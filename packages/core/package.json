@@ -1,0 +1,31 @@
+{
+  "name": "@perawallet/core",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "catalog:",
+    "@tanstack/react-query-persist-client": "catalog:",
+    "react": "catalog:",
+    "tsyringe": "catalog:",
+    "zustand": "catalog:",
+    "@kubb/plugin-client": "catalog:",
+    "@kubb/core": "catalog:"
+  },
+  "devDependencies": {
+    "eslint": "catalog:",
+    "jest": "catalog:",
+    "prettier": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "@types/jest": "catalog:",
+    "@types/react": "catalog:"
+  },
+  "packageManager": "pnpm@8.15.6"
+}

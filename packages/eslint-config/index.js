@@ -7,6 +7,7 @@ module.exports = {
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
     "prettier",
+    "plugin:esling-plugin-erasable-syntax-only/recomended"
   ],
   plugins: ["@typescript-eslint"],
   parserOptions: {

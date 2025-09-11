@@ -1,0 +1,1 @@
+{"required":["address","alpha_2_code"],"type":"object","properties":{"address":{"title":"Address","type":"string","maxLength":255,"minLength":1},"alpha_2_code":{"title":"Alpha 2 code","type":"string","minLength":1},"is_kyc_passed":{"title":"Is kyc passed","type":"boolean"}},"x-readme-ref-name":"ImmersveFundAddressUpdateSerializer.Response"}

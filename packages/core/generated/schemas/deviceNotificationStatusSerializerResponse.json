@@ -1,0 +1,1 @@
+{"required":["has_new_notification"],"type":"object","properties":{"has_new_notification":{"title":"Has new notification","type":"boolean"}},"x-readme-ref-name":"DeviceNotificationStatusSerializer.Response"}

@@ -1,0 +1,1 @@
+{"type":"object","properties":{"slug":{"title":"Slug","type":"string","format":"slug","pattern":"^[-a-zA-Z0-9_]+$","readOnly":true,"minLength":1},"name":{"title":"Name","type":"string","readOnly":true,"minLength":1}},"x-readme-ref-name":"DiscoverSimpleNFTCollection"}

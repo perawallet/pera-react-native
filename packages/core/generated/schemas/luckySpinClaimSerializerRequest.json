@@ -1,0 +1,1 @@
+{"required":["spin_id"],"type":"object","properties":{"spin_id":{"title":"Spin id","description":"Spin ID from Step 1","type":"string","format":"uuid"}},"x-readme-ref-name":"LuckySpinClaimSerializer.Request"}

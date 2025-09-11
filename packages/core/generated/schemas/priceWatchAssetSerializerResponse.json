@@ -1,0 +1,1 @@
+{"type":"object","properties":{"id":{"title":"Id","type":"string","readOnly":true,"minLength":1},"creation_datetime":{"title":"Creation datetime","type":"string","format":"date-time","readOnly":true}},"x-readme-ref-name":"PriceWatchAssetSerializer.Response"}

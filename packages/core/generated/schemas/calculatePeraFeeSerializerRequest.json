@@ -1,0 +1,1 @@
+{"required":["asset_in_id","amount"],"type":"object","properties":{"asset_in_id":{"title":"Asset in id","type":"integer"},"amount":{"title":"Amount","type":"string","format":"decimal"}},"x-readme-ref-name":"CalculatePeraFeeSerializer.Request"}

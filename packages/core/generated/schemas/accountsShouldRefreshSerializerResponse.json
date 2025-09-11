@@ -1,0 +1,1 @@
+{"type":"object","properties":{"refresh":{"title":"Refresh","type":"boolean","readOnly":true},"round":{"title":"Round","type":"integer","readOnly":true}},"x-readme-ref-name":"AccountsShouldRefreshSerializer.Response"}

@@ -1,3 +1,26 @@
 packages:
-  - "apps/*"
-  - "packages/*"
+  - apps/*
+  - packages/*
+
+catalog:
+  eslint: ^8.57.1
+  jest: ^29.6.3
+  prettier: 2.8.8
+  react: 19.1.0
+  tsyringe: ^4.10.0
+  typescript: ^5.8.3
+  vite: ^7.1.2
+  zustand: ^5.0.8
+  "@types/jest": ^29.5.13
+  "@types/react": ^19.1.0
+  "@kubb/cli": ^3.18.3
+  "@kubb/core": ^3.18.3
+  "@kubb/plugin-client": ^3.18.3
+  "@kubb/plugin-msw": ^3.18.3
+  "@kubb/plugin-oas": ^3.18.3
+  "@kubb/plugin-react-query": ^3.18.3
+  "@kubb/plugin-ts": ^3.18.3
+  "@kubb/plugin-zod": ^3.18.3
+  "@tanstack/react-query": ^5.87.4
+  "@tanstack/react-query-persist-client": ^5.87.4
+  "@tanstack/query-async-storage-persister": ^5.87.4
