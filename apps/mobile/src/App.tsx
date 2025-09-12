@@ -4,7 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { QueryProvider } from './providers/QueryProvider';
-import { bootstrapApp, useAppStore } from './bootstrap/boostrap';
+import { useBootstrapper, useAppStore } from './bootstrap/boostrap';
 import {
   useKeyValueStorageService
 } from '@perawallet/core';
@@ -22,9 +22,11 @@ function App() {
     return appState.theme === 'dark'
   }, [appState.theme])
 
+  const bootstrap = useBootstrapper()
+
   useEffect(() => {
     if (!bootstrapped) {
-      bootstrapApp().then(() => {
+      bootstrap().then(() => {
         const reactQueryPersistor = createAsyncStoragePersister({
           storage: kvService,
         });
@@ -32,7 +34,7 @@ function App() {
         setBootstrapped(true);
       });
     }
-  }, [bootstrapped]);
+  }, [bootstrapped, bootstrap, kvService]);
 
   return (
     <SafeAreaProvider>

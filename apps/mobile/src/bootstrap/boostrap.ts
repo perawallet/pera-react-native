@@ -20,21 +20,23 @@ const platformServices = {
 
 registerPlatformServices(platformServices)
 
-const crashlyticsService = useCrashReportingService()
-const remoteConfigService = useRemoteConfigService()
-const notificationService = useNotificationService()
-
 export var useAppStore = createAppStore();
 
-export const bootstrapApp = async () => {
-  const crashlyticsInit = crashlyticsService.initializeCrashReporting();
-  const remoteConfigInit = remoteConfigService.initializeRemoteConfig();
+export const useBootstrapper = () => {
+  const crashlyticsService = useCrashReportingService()
+  const remoteConfigService = useRemoteConfigService()
+  const notificationService = useNotificationService()
+  
+  return async () => {
+    const crashlyticsInit = crashlyticsService.initializeCrashReporting();
+    const remoteConfigInit = remoteConfigService.initializeRemoteConfig();
 
-  await Promise.allSettled([crashlyticsInit, remoteConfigInit]);
+    await Promise.allSettled([crashlyticsInit, remoteConfigInit]);
 
-  const notificationResults = await notificationService.initializeNotifications();
+    const notificationResults = await notificationService.initializeNotifications();
 
-  useAppStore.getState().setFcmToken(notificationResults.token || null);
+    useAppStore.getState().setFcmToken(notificationResults.token || null);
 
-  return platformServices
+    return platformServices
+  }
 };
