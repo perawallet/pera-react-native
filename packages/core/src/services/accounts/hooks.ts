@@ -1,4 +1,4 @@
-import { useAppStore } from "~/store"
+import { useAppStore } from "../../store"
 import { useSecureStorageService } from "../storage"
 import { type WalletAccount } from "./types"
 

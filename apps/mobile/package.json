@@ -7,7 +7,8 @@
     "ios": "react-native run-ios",
     "lint": "eslint .",
     "start": "react-native start",
-    "test": "jest"
+    "test": "vitest run",
+    "test:watch": "vitest --watch"
   },
   "dependencies": {
     "@notifee/react-native": "^9.1.8",
@@ -21,6 +22,8 @@
     "@react-navigation/elements": "^2.6.4",
     "@react-navigation/native": "^7.1.17",
     "@react-navigation/native-stack": "^7.3.26",
+    "@rneui/base": "4.0.0-rc.8",
+    "@rneui/themed": "4.0.0-rc.8",
     "@tanstack/query-async-storage-persister": "catalog:",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-query-persist-client": "catalog:",
@@ -32,6 +35,7 @@
     "react-native-mmkv": "^3.3.1",
     "react-native-safe-area-context": "^5.6.1",
     "react-native-screens": "^4.16.0",
+    "react-native-vector-icons": "^10.3.0",
     "reflect-metadata": "^0.2.2",
     "tailwindcss": "^4.1.13",
     "tsyringe": "catalog:",
@@ -48,14 +52,13 @@
     "@react-native/eslint-config": "0.81.1",
     "@react-native/metro-config": "0.81.1",
     "@react-native/typescript-config": "0.81.1",
-    "@types/jest": "catalog:",
     "@types/react": "catalog:",
     "@types/react-test-renderer": "^19.1.0",
     "eslint": "catalog:",
-    "jest": "catalog:",
     "prettier": "catalog:",
     "react-test-renderer": "19.1.0",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
   "engines": {
     "node": ">=20"

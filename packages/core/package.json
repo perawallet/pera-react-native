@@ -8,7 +8,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "test": "jest"
+    "test": "vitest run",
+    "test:watch": "vitest --watch"
   },
   "dependencies": {
     "@algorandfoundation/algokit-utils": "^9.1.2",
@@ -23,14 +24,13 @@
     "zustand": "catalog:"
   },
   "devDependencies": {
-    "@types/jest": "catalog:",
     "@types/react": "catalog:",
     "eslint": "catalog:",
-    "jest": "catalog:",
-    "ts-jest": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:",
-    "vite": "catalog:"
+    "vite": "catalog:",
+    "vitest": "catalog:",
+    "@vitest/coverage-v8": "catalog:"
   },
   "packageManager": "pnpm@8.15.6"
 }

@@ -1,8 +1,8 @@
 import { create, type StateCreator } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { useKeyValueStorageService } from "../services";
-import { createBlockchainSlice, type BlockchainSlice } from "~/services/blockchain";
-import { createAccountsSlice, type AccountsSlice } from "~/services/accounts";
+import { createBlockchainSlice, type BlockchainSlice } from "../services/blockchain";
+import { createAccountsSlice, type AccountsSlice } from "../services/accounts";
 
 type ThemeMode = "light" | "dark" | "system";
 

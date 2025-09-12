@@ -12,16 +12,18 @@ import {
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { Persister } from '@tanstack/react-query-persist-client';
 import { MainRoutes } from './routes/routes';
+import { ThemeProvider } from '@rneui/themed';
+import theme from './theme/theme';
 
 function App() {
   const [bootstrapped, setBootstrapped] = useState(false);
   const [persister, setPersister] = useState<Persister>();
-  const theme = useAppStore((state) => state.theme)
+  const themeMode = useAppStore((state) => state.theme)
   const kvService = useKeyValueStorageService();
   
   const isDarkMode = useMemo(() => {
-    return theme === 'dark'
-  }, [theme])
+    return themeMode === 'dark'
+  }, [themeMode])
 
   const bootstrap = useBootstrapper()
 
@@ -39,15 +41,17 @@ function App() {
 
   return (
     <SafeAreaProvider>
-      {!bootstrapped && <Text>Loading...</Text>}
-      {bootstrapped && persister && (
-        <QueryProvider persister={persister}>
-          <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-          <GestureHandlerRootView style={styles.container}>
-            <MainRoutes />
-          </GestureHandlerRootView>
-        </QueryProvider>
-      )}
+      <ThemeProvider theme={theme}>
+        {!bootstrapped && <Text>Loading...</Text>}
+        {bootstrapped && persister && (
+          <QueryProvider persister={persister}>
+            <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+            <GestureHandlerRootView style={styles.container}>
+              <MainRoutes />
+            </GestureHandlerRootView>
+          </QueryProvider>
+        )}
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

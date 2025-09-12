@@ -1,12 +1,14 @@
 {
   "private": true,
+  "type": "module",
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint -- --fix",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "generate:api": "kubb generate && pnpm run lint && pnpm run format"
+    "generate:api": "kubb generate && pnpm run lint && pnpm run format",
+    "test": "turbo run test"
   },
   "devDependencies": {
     "@kubb/cli": "catalog:",
@@ -16,9 +18,11 @@
     "@kubb/plugin-react-query": "catalog:",
     "@kubb/plugin-ts": "catalog:",
     "@kubb/plugin-zod": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
     "eslint": "catalog:",
     "prettier": "catalog:",
-    "turbo": "^2.5.6"
+    "turbo": "^2.5.6",
+    "vitest": "catalog:"
   },
   "packageManager": "pnpm@10.15.1",
   "name": "with-vite"

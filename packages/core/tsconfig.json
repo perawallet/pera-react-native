@@ -20,10 +20,14 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-    "baseUrl": ".",
+    "baseUrl": "src",
     "paths": {
-      "~/*": ["src/*"]
-    }
+      "@services/*": ["services/*"],
+      "@store/*": ["store/*"],
+      "@api/*": ["api/*", "api/generated/*"],
+      "@platform/*": ["platform/*"],
+    },
+    "types": ["vitest/globals"]
   },
   "include": ["src", "api"]
 }

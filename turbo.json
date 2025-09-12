@@ -10,6 +10,16 @@
     "dev": {
       "cache": false,
       "persistent": true
+    },
+    "test": {
+      "dependsOn": ["transit"]
+    },
+    "test:watch": {
+      "cache": false,
+      "persistent": true
+    },
+    "transit": {
+      "dependsOn": ["^transit"]
     }
   }
 }
