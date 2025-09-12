@@ -16,6 +16,7 @@ function App() {
   const [bootstrapped, setBootstrapped] = useState(false);
   const [persister, setPersister] = useState<Persister>();
   const appState = useAppStore()
+  const kvService = useKeyValueStorageService();
   
   const isDarkMode = useMemo(() => {
     return appState.theme === 'dark'
@@ -24,7 +25,6 @@ function App() {
   useEffect(() => {
     if (!bootstrapped) {
       bootstrapApp().then(() => {
-        const kvService = useKeyValueStorageService();
         const reactQueryPersistor = createAsyncStoragePersister({
           storage: kvService,
         });

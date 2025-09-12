@@ -14,7 +14,7 @@ export default defineConfig(() => {
     output: {
       barrelType: "named",
       clean: true,
-      path: "./packages/core/src/api",
+      path: "./packages/core/src/api/generated",
     },
     plugins: [
       pluginOas({
