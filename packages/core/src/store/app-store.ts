@@ -4,7 +4,7 @@ import { container } from "tsyringe";
 import {
   type KeyValueStorageService,
   KeyValueStorageServiceContainerKey,
-} from "~/services/storage/key-value-storage";
+} from "../services/storage/key-value-storage";
 
 type ThemeMode = "light" | "dark" | "system";
 
@@ -39,5 +39,3 @@ export const createAppStore = () => {
     )
   );
 };
-
-export var useAppStore = createAppStore()

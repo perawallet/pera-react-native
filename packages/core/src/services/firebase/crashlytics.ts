@@ -1,16 +1,16 @@
 import { container } from "tsyringe";
 import { useMemo } from "react";
 
-export const CrashlyticsServiceContainerKey = "CrashlyticsService";
+export const CrashReportingServiceContainerKey = "CrashReportingService";
 
-export interface CrashlyticsService {
-  initialize(): void;
+export interface CrashReportingService {
+  initializeCrashReporting(): void;
   recordNonFatalError(error: unknown): void;
 }
 
 export const useCrashlyticsService = () => {
   return useMemo(
-    () => container.resolve<CrashlyticsService>(CrashlyticsServiceContainerKey),
-    [CrashlyticsServiceContainerKey]
+    () => container.resolve<CrashReportingService>(CrashReportingServiceContainerKey),
+    [CrashReportingServiceContainerKey]
   );
 };

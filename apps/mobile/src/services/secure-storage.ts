@@ -1,7 +1,7 @@
 import * as Keychain from 'react-native-keychain';
 import type { SecureStorageService } from '@perawallet/core';
 
-const SERVICE_PREFIX = 'com.algorandllc';
+const SERVICE_PREFIX = 'com.algorand.android';
 
 type Options = {
   service?: string;

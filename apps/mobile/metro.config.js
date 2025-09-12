@@ -12,7 +12,10 @@ const config = {
     unstable_enableSymlinks: true, 
     unstable_enablePackageExports: true,
   },
-  // this specifies the folder where are located the node_modules for the project
-  watchFolders: [path.join(__dirname, '..', '..')],
+  // this specifies the folder where the node_modules are
+  watchFolders: [
+    path.join(__dirname, '..', '..'), 
+    __dirname
+  ],
 };
 module.exports = mergeConfig(getDefaultConfig(__dirname), config);

@@ -1,46 +1,45 @@
-/**
- * Mobile App shell wired to shared core/services
- * @format
- */
-
 import React, { useEffect, useState } from 'react';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
+import { StatusBar, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import { QueryProvider } from '~/providers/QueryProvider';
-import DemoScreen from '~/screens/DemoScreen';
-import { bootstrapApp } from '~/bootstrap/boostrap';
-import { useKeyValueStorageService } from '@perawallet/core';
+import { QueryProvider } from './providers/QueryProvider';
+import DemoScreen from './screens/DemoScreen';
+import { bootstrapApp, useAppStore } from './bootstrap/boostrap';
+import { KeyValueStorageService, KeyValueStorageServiceContainerKey } from '@perawallet/core';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { Persister } from '@tanstack/react-query-persist-client';
+import { container } from 'tsyringe';
+import PortfolioScreen from './screens/portfolio/PortfolioScreen';
 
 function App() {
-  const isDarkMode = useColorScheme() === 'dark';
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const [bootstrapped, setBootstrapped] = useState(false);
   const [persister, setPersister] = useState<Persister>();
-  const kvService = useKeyValueStorageService();
 
   useEffect(() => {
     if (!bootstrapped) {
-      bootstrapApp();
-
-      const reactQueryPersistor = createAsyncStoragePersister({
-        storage: kvService,
-      });
-      setPersister(reactQueryPersistor);
-      setBootstrapped(true);
+      bootstrapApp()
+        .then(() => {
+          const kvService = container.resolve<KeyValueStorageService>(KeyValueStorageServiceContainerKey)
+          const reactQueryPersistor = createAsyncStoragePersister({
+            storage: kvService,
+          });
+          setPersister(reactQueryPersistor);
+          setBootstrapped(true);
+          setIsDarkMode(useAppStore.getState().theme == 'dark')
+        })
     }
-  }, [kvService, bootstrapped]);
+  }, [bootstrapped]);
 
   return (
     <SafeAreaProvider>
-      {!bootstrapped && <View>Loading...</View>}
+      {!bootstrapped && <Text>Loading...</Text>}
       {bootstrapped && persister && (
         <QueryProvider persister={persister}>
           <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
           <GestureHandlerRootView style={styles.container}>
-            <DemoScreen />
+            <PortfolioScreen />
           </GestureHandlerRootView>
         </QueryProvider>
       )}
@@ -51,7 +50,7 @@ function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
+  }
 });
 
 export default App;

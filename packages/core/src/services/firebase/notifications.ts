@@ -9,7 +9,7 @@ export type NotificationsInitResult = {
 };
 
 export interface NotificationService {
-  initialize(): Promise<NotificationsInitResult>;
+  initializeNotifications(): Promise<NotificationsInitResult>;
 }
 
 export const useNotificationService = () => {

@@ -1,44 +1,50 @@
-import { RNCrashlyticsService } from '~/services/crashlytics';
-import { RNKeyValueStorageService } from '~/services/key-value-storage';
-import { RNNotificationService } from '~/services/notifications';
-import { RNRemoteConfigService } from '~/services/remote-config';
-import { RNSecureStorageService } from '~/services/secure-storage';
+import { RNFirebaseService } from '../services/firebase';
+import { RNKeyValueStorageService } from '../services/key-value-storage';
+import { RNSecureStorageService } from '../services/secure-storage';
 import {
-  CrashlyticsService,
-  CrashlyticsServiceContainerKey,
+  CrashReportingService,
+  CrashReportingServiceContainerKey,
   NotificationService,
   NotificationServiceContainerKey,
-  RemoteConfigContainerKey,
+  RemoteConfigServiceContainerKey,
   RemoteConfigService,
   KeyValueStorageServiceContainerKey,
   SecureStorageServiceContainerKey,
-  useAppStore
+  SecureStorageService,
+  KeyValueStorageService,
+  createAppStore
 } from '@perawallet/core';
 import { container } from 'tsyringe';
 
-container.register(CrashlyticsServiceContainerKey, {
-  useClass: RNCrashlyticsService,
+console.log('REGISTERING PLATFORM IMPL')
+
+const firebaseService = new RNFirebaseService()
+
+container.register<CrashReportingService>(CrashReportingServiceContainerKey, {
+  useValue: firebaseService,
 });
-container.register(NotificationServiceContainerKey, {
-  useClass: RNNotificationService,
+container.register<NotificationService>(NotificationServiceContainerKey, {
+  useValue: firebaseService,
 });
-container.register(RemoteConfigContainerKey, {
-  useClass: RNRemoteConfigService,
+container.register<RemoteConfigService>(RemoteConfigServiceContainerKey, {
+  useValue: firebaseService,
 });
-container.register(SecureStorageServiceContainerKey, {
-  useClass: RNSecureStorageService,
+container.register<SecureStorageService>(SecureStorageServiceContainerKey, {
+  useValue: new RNSecureStorageService(),
 });
-container.register(KeyValueStorageServiceContainerKey, {
-  useClass: RNKeyValueStorageService,
+container.register<KeyValueStorageService>(KeyValueStorageServiceContainerKey, {
+  useValue: new RNKeyValueStorageService(),
 });
+
+export var useAppStore = createAppStore()
 
 export const bootstrapApp = async () => {
   const crashlyticsInit = container
-    .resolve<CrashlyticsService>(CrashlyticsServiceContainerKey)
-    .initialize();
+    .resolve<CrashReportingService>(CrashReportingServiceContainerKey)
+    .initializeCrashReporting();
   const remoteConfigInit = container
-    .resolve<RemoteConfigService>(RemoteConfigContainerKey)
-    .initialize();
+    .resolve<RemoteConfigService>(RemoteConfigServiceContainerKey)
+    .initializeRemoteConfig();
 
   await Promise.allSettled([
     crashlyticsInit,
@@ -47,10 +53,8 @@ export const bootstrapApp = async () => {
 
   const notificationResults = await container
     .resolve<NotificationService>(NotificationServiceContainerKey)
-    .initialize();
+    .initializeNotifications();
 
-    //TODO we might run into a chicken/egg situation here.  Need to make sure
-    //the store is setup first
     useAppStore
       .getState()
       .setFcmToken(notificationResults.token || null);
