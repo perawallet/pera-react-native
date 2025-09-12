@@ -4,13 +4,13 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { QueryProvider } from './providers/QueryProvider';
-import DemoScreen from './screens/DemoScreen';
 import { bootstrapApp, useAppStore } from './bootstrap/boostrap';
 import { KeyValueStorageService, KeyValueStorageServiceContainerKey } from '@perawallet/core';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { Persister } from '@tanstack/react-query-persist-client';
 import { container } from 'tsyringe';
 import PortfolioScreen from './screens/portfolio/PortfolioScreen';
+import { MainRoutes } from './routes/routes';
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -39,7 +39,7 @@ function App() {
         <QueryProvider persister={persister}>
           <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
           <GestureHandlerRootView style={styles.container}>
-            <PortfolioScreen />
+            <MainRoutes />
           </GestureHandlerRootView>
         </QueryProvider>
       )}
