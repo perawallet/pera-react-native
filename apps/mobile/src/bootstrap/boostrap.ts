@@ -1,61 +1,40 @@
-import { RNFirebaseService } from '../services/firebase';
-import { RNKeyValueStorageService } from '../services/key-value-storage';
-import { RNSecureStorageService } from '../services/secure-storage';
+import { RNFirebaseService } from '../platform/firebase';
+import { RNKeyValueStorageService } from '../platform/key-value-storage';
+import { RNSecureStorageService } from '../platform/secure-storage';
 import {
-  CrashReportingService,
-  CrashReportingServiceContainerKey,
-  NotificationService,
-  NotificationServiceContainerKey,
-  RemoteConfigServiceContainerKey,
-  RemoteConfigService,
-  KeyValueStorageServiceContainerKey,
-  SecureStorageServiceContainerKey,
-  SecureStorageService,
-  KeyValueStorageService,
-  createAppStore
+  createAppStore,
+  useCrashReportingService,
+  useRemoteConfigService,
+  useNotificationService,
+  registerPlatformServices,
 } from '@perawallet/core';
-import { container } from 'tsyringe';
 
-console.log('REGISTERING PLATFORM IMPL')
+const firebaseService = new RNFirebaseService();
+const platformServices = {
+  crashReporting: firebaseService,
+  notification: firebaseService,
+  remoteConfig: firebaseService,
+  secureStorage: new RNSecureStorageService(),
+  keyValueStorage: new RNKeyValueStorageService()
+}
 
-const firebaseService = new RNFirebaseService()
+registerPlatformServices(platformServices)
 
-container.register<CrashReportingService>(CrashReportingServiceContainerKey, {
-  useValue: firebaseService,
-});
-container.register<NotificationService>(NotificationServiceContainerKey, {
-  useValue: firebaseService,
-});
-container.register<RemoteConfigService>(RemoteConfigServiceContainerKey, {
-  useValue: firebaseService,
-});
-container.register<SecureStorageService>(SecureStorageServiceContainerKey, {
-  useValue: new RNSecureStorageService(),
-});
-container.register<KeyValueStorageService>(KeyValueStorageServiceContainerKey, {
-  useValue: new RNKeyValueStorageService(),
-});
+const crashlyticsService = useCrashReportingService()
+const remoteConfigService = useRemoteConfigService()
+const notificationService = useNotificationService()
 
-export var useAppStore = createAppStore()
+export var useAppStore = createAppStore();
 
 export const bootstrapApp = async () => {
-  const crashlyticsInit = container
-    .resolve<CrashReportingService>(CrashReportingServiceContainerKey)
-    .initializeCrashReporting();
-  const remoteConfigInit = container
-    .resolve<RemoteConfigService>(RemoteConfigServiceContainerKey)
-    .initializeRemoteConfig();
+  const crashlyticsInit = crashlyticsService.initializeCrashReporting();
+  const remoteConfigInit = remoteConfigService.initializeRemoteConfig();
 
-  await Promise.allSettled([
-    crashlyticsInit,
-    remoteConfigInit,
-  ]);
+  await Promise.allSettled([crashlyticsInit, remoteConfigInit]);
 
-  const notificationResults = await container
-    .resolve<NotificationService>(NotificationServiceContainerKey)
-    .initializeNotifications();
+  const notificationResults = await notificationService.initializeNotifications();
 
-    useAppStore
-      .getState()
-      .setFcmToken(notificationResults.token || null);
+  useAppStore.getState().setFcmToken(notificationResults.token || null);
+
+  return platformServices
 };

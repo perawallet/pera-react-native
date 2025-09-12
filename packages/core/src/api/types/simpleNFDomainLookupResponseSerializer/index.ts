@@ -1,0 +1,1 @@
+export type { SimpleNFDomainLookupResponseSerializerResponse } from "./Response.ts";

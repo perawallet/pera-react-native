@@ -10,22 +10,24 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@algorandfoundation/algokit-utils": "^9.1.2",
+    "@kubb/core": "catalog:",
+    "@kubb/plugin-client": "catalog:",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-query-persist-client": "catalog:",
+    "algosdk": "^3.4.0",
     "react": "catalog:",
     "tsyringe": "catalog:",
-    "zustand": "catalog:",
-    "@kubb/plugin-client": "catalog:",
-    "@kubb/core": "catalog:"
+    "zustand": "catalog:"
   },
   "devDependencies": {
+    "@types/jest": "catalog:",
+    "@types/react": "catalog:",
     "eslint": "catalog:",
     "jest": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:",
-    "vite": "catalog:",
-    "@types/jest": "catalog:",
-    "@types/react": "catalog:"
+    "vite": "catalog:"
   },
   "packageManager": "pnpm@8.15.6"
 }

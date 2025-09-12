@@ -14,7 +14,7 @@ export default defineConfig(() => {
     output: {
       barrelType: "named",
       clean: true,
-      path: "./packages/generated",
+      path: "./packages/core/src/api",
     },
     plugins: [
       pluginOas({
@@ -27,7 +27,7 @@ export default defineConfig(() => {
         enumType: "literal",
         output: {
           path: "types",
-          barrelType: false,
+          barrelType: "named",
         },
         unknownType: "unknown",
       }),

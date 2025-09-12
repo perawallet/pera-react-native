@@ -1,0 +1,1 @@
+export type { WaitlistResponseSerializerResponse } from "./Response.ts";

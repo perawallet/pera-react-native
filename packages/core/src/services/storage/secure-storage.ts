@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { container } from "tsyringe";
 
 export const SecureStorageServiceContainerKey = "SecureStorageService";
@@ -10,10 +9,5 @@ export interface SecureStorageService {
   authenticate(): Promise<boolean>;
 }
 
-export const useSecureStorageService = () => {
-  return useMemo(
-    () =>
-      container.resolve<SecureStorageService>(SecureStorageServiceContainerKey),
-    [SecureStorageServiceContainerKey]
-  );
-};
+export const useSecureStorageService = () =>
+    container.resolve<SecureStorageService>(SecureStorageServiceContainerKey);

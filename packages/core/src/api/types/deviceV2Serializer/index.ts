@@ -1,0 +1,2 @@
+export type { DeviceV2SerializerRequestLocaleEnum, DeviceV2SerializerRequestPlatformEnum, DeviceV2SerializerRequestApplicationEnum, DeviceV2SerializerRequest } from "./Request.ts";
+export type { DeviceV2SerializerResponseLocaleEnum, DeviceV2SerializerResponsePlatformEnum, DeviceV2SerializerResponseApplicationEnum, DeviceV2SerializerResponse } from "./Response.ts";

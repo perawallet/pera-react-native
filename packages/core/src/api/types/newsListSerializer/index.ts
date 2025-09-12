@@ -1,0 +1,1 @@
+export type { NewsListSerializerResponse } from "./Response.ts";

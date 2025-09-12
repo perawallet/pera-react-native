@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { container } from "tsyringe";
 
 export const KeyValueStorageServiceContainerKey = "KeyValueStorageService";
@@ -11,12 +10,5 @@ export interface KeyValueStorageService {
   getJSON<T>(key: string): T | null;
 }
 
-export const useKeyValueStorageService = () => {
-  return useMemo(
-    () =>
-      container.resolve<KeyValueStorageService>(
-        KeyValueStorageServiceContainerKey
-      ),
-    [KeyValueStorageServiceContainerKey]
-  );
-};
+export const useKeyValueStorageService = () => 
+    container.resolve<KeyValueStorageService>(KeyValueStorageServiceContainerKey);

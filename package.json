@@ -6,7 +6,7 @@
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint -- --fix",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "generate:api": "kubb generate && npm run lint && npm run format"
+    "generate:api": "kubb generate && pnpm run lint && pnpm run format"
   },
   "devDependencies": {
     "@kubb/cli": "catalog:",

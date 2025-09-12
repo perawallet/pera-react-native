@@ -1,2 +1,2 @@
-export * from "./firebase/";
+export * from "./configuration/";
 export * from "./storage/";

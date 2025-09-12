@@ -1,0 +1,2 @@
+export type { DeviceV2MergeSerializerRequestLocaleEnum, DeviceV2MergeSerializerRequestPlatformEnum, DeviceV2MergeSerializerRequestApplicationEnum, DeviceV2MergeSerializerRequest } from "./Request.ts";
+export type { DeviceV2MergeSerializerResponseLocaleEnum, DeviceV2MergeSerializerResponsePlatformEnum, DeviceV2MergeSerializerResponseApplicationEnum, DeviceV2MergeSerializerResponse } from "./Response.ts";

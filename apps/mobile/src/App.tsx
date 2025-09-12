@@ -1,34 +1,36 @@
-import React, { useEffect, useState } from 'react';
-import { StatusBar, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { StatusBar, StyleSheet, Text } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { QueryProvider } from './providers/QueryProvider';
 import { bootstrapApp, useAppStore } from './bootstrap/boostrap';
-import { KeyValueStorageService, KeyValueStorageServiceContainerKey } from '@perawallet/core';
+import {
+  useKeyValueStorageService
+} from '@perawallet/core';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { Persister } from '@tanstack/react-query-persist-client';
-import { container } from 'tsyringe';
-import PortfolioScreen from './screens/portfolio/PortfolioScreen';
 import { MainRoutes } from './routes/routes';
 
 function App() {
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [bootstrapped, setBootstrapped] = useState(false);
   const [persister, setPersister] = useState<Persister>();
+  const appState = useAppStore()
+  
+  const isDarkMode = useMemo(() => {
+    return appState.theme === 'dark'
+  }, [appState.theme])
 
   useEffect(() => {
     if (!bootstrapped) {
-      bootstrapApp()
-        .then(() => {
-          const kvService = container.resolve<KeyValueStorageService>(KeyValueStorageServiceContainerKey)
-          const reactQueryPersistor = createAsyncStoragePersister({
-            storage: kvService,
-          });
-          setPersister(reactQueryPersistor);
-          setBootstrapped(true);
-          setIsDarkMode(useAppStore.getState().theme == 'dark')
-        })
+      bootstrapApp().then(() => {
+        const kvService = useKeyValueStorageService();
+        const reactQueryPersistor = createAsyncStoragePersister({
+          storage: kvService,
+        });
+        setPersister(reactQueryPersistor);
+        setBootstrapped(true);
+      });
     }
   }, [bootstrapped]);
 
@@ -50,7 +52,7 @@ function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  }
+  },
 });
 
 export default App;

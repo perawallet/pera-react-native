@@ -1,10 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { container } from "tsyringe";
-import {
-  type KeyValueStorageService,
-  KeyValueStorageServiceContainerKey,
-} from "../services/storage/key-value-storage";
+import { useKeyValueStorageService } from "../services";
 
 type ThemeMode = "light" | "dark" | "system";
 
@@ -16,9 +12,7 @@ export type AppState = {
 };
 
 export const createAppStore = () => {
-  const kvStorage = container.resolve<KeyValueStorageService>(
-    KeyValueStorageServiceContainerKey
-  );
+  const kvStorage = useKeyValueStorageService()
   return create<AppState>()(
     persist(
       (set) => ({

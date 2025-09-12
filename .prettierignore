@@ -1,2 +1,2 @@
-packages/core/generated/*
+packages/core/src/api/*
 apps/mobile/vendor/*

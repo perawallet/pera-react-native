@@ -1,0 +1,1 @@
+export type { AccountStakingRewardsSerializerResponse } from "./Response.ts";

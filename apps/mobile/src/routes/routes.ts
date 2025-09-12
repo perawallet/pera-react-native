@@ -10,15 +10,15 @@ const RootStack = createBottomTabNavigator({
   initialRouteName: 'Home',
   screens: {
     Home: {
-        screen: PortfolioScreen,
-        options: {
-            title: "Portfolio"
-        }
+      screen: PortfolioScreen,
+      options: {
+        title: 'Portfolio',
+      },
     },
     Discover: DiscoverScreen,
     Swap: SwapScreen,
     Staking: StakingScreen,
-    Menu: MenuScreen
+    Menu: MenuScreen,
   },
 });
 

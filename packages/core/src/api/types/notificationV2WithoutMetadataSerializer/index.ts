@@ -1,0 +1,1 @@
+export type { NotificationV2WithoutMetadataSerializerResponse } from "./Response.ts";
