@@ -4,8 +4,9 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { QueryProvider } from './providers/QueryProvider';
-import { useBootstrapper, useAppStore } from './bootstrap/boostrap';
+import { useBootstrapper } from './bootstrap/boostrap';
 import {
+  useAppStore,
   useKeyValueStorageService
 } from '@perawallet/core';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
@@ -15,12 +16,12 @@ import { MainRoutes } from './routes/routes';
 function App() {
   const [bootstrapped, setBootstrapped] = useState(false);
   const [persister, setPersister] = useState<Persister>();
-  const appState = useAppStore()
+  const theme = useAppStore((state) => state.theme)
   const kvService = useKeyValueStorageService();
   
   const isDarkMode = useMemo(() => {
-    return appState.theme === 'dark'
-  }, [appState.theme])
+    return theme === 'dark'
+  }, [theme])
 
   const bootstrap = useBootstrapper()
 

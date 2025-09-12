@@ -2,11 +2,11 @@ import { RNFirebaseService } from '../platform/firebase';
 import { RNKeyValueStorageService } from '../platform/key-value-storage';
 import { RNSecureStorageService } from '../platform/secure-storage';
 import {
-  createAppStore,
   useCrashReportingService,
   useRemoteConfigService,
   useNotificationService,
   registerPlatformServices,
+  useAppStore,
 } from '@perawallet/core';
 
 const firebaseService = new RNFirebaseService();
@@ -20,13 +20,12 @@ const platformServices = {
 
 registerPlatformServices(platformServices)
 
-export var useAppStore = createAppStore();
-
 export const useBootstrapper = () => {
   const crashlyticsService = useCrashReportingService()
   const remoteConfigService = useRemoteConfigService()
   const notificationService = useNotificationService()
-  
+  const setFcmToken = useAppStore((state) => { return state.setFcmToken })
+
   return async () => {
     const crashlyticsInit = crashlyticsService.initializeCrashReporting();
     const remoteConfigInit = remoteConfigService.initializeRemoteConfig();
@@ -35,7 +34,7 @@ export const useBootstrapper = () => {
 
     const notificationResults = await notificationService.initializeNotifications();
 
-    useAppStore.getState().setFcmToken(notificationResults.token || null);
+    setFcmToken(notificationResults.token || null);
 
     return platformServices
   }

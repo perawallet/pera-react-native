@@ -7,10 +7,12 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "jest"
   },
   "dependencies": {
     "@algorandfoundation/algokit-utils": "^9.1.2",
+    "@algorandfoundation/xhd-wallet-api": "^1.0.3",
     "@kubb/core": "catalog:",
     "@kubb/plugin-client": "catalog:",
     "@tanstack/react-query": "catalog:",
@@ -25,6 +27,7 @@
     "@types/react": "catalog:",
     "eslint": "catalog:",
     "jest": "catalog:",
+    "ts-jest": "catalog:",
     "prettier": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:"
