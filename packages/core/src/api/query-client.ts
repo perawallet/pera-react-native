@@ -1,5 +1,4 @@
 import ky, { type SearchParamsOption, type KyInstance } from 'ky'
-import { stringifyJson } from '../utils/stringifyJson'
 import { config } from 'config/main'
 import { Networks } from '@services/blockchain'
 import { useAppStore } from '@store/app-store'
@@ -52,7 +51,6 @@ export interface ResponseConfig<TData = unknown> {
 export type ResponseErrorConfig<TError = unknown> = TError
 
 const mainnetClient = ky.create({
-	stringifyJson,
 	hooks: {
 		beforeRequest: [
 			request => {
@@ -64,7 +62,6 @@ const mainnetClient = ky.create({
 	prefixUrl: config.mainnetBackendUrl,
 })
 const testnetClient = ky.create({
-	stringifyJson,
 	hooks: {
 		beforeRequest: [
 			request => {
