@@ -1,18 +1,19 @@
 import { container } from "tsyringe";
 import {
   CrashReportingServiceContainerKey,
-  NotificationServiceContainerKey,
-  RemoteConfigServiceContainerKey,
   type CrashReportingService,
+} from "../services/reporting";
+import {
+  RemoteConfigServiceContainerKey,
   type RemoteConfigService,
-} from "../services/configuration";
+} from "../services/remote-config";
 import {
   KeyValueStorageServiceContainerKey,
   SecureStorageServiceContainerKey,
   type KeyValueStorageService,
-  type NotificationService,
   type SecureStorageService,
 } from "../services";
+import { NotificationServiceContainerKey, type NotificationService } from "@services/notifications";
 
 export interface PlatformServices {
   keyValueStorage: KeyValueStorageService;

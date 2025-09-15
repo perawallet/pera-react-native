@@ -3,12 +3,12 @@ import { registerPlatformServices } from "../../platform";
 import { Networks } from "../../services/blockchain/types";
 import type { KeyValueStorageService } from "../../services/storage/key-value-storage";
 import type { SecureStorageService } from "../../services/storage/secure-storage";
-import type { RemoteConfigService } from "../../services/configuration/remote-config";
+import type { RemoteConfigService } from "../../services/remote-config/platform-service";
 import type {
   NotificationService,
   NotificationsInitResult,
-} from "../../services/configuration/notifications";
-import type { CrashReportingService } from "../../services/configuration/reporting";
+} from "../../services/notifications/platform-service";
+import type { CrashReportingService } from "../../services/reporting/platform-service";
 
 class MemoryKeyValueStorage implements KeyValueStorageService {
   private store = new Map<string, string>();
