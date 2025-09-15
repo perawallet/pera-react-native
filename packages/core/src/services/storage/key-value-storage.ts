@@ -10,5 +10,5 @@ export interface KeyValueStorageService {
   getJSON<T>(key: string): T | null;
 }
 
-export const useKeyValueStorageService = () => 
-    container.resolve<KeyValueStorageService>(KeyValueStorageServiceContainerKey);
+export const useKeyValueStorageService = () =>
+  container.resolve<KeyValueStorageService>(KeyValueStorageServiceContainerKey);

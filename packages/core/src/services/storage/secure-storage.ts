@@ -10,4 +10,4 @@ export interface SecureStorageService {
 }
 
 export const useSecureStorageService = () =>
-    container.resolve<SecureStorageService>(SecureStorageServiceContainerKey);
+  container.resolve<SecureStorageService>(SecureStorageServiceContainerKey);

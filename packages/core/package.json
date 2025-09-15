@@ -20,6 +20,7 @@
     "@tanstack/react-query-persist-client": "catalog:",
     "algosdk": "^3.4.0",
     "react": "catalog:",
+    "reflect-metadata": "catalog:",
     "tsyringe": "catalog:",
     "zustand": "catalog:"
   },

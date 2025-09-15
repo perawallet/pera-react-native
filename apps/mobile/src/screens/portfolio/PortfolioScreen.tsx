@@ -4,9 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import PeraButton from '../../components/button/PeraButton';
 
 const PortfolioScreen = () => {
-    const showAlert = () => {
-        Alert.alert('Hello', 'You clicked a button!')
-    }
+  const showAlert = () => {
+    Alert.alert('Hello', 'You clicked a button!');
+  };
 
   return (
     <SafeAreaView style={styles.container}>

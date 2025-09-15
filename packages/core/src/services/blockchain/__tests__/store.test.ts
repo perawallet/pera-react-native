@@ -5,7 +5,10 @@ describe("services/blockchain/store", () => {
   test("defaults to mainnet and setNetwork updates", () => {
     let state: BlockchainSlice;
     const set = (partial: Partial<BlockchainSlice>) => {
-      state = { ...(state as BlockchainSlice), ...(partial as BlockchainSlice) };
+      state = {
+        ...(state as BlockchainSlice),
+        ...(partial as BlockchainSlice),
+      };
     };
     const get = () => state;
 

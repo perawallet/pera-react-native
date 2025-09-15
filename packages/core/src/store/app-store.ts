@@ -1,7 +1,10 @@
 import { create, type StateCreator } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { useKeyValueStorageService } from "../services";
-import { createBlockchainSlice, type BlockchainSlice } from "../services/blockchain";
+import {
+  createBlockchainSlice,
+  type BlockchainSlice,
+} from "../services/blockchain";
 import { createAccountsSlice, type AccountsSlice } from "../services/accounts";
 
 type ThemeMode = "light" | "dark" | "system";
@@ -19,10 +22,10 @@ const createAppSlice: StateCreator<AppSlice, [], [], AppSlice> = (set) => {
     fcmToken: null,
     setTheme: (theme) => set({ theme }),
     setFcmToken: (token) => set({ fcmToken: token }),
-  }
-}
+  };
+};
 
-export type AppState = AppSlice & AccountsSlice & BlockchainSlice
+export type AppState = AppSlice & AccountsSlice & BlockchainSlice;
 export const useAppStore = create<AppState>()(
   persist(
     (...a) => ({

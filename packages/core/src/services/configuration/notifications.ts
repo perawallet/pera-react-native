@@ -11,5 +11,5 @@ export interface NotificationService {
   initializeNotifications(): Promise<NotificationsInitResult>;
 }
 
-export const useNotificationService = () => 
-    container.resolve<NotificationService>(NotificationServiceContainerKey);
+export const useNotificationService = () =>
+  container.resolve<NotificationService>(NotificationServiceContainerKey);

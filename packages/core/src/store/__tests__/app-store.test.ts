@@ -4,7 +4,10 @@ import { Networks } from "../../services/blockchain/types";
 import type { KeyValueStorageService } from "../../services/storage/key-value-storage";
 import type { SecureStorageService } from "../../services/storage/secure-storage";
 import type { RemoteConfigService } from "../../services/configuration/remote-config";
-import type { NotificationService, NotificationsInitResult } from "../../services/configuration/notifications";
+import type {
+  NotificationService,
+  NotificationsInitResult,
+} from "../../services/configuration/notifications";
 import type { CrashReportingService } from "../../services/configuration/reporting";
 
 class MemoryKeyValueStorage implements KeyValueStorageService {
@@ -34,27 +37,37 @@ class MemoryKeyValueStorage implements KeyValueStorageService {
 
 const dummySecure: SecureStorageService = {
   async setItem() {},
-  async getItem() { return null; },
+  async getItem() {
+    return null;
+  },
   async removeItem() {},
-  async authenticate() { return true; }
+  async authenticate() {
+    return true;
+  },
 };
 
 const dummyRemote: RemoteConfigService = {
   initializeRemoteConfig() {},
-  getStringValue(_k, f) { return f ?? ""; },
-  getBooleanValue(_k, f) { return f ?? false; },
-  getNumberValue(_k, f) { return f ?? 0; }
+  getStringValue(_k, f) {
+    return f ?? "";
+  },
+  getBooleanValue(_k, f) {
+    return f ?? false;
+  },
+  getNumberValue(_k, f) {
+    return f ?? 0;
+  },
 };
 
 const dummyNotif: NotificationService = {
   async initializeNotifications(): Promise<NotificationsInitResult> {
     return { unsubscribe: () => {} };
-  }
+  },
 };
 
 const dummyCrash: CrashReportingService = {
   initializeCrashReporting() {},
-  recordNonFatalError(_e: unknown) {}
+  recordNonFatalError(_e: unknown) {},
 };
 
 describe("store/app-store", () => {
@@ -67,7 +80,7 @@ describe("store/app-store", () => {
       secureStorage: dummySecure,
       remoteConfig: dummyRemote,
       notification: dummyNotif,
-      crashReporting: dummyCrash
+      crashReporting: dummyCrash,
     });
 
     // First load: verify defaults and update values

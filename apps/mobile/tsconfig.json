@@ -1,7 +1,7 @@
 {
   "extends": "@react-native/typescript-config",
   "compilerOptions": {
-    "types": ["nativewind/types", "vitest/globals"],
+    "types": ["vitest/globals"],
     "baseUrl": "src",
     "paths": {
       "@components/*": ["components/*"],

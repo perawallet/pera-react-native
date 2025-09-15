@@ -17,4 +17,4 @@ export interface RemoteConfigService {
 }
 
 export const useRemoteConfigService = () =>
-    container.resolve<RemoteConfigService>(RemoteConfigServiceContainerKey)
+  container.resolve<RemoteConfigService>(RemoteConfigServiceContainerKey);

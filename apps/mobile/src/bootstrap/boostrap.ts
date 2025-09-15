@@ -15,16 +15,18 @@ const platformServices = {
   notification: firebaseService,
   remoteConfig: firebaseService,
   secureStorage: new RNSecureStorageService(),
-  keyValueStorage: new RNKeyValueStorageService()
-}
+  keyValueStorage: new RNKeyValueStorageService(),
+};
 
-registerPlatformServices(platformServices)
+registerPlatformServices(platformServices);
 
 export const useBootstrapper = () => {
-  const crashlyticsService = useCrashReportingService()
-  const remoteConfigService = useRemoteConfigService()
-  const notificationService = useNotificationService()
-  const setFcmToken = useAppStore((state) => { return state.setFcmToken })
+  const crashlyticsService = useCrashReportingService();
+  const remoteConfigService = useRemoteConfigService();
+  const notificationService = useNotificationService();
+  const setFcmToken = useAppStore(state => {
+    return state.setFcmToken;
+  });
 
   return async () => {
     const crashlyticsInit = crashlyticsService.initializeCrashReporting();
@@ -32,10 +34,11 @@ export const useBootstrapper = () => {
 
     await Promise.allSettled([crashlyticsInit, remoteConfigInit]);
 
-    const notificationResults = await notificationService.initializeNotifications();
+    const notificationResults =
+      await notificationService.initializeNotifications();
 
     setFcmToken(notificationResults.token || null);
 
-    return platformServices
-  }
+    return platformServices;
+  };
 };
