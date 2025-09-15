@@ -54,7 +54,7 @@
     "@react-native/typescript-config": "0.81.1",
     "@testing-library/react-native": "^13.3.3",
     "@types/react": "catalog:",
-    "@types/react-native": "^0.81.1",
+    "@types/react-native": "^0.73.0",
     "eslint": "catalog:",
     "eslint-plugin-testing-library": "^7.7.0",
     "prettier": "catalog:",
