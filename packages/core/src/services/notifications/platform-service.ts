@@ -1,15 +1,15 @@
-import { container } from "tsyringe";
+import { container } from 'tsyringe'
 
-export const NotificationServiceContainerKey = "NotificationService";
+export const NotificationServiceContainerKey = 'NotificationService'
 
 export type NotificationsInitResult = {
-  token?: string;
-  unsubscribe: () => void;
-};
+	token?: string
+	unsubscribe: () => void
+}
 
 export interface NotificationService {
-  initializeNotifications(): Promise<NotificationsInitResult>;
+	initializeNotifications(): Promise<NotificationsInitResult>
 }
 
 export const useNotificationService = () =>
-  container.resolve<NotificationService>(NotificationServiceContainerKey);
+	container.resolve<NotificationService>(NotificationServiceContainerKey)

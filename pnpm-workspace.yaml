@@ -17,7 +17,7 @@ catalog:
   '@types/react': ^19.1.0
   '@vitest/coverage-v8': ^2.1.9
   eslint: ^8.57.1
-  prettier: 2.8.8
+  prettier: 3.6.2
   react: 19.1.1
   reflect-metadata: ^0.2.2
   tsyringe: ^4.10.0

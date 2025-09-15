@@ -8,12 +8,12 @@ import SwapScreen from '../screens/swap/SwapScreen';
 
 const RootStack = createBottomTabNavigator({
   initialRouteName: 'Home',
+  screenOptions: {
+    headerShown: false,
+  },
   screens: {
     Home: {
       screen: PortfolioScreen,
-      options: {
-        title: 'Portfolio',
-      },
     },
     Discover: DiscoverScreen,
     Swap: SwapScreen,

@@ -1,2 +1,1 @@
-export * from "./key-value-storage";
-export * from "./secure-storage";
+export * from './platform-service'
