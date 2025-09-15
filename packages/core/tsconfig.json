@@ -26,6 +26,8 @@
       "@store/*": ["store/*"],
       "@api/*": ["api/*", "api/generated/*"],
       "@platform/*": ["platform/*"],
+      "@test-utils/*": ["test-utils/*"],
+      "@test-utils": ["test-utils/index.ts"]
     },
     "types": ["vitest/globals"]
   },

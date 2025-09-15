@@ -1,21 +1,22 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
+import { snapshotEnv, restoreEnv, withFreshModules } from '@test-utils'
 import { getConfigForEnv, configSchema } from '../main'
 import { config as devConfig } from '../development'
 import { config as stagingConfig } from '../staging'
 import { config as prodConfig } from '../production'
 
-const originalEnv = { ...process.env }
+let envSnap: NodeJS.ProcessEnv
 
 describe('config/main', () => {
   beforeEach(() => {
+    envSnap = snapshotEnv()
     vi.resetModules()
-    process.env = { ...originalEnv }
     delete process.env.APP_ENV
     delete process.env.NODE_ENV
   })
 
   afterEach(() => {
-    process.env = { ...originalEnv }
+    restoreEnv(envSnap)
   })
 
   test('getConfigForEnv maps explicit env values and validates schema', () => {
@@ -61,9 +62,8 @@ describe('config/main', () => {
     expect(mod.config).toStrictEqual(configSchema.parse(stagingConfig))
 
     // Unknown value
-    vi.resetModules()
     process.env.APP_ENV = 'unknown'
-    const mod2 = await import('../main')
+    const mod2 = await withFreshModules(() => import('../main'))
     expect(mod2.config).toStrictEqual(configSchema.parse(devConfig))
   })
 })

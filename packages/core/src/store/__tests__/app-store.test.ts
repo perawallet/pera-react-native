@@ -1,86 +1,16 @@
 import { describe, test, expect, vi } from 'vitest'
-import { registerPlatformServices } from '../../platform'
 import { Networks } from '../../services/blockchain/types'
-import type { KeyValueStorageService } from '../../services/storage/platform-service'
-import type { SecureStorageService } from '../../services/storage/secure-storage'
-import type { RemoteConfigService } from '../../services/remote-config/platform-service'
-import type {
-	NotificationService,
-	NotificationsInitResult,
-} from '../../services/notifications/platform-service'
-import type { CrashReportingService } from '../../services/reporting/platform-service'
+import { MemoryKeyValueStorage, registerTestPlatform } from '@test-utils'
 
-class MemoryKeyValueStorage implements KeyValueStorageService {
-	private store = new Map<string, string>()
 
-	getItem(key: string): string | null {
-		return this.store.get(key) ?? null
-	}
-
-	setItem(key: string, value: string): void {
-		this.store.set(key, value)
-	}
-
-	removeItem(key: string): void {
-		this.store.delete(key)
-	}
-
-	setJSON<T>(key: string, value: T): void {
-		this.setItem(key, JSON.stringify(value))
-	}
-
-	getJSON<T>(key: string): T | null {
-		const v = this.getItem(key)
-		return v ? (JSON.parse(v) as T) : null
-	}
-}
-
-const dummySecure: SecureStorageService = {
-	async setItem() {},
-	async getItem() {
-		return null
-	},
-	async removeItem() {},
-	async authenticate() {
-		return true
-	},
-}
-
-const dummyRemote: RemoteConfigService = {
-	initializeRemoteConfig() {},
-	getStringValue(_k, f) {
-		return f ?? ''
-	},
-	getBooleanValue(_k, f) {
-		return f ?? false
-	},
-	getNumberValue(_k, f) {
-		return f ?? 0
-	},
-}
-
-const dummyNotif: NotificationService = {
-	async initializeNotifications(): Promise<NotificationsInitResult> {
-		return { unsubscribe: () => {} }
-	},
-}
-
-const dummyCrash: CrashReportingService = {
-	initializeCrashReporting() {},
-	recordNonFatalError(_e: unknown) {},
-}
 
 describe('store/app-store', () => {
 	test('initializes defaults, updates, and persists selected keys', async () => {
 		const kv = new MemoryKeyValueStorage()
 
 		// Register platform services so app-store persist() can resolve storage via the container
-		registerPlatformServices({
+		registerTestPlatform({
 			keyValueStorage: kv,
-			secureStorage: dummySecure,
-			remoteConfig: dummyRemote,
-			notification: dummyNotif,
-			crashReporting: dummyCrash,
 		})
 
 		// First load: verify defaults and update values

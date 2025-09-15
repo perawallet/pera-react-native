@@ -12,6 +12,7 @@ export default defineConfig({
       '@store': resolve(__dirname, 'src/store'),
       '@api': resolve(__dirname, 'src/api'),
       '@platform': resolve(__dirname, 'src/platform'),
+      '@test-utils': resolve(__dirname, 'src/test-utils'),
       'config': resolve(__dirname, 'src/config'),
     },
   },
@@ -31,7 +32,8 @@ export default defineConfig({
         'src/**/__fixtures__/**',
         'src/**/*.test.{ts,tsx}',
         'src/**/*.spec.{ts,tsx}',
-        'src/**/index.ts'
+        'src/**/index.ts',
+        'src/test-utils/**'
       ],
       reporter: ['text', 'html', 'lcov'],
       reportsDirectory: './coverage'

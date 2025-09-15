@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "android": "react-native run-android",
+    "android": "react-native run-android --verbose",
     "ios": "react-native run-ios",
     "lint": "eslint .",
     "start": "react-native start",
@@ -54,7 +54,7 @@
     "@react-native/typescript-config": "0.81.1",
     "@testing-library/react-native": "^13.3.3",
     "@types/react": "catalog:",
-    "@types/react-native": "^0.73.0",
+    "@types/react-native": "^0.81.1",
     "eslint": "catalog:",
     "eslint-plugin-testing-library": "^7.7.0",
     "prettier": "catalog:",

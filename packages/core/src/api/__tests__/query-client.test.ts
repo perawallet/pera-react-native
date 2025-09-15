@@ -1,18 +1,15 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 
 // Mocks for ky and zustand store (alias: @store/app-store)
-let kyCreateCalls: any[] = []
-let kyCallRecords: { label: string; input: any; options: any }[] = []
-let kyCreateIndex = 0
 
-vi.mock('ky', () => {
-  kyCreateCalls = []
-  kyCallRecords = []
-  kyCreateIndex = 0
+const kyState = vi.hoisted(() => {
+  let createCalls: any[] = []
+  let callRecords: { label: string; input: any; options: any }[] = []
+  let index = 0
 
   const makeInstance = (label: string) =>
     vi.fn(async (input: any, options: any) => {
-      kyCallRecords.push({ label, input, options })
+      callRecords.push({ label, input, options })
       return {
         async json() {
           return { ok: label }
@@ -23,36 +20,54 @@ vi.mock('ky', () => {
     })
 
   const create = vi.fn((opts: any) => {
-    kyCreateCalls.push(opts)
-    const label =
-      kyCreateIndex === 0 ? 'mainnet' : kyCreateIndex === 1 ? 'testnet' : `inst${kyCreateIndex}`
-    kyCreateIndex++
+    createCalls.push(opts)
+    const label = index === 0 ? 'mainnet' : index === 1 ? 'testnet' : `inst${index}`
+    index++
     return makeInstance(label)
   })
 
-  return {
-    __esModule: true,
-    default: { create },
+  const reset = () => {
+    createCalls = []
+    callRecords = []
+    index = 0
+    create.mockClear()
   }
-})
 
-let storeState: any = { network: 'mainnet' }
-vi.mock('@store/app-store', () => {
-  const useAppStore: any = (selector: any) => selector(storeState)
-  useAppStore.getState = () => storeState
-  useAppStore.setState = (partial: any) => {
-    storeState = { ...storeState, ...partial }
+  return {
+    create,
+    reset,
+    get createCalls() {
+      return createCalls
+    },
+    get callRecords() {
+      return callRecords
+    },
   }
-  return { useAppStore }
 })
+vi.mock('ky', () => ({
+  __esModule: true,
+  default: { create: kyState.create },
+}))
+
+const storeMock = vi.hoisted(() => {
+  let state: any = { network: 'mainnet' }
+  return {
+    create() {
+      const useAppStore: any = (selector: any) => selector(state)
+      ;(useAppStore as any).getState = () => state
+      ;(useAppStore as any).setState = (partial: any) => {
+        state = { ...state, ...partial }
+      }
+      return { useAppStore }
+    },
+  }
+})
+vi.mock('@store/app-store', () => storeMock.create())
 
 describe('api/query-client', () => {
   beforeEach(() => {
     vi.resetModules()
-    storeState = { network: 'mainnet' }
-    kyCreateCalls = []
-    kyCallRecords = []
-    kyCreateIndex = 0
+    kyState.reset()
   })
 
   test('throws when url is missing', async () => {
@@ -81,8 +96,8 @@ describe('api/query-client', () => {
     expect(res.data).toEqual({ ok: 'mainnet' })
 
     // verify ky instance call
-    expect(kyCallRecords.length).toBe(1)
-    const call = kyCallRecords[0]
+    expect(kyState.callRecords.length).toBe(1)
+    const call = kyState.callRecords[0]
     expect(call.label).toBe('mainnet')
     expect(call.input).toBe('api/v1/foo') // trimmed
     expect(call.options.method).toBe('POST')
@@ -93,9 +108,9 @@ describe('api/query-client', () => {
     expect(headers['X-Test']).toBe('T')
 
     // ky clients created for mainnet and testnet
-    expect(kyCreateCalls.length).toBe(2)
-    expect(kyCreateCalls[0].prefixUrl).toBeDefined()
-    expect(kyCreateCalls[1].prefixUrl).toBeDefined()
+    expect(kyState.createCalls.length).toBe(2)
+    expect(kyState.createCalls[0].prefixUrl).toBeDefined()
+    expect(kyState.createCalls[1].prefixUrl).toBeDefined()
   })
 
   test('uses testnet client when network=testnet', async () => {
@@ -108,8 +123,8 @@ describe('api/query-client', () => {
       method: 'GET',
     })
 
-    expect(kyCallRecords.length).toBe(1)
-    const call = kyCallRecords[0]
+    expect(kyState.callRecords.length).toBe(1)
+    const call = kyState.callRecords[0]
     expect(call.label).toBe('testnet')
     expect(call.input).toBe('bar')
     expect(call.options.method).toBe('GET')

@@ -18,15 +18,20 @@ vi.mock('@algorandfoundation/algokit-utils', () => {
 })
 
 // Mock the zustand-bound store to avoid persistence/container setup for these unit tests
-vi.mock('../../../store', () => {
+const storeMock = vi.hoisted(() => {
   let state: any = { network: 'mainnet' }
-  const useAppStore: any = (selector: any) => selector(state)
-  useAppStore.getState = () => state
-  useAppStore.setState = (partial: any) => {
-    state = { ...state, ...partial }
+  return {
+    create() {
+      const useAppStore: any = (selector: any) => selector(state)
+      ;(useAppStore as any).getState = () => state
+      ;(useAppStore as any).setState = (partial: any) => {
+        state = { ...state, ...partial }
+      }
+      return { useAppStore }
+    },
   }
-  return { useAppStore }
 })
+vi.mock('../../../store', () => storeMock.create())
 
 describe('services/blockchain/hooks', () => {
   beforeEach(() => {

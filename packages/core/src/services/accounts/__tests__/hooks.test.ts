@@ -1,61 +1,16 @@
 import { describe, test, expect, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { WalletAccount } from '../types'
+import { MemoryKeyValueStorage, registerTestPlatform } from '@test-utils'
 
-class MemoryKeyValueStorage {
-  private store = new Map<string, string>()
 
-  getItem(key: string): string | null {
-    return this.store.get(key) ?? null
-  }
 
-  setItem(key: string, value: string): void {
-    this.store.set(key, value)
-  }
 
-  removeItem(key: string): void {
-    this.store.delete(key)
-  }
-
-  setJSON<T>(key: string, value: T): void {
-    this.setItem(key, JSON.stringify(value))
-  }
-
-  getJSON<T>(key: string): T | null {
-    const v = this.getItem(key)
-    return v ? (JSON.parse(v) as T) : null
-  }
-}
-
-const dummyRemote = {
-  initializeRemoteConfig() {},
-  getStringValue(_k: string, f?: string) {
-    return f ?? ''
-  },
-  getBooleanValue(_k: string, f?: boolean) {
-    return f ?? false
-  },
-  getNumberValue(_k: string, f?: number) {
-    return f ?? 0
-  },
-}
-
-const dummyNotif = {
-  async initializeNotifications() {
-    return { unsubscribe: () => {} }
-  },
-}
-
-const dummyCrash = {
-  initializeCrashReporting() {},
-  recordNonFatalError(_e: unknown) {},
-}
 
 describe('services/accounts/hooks', () => {
   test('getAllAccounts, findAccountByAddress, and addAccount persist PK when provided', async () => {
     vi.resetModules()
 
-    const { registerPlatformServices } = await import('../../../platform')
     const dummySecure = {
       setItem: vi.fn(async (_k: string, _v: string) => {}),
       getItem: vi.fn(async (_k: string) => null),
@@ -63,12 +18,9 @@ describe('services/accounts/hooks', () => {
       authenticate: vi.fn(async () => true),
     }
 
-    registerPlatformServices({
+    registerTestPlatform({
       keyValueStorage: new MemoryKeyValueStorage() as any,
       secureStorage: dummySecure as any,
-      remoteConfig: dummyRemote as any,
-      notification: dummyNotif as any,
-      crashReporting: dummyCrash as any,
     })
 
     const { useAppStore } = await import('../../../store')
@@ -101,7 +53,6 @@ describe('services/accounts/hooks', () => {
   test('addAccount without secret does not persist PK', async () => {
     vi.resetModules()
 
-    const { registerPlatformServices } = await import('../../../platform')
     const dummySecure = {
       setItem: vi.fn(async (_k: string, _v: string) => {}),
       getItem: vi.fn(async (_k: string) => null),
@@ -109,12 +60,9 @@ describe('services/accounts/hooks', () => {
       authenticate: vi.fn(async () => true),
     }
 
-    registerPlatformServices({
+    registerTestPlatform({
       keyValueStorage: new MemoryKeyValueStorage() as any,
       secureStorage: dummySecure as any,
-      remoteConfig: dummyRemote as any,
-      notification: dummyNotif as any,
-      crashReporting: dummyCrash as any,
     })
 
     const { useAppStore } = await import('../../../store')
@@ -139,7 +87,6 @@ describe('services/accounts/hooks', () => {
   test('removeAccountById removes and clears persisted PK when privateKeyLocation is set', async () => {
     vi.resetModules()
 
-    const { registerPlatformServices } = await import('../../../platform')
     const dummySecure = {
       setItem: vi.fn(async (_k: string, _v: string) => {}),
       getItem: vi.fn(async (_k: string) => null),
@@ -147,12 +94,9 @@ describe('services/accounts/hooks', () => {
       authenticate: vi.fn(async () => true),
     }
 
-    registerPlatformServices({
+    registerTestPlatform({
       keyValueStorage: new MemoryKeyValueStorage() as any,
       secureStorage: dummySecure as any,
-      remoteConfig: dummyRemote as any,
-      notification: dummyNotif as any,
-      crashReporting: dummyCrash as any,
     })
 
     const { useAppStore } = await import('../../../store')
@@ -183,7 +127,6 @@ describe('services/accounts/hooks', () => {
   test('removeAccountByAddress removes and clears persisted PK when privateKeyLocation is set', async () => {
     vi.resetModules()
 
-    const { registerPlatformServices } = await import('../../../platform')
     const dummySecure = {
       setItem: vi.fn(async (_k: string, _v: string) => {}),
       getItem: vi.fn(async (_k: string) => null),
@@ -191,12 +134,9 @@ describe('services/accounts/hooks', () => {
       authenticate: vi.fn(async () => true),
     }
 
-    registerPlatformServices({
+    registerTestPlatform({
       keyValueStorage: new MemoryKeyValueStorage() as any,
       secureStorage: dummySecure as any,
-      remoteConfig: dummyRemote as any,
-      notification: dummyNotif as any,
-      crashReporting: dummyCrash as any,
     })
 
     const { useAppStore } = await import('../../../store')
