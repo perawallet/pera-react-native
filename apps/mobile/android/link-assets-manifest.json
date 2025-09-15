@@ -1,0 +1,37 @@
+{
+  "migIndex": 1,
+  "data": [
+    {
+      "path": "assets/fonts/DMSans/dmmono_medium.ttf",
+      "sha1": "d8c32570ea117ad5b9b245c432e5296c16ce3306"
+    },
+    {
+      "path": "assets/fonts/DMSans/dmmono_regular.ttf",
+      "sha1": "497d420c14159d8968fbba82a5a45d917f65fa98"
+    },
+    {
+      "path": "assets/fonts/DMSans/dmsans_bold.ttf",
+      "sha1": "40978b553245a0a4b7c665ebeb810c29c99811f3"
+    },
+    {
+      "path": "assets/fonts/DMSans/dmsans_bold_italic.ttf",
+      "sha1": "af5915d120d1f8253c18cb05128777e0fa5682fa"
+    },
+    {
+      "path": "assets/fonts/DMSans/dmsans_italic.ttf",
+      "sha1": "d3719e603afd398b4307d3f742dad87d1bc7eb64"
+    },
+    {
+      "path": "assets/fonts/DMSans/dmsans_medium.ttf",
+      "sha1": "64522278ab8d6046d88375e8734d5f036251004d"
+    },
+    {
+      "path": "assets/fonts/DMSans/dmsans_medium_italic.ttf",
+      "sha1": "86e59dafb24123738647c212c84b762f4e8da672"
+    },
+    {
+      "path": "assets/fonts/DMSans/dmsans_regular.ttf",
+      "sha1": "75fddbf90d761a6b6e8d75aa595c4913e31422bf"
+    }
+  ]
+}

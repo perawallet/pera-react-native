@@ -1,4 +1,16 @@
+import { DefaultTheme } from '@react-navigation/native';
 import { createTheme } from '@rneui/themed';
+
+export const getNavigationTheme = (mode: 'light' | 'dark' = 'light') => ({
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    background: mode === 'light'  ? '#FFFFFF' : '#18181B',
+    text: mode === 'light'  ? '##18181B' : '#FFFFFF',
+    primary: mode === 'light'  ? '##18181B' : '#FFFFFF',
+  },
+  dark: mode === 'dark'
+});
 
 export const getTheme = (mode: 'light' | 'dark' = 'light') =>
   createTheme({
@@ -31,7 +43,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
       // Surfaces
       background: '#18181B', // Defaults/bg (dark)
       // Neutrals
-      black: '#000000',
+      black: '#FFFFFF',
       white: '#F1F1F2', // Text/main (dark)
       grey0: '#27272A', // Layer/grayLightest (dark)
       grey1: '#27272A', // Layer/grayLighter (dark)
@@ -48,7 +60,36 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
     },
     mode,
     spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 24 },
+    components: {
+      Button: (props,theme)=>({
+        containerStyle:{
+          backgroundColor:theme.colors.primary,
+          color: theme.colors.white,
+          borderRadius: theme.spacing.xs
+        }
+      }),
+      Text: (props,theme)=>({
+        h1Style: {
+          fontFamily: 'DMSans-SemiBold',
+          fontWeight: '600',
+          fontSize: 25,
+        },
+        h2Style: {
+          fontFamily: 'DMSans-Medium',
+          fontWeight: '500',
+          fontSize: 19,
+        },
+        h3Style: {
+          fontFamily: 'DMSans-Medium',
+          fontWeight: '500',
+          fontSize: 15,
+        },
+        style: {
+          color: theme.colors.black,
+          fontFamily: 'DMSans-Regular',
+          fontWeight: '400',
+          fontSize: 13,
+        }
+      })
+    }
   });
-
-const theme = getTheme('light');
-export default theme;

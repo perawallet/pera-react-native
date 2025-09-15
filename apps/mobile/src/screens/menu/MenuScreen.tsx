@@ -1,14 +1,14 @@
-import { Text, View } from 'react-native';
-import { styles } from './styles';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import MainScreenLayout from '../../layouts/MainScreenLayout';
+import PeraView from '../../components/view/PeraView';
+import { Text } from '@rneui/themed';
 
 const MenuScreen = () => {
   return (
-    <SafeAreaView style={styles.container}>
-      <View>
+    <MainScreenLayout>
+      <PeraView>
         <Text>This will be the menu screen</Text>
-      </View>
-    </SafeAreaView>
+      </PeraView>
+    </MainScreenLayout>
   );
 };
 

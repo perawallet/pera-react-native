@@ -1,14 +1,14 @@
-import { Text, View } from 'react-native';
-import { styles } from './styles';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import MainScreenLayout from '../../layouts/MainScreenLayout';
+import PeraView from '../../components/view/PeraView';
+import { Text } from '@rneui/themed';
 
 const DiscoverScreen = () => {
   return (
-    <SafeAreaView style={styles.container}>
-      <View>
-        <Text>This will be the discover screen</Text>
-      </View>
-    </SafeAreaView>
+    <MainScreenLayout>
+        <PeraView>
+            <Text>This will be the discover screen</Text>
+        </PeraView>
+    </MainScreenLayout>
   );
 };
 

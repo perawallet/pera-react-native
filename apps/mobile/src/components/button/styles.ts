@@ -3,7 +3,7 @@ import { PeraButtonProps } from './PeraButton';
 
 export const useStyles = makeStyles((theme, props: PeraButtonProps) => ({
   buttonStyle: {
-    background:
+    backgroundColor:
       props.variant === 'primary'
         ? theme.colors.background
         : theme.colors.grey0,
@@ -11,6 +11,5 @@ export const useStyles = makeStyles((theme, props: PeraButtonProps) => ({
       props.variant === 'primary'
         ? theme.colors.primary
         : theme.colors.secondary,
-    marginHorizontal: theme.spacing.lg,
   },
 }));

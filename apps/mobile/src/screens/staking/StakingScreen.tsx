@@ -1,14 +1,14 @@
-import { Text, View } from 'react-native';
-import { styles } from './styles';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Text } from '@rneui/themed';
+import PeraView from '../../components/view/PeraView';
+import MainScreenLayout from '../../layouts/MainScreenLayout';
 
 const StakingScreen = () => {
   return (
-    <SafeAreaView style={styles.container}>
-      <View>
-        <Text>This will be the portfolio screen</Text>
-      </View>
-    </SafeAreaView>
+    <MainScreenLayout>
+        <PeraView>
+            <Text>This will be the portfolio screen</Text>
+        </PeraView>
+    </MainScreenLayout>
   );
 };
 

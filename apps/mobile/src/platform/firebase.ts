@@ -1,6 +1,6 @@
-import crashlytics from '@react-native-firebase/crashlytics';
-import remoteConfig from '@react-native-firebase/remote-config';
-import messaging from '@react-native-firebase/messaging';
+import crashlytics, { getCrashlytics, setCrashlyticsCollectionEnabled } from '@react-native-firebase/crashlytics';
+import remoteConfig, { getRemoteConfig } from '@react-native-firebase/remote-config';
+import messaging, { getMessaging } from '@react-native-firebase/messaging';
 import { Platform } from 'react-native';
 import notifee, { AndroidImportance, EventType } from '@notifee/react-native';
 import {
@@ -15,15 +15,15 @@ export class RNFirebaseService
 {
   async initializeRemoteConfig() {
     // Configure fetch interval (1 hour)
-    await remoteConfig().setConfigSettings({
+    await getRemoteConfig().setConfigSettings({
       minimumFetchIntervalMillis: 60 * 60 * 1000,
     });
 
     // TODO: setup defaults here but load them from somewhere central? Config?
-    await remoteConfig().setDefaults({});
+    await getRemoteConfig().setDefaults({});
 
     try {
-      await remoteConfig().fetchAndActivate();
+      await getRemoteConfig().fetchAndActivate();
     } catch {
       // ignore fetch errors, rely on cached/default values
     }
@@ -31,21 +31,21 @@ export class RNFirebaseService
 
   getStringValue(key: RemoteConfigKey, fallback?: string): string {
     try {
-      return remoteConfig().getValue(key).asString() || fallback || '';
+      return getRemoteConfig().getValue(key).asString() || fallback || '';
     } catch {
       return fallback || '';
     }
   }
   getBooleanValue(key: RemoteConfigKey, fallback?: boolean): boolean {
     try {
-      return remoteConfig().getValue(key).asBoolean();
+      return getRemoteConfig().getValue(key).asBoolean();
     } catch {
       return fallback || false;
     }
   }
   getNumberValue(key: RemoteConfigKey, fallback?: number): number {
     try {
-      return remoteConfig().getValue(key).asNumber();
+      return getRemoteConfig().getValue(key).asNumber();
     } catch {
       return fallback || 0;
     }
@@ -73,7 +73,7 @@ export class RNFirebaseService
     // FCM registration + token
     let token: string | undefined;
     try {
-      await messaging().registerDeviceForRemoteMessages();
+      await getMessaging().registerDeviceForRemoteMessages();
       token = await messaging().getToken();
     } catch {
       // noop
@@ -119,16 +119,16 @@ export class RNFirebaseService
   }
 
   initializeCrashReporting(): void {
-    crashlytics()
+    getCrashlytics()
       .setCrashlyticsCollectionEnabled(true)
       .catch(() => {});
   }
 
   recordNonFatalError(error: unknown): void {
     if (error instanceof Error) {
-      crashlytics().recordError(error);
+      getCrashlytics().recordError(error);
     } else {
-      crashlytics().recordError(new Error(String(error)));
+      getCrashlytics().recordError(new Error(String(error)));
     }
   }
 }
