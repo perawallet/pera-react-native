@@ -1,1 +1,0 @@
-{"type":"object","properties":{"rewards_total":{"title":"Rewards total","type":"string","format":"decimal","readOnly":true}},"x-readme-ref-name":"AccountStakingRewardsSerializer.Response"}

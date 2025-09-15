@@ -1,1 +1,0 @@
-{"required":["account_addresses","period"],"type":"object","properties":{"account_addresses":{"type":"array","items":{"type":"string","minLength":1}},"period":{"title":"Period","type":"string","enum":["one-year","one-month","one-week","one-day"]}},"x-readme-ref-name":"MultipleAccountWealthBalanceHistoryRequestSerializer.Request"}

@@ -1,1 +1,1 @@
-{"type":"object","properties":{"last_seen_notification_id":{"title":"Last seen notification id","type":"integer","maximum":9223372036854776000,"minimum":-9223372036854776000,"nullable":true}},"x-readme-ref-name":"UpdateDeviceLastSeenNotificationSerializer.Request"}
+{"type":"object","properties":{"last_seen_notification_id":{"title":"Last seen notification id","maximum":9223372036854776000,"minimum":-9223372036854776000,"type":"integer","nullable":true}},"x-readme-ref-name":"UpdateDeviceLastSeenNotificationSerializer.Request"}

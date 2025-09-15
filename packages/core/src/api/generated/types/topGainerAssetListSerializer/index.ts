@@ -1,1 +1,0 @@
-export type { TopGainerAssetListSerializerResponseVerificationTierEnum, TopGainerAssetListSerializerResponse } from "./Response.ts";

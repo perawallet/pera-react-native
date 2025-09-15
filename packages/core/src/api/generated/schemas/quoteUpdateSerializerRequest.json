@@ -1,1 +1,0 @@
-{"type":"object","properties":{"exception_text":{"title":"Exception text","description":"Exception text that occurred when a user tried to sign the transactions or send them to the blockchain.","type":"string","nullable":true}},"x-readme-ref-name":"QuoteUpdateSerializer.Request"}

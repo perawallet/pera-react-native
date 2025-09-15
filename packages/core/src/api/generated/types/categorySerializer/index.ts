@@ -1,1 +1,0 @@
-export type { CategorySerializerResponse } from "./Response.ts";

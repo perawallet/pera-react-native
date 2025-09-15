@@ -1,1 +1,0 @@
-export type { CollectibleSalesGraphSerializerResponse } from "./Response.ts";

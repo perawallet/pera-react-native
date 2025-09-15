@@ -1,1 +1,0 @@
-{"required":["name"],"type":"object","properties":{"name":{"title":"Name","type":"string","minLength":1},"light_theme_logo":{"title":"Light theme logo","type":"string","readOnly":true,"format":"uri"},"dark_theme_logo":{"title":"Dark theme logo","type":"string","readOnly":true,"format":"uri"}},"x-readme-ref-name":"AssetLabel"}

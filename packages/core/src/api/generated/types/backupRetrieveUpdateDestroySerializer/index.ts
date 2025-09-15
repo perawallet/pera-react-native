@@ -1,2 +1,0 @@
-export type { BackupRetrieveUpdateDestroySerializerRequest } from "./Request.ts";
-export type { BackupRetrieveUpdateDestroySerializerResponseTypeEnum, BackupRetrieveUpdateDestroySerializerResponse } from "./Response.ts";

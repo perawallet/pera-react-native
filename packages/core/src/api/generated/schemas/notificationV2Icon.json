@@ -1,1 +1,1 @@
-{"required":["logo"],"type":"object","properties":{"logo":{"title":"Logo","type":"string","format":"uri","minLength":1},"shape":{"title":"Shape","type":"string","enum":["circle","rectangle"],"default":"circle"}},"nullable":true,"x-readme-ref-name":"NotificationV2Icon"}
+{"required":["logo"],"type":"object","properties":{"logo":{"title":"Logo","minLength":1,"type":"string","format":"uri"},"shape":{"title":"Shape","type":"string","default":"circle","enum":["circle","rectangle"]}},"nullable":true,"x-nullable":true,"x-readme-ref-name":"NotificationV2Icon"}

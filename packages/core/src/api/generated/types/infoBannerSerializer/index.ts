@@ -1,1 +1,0 @@
-export type { InfoBannerSerializerResponse } from "./Response.ts";

@@ -1,1 +1,0 @@
-export type { CurrencySerializerResponse } from "./Response.ts";

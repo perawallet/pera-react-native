@@ -1,1 +1,0 @@
-export type { ApplicationSerializerResponse } from "./Response.ts";

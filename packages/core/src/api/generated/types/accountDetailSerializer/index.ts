@@ -1,1 +1,0 @@
-export type { AccountDetailSerializerResponse } from "./Response.ts";

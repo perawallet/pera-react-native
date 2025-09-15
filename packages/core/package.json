@@ -30,6 +30,7 @@
     "@types/react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "eslint": "catalog:",
+    "msw": "^2.11.2",
     "prettier": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",

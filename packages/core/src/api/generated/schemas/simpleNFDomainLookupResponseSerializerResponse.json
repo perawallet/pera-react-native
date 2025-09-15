@@ -1,1 +1,0 @@
-{"required":["name","source"],"type":"object","properties":{"name":{"title":"Name","type":"string","minLength":1},"source":{"title":"Source","type":"string","minLength":1}},"x-readme-ref-name":"SimpleNFDomainLookupResponseSerializer.Response"}

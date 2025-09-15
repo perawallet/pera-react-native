@@ -1,1 +1,0 @@
-export type { AccountWealthHistorySerializerResponse } from "./Response.ts";

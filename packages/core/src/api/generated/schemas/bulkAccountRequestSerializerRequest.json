@@ -1,1 +1,0 @@
-{"required":["account_addresses"],"type":"object","properties":{"account_addresses":{"type":"array","items":{"type":"string","minLength":1},"maxItems":50,"minItems":1}},"x-readme-ref-name":"BulkAccountRequestSerializer.Request"}

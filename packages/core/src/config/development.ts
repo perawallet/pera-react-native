@@ -1,6 +1,6 @@
 import type { Config } from "./main";
 
 export const config: Config = {
-  mainnetBackendUrl: "http://localhost:8080",
-  testnetBackendUrl: "http://localhost:8080",
+  mainnetBackendUrl: "https://staging.mainnet.api.perawallet.app",
+  testnetBackendUrl: "https://staging.testnet.api.perawallet.app",
 };

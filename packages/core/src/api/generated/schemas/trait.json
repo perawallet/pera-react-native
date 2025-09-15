@@ -1,1 +1,0 @@
-{"required":["display_value"],"type":"object","properties":{"display_name":{"title":"Display name","type":"string","minLength":1},"display_value":{"title":"Display value","type":"string","minLength":1}},"x-readme-ref-name":"Trait"}

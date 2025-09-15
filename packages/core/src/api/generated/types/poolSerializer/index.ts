@@ -1,1 +1,0 @@
-export type { PoolSerializerResponse } from "./Response.ts";
