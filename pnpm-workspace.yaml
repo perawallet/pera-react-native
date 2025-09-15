@@ -18,7 +18,7 @@ catalog:
   '@vitest/coverage-v8': ^2.1.9
   eslint: ^8.57.1
   prettier: 3.6.2
-  react: 19.1.1
+  react: 19.1.0
   reflect-metadata: ^0.2.2
   tsyringe: ^4.10.0
   typescript: ^5.8.3

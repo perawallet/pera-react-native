@@ -14,6 +14,9 @@ const RootStack = createBottomTabNavigator({
   screens: {
     Home: {
       screen: PortfolioScreen,
+      options: {
+        headerShown: false,
+      }
     },
     Discover: DiscoverScreen,
     Swap: SwapScreen,

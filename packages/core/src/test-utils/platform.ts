@@ -1,9 +1,9 @@
 import { registerPlatformServices, type PlatformServices } from '@platform/index'
 import { MemoryKeyValueStorage } from './storage'
-import type { KeyValueStorageService, SecureStorageService } from '@services/storage'
-import type { RemoteConfigService } from '@services/remote-config'
-import type { NotificationService } from '@services/notifications'
-import type { CrashReportingService } from '@services/reporting'
+import type { KeyValueStorageService, SecureStorageService } from '../services/storage'
+import type { RemoteConfigService } from '../services/remote-config'
+import type { NotificationService } from '../services/notifications'
+import type { CrashReportingService } from '../services/reporting'
 
 type Overrides = Partial<{
   keyValueStorage: KeyValueStorageService

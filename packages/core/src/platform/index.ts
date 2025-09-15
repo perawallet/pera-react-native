@@ -16,7 +16,7 @@ import {
 import {
 	NotificationServiceContainerKey,
 	type NotificationService,
-} from '@services/notifications'
+} from '../services/notifications'
 
 export interface PlatformServices {
 	keyValueStorage: KeyValueStorageService
