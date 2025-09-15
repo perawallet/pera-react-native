@@ -3,9 +3,9 @@
 * Do not edit manually.
 */
 
-import fetch from "@kubb/plugin-client/clients/axios";
+import fetch from "../../query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../query-client";
 import type { V1CollectibleSalesGraphListQueryResponse, V1CollectibleSalesGraphListPathParams, V1CollectibleSalesGraphListQueryParams } from "../types/V1CollectibleSalesGraphList.ts";
-import type { RequestConfig, ResponseErrorConfig } from "@kubb/plugin-client/clients/axios";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
 import { v1CollectibleSalesGraphListQueryResponseSchema } from "../zod/v1CollectibleSalesGraphListSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";

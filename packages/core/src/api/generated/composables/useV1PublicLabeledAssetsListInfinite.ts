@@ -3,9 +3,9 @@
 * Do not edit manually.
 */
 
-import fetch from "@kubb/plugin-client/clients/axios";
+import fetch from "../../query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../query-client";
 import type { V1PublicLabeledAssetsListQueryResponse, V1PublicLabeledAssetsListQueryParams } from "../types/V1PublicLabeledAssetsList.ts";
-import type { RequestConfig, ResponseErrorConfig } from "@kubb/plugin-client/clients/axios";
 import type { InfiniteData, QueryKey, QueryClient, InfiniteQueryObserverOptions, UseInfiniteQueryResult } from "@tanstack/react-query";
 import { v1PublicLabeledAssetsListQueryResponseSchema } from "../zod/v1PublicLabeledAssetsListSchema.ts";
 import { infiniteQueryOptions, useInfiniteQuery } from "@tanstack/react-query";

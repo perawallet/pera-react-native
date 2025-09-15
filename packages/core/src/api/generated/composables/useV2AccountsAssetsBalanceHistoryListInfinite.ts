@@ -3,9 +3,9 @@
 * Do not edit manually.
 */
 
-import fetch from "@kubb/plugin-client/clients/axios";
+import fetch from "../../query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../query-client";
 import type { V2AccountsAssetsBalanceHistoryListQueryResponse, V2AccountsAssetsBalanceHistoryListPathParams, V2AccountsAssetsBalanceHistoryListQueryParams } from "../types/V2AccountsAssetsBalanceHistoryList.ts";
-import type { RequestConfig, ResponseErrorConfig } from "@kubb/plugin-client/clients/axios";
 import type { InfiniteData, QueryKey, QueryClient, InfiniteQueryObserverOptions, UseInfiniteQueryResult } from "@tanstack/react-query";
 import { v2AccountsAssetsBalanceHistoryListQueryResponseSchema } from "../zod/v2AccountsAssetsBalanceHistoryListSchema.ts";
 import { infiniteQueryOptions, useInfiniteQuery } from "@tanstack/react-query";

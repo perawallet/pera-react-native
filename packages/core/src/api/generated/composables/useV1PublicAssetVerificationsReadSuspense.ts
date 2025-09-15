@@ -3,9 +3,9 @@
 * Do not edit manually.
 */
 
-import fetch from "@kubb/plugin-client/clients/axios";
+import fetch from "../../query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../query-client";
 import type { V1PublicAssetVerificationsReadQueryResponse, V1PublicAssetVerificationsReadPathParams } from "../types/V1PublicAssetVerificationsRead.ts";
-import type { RequestConfig, ResponseErrorConfig } from "@kubb/plugin-client/clients/axios";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
 import { v1PublicAssetVerificationsReadQueryResponseSchema } from "../zod/v1PublicAssetVerificationsReadSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";

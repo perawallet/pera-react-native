@@ -9,9 +9,9 @@ import type { DeviceV2MergeSerializerResponse } from "./deviceV2MergeSerializer/
 export type V2DevicesMergeCreateHeaderParams = {
     /**
      * @description Change App Version
-     * @type header | undefined
+     * @type string | undefined
     */
-    "APP-VERSION"?;
+    "APP-VERSION"?: string;
 };
 
 export type V2DevicesMergeCreate201 = DeviceV2MergeSerializerResponse;

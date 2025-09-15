@@ -3,9 +3,9 @@
 * Do not edit manually.
 */
 
-import fetch from "@kubb/plugin-client/clients/axios";
+import fetch from "../../query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../query-client";
 import type { V2WalletWealthCreateMutationRequest, V2WalletWealthCreateMutationResponse } from "../types/V2WalletWealthCreate.ts";
-import type { RequestConfig, ResponseErrorConfig } from "@kubb/plugin-client/clients/axios";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
 import { v2WalletWealthCreateMutationResponseSchema, v2WalletWealthCreateMutationRequestSchema } from "../zod/v2WalletWealthCreateSchema.ts";
 import { useMutation } from "@tanstack/react-query";

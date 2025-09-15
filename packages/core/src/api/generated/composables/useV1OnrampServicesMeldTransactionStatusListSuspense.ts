@@ -3,9 +3,9 @@
 * Do not edit manually.
 */
 
-import fetch from "@kubb/plugin-client/clients/axios";
+import fetch from "../../query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../query-client";
 import type { V1OnrampServicesMeldTransactionStatusListQueryResponse, V1OnrampServicesMeldTransactionStatusListQueryParams, V1OnrampServicesMeldTransactionStatusList400 } from "../types/V1OnrampServicesMeldTransactionStatusList.ts";
-import type { RequestConfig, ResponseErrorConfig } from "@kubb/plugin-client/clients/axios";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
 import { v1OnrampServicesMeldTransactionStatusListQueryResponseSchema } from "../zod/v1OnrampServicesMeldTransactionStatusListSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";

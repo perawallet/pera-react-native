@@ -3,9 +3,9 @@
 * Do not edit manually.
 */
 
-import fetch from "@kubb/plugin-client/clients/axios";
+import fetch from "../../query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../query-client";
 import type { V1DevicesBannersListQueryResponse, V1DevicesBannersListPathParams, V1DevicesBannersListQueryParams } from "../types/V1DevicesBannersList.ts";
-import type { RequestConfig, ResponseErrorConfig } from "@kubb/plugin-client/clients/axios";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
 import { v1DevicesBannersListQueryResponseSchema } from "../zod/v1DevicesBannersListSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";

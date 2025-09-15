@@ -3,9 +3,9 @@
 * Do not edit manually.
 */
 
-import fetch from "@kubb/plugin-client/clients/axios";
+import fetch from "../../query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../query-client";
 import type { V1DevicesAccountsPartialUpdateMutationRequest, V1DevicesAccountsPartialUpdateMutationResponse, V1DevicesAccountsPartialUpdatePathParams } from "../types/V1DevicesAccountsPartialUpdate.ts";
-import type { RequestConfig, ResponseErrorConfig } from "@kubb/plugin-client/clients/axios";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
 import { v1DevicesAccountsPartialUpdateMutationResponseSchema, v1DevicesAccountsPartialUpdateMutationRequestSchema } from "../zod/v1DevicesAccountsPartialUpdateSchema.ts";
 import { useMutation } from "@tanstack/react-query";

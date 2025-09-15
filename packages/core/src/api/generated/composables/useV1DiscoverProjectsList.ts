@@ -3,9 +3,9 @@
 * Do not edit manually.
 */
 
-import fetch from "@kubb/plugin-client/clients/axios";
+import fetch from "../../query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../query-client";
 import type { V1DiscoverProjectsListQueryResponse, V1DiscoverProjectsListQueryParams } from "../types/V1DiscoverProjectsList.ts";
-import type { RequestConfig, ResponseErrorConfig } from "@kubb/plugin-client/clients/axios";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
 import { v1DiscoverProjectsListQueryResponseSchema } from "../zod/v1DiscoverProjectsListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";

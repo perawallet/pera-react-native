@@ -9,9 +9,9 @@ import type { DeviceV2SerializerResponse } from "./deviceV2Serializer/Response.t
 export type V2DevicesMePartialUpdateHeaderParams = {
     /**
      * @description Change App Version
-     * @type header | undefined
+     * @type string | undefined
     */
-    "APP-VERSION"?;
+    "APP-VERSION"?: string;
 };
 
 export type V2DevicesMePartialUpdate200 = DeviceV2SerializerResponse;

@@ -1,5 +1,5 @@
 import type { StateCreator } from "zustand";
-import { type WalletAccount } from "./types";
+import type { WalletAccount } from "./types";
 
 export type AccountsSlice = {
   accounts: WalletAccount[];
@@ -17,5 +17,11 @@ export const createAccountsSlice: StateCreator<
     setAccounts: (accounts: WalletAccount[]) => {
       set({ accounts });
     },
+  };
+};
+
+export const partializeAccountsSlice = (state: AccountsSlice) => {
+  return {
+    accounts: state.accounts,
   };
 };

@@ -10,11 +10,7 @@ export const useAccounts = () => {
   return {
     getAllAccounts: () => accounts,
     findAccountByAddress: (address: string) => {
-      return (
-        accounts.find((a) => {
-          a.address === address;
-        }) ?? null
-      );
+      return accounts.find((a) => a.address === address) ?? null;
     },
     addAccount: (account: WalletAccount, privateKey?: string) => {
       accounts.push(account);

@@ -3,9 +3,9 @@
 * Do not edit manually.
 */
 
-import fetch from "@kubb/plugin-client/clients/axios";
+import fetch from "../../query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../query-client";
 import type { V1DexSwapQuotesUpdateMutationRequest, V1DexSwapQuotesUpdateMutationResponse, V1DexSwapQuotesUpdatePathParams } from "../types/V1DexSwapQuotesUpdate.ts";
-import type { RequestConfig, ResponseErrorConfig } from "@kubb/plugin-client/clients/axios";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
 import { v1DexSwapQuotesUpdateMutationResponseSchema, v1DexSwapQuotesUpdateMutationRequestSchema } from "../zod/v1DexSwapQuotesUpdateSchema.ts";
 import { useMutation } from "@tanstack/react-query";

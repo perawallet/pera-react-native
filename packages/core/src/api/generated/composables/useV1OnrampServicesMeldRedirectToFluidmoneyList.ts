@@ -3,9 +3,9 @@
 * Do not edit manually.
 */
 
-import fetch from "@kubb/plugin-client/clients/axios";
+import fetch from "../../query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../query-client";
 import type { V1OnrampServicesMeldRedirectToFluidmoneyListQueryResponse } from "../types/V1OnrampServicesMeldRedirectToFluidmoneyList.ts";
-import type { RequestConfig, ResponseErrorConfig } from "@kubb/plugin-client/clients/axios";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
 import { v1OnrampServicesMeldRedirectToFluidmoneyListQueryResponseSchema } from "../zod/v1OnrampServicesMeldRedirectToFluidmoneyListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";

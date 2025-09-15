@@ -8,7 +8,7 @@ import { deviceV2MergeSerializerResponseSchema } from "./deviceV2MergeSerializer
 import { z } from "zod";
 
 export const v2DevicesMergeCreateHeaderParamsSchema = z.object({
-    "APP-VERSION": .describe("Change App Version").optional()
+    "APP-VERSION": z.string().describe("Change App Version").optional()
     }).optional()
 
 export type V2DevicesMergeCreateHeaderParamsSchema = z.infer<typeof v2DevicesMergeCreateHeaderParamsSchema>

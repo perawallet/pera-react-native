@@ -3,9 +3,9 @@
 * Do not edit manually.
 */
 
-import fetch from "@kubb/plugin-client/clients/axios";
+import fetch from "../../query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../query-client";
 import type { V1DiscoverHomeFeaturedProjectsListQueryResponse, V1DiscoverHomeFeaturedProjectsListQueryParams } from "../types/V1DiscoverHomeFeaturedProjectsList.ts";
-import type { RequestConfig, ResponseErrorConfig } from "@kubb/plugin-client/clients/axios";
 import type { InfiniteData, QueryKey, QueryClient, InfiniteQueryObserverOptions, UseInfiniteQueryResult } from "@tanstack/react-query";
 import { v1DiscoverHomeFeaturedProjectsListQueryResponseSchema } from "../zod/v1DiscoverHomeFeaturedProjectsListSchema.ts";
 import { infiniteQueryOptions, useInfiniteQuery } from "@tanstack/react-query";

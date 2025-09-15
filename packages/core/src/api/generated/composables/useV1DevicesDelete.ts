@@ -3,9 +3,9 @@
 * Do not edit manually.
 */
 
-import fetch from "@kubb/plugin-client/clients/axios";
+import fetch from "../../query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../query-client";
 import type { V1DevicesDeleteMutationResponse } from "../types/V1DevicesDelete.ts";
-import type { RequestConfig, ResponseErrorConfig } from "@kubb/plugin-client/clients/axios";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
 import { v1DevicesDeleteMutationResponseSchema } from "../zod/v1DevicesDeleteSchema.ts";
 import { useMutation } from "@tanstack/react-query";

@@ -32,6 +32,9 @@ export default defineConfig(() => {
         unknownType: "unknown",
       }),
       pluginReactQuery({
+        client: {
+          importPath: "../../query-client",
+        },
         infinite: {
           queryParam: "page",
           cursorParam: "nextPage",

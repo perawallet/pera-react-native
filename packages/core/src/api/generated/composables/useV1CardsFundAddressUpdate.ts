@@ -3,9 +3,9 @@
 * Do not edit manually.
 */
 
-import fetch from "@kubb/plugin-client/clients/axios";
+import fetch from "../../query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../query-client";
 import type { V1CardsFundAddressUpdateMutationRequest, V1CardsFundAddressUpdateMutationResponse, V1CardsFundAddressUpdatePathParams } from "../types/V1CardsFundAddressUpdate.ts";
-import type { RequestConfig, ResponseErrorConfig } from "@kubb/plugin-client/clients/axios";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
 import { v1CardsFundAddressUpdateMutationResponseSchema, v1CardsFundAddressUpdateMutationRequestSchema } from "../zod/v1CardsFundAddressUpdateSchema.ts";
 import { useMutation } from "@tanstack/react-query";

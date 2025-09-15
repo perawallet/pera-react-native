@@ -3,9 +3,9 @@
 * Do not edit manually.
 */
 
-import fetch from "@kubb/plugin-client/clients/axios";
+import fetch from "../../query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../query-client";
 import type { V1AccountsCollectibleAssetsListQueryResponse, V1AccountsCollectibleAssetsListPathParams, V1AccountsCollectibleAssetsListQueryParams } from "../types/V1AccountsCollectibleAssetsList.ts";
-import type { RequestConfig, ResponseErrorConfig } from "@kubb/plugin-client/clients/axios";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
 import { v1AccountsCollectibleAssetsListQueryResponseSchema } from "../zod/v1AccountsCollectibleAssetsListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";

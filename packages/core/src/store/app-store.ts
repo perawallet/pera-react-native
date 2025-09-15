@@ -1,48 +1,38 @@
-import { create, type StateCreator } from "zustand";
+import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { useKeyValueStorageService } from "../services";
 import {
+  createAccountsSlice,
+  partializeAccountsSlice,
+  type AccountsSlice,
+} from "../services/accounts/store";
+import {
   createBlockchainSlice,
+  partializeBlockchainSlice,
   type BlockchainSlice,
-} from "../services/blockchain";
-import { createAccountsSlice, type AccountsSlice } from "../services/accounts";
+} from "../services/blockchain/store";
+import {
+  createSettingsSlice,
+  partializeSettingsSlice,
+  type SettingsSlice,
+} from "../services/settings/store";
 
-type ThemeMode = "light" | "dark" | "system";
-
-export type AppSlice = {
-  theme: ThemeMode;
-  fcmToken: string | null;
-  setTheme: (theme: ThemeMode) => void;
-  setFcmToken: (token: string | null) => void;
-};
-
-const createAppSlice: StateCreator<AppSlice, [], [], AppSlice> = (set) => {
-  return {
-    theme: "system",
-    fcmToken: null,
-    setTheme: (theme) => set({ theme }),
-    setFcmToken: (token) => set({ fcmToken: token }),
-  };
-};
-
-export type AppState = AppSlice & AccountsSlice & BlockchainSlice;
+export type AppState = SettingsSlice & AccountsSlice & BlockchainSlice;
 export const useAppStore = create<AppState>()(
   persist(
     (...a) => ({
+      ...createSettingsSlice(...a),
       ...createBlockchainSlice(...a),
       ...createAccountsSlice(...a),
-      ...createAppSlice(...a),
     }),
     {
       name: "app-store",
       storage: createJSONStorage(useKeyValueStorageService),
       version: 1,
       partialize: (state) => ({
-        //TODO figure out a cleaner way to decide which keys to persist
-        fcmToken: state.fcmToken,
-        theme: state.theme,
-        account: state.accounts,
-        network: state.network,
+        ...partializeSettingsSlice(state),
+        ...partializeBlockchainSlice(state),
+        ...partializeAccountsSlice(state),
       }),
     }
   )

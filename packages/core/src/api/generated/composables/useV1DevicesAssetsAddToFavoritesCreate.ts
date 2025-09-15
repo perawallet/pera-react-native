@@ -3,9 +3,9 @@
 * Do not edit manually.
 */
 
-import fetch from "@kubb/plugin-client/clients/axios";
+import fetch from "../../query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../query-client";
 import type { V1DevicesAssetsAddToFavoritesCreateMutationRequest, V1DevicesAssetsAddToFavoritesCreateMutationResponse, V1DevicesAssetsAddToFavoritesCreatePathParams } from "../types/V1DevicesAssetsAddToFavoritesCreate.ts";
-import type { RequestConfig, ResponseErrorConfig } from "@kubb/plugin-client/clients/axios";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
 import { v1DevicesAssetsAddToFavoritesCreateMutationResponseSchema, v1DevicesAssetsAddToFavoritesCreateMutationRequestSchema } from "../zod/v1DevicesAssetsAddToFavoritesCreateSchema.ts";
 import { useMutation } from "@tanstack/react-query";

@@ -3,9 +3,9 @@
 * Do not edit manually.
 */
 
-import fetch from "@kubb/plugin-client/clients/axios";
+import fetch from "../../query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../query-client";
 import type { V1AccountsReadQueryResponse, V1AccountsReadPathParams } from "../types/V1AccountsRead.ts";
-import type { RequestConfig, ResponseErrorConfig } from "@kubb/plugin-client/clients/axios";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
 import { v1AccountsReadQueryResponseSchema } from "../zod/v1AccountsReadSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";

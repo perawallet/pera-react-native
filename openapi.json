@@ -4599,7 +4599,7 @@
                         "name": "APP-VERSION",
                         "in": "header",
                         "description": "Change App Version",
-                        "type": "header"
+                        "type": "string"
                     }
                 ],
                 "responses": {
@@ -4649,7 +4649,7 @@
                         "name": "APP-VERSION",
                         "in": "header",
                         "description": "Change App Version",
-                        "type": "header"
+                        "type": "string"
                     }
                 ],
                 "responses": {
@@ -4680,7 +4680,7 @@
                         "name": "APP-VERSION",
                         "in": "header",
                         "description": "Change App Version",
-                        "type": "header"
+                        "type": "string"
                     }
                 ],
                 "responses": {
@@ -4727,7 +4727,7 @@
                         "name": "APP-VERSION",
                         "in": "header",
                         "description": "Change App Version",
-                        "type": "header"
+                        "type": "string"
                     }
                 ],
                 "responses": {

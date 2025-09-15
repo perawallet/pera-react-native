@@ -3,9 +3,9 @@
 * Do not edit manually.
 */
 
-import fetch from "@kubb/plugin-client/clients/axios";
+import fetch from "../../query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../query-client";
 import type { V1DiscoverLuckySpinClaimCreateMutationRequest, V1DiscoverLuckySpinClaimCreateMutationResponse } from "../types/V1DiscoverLuckySpinClaimCreate.ts";
-import type { RequestConfig, ResponseErrorConfig } from "@kubb/plugin-client/clients/axios";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
 import { v1DiscoverLuckySpinClaimCreateMutationResponseSchema, v1DiscoverLuckySpinClaimCreateMutationRequestSchema } from "../zod/v1DiscoverLuckySpinClaimCreateSchema.ts";
 import { useMutation } from "@tanstack/react-query";

@@ -3,9 +3,9 @@
 * Do not edit manually.
 */
 
-import fetch from "@kubb/plugin-client/clients/axios";
+import fetch from "../../query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../query-client";
 import type { V1CurrenciesListQueryResponse, V1CurrenciesListQueryParams } from "../types/V1CurrenciesList.ts";
-import type { RequestConfig, ResponseErrorConfig } from "@kubb/plugin-client/clients/axios";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
 import { v1CurrenciesListQueryResponseSchema } from "../zod/v1CurrenciesListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";

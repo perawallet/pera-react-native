@@ -19,3 +19,9 @@ export const createBlockchainSlice: StateCreator<
     },
   };
 };
+
+export const partializeBlockchainSlice = (state: BlockchainSlice) => {
+  return {
+    network: state.network,
+  };
+};
