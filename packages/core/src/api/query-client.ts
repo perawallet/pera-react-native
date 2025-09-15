@@ -51,25 +51,25 @@ export interface ResponseConfig<TData = unknown> {
 export type ResponseErrorConfig<TError = unknown> = TError
 
 const mainnetClient = ky.create({
-	hooks: {
-		beforeRequest: [
-			request => {
-				request.headers.set('Content-Type', 'application/json')
-				//TODO add app headers here
-			},
-		],
-	},
+	//TODO add a beforeRequest hook here to inject headers
+	// hooks: {
+	// 	beforeRequest: [
+	// 		request => {
+	// 			request.headers.set('Content-Type', 'application/json')
+	// 		},
+	// 	],
+	// },
 	prefixUrl: config.mainnetBackendUrl,
 })
 const testnetClient = ky.create({
-	hooks: {
-		beforeRequest: [
-			request => {
-				request.headers.set('Content-Type', 'application/json')
-				//TODO add app headers here
-			},
-		],
-	},
+	//TODO add a beforeRequest hook here to inject headers
+	// hooks: {
+	// 	beforeRequest: [
+	// 		request => {
+	// 			request.headers.set('Content-Type', 'application/json')
+	// 		},
+	// 	],
+	// },
 	prefixUrl: config.testnetBackendUrl,
 })
 
