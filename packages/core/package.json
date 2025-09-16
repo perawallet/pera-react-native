@@ -12,21 +12,24 @@
     "test:watch": "vitest --watch"
   },
   "dependencies": {
-    "@algorandfoundation/algokit-utils": "^9.1.2",
-    "@algorandfoundation/xhd-wallet-api": "^1.0.3",
+    "@algorandfoundation/algokit-utils": "catalog:",
+    "@algorandfoundation/xhd-wallet-api": "catalog:",
     "@kubb/core": "catalog:",
     "@kubb/plugin-client": "catalog:",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-query-persist-client": "catalog:",
-    "algosdk": "^3.4.0",
+    "bip39": "catalog:",
     "ky": "^1.10.0",
     "react": "catalog:",
     "reflect-metadata": "catalog:",
     "tsyringe": "catalog:",
+    "util": "catalog:",
+    "uuid": "^13.0.0",
     "zod": "^4.1.8",
     "zustand": "catalog:"
   },
   "devDependencies": {
+    "@babel/runtime": "catalog:",
     "@testing-library/react": "^16.3.0",
     "@types/react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
@@ -34,10 +37,10 @@
     "jsdom": "^27.0.0",
     "msw": "^2.11.2",
     "prettier": "catalog:",
-    "react-dom": "^19.1.1",
+    "react-dom": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"
   },
-  "packageManager": "pnpm@8.15.6"
+  "packageManager": "pnpm@10.15.1"
 }

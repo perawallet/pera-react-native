@@ -1,5 +1,6 @@
-import { Button, ButtonProps } from '@rneui/themed';
+import { Button, ButtonProps, useTheme } from '@rneui/themed';
 import { useStyles } from './styles';
+import { useMemo } from 'react';
 
 export type PeraButtonProps = {
   variant: 'primary' | 'secondary';
@@ -7,8 +8,9 @@ export type PeraButtonProps = {
 
 const PeraButton = (props: PeraButtonProps) => {
   const style = useStyles(props);
+  const { theme } = useTheme();
 
-  return <Button style={style.buttonStyle} {...props} />;
+  return <Button buttonStyle={style.buttonStyle} titleStyle={style.titleStyle} {...props} />;
 };
 
 export default PeraButton;

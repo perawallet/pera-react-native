@@ -3,6 +3,9 @@ packages:
   - packages/*
 
 catalog:
+  '@algorandfoundation/algokit-utils': ^9.1.2
+  '@algorandfoundation/xhd-wallet-api': 1.0.3
+  '@babel/runtime': ^7.28.4
   '@kubb/cli': ^3.18.3
   '@kubb/core': ^3.18.3
   '@kubb/plugin-client': ^3.18.3
@@ -16,12 +19,15 @@ catalog:
   '@tanstack/react-query-persist-client': ^5.87.4
   '@types/react': ^19.1.0
   '@vitest/coverage-v8': ^2.1.9
+  bip39: ^3.1.0
   eslint: ^8.57.1
   prettier: 3.6.2
   react: 19.1.0
+  react-dom: 19.1.0
   reflect-metadata: ^0.2.2
   tsyringe: ^4.10.0
   typescript: ^5.8.3
+  util: ^0.12.5
   vite: ^7.1.2
   vitest: ^2.1.9
   zustand: ^5.0.8

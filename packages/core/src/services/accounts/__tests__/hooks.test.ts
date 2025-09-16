@@ -3,11 +3,46 @@ import { renderHook, act } from '@testing-library/react'
 import type { WalletAccount } from '../types'
 import { MemoryKeyValueStorage, registerTestPlatform } from '@test-utils'
 
-
-
-
-
 describe('services/accounts/hooks', () => {
+  test('getDisplayAddress permutations', async () => {
+    vi.resetModules()
+
+    const { useDisplayAddress } = await import('../hooks')
+
+    const a1: WalletAccount = {
+      id: '1',
+      type: 'standard',
+      address: 'SHORT',
+    }
+    const { result } = renderHook(() => useDisplayAddress(a1))
+    expect(result.current).toEqual("SHORT")
+
+    const a2: WalletAccount = {
+      id: '1',
+      type: 'standard',
+      address: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+    }
+    const { result: result2 } = renderHook(() => useDisplayAddress(a2))
+    expect(result2.current).toEqual("ABCDE...VWXYZ")
+
+    const a3: WalletAccount = {
+      id: '1',
+      type: 'standard',
+      address: 'ABCDEFGHIJKL',
+    }
+    const { result: result3 } = renderHook(() => useDisplayAddress(a3))
+    expect(result3.current).toEqual("ABCDE...HIJKL")
+
+    const a4: WalletAccount = {
+      id: '1',
+      name: 'Named',
+      type: 'standard',
+      address: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+    }
+    const { result: result4 } = renderHook(() => useDisplayAddress(a4))
+    expect(result4.current).toEqual("Named")
+  })
+
   test('getAllAccounts, findAccountByAddress, and addAccount persist PK when provided', async () => {
     vi.resetModules()
 

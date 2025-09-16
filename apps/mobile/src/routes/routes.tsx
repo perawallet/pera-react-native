@@ -7,6 +7,7 @@ import MenuScreen from '../screens/menu/MenuScreen';
 import StakingScreen from '../screens/staking/StakingScreen';
 import SwapScreen from '../screens/swap/SwapScreen';
 import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
+import NameAccountScreen from '../screens/name-account/NameAccountScreen';
 
 
 const TabBarStack = createBottomTabNavigator({
@@ -28,14 +29,26 @@ const TabBarStack = createBottomTabNavigator({
   },
 });
 
-const RootStack = createNativeStackNavigator({
-  initialRouteName: 'Onboarding',
+const OnboardingStack = createNativeStackNavigator({
+  initialRouteName: 'OnboardingHome',
   screenOptions: {
     headerShown: false
   },
   screens: {
+    OnboardingHome: OnboardingScreen,
+    NameAccount: NameAccountScreen,
+  },
+});
+
+const RootStack = createNativeStackNavigator({
+  initialRouteName: 'Onboarding',
+  screenOptions: {
+    headerShown: false,
+    animation: 'default',
+  },
+  screens: {
     Home: TabBarStack,
-    Onboarding: OnboardingScreen,
+    Onboarding: OnboardingStack,
   },
 });
 

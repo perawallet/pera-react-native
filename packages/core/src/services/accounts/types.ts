@@ -23,7 +23,7 @@ export interface MultiSigDetails {
 
 export interface WalletAccount {
 	id: string
-	name: string
+	name?: string
 	type: AccountType
 	address: string
 	privateKeyLocation?: string

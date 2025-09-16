@@ -16,7 +16,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
   createTheme({
     lightColors: {
       // Primary/secondary brand
-      primary: '#6B46FE', // ButtonPrimary/newBg (light)
+      primary: '#27272A', // ButtonPrimary/bg (light)
       secondary: '#6B46FE', // ButtonSecondary/newText (light) - used as accent
       // Surfaces
       background: '#FFFFFF', // Defaults/bg (light)
@@ -37,11 +37,15 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
       layerGrayLightest: '#FAFAFA',
 
       //Text colors
-      textGray: '##71717A',
+      textGray: '#71717A',
       textGrayLighter: '#A1A1AA',
       textMain: '#18181B',
       textSonicSilver: '#71717A',
       textWhite: '#FFFFFF',
+
+      //Button
+      buttonPrimaryBg: '#27272A',
+      buttonPrimaryText: '#FFFFFF',
 
       // States
       success: '#2CB7BC', // Alert/positive
@@ -52,7 +56,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
     },
     darkColors: {
       // Primary/secondary brand (dark variants)
-      primary: '#AC8EFF', // ButtonPrimary/newBg (dark)
+      primary: '#FFEE55', // ButtonPrimary/newBg (dark)
       secondary: '#AC8EFF', // ButtonSecondary/newText (dark)
       // Surfaces
       background: '#18181B', // Defaults/bg (dark)
@@ -79,6 +83,10 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
       textSonicSilver: '#A1A1AA',
       textWhite: '#FFFFFF',
 
+      //Button
+      buttonPrimaryBg: '#FFEE55',
+      buttonPrimaryText: '#18181B',
+
       // States
       success: '#2CB7BC', // Alert/positive
       warning: '#FFEE55', // Link/primary (dark)
@@ -89,14 +97,47 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
     mode,
     spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 24 },
     components: {
-      Button: (props,theme)=>({
+      Button: (props,theme) => ({
         containerStyle:{
           backgroundColor:theme.colors.primary,
-          color: theme.colors.white,
+          color: theme.colors.textMain,
           borderRadius: theme.spacing.xs
         }
       }),
-      Text: (props,theme)=>({
+      Input: (props, theme) => ({
+        containerStyle: {
+          backgroundColor: theme.colors.background,
+          paddingHorizontal: 0,
+        },
+        inputStyle: {
+          fontFamily: 'DMSans-Regular',
+          fontWeight: '400',
+          fontSize: 13,
+          color: theme.mode === 'dark' ?
+              theme.colors.textGrayLighter : theme.colors.textMain,
+          borderRadius: theme.spacing.xs,
+        },
+        labelStyle: {
+          fontFamily: 'DMSans-Regular',
+          fontWeight: '400',
+          fontSize: 13,
+          color: theme.mode === 'dark' ?
+              theme.colors.textGrayLighter : theme.colors.textGray,
+          borderRadius: theme.spacing.xs,
+          marginBottom: theme.spacing.xs,
+        },
+        inputContainerStyle: {
+          backgroundColor: theme.mode === 'dark' ?
+              theme.colors.textMain : theme.colors.layerGrayLighter,
+          borderBottomWidth: 0 
+        },
+        cursorColor: theme.mode === 'dark' ?
+              theme.colors.textGray : theme.colors.textMain,
+        placeholderTextColor: theme.mode === 'dark' ?
+              theme.colors.textGrayLighter : theme.colors.textGray,
+        renderErrorMessage: false
+      }),
+      Text: (props,theme) => ({
         h1Style: {
           fontFamily: 'DMSans-Medium',
           fontWeight: '500',
