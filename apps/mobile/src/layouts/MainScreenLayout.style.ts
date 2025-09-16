@@ -1,12 +1,11 @@
 import { makeStyles } from "@rneui/themed";
-import { PropsWithChildren } from "react";
+import { MainScreenLayoutProps } from "./MainScreenLayout";
 
-export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
+export const useStyles = makeStyles((theme, props: MainScreenLayoutProps) => {
     return {
         mainContainer: {
             flex: 1,
             backgroundColor: theme.colors.background,
-            padding: theme.spacing.lg,
         },
         testnetContainer: {
             backgroundColor: theme.colors.primary,

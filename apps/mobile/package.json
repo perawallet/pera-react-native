@@ -35,6 +35,7 @@
     "react-native-renderer": "^15.5.3",
     "react-native-safe-area-context": "^5.6.1",
     "react-native-screens": "^4.16.0",
+    "react-native-svg": "^15.13.0",
     "react-native-vector-icons": "^10.3.0",
     "reflect-metadata": "catalog:",
     "tailwindcss": "^4.1.13",
@@ -60,6 +61,7 @@
     "eslint": "catalog:",
     "eslint-plugin-testing-library": "^7.7.0",
     "prettier": "catalog:",
+    "react-native-svg-transformer": "^1.5.1",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },

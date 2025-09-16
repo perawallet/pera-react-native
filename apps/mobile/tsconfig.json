@@ -8,8 +8,9 @@
       "@providers/*": ["providers/*"],
       "@routes/*": ["routes/*"],
       "@screens/*": ["screens/*"],
+      "@assets/*": ["../assets/*"],
     }
   },
-  "include": ["**/*.ts", "**/*.tsx"],
+  "include": ["**/*.ts", "**/*.tsx", "**/*.svg"],
   "exclude": ["**/node_modules", "**/Pods"]
 }

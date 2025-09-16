@@ -1,8 +1,9 @@
-import { PropsWithChildren } from 'react';
 import { useStyles } from './styles';
-import { View } from 'react-native';
+import { View, ViewProps } from 'react-native';
 
-const PeraView = (props: PropsWithChildren) => {
+export type PeraViewProps = ViewProps
+
+const PeraView = (props: PeraViewProps) => {
   const style = useStyles(props);
 
   return <View style={style.defaultStyle} {...props}>{props.children}</View>;

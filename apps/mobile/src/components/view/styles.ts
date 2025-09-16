@@ -1,7 +1,7 @@
 import { makeStyles } from '@rneui/themed';
-import { PropsWithChildren } from 'react';
+import { PeraViewProps } from './PeraView';
 
-export const useStyles = makeStyles((theme, props: PropsWithChildren) => ({
+export const useStyles = makeStyles((theme, props: PeraViewProps) => ({
   defaultStyle: {
     backgroundColor: theme.colors.background
   },
