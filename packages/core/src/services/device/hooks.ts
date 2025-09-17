@@ -15,28 +15,33 @@ export const useDevice = () => {
 
 	return {
 		registerDevice: async () => {
+			const addresses: string[] = accounts
+				.filter(a => a.address)
+				.map(a => a.address)
 			if (!deviceID) {
 				const result = await createDevice({
 					data: {
-						accounts: accounts.map(a => a.address),
+						accounts: addresses,
 						platform: await deviceInfoService.getDevicePlatform(),
 						push_token: fcmToken ?? undefined,
 						model: deviceInfoService.getDeviceModel(),
 						application: 'pera',
+						locale: deviceInfoService.getDeviceLocale(),
 					},
 				})
 				setDeviceID(result.id ?? null)
 			} else {
-                await updateDevice({
-                    device_id: deviceID,
-                    data: {
-                        accounts: accounts.map(a => a.address),
-                        platform: await deviceInfoService.getDevicePlatform(),
-                        push_token: fcmToken ?? undefined,
-                        model: deviceInfoService.getDeviceModel(),
-                    },
-                })
-            }
+				await updateDevice({
+					device_id: deviceID,
+					data: {
+						accounts: addresses,
+						platform: await deviceInfoService.getDevicePlatform(),
+						push_token: fcmToken ?? undefined,
+						model: deviceInfoService.getDeviceModel(),
+						locale: deviceInfoService.getDeviceLocale(),
+					},
+				})
+			}
 		},
 	}
 }

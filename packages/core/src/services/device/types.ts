@@ -1,4 +1,3 @@
-
 export const DevicePlatforms = {
 	ios: 'ios',
 	android: 'android',

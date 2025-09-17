@@ -12,7 +12,7 @@ export const deviceSerializerRequestSchema = z.object({
 "application": z.enum(["pera", "pera-beta", "fifa"]).optional(),
 "model": z.string().min(1).default(""),
 "locale": z.string().min(1).default(""),
-"accounts": z.array(z.string().nullable())
+"accounts": z.array(z.string())
     })
 
 export type DeviceSerializerRequestSchema = z.infer<typeof deviceSerializerRequestSchema>

@@ -31,5 +31,5 @@
     },
     "types": ["vitest/globals"]
   },
-  "include": ["src", "api"]
+  "include": ["src", "lib"]
 }

@@ -1,9 +1,7 @@
 import { useAppStore } from '../../store'
 import { useSecureStorageService } from '../storage'
 import type { WalletAccount } from './types'
-import {
-	BIP32DerivationType,
-} from '@algorandfoundation/xhd-wallet-api'
+import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { v7 as uuidv7 } from 'uuid'
 import { useHDWallet } from './hooks.hdwallet'
 
@@ -42,7 +40,7 @@ export const useAccounts = () => {
 			let mnemonic = await secureStorage.getItem(rootKeyLocation)
 			if (!mnemonic) {
 				const generatedMnemonic = createMnemonic()
-                const base64Mnemonic = Buffer.from(generatedMnemonic).toString('base64')
+				const base64Mnemonic = Buffer.from(generatedMnemonic).toString('base64')
 				await secureStorage.setItem(rootKeyLocation, base64Mnemonic)
 				mnemonic = base64Mnemonic
 			}

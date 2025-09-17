@@ -18,7 +18,7 @@ type Overrides = Partial<{
 	remoteConfig: RemoteConfigService
 	notification: NotificationService
 	crashReporting: CrashReportingService
-    deviceInfo: DeviceInfoService
+	deviceInfo: DeviceInfoService
 }>
 
 /**
@@ -63,14 +63,21 @@ export const buildTestPlatform = (
 		recordNonFatalError(_e: unknown) {},
 	}
 
-    const deviceInfo: DeviceInfoService = {
-        initializeDeviceInfo() {},
-        getDeviceID() { return Promise.resolve('testID') },
-        getDeviceModel() { return "testModel" },
-        getDevicePlatform() {
-            return Promise.resolve(DevicePlatforms.web)
-        },
-    }
+	const deviceInfo: DeviceInfoService = {
+		initializeDeviceInfo() {},
+		getDeviceID() {
+			return Promise.resolve('testID')
+		},
+		getDeviceModel() {
+			return 'testModel'
+		},
+		getDevicePlatform() {
+			return Promise.resolve(DevicePlatforms.web)
+		},
+		getDeviceLocale() {
+			return 'testLocale'
+		},
+	}
 
 	return {
 		keyValueStorage: overrides.keyValueStorage ?? new MemoryKeyValueStorage(),
@@ -78,7 +85,7 @@ export const buildTestPlatform = (
 		remoteConfig: overrides.remoteConfig ?? defaultRemote,
 		notification: overrides.notification ?? defaultNotification,
 		crashReporting: overrides.crashReporting ?? defaultCrash,
-        deviceInfo: overrides.deviceInfo ?? deviceInfo
+		deviceInfo: overrides.deviceInfo ?? deviceInfo,
 	}
 }
 

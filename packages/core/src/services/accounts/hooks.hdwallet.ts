@@ -4,7 +4,7 @@ import {
 	Encoding,
 	fromSeed,
 	KeyContext,
-	XHDWalletAPI
+	XHDWalletAPI,
 } from '@algorandfoundation/xhd-wallet-api'
 import * as bip39 from 'bip39'
 import messageSchema from './schema/message-schema.json'
@@ -18,10 +18,10 @@ export const useHDWallet = () => {
 		return Buffer.from(decoder.decode(key)).toString('base64')
 	}
 
-    const createPath = (account: number, keyIndex: number) => {
+	const createPath = (account: number, keyIndex: number) => {
 		//m / purpose (bip44) / coin type (algorand) / account / change / address index
-        return [44, 283, account, 0, keyIndex]
-    }
+		return [44, 283, account, 0, keyIndex]
+	}
 
 	return {
 		createMnemonic: () => {
@@ -49,8 +49,8 @@ export const useHDWallet = () => {
 				keyIndex,
 				derivationType,
 			)
-			const base64Key = base64EncodeKey(key)
-			const base64Address = base64EncodeKey(address)
+			const base64Key = base64EncodeKey(key.buffer)
+			const base64Address = base64EncodeKey(address.buffer)
 			return {
 				address: base64Address,
 				privateKey: base64Key,
@@ -60,19 +60,42 @@ export const useHDWallet = () => {
 			const seed = await bip39.mnemonicToSeed(mnemonic)
 			return fromSeed(seed)
 		},
-        signTransaction: (mnemonic: string, hdWalletDetails: HDWalletDetails, transaction: Buffer) => {
+		signTransaction: (
+			mnemonic: string,
+			hdWalletDetails: HDWalletDetails,
+			transaction: Buffer,
+		) => {
 			const seed = bip39.mnemonicToSeedSync(mnemonic)
 			const rootKey = fromSeed(seed)
-            return api.signAlgoTransaction(rootKey, KeyContext.Address, hdWalletDetails.account, hdWalletDetails.keyIndex, transaction, BIP32DerivationType.Peikert)
-        },
-        signData: (mnemonic: string, hdWalletDetails: HDWalletDetails, data: Buffer) => {
+			return api.signAlgoTransaction(
+				rootKey,
+				KeyContext.Address,
+				hdWalletDetails.account,
+				hdWalletDetails.keyIndex,
+				transaction,
+				BIP32DerivationType.Peikert,
+			)
+		},
+		signData: (
+			mnemonic: string,
+			hdWalletDetails: HDWalletDetails,
+			data: Buffer,
+		) => {
 			const seed = bip39.mnemonicToSeedSync(mnemonic)
 			const rootKey = fromSeed(seed)
-            const metadata = {
-                encoding: Encoding.BASE64,
-                schema: messageSchema
-            }
-            return api.signData(rootKey, KeyContext.Address, hdWalletDetails.account, hdWalletDetails.keyIndex, data, metadata, BIP32DerivationType.Peikert)
-        }
+			const metadata = {
+				encoding: Encoding.BASE64,
+				schema: messageSchema,
+			}
+			return api.signData(
+				rootKey,
+				KeyContext.Address,
+				hdWalletDetails.account,
+				hdWalletDetails.keyIndex,
+				data,
+				metadata,
+				BIP32DerivationType.Peikert,
+			)
+		},
 	}
 }

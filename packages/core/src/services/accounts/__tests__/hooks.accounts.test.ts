@@ -7,28 +7,28 @@ const uuidSpies = vi.hoisted(() => ({ v7: vi.fn() }))
 vi.mock('uuid', () => ({ v7: uuidSpies.v7 }))
 
 const apiSpies = vi.hoisted(() => ({
-  deriveSpy: vi.fn(),
-  keyGenSpy: vi.fn(),
+	deriveSpy: vi.fn(),
+	keyGenSpy: vi.fn(),
 }))
 const xhdSpies = vi.hoisted(() => ({
-  fromSeed: vi.fn(() => 'ROOT_KEY'),
+	fromSeed: vi.fn(() => 'ROOT_KEY'),
 }))
 const bip39Spies = vi.hoisted(() => ({
-  generateMnemonic: vi.fn(() => 'GENERATED_MNEMO'),
-  mnemonicToSeedSync: vi.fn(() => Buffer.from('seed_sync')),
-  mnemonicToSeed: vi.fn(async () => Buffer.from('seed_async')),
+	generateMnemonic: vi.fn(() => 'GENERATED_MNEMO'),
+	mnemonicToSeedSync: vi.fn(() => Buffer.from('seed_sync')),
+	mnemonicToSeed: vi.fn(async () => Buffer.from('seed_async')),
 }))
 
 vi.mock('@algorandfoundation/xhd-wallet-api', () => {
-  return {
-    BIP32DerivationType: { Peikert: 'PEIKERT' },
-    fromSeed: xhdSpies.fromSeed,
-    KeyContext: { Address: 'Address' },
-    XHDWalletAPI: vi.fn().mockImplementation(() => ({
-      deriveKey: apiSpies.deriveSpy,
-      keyGen: apiSpies.keyGenSpy,
-    })),
-  }
+	return {
+		BIP32DerivationType: { Peikert: 'PEIKERT' },
+		fromSeed: xhdSpies.fromSeed,
+		KeyContext: { Address: 'Address' },
+		XHDWalletAPI: vi.fn().mockImplementation(() => ({
+			deriveKey: apiSpies.deriveSpy,
+			keyGen: apiSpies.keyGenSpy,
+		})),
+	}
 })
 vi.mock('bip39', () => bip39Spies)
 
@@ -275,7 +275,10 @@ describe('services/accounts/hooks - createAccount', () => {
 
 		expect(dummySecure.getItem).toHaveBeenCalledWith('rootkey-WALLET1')
 		expect(bip39Spies.generateMnemonic).toHaveBeenCalledTimes(1)
-		expect(dummySecure.setItem).toHaveBeenCalledWith('rootkey-WALLET1', Buffer.from('GENERATED_MNEMO').toString('base64'))
+		expect(dummySecure.setItem).toHaveBeenCalledWith(
+			'rootkey-WALLET1',
+			Buffer.from('GENERATED_MNEMO').toString('base64'),
+		)
 		expect(dummySecure.setItem).toHaveBeenCalledWith('pk-KEY1', expectedPk)
 
 		expect(created).toMatchObject({
@@ -325,7 +328,9 @@ describe('services/accounts/hooks - createAccount', () => {
 		apiSpies.keyGenSpy.mockResolvedValueOnce(addr)
 
 		// uuid: pk id, account id (walletId is provided)
-		uuidSpies.v7.mockImplementationOnce(() => 'KEY2').mockImplementationOnce(() => 'ACC2')
+		uuidSpies.v7
+			.mockImplementationOnce(() => 'KEY2')
+			.mockImplementationOnce(() => 'ACC2')
 
 		const { useAppStore } = await import('../../../store')
 		const { useAccounts } = await import('../hooks.accounts')
@@ -364,7 +369,9 @@ describe('services/accounts/hooks - createAccount', () => {
 			},
 		})
 
-		expect(useAppStore.getState().accounts.find((a: any) => a.id === 'ACC2')).toBeTruthy()
+		expect(
+			useAppStore.getState().accounts.find((a: any) => a.id === 'ACC2'),
+		).toBeTruthy()
 	})
 })
 

@@ -31,3 +31,8 @@ catalog:
   vite: ^7.1.2
   vitest: ^2.1.9
   zustand: ^5.0.8
+
+packageExtensions:
+  '@algorandfoundation/xhd-wallet-api':
+    dependencies:
+      crypto: "*"

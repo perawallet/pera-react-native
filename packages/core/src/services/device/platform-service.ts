@@ -8,6 +8,7 @@ export interface DeviceInfoService {
 	getDeviceID(): Promise<string>
 	getDeviceModel(): string
 	getDevicePlatform(): Promise<DevicePlatform>
+	getDeviceLocale(): string
 }
 
 export const useDeviceInfoService = () =>

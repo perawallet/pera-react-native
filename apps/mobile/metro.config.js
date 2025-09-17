@@ -19,6 +19,18 @@ const config = {
     sourceExts: [...sourceExts, "svg"],
     unstable_enableSymlinks: true, 
     unstable_enablePackageExports: true,
+    resolveRequest: (context, moduleName, platform) => {
+        if (moduleName === 'crypto') {
+            // when importing crypto, resolve to react-native-quick-crypto
+            return context.resolveRequest(
+            context,
+            'react-native-quick-crypto',
+            platform,
+            )
+        }
+        // otherwise chain to the standard Metro resolver.
+        return context.resolveRequest(context, moduleName, platform)
+    }
   },
   // this specifies the folder where the node_modules are
   watchFolders: [

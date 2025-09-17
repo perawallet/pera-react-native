@@ -35,10 +35,6 @@ export default defineConfig(() => {
 				client: {
 					importPath: '../../query-client',
 				},
-				infinite: {
-					queryParam: 'page',
-					cursorParam: 'nextPage',
-				},
 				output: {
 					path: 'composables',
 					barrelType: false,

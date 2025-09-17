@@ -14,6 +14,7 @@ describe('services/device/platform-service', () => {
 			getDeviceID: vi.fn(() => Promise.resolve('id')),
 			getDeviceModel: vi.fn(() => 'testModel'),
 			getDevicePlatform: vi.fn(() => Promise.resolve(DevicePlatforms.web)),
+			getDeviceLocale: vi.fn(() => 'testLanguage'),
 		}
 
 		container.register(DeviceInfoServiceContainerKey, { useValue: dummy })
