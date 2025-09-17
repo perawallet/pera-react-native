@@ -8,7 +8,6 @@ import {
   useNotificationService,
   registerPlatformServices,
   useAppStore,
-  useDevice,
 } from '@perawallet/core';
 
 const firebaseService = new RNFirebaseService();

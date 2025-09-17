@@ -1,13 +1,12 @@
 import { View, ViewProps } from 'react-native';
 import { useStyles } from './MainScreenLayout.style';
-import { Networks, useAppStore, useDevice } from '@perawallet/core';
+import { Networks, useAppStore } from '@perawallet/core';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PeraView from '../components/view/PeraView';
 import { useNavigation } from '@react-navigation/native';
 
 import ChevronLeft from '../../assets/icons/chevron-left.svg';
 import { Text, useTheme } from '@rneui/themed';
-import { useEffect } from 'react';
 
 export type MainScreenLayoutProps = {
   fullScreen?: boolean;
@@ -20,15 +19,10 @@ const MainScreenLayout = (props: MainScreenLayoutProps) => {
   const { theme } = useTheme();
   const network = useAppStore(state => state.network);
   const navigation = useNavigation();
-  const { registerDevice } = useDevice();
 
   const goBack = () => {
     navigation.goBack();
   };
-
-  useEffect(() => {
-    registerDevice();
-  }, [])
 
   return props.fullScreen ? (
     <PeraView style={[props.style, styles.mainContainer]} {...props}>
