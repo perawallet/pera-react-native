@@ -13,8 +13,7 @@ export const useDevice = () => {
 	const { mutateAsync: createDevice } = useV1DevicesCreate()
 	const { mutateAsync: updateDevice } = useV1DevicesPartialUpdate()
 
-	return {
-		registerDevice: async () => {
+    const registerDevice = async () => {
 			const addresses: string[] = accounts
 				.filter(a => a.address)
 				.map(a => a.address)
@@ -42,6 +41,9 @@ export const useDevice = () => {
 					},
 				})
 			}
-		},
+		}
+        
+	return {
+		registerDevice
 	}
 }
