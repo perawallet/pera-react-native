@@ -27,7 +27,6 @@ export const useBootstrapper = () => {
   const crashlyticsService = useCrashReportingService();
   const remoteConfigService = useRemoteConfigService();
   const notificationService = useNotificationService();
-  const { registerDevice } = useDevice();
 
   const setFcmToken = useAppStore(state => {
     return state.setFcmToken;
@@ -43,7 +42,6 @@ export const useBootstrapper = () => {
       await notificationService.initializeNotifications();
 
     setFcmToken(notificationResults.token || null);
-    registerDevice();
 
     return platformServices;
   };
