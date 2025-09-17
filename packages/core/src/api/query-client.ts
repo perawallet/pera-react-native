@@ -1,7 +1,7 @@
 import ky, { type SearchParamsOption, type KyInstance } from 'ky'
 import { config } from '../config/main'
-import { Networks } from '@services/blockchain'
-import { useAppStore } from '@store/app-store'
+import { Networks } from '../services/blockchain'
+import { useAppStore } from '../store/app-store'
 
 const clients = new Map<string, KyInstance>()
 
