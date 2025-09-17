@@ -9,7 +9,6 @@ import { Persister } from '@tanstack/react-query-persist-client';
 import { ThemeProvider } from '@rneui/themed';
 import { getNavigationTheme, getTheme } from './theme/theme';
 import { MainRoutes } from './routes/routes';
-import MainScreenLayout from './layouts/MainScreenLayout';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 function App() {
@@ -18,13 +17,15 @@ function App() {
   const themeMode = useAppStore(state => state.theme);
   const kvService = useKeyValueStorageService();
 
-  const scheme = useColorScheme()
+  const scheme = useColorScheme();
   const isDarkMode = useMemo(() => {
-    return themeMode === 'dark' || (themeMode === "system" && scheme === "dark");
+    return (
+      themeMode === 'dark' || (themeMode === 'system' && scheme === 'dark')
+    );
   }, [themeMode, scheme]);
 
-  const theme = getTheme(isDarkMode ? 'dark' : 'light')
-  const navTheme = getNavigationTheme(isDarkMode? 'dark' : 'light')
+  const theme = getTheme(isDarkMode ? 'dark' : 'light');
+  const navTheme = getNavigationTheme(isDarkMode ? 'dark' : 'light');
 
   const bootstrap = useBootstrapper();
 
@@ -41,21 +42,21 @@ function App() {
   }, [bootstrapped, bootstrap, kvService]);
 
   return (
-      <ThemeProvider theme={theme}>
-        <SafeAreaProvider>
-          {!bootstrapped && <Text>Loading...</Text>}
-          {bootstrapped && persister && (
-            <QueryProvider persister={persister}>
-              <StatusBar
-                barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-              />
-              <GestureHandlerRootView>
-                <MainRoutes theme={navTheme} />
-              </GestureHandlerRootView>
-            </QueryProvider>
-          )}
-        </SafeAreaProvider>
-      </ThemeProvider>
+    <ThemeProvider theme={theme}>
+      <SafeAreaProvider>
+        {!bootstrapped && <Text>Loading...</Text>}
+        {bootstrapped && persister && (
+          <QueryProvider persister={persister}>
+            <StatusBar
+              barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+            />
+            <GestureHandlerRootView>
+              <MainRoutes theme={navTheme} />
+            </GestureHandlerRootView>
+          </QueryProvider>
+        )}
+      </SafeAreaProvider>
+    </ThemeProvider>
   );
 }
 

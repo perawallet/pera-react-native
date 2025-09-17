@@ -13,9 +13,9 @@ export const useStyles = makeStyles((theme, props: PeraButtonProps) => ({
     fontWeight: '500',
     fontSize: 15,
     lineHeight: 24,
-    color: 
+    color:
       props.variant === 'primary'
         ? theme.colors.buttonPrimaryText
-        : theme.colors.textMain
-  }
+        : theme.colors.textMain,
+  },
 }));

@@ -11,10 +11,10 @@ const PortfolioScreen = () => {
 
   return (
     <MainScreenLayout>
-        <PeraView>
-            <Text>This will be the portfolio screen</Text>
-            <PeraButton variant="primary" title="test me" onPress={showAlert} />
-        </PeraView>
+      <PeraView>
+        <Text>This will be the portfolio screen</Text>
+        <PeraButton variant="primary" title="test me" onPress={showAlert} />
+      </PeraView>
     </MainScreenLayout>
   );
 };

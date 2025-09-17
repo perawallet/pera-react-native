@@ -17,6 +17,10 @@ import {
 	NotificationServiceContainerKey,
 	type NotificationService,
 } from '../services/notifications'
+import {
+	DeviceInfoServiceContainerKey,
+	type DeviceInfoService,
+} from '../services/device/platform-service'
 
 export interface PlatformServices {
 	keyValueStorage: KeyValueStorageService
@@ -24,6 +28,7 @@ export interface PlatformServices {
 	notification: NotificationService
 	remoteConfig: RemoteConfigService
 	crashReporting: CrashReportingService
+	deviceInfo: DeviceInfoService
 }
 
 export const registerPlatformServices = (platform: PlatformServices) => {
@@ -42,5 +47,8 @@ export const registerPlatformServices = (platform: PlatformServices) => {
 	})
 	container.register<CrashReportingService>(CrashReportingServiceContainerKey, {
 		useValue: platform.crashReporting,
+	})
+	container.register<DeviceInfoService>(DeviceInfoServiceContainerKey, {
+		useValue: platform.deviceInfo,
 	})
 }

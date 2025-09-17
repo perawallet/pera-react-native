@@ -1,5 +1,5 @@
 import ky, { type SearchParamsOption, type KyInstance } from 'ky'
-import { config } from 'config/main'
+import { config } from '../config/main'
 import { Networks } from '@services/blockchain'
 import { useAppStore } from '@store/app-store'
 

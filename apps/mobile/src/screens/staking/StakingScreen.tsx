@@ -5,9 +5,9 @@ import MainScreenLayout from '../../layouts/MainScreenLayout';
 const StakingScreen = () => {
   return (
     <MainScreenLayout>
-        <PeraView>
-            <Text>This will be the portfolio screen</Text>
-        </PeraView>
+      <PeraView>
+        <Text>This will be the portfolio screen</Text>
+      </PeraView>
     </MainScreenLayout>
   );
 };

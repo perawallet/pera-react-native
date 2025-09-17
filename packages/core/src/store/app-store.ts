@@ -16,14 +16,23 @@ import {
 	partializeSettingsSlice,
 	type SettingsSlice,
 } from '../services/settings/store'
+import {
+	createDeviceSlice,
+	partializeDeviceSlice,
+	type DeviceSlice,
+} from '../services/device/store'
 
-export type AppState = SettingsSlice & AccountsSlice & BlockchainSlice
+export type AppState = SettingsSlice &
+	AccountsSlice &
+	BlockchainSlice &
+	DeviceSlice
 export const useAppStore = create<AppState>()(
 	persist(
 		(...a) => ({
 			...createSettingsSlice(...a),
 			...createBlockchainSlice(...a),
 			...createAccountsSlice(...a),
+			...createDeviceSlice(...a),
 		}),
 		{
 			name: 'app-store',
@@ -33,6 +42,7 @@ export const useAppStore = create<AppState>()(
 				...partializeSettingsSlice(state),
 				...partializeBlockchainSlice(state),
 				...partializeAccountsSlice(state),
+				...partializeDeviceSlice(state),
 			}),
 		},
 	),

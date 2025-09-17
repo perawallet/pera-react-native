@@ -9,10 +9,9 @@ import SwapScreen from '../screens/swap/SwapScreen';
 import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
 import NameAccountScreen from '../screens/name-account/NameAccountScreen';
 
-
 const TabBarStack = createBottomTabNavigator({
   initialRouteName: 'Home',
-  screenOptions: ({ route, theme }) => ({
+  screenOptions: ({ theme }) => ({
     headerShown: false,
     tabBarStyle: {
       backgroundColor: theme.colors.background,
@@ -32,7 +31,7 @@ const TabBarStack = createBottomTabNavigator({
 const OnboardingStack = createNativeStackNavigator({
   initialRouteName: 'OnboardingHome',
   screenOptions: {
-    headerShown: false
+    headerShown: false,
   },
   screens: {
     OnboardingHome: OnboardingScreen,
@@ -52,4 +51,4 @@ const RootStack = createNativeStackNavigator({
   },
 });
 
-export const MainRoutes = createStaticNavigation(RootStack)
+export const MainRoutes = createStaticNavigation(RootStack);

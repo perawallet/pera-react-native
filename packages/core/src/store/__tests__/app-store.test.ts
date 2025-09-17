@@ -2,8 +2,6 @@ import { describe, test, expect, vi } from 'vitest'
 import { Networks } from '../../services/blockchain/types'
 import { MemoryKeyValueStorage, registerTestPlatform } from '@test-utils'
 
-
-
 describe('store/app-store', () => {
 	test('initializes defaults, updates, and persists selected keys', async () => {
 		const kv = new MemoryKeyValueStorage()

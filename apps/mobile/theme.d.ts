@@ -16,8 +16,7 @@ declare module '@rneui/themed' {
     textWhite: string;
 
     //Button colos
-    buttonPrimaryBg: string
-    buttonPrimaryText: string
-
+    buttonPrimaryBg: string;
+    buttonPrimaryText: string;
   }
 }

@@ -1,7 +1,7 @@
 import { makeStyles } from '@rneui/themed';
 import { PanelButtonProps } from './PanelButton';
 
-export const useStyles = makeStyles((theme, props: PanelButtonProps) => ({
+export const useStyles = makeStyles((theme, _: PanelButtonProps) => ({
   buttonStyle: {
     height: 60,
     gap: theme.spacing.md,
@@ -11,12 +11,12 @@ export const useStyles = makeStyles((theme, props: PanelButtonProps) => ({
     padding: theme.spacing.lg,
     backgroundColor: theme.colors.layerGrayLighter,
     color: theme.colors.textMain,
-    borderRadius: theme.spacing.lg
+    borderRadius: theme.spacing.lg,
   },
   textStyle: {
     backgroundColor: theme.colors.layerGrayLighter,
     color: theme.colors.textMain,
     flexGrow: 1,
     height: 28,
-  }
+  },
 }));

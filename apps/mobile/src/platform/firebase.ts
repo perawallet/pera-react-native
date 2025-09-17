@@ -1,5 +1,5 @@
-import crashlytics, { getCrashlytics, setCrashlyticsCollectionEnabled } from '@react-native-firebase/crashlytics';
-import remoteConfig, { getRemoteConfig } from '@react-native-firebase/remote-config';
+import { getCrashlytics } from '@react-native-firebase/crashlytics';
+import { getRemoteConfig } from '@react-native-firebase/remote-config';
 import messaging, { getMessaging } from '@react-native-firebase/messaging';
 import { Platform } from 'react-native';
 import notifee, { AndroidImportance, EventType } from '@notifee/react-native';
