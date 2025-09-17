@@ -1,14 +1,11 @@
 import { useAppStore } from '../../store'
 import { useSecureStorageService } from '../storage'
-import { type WalletAccount } from './types'
+import type { WalletAccount } from './types'
 import {
 	BIP32DerivationType,
-	fromSeed,
-	KeyContext,
-	XHDWalletAPI,
 } from '@algorandfoundation/xhd-wallet-api'
-import * as bip39 from 'bip39'
 import { v7 as uuidv7 } from 'uuid'
+import { useHDWallet } from './hooks.hdwallet'
 
 const MAX_ADDRESS_DISPLAY = 11
 const ADDRESS_DISPLAY_PREFIX_LENGTH = 5
@@ -19,55 +16,7 @@ export const useDisplayAddress = (account: WalletAccount) => {
 	return `${account.address.substring(0, ADDRESS_DISPLAY_PREFIX_LENGTH)}...${account.address.substring(account.address.length - ADDRESS_DISPLAY_PREFIX_LENGTH)}`
 }
 
-export const useHDWallet = () => {
-	const api = new XHDWalletAPI()
-
-	const base64EncodeKey = (key: ArrayBufferLike) => {
-		const decoder = new TextDecoder()
-		return Buffer.from(decoder.decode(key)).toString('base64')
-	}
-
-	return {
-		createMnemonic: () => {
-			return bip39.generateMnemonic()
-		},
-		deriveKey: async ({
-			mnemonic,
-			account = 0,
-			keyIndex = 0,
-			derivationType = BIP32DerivationType.Peikert,
-		}: {
-			mnemonic: string
-			account?: number
-			keyIndex?: number
-			derivationType?: BIP32DerivationType
-		}) => {
-			const seed = bip39.mnemonicToSeedSync(mnemonic)
-			const rootKey = fromSeed(seed)
-			//m / purpose (bip44) / coin type (algorand) / account / change / address index
-			const path = [44, 283, account, 0, keyIndex]
-			const key = await api.deriveKey(rootKey, path, true, derivationType)
-			const address = await api.keyGen(
-				rootKey,
-				KeyContext.Address,
-				account,
-				keyIndex,
-				derivationType,
-			)
-			const base64Key = base64EncodeKey(key)
-			const base64Address = base64EncodeKey(address)
-			return {
-				address: base64Address,
-				privateKey: base64Key,
-			}
-		},
-		mnemonicToRootKey: async (mnemonic: string) => {
-			const seed = await bip39.mnemonicToSeed(mnemonic)
-			return fromSeed(seed)
-		},
-	}
-}
-
+// Services relating to locally stored accounts
 export const useAccounts = () => {
 	const accounts = useAppStore(state => state.accounts)
 	const setAccounts = useAppStore(state => state.setAccounts)
@@ -93,12 +42,13 @@ export const useAccounts = () => {
 			let mnemonic = await secureStorage.getItem(rootKeyLocation)
 			if (!mnemonic) {
 				const generatedMnemonic = createMnemonic()
-				await secureStorage.setItem(rootKeyLocation, generatedMnemonic)
-				mnemonic = generatedMnemonic
+                const base64Mnemonic = Buffer.from(generatedMnemonic).toString('base64')
+				await secureStorage.setItem(rootKeyLocation, base64Mnemonic)
+				mnemonic = base64Mnemonic
 			}
 
 			const { address, privateKey } = await deriveKey({
-				mnemonic,
+				mnemonic: Buffer.from(mnemonic, 'base64').toString('utf-8'),
 				account,
 				keyIndex,
 				derivationType: BIP32DerivationType.Peikert,
