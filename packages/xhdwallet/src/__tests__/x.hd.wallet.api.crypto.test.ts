@@ -771,7 +771,9 @@ describe('Contextual Derivation & Signing', () => {
 				await expect(encodeAddress(Buffer.from(key))).toEqual(
 					'ML7IGK322ECUJPUDG6THAQ26KBSK4STG4555PCIJOZNUNNLWU3Z3ZFXITA',
 				)
-				await expect(nacl.sign.detached.verify(prefixEncodedTx, sig, key)).toBe(true)
+				await expect(nacl.sign.detached.verify(prefixEncodedTx, sig, key)).toBe(
+					true,
+				)
 			})
 		})
 

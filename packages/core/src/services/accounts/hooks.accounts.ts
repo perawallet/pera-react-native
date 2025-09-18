@@ -12,7 +12,7 @@ const ADDRESS_DISPLAY_PREFIX_LENGTH = 5
 
 export const useDisplayAddress = (account: WalletAccount) => {
 	if (account.name) return account.name
-	if (!account.address) return "No Address Found"
+	if (!account.address) return 'No Address Found'
 	if (account.address.length <= MAX_ADDRESS_DISPLAY) return account.address
 	return `${account.address.substring(0, ADDRESS_DISPLAY_PREFIX_LENGTH)}...${account.address.substring(account.address.length - ADDRESS_DISPLAY_PREFIX_LENGTH)}`
 }
@@ -43,7 +43,7 @@ export const useAccounts = () => {
 			let mnemonic = await secureStorage.getItem(rootKeyLocation)
 			if (!mnemonic) {
 				const generatedMnemonic = createMnemonic()
-				const base64Mnemonic = encodeToBase64(Buffer.from(generatedMnemonic)) 
+				const base64Mnemonic = encodeToBase64(Buffer.from(generatedMnemonic))
 				await secureStorage.setItem(rootKeyLocation, base64Mnemonic)
 				mnemonic = base64Mnemonic
 			}

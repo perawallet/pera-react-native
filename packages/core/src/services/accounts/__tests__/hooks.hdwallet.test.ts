@@ -27,10 +27,13 @@ const bip39Spies = vi.hoisted(() => {
 
 vi.mock('@perawallet/xhdwallet', () => {
 	return {
+		BIP32DerivationTypes: { Khovratovich: 32, Peikert: 9 },
 		BIP32DerivationType: { Peikert: 'PEIKERT', Other: 'OTHER' },
 		Encoding: { BASE64: 'BASE64' },
 		fromSeed: xhdSpies.fromSeed,
 		KeyContext: { Address: 'Address' },
+		KeyContexts: { Address: 0, Identity: 1 },
+		Encodings: { MSGPACK: 'msgpack', BASE64: 'base64', NONE: 'none' },
 		XHDWalletAPI: vi.fn().mockImplementation(() => ({
 			deriveKey: apiSpies.deriveSpy,
 			keyGen: apiSpies.keyGenSpy,
@@ -89,19 +92,24 @@ describe('services/accounts/useHDWallet', () => {
 			'ROOT_KEY',
 			[44, 283, 0, 0, 0],
 			true,
-			'PEIKERT',
+			9,
 		)
 		expect(apiSpies.keyGenSpy).toHaveBeenCalledWith(
 			'ROOT_KEY',
-			'Address',
 			0,
 			0,
-			'PEIKERT',
+			0,
+			9,
 		)
 
-		// Assert base64
-		expect(out.privateKey).toBe(Buffer.from('PRIVKEY').toString('base64'))
-		expect(out.address).toBe(Buffer.from('ADDRESS').toString('base64'))
+    console.log("Privkey")
+    console.log(out.privateKey)
+    console.log("address")
+    console.log(out.address)
+
+		// Assert
+		expect(out.privateKey).toBe(priv)
+		expect(out.address).toBe(addr)
 	})
 
 	test('deriveKey allows overriding account, keyIndex and derivationType', async () => {
@@ -132,7 +140,7 @@ describe('services/accounts/useHDWallet', () => {
 		)
 		expect(apiSpies.keyGenSpy).toHaveBeenCalledWith(
 			'ROOT_KEY',
-			'Address',
+			0,
 			7,
 			9,
 			'OTHER',
@@ -161,11 +169,11 @@ describe('services/accounts/useHDWallet', () => {
 		expect(xhdSpies.fromSeed).toHaveBeenCalled()
 		expect(apiSpies.signTxnSpy).toHaveBeenCalledWith(
 			'ROOT_KEY',
-			'Address',
+			0,
 			4,
 			6,
 			txn,
-			'PEIKERT',
+			9,
 		)
 		expect(signed).toBe('SIGNED_TX')
 	})
@@ -192,14 +200,14 @@ describe('services/accounts/useHDWallet', () => {
 		expect(apiSpies.signDataSpy).toHaveBeenCalled()
 		const call = (apiSpies.signDataSpy as any).mock.calls[0]
 		expect(call[0]).toBe('ROOT_KEY')
-		expect(call[1]).toBe('Address')
+		expect(call[1]).toBe(0)
 		expect(call[2]).toBe(1)
 		expect(call[3]).toBe(2)
 		expect(call[4]).toBe(payload)
 		expect(call[5]).toEqual(
-			expect.objectContaining({ encoding: 'BASE64', schema: expect.anything() }),
+			expect.objectContaining({ encoding: 'base64', schema: expect.anything() }),
 		)
-		expect(call[6]).toBe('PEIKERT')
+		expect(call[6]).toBe(9)
 		expect(signed).toBe('SIGNED_DATA')
 	})
 })

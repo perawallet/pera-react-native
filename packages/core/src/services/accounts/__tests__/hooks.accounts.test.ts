@@ -13,17 +13,28 @@ const apiSpies = vi.hoisted(() => ({
 const xhdSpies = vi.hoisted(() => ({
 	fromSeed: vi.fn(() => 'ROOT_KEY'),
 }))
+
+const mockedMnemonic = 'spike assault capital honey word junk bind task gorilla visa resist next size initial bacon ice gym entire bargain voice shift pause supply town'
+
 const bip39Spies = vi.hoisted(() => ({
-	generateMnemonic: vi.fn(() => 'GENERATED_MNEMO'),
+	generateMnemonic: vi.fn(() => mockedMnemonic),
 	mnemonicToSeedSync: vi.fn(() => Buffer.from('seed_sync')),
 	mnemonicToSeed: vi.fn(async () => Buffer.from('seed_async')),
 }))
 
+vi.mock('algosdk', () => {
+	return {
+		encodeAddress: vi.fn(() => "QUREUkVTUw==")
+	}
+})
+
 vi.mock('@perawallet/xhdwallet', () => {
 	return {
 		BIP32DerivationType: { Peikert: 'PEIKERT' },
+		BIP32DerivationTypes: { Peikert: 9 },
 		fromSeed: xhdSpies.fromSeed,
 		KeyContext: { Address: 'Address' },
+		KeyContexts: { Address: 0 },
 		XHDWalletAPI: vi.fn().mockImplementation(() => ({
 			deriveKey: apiSpies.deriveSpy,
 			keyGen: apiSpies.keyGenSpy,
@@ -254,6 +265,8 @@ describe('services/accounts/hooks - createAccount', () => {
 		const addr = new Uint8Array([65, 68, 68, 82, 69, 83, 83]) // 'ADDRESS'
 		apiSpies.deriveSpy.mockResolvedValueOnce(priv)
 		apiSpies.keyGenSpy.mockResolvedValueOnce(addr)
+		const expectedPk = Buffer.from('PRIVKEY').toString('base64')
+		const expectedAddr = Buffer.from('ADDRESS').toString('base64')
 
 		// uuid: walletId, pk id, account id
 		uuidSpies.v7
@@ -270,14 +283,11 @@ describe('services/accounts/hooks - createAccount', () => {
 			created = await result.current.createAccount({ account: 2, keyIndex: 5 })
 		})
 
-		const expectedPk = Buffer.from('PRIVKEY').toString('base64')
-		const expectedAddr = Buffer.from('ADDRESS').toString('base64')
-
 		expect(dummySecure.getItem).toHaveBeenCalledWith('rootkey-WALLET1')
 		expect(bip39Spies.generateMnemonic).toHaveBeenCalledTimes(1)
 		expect(dummySecure.setItem).toHaveBeenCalledWith(
 			'rootkey-WALLET1',
-			Buffer.from('GENERATED_MNEMO').toString('base64'),
+			Buffer.from(mockedMnemonic).toString('base64'),
 		)
 		expect(dummySecure.setItem).toHaveBeenCalledWith('pk-KEY1', expectedPk)
 
@@ -291,7 +301,7 @@ describe('services/accounts/hooks - createAccount', () => {
 				account: 2,
 				change: 0,
 				keyIndex: 5,
-				derivationType: 'PEIKERT',
+				derivationType: 9,
 			},
 		})
 
@@ -311,7 +321,7 @@ describe('services/accounts/hooks - createAccount', () => {
 
 		const dummySecure = {
 			setItem: vi.fn(async (_k: string, _v: string) => {}),
-			getItem: vi.fn(async (_k: string) => 'SAVED_MNEMO'),
+			getItem: vi.fn(async (_k: string) => Buffer.from('spike assault capital honey word junk bind task gorilla visa resist next size initial bacon ice gym entire bargain voice shift pause supply town').toString('base64')),
 			removeItem: vi.fn(async (_k: string) => {}),
 			authenticate: vi.fn(async () => true),
 		}
@@ -320,6 +330,9 @@ describe('services/accounts/hooks - createAccount', () => {
 			keyValueStorage: new MemoryKeyValueStorage() as any,
 			secureStorage: dummySecure as any,
 		})
+
+		const expectedPk = Buffer.from('PRIVKEY').toString('base64')
+		const expectedAddr = Buffer.from('ADDRESS').toString('base64')
 
 		// XHD-API responses
 		const priv = new Uint8Array([80, 82, 73, 86, 75, 69, 89]) // 'PRIVKEY'
@@ -345,9 +358,6 @@ describe('services/accounts/hooks - createAccount', () => {
 			})
 		})
 
-		const expectedPk = Buffer.from('PRIVKEY').toString('base64')
-		const expectedAddr = Buffer.from('ADDRESS').toString('base64')
-
 		expect(dummySecure.getItem).toHaveBeenCalledWith('rootkey-EXIST')
 		expect(bip39Spies.generateMnemonic).not.toHaveBeenCalled()
 
@@ -365,7 +375,7 @@ describe('services/accounts/hooks - createAccount', () => {
 				account: 1,
 				change: 0,
 				keyIndex: 3,
-				derivationType: 'PEIKERT',
+				derivationType: 9,
 			},
 		})
 

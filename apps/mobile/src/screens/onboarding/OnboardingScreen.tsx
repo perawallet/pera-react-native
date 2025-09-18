@@ -20,15 +20,15 @@ const OnboardingScreen = () => {
   const styles = useStyles();
   const { createAccount } = useAccounts();
   const { theme } = useTheme();
-  const [processing, setProcessing] = useState(false)
+  const [processing, setProcessing] = useState(false);
 
   const createAccountHandler = async () => {
-    setProcessing(true)
+    setProcessing(true);
     try {
       const account = await createAccount({ account: 0, keyIndex: 0 });
       navigation.push('NameAccount', { account: account });
     } finally {
-      setProcessing(false)
+      setProcessing(false);
     }
   };
   const importAccount = () => {
@@ -66,9 +66,13 @@ const OnboardingScreen = () => {
           />
         </PeraView>
       </PeraView>
-      <Overlay isVisible={processing} overlayStyle={styles.overlay} backdropStyle={styles.overlayBackdrop}>
+      <Overlay
+        isVisible={processing}
+        overlayStyle={styles.overlay}
+        backdropStyle={styles.overlayBackdrop}
+      >
         <Text>Setting up your wallet...</Text>
-        <ActivityIndicator  size="large" color={theme.colors.primary} />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </Overlay>
     </MainScreenLayout>
   );
