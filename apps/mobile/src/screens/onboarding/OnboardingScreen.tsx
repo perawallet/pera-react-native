@@ -1,7 +1,7 @@
 import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useStyles } from './styles';
-import { Text } from '@rneui/themed';
+import { LinearProgress, Text, useTheme } from '@rneui/themed';
 import PeraView from '../../components/view/PeraView';
 import MainScreenLayout from '../../layouts/MainScreenLayout';
 import PanelButton from '../../components/panel-button/PanelButton';
@@ -10,17 +10,26 @@ import WelcomeImage from '../../../assets/images/welcome-background.svg';
 import WalletIcon from '../../../assets/icons/wallet-with-algo.svg';
 import KeyIcon from '../../../assets/icons/key.svg';
 import ChevronNext from '../../../assets/icons/chevron-right.svg';
-import { Alert } from 'react-native';
+import { ActivityIndicator, Alert } from 'react-native';
 import { useAccounts } from '@perawallet/core';
+import { Overlay } from '@rneui/themed';
+import { useState } from 'react';
 
 const OnboardingScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
   const styles = useStyles();
   const { createAccount } = useAccounts();
+  const { theme } = useTheme();
+  const [processing, setProcessing] = useState(false)
 
-  const createAccountHandler = () => {
-    const account = createAccount({ account: 0, keyIndex: 0 });
-    navigation.push('NameAccount', { account: account });
+  const createAccountHandler = async () => {
+    setProcessing(true)
+    try {
+      const account = await createAccount({ account: 0, keyIndex: 0 });
+      navigation.push('NameAccount', { account: account });
+    } finally {
+      setProcessing(false)
+    }
   };
   const importAccount = () => {
     Alert.alert('Not yet implemented');
@@ -57,6 +66,10 @@ const OnboardingScreen = () => {
           />
         </PeraView>
       </PeraView>
+      <Overlay isVisible={processing} overlayStyle={styles.overlay} backdropStyle={styles.overlayBackdrop}>
+        <Text>Setting up your wallet...</Text>
+        <ActivityIndicator  size="large" color={theme.colors.primary} />
+      </Overlay>
     </MainScreenLayout>
   );
 };

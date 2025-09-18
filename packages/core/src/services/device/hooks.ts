@@ -13,37 +13,37 @@ export const useDevice = () => {
 	const { mutateAsync: createDevice } = useV1DevicesCreate()
 	const { mutateAsync: updateDevice } = useV1DevicesPartialUpdate()
 
-    const registerDevice = async () => {
-			const addresses: string[] = accounts
-				.filter(a => a.address)
-				.map(a => a.address)
-			if (!deviceID) {
-				const result = await createDevice({
-					data: {
-						accounts: addresses,
-						platform: await deviceInfoService.getDevicePlatform(),
-						push_token: fcmToken ?? undefined,
-						model: deviceInfoService.getDeviceModel(),
-						application: 'pera',
-						locale: deviceInfoService.getDeviceLocale(),
-					},
-				})
-				setDeviceID(result.id ?? null)
-			} else {
-				await updateDevice({
-					device_id: deviceID,
-					data: {
-						accounts: addresses,
-						platform: await deviceInfoService.getDevicePlatform(),
-						push_token: fcmToken ?? undefined,
-						model: deviceInfoService.getDeviceModel(),
-						locale: deviceInfoService.getDeviceLocale(),
-					},
-				})
-			}
+	const registerDevice = async () => {
+		const addresses: string[] = accounts
+			.filter(a => a.address)
+			.map(a => a.address)
+		if (!deviceID) {
+			const result = await createDevice({
+				data: {
+					accounts: addresses,
+					platform: await deviceInfoService.getDevicePlatform(),
+					push_token: fcmToken ?? undefined,
+					model: deviceInfoService.getDeviceModel(),
+					application: 'pera',
+					locale: deviceInfoService.getDeviceLocale(),
+				},
+			})
+			setDeviceID(result.id ?? null)
+		} else {
+			await updateDevice({
+				device_id: deviceID,
+				data: {
+					accounts: addresses,
+					platform: await deviceInfoService.getDevicePlatform(),
+					push_token: fcmToken ?? undefined,
+					model: deviceInfoService.getDeviceModel(),
+					locale: deviceInfoService.getDeviceLocale(),
+				},
+			})
 		}
-        
+	}
+
 	return {
-		registerDevice
+		registerDevice,
 	}
 }

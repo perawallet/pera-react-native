@@ -85,6 +85,7 @@ describe('services/device/hooks', () => {
 				push_token: 'FCM123',
 				model: 'testModel',
 				application: 'pera',
+                locale: 'testLocale',
 			},
 		})
 		expect((useAppStore as any).getState().deviceID).toBe('NEW_ID')
@@ -119,6 +120,7 @@ describe('services/device/hooks', () => {
 				platform: 'web',
 				push_token: 'TOKEN',
 				model: 'testModel',
+                locale: 'testLocale',
 			},
 		})
 		expect((useAppStore as any).getState().deviceID).toBe('DEV1')

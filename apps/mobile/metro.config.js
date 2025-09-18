@@ -21,16 +21,45 @@ const config = {
     unstable_enablePackageExports: true,
     resolveRequest: (context, moduleName, platform) => {
         if (moduleName === 'crypto') {
-            // when importing crypto, resolve to react-native-quick-crypto
+            const result = context.resolveRequest(
+                context,
+                'react-native-quick-crypto',
+                platform,
+            )
+
+            return result
+        }
+        if (moduleName === 'buffer') {
             return context.resolveRequest(
-            context,
-            'react-native-quick-crypto',
-            platform,
+                context,
+                '@craftzdog/react-native-buffer',
+                platform,
             )
         }
-        // otherwise chain to the standard Metro resolver.
-        return context.resolveRequest(context, moduleName, platform)
-    }
+        if (moduleName === 'stream') {
+            return context.resolveRequest(
+                context,
+                'readable-stream',
+                platform,
+            )
+        }
+        if (moduleName === 'base64-js') {
+            return context.resolveRequest(
+                context,
+                'react-native-quick-base64',
+                platform,
+            )
+        }
+        // else if (moduleName === 'stream') {
+        //     return context.resolveRequest(
+        //         context,
+        //         'readable-stream',
+        //         platform,
+        //     )
+        // }
+        // Optionally, chain to the standard Metro resolver.
+        return context.resolveRequest(context, moduleName, platform);
+    },
   },
   // this specifies the folder where the node_modules are
   watchFolders: [

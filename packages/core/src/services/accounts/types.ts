@@ -1,4 +1,10 @@
-import type { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
+export const DerivationTypes = {
+	Khovratovich: 32,
+	Peikert: 9,
+}
+
+export type DerivationType =
+	(typeof DerivationTypes)[keyof typeof DerivationTypes]
 
 export const AccountTypes = {
 	standard: 'standard',
@@ -13,7 +19,7 @@ export interface HDWalletDetails {
 	account: number
 	change: number
 	keyIndex: number
-	derivationType: BIP32DerivationType
+	derivationType: DerivationType
 }
 
 export interface MultiSigDetails {

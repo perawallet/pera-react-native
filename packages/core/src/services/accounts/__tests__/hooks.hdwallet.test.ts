@@ -25,7 +25,7 @@ const bip39Spies = vi.hoisted(() => {
 	}
 })
 
-vi.mock('@algorandfoundation/xhd-wallet-api', () => {
+vi.mock('@perawallet/xhdwallet', () => {
 	return {
 		BIP32DerivationType: { Peikert: 'PEIKERT', Other: 'OTHER' },
 		Encoding: { BASE64: 'BASE64' },
@@ -74,8 +74,8 @@ describe('services/accounts/useHDWallet', () => {
 		;(bip39Spies.mnemonicToSeedSync as any).mockReturnValueOnce(syncSeed)
 
 		// Prepare API responses: "PRIVKEY" and "ADDRESS"
-		const priv = new Uint8Array([80, 82, 73, 86, 75, 69, 89]).buffer
-		const addr = new Uint8Array([65, 68, 68, 82, 69, 83, 83]).buffer
+		const priv = new Uint8Array([80, 82, 73, 86, 75, 69, 89])
+		const addr = new Uint8Array([65, 68, 68, 82, 69, 83, 83])
 		apiSpies.deriveSpy.mockResolvedValueOnce(priv)
 		apiSpies.keyGenSpy.mockResolvedValueOnce(addr)
 
@@ -115,7 +115,7 @@ describe('services/accounts/useHDWallet', () => {
 		apiSpies.keyGenSpy.mockResolvedValueOnce(new Uint8Array([50]).buffer)
 
 		const { useHDWallet } = await import('../hooks.hdwallet')
-		const xhd = await import('@algorandfoundation/xhd-wallet-api')
+		const xhd = await import('@perawallet/xhdwallet')
 		const { result } = renderHook(() => useHDWallet())
 		await result.current.deriveKey({
 			mnemonic: 'x',

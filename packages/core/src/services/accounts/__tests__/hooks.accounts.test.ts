@@ -19,7 +19,7 @@ const bip39Spies = vi.hoisted(() => ({
 	mnemonicToSeed: vi.fn(async () => Buffer.from('seed_async')),
 }))
 
-vi.mock('@algorandfoundation/xhd-wallet-api', () => {
+vi.mock('@perawallet/xhdwallet', () => {
 	return {
 		BIP32DerivationType: { Peikert: 'PEIKERT' },
 		fromSeed: xhdSpies.fromSeed,
@@ -250,8 +250,8 @@ describe('services/accounts/hooks - createAccount', () => {
 		})
 
 		// XHD-API responses (ArrayBuffers) => base64('PRIVKEY'), base64('ADDRESS')
-		const priv = new Uint8Array([80, 82, 73, 86, 75, 69, 89]).buffer // 'PRIVKEY'
-		const addr = new Uint8Array([65, 68, 68, 82, 69, 83, 83]).buffer // 'ADDRESS'
+		const priv = new Uint8Array([80, 82, 73, 86, 75, 69, 89]) // 'PRIVKEY'
+		const addr = new Uint8Array([65, 68, 68, 82, 69, 83, 83]) // 'ADDRESS'
 		apiSpies.deriveSpy.mockResolvedValueOnce(priv)
 		apiSpies.keyGenSpy.mockResolvedValueOnce(addr)
 
@@ -322,8 +322,8 @@ describe('services/accounts/hooks - createAccount', () => {
 		})
 
 		// XHD-API responses
-		const priv = new Uint8Array([80, 82, 73, 86, 75, 69, 89]).buffer // 'PRIVKEY'
-		const addr = new Uint8Array([65, 68, 68, 82, 69, 83, 83]).buffer // 'ADDRESS'
+		const priv = new Uint8Array([80, 82, 73, 86, 75, 69, 89]) // 'PRIVKEY'
+		const addr = new Uint8Array([65, 68, 68, 82, 69, 83, 83]) // 'ADDRESS'
 		apiSpies.deriveSpy.mockResolvedValueOnce(priv)
 		apiSpies.keyGenSpy.mockResolvedValueOnce(addr)
 

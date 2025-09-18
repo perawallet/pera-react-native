@@ -1,15 +1,18 @@
 import { useAppStore } from '../../store'
 import { useSecureStorageService } from '../storage'
 import type { WalletAccount } from './types'
-import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
+import { BIP32DerivationTypes } from '@perawallet/xhdwallet'
 import { v7 as uuidv7 } from 'uuid'
 import { useHDWallet } from './hooks.hdwallet'
+import { decodeFromBase64, encodeToBase64 } from '../../utils/string-encoding'
+import { encodeAlgorandAddress } from '../blockchain'
 
 const MAX_ADDRESS_DISPLAY = 11
 const ADDRESS_DISPLAY_PREFIX_LENGTH = 5
 
 export const useDisplayAddress = (account: WalletAccount) => {
 	if (account.name) return account.name
+	if (!account.address) return "No Address Found"
 	if (account.address.length <= MAX_ADDRESS_DISPLAY) return account.address
 	return `${account.address.substring(0, ADDRESS_DISPLAY_PREFIX_LENGTH)}...${account.address.substring(account.address.length - ADDRESS_DISPLAY_PREFIX_LENGTH)}`
 }
@@ -40,38 +43,37 @@ export const useAccounts = () => {
 			let mnemonic = await secureStorage.getItem(rootKeyLocation)
 			if (!mnemonic) {
 				const generatedMnemonic = createMnemonic()
-				const base64Mnemonic = Buffer.from(generatedMnemonic).toString('base64')
+				const base64Mnemonic = encodeToBase64(Buffer.from(generatedMnemonic)) 
 				await secureStorage.setItem(rootKeyLocation, base64Mnemonic)
 				mnemonic = base64Mnemonic
 			}
 
 			const { address, privateKey } = await deriveKey({
-				mnemonic: Buffer.from(mnemonic, 'base64').toString('utf-8'),
+				mnemonic: decodeFromBase64(mnemonic).toString(),
 				account,
 				keyIndex,
-				derivationType: BIP32DerivationType.Peikert,
+				derivationType: BIP32DerivationTypes.Peikert,
 			})
 
 			const id = uuidv7()
 			const keyStoreLocation = `pk-${id}`
-			await secureStorage.setItem(keyStoreLocation, privateKey)
+			await secureStorage.setItem(keyStoreLocation, encodeToBase64(privateKey))
 			const newAccount: WalletAccount = {
 				id: uuidv7(),
-				address: address,
+				address: encodeAlgorandAddress(address),
 				type: 'standard',
 				hdWalletDetails: {
 					walletId: rootWalletId,
 					account: account,
 					change: 0,
 					keyIndex: keyIndex,
-					derivationType: BIP32DerivationType.Peikert,
+					derivationType: BIP32DerivationTypes.Peikert,
 				},
 				privateKeyLocation: keyStoreLocation,
 			}
 
 			accounts.push(newAccount)
 			setAccounts(accounts)
-
 			return newAccount
 		},
 		addAccount: (account: WalletAccount, privateKey?: string) => {

@@ -31,5 +31,16 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       marginBottom: theme.spacing.sm,
       color: theme.colors.textGray,
     },
+    overlayBackdrop: {
+        backgroundColor: 'rgba(52, 52, 52, 0.8)',
+    },
+    overlay: {
+        padding: theme.spacing.xl,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: theme.colors.layerGray,
+        borderRadius: theme.spacing.lg,
+        gap: theme.spacing.lg,
+    },
   };
 });
