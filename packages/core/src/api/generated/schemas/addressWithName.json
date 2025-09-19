@@ -1,0 +1,1 @@
+{"required":["address","name"],"type":"object","properties":{"address":{"title":"Address","minLength":1,"type":"string"},"name":{"title":"Name","minLength":1,"type":"string"}},"x-readme-ref-name":"AddressWithName"}

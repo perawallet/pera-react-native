@@ -1,0 +1,1 @@
+{"required":["algo_staking"],"type":"object","properties":{"algo_staking":{"title":"Algo staking","type":"boolean"}},"x-readme-ref-name":"FeatureFlagResponseSerializer.Response"}

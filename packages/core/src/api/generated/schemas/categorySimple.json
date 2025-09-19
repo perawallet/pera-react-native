@@ -1,0 +1,1 @@
+{"required":["id"],"type":"object","properties":{"id":{"title":"Id","minLength":1,"type":"string"},"title":{"title":"Title","minLength":1,"type":"string","readOnly":true},"order":{"title":"Order","type":"integer","readOnly":true}},"x-readme-ref-name":"CategorySimple"}

@@ -1,0 +1,1 @@
+export type { BulkAccountRequestSerializerRequest } from "./Request.ts";

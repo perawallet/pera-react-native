@@ -1,0 +1,1 @@
+{"required":["device_id"],"type":"object","properties":{"device_id":{"title":"Device id","type":"integer","description":"Device ID to check favorite and price alert status for"}},"x-readme-ref-name":"AssetDetailRequestSerializerV2.Request"}

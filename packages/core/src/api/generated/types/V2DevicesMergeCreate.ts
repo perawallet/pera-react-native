@@ -7,11 +7,7 @@ import type { DeviceV2MergeSerializerRequest } from "./deviceV2MergeSerializer/R
 import type { DeviceV2MergeSerializerResponse } from "./deviceV2MergeSerializer/Response.ts";
 
 export type V2DevicesMergeCreateHeaderParams = {
-    /**
-     * @description Change App Version
-     * @type string | undefined
-    */
-    "APP-VERSION"?: string;
+    "APP-VERSION"?: unknown;
 };
 
 export type V2DevicesMergeCreate201 = DeviceV2MergeSerializerResponse;

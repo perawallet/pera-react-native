@@ -12,5 +12,5 @@
     }
   },
   "include": ["**/*.ts", "**/*.tsx", "**/*.svg"],
-  "exclude": ["**/node_modules", "**/Pods"]
+  "exclude": ["**/node_modules", "**/Pods", "**/coverage"]
 }

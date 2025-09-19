@@ -8,8 +8,8 @@ import MainScreenLayout from '../../layouts/MainScreenLayout';
 
 import WalletIcon from '../../../assets/icons/wallet.svg';
 import {
+  getAccountDisplayName,
   useAccounts,
-  useDisplayAddress,
   WalletAccount,
 } from '@perawallet/core';
 import { useState } from 'react';
@@ -29,7 +29,7 @@ const NameAccountScreen = ({ route }: NameAccountScreenProps) => {
 
   const [account, setAccount] = useState<WalletAccount>(routeAccount);
   const numWallets = getAllAccounts().length;
-  const initialWalletName = useDisplayAddress(account);
+  const initialWalletName = getAccountDisplayName(account);
   const [walletDisplay, setWalletDisplay] = useState<string>(initialWalletName);
 
   const saveName = (value: string) => {

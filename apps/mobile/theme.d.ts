@@ -15,8 +15,17 @@ declare module '@rneui/themed' {
     textSonicSilver: string;
     textWhite: string;
 
-    //Button colos
+    //Button colors
     buttonPrimaryBg: string;
     buttonPrimaryText: string;
+
+    buttonHelperBg: string;
+    buttonHelperText: string;
+
+    buttonSquareBg: string;
+    buttonSquareText: string;
+
+    //Helper colors
+    helperPositive: string;
   }
 }

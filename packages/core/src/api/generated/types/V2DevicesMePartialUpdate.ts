@@ -7,11 +7,7 @@ import type { DeviceV2SerializerRequest } from "./deviceV2Serializer/Request.ts"
 import type { DeviceV2SerializerResponse } from "./deviceV2Serializer/Response.ts";
 
 export type V2DevicesMePartialUpdateHeaderParams = {
-    /**
-     * @description Change App Version
-     * @type string | undefined
-    */
-    "APP-VERSION"?: string;
+    "APP-VERSION"?: unknown;
 };
 
 export type V2DevicesMePartialUpdate200 = DeviceV2SerializerResponse;

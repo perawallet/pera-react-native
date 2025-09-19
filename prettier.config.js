@@ -11,7 +11,7 @@ export default {
   semi: false,
   singleAttributePerLine: true,
   singleQuote: true,
-  tabWidth: 1,
-  useTabs: true,
+  tabWidth: 4,
+  useTabs: false,
   vueIndentScriptAndStyle: false,
 };

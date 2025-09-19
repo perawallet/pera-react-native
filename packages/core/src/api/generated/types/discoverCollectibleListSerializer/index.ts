@@ -1,0 +1,1 @@
+export type { DiscoverCollectibleListSerializerResponse } from "./Response.ts";

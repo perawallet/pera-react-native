@@ -47,6 +47,15 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
       buttonPrimaryBg: '#27272A',
       buttonPrimaryText: '#FFFFFF',
 
+      buttonHelperBg: '#27272A',
+      buttonHelperText: '#FFFFFF',
+
+      buttonSquareBg: 'rgba(44, 183, 188, 0.12)',
+      buttonSquareText: '#1F8E9D',
+
+      //Helpers
+      helperPositive: '#1F8E9D',
+
       // States
       success: '#2CB7BC', // Alert/positive
       warning: '#FFEE55', // Link/primary (dark variant) used as generic warning
@@ -86,6 +95,15 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
       //Button
       buttonPrimaryBg: '#FFEE55',
       buttonPrimaryText: '#18181B',
+
+      buttonHelperBg: 'rgba(255, 238, 85, 0.1)',
+      buttonHelperText: '#FFEE55',
+
+      buttonSquareBg: 'rgba(44, 183, 188, 0.12)',
+      buttonSquareText: '#2CB7BC',
+
+      //Helpers
+      helperPositive: '#2CB7BC',
 
       // States
       success: '#2CB7BC', // Alert/positive

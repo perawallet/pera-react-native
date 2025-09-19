@@ -1,0 +1,1 @@
+export type { DiscoverFeaturedNFTCollectionSerializerResponse } from "./Response.ts";

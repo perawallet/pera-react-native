@@ -1,0 +1,1 @@
+export type { DiscoverNFTCollectionListSerializerResponse } from "./Response.ts";

@@ -8,7 +8,7 @@
     "lint:fix": "turbo run lint -- --fix",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "generate:api": "kubb generate && pnpm run lint && pnpm run format",
-    "test": "turbo run test"
+    "test": "turbo run test -- --coverage"
   },
   "devDependencies": {
     "@kubb/cli": "catalog:",

@@ -1,0 +1,1 @@
+{"required":["logo","name"],"type":"object","properties":{"name":{"title":"Name","minLength":1,"type":"string"},"logo":{"title":"Logo","minLength":1,"type":"string","format":"uri"}},"x-readme-ref-name":"Service"}

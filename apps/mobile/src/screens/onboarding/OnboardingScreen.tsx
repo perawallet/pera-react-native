@@ -1,7 +1,7 @@
 import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useStyles } from './styles';
-import { LinearProgress, Text, useTheme } from '@rneui/themed';
+import { Text, useTheme } from '@rneui/themed';
 import PeraView from '../../components/view/PeraView';
 import MainScreenLayout from '../../layouts/MainScreenLayout';
 import PanelButton from '../../components/panel-button/PanelButton';

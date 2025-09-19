@@ -1,0 +1,1 @@
+{"required":["quote"],"type":"object","properties":{"quote":{"title":"Quote","type":"integer"}},"x-readme-ref-name":"PrepareTransactionsV2Serializer.Request"}

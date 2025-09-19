@@ -4,7 +4,7 @@
 */
 
 
-export type NotificationV2SerializerResponseTypeEnum = "transaction-sent" | "transaction-received" | "transaction-failed" | "asset-support-request" | "asset-support-success" | "asset-transaction-sent" | "asset-transaction-received" | "asset-transaction-failed" | "broadcast" | "rekey-address" | "None" | "tinyman-v1-1-swap" | "tinyman-v1-1-mint" | "tinyman-v1-1-burn" | "inbox-asset-transaction-received" | "inbox-asset-transaction-sent" | "inbox-asset-claimed" | "inbox-asset-rejected" | "custom-text-message" | "favorited-asset-price-change" | "algo-price-change" | "favorited-asset-is-top-mover" | "card-payment" | "card-refund" | "card-spend-incentive" | "card-withdraw" | "card-deposit";
+export type NotificationV2SerializerResponseTypeEnum = "transaction-sent" | "transaction-received" | "transaction-failed" | "asset-support-request" | "asset-support-success" | "asset-transaction-sent" | "asset-transaction-received" | "asset-transaction-failed" | "broadcast" | "rekey-address" | "None" | "tinyman-v1-1-swap" | "tinyman-v1-1-mint" | "tinyman-v1-1-burn" | "inbox-asset-transaction-received" | "inbox-asset-transaction-sent" | "inbox-asset-claimed" | "inbox-asset-rejected" | "custom-text-message" | "favorited-asset-price-change" | "algo-price-change" | "favorited-asset-is-top-mover" | "card-payment" | "card-refund" | "card-spend-incentive" | "card-withdraw" | "card-deposit" | "swap-large-buy" | "swap-large-sell" | "asset-large-volume" | "triggered-via-endpoint" | "lucky-spin-cooldown-ended" | "lucky-spin-bonus-earned" | "lucky-spin-streak-warning";
 
 export type NotificationV2SerializerResponse = {
     /**

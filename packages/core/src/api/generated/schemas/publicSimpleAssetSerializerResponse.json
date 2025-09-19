@@ -1,0 +1,1 @@
+{"required":["asset_id","verification_tier"],"type":"object","properties":{"asset_id":{"title":"Asset id","maximum":9223372036854776000,"minimum":0,"type":"integer"},"verification_tier":{"title":"Verification tier","type":"string","enum":["verified","unverified","suspicious"]}},"x-readme-ref-name":"PublicSimpleAssetSerializer.Response"}

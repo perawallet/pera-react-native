@@ -1,0 +1,1 @@
+{"required":["encrypted_content"],"type":"object","properties":{"encrypted_content":{"title":"Encrypted content","type":"string"}},"x-readme-ref-name":"BackupRetrieveUpdateDestroySerializer.Request"}

@@ -1,0 +1,1 @@
+export type { AssetDetailRequestSerializerV2Request } from "./Request.ts";
