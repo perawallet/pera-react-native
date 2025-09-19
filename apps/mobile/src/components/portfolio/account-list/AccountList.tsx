@@ -28,7 +28,7 @@ const AccountList = () => {
   return (
     <PeraView style={themeStyle.container}>
       <PeraView style={themeStyle.titleBar}>
-        <Text>Accounts</Text>
+        <Text h4>Accounts</Text>
         <PeraView style={themeStyle.titleBarButtonContainer}>
           <TouchableOpacity
             style={themeStyle.sortButton}

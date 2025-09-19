@@ -1,0 +1,1 @@
+{"properties":{"offset":{"description":"Timestamp offset in seconds.","type":"integer","x-go-type":"uint64"}},"required":["offset"],"type":"object"}

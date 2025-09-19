@@ -6,6 +6,10 @@ import { config as productionConfig } from './production'
 export const configSchema = z.object({
     mainnetBackendUrl: z.url(),
     testnetBackendUrl: z.url(),
+    mainnetAlgodUrl: z.url(),
+    testnetAlgodUrl: z.url(),
+    mainnetIndexerUrl: z.url(),
+    testnetIndexerUrl: z.url(),
 })
 
 export type Config = z.infer<typeof configSchema>

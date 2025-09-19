@@ -1,0 +1,1 @@
+{"properties":{"current-round":{"description":"Round at which the results were computed.","type":"integer"},"transaction":{"$ref":"#/components/schemas/Transaction"}},"required":["current-round","transaction"],"type":"object"}

@@ -1,0 +1,1 @@
+{"description":"The type of hash function used to create the proof, must be one of: \n* sha512_256 \n* sha256","enum":["sha512_256","sha256"],"type":"string","x-readme-ref-name":"Hashtype"}

@@ -1,9 +1,5 @@
-import ky, { type SearchParamsOption, type KyInstance } from 'ky'
-import { config } from '../config/main'
-import { Networks } from '../services/blockchain'
+import type { SearchParamsOption, KyInstance } from 'ky'
 import { useAppStore } from '../store/app-store'
-
-const clients = new Map<string, KyInstance>()
 
 function toSearchParamsOption(
     input: Record<string, unknown> | undefined,
@@ -56,69 +52,43 @@ export interface ResponseConfig<TData = unknown> {
 
 export type ResponseErrorConfig<TError = unknown> = TError
 
-const mainnetClient = ky.create({
-    //TODO add a beforeRequest hook here to inject headers
-    // hooks: {
-    // 	beforeRequest: [
-    // 		request => {
-    // 			request.headers.set('Content-Type', 'application/json')
-    // 		},
-    // 	],
-    // },
-    prefixUrl: config.mainnetBackendUrl,
-})
-const testnetClient = ky.create({
-    //TODO add a beforeRequest hook here to inject headers
-    // hooks: {
-    // 	beforeRequest: [
-    // 		request => {
-    // 			request.headers.set('Content-Type', 'application/json')
-    // 		},
-    // 	],
-    // },
-    prefixUrl: config.testnetBackendUrl,
-})
+export const createFetchClient = (clients: Map<string, KyInstance>) => {
+    return async <
+        TData,
+        _TError = unknown,
+        TVariables = unknown,
+    >(
+        requestConfig: RequestConfig<TVariables>,
+    ): Promise<ResponseConfig<TData>> => {
+        if (!requestConfig.url) {
+            throw new Error('URL is required')
+        }
 
-clients.set(Networks.mainnet, mainnetClient)
-clients.set(Networks.testnet, testnetClient)
+        const network = useAppStore(state => state.network)
+        const client = clients.get(network)
 
-export const fetchClient = async <
-    TData,
-    _TError = unknown,
-    TVariables = unknown,
->(
-    requestConfig: RequestConfig<TVariables>,
-): Promise<ResponseConfig<TData>> => {
-    if (!requestConfig.url) {
-        throw new Error('URL is required')
-    }
+        if (!client) {
+            throw new Error('Could not get KY client')
+        }
 
-    const network = useAppStore(state => state.network)
-    const client = clients.get(network)
+        const path = requestConfig.url.startsWith('/')
+            ? requestConfig.url.slice(1)
+            : requestConfig.url
 
-    if (!client) {
-        throw new Error('Could not get KY client')
-    }
+        const response = await client(path, {
+            searchParams: toSearchParamsOption(requestConfig.params),
+            method: requestConfig.method,
+            json: requestConfig.data,
+            signal: requestConfig.signal,
+            headers: requestConfig.headers,
+        })
 
-    const path = requestConfig.url.startsWith('/')
-        ? requestConfig.url.slice(1)
-        : requestConfig.url
+        const data = await response.json<TData>()
 
-    const response = await client(path, {
-        searchParams: toSearchParamsOption(requestConfig.params),
-        method: requestConfig.method,
-        json: requestConfig.data,
-        signal: requestConfig.signal,
-        headers: requestConfig.headers,
-    })
-
-    const data = await response.json<TData>()
-
-    return {
-        data,
-        status: response.status,
-        statusText: response.statusText,
+        return {
+            data,
+            status: response.status,
+            statusText: response.statusText,
+        }
     }
 }
-
-export default fetchClient

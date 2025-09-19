@@ -1,0 +1,1 @@
+{"properties":{"blockHash":{"description":"Block header hash.","type":"string"}},"required":["blockHash"],"type":"object"}

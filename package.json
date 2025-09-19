@@ -7,7 +7,10 @@
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint -- --fix",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "generate:api": "kubb generate && pnpm run lint && pnpm run format",
+    "generate:all-apis": "kubb generate --config backend-kubb.config.ts && kubb generate --config algod-kubb.config.ts && kubb generate --config indexer-kubb.config.ts",
+    "generate:backend-api": "kubb generate --config backend-kubb.config.ts",
+    "generate:algod-api": "kubb generate --config algod-kubb.config.ts",
+    "generate:indexer-api": "kubb generate --config indexer-kubb.config.ts",
     "test": "turbo run test -- --coverage"
   },
   "devDependencies": {
@@ -19,7 +22,9 @@
     "@kubb/plugin-ts": "catalog:",
     "@kubb/plugin-zod": "catalog:",
     "@vitest/coverage-v8": "catalog:",
+    "@perawallet/eslint-config": "workspace:*",
     "eslint": "catalog:",
+    "eslint-plugin-erasable-syntax-only": "^0.3.1",
     "prettier": "catalog:",
     "turbo": "^2.5.6",
     "vitest": "catalog:"

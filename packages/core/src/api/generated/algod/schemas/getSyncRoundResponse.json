@@ -1,0 +1,1 @@
+{"properties":{"round":{"description":"The minimum sync round for the ledger.","type":"integer","x-go-type":"basics.Round"}},"required":["round"],"type":"object"}

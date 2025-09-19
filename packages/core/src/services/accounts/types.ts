@@ -10,6 +10,7 @@ export const AccountTypes = {
     standard: 'standard',
     ledger: 'ledger',
     multisig: 'multisig',
+    watch: 'watch'
 } as const
 
 export type AccountType = (typeof AccountTypes)[keyof typeof AccountTypes]
@@ -27,11 +28,6 @@ export interface MultiSigDetails {
     addresses: string[]
 }
 
-export interface AccountBalance {
-    assetId: string
-    balance: string
-}
-
 export interface WalletAccount {
     id?: string
     name?: string
@@ -40,5 +36,5 @@ export interface WalletAccount {
     privateKeyLocation?: string
     hdWalletDetails?: HDWalletDetails
     multisigDetails?: MultiSigDetails
-    balances?: AccountBalance[]
+    rekeyAddress?: string
 }

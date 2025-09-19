@@ -1,0 +1,1 @@
+{"description":"An catchpoint abort response.","properties":{"catchup-message":{"description":"Catchup abort response string","type":"string"}},"required":["catchup-message"],"type":"object"}

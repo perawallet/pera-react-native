@@ -4,6 +4,7 @@ packages:
 
 catalog:
   '@algorandfoundation/algokit-utils': ^9.1.2
+  '@algorandfoundation/xhd-wallet-api': ^1.0.3
   '@babel/runtime': ^7.28.4
   '@kubb/cli': ^3.18.3
   '@kubb/core': ^3.18.3

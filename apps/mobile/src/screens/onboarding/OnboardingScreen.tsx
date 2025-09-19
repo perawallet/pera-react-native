@@ -22,18 +22,23 @@ const OnboardingScreen = () => {
   const { theme } = useTheme();
   const [processing, setProcessing] = useState(false);
 
-  const createAccountHandler = async () => {
-    setProcessing(true);
+  const doCreate = async () => {
     try {
-      const account = await createAccount({ account: 0, keyIndex: 0 });
-      navigation.push('NameAccount', { account: account });
+      const account = await createAccount({ account: 0, keyIndex: 0 })
+      navigation.push('NameAccount', { account: account })
     } finally {
-      setProcessing(false);
+      setProcessing(false)
     }
-  };
+  }
+
+  const createAccountHandler = async () => {
+    setProcessing(true)
+    doCreate()
+  }
+
   const importAccount = () => {
     Alert.alert('Not yet implemented');
-  };
+  }
 
   return (
     <MainScreenLayout style={styles.layout} fullScreen>

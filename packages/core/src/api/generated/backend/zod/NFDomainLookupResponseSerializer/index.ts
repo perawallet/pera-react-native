@@ -1,0 +1,1 @@
+export type { NFDomainLookupResponseSerializerResponseSchema } from "./responseSchema.ts";

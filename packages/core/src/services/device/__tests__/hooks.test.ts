@@ -11,12 +11,12 @@ const api = vi.hoisted(() => {
 })
 
 // Mock generated API composables used by the hook
-vi.mock('@api/generated/composables/useV1DevicesCreate', () => {
+vi.mock('@api/generated/backend/hooks/useV1DevicesCreate', () => {
     return {
         useV1DevicesCreate: () => ({ mutateAsync: api.createSpy }),
     }
 })
-vi.mock('@api/generated/composables/useV1DevicesPartialUpdate', () => {
+vi.mock('@api/generated/backend/hooks/useV1DevicesPartialUpdate', () => {
     return {
         useV1DevicesPartialUpdate: () => ({ mutateAsync: api.updateSpy }),
     }

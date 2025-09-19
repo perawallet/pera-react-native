@@ -1,0 +1,1 @@
+{"description":"An catchpoint start response.","properties":{"catchup-message":{"description":"Catchup start response string","type":"string"}},"required":["catchup-message"],"type":"object"}

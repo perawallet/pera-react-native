@@ -9,11 +9,14 @@ import {
   WalletAccount,
 } from '@perawallet/core';
 
-import WalletIcon from '../../../../assets/icons/wallet-with-algo.svg';
+import WalletIcon from '../../../../assets/icons/wallet-in-circle.svg';
+import LedgerIcon from '../../../../assets/icons/ledger-in-circle.svg';
+import WatchIcon from '../../../../assets/icons/eye-in-circle.svg';
+
 import { TouchableOpacity } from 'react-native';
-import PeraView from '@components/view/PeraView';
+import PeraView from '../../../components/view/PeraView';
 import { useMemo } from 'react';
-import CurrencyDisplay from '@components/currency-display/CurrencyDisplay';
+import CurrencyDisplay from '../../../components/currency-display/CurrencyDisplay';
 
 type AccountListRowProps = {
   account: WalletAccount;
@@ -27,6 +30,16 @@ const AccountListRow = ({ account }: AccountListRowProps) => {
     () => truncateAlgorandAddress(account.address),
     [account],
   );
+  const icon = useMemo(
+    () => {
+      if (account.type === 'ledger') return <LedgerIcon />
+      if (account.type === 'standard') return <WalletIcon />
+      if (account.type === 'watch') return <WatchIcon />
+    },
+    [account],
+  );
+
+  const showAltAddress = account.rekeyAddress || account.name?.length
 
   //TODO pull from server/node/somewhere
   const algoAmount = '0';
@@ -39,21 +52,21 @@ const AccountListRow = ({ account }: AccountListRowProps) => {
   return (
     <TouchableOpacity style={themeStyle.container} onPress={goToAccount}>
       <WalletIcon />
-      <PeraView style={themeStyle.nameContainer}>
-        <PeraView>
-          <Text>{displayName}</Text>
-          <Text>{displayAddress}</Text>
+      <PeraView style={themeStyle.textContainer}>
+        <PeraView style={themeStyle.nameContainer}>
+          <Text h4>{displayName}</Text>
+          {showAltAddress && <Text style={themeStyle.secondaryText}>{displayAddress}</Text>}
         </PeraView>
         <PeraView style={themeStyle.balanceContainer}>
           <CurrencyDisplay
+            h4
             value={algoAmount}
             precision={2}
             currencySymbol="A"
           />
-          <CurrencyDisplay value={usdAmount} precision={2} currencySymbol="$" />
+          <CurrencyDisplay style={themeStyle.secondaryText} value={usdAmount} precision={2} currencySymbol="$" />
         </PeraView>
       </PeraView>
-      <ListItem.Chevron />
     </TouchableOpacity>
   );
 };

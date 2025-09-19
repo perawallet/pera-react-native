@@ -1,6 +1,6 @@
-import { useV1DevicesCreate } from '../../api/generated/composables/useV1DevicesCreate'
+import { useV1DevicesCreate } from '../../api/generated/backend/hooks/useV1DevicesCreate'
 import { useAppStore } from '../../store'
-import { useV1DevicesPartialUpdate } from '../../api/generated/composables/useV1DevicesPartialUpdate'
+import { useV1DevicesPartialUpdate } from '../../api/generated/backend/hooks/useV1DevicesPartialUpdate'
 import { useDeviceInfoService } from './platform-service'
 
 export const useDevice = () => {

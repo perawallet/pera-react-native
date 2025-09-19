@@ -12,10 +12,10 @@
   },
   "dependencies": {
     "@algorandfoundation/algokit-utils": "catalog:",
+    "@algorandfoundation/xhd-wallet-api": "catalog:",
     "@craftzdog/react-native-buffer": "^6.1.0",
     "@notifee/react-native": "^9.1.8",
     "@perawallet/core": "workspace:*",
-    "@perawallet/xhdwallet": "workspace:*",
     "@react-native-firebase/app": "^23.3.1",
     "@react-native-firebase/crashlytics": "^23.3.1",
     "@react-native-firebase/messaging": "^23.3.1",

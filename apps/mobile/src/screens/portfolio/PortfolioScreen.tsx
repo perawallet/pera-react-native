@@ -41,7 +41,7 @@ const PortfolioScreen = () => {
         <CurrencyDisplay
           h1
           value={portfolioValue}
-          currencySymbol=""
+          currencySymbol="A"
           precision={2}
         />
         <CurrencyDisplay

@@ -26,6 +26,7 @@ export const useStyles = makeStyles(theme => ({
   addButton: {
     color: theme.colors.buttonSquareText,
     backgroundColor: theme.colors.buttonSquareBg,
+    borderRadius: theme.spacing.sm,
     width: 40,
     height: 40,
   },

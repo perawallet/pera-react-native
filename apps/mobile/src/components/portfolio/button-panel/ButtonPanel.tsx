@@ -16,8 +16,8 @@ const ButtonPanel = () => {
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
   const themeStyle = useStyles();
 
-  const goToPage = (name: string) => {
-    navigation.replace(name);
+  const goToRootPage = (name: string) => {
+    navigation.replace('Home', {screen: name});
   };
 
   const notImplemented = () => {
@@ -30,15 +30,15 @@ const ButtonPanel = () => {
         buttonStyle={themeStyle.blackButton}
         title="Swap"
         icon={<SwapIcon color={theme.colors.buttonHelperText} />}
-        onPress={() => goToPage('Swap')}
+        onPress={() => goToRootPage('Swap')}
       />
-      <RoundButton title="Buy" icon={<BuyIcon />} onPress={notImplemented} />
+      <RoundButton title="Buy" icon={<BuyIcon color={theme.colors.textMain} />} onPress={notImplemented} />
       <RoundButton
         title="Stake"
-        icon={<StakeIcon />}
-        onPress={() => goToPage('Staking')}
+        icon={<StakeIcon color={theme.colors.textMain} />}
+        onPress={() => goToRootPage('Staking')}
       />
-      <RoundButton title="Send" icon={<SendIcon />} onPress={notImplemented} />
+      <RoundButton title="Send" icon={<SendIcon color={theme.colors.textMain} />} onPress={notImplemented} />
     </PeraView>
   );
 };

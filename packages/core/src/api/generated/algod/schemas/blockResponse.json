@@ -1,0 +1,1 @@
+{"properties":{"block":{"description":"Block header data.","properties":{},"type":"object","x-algorand-format":"BlockHeader"},"cert":{"description":"Optional certificate object. This is only included when the format is set to message pack.","properties":{},"type":"object","x-algorand-format":"BlockCertificate"}},"required":["block"],"type":"object"}

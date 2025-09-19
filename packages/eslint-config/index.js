@@ -7,7 +7,7 @@ module.exports = {
     "eslint:recommended",
     "plugin:@typescript-eslint/recommended",
     "prettier",
-    "plugin:esling-plugin-erasable-syntax-only/recomended"
+    "plugin:erasable-syntax-only/recommended"
   ],
   plugins: ["@typescript-eslint"],
   parserOptions: {
@@ -17,5 +17,5 @@ module.exports = {
   rules: {
     "@typescript-eslint/no-non-null-assertion": "off",
   },
-  globalIgnores: ['coverage/*']
+  ignorePatterns: ["coverage/*"]
 };

@@ -1,0 +1,2 @@
+export type { MultipleAccountWealthBalanceHistoryRequestSerializerRequestSchema } from "./requestSchema.ts";
+export { multipleAccountWealthBalanceHistoryRequestSerializerRequestSchema } from "./requestSchema.ts";
