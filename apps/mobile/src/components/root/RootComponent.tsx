@@ -1,6 +1,6 @@
-import { useAppStore, useDevice } from '@perawallet/core';
-import { useEffect, useMemo } from 'react';
-import { StatusBar, useColorScheme } from 'react-native';
+import { useAppStore, useDevice, usePolling } from '@perawallet/core';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { AppState, StatusBar, useColorScheme } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { MainRoutes } from '../../routes/routes';
 import { getNavigationTheme, getTheme } from '../../theme/theme';
@@ -18,9 +18,38 @@ export const RootComponent = () => {
   const theme = getTheme(isDarkMode ? 'dark' : 'light');
   const navTheme = getNavigationTheme(isDarkMode ? 'dark' : 'light');
   const { registerDevice } = useDevice();
+  const { startPolling, stopPolling } = usePolling();
+
+  const appState = useRef(AppState.currentState)
 
   useEffect(() => {
-    registerDevice();
+    registerDevice()
+
+    startPolling()
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === 'active'
+      ) {
+        console.log("STARTING")
+        startPolling()
+      }
+
+      else if (
+        appState.current  === 'active' &&
+        nextAppState.match(/inactive|background/)
+      ) {
+        console.log("STOPPING")
+        stopPolling()
+      }
+
+      appState.current = nextAppState;
+    })
+
+    return () => {
+      stopPolling()
+      subscription.remove();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -21,11 +21,14 @@ import {
     partializeDeviceSlice,
     type DeviceSlice,
 } from '../services/device/store'
+import { createPollingSlice, partializePollingSlice, type PollingSlice } from '../services/polling/store'
 
 export type AppState = SettingsSlice &
     AccountsSlice &
     BlockchainSlice &
-    DeviceSlice
+    DeviceSlice &
+    PollingSlice
+
 export const useAppStore = create<AppState>()(
     persist(
         (...a) => ({
@@ -33,6 +36,7 @@ export const useAppStore = create<AppState>()(
             ...createBlockchainSlice(...a),
             ...createAccountsSlice(...a),
             ...createDeviceSlice(...a),
+            ...createPollingSlice(...a),
         }),
         {
             name: 'app-store',
@@ -43,6 +47,7 @@ export const useAppStore = create<AppState>()(
                 ...partializeBlockchainSlice(state),
                 ...partializeAccountsSlice(state),
                 ...partializeDeviceSlice(state),
+                ...partializePollingSlice(state),
             }),
         },
     ),
