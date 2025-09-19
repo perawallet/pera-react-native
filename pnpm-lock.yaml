@@ -116,12 +116,18 @@ importers:
       '@kubb/plugin-zod':
         specifier: 'catalog:'
         version: 3.18.3(@kubb/react@3.18.3)(ajv@8.17.1)(encoding@0.1.13)
+      '@perawallet/eslint-config':
+        specifier: workspace:*
+        version: link:packages/eslint-config
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 2.1.9(vitest@2.1.9(@types/node@24.4.0)(jsdom@27.0.0(postcss@8.5.6))(lightningcss@1.27.0)(msw@2.11.2(@types/node@24.4.0)(typescript@5.9.2))(terser@5.44.0))
       eslint:
         specifier: 'catalog:'
         version: 8.57.1
+      eslint-plugin-erasable-syntax-only:
+        specifier: ^0.3.1
+        version: 0.3.1(@typescript-eslint/parser@7.18.0(eslint@8.57.1)(typescript@5.9.2))(eslint@8.57.1)(typescript@5.9.2)
       prettier:
         specifier: 'catalog:'
         version: 3.6.2
