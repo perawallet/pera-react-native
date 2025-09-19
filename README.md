@@ -1,33 +1,99 @@
-# `Turborepo` Vite starter
+# Pera Monorepo
 
-This is a community-maintained example. If you experience a problem, please submit a pull request with a fix. GitHub Issues will be closed.
+A concise guide to structure, setup, and daily commands.
 
-## Using this example
+## Prerequisites
 
-Run the following command:
+- Node.js >= 20 and pnpm 10.15+ (see packageManager in [`package.json`](package.json))
+- iOS: Xcode 15+, CocoaPods via Bundler (Ruby), iOS Simulator
+- Android: Android Studio + SDKs, JDK 17, emulator or device
+- macOS: Watchman for fast reloads
+
+## Install
 
 ```sh
-npx create-turbo@latest -e with-vite
+pnpm install
+# First time iOS only
+(cd apps/mobile/ios && bundle install && bundle exec pod install)
 ```
 
-## What's inside?
+## Run the mobile app
 
-This Turborepo includes the following packages and apps:
+In one terminal start Metro:
 
-### Apps and Packages
+```sh
+pnpm --filter mobile start
+```
 
-- `docs`: a vanilla [vite](https://vitejs.dev) ts app
-- `web`: another vanilla [vite](https://vitejs.dev) ts app
-- `@repo/ui`: a stub component & utility library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: shared `eslint` configurations
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+In another terminal run a platform target:
 
-Each package and app is 100% [TypeScript](https://www.typescriptlang.org/).
+```sh
+# iOS
+pnpm --filter mobile ios
 
-### Utilities
+# Android
+pnpm --filter mobile android
+```
 
-This Turborepo has some additional tools already setup for you:
+Tip: you can also run these from the app folder:
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+```sh
+pnpm -C apps/mobile start|ios|android
+```
+
+## Workspace layout
+
+- apps/mobile — React Native app scaffold and screens
+- packages/core — shared domain/services and generated API clients
+  - src/api/generated/(backend|algod|indexer) — outputs from Kubb
+  - src/services — slices of functionality (aka features)
+  - src/config — per-environment config
+  - src/store — shared state (uses zustand)
+  - src/platform - a set of interfaces each platform will need to implement to provide platform specific implementations
+- packages/eslint-config — shared ESLint rules
+- packages/typescript-config — shared tsconfig bases
+- packages/xhdwallet — HD wallet crypto helpers (this is a modified version of @algorandfoundation/xhd-wallet-api which isn't babel friendly)
+- specs — OpenAPI specs used for generation
+
+See workspace definition in [`pnpm-workspace.yaml`](pnpm-workspace.yaml).
+
+## Tooling
+
+- Task runner/cache: Turborepo (scripts in [`package.json`](package.json))
+- Formatting: Prettier
+- Linting: ESLint with shared config from [`packages/eslint-config`](packages/eslint-config/index.js)
+- TypeScript project references via [`packages/typescript-config`](packages/typescript-config/package.json)
+- API codegen: Kubb with configs [`backend-kubb.config.ts`](backend-kubb.config.ts), [`algod-kubb.config.ts`](algod-kubb.config.ts), [`indexer-kubb.config.ts`](indexer-kubb.config.ts); specs live in [`specs/`](specs/backend-openapi.json)
+
+Generate or refresh all API clients:
+
+```sh
+pnpm run generate:all-apis
+```
+
+This writes typed clients, zod schemas, msw mocks, and React Query hooks under:
+
+- packages/core/src/api/generated/backend
+- packages/core/src/api/generated/algod
+- packages/core/src/api/generated/indexer
+
+Clients are wired to thin query clients in core, e.g. [`packages/core/src/api/backend-query-client.ts`](packages/core/src/api/backend-query-client.ts), [`packages/core/src/api/algod-query-client.ts`](packages/core/src/api/algod-query-client.ts), [`packages/core/src/api/indexer-query-client.ts`](packages/core/src/api/indexer-query-client.ts).
+
+## Common commands (root)
+
+```sh
+pnpm build          # turbo run build across packages
+pnpm test           # turbo run test -- --coverage
+pnpm lint           # turbo run lint
+pnpm lint:fix       # turbo run lint -- --fix
+pnpm format         # prettier --write
+```
+
+## Development patterns
+
+- Do not call backends directly in the app; use generated React Query hooks from core.
+- Keep cross-platform logic in core; keep native/platform glue and UI in the app.
+- Follow shared lint/format; run CI-equivalent locally via the commands above.
+- Regenerate API clients whenever a spec in [`specs/`](specs/backend-openapi.json) changes.
+
+For app-specific notes, see [`apps/mobile/README.md`](apps/mobile/README.md) and for library details see [`packages/core`](packages/core/src/index.ts).

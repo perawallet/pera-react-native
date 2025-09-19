@@ -1,97 +1,77 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# Pera Mobile
 
-# Getting Started
+Minimal RN quickstart for this monorepo.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## Prerequisites
+- Node.js >= 20 and pnpm 10+
+- iOS: Xcode 15+, Ruby bundler + CocoaPods
+- Android: Android Studio + SDKs, JDK 17
 
-## Step 1: Start Metro
-
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
-
-To start the Metro dev server, run the following command from the root of your React Native project:
-
-```sh
-# Using npm
-npm start
-
-# OR using Yarn
-yarn start
-```
-
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
+## Install
 
 ```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
+pnpm install
+# iOS first time / after native deps change
+(cd apps/mobile/ios && bundle install && bundle exec pod install)
 ```
 
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+## Run
 
 ```sh
-bundle install
+# iOS
+pnpm --filter mobile ios
+# Android
+pnpm --filter mobile android
 ```
 
-Then, and every time you update your native dependencies, run:
+From the app folder:
 
 ```sh
-bundle exec pod install
+pnpm -C apps/mobile start|ios|android
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+## Code structure
+
+- App entry: [apps/mobile/src/App.tsx](apps/mobile/src/App.tsx)
+- Shared logic via Core package: [packages/core/src/index.ts](packages/core/src/index.ts)
+- src/screens - top level navigation destinations
+- src/components - any UI elements/widgets/shared components.  Note the RootComponent here which does some heavy lifting.
+- src/layouts - top level layout components
+- src/routes - the react navigation route structure
+- src/platform - the react native implementation of the core package platform interfaces
+- src/theme - the react native elements theme structure (and theme.d.ts for quality of life extensions)
+
+Note that various core modules are resolved to react query specific implementations in babel/metro config
+
+React Query is provided by [QueryProvider()](apps/mobile/src/providers/QueryProvider.tsx:25) using a shared [queryClient](apps/mobile/src/providers/QueryProvider.tsx:9).
+
+## Path aliases
+
+Keep Babel and TS paths in sync:
+
+- [babel.config.js](apps/mobile/babel.config.js)
+- [tsconfig.json](apps/mobile/tsconfig.json)
+
+Aliases include @components/*, @providers/*, @routes/*, @screens/*, @assets/*.
+
+NOTE at time of writing this works in VS Code, but when deployed on the device these break (more babel/metro debugging required)
+
+## Styling
+
+We use the React Native Elements package for basic widgets and rely on the themed version for theming.  Use makeStyles to generate stylesheets for fast access.
+
+## Firebase
+
+The project includes:
+- [ios/GoogleService-Info.plist](apps/mobile/ios/GoogleService-Info.plist)
+- [android/app/google-services.json](apps/mobile/android/app/google-services.json)
+
+Replace these for your environment if needed.
+
+## Scripts
 
 ```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
+pnpm --filter mobile lint
+pnpm --filter mobile test
+pnpm --filter mobile test:watch
 ```
-
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
-
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
-
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
