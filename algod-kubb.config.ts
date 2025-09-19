@@ -33,7 +33,7 @@ export default defineConfig(() => {
             }),
             pluginReactQuery({
                 client: {
-                    importPath: '../../algod-query-client',
+                    importPath: '../../../algod-query-client',
                 },
                 output: {
                     path: 'hooks',
