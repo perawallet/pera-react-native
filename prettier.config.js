@@ -13,5 +13,4 @@ export default {
   singleQuote: true,
   tabWidth: 4,
   useTabs: false,
-  vueIndentScriptAndStyle: false,
 };
