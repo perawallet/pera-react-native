@@ -3,8 +3,8 @@
 * Do not edit manually.
 */
 
-import fetch from "../../algod-query-client";
-import type { RequestConfig, ResponseErrorConfig } from "../../algod-query-client";
+import fetch from "../../../algod-query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { GetReadyQueryResponse, GetReady500, GetReady503 } from "../types/GetReady.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
 import { getReadyQueryResponseSchema } from "../zod/getReadySchema.ts";

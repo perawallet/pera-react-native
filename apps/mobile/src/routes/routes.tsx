@@ -15,7 +15,7 @@ const TabBarStack = createBottomTabNavigator({
     headerShown: false,
     tabBarStyle: {
       backgroundColor: theme.colors.background,
-      borderTopWidth: 0
+      borderTopWidth: 0,
     },
     tabBarActiveTintColor: theme.colors.primary,
     tabBarInactiveTintColor: theme.colors.text,

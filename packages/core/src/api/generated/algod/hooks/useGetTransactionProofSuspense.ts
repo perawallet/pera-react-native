@@ -3,8 +3,8 @@
 * Do not edit manually.
 */
 
-import fetch from "../../algod-query-client";
-import type { RequestConfig, ResponseErrorConfig } from "../../algod-query-client";
+import fetch from "../../../algod-query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { GetTransactionProofQueryResponse, GetTransactionProofPathParams, GetTransactionProofQueryParams, GetTransactionProof400, GetTransactionProof401, GetTransactionProof404, GetTransactionProof500 } from "../types/GetTransactionProof.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
 import { getTransactionProofQueryResponseSchema } from "../zod/getTransactionProofSchema.ts";

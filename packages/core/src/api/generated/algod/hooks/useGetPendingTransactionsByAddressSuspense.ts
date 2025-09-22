@@ -3,8 +3,8 @@
 * Do not edit manually.
 */
 
-import fetch from "../../algod-query-client";
-import type { RequestConfig, ResponseErrorConfig } from "../../algod-query-client";
+import fetch from "../../../algod-query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { GetPendingTransactionsByAddressQueryResponse, GetPendingTransactionsByAddressPathParams, GetPendingTransactionsByAddressQueryParams, GetPendingTransactionsByAddress400, GetPendingTransactionsByAddress401, GetPendingTransactionsByAddress500, GetPendingTransactionsByAddress503 } from "../types/GetPendingTransactionsByAddress.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
 import { getPendingTransactionsByAddressQueryResponseSchema } from "../zod/getPendingTransactionsByAddressSchema.ts";

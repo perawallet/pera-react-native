@@ -3,8 +3,8 @@
 * Do not edit manually.
 */
 
-import fetch from "../../algod-query-client";
-import type { RequestConfig, ResponseErrorConfig } from "../../algod-query-client";
+import fetch from "../../../algod-query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { AddParticipationKeyMutationRequest, AddParticipationKeyMutationResponse, AddParticipationKey400, AddParticipationKey401, AddParticipationKey404, AddParticipationKey500, AddParticipationKey503 } from "../types/AddParticipationKey.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
 import { addParticipationKeyMutationResponseSchema, addParticipationKeyMutationRequestSchema } from "../zod/addParticipationKeySchema.ts";

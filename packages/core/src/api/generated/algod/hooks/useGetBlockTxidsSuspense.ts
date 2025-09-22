@@ -3,8 +3,8 @@
 * Do not edit manually.
 */
 
-import fetch from "../../algod-query-client";
-import type { RequestConfig, ResponseErrorConfig } from "../../algod-query-client";
+import fetch from "../../../algod-query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { GetBlockTxidsQueryResponse, GetBlockTxidsPathParams, GetBlockTxids400, GetBlockTxids401, GetBlockTxids404, GetBlockTxids500 } from "../types/GetBlockTxids.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
 import { getBlockTxidsQueryResponseSchema } from "../zod/getBlockTxidsSchema.ts";

@@ -17,7 +17,7 @@ const ButtonPanel = () => {
   const themeStyle = useStyles();
 
   const goToRootPage = (name: string) => {
-    navigation.replace('Home', {screen: name});
+    navigation.replace('Home', { screen: name });
   };
 
   const notImplemented = () => {
@@ -32,13 +32,21 @@ const ButtonPanel = () => {
         icon={<SwapIcon color={theme.colors.buttonHelperText} />}
         onPress={() => goToRootPage('Swap')}
       />
-      <RoundButton title="Buy" icon={<BuyIcon color={theme.colors.textMain} />} onPress={notImplemented} />
+      <RoundButton
+        title="Buy"
+        icon={<BuyIcon color={theme.colors.textMain} />}
+        onPress={notImplemented}
+      />
       <RoundButton
         title="Stake"
         icon={<StakeIcon color={theme.colors.textMain} />}
         onPress={() => goToRootPage('Staking')}
       />
-      <RoundButton title="Send" icon={<SendIcon color={theme.colors.textMain} />} onPress={notImplemented} />
+      <RoundButton
+        title="Send"
+        icon={<SendIcon color={theme.colors.textMain} />}
+        onPress={notImplemented}
+      />
     </PeraView>
   );
 };

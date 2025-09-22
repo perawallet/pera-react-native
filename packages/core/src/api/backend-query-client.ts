@@ -8,22 +8,22 @@ const clients = new Map<string, KyInstance>()
 const mainnetClient = ky.create({
     //TODO add a beforeRequest hook here to inject headers
     hooks: {
-    	beforeRequest: [
-    		request => {
-    			request.headers.set('Content-Type', 'application/json')
-    		},
-    	],
+        beforeRequest: [
+            request => {
+                request.headers.set('Content-Type', 'application/json')
+            },
+        ],
     },
     prefixUrl: config.mainnetBackendUrl,
 })
 const testnetClient = ky.create({
     //TODO add a beforeRequest hook here to inject headers
     hooks: {
-    	beforeRequest: [
-    		request => {
-    			request.headers.set('Content-Type', 'application/json')
-    		},
-    	],
+        beforeRequest: [
+            request => {
+                request.headers.set('Content-Type', 'application/json')
+            },
+        ],
     },
     prefixUrl: config.testnetBackendUrl,
 })

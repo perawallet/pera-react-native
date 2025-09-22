@@ -3,8 +3,8 @@
 * Do not edit manually.
 */
 
-import fetch from "../../algod-query-client";
-import type { RequestConfig, ResponseErrorConfig } from "../../algod-query-client";
+import fetch from "../../../algod-query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { SetSyncRoundMutationResponse, SetSyncRoundPathParams, SetSyncRound400, SetSyncRound401, SetSyncRound500, SetSyncRound503 } from "../types/SetSyncRound.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
 import { setSyncRoundMutationResponseSchema } from "../zod/setSyncRoundSchema.ts";

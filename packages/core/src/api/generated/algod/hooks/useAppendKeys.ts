@@ -3,8 +3,8 @@
 * Do not edit manually.
 */
 
-import fetch from "../../algod-query-client";
-import type { RequestConfig, ResponseErrorConfig } from "../../algod-query-client";
+import fetch from "../../../algod-query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { AppendKeysMutationRequest, AppendKeysMutationResponse, AppendKeysPathParams, AppendKeys400, AppendKeys401, AppendKeys404, AppendKeys500 } from "../types/AppendKeys.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
 import { appendKeysMutationResponseSchema, appendKeysMutationRequestSchema } from "../zod/appendKeysSchema.ts";

@@ -73,7 +73,7 @@ describe('api/query-client', () => {
 
     test('throws when url is missing', async () => {
         const { algodFetchClient } = await import('../algod-query-client')
-        
+
         await expect(
             algodFetchClient<any>({ method: 'GET' } as any),
         ).rejects.toThrow('URL is required')

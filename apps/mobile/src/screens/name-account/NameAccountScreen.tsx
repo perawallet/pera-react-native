@@ -8,9 +8,10 @@ import MainScreenLayout from '../../layouts/MainScreenLayout';
 
 import WalletIcon from '../../../assets/icons/wallet.svg';
 import {
+  useAllAccounts,
   getAccountDisplayName,
-  useAccounts,
   WalletAccount,
+  useUpdateAccount,
 } from '@perawallet/core';
 import { useState } from 'react';
 import type { StaticScreenProps } from '@react-navigation/native';
@@ -24,11 +25,13 @@ const NameAccountScreen = ({ route }: NameAccountScreenProps) => {
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
   const styles = useStyles();
   const { theme } = useTheme();
-  const { getAllAccounts, updateAccount } = useAccounts();
+  const accounts = useAllAccounts();
+  const updateAccount = useUpdateAccount();
+
   const routeAccount = route.params?.account;
 
   const [account, setAccount] = useState<WalletAccount>(routeAccount);
-  const numWallets = getAllAccounts().length;
+  const numWallets = accounts.length;
   const initialWalletName = getAccountDisplayName(account);
   const [walletDisplay, setWalletDisplay] = useState<string>(initialWalletName);
 

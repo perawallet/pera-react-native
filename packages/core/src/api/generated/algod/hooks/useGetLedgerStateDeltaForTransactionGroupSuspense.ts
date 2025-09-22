@@ -3,8 +3,8 @@
 * Do not edit manually.
 */
 
-import fetch from "../../algod-query-client";
-import type { RequestConfig, ResponseErrorConfig } from "../../algod-query-client";
+import fetch from "../../../algod-query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { GetLedgerStateDeltaForTransactionGroupQueryResponse, GetLedgerStateDeltaForTransactionGroupPathParams, GetLedgerStateDeltaForTransactionGroupQueryParams, GetLedgerStateDeltaForTransactionGroup401, GetLedgerStateDeltaForTransactionGroup404, GetLedgerStateDeltaForTransactionGroup408, GetLedgerStateDeltaForTransactionGroup500, GetLedgerStateDeltaForTransactionGroup501 } from "../types/GetLedgerStateDeltaForTransactionGroup.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
 import { getLedgerStateDeltaForTransactionGroupQueryResponseSchema } from "../zod/getLedgerStateDeltaForTransactionGroupSchema.ts";

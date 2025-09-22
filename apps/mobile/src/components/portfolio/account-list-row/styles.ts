@@ -25,5 +25,5 @@ export const useStyles = makeStyles(theme => ({
   },
   secondaryText: {
     color: theme.colors.textGrayLighter,
-  }
+  },
 }));

@@ -1,119 +1,73 @@
 import { describe, test, expect } from 'vitest'
-import { truncateAlgorandAddress } from '../addresses'
-import { asFixedPrecisionNumber } from '../strings'
+import { encodeToBase64, decodeFromBase64 } from '../strings'
+import { formatCurrency } from '../strings'
 
-describe('utils/addresses - truncateAlgorandAddress', () => {
-    test('returns original when length <= 11', () => {
-        expect(truncateAlgorandAddress('SHORT')).toEqual('SHORT')
-        expect(truncateAlgorandAddress('ABCDEFGHIJK')).toEqual('ABCDEFGHIJK')
+describe('utils/strings - base64 encoding', () => {
+    test('encodeToBase64 encodes bytes correctly', () => {
+        const bytes = new Uint8Array([80, 82, 73, 86, 75, 69, 89]) // 'PRIVKEY'
+        expect(encodeToBase64(bytes)).toEqual('UFJJVktFWQ==')
     })
 
-    test('truncates when length > 11 (5+...+5)', () => {
-        expect(truncateAlgorandAddress('ABCDEFGHIJKL')).toEqual('ABCDE...HIJKL')
-        expect(truncateAlgorandAddress('ABCDEFGHIJKLMNOPQRSTUVWXYZ')).toEqual(
-            'ABCDE...VWXYZ',
-        )
+    test('decodeFromBase64 decodes base64 correctly', () => {
+        const base64 = 'AQIDBAUG' // [1,2,3,4,5,6]
+        const decoded = decodeFromBase64(base64)
+        expect(Array.from(decoded)).toEqual([1, 2, 3, 4, 5, 6])
+    })
+
+    test('round-trip encode/decode returns original bytes', () => {
+        const original = new Uint8Array([
+            0, 1, 2, 3, 250, 251, 252, 253, 254, 255,
+        ])
+        const encoded = encodeToBase64(original)
+        const decoded = decodeFromBase64(encoded)
+        expect(Array.from(decoded)).toEqual(Array.from(original))
     })
 })
 
-describe('utils/strings - asFixedPrecisionNumber', () => {
-    test('returns original value if multiple dots present', () => {
-        expect(asFixedPrecisionNumber('1.2.3', 2)).toEqual('1.2.3')
-        expect(asFixedPrecisionNumber('..', 2)).toEqual('..')
+describe('utils/strings - formatCurrency', () => {
+    test('formats USD in en-US with precision', () => {
+        expect(formatCurrency('0', 2, 'USD', 'en-US')).toBe('$0.00')
+        expect(formatCurrency('1', 2, 'USD', 'en-US')).toBe('$1.00')
+        expect(formatCurrency('1000', 2, 'USD', 'en-US')).toBe('$1,000.00')
+        expect(formatCurrency('123456789', 2, 'USD', 'en-US')).toBe(
+            '$123,456,789.00',
+        )
+        expect(formatCurrency('1e3', 2, 'USD', 'en-US')).toBe('$1,000.00')
     })
 
-    test('handles zero precision by returning integer part only', () => {
-        expect(asFixedPrecisionNumber('123', 0)).toEqual('123')
-        expect(asFixedPrecisionNumber('123.45', 0)).toEqual('123')
-        expect(asFixedPrecisionNumber('.45', 0)).toEqual('0')
-        expect(asFixedPrecisionNumber('', 0)).toEqual('0')
+    test('supports precision 0 (no decimals)', () => {
+        expect(formatCurrency('1', 0, 'USD', 'en-US')).toBe('$1')
+        expect(formatCurrency('1000', 0, 'USD', 'en-US')).toBe('$1,000')
     })
 
-    test('pads with zeros when no fractional part', () => {
-        expect(asFixedPrecisionNumber('5', 2)).toEqual('5.00')
-        expect(asFixedPrecisionNumber('0', 3)).toEqual('0.000')
+    test('formats negative amounts', () => {
+        expect(formatCurrency('-12345', 2, 'USD', 'en-US')).toBe('-$12,345.00')
     })
 
-    test('ensures leading zero when input starts with dot', () => {
-        expect(asFixedPrecisionNumber('.5', 2)).toEqual('0.50')
-        expect(asFixedPrecisionNumber('.', 2)).toEqual('0.00')
+    test('uses locale placement/symbol for GBP in en-GB', () => {
+        expect(formatCurrency('12345', 2, 'GBP', 'en-GB')).toBe('£12,345.00')
     })
 
-    test('keeps fractional part if shorter than precision (pads to precision)', () => {
-        expect(asFixedPrecisionNumber('1.2', 3)).toEqual('1.200')
-        expect(asFixedPrecisionNumber('1.', 2)).toEqual('1.00')
+    test('throws for non-integer numeric strings (BigInt constraint)', () => {
+        expect(() =>
+            formatCurrency('some-other-string', 2, 'USD', 'en-US'),
+        ).toThrow()
     })
 
-    test('keeps fractional part if exactly matches precision', () => {
-        expect(asFixedPrecisionNumber('1.23', 2)).toEqual('1.23')
-        expect(asFixedPrecisionNumber('0.000', 3)).toEqual('0.000')
-    })
+    describe('crypto symbol replacement (BTC, ETH, ALGO)', () => {
+        test('BTC symbol (₿) with grouping and precision', () => {
+            const out = formatCurrency('1234', 2, 'BTC', 'en-US')
+            expect(out).toBe('₿1,234.00')
+        })
 
-    test('rounds correctly when fractional part exceeds precision', () => {
-        // 1.234 -> 1.23 (third digit is 4, so no round up)
-        expect(asFixedPrecisionNumber('1.234', 2)).toEqual('1.23')
-        // 1.235 -> 1.24 (third digit is 5, round half up)
-        expect(asFixedPrecisionNumber('1.235', 2)).toEqual('1.24')
-        // 0.999 -> 1.00 (carry into integer part)
-        expect(asFixedPrecisionNumber('0.999', 2)).toEqual('1.00')
-    })
+        test('ETH symbol (Ξ) with custom precision', () => {
+            const out = formatCurrency('1234', 4, 'ETH', 'en-US')
+            expect(out).toBe('Ξ1,234.0000')
+        })
 
-    test('rounds correctly when fractional part exceeds precision with big numbers', () => {
-        // 1.234 -> 1.23 (third digit is 4, so no round up)
-        expect(asFixedPrecisionNumber('19437587588.2323423454', 9)).toEqual('19437587588.232342345')
-        // 1.235 -> 1.24 (third digit is 5, round half up)
-        expect(asFixedPrecisionNumber('19437587588.2323423455', 9)).toEqual('19437587588.232342346')
-        // 0.999 -> 1.00 (carry into integer part)
-        expect(asFixedPrecisionNumber('19437587588.9999990001', 5)).toEqual('19437587589.00000')
-    })
-
-    test('handles leading + sign and pads to precision', () => {
-        expect(asFixedPrecisionNumber('+123.4', 2)).toEqual('+123.40')
-    })
-
-    test('returns original for invalid fractional digits (non-digit after dot)', () => {
-        expect(asFixedPrecisionNumber('123.e4', 2)).toEqual('123.e4')
-    })
-
-    test('returns original for invalid integer digits (non-digit before dot)', () => {
-        expect(asFixedPrecisionNumber('1a3.45', 2)).toEqual('1a3.45')
-    })
-
-    test('rounds half-up to integer (precision=0) with carry', () => {
-        expect(asFixedPrecisionNumber('9.5', 0)).toEqual('10')
-    })
-
-    test('rounds with fractional overflow carry into integer', () => {
-        expect(asFixedPrecisionNumber('1.995', 2)).toEqual('2.00')
-    })
-
-    test('handles negative sign and zero-padding', () => {
-        expect(asFixedPrecisionNumber('-07.8', 2)).toEqual('-07.80')
-    })
-
-    test('rounds half-up negative to integer', () => {
-        expect(asFixedPrecisionNumber('-123.5', 0)).toEqual('-124')
-    })
-
-    test('extracts leading + sign and pads to requested precision', () => {
-        expect(asFixedPrecisionNumber('+123.4', 2)).toEqual('+123.40')
-    })
-
-    test('returns original for invalid digit groups (non-digits present)', () => {
-        expect(asFixedPrecisionNumber('123.e4', 2)).toEqual('123.e4')
-        expect(asFixedPrecisionNumber('1a3.45', 2)).toEqual('1a3.45')
-    })
-
-    test('rounds half-up to integer (precision=0) with carry', () => {
-        expect(asFixedPrecisionNumber('9.5', 0)).toEqual('10')
-    })
-
-    test('handles empty input and negative precision', () => {
-        expect(asFixedPrecisionNumber('', -1)).toEqual('0')
-        expect(asFixedPrecisionNumber('-', -1)).toEqual('0')
-        expect(asFixedPrecisionNumber('+', -1)).toEqual('0')
-        expect(asFixedPrecisionNumber('', 1)).toEqual('0.0')
-        expect(asFixedPrecisionNumber('-', 1)).toEqual('0.0')
-        expect(asFixedPrecisionNumber('+', 1)).toEqual('0.0')
+        test('ALGO symbol (Ⱥ) with higher precision', () => {
+            const out = formatCurrency('1234', 6, 'ALGO', 'en-US')
+            expect(out).toBe('Ⱥ1,234.000000')
+        })
     })
 })

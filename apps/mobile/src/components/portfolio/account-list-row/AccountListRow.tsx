@@ -2,10 +2,11 @@ import { useStyles } from './styles';
 import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
-import { ListItem, Text } from '@rneui/themed';
+import { Text } from '@rneui/themed';
 import {
   getAccountDisplayName,
   truncateAlgorandAddress,
+  useAccountBalances,
   WalletAccount,
 } from '@perawallet/core';
 
@@ -30,20 +31,15 @@ const AccountListRow = ({ account }: AccountListRowProps) => {
     () => truncateAlgorandAddress(account.address),
     [account],
   );
-  const icon = useMemo(
-    () => {
-      if (account.type === 'ledger') return <LedgerIcon />
-      if (account.type === 'standard') return <WalletIcon />
-      if (account.type === 'watch') return <WatchIcon />
-    },
-    [account],
-  );
+  const icon = useMemo(() => {
+    if (account.type === 'ledger') return <LedgerIcon />;
+    if (account.type === 'standard') return <WalletIcon />;
+    if (account.type === 'watch') return <WatchIcon />;
+  }, [account]);
 
-  const showAltAddress = account.rekeyAddress || account.name?.length
+  const { algoAmount, usdAmount } = useAccountBalances(account);
 
-  //TODO pull from server/node/somewhere
-  const algoAmount = '0';
-  const usdAmount = '0';
+  const showAltAddress = account.rekeyAddress || account.name?.length;
 
   const goToAccount = () => {
     navigation.push('AccountDetails', { account });
@@ -51,20 +47,27 @@ const AccountListRow = ({ account }: AccountListRowProps) => {
 
   return (
     <TouchableOpacity style={themeStyle.container} onPress={goToAccount}>
-      <WalletIcon />
+      {icon}
       <PeraView style={themeStyle.textContainer}>
         <PeraView style={themeStyle.nameContainer}>
           <Text h4>{displayName}</Text>
-          {showAltAddress && <Text style={themeStyle.secondaryText}>{displayAddress}</Text>}
+          {showAltAddress && (
+            <Text style={themeStyle.secondaryText}>{displayAddress}</Text>
+          )}
         </PeraView>
         <PeraView style={themeStyle.balanceContainer}>
           <CurrencyDisplay
             h4
             value={algoAmount}
             precision={2}
-            currencySymbol="A"
+            currency="ALGO"
           />
-          <CurrencyDisplay style={themeStyle.secondaryText} value={usdAmount} precision={2} currencySymbol="$" />
+          <CurrencyDisplay
+            style={themeStyle.secondaryText}
+            value={usdAmount}
+            precision={2}
+            currency="USD"
+          />
         </PeraView>
       </PeraView>
     </TouchableOpacity>

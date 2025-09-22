@@ -3,8 +3,8 @@
 * Do not edit manually.
 */
 
-import fetch from "../../algod-query-client";
-import type { RequestConfig, ResponseErrorConfig } from "../../algod-query-client";
+import fetch from "../../../algod-query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { GetLightBlockHeaderProofQueryResponse, GetLightBlockHeaderProofPathParams, GetLightBlockHeaderProof401, GetLightBlockHeaderProof404, GetLightBlockHeaderProof408, GetLightBlockHeaderProof500, GetLightBlockHeaderProof503 } from "../types/GetLightBlockHeaderProof.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
 import { getLightBlockHeaderProofQueryResponseSchema } from "../zod/getLightBlockHeaderProofSchema.ts";

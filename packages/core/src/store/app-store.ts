@@ -21,7 +21,11 @@ import {
     partializeDeviceSlice,
     type DeviceSlice,
 } from '../services/device/store'
-import { createPollingSlice, partializePollingSlice, type PollingSlice } from '../services/polling/store'
+import {
+    createPollingSlice,
+    partializePollingSlice,
+    type PollingSlice,
+} from '../services/polling/store'
 
 export type AppState = SettingsSlice &
     AccountsSlice &

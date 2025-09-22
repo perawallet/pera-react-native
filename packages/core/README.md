@@ -6,14 +6,14 @@ Shared domain logic, typed API clients, and React Query hooks used by the app.
 
 - Domain services and state under [packages/core/src/services](packages/core/src/services/index.ts)
 - Typed API clients and hooks under generated folders (generated using kubb from openapi specs):
-  - packages/core/src/api/generated/backend
-  - packages/core/src/api/generated/algod
-  - packages/core/src/api/generated/indexer
+    - packages/core/src/api/generated/backend
+    - packages/core/src/api/generated/algod
+    - packages/core/src/api/generated/indexer
 - Query clients and HTTP utilities:
-  - [packages/core/src/api/backend-query-client.ts](packages/core/src/api/backend-query-client.ts)
-  - [packages/core/src/api/algod-query-client.ts](packages/core/src/api/algod-query-client.ts)
-  - [packages/core/src/api/indexer-query-client.ts](packages/core/src/api/indexer-query-client.ts)
-  - [createFetchClient()](packages/core/src/api/query-client.ts:55) — network-aware ky wrapper
+    - [packages/core/src/api/backend-query-client.ts](packages/core/src/api/backend-query-client.ts)
+    - [packages/core/src/api/algod-query-client.ts](packages/core/src/api/algod-query-client.ts)
+    - [packages/core/src/api/indexer-query-client.ts](packages/core/src/api/indexer-query-client.ts)
+    - [createFetchClient()](packages/core/src/api/query-client.ts:55) — network-aware ky wrapper
 - Environment config in [packages/core/src/config](packages/core/src/config/main.ts)
 - Shared state store (zustand) in [packages/core/src/store](packages/core/src/store/index.ts)
 - Utilities in [packages/core/src/utils](packages/core/src/utils/index.ts)
@@ -58,12 +58,12 @@ React Query hooks use the network-aware clients above and zod parsing configured
 ## Services and patterns
 
 - Services expose a small surface area (stores plus hooks). Examples:
-  - Accounts: [packages/core/src/services/accounts](packages/core/src/services/accounts/index.ts)
-  - Assets: [packages/core/src/services/assets](packages/core/src/services/assets/index.ts)
-  - Polling: [packages/core/src/services/polling](packages/core/src/services/polling/index.ts)
-  - Notifications: [packages/core/src/services/notifications](packages/core/src/services/notifications/index.ts)
-  - Remote config: [packages/core/src/services/remote-config](packages/core/src/services/remote-config/index.ts)
-  - Storage: [packages/core/src/services/storage](packages/core/src/services/storage/index.ts)
+    - Accounts: [packages/core/src/services/accounts](packages/core/src/services/accounts/index.ts)
+    - Assets: [packages/core/src/services/assets](packages/core/src/services/assets/index.ts)
+    - Polling: [packages/core/src/services/polling](packages/core/src/services/polling/index.ts)
+    - Notifications: [packages/core/src/services/notifications](packages/core/src/services/notifications/index.ts)
+    - Remote config: [packages/core/src/services/remote-config](packages/core/src/services/remote-config/index.ts)
+    - Storage: [packages/core/src/services/storage](packages/core/src/services/storage/index.ts)
 - Keep domain logic here; UI/platform glue belongs in the app.
 - Prefer selectors and typed helpers over ad-hoc object access.
 
@@ -74,7 +74,7 @@ React Query hooks use the network-aware clients above and zod parsing configured
 
 ## Testing
 
-- Unit tests use Vitest; see existing specs under [packages/core/src/services/accounts/__tests__](packages/core/src/services/accounts/__tests__/hooks.accounts.test.ts).
+- Unit tests use Vitest; see existing specs under [packages/core/src/services/accounts/**tests**](packages/core/src/services/accounts/__tests__/hooks.accounts.test.ts).
 - API layer can be tested with generated MSW handlers under each generated mocks folder.
 - Run coverage from root: pnpm test
 

@@ -3,8 +3,8 @@
 * Do not edit manually.
 */
 
-import fetch from "../../algod-query-client";
-import type { RequestConfig, ResponseErrorConfig } from "../../algod-query-client";
+import fetch from "../../../algod-query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { AbortCatchupMutationResponse, AbortCatchupPathParams, AbortCatchup400, AbortCatchup401, AbortCatchup500 } from "../types/AbortCatchup.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
 import { abortCatchupMutationResponseSchema } from "../zod/abortCatchupSchema.ts";

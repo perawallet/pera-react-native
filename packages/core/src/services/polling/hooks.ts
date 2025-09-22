@@ -6,9 +6,11 @@ import { useQueryClient } from '@tanstack/react-query'
 const CACHE_CHECK_INTERVAL = 3000
 
 export const usePolling = () => {
-    const accounts = useAppStore((state) => state.accounts)
-    const lastRefreshedRound = useAppStore((state) => state.lastRefreshedRound)
-    const setLastRefreshedRound = useAppStore((state) => state.setLastRefreshedRound)
+    const accounts = useAppStore(state => state.accounts)
+    const lastRefreshedRound = useAppStore(state => state.lastRefreshedRound)
+    const setLastRefreshedRound = useAppStore(
+        state => state.setLastRefreshedRound,
+    )
     const { mutateAsync } = useV1AccountsShouldRefreshCreate()
     const queryClient = useQueryClient()
     const [polling, setPolling] = useState<any>()
@@ -21,8 +23,8 @@ export const usePolling = () => {
             const response = await mutateAsync({
                 data: {
                     account_addresses: addresses,
-                    last_refreshed_round: lastRefreshedRound
-                }
+                    last_refreshed_round: lastRefreshedRound,
+                },
             })
 
             if (response.refresh) {
@@ -31,7 +33,7 @@ export const usePolling = () => {
                 setLastRefreshedRound(response.round ?? null)
             }
         } catch (error) {
-            console.log("Polling failed", error)
+            console.log('Polling failed', error)
         }
     }
 
@@ -49,6 +51,6 @@ export const usePolling = () => {
 
     return {
         startPolling,
-        stopPolling
+        stopPolling,
     }
 }

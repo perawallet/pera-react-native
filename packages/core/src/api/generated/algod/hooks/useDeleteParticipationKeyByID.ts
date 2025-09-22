@@ -3,8 +3,8 @@
 * Do not edit manually.
 */
 
-import fetch from "../../algod-query-client";
-import type { RequestConfig, ResponseErrorConfig } from "../../algod-query-client";
+import fetch from "../../../algod-query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { DeleteParticipationKeyByIDMutationResponse, DeleteParticipationKeyByIDPathParams, DeleteParticipationKeyByID400, DeleteParticipationKeyByID401, DeleteParticipationKeyByID404, DeleteParticipationKeyByID500 } from "../types/DeleteParticipationKeyByID.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
 import { deleteParticipationKeyByIDMutationResponseSchema } from "../zod/deleteParticipationKeyByIDSchema.ts";

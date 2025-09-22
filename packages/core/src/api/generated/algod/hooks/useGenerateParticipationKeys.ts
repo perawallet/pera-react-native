@@ -3,8 +3,8 @@
 * Do not edit manually.
 */
 
-import fetch from "../../algod-query-client";
-import type { RequestConfig, ResponseErrorConfig } from "../../algod-query-client";
+import fetch from "../../../algod-query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { GenerateParticipationKeysMutationResponse, GenerateParticipationKeysPathParams, GenerateParticipationKeysQueryParams, GenerateParticipationKeys400, GenerateParticipationKeys401, GenerateParticipationKeys500, GenerateParticipationKeys503 } from "../types/GenerateParticipationKeys.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
 import { generateParticipationKeysMutationResponseSchema } from "../zod/generateParticipationKeysSchema.ts";

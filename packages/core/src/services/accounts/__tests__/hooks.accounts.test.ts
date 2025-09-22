@@ -2,6 +2,8 @@ import { describe, test, expect, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { WalletAccount } from '../types'
 import { MemoryKeyValueStorage, registerTestPlatform } from '@test-utils'
+import Decimal from 'decimal.js'
+
 // Hoisted mocks for createAccount path dependencies
 const uuidSpies = vi.hoisted(() => ({ v7: vi.fn() }))
 vi.mock('uuid', () => ({ v7: uuidSpies.v7 }))
@@ -14,6 +16,11 @@ const xhdSpies = vi.hoisted(() => ({
     fromSeed: vi.fn(() => 'ROOT_KEY'),
 }))
 
+const querySpies = vi.hoisted(() => ({
+    useLookupAccountByID: vi.fn(),
+    useV1AssetsList: vi.fn(),
+}))
+
 const mockedMnemonic =
     'spike assault capital honey word junk bind task gorilla visa resist next size initial bacon ice gym entire bargain voice shift pause supply town'
 
@@ -22,7 +29,6 @@ const bip39Spies = vi.hoisted(() => ({
     mnemonicToSeedSync: vi.fn(() => Buffer.from('seed_sync')),
     mnemonicToSeed: vi.fn(async () => Buffer.from('seed_async')),
 }))
-
 vi.mock('algosdk', () => {
     return {
         encodeAddress: vi.fn(() => 'QUREUkVTUw=='),
@@ -44,8 +50,16 @@ vi.mock('@perawallet/xhdwallet', () => {
 })
 vi.mock('bip39', () => bip39Spies)
 
+// Mocks must match the exact module specifiers used in hooks.accounts.ts
+vi.mock('../../../api/generated/indexer', () => ({
+    useLookupAccountByID: querySpies.useLookupAccountByID,
+}))
+vi.mock('../../../api/generated/backend', () => ({
+    useV1AssetsList: querySpies.useV1AssetsList,
+}))
+
 describe('services/accounts/hooks', () => {
-    test('getAllAccounts, findAccountByAddress, and addAccount persist PK when provided', async () => {
+    test('allAccounts, findAccountByAddress, and addAccount persist PK when provided', async () => {
         vi.resetModules()
 
         const dummySecure = {
@@ -61,12 +75,14 @@ describe('services/accounts/hooks', () => {
         })
 
         const { useAppStore } = await import('../../../store')
-        const { useAccounts } = await import('../hooks.accounts')
+        const { useAllAccounts, useFindAccountbyAddress, useAddAccount } =
+            await import('../hooks.accounts')
 
-        const { result } = renderHook(() => useAccounts())
+        const { result: allRes } = renderHook(() => useAllAccounts())
+        const { result: addRes } = renderHook(() => useAddAccount())
 
         // defaults
-        expect(result.current.getAllAccounts()).toEqual([])
+        expect(allRes.current).toEqual([])
 
         const a1: WalletAccount = {
             id: '1',
@@ -77,14 +93,21 @@ describe('services/accounts/hooks', () => {
 
         // add with secret - should persist to secure storage
         act(() => {
-            result.current.addAccount(a1, 'secret')
+            addRes.current(a1, 'secret')
         })
         expect(useAppStore.getState().accounts).toEqual([a1])
         expect(dummySecure.setItem).toHaveBeenCalledWith('pk-ALICE', 'secret')
 
         // find present / absent
-        expect(result.current.findAccountByAddress('ALICE')).toEqual(a1)
-        expect(result.current.findAccountByAddress('MISSING')).toBeNull()
+        const { result: findRes, rerender: rerenderFind } = renderHook(
+            ({ addr }) => useFindAccountbyAddress(addr),
+            {
+                initialProps: { addr: 'ALICE' },
+            },
+        )
+        expect(findRes.current).toEqual(a1)
+        rerenderFind({ addr: 'MISSING' })
+        expect(findRes.current).toBeNull()
     })
 
     test('addAccount without secret does not persist PK', async () => {
@@ -103,9 +126,9 @@ describe('services/accounts/hooks', () => {
         })
 
         const { useAppStore } = await import('../../../store')
-        const { useAccounts } = await import('../hooks.accounts')
+        const { useAddAccount } = await import('../hooks.accounts')
 
-        const { result } = renderHook(() => useAccounts())
+        const { result: addRes } = renderHook(() => useAddAccount())
 
         const a: WalletAccount = {
             id: '2',
@@ -115,7 +138,7 @@ describe('services/accounts/hooks', () => {
         }
 
         act(() => {
-            result.current.addAccount(a)
+            addRes.current(a)
         })
         expect(useAppStore.getState().accounts).toEqual([a])
         expect(dummySecure.setItem).not.toHaveBeenCalled()
@@ -137,9 +160,14 @@ describe('services/accounts/hooks', () => {
         })
 
         const { useAppStore } = await import('../../../store')
-        const { useAccounts } = await import('../hooks.accounts')
+        const { useAddAccount, useRemoveAccountById } = await import(
+            '../hooks.accounts'
+        )
 
-        const { result } = renderHook(() => useAccounts())
+        const { result: addRes } = renderHook(() => useAddAccount())
+        const { result: removeByIdRes } = renderHook(() =>
+            useRemoveAccountById(),
+        )
 
         const a: WalletAccount = {
             id: '3',
@@ -150,12 +178,12 @@ describe('services/accounts/hooks', () => {
         }
 
         act(() => {
-            result.current.addAccount(a)
+            addRes.current(a)
         })
         expect(useAppStore.getState().accounts).toEqual([a])
 
         act(() => {
-            result.current.removeAccountById('3')
+            removeByIdRes.current('3')
         })
         expect(useAppStore.getState().accounts).toEqual([])
         expect(dummySecure.removeItem).toHaveBeenCalledWith('pk-CAROL')
@@ -177,9 +205,14 @@ describe('services/accounts/hooks', () => {
         })
 
         const { useAppStore } = await import('../../../store')
-        const { useAccounts } = await import('../hooks.accounts')
+        const { useAddAccount, removeAccountByAddress } = await import(
+            '../hooks.accounts'
+        )
 
-        const { result } = renderHook(() => useAccounts())
+        const { result: addRes } = renderHook(() => useAddAccount())
+        const { result: removeByAddressRes } = renderHook(() =>
+            removeAccountByAddress(),
+        )
 
         const a: WalletAccount = {
             id: '4',
@@ -190,12 +223,12 @@ describe('services/accounts/hooks', () => {
         }
 
         act(() => {
-            result.current.addAccount(a)
+            addRes.current(a)
         })
         expect(useAppStore.getState().accounts).toEqual([a])
 
         act(() => {
-            result.current.removeAccountByAddress('DAVE')
+            removeByAddressRes.current('DAVE')
         })
         expect(useAppStore.getState().accounts).toEqual([])
         expect(dummySecure.removeItem).toHaveBeenCalledWith('pk-DAVE')
@@ -237,12 +270,12 @@ describe('services/accounts/hooks - createAccount', () => {
             .mockImplementationOnce(() => 'ACC1')
 
         const { useAppStore } = await import('../../../store')
-        const { useAccounts } = await import('../hooks.accounts')
+        const { useCreateAccount } = await import('../hooks.accounts')
 
-        const { result } = renderHook(() => useAccounts())
+        const { result: createRes } = renderHook(() => useCreateAccount())
         let created: any
         await act(async () => {
-            created = await result.current.createAccount({
+            created = await createRes.current({
                 account: 2,
                 keyIndex: 5,
             })
@@ -315,12 +348,12 @@ describe('services/accounts/hooks - createAccount', () => {
             .mockImplementationOnce(() => 'ACC2')
 
         const { useAppStore } = await import('../../../store')
-        const { useAccounts } = await import('../hooks.accounts')
+        const { useCreateAccount } = await import('../hooks.accounts')
 
-        const { result } = renderHook(() => useAccounts())
+        const { result: createRes } = renderHook(() => useCreateAccount())
         let created: any
         await act(async () => {
-            created = await result.current.createAccount({
+            created = await createRes.current({
                 walletId: 'EXIST',
                 account: 1,
                 keyIndex: 3,
@@ -357,7 +390,7 @@ describe('services/accounts/hooks - createAccount', () => {
 })
 
 describe('services/accounts/hooks - updateAccount', () => {
-    test('updateAccount replaces account and persists PK when provided', async () => {
+    test('useUpdateAccount replaces account and persists PK when provided', async () => {
         vi.resetModules()
 
         const dummySecure = {
@@ -373,9 +406,12 @@ describe('services/accounts/hooks - updateAccount', () => {
         })
 
         const { useAppStore } = await import('../../../store')
-        const { useAccounts } = await import('../hooks.accounts')
+        const { useAddAccount, useUpdateAccount } = await import(
+            '../hooks.accounts'
+        )
 
-        const { result } = renderHook(() => useAccounts())
+        const { result: addRes } = renderHook(() => useAddAccount())
+        const { result: updateRes } = renderHook(() => useUpdateAccount())
 
         const initial: WalletAccount = {
             id: 'ID1',
@@ -386,7 +422,7 @@ describe('services/accounts/hooks - updateAccount', () => {
 
         // seed store
         act(() => {
-            result.current.addAccount(initial)
+            addRes.current(initial)
         })
         expect(useAppStore.getState().accounts).toEqual([initial])
 
@@ -397,7 +433,7 @@ describe('services/accounts/hooks - updateAccount', () => {
         }
 
         act(() => {
-            result.current.updateAccount(updated, 'new-secret')
+            updateRes.current(updated, 'new-secret')
         })
 
         // state replaced with updated object
@@ -409,7 +445,7 @@ describe('services/accounts/hooks - updateAccount', () => {
         )
     })
 
-    test('updateAccount replaces account without persisting PK when not provided', async () => {
+    test('useUpdateAccount replaces account without persisting PK when not provided', async () => {
         vi.resetModules()
 
         const dummySecure = {
@@ -425,9 +461,12 @@ describe('services/accounts/hooks - updateAccount', () => {
         })
 
         const { useAppStore } = await import('../../../store')
-        const { useAccounts } = await import('../hooks.accounts')
+        const { useAddAccount, useUpdateAccount } = await import(
+            '../hooks.accounts'
+        )
 
-        const { result } = renderHook(() => useAccounts())
+        const { result: addRes } = renderHook(() => useAddAccount())
+        const { result: updateRes } = renderHook(() => useUpdateAccount())
 
         const initial: WalletAccount = {
             id: 'ID2',
@@ -437,7 +476,7 @@ describe('services/accounts/hooks - updateAccount', () => {
         }
 
         act(() => {
-            result.current.addAccount(initial)
+            addRes.current(initial)
         })
         expect(useAppStore.getState().accounts).toEqual([initial])
 
@@ -447,10 +486,89 @@ describe('services/accounts/hooks - updateAccount', () => {
         }
 
         act(() => {
-            result.current.updateAccount(updated)
+            updateRes.current(updated)
         })
 
         expect(useAppStore.getState().accounts).toEqual([updated])
         expect(dummySecure.setItem).not.toHaveBeenCalled()
+    })
+})
+
+describe('services/accounts/hooks - useAccountBalances', () => {
+    test('aggregates USD and ALGO using backend/indexer data', async () => {
+        vi.resetModules()
+        vi.clearAllMocks()
+
+        // indexer account info with one ASA and some microalgos
+        querySpies.useLookupAccountByID.mockImplementation((_args: any) => ({
+            data: {
+                account: {
+                    amount: {
+                        microAlgos: () => ({ microAlgos: 1000n }), // microAlgos BigInt
+                    },
+                    assets: [{ 'asset-id': 123, amount: 50 }],
+                },
+            },
+            isPending: false,
+        }))
+
+        // backend asset details for ALGO (id 0) and ASA 123
+        querySpies.useV1AssetsList.mockImplementation((_args: any) => ({
+            data: {
+                results: [
+                    { asset_id: 0, usd_value: 0.5, fraction_decimals: 6 },
+                    { asset_id: 123, usd_value: 5, fraction_decimals: 2 },
+                ],
+            },
+            isPending: false,
+        }))
+
+        const { useAccountBalances } = await import('../hooks.accounts')
+        const acct: WalletAccount = {
+            id: 'ANY',
+            type: 'standard',
+            address: 'ADDR',
+        }
+
+        const { result } = renderHook(() => useAccountBalances(acct))
+
+        expect(result.current.usdAmount).toEqual(Decimal(2.5005))
+        expect(result.current.algoAmount).toEqual(Decimal(5.001))
+    })
+
+    test('returns fallback algos() when computed USD is zero', async () => {
+        vi.resetModules()
+        vi.clearAllMocks()
+
+        querySpies.useLookupAccountByID.mockImplementation((_args: any) => ({
+            data: {
+                account: {
+                    amount: {
+                        microAlgos: () => ({ microAlgos: 1000n }),
+                    },
+                    assets: [], // no ASA balances
+                },
+            },
+            isPending: false,
+        }))
+
+        querySpies.useV1AssetsList.mockImplementation((_args: any) => ({
+            data: {
+                results: [{ asset_id: 0, usd_value: 0, fraction_decimals: 6 }],
+            },
+            isPending: false,
+        }))
+
+        const { useAccountBalances } = await import('../hooks.accounts')
+        const acct: WalletAccount = {
+            id: 'ANY2',
+            type: 'standard',
+            address: 'ADDR2',
+        }
+
+        const { result } = renderHook(() => useAccountBalances(acct))
+
+        expect(result.current.usdAmount).toEqual(Decimal(0))
+        expect(result.current.algoAmount).toEqual(Decimal(0.001))
     })
 })

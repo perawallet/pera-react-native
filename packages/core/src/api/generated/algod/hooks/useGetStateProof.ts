@@ -3,8 +3,8 @@
 * Do not edit manually.
 */
 
-import fetch from "../../algod-query-client";
-import type { RequestConfig, ResponseErrorConfig } from "../../algod-query-client";
+import fetch from "../../../algod-query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { GetStateProofQueryResponse, GetStateProofPathParams, GetStateProof401, GetStateProof404, GetStateProof408, GetStateProof500, GetStateProof503 } from "../types/GetStateProof.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
 import { getStateProofQueryResponseSchema } from "../zod/getStateProofSchema.ts";

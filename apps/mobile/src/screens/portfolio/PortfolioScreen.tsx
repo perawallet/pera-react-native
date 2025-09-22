@@ -11,13 +11,14 @@ import InfoIcon from '../../../assets/icons/info.svg';
 import CurrencyDisplay from '../../components/currency-display/CurrencyDisplay';
 import ButtonPanel from '../../components/portfolio/button-panel/ButtonPanel';
 import AccountList from '../../components/portfolio/account-list/AccountList';
+import Decimal from 'decimal.js';
 
 const PortfolioScreen = () => {
   const { theme } = useTheme();
   const styles = useStyles();
 
   //TODO fetch this from server etc.
-  const portfolioValue = '0';
+  const portfolioValue = Decimal(0);
 
   return (
     <MainScreenLayout>
@@ -41,14 +42,15 @@ const PortfolioScreen = () => {
         <CurrencyDisplay
           h1
           value={portfolioValue}
-          currencySymbol="A"
+          currency="ALGO"
           precision={2}
         />
         <CurrencyDisplay
           h4
           h4Style={styles.valueTitle}
           value={portfolioValue}
-          currencySymbol="≈ $"
+          currency="USD"
+          prefix="≈ "
           precision={2}
         />
       </PeraView>

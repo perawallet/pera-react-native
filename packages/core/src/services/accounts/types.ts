@@ -10,7 +10,7 @@ export const AccountTypes = {
     standard: 'standard',
     ledger: 'ledger',
     multisig: 'multisig',
-    watch: 'watch'
+    watch: 'watch',
 } as const
 
 export type AccountType = (typeof AccountTypes)[keyof typeof AccountTypes]

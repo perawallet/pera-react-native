@@ -53,11 +53,7 @@ export interface ResponseConfig<TData = unknown> {
 export type ResponseErrorConfig<TError = unknown> = TError
 
 export const createFetchClient = (clients: Map<string, KyInstance>) => {
-    return async <
-        TData,
-        _TError = unknown,
-        TVariables = unknown,
-    >(
+    return async <TData, _TError = unknown, TVariables = unknown>(
         requestConfig: RequestConfig<TVariables>,
     ): Promise<ResponseConfig<TData>> => {
         if (!requestConfig.url) {

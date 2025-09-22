@@ -3,8 +3,8 @@
 * Do not edit manually.
 */
 
-import fetch from "../../algod-query-client";
-import type { RequestConfig, ResponseErrorConfig } from "../../algod-query-client";
+import fetch from "../../../algod-query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { TealDisassembleMutationRequest, TealDisassembleMutationResponse, TealDisassemble400, TealDisassemble401, TealDisassemble404, TealDisassemble500 } from "../types/TealDisassemble.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
 import { tealDisassembleMutationResponseSchema, tealDisassembleMutationRequestSchema } from "../zod/tealDisassembleSchema.ts";

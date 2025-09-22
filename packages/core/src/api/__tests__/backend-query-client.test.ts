@@ -73,7 +73,7 @@ describe('api/query-client', () => {
 
     test('throws when url is missing', async () => {
         const { backendFetchClient } = await import('../backend-query-client')
-        
+
         await expect(
             backendFetchClient<any>({ method: 'GET' } as any),
         ).rejects.toThrow('URL is required')

@@ -9,9 +9,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest --watch",
-    "lint": "eslint . --ext .ts,.tsx",
-    "lint:fix": "eslint . --ext .ts,.tsx --fix"
+    "test:watch": "vitest --watch"
   },
   "dependencies": {
     "@algorandfoundation/algokit-utils": "catalog:",
@@ -24,6 +22,7 @@
     "base32-encode": "^2.0.0",
     "base64-js": "^1.5.1",
     "bip39": "catalog:",
+    "decimal.js": "^10.6.0",
     "ky": "^1.10.0",
     "react": "catalog:",
     "react-native-quick-base64": "^2.2.2",

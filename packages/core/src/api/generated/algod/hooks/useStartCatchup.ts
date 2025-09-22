@@ -3,8 +3,8 @@
 * Do not edit manually.
 */
 
-import fetch from "../../algod-query-client";
-import type { RequestConfig, ResponseErrorConfig } from "../../algod-query-client";
+import fetch from "../../../algod-query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { StartCatchupMutationResponse, StartCatchupPathParams, StartCatchupQueryParams, StartCatchup400, StartCatchup401, StartCatchup408, StartCatchup500 } from "../types/StartCatchup.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
 import { startCatchupMutationResponseSchema } from "../zod/startCatchupSchema.ts";

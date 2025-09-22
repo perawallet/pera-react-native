@@ -3,8 +3,8 @@
 * Do not edit manually.
 */
 
-import fetch from "../../algod-query-client";
-import type { RequestConfig, ResponseErrorConfig } from "../../algod-query-client";
+import fetch from "../../../algod-query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { SimulateTransactionMutationRequest, SimulateTransactionMutationResponse, SimulateTransactionQueryParams, SimulateTransaction400, SimulateTransaction401, SimulateTransaction500, SimulateTransaction503 } from "../types/SimulateTransaction.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
 import { simulateTransactionMutationResponseSchema, simulateTransactionMutationRequestSchema } from "../zod/simulateTransactionSchema.ts";

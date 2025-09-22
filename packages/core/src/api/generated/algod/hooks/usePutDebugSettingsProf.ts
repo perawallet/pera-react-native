@@ -3,8 +3,8 @@
 * Do not edit manually.
 */
 
-import fetch from "../../algod-query-client";
-import type { RequestConfig, ResponseErrorConfig } from "../../algod-query-client";
+import fetch from "../../../algod-query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { PutDebugSettingsProfMutationResponse } from "../types/PutDebugSettingsProf.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
 import { putDebugSettingsProfMutationResponseSchema } from "../zod/putDebugSettingsProfSchema.ts";

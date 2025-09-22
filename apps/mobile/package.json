@@ -31,6 +31,7 @@
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-query-persist-client": "catalog:",
     "bip39": "catalog:",
+    "decimal.js": "^10.6.0",
     "react": "catalog:",
     "react-native": "0.81.1",
     "react-native-device-info": "^14.0.4",

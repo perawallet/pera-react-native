@@ -45,11 +45,11 @@ pnpm -C apps/mobile start|ios|android
 
 - apps/mobile — React Native app scaffold and screens
 - packages/core — shared domain/services and generated API clients
-  - src/api/generated/(backend|algod|indexer) — outputs from Kubb
-  - src/services — slices of functionality (aka features)
-  - src/config — per-environment config
-  - src/store — shared state (uses zustand)
-  - src/platform - a set of interfaces each platform will need to implement to provide platform specific implementations
+    - src/api/generated/(backend|algod|indexer) — outputs from Kubb
+    - src/services — slices of functionality (aka features)
+    - src/config — per-environment config
+    - src/store — shared state (uses zustand)
+    - src/platform - a set of interfaces each platform will need to implement to provide platform specific implementations
 - packages/eslint-config — shared ESLint rules
 - packages/typescript-config — shared tsconfig bases
 - packages/xhdwallet — HD wallet crypto helpers (this is a modified version of @algorandfoundation/xhd-wallet-api which isn't babel friendly)

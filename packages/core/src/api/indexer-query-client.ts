@@ -1,6 +1,6 @@
 import ky, { type KyInstance } from 'ky'
 import { config } from '../config/main'
-import { Networks } from '../services/blockchain'
+import { Networks } from '../services/blockchain/types'
 import { createFetchClient } from './query-client'
 
 const clients = new Map<string, KyInstance>()

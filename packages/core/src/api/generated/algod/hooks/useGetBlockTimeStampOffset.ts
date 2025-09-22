@@ -3,8 +3,8 @@
 * Do not edit manually.
 */
 
-import fetch from "../../algod-query-client";
-import type { RequestConfig, ResponseErrorConfig } from "../../algod-query-client";
+import fetch from "../../../algod-query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { GetBlockTimeStampOffsetQueryResponse, GetBlockTimeStampOffset400 } from "../types/GetBlockTimeStampOffset.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
 import { getBlockTimeStampOffsetQueryResponseSchema } from "../zod/getBlockTimeStampOffsetSchema.ts";

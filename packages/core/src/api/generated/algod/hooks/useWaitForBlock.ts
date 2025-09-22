@@ -3,8 +3,8 @@
 * Do not edit manually.
 */
 
-import fetch from "../../algod-query-client";
-import type { RequestConfig, ResponseErrorConfig } from "../../algod-query-client";
+import fetch from "../../../algod-query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { WaitForBlockQueryResponse, WaitForBlockPathParams, WaitForBlock400, WaitForBlock401, WaitForBlock500, WaitForBlock503 } from "../types/WaitForBlock.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
 import { waitForBlockQueryResponseSchema } from "../zod/waitForBlockSchema.ts";

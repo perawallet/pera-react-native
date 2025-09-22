@@ -3,8 +3,8 @@
 * Do not edit manually.
 */
 
-import fetch from "../../algod-query-client";
-import type { RequestConfig, ResponseErrorConfig } from "../../algod-query-client";
+import fetch from "../../../algod-query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { AccountInformationQueryResponse, AccountInformationPathParams, AccountInformationQueryParams, AccountInformation400, AccountInformation401, AccountInformation500 } from "../types/AccountInformation.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
 import { accountInformationQueryResponseSchema } from "../zod/accountInformationSchema.ts";

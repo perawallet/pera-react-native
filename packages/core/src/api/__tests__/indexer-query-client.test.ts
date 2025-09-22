@@ -73,7 +73,7 @@ describe('api/query-client', () => {
 
     test('throws when url is missing', async () => {
         const { indexerFetchClient } = await import('../indexer-query-client')
-        
+
         await expect(
             indexerFetchClient<any>({ method: 'GET' } as any),
         ).rejects.toThrow('URL is required')

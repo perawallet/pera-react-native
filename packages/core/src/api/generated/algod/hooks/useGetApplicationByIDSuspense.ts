@@ -3,8 +3,8 @@
 * Do not edit manually.
 */
 
-import fetch from "../../algod-query-client";
-import type { RequestConfig, ResponseErrorConfig } from "../../algod-query-client";
+import fetch from "../../../algod-query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { GetApplicationByIDQueryResponse, GetApplicationByIDPathParams, GetApplicationByID400, GetApplicationByID401, GetApplicationByID404, GetApplicationByID500 } from "../types/GetApplicationByID.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
 import { getApplicationByIDQueryResponseSchema } from "../zod/getApplicationByIDSchema.ts";

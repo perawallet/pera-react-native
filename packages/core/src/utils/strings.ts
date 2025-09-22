@@ -1,4 +1,7 @@
 import { toByteArray, fromByteArray } from 'base64-js'
+import { Decimal } from 'decimal.js'
+
+Decimal.set({ precision: 18, crypto: true, rounding: Decimal.ROUND_HALF_UP })
 
 export const encodeToBase64 = (bytes: Uint8Array) => {
     return fromByteArray(bytes)
@@ -8,64 +11,39 @@ export const decodeFromBase64 = (base64: string) => {
     return toByteArray(base64)
 }
 
-export const asFixedPrecisionNumber = (value: string, precision: number) => {
-    const input = value.trim()
+//TODO: we should fetch this from the server or a file or something
+const currencySymbols: Record<string, string> = {
+    ALGO: 'Ⱥ',
+    ETH: 'Ξ',
+    BTC: '₿',
+    USD: '$',
+    EUR: '€',
+    GBP: '£',
+}
 
-    if (!input.length || input === '-' || input === '+') {
-        return precision > 0 ? `0.${''.padEnd(precision, '0')}` : '0'
-    }
+export const formatCurrency = (
+    value: Decimal | string | number,
+    precision: number,
+    currency: string,
+    locale: string = 'en-US',
+) => {
+    const decimal = new Decimal(value).toFixed(precision)
+    const currencySymbol = currencySymbols[currency] ?? '$'
+
+    const parts = decimal.split('.')
+    const integer = parts[0]
+    const formatter = Intl.NumberFormat(locale, {
+        style: 'decimal',
+    })
+    let formattedInteger = formatter.format(Number(integer))
+    const fraction = parts.length > 1 ? '.' + parts[1] : ''
 
     let sign = ''
-    let s = input
-    if (s[0] === '+' || s[0] === '-') {
-        sign = s[0]
-        s = s.slice(1)
+    if (formattedInteger.startsWith('-') || formattedInteger.startsWith('+')) {
+        sign = formattedInteger[0]
+        formattedInteger = formattedInteger.substring(1)
     }
 
-    const parts = s.split('.')
-    if (parts.length > 2) {
-        // Invalid numeric format; preserve original
-        return value
-    }
-
-    let integerPart = parts[0] || '0'
-    let fractionPart = parts[1] || ''
-
-    // Validate digits only (no scientific notation / separators)
-    const digitsOnly = /^[0-9]*$/
-    if (!digitsOnly.test(integerPart) || !digitsOnly.test(fractionPart)) {
-        return value
-    }
-
-    const clampedPrecision = Math.max(0, precision | 0)
-    if (clampedPrecision === 0) {
-        if (fractionPart[0] && Number(fractionPart[0]) >= 5) {
-            integerPart =  (Number(integerPart) + 1).toString()
-        }
-        return `${sign}${integerPart}`
-    }
-
-    if (fractionPart.length < clampedPrecision) {
-        return `${sign}${integerPart}.${fractionPart.padEnd(clampedPrecision, '0')}`
-    }
-
-    if (fractionPart.length === clampedPrecision) {
-        return `${sign}${integerPart}.${fractionPart}`
-    }
-
-    //we have too many fraction digits so we need to round
-    const keep = fractionPart.slice(0, clampedPrecision)
-    const roundingDigit = fractionPart[clampedPrecision]
-    if (Number(roundingDigit) < 5) {
-        return `${sign}${integerPart}.${keep}`
-    }
-
-    const incremented = (parseInt(keep, 10) + 1).toString()
-
-    if (incremented.length > clampedPrecision) {
-        integerPart = (Number(integerPart) + 1).toString()
-        return `${sign}${integerPart}.${''.padEnd(clampedPrecision, '0')}`
-    }
-
-    return `${sign}${integerPart}.${incremented.padStart(clampedPrecision, '0')}`
+    //TODO this is pretty limited formatting - it's not very locale specific
+    return `${sign}${currencySymbol}${formattedInteger}${fraction}`
 }

@@ -3,8 +3,8 @@
 * Do not edit manually.
 */
 
-import fetch from "../../algod-query-client";
-import type { RequestConfig, ResponseErrorConfig } from "../../algod-query-client";
+import fetch from "../../../algod-query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { TealCompileMutationRequest, TealCompileMutationResponse, TealCompileQueryParams, TealCompile400, TealCompile401, TealCompile404, TealCompile500 } from "../types/TealCompile.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
 import { tealCompileMutationResponseSchema, tealCompileMutationRequestSchema } from "../zod/tealCompileSchema.ts";

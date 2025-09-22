@@ -3,8 +3,8 @@
 * Do not edit manually.
 */
 
-import fetch from "../../algod-query-client";
-import type { RequestConfig, ResponseErrorConfig } from "../../algod-query-client";
+import fetch from "../../../algod-query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { GetBlockHashQueryResponse, GetBlockHashPathParams, GetBlockHash400, GetBlockHash401, GetBlockHash404, GetBlockHash500 } from "../types/GetBlockHash.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
 import { getBlockHashQueryResponseSchema } from "../zod/getBlockHashSchema.ts";

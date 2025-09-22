@@ -200,6 +200,9 @@ importers:
       bip39:
         specifier: 'catalog:'
         version: 3.1.0
+      decimal.js:
+        specifier: ^10.6.0
+        version: 10.6.0
       react:
         specifier: 'catalog:'
         version: 19.1.0
@@ -363,6 +366,9 @@ importers:
       bip39:
         specifier: 'catalog:'
         version: 3.1.0
+      decimal.js:
+        specifier: ^10.6.0
+        version: 10.6.0
       ky:
         specifier: ^1.10.0
         version: 1.10.0

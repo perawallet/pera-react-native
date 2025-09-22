@@ -3,8 +3,8 @@
 * Do not edit manually.
 */
 
-import fetch from "../../algod-query-client";
-import type { RequestConfig, ResponseErrorConfig } from "../../algod-query-client";
+import fetch from "../../../algod-query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { GetApplicationBoxByNameQueryResponse, GetApplicationBoxByNamePathParams, GetApplicationBoxByNameQueryParams, GetApplicationBoxByName400, GetApplicationBoxByName401, GetApplicationBoxByName404, GetApplicationBoxByName500 } from "../types/GetApplicationBoxByName.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
 import { getApplicationBoxByNameQueryResponseSchema } from "../zod/getApplicationBoxByNameSchema.ts";

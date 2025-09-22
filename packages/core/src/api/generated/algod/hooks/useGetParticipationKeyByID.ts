@@ -3,8 +3,8 @@
 * Do not edit manually.
 */
 
-import fetch from "../../algod-query-client";
-import type { RequestConfig, ResponseErrorConfig } from "../../algod-query-client";
+import fetch from "../../../algod-query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { GetParticipationKeyByIDQueryResponse, GetParticipationKeyByIDPathParams, GetParticipationKeyByID400, GetParticipationKeyByID401, GetParticipationKeyByID404, GetParticipationKeyByID500 } from "../types/GetParticipationKeyByID.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
 import { getParticipationKeyByIDQueryResponseSchema } from "../zod/getParticipationKeyByIDSchema.ts";

@@ -3,8 +3,8 @@
 * Do not edit manually.
 */
 
-import fetch from "../../algod-query-client";
-import type { RequestConfig, ResponseErrorConfig } from "../../algod-query-client";
+import fetch from "../../../algod-query-client";
+import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { GetBlockQueryResponse, GetBlockPathParams, GetBlockQueryParams, GetBlock400, GetBlock401, GetBlock404, GetBlock500 } from "../types/GetBlock.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
 import { getBlockQueryResponseSchema } from "../zod/getBlockSchema.ts";
