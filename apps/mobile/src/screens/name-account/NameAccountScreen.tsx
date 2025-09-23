@@ -43,7 +43,7 @@ const NameAccountScreen = ({ route }: NameAccountScreenProps) => {
   };
 
   const goToHome = () => {
-    navigation.replace('Home');
+    navigation.replace('TabBar');
   };
 
   return (

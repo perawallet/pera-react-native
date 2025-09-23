@@ -47,7 +47,7 @@ const RootStack = createNativeStackNavigator({
     animation: 'default',
   },
   screens: {
-    Home: TabBarStack,
+    TabBar: TabBarStack,
     Onboarding: OnboardingStack,
   },
 });

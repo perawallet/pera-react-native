@@ -10,6 +10,10 @@ export const configSchema = z.object({
     testnetAlgodUrl: z.url(),
     mainnetIndexerUrl: z.url(),
     testnetIndexerUrl: z.url(),
+	backendAPIKey: z.string(),
+	algodApiKey: z.string(),
+	indexerApiKey: z.string(),
+	debugEnabled: z.boolean()
 })
 
 export type Config = z.infer<typeof configSchema>

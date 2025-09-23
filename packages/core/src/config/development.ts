@@ -7,4 +7,8 @@ export const config: Config = {
     testnetAlgodUrl: 'http://localhost:8000',
     mainnetIndexerUrl: 'http://localhost:8000',
     testnetIndexerUrl: 'http://localhost:8000',
+	backendAPIKey: 'development-purposes-only-dc98f2c7-908f-4f74-81ef-9f5464213f99',
+	algodApiKey: '',
+	indexerApiKey: '',
+	debugEnabled: true
 }

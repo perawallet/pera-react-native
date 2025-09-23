@@ -17,7 +17,7 @@ const ButtonPanel = () => {
   const themeStyle = useStyles();
 
   const goToRootPage = (name: string) => {
-    navigation.replace('Home', { screen: name });
+    navigation.replace('TabBar', { screen: name });
   };
 
   const notImplemented = () => {

@@ -1,5 +1,6 @@
-import type { SearchParamsOption, KyInstance } from 'ky'
+import type { SearchParamsOption, KyInstance, KyRequest } from 'ky'
 import { useAppStore } from '../store/app-store'
+import { config } from '../config/main'
 
 function toSearchParamsOption(
     input: Record<string, unknown> | undefined,
@@ -52,6 +53,18 @@ export interface ResponseConfig<TData = unknown> {
 
 export type ResponseErrorConfig<TError = unknown> = TError
 
+export const logRequest = (request: KyRequest) => {
+    if (config.debugEnabled) {
+        console.log("Sending request", request)
+    }
+}
+
+export const logResponse = (request: KyRequest) => {
+    if (config.debugEnabled) {
+        console.log("Received response", request)
+    }
+}
+
 export const createFetchClient = (clients: Map<string, KyInstance>) => {
     return async <TData, _TError = unknown, TVariables = unknown>(
         requestConfig: RequestConfig<TVariables>,
@@ -60,7 +73,7 @@ export const createFetchClient = (clients: Map<string, KyInstance>) => {
             throw new Error('URL is required')
         }
 
-        const network = useAppStore(state => state.network)
+        const network = useAppStore(state => state.network) ?? 'testnet'
         const client = clients.get(network)
 
         if (!client) {
