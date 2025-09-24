@@ -11,7 +11,6 @@ import {
     useV1AssetsList,
     type AssetSerializerResponse,
 } from '../../api/generated/backend'
-import { useMemo } from 'react'
 import Decimal from 'decimal.js'
 
 // Services relating to locally stored accounts

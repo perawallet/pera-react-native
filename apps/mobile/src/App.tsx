@@ -11,9 +11,9 @@ import { RootComponent } from './components/root/RootComponent';
 function App() {
   const [bootstrapped, setBootstrapped] = useState(false);
   const [persister, setPersister] = useState<Persister>();
-  const kvService = useKeyValueStorageService();
 
   const bootstrap = useBootstrapper();
+  const kvService = useKeyValueStorageService();
 
   useEffect(() => {
     if (!bootstrapped) {
