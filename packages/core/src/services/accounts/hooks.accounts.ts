@@ -19,6 +19,16 @@ export const useAllAccounts = () => {
     return accounts
 }
 
+export const useHasAccounts = () => {
+    const accounts = useAppStore(state => state.accounts)
+    return !!accounts?.length
+}
+
+export const useHasNoAccounts = () => {
+    const accounts = useAppStore(state => state.accounts)
+    return !accounts?.length
+}
+
 export const useFindAccountbyAddress = (address: string) => {
     const accounts = useAppStore(state => state.accounts)
     return accounts.find(a => a.address === address) ?? null

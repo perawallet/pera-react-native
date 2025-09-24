@@ -8,6 +8,7 @@ import StakingScreen from '../screens/staking/StakingScreen';
 import SwapScreen from '../screens/swap/SwapScreen';
 import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
 import NameAccountScreen from '../screens/name-account/NameAccountScreen';
+import { useHasAccounts, useHasNoAccounts } from '@perawallet/core';
 
 const TabBarStack = createBottomTabNavigator({
   initialRouteName: 'Home',
@@ -41,14 +42,19 @@ const OnboardingStack = createNativeStackNavigator({
 });
 
 const RootStack = createNativeStackNavigator({
-  initialRouteName: 'Onboarding',
   screenOptions: {
     headerShown: false,
     animation: 'default',
   },
   screens: {
-    TabBar: TabBarStack,
-    Onboarding: OnboardingStack,
+    Onboarding: {
+      if: useHasNoAccounts,
+      screen: OnboardingStack,
+    },
+    TabBar:  {
+      if: useHasAccounts,
+      screen: TabBarStack,
+    }
   },
 });
 
