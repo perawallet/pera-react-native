@@ -1,4 +1,42 @@
-import { vi } from 'vitest';
+import 'reflect-metadata';
+import { vi, afterEach } from 'vitest';
+
+// Clean up after each test
+afterEach(() => {
+  vi.clearAllMocks();
+});
+
+// Mock React Native core modules
+vi.mock('react-native', async () => {
+  const RN = await vi.importActual('react-native');
+  return {
+    ...RN,
+    Platform: {
+      OS: 'ios',
+      select: vi.fn((obj) => obj.ios || obj.default),
+    },
+    Dimensions: {
+      get: vi.fn(() => ({ width: 375, height: 812 })),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    },
+    StatusBar: {
+      setBarStyle: vi.fn(),
+      setBackgroundColor: vi.fn(),
+    },
+    Alert: {
+      alert: vi.fn(),
+    },
+    StyleSheet: {
+      create: vi.fn((styles) => styles),
+      hairlineWidth: 1,
+      absoluteFill: { position: 'absolute', top: 0, left: 0, bottom: 0, right: 0 },
+    },
+    TouchableOpacity: vi.fn().mockImplementation(({ children, ...props }) => children),
+    View: vi.fn().mockImplementation(({ children, ...props }) => children),
+    Text: vi.fn().mockImplementation(({ children, ...props }) => children),
+  };
+});
 
 // Silence RN Animated warnings
 vi.mock('react-native/Libraries/Animated/NativeAnimatedHelper', () => ({}));
@@ -7,6 +45,35 @@ vi.mock('react-native/Libraries/Animated/NativeAnimatedHelper', () => ({}));
 vi.mock('react-native/Libraries/EventEmitter/NativeEventEmitter', () => {
   return class NativeEventEmitter {};
 });
+
+// Mock React Navigation
+vi.mock('@react-navigation/native', () => ({
+  useNavigation: () => ({
+    navigate: vi.fn(),
+    goBack: vi.fn(),
+    reset: vi.fn(),
+    setOptions: vi.fn(),
+  }),
+  useRoute: () => ({
+    params: {},
+  }),
+  useFocusEffect: vi.fn(),
+  NavigationContainer: ({ children }: any) => children,
+}));
+
+vi.mock('@react-navigation/bottom-tabs', () => ({
+  createBottomTabNavigator: vi.fn(() => ({
+    Navigator: ({ children }: any) => children,
+    Screen: ({ children }: any) => children,
+  })),
+}));
+
+vi.mock('@react-navigation/native-stack', () => ({
+  createNativeStackNavigator: vi.fn(() => ({
+    Navigator: ({ children }: any) => children,
+    Screen: ({ children }: any) => children,
+  })),
+}));
 
 // Common native modules used in the app, stubbed with minimal implementations
 vi.mock('@react-native-firebase/app', () => ({
