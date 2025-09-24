@@ -66,6 +66,7 @@ export const logResponse = (request: KyRequest) => {
 }
 
 export const createFetchClient = (clients: Map<string, KyInstance>) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     return async <TData, _TError = unknown, TVariables = unknown>(
         requestConfig: RequestConfig<TVariables>,
     ): Promise<ResponseConfig<TData>> => {

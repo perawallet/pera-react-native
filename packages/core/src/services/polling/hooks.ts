@@ -11,7 +11,7 @@ export const usePolling = () => {
         state => state.setLastRefreshedRound,
     )
     const { mutateAsync } = useV1AccountsShouldRefreshCreate()
-    const [polling, setPolling] = useState<any>()
+    const [polling, setPolling] = useState<NodeJS.Timeout | null>(null)
 
     const addresses = useMemo(() => accounts.map(a => a.address), [accounts])
 
