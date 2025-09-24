@@ -31,7 +31,8 @@ export const usePolling = () => {
                 setLastRefreshedRound(response.round ?? null)
             }
         } catch (error) {
-            console.log('Polling failed', error)
+            console.log('Polling failed:')
+            console.log(error)
         }
     }
 

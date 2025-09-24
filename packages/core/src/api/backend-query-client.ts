@@ -15,26 +15,16 @@ const setStandardHeaders = (request: KyRequest) => {
 
 const mainnetClient = ky.create({
     hooks: {
-        beforeRequest: [
-            setStandardHeaders,
-            logRequest
-        ],
-        afterResponse: [
-            logResponse
-        ]
+        beforeRequest: [setStandardHeaders, logRequest],
+        afterResponse: [logResponse],
     },
     prefixUrl: config.mainnetBackendUrl,
 })
 
 const testnetClient = ky.create({
     hooks: {
-        beforeRequest: [
-            setStandardHeaders,
-            logRequest
-        ],
-        afterResponse: [
-            logResponse
-        ]
+        beforeRequest: [setStandardHeaders, logRequest],
+        afterResponse: [logResponse],
     },
     prefixUrl: config.testnetBackendUrl,
 })
@@ -44,22 +34,23 @@ clients.set(Networks.testnet, testnetClient)
 
 export const updateBackendHeaders = (headers: Map<string, string>) => {
     clients.forEach((client, network) => {
-        clients.set(network, client.extend({
-            hooks: {
-                beforeRequest: [
-                    setStandardHeaders,
-                    request => {
-                        headers.forEach((v, k) => {
-                            request.headers.set(k, v)
-                        })
-                    },
-                    logRequest
-                ],
-                afterResponse: [
-                    logResponse
-                ]
-            }
-        }))
+        clients.set(
+            network,
+            client.extend({
+                hooks: {
+                    beforeRequest: [
+                        setStandardHeaders,
+                        request => {
+                            headers.forEach((v, k) => {
+                                request.headers.set(k, v)
+                            })
+                        },
+                        logRequest,
+                    ],
+                    afterResponse: [logResponse],
+                },
+            }),
+        )
     })
 }
 

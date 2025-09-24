@@ -51,10 +51,10 @@ const RootStack = createNativeStackNavigator({
       if: useHasNoAccounts,
       screen: OnboardingStack,
     },
-    TabBar:  {
+    TabBar: {
       if: useHasAccounts,
       screen: TabBarStack,
-    }
+    },
   },
 });
 

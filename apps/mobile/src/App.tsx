@@ -7,7 +7,7 @@ import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persi
 import { Persister } from '@tanstack/react-query-persist-client';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { RootComponent } from './components/root/RootComponent';
-import BootSplash from "react-native-bootsplash";
+import BootSplash from 'react-native-bootsplash';
 
 function App() {
   const [bootstrapped, setBootstrapped] = useState(false);
@@ -28,7 +28,7 @@ function App() {
         //we defer the hiding so the initial layout can happen
         setTimeout(() => {
           BootSplash.hide({ fade: true });
-        }, 200)
+        }, 200);
       });
     }
   }, [bootstrapped, bootstrap, kvService]);

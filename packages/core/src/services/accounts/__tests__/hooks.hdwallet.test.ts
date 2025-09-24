@@ -98,11 +98,6 @@ describe('services/accounts/useHDWallet', () => {
         )
         expect(apiSpies.keyGenSpy).toHaveBeenCalledWith('ROOT_KEY', 0, 0, 0, 9)
 
-        console.log('Privkey')
-        console.log(out.privateKey)
-        console.log('address')
-        console.log(out.address)
-
         // Assert
         expect(out.privateKey).toBe(priv)
         expect(out.address).toBe(addr)

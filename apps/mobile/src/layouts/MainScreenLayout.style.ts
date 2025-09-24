@@ -7,7 +7,7 @@ export const useStyles = makeStyles((theme, props: MainScreenLayoutProps) => {
       flex: 1,
       backgroundColor: theme.colors.background,
       padding: props.fullScreen ? 0 : theme.spacing.xl,
-      height: '100%'
+      height: '100%',
     },
     testnetContainer: {
       backgroundColor: theme.colors.primary,

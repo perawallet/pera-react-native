@@ -21,6 +21,7 @@ import {
     DeviceInfoServiceContainerKey,
     type DeviceInfoService,
 } from '../services/device/platform-service'
+import { reinitializeAppStore } from '../store/app-store'
 
 export interface PlatformServices {
     keyValueStorage: KeyValueStorageService
@@ -54,4 +55,5 @@ export const registerPlatformServices = (platform: PlatformServices) => {
     container.register<DeviceInfoService>(DeviceInfoServiceContainerKey, {
         useValue: platform.deviceInfo,
     })
+    reinitializeAppStore()
 }

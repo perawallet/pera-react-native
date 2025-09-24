@@ -1,5 +1,9 @@
-import { create, type Mutate, type StateCreator, type StoreApi, type StoreMutatorIdentifier, type UseBoundStore } from 'zustand'
-import { persist, createJSONStorage, type PersistOptions } from 'zustand/middleware'
+import { create, type StoreApi, type UseBoundStore } from 'zustand'
+import {
+    persist,
+    createJSONStorage,
+    type PersistOptions,
+} from 'zustand/middleware'
 import { useKeyValueStorageService } from '../services'
 import {
     createAccountsSlice,
@@ -36,36 +40,60 @@ export type AppState = SettingsSlice &
 type PersistListener<S> = (state: S) => void
 
 type StorePersist<S, Ps, Pr> = S extends {
-  getState: () => infer T
-  setState: {
-    // capture both overloads of setState
-    (...args: infer Sa1): infer Sr1
-    (...args: infer Sa2): infer Sr2
-  }
-}
-  ? {
-      setState(...args: Sa1): Sr1 | Pr
-      setState(...args: Sa2): Sr2 | Pr
-      persist: {
-        setOptions: (options: Partial<PersistOptions<T, Ps, Pr>>) => void
-        clearStorage: () => void
-        rehydrate: () => Promise<void> | void
-        hasHydrated: () => boolean
-        onHydrate: (fn: PersistListener<T>) => () => void
-        onFinishHydration: (fn: PersistListener<T>) => () => void
-        getOptions: () => Partial<PersistOptions<T, Ps, Pr>>
-      }
+    getState: () => infer T
+    setState: {
+        // capture both overloads of setState
+        (...args: infer Sa1): infer Sr1
+        (...args: infer Sa2): infer Sr2
     }
-  : never
+}
+    ? {
+          setState(...args: Sa1): Sr1 | Pr
+          setState(...args: Sa2): Sr2 | Pr
+          persist: {
+              setOptions: (options: Partial<PersistOptions<T, Ps, Pr>>) => void
+              clearStorage: () => void
+              rehydrate: () => Promise<void> | void
+              hasHydrated: () => boolean
+              onHydrate: (fn: PersistListener<T>) => () => void
+              onFinishHydration: (fn: PersistListener<T>) => () => void
+              getOptions: () => Partial<PersistOptions<T, Ps, Pr>>
+          }
+      }
+    : never
 
 type Write<T, U> = Omit<T, keyof U> & U
 
 type WithPersist<S, A> = Write<S, StorePersist<S, A, unknown>>
 
-export let useAppStore: UseBoundStore<WithPersist<StoreApi<AppState>, unknown>> 
+export let useAppStore: UseBoundStore<
+    WithPersist<StoreApi<AppState>, unknown>
+> = create<AppState>()(
+    persist(
+        (...a) => ({
+            ...createSettingsSlice(...a),
+            ...createBlockchainSlice(...a),
+            ...createAccountsSlice(...a),
+            ...createDeviceSlice(...a),
+            ...createPollingSlice(...a),
+        }),
+        {
+            name: 'app-store',
+            storage: createJSONStorage(useKeyValueStorageService),
+            version: 1,
+            partialize: state => ({
+                ...partializeSettingsSlice(state),
+                ...partializeBlockchainSlice(state),
+                ...partializeAccountsSlice(state),
+                ...partializeDeviceSlice(state),
+                ...partializePollingSlice(state),
+            }),
+        },
+    ),
+)
 
-export const initializeAppStore = () => {
-    const store = create<AppState>()(
+export const reinitializeAppStore = () => {
+    useAppStore = create<AppState>()(
         persist(
             (...a) => ({
                 ...createSettingsSlice(...a),
@@ -75,7 +103,7 @@ export const initializeAppStore = () => {
                 ...createPollingSlice(...a),
             }),
             {
-                name: 'app-store',    
+                name: 'app-store',
                 storage: createJSONStorage(useKeyValueStorageService),
                 version: 1,
                 partialize: state => ({
@@ -86,8 +114,7 @@ export const initializeAppStore = () => {
                     ...partializePollingSlice(state),
                 }),
             },
-        )
+        ),
     )
-
-    useAppStore = store
+    return useAppStore
 }

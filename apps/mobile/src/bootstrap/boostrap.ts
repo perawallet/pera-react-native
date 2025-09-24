@@ -8,7 +8,6 @@ import {
   useNotificationService,
   registerPlatformServices,
   useAppStore,
-  initializeAppStore,
 } from '@perawallet/core';
 
 const firebaseService = new RNFirebaseService();
@@ -22,7 +21,6 @@ const platformServices = {
 };
 
 registerPlatformServices(platformServices);
-initializeAppStore()
 
 export const useBootstrapper = () => {
   const crashlyticsService = useCrashReportingService();

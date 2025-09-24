@@ -10,10 +10,10 @@ export const configSchema = z.object({
     testnetAlgodUrl: z.url(),
     mainnetIndexerUrl: z.url(),
     testnetIndexerUrl: z.url(),
-	backendAPIKey: z.string(),
-	algodApiKey: z.string(),
-	indexerApiKey: z.string(),
-	debugEnabled: z.boolean()
+    backendAPIKey: z.string(),
+    algodApiKey: z.string(),
+    indexerApiKey: z.string(),
+    debugEnabled: z.boolean(),
 })
 
 export type Config = z.infer<typeof configSchema>
@@ -36,16 +36,19 @@ export function getConfigForEnv(env?: string): Config {
     switch (key) {
         case 'production':
         case 'prod':
+            console.log('Configured for production')
             selected = productionConfig
             break
         case 'staging':
         case 'stage':
+            console.log('Configured for staging')
             selected = stagingConfig
             break
         case 'development':
         case 'dev':
         case 'test': // vitest default
         default:
+            console.log('Configured for development')
             selected = developmentConfig
     }
 

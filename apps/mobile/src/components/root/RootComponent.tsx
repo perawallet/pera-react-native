@@ -25,7 +25,7 @@ export const RootComponent = () => {
   useEffect(() => {
     registerDevice();
 
-    startPolling();
+    // startPolling();
     const subscription = AppState.addEventListener('change', nextAppState => {
       if (
         appState.current.match(/inactive|background/) &&

@@ -7,37 +7,33 @@ const clients = new Map<string, KyInstance>()
 
 const mainnetClient = ky.create({
     hooks: {
-    	beforeRequest: [
-    		request => {
-    			request.headers.set('Content-Type', 'application/json')
+        beforeRequest: [
+            request => {
+                request.headers.set('Content-Type', 'application/json')
 
                 if (config.algodApiKey?.length) {
                     request.headers.set('X-Algo-API-Token', config.algodApiKey)
                 }
-    		},
-            logRequest
+            },
+            logRequest,
         ],
-        afterResponse: [
-            logResponse
-        ]
+        afterResponse: [logResponse],
     },
     prefixUrl: config.mainnetAlgodUrl,
 })
 const testnetClient = ky.create({
     hooks: {
-    	beforeRequest: [
-    		request => {
-    			request.headers.set('Content-Type', 'application/json')
+        beforeRequest: [
+            request => {
+                request.headers.set('Content-Type', 'application/json')
 
                 if (config.algodApiKey?.length) {
                     request.headers.set('X-Algo-API-Token', config.algodApiKey)
                 }
-    		},
-            logRequest
+            },
+            logRequest,
         ],
-        afterResponse: [
-            logResponse
-        ]
+        afterResponse: [logResponse],
     },
     prefixUrl: config.testnetAlgodUrl,
 })

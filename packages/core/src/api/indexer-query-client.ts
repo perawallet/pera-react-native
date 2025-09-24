@@ -7,33 +7,37 @@ const clients = new Map<string, KyInstance>()
 
 const mainnetClient = ky.create({
     hooks: {
-    	beforeRequest: [
-    		request => {
-    			request.headers.set('Content-Type', 'application/json')
+        beforeRequest: [
+            request => {
+                request.headers.set('Content-Type', 'application/json')
 
                 if (config.indexerApiKey?.length) {
-                    request.headers.set('X-Indexer-API-Token', config.indexerApiKey)
+                    request.headers.set(
+                        'X-Indexer-API-Token',
+                        config.indexerApiKey,
+                    )
                 }
-    		},
-    	],
+            },
+        ],
     },
     prefixUrl: config.mainnetIndexerUrl,
 })
 const testnetClient = ky.create({
     hooks: {
-    	beforeRequest: [
-    		request => {
-    			request.headers.set('Content-Type', 'application/json')
+        beforeRequest: [
+            request => {
+                request.headers.set('Content-Type', 'application/json')
 
                 if (config.indexerApiKey?.length) {
-                    request.headers.set('X-Indexer-API-Token', config.indexerApiKey)
+                    request.headers.set(
+                        'X-Indexer-API-Token',
+                        config.indexerApiKey,
+                    )
                 }
-    		},
-            logRequest
-    	],
-        afterResponse: [
-            logResponse
-        ]
+            },
+            logRequest,
+        ],
+        afterResponse: [logResponse],
     },
     prefixUrl: config.testnetIndexerUrl,
 })

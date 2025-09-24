@@ -55,13 +55,13 @@ export type ResponseErrorConfig<TError = unknown> = TError
 
 export const logRequest = (request: KyRequest) => {
     if (config.debugEnabled) {
-        console.log("Sending request", request)
+        console.log('Sending request', request)
     }
 }
 
 export const logResponse = (request: KyRequest) => {
     if (config.debugEnabled) {
-        console.log("Received response", request)
+        console.log('Received response', request)
     }
 }
 
@@ -73,7 +73,7 @@ export const createFetchClient = (clients: Map<string, KyInstance>) => {
             throw new Error('URL is required')
         }
 
-        const network = useAppStore(state => state.network) ?? 'testnet'
+        const network = useAppStore.getState().network ?? 'testnet'
         const client = clients.get(network)
 
         if (!client) {

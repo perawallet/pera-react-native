@@ -7,8 +7,9 @@ export const config: Config = {
     testnetAlgodUrl: 'https://testnet-api.algonode.cloud',
     mainnetIndexerUrl: 'http://mainnet-idx.algonode.cloud',
     testnetIndexerUrl: 'http://testnet-idx.algonode.cloud',
-	backendAPIKey: 'development-purposes-only-dc98f2c7-908f-4f74-81ef-9f5464213f99',
-	algodApiKey: '',
-	indexerApiKey: '',
-	debugEnabled: false,
+    backendAPIKey:
+        'development-purposes-only-dc98f2c7-908f-4f74-81ef-9f5464213f99',
+    algodApiKey: '',
+    indexerApiKey: '',
+    debugEnabled: false,
 }

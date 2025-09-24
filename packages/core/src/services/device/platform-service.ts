@@ -7,7 +7,7 @@ export interface DeviceInfoService {
     initializeDeviceInfo(): void
     getDeviceID(): Promise<string>
     getDeviceModel(): string
-    getDevicePlatform(): Promise<DevicePlatform>
+    getDevicePlatform(): DevicePlatform
     getDeviceLocale(): string
 }
 
