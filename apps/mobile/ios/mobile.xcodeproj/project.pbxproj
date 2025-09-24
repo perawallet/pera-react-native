@@ -20,6 +20,8 @@
 		59A9BB54AE4F468A8DA2DC37 /* dmsans_medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C324889D19A14B63A973187A /* dmsans_medium.ttf */; };
 		D1FDCAFC521E485CB1C2B636 /* dmsans_medium_italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A3162772E88D4CC38F18A2D0 /* dmsans_medium_italic.ttf */; };
 		78ED9D1734CE4EED91FC3FA2 /* dmsans_regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 15454DF9F32A48398FA8F5D9 /* dmsans_regular.ttf */; };
+		F89341C1A1594326B4BC919D /* BootSplash.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 1C828B83D3E94D22916C3A70 /* BootSplash.storyboard */; };
+		55AFE3D89971452AAAACAD8C /* Colors.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5956385C5D594D168439900B /* Colors.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -41,6 +43,8 @@
 		C324889D19A14B63A973187A /* dmsans_medium.ttf */ = {isa = PBXFileReference; name = "dmsans_medium.ttf"; path = "../assets/fonts/DMSans/dmsans_medium.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
 		A3162772E88D4CC38F18A2D0 /* dmsans_medium_italic.ttf */ = {isa = PBXFileReference; name = "dmsans_medium_italic.ttf"; path = "../assets/fonts/DMSans/dmsans_medium_italic.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
 		15454DF9F32A48398FA8F5D9 /* dmsans_regular.ttf */ = {isa = PBXFileReference; name = "dmsans_regular.ttf"; path = "../assets/fonts/DMSans/dmsans_regular.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		1C828B83D3E94D22916C3A70 /* BootSplash.storyboard */ = {isa = PBXFileReference; name = "BootSplash.storyboard"; path = "mobile/BootSplash.storyboard"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		5956385C5D594D168439900B /* Colors.xcassets */ = {isa = PBXFileReference; name = "Colors.xcassets"; path = "mobile/Colors.xcassets"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = folder.assetcatalog; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -63,6 +67,8 @@
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */,
+				1C828B83D3E94D22916C3A70 /* BootSplash.storyboard */,
+				5956385C5D594D168439900B /* Colors.xcassets */,
 			);
 			name = mobile;
 			sourceTree = "<group>";
@@ -202,6 +208,8 @@
 				59A9BB54AE4F468A8DA2DC37 /* dmsans_medium.ttf in Resources */,
 				D1FDCAFC521E485CB1C2B636 /* dmsans_medium_italic.ttf in Resources */,
 				78ED9D1734CE4EED91FC3FA2 /* dmsans_regular.ttf in Resources */,
+				F89341C1A1594326B4BC919D /* BootSplash.storyboard in Resources */,
+				55AFE3D89971452AAAACAD8C /* Colors.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
