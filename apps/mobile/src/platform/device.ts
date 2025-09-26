@@ -1,6 +1,6 @@
 import {
-  DeviceInfoService,
-  DevicePlatform,
+  type DeviceInfoService,
+  type DevicePlatform,
   updateBackendHeaders,
 } from '@perawallet/core';
 import DeviceInfo from 'react-native-device-info';

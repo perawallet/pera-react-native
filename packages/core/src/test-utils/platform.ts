@@ -72,7 +72,7 @@ export const buildTestPlatform = (
             return 'testModel'
         },
         getDevicePlatform() {
-            return Promise.resolve(DevicePlatforms.web)
+            return DevicePlatforms.web
         },
         getDeviceLocale() {
             return 'testLocale'

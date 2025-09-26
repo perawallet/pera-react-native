@@ -1,25 +1,22 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { ACCESS_CONTROL, SECURITY_LEVEL } from 'react-native-keychain';
 import { RNSecureStorageService } from '../secure-storage'
-import * as Keychain from 'react-native-keychain'
 
-// Mock react-native-keychain
-vi.mock('react-native-keychain', () => ({
-  setGenericPassword: vi.fn(),
+const mockKeychain = vi.hoisted(() => ({
+  setGenericPassword: vi.fn(async () => true),
   getGenericPassword: vi.fn(),
-  resetGenericPassword: vi.fn(),
+  resetGenericPassword: vi.fn(async () => true),
   ACCESSIBLE: {
-    WHEN_UNLOCKED_THIS_DEVICE_ONLY: 'WhenUnlockedThisDeviceOnly',
+    WHEN_UNLOCKED_THIS_DEVICE_ONLY: "WhenUnlockedThisDeviceOnly"
   },
   ACCESS_CONTROL: {
-    BIOMETRY_CURRENT_SET: 'BiometryCurrentSet',
+    BIOMETRY_CURRENT_SET: "BiometryCurrentSet"
   },
   SECURITY_LEVEL: {
-    SECURE_HARDWARE: 'SecureHardware',
-  },
-  STORAGE_TYPE: {
-    KC: 'KC',
-  },
+    SECURE_HARDWARE: "SecureHardware"
+  }
 }))
+
+vi.mock('react-native-keychain', () => mockKeychain);
 
 describe('RNSecureStorageService', () => {
   let service: RNSecureStorageService
@@ -30,13 +27,13 @@ describe('RNSecureStorageService', () => {
   })
 
   describe('initialize', () => {
-    test('sets default options', async () => {
-      await service.initialize()
-
+    it('sets default options', async () => {
+      service.initialize()
+  
       // Test by calling setItem and checking the options passed to Keychain
       await service.setItem('test-key', 'test-value')
 
-      expect(Keychain.setGenericPassword).toHaveBeenCalledWith(
+      expect(mockKeychain.setGenericPassword).toHaveBeenCalledWith(
         'user',
         'test-value',
         expect.objectContaining({
@@ -52,8 +49,8 @@ describe('RNSecureStorageService', () => {
       )
     })
 
-    test('accepts custom options', async () => {
-      await service.initialize({
+    it('accepts custom options', async () => {
+      service.initialize({
         service: 'custom.service',
         requireBiometrics: false,
         promptTitle: 'Custom Title',
@@ -62,7 +59,7 @@ describe('RNSecureStorageService', () => {
 
       await service.setItem('test-key', 'test-value')
 
-      expect(Keychain.setGenericPassword).toHaveBeenCalledWith(
+      expect(mockKeychain.setGenericPassword).toHaveBeenCalledWith(
         'user',
         'test-value',
         expect.objectContaining({
@@ -80,11 +77,11 @@ describe('RNSecureStorageService', () => {
   })
 
   describe('setItem', () => {
-    test('stores value with service-specific key', async () => {
-      await service.initialize()
+    it('stores value with service-specific key', async () => {
+      service.initialize()
       await service.setItem('my-key', 'my-value')
 
-      expect(Keychain.setGenericPassword).toHaveBeenCalledWith(
+      expect(mockKeychain.setGenericPassword).toHaveBeenCalledWith(
         'user',
         'my-value',
         expect.objectContaining({
@@ -95,11 +92,11 @@ describe('RNSecureStorageService', () => {
   })
 
   describe('getItem', () => {
-    test('returns stored value', async () => {
-      await service.initialize()
+    it('returns stored value', async () => {
+      service.initialize()
       
       // Mock successful retrieval
-      vi.mocked(Keychain.getGenericPassword).mockResolvedValue({
+      mockKeychain.getGenericPassword.mockResolvedValue({
         service: 'com.algorand.android.my-key',
         username: 'user',
         password: 'stored-value',
@@ -109,18 +106,18 @@ describe('RNSecureStorageService', () => {
       const result = await service.getItem('my-key')
       
       expect(result).toBe('stored-value')
-      expect(Keychain.getGenericPassword).toHaveBeenCalledWith(
+      expect(mockKeychain.getGenericPassword).toHaveBeenCalledWith(
         expect.objectContaining({
           service: 'com.algorand.android.my-key',
         })
       )
     })
 
-    test('returns null when no value found', async () => {
-      await service.initialize()
+    it('returns null when no value found', async () => {
+      service.initialize()
       
       // Mock no credentials found
-      vi.mocked(Keychain.getGenericPassword).mockResolvedValue(false)
+      mockKeychain.getGenericPassword.mockResolvedValue(false)
 
       const result = await service.getItem('non-existent-key')
       
@@ -129,11 +126,11 @@ describe('RNSecureStorageService', () => {
   })
 
   describe('removeItem', () => {
-    test('removes stored value', async () => {
-      await service.initialize()
+    it('removes stored value', async () => {
+      service.initialize()
       await service.removeItem('my-key')
 
-      expect(Keychain.resetGenericPassword).toHaveBeenCalledWith(
+      expect(mockKeychain.resetGenericPassword).toHaveBeenCalledWith(
         expect.objectContaining({
           service: 'com.algorand.android.my-key',
         })
@@ -142,11 +139,11 @@ describe('RNSecureStorageService', () => {
   })
 
   describe('authenticate', () => {
-    test('returns true when authentication succeeds with existing probe', async () => {
-      await service.initialize()
+    it('returns true when authentication succeeds with existing probe', async () => {
+      service.initialize()
       
       // Mock existing auth probe
-      vi.mocked(Keychain.getGenericPassword).mockResolvedValue({
+      mockKeychain.getGenericPassword.mockResolvedValue({
         service: 'com.algorand.android.auth_probe',
         username: 'user',
         password: '1',
@@ -156,18 +153,18 @@ describe('RNSecureStorageService', () => {
       const result = await service.authenticate()
       
       expect(result).toBe(true)
-      expect(Keychain.getGenericPassword).toHaveBeenCalledWith(
+      expect(mockKeychain.getGenericPassword).toHaveBeenCalledWith(
         expect.objectContaining({
           service: 'com.algorand.android.auth_probe',
         })
       )
     })
 
-    test('returns true when creating new auth probe succeeds', async () => {
-      await service.initialize()
+    it('returns true when creating new auth probe succeeds', async () => {
+      service.initialize()
       
       // Mock no existing probe, then successful creation and retrieval
-      vi.mocked(Keychain.getGenericPassword)
+      mockKeychain.getGenericPassword
         .mockResolvedValueOnce(false) // First call - no existing probe
         .mockResolvedValueOnce({ // Second call - successful retrieval after creation
           service: 'com.algorand.android.auth_probe',
@@ -179,21 +176,21 @@ describe('RNSecureStorageService', () => {
       const result = await service.authenticate()
       
       expect(result).toBe(true)
-      expect(Keychain.setGenericPassword).toHaveBeenCalledWith(
+      expect(mockKeychain.setGenericPassword).toHaveBeenCalledWith(
         'user',
         '1',
         expect.objectContaining({
           service: 'com.algorand.android.auth_probe',
         })
       )
-      expect(Keychain.getGenericPassword).toHaveBeenCalledTimes(2)
+      expect(mockKeychain.getGenericPassword).toHaveBeenCalledTimes(2)
     })
 
-    test('returns false when authentication fails', async () => {
-      await service.initialize()
+    it('returns false when authentication fails', async () => {
+      service.initialize()
       
       // Mock keychain operations throwing (e.g., user cancelled biometric prompt)
-      vi.mocked(Keychain.getGenericPassword).mockRejectedValue(
+      mockKeychain.getGenericPassword.mockRejectedValue(
         new Error('User cancelled authentication')
       )
 
@@ -202,11 +199,11 @@ describe('RNSecureStorageService', () => {
       expect(result).toBe(false)
     })
 
-    test('returns false when probe creation fails but initial read returns false', async () => {
-      await service.initialize()
+    it('returns false when probe creation fails but initial read returns false', async () => {
+      service.initialize()
       
       // Mock no existing probe, creation succeeds, but final read fails
-      vi.mocked(Keychain.getGenericPassword)
+      mockKeychain.getGenericPassword
         .mockResolvedValueOnce(false) // First call - no existing probe
         .mockResolvedValueOnce(false) // Second call - failed to read after creation
 

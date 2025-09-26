@@ -1,3 +1,4 @@
+import { setConfigSettings } from '@react-native-firebase/remote-config';
 import 'reflect-metadata';
 import { vi, afterEach } from 'vitest';
 
@@ -6,7 +7,38 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-// Mock React Native core modules
+
+vi.mock('react-native-device-info', () => ({
+  default: {
+    getApplicationName: () => 'Test App',
+    getBundleId: () => 'com.test.app',
+    getVersion: () => '1.0.0',
+    getSystemVersion: () => '17.0',
+    getDeviceId: () => 'test-device',
+    getUniqueId: () => Promise.resolve('unique-id'),
+    getModel: () => 'iPhone',
+  },
+}));
+
+vi.mock('react-native-keychain', () => ({
+  setGenericPassword: vi.fn().mockResolvedValue(true),
+  getGenericPassword: vi.fn().mockResolvedValue({
+    username: 'user',
+    password: 'test-password',
+  }),
+  resetGenericPassword: vi.fn().mockResolvedValue(true),
+  ACCESSIBLE: {
+    WHEN_UNLOCKED_THIS_DEVICE_ONLY: 'WhenUnlockedThisDeviceOnly',
+  },
+  ACCESS_CONTROL: {
+    BIOMETRY_CURRENT_SET: 'BiometryCurrentSet',
+  },
+  SECURITY_LEVEL: {
+    SECURE_HARDWARE: 'SecureHardware',
+  },
+}));
+
+// // Mock React Native core modules
 vi.mock('react-native', async () => {
   const RN = await vi.importActual('react-native');
   return {
@@ -14,6 +46,19 @@ vi.mock('react-native', async () => {
     Platform: {
       OS: 'ios',
       select: vi.fn((obj) => obj.ios || obj.default),
+    },
+    NativeModules: {
+      SettingsManager: {
+        settings: {
+          AppleLocale: 'en_US',
+          AppleLanguages: ['en_US', 'fr_FR'],
+        },
+      },
+      I18nManager: {
+        getConstants: vi.fn(() => ({
+          localeIdentifier: 'en_US',
+        })),
+      },
     },
     Dimensions: {
       get: vi.fn(() => ({ width: 375, height: 812 })),
@@ -37,6 +82,17 @@ vi.mock('react-native', async () => {
     Text: vi.fn().mockImplementation(({ children, ...props }) => children),
   };
 });
+
+vi.mock('react-native-safe-area-context', () => {
+  const inset = { top: 0, right: 0, bottom: 0, left: 0 }
+  return {
+    SafeAreaProvider: vi.fn().mockImplementation(({ children }) => children),
+    SafeAreaConsumer: vi
+      .fn()
+      .mockImplementation(({ children }) => children(inset)),
+    useSafeAreaInsets: vi.fn().mockImplementation(() => inset),
+  }
+})
 
 // Silence RN Animated warnings
 vi.mock('react-native/Libraries/Animated/NativeAnimatedHelper', () => ({}));
@@ -81,20 +137,26 @@ vi.mock('@react-native-firebase/app', () => ({
 }));
 
 vi.mock('@react-native-firebase/crashlytics', () => ({
-  default: () => ({ recordError: vi.fn(), log: vi.fn() }),
-}));
-
-vi.mock('@react-native-firebase/messaging', () => ({
-  default: () => ({
-    onMessage: vi.fn(() => vi.fn()),
-    getToken: vi.fn(async () => 'token'),
+  getCrashlytics: () => ({ 
+    setCrashlyticsCollectionEnabled: vi.fn(), 
+    recordError: vi.fn(), 
+    log: vi.fn() 
   }),
 }));
 
+vi.mock('@react-native-firebase/messaging', () => ({
+  getMessaging: () => ({
+    registerDeviceForRemoteMessages: vi.fn(),
+    onMessage: vi.fn(() => vi.fn()),
+    getToken: vi.fn(async () => 'token'),
+  })
+}));
+
 vi.mock('@react-native-firebase/remote-config', () => ({
-  default: () => ({
+  getRemoteConfig: () => ({
     setDefaults: vi.fn(async () => {}),
     fetchAndActivate: vi.fn(async () => true),
+    setConfigSettings: vi.fn(),
     getValue: vi.fn(() => ({
       asString: () => '',
       asBoolean: () => false,
@@ -108,12 +170,6 @@ vi.mock('@notifee/react-native', () => ({
     requestPermission: vi.fn(async () => true),
     onForegroundEvent: vi.fn(() => vi.fn()),
   },
-}));
-
-vi.mock('react-native-keychain', () => ({
-  setGenericPassword: vi.fn(async () => true),
-  getGenericPassword: vi.fn(async () => false),
-  resetGenericPassword: vi.fn(async () => true),
 }));
 
 vi.mock('react-native-mmkv', () => {
@@ -131,3 +187,15 @@ vi.mock('react-native-mmkv', () => {
   }
   return { MMKV };
 });
+
+vi.mock('@notifee/react-native', () => {
+  return {
+    AuthorizationStatus: "AUTHORIZED",
+    notifee: {
+      requestPermission: vi.fn(),
+      createChannel: vi.fn(),
+      displayNotification: vi.fn(),
+      onForegroundEvent: vi.fn(),
+    },
+  }
+})
