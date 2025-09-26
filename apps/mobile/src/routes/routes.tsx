@@ -45,6 +45,7 @@ const RootStack = createNativeStackNavigator({
   screenOptions: {
     headerShown: false,
     animation: 'default',
+    animationDuration: 50,
   },
   screens: {
     Onboarding: {

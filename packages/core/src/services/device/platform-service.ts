@@ -9,6 +9,7 @@ export interface DeviceInfoService {
     getDeviceModel(): string
     getDevicePlatform(): DevicePlatform
     getDeviceLocale(): string
+    getUserAgent(): string
 }
 
 export const useDeviceInfoService = () =>

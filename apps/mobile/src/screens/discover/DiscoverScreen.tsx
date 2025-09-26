@@ -1,14 +1,16 @@
-import MainScreenLayout from '../../layouts/MainScreenLayout';
+import { config } from '@perawallet/core';
+import PeraWebView from '../../components/webview/PeraWebView';
+import { useStyles } from './styles';
 import PeraView from '../../components/view/PeraView';
-import { Text } from '@rneui/themed';
 
 const DiscoverScreen = () => {
+  const styles = useStyles();
+  const url = config.discoverBaseUrl
+
   return (
-    <MainScreenLayout>
-      <PeraView>
-        <Text>This will be the discover screen</Text>
-      </PeraView>
-    </MainScreenLayout>
+    <PeraView style={styles.container}>
+      <PeraWebView url={url} style={styles.webview} containerStyle={styles.webview}/>
+    </PeraView>
   );
 };
 

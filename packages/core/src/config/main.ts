@@ -13,7 +13,12 @@ export const configSchema = z.object({
     backendAPIKey: z.string(),
     algodApiKey: z.string(),
     indexerApiKey: z.string(),
+
+    discoverBaseUrl: z.url(),
+    stakingBaseUrl: z.url(),
+    
     debugEnabled: z.boolean(),
+    profilingEnabled: z.boolean(),
 })
 
 export type Config = z.infer<typeof configSchema>

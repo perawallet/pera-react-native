@@ -1,14 +1,16 @@
-import { Text } from '@rneui/themed';
+import { config } from '@perawallet/core';
+import PeraWebView from '../../components/webview/PeraWebView';
+import { useStyles } from './styles';
 import PeraView from '../../components/view/PeraView';
-import MainScreenLayout from '../../layouts/MainScreenLayout';
 
 const StakingScreen = () => {
+  const styles = useStyles();
+  const url = config.stakingBaseUrl
+
   return (
-    <MainScreenLayout>
-      <PeraView>
-        <Text>This will be the portfolio screen</Text>
-      </PeraView>
-    </MainScreenLayout>
+    <PeraView style={styles.container}>
+      <PeraWebView url={url} style={styles.webview} containerStyle={styles.webview}/>
+    </PeraView>
   );
 };
 
