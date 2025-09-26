@@ -8,6 +8,8 @@ import { Persister } from '@tanstack/react-query-persist-client';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { RootComponent } from './components/root/RootComponent';
 import BootSplash from 'react-native-bootsplash';
+import { NotifierWrapper } from 'react-native-notifier';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 function App() {
   const [bootstrapped, setBootstrapped] = useState(false);
@@ -37,9 +39,13 @@ function App() {
     <SafeAreaProvider>
       {!bootstrapped && <Text>Loading...</Text>}
       {bootstrapped && persister && (
-        <QueryProvider persister={persister}>
-          <RootComponent />
-        </QueryProvider>
+        <GestureHandlerRootView>
+          <QueryProvider persister={persister}>
+            <NotifierWrapper>
+              <RootComponent />
+            </NotifierWrapper>
+          </QueryProvider>
+        </GestureHandlerRootView>
       )}
     </SafeAreaProvider>
   );

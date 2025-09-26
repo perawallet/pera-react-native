@@ -2,9 +2,11 @@ import { config } from '@perawallet/core';
 import PeraWebView from '../../components/webview/PeraWebView';
 import { useStyles } from './styles';
 import PeraView from '../../components/view/PeraView';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const DiscoverScreen = () => {
-  const styles = useStyles();
+  const insets = useSafeAreaInsets()
+  const styles = useStyles(insets);
   const url = config.discoverBaseUrl
 
   return (

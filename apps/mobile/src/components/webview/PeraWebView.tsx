@@ -2,10 +2,11 @@
 import { config, useDeviceInfoService } from '@perawallet/core';
 import { useTheme } from '@rneui/themed';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert } from 'react-native';
 import { WebView, WebViewMessageEvent, WebViewProps } from 'react-native-webview';
-import { WebViewNavigationEvent } from 'react-native-webview/lib/WebViewTypes';
+import { WebViewHttpErrorEvent, WebViewNavigationEvent } from 'react-native-webview/lib/WebViewTypes';
 import { baseJS, peraConnectJS } from './injected-scripts';
+import useToast from '../../hooks/toast';
+
 
 export type PeraWebViewProps = {
     url: string,
@@ -22,19 +23,36 @@ const PeraWebView = (props: PeraWebViewProps) => {
     const { theme } = useTheme()
     const [loaded, setLoaded] = useState(false)
     const webview = useRef<WebView>(null)
+    const { showToast } = useToast()
    
 
     const deviceInfo = useDeviceInfoService()
 
     const handleEvent = useCallback((event: WebViewMessageEvent) => {
-        Alert.alert("Received JS event: " + event.nativeEvent?.title)
+        showToast({
+            title: event.nativeEvent.title || "WebView Event",
+            body: event.nativeEvent?.data || "",
+            type: 'info'
+        });
     }, [])
 
     const verifyLoad = useCallback((event: WebViewNavigationEvent) => {
         if (event.nativeEvent.url.endsWith('.js')) {
-            Alert.alert("Loading JS doc: " + event.nativeEvent?.title)
+            showToast({
+                title: event.nativeEvent.title || "Loading JS",
+                body: event.nativeEvent?.url || "",
+                type: 'info'
+            });
         }
     }, [])
+
+    const showError = useCallback((event: WebViewHttpErrorEvent) => {
+        showToast({
+            title: event.nativeEvent.title,
+            body: `${event.nativeEvent.statusCode} - ${event.nativeEvent.description}`,
+            type: 'error'
+        })
+    }, []) 
 
     const jsToLoad = useMemo(() => {
         let js = baseJS
@@ -66,6 +84,7 @@ const PeraWebView = (props: PeraWebViewProps) => {
         setSupportMultipleWindows={false}
         userAgent={deviceInfo.getUserAgent()}
         onLoadStart={verifyLoad}
+        onHttpError={showError}
         onLoadEnd={() => setLoaded(true)}
         onError={(error) => console.log(error)}
       />
