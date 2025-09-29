@@ -4,7 +4,7 @@ import { useTheme } from '@rneui/themed';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { WebView, WebViewMessageEvent, WebViewProps } from 'react-native-webview';
 import { WebViewErrorEvent, WebViewHttpErrorEvent, WebViewNavigationEvent } from 'react-native-webview/lib/WebViewTypes';
-import { baseJS, peraConnectJS } from './injected-scripts';
+import { baseJS, peraConnectJS, peraMobileInterfaceJS } from './injected-scripts';
 import useToast from '../../hooks/toast';
 
 
@@ -23,8 +23,7 @@ const PeraWebView = (props: PeraWebViewProps) => {
     const { theme } = useTheme()
     const [loaded, setLoaded] = useState(false)
     const webview = useRef<WebView>(null)
-    const { showToast } = useToast()
-   
+    const { showToast } = useToast()   
 
     const deviceInfo = useDeviceInfoService()
 
@@ -37,6 +36,11 @@ const PeraWebView = (props: PeraWebViewProps) => {
         if (config.debugEnabled) {
             console.log('Received onMessage event', event.nativeEvent.data)
         }
+        showToast({
+            title: 'Not setup yet',
+            body: `Pera Wallet mobile interface has not been fully implemented`,
+            type: 'error'
+        })
     }, [])
 
     const verifyLoad = useCallback((event: WebViewNavigationEvent) => {
@@ -72,6 +76,9 @@ const PeraWebView = (props: PeraWebViewProps) => {
     useEffect(() => {
         if (loaded) {
             webview.current?.injectJavaScript(updateTheme(theme.mode))
+            if (enablePeraConnect) {
+                webview.current?.injectJavaScript(peraMobileInterfaceJS)
+            }
         }
     }, [theme, loaded])
 

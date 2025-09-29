@@ -1,7 +1,31 @@
 export const baseJS = `var css = '*{-webkit-touch-callout:none;-webkit-user-select:none}textarea,input{user-select:text;-webkit-user-select:text;}';
 var head = document.head || document.getElementsByTagName('head')[0];
 var style = document.createElement('style'); style.type = 'text/css';
-style.appendChild(document.createTextNode(css)); head.appendChild(style); window.peraMobileInterface = window.ReactNativeView;`
+style.appendChild(document.createTextNode(css)); head.appendChild(style);`
+
+export const peraMobileInterfaceJS = `
+if (window.ReactNativeWebView) {
+function sendRNMessage(action, params) {
+    window.ReactNativeWebView.postMessage(JSON.stringify({ action, params })); 
+};
+const peraMobileInterface = {
+    version: '2',
+    openSystemBrowser: (params) => sendRNMessage('openSystemBrowser', params),
+    closeWebView: () => sendRNMessage('closeWebView'),
+    openDappWebview: (params) => sendRNMessage('openDappWebview', params),
+    pushDappViewerScreen: (params) => sendRNMessage('pushDappViewerScreen', params),
+    getAuthorizedAddresses: () => sendRNMessage('getAuthorizedAddresses', params),
+    getDeviceId: () => sendRNMessage('getDeviceId'),
+    closePeraCards: () => sendRNMessage('closePeraCards'),
+    handleTokenDetailActionButtonClick: (params) => sendRNMessage('handleTokenDetailActionButtonClick', params),
+    pushNewScreen: (params) => sendRNMessage('pushNewScreen', params),
+    pushTokenDetailScreen: (params) => sendRNMessage('pushTokenDetailScreen', params)
+};
+window.peraMobileInterface = peraMobileInterface;
+} 
+else { 
+alert('Failed to connect to Pera Wallet'); 
+}`
 
 export const peraConnectJS = `function setupPeraConnectObserver(){const e=new MutationObserver(()=>{const \
 t=document.getElementById("pera-wallet-connect-modal-wrapper"),e=document.getElementById\("pera-wallet-redirect-modal-wrapper");\
