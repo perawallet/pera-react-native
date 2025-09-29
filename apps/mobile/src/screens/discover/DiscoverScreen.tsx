@@ -11,7 +11,7 @@ const DiscoverScreen = () => {
 
   return (
     <PeraView style={styles.container}>
-      <PeraWebView url={url} enablePeraConnect={true} style={styles.webview} containerStyle={styles.webview}/>
+      <PeraWebView url={url} enablePeraConnect={true} containerStyle={styles.webview}/>
     </PeraView>
   );
 };

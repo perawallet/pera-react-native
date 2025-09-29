@@ -61,12 +61,14 @@ const AccountListRow = ({ account }: AccountListRowProps) => {
             value={algoAmount}
             precision={2}
             currency="ALGO"
+            alignRight
           />
           <CurrencyDisplay
             style={themeStyle.secondaryText}
             value={usdAmount}
             precision={2}
             currency="USD"
+            alignRight
           />
         </PeraView>
       </PeraView>

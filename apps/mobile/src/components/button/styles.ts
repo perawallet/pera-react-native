@@ -7,9 +7,10 @@ export const useStyles = makeStyles((theme, props: PeraButtonProps) => ({
       props.variant === 'primary'
         ? theme.colors.buttonPrimaryBg
         : theme.colors.secondary,
+    gap: theme.spacing.sm,
   },
   titleStyle: {
-    fontFamily: 'DMSans-Regular',
+    fontFamily: 'DMSans-Medium',
     fontWeight: '500',
     fontSize: 15,
     lineHeight: 24,

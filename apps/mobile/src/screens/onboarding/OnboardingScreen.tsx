@@ -55,6 +55,7 @@ const OnboardingScreen = () => {
           </Text>
           <PanelButton
             title="Create a new wallet"
+            titleWeight="h4" 
             onPress={createAccountHandler}
             leftIcon={<WalletIcon />}
             rightIcon={<ChevronNext />}
@@ -65,6 +66,7 @@ const OnboardingScreen = () => {
           </Text>
           <PanelButton
             title="Import an account"
+            titleWeight="h4" 
             onPress={importAccount}
             leftIcon={<KeyIcon />}
             rightIcon={<ChevronNext />}

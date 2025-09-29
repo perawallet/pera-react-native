@@ -15,7 +15,7 @@ export type PeraWebViewProps = {
 
 const updateTheme = (mode: 'light' | 'dark') => {
     const jsTheme = mode === 'dark' ? 'dark-theme' : 'light-theme'
-    return `updateTheme(${jsTheme}); alert('Set theme to ${jsTheme}')`
+    return `if (updateTheme) { updateTheme(${jsTheme}); }`
 }
 
 const PeraWebView = (props: PeraWebViewProps) => {

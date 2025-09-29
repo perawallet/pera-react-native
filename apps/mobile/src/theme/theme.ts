@@ -6,8 +6,8 @@ export const getNavigationTheme = (mode: 'light' | 'dark' = 'light') => ({
   colors: {
     ...DefaultTheme.colors,
     background: mode === 'light' ? '#FFFFFF' : '#18181B',
-    text: mode === 'light' ? '##18181B' : '#FFFFFF',
-    primary: mode === 'light' ? '##18181B' : '#FFFFFF',
+    text: mode === 'light' ? '#A1A1AA' : '#71717A',
+    primary: mode === 'light' ? '#18181B' : '#FAFAFA',
   },
   dark: mode === 'dark',
 });
@@ -55,6 +55,10 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
 
       //Helpers
       helperPositive: '#1F8E9D',
+
+      // Tab Bar
+      tabIconActive: '#18181B',
+      tabIconPassive: '#A1A1AA',
 
       // States
       success: '#2CB7BC', // Alert/positive
@@ -104,6 +108,10 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
 
       //Helpers
       helperPositive: '#2CB7BC',
+
+      // Tab Bar
+      tabIconActive: '#FAFAFA',
+      tabIconPassive: '#71717A',
 
       // States
       success: '#2CB7BC', // Alert/positive

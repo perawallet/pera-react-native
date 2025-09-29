@@ -13,7 +13,6 @@ export const decodeFromBase64 = (base64: string) => {
 
 //TODO: we should fetch this from the server or a file or something
 const currencySymbols: Record<string, string> = {
-    ALGO: 'Ⱥ',
     ETH: 'Ξ',
     BTC: '₿',
     USD: '$',
@@ -28,7 +27,8 @@ export const formatCurrency = (
     locale: string = 'en-US',
 ) => {
     const decimal = new Decimal(value).toFixed(precision)
-    const currencySymbol = currencySymbols[currency] ?? '$'
+    const currencySymbol = currency === 'ALGO' ? '' : 
+        currencySymbols[currency] ?? '$'
 
     const parts = decimal.split('.')
     const integer = parts[0]
