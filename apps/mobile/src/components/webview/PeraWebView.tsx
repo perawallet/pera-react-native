@@ -3,7 +3,7 @@ import { config, useDeviceInfoService } from '@perawallet/core';
 import { useTheme } from '@rneui/themed';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { WebView, WebViewMessageEvent, WebViewProps } from 'react-native-webview';
-import { WebViewHttpErrorEvent, WebViewNavigationEvent } from 'react-native-webview/lib/WebViewTypes';
+import { WebViewErrorEvent, WebViewHttpErrorEvent, WebViewNavigationEvent } from 'react-native-webview/lib/WebViewTypes';
 import { baseJS, peraConnectJS } from './injected-scripts';
 import useToast from '../../hooks/toast';
 
@@ -15,7 +15,7 @@ export type PeraWebViewProps = {
 
 const updateTheme = (mode: 'light' | 'dark') => {
     const jsTheme = mode === 'dark' ? 'dark-theme' : 'light-theme'
-    return `if (updateTheme) { updateTheme(${jsTheme}); }`
+    return `if (updateTheme) { updateTheme('${jsTheme}'); }`
 }
 
 const PeraWebView = (props: PeraWebViewProps) => {
@@ -28,23 +28,28 @@ const PeraWebView = (props: PeraWebViewProps) => {
 
     const deviceInfo = useDeviceInfoService()
 
+    //TODO: replace this with the real version + platform
+    const userAgent = useMemo(() => {
+        return `pera_${deviceInfo.getDevicePlatform()}_6.202518.0`
+    }, [deviceInfo])
+
     const handleEvent = useCallback((event: WebViewMessageEvent) => {
-        showToast({
-            title: event.nativeEvent.title || "WebView Event",
-            body: event.nativeEvent?.data || "",
-            type: 'info'
-        });
+        if (config.debugEnabled) {
+            console.log('Received onMessage event', event.nativeEvent.data)
+        }
     }, [])
 
     const verifyLoad = useCallback((event: WebViewNavigationEvent) => {
-        if (event.nativeEvent.url.endsWith('.js')) {
-            showToast({
-                title: event.nativeEvent.title || "Loading JS",
-                body: event.nativeEvent?.url || "",
-                type: 'info'
-            });
-        }
+        console.log('Loading', event.nativeEvent.url)
     }, [])
+
+    const showLoadError = useCallback((event: WebViewErrorEvent) => {
+        showToast({
+            title: event.nativeEvent.title,
+            body: `${event.nativeEvent.code} - ${event.nativeEvent.url}`,
+            type: 'error'
+        })
+    }, []) 
 
     const showError = useCallback((event: WebViewHttpErrorEvent) => {
         showToast({
@@ -79,14 +84,17 @@ const PeraWebView = (props: PeraWebViewProps) => {
         }}
         onMessage={handleEvent}
         webviewDebuggingEnabled={config.debugEnabled}
+        pullToRefreshEnabled={true}
         injectedJavaScript={jsToLoad}
-        forceDarkOn={theme.mode === 'dark'}
         setSupportMultipleWindows={false}
-        userAgent={deviceInfo.getUserAgent()}
+        userAgent={userAgent}
         onLoadStart={verifyLoad}
+        onLoadSubResourceError={showLoadError}
+        onError={showLoadError}
         onHttpError={showError}
         onLoadEnd={() => setLoaded(true)}
-        onError={(error) => console.log(error)}
+        dataDetectorTypes={[]}
+        textInteractionEnabled={false}
       />
     );
 }

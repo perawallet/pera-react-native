@@ -6,8 +6,8 @@ import RoundButton from '../../round-button/RoundButton';
 
 import SwapIcon from '../../../../assets/icons/swap.svg';
 import BuyIcon from '../../../../assets/icons/buy.svg';
-import StakeIcon from '../../../../assets/icons/stake.svg';
-import SendIcon from '../../../../assets/icons/send.svg';
+import StakeIcon from '../../../../assets/icons/dot-stack.svg';
+import SendIcon from '../../../../assets/icons/outflow.svg';
 import { Alert } from 'react-native';
 import { useTheme } from '@rneui/themed';
 

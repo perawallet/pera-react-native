@@ -11,6 +11,6 @@
       "@assets/*": ["../assets/*"],
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", "**/*.svg"],
+  "include": ["**/*.ts", "**/*.tsx", "**/*.svg", "**/*.png"],
   "exclude": ["**/node_modules", "**/Pods", "**/coverage"]
 }

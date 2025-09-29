@@ -1,11 +1,13 @@
 import PeraButton from "../../../components/button/PeraButton"
 import PeraView from "../../../components/view/PeraView"
-import { Text } from "@rneui/themed"
+import { Image, Text } from "@rneui/themed"
 import { useStyles } from './styles'
 
 import CardIcon from '../../../../assets/icons/card.svg'
 import PlusIcon from '../../../../assets/icons/plus.svg'
-import CardBackground from '../../../../assets/images/card-background.svg'
+import CardBackground from '../../../../assets/images/card-background.png'
+
+const BACKGROUND_URI = Image.resolveAssetSource(CardBackground).uri
 
 const CardPanel = () => {
     const styles = useStyles();
@@ -24,7 +26,7 @@ const CardPanel = () => {
                     </Text>
                 </PeraView>
                 <PeraView style={styles.cardImageContainer}>
-                    <CardBackground />
+                    <Image source={{ uri: BACKGROUND_URI}} style={styles.backgroundImage} />
                 </PeraView>
             </PeraView>
             <PeraView style={styles.cardButtonContainer}>

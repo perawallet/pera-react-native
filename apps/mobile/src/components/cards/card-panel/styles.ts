@@ -33,11 +33,16 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
     },
     icon: {
       color: theme.colors.textMain,
-      backgroundColor: theme.colors.background,
+      backgroundColor: theme.colors.layerGrayLighter,
     },
     buttonIcon: {
       color: theme.colors.buttonPrimaryText,
       backgroundColor: theme.colors.primary,
+    },
+    backgroundImage: {
+      marginTop: theme.spacing.lg,
+      width: 116,
+      height: 124,
     }
   };
 });

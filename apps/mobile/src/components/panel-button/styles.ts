@@ -13,10 +13,14 @@ export const useStyles = makeStyles((theme, _: PanelButtonProps) => ({
     color: theme.colors.textMain,
     borderRadius: theme.spacing.lg,
   },
+  containerStyle: {
+
+  },
   textStyle: {
     backgroundColor: theme.colors.layerGrayLighter,
     color: theme.colors.textMain,
     flexGrow: 1,
     height: 28,
+    verticalAlign: 'middle',
   },
 }));
