@@ -34,6 +34,7 @@
     "decimal.js": "^10.6.0",
     "react": "catalog:",
     "react-native": "0.81.1",
+    "react-native-advanced-input-mask": "^1.4.5",
     "react-native-bootsplash": "^6.3.11",
     "react-native-device-info": "^14.0.4",
     "react-native-gesture-handler": "^2.28.0",

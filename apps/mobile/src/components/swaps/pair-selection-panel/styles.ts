@@ -103,19 +103,16 @@ export const useStyles = makeStyles(theme => ({
     color: theme.colors.textGray,
     flexShrink: 1,
   },
-  primaryInputContainer: {
-    flexGrow: 1,
-    padding: 0,
-  },
   primaryInput: {
     color: theme.colors.textGray,
     backgroundColor: theme.colors.background,
     fontFamily: 'DMSans-Medium',
     fontWeight: '500',
     fontSize: 25,
-    lineHeight: 24,
     padding: 0,
     margin: 0,
+    top: 0,
+    height: 48
   },
   primaryAmountText: {
     color: theme.colors.textGray,

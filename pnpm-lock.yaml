@@ -209,6 +209,9 @@ importers:
       react-native:
         specifier: 0.81.1
         version: 0.81.1(@babel/core@7.28.4)(@react-native-community/cli@20.0.0(typescript@5.9.2))(@react-native/metro-config@0.81.1(@babel/core@7.28.4))(@types/react@19.1.13)(react@19.1.0)
+      react-native-advanced-input-mask:
+        specifier: ^1.4.5
+        version: 1.4.5(react-native@0.81.1(@babel/core@7.28.4)(@react-native-community/cli@20.0.0(typescript@5.9.2))(@react-native/metro-config@0.81.1(@babel/core@7.28.4))(@types/react@19.1.13)(react@19.1.0))(react@19.1.0)
       react-native-bootsplash:
         specifier: ^6.3.11
         version: 6.3.11(react-native@0.81.1(@babel/core@7.28.4)(@react-native-community/cli@20.0.0(typescript@5.9.2))(@react-native/metro-config@0.81.1(@babel/core@7.28.4))(@types/react@19.1.13)(react@19.1.0))(react@19.1.0)
@@ -6417,6 +6420,12 @@ packages:
 
   react-is@19.1.1:
     resolution: {integrity: sha512-tr41fA15Vn8p4X9ntI+yCyeGSf1TlYaY5vlTZfQmeLBrFo3psOPX6HhTDnFNL9uj3EhP0KAQ80cugCl4b4BERA==}
+
+  react-native-advanced-input-mask@1.4.5:
+    resolution: {integrity: sha512-sNIbIItm23uoXE25zIifkTIzYCDP9w/xqXk2aWVboF+YRnh9YHf9cz25FrN9oN5mZhdjH6jUKuDAh8yH8flcXQ==}
+    peerDependencies:
+      react: '*'
+      react-native: '*'
 
   react-native-bootsplash@6.3.11:
     resolution: {integrity: sha512-VA102LDBPyqMJzRtIb5H6MWsKSSpjzW49e34E2kpOivmkYllLlOpkpB/Q6Yvrt4u3EbkgOxB5gerJERhvcO4Tg==}
@@ -15082,6 +15091,11 @@ snapshots:
   react-is@18.3.1: {}
 
   react-is@19.1.1: {}
+
+  react-native-advanced-input-mask@1.4.5(react-native@0.81.1(@babel/core@7.28.4)(@react-native-community/cli@20.0.0(typescript@5.9.2))(@react-native/metro-config@0.81.1(@babel/core@7.28.4))(@types/react@19.1.13)(react@19.1.0))(react@19.1.0):
+    dependencies:
+      react: 19.1.0
+      react-native: 0.81.1(@babel/core@7.28.4)(@react-native-community/cli@20.0.0(typescript@5.9.2))(@react-native/metro-config@0.81.1(@babel/core@7.28.4))(@types/react@19.1.13)(react@19.1.0)
 
   react-native-bootsplash@6.3.11(react-native@0.81.1(@babel/core@7.28.4)(@react-native-community/cli@20.0.0(typescript@5.9.2))(@react-native/metro-config@0.81.1(@babel/core@7.28.4))(@types/react@19.1.13)(react@19.1.0))(react@19.1.0):
     dependencies:

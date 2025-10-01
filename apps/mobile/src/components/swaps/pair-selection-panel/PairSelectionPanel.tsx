@@ -1,7 +1,7 @@
 import { useAppStore } from '@perawallet/core';
 import { useStyles } from './styles';
-import { useMemo, useState } from 'react';
-import { Divider, Input, Text } from '@rneui/themed';
+import { useCallback, useMemo, useState } from 'react';
+import { Divider, Text, useTheme } from '@rneui/themed';
 import Decimal from 'decimal.js';
 import AssetSelection from '../../common/asset-selection/AssetSelection';
 import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay';
@@ -14,11 +14,14 @@ import SlidersIcon from '../../../../assets/icons/sliders.svg';
 // TODO: these should be loaded from the server
 import AlgoAssetIcon from '../../../../assets/icons/assets/algo.svg';
 import USDCAssetIcon from '../../../../assets/icons/assets/usdc.svg';
+import CurrencyInput from '../../common/currency-input/CurrencyInput';
 
 const PairSelectionPanel = () => {
   const styles = useStyles();
+  const { theme } = useTheme();
 
   //TODO: some or all of these should probably come from either an account hook, the state store or a calculation
+  const [sendAmount, setSendAmount] = useState("0.0.00");
   const [receiveAmount, setRecieveAmount] = useState(Decimal(0));
   const [receiveAmountUSD, setRecieveAmountUSD] = useState(Decimal(0));
   const [fromBalance, setFromBalance] = useState(Decimal(0));
@@ -32,6 +35,10 @@ const PairSelectionPanel = () => {
     () => getSelectedAccount,
     [selectedAccountIndex],
   );
+
+  const handleAmountChange = useCallback((formatted: string) => {
+    console.log('send amount update', formatted)
+  }, [setSendAmount])
 
   return (
     <PeraView style={styles.container}>
@@ -50,11 +57,14 @@ const PairSelectionPanel = () => {
         </PeraView>
         <PeraView style={styles.inputContainer}>
           <PeraView style={styles.inputAmountsContainer}>
-            <Input
-              inputContainerStyle={styles.primaryInputContainer}
-              inputStyle={styles.primaryInput}
-              value={receiveAmount.toFixed(2)}
-              renderErrorMessage={false}
+            <CurrencyInput
+              cursorColor={theme.colors.textGray}
+              style={styles.primaryInput}
+              value={sendAmount}
+              minPrecision={2}
+              maxPrecision={18} //TODO: replace with asset precision
+              onChangeText={handleAmountChange}
+              affinityCalculationStrategy={0}
             />
             <CurrencyDisplay
               style={styles.secondaryAmountText}

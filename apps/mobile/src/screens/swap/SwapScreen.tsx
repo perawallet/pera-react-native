@@ -7,12 +7,14 @@ import PairSelectionPanel from '../../components/swaps/pair-selection-panel/Pair
 import SwapHistoryPanel from '../../components/swaps/swap-history-panel/SwapHistoryPanel';
 import TopPairsPanel from '../../components/swaps/top-pairs-panel/TopPairsPanel';
 import AccountSelection from '../../components/common/account-selection/AccountSelection';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SwapScreen = () => {
-  const styles = useStyles();
+  const insets = useSafeAreaInsets()
+  const styles = useStyles(insets)
 
   return (
-    <MainScreenLayout style={styles.container}>
+    <MainScreenLayout fullScreen style={styles.container}>
       <PeraView style={styles.headerContainer}>
         <PeraView style={styles.titleContainer}>
           <Text h3 h3Style={styles.titleText}>

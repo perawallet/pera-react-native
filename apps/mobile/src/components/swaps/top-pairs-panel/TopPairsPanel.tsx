@@ -1,6 +1,6 @@
 import { useStyles } from './styles';
 import PeraView from '../../common/view/PeraView';
-import { ScrollView, TouchableOpacity } from 'react-native';
+import { FlatList, ScrollView } from 'react-native';
 import { Text } from '@rneui/themed';
 import { useCallback } from 'react';
 
@@ -14,9 +14,9 @@ import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay';
 const TopPairsPanel = () => {
   const themeStyle = useStyles();
 
-  const renderSwapPair = useCallback((item: any, index: number) => {
+  const renderSwapPair = useCallback(({ item }: { item: any}) => {
     return (
-      <PeraView style={themeStyle.itemRow} key={'toppair' + index}>
+      <PeraView style={themeStyle.itemRow}>
         <SwapPair
           style={themeStyle.itemContainer}
           fromName={item.fromName}
@@ -70,11 +70,7 @@ const TopPairsPanel = () => {
           Volume (24H)
         </Text>
       </PeraView>
-      <ScrollView contentContainerStyle={themeStyle.itemScrollContainer}>
-        {pairs.map((item, i) => {
-          return renderSwapPair(item, i);
-        })}
-      </ScrollView>
+      <FlatList style={themeStyle.scrollContainer} contentContainerStyle={themeStyle.itemScrollContainer} data={pairs} renderItem={renderSwapPair} />
     </PeraView>
   );
 };
