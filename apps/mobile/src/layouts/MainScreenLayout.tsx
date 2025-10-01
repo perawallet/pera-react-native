@@ -9,13 +9,14 @@ import ChevronLeft from '../../assets/icons/chevron-left.svg';
 import { Text, useTheme } from '@rneui/themed';
 
 export type MainScreenLayoutProps = {
-  fullScreen?: boolean;
-  showBack?: boolean;
-  title?: string;
+  fullScreen?: boolean
+  showBack?: boolean
+  title?: string
+  header?: boolean
 } & ViewProps;
 
 const MainScreenLayout = (props: MainScreenLayoutProps) => {
-  const styles = useStyles();
+  const styles = useStyles(props);
   const { theme } = useTheme();
   const network = useAppStore(state => state.network);
   const navigation = useNavigation();
@@ -24,7 +25,7 @@ const MainScreenLayout = (props: MainScreenLayoutProps) => {
     navigation.goBack();
   };
 
-  return props.fullScreen ? (
+  return props.fullScreen || props.header ? (
     <PeraView style={[styles.mainContainer, props.style]} {...props}>
       {props.showBack && (
         <ChevronLeft

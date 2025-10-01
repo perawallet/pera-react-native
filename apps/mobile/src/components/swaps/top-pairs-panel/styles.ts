@@ -37,22 +37,4 @@ export const useStyles = makeStyles(theme => ({
     alignItems: 'center',
     gap: theme.spacing.lg,
   },
-  itemIconContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 48,
-  },
-  fromIcon: {
-    position: 'absolute',
-    left: -5,
-    top: 7,
-  },
-  toIcon: {
-    position: 'relative',
-    borderWidth: 2,
-    borderColor: theme.colors.background,
-    borderRadius: 8,
-    left: 8,
-    bottom: -8,
-  },
 }));

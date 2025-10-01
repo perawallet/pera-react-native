@@ -51,4 +51,7 @@ export class RNDeviceInfoStorageService implements DeviceInfoService {
   getUserAgent(): string {
     return buildUserAgent();
   }
+  getAppVersion(): string {
+    return DeviceInfo.getVersion()
+  }
 }

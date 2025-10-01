@@ -8,6 +8,11 @@ import StakingScreen from '../screens/staking/StakingScreen';
 import SwapScreen from '../screens/swap/SwapScreen';
 import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
 import NameAccountScreen from '../screens/name-account/NameAccountScreen';
+import AccountScreen from '../screens/account/AccountScreen';
+import AssetDetailsScreen from '../screens/asset-details/AssetDetailsScreen';
+import SettingsScreen from '../screens/settings/SettingsScreen';
+import SettingsSubPageScreen from '../screens/settings-sub-page/SettingsSubPageScreen';
+
 import { useHasAccounts, useHasNoAccounts } from '@perawallet/core';
 
 import HomeIcon from '../../assets/icons/house.svg';
@@ -15,6 +20,70 @@ import DiscoverIcon from '../../assets/icons/globe.svg';
 import SwapIcon from '../../assets/icons/swap.svg';
 import StakingIcon from '../../assets/icons/dot-stack.svg';
 import MenuIcon from '../../assets/icons/horizontal-line-stack.svg';
+
+const PortfolioStack = createNativeStackNavigator({
+  initialRouteName: 'Portfolio',
+  screenOptions: {
+    headerShown: false,
+    headerShadowVisible: false,
+    headerTitleStyle: {
+      fontFamily: "DMSans-Regular",
+      fontWeight: 400,
+      fontSize: 15,
+      lineHeight: 24,
+      textAlign: 'center'
+    },
+    headerStyle: {
+    }
+  },
+  screens: {
+    Portfolio: PortfolioScreen,
+    Account: {
+      screen: AccountScreen,
+      options: {
+        headerShown: true,
+        title: 'Account'
+      }
+    },
+    AssetDetails: {
+      screen: AssetDetailsScreen,
+      options: {
+        headerShown: true
+      }
+    },
+  },
+});
+
+const SettingsStack = createNativeStackNavigator({
+  initialRouteName: 'SettingsHome',
+  screenOptions: {
+    headerShown: true,
+    headerShadowVisible: false,
+    headerTitleStyle: {
+      fontFamily: "DMSans-Regular",
+      fontWeight: 400,
+      fontSize: 15,
+      lineHeight: 24,
+      textAlign: 'center'
+    },
+    headerStyle: {
+    }
+  },
+  screens: {
+    SettingsHome: {
+      screen: SettingsScreen,
+      options: {
+        title: 'Settings'
+      }
+    },
+    SettingsSubPage: {
+      screen: SettingsSubPageScreen,
+      options: ({ route }: { route: any }) => ({
+        title: route.params?.title,
+      }),
+    }
+  },
+});
 
 const TabBarStack = createBottomTabNavigator({
   initialRouteName: 'Home',
@@ -35,7 +104,7 @@ const TabBarStack = createBottomTabNavigator({
     },
   }),
   screens: {
-    Home: PortfolioScreen,
+    Home: PortfolioStack,
     Discover: DiscoverScreen,
     Swap: SwapScreen,
     Staking: StakingScreen,
@@ -69,6 +138,7 @@ const RootStack = createNativeStackNavigator({
       if: useHasAccounts,
       screen: TabBarStack,
     },
+    Settings: SettingsStack,
   },
 });
 

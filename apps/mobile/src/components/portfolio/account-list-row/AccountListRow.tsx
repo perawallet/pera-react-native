@@ -42,7 +42,7 @@ const AccountListRow = ({ account }: AccountListRowProps) => {
   const showAltAddress = account.rekeyAddress || account.name?.length;
 
   const goToAccount = () => {
-    navigation.push('AccountDetails', { account });
+    navigation.push('Account', { account });
   };
 
   return (

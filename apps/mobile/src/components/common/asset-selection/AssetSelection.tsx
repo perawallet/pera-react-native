@@ -3,18 +3,18 @@ import PeraView from '../view/PeraView';
 import { useStyles } from './styles';
 
 import ChevronRight from '../../../../assets/icons/chevron-right.svg';
+import AssetIcon from '../asset-icon/AssetIcon';
 
 export type AssetSelectionProps = {
   name: string;
-  icon: React.ReactElement<{}>;
 };
 
-const AssetSelection = ({ name, icon }: AssetSelectionProps) => {
+const AssetSelection = ({ name }: AssetSelectionProps) => {
   const styles = useStyles();
 
   return (
     <PeraView style={styles.container}>
-      {icon}
+      <AssetIcon asset={name} />
       <Text h4Style={styles.text} h4>
         {name}
       </Text>

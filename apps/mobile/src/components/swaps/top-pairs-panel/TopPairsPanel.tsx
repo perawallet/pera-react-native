@@ -1,13 +1,9 @@
 import { useStyles } from './styles';
 import PeraView from '../../common/view/PeraView';
-import { FlatList, ScrollView } from 'react-native';
+import { FlatList } from 'react-native';
 import { Text } from '@rneui/themed';
 import { useCallback } from 'react';
 
-// TODO: these should be loaded from the server
-import AlgoAssetIcon from '../../../../assets/icons/assets/algo.svg';
-import VestAssetIcon from '../../../../assets/icons/assets/vest.svg';
-import USDCAssetIcon from '../../../../assets/icons/assets/usdc.svg';
 import SwapPair from '../swap-pair/SwapPair';
 import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay';
 
@@ -20,8 +16,6 @@ const TopPairsPanel = () => {
         <SwapPair
           style={themeStyle.itemContainer}
           fromName={item.fromName}
-          fromIcon={item.fromIcon}
-          toIcon={item.toIcon}
           toName={item.toName}
         />
         <CurrencyDisplay
@@ -41,23 +35,17 @@ const TopPairsPanel = () => {
   const pairs = [
     {
       fromName: 'VEST',
-      fromIcon: <VestAssetIcon style={themeStyle.fromIcon} />,
       toName: 'ALGO',
-      toIcon: <AlgoAssetIcon style={themeStyle.toIcon} />,
       volume: 20000,
     },
     {
       fromName: 'ALGO',
-      fromIcon: <AlgoAssetIcon style={themeStyle.fromIcon} />,
       toName: 'USDC',
-      toIcon: <USDCAssetIcon style={themeStyle.toIcon} />,
       volume: 234240,
     },
     {
       fromName: 'ALGO',
-      fromIcon: <AlgoAssetIcon style={themeStyle.fromIcon} />,
       toName: 'VEST',
-      toIcon: <VestAssetIcon style={themeStyle.toIcon} />,
       volume: 422210,
     },
   ];

@@ -10,10 +10,6 @@ import { TouchableOpacity, View } from 'react-native';
 
 import SwitchIcon from '../../../../assets/icons/switch.svg';
 import SlidersIcon from '../../../../assets/icons/sliders.svg';
-
-// TODO: these should be loaded from the server
-import AlgoAssetIcon from '../../../../assets/icons/assets/algo.svg';
-import USDCAssetIcon from '../../../../assets/icons/assets/usdc.svg';
 import CurrencyInput from '../../common/currency-input/CurrencyInput';
 
 const PairSelectionPanel = () => {
@@ -21,7 +17,7 @@ const PairSelectionPanel = () => {
   const { theme } = useTheme();
 
   //TODO: some or all of these should probably come from either an account hook, the state store or a calculation
-  const [sendAmount, setSendAmount] = useState("0.0.00");
+  const [sendAmount, setSendAmount] = useState("0.00");
   const [receiveAmount, setRecieveAmount] = useState(Decimal(0));
   const [receiveAmountUSD, setRecieveAmountUSD] = useState(Decimal(0));
   const [fromBalance, setFromBalance] = useState(Decimal(0));
@@ -37,7 +33,7 @@ const PairSelectionPanel = () => {
   );
 
   const handleAmountChange = useCallback((formatted: string) => {
-    console.log('send amount update', formatted)
+    setSendAmount(formatted)
   }, [setSendAmount])
 
   return (
@@ -73,7 +69,7 @@ const PairSelectionPanel = () => {
               value={receiveAmountUSD}
             />
           </PeraView>
-          <AssetSelection name="ALGO" icon={<AlgoAssetIcon />} />
+          <AssetSelection name="ALGO" />
         </PeraView>
       </PeraView>
       <View style={styles.floatButtonContainer}>
@@ -120,7 +116,7 @@ const PairSelectionPanel = () => {
               value={receiveAmountUSD}
             />
           </PeraView>
-          <AssetSelection name="USDC" icon={<USDCAssetIcon />} />
+          <AssetSelection name="USDC" />
         </PeraView>
       </PeraView>
     </PeraView>

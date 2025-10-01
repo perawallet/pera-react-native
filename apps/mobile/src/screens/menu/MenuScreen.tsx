@@ -14,11 +14,17 @@ import EnvelopeIcon from '../../../assets/icons/envelope-letter.svg';
 
 import PanelButton from '../../components/common/panel-button/PanelButton';
 import CardPanel from '../../components/cards/card-panel/CardPanel';
-import { useAppStore } from '@perawallet/core';
+import { ParamListBase, useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 const MenuScreen = () => {
-  const { theme } = useTheme();
-  const styles = useStyles();
+  const { theme } = useTheme()
+  const styles = useStyles()
+  const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
+
+  const goToSettings = () => {
+    navigation.push('Settings')
+  }
 
   return (
     <MainScreenLayout>
@@ -31,7 +37,7 @@ const MenuScreen = () => {
           <TouchableOpacity>
             <CameraIcon style={styles.icon} color={theme.colors.textMain} />
           </TouchableOpacity>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={goToSettings}>
             <GearIcon style={styles.icon} color={theme.colors.textMain} />
           </TouchableOpacity>
         </PeraView>
