@@ -6,7 +6,7 @@ import { AuthorizationStatus } from '@react-native-firebase/messaging';
 vi.mock('react-native', () => ({
   Platform: {
     OS: 'ios',
-    select: vi.fn((config) => config.ios),
+    select: vi.fn(config => config.ios),
   },
 }));
 
@@ -19,11 +19,11 @@ vi.mock('@react-native-firebase/crashlytics', () => ({
 }));
 
 const mockRemoteConfig = vi.hoisted(() => ({
-    setConfigSettings: vi.fn().mockResolvedValue(undefined),
-    setDefaults: vi.fn().mockResolvedValue(undefined),
-    fetchAndActivate: vi.fn().mockResolvedValue(true),
-    getValue: vi.fn()
-  }))
+  setConfigSettings: vi.fn().mockResolvedValue(undefined),
+  setDefaults: vi.fn().mockResolvedValue(undefined),
+  fetchAndActivate: vi.fn().mockResolvedValue(true),
+  getValue: vi.fn(),
+}));
 
 vi.mock('@react-native-firebase/remote-config', () => ({
   getRemoteConfig: () => mockRemoteConfig,
@@ -59,8 +59,8 @@ vi.mock('@notifee/react-native', () => ({
     NOT_DETERMINED: -1,
     DENIED: 0,
     AUTHORIZED: 1,
-    PROVISIONAL: 2
-  }
+    PROVISIONAL: 2,
+  },
 }));
 
 describe('RNFirebaseService', () => {
@@ -78,7 +78,9 @@ describe('RNFirebaseService', () => {
       });
 
       it('should handle fetch errors gracefully', async () => {
-        mockRemoteConfig.fetchAndActivate.mockRejectedValueOnce(new Error('Fetch failed'));
+        mockRemoteConfig.fetchAndActivate.mockRejectedValueOnce(
+          new Error('Fetch failed'),
+        );
         await expect(service.initializeRemoteConfig()).resolves.not.toThrow();
       });
     });
@@ -89,7 +91,7 @@ describe('RNFirebaseService', () => {
           asString: () => 'mock-string-value',
           asBoolean: () => true,
           asNumber: () => 42,
-        })
+        });
         const result = service.getStringValue('welcome_message');
         expect(result).toBe('mock-string-value');
       });
@@ -99,13 +101,13 @@ describe('RNFirebaseService', () => {
           asString: () => 'mock-string-value',
           asBoolean: () => true,
           asNumber: () => 42,
-        })
+        });
         const result = service.getStringValue('welcome_message', 'fallback');
         expect(result).toBe('mock-string-value');
       });
 
       it('should return empty string when no fallback and getValue nothing', async () => {
-        mockRemoteConfig.getValue.mockRejectedValue(new Error('no value'))
+        mockRemoteConfig.getValue.mockRejectedValue(new Error('no value'));
         const result = service.getStringValue('welcome_message');
         expect(result).toBe('');
       });
@@ -117,7 +119,7 @@ describe('RNFirebaseService', () => {
           asString: () => 'mock-string-value',
           asBoolean: () => true,
           asNumber: () => 42,
-        })
+        });
         const result = service.getBooleanValue('welcome_message');
         expect(result).toEqual(true);
       });
@@ -127,13 +129,13 @@ describe('RNFirebaseService', () => {
           asString: () => 'mock-string-value',
           asBoolean: () => true,
           asNumber: () => 42,
-        })
+        });
         const result = service.getBooleanValue('welcome_message', false);
         expect(result).toEqual(true);
       });
 
       it('should return fallback ', async () => {
-        mockRemoteConfig.getValue.mockRejectedValue(new Error('no value'))
+        mockRemoteConfig.getValue.mockRejectedValue(new Error('no value'));
         const result = service.getBooleanValue('welcome_message', true);
         expect(result).toEqual(true);
       });
@@ -145,7 +147,7 @@ describe('RNFirebaseService', () => {
           asString: () => 'mock-string-value',
           asBoolean: () => true,
           asNumber: () => 42,
-        })
+        });
         const result = service.getNumberValue('welcome_message');
         expect(result).toEqual(42);
       });
@@ -155,13 +157,13 @@ describe('RNFirebaseService', () => {
           asString: () => 'mock-string-value',
           asBoolean: () => true,
           asNumber: () => 42,
-        })
+        });
         const result = service.getNumberValue('welcome_message', 100);
         expect(result).toEqual(42);
       });
 
       it('should return fallback value when no value received', () => {
-        mockRemoteConfig.getValue.mockRejectedValue(new Error('no value'))
+        mockRemoteConfig.getValue.mockRejectedValue(new Error('no value'));
         const result = service.getNumberValue('welcome_message', 100);
         expect(result).toEqual(100);
       });
@@ -172,8 +174,8 @@ describe('RNFirebaseService', () => {
     describe('initializeNotifications', () => {
       it('should initialize notifications successfully', async () => {
         mockNotifee.requestPermission.mockResolvedValue({
-          authorizationStatus: 1 //AUTHORIZED
-        })
+          authorizationStatus: 1, //AUTHORIZED
+        });
         const result = await service.initializeNotifications();
 
         expect(result).toHaveProperty('token');
@@ -185,10 +187,12 @@ describe('RNFirebaseService', () => {
       it('should handle Android platform correctly', async () => {
         const { Platform } = await import('react-native');
         vi.mocked(Platform).OS = 'android';
-        vi.mocked(Platform.select).mockImplementation((config: any) => config.android);
+        vi.mocked(Platform.select).mockImplementation(
+          (config: any) => config.android,
+        );
         mockNotifee.requestPermission.mockResolvedValue({
-          authorizationStatus: 1
-        })
+          authorizationStatus: 1,
+        });
 
         const result = await service.initializeNotifications();
 
@@ -198,36 +202,38 @@ describe('RNFirebaseService', () => {
 
       it('should call unsubscribe functions when unsubscribe is called', async () => {
         const result = await service.initializeNotifications();
-        
+
         // Should not throw when calling unsubscribe
         expect(() => result.unsubscribe()).not.toThrow();
       });
 
       it('should handle permission request errors', async () => {
         mockNotifee.requestPermission.mockResolvedValue({
-          authorizationStatus: "DENIED"
+          authorizationStatus: 'DENIED',
         });
-        
+
         const result = await service.initializeNotifications();
-        
+
         expect(result).toHaveProperty('token');
         expect(result).toHaveProperty('unsubscribe');
       });
 
       it('should handle messaging registration errors', async () => {
-        mockMessaging.registerDeviceForRemoteMessages.mockRejectedValueOnce(new Error('Registration failed'));
+        mockMessaging.registerDeviceForRemoteMessages.mockRejectedValueOnce(
+          new Error('Registration failed'),
+        );
         mockMessaging.getToken.mockRejectedValueOnce(new Error('Token failed'));
-        
+
         const result = await service.initializeNotifications();
-        
+
         expect(result.token).toBeUndefined();
         expect(result).toHaveProperty('unsubscribe');
       });
 
       it('should register onMessage and onForegroundEvent handlers', async () => {
         mockNotifee.requestPermission.mockResolvedValue({
-          authorizationStatus: 1 //AUTHORIZED
-        })
+          authorizationStatus: 1, //AUTHORIZED
+        });
         await service.initializeNotifications();
 
         expect(mockMessaging.onMessage).toHaveBeenCalled();

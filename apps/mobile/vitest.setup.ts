@@ -7,7 +7,6 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-
 vi.mock('react-native-device-info', () => ({
   default: {
     getApplicationName: () => 'Test App',
@@ -45,7 +44,7 @@ vi.mock('react-native', async () => {
     ...RN,
     Platform: {
       OS: 'ios',
-      select: vi.fn((obj) => obj.ios || obj.default),
+      select: vi.fn(obj => obj.ios || obj.default),
     },
     NativeModules: {
       SettingsManager: {
@@ -73,26 +72,34 @@ vi.mock('react-native', async () => {
       alert: vi.fn(),
     },
     StyleSheet: {
-      create: vi.fn((styles) => styles),
+      create: vi.fn(styles => styles),
       hairlineWidth: 1,
-      absoluteFill: { position: 'absolute', top: 0, left: 0, bottom: 0, right: 0 },
+      absoluteFill: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        bottom: 0,
+        right: 0,
+      },
     },
-    TouchableOpacity: vi.fn().mockImplementation(({ children, ...props }) => children),
+    TouchableOpacity: vi
+      .fn()
+      .mockImplementation(({ children, ...props }) => children),
     View: vi.fn().mockImplementation(({ children, ...props }) => children),
     Text: vi.fn().mockImplementation(({ children, ...props }) => children),
   };
 });
 
 vi.mock('react-native-safe-area-context', () => {
-  const inset = { top: 0, right: 0, bottom: 0, left: 0 }
+  const inset = { top: 0, right: 0, bottom: 0, left: 0 };
   return {
     SafeAreaProvider: vi.fn().mockImplementation(({ children }) => children),
     SafeAreaConsumer: vi
       .fn()
       .mockImplementation(({ children }) => children(inset)),
     useSafeAreaInsets: vi.fn().mockImplementation(() => inset),
-  }
-})
+  };
+});
 
 // Silence RN Animated warnings
 vi.mock('react-native/Libraries/Animated/NativeAnimatedHelper', () => ({}));
@@ -137,10 +144,10 @@ vi.mock('@react-native-firebase/app', () => ({
 }));
 
 vi.mock('@react-native-firebase/crashlytics', () => ({
-  getCrashlytics: () => ({ 
-    setCrashlyticsCollectionEnabled: vi.fn(), 
-    recordError: vi.fn(), 
-    log: vi.fn() 
+  getCrashlytics: () => ({
+    setCrashlyticsCollectionEnabled: vi.fn(),
+    recordError: vi.fn(),
+    log: vi.fn(),
   }),
 }));
 
@@ -149,7 +156,7 @@ vi.mock('@react-native-firebase/messaging', () => ({
     registerDeviceForRemoteMessages: vi.fn(),
     onMessage: vi.fn(() => vi.fn()),
     getToken: vi.fn(async () => 'token'),
-  })
+  }),
 }));
 
 vi.mock('@react-native-firebase/remote-config', () => ({
@@ -190,12 +197,12 @@ vi.mock('react-native-mmkv', () => {
 
 vi.mock('@notifee/react-native', () => {
   return {
-    AuthorizationStatus: "AUTHORIZED",
+    AuthorizationStatus: 'AUTHORIZED',
     notifee: {
       requestPermission: vi.fn(),
       createChannel: vi.fn(),
       displayNotification: vi.fn(),
       onForegroundEvent: vi.fn(),
     },
-  }
-})
+  };
+});

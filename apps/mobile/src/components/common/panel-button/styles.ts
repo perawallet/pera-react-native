@@ -13,9 +13,7 @@ export const useStyles = makeStyles((theme, _: PanelButtonProps) => ({
     color: theme.colors.textMain,
     borderRadius: theme.spacing.lg,
   },
-  containerStyle: {
-
-  },
+  containerStyle: {},
   textStyle: {
     backgroundColor: theme.colors.layerGrayLighter,
     color: theme.colors.textMain,

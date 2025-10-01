@@ -2,7 +2,7 @@ import { View, ViewProps } from 'react-native';
 import { useStyles } from './MainScreenLayout.style';
 import { Networks, useAppStore } from '@perawallet/core';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import PeraView from '../components/view/PeraView';
+import PeraView from '../components/common/view/PeraView';
 import { useNavigation } from '@react-navigation/native';
 
 import ChevronLeft from '../../assets/icons/chevron-left.svg';
@@ -25,7 +25,7 @@ const MainScreenLayout = (props: MainScreenLayoutProps) => {
   };
 
   return props.fullScreen ? (
-    <PeraView style={[props.style, styles.mainContainer]} {...props}>
+    <PeraView style={[styles.mainContainer, props.style]} {...props}>
       {props.showBack && (
         <ChevronLeft
           stroke={theme.colors.textMain}

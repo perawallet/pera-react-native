@@ -1,5 +1,5 @@
 import { useStyles } from './styles';
-import PeraView from '../../view/PeraView';
+import PeraView from '../../common/view/PeraView';
 
 import { Alert, FlatList, TouchableOpacity } from 'react-native';
 import { Text } from '@rneui/themed';
@@ -19,8 +19,8 @@ const AccountList = () => {
     Alert.alert('Not Implemented');
   };
 
-  const renderAccount = useCallback(({ item }: { item: WalletAccount }) => {
-    return <AccountListRow account={item} />;
+  const renderAccount = useCallback(({ item, index }: { item: WalletAccount, index: number }) => {
+    return <AccountListRow account={item} key={'accountrow-' + index}/>;
   }, []);
 
   return (

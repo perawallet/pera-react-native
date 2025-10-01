@@ -1,6 +1,6 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { RNDeviceInfoStorageService } from '../device';
-import * as RN from 'react-native'
+import * as RN from 'react-native';
 
 // Mock @perawallet/core
 vi.mock('@perawallet/core', () => ({
@@ -52,11 +52,11 @@ describe('RNDeviceInfoStorageService', () => {
     it('sets up headers and calls updateBackendHeaders', async () => {
       const { updateBackendHeaders } = await import('@perawallet/core');
       const mockUpdateBackendHeaders = vi.mocked(updateBackendHeaders);
-      
+
       service.initializeDeviceInfo();
 
       expect(mockUpdateBackendHeaders).toHaveBeenCalledWith(expect.any(Map));
-      
+
       const headers = mockUpdateBackendHeaders.mock.calls[0][0];
       expect(headers.get('App-Name')).toBe('Pera Wallet');
       expect(headers.get('App-Package-Name')).toBe('com.algorand.android');
@@ -70,7 +70,7 @@ describe('RNDeviceInfoStorageService', () => {
     it('calls DeviceInfo methods for header values', async () => {
       const DeviceInfo = (await import('react-native-device-info')).default;
       const mockDeviceInfo = vi.mocked(DeviceInfo);
-      
+
       service.initializeDeviceInfo();
 
       expect(mockDeviceInfo.getApplicationName).toHaveBeenCalled();
@@ -85,9 +85,9 @@ describe('RNDeviceInfoStorageService', () => {
     it('returns unique device ID from DeviceInfo', async () => {
       const DeviceInfo = (await import('react-native-device-info')).default;
       const mockDeviceInfo = vi.mocked(DeviceInfo);
-      
+
       const deviceId = await service.getDeviceID();
-      
+
       expect(deviceId).toBe('unique-device-id');
       expect(mockDeviceInfo.getUniqueId).toHaveBeenCalled();
     });
@@ -97,9 +97,9 @@ describe('RNDeviceInfoStorageService', () => {
     it('returns device model from DeviceInfo', async () => {
       const DeviceInfo = (await import('react-native-device-info')).default;
       const mockDeviceInfo = vi.mocked(DeviceInfo);
-      
+
       const model = service.getDeviceModel();
-      
+
       expect(model).toBe('iPhone 13');
       expect(mockDeviceInfo.getModel).toHaveBeenCalled();
     });
@@ -108,7 +108,7 @@ describe('RNDeviceInfoStorageService', () => {
   describe('getDevicePlatform', () => {
     it('returns iOS platform', () => {
       const platform = service.getDevicePlatform();
-      
+
       expect(platform).toBe('ios');
     });
 
@@ -121,9 +121,9 @@ describe('RNDeviceInfoStorageService', () => {
       // Create new service instance to pick up the new mock
       const androidService = new RNDeviceInfoStorageService();
       const platform = androidService.getDevicePlatform();
-      
+
       expect(platform).toBe('android');
-      
+
       // Reset back to iOS for other tests
       mockPlatform.OS = 'ios' as any;
     });
@@ -132,7 +132,7 @@ describe('RNDeviceInfoStorageService', () => {
   describe('getDeviceLocale', () => {
     it('returns formatted locale for iOS', () => {
       const locale = service.getDeviceLocale();
-      
+
       expect(locale).toBe('en-US');
     });
 
@@ -140,42 +140,51 @@ describe('RNDeviceInfoStorageService', () => {
       // Mock iOS without AppleLocale
       const { NativeModules } = await import('react-native');
       const mockNativeModules = vi.mocked(NativeModules);
-      (mockNativeModules.SettingsManager.settings as any).AppleLocale = undefined;
-      
+      (mockNativeModules.SettingsManager.settings as any).AppleLocale =
+        undefined;
+
       const locale = service.getDeviceLocale();
-      
+
       expect(locale).toBe('en-US');
     });
 
     it('returns formatted locale for Android', () => {
-      vi.mocked(RN).Platform.OS = 'android'
-      vi.mocked(RN).NativeModules.SettingsManager.settings.AppleLocale = 'en_US'
-      vi.mocked(RN).NativeModules.SettingsManager.settings.AppleLanguages = ['en_US', 'fr_FR']
+      vi.mocked(RN).Platform.OS = 'android';
+      vi.mocked(RN).NativeModules.SettingsManager.settings.AppleLocale =
+        'en_US';
+      vi.mocked(RN).NativeModules.SettingsManager.settings.AppleLanguages = [
+        'en_US',
+        'fr_FR',
+      ];
       vi.mocked(RN).NativeModules.I18nManager.getConstants = vi.fn(() => ({
         isRTL: false,
         doLeftAndRightSwapInRTL: false,
-        localeIdentifier: 'en_GB'
-      }))
+        localeIdentifier: 'en_GB',
+      }));
 
       const androidService = new RNDeviceInfoStorageService();
       const locale = androidService.getDeviceLocale();
-      
+
       expect(locale).toBe('en-GB');
     });
 
     it('converts underscores to hyphens in locale', async () => {
       // Spy on the NativeModules to override the AppleLocale value
-      vi.mocked(RN).Platform.OS = 'ios'
-      vi.mocked(RN).NativeModules.SettingsManager.settings.AppleLocale = 'fr_CA'
-      vi.mocked(RN).NativeModules.SettingsManager.settings.AppleLanguages = ['en_US', 'fr_FR']
+      vi.mocked(RN).Platform.OS = 'ios';
+      vi.mocked(RN).NativeModules.SettingsManager.settings.AppleLocale =
+        'fr_CA';
+      vi.mocked(RN).NativeModules.SettingsManager.settings.AppleLanguages = [
+        'en_US',
+        'fr_FR',
+      ];
       vi.mocked(RN).NativeModules.I18nManager.getConstants = vi.fn(() => ({
         isRTL: false,
         doLeftAndRightSwapInRTL: false,
-        localeIdentifier: 'en_GB'
-      }))
-      
+        localeIdentifier: 'en_GB',
+      }));
+
       const locale = service.getDeviceLocale();
-      
+
       expect(locale).toBe('fr-CA');
     });
   });
@@ -183,17 +192,21 @@ describe('RNDeviceInfoStorageService', () => {
   describe('locale formatting', () => {
     it('replaces all underscores with hyphens', async () => {
       // Spy on the NativeModules to override the AppleLocale value
-      vi.mocked(RN).Platform.OS = 'ios'
-      vi.mocked(RN).NativeModules.SettingsManager.settings.AppleLocale = 'zh_Hans_CN'
-      vi.mocked(RN).NativeModules.SettingsManager.settings.AppleLanguages = ['en_US', 'fr_FR']
+      vi.mocked(RN).Platform.OS = 'ios';
+      vi.mocked(RN).NativeModules.SettingsManager.settings.AppleLocale =
+        'zh_Hans_CN';
+      vi.mocked(RN).NativeModules.SettingsManager.settings.AppleLanguages = [
+        'en_US',
+        'fr_FR',
+      ];
       vi.mocked(RN).NativeModules.I18nManager.getConstants = vi.fn(() => ({
         isRTL: false,
         doLeftAndRightSwapInRTL: false,
-        localeIdentifier: 'en_GB'
-      }))
-      
+        localeIdentifier: 'en_GB',
+      }));
+
       const locale = service.getDeviceLocale();
-      
+
       expect(locale).toBe('zh-Hans-CN');
     });
   });

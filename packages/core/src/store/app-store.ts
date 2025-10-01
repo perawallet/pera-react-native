@@ -30,12 +30,18 @@ import {
     partializePollingSlice,
     type PollingSlice,
 } from '../services/polling/store'
+import {
+    createSwapsSlice,
+    partializeSwapsSlice,
+    type SwapsSlice,
+} from '../services/swaps'
 
 export type AppState = SettingsSlice &
     AccountsSlice &
     BlockchainSlice &
     DeviceSlice &
-    PollingSlice
+    PollingSlice &
+    SwapsSlice
 
 type PersistListener<S> = (state: S) => void
 
@@ -76,6 +82,7 @@ export let useAppStore: UseBoundStore<
             ...createAccountsSlice(...a),
             ...createDeviceSlice(...a),
             ...createPollingSlice(...a),
+            ...createSwapsSlice(...a),
         }),
         {
             name: 'app-store',
@@ -87,6 +94,7 @@ export let useAppStore: UseBoundStore<
                 ...partializeAccountsSlice(state),
                 ...partializeDeviceSlice(state),
                 ...partializePollingSlice(state),
+                ...partializeSwapsSlice(state),
             }),
         },
     ),
@@ -101,6 +109,7 @@ export const reinitializeAppStore = () => {
                 ...createAccountsSlice(...a),
                 ...createDeviceSlice(...a),
                 ...createPollingSlice(...a),
+                ...createSwapsSlice(...a),
             }),
             {
                 name: 'app-store',
@@ -112,6 +121,7 @@ export const reinitializeAppStore = () => {
                     ...partializeAccountsSlice(state),
                     ...partializeDeviceSlice(state),
                     ...partializePollingSlice(state),
+                    ...partializeSwapsSlice(state),
                 }),
             },
         ),

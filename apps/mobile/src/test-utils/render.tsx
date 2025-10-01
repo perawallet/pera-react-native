@@ -59,11 +59,11 @@ interface TestProvidersProps {
   navigationProps?: any;
 }
 
-const TestProviders = ({ 
-  children, 
-  queryClient, 
+const TestProviders = ({
+  children,
+  queryClient,
   theme = testTheme,
-  navigationProps = {}
+  navigationProps = {},
 }: TestProvidersProps) => {
   const client = queryClient || createTestQueryClient();
 
@@ -98,7 +98,7 @@ const customRender = (
     theme,
     navigationProps,
     ...renderOptions
-  }: CustomRenderOptions = {}
+  }: CustomRenderOptions = {},
 ) => {
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
     <TestProviders

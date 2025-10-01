@@ -1,4 +1,4 @@
-import PeraView from '../../components/view/PeraView';
+import PeraView from '../../components/common/view/PeraView';
 import MainScreenLayout from '../../layouts/MainScreenLayout';
 import { Text, useTheme } from '@rneui/themed';
 import { useStyles } from './styles';
@@ -8,7 +8,7 @@ import CameraIcon from '../../../assets/icons/camera.svg';
 import BellIcon from '../../../assets/icons/bell.svg';
 import InfoIcon from '../../../assets/icons/info.svg';
 
-import CurrencyDisplay from '../../components/currency-display/CurrencyDisplay';
+import CurrencyDisplay from '../../components/common/currency-display/CurrencyDisplay';
 import ButtonPanel from '../../components/portfolio/button-panel/ButtonPanel';
 import AccountList from '../../components/portfolio/account-list/AccountList';
 import Decimal from 'decimal.js';

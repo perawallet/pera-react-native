@@ -2,9 +2,9 @@ import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useStyles } from './styles';
 import { Text, useTheme } from '@rneui/themed';
-import PeraView from '../../components/view/PeraView';
+import PeraView from '../../components/common/view/PeraView';
 import MainScreenLayout from '../../layouts/MainScreenLayout';
-import PanelButton from '../../components/panel-button/PanelButton';
+import PanelButton from '../../components/common/panel-button/PanelButton';
 
 import WelcomeImage from '../../../assets/images/welcome-background.svg';
 import WalletIcon from '../../../assets/icons/wallet-with-algo.svg';
@@ -55,7 +55,7 @@ const OnboardingScreen = () => {
           </Text>
           <PanelButton
             title="Create a new wallet"
-            titleWeight="h4" 
+            titleWeight="h4"
             onPress={createAccountHandler}
             leftIcon={<WalletIcon />}
             rightIcon={<ChevronNext />}
@@ -66,7 +66,7 @@ const OnboardingScreen = () => {
           </Text>
           <PanelButton
             title="Import an account"
-            titleWeight="h4" 
+            titleWeight="h4"
             onPress={importAccount}
             leftIcon={<KeyIcon />}
             rightIcon={<ChevronNext />}

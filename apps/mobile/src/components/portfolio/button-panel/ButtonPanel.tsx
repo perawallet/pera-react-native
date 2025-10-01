@@ -1,8 +1,8 @@
 import { useStyles } from './styles';
-import PeraView from '../../view/PeraView';
+import PeraView from '../../common/view/PeraView';
 import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import RoundButton from '../../round-button/RoundButton';
+import RoundButton from '../../common/round-button/RoundButton';
 
 import SwapIcon from '../../../../assets/icons/swap.svg';
 import BuyIcon from '../../../../assets/icons/buy.svg';

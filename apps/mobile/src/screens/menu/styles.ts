@@ -21,7 +21,7 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       width: 24,
       height: 24,
       backgroundColor: 'transparent',
-      color: theme.colors.textMain
+      color: theme.colors.textMain,
     },
     menuContainer: {
       gap: theme.spacing.md,

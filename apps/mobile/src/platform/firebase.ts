@@ -2,7 +2,11 @@ import { getCrashlytics } from '@react-native-firebase/crashlytics';
 import { getRemoteConfig } from '@react-native-firebase/remote-config';
 import { getMessaging } from '@react-native-firebase/messaging';
 import { Platform } from 'react-native';
-import notifee, { AndroidImportance, AuthorizationStatus, EventType } from '@notifee/react-native';
+import notifee, {
+  AndroidImportance,
+  AuthorizationStatus,
+  EventType,
+} from '@notifee/react-native';
 import {
   CrashReportingService,
   NotificationsInitResult,
@@ -58,8 +62,8 @@ export class RNFirebaseService
     if (settings.authorizationStatus !== AuthorizationStatus.AUTHORIZED) {
       return {
         token: undefined,
-        unsubscribe: () => {}
-      }
+        unsubscribe: () => {},
+      };
     }
 
     // Android notification channel
@@ -83,20 +87,22 @@ export class RNFirebaseService
     }
 
     // Foreground message handler (show a local notification)
-    const unsubscribeOnMessage = getMessaging().onMessage(async remoteMessage => {
-      const title = remoteMessage.notification?.title ?? 'Notification';
-      const body = remoteMessage.notification?.body ?? undefined;
+    const unsubscribeOnMessage = getMessaging().onMessage(
+      async remoteMessage => {
+        const title = remoteMessage.notification?.title ?? 'Notification';
+        const body = remoteMessage.notification?.body ?? undefined;
 
-      await notifee.displayNotification({
-        title,
-        body,
-        data: remoteMessage.data,
-        android: Platform.select({
-          android: { channelId: 'default' },
-          ios: undefined,
-        }) as any,
-      });
-    });
+        await notifee.displayNotification({
+          title,
+          body,
+          data: remoteMessage.data,
+          android: Platform.select({
+            android: { channelId: 'default' },
+            ios: undefined,
+          }) as any,
+        });
+      },
+    );
 
     // Foreground notification events
     const unsubscribeNotifeeForeground = notifee.onForegroundEvent(

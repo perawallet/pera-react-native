@@ -2,8 +2,8 @@ import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useStyles } from './styles';
 import { Input, Text, useTheme } from '@rneui/themed';
-import PeraView from '../../components/view/PeraView';
-import PeraButton from '../../components/button/PeraButton';
+import PeraView from '../../components/common/view/PeraView';
+import PeraButton from '../../components/common/button/PeraButton';
 import MainScreenLayout from '../../layouts/MainScreenLayout';
 
 import WalletIcon from '../../../assets/icons/wallet.svg';

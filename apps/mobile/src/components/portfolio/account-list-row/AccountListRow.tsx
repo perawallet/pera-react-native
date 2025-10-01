@@ -15,9 +15,9 @@ import LedgerIcon from '../../../../assets/icons/ledger-in-circle.svg';
 import WatchIcon from '../../../../assets/icons/eye-in-circle.svg';
 
 import { TouchableOpacity } from 'react-native';
-import PeraView from '../../../components/view/PeraView';
+import PeraView from '../../common/view/PeraView';
 import { useMemo } from 'react';
-import CurrencyDisplay from '../../../components/currency-display/CurrencyDisplay';
+import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay';
 
 type AccountListRowProps = {
   account: WalletAccount;

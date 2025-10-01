@@ -4,7 +4,7 @@ import PeraView from '../view/PeraView';
 import { useMemo } from 'react';
 import { formatCurrency, useDeviceInfoService } from '@perawallet/core';
 import { Decimal } from 'decimal.js';
-import AlgoIcon from '../../../assets/icons/algo.svg'
+import AlgoIcon from '../../../../assets/icons/algo.svg';
 
 export type CurrencyDisplayProps = {
   currency: string;
@@ -12,14 +12,25 @@ export type CurrencyDisplayProps = {
   precision: number;
   prefix?: string;
   alignRight?: boolean;
+  showSymbol?: boolean;
+  units?: 'K' | 'M';
 } & TextProps;
 
 const CurrencyDisplay = (props: CurrencyDisplayProps) => {
   const themeStyle = useStyles(props);
   const deviceInfo = useDeviceInfoService();
-  const { currency, value, precision, prefix, alignRight = false, ...rest } = props;
+  const {
+    currency,
+    value,
+    precision,
+    prefix,
+    units,
+    showSymbol = true,
+    alignRight = false,
+    ...rest
+  } = props;
 
-  const isAlgo = useMemo(() => currency === 'ALGO', [currency])
+  const isAlgo = useMemo(() => currency === 'ALGO', [currency]);
 
   const displayValue = useMemo(() => {
     return formatCurrency(
@@ -27,16 +38,30 @@ const CurrencyDisplay = (props: CurrencyDisplayProps) => {
       precision,
       currency,
       deviceInfo.getDeviceLocale(),
+      showSymbol,
+      units,
     );
-  }, [value, precision, currency, deviceInfo]);
+  }, [value, precision, currency, deviceInfo, units]);
 
   return (
     <PeraView style={themeStyle.container}>
-      {isAlgo && <AlgoIcon style={themeStyle.algoIcon} />}
+      {isAlgo && showSymbol && (
+        <AlgoIcon
+          style={[
+            themeStyle.algoIcon,
+            props.style,
+            props.h1Style,
+            props.h2Style,
+            props.h3Style,
+            props.h4Style,
+          ]}
+        />
+      )}
       <PeraView style={themeStyle.textContainer}>
         <Text {...rest}>
           {prefix ? prefix : ''}
           {displayValue}
+          {units}
         </Text>
       </PeraView>
     </PeraView>

@@ -17,7 +17,7 @@ export const mockCoreServices = () => {
       useAllAccounts: vi.fn(() => []),
       useHasAccounts: vi.fn(() => true),
       useHasNoAccounts: vi.fn(() => false),
-      useAppStore: vi.fn((selector) => {
+      useAppStore: vi.fn(selector => {
         const mockState = {
           network: 'mainnet',
           fcmToken: null,
@@ -41,23 +41,23 @@ export const mockSvgComponents = () => {
   vi.mock('../../../assets/icons/list-arrow-down.svg', () => ({
     default: vi.fn(() => null),
   }));
-  
+
   vi.mock('../../../assets/icons/plus-with-border.svg', () => ({
     default: vi.fn(() => null),
   }));
-  
+
   vi.mock('../../../assets/icons/camera.svg', () => ({
     default: vi.fn(() => null),
   }));
-  
+
   vi.mock('../../../assets/icons/bell.svg', () => ({
     default: vi.fn(() => null),
   }));
-  
+
   vi.mock('../../../assets/icons/info.svg', () => ({
     default: vi.fn(() => null),
   }));
-  
+
   vi.mock('../../../assets/icons/chevron-left.svg', () => ({
     default: vi.fn(() => null),
   }));
@@ -65,23 +65,23 @@ export const mockSvgComponents = () => {
   vi.mock('../../assets/icons/list-arrow-down.svg', () => ({
     default: vi.fn(() => null),
   }));
-  
+
   vi.mock('../../assets/icons/plus-with-border.svg', () => ({
     default: vi.fn(() => null),
   }));
-  
+
   vi.mock('../../assets/icons/camera.svg', () => ({
     default: vi.fn(() => null),
   }));
-  
+
   vi.mock('../../assets/icons/bell.svg', () => ({
     default: vi.fn(() => null),
   }));
-  
+
   vi.mock('../../assets/icons/info.svg', () => ({
     default: vi.fn(() => null),
   }));
-  
+
   vi.mock('../../assets/icons/chevron-left.svg', () => ({
     default: vi.fn(() => null),
   }));

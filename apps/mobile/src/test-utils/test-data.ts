@@ -109,7 +109,9 @@ export const mockPlatformServices = {
 };
 
 // Helper to create test props with defaults
-export const createTestProps = <T extends Record<string, any>>(overrides: Partial<T> = {} as Partial<T>) => {
+export const createTestProps = <T extends Record<string, any>>(
+  overrides: Partial<T> = {} as Partial<T>,
+) => {
   const defaults = {
     testID: 'test-component',
     accessibilityLabel: 'Test Component',

@@ -20,15 +20,28 @@ const currencySymbols: Record<string, string> = {
     GBP: '£',
 }
 
+const toUnits = (amount: Decimal, units: '' | 'K' | 'M' = '') => {
+    if (units === 'K') {
+        return amount.div(1_000)
+    } else if (units === 'M') {
+        return amount.div(1_000_000)
+    }
+    return amount
+}
+
 export const formatCurrency = (
     value: Decimal | string | number,
     precision: number,
     currency: string,
     locale: string = 'en-US',
+    showSymbol: boolean = true,
+    units?: 'K' | 'M',
 ) => {
-    const decimal = new Decimal(value).toFixed(precision)
-    const currencySymbol = currency === 'ALGO' ? '' : 
-        currencySymbols[currency] ?? '$'
+    const decimal = toUnits(new Decimal(value), units).toFixed(precision)
+    const currencySymbol =
+        !showSymbol || currency === 'ALGO'
+            ? ''
+            : (currencySymbols[currency] ?? '$')
 
     const parts = decimal.split('.')
     const integer = parts[0]

@@ -10,7 +10,7 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
     webview: {
       flexGrow: 1,
       backgroundColor: theme.colors.background,
-      marginTop: insets.top
-    }
+      marginTop: insets.top,
+    },
   };
 });

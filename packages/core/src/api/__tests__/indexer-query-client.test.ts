@@ -162,16 +162,16 @@ describe('api/indexer-query-client', () => {
     test('sets X-Indexer-API-Token header when indexerApiKey is provided', async () => {
         // Set the API key
         configMock.indexerApiKey = 'test-indexer-key'
-        
+
         // Clear previous imports and reset mocks
         vi.resetModules()
         kyState.reset()
-        
+
         const { indexerFetchClient } = await import('../indexer-query-client')
         const { useAppStore } = await import('@store/app-store')
 
         useAppStore.setState({ network: 'testnet' })
-        
+
         await indexerFetchClient<{ ok: string }>({
             url: '/test',
             method: 'GET',
@@ -179,43 +179,59 @@ describe('api/indexer-query-client', () => {
 
         // Verify that ky.create was called with the correct headers
         expect(kyState.createCalls.length).toBe(2)
-        
+
         // Check mainnet client creation (first call)
         const mainnetHooks = kyState.createCalls[0].hooks
         expect(mainnetHooks.beforeRequest).toBeDefined()
         expect(mainnetHooks.beforeRequest.length).toBe(1) // Only header setting function for mainnet
-        
+
         // Test the header setting function for mainnet
         const mockRequest = {
             headers: new Map(),
-            set(key: string, value: string) { this.headers.set(key, value) }
+            set(key: string, value: string) {
+                this.headers.set(key, value)
+            },
         }
         mockRequest.headers.set = vi.fn()
-        
+
         // Call the beforeRequest hook (header setting)
         mainnetHooks.beforeRequest[0](mockRequest)
-        
-        expect(mockRequest.headers.set).toHaveBeenCalledWith('Content-Type', 'application/json')
-        expect(mockRequest.headers.set).toHaveBeenCalledWith('X-Indexer-API-Token', 'test-indexer-key')
-        
+
+        expect(mockRequest.headers.set).toHaveBeenCalledWith(
+            'Content-Type',
+            'application/json',
+        )
+        expect(mockRequest.headers.set).toHaveBeenCalledWith(
+            'X-Indexer-API-Token',
+            'test-indexer-key',
+        )
+
         // Check testnet client creation (second call)
         const testnetHooks = kyState.createCalls[1].hooks
         expect(testnetHooks.beforeRequest).toBeDefined()
         expect(testnetHooks.beforeRequest.length).toBe(2) // Header setting + logRequest
-        
+
         // Test the header setting function for testnet
         const mockRequest2 = {
             headers: new Map(),
-            set(key: string, value: string) { this.headers.set(key, value) }
+            set(key: string, value: string) {
+                this.headers.set(key, value)
+            },
         }
         mockRequest2.headers.set = vi.fn()
-        
+
         // Call the first beforeRequest hook (header setting)
         testnetHooks.beforeRequest[0](mockRequest2)
-        
-        expect(mockRequest2.headers.set).toHaveBeenCalledWith('Content-Type', 'application/json')
-        expect(mockRequest2.headers.set).toHaveBeenCalledWith('X-Indexer-API-Token', 'test-indexer-key')
-        
+
+        expect(mockRequest2.headers.set).toHaveBeenCalledWith(
+            'Content-Type',
+            'application/json',
+        )
+        expect(mockRequest2.headers.set).toHaveBeenCalledWith(
+            'X-Indexer-API-Token',
+            'test-indexer-key',
+        )
+
         // Reset for next test
         configMock.indexerApiKey = ''
     })
@@ -223,16 +239,16 @@ describe('api/indexer-query-client', () => {
     test('does not set X-Indexer-API-Token header when indexerApiKey is empty', async () => {
         // Ensure API key is empty
         configMock.indexerApiKey = ''
-        
+
         // Clear previous imports and reset mocks
         vi.resetModules()
         kyState.reset()
-        
+
         const { indexerFetchClient } = await import('../indexer-query-client')
         const { useAppStore } = await import('@store/app-store')
 
         useAppStore.setState({ network: 'testnet' })
-        
+
         await indexerFetchClient<{ ok: string }>({
             url: '/test',
             method: 'GET',
@@ -240,33 +256,49 @@ describe('api/indexer-query-client', () => {
 
         // Verify that ky.create was called
         expect(kyState.createCalls.length).toBe(2)
-        
+
         // Test the header setting function for mainnet
         const mainnetHooks = kyState.createCalls[0].hooks
         const mockRequest = {
             headers: new Map(),
-            set(key: string, value: string) { this.headers.set(key, value) }
+            set(key: string, value: string) {
+                this.headers.set(key, value)
+            },
         }
         mockRequest.headers.set = vi.fn()
-        
+
         // Call the beforeRequest hook (header setting)
         mainnetHooks.beforeRequest[0](mockRequest)
-        
-        expect(mockRequest.headers.set).toHaveBeenCalledWith('Content-Type', 'application/json')
-        expect(mockRequest.headers.set).not.toHaveBeenCalledWith('X-Indexer-API-Token', expect.anything())
-        
+
+        expect(mockRequest.headers.set).toHaveBeenCalledWith(
+            'Content-Type',
+            'application/json',
+        )
+        expect(mockRequest.headers.set).not.toHaveBeenCalledWith(
+            'X-Indexer-API-Token',
+            expect.anything(),
+        )
+
         // Test the header setting function for testnet
         const testnetHooks = kyState.createCalls[1].hooks
         const mockRequest2 = {
             headers: new Map(),
-            set(key: string, value: string) { this.headers.set(key, value) }
+            set(key: string, value: string) {
+                this.headers.set(key, value)
+            },
         }
         mockRequest2.headers.set = vi.fn()
-        
+
         // Call the first beforeRequest hook (header setting)
         testnetHooks.beforeRequest[0](mockRequest2)
-        
-        expect(mockRequest2.headers.set).toHaveBeenCalledWith('Content-Type', 'application/json')
-        expect(mockRequest2.headers.set).not.toHaveBeenCalledWith('X-Indexer-API-Token', expect.anything())
+
+        expect(mockRequest2.headers.set).toHaveBeenCalledWith(
+            'Content-Type',
+            'application/json',
+        )
+        expect(mockRequest2.headers.set).not.toHaveBeenCalledWith(
+            'X-Indexer-API-Token',
+            expect.anything(),
+        )
     })
 })

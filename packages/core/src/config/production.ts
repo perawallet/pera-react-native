@@ -14,7 +14,7 @@ export const config: Config = {
 
     discoverBaseUrl: 'https://discover-mobile.perawallet.app/',
     stakingBaseUrl: 'https://staking-mobile.perawallet.app/',
-    
+
     debugEnabled: false,
     profilingEnabled: false,
 }

@@ -43,6 +43,6 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       marginTop: theme.spacing.lg,
       width: 116,
       height: 124,
-    }
+    },
   };
 });

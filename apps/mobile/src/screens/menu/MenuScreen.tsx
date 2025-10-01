@@ -1,5 +1,5 @@
 import MainScreenLayout from '../../layouts/MainScreenLayout';
-import PeraView from '../../components/view/PeraView';
+import PeraView from '../../components/common/view/PeraView';
 import { Text, useTheme } from '@rneui/themed';
 import { TouchableOpacity } from 'react-native';
 import { useStyles } from './styles';
@@ -12,7 +12,7 @@ import AlgoIcon from '../../../assets/icons/algo.svg';
 import InflowIcon from '../../../assets/icons/inflow.svg';
 import EnvelopeIcon from '../../../assets/icons/envelope-letter.svg';
 
-import PanelButton from '../../components/panel-button/PanelButton';
+import PanelButton from '../../components/common/panel-button/PanelButton';
 import CardPanel from '../../components/cards/card-panel/CardPanel';
 import { useAppStore } from '@perawallet/core';
 
@@ -22,7 +22,6 @@ const MenuScreen = () => {
 
   return (
     <MainScreenLayout>
-
       <PeraView style={styles.iconBar}>
         <PeraView style={styles.iconBarColumn} />
         <Text h4 style={styles.iconBarColumn}>
@@ -39,13 +38,36 @@ const MenuScreen = () => {
       </PeraView>
 
       <PeraView style={styles.menuContainer}>
-        <CardPanel />           
-        <PanelButton title='NFTs' titleWeight="h3" leftIcon={<CardStackIcon style={styles.icon} />} rightIcon={<ChevronRight style={styles.icon} />} onPress={() => {}}/>
-        <PanelButton title='Buy ALGO' titleWeight="h3" leftIcon={<AlgoIcon style={styles.icon} />} rightIcon={<ChevronRight style={styles.icon} />} onPress={() => {}}/>
-        <PanelButton title='Receive' titleWeight="h3" leftIcon={<InflowIcon style={styles.icon} />} rightIcon={<ChevronRight style={styles.icon} />} onPress={() => {}}/>
-        <PanelButton title='Invite Friends' titleWeight="h3" leftIcon={<EnvelopeIcon style={styles.icon} />} rightIcon={<ChevronRight style={styles.icon} />} onPress={() => {}}/>
+        <CardPanel />
+        <PanelButton
+          title="NFTs"
+          titleWeight="h3"
+          leftIcon={<CardStackIcon style={styles.icon} />}
+          rightIcon={<ChevronRight style={styles.icon} />}
+          onPress={() => {}}
+        />
+        <PanelButton
+          title="Buy ALGO"
+          titleWeight="h3"
+          leftIcon={<AlgoIcon style={styles.icon} />}
+          rightIcon={<ChevronRight style={styles.icon} />}
+          onPress={() => {}}
+        />
+        <PanelButton
+          title="Receive"
+          titleWeight="h3"
+          leftIcon={<InflowIcon style={styles.icon} />}
+          rightIcon={<ChevronRight style={styles.icon} />}
+          onPress={() => {}}
+        />
+        <PanelButton
+          title="Invite Friends"
+          titleWeight="h3"
+          leftIcon={<EnvelopeIcon style={styles.icon} />}
+          rightIcon={<ChevronRight style={styles.icon} />}
+          onPress={() => {}}
+        />
       </PeraView>
-
     </MainScreenLayout>
   );
 };

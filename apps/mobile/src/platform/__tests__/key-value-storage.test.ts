@@ -32,10 +32,10 @@ describe('RNKeyValueStorageService', () => {
 
   it('should handle invalid JSON gracefully', () => {
     const kv = new RNKeyValueStorageService();
-    
+
     // Set invalid JSON manually by mocking the underlying storage
     kv.mmkv.set('invalid-json', '{invalid json}');
-    
+
     // getJSON should return null for invalid JSON
     const result = kv.getJSON('invalid-json');
     expect(result).toBeNull();
@@ -43,7 +43,7 @@ describe('RNKeyValueStorageService', () => {
 
   it('should return null for non-existent JSON keys', () => {
     const kv = new RNKeyValueStorageService();
-    
+
     const result = kv.getJSON('non-existent-key');
     expect(result).toBeNull();
   });

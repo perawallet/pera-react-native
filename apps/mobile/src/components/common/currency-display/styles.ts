@@ -2,17 +2,17 @@ import { makeStyles } from '@rneui/themed';
 import { CurrencyDisplayProps } from './CurrencyDisplay';
 
 export const useStyles = makeStyles((theme, props: CurrencyDisplayProps) => {
-  let size = 16
+  let size = 16;
 
   if (props.h1) {
-    size = 40
+    size = 40;
   } else if (props.h2) {
-    size = 36
+    size = 36;
   } else if (props.h3) {
-    size = 24
+    size = 24;
   }
 
-  return ({
+  return {
     container: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -26,6 +26,6 @@ export const useStyles = makeStyles((theme, props: CurrencyDisplayProps) => {
       width: size,
       height: size,
       flexShrink: 1,
-    }
-  })
+    },
+  };
 });

@@ -11,7 +11,7 @@ export const config: Config = {
         'development-purposes-only-dc98f2c7-908f-4f74-81ef-9f5464213f99',
     algodApiKey: '',
     indexerApiKey: '',
-    
+
     discoverBaseUrl: 'https://discover-mobile-staging.perawallet.app/',
     stakingBaseUrl: 'https://staking-mobile-staging.perawallet.app/',
 
