@@ -30,8 +30,8 @@ else {
   .replaceAll(' ', '');
 
 export const peraConnectJS = `function setupPeraConnectObserver(){const e=new MutationObserver(()=>{const \
-t=document.getElementById("pera-wallet-connect-modal-wrapper"),e=document.getElementById\("pera-wallet-redirect-modal-wrapper");\
-if(e&&e.remove(),t){const o=t.getElementsByTagName("pera-wallet-connect-modal");
+t=document.getElementById("pera-wallet-connect-modal-wrapper"),e=document.getElementById("pera-wallet-redirect-modal-wrapper");\
+if(e&&e.remove(),t){const o=t.getElementsByTagName("pera-wallet-connect-modal");\
 let e="";if(o&&o[0]&&o[0].shadowRoot){const a=o[0].shadowRoot.querySelector("pera-wallet-modal-touch-screen-mode")\
 .shadowRoot.querySelector("#pera-wallet-connect-modal-touch-screen-mode-launch-pera-wallet-button")\
 ;alert("LINK_ELEMENT_V1"+a),a&&(e=a.getAttribute("href"))}else{const r=t.getElementsByClassName(\

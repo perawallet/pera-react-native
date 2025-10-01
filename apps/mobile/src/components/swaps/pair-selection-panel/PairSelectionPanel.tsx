@@ -1,6 +1,5 @@
-import { useAppStore } from '@perawallet/core';
 import { useStyles } from './styles';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Divider, Text, useTheme } from '@rneui/themed';
 import Decimal from 'decimal.js';
 import AssetSelection from '../../common/asset-selection/AssetSelection';
@@ -18,19 +17,10 @@ const PairSelectionPanel = () => {
 
   //TODO: some or all of these should probably come from either an account hook, the state store or a calculation
   const [sendAmount, setSendAmount] = useState("0.00");
-  const [receiveAmount, setRecieveAmount] = useState(Decimal(0));
-  const [receiveAmountUSD, setRecieveAmountUSD] = useState(Decimal(0));
-  const [fromBalance, setFromBalance] = useState(Decimal(0));
-  const [toBalance, setToBalance] = useState(Decimal(0));
-  const getSelectedAccount = useAppStore(state => state.getSelectedAccount);
-  const selectedAccountIndex = useAppStore(state => state.selectedAccountIndex);
-  const fromAsset = useAppStore(state => state.fromAsset);
-  const toAsset = useAppStore(state => state.toAsset);
-
-  const selectedAccount = useMemo(
-    () => getSelectedAccount,
-    [selectedAccountIndex],
-  );
+  const [receiveAmount, _] = useState(Decimal(0));
+  const [receiveAmountUSD, __] = useState(Decimal(0));
+  const [fromBalance, ___] = useState(Decimal(0));
+  const [toBalance, ____] = useState(Decimal(0));
 
   const handleAmountChange = useCallback((formatted: string) => {
     setSendAmount(formatted)

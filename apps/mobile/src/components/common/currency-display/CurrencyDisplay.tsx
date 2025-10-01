@@ -26,7 +26,6 @@ const CurrencyDisplay = (props: CurrencyDisplayProps) => {
     prefix,
     units,
     showSymbol = true,
-    alignRight = false,
     ...rest
   } = props;
 
@@ -41,7 +40,7 @@ const CurrencyDisplay = (props: CurrencyDisplayProps) => {
       showSymbol,
       units,
     );
-  }, [value, precision, currency, deviceInfo, units]);
+  }, [value, precision, currency, deviceInfo, showSymbol, units]);
 
   return (
     <PeraView style={themeStyle.container}>

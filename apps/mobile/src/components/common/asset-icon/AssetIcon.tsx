@@ -3,7 +3,6 @@
 import AlgoAssetIcon from '../../../../assets/icons/assets/algo.svg';
 import USDCAssetIcon from '../../../../assets/icons/assets/usdc.svg';
 import VestAssetIcon from '../../../../assets/icons/assets/vest.svg';
-import { ViewProps } from 'react-native';
 import { useMemo } from 'react';
 import { SvgProps } from 'react-native-svg';
 
@@ -17,7 +16,7 @@ const AssetIcon = ({ asset, ...rest }: AssetIconProps) => {
     if (asset === 'USDC') return <USDCAssetIcon {...rest} /> 
     if (asset === 'VEST') return <VestAssetIcon {...rest} /> 
     return <AlgoAssetIcon />  //TODO: fallback to web URL?  Have a generic icon?
-  }, [asset])
+  }, [asset, rest])
 
   return (
     <>{icon}</>

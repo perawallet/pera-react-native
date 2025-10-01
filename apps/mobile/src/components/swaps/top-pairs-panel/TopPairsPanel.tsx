@@ -28,7 +28,7 @@ const TopPairsPanel = () => {
         />
       </PeraView>
     );
-  }, []);
+  }, [themeStyle]);
 
   //TODO: pull from server
   //TOOD make a thing that can render an asset label and an asset icon from the asset

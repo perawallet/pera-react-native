@@ -25,7 +25,7 @@ export const mockCoreServices = () => {
         };
         return selector ? selector(mockState) : mockState;
       }),
-      formatCurrency: vi.fn((value, precision, currency, locale) => {
+      formatCurrency: vi.fn((value, _, currency, __) => {
         return `${value.toString()} ${currency}`;
       }),
       Networks: {

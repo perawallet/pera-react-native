@@ -1,6 +1,5 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { RNFirebaseService } from '../firebase';
-import { AuthorizationStatus } from '@react-native-firebase/messaging';
 
 // Mock react-native Platform
 vi.mock('react-native', () => ({

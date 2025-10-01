@@ -51,7 +51,7 @@ const PeraWebView = (props: PeraWebViewProps) => {
       body: `Pera Wallet mobile interface has not been fully implemented`,
       type: 'error',
     });
-  }, []);
+  }, [showToast]);
 
   const verifyLoad = useCallback((event: WebViewNavigationEvent) => {
     console.log('Loading', event.nativeEvent.url);
@@ -63,7 +63,7 @@ const PeraWebView = (props: PeraWebViewProps) => {
       body: `${event.nativeEvent.code} - ${event.nativeEvent.url}`,
       type: 'error',
     });
-  }, []);
+  }, [showToast]);
 
   const showError = useCallback((event: WebViewHttpErrorEvent) => {
     showToast({
@@ -71,7 +71,7 @@ const PeraWebView = (props: PeraWebViewProps) => {
       body: `${event.nativeEvent.statusCode} - ${event.nativeEvent.description}`,
       type: 'error',
     });
-  }, []);
+  }, [showToast]);
 
   const jsToLoad = useMemo(() => {
     let js = baseJS;
@@ -90,7 +90,7 @@ const PeraWebView = (props: PeraWebViewProps) => {
         webview.current?.injectJavaScript(peraMobileInterfaceJS);
       }
     }
-  }, [theme, loaded]);
+  }, [theme, loaded, enablePeraConnect]);
 
   return (
     <WebView

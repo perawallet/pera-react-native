@@ -1,5 +1,4 @@
 import { makeStyles } from '@rneui/themed';
-import { PropsWithChildren } from 'react';
 import { EdgeInsets } from 'react-native-safe-area-context';
 
 export const useStyles = makeStyles((theme, insets: EdgeInsets) => {

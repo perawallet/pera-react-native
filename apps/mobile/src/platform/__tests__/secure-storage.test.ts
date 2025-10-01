@@ -1,4 +1,3 @@
-import { ACCESS_CONTROL, SECURITY_LEVEL } from 'react-native-keychain';
 import { RNSecureStorageService } from '../secure-storage';
 
 const mockKeychain = vi.hoisted(() => ({

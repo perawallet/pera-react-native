@@ -17,6 +17,7 @@ vi.mock('react-native-device-info', () => ({
     getDeviceId: vi.fn(() => 'iPhone13,2'),
     getUniqueId: vi.fn(() => Promise.resolve('unique-device-id')),
     getModel: vi.fn(() => 'iPhone 13'),
+    getBuildNumber: vi.fn(() => '1')
   },
 }));
 

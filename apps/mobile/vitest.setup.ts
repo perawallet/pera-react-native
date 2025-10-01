@@ -1,4 +1,3 @@
-import { setConfigSettings } from '@react-native-firebase/remote-config';
 import 'reflect-metadata';
 import { vi, afterEach } from 'vitest';
 
@@ -84,9 +83,9 @@ vi.mock('react-native', async () => {
     },
     TouchableOpacity: vi
       .fn()
-      .mockImplementation(({ children, ...props }) => children),
-    View: vi.fn().mockImplementation(({ children, ...props }) => children),
-    Text: vi.fn().mockImplementation(({ children, ...props }) => children),
+      .mockImplementation(({ children }) => children),
+    View: vi.fn().mockImplementation(({ children }) => children),
+    Text: vi.fn().mockImplementation(({ children }) => children),
   };
 });
 

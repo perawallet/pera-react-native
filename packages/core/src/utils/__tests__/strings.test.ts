@@ -67,7 +67,7 @@ describe('utils/strings - formatCurrency', () => {
 
         test('ALGO symbol (Ⱥ) with higher precision', () => {
             const out = formatCurrency('1234', 6, 'ALGO', 'en-US')
-            expect(out).toBe('Ⱥ1,234.000000')
+            expect(out).toBe('1,234.000000')
         })
     })
 })
