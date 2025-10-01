@@ -51,6 +51,85 @@ describe('services/accounts/store', () => {
         expect(state.accounts).toEqual([a1, a3])
     })
 
+    test('getSelectedAccount returns the selected account', () => {
+        let state: AccountsSlice
+
+        const set = (partial: Partial<AccountsSlice>) => {
+            state = {
+                ...(state as AccountsSlice),
+                ...(partial as AccountsSlice),
+            }
+        }
+        const get = () => state
+
+        state = createAccountsSlice(set as any, get as any, {} as any)
+
+        const a1: WalletAccount = {
+            id: '1',
+            name: 'Alice',
+            type: 'standard',
+            address: 'ALICE-ADDR',
+        }
+        const a2: WalletAccount = {
+            id: '2',
+            name: 'Bob',
+            type: 'standard',
+            address: 'BOB-ADDR',
+        }
+
+        state.setAccounts([a1, a2])
+        
+        // Test default selection (index 0)
+        expect(state.getSelectedAccount()).toEqual(a1)
+        
+        // Test selecting index 1
+        state.setSelectedAccountIndex(1)
+        expect(state.getSelectedAccount()).toEqual(a2)
+        
+        // Test invalid index (negative)
+        state.setSelectedAccountIndex(-1)
+        expect(state.getSelectedAccount()).toBeNull()
+        
+        // Test invalid index (out of bounds)
+        state.setSelectedAccountIndex(10)
+        expect(state.getSelectedAccount()).toBeNull()
+    })
+
+    test('setAccounts resets selectedAccountIndex to 0', () => {
+        let state: AccountsSlice
+
+        const set = (partial: Partial<AccountsSlice>) => {
+            state = {
+                ...(state as AccountsSlice),
+                ...(partial as AccountsSlice),
+            }
+        }
+        const get = () => state
+
+        state = createAccountsSlice(set as any, get as any, {} as any)
+
+        const a1: WalletAccount = {
+            id: '1',
+            name: 'Alice',
+            type: 'standard',
+            address: 'ALICE-ADDR',
+        }
+        const a2: WalletAccount = {
+            id: '2',
+            name: 'Bob',
+            type: 'standard',
+            address: 'BOB-ADDR',
+        }
+
+        state.setAccounts([a1, a2])
+        state.setSelectedAccountIndex(1)
+        expect(state.selectedAccountIndex).toBe(1)
+        
+        // Setting new accounts should reset index to 0
+        state.setAccounts([a1])
+        expect(state.selectedAccountIndex).toBe(0)
+    })
+
     test('partializeAccountsSlice returns only the persisted subset', () => {
         let captured: WalletAccount[] = []
         const state: AccountsSlice = {
@@ -62,9 +141,12 @@ describe('services/accounts/store', () => {
                     address: 'ZED-ADDR',
                 },
             ],
+            selectedAccountIndex: 0,
+            getSelectedAccount: () => null,
             setAccounts: accounts => {
                 captured = accounts
             },
+            setSelectedAccountIndex: () => {},
         }
 
         const partial = partializeAccountsSlice(state)

@@ -110,6 +110,90 @@ describe('services/accounts/hooks', () => {
         expect(findRes.current).toBeNull()
     })
 
+    test('useHasAccounts returns true when accounts exist, false when empty', async () => {
+        vi.resetModules()
+
+        const dummySecure = {
+            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            getItem: vi.fn(async (_k: string) => null),
+            removeItem: vi.fn(async (_k: string) => {}),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const { useAppStore } = await import('../../../store')
+        const { useHasAccounts, useAddAccount } = await import(
+            '../hooks.accounts'
+        )
+
+        const { result: hasRes } = renderHook(() => useHasAccounts())
+        const { result: addRes } = renderHook(() => useAddAccount())
+
+        // empty initially
+        expect(hasRes.current).toBe(false)
+
+        const a1: WalletAccount = {
+            id: '1',
+            name: 'Alice',
+            type: 'standard',
+            address: 'ALICE',
+        }
+
+        act(() => {
+            addRes.current(a1)
+        })
+
+        // now has accounts
+        const { result: hasRes2 } = renderHook(() => useHasAccounts())
+        expect(hasRes2.current).toBe(true)
+    })
+
+    test('useHasNoAccounts returns true when empty, false when accounts exist', async () => {
+        vi.resetModules()
+
+        const dummySecure = {
+            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            getItem: vi.fn(async (_k: string) => null),
+            removeItem: vi.fn(async (_k: string) => {}),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const { useAppStore } = await import('../../../store')
+        const { useHasNoAccounts, useAddAccount } = await import(
+            '../hooks.accounts'
+        )
+
+        const { result: hasNoRes } = renderHook(() => useHasNoAccounts())
+        const { result: addRes } = renderHook(() => useAddAccount())
+
+        // no accounts initially
+        expect(hasNoRes.current).toBe(true)
+
+        const a1: WalletAccount = {
+            id: '1',
+            name: 'Alice',
+            type: 'standard',
+            address: 'ALICE',
+        }
+
+        act(() => {
+            addRes.current(a1)
+        })
+
+        // now has accounts, so hasNoAccounts should be false
+        const { result: hasNoRes2 } = renderHook(() => useHasNoAccounts())
+        expect(hasNoRes2.current).toBe(false)
+    })
+
     test('addAccount without secret does not persist PK', async () => {
         vi.resetModules()
 
@@ -570,5 +654,82 @@ describe('services/accounts/hooks - useAccountBalances', () => {
 
         expect(result.current.usdAmount).toEqual(Decimal(0))
         expect(result.current.algoAmount).toEqual(Decimal(0.001))
+    })
+
+    test('returns fallback when account.id is null', async () => {
+        vi.resetModules()
+        vi.clearAllMocks()
+
+        querySpies.useLookupAccountByID.mockImplementation((_args: any) => ({
+            data: {
+                account: {
+                    amount: {
+                        microAlgos: () => ({ microAlgos: 1000n }),
+                    },
+                    assets: [],
+                },
+            },
+            isPending: false,
+        }))
+
+        querySpies.useV1AssetsList.mockImplementation((_args: any) => ({
+            data: {
+                results: [{ asset_id: 0, usd_value: 0, fraction_decimals: 6 }],
+            },
+            isPending: false,
+        }))
+
+        const { useAccountBalances } = await import('../hooks.accounts')
+        const acct: WalletAccount = {
+            id: undefined, // No ID
+            type: 'standard',
+            address: 'ADDR3',
+        }
+
+        const { result } = renderHook(() => useAccountBalances(acct))
+
+        expect(result.current.usdAmount).toEqual(Decimal(0))
+        expect(result.current.algoAmount).toEqual(Decimal(0.001))
+    })
+
+    test('handles algoAsset without returning early', async () => {
+        vi.resetModules()
+        vi.clearAllMocks()
+
+        querySpies.useLookupAccountByID.mockImplementation((_args: any) => ({
+            data: {
+                account: {
+                    amount: {
+                        microAlgos: () => ({ microAlgos: 1000000n }),
+                    },
+                    assets: [{ 'asset-id': 123, amount: 100 }],
+                },
+            },
+            isPending: false,
+        }))
+
+        querySpies.useV1AssetsList.mockImplementation((_args: any) => ({
+            data: {
+                results: [
+                    { asset_id: 0, usd_value: 2, fraction_decimals: 6 },
+                    { asset_id: 123, usd_value: 10, fraction_decimals: 2 },
+                ],
+            },
+            isPending: false,
+        }))
+
+        const { useAccountBalances } = await import('../hooks.accounts')
+        const acct: WalletAccount = {
+            id: 'ANY5',
+            type: 'standard',
+            address: 'ADDR5',
+        }
+
+        const { result } = renderHook(() => useAccountBalances(acct))
+
+        // Asset value (100 * 10 / 100 = 10) + ALGO value (1000000 * 2 / 1000000 = 2) = 12
+        expect(result.current.usdAmount).toEqual(Decimal(12))
+        // algoAmount = usdAmount / algoAsset.usd_value = 12 / 2 = 6
+        expect(result.current.algoAmount).toEqual(Decimal(6))
     })
 })

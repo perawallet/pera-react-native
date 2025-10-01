@@ -70,4 +70,21 @@ describe('utils/strings - formatCurrency', () => {
             expect(out).toBe('1,234.000000')
         })
     })
+
+    test('formats with K units', () => {
+        expect(formatCurrency('1000', 2, 'USD', 'en-US', true, 'K')).toBe('$1.00')
+        expect(formatCurrency('5000', 2, 'USD', 'en-US', true, 'K')).toBe('$5.00')
+        expect(formatCurrency('12345', 2, 'USD', 'en-US', true, 'K')).toBe('$12.35')
+    })
+
+    test('formats with M units', () => {
+        expect(formatCurrency('1000000', 2, 'USD', 'en-US', true, 'M')).toBe('$1.00')
+        expect(formatCurrency('5000000', 2, 'USD', 'en-US', true, 'M')).toBe('$5.00')
+        expect(formatCurrency('12345678', 2, 'USD', 'en-US', true, 'M')).toBe('$12.35')
+    })
+
+    test('formats without symbol when showSymbol is false', () => {
+        expect(formatCurrency('1234', 2, 'USD', 'en-US', false)).toBe('1,234.00')
+        expect(formatCurrency('5678', 2, 'GBP', 'en-GB', false)).toBe('5,678.00')
+    })
 })
