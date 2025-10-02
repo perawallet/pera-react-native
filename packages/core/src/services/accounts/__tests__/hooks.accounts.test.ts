@@ -576,6 +576,57 @@ describe('services/accounts/hooks - updateAccount', () => {
         expect(useAppStore.getState().accounts).toEqual([updated])
         expect(dummySecure.setItem).not.toHaveBeenCalled()
     })
+
+    test('useUpdateAccount handles when account is not found (findIndex returns -1)', async () => {
+        vi.resetModules()
+
+        const dummySecure = {
+            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            getItem: vi.fn(async (_k: string) => null),
+            removeItem: vi.fn(async (_k: string) => {}),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const { useAppStore } = await import('../../../store')
+        const { useAddAccount, useUpdateAccount } = await import(
+            '../hooks.accounts'
+        )
+
+        const { result: addRes } = renderHook(() => useAddAccount())
+        const { result: updateRes } = renderHook(() => useUpdateAccount())
+
+        const initial: WalletAccount = {
+            id: 'ID3',
+            type: 'standard',
+            address: 'ADDR3',
+            name: 'Existing',
+        }
+
+        act(() => {
+            addRes.current(initial)
+        })
+
+        // Try to update an account with a different address (not found)
+        const notFound: WalletAccount = {
+            id: 'ID4',
+            type: 'standard',
+            address: 'DIFFERENT_ADDR',
+            name: 'Not Found',
+        }
+
+        act(() => {
+            updateRes.current(notFound)
+        })
+
+        // The account at index -1 (or undefined) should have been updated
+        // This tests the ?? null branch
+        expect(useAppStore.getState().accounts).toHaveLength(1)
+    })
 })
 
 describe('services/accounts/hooks - useAccountBalances', () => {
@@ -731,5 +782,124 @@ describe('services/accounts/hooks - useAccountBalances', () => {
         expect(result.current.usdAmount).toEqual(Decimal(12))
         // algoAmount = usdAmount / algoAsset.usd_value = 12 / 2 = 6
         expect(result.current.algoAmount).toEqual(Decimal(6))
+    })
+
+    test('handles ASA with null usd_value', async () => {
+        vi.resetModules()
+        vi.clearAllMocks()
+
+        querySpies.useLookupAccountByID.mockImplementation((_args: any) => ({
+            data: {
+                account: {
+                    amount: {
+                        microAlgos: () => ({ microAlgos: 1000n }),
+                    },
+                    assets: [{ 'asset-id': 456, amount: 100 }],
+                },
+            },
+            isPending: false,
+        }))
+
+        querySpies.useV1AssetsList.mockImplementation((_args: any) => ({
+            data: {
+                results: [
+                    { asset_id: 0, usd_value: 1, fraction_decimals: 6 },
+                    { asset_id: 456, usd_value: null, fraction_decimals: 2 }, // null usd_value
+                ],
+            },
+            isPending: false,
+        }))
+
+        const { useAccountBalances } = await import('../hooks.accounts')
+        const acct: WalletAccount = {
+            id: 'ANY6',
+            type: 'standard',
+            address: 'ADDR6',
+        }
+
+        const { result } = renderHook(() => useAccountBalances(acct))
+
+        // Should handle null usd_value gracefully using ?? 0
+        // Only ALGO value should be counted: 1000 * 1 / 1000000 = 0.001
+        expect(result.current.usdAmount).toEqual(Decimal(0.001))
+        expect(result.current.algoAmount).toEqual(Decimal(0.001))
+    })
+
+    test('handles missing account amount data', async () => {
+        vi.resetModules()
+        vi.clearAllMocks()
+
+        querySpies.useLookupAccountByID.mockImplementation((_args: any) => ({
+            data: {
+                account: {
+                    amount: undefined, // Missing amount to test optional chaining
+                    assets: [],
+                },
+            },
+            isPending: false,
+        }))
+
+        querySpies.useV1AssetsList.mockImplementation((_args: any) => ({
+            data: {
+                results: [], // No asset data, so algoAsset will be undefined
+            },
+            isPending: false,
+        }))
+
+        const { useAccountBalances } = await import('../hooks.accounts')
+        const acct: WalletAccount = {
+            id: 'ANY7',
+            type: 'standard',
+            address: 'ADDR7',
+        }
+
+        const { result } = renderHook(() => useAccountBalances(acct))
+
+        // With no assets and missing amount, should use ?? 0 fallback
+        expect(result.current.usdAmount).toEqual(Decimal(0))
+        expect(result.current.algoAmount).toEqual(Decimal(0))
+    })
+
+    test('handles algoAsset with null usd_value in non-zero usdAmount path', async () => {
+        vi.resetModules()
+        vi.clearAllMocks()
+
+        querySpies.useLookupAccountByID.mockImplementation((_args: any) => ({
+            data: {
+                account: {
+                    amount: {
+                        microAlgos: () => ({ microAlgos: 2000000n }),
+                    },
+                    assets: [{ 'asset-id': 789, amount: 200 }],
+                },
+            },
+            isPending: false,
+        }))
+
+        querySpies.useV1AssetsList.mockImplementation((_args: any) => ({
+            data: {
+                results: [
+                    { asset_id: 0, usd_value: null, fraction_decimals: 6 }, // null for ALGO
+                    { asset_id: 789, usd_value: 3, fraction_decimals: 2 },
+                ],
+            },
+            isPending: false,
+        }))
+
+        const { useAccountBalances } = await import('../hooks.accounts')
+        const acct: WalletAccount = {
+            id: 'ANY9',
+            type: 'standard',
+            address: 'ADDR9',
+        }
+
+        const { result } = renderHook(() => useAccountBalances(acct))
+
+        // ASA value: 200 * 3 / 100 = 6
+        // ALGO value: 0 (usd_value is null, uses ?? 0)
+        // Total usdAmount: 6
+        expect(result.current.usdAmount).toEqual(Decimal(6))
+        // algoAmount calculation should use ?? 0 for null usd_value: 6 / 0 = Infinity
+        expect(result.current.algoAmount.isFinite()).toBe(false)
     })
 })
