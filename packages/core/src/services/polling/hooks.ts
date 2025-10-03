@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useAppStore } from '../../store'
 import { useV1AccountsShouldRefreshCreate } from '../../api/generated/backend'
+import { useQueryClient } from '@tanstack/react-query'
 
 const CACHE_CHECK_INTERVAL = 3000
 
@@ -11,6 +12,7 @@ export const usePolling = () => {
         state => state.setLastRefreshedRound,
     )
     const { mutateAsync } = useV1AccountsShouldRefreshCreate()
+    const queryClient = useQueryClient()
     const [polling, setPolling] = useState<NodeJS.Timeout | null>(null)
 
     const addresses = useMemo(() => accounts.map(a => a.address), [accounts])
@@ -26,8 +28,8 @@ export const usePolling = () => {
             })
 
             if (response.refresh) {
-                //TODO: we need to reset any react queries that require refresh on next view here
-                //queryClient.resetQueries()
+                //TODO: can we be a bit more selective of which queries we reset?
+                queryClient.resetQueries()
                 setLastRefreshedRound(response.round ?? null)
             }
         } catch (error) {

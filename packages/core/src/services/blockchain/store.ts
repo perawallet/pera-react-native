@@ -15,6 +15,7 @@ export const createBlockchainSlice: StateCreator<
     return {
         network: Networks.mainnet,
         setNetwork: (network: Network) => {
+            //TODO in an ideal world we need to trigger clearing the react-query cache here
             set({ network })
         },
     }
