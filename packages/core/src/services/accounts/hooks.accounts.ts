@@ -6,14 +6,14 @@ import { v7 as uuidv7 } from 'uuid'
 import { useHDWallet } from './hooks.hdwallet'
 import { decodeFromBase64, encodeToBase64 } from '../../utils/strings'
 import { encodeAlgorandAddress } from '../blockchain'
-import { useLookupAccountByID } from '../../api/generated/indexer'
 import {
-    useV1AssetsList,
     useV1DevicesPartialUpdate,
-    type AssetSerializerResponse,
+    v1AccountsAssetsList,
+    v1AccountsAssetsListQueryKey,
 } from '../../api/generated/backend'
 import Decimal from 'decimal.js'
 import { useDeviceInfoService } from '../device'
+import { useQueries } from '@tanstack/react-query'
 
 // Services relating to locally stored accounts
 export const useAllAccounts = () => {
@@ -252,88 +252,50 @@ export const useRemoveAccountById = () => {
     }
 }
 
-export const useAccountBalances = (account: WalletAccount) => {
-    //TODO: this may need to be revisited - not sure if the react query hooks will cause a rerender form in here
-    //when something changes, and if not, the calculations will not work correctly
-    const { data: accountInfo, isPending } = useLookupAccountByID(
-        {
-            accountId: account.id ?? '',
-            params: {
-                exclude: ['created-apps', 'created-assets'],
-            },
-        },
-        {
-            query: {
-                enabled: !!account.id,
-                notifyOnChangeProps: ['data', 'isPending'],
-            },
-        },
-    )
+export const useAccountBalances = (accounts: WalletAccount[]) => {
+    const results = useQueries({
+        queries: accounts.map(acc => {
+            const address = acc.address
+            return {
+                queryKey: v1AccountsAssetsListQueryKey(
+                    { account_address: address },
+                    { include_algo: true },
+                ),
+                queryFn: () =>
+                    v1AccountsAssetsList({
+                        account_address: address,
+                        params: { include_algo: true },
+                    }),
+                staleTime: Infinity,
+            }
+        }),
+    })
 
-    const { data: assetDetails } = useV1AssetsList(
-        {
-            params: {
-                asset_ids: [
-                    '0',
-                    accountInfo?.account.assets?.map(a =>
-                        a['asset-id'].toString(),
+    return results.map(r => {
+        const accountInfo = r.data
+        let algoAmount = Decimal(0)
+        let usdAmount = Decimal(0)
+
+        if (accountInfo) {
+            accountInfo.results.forEach(data => {
+                algoAmount = algoAmount.plus(
+                    Decimal(data.amount ?? '0').div(
+                        Decimal(10).pow(data.fraction_decimals),
                     ),
-                ].join(','),
-            },
-        },
-        {
-            query: {
-                enabled: !!accountInfo?.account.assets?.length && !isPending,
-                notifyOnChangeProps: ['data', 'isPending'],
-            },
-        },
-    )
-
-    const assetDetailsMap = new Map<number, AssetSerializerResponse>()
-    assetDetails?.results.forEach(a => {
-        assetDetailsMap.set(a.asset_id, a)
-    })
-    const algoAsset = assetDetailsMap.get(0)
-
-    let usdAmount = Decimal(0)
-    accountInfo?.account.assets?.map(a => {
-        const asset = assetDetailsMap.get(a['asset-id'])
-        if (asset) {
-            usdAmount = usdAmount.plus(
-                Decimal(asset.usd_value ?? 0)
-                    .times(Decimal(a.amount))
-                    .div(10 ** asset.fraction_decimals),
-            )
+                )
+                usdAmount = usdAmount.plus(
+                    Decimal(data.balance_usd_value ?? '0'),
+                )
+            })
         }
-    })
 
-    if (algoAsset) {
-        const microalgos = Decimal(
-            accountInfo?.account.amount.microAlgos().microAlgos ?? 0,
-        )
-        usdAmount = usdAmount.plus(
-            Decimal(algoAsset.usd_value ?? 0)
-                .times(Decimal(microalgos))
-                .div(10 ** algoAsset.fraction_decimals),
-        )
-    }
-
-    if (!usdAmount || usdAmount?.equals(0)) {
         return {
-            usdAmount: Decimal(usdAmount),
-            algoAmount: Decimal(
-                accountInfo?.account?.amount?.microAlgos().microAlgos ?? 0,
-            ).div(10 ** 6),
+            algoAmount: algoAmount,
+            usdAmount: usdAmount,
+            isPending: r.isPending,
+            isFetched: r.isFetched,
+            isRefetching: r.isRefetching,
+            isError: r.isError,
         }
-    }
-
-    let algoAmount = Decimal(0)
-    if (algoAsset) {
-        algoAmount = usdAmount.div(Decimal(algoAsset.usd_value ?? 0))
-    }
-
-    return {
-        algoAmount,
-        usdAmount,
-    }
+    })
 }

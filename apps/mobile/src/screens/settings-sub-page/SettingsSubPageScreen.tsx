@@ -12,42 +12,43 @@ type SettingsSubPageScreenProps = StaticScreenProps<{
 }>;
 
 const SettingsSubPageScreen = ({ route }: SettingsSubPageScreenProps) => {
-    const styles = useStyles()
-  const setTheme = useAppStore(state => state.setTheme)
-  const theme = useAppStore(state => state.theme)
-  const network = useAppStore(state => state.network)
-  const setNetwork = useAppStore(state => state.setNetwork)
-  const queryClient = useQueryClient()
+  const styles = useStyles();
+  const setTheme = useAppStore(state => state.setTheme);
+  const theme = useAppStore(state => state.theme);
+  const network = useAppStore(state => state.network);
+  const setNetwork = useAppStore(state => state.setNetwork);
+  const queryClient = useQueryClient();
 
   const toggleTheme = () => {
     if (theme === 'dark' || theme === 'system') {
-        setTheme('light')
+      setTheme('light');
     } else {
-        setTheme('dark')
+      setTheme('dark');
     }
-  }
+  };
 
   const toggleNetwork = () => {
     if (network === 'mainnet') {
-        setNetwork('testnet')
+      setNetwork('testnet');
     } else {
-        setNetwork('mainnet')
+      setNetwork('mainnet');
     }
 
-    queryClient.invalidateQueries()
-  }
+    queryClient.invalidateQueries();
+  };
 
   return (
     <MainScreenLayout>
-        <PeraView style={styles.container}>
-            <Text>This page would hold the settings for {route.params.title}.  
-                For now we are going to just put some random stuff here for ease of use
-            </Text>
+      <PeraView style={styles.container}>
+        <Text>
+          This page would hold the settings for {route.params.title}. For now we
+          are going to just put some random stuff here for ease of use
+        </Text>
 
-            <Button onPress={toggleTheme} title="Toggle Theme" />
+        <Button onPress={toggleTheme} title="Toggle Theme" />
 
-            <Button onPress={toggleNetwork} title="Toggle Network" />
-        </PeraView>
+        <Button onPress={toggleNetwork} title="Toggle Network" />
+      </PeraView>
     </MainScreenLayout>
   );
 };

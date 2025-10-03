@@ -1,33 +1,12 @@
-import type { SearchParamsOption, KyInstance, KyRequest } from 'ky'
+import type {
+    SearchParamsOption,
+    KyInstance,
+    KyRequest,
+    KyResponse,
+    Options,
+} from 'ky'
 import { useAppStore } from '../store/app-store'
 import { config } from '../config/main'
-
-function toSearchParamsOption(
-    input: Record<string, unknown> | undefined,
-): SearchParamsOption {
-    const searchParams = new URLSearchParams()
-
-    if (!input) {
-        return searchParams
-    }
-
-    for (const [key, value] of Object.entries(input)) {
-        if (value == null) {
-            continue
-        }
-
-        if (Array.isArray(value)) {
-            for (const val of value) {
-                searchParams.append(key, String(val))
-            }
-            continue
-        }
-
-        searchParams.append(key, String(value))
-    }
-
-    return searchParams
-}
 
 export interface RequestConfig<TData = unknown> {
     url?: string
@@ -59,9 +38,13 @@ export const logRequest = (request: KyRequest) => {
     }
 }
 
-export const logResponse = (request: KyRequest) => {
+export const logResponse = (
+    _: KyRequest,
+    __: Options,
+    response: KyResponse,
+) => {
     if (config.debugEnabled) {
-        console.log('Received response', request)
+        console.log('Received response', response)
     }
 }
 
@@ -86,7 +69,7 @@ export const createFetchClient = (clients: Map<string, KyInstance>) => {
             : requestConfig.url
 
         const response = await client(path, {
-            searchParams: toSearchParamsOption(requestConfig.params),
+            searchParams: requestConfig.params as SearchParamsOption,
             method: requestConfig.method,
             json: requestConfig.data,
             signal: requestConfig.signal,

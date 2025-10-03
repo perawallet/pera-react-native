@@ -15,7 +15,7 @@ export const accountDetailAssetSerializerResponseSchema = z.object({
 "verification_tier": z.enum(["verified", "unverified", "suspicious"]),
 "type": z.enum(["algo", "standard_asset", "dapp_asset", "collectible"]).optional(),
 "logo": z.string().url().optional(),
-"collectible": z.lazy(() => simpleCollectibleSchema),
+"collectible": z.lazy(() => simpleCollectibleSchema).nullable(),
 "balance_usd_value": z.string().optional(),
 "last_24_hours_algo_price_change_percentage": z.number().nullable()
     })

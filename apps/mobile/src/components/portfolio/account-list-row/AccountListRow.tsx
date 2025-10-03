@@ -18,6 +18,7 @@ import { TouchableOpacity } from 'react-native';
 import PeraView from '../../common/view/PeraView';
 import { useMemo } from 'react';
 import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay';
+import Decimal from 'decimal.js';
 
 type AccountListRowProps = {
   account: WalletAccount;
@@ -37,8 +38,7 @@ const AccountListRow = ({ account }: AccountListRowProps) => {
     if (account.type === 'watch') return <WatchIcon />;
   }, [account]);
 
-  const { algoAmount, usdAmount } = useAccountBalances(account);
-
+  const data = useAccountBalances([account]);
   const showAltAddress = account.rekeyAddress || account.name?.length;
 
   const goToAccount = () => {
@@ -58,17 +58,19 @@ const AccountListRow = ({ account }: AccountListRowProps) => {
         <PeraView style={themeStyle.balanceContainer}>
           <CurrencyDisplay
             h4
-            value={algoAmount}
+            value={data.length ? data[0].algoAmount : Decimal(0)}
             precision={2}
             currency="ALGO"
             alignRight
+            skeleton={data.length ? !data[0].isFetched : false}
           />
           <CurrencyDisplay
             style={themeStyle.secondaryText}
-            value={usdAmount}
+            value={data.length ? data[0].usdAmount : Decimal(0)}
             precision={2}
             currency="USD"
             alignRight
+            skeleton={data.length ? !data[0].isFetched : false}
           />
         </PeraView>
       </PeraView>

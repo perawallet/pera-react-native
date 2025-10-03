@@ -183,6 +183,17 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             : theme.colors.textGray,
         renderErrorMessage: false,
       }),
+      Skeleton: (_, theme) => ({
+        skeletonStyle: {
+          backgroundColor: theme.colors.layerGrayLighter,
+        },
+        style: {
+          backgroundColor: theme.colors.layerGrayLight,
+          borderWidth: 2,
+          borderColor: theme.colors.background,
+        },
+        animation: 'pulse',
+      }),
       Text: () => ({
         h1Style: {
           fontFamily: 'DMSans-Medium',

@@ -49,9 +49,9 @@ export const RootComponent = () => {
   const appState = useRef(AppState.currentState);
 
   useEffect(() => {
+    //TODO: this doesn't handle switching networks
     registerDevice();
 
-    // startPolling();
     const subscription = AppState.addEventListener('change', nextAppState => {
       if (
         appState.current.match(/inactive|background/) &&

@@ -3,6 +3,8 @@ import { renderHook, act } from '@testing-library/react'
 import type { WalletAccount } from '../types'
 import { MemoryKeyValueStorage, registerTestPlatform } from '@test-utils'
 import Decimal from 'decimal.js'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import React from 'react'
 
 // Hoisted mocks for createAccount path dependencies
 const uuidSpies = vi.hoisted(() => ({ v7: vi.fn() }))
@@ -21,6 +23,14 @@ const querySpies = vi.hoisted(() => ({
     useV1AssetsList: vi.fn(),
     useV1DevicesPartialUpdate: vi.fn(() => ({
         mutateAsync: vi.fn(async () => ({})),
+    })),
+    v1AccountsAssetsListQueryKey: vi.fn((params: any, options: any) => [
+        'v1AccountsAssetsList',
+        params,
+        options,
+    ]),
+    v1AccountsAssetsList: vi.fn(async (): Promise<any> => ({
+        results: [],
     })),
 }))
 
@@ -60,6 +70,8 @@ vi.mock('../../../api/generated/indexer', () => ({
 vi.mock('../../../api/generated/backend', () => ({
     useV1AssetsList: querySpies.useV1AssetsList,
     useV1DevicesPartialUpdate: querySpies.useV1DevicesPartialUpdate,
+    v1AccountsAssetsListQueryKey: querySpies.v1AccountsAssetsListQueryKey,
+    v1AccountsAssetsList: querySpies.v1AccountsAssetsList,
 }))
 
 describe('services/accounts/hooks', () => {
@@ -1049,33 +1061,38 @@ describe('services/accounts/hooks - updateAccount', () => {
 })
 
 describe('services/accounts/hooks - useAccountBalances', () => {
+    const createWrapper = () => {
+        const queryClient = new QueryClient({
+            defaultOptions: {
+                queries: {
+                    retry: false,
+                },
+            },
+        })
+        return ({ children }: { children: React.ReactNode }) =>
+            React.createElement(QueryClientProvider, { client: queryClient }, children)
+    }
+
     test('aggregates USD and ALGO using backend/indexer data', async () => {
         vi.resetModules()
         vi.clearAllMocks()
 
-        // indexer account info with one ASA and some microalgos
-        querySpies.useLookupAccountByID.mockImplementation((_args: any) => ({
-            data: {
-                account: {
-                    amount: {
-                        microAlgos: () => ({ microAlgos: 1000n }), // microAlgos BigInt
-                    },
-                    assets: [{ 'asset-id': 123, amount: 50 }],
+        querySpies.v1AccountsAssetsList.mockResolvedValue({
+            results: [
+                {
+                    asset_id: 0,
+                    amount: '1000',
+                    fraction_decimals: 6,
+                    balance_usd_value: '0.0005',
                 },
-            },
-            isPending: false,
-        }))
-
-        // backend asset details for ALGO (id 0) and ASA 123
-        querySpies.useV1AssetsList.mockImplementation((_args: any) => ({
-            data: {
-                results: [
-                    { asset_id: 0, usd_value: 0.5, fraction_decimals: 6 },
-                    { asset_id: 123, usd_value: 5, fraction_decimals: 2 },
-                ],
-            },
-            isPending: false,
-        }))
+                {
+                    asset_id: 123,
+                    amount: '50',
+                    fraction_decimals: 2,
+                    balance_usd_value: '2.5',
+                },
+            ],
+        })
 
         const { useAccountBalances } = await import('../hooks.accounts')
         const acct: WalletAccount = {
@@ -1084,34 +1101,32 @@ describe('services/accounts/hooks - useAccountBalances', () => {
             address: 'ADDR',
         }
 
-        const { result } = renderHook(() => useAccountBalances(acct))
+        const { result } = renderHook(() => useAccountBalances([acct]), {
+            wrapper: createWrapper(),
+        })
 
-        expect(result.current.usdAmount).toEqual(Decimal(2.5005))
-        expect(result.current.algoAmount).toEqual(Decimal(5.001))
+        await vi.waitFor(() => {
+            expect(result.current[0].isFetched).toBe(true)
+        })
+
+        expect(result.current[0].usdAmount).toEqual(Decimal(2.5005))
+        expect(result.current[0].algoAmount).toEqual(Decimal(0.501))
     })
 
     test('returns fallback algos() when computed USD is zero', async () => {
         vi.resetModules()
         vi.clearAllMocks()
 
-        querySpies.useLookupAccountByID.mockImplementation((_args: any) => ({
-            data: {
-                account: {
-                    amount: {
-                        microAlgos: () => ({ microAlgos: 1000n }),
-                    },
-                    assets: [], // no ASA balances
+        querySpies.v1AccountsAssetsList.mockResolvedValue({
+            results: [
+                {
+                    asset_id: 0,
+                    amount: '1000',
+                    fraction_decimals: 6,
+                    balance_usd_value: '0',
                 },
-            },
-            isPending: false,
-        }))
-
-        querySpies.useV1AssetsList.mockImplementation((_args: any) => ({
-            data: {
-                results: [{ asset_id: 0, usd_value: 0, fraction_decimals: 6 }],
-            },
-            isPending: false,
-        }))
+            ],
+        })
 
         const { useAccountBalances } = await import('../hooks.accounts')
         const acct: WalletAccount = {
@@ -1120,34 +1135,32 @@ describe('services/accounts/hooks - useAccountBalances', () => {
             address: 'ADDR2',
         }
 
-        const { result } = renderHook(() => useAccountBalances(acct))
+        const { result } = renderHook(() => useAccountBalances([acct]), {
+            wrapper: createWrapper(),
+        })
 
-        expect(result.current.usdAmount).toEqual(Decimal(0))
-        expect(result.current.algoAmount).toEqual(Decimal(0.001))
+        await vi.waitFor(() => {
+            expect(result.current[0].isFetched).toBe(true)
+        })
+
+        expect(result.current[0].usdAmount).toEqual(Decimal(0))
+        expect(result.current[0].algoAmount).toEqual(Decimal(0.001))
     })
 
     test('returns fallback when account.id is null', async () => {
         vi.resetModules()
         vi.clearAllMocks()
 
-        querySpies.useLookupAccountByID.mockImplementation((_args: any) => ({
-            data: {
-                account: {
-                    amount: {
-                        microAlgos: () => ({ microAlgos: 1000n }),
-                    },
-                    assets: [],
+        querySpies.v1AccountsAssetsList.mockResolvedValue({
+            results: [
+                {
+                    asset_id: 0,
+                    amount: '1000',
+                    fraction_decimals: 6,
+                    balance_usd_value: '0',
                 },
-            },
-            isPending: false,
-        }))
-
-        querySpies.useV1AssetsList.mockImplementation((_args: any) => ({
-            data: {
-                results: [{ asset_id: 0, usd_value: 0, fraction_decimals: 6 }],
-            },
-            isPending: false,
-        }))
+            ],
+        })
 
         const { useAccountBalances } = await import('../hooks.accounts')
         const acct: WalletAccount = {
@@ -1156,37 +1169,38 @@ describe('services/accounts/hooks - useAccountBalances', () => {
             address: 'ADDR3',
         }
 
-        const { result } = renderHook(() => useAccountBalances(acct))
+        const { result } = renderHook(() => useAccountBalances([acct]), {
+            wrapper: createWrapper(),
+        })
 
-        expect(result.current.usdAmount).toEqual(Decimal(0))
-        expect(result.current.algoAmount).toEqual(Decimal(0.001))
+        await vi.waitFor(() => {
+            expect(result.current[0].isFetched).toBe(true)
+        })
+
+        expect(result.current[0].usdAmount).toEqual(Decimal(0))
+        expect(result.current[0].algoAmount).toEqual(Decimal(0.001))
     })
 
     test('handles algoAsset without returning early', async () => {
         vi.resetModules()
         vi.clearAllMocks()
 
-        querySpies.useLookupAccountByID.mockImplementation((_args: any) => ({
-            data: {
-                account: {
-                    amount: {
-                        microAlgos: () => ({ microAlgos: 1000000n }),
-                    },
-                    assets: [{ 'asset-id': 123, amount: 100 }],
+        querySpies.v1AccountsAssetsList.mockResolvedValue({
+            results: [
+                {
+                    asset_id: 0,
+                    amount: '1000000',
+                    fraction_decimals: 6,
+                    balance_usd_value: '2',
                 },
-            },
-            isPending: false,
-        }))
-
-        querySpies.useV1AssetsList.mockImplementation((_args: any) => ({
-            data: {
-                results: [
-                    { asset_id: 0, usd_value: 2, fraction_decimals: 6 },
-                    { asset_id: 123, usd_value: 10, fraction_decimals: 2 },
-                ],
-            },
-            isPending: false,
-        }))
+                {
+                    asset_id: 123,
+                    amount: '100',
+                    fraction_decimals: 2,
+                    balance_usd_value: '10',
+                },
+            ],
+        })
 
         const { useAccountBalances } = await import('../hooks.accounts')
         const acct: WalletAccount = {
@@ -1195,39 +1209,38 @@ describe('services/accounts/hooks - useAccountBalances', () => {
             address: 'ADDR5',
         }
 
-        const { result } = renderHook(() => useAccountBalances(acct))
+        const { result } = renderHook(() => useAccountBalances([acct]), {
+            wrapper: createWrapper(),
+        })
 
-        // Asset value (100 * 10 / 100 = 10) + ALGO value (1000000 * 2 / 1000000 = 2) = 12
-        expect(result.current.usdAmount).toEqual(Decimal(12))
-        // algoAmount = usdAmount / algoAsset.usd_value = 12 / 2 = 6
-        expect(result.current.algoAmount).toEqual(Decimal(6))
+        await vi.waitFor(() => {
+            expect(result.current[0].isFetched).toBe(true)
+        })
+
+        expect(result.current[0].usdAmount).toEqual(Decimal(12))
+        expect(result.current[0].algoAmount).toEqual(Decimal(2))
     })
 
     test('handles ASA with null usd_value', async () => {
         vi.resetModules()
         vi.clearAllMocks()
 
-        querySpies.useLookupAccountByID.mockImplementation((_args: any) => ({
-            data: {
-                account: {
-                    amount: {
-                        microAlgos: () => ({ microAlgos: 1000n }),
-                    },
-                    assets: [{ 'asset-id': 456, amount: 100 }],
+        querySpies.v1AccountsAssetsList.mockResolvedValue({
+            results: [
+                {
+                    asset_id: 0,
+                    amount: '1000',
+                    fraction_decimals: 6,
+                    balance_usd_value: '0.001',
                 },
-            },
-            isPending: false,
-        }))
-
-        querySpies.useV1AssetsList.mockImplementation((_args: any) => ({
-            data: {
-                results: [
-                    { asset_id: 0, usd_value: 1, fraction_decimals: 6 },
-                    { asset_id: 456, usd_value: null, fraction_decimals: 2 }, // null usd_value
-                ],
-            },
-            isPending: false,
-        }))
+                {
+                    asset_id: 456,
+                    amount: '100',
+                    fraction_decimals: 2,
+                    balance_usd_value: null,
+                },
+            ],
+        })
 
         const { useAccountBalances } = await import('../hooks.accounts')
         const acct: WalletAccount = {
@@ -1236,34 +1249,25 @@ describe('services/accounts/hooks - useAccountBalances', () => {
             address: 'ADDR6',
         }
 
-        const { result } = renderHook(() => useAccountBalances(acct))
+        const { result } = renderHook(() => useAccountBalances([acct]), {
+            wrapper: createWrapper(),
+        })
 
-        // Should handle null usd_value gracefully using ?? 0
-        // Only ALGO value should be counted: 1000 * 1 / 1000000 = 0.001
-        expect(result.current.usdAmount).toEqual(Decimal(0.001))
-        expect(result.current.algoAmount).toEqual(Decimal(0.001))
+        await vi.waitFor(() => {
+            expect(result.current[0].isFetched).toBe(true)
+        })
+
+        expect(result.current[0].usdAmount).toEqual(Decimal(0.001))
+        expect(result.current[0].algoAmount).toEqual(Decimal(1.001))
     })
 
     test('handles missing account amount data', async () => {
         vi.resetModules()
         vi.clearAllMocks()
 
-        querySpies.useLookupAccountByID.mockImplementation((_args: any) => ({
-            data: {
-                account: {
-                    amount: undefined, // Missing amount to test optional chaining
-                    assets: [],
-                },
-            },
-            isPending: false,
-        }))
-
-        querySpies.useV1AssetsList.mockImplementation((_args: any) => ({
-            data: {
-                results: [], // No asset data, so algoAsset will be undefined
-            },
-            isPending: false,
-        }))
+        querySpies.v1AccountsAssetsList.mockResolvedValue({
+            results: [],
+        })
 
         const { useAccountBalances } = await import('../hooks.accounts')
         const acct: WalletAccount = {
@@ -1272,38 +1276,38 @@ describe('services/accounts/hooks - useAccountBalances', () => {
             address: 'ADDR7',
         }
 
-        const { result } = renderHook(() => useAccountBalances(acct))
+        const { result } = renderHook(() => useAccountBalances([acct]), {
+            wrapper: createWrapper(),
+        })
 
-        // With no assets and missing amount, should use ?? 0 fallback
-        expect(result.current.usdAmount).toEqual(Decimal(0))
-        expect(result.current.algoAmount).toEqual(Decimal(0))
+        await vi.waitFor(() => {
+            expect(result.current[0].isFetched).toBe(true)
+        })
+
+        expect(result.current[0].usdAmount).toEqual(Decimal(0))
+        expect(result.current[0].algoAmount).toEqual(Decimal(0))
     })
 
     test('handles algoAsset with null usd_value in non-zero usdAmount path', async () => {
         vi.resetModules()
         vi.clearAllMocks()
 
-        querySpies.useLookupAccountByID.mockImplementation((_args: any) => ({
-            data: {
-                account: {
-                    amount: {
-                        microAlgos: () => ({ microAlgos: 2000000n }),
-                    },
-                    assets: [{ 'asset-id': 789, amount: 200 }],
+        querySpies.v1AccountsAssetsList.mockResolvedValue({
+            results: [
+                {
+                    asset_id: 0,
+                    amount: '2000000',
+                    fraction_decimals: 6,
+                    balance_usd_value: null,
                 },
-            },
-            isPending: false,
-        }))
-
-        querySpies.useV1AssetsList.mockImplementation((_args: any) => ({
-            data: {
-                results: [
-                    { asset_id: 0, usd_value: null, fraction_decimals: 6 }, // null for ALGO
-                    { asset_id: 789, usd_value: 3, fraction_decimals: 2 },
-                ],
-            },
-            isPending: false,
-        }))
+                {
+                    asset_id: 789,
+                    amount: '200',
+                    fraction_decimals: 2,
+                    balance_usd_value: '6',
+                },
+            ],
+        })
 
         const { useAccountBalances } = await import('../hooks.accounts')
         const acct: WalletAccount = {
@@ -1312,13 +1316,15 @@ describe('services/accounts/hooks - useAccountBalances', () => {
             address: 'ADDR9',
         }
 
-        const { result } = renderHook(() => useAccountBalances(acct))
+        const { result } = renderHook(() => useAccountBalances([acct]), {
+            wrapper: createWrapper(),
+        })
 
-        // ASA value: 200 * 3 / 100 = 6
-        // ALGO value: 0 (usd_value is null, uses ?? 0)
-        // Total usdAmount: 6
-        expect(result.current.usdAmount).toEqual(Decimal(6))
-        // algoAmount calculation should use ?? 0 for null usd_value: 6 / 0 = Infinity
-        expect(result.current.algoAmount.isFinite()).toBe(false)
+        await vi.waitFor(() => {
+            expect(result.current[0].isFetched).toBe(true)
+        })
+
+        expect(result.current[0].usdAmount).toEqual(Decimal(6))
+        expect(result.current[0].algoAmount).toEqual(Decimal(4))
     })
 })

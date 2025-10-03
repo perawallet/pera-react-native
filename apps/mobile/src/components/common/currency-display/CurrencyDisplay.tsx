@@ -1,5 +1,5 @@
 import { useStyles } from './styles';
-import { Text, TextProps } from '@rneui/themed';
+import { Skeleton, Text, TextProps } from '@rneui/themed';
 import PeraView from '../view/PeraView';
 import { useMemo } from 'react';
 import { formatCurrency, useDeviceInfoService } from '@perawallet/core';
@@ -13,6 +13,7 @@ export type CurrencyDisplayProps = {
   prefix?: string;
   alignRight?: boolean;
   showSymbol?: boolean;
+  skeleton?: boolean;
   units?: 'K' | 'M';
 } & TextProps;
 
@@ -26,6 +27,7 @@ const CurrencyDisplay = (props: CurrencyDisplayProps) => {
     prefix,
     units,
     showSymbol = true,
+    skeleton = false,
     ...rest
   } = props;
 
@@ -42,6 +44,13 @@ const CurrencyDisplay = (props: CurrencyDisplayProps) => {
     );
   }, [value, precision, currency, deviceInfo, showSymbol, units]);
 
+  if (skeleton) {
+    return (
+      <PeraView style={themeStyle.container}>
+        <Skeleton style={themeStyle.skeleton} />
+      </PeraView>
+    );
+  }
   return (
     <PeraView style={themeStyle.container}>
       {isAlgo && showSymbol && (

@@ -51,7 +51,7 @@ export type AccountDetailAssetSerializerResponse = {
     /**
      * @type object
     */
-    collectible: SimpleCollectible;
+    collectible: SimpleCollectible | null;
     /**
      * @type string | undefined
     */

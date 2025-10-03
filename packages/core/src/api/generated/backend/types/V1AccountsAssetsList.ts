@@ -28,6 +28,11 @@ export type V1AccountsAssetsListQueryParams = {
      * @type integer | undefined
     */
     limit?: number;
+    /**
+     * @description whether to include the algo asset.
+     * @type boolean | undefined
+    */
+    include_algo?: boolean;
 };
 
 export type V1AccountsAssetsList200 = {

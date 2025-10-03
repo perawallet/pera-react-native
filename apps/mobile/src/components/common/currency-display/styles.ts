@@ -16,7 +16,11 @@ export const useStyles = makeStyles((theme, props: CurrencyDisplayProps) => {
     container: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'flex-end',
+      justifyContent: 'flex-start',
+    },
+    skeleton: {
+      maxWidth: 150,
+      height: size,
     },
     textContainer: {
       flexGrow: 1,

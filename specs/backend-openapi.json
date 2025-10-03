@@ -176,6 +176,14 @@
             "schema": {
               "type": "integer"
             }
+          },
+          {
+            "name": "include_algo",
+            "in": "query",
+            "description": "whether to include the algo asset.",
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -6322,7 +6330,8 @@
             "readOnly": true
           },
           "collectible": {
-            "$ref": "#/components/schemas/SimpleCollectible"
+            "$ref": "#/components/schemas/SimpleCollectible",
+            "nullable": true
           },
           "balance_usd_value": {
             "title": "Balance usd value",
