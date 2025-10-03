@@ -1,5 +1,5 @@
 import { createStaticNavigation } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createNativeStackNavigator, NativeStackHeaderProps } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import PortfolioScreen from '../screens/portfolio/PortfolioScreen';
 import DiscoverScreen from '../screens/discover/DiscoverScreen';
@@ -21,20 +21,13 @@ import DiscoverIcon from '../../assets/icons/globe.svg';
 import SwapIcon from '../../assets/icons/swap.svg';
 import StakingIcon from '../../assets/icons/dot-stack.svg';
 import MenuIcon from '../../assets/icons/horizontal-line-stack.svg';
+import NavigationHeader from '../components/common/navigation-header/NavigationHeader';
 
 const PortfolioStack = createNativeStackNavigator({
   initialRouteName: 'Portfolio',
   screenOptions: {
     headerShown: false,
-    headerShadowVisible: false,
-    headerTitleStyle: {
-      fontFamily: 'DMSans-Regular',
-      fontWeight: 400,
-      fontSize: 15,
-      lineHeight: 24,
-      textAlign: 'center',
-    },
-    headerStyle: {},
+    header: (props: NativeStackHeaderProps) => <NavigationHeader {...props} />
   },
   screens: {
     Portfolio: PortfolioScreen,
@@ -58,15 +51,7 @@ const SettingsStack = createNativeStackNavigator({
   initialRouteName: 'SettingsHome',
   screenOptions: {
     headerShown: true,
-    headerShadowVisible: false,
-    headerTitleStyle: {
-      fontFamily: 'DMSans-Regular',
-      fontWeight: 400,
-      fontSize: 15,
-      lineHeight: 24,
-      textAlign: 'center',
-    },
-    headerStyle: {},
+    header: (props: NativeStackHeaderProps) => <NavigationHeader {...props} />
   },
   screens: {
     SettingsHome: {
