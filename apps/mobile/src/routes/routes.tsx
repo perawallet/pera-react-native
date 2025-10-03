@@ -1,5 +1,8 @@
 import { createStaticNavigation } from '@react-navigation/native';
-import { createNativeStackNavigator, NativeStackHeaderProps } from '@react-navigation/native-stack';
+import {
+  createNativeStackNavigator,
+  NativeStackHeaderProps,
+} from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import PortfolioScreen from '../screens/portfolio/PortfolioScreen';
 import DiscoverScreen from '../screens/discover/DiscoverScreen';
@@ -27,7 +30,7 @@ const PortfolioStack = createNativeStackNavigator({
   initialRouteName: 'Portfolio',
   screenOptions: {
     headerShown: false,
-    header: (props: NativeStackHeaderProps) => <NavigationHeader {...props} />
+    header: (props: NativeStackHeaderProps) => <NavigationHeader {...props} />,
   },
   screens: {
     Portfolio: PortfolioScreen,
@@ -51,7 +54,7 @@ const SettingsStack = createNativeStackNavigator({
   initialRouteName: 'SettingsHome',
   screenOptions: {
     headerShown: true,
-    header: (props: NativeStackHeaderProps) => <NavigationHeader {...props} />
+    header: (props: NativeStackHeaderProps) => <NavigationHeader {...props} />,
   },
   screens: {
     SettingsHome: {

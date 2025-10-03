@@ -9,8 +9,8 @@ type SettingsSubPageScreenProps = StaticScreenProps<{
 }>;
 
 const SettingsSubPageScreen = ({ route }: SettingsSubPageScreenProps) => {
-  const setTheme = useAppStore(state => state.setTheme)
-  setTheme('light') //TODO: Remove this hack - it's only here so we can force the app into light mode
+  const setTheme = useAppStore(state => state.setTheme);
+  setTheme('light'); //TODO: Remove this hack - it's only here so we can force the app into light mode
   return (
     <MainScreenLayout header fullScreen>
       <Text>This page would hold the settings for {route.params.title}</Text>

@@ -1,6 +1,6 @@
 import { makeStyles } from '@rneui/themed';
 
-export const useStyles = makeStyles((theme) => ({
+export const useStyles = makeStyles(theme => ({
   container: {
     flexDirection: 'row',
     padding: theme.spacing.md,
@@ -15,6 +15,6 @@ export const useStyles = makeStyles((theme) => ({
   },
   backIconContainer: {
     paddingHorizontal: theme.spacing.sm,
-    width: theme.spacing.xl * 2
-  }
+    width: theme.spacing.xl * 2,
+  },
 }));

@@ -9,9 +9,11 @@ import { encodeAlgorandAddress } from '../blockchain'
 import { useLookupAccountByID } from '../../api/generated/indexer'
 import {
     useV1AssetsList,
+    useV1DevicesPartialUpdate,
     type AssetSerializerResponse,
 } from '../../api/generated/backend'
 import Decimal from 'decimal.js'
+import { useDeviceInfoService } from '../device'
 
 // Services relating to locally stored accounts
 export const useAllAccounts = () => {
@@ -39,6 +41,9 @@ export const useCreateAccount = () => {
     const { createMnemonic, deriveKey } = useHDWallet()
     const secureStorage = useSecureStorageService()
     const setAccounts = useAppStore(state => state.setAccounts)
+    const deviceID = useAppStore(state => state.deviceID)
+    const deviceInfo = useDeviceInfoService()
+    const { mutateAsync: updateDeviceOnBackend } = useV1DevicesPartialUpdate()
 
     return async ({
         walletId,
@@ -90,6 +95,16 @@ export const useCreateAccount = () => {
 
         accounts.push(newAccount)
         setAccounts([...accounts])
+
+        if (deviceID) {
+            updateDeviceOnBackend({
+                device_id: deviceID,
+                data: {
+                    platform: deviceInfo.getDevicePlatform(),
+                    accounts: accounts.map(a => a.address),
+                },
+            })
+        }
         return newAccount
     }
 }
@@ -99,6 +114,9 @@ export const useImportWallet = () => {
     const { deriveKey } = useHDWallet()
     const secureStorage = useSecureStorageService()
     const setAccounts = useAppStore(state => state.setAccounts)
+    const deviceID = useAppStore(state => state.deviceID)
+    const deviceInfo = useDeviceInfoService()
+    const { mutateAsync: updateDeviceOnBackend } = useV1DevicesPartialUpdate()
 
     return async ({
         walletId,
@@ -144,6 +162,16 @@ export const useImportWallet = () => {
 
         accounts.push(newAccount)
         setAccounts([...accounts])
+
+        if (deviceID) {
+            updateDeviceOnBackend({
+                device_id: deviceID,
+                data: {
+                    platform: deviceInfo.getDevicePlatform(),
+                    accounts: accounts.map(a => a.address),
+                },
+            })
+        }
         return newAccount
     }
 }
@@ -152,6 +180,9 @@ export const useAddAccount = () => {
     const accounts = useAppStore(state => state.accounts)
     const secureStorage = useSecureStorageService()
     const setAccounts = useAppStore(state => state.setAccounts)
+    const deviceID = useAppStore(state => state.deviceID)
+    const deviceInfo = useDeviceInfoService()
+    const { mutateAsync: updateDeviceOnBackend } = useV1DevicesPartialUpdate()
 
     return (account: WalletAccount, privateKey?: string) => {
         accounts.push(account)
@@ -161,23 +192,15 @@ export const useAddAccount = () => {
             const storageKey = `pk-${account.address}`
             secureStorage.setItem(storageKey, privateKey)
         }
-    }
-}
 
-export const useUpdateAccount = () => {
-    const accounts = useAppStore(state => state.accounts)
-    const secureStorage = useSecureStorageService()
-    const setAccounts = useAppStore(state => state.setAccounts)
-
-    return (account: WalletAccount, privateKey?: string) => {
-        const index =
-            accounts.findIndex(a => a.address === account.address) ?? null
-        accounts[index] = account
-        setAccounts([...accounts])
-
-        if (privateKey) {
-            const storageKey = `pk-${account.address}`
-            secureStorage.setItem(storageKey, privateKey)
+        if (deviceID) {
+            updateDeviceOnBackend({
+                device_id: deviceID,
+                data: {
+                    platform: deviceInfo.getDevicePlatform(),
+                    accounts: accounts.map(a => a.address),
+                },
+            })
         }
     }
 }
@@ -194,22 +217,6 @@ export const useRemoveAccountById = () => {
             secureStorage.removeItem(storageKey)
         }
         const remaining = accounts.filter(a => a.id !== id)
-        setAccounts([...remaining])
-    }
-}
-
-export const removeAccountByAddress = () => {
-    const accounts = useAppStore(state => state.accounts)
-    const secureStorage = useSecureStorageService()
-    const setAccounts = useAppStore(state => state.setAccounts)
-
-    return (address: string) => {
-        const account = accounts.find(a => a.address === address)
-        if (account && account.privateKeyLocation) {
-            const storageKey = `pk-${account.address}`
-            secureStorage.removeItem(storageKey)
-        }
-        const remaining = accounts.filter(a => a.address !== address)
         setAccounts([...remaining])
     }
 }

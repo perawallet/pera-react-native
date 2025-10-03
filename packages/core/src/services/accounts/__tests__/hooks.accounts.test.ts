@@ -19,6 +19,9 @@ const xhdSpies = vi.hoisted(() => ({
 const querySpies = vi.hoisted(() => ({
     useLookupAccountByID: vi.fn(),
     useV1AssetsList: vi.fn(),
+    useV1DevicesPartialUpdate: vi.fn(() => ({
+        mutateAsync: vi.fn(async () => ({})),
+    })),
 }))
 
 const mockedMnemonic =
@@ -56,6 +59,7 @@ vi.mock('../../../api/generated/indexer', () => ({
 }))
 vi.mock('../../../api/generated/backend', () => ({
     useV1AssetsList: querySpies.useV1AssetsList,
+    useV1DevicesPartialUpdate: querySpies.useV1DevicesPartialUpdate,
 }))
 
 describe('services/accounts/hooks', () => {
@@ -270,51 +274,6 @@ describe('services/accounts/hooks', () => {
         expect(useAppStore.getState().accounts).toEqual([])
         expect(dummySecure.removeItem).toHaveBeenCalledWith('pk-CAROL')
     })
-
-    test('removeAccountByAddress removes and clears persisted PK when privateKeyLocation is set', async () => {
-        vi.resetModules()
-
-        const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
-            getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
-            authenticate: vi.fn(async () => true),
-        }
-
-        registerTestPlatform({
-            keyValueStorage: new MemoryKeyValueStorage() as any,
-            secureStorage: dummySecure as any,
-        })
-
-        const { useAppStore } = await import('../../../store')
-        const { useAddAccount, removeAccountByAddress } = await import(
-            '../hooks.accounts'
-        )
-
-        const { result: addRes } = renderHook(() => useAddAccount())
-        const { result: removeByAddressRes } = renderHook(() =>
-            removeAccountByAddress(),
-        )
-
-        const a: WalletAccount = {
-            id: '4',
-            name: 'Dave',
-            type: 'standard',
-            address: 'DAVE',
-            privateKeyLocation: 'device',
-        }
-
-        act(() => {
-            addRes.current(a)
-        })
-        expect(useAppStore.getState().accounts).toEqual([a])
-
-        act(() => {
-            removeByAddressRes.current('DAVE')
-        })
-        expect(useAppStore.getState().accounts).toEqual([])
-        expect(dummySecure.removeItem).toHaveBeenCalledWith('pk-DAVE')
-    })
 })
 
 describe('services/accounts/hooks - createAccount', () => {
@@ -468,6 +427,64 @@ describe('services/accounts/hooks - createAccount', () => {
         expect(
             useAppStore.getState().accounts.find((a: any) => a.id === 'ACC2'),
         ).toBeTruthy()
+    })
+
+    test('createAccount calls updateDeviceOnBackend when deviceID is set', async () => {
+        vi.resetModules()
+        vi.clearAllMocks()
+        uuidSpies.v7.mockReset()
+        apiSpies.deriveSpy.mockReset()
+        apiSpies.keyGenSpy.mockReset()
+
+        const updateDeviceSpy = vi.fn(async () => ({}))
+        querySpies.useV1DevicesPartialUpdate.mockReturnValue({
+            mutateAsync: updateDeviceSpy,
+        })
+
+        const dummySecure = {
+            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            getItem: vi.fn(async (_k: string) => null),
+            removeItem: vi.fn(async (_k: string) => {}),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const priv = new Uint8Array([80, 82, 73, 86, 75, 69, 89])
+        const addr = new Uint8Array([65, 68, 68, 82, 69, 83, 83])
+        apiSpies.deriveSpy.mockResolvedValueOnce(priv)
+        apiSpies.keyGenSpy.mockResolvedValueOnce(addr)
+
+        uuidSpies.v7
+            .mockImplementationOnce(() => 'WALLET_DEV')
+            .mockImplementationOnce(() => 'KEY_DEV')
+            .mockImplementationOnce(() => 'ACC_DEV')
+
+        const { useAppStore } = await import('../../../store')
+        const { useCreateAccount } = await import('../hooks.accounts')
+
+        // Set deviceID in store
+        useAppStore.setState({ deviceID: 'TEST_DEVICE_123' })
+
+        const { result: createRes } = renderHook(() => useCreateAccount())
+        await act(async () => {
+            await createRes.current({
+                account: 0,
+                keyIndex: 0,
+            })
+        })
+
+        // Verify updateDeviceOnBackend was called
+        expect(updateDeviceSpy).toHaveBeenCalledWith({
+            device_id: 'TEST_DEVICE_123',
+            data: {
+                platform: 'web',
+                accounts: expect.any(Array),
+            },
+        })
     })
 })
 
@@ -749,11 +766,74 @@ describe('services/accounts/hooks - useImportWallet', () => {
             address: expectedAddr,
         })
     })
+
+    test('useImportWallet calls updateDeviceOnBackend when deviceID is set', async () => {
+        vi.resetModules()
+        vi.clearAllMocks()
+        uuidSpies.v7.mockReset()
+        apiSpies.deriveSpy.mockReset()
+        apiSpies.keyGenSpy.mockReset()
+
+        const updateDeviceSpy = vi.fn(async () => ({}))
+        querySpies.useV1DevicesPartialUpdate.mockReturnValue({
+            mutateAsync: updateDeviceSpy,
+        })
+
+        const dummySecure = {
+            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            getItem: vi.fn(async (_k: string) => null),
+            removeItem: vi.fn(async (_k: string) => {}),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const priv = new Uint8Array([80, 82, 73, 86, 75, 69, 89])
+        const addr = new Uint8Array([65, 68, 68, 82, 69, 83, 83])
+        apiSpies.deriveSpy.mockResolvedValueOnce(priv)
+        apiSpies.keyGenSpy.mockResolvedValueOnce(addr)
+
+        uuidSpies.v7
+            .mockImplementationOnce(() => 'WALLET_IMPORT_DEV')
+            .mockImplementationOnce(() => 'KEY_IMPORT_DEV')
+            .mockImplementationOnce(() => 'ACC_IMPORT_DEV')
+
+        const { useAppStore } = await import('../../../store')
+        const { useImportWallet } = await import('../hooks.accounts')
+
+        // Set deviceID in store
+        useAppStore.setState({ deviceID: 'TEST_DEVICE_456' })
+
+        const { result: importRes } = renderHook(() => useImportWallet())
+        await act(async () => {
+            await importRes.current({
+                mnemonic: 'test wallet import with device id',
+            })
+        })
+
+        // Verify updateDeviceOnBackend was called
+        expect(updateDeviceSpy).toHaveBeenCalledWith({
+            device_id: 'TEST_DEVICE_456',
+            data: {
+                platform: 'web',
+                accounts: expect.any(Array),
+            },
+        })
+    })
 })
 
-describe('services/accounts/hooks - updateAccount', () => {
-    test('useUpdateAccount replaces account and persists PK when provided', async () => {
+describe('services/accounts/hooks - useAddAccount', () => {
+    test('useAddAccount calls updateDeviceOnBackend when deviceID is set', async () => {
         vi.resetModules()
+        vi.clearAllMocks()
+
+        const updateDeviceSpy = vi.fn(async () => ({}))
+        querySpies.useV1DevicesPartialUpdate.mockReturnValue({
+            mutateAsync: updateDeviceSpy,
+        })
 
         const dummySecure = {
             setItem: vi.fn(async (_k: string, _v: string) => {}),
@@ -768,142 +848,32 @@ describe('services/accounts/hooks - updateAccount', () => {
         })
 
         const { useAppStore } = await import('../../../store')
-        const { useAddAccount, useUpdateAccount } = await import(
-            '../hooks.accounts'
-        )
+        const { useAddAccount } = await import('../hooks.accounts')
+
+        // Set deviceID in store
+        useAppStore.setState({ deviceID: 'TEST_DEVICE_789' })
 
         const { result: addRes } = renderHook(() => useAddAccount())
-        const { result: updateRes } = renderHook(() => useUpdateAccount())
 
-        const initial: WalletAccount = {
-            id: 'ID1',
+        const testAccount: WalletAccount = {
+            id: 'ADD_TEST',
+            name: 'Test Add Account',
             type: 'standard',
-            address: 'ADDR1',
-            name: 'Old Name',
-        }
-
-        // seed store
-        act(() => {
-            addRes.current(initial)
-        })
-        expect(useAppStore.getState().accounts).toEqual([initial])
-
-        // update same address with new fields
-        const updated: WalletAccount = {
-            ...initial,
-            name: 'New Name',
+            address: 'TEST_ADDRESS',
         }
 
         act(() => {
-            updateRes.current(updated, 'new-secret')
+            addRes.current(testAccount)
         })
 
-        // state replaced with updated object
-        expect(useAppStore.getState().accounts).toEqual([updated])
-        // PK persisted when provided
-        expect(dummySecure.setItem).toHaveBeenCalledWith(
-            'pk-ADDR1',
-            'new-secret',
-        )
-    })
-
-    test('useUpdateAccount replaces account without persisting PK when not provided', async () => {
-        vi.resetModules()
-
-        const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
-            getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
-            authenticate: vi.fn(async () => true),
-        }
-
-        registerTestPlatform({
-            keyValueStorage: new MemoryKeyValueStorage() as any,
-            secureStorage: dummySecure as any,
+        // Verify updateDeviceOnBackend was called
+        expect(updateDeviceSpy).toHaveBeenCalledWith({
+            device_id: 'TEST_DEVICE_789',
+            data: {
+                platform: 'web',
+                accounts: expect.arrayContaining(['TEST_ADDRESS']),
+            },
         })
-
-        const { useAppStore } = await import('../../../store')
-        const { useAddAccount, useUpdateAccount } = await import(
-            '../hooks.accounts'
-        )
-
-        const { result: addRes } = renderHook(() => useAddAccount())
-        const { result: updateRes } = renderHook(() => useUpdateAccount())
-
-        const initial: WalletAccount = {
-            id: 'ID2',
-            type: 'standard',
-            address: 'ADDR2',
-            name: 'Before',
-        }
-
-        act(() => {
-            addRes.current(initial)
-        })
-        expect(useAppStore.getState().accounts).toEqual([initial])
-
-        const updated: WalletAccount = {
-            ...initial,
-            name: 'After',
-        }
-
-        act(() => {
-            updateRes.current(updated)
-        })
-
-        expect(useAppStore.getState().accounts).toEqual([updated])
-        expect(dummySecure.setItem).not.toHaveBeenCalled()
-    })
-
-    test('useUpdateAccount handles when account is not found (findIndex returns -1)', async () => {
-        vi.resetModules()
-
-        const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
-            getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
-            authenticate: vi.fn(async () => true),
-        }
-
-        registerTestPlatform({
-            keyValueStorage: new MemoryKeyValueStorage() as any,
-            secureStorage: dummySecure as any,
-        })
-
-        const { useAppStore } = await import('../../../store')
-        const { useAddAccount, useUpdateAccount } = await import(
-            '../hooks.accounts'
-        )
-
-        const { result: addRes } = renderHook(() => useAddAccount())
-        const { result: updateRes } = renderHook(() => useUpdateAccount())
-
-        const initial: WalletAccount = {
-            id: 'ID3',
-            type: 'standard',
-            address: 'ADDR3',
-            name: 'Existing',
-        }
-
-        act(() => {
-            addRes.current(initial)
-        })
-
-        // Try to update an account with a different address (not found)
-        const notFound: WalletAccount = {
-            id: 'ID4',
-            type: 'standard',
-            address: 'DIFFERENT_ADDR',
-            name: 'Not Found',
-        }
-
-        act(() => {
-            updateRes.current(notFound)
-        })
-
-        // The account at index -1 (or undefined) should have been updated
-        // This tests the ?? null branch
-        expect(useAppStore.getState().accounts).toHaveLength(1)
     })
 })
 

@@ -1,7 +1,4 @@
-import {
-  ParamListBase,
-  useNavigation,
-} from '@react-navigation/native';
+import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useStyles } from './styles';
 import { Input, Overlay, Text, useTheme } from '@rneui/themed';

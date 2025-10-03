@@ -1,9 +1,6 @@
 import { View, ViewProps } from 'react-native';
 import { useStyles } from './MainScreenLayout.style';
-import {
-  EdgeInsets,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import { EdgeInsets, useSafeAreaInsets } from 'react-native-safe-area-context';
 import PeraView from '../components/common/view/PeraView';
 import { useNavigation } from '@react-navigation/native';
 
