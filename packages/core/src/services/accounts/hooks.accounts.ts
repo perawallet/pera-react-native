@@ -176,6 +176,37 @@ export const useImportWallet = () => {
     }
 }
 
+export const useUpdateAccount = () => {
+    const accounts = useAppStore(state => state.accounts)
+    const secureStorage = useSecureStorageService()
+    const setAccounts = useAppStore(state => state.setAccounts)
+    const deviceID = useAppStore(state => state.deviceID)
+    const deviceInfo = useDeviceInfoService()
+    const { mutateAsync: updateDeviceOnBackend } = useV1DevicesPartialUpdate()
+
+    return (account: WalletAccount, privateKey?: string) => {
+        const index =
+            accounts.findIndex(a => a.address === account.address) ?? null
+        accounts[index] = account
+        setAccounts([...accounts])
+
+        if (privateKey) {
+            const storageKey = `pk-${account.address}`
+            secureStorage.setItem(storageKey, privateKey)
+        }
+
+        if (deviceID) {
+            updateDeviceOnBackend({
+                device_id: deviceID,
+                data: {
+                    platform: deviceInfo.getDevicePlatform(),
+                    accounts: accounts.map(a => a.address),
+                },
+            })
+        }
+    }
+}
+
 export const useAddAccount = () => {
     const accounts = useAppStore(state => state.accounts)
     const secureStorage = useSecureStorageService()

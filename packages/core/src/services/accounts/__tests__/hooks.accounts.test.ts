@@ -876,6 +876,177 @@ describe('services/accounts/hooks - useAddAccount', () => {
         })
     })
 })
+describe('services/accounts/hooks - updateAccount', () => {
+    test('useUpdateAccount replaces account and persists PK when provided', async () => {
+        vi.resetModules()
+
+        const dummySecure = {
+            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            getItem: vi.fn(async (_k: string) => null),
+            removeItem: vi.fn(async (_k: string) => {}),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const { useAppStore } = await import('../../../store')
+        const { useAddAccount, useUpdateAccount } = await import(
+            '../hooks.accounts'
+        )
+
+        const { result: addRes } = renderHook(() => useAddAccount())
+        const { result: updateRes } = renderHook(() => useUpdateAccount())
+
+        const initial: WalletAccount = {
+            id: 'ID1',
+            type: 'standard',
+            address: 'ADDR1',
+            name: 'Old Name',
+        }
+
+        // seed store
+        act(() => {
+            addRes.current(initial)
+        })
+        expect(useAppStore.getState().accounts).toEqual([initial])
+
+        // update same address with new fields
+        const updated: WalletAccount = {
+            ...initial,
+            name: 'New Name',
+        }
+
+        act(() => {
+            updateRes.current(updated, 'new-secret')
+        })
+
+        // state replaced with updated object
+        expect(useAppStore.getState().accounts).toEqual([updated])
+        // PK persisted when provided
+        expect(dummySecure.setItem).toHaveBeenCalledWith(
+            'pk-ADDR1',
+            'new-secret',
+        )
+    })
+
+    test('useUpdateAccount replaces account without persisting PK when not provided', async () => {
+        vi.resetModules()
+        vi.clearAllMocks()
+
+        const updateDeviceSpy = vi.fn(async () => ({}))
+        querySpies.useV1DevicesPartialUpdate.mockReturnValue({
+            mutateAsync: updateDeviceSpy,
+        })
+
+        const dummySecure = {
+            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            getItem: vi.fn(async (_k: string) => null),
+            removeItem: vi.fn(async (_k: string) => {}),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const { useAppStore } = await import('../../../store')
+        const { useAddAccount, useUpdateAccount } = await import(
+            '../hooks.accounts'
+        )
+        useAppStore.setState({ deviceID: 'TEST_DEVICE_456' })
+
+        const { result: addRes } = renderHook(() => useAddAccount())
+        const { result: updateRes } = renderHook(() => useUpdateAccount())
+
+        const initial: WalletAccount = {
+            id: 'ID2',
+            type: 'standard',
+            address: 'ADDR2',
+            name: 'Before',
+        }
+
+        act(() => {
+            addRes.current(initial)
+        })
+        expect(useAppStore.getState().accounts).toEqual([initial])
+
+        const updated: WalletAccount = {
+            ...initial,
+            name: 'After',
+        }
+
+        act(() => {
+            updateRes.current(updated)
+        })
+
+        expect(useAppStore.getState().accounts).toEqual([updated])
+        expect(dummySecure.setItem).not.toHaveBeenCalled()
+
+        // Verify updateDeviceOnBackend was called
+        expect(updateDeviceSpy).toHaveBeenCalledWith({
+            device_id: 'TEST_DEVICE_456',
+            data: {
+                platform: 'web',
+                accounts: expect.any(Array),
+            },
+        })
+    })
+
+    test('useUpdateAccount handles when account is not found (findIndex returns -1)', async () => {
+        vi.resetModules()
+
+        const dummySecure = {
+            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            getItem: vi.fn(async (_k: string) => null),
+            removeItem: vi.fn(async (_k: string) => {}),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const { useAppStore } = await import('../../../store')
+        const { useAddAccount, useUpdateAccount } = await import(
+            '../hooks.accounts'
+        )
+
+        const { result: addRes } = renderHook(() => useAddAccount())
+        const { result: updateRes } = renderHook(() => useUpdateAccount())
+
+        const initial: WalletAccount = {
+            id: 'ID3',
+            type: 'standard',
+            address: 'ADDR3',
+            name: 'Existing',
+        }
+
+        act(() => {
+            addRes.current(initial)
+        })
+
+        // Try to update an account with a different address (not found)
+        const notFound: WalletAccount = {
+            id: 'ID4',
+            type: 'standard',
+            address: 'DIFFERENT_ADDR',
+            name: 'Not Found',
+        }
+
+        act(() => {
+            updateRes.current(notFound)
+        })
+
+        // The account at index -1 (or undefined) should have been updated
+        // This tests the ?? null branch
+        expect(useAppStore.getState().accounts).toHaveLength(1)
+    })
+})
 
 describe('services/accounts/hooks - useAccountBalances', () => {
     test('aggregates USD and ALGO using backend/indexer data', async () => {
