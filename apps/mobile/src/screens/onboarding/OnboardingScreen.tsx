@@ -37,7 +37,7 @@ const OnboardingScreen = () => {
   };
 
   const importAccount = () => {
-    Alert.alert('Not yet implemented');
+      navigation.push('ImportAccount');
   };
 
   return (

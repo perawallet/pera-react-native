@@ -125,7 +125,6 @@ describe('services/accounts/hooks', () => {
             secureStorage: dummySecure as any,
         })
 
-        const { useAppStore } = await import('../../../store')
         const { useHasAccounts, useAddAccount } = await import(
             '../hooks.accounts'
         )
@@ -167,7 +166,6 @@ describe('services/accounts/hooks', () => {
             secureStorage: dummySecure as any,
         })
 
-        const { useAppStore } = await import('../../../store')
         const { useHasNoAccounts, useAddAccount } = await import(
             '../hooks.accounts'
         )

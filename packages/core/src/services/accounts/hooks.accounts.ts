@@ -94,6 +94,62 @@ export const useCreateAccount = () => {
     }
 }
 
+export const useImportWallet = () => {
+    const accounts = useAppStore(state => state.accounts)
+    const { deriveKey } = useHDWallet()
+    const secureStorage = useSecureStorageService()
+    const setAccounts = useAppStore(state => state.setAccounts)
+
+    return async ({
+        walletId,
+        mnemonic
+    }: {
+        walletId?: string,
+        mnemonic: string
+    }) => {
+        const rootWalletId = walletId ?? uuidv7()
+        const rootKeyLocation = `rootkey-${rootWalletId}`
+        const base64Mnemonic = encodeToBase64(
+            Buffer.from(mnemonic),
+        )
+        secureStorage.setItem(rootKeyLocation, base64Mnemonic)
+
+        //TODO: we currently just create the 0/0 account but we really should scan the blockchain
+        //and look for accounts that might match (see old app logic - we want to scan iteratively
+        //until we find 5 empty keyindexes and 5 empty accounts (I think)
+        const { address, privateKey } = await deriveKey({
+            mnemonic: mnemonic,
+            account: 0,
+            keyIndex: 0,
+            derivationType: BIP32DerivationTypes.Peikert,
+        })
+
+        const id = uuidv7()
+        const keyStoreLocation = `pk-${id}`
+        await secureStorage.setItem(
+            keyStoreLocation,
+            encodeToBase64(privateKey),
+        )
+        const newAccount: WalletAccount = {
+            id: uuidv7(),
+            address: encodeAlgorandAddress(address),
+            type: 'standard',
+            hdWalletDetails: {
+                walletId: rootWalletId,
+                account: 0,
+                change: 0,
+                keyIndex: 0,
+                derivationType: BIP32DerivationTypes.Peikert,
+            },
+            privateKeyLocation: keyStoreLocation,
+        }
+
+        accounts.push(newAccount)
+        setAccounts(accounts)
+        return newAccount
+    }
+}
+
 export const useAddAccount = () => {
     const accounts = useAppStore(state => state.accounts)
     const secureStorage = useSecureStorageService()

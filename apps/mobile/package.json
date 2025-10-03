@@ -16,6 +16,7 @@
     "@craftzdog/react-native-buffer": "^6.1.0",
     "@notifee/react-native": "^9.1.8",
     "@perawallet/core": "workspace:*",
+    "@react-native-clipboard/clipboard": "^1.16.3",
     "@react-native-firebase/app": "^23.3.1",
     "@react-native-firebase/crashlytics": "^23.3.1",
     "@react-native-firebase/messaging": "^23.3.1",

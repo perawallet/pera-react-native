@@ -110,7 +110,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
       //Helpers
       helperPositive: '#2CB7BC',
       helperGray200:'rgba(143, 143, 148, 0.2)',
-      
+
       // Tab Bar
       tabIconActive: '#FAFAFA',
       tabIconPassive: '#71717A',
@@ -131,6 +131,12 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
           color: theme.colors.textMain,
           borderRadius: theme.spacing.xs,
         },
+        disabledStyle: {
+          backgroundColor: theme.colors.textGray,
+        },
+        disabledTitleStyle: {
+          color: theme.colors.textGrayLighter
+        }
       }),
       Input: (_, theme) => ({
         containerStyle: {
