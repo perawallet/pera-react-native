@@ -42,36 +42,45 @@ const PeraWebView = (props: PeraWebViewProps) => {
     return `pera_${deviceInfo.getDevicePlatform()}_6.202518.0`;
   }, [deviceInfo]);
 
-  const handleEvent = useCallback((event: WebViewMessageEvent) => {
-    if (config.debugEnabled) {
-      console.log('Received onMessage event', event.nativeEvent.data);
-    }
-    showToast({
-      title: 'Not setup yet',
-      body: `Pera Wallet mobile interface has not been fully implemented`,
-      type: 'error',
-    });
-  }, [showToast]);
+  const handleEvent = useCallback(
+    (event: WebViewMessageEvent) => {
+      if (config.debugEnabled) {
+        console.log('Received onMessage event', event.nativeEvent.data);
+      }
+      showToast({
+        title: 'Not setup yet',
+        body: `Pera Wallet mobile interface has not been fully implemented`,
+        type: 'error',
+      });
+    },
+    [showToast],
+  );
 
   const verifyLoad = useCallback((event: WebViewNavigationEvent) => {
     console.log('Loading', event.nativeEvent.url);
   }, []);
 
-  const showLoadError = useCallback((event: WebViewErrorEvent) => {
-    showToast({
-      title: event.nativeEvent.title,
-      body: `${event.nativeEvent.code} - ${event.nativeEvent.url}`,
-      type: 'error',
-    });
-  }, [showToast]);
+  const showLoadError = useCallback(
+    (event: WebViewErrorEvent) => {
+      showToast({
+        title: event.nativeEvent.title,
+        body: `${event.nativeEvent.code} - ${event.nativeEvent.url}`,
+        type: 'error',
+      });
+    },
+    [showToast],
+  );
 
-  const showError = useCallback((event: WebViewHttpErrorEvent) => {
-    showToast({
-      title: event.nativeEvent.title,
-      body: `${event.nativeEvent.statusCode} - ${event.nativeEvent.description}`,
-      type: 'error',
-    });
-  }, [showToast]);
+  const showError = useCallback(
+    (event: WebViewHttpErrorEvent) => {
+      showToast({
+        title: event.nativeEvent.title,
+        body: `${event.nativeEvent.statusCode} - ${event.nativeEvent.description}`,
+        type: 'error',
+      });
+    },
+    [showToast],
+  );
 
   const jsToLoad = useMemo(() => {
     let js = baseJS;

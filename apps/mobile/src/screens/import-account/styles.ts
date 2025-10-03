@@ -33,22 +33,22 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
     wordContainer: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      marginBottom: theme.spacing.lg
+      marginBottom: theme.spacing.lg,
     },
     column: {
       width: '47%',
     },
     scrollView: {
-      paddingBottom: theme.spacing.lg
+      paddingBottom: theme.spacing.lg,
     },
     inputContainerRow: {
       marginTop: theme.spacing.sm,
       flexDirection: 'row',
       gap: theme.spacing.sm,
-      alignItems: 'center'
+      alignItems: 'center',
     },
     label: {
-        color: theme.colors.textGray,
+      color: theme.colors.textGray,
     },
     focusedLabel: {
       color: theme.colors.textMain,
@@ -70,7 +70,7 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
     },
     input: {
       flexShrink: 1,
-      backgroundColor: 'transparent'
+      backgroundColor: 'transparent',
     },
     overlayBackdrop: {
       backgroundColor: 'rgba(52, 52, 52, 0.8)',

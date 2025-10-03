@@ -10,25 +10,28 @@ import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay';
 const TopPairsPanel = () => {
   const themeStyle = useStyles();
 
-  const renderSwapPair = useCallback(({ item }: { item: any}) => {
-    return (
-      <PeraView style={themeStyle.itemRow}>
-        <SwapPair
-          style={themeStyle.itemContainer}
-          fromName={item.fromName}
-          toName={item.toName}
-        />
-        <CurrencyDisplay
-          currency="USD"
-          precision={2}
-          value={item.volume}
-          units="K"
-          h4
-          h4Style={themeStyle.headerText}
-        />
-      </PeraView>
-    );
-  }, [themeStyle]);
+  const renderSwapPair = useCallback(
+    ({ item }: { item: any }) => {
+      return (
+        <PeraView style={themeStyle.itemRow}>
+          <SwapPair
+            style={themeStyle.itemContainer}
+            fromName={item.fromName}
+            toName={item.toName}
+          />
+          <CurrencyDisplay
+            currency="USD"
+            precision={2}
+            value={item.volume}
+            units="K"
+            h4
+            h4Style={themeStyle.headerText}
+          />
+        </PeraView>
+      );
+    },
+    [themeStyle],
+  );
 
   //TODO: pull from server
   //TOOD make a thing that can render an asset label and an asset icon from the asset
@@ -58,7 +61,12 @@ const TopPairsPanel = () => {
           Volume (24H)
         </Text>
       </PeraView>
-      <FlatList style={themeStyle.scrollContainer} contentContainerStyle={themeStyle.itemScrollContainer} data={pairs} renderItem={renderSwapPair} />
+      <FlatList
+        style={themeStyle.scrollContainer}
+        contentContainerStyle={themeStyle.itemScrollContainer}
+        data={pairs}
+        renderItem={renderSwapPair}
+      />
     </PeraView>
   );
 };

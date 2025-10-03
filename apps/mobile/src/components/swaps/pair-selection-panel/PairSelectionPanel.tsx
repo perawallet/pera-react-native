@@ -16,15 +16,18 @@ const PairSelectionPanel = () => {
   const { theme } = useTheme();
 
   //TODO: some or all of these should probably come from either an account hook, the state store or a calculation
-  const [sendAmount, setSendAmount] = useState("0.00");
+  const [sendAmount, setSendAmount] = useState('0.00');
   const [receiveAmount, _] = useState(Decimal(0));
   const [receiveAmountUSD, __] = useState(Decimal(0));
   const [fromBalance, ___] = useState(Decimal(0));
   const [toBalance, ____] = useState(Decimal(0));
 
-  const handleAmountChange = useCallback((formatted: string) => {
-    setSendAmount(formatted)
-  }, [setSendAmount])
+  const handleAmountChange = useCallback(
+    (formatted: string) => {
+      setSendAmount(formatted);
+    },
+    [setSendAmount],
+  );
 
   return (
     <PeraView style={styles.container}>

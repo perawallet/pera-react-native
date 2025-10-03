@@ -9,16 +9,19 @@ import SwapPair from '../swap-pair/SwapPair';
 const SwapHistoryPanel = () => {
   const themeStyle = useStyles();
 
-  const renderSwapPair = useCallback((item: any, index: number) => {
-    return (
-      <SwapPair
-        key={'swappair' + index}
-        style={themeStyle.itemContainer}
-        fromName={item.fromName}
-        toName={item.toName}
-      />
-    );
-  }, [themeStyle.itemContainer]);
+  const renderSwapPair = useCallback(
+    (item: any, index: number) => {
+      return (
+        <SwapPair
+          key={'swappair' + index}
+          style={themeStyle.itemContainer}
+          fromName={item.fromName}
+          toName={item.toName}
+        />
+      );
+    },
+    [themeStyle.itemContainer],
+  );
 
   //TODO: pull from server
   //TOOD make a thing that can render an asset label and an asset icon from the asset

@@ -10,7 +10,7 @@ import WelcomeImage from '../../../assets/images/welcome-background.svg';
 import WalletIcon from '../../../assets/icons/wallet-with-algo.svg';
 import KeyIcon from '../../../assets/icons/key.svg';
 import ChevronNext from '../../../assets/icons/chevron-right.svg';
-import { ActivityIndicator, Alert } from 'react-native';
+import { ActivityIndicator } from 'react-native';
 import { useCreateAccount } from '@perawallet/core';
 import { Overlay } from '@rneui/themed';
 import { useState } from 'react';
@@ -37,7 +37,7 @@ const OnboardingScreen = () => {
   };
 
   const importAccount = () => {
-      navigation.push('ImportAccount');
+    navigation.push('ImportAccount');
   };
 
   return (

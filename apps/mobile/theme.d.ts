@@ -32,5 +32,8 @@ declare module '@rneui/themed' {
     // Tab Bar
     tabIconActive: string;
     tabIconPassive: string;
+
+    //Backgrounds
+    testnetBackground: string;
   }
 }

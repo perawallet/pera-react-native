@@ -16,7 +16,7 @@ const SwapPair = (props: SwapPairItemProps) => {
   return (
     <PeraView style={props.style}>
       <PeraView style={themeStyle.itemIconContainer}>
-        <AssetIcon asset={props.fromName} style={themeStyle.fromIcon}/>
+        <AssetIcon asset={props.fromName} style={themeStyle.fromIcon} />
         <AssetIcon asset={props.toName} style={themeStyle.toIcon} />
       </PeraView>
       <Text h4>

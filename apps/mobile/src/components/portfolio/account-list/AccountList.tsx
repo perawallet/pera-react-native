@@ -19,9 +19,12 @@ const AccountList = () => {
     Alert.alert('Not Implemented');
   };
 
-  const renderAccount = useCallback(({ item, index }: { item: WalletAccount, index: number }) => {
-    return <AccountListRow account={item} key={'accountrow-' + index}/>;
-  }, []);
+  const renderAccount = useCallback(
+    ({ item, index }: { item: WalletAccount; index: number }) => {
+      return <AccountListRow account={item} key={'accountrow-' + index} />;
+    },
+    [],
+  );
 
   return (
     <PeraView style={themeStyle.container}>

@@ -112,7 +112,7 @@ export const useStyles = makeStyles(theme => ({
     padding: 0,
     margin: 0,
     top: 0,
-    height: 48
+    height: 48,
   },
   primaryAmountText: {
     color: theme.colors.textGray,

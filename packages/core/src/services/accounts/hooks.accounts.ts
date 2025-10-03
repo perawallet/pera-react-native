@@ -89,7 +89,7 @@ export const useCreateAccount = () => {
         }
 
         accounts.push(newAccount)
-        setAccounts(accounts)
+        setAccounts([...accounts])
         return newAccount
     }
 }
@@ -102,16 +102,14 @@ export const useImportWallet = () => {
 
     return async ({
         walletId,
-        mnemonic
+        mnemonic,
     }: {
-        walletId?: string,
+        walletId?: string
         mnemonic: string
     }) => {
         const rootWalletId = walletId ?? uuidv7()
         const rootKeyLocation = `rootkey-${rootWalletId}`
-        const base64Mnemonic = encodeToBase64(
-            Buffer.from(mnemonic),
-        )
+        const base64Mnemonic = encodeToBase64(Buffer.from(mnemonic))
         secureStorage.setItem(rootKeyLocation, base64Mnemonic)
 
         //TODO: we currently just create the 0/0 account but we really should scan the blockchain
@@ -145,7 +143,7 @@ export const useImportWallet = () => {
         }
 
         accounts.push(newAccount)
-        setAccounts(accounts)
+        setAccounts([...accounts])
         return newAccount
     }
 }
@@ -157,7 +155,7 @@ export const useAddAccount = () => {
 
     return (account: WalletAccount, privateKey?: string) => {
         accounts.push(account)
-        setAccounts(accounts)
+        setAccounts([...accounts])
 
         if (privateKey) {
             const storageKey = `pk-${account.address}`
@@ -175,7 +173,7 @@ export const useUpdateAccount = () => {
         const index =
             accounts.findIndex(a => a.address === account.address) ?? null
         accounts[index] = account
-        setAccounts(accounts)
+        setAccounts([...accounts])
 
         if (privateKey) {
             const storageKey = `pk-${account.address}`
@@ -196,7 +194,7 @@ export const useRemoveAccountById = () => {
             secureStorage.removeItem(storageKey)
         }
         const remaining = accounts.filter(a => a.id !== id)
-        setAccounts(remaining)
+        setAccounts([...remaining])
     }
 }
 
@@ -212,7 +210,7 @@ export const removeAccountByAddress = () => {
             secureStorage.removeItem(storageKey)
         }
         const remaining = accounts.filter(a => a.address !== address)
-        setAccounts(remaining)
+        setAccounts([...remaining])
     }
 }
 

@@ -18,13 +18,13 @@ import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 const MenuScreen = () => {
-  const { theme } = useTheme()
-  const styles = useStyles()
-  const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
+  const { theme } = useTheme();
+  const styles = useStyles();
+  const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
 
   const goToSettings = () => {
-    navigation.push('Settings')
-  }
+    navigation.push('Settings');
+  };
 
   return (
     <MainScreenLayout>

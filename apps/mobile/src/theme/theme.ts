@@ -61,6 +61,8 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
       tabIconActive: '#18181B',
       tabIconPassive: '#A1A1AA',
 
+      testnetBackground: '#EDB21C',
+
       // States
       success: '#2CB7BC', // Alert/positive
       warning: '#FFEE55', // Link/primary (dark variant) used as generic warning
@@ -109,11 +111,13 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
 
       //Helpers
       helperPositive: '#2CB7BC',
-      helperGray200:'rgba(143, 143, 148, 0.2)',
+      helperGray200: 'rgba(143, 143, 148, 0.2)',
 
       // Tab Bar
       tabIconActive: '#FAFAFA',
       tabIconPassive: '#71717A',
+
+      testnetBackground: '#EDB21C',
 
       // States
       success: '#2CB7BC', // Alert/positive
@@ -135,8 +139,8 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
           backgroundColor: theme.colors.textGray,
         },
         disabledTitleStyle: {
-          color: theme.colors.textGrayLighter
-        }
+          color: theme.colors.textGrayLighter,
+        },
       }),
       Input: (_, theme) => ({
         containerStyle: {

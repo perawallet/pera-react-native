@@ -10,8 +10,8 @@ import AccountSelection from '../../components/common/account-selection/AccountS
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const SwapScreen = () => {
-  const insets = useSafeAreaInsets()
-  const styles = useStyles(insets)
+  const insets = useSafeAreaInsets();
+  const styles = useStyles(insets);
 
   return (
     <MainScreenLayout fullScreen style={styles.container}>

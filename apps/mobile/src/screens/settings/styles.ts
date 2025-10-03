@@ -18,25 +18,23 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
       flexDirection: 'row',
       gap: theme.spacing.lg,
       paddingVertical: theme.spacing.lg,
-      alignItems: 'center'
+      alignItems: 'center',
     },
     sectionRowTitle: {
-      flexGrow: 1
+      flexGrow: 1,
     },
     scrollView: {
       flex: 1,
       marginHorizontal: theme.spacing.xl,
       marginBottom: insets.bottom,
     },
-    scrollViewContainer: {
-
-    },
+    scrollViewContainer: {},
     versionText: {
       color: theme.colors.textGrayLighter,
       paddingVertical: theme.spacing.sm,
       textAlign: 'center',
       width: '100%',
       fontSize: 11,
-    }
+    },
   };
 });

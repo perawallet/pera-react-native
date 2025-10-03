@@ -78,18 +78,18 @@ describe('services/accounts/store', () => {
         }
 
         state.setAccounts([a1, a2])
-        
+
         // Test default selection (index 0)
         expect(state.getSelectedAccount()).toEqual(a1)
-        
+
         // Test selecting index 1
         state.setSelectedAccountIndex(1)
         expect(state.getSelectedAccount()).toEqual(a2)
-        
+
         // Test invalid index (negative)
         state.setSelectedAccountIndex(-1)
         expect(state.getSelectedAccount()).toBeNull()
-        
+
         // Test invalid index (out of bounds)
         state.setSelectedAccountIndex(10)
         expect(state.getSelectedAccount()).toBeNull()
@@ -124,7 +124,7 @@ describe('services/accounts/store', () => {
         state.setAccounts([a1, a2])
         state.setSelectedAccountIndex(1)
         expect(state.selectedAccountIndex).toBe(1)
-        
+
         // Setting new accounts should reset index to 0
         state.setAccounts([a1])
         expect(state.selectedAccountIndex).toBe(0)

@@ -44,7 +44,7 @@ const NameAccountScreen = ({ route }: NameAccountScreenProps) => {
 
   const goToHome = () => {
     navigation.replace('TabBar', {
-      screen: 'Home'
+      screen: 'Home',
     });
   };
 

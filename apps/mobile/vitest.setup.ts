@@ -81,9 +81,7 @@ vi.mock('react-native', async () => {
         right: 0,
       },
     },
-    TouchableOpacity: vi
-      .fn()
-      .mockImplementation(({ children }) => children),
+    TouchableOpacity: vi.fn().mockImplementation(({ children }) => children),
     View: vi.fn().mockImplementation(({ children }) => children),
     Text: vi.fn().mockImplementation(({ children }) => children),
   };

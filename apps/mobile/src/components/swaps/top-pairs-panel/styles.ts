@@ -4,7 +4,7 @@ export const useStyles = makeStyles(theme => ({
   container: {
     paddingHorizontal: theme.spacing.lg,
     flexShrink: 1,
-    backgroundColor: theme.colors.background
+    backgroundColor: theme.colors.background,
   },
   headerContainer: {
     gap: theme.spacing.md,

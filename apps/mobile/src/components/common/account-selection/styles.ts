@@ -15,7 +15,7 @@ export const useStyles = makeStyles(theme => {
       borderColor: theme.colors.helperGray200,
     },
     text: {
-      color: theme.colors.textGray
+      color: theme.colors.textGray,
     },
   };
 });

@@ -14,7 +14,7 @@ import SettingsScreen from '../screens/settings/SettingsScreen';
 import SettingsSubPageScreen from '../screens/settings-sub-page/SettingsSubPageScreen';
 import ImportAccountScreen from '../screens/import-account/ImportAccountScreen';
 
-import { useHasAccounts, useHasNoAccounts } from '@perawallet/core';
+import { useHasNoAccounts } from '@perawallet/core';
 
 import HomeIcon from '../../assets/icons/house.svg';
 import DiscoverIcon from '../../assets/icons/globe.svg';
@@ -28,14 +28,13 @@ const PortfolioStack = createNativeStackNavigator({
     headerShown: false,
     headerShadowVisible: false,
     headerTitleStyle: {
-      fontFamily: "DMSans-Regular",
+      fontFamily: 'DMSans-Regular',
       fontWeight: 400,
       fontSize: 15,
       lineHeight: 24,
-      textAlign: 'center'
+      textAlign: 'center',
     },
-    headerStyle: {
-    }
+    headerStyle: {},
   },
   screens: {
     Portfolio: PortfolioScreen,
@@ -43,14 +42,14 @@ const PortfolioStack = createNativeStackNavigator({
       screen: AccountScreen,
       options: {
         headerShown: true,
-        title: 'Account'
-      }
+        title: 'Account',
+      },
     },
     AssetDetails: {
       screen: AssetDetailsScreen,
       options: {
-        headerShown: true
-      }
+        headerShown: true,
+      },
     },
   },
 });
@@ -61,28 +60,27 @@ const SettingsStack = createNativeStackNavigator({
     headerShown: true,
     headerShadowVisible: false,
     headerTitleStyle: {
-      fontFamily: "DMSans-Regular",
+      fontFamily: 'DMSans-Regular',
       fontWeight: 400,
       fontSize: 15,
       lineHeight: 24,
-      textAlign: 'center'
+      textAlign: 'center',
     },
-    headerStyle: {
-    }
+    headerStyle: {},
   },
   screens: {
     SettingsHome: {
       screen: SettingsScreen,
       options: {
-        title: 'Settings'
-      }
+        title: 'Settings',
+      },
     },
     SettingsSubPage: {
       screen: SettingsSubPageScreen,
       options: ({ route }: { route: any }) => ({
         title: route.params?.title,
       }),
-    }
+    },
   },
 });
 

@@ -28,5 +28,8 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
     valueTitle: {
       color: theme.colors.textGray,
     },
+    primaryCurrency: {
+      color: theme.colors.textMain,
+    },
   };
 });

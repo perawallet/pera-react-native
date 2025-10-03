@@ -2,15 +2,15 @@ import { makeStyles } from '@rneui/themed';
 import { PeraButtonProps } from './PeraButton';
 
 export const useStyles = makeStyles((theme, props: PeraButtonProps) => {
-  let backgroundColor = theme.colors.buttonPrimaryBg
-  let color = theme.colors.buttonPrimaryText
+  let backgroundColor = theme.colors.buttonPrimaryBg;
+  let color = theme.colors.buttonPrimaryText;
 
   if (props.variant === 'secondary') {
-    backgroundColor = theme.colors.secondary
-    color = theme.colors.textMain
+    backgroundColor = theme.colors.secondary;
+    color = theme.colors.textMain;
   } else if (props.variant === 'tertiary') {
-    backgroundColor = theme.colors.layerGrayLighter
-    color = theme.colors.textMain
+    backgroundColor = theme.colors.layerGrayLighter;
+    color = theme.colors.textMain;
   }
 
   return {
@@ -25,5 +25,5 @@ export const useStyles = makeStyles((theme, props: PeraButtonProps) => {
       lineHeight: 24,
       color,
     },
-  }
+  };
 });

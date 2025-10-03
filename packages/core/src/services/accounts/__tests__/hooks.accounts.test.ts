@@ -471,6 +471,286 @@ describe('services/accounts/hooks - createAccount', () => {
     })
 })
 
+describe('services/accounts/hooks - useImportWallet', () => {
+    test('imports wallet with mnemonic, stores root key, derives 0/0 account, and persists PK', async () => {
+        vi.resetModules()
+        vi.clearAllMocks()
+        uuidSpies.v7.mockReset()
+        apiSpies.deriveSpy.mockReset()
+        apiSpies.keyGenSpy.mockReset()
+
+        const dummySecure = {
+            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            getItem: vi.fn(async (_k: string) => null),
+            removeItem: vi.fn(async (_k: string) => {}),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        // XHD-API responses for 0/0 derivation
+        const priv = new Uint8Array([80, 82, 73, 86, 75, 69, 89]) // 'PRIVKEY'
+        const addr = new Uint8Array([65, 68, 68, 82, 69, 83, 83]) // 'ADDRESS'
+        apiSpies.deriveSpy.mockResolvedValueOnce(priv)
+        apiSpies.keyGenSpy.mockResolvedValueOnce(addr)
+        const expectedPk = Buffer.from('PRIVKEY').toString('base64')
+        const expectedAddr = Buffer.from('ADDRESS').toString('base64')
+
+        // uuid: walletId, pk id, account id
+        uuidSpies.v7
+            .mockImplementationOnce(() => 'IMPORT_WALLET1')
+            .mockImplementationOnce(() => 'IMPORT_KEY1')
+            .mockImplementationOnce(() => 'IMPORT_ACC1')
+
+        const importMnemonic =
+            'test import seed phrase wallet mnemonic words example one two three four five six seven eight nine ten eleven twelve'
+
+        const { useAppStore } = await import('../../../store')
+        const { useImportWallet } = await import('../hooks.accounts')
+
+        const { result: importRes } = renderHook(() => useImportWallet())
+        let imported: any
+        await act(async () => {
+            imported = await importRes.current({
+                mnemonic: importMnemonic,
+            })
+        })
+
+        // Verify mnemonic was stored in secure storage
+        expect(dummySecure.setItem).toHaveBeenCalledWith(
+            'rootkey-IMPORT_WALLET1',
+            Buffer.from(importMnemonic).toString('base64'),
+        )
+
+        // Verify private key was stored
+        expect(dummySecure.setItem).toHaveBeenCalledWith(
+            'pk-IMPORT_KEY1',
+            expectedPk,
+        )
+
+        // Verify account structure
+        expect(imported).toMatchObject({
+            id: 'IMPORT_ACC1',
+            address: expectedAddr,
+            type: 'standard',
+            privateKeyLocation: 'pk-IMPORT_KEY1',
+            hdWalletDetails: {
+                walletId: 'IMPORT_WALLET1',
+                account: 0,
+                change: 0,
+                keyIndex: 0,
+                derivationType: 9, // BIP32DerivationTypes.Peikert
+            },
+        })
+
+        // Verify account was added to store
+        expect(useAppStore.getState().accounts).toHaveLength(1)
+        expect(useAppStore.getState().accounts[0]).toMatchObject({
+            address: expectedAddr,
+            privateKeyLocation: 'pk-IMPORT_KEY1',
+        })
+    })
+
+    test('imports wallet with existing walletId and mnemonic', async () => {
+        vi.resetModules()
+        vi.clearAllMocks()
+        uuidSpies.v7.mockReset()
+        apiSpies.deriveSpy.mockReset()
+        apiSpies.keyGenSpy.mockReset()
+
+        const dummySecure = {
+            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            getItem: vi.fn(async (_k: string) => null),
+            removeItem: vi.fn(async (_k: string) => {}),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const priv = new Uint8Array([80, 82, 73, 86, 75, 69, 89])
+        const addr = new Uint8Array([65, 68, 68, 82, 69, 83, 83])
+        apiSpies.deriveSpy.mockResolvedValueOnce(priv)
+        apiSpies.keyGenSpy.mockResolvedValueOnce(addr)
+        const expectedPk = Buffer.from('PRIVKEY').toString('base64')
+        const expectedAddr = Buffer.from('ADDRESS').toString('base64')
+
+        // uuid: pk id, account id (walletId is provided)
+        uuidSpies.v7
+            .mockImplementationOnce(() => 'IMPORT_KEY2')
+            .mockImplementationOnce(() => 'IMPORT_ACC2')
+
+        const importMnemonic = 'existing wallet seed phrase to import'
+        const existingWalletId = 'EXISTING_WALLET_ID'
+
+        const { useAppStore } = await import('../../../store')
+        const { useImportWallet } = await import('../hooks.accounts')
+
+        const { result: importRes } = renderHook(() => useImportWallet())
+        let imported: any
+        await act(async () => {
+            imported = await importRes.current({
+                walletId: existingWalletId,
+                mnemonic: importMnemonic,
+            })
+        })
+
+        // Verify mnemonic was stored with provided walletId
+        expect(dummySecure.setItem).toHaveBeenCalledWith(
+            `rootkey-${existingWalletId}`,
+            Buffer.from(importMnemonic).toString('base64'),
+        )
+
+        // Verify private key was stored
+        expect(dummySecure.setItem).toHaveBeenCalledWith(
+            'pk-IMPORT_KEY2',
+            expectedPk,
+        )
+
+        // Verify account uses provided walletId
+        expect(imported).toMatchObject({
+            id: 'IMPORT_ACC2',
+            address: expectedAddr,
+            type: 'standard',
+            privateKeyLocation: 'pk-IMPORT_KEY2',
+            hdWalletDetails: {
+                walletId: existingWalletId,
+                account: 0,
+                change: 0,
+                keyIndex: 0,
+                derivationType: 9,
+            },
+        })
+
+        expect(
+            useAppStore
+                .getState()
+                .accounts.find((a: any) => a.id === 'IMPORT_ACC2'),
+        ).toBeTruthy()
+    })
+
+    test('imports wallet and derives first account with correct derivation path (0/0)', async () => {
+        vi.resetModules()
+        vi.clearAllMocks()
+        uuidSpies.v7.mockReset()
+        apiSpies.deriveSpy.mockReset()
+        apiSpies.keyGenSpy.mockReset()
+
+        const dummySecure = {
+            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            getItem: vi.fn(async (_k: string) => null),
+            removeItem: vi.fn(async (_k: string) => {}),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const priv = new Uint8Array([80, 82, 73, 86, 75, 69, 89])
+        const addr = new Uint8Array([65, 68, 68, 82, 69, 83, 83])
+        apiSpies.deriveSpy.mockResolvedValueOnce(priv)
+        apiSpies.keyGenSpy.mockResolvedValueOnce(addr)
+
+        uuidSpies.v7
+            .mockImplementationOnce(() => 'WALLET3')
+            .mockImplementationOnce(() => 'KEY3')
+            .mockImplementationOnce(() => 'ACC3')
+
+        const importMnemonic =
+            'verify correct derivation path for imported wallet'
+
+        const { useImportWallet } = await import('../hooks.accounts')
+
+        const { result: importRes } = renderHook(() => useImportWallet())
+        await act(async () => {
+            await importRes.current({
+                mnemonic: importMnemonic,
+            })
+        })
+
+        // Verify deriveKey was called (through the hook)
+        // The actual verification happens in the mocked XHD API
+        expect(apiSpies.deriveSpy).toHaveBeenCalledTimes(1)
+        expect(apiSpies.keyGenSpy).toHaveBeenCalledTimes(1)
+    })
+
+    test('imports wallet and adds account to existing accounts in store', async () => {
+        vi.resetModules()
+        vi.clearAllMocks()
+        uuidSpies.v7.mockReset()
+        apiSpies.deriveSpy.mockReset()
+        apiSpies.keyGenSpy.mockReset()
+
+        const dummySecure = {
+            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            getItem: vi.fn(async (_k: string) => null),
+            removeItem: vi.fn(async (_k: string) => {}),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const priv = new Uint8Array([80, 82, 73, 86, 75, 69, 89])
+        const addr = new Uint8Array([65, 68, 68, 82, 69, 83, 83])
+        apiSpies.deriveSpy.mockResolvedValueOnce(priv)
+        apiSpies.keyGenSpy.mockResolvedValueOnce(addr)
+        const expectedAddr = Buffer.from('ADDRESS').toString('base64')
+
+        uuidSpies.v7
+            .mockImplementationOnce(() => 'WALLET4')
+            .mockImplementationOnce(() => 'KEY4')
+            .mockImplementationOnce(() => 'ACC4')
+
+        const { useAppStore } = await import('../../../store')
+        const { useImportWallet, useAddAccount } = await import(
+            '../hooks.accounts'
+        )
+
+        // Add an existing account first
+        const { result: addRes } = renderHook(() => useAddAccount())
+        const existingAccount: WalletAccount = {
+            id: 'EXISTING_ACC',
+            name: 'Existing Account',
+            type: 'standard',
+            address: 'EXISTING_ADDR',
+        }
+        act(() => {
+            addRes.current(existingAccount)
+        })
+
+        expect(useAppStore.getState().accounts).toHaveLength(1)
+
+        // Now import a wallet
+        const { result: importRes } = renderHook(() => useImportWallet())
+        await act(async () => {
+            await importRes.current({
+                mnemonic: 'new imported wallet mnemonic',
+            })
+        })
+
+        // Verify both accounts exist
+        expect(useAppStore.getState().accounts).toHaveLength(2)
+        expect(useAppStore.getState().accounts[0]).toMatchObject({
+            id: 'EXISTING_ACC',
+            address: 'EXISTING_ADDR',
+        })
+        expect(useAppStore.getState().accounts[1]).toMatchObject({
+            id: 'ACC4',
+            address: expectedAddr,
+        })
+    })
+})
+
 describe('services/accounts/hooks - updateAccount', () => {
     test('useUpdateAccount replaces account and persists PK when provided', async () => {
         vi.resetModules()

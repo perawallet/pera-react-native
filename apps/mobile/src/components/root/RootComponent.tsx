@@ -1,10 +1,37 @@
 import { useAppStore, useDevice, usePolling } from '@perawallet/core';
 import { useEffect, useMemo, useRef } from 'react';
-import { AppState, StatusBar, useColorScheme } from 'react-native';
+import { AppState, StatusBar, useColorScheme, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { MainRoutes } from '../../routes/routes';
 import { getNavigationTheme, getTheme } from '../../theme/theme';
 import { ThemeProvider } from '@rneui/themed';
+import { useStyles } from './styles';
+import PeraView from '../../components/common/view/PeraView';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
+  const insets = useSafeAreaInsets();
+  const styles = useStyles(insets);
+  const network = useAppStore(state => state.network);
+  const navTheme = getNavigationTheme(isDarkMode ? 'dark' : 'light');
+
+  const networkBarStyle = useMemo(() => {
+    if (network === 'testnet') {
+      return styles.testnetBar;
+    }
+    return styles.mainnetBar;
+  }, [network, styles.testnetBar, styles.mainnetBar]);
+
+  return (
+    <PeraView style={styles.container}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+      <View style={networkBarStyle} />
+      <GestureHandlerRootView>
+        <MainRoutes theme={navTheme} />
+      </GestureHandlerRootView>
+    </PeraView>
+  );
+};
 
 export const RootComponent = () => {
   const themeMode = useAppStore(state => state.theme);
@@ -16,7 +43,6 @@ export const RootComponent = () => {
   }, [themeMode, scheme]);
 
   const theme = getTheme(isDarkMode ? 'dark' : 'light');
-  const navTheme = getNavigationTheme(isDarkMode ? 'dark' : 'light');
   const { registerDevice } = useDevice();
   const { startPolling, stopPolling } = usePolling();
 
@@ -51,10 +77,7 @@ export const RootComponent = () => {
 
   return (
     <ThemeProvider theme={theme}>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <GestureHandlerRootView>
-        <MainRoutes theme={navTheme} />
-      </GestureHandlerRootView>
+      <RootContentContainer isDarkMode={isDarkMode} />
     </ThemeProvider>
   );
 };

@@ -44,6 +44,7 @@ const PortfolioScreen = () => {
           value={portfolioValue}
           currency="ALGO"
           precision={2}
+          h1Style={styles.primaryCurrency}
         />
         <CurrencyDisplay
           h4
