@@ -8,16 +8,17 @@
 
 /* Begin PBXBuildFile section */
 		088C5A0C56EB47AC88CE8836 /* dmsans_bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = AC861E576FDA466995A646F3 /* dmsans_bold.ttf */; };
-		0C80B921A6F3F58F76C31292 /* libPods-mobile.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5DCACB8F33CDC322A6C60F78 /* libPods-mobile.a */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		26681905ED0133E55BB249B7 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		55AFE3D89971452AAAACAD8C /* Colors.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5956385C5D594D168439900B /* Colors.xcassets */; };
+		594D57522E8FDD1500D0DA38 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 594D57512E8FDD1500D0DA38 /* GoogleService-Info.plist */; };
 		59A9BB54AE4F468A8DA2DC37 /* dmsans_medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C324889D19A14B63A973187A /* dmsans_medium.ttf */; };
 		755326DF0FA545529115977D /* dmsans_bold_italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C9281899FC5A404295543F87 /* dmsans_bold_italic.ttf */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		78ED9D1734CE4EED91FC3FA2 /* dmsans_regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 15454DF9F32A48398FA8F5D9 /* dmsans_regular.ttf */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		9CF3818ACB8E44B8AE8A6F4D /* dmsans_italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 4C1D7B54CD7C4739A4208F2A /* dmsans_italic.ttf */; };
+		A06D0038CDA9E3E88A9946C7 /* Pods_mobile.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 227488F2F61EE8458B0F3AF8 /* Pods_mobile.framework */; };
 		D1FDCAFC521E485CB1C2B636 /* dmsans_medium_italic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A3162772E88D4CC38F18A2D0 /* dmsans_medium_italic.ttf */; };
 		D868F14845F74569A8AB0A67 /* dmmono_medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C6ED8CD1325C48B7B06CC21F /* dmmono_medium.ttf */; };
 		E99E8DE590AA4303A0B94A58 /* dmmono_regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = CDE1BEC7F89341C39E4C5B7A /* dmmono_regular.ttf */; };
@@ -29,21 +30,22 @@
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = mobile/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = mobile/Info.plist; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = mobile/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		15454DF9F32A48398FA8F5D9 /* dmsans_regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = dmsans_regular.ttf; path = ../assets/fonts/DMSans/dmsans_regular.ttf; sourceTree = "<group>"; };
-		1C828B83D3E94D22916C3A70 /* BootSplash.storyboard */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = BootSplash.storyboard; path = mobile/BootSplash.storyboard; sourceTree = "<group>"; };
+		15454DF9F32A48398FA8F5D9 /* dmsans_regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = dmsans_regular.ttf; path = ../assets/fonts/DMSans/dmsans_regular.ttf; sourceTree = "<group>"; };
+		1C828B83D3E94D22916C3A70 /* BootSplash.storyboard */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = BootSplash.storyboard; path = mobile/BootSplash.storyboard; sourceTree = "<group>"; };
+		227488F2F61EE8458B0F3AF8 /* Pods_mobile.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_mobile.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		3B4392A12AC88292D35C810B /* Pods-mobile.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-mobile.debug.xcconfig"; path = "Target Support Files/Pods-mobile/Pods-mobile.debug.xcconfig"; sourceTree = "<group>"; };
-		4C1D7B54CD7C4739A4208F2A /* dmsans_italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = dmsans_italic.ttf; path = ../assets/fonts/DMSans/dmsans_italic.ttf; sourceTree = "<group>"; };
+		4C1D7B54CD7C4739A4208F2A /* dmsans_italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = dmsans_italic.ttf; path = ../assets/fonts/DMSans/dmsans_italic.ttf; sourceTree = "<group>"; };
 		5709B34CF0A7D63546082F79 /* Pods-mobile.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-mobile.release.xcconfig"; path = "Target Support Files/Pods-mobile/Pods-mobile.release.xcconfig"; sourceTree = "<group>"; };
-		5956385C5D594D168439900B /* Colors.xcassets */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = folder.assetcatalog; name = Colors.xcassets; path = mobile/Colors.xcassets; sourceTree = "<group>"; };
-		5DCACB8F33CDC322A6C60F78 /* libPods-mobile.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-mobile.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		594D57512E8FDD1500D0DA38 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		5956385C5D594D168439900B /* Colors.xcassets */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = folder.assetcatalog; name = Colors.xcassets; path = mobile/Colors.xcassets; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = mobile/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = mobile/LaunchScreen.storyboard; sourceTree = "<group>"; };
-		A3162772E88D4CC38F18A2D0 /* dmsans_medium_italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = dmsans_medium_italic.ttf; path = ../assets/fonts/DMSans/dmsans_medium_italic.ttf; sourceTree = "<group>"; };
-		AC861E576FDA466995A646F3 /* dmsans_bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = dmsans_bold.ttf; path = ../assets/fonts/DMSans/dmsans_bold.ttf; sourceTree = "<group>"; };
-		C324889D19A14B63A973187A /* dmsans_medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = dmsans_medium.ttf; path = ../assets/fonts/DMSans/dmsans_medium.ttf; sourceTree = "<group>"; };
-		C6ED8CD1325C48B7B06CC21F /* dmmono_medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = dmmono_medium.ttf; path = ../assets/fonts/DMSans/dmmono_medium.ttf; sourceTree = "<group>"; };
-		C9281899FC5A404295543F87 /* dmsans_bold_italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = dmsans_bold_italic.ttf; path = ../assets/fonts/DMSans/dmsans_bold_italic.ttf; sourceTree = "<group>"; };
-		CDE1BEC7F89341C39E4C5B7A /* dmmono_regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = dmmono_regular.ttf; path = ../assets/fonts/DMSans/dmmono_regular.ttf; sourceTree = "<group>"; };
+		A3162772E88D4CC38F18A2D0 /* dmsans_medium_italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = dmsans_medium_italic.ttf; path = ../assets/fonts/DMSans/dmsans_medium_italic.ttf; sourceTree = "<group>"; };
+		AC861E576FDA466995A646F3 /* dmsans_bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = dmsans_bold.ttf; path = ../assets/fonts/DMSans/dmsans_bold.ttf; sourceTree = "<group>"; };
+		C324889D19A14B63A973187A /* dmsans_medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = dmsans_medium.ttf; path = ../assets/fonts/DMSans/dmsans_medium.ttf; sourceTree = "<group>"; };
+		C6ED8CD1325C48B7B06CC21F /* dmmono_medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = dmmono_medium.ttf; path = ../assets/fonts/DMSans/dmmono_medium.ttf; sourceTree = "<group>"; };
+		C9281899FC5A404295543F87 /* dmsans_bold_italic.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = dmsans_bold_italic.ttf; path = ../assets/fonts/DMSans/dmsans_bold_italic.ttf; sourceTree = "<group>"; };
+		CDE1BEC7F89341C39E4C5B7A /* dmmono_regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = dmmono_regular.ttf; path = ../assets/fonts/DMSans/dmmono_regular.ttf; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
@@ -52,7 +54,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0C80B921A6F3F58F76C31292 /* libPods-mobile.a in Frameworks */,
+				A06D0038CDA9E3E88A9946C7 /* Pods_mobile.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -62,6 +64,7 @@
 		13B07FAE1A68108700A75B9A /* mobile */ = {
 			isa = PBXGroup;
 			children = (
+				594D57512E8FDD1500D0DA38 /* GoogleService-Info.plist */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				761780EC2CA45674006654EE /* AppDelegate.swift */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
@@ -77,7 +80,7 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				5DCACB8F33CDC322A6C60F78 /* libPods-mobile.a */,
+				227488F2F61EE8458B0F3AF8 /* Pods_mobile.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -134,7 +137,6 @@
 				15454DF9F32A48398FA8F5D9 /* dmsans_regular.ttf */,
 			);
 			name = Resources;
-			path = "";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -212,6 +214,7 @@
 				78ED9D1734CE4EED91FC3FA2 /* dmsans_regular.ttf in Resources */,
 				F89341C1A1594326B4BC919D /* BootSplash.storyboard in Resources */,
 				55AFE3D89971452AAAACAD8C /* Colors.xcassets in Resources */,
+				594D57522E8FDD1500D0DA38 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -436,6 +439,19 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon/ReactCommon.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon/ReactCommon.framework/Headers/react/nativemodule/core",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-runtimeexecutor/React_runtimeexecutor.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-runtimeexecutor/React_runtimeexecutor.framework/Headers/platform/ios",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon-Samples/ReactCommon_Samples.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon-Samples/ReactCommon_Samples.framework/Headers/platform/ios",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-Fabric/React_Fabric.framework/Headers/react/renderer/components/view/platform/cxx",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-NativeModulesApple/React_NativeModulesApple.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers/react/renderer/graphics/platform/ios",
+				);
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					/usr/lib/swift,
@@ -505,6 +521,19 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon/ReactCommon.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon/ReactCommon.framework/Headers/react/nativemodule/core",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-runtimeexecutor/React_runtimeexecutor.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-runtimeexecutor/React_runtimeexecutor.framework/Headers/platform/ios",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon-Samples/ReactCommon_Samples.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon-Samples/ReactCommon_Samples.framework/Headers/platform/ios",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-Fabric/React_Fabric.framework/Headers/react/renderer/components/view/platform/cxx",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-NativeModulesApple/React_NativeModulesApple.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers/react/renderer/graphics/platform/ios",
+				);
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					/usr/lib/swift,
