@@ -3,7 +3,7 @@
 * Do not edit manually.
 */
 
-import type { ResponseSerializerResponse } from "./responseSerializer/Response.ts";
+import type { AccountWealthHistorySerializerResponse } from "./accountWealthHistorySerializer/Response.ts";
 
 export type V2WalletWealthListQueryParamsPeriodEnum = "one-year" | "one-month" | "one-week" | "one-day";
 
@@ -28,7 +28,7 @@ export type V2WalletWealthListQueryParams = {
     currency: string;
 };
 
-export type V2WalletWealthList200 = ResponseSerializerResponse;
+export type V2WalletWealthList200 = AccountWealthHistorySerializerResponse;
 
 export type V2WalletWealthListQueryResponse = V2WalletWealthList200;
 

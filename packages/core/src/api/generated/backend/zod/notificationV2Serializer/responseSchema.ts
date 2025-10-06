@@ -10,7 +10,7 @@ export const notificationV2SerializerResponseSchema = z.object({
 "account": z.number().int().nullable().nullish(),
 "type": z.enum(["transaction-sent", "transaction-received", "transaction-failed", "asset-support-request", "asset-support-success", "asset-transaction-sent", "asset-transaction-received", "asset-transaction-failed", "broadcast", "rekey-address", "None", "tinyman-v1-1-swap", "tinyman-v1-1-mint", "tinyman-v1-1-burn", "inbox-asset-transaction-received", "inbox-asset-transaction-sent", "inbox-asset-claimed", "inbox-asset-rejected", "custom-text-message", "favorited-asset-price-change", "algo-price-change", "favorited-asset-is-top-mover", "card-payment", "card-refund", "card-spend-incentive", "card-withdraw", "card-deposit", "swap-large-buy", "swap-large-sell", "asset-large-volume", "triggered-via-endpoint", "lucky-spin-cooldown-ended", "lucky-spin-bonus-earned", "lucky-spin-streak-warning"]).optional(),
 "message": z.string().optional(),
-"creation_datetime": z.string().datetime().optional(),
+"creation_datetime": z.string().optional(),
 "metadata": z.object({
     
     }).nullable().nullish(),

@@ -10,7 +10,7 @@ export const swapHistoryItemSchema = z.object({
     "id": z.number().int(),
 "provider": z.enum(["tinyman", "tinyman-v2", "tinyman-swap-router", "vestige-v3", "vestige-v4", "folks-router", "deflex"]),
 "status": z.enum(["pending", "in_progress", "completed", "failed"]),
-"completed_datetime": z.string().datetime().nullable(),
+"completed_datetime": z.string().nullable(),
 "transaction_group_id": z.string().min(1).nullable(),
 "asset_in": z.lazy(() => DEXSwapAssetSchema),
 "asset_out": z.lazy(() => DEXSwapAssetSchema),

@@ -9,7 +9,7 @@ export const cheapestListingSchema = z.object({
     "id": z.number().int().optional(),
 "provider": z.enum(["randgallery", "algoxnft", "shufl", "exa_market"]).optional(),
 "amount_in_algo": z.string().describe("total amount paid to seller, provider and creator in microalgo").optional(),
-"update_datetime": z.string().datetime().optional()
+"update_datetime": z.string().optional()
     })
 
 export type CheapestListingSchema = z.infer<typeof cheapestListingSchema>

@@ -10,7 +10,7 @@ export const discoverListingListSerializerResponseSchema = z.object({
 "provider": z.enum(["randgallery", "algoxnft", "shufl", "exa_market"]).optional(),
 "amount_in_algo": z.string().describe("total amount paid to seller, provider and creator in microalgo").optional(),
 "external_url": z.string().optional(),
-"update_datetime": z.string().datetime().optional(),
+"update_datetime": z.string().optional(),
 "seller_address": z.string().min(1).optional()
     })
 

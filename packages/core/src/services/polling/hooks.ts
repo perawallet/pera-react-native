@@ -29,7 +29,7 @@ export const usePolling = () => {
 
             if (response.refresh) {
                 //TODO: can we be a bit more selective of which queries we reset?
-                queryClient.resetQueries()
+                //queryClient.resetQueries()
                 setLastRefreshedRound(response.round ?? null)
             }
         } catch (error) {

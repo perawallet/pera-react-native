@@ -3,7 +3,7 @@
 * Do not edit manually.
 */
 
-import { responseSerializerResponseSchema } from "./responseSerializer/responseSchema.ts";
+import { accountWealthHistorySerializerResponseSchema } from "./accountWealthHistorySerializer/responseSchema.ts";
 import { z } from "zod";
 
 export const v2WalletWealthListQueryParamsSchema = z.object({
@@ -15,7 +15,7 @@ export const v2WalletWealthListQueryParamsSchema = z.object({
 
 export type V2WalletWealthListQueryParamsSchema = z.infer<typeof v2WalletWealthListQueryParamsSchema>
 
-export const v2WalletWealthList200Schema = z.lazy(() => responseSerializerResponseSchema)
+export const v2WalletWealthList200Schema = z.lazy(() => accountWealthHistorySerializerResponseSchema)
 
 export type V2WalletWealthList200Schema = z.infer<typeof v2WalletWealthList200Schema>
 

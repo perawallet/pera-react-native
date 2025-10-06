@@ -9,7 +9,7 @@ import { z } from "zod";
 export const swapDistinctPairItemSchema = z.object({
     "asset_in": z.lazy(() => DEXSwapAssetSchema),
 "asset_out": z.lazy(() => DEXSwapAssetSchema),
-"swap_datetime": z.string().datetime(),
+"swap_datetime": z.string(),
 "pair_key": z.string().min(1).describe("Unique identifier for the asset pair")
     })
 

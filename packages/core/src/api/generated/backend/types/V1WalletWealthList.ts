@@ -23,7 +23,7 @@ export type V1WalletWealthListQueryParams = {
     period: V1WalletWealthListQueryParamsPeriodEnum;
 };
 
-export type V1WalletWealthList200 = AccountWealthHistorySerializerResponse[];
+export type V1WalletWealthList200 = AccountWealthHistorySerializerResponse;
 
 export type V1WalletWealthListQueryResponse = V1WalletWealthList200;
 

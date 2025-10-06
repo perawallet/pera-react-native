@@ -5099,10 +5099,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/AccountWealthHistorySerializer.Response"
-                  }
+                  "$ref": "#/components/schemas/AccountWealthHistorySerializer.Response"
                 }
               }
             }
@@ -6005,7 +6002,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ResponseSerializer.Response"
+                  "$ref": "#/components/schemas/AccountWealthHistorySerializer.Response"
                 }
               }
             }
@@ -6744,6 +6741,11 @@
           "round": {
             "title": "Round",
             "type": "integer"
+          },
+          "value_in_currency": {
+            "title": "Usd value",
+            "type": "string",
+            "format": "decimal"
           }
         }
       },

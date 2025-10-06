@@ -64,24 +64,32 @@ export const createFetchClient = (clients: Map<string, KyInstance>) => {
             throw new Error('Could not get KY client')
         }
 
-        const path = requestConfig.url.startsWith('/')
-            ? requestConfig.url.slice(1)
-            : requestConfig.url
+        try {
 
-        const response = await client(path, {
-            searchParams: requestConfig.params as SearchParamsOption,
-            method: requestConfig.method,
-            json: requestConfig.data,
-            signal: requestConfig.signal,
-            headers: requestConfig.headers,
-        })
+            const path = requestConfig.url.startsWith('/')
+                ? requestConfig.url.slice(1)
+                : requestConfig.url
 
-        const data = await response.json<TData>()
+            const response = await client(path, {
+                searchParams: requestConfig.params as SearchParamsOption,
+                method: requestConfig.method,
+                json: requestConfig.data,
+                signal: requestConfig.signal,
+                headers: requestConfig.headers,
+            })
 
-        return {
-            data,
-            status: response.status,
-            statusText: response.statusText,
+            const data = await response.json<TData>()
+
+            return {
+                data,
+                status: response.status,
+                statusText: response.statusText,
+            }
+        } catch (error) {
+            if (config.debugEnabled) {
+                console.log("Query error", error)
+            }
+            throw error
         }
     }
 }

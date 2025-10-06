@@ -6,7 +6,7 @@
 import { z } from "zod";
 
 export const assetPriceChartItemSchema = z.object({
-    "datetime": z.string().datetime(),
+    "datetime": z.string(),
 "price": z.string()
     })
 

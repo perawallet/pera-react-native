@@ -11,8 +11,10 @@ import InfoIcon from '../../../assets/icons/info.svg';
 import CurrencyDisplay from '../../components/common/currency-display/CurrencyDisplay';
 import ButtonPanel from '../../components/portfolio/button-panel/ButtonPanel';
 import AccountList from '../../components/portfolio/account-list/AccountList';
+import PortfolioChart from '../../components/portfolio/portfolio-chart/PortfolioChart';
 import Decimal from 'decimal.js';
-import { useAccountBalances, useAppStore } from '@perawallet/core';
+import { AccountWealthHistoryItem, formatDatetime, useAccountBalances, useAppStore } from '@perawallet/core';
+import { useCallback, useState } from 'react';
 
 const PortfolioScreen = () => {
   const { theme } = useTheme();
@@ -20,6 +22,7 @@ const PortfolioScreen = () => {
 
   const accounts = useAppStore(state => state.accounts);
   const data = useAccountBalances(accounts);
+  const [chartData, setChartData] = useState<AccountWealthHistoryItem | null>(null)
 
   const loading = data.some(d => !d.isFetched);
   const algoAmount = data.reduce(
@@ -30,6 +33,10 @@ const PortfolioScreen = () => {
     (acc, cur) => acc.plus(cur.usdAmount),
     Decimal(0),
   );
+
+  const chartSelectionChanged = useCallback((data: AccountWealthHistoryItem | null) => {
+    setChartData(data)
+  }, [setChartData])
 
   return (
     <MainScreenLayout>
@@ -52,24 +59,27 @@ const PortfolioScreen = () => {
       <PeraView style={styles.valueBar}>
         <CurrencyDisplay
           h1
-          value={algoAmount}
+          value={chartData ? Decimal(chartData.algo_value) : algoAmount}
           currency="ALGO"
           precision={2}
           h1Style={styles.primaryCurrency}
           skeleton={loading}
         />
-        <CurrencyDisplay
-          h4
-          h4Style={styles.valueTitle}
-          value={usdAmount}
-          currency="USD"
-          prefix="≈ "
-          precision={2}
-          skeleton={loading}
-        />
+        <PeraView style={styles.secondaryValueBar}>
+          <CurrencyDisplay
+            h4
+            h4Style={styles.valueTitle}
+            value={chartData ? Decimal(chartData.value_in_currency ?? '0') : usdAmount}
+            currency="USD"
+            prefix="≈ "
+            precision={2}
+            skeleton={loading}
+          />
+          {chartData && <Text h4 h4Style={styles.dateDisplay}>{formatDatetime(chartData.datetime)}</Text>}
+        </PeraView>
       </PeraView>
 
-      {/* TODO: Render chart here... */}
+      <PortfolioChart onSelectionChanged={chartSelectionChanged}/>
 
       <ButtonPanel />
 

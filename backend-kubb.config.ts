@@ -51,6 +51,7 @@ export default defineConfig(() => {
                 typed: false,
                 unknownType: 'unknown',
                 inferred: true,
+                dateType: false //TODO: zod doesn't support +1000 style offsets - we need to switch the backend to a supported model
             }),
             pluginMsw({
                 output: {

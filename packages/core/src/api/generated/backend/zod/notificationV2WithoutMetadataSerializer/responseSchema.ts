@@ -11,7 +11,7 @@ export const notificationV2WithoutMetadataSerializerResponseSchema = z.object({
 "account_address": z.string().optional(),
 "message": z.string().optional(),
 "url": z.string().optional(),
-"creation_datetime": z.string().datetime().optional(),
+"creation_datetime": z.string().optional(),
 "is_unread": z.string().optional(),
 "icon": z.lazy(() => notificationV2IconSchema).optional().nullable()
     })

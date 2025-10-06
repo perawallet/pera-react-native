@@ -14,7 +14,7 @@ export const v1WalletWealthListQueryParamsSchema = z.object({
 
 export type V1WalletWealthListQueryParamsSchema = z.infer<typeof v1WalletWealthListQueryParamsSchema>
 
-export const v1WalletWealthList200Schema = z.array(z.lazy(() => accountWealthHistorySerializerResponseSchema))
+export const v1WalletWealthList200Schema = z.lazy(() => accountWealthHistorySerializerResponseSchema)
 
 export type V1WalletWealthList200Schema = z.infer<typeof v1WalletWealthList200Schema>
 

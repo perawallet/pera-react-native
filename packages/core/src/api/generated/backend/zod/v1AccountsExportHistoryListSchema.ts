@@ -12,8 +12,8 @@ export const v1AccountsExportHistoryListPathParamsSchema = z.object({
 export type V1AccountsExportHistoryListPathParamsSchema = z.infer<typeof v1AccountsExportHistoryListPathParamsSchema>
 
 export const v1AccountsExportHistoryListQueryParamsSchema = z.object({
-    "start_date": z.string().date().optional(),
-"end_date": z.string().date().optional(),
+    "start_date": z.string().optional(),
+"end_date": z.string().optional(),
 "asset_id": z.coerce.number().int().optional()
     }).optional()
 

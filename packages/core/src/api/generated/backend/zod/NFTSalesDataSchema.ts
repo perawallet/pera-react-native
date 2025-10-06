@@ -7,7 +7,7 @@ import { NFTSaleDataSchema } from "./NFTSaleDataSchema.ts";
 import { z } from "zod";
 
 export const NFTSalesDataSchema = z.object({
-    "datetime": z.string().datetime(),
+    "datetime": z.string(),
 "sales": z.array(z.lazy(() => NFTSaleDataSchema).nullable()).nullable()
     })
 

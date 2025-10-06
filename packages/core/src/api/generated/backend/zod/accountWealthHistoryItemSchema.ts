@@ -6,10 +6,11 @@
 import { z } from "zod";
 
 export const accountWealthHistoryItemSchema = z.object({
-    "datetime": z.string().datetime(),
+    "datetime": z.string(),
 "usd_value": z.string(),
 "algo_value": z.string(),
-"round": z.number().int()
+"round": z.number().int(),
+"value_in_currency": z.string().optional()
     })
 
 export type AccountWealthHistoryItemSchema = z.infer<typeof accountWealthHistoryItemSchema>

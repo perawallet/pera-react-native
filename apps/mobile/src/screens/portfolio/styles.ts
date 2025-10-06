@@ -19,6 +19,11 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       paddingTop: theme.spacing.md,
       paddingBottom: theme.spacing.xl * 1.5,
     },
+    secondaryValueBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between'
+    },
     valueTitleBar: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -27,6 +32,10 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
     },
     valueTitle: {
       color: theme.colors.textGray,
+    },
+    dateDisplay: {
+      color: theme.colors.textGray,
+      textAlign: 'left'
     },
     primaryCurrency: {
       color: theme.colors.textMain,

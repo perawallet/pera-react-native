@@ -21,4 +21,8 @@ export type AccountWealthHistoryItem = {
      * @type integer
     */
     round: number;
+    /**
+     * @type string | undefined, decimal
+    */
+    value_in_currency?: string;
 };

@@ -7,7 +7,7 @@ import { z } from "zod";
 
 export const wealthDataPointSchema = z.object({
     "round": z.number().int(),
-"datetime": z.string().datetime(),
+"datetime": z.string(),
 "algo_value": z.string(),
 "usd_value": z.string(),
 "value_in_currency": z.string().optional()

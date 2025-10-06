@@ -7,7 +7,7 @@ import { z } from "zod";
 
 export const newsDetailSerializerResponseSchema = z.object({
     "id": z.string().min(1),
-"publishing_datetime": z.string().datetime().describe("User will see this datetime. If it is set for the future, it will be published in the future."),
+"publishing_datetime": z.string().describe("User will see this datetime. If it is set for the future, it will be published in the future."),
 "banner": z.string().url().optional(),
 "title": z.string().min(1).max(255),
 "content_html": z.string().optional()
