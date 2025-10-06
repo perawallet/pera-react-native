@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest'
 import { encodeToBase64, decodeFromBase64 } from '../strings'
-import { formatCurrency } from '../strings'
+import { formatCurrency, formatDatetime } from '../strings'
 
 describe('utils/strings - base64 encoding', () => {
     test('encodeToBase64 encodes bytes correctly', () => {
@@ -102,5 +102,25 @@ describe('utils/strings - formatCurrency', () => {
         expect(formatCurrency('5678', 2, 'GBP', 'en-GB', false)).toBe(
             '5,678.00',
         )
+    })
+})
+
+describe('utils/strings - formatDatetime', () => {
+    test('formats Date object', () => {
+        const date = new Date('2023-10-05T14:30:00Z')
+        const result = formatDatetime(date, 'en-US')
+        expect(result).toMatch(/October \d{1,2}, \d{4} at \d{1,2}:\d{2} (AM|PM)/)
+    })
+
+    test('formats ISO string without timezone', () => {
+        const datetime = '2023-10-05T14:30:00'
+        const result = formatDatetime(datetime, 'en-US')
+        expect(result).toMatch(/October 5, 2023 at \d{1,2}:\d{2} (AM|PM)/)
+    })
+
+    test('formats ISO string with timezone', () => {
+        const datetime = '2023-10-05T14:30:00+02:00'
+        const result = formatDatetime(datetime, 'en-US')
+        expect(result).toMatch(/October 5, 2023 at \d{1,2}:\d{2} (AM|PM)/)
     })
 })

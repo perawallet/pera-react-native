@@ -132,7 +132,7 @@ describe('api/query-client', () => {
         expect(call.input).toBe('api/v1/foo') // trimmed
         expect(call.options.method).toBe('POST')
         expect(call.options.json).toEqual(data)
-        expect(String(call.options.searchParams)).toBe('a=1&a=2&b=x')
+        expect(new URLSearchParams(call.options.searchParams as any).toString()).toBe('a=1%2C2&b=x&c=null&d=undefined')
         // header pass-through
         const headers = call.options.headers as Record<string, string>
         expect(headers['X-Test']).toBe('T')

@@ -77,11 +77,18 @@ describe('api/query-client', () => {
             headers: new Headers(),
         } as any
 
-        logResponse(mockRequest)
+        const mockResponse = {
+            url: 'https://example.com/api/test',
+            status: 200,
+            statusText: 'OK',
+            headers: new Headers(),
+        } as any
+
+        logResponse(mockRequest, {}, mockResponse)
 
         expect(consoleMock).toHaveBeenCalledWith(
             'Received response',
-            mockRequest,
+            mockResponse,
         )
     })
 
@@ -96,7 +103,14 @@ describe('api/query-client', () => {
             headers: new Headers(),
         } as any
 
-        logResponse(mockRequest)
+        const mockResponse = {
+            url: 'https://example.com/api/test',
+            status: 200,
+            statusText: 'OK',
+            headers: new Headers(),
+        } as any
+
+        logResponse(mockRequest, {}, mockResponse)
 
         expect(consoleMock).not.toHaveBeenCalled()
     })
@@ -126,4 +140,25 @@ describe('api/query-client', () => {
             fetchClient({ url: '/test', method: 'GET' }),
         ).rejects.toThrow('Could not get KY client')
     })
+
+    test('createFetchClient logs error and re-throws when request fails', async () => {
+        const { createFetchClient } = await import('../query-client')
+        const { useAppStore } = await import('@store/app-store')
+
+        const throwingClient = vi.fn(() => {
+            throw new Error('Network error')
+        })
+        const clients = new Map([['mainnet', throwingClient as any]])
+        const fetchClient = createFetchClient(clients)
+
+        useAppStore.setState({ network: 'mainnet' })
+        configMock.debugEnabled = true
+
+        await expect(
+            fetchClient({ url: '/test', method: 'GET' }),
+        ).rejects.toThrow('Network error')
+
+        expect(consoleMock).toHaveBeenCalledWith('Query error', expect.any(Error))
+    })
+
 })
