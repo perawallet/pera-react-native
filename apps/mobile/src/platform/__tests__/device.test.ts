@@ -190,6 +190,24 @@ describe('RNDeviceInfoStorageService', () => {
     });
   });
 
+  describe('getUserAgent', () => {
+    it('returns formatted user agent string', () => {
+      const userAgent = service.getUserAgent();
+
+      expect(userAgent).toContain('Pera Wallet/1.0.0.1');
+      expect(userAgent).toContain('(ios; iPhone 13; 15.0)');
+      expect(userAgent).toContain('pera_ios_1.0.0');
+    });
+  });
+
+  describe('getAppVersion', () => {
+    it('returns app version from DeviceInfo', () => {
+      const version = service.getAppVersion();
+
+      expect(version).toBe('1.0.0');
+    });
+  });
+
   describe('locale formatting', () => {
     it('replaces all underscores with hyphens', async () => {
       // Spy on the NativeModules to override the AppleLocale value

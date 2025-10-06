@@ -238,6 +238,103 @@ describe('RNFirebaseService', () => {
         expect(mockMessaging.onMessage).toHaveBeenCalled();
         expect(mockNotifee.onForegroundEvent).toHaveBeenCalled();
       });
+
+      it('should handle onMessage callback with notification data', async () => {
+        mockNotifee.requestPermission.mockResolvedValue({
+          authorizationStatus: 1, //AUTHORIZED
+        });
+        await service.initializeNotifications();
+
+        // Get the callback that was passed to onMessage
+        const onMessageCallback = (mockMessaging.onMessage as any).mock.calls[0][0] as (message: any) => Promise<void>;
+        expect(onMessageCallback).toBeDefined();
+
+        const mockRemoteMessage = {
+          notification: {
+            title: 'Test Title',
+            body: 'Test Body',
+          },
+          data: { key: 'value' },
+        };
+
+        await onMessageCallback(mockRemoteMessage);
+
+        expect(mockNotifee.displayNotification).toHaveBeenCalledWith({
+          title: 'Test Title',
+          body: 'Test Body',
+          data: { key: 'value' },
+          android: { channelId: 'default' }, // Platform.select returns android value due to mock
+        });
+      });
+
+      it('should handle onMessage callback with missing notification data', async () => {
+        mockNotifee.requestPermission.mockResolvedValue({
+          authorizationStatus: 1, //AUTHORIZED
+        });
+        await service.initializeNotifications();
+
+        // Get the callback that was passed to onMessage
+        const onMessageCallback = (mockMessaging.onMessage as any).mock.calls[0][0] as (message: any) => Promise<void>;
+        expect(onMessageCallback).toBeDefined();
+
+        const mockRemoteMessage = {
+          data: { key: 'value' },
+        };
+
+        await onMessageCallback(mockRemoteMessage);
+
+        expect(mockNotifee.displayNotification).toHaveBeenCalledWith({
+          title: 'Notification',
+          body: undefined,
+          data: { key: 'value' },
+          android: { channelId: 'default' }, // Platform.select returns android value due to mock
+        });
+      });
+
+      it('should handle onForegroundEvent callback for PRESS event', async () => {
+        mockNotifee.requestPermission.mockResolvedValue({
+          authorizationStatus: 1, //AUTHORIZED
+        });
+        await service.initializeNotifications();
+
+        // Get the callback that was passed to onForegroundEvent
+        const onForegroundEventCallback = (mockNotifee.onForegroundEvent as any).mock.calls[0][0] as (event: any) => Promise<void>;
+        expect(onForegroundEventCallback).toBeDefined();
+
+        await onForegroundEventCallback({ type: 0 }); // EventType.PRESS
+
+        // Should not throw, currently no-op
+      });
+
+      it('should handle onForegroundEvent callback for ACTION_PRESS event', async () => {
+        mockNotifee.requestPermission.mockResolvedValue({
+          authorizationStatus: 1, //AUTHORIZED
+        });
+        await service.initializeNotifications();
+
+        // Get the callback that was passed to onForegroundEvent
+        const onForegroundEventCallback = (mockNotifee.onForegroundEvent as any).mock.calls[0][0] as (event: any) => Promise<void>;
+        expect(onForegroundEventCallback).toBeDefined();
+
+        await onForegroundEventCallback({ type: 1 }); // EventType.ACTION_PRESS
+
+        // Should not throw, currently no-op
+      });
+
+      it('should handle onForegroundEvent callback for unknown event type', async () => {
+        mockNotifee.requestPermission.mockResolvedValue({
+          authorizationStatus: 1, //AUTHORIZED
+        });
+        await service.initializeNotifications();
+
+        // Get the callback that was passed to onForegroundEvent
+        const onForegroundEventCallback = (mockNotifee.onForegroundEvent as any).mock.calls[0][0] as (event: any) => Promise<void>;
+        expect(onForegroundEventCallback).toBeDefined();
+
+        await onForegroundEventCallback({ type: 999 }); // Unknown event type
+
+        // Should not throw, hits default case
+      });
     });
   });
 
