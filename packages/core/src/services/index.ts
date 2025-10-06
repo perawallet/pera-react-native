@@ -1,4 +1,5 @@
 export * from './accounts'
+export * from './assets'
 export * from './blockchain'
 export * from './device'
 export * from './polling'

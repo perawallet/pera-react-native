@@ -46,7 +46,7 @@ const AccountList = () => {
           </TouchableOpacity>
         </PeraView>
       </PeraView>
-      {accounts.map((account, index) => renderAccount({item: account, index}))}
+      {accounts.map((account: WalletAccount, index: number) => renderAccount({item: account, index}))}
     </PeraView>
   );
 };

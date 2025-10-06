@@ -26,6 +26,7 @@ const AssetIcon = (props: AssetIconProps) => {
     if (asset.unit_name === 'ALGO') return <AlgoAssetIcon {...rest} style={styles.icon} width={size} height={size} />;
     if (asset.unit_name === 'USDC') return <USDCAssetIcon {...rest} style={styles.icon} width={size} height={size} />;
     if (asset.unit_name === 'VEST') return <VestAssetIcon {...rest} style={styles.icon} width={size} height={size} />;
+    if (asset.logo) return <Image source={{uri: asset.logo}} style={styles.icon} width={size} height={size} />
     if (asset.labels) {
       const labelLogo =  isDarkMode ?
           asset.labels?.find(l => l.dark_theme_logo)?.dark_theme_logo : asset.labels?.find(l => l.light_theme_logo)?.light_theme_logo
@@ -33,7 +34,6 @@ const AssetIcon = (props: AssetIconProps) => {
         return <Image source={{uri: labelLogo}} style={styles.icon} width={size} height={size}/>
       }
     }
-    if (asset.logo) return <Image source={{uri: asset.logo}} style={styles.icon} width={size} height={size} />
     return <AlgoAssetIcon {...rest} width={size} height={size} />; //TODO: fallback to web URL?  Have a generic icon?
   }, [asset, rest]);
 

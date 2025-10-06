@@ -5,33 +5,17 @@ import { Text } from '@rneui/themed';
 import { useCallback } from 'react';
 
 import SwapPair from '../swap-pair/SwapPair';
-import { useV1AssetsList } from '@perawallet/core';
+import { AssetDetails, useCachedAssets } from '@perawallet/core';
 
 const SwapHistoryPanel = () => {
   const themeStyle = useStyles();
   
-  //TODO: pull from server using asset IDs in a single query
-  const { data: algoAssets } = useV1AssetsList({
-    params: {
-        q: 'algo'
-    }
-  })
-
-  const { data: usdcAssets } = useV1AssetsList({
-    params: {
-        q: 'usdc'
-    }
-  })
-
-  const { data: vestAssets } = useV1AssetsList({
-    params: {
-        q: 'vest'
-    }
-  })
+      
+  const { assets } = useCachedAssets([11711, 10458941, 700965019])
   
-  const algoAsset = algoAssets?.results?.length ? algoAssets.results.at(0) : null
-  const usdcAsset = usdcAssets?.results?.length ? usdcAssets.results.at(0) : null
-  const vestAsset = vestAssets?.results?.length ? vestAssets.results.at(0) : null
+  const algoAsset = assets?.length ? assets.find((a: AssetDetails) => a.unit_name === 'ALGO') : null
+  const usdcAsset = assets?.length ? assets.find((a: AssetDetails) => a.unit_name === 'USDC') : null
+  const vestAsset = assets?.length ? assets.find((a: AssetDetails) => a.unit_name === 'HIPO') : null
 
   const renderSwapPair = useCallback(
     (item: any, index: number) => {

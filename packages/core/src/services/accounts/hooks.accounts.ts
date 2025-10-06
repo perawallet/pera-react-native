@@ -10,6 +10,7 @@ import {
     useV1DevicesPartialUpdate,
     v1AccountsAssetsList,
     v1AccountsAssetsListQueryKey,
+    type AccountDetailAssetSerializerResponse,
 } from '../../api/generated/backend'
 import Decimal from 'decimal.js'
 import { useDeviceInfoService } from '../device'
@@ -277,7 +278,7 @@ export const useAccountBalances = (accounts: WalletAccount[]) => {
         let usdAmount = Decimal(0)
 
         if (accountInfo) {
-            accountInfo.results.forEach(data => {
+            accountInfo.results.forEach((data:AccountDetailAssetSerializerResponse)  => {
                 algoAmount = algoAmount.plus(
                     Decimal(data.amount ?? '0').div(
                         Decimal(10).pow(data.fraction_decimals),

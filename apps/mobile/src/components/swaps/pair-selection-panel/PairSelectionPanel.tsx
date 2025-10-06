@@ -10,26 +10,16 @@ import { TouchableOpacity, View } from 'react-native';
 import SwitchIcon from '../../../../assets/icons/switch.svg';
 import SlidersIcon from '../../../../assets/icons/sliders.svg';
 import CurrencyInput from '../../common/currency-input/CurrencyInput';
-import { useV1AssetsList } from '@perawallet/core';
+import { AssetDetails, useCachedAssets } from '@perawallet/core';
 
 const PairSelectionPanel = () => {
   const styles = useStyles();
   const { theme } = useTheme();
 
-  const { data: algoAssets } = useV1AssetsList({
-    params: {
-        q: 'algo'
-    }
-  })
-
-  const { data: usdcAssets } = useV1AssetsList({
-    params: {
-        q: 'usdc'
-    }
-  })
-
-  const algoAsset = algoAssets?.results?.length ? algoAssets.results.at(0) : null
-  const usdcAsset = usdcAssets?.results?.length ? usdcAssets.results.at(0) : null
+  const { assets } = useCachedAssets([10458941, 700965019])
+  
+  const algoAsset = assets?.length ? assets.find((a: AssetDetails) => a.unit_name === 'ALGO') : null
+  const usdcAsset = assets?.length ? assets.find((a: AssetDetails) => a.unit_name === 'USDC') : null
 
   //TODO: some or all of these should probably come from either an account hook, the state store or a calculation
   const [sendAmount, setSendAmount] = useState('0.00');
