@@ -6324,7 +6324,8 @@
             "title": "Logo",
             "type": "string",
             "format": "uri",
-            "readOnly": true
+            "readOnly": true,
+            "nullable": true
           },
           "collectible": {
             "$ref": "#/components/schemas/SimpleCollectible",
@@ -6583,7 +6584,8 @@
             "title": "Logo",
             "type": "string",
             "format": "uri",
-            "readOnly": true
+            "readOnly": true,
+            "nullable": true
           },
           "balance_usd_value": {
             "title": "Balance usd value",
@@ -7033,7 +7035,8 @@
             "title": "Logo",
             "type": "string",
             "format": "uri",
-            "readOnly": true
+            "readOnly": true,
+            "nullable": true
           },
           "unit_name": {
             "title": "Unit name",
@@ -7430,7 +7433,6 @@
         "required": [
           "asset_id",
           "category",
-          "collectible",
           "creator",
           "fraction_decimals",
           "is_deleted",
@@ -7454,7 +7456,8 @@
             "title": "Logo",
             "type": "string",
             "format": "uri",
-            "readOnly": true
+            "readOnly": true,
+            "nullable": true
           },
           "unit_name": {
             "title": "Unit name",
@@ -7625,7 +7628,8 @@
             "title": "Logo",
             "type": "string",
             "format": "uri",
-            "readOnly": true
+            "readOnly": true,
+            "nullable": true
           },
           "verification_tier": {
             "title": "Verification tier",
@@ -7706,7 +7710,8 @@
             "title": "Logo",
             "type": "string",
             "format": "uri",
-            "readOnly": true
+            "readOnly": true,
+            "nullable": true
           },
           "unit_name": {
             "title": "Unit name",
@@ -7796,7 +7801,8 @@
             "title": "Logo svg",
             "type": "string",
             "format": "uri",
-            "readOnly": true
+            "readOnly": true,
+            "nullable": true
           },
           "discord_url": {
             "title": "Discord url",
@@ -8715,7 +8721,8 @@
             "title": "Logo",
             "type": "string",
             "format": "uri",
-            "readOnly": true
+            "readOnly": true,
+            "nullable": true
           },
           "name": {
             "title": "Name",
@@ -10837,7 +10844,8 @@
             "title": "Logo",
             "type": "string",
             "format": "uri",
-            "readOnly": true
+            "readOnly": true,
+            "nullable": true
           },
           "verification_tier": {
             "title": "Verification tier",
@@ -11079,7 +11087,8 @@
             "title": "Logo",
             "type": "string",
             "format": "uri",
-            "readOnly": true
+            "readOnly": true,
+            "nullable": true
           },
           "unit_name": {
             "title": "Unit name",
@@ -11169,7 +11178,8 @@
             "title": "Logo svg",
             "type": "string",
             "format": "uri",
-            "readOnly": true
+            "readOnly": true,
+            "nullable": true
           },
           "discord_url": {
             "title": "Discord url",

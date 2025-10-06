@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DiscoverNftCollectionsCollectiblesListQueryResponse, V1DiscoverNftCollectionsCollectiblesListPathParams, V1DiscoverNftCollectionsCollectiblesListQueryParams } from "../types/V1DiscoverNftCollectionsCollectiblesList.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1DiscoverNftCollectionsCollectiblesListQueryResponseSchema } from "../zod/v1DiscoverNftCollectionsCollectiblesListSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1DiscoverNftCollectionsCollectiblesListSuspenseQueryKey = ({ slug }: { slug: V1DiscoverNftCollectionsCollectiblesListPathParams["slug"] }, params?: V1DiscoverNftCollectionsCollectiblesListQueryParams) => [{ url: '/v1/discover/nft/collections/:slug/collectibles/', params: {slug:slug} }, ...(params ? [params] : [])] as const
@@ -21,7 +20,7 @@ export async function v1DiscoverNftCollectionsCollectiblesListSuspense({ slug, p
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DiscoverNftCollectionsCollectiblesListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/discover/nft/collections/${slug}/collectibles/`, params, ... requestConfig })  
-  return v1DiscoverNftCollectionsCollectiblesListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1DiscoverNftCollectionsCollectiblesListSuspenseQueryOptions({ slug, params }: { slug: V1DiscoverNftCollectionsCollectiblesListPathParams["slug"]; params?: V1DiscoverNftCollectionsCollectiblesListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

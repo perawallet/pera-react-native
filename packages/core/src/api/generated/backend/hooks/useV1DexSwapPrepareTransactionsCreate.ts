@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DexSwapPrepareTransactionsCreateMutationRequest, V1DexSwapPrepareTransactionsCreateMutationResponse } from "../types/V1DexSwapPrepareTransactionsCreate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v1DexSwapPrepareTransactionsCreateMutationResponseSchema, v1DexSwapPrepareTransactionsCreateMutationRequestSchema } from "../zod/v1DexSwapPrepareTransactionsCreateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v1DexSwapPrepareTransactionsCreateMutationKey = () => [{ url: '/v1/dex-swap/prepare-transactions/' }] as const
@@ -22,10 +21,10 @@ export type V1DexSwapPrepareTransactionsCreateMutationKey = ReturnType<typeof v1
 export async function v1DexSwapPrepareTransactionsCreate({ data }: { data: V1DexSwapPrepareTransactionsCreateMutationRequest }, config: Partial<RequestConfig<V1DexSwapPrepareTransactionsCreateMutationRequest>> & { client?: typeof fetch } = {}) {
   const { client: request = fetch, ...requestConfig } = config  
   
-  const requestData = v1DexSwapPrepareTransactionsCreateMutationRequestSchema.parse(data)  
+  const requestData = data  
   
   const res = await request<V1DexSwapPrepareTransactionsCreateMutationResponse, ResponseErrorConfig<Error>, V1DexSwapPrepareTransactionsCreateMutationRequest>({ method : "POST", url : `/v1/dex-swap/prepare-transactions/`, data : requestData, ... requestConfig })  
-  return v1DexSwapPrepareTransactionsCreateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

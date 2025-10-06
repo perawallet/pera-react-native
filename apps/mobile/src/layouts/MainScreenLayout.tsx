@@ -29,7 +29,7 @@ const MainScreenLayout = (props: MainScreenLayoutProps) => {
   };
 
   return (
-    <PeraView style={[styles.mainContainer, props.style]} {...props}>
+    <PeraView style={[props.style, styles.mainContainer]} {...props}>
       <View style={styles.contentContainer}>
         {props.showBack && (
           <ChevronLeft

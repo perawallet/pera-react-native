@@ -46,7 +46,7 @@ const AccountList = () => {
           </TouchableOpacity>
         </PeraView>
       </PeraView>
-      <FlatList data={accounts} renderItem={renderAccount} />
+      {accounts.map((account, index) => renderAccount({item: account, index}))}
     </PeraView>
   );
 };

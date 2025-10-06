@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DiscoverAssetsTopGainersListQueryResponse } from "../types/V1DiscoverAssetsTopGainersList.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1DiscoverAssetsTopGainersListQueryResponseSchema } from "../zod/v1DiscoverAssetsTopGainersListSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1DiscoverAssetsTopGainersListSuspenseQueryKey = () => [{ url: '/v1/discover/assets/top-gainers/' }] as const
@@ -21,7 +20,7 @@ export async function v1DiscoverAssetsTopGainersListSuspense(config: Partial<Req
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DiscoverAssetsTopGainersListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/discover/assets/top-gainers/`, ... requestConfig })  
-  return v1DiscoverAssetsTopGainersListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1DiscoverAssetsTopGainersListSuspenseQueryOptions(config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

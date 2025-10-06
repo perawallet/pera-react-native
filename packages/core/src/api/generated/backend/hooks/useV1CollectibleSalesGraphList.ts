@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1CollectibleSalesGraphListQueryResponse, V1CollectibleSalesGraphListPathParams, V1CollectibleSalesGraphListQueryParams } from "../types/V1CollectibleSalesGraphList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1CollectibleSalesGraphListQueryResponseSchema } from "../zod/v1CollectibleSalesGraphListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1CollectibleSalesGraphListQueryKey = ({ asset_id }: { asset_id: V1CollectibleSalesGraphListPathParams["asset_id"] }, params: V1CollectibleSalesGraphListQueryParams) => [{ url: '/v1/collectible/:asset_id/sales/graph/', params: {asset_id:asset_id} }, ...(params ? [params] : [])] as const
@@ -23,7 +22,7 @@ export async function v1CollectibleSalesGraphList({ asset_id, params }: { asset_
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1CollectibleSalesGraphListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/collectible/${asset_id}/sales/graph/`, params, ... requestConfig })  
-  return v1CollectibleSalesGraphListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1CollectibleSalesGraphListQueryOptions({ asset_id, params }: { asset_id: V1CollectibleSalesGraphListPathParams["asset_id"]; params: V1CollectibleSalesGraphListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

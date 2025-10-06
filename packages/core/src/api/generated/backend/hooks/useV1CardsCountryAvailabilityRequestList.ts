@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1CardsCountryAvailabilityRequestListQueryResponse, V1CardsCountryAvailabilityRequestListQueryParams, V1CardsCountryAvailabilityRequestList400 } from "../types/V1CardsCountryAvailabilityRequestList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1CardsCountryAvailabilityRequestListQueryResponseSchema } from "../zod/v1CardsCountryAvailabilityRequestListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1CardsCountryAvailabilityRequestListQueryKey = (params?: V1CardsCountryAvailabilityRequestListQueryParams) => [{ url: '/v1/cards/country-availability-request/' }, ...(params ? [params] : [])] as const
@@ -22,7 +21,7 @@ export async function v1CardsCountryAvailabilityRequestList({ params }: { params
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1CardsCountryAvailabilityRequestListQueryResponse, ResponseErrorConfig<V1CardsCountryAvailabilityRequestList400>, unknown>({ method : "GET", url : `/v1/cards/country-availability-request/`, params, ... requestConfig })  
-  return v1CardsCountryAvailabilityRequestListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1CardsCountryAvailabilityRequestListQueryOptions({ params }: { params?: V1CardsCountryAvailabilityRequestListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

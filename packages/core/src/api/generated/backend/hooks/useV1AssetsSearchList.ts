@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1AssetsSearchListQueryResponse, V1AssetsSearchListQueryParams } from "../types/V1AssetsSearchList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1AssetsSearchListQueryResponseSchema } from "../zod/v1AssetsSearchListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1AssetsSearchListQueryKey = (params?: V1AssetsSearchListQueryParams) => [{ url: '/v1/assets/search/' }, ...(params ? [params] : [])] as const
@@ -21,7 +20,7 @@ export async function v1AssetsSearchList({ params }: { params?: V1AssetsSearchLi
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1AssetsSearchListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/assets/search/`, params, ... requestConfig })  
-  return v1AssetsSearchListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1AssetsSearchListQueryOptions({ params }: { params?: V1AssetsSearchListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

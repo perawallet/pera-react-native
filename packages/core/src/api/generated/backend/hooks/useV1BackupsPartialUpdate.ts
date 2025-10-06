@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1BackupsPartialUpdateMutationRequest, V1BackupsPartialUpdateMutationResponse, V1BackupsPartialUpdatePathParams, V1BackupsPartialUpdateHeaderParams } from "../types/V1BackupsPartialUpdate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v1BackupsPartialUpdateMutationResponseSchema, v1BackupsPartialUpdateMutationRequestSchema } from "../zod/v1BackupsPartialUpdateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v1BackupsPartialUpdateMutationKey = () => [{ url: '/v1/backups/:id/' }] as const
@@ -22,10 +21,10 @@ export type V1BackupsPartialUpdateMutationKey = ReturnType<typeof v1BackupsParti
 export async function v1BackupsPartialUpdate({ id, data, headers }: { id: V1BackupsPartialUpdatePathParams["id"]; data: V1BackupsPartialUpdateMutationRequest; headers: V1BackupsPartialUpdateHeaderParams }, config: Partial<RequestConfig<V1BackupsPartialUpdateMutationRequest>> & { client?: typeof fetch } = {}) {
   const { client: request = fetch, ...requestConfig } = config  
   
-  const requestData = v1BackupsPartialUpdateMutationRequestSchema.parse(data)  
+  const requestData = data  
   
   const res = await request<V1BackupsPartialUpdateMutationResponse, ResponseErrorConfig<Error>, V1BackupsPartialUpdateMutationRequest>({ method : "PATCH", url : `/v1/backups/${id}/`, data : requestData, ... requestConfig, headers : { ...headers, ...requestConfig.headers } })  
-  return v1BackupsPartialUpdateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

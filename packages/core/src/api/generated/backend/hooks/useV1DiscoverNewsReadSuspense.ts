@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DiscoverNewsReadQueryResponse, V1DiscoverNewsReadPathParams } from "../types/V1DiscoverNewsRead.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1DiscoverNewsReadQueryResponseSchema } from "../zod/v1DiscoverNewsReadSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1DiscoverNewsReadSuspenseQueryKey = ({ id }: { id: V1DiscoverNewsReadPathParams["id"] }) => [{ url: '/v1/discover/news/:id/', params: {id:id} }] as const
@@ -21,7 +20,7 @@ export async function v1DiscoverNewsReadSuspense({ id }: { id: V1DiscoverNewsRea
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DiscoverNewsReadQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/discover/news/${id}/`, ... requestConfig })  
-  return v1DiscoverNewsReadQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1DiscoverNewsReadSuspenseQueryOptions({ id }: { id: V1DiscoverNewsReadPathParams["id"] }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

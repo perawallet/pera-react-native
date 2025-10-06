@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1AccountsAssetsBalanceHistoryListQueryResponse, V1AccountsAssetsBalanceHistoryListPathParams, V1AccountsAssetsBalanceHistoryListQueryParams } from "../types/V1AccountsAssetsBalanceHistoryList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1AccountsAssetsBalanceHistoryListQueryResponseSchema } from "../zod/v1AccountsAssetsBalanceHistoryListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1AccountsAssetsBalanceHistoryListQueryKey = ({ account_address, asset_id }: { account_address: V1AccountsAssetsBalanceHistoryListPathParams["account_address"]; asset_id: V1AccountsAssetsBalanceHistoryListPathParams["asset_id"] }, params: V1AccountsAssetsBalanceHistoryListQueryParams) => [{ url: '/v1/accounts/:account_address/assets/:asset_id/balance-history/', params: {account_address:account_address,asset_id:asset_id} }, ...(params ? [params] : [])] as const
@@ -23,7 +22,7 @@ export async function v1AccountsAssetsBalanceHistoryList({ account_address, asse
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1AccountsAssetsBalanceHistoryListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/accounts/${account_address}/assets/${asset_id}/balance-history/`, params, ... requestConfig })  
-  return v1AccountsAssetsBalanceHistoryListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1AccountsAssetsBalanceHistoryListQueryOptions({ account_address, asset_id, params }: { account_address: V1AccountsAssetsBalanceHistoryListPathParams["account_address"]; asset_id: V1AccountsAssetsBalanceHistoryListPathParams["asset_id"]; params: V1AccountsAssetsBalanceHistoryListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1CardsSupportedCountriesListQueryResponse } from "../types/V1CardsSupportedCountriesList.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1CardsSupportedCountriesListQueryResponseSchema } from "../zod/v1CardsSupportedCountriesListSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1CardsSupportedCountriesListSuspenseQueryKey = () => [{ url: '/v1/cards/supported-countries/' }] as const
@@ -21,7 +20,7 @@ export async function v1CardsSupportedCountriesListSuspense(config: Partial<Requ
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1CardsSupportedCountriesListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/cards/supported-countries/`, ... requestConfig })  
-  return v1CardsSupportedCountriesListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1CardsSupportedCountriesListSuspenseQueryOptions(config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

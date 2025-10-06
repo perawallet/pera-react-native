@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DexSwapQuotesUpdateMutationRequest, V1DexSwapQuotesUpdateMutationResponse, V1DexSwapQuotesUpdatePathParams } from "../types/V1DexSwapQuotesUpdate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v1DexSwapQuotesUpdateMutationResponseSchema, v1DexSwapQuotesUpdateMutationRequestSchema } from "../zod/v1DexSwapQuotesUpdateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v1DexSwapQuotesUpdateMutationKey = () => [{ url: '/v1/dex-swap/quotes/:quote_id/' }] as const
@@ -20,10 +19,10 @@ export type V1DexSwapQuotesUpdateMutationKey = ReturnType<typeof v1DexSwapQuotes
 export async function v1DexSwapQuotesUpdate({ quote_id, data }: { quote_id: V1DexSwapQuotesUpdatePathParams["quote_id"]; data?: V1DexSwapQuotesUpdateMutationRequest }, config: Partial<RequestConfig<V1DexSwapQuotesUpdateMutationRequest>> & { client?: typeof fetch } = {}) {
   const { client: request = fetch, ...requestConfig } = config  
   
-  const requestData = v1DexSwapQuotesUpdateMutationRequestSchema.parse(data)  
+  const requestData = data  
   
   const res = await request<V1DexSwapQuotesUpdateMutationResponse, ResponseErrorConfig<Error>, V1DexSwapQuotesUpdateMutationRequest>({ method : "PUT", url : `/v1/dex-swap/quotes/${quote_id}/`, data : requestData, ... requestConfig })  
-  return v1DexSwapQuotesUpdateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

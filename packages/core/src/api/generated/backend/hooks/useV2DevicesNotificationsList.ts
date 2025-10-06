@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V2DevicesNotificationsListQueryResponse, V2DevicesNotificationsListPathParams, V2DevicesNotificationsListQueryParams } from "../types/V2DevicesNotificationsList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v2DevicesNotificationsListQueryResponseSchema } from "../zod/v2DevicesNotificationsListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v2DevicesNotificationsListQueryKey = ({ device_id }: { device_id: V2DevicesNotificationsListPathParams["device_id"] }, params?: V2DevicesNotificationsListQueryParams) => [{ url: '/v2/devices/:device_id/notifications/', params: {device_id:device_id} }, ...(params ? [params] : [])] as const
@@ -21,7 +20,7 @@ export async function v2DevicesNotificationsList({ device_id, params }: { device
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V2DevicesNotificationsListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v2/devices/${device_id}/notifications/`, params, ... requestConfig })  
-  return v2DevicesNotificationsListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v2DevicesNotificationsListQueryOptions({ device_id, params }: { device_id: V2DevicesNotificationsListPathParams["device_id"]; params?: V2DevicesNotificationsListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1IsScammerDomainListQueryResponse } from "../types/V1IsScammerDomainList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1IsScammerDomainListQueryResponseSchema } from "../zod/v1IsScammerDomainListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1IsScammerDomainListQueryKey = () => [{ url: '/v1/is-scammer-domain/' }] as const
@@ -23,7 +22,7 @@ export async function v1IsScammerDomainList(config: Partial<RequestConfig> & { c
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1IsScammerDomainListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/is-scammer-domain/`, ... requestConfig })  
-  return v1IsScammerDomainListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1IsScammerDomainListQueryOptions(config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1AsaInboxesSummarySendFlowReadQueryResponse, V1AsaInboxesSummarySendFlowReadPathParams, V1AsaInboxesSummarySendFlowReadQueryParams } from "../types/V1AsaInboxesSummarySendFlowRead.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1AsaInboxesSummarySendFlowReadQueryResponseSchema } from "../zod/v1AsaInboxesSummarySendFlowReadSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1AsaInboxesSummarySendFlowReadQueryKey = ({ asset_id, receiver_address }: { asset_id: V1AsaInboxesSummarySendFlowReadPathParams["asset_id"]; receiver_address: V1AsaInboxesSummarySendFlowReadPathParams["receiver_address"] }, params?: V1AsaInboxesSummarySendFlowReadQueryParams) => [{ url: '/v1/asa-inboxes/summary/send-flow/:receiver_address/:asset_id/', params: {receiver_address:receiver_address,asset_id:asset_id} }, ...(params ? [params] : [])] as const
@@ -21,7 +20,7 @@ export async function v1AsaInboxesSummarySendFlowRead({ asset_id, receiver_addre
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1AsaInboxesSummarySendFlowReadQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/asa-inboxes/summary/send-flow/${receiver_address}/${asset_id}/`, params, ... requestConfig })  
-  return v1AsaInboxesSummarySendFlowReadQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1AsaInboxesSummarySendFlowReadQueryOptions({ asset_id, receiver_address, params }: { asset_id: V1AsaInboxesSummarySendFlowReadPathParams["asset_id"]; receiver_address: V1AsaInboxesSummarySendFlowReadPathParams["receiver_address"]; params?: V1AsaInboxesSummarySendFlowReadQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

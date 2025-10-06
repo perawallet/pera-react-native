@@ -10,10 +10,26 @@ import { TouchableOpacity, View } from 'react-native';
 import SwitchIcon from '../../../../assets/icons/switch.svg';
 import SlidersIcon from '../../../../assets/icons/sliders.svg';
 import CurrencyInput from '../../common/currency-input/CurrencyInput';
+import { useV1AssetsList } from '@perawallet/core';
 
 const PairSelectionPanel = () => {
   const styles = useStyles();
   const { theme } = useTheme();
+
+  const { data: algoAssets } = useV1AssetsList({
+    params: {
+        q: 'algo'
+    }
+  })
+
+  const { data: usdcAssets } = useV1AssetsList({
+    params: {
+        q: 'usdc'
+    }
+  })
+
+  const algoAsset = algoAssets?.results?.length ? algoAssets.results.at(0) : null
+  const usdcAsset = usdcAssets?.results?.length ? usdcAssets.results.at(0) : null
 
   //TODO: some or all of these should probably come from either an account hook, the state store or a calculation
   const [sendAmount, setSendAmount] = useState('0.00');
@@ -62,7 +78,7 @@ const PairSelectionPanel = () => {
               value={receiveAmountUSD}
             />
           </PeraView>
-          <AssetSelection name="ALGO" />
+          {algoAsset && <AssetSelection asset={algoAsset} />}
         </PeraView>
       </PeraView>
       <View style={styles.floatButtonContainer}>
@@ -109,7 +125,7 @@ const PairSelectionPanel = () => {
               value={receiveAmountUSD}
             />
           </PeraView>
-          <AssetSelection name="USDC" />
+          {usdcAsset && <AssetSelection asset={usdcAsset} />}
         </PeraView>
       </PeraView>
     </PeraView>

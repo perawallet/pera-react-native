@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V2DexSwapHistoryListQueryResponse, V2DexSwapHistoryListQueryParams } from "../types/V2DexSwapHistoryList.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v2DexSwapHistoryListQueryResponseSchema } from "../zod/v2DexSwapHistoryListSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v2DexSwapHistoryListSuspenseQueryKey = (params: V2DexSwapHistoryListQueryParams) => [{ url: '/v2/dex-swap/history/' }, ...(params ? [params] : [])] as const
@@ -22,7 +21,7 @@ export async function v2DexSwapHistoryListSuspense({ params }: { params: V2DexSw
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V2DexSwapHistoryListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v2/dex-swap/history/`, params, ... requestConfig })  
-  return v2DexSwapHistoryListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v2DexSwapHistoryListSuspenseQueryOptions({ params }: { params: V2DexSwapHistoryListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

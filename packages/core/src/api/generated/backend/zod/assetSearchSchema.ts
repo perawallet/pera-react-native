@@ -10,7 +10,7 @@ import { z } from "zod";
 export const assetSearchSchema = z.object({
     "asset_id": z.number().int().optional(),
 "name": z.string().min(1).optional(),
-"logo": z.string().url().optional(),
+"logo": z.string().url().nullable().nullish(),
 "verification_tier": z.enum(["verified", "unverified", "suspicious"]),
 "unit_name": z.string().min(1).optional(),
 "collectible": z.lazy(() => collectibleSearchSchema),

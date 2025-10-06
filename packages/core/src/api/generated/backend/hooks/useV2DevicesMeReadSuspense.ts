@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V2DevicesMeReadQueryResponse } from "../types/V2DevicesMeRead.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v2DevicesMeReadQueryResponseSchema } from "../zod/v2DevicesMeReadSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v2DevicesMeReadSuspenseQueryKey = () => [{ url: '/v2/devices/me/' }] as const
@@ -21,7 +20,7 @@ export async function v2DevicesMeReadSuspense(config: Partial<RequestConfig> & {
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V2DevicesMeReadQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v2/devices/me/`, ... requestConfig })  
-  return v2DevicesMeReadQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v2DevicesMeReadSuspenseQueryOptions(config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

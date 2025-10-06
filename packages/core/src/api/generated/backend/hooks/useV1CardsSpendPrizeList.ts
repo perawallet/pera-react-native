@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1CardsSpendPrizeListQueryResponse } from "../types/V1CardsSpendPrizeList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1CardsSpendPrizeListQueryResponseSchema } from "../zod/v1CardsSpendPrizeListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1CardsSpendPrizeListQueryKey = () => [{ url: '/v1/cards/spend-prize/' }] as const
@@ -21,7 +20,7 @@ export async function v1CardsSpendPrizeList(config: Partial<RequestConfig> & { c
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1CardsSpendPrizeListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/cards/spend-prize/`, ... requestConfig })  
-  return v1CardsSpendPrizeListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1CardsSpendPrizeListQueryOptions(config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

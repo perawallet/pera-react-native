@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V2DexSwapTopPairsListQueryResponse, V2DexSwapTopPairsListQueryParams } from "../types/V2DexSwapTopPairsList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v2DexSwapTopPairsListQueryResponseSchema } from "../zod/v2DexSwapTopPairsListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v2DexSwapTopPairsListQueryKey = (params?: V2DexSwapTopPairsListQueryParams) => [{ url: '/v2/dex-swap/top-pairs/' }, ...(params ? [params] : [])] as const
@@ -22,7 +21,7 @@ export async function v2DexSwapTopPairsList({ params }: { params?: V2DexSwapTopP
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V2DexSwapTopPairsListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v2/dex-swap/top-pairs/`, params, ... requestConfig })  
-  return v2DexSwapTopPairsListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v2DexSwapTopPairsListQueryOptions({ params }: { params?: V2DexSwapTopPairsListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

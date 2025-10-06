@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1AssetsReadQueryResponse, V1AssetsReadPathParams } from "../types/V1AssetsRead.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1AssetsReadQueryResponseSchema } from "../zod/v1AssetsReadSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1AssetsReadQueryKey = ({ asset_id }: { asset_id: V1AssetsReadPathParams["asset_id"] }) => [{ url: '/v1/assets/:asset_id/', params: {asset_id:asset_id} }] as const
@@ -23,7 +22,7 @@ export async function v1AssetsRead({ asset_id }: { asset_id: V1AssetsReadPathPar
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1AssetsReadQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/assets/${asset_id}/`, ... requestConfig })  
-  return v1AssetsReadQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1AssetsReadQueryOptions({ asset_id }: { asset_id: V1AssetsReadPathParams["asset_id"] }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

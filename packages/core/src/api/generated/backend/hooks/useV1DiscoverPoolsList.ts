@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DiscoverPoolsListQueryResponse, V1DiscoverPoolsListQueryParams } from "../types/V1DiscoverPoolsList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1DiscoverPoolsListQueryResponseSchema } from "../zod/v1DiscoverPoolsListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1DiscoverPoolsListQueryKey = (params?: V1DiscoverPoolsListQueryParams) => [{ url: '/v1/discover/pools/' }, ...(params ? [params] : [])] as const
@@ -21,7 +20,7 @@ export async function v1DiscoverPoolsList({ params }: { params?: V1DiscoverPools
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DiscoverPoolsListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/discover/pools/`, params, ... requestConfig })  
-  return v1DiscoverPoolsListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1DiscoverPoolsListQueryOptions({ params }: { params?: V1DiscoverPoolsListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

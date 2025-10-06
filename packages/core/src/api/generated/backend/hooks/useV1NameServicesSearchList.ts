@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1NameServicesSearchListQueryResponse, V1NameServicesSearchListQueryParams } from "../types/V1NameServicesSearchList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1NameServicesSearchListQueryResponseSchema } from "../zod/v1NameServicesSearchListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1NameServicesSearchListQueryKey = (params: V1NameServicesSearchListQueryParams) => [{ url: '/v1/name-services/search/' }, ...(params ? [params] : [])] as const
@@ -21,7 +20,7 @@ export async function v1NameServicesSearchList({ params }: { params: V1NameServi
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1NameServicesSearchListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/name-services/search/`, params, ... requestConfig })  
-  return v1NameServicesSearchListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1NameServicesSearchListQueryOptions({ params }: { params: V1NameServicesSearchListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

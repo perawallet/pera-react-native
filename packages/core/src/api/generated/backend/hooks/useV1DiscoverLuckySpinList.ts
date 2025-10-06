@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DiscoverLuckySpinListQueryResponse, V1DiscoverLuckySpinListQueryParams } from "../types/V1DiscoverLuckySpinList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1DiscoverLuckySpinListQueryResponseSchema } from "../zod/v1DiscoverLuckySpinListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1DiscoverLuckySpinListQueryKey = (params: V1DiscoverLuckySpinListQueryParams) => [{ url: '/v1/discover/lucky-spin/' }, ...(params ? [params] : [])] as const
@@ -22,7 +21,7 @@ export async function v1DiscoverLuckySpinList({ params }: { params: V1DiscoverLu
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DiscoverLuckySpinListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/discover/lucky-spin/`, params, ... requestConfig })  
-  return v1DiscoverLuckySpinListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1DiscoverLuckySpinListQueryOptions({ params }: { params: V1DiscoverLuckySpinListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

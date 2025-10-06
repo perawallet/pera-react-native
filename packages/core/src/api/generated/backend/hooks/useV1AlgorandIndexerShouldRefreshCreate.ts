@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1AlgorandIndexerShouldRefreshCreateMutationRequest, V1AlgorandIndexerShouldRefreshCreateMutationResponse } from "../types/V1AlgorandIndexerShouldRefreshCreate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v1AlgorandIndexerShouldRefreshCreateMutationResponseSchema, v1AlgorandIndexerShouldRefreshCreateMutationRequestSchema } from "../zod/v1AlgorandIndexerShouldRefreshCreateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v1AlgorandIndexerShouldRefreshCreateMutationKey = () => [{ url: '/v1/algorand-indexer/should-refresh/' }] as const
@@ -22,10 +21,10 @@ export type V1AlgorandIndexerShouldRefreshCreateMutationKey = ReturnType<typeof 
 export async function v1AlgorandIndexerShouldRefreshCreate({ data }: { data: V1AlgorandIndexerShouldRefreshCreateMutationRequest }, config: Partial<RequestConfig<V1AlgorandIndexerShouldRefreshCreateMutationRequest>> & { client?: typeof fetch } = {}) {
   const { client: request = fetch, ...requestConfig } = config  
   
-  const requestData = v1AlgorandIndexerShouldRefreshCreateMutationRequestSchema.parse(data)  
+  const requestData = data  
   
   const res = await request<V1AlgorandIndexerShouldRefreshCreateMutationResponse, ResponseErrorConfig<Error>, V1AlgorandIndexerShouldRefreshCreateMutationRequest>({ method : "POST", url : `/v1/algorand-indexer/should-refresh/`, data : requestData, ... requestConfig })  
-  return v1AlgorandIndexerShouldRefreshCreateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

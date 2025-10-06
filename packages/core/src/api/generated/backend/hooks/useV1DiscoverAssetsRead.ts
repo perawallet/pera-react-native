@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DiscoverAssetsReadQueryResponse, V1DiscoverAssetsReadPathParams } from "../types/V1DiscoverAssetsRead.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1DiscoverAssetsReadQueryResponseSchema } from "../zod/v1DiscoverAssetsReadSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1DiscoverAssetsReadQueryKey = ({ asset_id }: { asset_id: V1DiscoverAssetsReadPathParams["asset_id"] }) => [{ url: '/v1/discover/assets/:asset_id/', params: {asset_id:asset_id} }] as const
@@ -21,7 +20,7 @@ export async function v1DiscoverAssetsRead({ asset_id }: { asset_id: V1DiscoverA
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DiscoverAssetsReadQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/discover/assets/${asset_id}/`, ... requestConfig })  
-  return v1DiscoverAssetsReadQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1DiscoverAssetsReadQueryOptions({ asset_id }: { asset_id: V1DiscoverAssetsReadPathParams["asset_id"] }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

@@ -24,9 +24,9 @@ export type AssetDetailSerializerResponse = {
     */
     name?: string;
     /**
-     * @type string | undefined, uri
+     * @type string, uri
     */
-    readonly logo?: string;
+    readonly logo?: string | null;
     /**
      * @maxLength 255
      * @type string | undefined
@@ -93,9 +93,9 @@ export type AssetDetailSerializerResponse = {
     */
     project_name?: string;
     /**
-     * @type string | undefined, uri
+     * @type string, uri
     */
-    readonly logo_svg?: string;
+    readonly logo_svg?: string | null;
     /**
      * @maxLength 255
      * @type string | undefined, uri

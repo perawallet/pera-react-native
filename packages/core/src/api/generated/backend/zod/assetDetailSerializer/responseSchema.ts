@@ -11,7 +11,7 @@ import { z } from "zod";
 export const assetDetailSerializerResponseSchema = z.object({
     "asset_id": z.number().int().min(0).max(9223372036854776000),
 "name": z.string().max(255).optional(),
-"logo": z.string().url().optional(),
+"logo": z.string().url().nullable().nullish(),
 "unit_name": z.string().max(255).optional(),
 "fraction_decimals": z.number().int().min(0).max(2147483647),
 "total": z.string(),
@@ -27,7 +27,7 @@ export const assetDetailSerializerResponseSchema = z.object({
 "labels": z.array(z.lazy(() => assetLabelSchema)).optional(),
 "project_url": z.string().url().max(200).optional(),
 "project_name": z.string().max(255).optional(),
-"logo_svg": z.string().url().optional(),
+"logo_svg": z.string().url().nullable().nullish(),
 "discord_url": z.string().url().max(255).optional(),
 "telegram_url": z.string().url().max(255).optional(),
 "twitter_username": z.string().regex(/^(\w){1,15}$/).max(255).optional(),

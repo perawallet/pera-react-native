@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DiscoverAssetsMarketListQueryResponse, V1DiscoverAssetsMarketListQueryParams } from "../types/V1DiscoverAssetsMarketList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1DiscoverAssetsMarketListQueryResponseSchema } from "../zod/v1DiscoverAssetsMarketListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1DiscoverAssetsMarketListQueryKey = (params: V1DiscoverAssetsMarketListQueryParams) => [{ url: '/v1/discover/assets/market/' }, ...(params ? [params] : [])] as const
@@ -21,7 +20,7 @@ export async function v1DiscoverAssetsMarketList({ params }: { params: V1Discove
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DiscoverAssetsMarketListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/discover/assets/market/`, params, ... requestConfig })  
-  return v1DiscoverAssetsMarketListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1DiscoverAssetsMarketListQueryOptions({ params }: { params: V1DiscoverAssetsMarketListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

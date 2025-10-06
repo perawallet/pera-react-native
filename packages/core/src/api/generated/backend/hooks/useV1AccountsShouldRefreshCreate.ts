@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1AccountsShouldRefreshCreateMutationRequest, V1AccountsShouldRefreshCreateMutationResponse } from "../types/V1AccountsShouldRefreshCreate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v1AccountsShouldRefreshCreateMutationResponseSchema, v1AccountsShouldRefreshCreateMutationRequestSchema } from "../zod/v1AccountsShouldRefreshCreateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v1AccountsShouldRefreshCreateMutationKey = () => [{ url: '/v1/accounts/should-refresh/' }] as const
@@ -22,10 +21,10 @@ export type V1AccountsShouldRefreshCreateMutationKey = ReturnType<typeof v1Accou
 export async function v1AccountsShouldRefreshCreate({ data }: { data: V1AccountsShouldRefreshCreateMutationRequest }, config: Partial<RequestConfig<V1AccountsShouldRefreshCreateMutationRequest>> & { client?: typeof fetch } = {}) {
   const { client: request = fetch, ...requestConfig } = config  
   
-  const requestData = v1AccountsShouldRefreshCreateMutationRequestSchema.parse(data)  
+  const requestData = data  
   
   const res = await request<V1AccountsShouldRefreshCreateMutationResponse, ResponseErrorConfig<Error>, V1AccountsShouldRefreshCreateMutationRequest>({ method : "POST", url : `/v1/accounts/should-refresh/`, data : requestData, ... requestConfig })  
-  return v1AccountsShouldRefreshCreateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

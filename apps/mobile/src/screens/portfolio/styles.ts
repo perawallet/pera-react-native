@@ -40,5 +40,12 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
     primaryCurrency: {
       color: theme.colors.textMain,
     },
+    webview: {
+      flex: 1,
+      paddingHorizontal: theme.spacing.xl,
+    },
+    webviewContent: {
+      flex: 1,
+    }
   };
 });

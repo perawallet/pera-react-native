@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DiscoverPoolsBarsListQueryResponse, V1DiscoverPoolsBarsListPathParams } from "../types/V1DiscoverPoolsBarsList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1DiscoverPoolsBarsListQueryResponseSchema } from "../zod/v1DiscoverPoolsBarsListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1DiscoverPoolsBarsListQueryKey = ({ pool_id }: { pool_id: V1DiscoverPoolsBarsListPathParams["pool_id"] }) => [{ url: '/v1/discover/pools/:pool_id/bars/', params: {pool_id:pool_id} }] as const
@@ -21,7 +20,7 @@ export async function v1DiscoverPoolsBarsList({ pool_id }: { pool_id: V1Discover
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DiscoverPoolsBarsListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/discover/pools/${pool_id}/bars/`, ... requestConfig })  
-  return v1DiscoverPoolsBarsListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1DiscoverPoolsBarsListQueryOptions({ pool_id }: { pool_id: V1DiscoverPoolsBarsListPathParams["pool_id"] }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

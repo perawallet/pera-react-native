@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DiscoverAssetsListQueryResponse } from "../types/V1DiscoverAssetsList.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1DiscoverAssetsListQueryResponseSchema } from "../zod/v1DiscoverAssetsListSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1DiscoverAssetsListSuspenseQueryKey = () => [{ url: '/v1/discover/assets/' }] as const
@@ -21,7 +20,7 @@ export async function v1DiscoverAssetsListSuspense(config: Partial<RequestConfig
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DiscoverAssetsListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/discover/assets/`, ... requestConfig })  
-  return v1DiscoverAssetsListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1DiscoverAssetsListSuspenseQueryOptions(config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

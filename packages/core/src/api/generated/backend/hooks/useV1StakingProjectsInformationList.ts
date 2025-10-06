@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1StakingProjectsInformationListQueryResponse } from "../types/V1StakingProjectsInformationList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1StakingProjectsInformationListQueryResponseSchema } from "../zod/v1StakingProjectsInformationListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1StakingProjectsInformationListQueryKey = () => [{ url: '/v1/staking/projects-information/' }] as const
@@ -21,7 +20,7 @@ export async function v1StakingProjectsInformationList(config: Partial<RequestCo
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1StakingProjectsInformationListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/staking/projects-information/`, ... requestConfig })  
-  return v1StakingProjectsInformationListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1StakingProjectsInformationListQueryOptions(config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

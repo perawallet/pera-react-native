@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1OnrampServicesMeldRedirectToFluidmoneyListQueryResponse } from "../types/V1OnrampServicesMeldRedirectToFluidmoneyList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1OnrampServicesMeldRedirectToFluidmoneyListQueryResponseSchema } from "../zod/v1OnrampServicesMeldRedirectToFluidmoneyListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1OnrampServicesMeldRedirectToFluidmoneyListQueryKey = () => [{ url: '/v1/onramp-services/meld/redirect-to-fluidmoney/' }] as const
@@ -21,7 +20,7 @@ export async function v1OnrampServicesMeldRedirectToFluidmoneyList(config: Parti
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1OnrampServicesMeldRedirectToFluidmoneyListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/onramp-services/meld/redirect-to-fluidmoney/`, ... requestConfig })  
-  return v1OnrampServicesMeldRedirectToFluidmoneyListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1OnrampServicesMeldRedirectToFluidmoneyListQueryOptions(config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

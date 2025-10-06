@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DevicesAssetsAddToPriceWatchAssetsCreateMutationRequest, V1DevicesAssetsAddToPriceWatchAssetsCreateMutationResponse, V1DevicesAssetsAddToPriceWatchAssetsCreatePathParams } from "../types/V1DevicesAssetsAddToPriceWatchAssetsCreate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v1DevicesAssetsAddToPriceWatchAssetsCreateMutationResponseSchema, v1DevicesAssetsAddToPriceWatchAssetsCreateMutationRequestSchema } from "../zod/v1DevicesAssetsAddToPriceWatchAssetsCreateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v1DevicesAssetsAddToPriceWatchAssetsCreateMutationKey = () => [{ url: '/v1/devices/:device_id/assets/:asset_id/add-to-price-watch-assets/' }] as const
@@ -22,10 +21,10 @@ export type V1DevicesAssetsAddToPriceWatchAssetsCreateMutationKey = ReturnType<t
 export async function v1DevicesAssetsAddToPriceWatchAssetsCreate({ asset_id, device_id, data }: { asset_id: V1DevicesAssetsAddToPriceWatchAssetsCreatePathParams["asset_id"]; device_id: V1DevicesAssetsAddToPriceWatchAssetsCreatePathParams["device_id"]; data?: V1DevicesAssetsAddToPriceWatchAssetsCreateMutationRequest }, config: Partial<RequestConfig<V1DevicesAssetsAddToPriceWatchAssetsCreateMutationRequest>> & { client?: typeof fetch } = {}) {
   const { client: request = fetch, ...requestConfig } = config  
   
-  const requestData = v1DevicesAssetsAddToPriceWatchAssetsCreateMutationRequestSchema.parse(data)  
+  const requestData = data  
   
   const res = await request<V1DevicesAssetsAddToPriceWatchAssetsCreateMutationResponse, ResponseErrorConfig<Error>, V1DevicesAssetsAddToPriceWatchAssetsCreateMutationRequest>({ method : "POST", url : `/v1/devices/${device_id}/assets/${asset_id}/add-to-price-watch-assets/`, data : requestData, ... requestConfig })  
-  return v1DevicesAssetsAddToPriceWatchAssetsCreateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

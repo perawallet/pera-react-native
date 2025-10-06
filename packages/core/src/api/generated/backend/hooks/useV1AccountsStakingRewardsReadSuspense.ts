@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1AccountsStakingRewardsReadQueryResponse, V1AccountsStakingRewardsReadPathParams } from "../types/V1AccountsStakingRewardsRead.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1AccountsStakingRewardsReadQueryResponseSchema } from "../zod/v1AccountsStakingRewardsReadSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1AccountsStakingRewardsReadSuspenseQueryKey = ({ account_address }: { account_address: V1AccountsStakingRewardsReadPathParams["account_address"] }) => [{ url: '/v1/accounts/:account_address/staking-rewards/', params: {account_address:account_address} }] as const
@@ -21,7 +20,7 @@ export async function v1AccountsStakingRewardsReadSuspense({ account_address }: 
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1AccountsStakingRewardsReadQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/accounts/${account_address}/staking-rewards/`, ... requestConfig })  
-  return v1AccountsStakingRewardsReadQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1AccountsStakingRewardsReadSuspenseQueryOptions({ account_address }: { account_address: V1AccountsStakingRewardsReadPathParams["account_address"] }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1ExplorerChainDynamicsListQueryResponse, V1ExplorerChainDynamicsListQueryParams } from "../types/V1ExplorerChainDynamicsList.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1ExplorerChainDynamicsListQueryResponseSchema } from "../zod/v1ExplorerChainDynamicsListSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1ExplorerChainDynamicsListSuspenseQueryKey = (params?: V1ExplorerChainDynamicsListQueryParams) => [{ url: '/v1/explorer/chain-dynamics/' }, ...(params ? [params] : [])] as const
@@ -23,7 +22,7 @@ export async function v1ExplorerChainDynamicsListSuspense({ params }: { params?:
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1ExplorerChainDynamicsListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/explorer/chain-dynamics/`, params, ... requestConfig })  
-  return v1ExplorerChainDynamicsListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1ExplorerChainDynamicsListSuspenseQueryOptions({ params }: { params?: V1ExplorerChainDynamicsListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

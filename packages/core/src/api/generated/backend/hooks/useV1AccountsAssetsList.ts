@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1AccountsAssetsListQueryResponse, V1AccountsAssetsListPathParams, V1AccountsAssetsListQueryParams } from "../types/V1AccountsAssetsList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1AccountsAssetsListQueryResponseSchema } from "../zod/v1AccountsAssetsListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1AccountsAssetsListQueryKey = ({ account_address }: { account_address: V1AccountsAssetsListPathParams["account_address"] }, params?: V1AccountsAssetsListQueryParams) => [{ url: '/v1/accounts/:account_address/assets/', params: {account_address:account_address} }, ...(params ? [params] : [])] as const
@@ -21,7 +20,7 @@ export async function v1AccountsAssetsList({ account_address, params }: { accoun
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1AccountsAssetsListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/accounts/${account_address}/assets/`, params, ... requestConfig })  
-  return v1AccountsAssetsListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1AccountsAssetsListQueryOptions({ account_address, params }: { account_address: V1AccountsAssetsListPathParams["account_address"]; params?: V1AccountsAssetsListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

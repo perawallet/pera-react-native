@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DiscoverAssetsWrappedListQueryResponse } from "../types/V1DiscoverAssetsWrappedList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1DiscoverAssetsWrappedListQueryResponseSchema } from "../zod/v1DiscoverAssetsWrappedListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1DiscoverAssetsWrappedListQueryKey = () => [{ url: '/v1/discover/assets/wrapped/' }] as const
@@ -21,7 +20,7 @@ export async function v1DiscoverAssetsWrappedList(config: Partial<RequestConfig>
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DiscoverAssetsWrappedListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/discover/assets/wrapped/`, ... requestConfig })  
-  return v1DiscoverAssetsWrappedListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1DiscoverAssetsWrappedListQueryOptions(config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1CardsCountryAvailabilityRequestCreateMutationRequest, V1CardsCountryAvailabilityRequestCreateMutationResponse, V1CardsCountryAvailabilityRequestCreate400 } from "../types/V1CardsCountryAvailabilityRequestCreate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v1CardsCountryAvailabilityRequestCreateMutationResponseSchema, v1CardsCountryAvailabilityRequestCreateMutationRequestSchema } from "../zod/v1CardsCountryAvailabilityRequestCreateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v1CardsCountryAvailabilityRequestCreateMutationKey = () => [{ url: '/v1/cards/country-availability-request/' }] as const
@@ -21,10 +20,10 @@ export type V1CardsCountryAvailabilityRequestCreateMutationKey = ReturnType<type
 export async function v1CardsCountryAvailabilityRequestCreate({ data }: { data: V1CardsCountryAvailabilityRequestCreateMutationRequest }, config: Partial<RequestConfig<V1CardsCountryAvailabilityRequestCreateMutationRequest>> & { client?: typeof fetch } = {}) {
   const { client: request = fetch, ...requestConfig } = config  
   
-  const requestData = v1CardsCountryAvailabilityRequestCreateMutationRequestSchema.parse(data)  
+  const requestData = data  
   
   const res = await request<V1CardsCountryAvailabilityRequestCreateMutationResponse, ResponseErrorConfig<V1CardsCountryAvailabilityRequestCreate400>, V1CardsCountryAvailabilityRequestCreateMutationRequest>({ method : "POST", url : `/v1/cards/country-availability-request/`, data : requestData, ... requestConfig })  
-  return v1CardsCountryAvailabilityRequestCreateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

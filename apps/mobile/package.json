@@ -38,6 +38,7 @@
     "react-native-advanced-input-mask": "^1.4.5",
     "react-native-bootsplash": "^6.3.11",
     "react-native-device-info": "^14.0.4",
+    "react-native-error-boundary": "^2.0.0",
     "react-native-gesture-handler": "^2.28.0",
     "react-native-gifted-charts": "^1.4.64",
     "react-native-haptic-feedback": "^2.3.3",

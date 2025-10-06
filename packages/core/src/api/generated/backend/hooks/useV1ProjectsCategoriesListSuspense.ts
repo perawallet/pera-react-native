@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1ProjectsCategoriesListQueryResponse, V1ProjectsCategoriesListQueryParams } from "../types/V1ProjectsCategoriesList.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1ProjectsCategoriesListQueryResponseSchema } from "../zod/v1ProjectsCategoriesListSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1ProjectsCategoriesListSuspenseQueryKey = (params?: V1ProjectsCategoriesListQueryParams) => [{ url: '/v1/projects/categories/' }, ...(params ? [params] : [])] as const
@@ -22,7 +21,7 @@ export async function v1ProjectsCategoriesListSuspense({ params }: { params?: V1
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1ProjectsCategoriesListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/projects/categories/`, params, ... requestConfig })  
-  return v1ProjectsCategoriesListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1ProjectsCategoriesListSuspenseQueryOptions({ params }: { params?: V1ProjectsCategoriesListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

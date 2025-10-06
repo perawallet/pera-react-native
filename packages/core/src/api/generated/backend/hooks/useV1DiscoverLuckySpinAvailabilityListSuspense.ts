@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DiscoverLuckySpinAvailabilityListQueryResponse } from "../types/V1DiscoverLuckySpinAvailabilityList.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1DiscoverLuckySpinAvailabilityListQueryResponseSchema } from "../zod/v1DiscoverLuckySpinAvailabilityListSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1DiscoverLuckySpinAvailabilityListSuspenseQueryKey = () => [{ url: '/v1/discover/lucky-spin/availability/' }] as const
@@ -22,7 +21,7 @@ export async function v1DiscoverLuckySpinAvailabilityListSuspense(config: Partia
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DiscoverLuckySpinAvailabilityListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/discover/lucky-spin/availability/`, ... requestConfig })  
-  return v1DiscoverLuckySpinAvailabilityListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1DiscoverLuckySpinAvailabilityListSuspenseQueryOptions(config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

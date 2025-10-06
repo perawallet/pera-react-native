@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DexSwapAvailableAssetsListQueryResponse, V1DexSwapAvailableAssetsListQueryParams, V1DexSwapAvailableAssetsList503 } from "../types/V1DexSwapAvailableAssetsList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1DexSwapAvailableAssetsListQueryResponseSchema } from "../zod/v1DexSwapAvailableAssetsListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1DexSwapAvailableAssetsListQueryKey = (params: V1DexSwapAvailableAssetsListQueryParams) => [{ url: '/v1/dex-swap/available-assets/' }, ...(params ? [params] : [])] as const
@@ -23,7 +22,7 @@ export async function v1DexSwapAvailableAssetsList({ params }: { params: V1DexSw
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DexSwapAvailableAssetsListQueryResponse, ResponseErrorConfig<V1DexSwapAvailableAssetsList503>, unknown>({ method : "GET", url : `/v1/dex-swap/available-assets/`, params, ... requestConfig })  
-  return v1DexSwapAvailableAssetsListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1DexSwapAvailableAssetsListQueryOptions({ params }: { params: V1DexSwapAvailableAssetsListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

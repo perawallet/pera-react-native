@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1CurrenciesReadQueryResponse, V1CurrenciesReadPathParams } from "../types/V1CurrenciesRead.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1CurrenciesReadQueryResponseSchema } from "../zod/v1CurrenciesReadSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1CurrenciesReadQueryKey = ({ currency_id }: { currency_id: V1CurrenciesReadPathParams["currency_id"] }) => [{ url: '/v1/currencies/:currency_id/', params: {currency_id:currency_id} }] as const
@@ -21,7 +20,7 @@ export async function v1CurrenciesRead({ currency_id }: { currency_id: V1Currenc
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1CurrenciesReadQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/currencies/${currency_id}/`, ... requestConfig })  
-  return v1CurrenciesReadQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1CurrenciesReadQueryOptions({ currency_id }: { currency_id: V1CurrenciesReadPathParams["currency_id"] }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

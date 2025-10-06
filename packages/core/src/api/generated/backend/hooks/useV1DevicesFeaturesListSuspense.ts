@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DevicesFeaturesListQueryResponse, V1DevicesFeaturesListPathParams } from "../types/V1DevicesFeaturesList.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1DevicesFeaturesListQueryResponseSchema } from "../zod/v1DevicesFeaturesListSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1DevicesFeaturesListSuspenseQueryKey = ({ device_id }: { device_id: V1DevicesFeaturesListPathParams["device_id"] }) => [{ url: '/v1/devices/:device_id/features/', params: {device_id:device_id} }] as const
@@ -21,7 +20,7 @@ export async function v1DevicesFeaturesListSuspense({ device_id }: { device_id: 
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DevicesFeaturesListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/devices/${device_id}/features/`, ... requestConfig })  
-  return v1DevicesFeaturesListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1DevicesFeaturesListSuspenseQueryOptions({ device_id }: { device_id: V1DevicesFeaturesListPathParams["device_id"] }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

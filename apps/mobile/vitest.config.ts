@@ -40,9 +40,11 @@ export default defineConfig({
         'src/**/*.style.ts',
         'src/**/styles.ts',
         'src/**/theme.ts',
-        //writing tests for the bootstrapper caused a spurious sytnax error I couldn't figure out
-        //disabling for now
+        'src/components/common/webview/injected-scripts.ts',
+        //TODO: tests for hooks and boostrap was causing weird syntax error I couldn't figure out so disabling
+        //coverage for now
         'src/bootstrap/*',
+        'src/hooks/toast.ts'
       ],
       reporter: ['text', 'html', 'lcov'],
       reportsDirectory: './coverage',

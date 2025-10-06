@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1CollectionSalesGraphListQueryResponse, V1CollectionSalesGraphListPathParams, V1CollectionSalesGraphListQueryParams } from "../types/V1CollectionSalesGraphList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1CollectionSalesGraphListQueryResponseSchema } from "../zod/v1CollectionSalesGraphListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1CollectionSalesGraphListQueryKey = ({ slug }: { slug: V1CollectionSalesGraphListPathParams["slug"] }, params: V1CollectionSalesGraphListQueryParams) => [{ url: '/v1/collection/:slug/sales/graph/', params: {slug:slug} }, ...(params ? [params] : [])] as const
@@ -23,7 +22,7 @@ export async function v1CollectionSalesGraphList({ slug, params }: { slug: V1Col
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1CollectionSalesGraphListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/collection/${slug}/sales/graph/`, params, ... requestConfig })  
-  return v1CollectionSalesGraphListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1CollectionSalesGraphListQueryOptions({ slug, params }: { slug: V1CollectionSalesGraphListPathParams["slug"]; params: V1CollectionSalesGraphListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DiscoverLuckySpinClaimCreateMutationRequest, V1DiscoverLuckySpinClaimCreateMutationResponse } from "../types/V1DiscoverLuckySpinClaimCreate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v1DiscoverLuckySpinClaimCreateMutationResponseSchema, v1DiscoverLuckySpinClaimCreateMutationRequestSchema } from "../zod/v1DiscoverLuckySpinClaimCreateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v1DiscoverLuckySpinClaimCreateMutationKey = () => [{ url: '/v1/discover/lucky-spin/claim/' }] as const
@@ -21,10 +20,10 @@ export type V1DiscoverLuckySpinClaimCreateMutationKey = ReturnType<typeof v1Disc
 export async function v1DiscoverLuckySpinClaimCreate({ data }: { data: V1DiscoverLuckySpinClaimCreateMutationRequest }, config: Partial<RequestConfig<V1DiscoverLuckySpinClaimCreateMutationRequest>> & { client?: typeof fetch } = {}) {
   const { client: request = fetch, ...requestConfig } = config  
   
-  const requestData = v1DiscoverLuckySpinClaimCreateMutationRequestSchema.parse(data)  
+  const requestData = data  
   
   const res = await request<V1DiscoverLuckySpinClaimCreateMutationResponse, ResponseErrorConfig<Error>, V1DiscoverLuckySpinClaimCreateMutationRequest>({ method : "POST", url : `/v1/discover/lucky-spin/claim/`, data : requestData, ... requestConfig })  
-  return v1DiscoverLuckySpinClaimCreateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

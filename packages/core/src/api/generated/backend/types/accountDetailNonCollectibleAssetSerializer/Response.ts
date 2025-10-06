@@ -44,9 +44,9 @@ export type AccountDetailNonCollectibleAssetSerializerResponse = {
     */
     type?: AccountDetailNonCollectibleAssetSerializerResponseTypeEnum;
     /**
-     * @type string | undefined, uri
+     * @type string, uri
     */
-    readonly logo?: string;
+    readonly logo?: string | null;
     /**
      * @type string | undefined
     */

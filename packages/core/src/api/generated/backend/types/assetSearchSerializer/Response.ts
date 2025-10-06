@@ -21,9 +21,9 @@ export type AssetSearchSerializerResponse = {
     */
     readonly name?: string;
     /**
-     * @type string | undefined, uri
+     * @type string, uri
     */
-    readonly logo?: string;
+    readonly logo?: string | null;
     /**
      * @type string
     */

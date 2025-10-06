@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1OnrampServicesMeldRedirectToFluidmoneyCreateMutationResponse } from "../types/V1OnrampServicesMeldRedirectToFluidmoneyCreate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v1OnrampServicesMeldRedirectToFluidmoneyCreateMutationResponseSchema } from "../zod/v1OnrampServicesMeldRedirectToFluidmoneyCreateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v1OnrampServicesMeldRedirectToFluidmoneyCreateMutationKey = () => [{ url: '/v1/onramp-services/meld/redirect-to-fluidmoney/' }] as const
@@ -21,7 +20,7 @@ export async function v1OnrampServicesMeldRedirectToFluidmoneyCreate(config: Par
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1OnrampServicesMeldRedirectToFluidmoneyCreateMutationResponse, ResponseErrorConfig<Error>, unknown>({ method : "POST", url : `/v1/onramp-services/meld/redirect-to-fluidmoney/`, ... requestConfig })  
-  return v1OnrampServicesMeldRedirectToFluidmoneyCreateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

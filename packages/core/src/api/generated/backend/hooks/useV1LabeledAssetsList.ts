@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1LabeledAssetsListQueryResponse, V1LabeledAssetsListQueryParams } from "../types/V1LabeledAssetsList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1LabeledAssetsListQueryResponseSchema } from "../zod/v1LabeledAssetsListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1LabeledAssetsListQueryKey = (params?: V1LabeledAssetsListQueryParams) => [{ url: '/v1/labeled-assets/' }, ...(params ? [params] : [])] as const
@@ -24,7 +23,7 @@ export async function v1LabeledAssetsList({ params }: { params?: V1LabeledAssets
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1LabeledAssetsListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/labeled-assets/`, params, ... requestConfig })  
-  return v1LabeledAssetsListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1LabeledAssetsListQueryOptions({ params }: { params?: V1LabeledAssetsListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DevicesUpdateLastSeenNotificationUpdateMutationRequest, V1DevicesUpdateLastSeenNotificationUpdateMutationResponse, V1DevicesUpdateLastSeenNotificationUpdatePathParams } from "../types/V1DevicesUpdateLastSeenNotificationUpdate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v1DevicesUpdateLastSeenNotificationUpdateMutationResponseSchema, v1DevicesUpdateLastSeenNotificationUpdateMutationRequestSchema } from "../zod/v1DevicesUpdateLastSeenNotificationUpdateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v1DevicesUpdateLastSeenNotificationUpdateMutationKey = () => [{ url: '/v1/devices/:device_id/update-last-seen-notification/' }] as const
@@ -20,10 +19,10 @@ export type V1DevicesUpdateLastSeenNotificationUpdateMutationKey = ReturnType<ty
 export async function v1DevicesUpdateLastSeenNotificationUpdate({ device_id, data }: { device_id: V1DevicesUpdateLastSeenNotificationUpdatePathParams["device_id"]; data?: V1DevicesUpdateLastSeenNotificationUpdateMutationRequest }, config: Partial<RequestConfig<V1DevicesUpdateLastSeenNotificationUpdateMutationRequest>> & { client?: typeof fetch } = {}) {
   const { client: request = fetch, ...requestConfig } = config  
   
-  const requestData = v1DevicesUpdateLastSeenNotificationUpdateMutationRequestSchema.parse(data)  
+  const requestData = data  
   
   const res = await request<V1DevicesUpdateLastSeenNotificationUpdateMutationResponse, ResponseErrorConfig<Error>, V1DevicesUpdateLastSeenNotificationUpdateMutationRequest>({ method : "PUT", url : `/v1/devices/${device_id}/update-last-seen-notification/`, data : requestData, ... requestConfig })  
-  return v1DevicesUpdateLastSeenNotificationUpdateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

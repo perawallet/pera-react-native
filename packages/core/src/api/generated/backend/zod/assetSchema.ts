@@ -11,7 +11,7 @@ import { z } from "zod";
 export const assetSchema = z.object({
     "asset_id": z.number().int().min(0).max(9223372036854776000),
 "name": z.string().max(255).optional(),
-"logo": z.string().url().optional(),
+"logo": z.string().url().nullable().nullish(),
 "unit_name": z.string().max(255).optional(),
 "fraction_decimals": z.number().int().min(0).max(2147483647),
 "total": z.string(),

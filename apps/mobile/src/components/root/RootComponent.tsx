@@ -1,4 +1,4 @@
-import { useAppStore, useDevice, usePolling } from '@perawallet/core';
+import { config, useAppStore, useDevice, usePolling } from '@perawallet/core';
 import { useEffect, useMemo, useRef } from 'react';
 import { AppState, StatusBar, useColorScheme, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -8,12 +8,16 @@ import { ThemeProvider } from '@rneui/themed';
 import { useStyles } from './styles';
 import PeraView from '../../components/common/view/PeraView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import ErrorBoundary from 'react-native-error-boundary';
+import useToast from '../../hooks/toast';
+import { useIsDarkMode } from '../../hooks/theme';
 
 const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
   const insets = useSafeAreaInsets();
   const styles = useStyles(insets);
   const network = useAppStore(state => state.network);
   const navTheme = getNavigationTheme(isDarkMode ? 'dark' : 'light');
+  const { showToast } = useToast()
 
   const networkBarStyle = useMemo(() => {
     if (network === 'testnet') {
@@ -22,25 +26,29 @@ const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
     return styles.mainnetBar;
   }, [network, styles.testnetBar, styles.mainnetBar]);
 
+  const showError = (error: any) => {
+    showToast({
+      title: 'Error',
+      body: config.debugEnabled ? `Details: ${error}` : "An error has occured, please try again.",
+      type: 'error'
+    })
+  }
+
   return (
-    <PeraView style={styles.container}>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <View style={networkBarStyle} />
-      <GestureHandlerRootView>
-        <MainRoutes theme={navTheme} />
-      </GestureHandlerRootView>
-    </PeraView>
+    <ErrorBoundary onError={showError}>
+      <PeraView style={styles.container}>
+        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+        <View style={networkBarStyle} />
+        <GestureHandlerRootView>
+          <MainRoutes theme={navTheme} />
+        </GestureHandlerRootView>
+      </PeraView>
+    </ErrorBoundary>
   );
 };
 
 export const RootComponent = () => {
-  const themeMode = useAppStore(state => state.theme);
-  const scheme = useColorScheme();
-  const isDarkMode = useMemo(() => {
-    return (
-      themeMode === 'dark' || (themeMode === 'system' && scheme === 'dark')
-    );
-  }, [themeMode, scheme]);
+  const isDarkMode = useIsDarkMode()
 
   const theme = getTheme(isDarkMode ? 'dark' : 'light');
   const { registerDevice } = useDevice();
@@ -76,6 +84,7 @@ export const RootComponent = () => {
   }, []);
 
   return (
+
     <ThemeProvider theme={theme}>
       <RootContentContainer isDarkMode={isDarkMode} />
     </ThemeProvider>

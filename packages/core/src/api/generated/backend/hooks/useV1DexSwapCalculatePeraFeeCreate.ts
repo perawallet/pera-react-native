@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DexSwapCalculatePeraFeeCreateMutationRequest, V1DexSwapCalculatePeraFeeCreateMutationResponse } from "../types/V1DexSwapCalculatePeraFeeCreate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v1DexSwapCalculatePeraFeeCreateMutationResponseSchema, v1DexSwapCalculatePeraFeeCreateMutationRequestSchema } from "../zod/v1DexSwapCalculatePeraFeeCreateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v1DexSwapCalculatePeraFeeCreateMutationKey = () => [{ url: '/v1/dex-swap/calculate-pera-fee/' }] as const
@@ -22,10 +21,10 @@ export type V1DexSwapCalculatePeraFeeCreateMutationKey = ReturnType<typeof v1Dex
 export async function v1DexSwapCalculatePeraFeeCreate({ data }: { data: V1DexSwapCalculatePeraFeeCreateMutationRequest }, config: Partial<RequestConfig<V1DexSwapCalculatePeraFeeCreateMutationRequest>> & { client?: typeof fetch } = {}) {
   const { client: request = fetch, ...requestConfig } = config  
   
-  const requestData = v1DexSwapCalculatePeraFeeCreateMutationRequestSchema.parse(data)  
+  const requestData = data  
   
   const res = await request<V1DexSwapCalculatePeraFeeCreateMutationResponse, ResponseErrorConfig<Error>, V1DexSwapCalculatePeraFeeCreateMutationRequest>({ method : "POST", url : `/v1/dex-swap/calculate-pera-fee/`, data : requestData, ... requestConfig })  
-  return v1DexSwapCalculatePeraFeeCreateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

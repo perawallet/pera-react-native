@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1BackupsReadQueryResponse, V1BackupsReadPathParams } from "../types/V1BackupsRead.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1BackupsReadQueryResponseSchema } from "../zod/v1BackupsReadSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1BackupsReadSuspenseQueryKey = ({ id }: { id: V1BackupsReadPathParams["id"] }) => [{ url: '/v1/backups/:id/', params: {id:id} }] as const
@@ -23,7 +22,7 @@ export async function v1BackupsReadSuspense({ id }: { id: V1BackupsReadPathParam
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1BackupsReadQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/backups/${id}/`, ... requestConfig })  
-  return v1BackupsReadQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1BackupsReadSuspenseQueryOptions({ id }: { id: V1BackupsReadPathParams["id"] }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

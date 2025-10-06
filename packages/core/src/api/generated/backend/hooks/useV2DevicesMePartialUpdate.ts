@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V2DevicesMePartialUpdateMutationRequest, V2DevicesMePartialUpdateMutationResponse, V2DevicesMePartialUpdateHeaderParams } from "../types/V2DevicesMePartialUpdate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v2DevicesMePartialUpdateMutationResponseSchema, v2DevicesMePartialUpdateMutationRequestSchema } from "../zod/v2DevicesMePartialUpdateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v2DevicesMePartialUpdateMutationKey = () => [{ url: '/v2/devices/me/' }] as const
@@ -21,10 +20,10 @@ export type V2DevicesMePartialUpdateMutationKey = ReturnType<typeof v2DevicesMeP
 export async function v2DevicesMePartialUpdate({ data, headers }: { data: V2DevicesMePartialUpdateMutationRequest; headers?: V2DevicesMePartialUpdateHeaderParams }, config: Partial<RequestConfig<V2DevicesMePartialUpdateMutationRequest>> & { client?: typeof fetch } = {}) {
   const { client: request = fetch, ...requestConfig } = config  
   
-  const requestData = v2DevicesMePartialUpdateMutationRequestSchema.parse(data)  
+  const requestData = data  
   
   const res = await request<V2DevicesMePartialUpdateMutationResponse, ResponseErrorConfig<Error>, V2DevicesMePartialUpdateMutationRequest>({ method : "PATCH", url : `/v2/devices/me/`, data : requestData, ... requestConfig, headers : { ...headers, ...requestConfig.headers } })  
-  return v2DevicesMePartialUpdateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

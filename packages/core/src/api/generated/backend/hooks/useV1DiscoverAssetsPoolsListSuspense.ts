@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DiscoverAssetsPoolsListQueryResponse, V1DiscoverAssetsPoolsListPathParams } from "../types/V1DiscoverAssetsPoolsList.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1DiscoverAssetsPoolsListQueryResponseSchema } from "../zod/v1DiscoverAssetsPoolsListSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1DiscoverAssetsPoolsListSuspenseQueryKey = ({ asset_id }: { asset_id: V1DiscoverAssetsPoolsListPathParams["asset_id"] }) => [{ url: '/v1/discover/assets/:asset_id/pools/', params: {asset_id:asset_id} }] as const
@@ -22,7 +21,7 @@ export async function v1DiscoverAssetsPoolsListSuspense({ asset_id }: { asset_id
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DiscoverAssetsPoolsListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/discover/assets/${asset_id}/pools/`, ... requestConfig })  
-  return v1DiscoverAssetsPoolsListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1DiscoverAssetsPoolsListSuspenseQueryOptions({ asset_id }: { asset_id: V1DiscoverAssetsPoolsListPathParams["asset_id"] }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

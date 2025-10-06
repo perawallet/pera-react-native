@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1AccountsCreatedNonCollectibleAssetsListQueryResponse, V1AccountsCreatedNonCollectibleAssetsListPathParams, V1AccountsCreatedNonCollectibleAssetsListQueryParams } from "../types/V1AccountsCreatedNonCollectibleAssetsList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1AccountsCreatedNonCollectibleAssetsListQueryResponseSchema } from "../zod/v1AccountsCreatedNonCollectibleAssetsListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1AccountsCreatedNonCollectibleAssetsListQueryKey = ({ account_address }: { account_address: V1AccountsCreatedNonCollectibleAssetsListPathParams["account_address"] }, params?: V1AccountsCreatedNonCollectibleAssetsListQueryParams) => [{ url: '/v1/accounts/:account_address/created-non-collectible-assets/', params: {account_address:account_address} }, ...(params ? [params] : [])] as const
@@ -22,7 +21,7 @@ export async function v1AccountsCreatedNonCollectibleAssetsList({ account_addres
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1AccountsCreatedNonCollectibleAssetsListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/accounts/${account_address}/created-non-collectible-assets/`, params, ... requestConfig })  
-  return v1AccountsCreatedNonCollectibleAssetsListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1AccountsCreatedNonCollectibleAssetsListQueryOptions({ account_address, params }: { account_address: V1AccountsCreatedNonCollectibleAssetsListPathParams["account_address"]; params?: V1AccountsCreatedNonCollectibleAssetsListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

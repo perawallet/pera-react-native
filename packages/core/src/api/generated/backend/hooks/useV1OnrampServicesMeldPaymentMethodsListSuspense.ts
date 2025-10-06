@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1OnrampServicesMeldPaymentMethodsListQueryResponse, V1OnrampServicesMeldPaymentMethodsListQueryParams } from "../types/V1OnrampServicesMeldPaymentMethodsList.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1OnrampServicesMeldPaymentMethodsListQueryResponseSchema } from "../zod/v1OnrampServicesMeldPaymentMethodsListSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1OnrampServicesMeldPaymentMethodsListSuspenseQueryKey = (params: V1OnrampServicesMeldPaymentMethodsListQueryParams) => [{ url: '/v1/onramp-services/meld/payment-methods/' }, ...(params ? [params] : [])] as const
@@ -23,7 +22,7 @@ export async function v1OnrampServicesMeldPaymentMethodsListSuspense({ params }:
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1OnrampServicesMeldPaymentMethodsListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/onramp-services/meld/payment-methods/`, params, ... requestConfig })  
-  return v1OnrampServicesMeldPaymentMethodsListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1OnrampServicesMeldPaymentMethodsListSuspenseQueryOptions({ params }: { params: V1OnrampServicesMeldPaymentMethodsListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

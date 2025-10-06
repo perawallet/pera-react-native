@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DevicesAccountsUpdateMutationRequest, V1DevicesAccountsUpdateMutationResponse, V1DevicesAccountsUpdatePathParams } from "../types/V1DevicesAccountsUpdate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v1DevicesAccountsUpdateMutationResponseSchema, v1DevicesAccountsUpdateMutationRequestSchema } from "../zod/v1DevicesAccountsUpdateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v1DevicesAccountsUpdateMutationKey = () => [{ url: '/v1/devices/:device_id/accounts/:address/' }] as const
@@ -20,10 +19,10 @@ export type V1DevicesAccountsUpdateMutationKey = ReturnType<typeof v1DevicesAcco
 export async function v1DevicesAccountsUpdate({ address, device_id, data }: { address: V1DevicesAccountsUpdatePathParams["address"]; device_id: V1DevicesAccountsUpdatePathParams["device_id"]; data?: V1DevicesAccountsUpdateMutationRequest }, config: Partial<RequestConfig<V1DevicesAccountsUpdateMutationRequest>> & { client?: typeof fetch } = {}) {
   const { client: request = fetch, ...requestConfig } = config  
   
-  const requestData = v1DevicesAccountsUpdateMutationRequestSchema.parse(data)  
+  const requestData = data  
   
   const res = await request<V1DevicesAccountsUpdateMutationResponse, ResponseErrorConfig<Error>, V1DevicesAccountsUpdateMutationRequest>({ method : "PUT", url : `/v1/devices/${device_id}/accounts/${address}/`, data : requestData, ... requestConfig })  
-  return v1DevicesAccountsUpdateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

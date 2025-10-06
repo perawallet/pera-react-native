@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DevicesNotificationStatusListQueryResponse, V1DevicesNotificationStatusListPathParams } from "../types/V1DevicesNotificationStatusList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1DevicesNotificationStatusListQueryResponseSchema } from "../zod/v1DevicesNotificationStatusListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1DevicesNotificationStatusListQueryKey = ({ device_id }: { device_id: V1DevicesNotificationStatusListPathParams["device_id"] }) => [{ url: '/v1/devices/:device_id/notification-status/', params: {device_id:device_id} }] as const
@@ -21,7 +20,7 @@ export async function v1DevicesNotificationStatusList({ device_id }: { device_id
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DevicesNotificationStatusListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/devices/${device_id}/notification-status/`, ... requestConfig })  
-  return v1DevicesNotificationStatusListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1DevicesNotificationStatusListQueryOptions({ device_id }: { device_id: V1DevicesNotificationStatusListPathParams["device_id"] }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

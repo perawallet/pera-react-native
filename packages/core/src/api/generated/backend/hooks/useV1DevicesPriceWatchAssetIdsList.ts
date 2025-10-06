@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DevicesPriceWatchAssetIdsListQueryResponse, V1DevicesPriceWatchAssetIdsListPathParams } from "../types/V1DevicesPriceWatchAssetIdsList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1DevicesPriceWatchAssetIdsListQueryResponseSchema } from "../zod/v1DevicesPriceWatchAssetIdsListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1DevicesPriceWatchAssetIdsListQueryKey = ({ device_id }: { device_id: V1DevicesPriceWatchAssetIdsListPathParams["device_id"] }) => [{ url: '/v1/devices/:device_id/price-watch-asset-ids/', params: {device_id:device_id} }] as const
@@ -23,7 +22,7 @@ export async function v1DevicesPriceWatchAssetIdsList({ device_id }: { device_id
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DevicesPriceWatchAssetIdsListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/devices/${device_id}/price-watch-asset-ids/`, ... requestConfig })  
-  return v1DevicesPriceWatchAssetIdsListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1DevicesPriceWatchAssetIdsListQueryOptions({ device_id }: { device_id: V1DevicesPriceWatchAssetIdsListPathParams["device_id"] }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DiscoverAlgoReadQueryResponse } from "../types/V1DiscoverAlgoRead.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1DiscoverAlgoReadQueryResponseSchema } from "../zod/v1DiscoverAlgoReadSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1DiscoverAlgoReadSuspenseQueryKey = () => [{ url: '/v1/discover/algo/' }] as const
@@ -21,7 +20,7 @@ export async function v1DiscoverAlgoReadSuspense(config: Partial<RequestConfig> 
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DiscoverAlgoReadQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/discover/algo/`, ... requestConfig })  
-  return v1DiscoverAlgoReadQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1DiscoverAlgoReadSuspenseQueryOptions(config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

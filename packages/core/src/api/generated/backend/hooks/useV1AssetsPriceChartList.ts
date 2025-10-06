@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1AssetsPriceChartListQueryResponse, V1AssetsPriceChartListQueryParams } from "../types/V1AssetsPriceChartList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1AssetsPriceChartListQueryResponseSchema } from "../zod/v1AssetsPriceChartListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1AssetsPriceChartListQueryKey = (params: V1AssetsPriceChartListQueryParams) => [{ url: '/v1/assets/price-chart/' }, ...(params ? [params] : [])] as const
@@ -23,7 +22,7 @@ export async function v1AssetsPriceChartList({ params }: { params: V1AssetsPrice
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1AssetsPriceChartListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/assets/price-chart/`, params, ... requestConfig })  
-  return v1AssetsPriceChartListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1AssetsPriceChartListQueryOptions({ params }: { params: V1AssetsPriceChartListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

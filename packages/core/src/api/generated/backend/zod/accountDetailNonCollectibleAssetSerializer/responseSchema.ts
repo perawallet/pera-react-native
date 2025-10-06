@@ -13,7 +13,7 @@ export const accountDetailNonCollectibleAssetSerializerResponseSchema = z.object
 "fraction_decimals": z.number().int().min(0).max(2147483647),
 "verification_tier": z.enum(["verified", "unverified", "suspicious"]),
 "type": z.enum(["algo", "standard_asset", "dapp_asset", "collectible"]).optional(),
-"logo": z.string().url().optional(),
+"logo": z.string().url().nullable().nullish(),
 "balance_usd_value": z.string().optional()
     })
 

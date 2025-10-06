@@ -24,9 +24,9 @@ export type Asset = {
     */
     name?: string;
     /**
-     * @type string | undefined, uri
+     * @type string, uri
     */
-    readonly logo?: string;
+    readonly logo?: string | null;
     /**
      * @maxLength 255
      * @type string | undefined

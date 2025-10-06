@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V2AssetsToggleFavoriteCreateMutationRequest, V2AssetsToggleFavoriteCreateMutationResponse, V2AssetsToggleFavoriteCreatePathParams } from "../types/V2AssetsToggleFavoriteCreate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v2AssetsToggleFavoriteCreateMutationResponseSchema, v2AssetsToggleFavoriteCreateMutationRequestSchema } from "../zod/v2AssetsToggleFavoriteCreateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v2AssetsToggleFavoriteCreateMutationKey = () => [{ url: '/v2/assets/:asset_id/toggle-favorite/' }] as const
@@ -22,10 +21,10 @@ export type V2AssetsToggleFavoriteCreateMutationKey = ReturnType<typeof v2Assets
 export async function v2AssetsToggleFavoriteCreate({ asset_id, data }: { asset_id: V2AssetsToggleFavoriteCreatePathParams["asset_id"]; data: V2AssetsToggleFavoriteCreateMutationRequest }, config: Partial<RequestConfig<V2AssetsToggleFavoriteCreateMutationRequest>> & { client?: typeof fetch } = {}) {
   const { client: request = fetch, ...requestConfig } = config  
   
-  const requestData = v2AssetsToggleFavoriteCreateMutationRequestSchema.parse(data)  
+  const requestData = data  
   
   const res = await request<V2AssetsToggleFavoriteCreateMutationResponse, ResponseErrorConfig<Error>, V2AssetsToggleFavoriteCreateMutationRequest>({ method : "POST", url : `/v2/assets/${asset_id}/toggle-favorite/`, data : requestData, ... requestConfig })  
-  return v2AssetsToggleFavoriteCreateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

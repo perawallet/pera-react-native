@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DevicesTriggerNotificationCreateMutationRequest, V1DevicesTriggerNotificationCreateMutationResponse } from "../types/V1DevicesTriggerNotificationCreate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v1DevicesTriggerNotificationCreateMutationResponseSchema, v1DevicesTriggerNotificationCreateMutationRequestSchema } from "../zod/v1DevicesTriggerNotificationCreateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v1DevicesTriggerNotificationCreateMutationKey = () => [{ url: '/v1/devices/trigger-notification/' }] as const
@@ -20,10 +19,10 @@ export type V1DevicesTriggerNotificationCreateMutationKey = ReturnType<typeof v1
 export async function v1DevicesTriggerNotificationCreate({ data }: { data: V1DevicesTriggerNotificationCreateMutationRequest }, config: Partial<RequestConfig<V1DevicesTriggerNotificationCreateMutationRequest>> & { client?: typeof fetch } = {}) {
   const { client: request = fetch, ...requestConfig } = config  
   
-  const requestData = v1DevicesTriggerNotificationCreateMutationRequestSchema.parse(data)  
+  const requestData = data  
   
   const res = await request<V1DevicesTriggerNotificationCreateMutationResponse, ResponseErrorConfig<Error>, V1DevicesTriggerNotificationCreateMutationRequest>({ method : "POST", url : `/v1/devices/trigger-notification/`, data : requestData, ... requestConfig })  
-  return v1DevicesTriggerNotificationCreateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

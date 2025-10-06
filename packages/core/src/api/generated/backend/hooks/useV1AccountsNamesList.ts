@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1AccountsNamesListQueryResponse, V1AccountsNamesListPathParams, V1AccountsNamesListQueryParams } from "../types/V1AccountsNamesList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1AccountsNamesListQueryResponseSchema } from "../zod/v1AccountsNamesListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1AccountsNamesListQueryKey = ({ account_address }: { account_address: V1AccountsNamesListPathParams["account_address"] }, params?: V1AccountsNamesListQueryParams) => [{ url: '/v1/accounts/:account_address/names/', params: {account_address:account_address} }, ...(params ? [params] : [])] as const
@@ -23,7 +22,7 @@ export async function v1AccountsNamesList({ account_address, params }: { account
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1AccountsNamesListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/accounts/${account_address}/names/`, params, ... requestConfig })  
-  return v1AccountsNamesListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1AccountsNamesListQueryOptions({ account_address, params }: { account_address: V1AccountsNamesListPathParams["account_address"]; params?: V1AccountsNamesListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

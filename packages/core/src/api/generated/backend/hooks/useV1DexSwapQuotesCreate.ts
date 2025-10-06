@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DexSwapQuotesCreateMutationRequest, V1DexSwapQuotesCreateMutationResponse, V1DexSwapQuotesCreate503 } from "../types/V1DexSwapQuotesCreate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v1DexSwapQuotesCreateMutationResponseSchema, v1DexSwapQuotesCreateMutationRequestSchema } from "../zod/v1DexSwapQuotesCreateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v1DexSwapQuotesCreateMutationKey = () => [{ url: '/v1/dex-swap/quotes/' }] as const
@@ -22,10 +21,10 @@ export type V1DexSwapQuotesCreateMutationKey = ReturnType<typeof v1DexSwapQuotes
 export async function v1DexSwapQuotesCreate({ data }: { data: V1DexSwapQuotesCreateMutationRequest }, config: Partial<RequestConfig<V1DexSwapQuotesCreateMutationRequest>> & { client?: typeof fetch } = {}) {
   const { client: request = fetch, ...requestConfig } = config  
   
-  const requestData = v1DexSwapQuotesCreateMutationRequestSchema.parse(data)  
+  const requestData = data  
   
   const res = await request<V1DexSwapQuotesCreateMutationResponse, ResponseErrorConfig<V1DexSwapQuotesCreate503>, V1DexSwapQuotesCreateMutationRequest>({ method : "POST", url : `/v1/dex-swap/quotes/`, data : requestData, ... requestConfig })  
-  return v1DexSwapQuotesCreateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

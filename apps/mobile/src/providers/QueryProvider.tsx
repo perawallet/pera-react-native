@@ -3,16 +3,25 @@ import {
   PersistQueryClientProvider,
   PersistQueryClientRootOptions,
 } from '@tanstack/react-query-persist-client';
-import { OmitKeyof, QueryClient } from '@tanstack/react-query';
+import { OmitKeyof, QueryCache, QueryClient } from '@tanstack/react-query';
 
-//TODO: we'll want to inject headers here too probably
+const cache = new QueryCache({
+  onError: (error) => {
+    console.log('An error has occurred:', error)
+  }
+})
 const queryClient = new QueryClient({
+  queryCache: cache,
   defaultOptions: {
     queries: {
       gcTime: 1000 * 60 * 60 * 24,
       staleTime: 1000 * 30,
       retry: 2,
     },
+    mutations: {
+      //TODO do we want to enable throwOnError?
+      //throwOnError: true
+    }
   },
 });
 

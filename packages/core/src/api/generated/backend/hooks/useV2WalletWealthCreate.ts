@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V2WalletWealthCreateMutationRequest, V2WalletWealthCreateMutationResponse } from "../types/V2WalletWealthCreate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v2WalletWealthCreateMutationResponseSchema, v2WalletWealthCreateMutationRequestSchema } from "../zod/v2WalletWealthCreateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v2WalletWealthCreateMutationKey = () => [{ url: '/v2/wallet/wealth/' }] as const
@@ -20,10 +19,10 @@ export type V2WalletWealthCreateMutationKey = ReturnType<typeof v2WalletWealthCr
 export async function v2WalletWealthCreate({ data }: { data: V2WalletWealthCreateMutationRequest }, config: Partial<RequestConfig<V2WalletWealthCreateMutationRequest>> & { client?: typeof fetch } = {}) {
   const { client: request = fetch, ...requestConfig } = config  
   
-  const requestData = v2WalletWealthCreateMutationRequestSchema.parse(data)  
+  const requestData = data  
   
   const res = await request<V2WalletWealthCreateMutationResponse, ResponseErrorConfig<Error>, V2WalletWealthCreateMutationRequest>({ method : "POST", url : `/v2/wallet/wealth/`, data : requestData, ... requestConfig })  
-  return v2WalletWealthCreateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

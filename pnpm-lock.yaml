@@ -9,15 +9,39 @@ catalogs:
     '@algorandfoundation/algokit-utils':
       specifier: ^9.1.2
       version: 9.1.2
+    '@algorandfoundation/xhd-wallet-api':
+      specifier: ^1.0.3
+      version: 1.0.3
     '@babel/runtime':
       specifier: ^7.28.4
       version: 7.28.4
+    '@kubb/cli':
+      specifier: ^3.18.3
+      version: 3.18.3
     '@kubb/core':
       specifier: ^3.18.3
       version: 3.18.3
     '@kubb/plugin-client':
       specifier: ^3.18.3
       version: 3.18.3
+    '@kubb/plugin-msw':
+      specifier: ^3.18.3
+      version: 3.18.3
+    '@kubb/plugin-oas':
+      specifier: ^3.18.3
+      version: 3.18.3
+    '@kubb/plugin-react-query':
+      specifier: ^3.18.3
+      version: 3.18.3
+    '@kubb/plugin-ts':
+      specifier: ^3.18.3
+      version: 3.18.3
+    '@kubb/plugin-zod':
+      specifier: ^3.18.3
+      version: 3.18.3
+    '@tanstack/query-async-storage-persister':
+      specifier: ^5.87.4
+      version: 5.87.4
     '@tanstack/react-query':
       specifier: ^5.87.4
       version: 5.87.4
@@ -197,6 +221,9 @@ importers:
       react-native-device-info:
         specifier: ^14.0.4
         version: 14.0.4(react-native@0.81.1(@babel/core@7.28.4)(@react-native-community/cli@20.0.0(typescript@5.9.2))(@react-native/metro-config@0.81.1(@babel/core@7.28.4))(@types/react@19.1.13)(react@19.1.0))
+      react-native-error-boundary:
+        specifier: ^2.0.0
+        version: 2.0.0(@types/react-native@0.73.0(@babel/core@7.28.4)(@react-native-community/cli@20.0.0(typescript@5.9.2))(@react-native/metro-config@0.81.1(@babel/core@7.28.4))(@types/react@19.1.13)(react@19.1.0))(react-native@0.81.1(@babel/core@7.28.4)(@react-native-community/cli@20.0.0(typescript@5.9.2))(@react-native/metro-config@0.81.1(@babel/core@7.28.4))(@types/react@19.1.13)(react@19.1.0))(react@19.1.0)
       react-native-gesture-handler:
         specifier: ^2.28.0
         version: 2.28.0(react-native@0.81.1(@babel/core@7.28.4)(@react-native-community/cli@20.0.0(typescript@5.9.2))(@react-native/metro-config@0.81.1(@babel/core@7.28.4))(@types/react@19.1.13)(react@19.1.0))(react@19.1.0)
@@ -6446,6 +6473,16 @@ packages:
     resolution: {integrity: sha512-NX0wMAknSDBeFnEnSFQ8kkAcQrFHrG4Cl0mVjoD+0++iaKrOupiGpBXqs8xR0SeJyPC5zpdPl4h/SaBGly6UxA==}
     peerDependencies:
       react-native: '*'
+
+  react-native-error-boundary@2.0.0:
+    resolution: {integrity: sha512-Od5jZH5DEDuxFI1x+AzCwufpMMJleEJAAj5qOBDA6Ez5+EN2rw5/59/uwW4oGMCgjsB6rpx7yIKHCMx5aIlpdQ==}
+    peerDependencies:
+      '@types/react-native': '>=0.57.7'
+      react: '>=16.6.0'
+      react-native: '>=0.57.7'
+    peerDependenciesMeta:
+      '@types/react-native':
+        optional: true
 
   react-native-gesture-handler@2.28.0:
     resolution: {integrity: sha512-0msfJ1vRxXKVgTgvL+1ZOoYw3/0z1R+Ked0+udoJhyplC2jbVKIJ8Z1bzWdpQRCV3QcQ87Op0zJVE5DhKK2A0A==}
@@ -15167,6 +15204,13 @@ snapshots:
   react-native-device-info@14.0.4(react-native@0.81.1(@babel/core@7.28.4)(@react-native-community/cli@20.0.0(typescript@5.9.2))(@react-native/metro-config@0.81.1(@babel/core@7.28.4))(@types/react@19.1.13)(react@19.1.0)):
     dependencies:
       react-native: 0.81.1(@babel/core@7.28.4)(@react-native-community/cli@20.0.0(typescript@5.9.2))(@react-native/metro-config@0.81.1(@babel/core@7.28.4))(@types/react@19.1.13)(react@19.1.0)
+
+  react-native-error-boundary@2.0.0(@types/react-native@0.73.0(@babel/core@7.28.4)(@react-native-community/cli@20.0.0(typescript@5.9.2))(@react-native/metro-config@0.81.1(@babel/core@7.28.4))(@types/react@19.1.13)(react@19.1.0))(react-native@0.81.1(@babel/core@7.28.4)(@react-native-community/cli@20.0.0(typescript@5.9.2))(@react-native/metro-config@0.81.1(@babel/core@7.28.4))(@types/react@19.1.13)(react@19.1.0))(react@19.1.0):
+    dependencies:
+      react: 19.1.0
+      react-native: 0.81.1(@babel/core@7.28.4)(@react-native-community/cli@20.0.0(typescript@5.9.2))(@react-native/metro-config@0.81.1(@babel/core@7.28.4))(@types/react@19.1.13)(react@19.1.0)
+    optionalDependencies:
+      '@types/react-native': 0.73.0(@babel/core@7.28.4)(@react-native-community/cli@20.0.0(typescript@5.9.2))(@react-native/metro-config@0.81.1(@babel/core@7.28.4))(@types/react@19.1.13)(react@19.1.0)
 
   react-native-gesture-handler@2.28.0(react-native@0.81.1(@babel/core@7.28.4)(@react-native-community/cli@20.0.0(typescript@5.9.2))(@react-native/metro-config@0.81.1(@babel/core@7.28.4))(@types/react@19.1.13)(react@19.1.0))(react@19.1.0):
     dependencies:

@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1AssetVerificationsReadQueryResponse, V1AssetVerificationsReadPathParams } from "../types/V1AssetVerificationsRead.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1AssetVerificationsReadQueryResponseSchema } from "../zod/v1AssetVerificationsReadSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1AssetVerificationsReadQueryKey = ({ asset_id }: { asset_id: V1AssetVerificationsReadPathParams["asset_id"] }) => [{ url: '/v1/asset-verifications/:asset_id/', params: {asset_id:asset_id} }] as const
@@ -24,7 +23,7 @@ export async function v1AssetVerificationsRead({ asset_id }: { asset_id: V1Asset
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1AssetVerificationsReadQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/asset-verifications/${asset_id}/`, ... requestConfig })  
-  return v1AssetVerificationsReadQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1AssetVerificationsReadQueryOptions({ asset_id }: { asset_id: V1AssetVerificationsReadPathParams["asset_id"] }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

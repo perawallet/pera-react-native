@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1PublicVerifiedAssetsListQueryResponse, V1PublicVerifiedAssetsListQueryParams } from "../types/V1PublicVerifiedAssetsList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1PublicVerifiedAssetsListQueryResponseSchema } from "../zod/v1PublicVerifiedAssetsListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1PublicVerifiedAssetsListQueryKey = (params?: V1PublicVerifiedAssetsListQueryParams) => [{ url: '/v1/public/verified-assets/' }, ...(params ? [params] : [])] as const
@@ -23,7 +22,7 @@ export async function v1PublicVerifiedAssetsList({ params }: { params?: V1Public
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1PublicVerifiedAssetsListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/public/verified-assets/`, params, ... requestConfig })  
-  return v1PublicVerifiedAssetsListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1PublicVerifiedAssetsListQueryOptions({ params }: { params?: V1PublicVerifiedAssetsListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

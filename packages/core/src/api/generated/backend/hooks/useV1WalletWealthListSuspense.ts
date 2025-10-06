@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1WalletWealthListQueryResponse, V1WalletWealthListQueryParams } from "../types/V1WalletWealthList.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1WalletWealthListQueryResponseSchema } from "../zod/v1WalletWealthListSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1WalletWealthListSuspenseQueryKey = (params: V1WalletWealthListQueryParams) => [{ url: '/v1/wallet/wealth/' }, ...(params ? [params] : [])] as const
@@ -21,7 +20,7 @@ export async function v1WalletWealthListSuspense({ params }: { params: V1WalletW
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1WalletWealthListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/wallet/wealth/`, params, ... requestConfig })  
-  return v1WalletWealthListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1WalletWealthListSuspenseQueryOptions({ params }: { params: V1WalletWealthListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

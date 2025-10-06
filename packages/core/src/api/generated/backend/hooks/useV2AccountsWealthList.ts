@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V2AccountsWealthListQueryResponse, V2AccountsWealthListPathParams, V2AccountsWealthListQueryParams } from "../types/V2AccountsWealthList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v2AccountsWealthListQueryResponseSchema } from "../zod/v2AccountsWealthListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v2AccountsWealthListQueryKey = ({ account_address }: { account_address: V2AccountsWealthListPathParams["account_address"] }, params: V2AccountsWealthListQueryParams) => [{ url: '/v2/accounts/:account_address/wealth/', params: {account_address:account_address} }, ...(params ? [params] : [])] as const
@@ -21,7 +20,7 @@ export async function v2AccountsWealthList({ account_address, params }: { accoun
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V2AccountsWealthListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v2/accounts/${account_address}/wealth/`, params, ... requestConfig })  
-  return v2AccountsWealthListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v2AccountsWealthListQueryOptions({ account_address, params }: { account_address: V2AccountsWealthListPathParams["account_address"]; params: V2AccountsWealthListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

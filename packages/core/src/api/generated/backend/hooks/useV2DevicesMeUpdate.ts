@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V2DevicesMeUpdateMutationRequest, V2DevicesMeUpdateMutationResponse, V2DevicesMeUpdateHeaderParams } from "../types/V2DevicesMeUpdate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v2DevicesMeUpdateMutationResponseSchema, v2DevicesMeUpdateMutationRequestSchema } from "../zod/v2DevicesMeUpdateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v2DevicesMeUpdateMutationKey = () => [{ url: '/v2/devices/me/' }] as const
@@ -21,10 +20,10 @@ export type V2DevicesMeUpdateMutationKey = ReturnType<typeof v2DevicesMeUpdateMu
 export async function v2DevicesMeUpdate({ data, headers }: { data: V2DevicesMeUpdateMutationRequest; headers?: V2DevicesMeUpdateHeaderParams }, config: Partial<RequestConfig<V2DevicesMeUpdateMutationRequest>> & { client?: typeof fetch } = {}) {
   const { client: request = fetch, ...requestConfig } = config  
   
-  const requestData = v2DevicesMeUpdateMutationRequestSchema.parse(data)  
+  const requestData = data  
   
   const res = await request<V2DevicesMeUpdateMutationResponse, ResponseErrorConfig<Error>, V2DevicesMeUpdateMutationRequest>({ method : "PUT", url : `/v2/devices/me/`, data : requestData, ... requestConfig, headers : { ...headers, ...requestConfig.headers } })  
-  return v2DevicesMeUpdateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V2AssetsTogglePriceAlertCreateMutationRequest, V2AssetsTogglePriceAlertCreateMutationResponse, V2AssetsTogglePriceAlertCreatePathParams } from "../types/V2AssetsTogglePriceAlertCreate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v2AssetsTogglePriceAlertCreateMutationResponseSchema, v2AssetsTogglePriceAlertCreateMutationRequestSchema } from "../zod/v2AssetsTogglePriceAlertCreateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v2AssetsTogglePriceAlertCreateMutationKey = () => [{ url: '/v2/assets/:asset_id/toggle-price-alert/' }] as const
@@ -22,10 +21,10 @@ export type V2AssetsTogglePriceAlertCreateMutationKey = ReturnType<typeof v2Asse
 export async function v2AssetsTogglePriceAlertCreate({ asset_id, data }: { asset_id: V2AssetsTogglePriceAlertCreatePathParams["asset_id"]; data: V2AssetsTogglePriceAlertCreateMutationRequest }, config: Partial<RequestConfig<V2AssetsTogglePriceAlertCreateMutationRequest>> & { client?: typeof fetch } = {}) {
   const { client: request = fetch, ...requestConfig } = config  
   
-  const requestData = v2AssetsTogglePriceAlertCreateMutationRequestSchema.parse(data)  
+  const requestData = data  
   
   const res = await request<V2AssetsTogglePriceAlertCreateMutationResponse, ResponseErrorConfig<Error>, V2AssetsTogglePriceAlertCreateMutationRequest>({ method : "POST", url : `/v2/assets/${asset_id}/toggle-price-alert/`, data : requestData, ... requestConfig })  
-  return v2AssetsTogglePriceAlertCreateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

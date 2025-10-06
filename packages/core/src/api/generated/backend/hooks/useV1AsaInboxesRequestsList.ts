@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1AsaInboxesRequestsListQueryResponse } from "../types/V1AsaInboxesRequestsList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1AsaInboxesRequestsListQueryResponseSchema } from "../zod/v1AsaInboxesRequestsListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1AsaInboxesRequestsListQueryKey = () => [{ url: '/v1/asa-inboxes/requests/' }] as const
@@ -23,7 +22,7 @@ export async function v1AsaInboxesRequestsList(config: Partial<RequestConfig> & 
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1AsaInboxesRequestsListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/asa-inboxes/requests/`, ... requestConfig })  
-  return v1AsaInboxesRequestsListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1AsaInboxesRequestsListQueryOptions(config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

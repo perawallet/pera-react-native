@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V2DexSwapProvidersListQueryResponse } from "../types/V2DexSwapProvidersList.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v2DexSwapProvidersListQueryResponseSchema } from "../zod/v2DexSwapProvidersListSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v2DexSwapProvidersListSuspenseQueryKey = () => [{ url: '/v2/dex-swap/providers/' }] as const
@@ -21,7 +20,7 @@ export async function v2DexSwapProvidersListSuspense(config: Partial<RequestConf
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V2DexSwapProvidersListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v2/dex-swap/providers/`, ... requestConfig })  
-  return v2DexSwapProvidersListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v2DexSwapProvidersListSuspenseQueryOptions(config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

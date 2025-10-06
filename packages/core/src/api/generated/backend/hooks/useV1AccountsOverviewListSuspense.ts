@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1AccountsOverviewListQueryResponse, V1AccountsOverviewListPathParams } from "../types/V1AccountsOverviewList.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1AccountsOverviewListQueryResponseSchema } from "../zod/v1AccountsOverviewListSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1AccountsOverviewListSuspenseQueryKey = ({ account_address }: { account_address: V1AccountsOverviewListPathParams["account_address"] }) => [{ url: '/v1/accounts/:account_address/overview/', params: {account_address:account_address} }] as const
@@ -23,7 +22,7 @@ export async function v1AccountsOverviewListSuspense({ account_address }: { acco
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1AccountsOverviewListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/accounts/${account_address}/overview/`, ... requestConfig })  
-  return v1AccountsOverviewListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1AccountsOverviewListSuspenseQueryOptions({ account_address }: { account_address: V1AccountsOverviewListPathParams["account_address"] }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

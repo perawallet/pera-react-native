@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1AccountsFastLookupReadQueryResponse, V1AccountsFastLookupReadPathParams } from "../types/V1AccountsFastLookupRead.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1AccountsFastLookupReadQueryResponseSchema } from "../zod/v1AccountsFastLookupReadSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1AccountsFastLookupReadSuspenseQueryKey = ({ account_address }: { account_address: V1AccountsFastLookupReadPathParams["account_address"] }) => [{ url: '/v1/accounts/fast-lookup/:account_address/', params: {account_address:account_address} }] as const
@@ -23,7 +22,7 @@ export async function v1AccountsFastLookupReadSuspense({ account_address }: { ac
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1AccountsFastLookupReadQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/accounts/fast-lookup/${account_address}/`, ... requestConfig })  
-  return v1AccountsFastLookupReadQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1AccountsFastLookupReadSuspenseQueryOptions({ account_address }: { account_address: V1AccountsFastLookupReadPathParams["account_address"] }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DevicesAssetsPriceWatchAssetStatusListQueryResponse, V1DevicesAssetsPriceWatchAssetStatusListPathParams } from "../types/V1DevicesAssetsPriceWatchAssetStatusList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1DevicesAssetsPriceWatchAssetStatusListQueryResponseSchema } from "../zod/v1DevicesAssetsPriceWatchAssetStatusListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1DevicesAssetsPriceWatchAssetStatusListQueryKey = ({ asset_id, device_id }: { asset_id: V1DevicesAssetsPriceWatchAssetStatusListPathParams["asset_id"]; device_id: V1DevicesAssetsPriceWatchAssetStatusListPathParams["device_id"] }) => [{ url: '/v1/devices/:device_id/assets/:asset_id/price-watch-asset-status/', params: {device_id:device_id,asset_id:asset_id} }] as const
@@ -23,7 +22,7 @@ export async function v1DevicesAssetsPriceWatchAssetStatusList({ asset_id, devic
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DevicesAssetsPriceWatchAssetStatusListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/devices/${device_id}/assets/${asset_id}/price-watch-asset-status/`, ... requestConfig })  
-  return v1DevicesAssetsPriceWatchAssetStatusListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1DevicesAssetsPriceWatchAssetStatusListQueryOptions({ asset_id, device_id }: { asset_id: V1DevicesAssetsPriceWatchAssetStatusListPathParams["asset_id"]; device_id: V1DevicesAssetsPriceWatchAssetStatusListPathParams["device_id"] }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

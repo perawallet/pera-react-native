@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1PublicAssetsListQueryResponse, V1PublicAssetsListQueryParams } from "../types/V1PublicAssetsList.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1PublicAssetsListQueryResponseSchema } from "../zod/v1PublicAssetsListSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1PublicAssetsListSuspenseQueryKey = (params?: V1PublicAssetsListQueryParams) => [{ url: '/v1/public/assets/' }, ...(params ? [params] : [])] as const
@@ -23,7 +22,7 @@ export async function v1PublicAssetsListSuspense({ params }: { params?: V1Public
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1PublicAssetsListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/public/assets/`, params, ... requestConfig })  
-  return v1PublicAssetsListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1PublicAssetsListSuspenseQueryOptions({ params }: { params?: V1PublicAssetsListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DevicesAssetsAddToFavoritesCreateMutationRequest, V1DevicesAssetsAddToFavoritesCreateMutationResponse, V1DevicesAssetsAddToFavoritesCreatePathParams } from "../types/V1DevicesAssetsAddToFavoritesCreate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v1DevicesAssetsAddToFavoritesCreateMutationResponseSchema, v1DevicesAssetsAddToFavoritesCreateMutationRequestSchema } from "../zod/v1DevicesAssetsAddToFavoritesCreateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v1DevicesAssetsAddToFavoritesCreateMutationKey = () => [{ url: '/v1/devices/:device_id/assets/:asset_id/add-to-favorites/' }] as const
@@ -22,10 +21,10 @@ export type V1DevicesAssetsAddToFavoritesCreateMutationKey = ReturnType<typeof v
 export async function v1DevicesAssetsAddToFavoritesCreate({ asset_id, device_id, data }: { asset_id: V1DevicesAssetsAddToFavoritesCreatePathParams["asset_id"]; device_id: V1DevicesAssetsAddToFavoritesCreatePathParams["device_id"]; data?: V1DevicesAssetsAddToFavoritesCreateMutationRequest }, config: Partial<RequestConfig<V1DevicesAssetsAddToFavoritesCreateMutationRequest>> & { client?: typeof fetch } = {}) {
   const { client: request = fetch, ...requestConfig } = config  
   
-  const requestData = v1DevicesAssetsAddToFavoritesCreateMutationRequestSchema.parse(data)  
+  const requestData = data  
   
   const res = await request<V1DevicesAssetsAddToFavoritesCreateMutationResponse, ResponseErrorConfig<Error>, V1DevicesAssetsAddToFavoritesCreateMutationRequest>({ method : "POST", url : `/v1/devices/${device_id}/assets/${asset_id}/add-to-favorites/`, data : requestData, ... requestConfig })  
-  return v1DevicesAssetsAddToFavoritesCreateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1ApplicationsReadQueryResponse, V1ApplicationsReadPathParams } from "../types/V1ApplicationsRead.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1ApplicationsReadQueryResponseSchema } from "../zod/v1ApplicationsReadSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1ApplicationsReadQueryKey = ({ application_id }: { application_id: V1ApplicationsReadPathParams["application_id"] }) => [{ url: '/v1/applications/:application_id/', params: {application_id:application_id} }] as const
@@ -21,7 +20,7 @@ export async function v1ApplicationsRead({ application_id }: { application_id: V
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1ApplicationsReadQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/applications/${application_id}/`, ... requestConfig })  
-  return v1ApplicationsReadQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1ApplicationsReadQueryOptions({ application_id }: { application_id: V1ApplicationsReadPathParams["application_id"] }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

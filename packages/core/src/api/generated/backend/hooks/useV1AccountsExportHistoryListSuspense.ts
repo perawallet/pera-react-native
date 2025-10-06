@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1AccountsExportHistoryListQueryResponse, V1AccountsExportHistoryListPathParams, V1AccountsExportHistoryListQueryParams } from "../types/V1AccountsExportHistoryList.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1AccountsExportHistoryListQueryResponseSchema } from "../zod/v1AccountsExportHistoryListSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1AccountsExportHistoryListSuspenseQueryKey = ({ account_address }: { account_address: V1AccountsExportHistoryListPathParams["account_address"] }, params?: V1AccountsExportHistoryListQueryParams) => [{ url: '/v1/accounts/:account_address/export-history/', params: {account_address:account_address} }, ...(params ? [params] : [])] as const
@@ -23,7 +22,7 @@ export async function v1AccountsExportHistoryListSuspense({ account_address, par
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1AccountsExportHistoryListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/accounts/${account_address}/export-history/`, params, ... requestConfig })  
-  return v1AccountsExportHistoryListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1AccountsExportHistoryListSuspenseQueryOptions({ account_address, params }: { account_address: V1AccountsExportHistoryListPathParams["account_address"]; params?: V1AccountsExportHistoryListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

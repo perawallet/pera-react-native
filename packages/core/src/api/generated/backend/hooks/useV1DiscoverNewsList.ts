@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DiscoverNewsListQueryResponse, V1DiscoverNewsListQueryParams } from "../types/V1DiscoverNewsList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1DiscoverNewsListQueryResponseSchema } from "../zod/v1DiscoverNewsListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1DiscoverNewsListQueryKey = (params?: V1DiscoverNewsListQueryParams) => [{ url: '/v1/discover/news/' }, ...(params ? [params] : [])] as const
@@ -21,7 +20,7 @@ export async function v1DiscoverNewsList({ params }: { params?: V1DiscoverNewsLi
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DiscoverNewsListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/discover/news/`, params, ... requestConfig })  
-  return v1DiscoverNewsListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1DiscoverNewsListQueryOptions({ params }: { params?: V1DiscoverNewsListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

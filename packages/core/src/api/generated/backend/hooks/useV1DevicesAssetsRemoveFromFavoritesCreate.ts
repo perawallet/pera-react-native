@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DevicesAssetsRemoveFromFavoritesCreateMutationRequest, V1DevicesAssetsRemoveFromFavoritesCreateMutationResponse, V1DevicesAssetsRemoveFromFavoritesCreatePathParams } from "../types/V1DevicesAssetsRemoveFromFavoritesCreate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v1DevicesAssetsRemoveFromFavoritesCreateMutationResponseSchema, v1DevicesAssetsRemoveFromFavoritesCreateMutationRequestSchema } from "../zod/v1DevicesAssetsRemoveFromFavoritesCreateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v1DevicesAssetsRemoveFromFavoritesCreateMutationKey = () => [{ url: '/v1/devices/:device_id/assets/:asset_id/remove-from-favorites/' }] as const
@@ -22,10 +21,10 @@ export type V1DevicesAssetsRemoveFromFavoritesCreateMutationKey = ReturnType<typ
 export async function v1DevicesAssetsRemoveFromFavoritesCreate({ asset_id, device_id, data }: { asset_id: V1DevicesAssetsRemoveFromFavoritesCreatePathParams["asset_id"]; device_id: V1DevicesAssetsRemoveFromFavoritesCreatePathParams["device_id"]; data?: V1DevicesAssetsRemoveFromFavoritesCreateMutationRequest }, config: Partial<RequestConfig<V1DevicesAssetsRemoveFromFavoritesCreateMutationRequest>> & { client?: typeof fetch } = {}) {
   const { client: request = fetch, ...requestConfig } = config  
   
-  const requestData = v1DevicesAssetsRemoveFromFavoritesCreateMutationRequestSchema.parse(data)  
+  const requestData = data  
   
   const res = await request<V1DevicesAssetsRemoveFromFavoritesCreateMutationResponse, ResponseErrorConfig<Error>, V1DevicesAssetsRemoveFromFavoritesCreateMutationRequest>({ method : "POST", url : `/v1/devices/${device_id}/assets/${asset_id}/remove-from-favorites/`, data : requestData, ... requestConfig })  
-  return v1DevicesAssetsRemoveFromFavoritesCreateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

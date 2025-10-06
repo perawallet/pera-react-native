@@ -45,9 +45,9 @@ export type AccountDetailAssetSerializerResponse = {
     */
     type?: AccountDetailAssetSerializerResponseTypeEnum;
     /**
-     * @type string | undefined, uri
+     * @type string, uri
     */
-    readonly logo?: string;
+    readonly logo?: string | null;
     /**
      * @type object
     */

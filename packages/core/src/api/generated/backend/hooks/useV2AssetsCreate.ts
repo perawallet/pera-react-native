@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V2AssetsCreateMutationRequest, V2AssetsCreateMutationResponse, V2AssetsCreatePathParams } from "../types/V2AssetsCreate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v2AssetsCreateMutationResponseSchema, v2AssetsCreateMutationRequestSchema } from "../zod/v2AssetsCreateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v2AssetsCreateMutationKey = () => [{ url: '/v2/assets/:asset_id/' }] as const
@@ -22,10 +21,10 @@ export type V2AssetsCreateMutationKey = ReturnType<typeof v2AssetsCreateMutation
 export async function v2AssetsCreate({ asset_id, data }: { asset_id: V2AssetsCreatePathParams["asset_id"]; data: V2AssetsCreateMutationRequest }, config: Partial<RequestConfig<V2AssetsCreateMutationRequest>> & { client?: typeof fetch } = {}) {
   const { client: request = fetch, ...requestConfig } = config  
   
-  const requestData = v2AssetsCreateMutationRequestSchema.parse(data)  
+  const requestData = data  
   
   const res = await request<V2AssetsCreateMutationResponse, ResponseErrorConfig<Error>, V2AssetsCreateMutationRequest>({ method : "POST", url : `/v2/assets/${asset_id}/`, data : requestData, ... requestConfig })  
-  return v2AssetsCreateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

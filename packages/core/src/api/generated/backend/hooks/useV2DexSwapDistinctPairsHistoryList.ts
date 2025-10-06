@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V2DexSwapDistinctPairsHistoryListQueryResponse, V2DexSwapDistinctPairsHistoryListQueryParams } from "../types/V2DexSwapDistinctPairsHistoryList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v2DexSwapDistinctPairsHistoryListQueryResponseSchema } from "../zod/v2DexSwapDistinctPairsHistoryListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v2DexSwapDistinctPairsHistoryListQueryKey = (params: V2DexSwapDistinctPairsHistoryListQueryParams) => [{ url: '/v2/dex-swap/distinct-pairs-history/' }, ...(params ? [params] : [])] as const
@@ -22,7 +21,7 @@ export async function v2DexSwapDistinctPairsHistoryList({ params }: { params: V2
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V2DexSwapDistinctPairsHistoryListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v2/dex-swap/distinct-pairs-history/`, params, ... requestConfig })  
-  return v2DexSwapDistinctPairsHistoryListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v2DexSwapDistinctPairsHistoryListQueryOptions({ params }: { params: V2DexSwapDistinctPairsHistoryListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

@@ -7,7 +7,7 @@ import { z } from "zod";
 
 export const DEXSwapAssetSchema = z.object({
     "asset_id": z.number().int().optional(),
-"logo": z.string().url().optional(),
+"logo": z.string().url().nullable().nullish(),
 "name": z.string().min(1).optional(),
 "unit_name": z.string().min(1).optional(),
 "total": z.string().optional(),

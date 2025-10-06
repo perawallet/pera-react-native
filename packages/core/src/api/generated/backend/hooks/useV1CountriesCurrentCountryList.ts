@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1CountriesCurrentCountryListQueryResponse } from "../types/V1CountriesCurrentCountryList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1CountriesCurrentCountryListQueryResponseSchema } from "../zod/v1CountriesCurrentCountryListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1CountriesCurrentCountryListQueryKey = () => [{ url: '/v1/countries/current-country/' }] as const
@@ -21,7 +20,7 @@ export async function v1CountriesCurrentCountryList(config: Partial<RequestConfi
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1CountriesCurrentCountryListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/countries/current-country/`, ... requestConfig })  
-  return v1CountriesCurrentCountryListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1CountriesCurrentCountryListQueryOptions(config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

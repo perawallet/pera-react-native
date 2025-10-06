@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1PublicAssetVerificationsReadQueryResponse, V1PublicAssetVerificationsReadPathParams } from "../types/V1PublicAssetVerificationsRead.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1PublicAssetVerificationsReadQueryResponseSchema } from "../zod/v1PublicAssetVerificationsReadSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1PublicAssetVerificationsReadSuspenseQueryKey = ({ asset_id }: { asset_id: V1PublicAssetVerificationsReadPathParams["asset_id"] }) => [{ url: '/v1/public/asset-verifications/:asset_id/', params: {asset_id:asset_id} }] as const
@@ -23,7 +22,7 @@ export async function v1PublicAssetVerificationsReadSuspense({ asset_id }: { ass
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1PublicAssetVerificationsReadQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/public/asset-verifications/${asset_id}/`, ... requestConfig })  
-  return v1PublicAssetVerificationsReadQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1PublicAssetVerificationsReadSuspenseQueryOptions({ asset_id }: { asset_id: V1PublicAssetVerificationsReadPathParams["asset_id"] }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DiscoverNftCollectionsReadQueryResponse, V1DiscoverNftCollectionsReadPathParams } from "../types/V1DiscoverNftCollectionsRead.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1DiscoverNftCollectionsReadQueryResponseSchema } from "../zod/v1DiscoverNftCollectionsReadSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1DiscoverNftCollectionsReadQueryKey = ({ slug }: { slug: V1DiscoverNftCollectionsReadPathParams["slug"] }) => [{ url: '/v1/discover/nft/collections/:slug/', params: {slug:slug} }] as const
@@ -21,7 +20,7 @@ export async function v1DiscoverNftCollectionsRead({ slug }: { slug: V1DiscoverN
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DiscoverNftCollectionsReadQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/discover/nft/collections/${slug}/`, ... requestConfig })  
-  return v1DiscoverNftCollectionsReadQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1DiscoverNftCollectionsReadQueryOptions({ slug }: { slug: V1DiscoverNftCollectionsReadPathParams["slug"] }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

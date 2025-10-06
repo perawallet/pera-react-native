@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DevicesFavoriteAssetIdsListQueryResponse, V1DevicesFavoriteAssetIdsListPathParams } from "../types/V1DevicesFavoriteAssetIdsList.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1DevicesFavoriteAssetIdsListQueryResponseSchema } from "../zod/v1DevicesFavoriteAssetIdsListSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1DevicesFavoriteAssetIdsListSuspenseQueryKey = ({ device_id }: { device_id: V1DevicesFavoriteAssetIdsListPathParams["device_id"] }) => [{ url: '/v1/devices/:device_id/favorite-asset-ids/', params: {device_id:device_id} }] as const
@@ -23,7 +22,7 @@ export async function v1DevicesFavoriteAssetIdsListSuspense({ device_id }: { dev
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DevicesFavoriteAssetIdsListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/devices/${device_id}/favorite-asset-ids/`, ... requestConfig })  
-  return v1DevicesFavoriteAssetIdsListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1DevicesFavoriteAssetIdsListSuspenseQueryOptions({ device_id }: { device_id: V1DevicesFavoriteAssetIdsListPathParams["device_id"] }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

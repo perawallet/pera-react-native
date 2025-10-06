@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DiscoverFeaturedProjectsListQueryResponse, V1DiscoverFeaturedProjectsListQueryParams } from "../types/V1DiscoverFeaturedProjectsList.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1DiscoverFeaturedProjectsListQueryResponseSchema } from "../zod/v1DiscoverFeaturedProjectsListSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1DiscoverFeaturedProjectsListSuspenseQueryKey = (params?: V1DiscoverFeaturedProjectsListQueryParams) => [{ url: '/v1/discover/featured-projects/' }, ...(params ? [params] : [])] as const
@@ -21,7 +20,7 @@ export async function v1DiscoverFeaturedProjectsListSuspense({ params }: { param
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DiscoverFeaturedProjectsListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/discover/featured-projects/`, params, ... requestConfig })  
-  return v1DiscoverFeaturedProjectsListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1DiscoverFeaturedProjectsListSuspenseQueryOptions({ params }: { params?: V1DiscoverFeaturedProjectsListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

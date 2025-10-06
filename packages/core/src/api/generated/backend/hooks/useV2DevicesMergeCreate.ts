@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V2DevicesMergeCreateMutationRequest, V2DevicesMergeCreateMutationResponse, V2DevicesMergeCreateHeaderParams } from "../types/V2DevicesMergeCreate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v2DevicesMergeCreateMutationResponseSchema, v2DevicesMergeCreateMutationRequestSchema } from "../zod/v2DevicesMergeCreateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v2DevicesMergeCreateMutationKey = () => [{ url: '/v2/devices/merge/' }] as const
@@ -21,10 +20,10 @@ export type V2DevicesMergeCreateMutationKey = ReturnType<typeof v2DevicesMergeCr
 export async function v2DevicesMergeCreate({ data, headers }: { data: V2DevicesMergeCreateMutationRequest; headers?: V2DevicesMergeCreateHeaderParams }, config: Partial<RequestConfig<V2DevicesMergeCreateMutationRequest>> & { client?: typeof fetch } = {}) {
   const { client: request = fetch, ...requestConfig } = config  
   
-  const requestData = v2DevicesMergeCreateMutationRequestSchema.parse(data)  
+  const requestData = data  
   
   const res = await request<V2DevicesMergeCreateMutationResponse, ResponseErrorConfig<Error>, V2DevicesMergeCreateMutationRequest>({ method : "POST", url : `/v2/devices/merge/`, data : requestData, ... requestConfig, headers : { ...headers, ...requestConfig.headers } })  
-  return v2DevicesMergeCreateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

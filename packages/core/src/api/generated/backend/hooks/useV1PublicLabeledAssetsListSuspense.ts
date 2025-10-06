@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1PublicLabeledAssetsListQueryResponse, V1PublicLabeledAssetsListQueryParams } from "../types/V1PublicLabeledAssetsList.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1PublicLabeledAssetsListQueryResponseSchema } from "../zod/v1PublicLabeledAssetsListSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1PublicLabeledAssetsListSuspenseQueryKey = (params?: V1PublicLabeledAssetsListQueryParams) => [{ url: '/v1/public/labeled-assets/' }, ...(params ? [params] : [])] as const
@@ -23,7 +22,7 @@ export async function v1PublicLabeledAssetsListSuspense({ params }: { params?: V
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1PublicLabeledAssetsListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/public/labeled-assets/`, params, ... requestConfig })  
-  return v1PublicLabeledAssetsListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1PublicLabeledAssetsListSuspenseQueryOptions({ params }: { params?: V1PublicLabeledAssetsListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

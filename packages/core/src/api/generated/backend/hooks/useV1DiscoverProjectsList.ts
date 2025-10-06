@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DiscoverProjectsListQueryResponse, V1DiscoverProjectsListQueryParams } from "../types/V1DiscoverProjectsList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1DiscoverProjectsListQueryResponseSchema } from "../zod/v1DiscoverProjectsListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1DiscoverProjectsListQueryKey = (params: V1DiscoverProjectsListQueryParams) => [{ url: '/v1/discover/projects/' }, ...(params ? [params] : [])] as const
@@ -21,7 +20,7 @@ export async function v1DiscoverProjectsList({ params }: { params: V1DiscoverPro
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DiscoverProjectsListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/discover/projects/`, params, ... requestConfig })  
-  return v1DiscoverProjectsListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1DiscoverProjectsListQueryOptions({ params }: { params: V1DiscoverProjectsListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

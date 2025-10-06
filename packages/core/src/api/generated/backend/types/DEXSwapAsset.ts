@@ -12,9 +12,9 @@ export type DEXSwapAsset = {
     */
     readonly asset_id?: number;
     /**
-     * @type string | undefined, uri
+     * @type string, uri
     */
-    readonly logo?: string;
+    readonly logo?: string | null;
     /**
      * @minLength 1
      * @type string | undefined

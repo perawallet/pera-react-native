@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1CardsFundAddressPartialUpdateMutationRequest, V1CardsFundAddressPartialUpdateMutationResponse, V1CardsFundAddressPartialUpdatePathParams } from "../types/V1CardsFundAddressPartialUpdate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v1CardsFundAddressPartialUpdateMutationResponseSchema, v1CardsFundAddressPartialUpdateMutationRequestSchema } from "../zod/v1CardsFundAddressPartialUpdateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v1CardsFundAddressPartialUpdateMutationKey = () => [{ url: '/v1/cards/fund-address/:address/' }] as const
@@ -20,10 +19,10 @@ export type V1CardsFundAddressPartialUpdateMutationKey = ReturnType<typeof v1Car
 export async function v1CardsFundAddressPartialUpdate({ address, data }: { address: V1CardsFundAddressPartialUpdatePathParams["address"]; data: V1CardsFundAddressPartialUpdateMutationRequest }, config: Partial<RequestConfig<V1CardsFundAddressPartialUpdateMutationRequest>> & { client?: typeof fetch } = {}) {
   const { client: request = fetch, ...requestConfig } = config  
   
-  const requestData = v1CardsFundAddressPartialUpdateMutationRequestSchema.parse(data)  
+  const requestData = data  
   
   const res = await request<V1CardsFundAddressPartialUpdateMutationResponse, ResponseErrorConfig<Error>, V1CardsFundAddressPartialUpdateMutationRequest>({ method : "PATCH", url : `/v1/cards/fund-address/${address}/`, data : requestData, ... requestConfig })  
-  return v1CardsFundAddressPartialUpdateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

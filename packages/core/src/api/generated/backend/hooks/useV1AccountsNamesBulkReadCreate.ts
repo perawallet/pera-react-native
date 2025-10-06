@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1AccountsNamesBulkReadCreateMutationRequest, V1AccountsNamesBulkReadCreateMutationResponse } from "../types/V1AccountsNamesBulkReadCreate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v1AccountsNamesBulkReadCreateMutationResponseSchema, v1AccountsNamesBulkReadCreateMutationRequestSchema } from "../zod/v1AccountsNamesBulkReadCreateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v1AccountsNamesBulkReadCreateMutationKey = () => [{ url: '/v1/accounts/names/bulk-read/' }] as const
@@ -22,10 +21,10 @@ export type V1AccountsNamesBulkReadCreateMutationKey = ReturnType<typeof v1Accou
 export async function v1AccountsNamesBulkReadCreate({ data }: { data: V1AccountsNamesBulkReadCreateMutationRequest }, config: Partial<RequestConfig<V1AccountsNamesBulkReadCreateMutationRequest>> & { client?: typeof fetch } = {}) {
   const { client: request = fetch, ...requestConfig } = config  
   
-  const requestData = v1AccountsNamesBulkReadCreateMutationRequestSchema.parse(data)  
+  const requestData = data  
   
   const res = await request<V1AccountsNamesBulkReadCreateMutationResponse, ResponseErrorConfig<Error>, V1AccountsNamesBulkReadCreateMutationRequest>({ method : "POST", url : `/v1/accounts/names/bulk-read/`, data : requestData, ... requestConfig })  
-  return v1AccountsNamesBulkReadCreateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

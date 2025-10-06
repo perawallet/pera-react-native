@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1CardsFundAddressesListQueryResponse, V1CardsFundAddressesListQueryParams } from "../types/V1CardsFundAddressesList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1CardsFundAddressesListQueryResponseSchema } from "../zod/v1CardsFundAddressesListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1CardsFundAddressesListQueryKey = (params: V1CardsFundAddressesListQueryParams) => [{ url: '/v1/cards/fund-addresses/' }, ...(params ? [params] : [])] as const
@@ -21,7 +20,7 @@ export async function v1CardsFundAddressesList({ params }: { params: V1CardsFund
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1CardsFundAddressesListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/cards/fund-addresses/`, params, ... requestConfig })  
-  return v1CardsFundAddressesListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1CardsFundAddressesListQueryOptions({ params }: { params: V1CardsFundAddressesListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1BackupsUpdateMutationRequest, V1BackupsUpdateMutationResponse, V1BackupsUpdatePathParams, V1BackupsUpdateHeaderParams } from "../types/V1BackupsUpdate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v1BackupsUpdateMutationResponseSchema, v1BackupsUpdateMutationRequestSchema } from "../zod/v1BackupsUpdateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v1BackupsUpdateMutationKey = () => [{ url: '/v1/backups/:id/' }] as const
@@ -22,10 +21,10 @@ export type V1BackupsUpdateMutationKey = ReturnType<typeof v1BackupsUpdateMutati
 export async function v1BackupsUpdate({ id, data, headers }: { id: V1BackupsUpdatePathParams["id"]; data: V1BackupsUpdateMutationRequest; headers: V1BackupsUpdateHeaderParams }, config: Partial<RequestConfig<V1BackupsUpdateMutationRequest>> & { client?: typeof fetch } = {}) {
   const { client: request = fetch, ...requestConfig } = config  
   
-  const requestData = v1BackupsUpdateMutationRequestSchema.parse(data)  
+  const requestData = data  
   
   const res = await request<V1BackupsUpdateMutationResponse, ResponseErrorConfig<Error>, V1BackupsUpdateMutationRequest>({ method : "PUT", url : `/v1/backups/${id}/`, data : requestData, ... requestConfig, headers : { ...headers, ...requestConfig.headers } })  
-  return v1BackupsUpdateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

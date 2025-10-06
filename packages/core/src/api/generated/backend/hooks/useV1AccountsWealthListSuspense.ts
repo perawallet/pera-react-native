@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1AccountsWealthListQueryResponse, V1AccountsWealthListPathParams, V1AccountsWealthListQueryParams } from "../types/V1AccountsWealthList.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1AccountsWealthListQueryResponseSchema } from "../zod/v1AccountsWealthListSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1AccountsWealthListSuspenseQueryKey = ({ account_address }: { account_address: V1AccountsWealthListPathParams["account_address"] }, params: V1AccountsWealthListQueryParams) => [{ url: '/v1/accounts/:account_address/wealth/', params: {account_address:account_address} }, ...(params ? [params] : [])] as const
@@ -21,7 +20,7 @@ export async function v1AccountsWealthListSuspense({ account_address, params }: 
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1AccountsWealthListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/accounts/${account_address}/wealth/`, params, ... requestConfig })  
-  return v1AccountsWealthListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1AccountsWealthListSuspenseQueryOptions({ account_address, params }: { account_address: V1AccountsWealthListPathParams["account_address"]; params: V1AccountsWealthListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

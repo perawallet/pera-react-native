@@ -11,7 +11,7 @@ import { z } from "zod";
 export const assetSerializerResponseSchema = z.object({
     "asset_id": z.number().int().min(0).max(9223372036854776000),
 "name": z.string().max(255).optional(),
-"logo": z.string().url().optional(),
+"logo": z.string().url().nullable().nullish(),
 "unit_name": z.string().max(255).optional(),
 "fraction_decimals": z.number().int().min(0).max(2147483647),
 "total": z.string(),
@@ -20,7 +20,7 @@ export const assetSerializerResponseSchema = z.object({
 "is_deleted": z.boolean(),
 "verification_tier": z.enum(["verified", "unverified", "suspicious"]),
 "explorer_url": z.string().optional(),
-"collectible": z.lazy(() => simpleCollectibleSchema),
+"collectible": z.lazy(() => simpleCollectibleSchema).optional(),
 "creator": z.lazy(() => accountSchema),
 "type": z.enum(["algo", "standard_asset", "dapp_asset", "collectible"]).optional(),
 "category": z.number().int().nullable(),

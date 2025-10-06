@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DevicesSpotBannersListQueryResponse, V1DevicesSpotBannersListPathParams, V1DevicesSpotBannersListQueryParams } from "../types/V1DevicesSpotBannersList.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1DevicesSpotBannersListQueryResponseSchema } from "../zod/v1DevicesSpotBannersListSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1DevicesSpotBannersListSuspenseQueryKey = ({ device_id }: { device_id: V1DevicesSpotBannersListPathParams["device_id"] }, params?: V1DevicesSpotBannersListQueryParams) => [{ url: '/v1/devices/:device_id/spot-banners/', params: {device_id:device_id} }, ...(params ? [params] : [])] as const
@@ -21,7 +20,7 @@ export async function v1DevicesSpotBannersListSuspense({ device_id, params }: { 
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DevicesSpotBannersListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/devices/${device_id}/spot-banners/`, params, ... requestConfig })  
-  return v1DevicesSpotBannersListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1DevicesSpotBannersListSuspenseQueryOptions({ device_id, params }: { device_id: V1DevicesSpotBannersListPathParams["device_id"]; params?: V1DevicesSpotBannersListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

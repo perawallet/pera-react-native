@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DiscoverInfoBannersListQueryResponse, V1DiscoverInfoBannersListQueryParams } from "../types/V1DiscoverInfoBannersList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1DiscoverInfoBannersListQueryResponseSchema } from "../zod/v1DiscoverInfoBannersListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1DiscoverInfoBannersListQueryKey = (params?: V1DiscoverInfoBannersListQueryParams) => [{ url: '/v1/discover/info-banners/' }, ...(params ? [params] : [])] as const
@@ -21,7 +20,7 @@ export async function v1DiscoverInfoBannersList({ params }: { params?: V1Discove
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DiscoverInfoBannersListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/discover/info-banners/`, params, ... requestConfig })  
-  return v1DiscoverInfoBannersListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1DiscoverInfoBannersListQueryOptions({ params }: { params?: V1DiscoverInfoBannersListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

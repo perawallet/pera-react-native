@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DiscoverAssetsTrendingListQueryResponse } from "../types/V1DiscoverAssetsTrendingList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1DiscoverAssetsTrendingListQueryResponseSchema } from "../zod/v1DiscoverAssetsTrendingListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1DiscoverAssetsTrendingListQueryKey = () => [{ url: '/v1/discover/assets/trending/' }] as const
@@ -21,7 +20,7 @@ export async function v1DiscoverAssetsTrendingList(config: Partial<RequestConfig
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DiscoverAssetsTrendingListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/discover/assets/trending/`, ... requestConfig })  
-  return v1DiscoverAssetsTrendingListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1DiscoverAssetsTrendingListQueryOptions(config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

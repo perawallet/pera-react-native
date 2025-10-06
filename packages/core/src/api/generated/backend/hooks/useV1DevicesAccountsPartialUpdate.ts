@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DevicesAccountsPartialUpdateMutationRequest, V1DevicesAccountsPartialUpdateMutationResponse, V1DevicesAccountsPartialUpdatePathParams } from "../types/V1DevicesAccountsPartialUpdate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v1DevicesAccountsPartialUpdateMutationResponseSchema, v1DevicesAccountsPartialUpdateMutationRequestSchema } from "../zod/v1DevicesAccountsPartialUpdateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v1DevicesAccountsPartialUpdateMutationKey = () => [{ url: '/v1/devices/:device_id/accounts/:address/' }] as const
@@ -20,10 +19,10 @@ export type V1DevicesAccountsPartialUpdateMutationKey = ReturnType<typeof v1Devi
 export async function v1DevicesAccountsPartialUpdate({ address, device_id, data }: { address: V1DevicesAccountsPartialUpdatePathParams["address"]; device_id: V1DevicesAccountsPartialUpdatePathParams["device_id"]; data?: V1DevicesAccountsPartialUpdateMutationRequest }, config: Partial<RequestConfig<V1DevicesAccountsPartialUpdateMutationRequest>> & { client?: typeof fetch } = {}) {
   const { client: request = fetch, ...requestConfig } = config  
   
-  const requestData = v1DevicesAccountsPartialUpdateMutationRequestSchema.parse(data)  
+  const requestData = data  
   
   const res = await request<V1DevicesAccountsPartialUpdateMutationResponse, ResponseErrorConfig<Error>, V1DevicesAccountsPartialUpdateMutationRequest>({ method : "PATCH", url : `/v1/devices/${device_id}/accounts/${address}/`, data : requestData, ... requestConfig })  
-  return v1DevicesAccountsPartialUpdateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

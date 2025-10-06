@@ -4,19 +4,20 @@ import { useStyles } from './styles';
 
 import ChevronRight from '../../../../assets/icons/chevron-right.svg';
 import AssetIcon from '../asset-icon/AssetIcon';
+import { AssetSerializerResponse } from '@perawallet/core';
 
 export type AssetSelectionProps = {
-  name: string;
+  asset: AssetSerializerResponse;
 };
 
-const AssetSelection = ({ name }: AssetSelectionProps) => {
+const AssetSelection = ({ asset }: AssetSelectionProps) => {
   const styles = useStyles();
 
   return (
     <PeraView style={styles.container}>
-      <AssetIcon asset={name} />
+      <AssetIcon asset={asset} style={styles.icon}/>
       <Text h4Style={styles.text} h4>
-        {name}
+        {asset.unit_name}
       </Text>
       <ChevronRight />
     </PeraView>

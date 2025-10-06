@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1AccountsReadQueryResponse, V1AccountsReadPathParams } from "../types/V1AccountsRead.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1AccountsReadQueryResponseSchema } from "../zod/v1AccountsReadSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1AccountsReadSuspenseQueryKey = ({ account_address }: { account_address: V1AccountsReadPathParams["account_address"] }) => [{ url: '/v1/accounts/:account_address/', params: {account_address:account_address} }] as const
@@ -21,7 +20,7 @@ export async function v1AccountsReadSuspense({ account_address }: { account_addr
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1AccountsReadQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/accounts/${account_address}/`, ... requestConfig })  
-  return v1AccountsReadQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1AccountsReadSuspenseQueryOptions({ account_address }: { account_address: V1AccountsReadPathParams["account_address"] }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

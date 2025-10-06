@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1CurrenciesListQueryResponse, V1CurrenciesListQueryParams } from "../types/V1CurrenciesList.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1CurrenciesListQueryResponseSchema } from "../zod/v1CurrenciesListSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1CurrenciesListSuspenseQueryKey = (params?: V1CurrenciesListQueryParams) => [{ url: '/v1/currencies/' }, ...(params ? [params] : [])] as const
@@ -21,7 +20,7 @@ export async function v1CurrenciesListSuspense({ params }: { params?: V1Currenci
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1CurrenciesListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/currencies/`, params, ... requestConfig })  
-  return v1CurrenciesListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1CurrenciesListSuspenseQueryOptions({ params }: { params?: V1CurrenciesListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

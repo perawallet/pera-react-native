@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1ProjectsListQueryResponse, V1ProjectsListQueryParams } from "../types/V1ProjectsList.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1ProjectsListQueryResponseSchema } from "../zod/v1ProjectsListSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1ProjectsListSuspenseQueryKey = (params?: V1ProjectsListQueryParams) => [{ url: '/v1/projects/' }, ...(params ? [params] : [])] as const
@@ -21,7 +20,7 @@ export async function v1ProjectsListSuspense({ params }: { params?: V1ProjectsLi
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1ProjectsListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/projects/`, params, ... requestConfig })  
-  return v1ProjectsListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1ProjectsListSuspenseQueryOptions({ params }: { params?: V1ProjectsListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

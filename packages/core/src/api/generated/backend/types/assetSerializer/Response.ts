@@ -24,9 +24,9 @@ export type AssetSerializerResponse = {
     */
     name?: string;
     /**
-     * @type string | undefined, uri
+     * @type string, uri
     */
-    readonly logo?: string;
+    readonly logo?: string | null;
     /**
      * @maxLength 255
      * @type string | undefined
@@ -63,9 +63,9 @@ export type AssetSerializerResponse = {
     */
     readonly explorer_url?: string;
     /**
-     * @type object
+     * @type object | undefined
     */
-    collectible: SimpleCollectible;
+    collectible?: SimpleCollectible;
     /**
      * @type object
     */

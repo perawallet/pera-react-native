@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DiscoverNftCollectiblesReadQueryResponse, V1DiscoverNftCollectiblesReadPathParams } from "../types/V1DiscoverNftCollectiblesRead.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1DiscoverNftCollectiblesReadQueryResponseSchema } from "../zod/v1DiscoverNftCollectiblesReadSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1DiscoverNftCollectiblesReadSuspenseQueryKey = ({ asset_id }: { asset_id: V1DiscoverNftCollectiblesReadPathParams["asset_id"] }) => [{ url: '/v1/discover/nft/collectibles/:asset_id/', params: {asset_id:asset_id} }] as const
@@ -21,7 +20,7 @@ export async function v1DiscoverNftCollectiblesReadSuspense({ asset_id }: { asse
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DiscoverNftCollectiblesReadQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/discover/nft/collectibles/${asset_id}/`, ... requestConfig })  
-  return v1DiscoverNftCollectiblesReadQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1DiscoverNftCollectiblesReadSuspenseQueryOptions({ asset_id }: { asset_id: V1DiscoverNftCollectiblesReadPathParams["asset_id"] }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

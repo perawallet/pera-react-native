@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DiscoverNftCollectiblesListingsListQueryResponse, V1DiscoverNftCollectiblesListingsListPathParams, V1DiscoverNftCollectiblesListingsListQueryParams } from "../types/V1DiscoverNftCollectiblesListingsList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1DiscoverNftCollectiblesListingsListQueryResponseSchema } from "../zod/v1DiscoverNftCollectiblesListingsListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1DiscoverNftCollectiblesListingsListQueryKey = ({ asset_id }: { asset_id: V1DiscoverNftCollectiblesListingsListPathParams["asset_id"] }, params?: V1DiscoverNftCollectiblesListingsListQueryParams) => [{ url: '/v1/discover/nft/collectibles/:asset_id/listings/', params: {asset_id:asset_id} }, ...(params ? [params] : [])] as const
@@ -21,7 +20,7 @@ export async function v1DiscoverNftCollectiblesListingsList({ asset_id, params }
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DiscoverNftCollectiblesListingsListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/discover/nft/collectibles/${asset_id}/listings/`, params, ... requestConfig })  
-  return v1DiscoverNftCollectiblesListingsListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1DiscoverNftCollectiblesListingsListQueryOptions({ asset_id, params }: { asset_id: V1DiscoverNftCollectiblesListingsListPathParams["asset_id"]; params?: V1DiscoverNftCollectiblesListingsListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

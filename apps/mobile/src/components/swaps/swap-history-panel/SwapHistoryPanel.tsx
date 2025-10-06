@@ -5,9 +5,33 @@ import { Text } from '@rneui/themed';
 import { useCallback } from 'react';
 
 import SwapPair from '../swap-pair/SwapPair';
+import { useV1AssetsList } from '@perawallet/core';
 
 const SwapHistoryPanel = () => {
   const themeStyle = useStyles();
+  
+  //TODO: pull from server using asset IDs in a single query
+  const { data: algoAssets } = useV1AssetsList({
+    params: {
+        q: 'algo'
+    }
+  })
+
+  const { data: usdcAssets } = useV1AssetsList({
+    params: {
+        q: 'usdc'
+    }
+  })
+
+  const { data: vestAssets } = useV1AssetsList({
+    params: {
+        q: 'vest'
+    }
+  })
+  
+  const algoAsset = algoAssets?.results?.length ? algoAssets.results.at(0) : null
+  const usdcAsset = usdcAssets?.results?.length ? usdcAssets.results.at(0) : null
+  const vestAsset = vestAssets?.results?.length ? vestAssets.results.at(0) : null
 
   const renderSwapPair = useCallback(
     (item: any, index: number) => {
@@ -15,28 +39,26 @@ const SwapHistoryPanel = () => {
         <SwapPair
           key={'swappair' + index}
           style={themeStyle.itemContainer}
-          fromName={item.fromName}
-          toName={item.toName}
+          fromAsset={item.fromAsset}
+          toAsset={item.toAsset}
         />
       );
     },
     [themeStyle.itemContainer],
   );
 
-  //TODO: pull from server
-  //TOOD make a thing that can render an asset label and an asset icon from the asset
   const pairs = [
     {
-      fromName: 'VEST',
-      toName: 'ALGO',
+      fromAsset: vestAsset,
+      toAsset: algoAsset,
     },
     {
-      fromName: 'ALGO',
-      toName: 'USDC',
+      fromAsset: algoAsset,
+      toAsset: usdcAsset,
     },
     {
-      fromName: 'ALGO',
-      toName: 'VEST',
+      fromAsset: algoAsset,
+      toAsset: vestAsset,
     },
   ];
 

@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1BackupsCreateMutationRequest, V1BackupsCreateMutationResponse } from "../types/V1BackupsCreate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v1BackupsCreateMutationResponseSchema, v1BackupsCreateMutationRequestSchema } from "../zod/v1BackupsCreateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v1BackupsCreateMutationKey = () => [{ url: '/v1/backups/' }] as const
@@ -22,10 +21,10 @@ export type V1BackupsCreateMutationKey = ReturnType<typeof v1BackupsCreateMutati
 export async function v1BackupsCreate({ data }: { data: V1BackupsCreateMutationRequest }, config: Partial<RequestConfig<V1BackupsCreateMutationRequest>> & { client?: typeof fetch } = {}) {
   const { client: request = fetch, ...requestConfig } = config  
   
-  const requestData = v1BackupsCreateMutationRequestSchema.parse(data)  
+  const requestData = data  
   
   const res = await request<V1BackupsCreateMutationResponse, ResponseErrorConfig<Error>, V1BackupsCreateMutationRequest>({ method : "POST", url : `/v1/backups/`, data : requestData, ... requestConfig })  
-  return v1BackupsCreateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1OnrampServicesMeldQuotesCreateMutationRequest, V1OnrampServicesMeldQuotesCreateMutationResponse, V1OnrampServicesMeldQuotesCreate400 } from "../types/V1OnrampServicesMeldQuotesCreate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v1OnrampServicesMeldQuotesCreateMutationResponseSchema, v1OnrampServicesMeldQuotesCreateMutationRequestSchema } from "../zod/v1OnrampServicesMeldQuotesCreateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v1OnrampServicesMeldQuotesCreateMutationKey = () => [{ url: '/v1/onramp-services/meld/quotes/' }] as const
@@ -22,10 +21,10 @@ export type V1OnrampServicesMeldQuotesCreateMutationKey = ReturnType<typeof v1On
 export async function v1OnrampServicesMeldQuotesCreate({ data }: { data: V1OnrampServicesMeldQuotesCreateMutationRequest }, config: Partial<RequestConfig<V1OnrampServicesMeldQuotesCreateMutationRequest>> & { client?: typeof fetch } = {}) {
   const { client: request = fetch, ...requestConfig } = config  
   
-  const requestData = v1OnrampServicesMeldQuotesCreateMutationRequestSchema.parse(data)  
+  const requestData = data  
   
   const res = await request<V1OnrampServicesMeldQuotesCreateMutationResponse, ResponseErrorConfig<V1OnrampServicesMeldQuotesCreate400>, V1OnrampServicesMeldQuotesCreateMutationRequest>({ method : "POST", url : `/v1/onramp-services/meld/quotes/`, data : requestData, ... requestConfig })  
-  return v1OnrampServicesMeldQuotesCreateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

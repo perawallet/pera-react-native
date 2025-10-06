@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DevicesDeleteMutationResponse } from "../types/V1DevicesDelete.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v1DevicesDeleteMutationResponseSchema } from "../zod/v1DevicesDeleteSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v1DevicesDeleteMutationKey = () => [{ url: '/v1/devices/' }] as const
@@ -23,7 +22,7 @@ export async function v1DevicesDelete(config: Partial<RequestConfig> & { client?
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DevicesDeleteMutationResponse, ResponseErrorConfig<Error>, unknown>({ method : "DELETE", url : `/v1/devices/`, ... requestConfig })  
-  return v1DevicesDeleteMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

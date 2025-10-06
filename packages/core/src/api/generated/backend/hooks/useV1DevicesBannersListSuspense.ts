@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DevicesBannersListQueryResponse, V1DevicesBannersListPathParams, V1DevicesBannersListQueryParams } from "../types/V1DevicesBannersList.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1DevicesBannersListQueryResponseSchema } from "../zod/v1DevicesBannersListSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1DevicesBannersListSuspenseQueryKey = ({ device_id }: { device_id: V1DevicesBannersListPathParams["device_id"] }, params?: V1DevicesBannersListQueryParams) => [{ url: '/v1/devices/:device_id/banners/', params: {device_id:device_id} }, ...(params ? [params] : [])] as const
@@ -21,7 +20,7 @@ export async function v1DevicesBannersListSuspense({ device_id, params }: { devi
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DevicesBannersListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/devices/${device_id}/banners/`, params, ... requestConfig })  
-  return v1DevicesBannersListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1DevicesBannersListSuspenseQueryOptions({ device_id, params }: { device_id: V1DevicesBannersListPathParams["device_id"]; params?: V1DevicesBannersListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

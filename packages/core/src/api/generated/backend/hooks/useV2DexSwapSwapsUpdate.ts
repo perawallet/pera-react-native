@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V2DexSwapSwapsUpdateMutationRequest, V2DexSwapSwapsUpdateMutationResponse, V2DexSwapSwapsUpdatePathParams } from "../types/V2DexSwapSwapsUpdate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v2DexSwapSwapsUpdateMutationResponseSchema, v2DexSwapSwapsUpdateMutationRequestSchema } from "../zod/v2DexSwapSwapsUpdateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v2DexSwapSwapsUpdateMutationKey = () => [{ url: '/v2/dex-swap/swaps/:swap_id/' }] as const
@@ -20,10 +19,10 @@ export type V2DexSwapSwapsUpdateMutationKey = ReturnType<typeof v2DexSwapSwapsUp
 export async function v2DexSwapSwapsUpdate({ swap_id, data }: { swap_id: V2DexSwapSwapsUpdatePathParams["swap_id"]; data: V2DexSwapSwapsUpdateMutationRequest }, config: Partial<RequestConfig<V2DexSwapSwapsUpdateMutationRequest>> & { client?: typeof fetch } = {}) {
   const { client: request = fetch, ...requestConfig } = config  
   
-  const requestData = v2DexSwapSwapsUpdateMutationRequestSchema.parse(data)  
+  const requestData = data  
   
   const res = await request<V2DexSwapSwapsUpdateMutationResponse, ResponseErrorConfig<Error>, V2DexSwapSwapsUpdateMutationRequest>({ method : "PUT", url : `/v2/dex-swap/swaps/${swap_id}/`, data : requestData, ... requestConfig })  
-  return v2DexSwapSwapsUpdateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

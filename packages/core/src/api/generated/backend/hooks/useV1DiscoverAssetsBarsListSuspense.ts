@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DiscoverAssetsBarsListQueryResponse, V1DiscoverAssetsBarsListPathParams } from "../types/V1DiscoverAssetsBarsList.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1DiscoverAssetsBarsListQueryResponseSchema } from "../zod/v1DiscoverAssetsBarsListSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1DiscoverAssetsBarsListSuspenseQueryKey = ({ asset_id }: { asset_id: V1DiscoverAssetsBarsListPathParams["asset_id"] }) => [{ url: '/v1/discover/assets/:asset_id/bars/', params: {asset_id:asset_id} }] as const
@@ -21,7 +20,7 @@ export async function v1DiscoverAssetsBarsListSuspense({ asset_id }: { asset_id:
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1DiscoverAssetsBarsListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/discover/assets/${asset_id}/bars/`, ... requestConfig })  
-  return v1DiscoverAssetsBarsListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1DiscoverAssetsBarsListSuspenseQueryOptions({ asset_id }: { asset_id: V1DiscoverAssetsBarsListPathParams["asset_id"] }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

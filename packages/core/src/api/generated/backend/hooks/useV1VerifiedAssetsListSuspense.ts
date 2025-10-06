@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1VerifiedAssetsListQueryResponse, V1VerifiedAssetsListQueryParams } from "../types/V1VerifiedAssetsList.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1VerifiedAssetsListQueryResponseSchema } from "../zod/v1VerifiedAssetsListSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1VerifiedAssetsListSuspenseQueryKey = (params?: V1VerifiedAssetsListQueryParams) => [{ url: '/v1/verified-assets/' }, ...(params ? [params] : [])] as const
@@ -24,7 +23,7 @@ export async function v1VerifiedAssetsListSuspense({ params }: { params?: V1Veri
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1VerifiedAssetsListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/verified-assets/`, params, ... requestConfig })  
-  return v1VerifiedAssetsListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1VerifiedAssetsListSuspenseQueryOptions({ params }: { params?: V1VerifiedAssetsListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1OnrampServicesMeldTransactionStatusListQueryResponse, V1OnrampServicesMeldTransactionStatusListQueryParams, V1OnrampServicesMeldTransactionStatusList400 } from "../types/V1OnrampServicesMeldTransactionStatusList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1OnrampServicesMeldTransactionStatusListQueryResponseSchema } from "../zod/v1OnrampServicesMeldTransactionStatusListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1OnrampServicesMeldTransactionStatusListQueryKey = (params: V1OnrampServicesMeldTransactionStatusListQueryParams) => [{ url: '/v1/onramp-services/meld/transaction-status/' }, ...(params ? [params] : [])] as const
@@ -23,7 +22,7 @@ export async function v1OnrampServicesMeldTransactionStatusList({ params }: { pa
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1OnrampServicesMeldTransactionStatusListQueryResponse, ResponseErrorConfig<V1OnrampServicesMeldTransactionStatusList400>, unknown>({ method : "GET", url : `/v1/onramp-services/meld/transaction-status/`, params, ... requestConfig })  
-  return v1OnrampServicesMeldTransactionStatusListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1OnrampServicesMeldTransactionStatusListQueryOptions({ params }: { params: V1OnrampServicesMeldTransactionStatusListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

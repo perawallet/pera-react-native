@@ -2,7 +2,7 @@ import PeraView from '../../components/common/view/PeraView';
 import MainScreenLayout from '../../layouts/MainScreenLayout';
 import { Text, useTheme } from '@rneui/themed';
 import { useStyles } from './styles';
-import { TouchableOpacity } from 'react-native';
+import { ScrollView, TouchableOpacity } from 'react-native';
 
 import CameraIcon from '../../../assets/icons/camera.svg';
 import BellIcon from '../../../assets/icons/bell.svg';
@@ -42,68 +42,70 @@ const PortfolioScreen = () => {
   );
 
   const chartSelectionChanged = useCallback(
-    (chartData: AccountWealthHistoryItem | null) => {
-      setChartData(chartData);
+    (selected: AccountWealthHistoryItem | null) => {
+      setChartData(selected);
     },
     [setChartData],
   );
 
   return (
-    <MainScreenLayout>
-      <PeraView style={styles.iconBar}>
-        <TouchableOpacity>
-          <CameraIcon style={styles.icon} color={theme.colors.textMain} />
-        </TouchableOpacity>
-        <TouchableOpacity>
-          <BellIcon style={styles.icon} color={theme.colors.textMain} />
-        </TouchableOpacity>
-      </PeraView>
-      <PeraView style={styles.valueTitleBar}>
-        <Text h4Style={styles.valueTitle} h4>
-          Portfolio Value
-        </Text>
-        <TouchableOpacity>
-          <InfoIcon style={styles.icon} color={theme.colors.textGray} />
-        </TouchableOpacity>
-      </PeraView>
-      <PeraView style={styles.valueBar}>
-        <CurrencyDisplay
-          h1
-          value={chartData ? Decimal(chartData.algo_value) : algoAmount}
-          currency="ALGO"
-          precision={2}
-          h1Style={styles.primaryCurrency}
-          skeleton={loading}
-        />
-        <PeraView style={styles.secondaryValueBar}>
+    <MainScreenLayout fullScreen>
+      <ScrollView style={styles.webview} contentContainerStyle={styles.webviewContent}>
+        <PeraView style={styles.iconBar}>
+          <TouchableOpacity>
+            <CameraIcon style={styles.icon} color={theme.colors.textMain} />
+          </TouchableOpacity>
+          <TouchableOpacity>
+            <BellIcon style={styles.icon} color={theme.colors.textMain} />
+          </TouchableOpacity>
+        </PeraView>
+        <PeraView style={styles.valueTitleBar}>
+          <Text h4Style={styles.valueTitle} h4>
+            Portfolio Value
+          </Text>
+          <TouchableOpacity>
+            <InfoIcon style={styles.icon} color={theme.colors.textGray} />
+          </TouchableOpacity>
+        </PeraView>
+        <PeraView style={styles.valueBar}>
           <CurrencyDisplay
-            h4
-            h4Style={styles.valueTitle}
-            value={
-              chartData
-                ? Decimal(chartData.value_in_currency ?? '0')
-                : usdAmount
-            }
-            currency="USD"
-            prefix="≈ "
+            h1
+            value={chartData ? Decimal(chartData.algo_value) : algoAmount}
+            currency="ALGO"
             precision={2}
+            h1Style={styles.primaryCurrency}
             skeleton={loading}
           />
-          {chartData && (
-            <Text h4 h4Style={styles.dateDisplay}>
-              {formatDatetime(chartData.datetime)}
-            </Text>
-          )}
+          <PeraView style={styles.secondaryValueBar}>
+            <CurrencyDisplay
+              h4
+              h4Style={styles.valueTitle}
+              value={
+                chartData
+                  ? Decimal(chartData.value_in_currency ?? '0')
+                  : usdAmount
+              }
+              currency="USD"
+              prefix="≈ "
+              precision={2}
+              skeleton={loading}
+            />
+            {chartData && (
+              <Text h4 h4Style={styles.dateDisplay}>
+                {formatDatetime(chartData.datetime)}
+              </Text>
+            )}
+          </PeraView>
         </PeraView>
-      </PeraView>
 
-      <PortfolioChart onSelectionChanged={chartSelectionChanged} />
+        <PortfolioChart onSelectionChanged={chartSelectionChanged} />
 
-      <ButtonPanel />
+        <ButtonPanel />
 
-      {/* TODO: Render banners and spot banners here... */}
+        {/* TODO: Render banners and spot banners here... */}
 
-      <AccountList />
+        <AccountList />
+      </ScrollView>
     </MainScreenLayout>
   );
 };

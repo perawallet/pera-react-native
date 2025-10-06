@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DevicesUpdateLastSeenNotificationPartialUpdateMutationRequest, V1DevicesUpdateLastSeenNotificationPartialUpdateMutationResponse, V1DevicesUpdateLastSeenNotificationPartialUpdatePathParams } from "../types/V1DevicesUpdateLastSeenNotificationPartialUpdate.ts";
 import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { v1DevicesUpdateLastSeenNotificationPartialUpdateMutationResponseSchema, v1DevicesUpdateLastSeenNotificationPartialUpdateMutationRequestSchema } from "../zod/v1DevicesUpdateLastSeenNotificationPartialUpdateSchema.ts";
 import { useMutation } from "@tanstack/react-query";
 
 export const v1DevicesUpdateLastSeenNotificationPartialUpdateMutationKey = () => [{ url: '/v1/devices/:device_id/update-last-seen-notification/' }] as const
@@ -20,10 +19,10 @@ export type V1DevicesUpdateLastSeenNotificationPartialUpdateMutationKey = Return
 export async function v1DevicesUpdateLastSeenNotificationPartialUpdate({ device_id, data }: { device_id: V1DevicesUpdateLastSeenNotificationPartialUpdatePathParams["device_id"]; data?: V1DevicesUpdateLastSeenNotificationPartialUpdateMutationRequest }, config: Partial<RequestConfig<V1DevicesUpdateLastSeenNotificationPartialUpdateMutationRequest>> & { client?: typeof fetch } = {}) {
   const { client: request = fetch, ...requestConfig } = config  
   
-  const requestData = v1DevicesUpdateLastSeenNotificationPartialUpdateMutationRequestSchema.parse(data)  
+  const requestData = data  
   
   const res = await request<V1DevicesUpdateLastSeenNotificationPartialUpdateMutationResponse, ResponseErrorConfig<Error>, V1DevicesUpdateLastSeenNotificationPartialUpdateMutationRequest>({ method : "PATCH", url : `/v1/devices/${device_id}/update-last-seen-notification/`, data : requestData, ... requestConfig })  
-  return v1DevicesUpdateLastSeenNotificationPartialUpdateMutationResponseSchema.parse(res.data)
+  return res.data
 }
 
 /**

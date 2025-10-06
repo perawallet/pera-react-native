@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1AccountsCollectibleAssetsListQueryResponse, V1AccountsCollectibleAssetsListPathParams, V1AccountsCollectibleAssetsListQueryParams } from "../types/V1AccountsCollectibleAssetsList.ts";
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
-import { v1AccountsCollectibleAssetsListQueryResponseSchema } from "../zod/v1AccountsCollectibleAssetsListSchema.ts";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
 export const v1AccountsCollectibleAssetsListQueryKey = ({ account_address }: { account_address: V1AccountsCollectibleAssetsListPathParams["account_address"] }, params?: V1AccountsCollectibleAssetsListQueryParams) => [{ url: '/v1/accounts/:account_address/collectible-assets/', params: {account_address:account_address} }, ...(params ? [params] : [])] as const
@@ -22,7 +21,7 @@ export async function v1AccountsCollectibleAssetsList({ account_address, params 
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1AccountsCollectibleAssetsListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/accounts/${account_address}/collectible-assets/`, params, ... requestConfig })  
-  return v1AccountsCollectibleAssetsListQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1AccountsCollectibleAssetsListQueryOptions({ account_address, params }: { account_address: V1AccountsCollectibleAssetsListPathParams["account_address"]; params?: V1AccountsCollectibleAssetsListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

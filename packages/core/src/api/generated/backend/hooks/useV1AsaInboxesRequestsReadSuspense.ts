@@ -7,7 +7,6 @@ import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1AsaInboxesRequestsReadQueryResponse, V1AsaInboxesRequestsReadPathParams, V1AsaInboxesRequestsReadQueryParams } from "../types/V1AsaInboxesRequestsRead.ts";
 import type { QueryKey, QueryClient, UseSuspenseQueryOptions, UseSuspenseQueryResult } from "@tanstack/react-query";
-import { v1AsaInboxesRequestsReadQueryResponseSchema } from "../zod/v1AsaInboxesRequestsReadSchema.ts";
 import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 
 export const v1AsaInboxesRequestsReadSuspenseQueryKey = ({ account_address }: { account_address: V1AsaInboxesRequestsReadPathParams["account_address"] }, params?: V1AsaInboxesRequestsReadQueryParams) => [{ url: '/v1/asa-inboxes/requests/:account_address/', params: {account_address:account_address} }, ...(params ? [params] : [])] as const
@@ -21,7 +20,7 @@ export async function v1AsaInboxesRequestsReadSuspense({ account_address, params
   const { client: request = fetch, ...requestConfig } = config  
   
   const res = await request<V1AsaInboxesRequestsReadQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/asa-inboxes/requests/${account_address}/`, params, ... requestConfig })  
-  return v1AsaInboxesRequestsReadQueryResponseSchema.parse(res.data)
+  return res.data
 }
 
 export function v1AsaInboxesRequestsReadSuspenseQueryOptions({ account_address, params }: { account_address: V1AsaInboxesRequestsReadPathParams["account_address"]; params?: V1AsaInboxesRequestsReadQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {

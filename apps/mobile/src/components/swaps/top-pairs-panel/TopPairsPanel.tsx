@@ -6,9 +6,33 @@ import { useCallback } from 'react';
 
 import SwapPair from '../swap-pair/SwapPair';
 import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay';
+import { useV1AssetsList } from '@perawallet/core';
 
 const TopPairsPanel = () => {
   const themeStyle = useStyles();
+    
+    //TODO: pull from server using asset IDs in a single query
+    const { data: algoAssets } = useV1AssetsList({
+      params: {
+          q: 'algo'
+      }
+    })
+  
+    const { data: usdcAssets } = useV1AssetsList({
+      params: {
+          q: 'usdc'
+      }
+    })
+  
+    const { data: vestAssets } = useV1AssetsList({
+      params: {
+          q: 'vest'
+      }
+    })
+    
+    const algoAsset = algoAssets?.results?.length ? algoAssets.results.at(0) : null
+    const usdcAsset = usdcAssets?.results?.length ? usdcAssets.results.at(0) : null
+    const vestAsset = vestAssets?.results?.length ? vestAssets.results.at(0) : null
 
   const renderSwapPair = useCallback(
     ({ item }: { item: any }) => {
@@ -16,8 +40,8 @@ const TopPairsPanel = () => {
         <PeraView style={themeStyle.itemRow}>
           <SwapPair
             style={themeStyle.itemContainer}
-            fromName={item.fromName}
-            toName={item.toName}
+            fromAsset={item.fromAsset}
+            toAsset={item.toAsset}
           />
           <CurrencyDisplay
             currency="USD"
@@ -37,18 +61,18 @@ const TopPairsPanel = () => {
   //TOOD make a thing that can render an asset label and an asset icon from the asset
   const pairs = [
     {
-      fromName: 'VEST',
-      toName: 'ALGO',
+      fromAsset: vestAsset,
+      toAsset: algoAsset,
       volume: 20000,
     },
     {
-      fromName: 'ALGO',
-      toName: 'USDC',
+      fromAsset: algoAsset,
+      toAsset: usdcAsset,
       volume: 234240,
     },
     {
-      fromName: 'ALGO',
-      toName: 'VEST',
+      fromAsset: algoAsset,
+      toAsset: vestAsset,
       volume: 422210,
     },
   ];
