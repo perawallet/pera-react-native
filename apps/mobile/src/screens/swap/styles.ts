@@ -7,7 +7,6 @@ export const useStyles = makeStyles(theme => {
       flex: 1,
     },
     headerContainer: {
-      marginTop: theme.spacing.xl,
       flexDirection: 'row',
       justifyContent: 'space-between',
       paddingHorizontal: theme.spacing.xl,

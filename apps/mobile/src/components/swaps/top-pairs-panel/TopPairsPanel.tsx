@@ -40,8 +40,7 @@ const TopPairsPanel = () => {
     [themeStyle],
   );
 
-  //TODO: pull from server
-  //TOOD make a thing that can render an asset label and an asset icon from the asset
+  //TODO: this is local data for now...replace with server data
   const pairs = [
     {
       fromAsset: vestAsset,

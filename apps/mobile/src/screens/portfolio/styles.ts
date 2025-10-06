@@ -45,7 +45,7 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       paddingHorizontal: theme.spacing.xl,
     },
     webviewContent: {
-      flex: 1,
+      paddingBottom: theme.spacing.xl,
     }
   };
 });
