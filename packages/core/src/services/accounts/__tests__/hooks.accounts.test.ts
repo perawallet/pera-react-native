@@ -29,9 +29,11 @@ const querySpies = vi.hoisted(() => ({
         params,
         options,
     ]),
-    v1AccountsAssetsList: vi.fn(async (): Promise<any> => ({
-        results: [],
-    })),
+    v1AccountsAssetsList: vi.fn(
+        async (): Promise<any> => ({
+            results: [],
+        }),
+    ),
 }))
 
 const mockedMnemonic =
@@ -1070,7 +1072,11 @@ describe('services/accounts/hooks - useAccountBalances', () => {
             },
         })
         return ({ children }: { children: React.ReactNode }) =>
-            React.createElement(QueryClientProvider, { client: queryClient }, children)
+            React.createElement(
+                QueryClientProvider,
+                { client: queryClient },
+                children,
+            )
     }
 
     test('aggregates USD and ALGO using backend/indexer data', async () => {

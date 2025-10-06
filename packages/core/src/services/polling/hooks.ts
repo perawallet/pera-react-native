@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useAppStore } from '../../store'
 import { useV1AccountsShouldRefreshCreate } from '../../api/generated/backend'
-import { useQueryClient } from '@tanstack/react-query'
 
 const CACHE_CHECK_INTERVAL = 3000
 
@@ -12,7 +11,6 @@ export const usePolling = () => {
         state => state.setLastRefreshedRound,
     )
     const { mutateAsync } = useV1AccountsShouldRefreshCreate()
-    const queryClient = useQueryClient()
     const [polling, setPolling] = useState<NodeJS.Timeout | null>(null)
 
     const addresses = useMemo(() => accounts.map(a => a.address), [accounts])

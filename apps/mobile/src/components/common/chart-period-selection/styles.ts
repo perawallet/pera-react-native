@@ -23,6 +23,6 @@ export const useStyles = makeStyles(theme => {
       borderRadius: theme.spacing.sm,
       paddingVertical: theme.spacing.xs,
       paddingHorizontal: theme.spacing.md,
-    }
+    },
   };
 });

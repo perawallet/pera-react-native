@@ -13,7 +13,12 @@ import ButtonPanel from '../../components/portfolio/button-panel/ButtonPanel';
 import AccountList from '../../components/portfolio/account-list/AccountList';
 import PortfolioChart from '../../components/portfolio/portfolio-chart/PortfolioChart';
 import Decimal from 'decimal.js';
-import { AccountWealthHistoryItem, formatDatetime, useAccountBalances, useAppStore } from '@perawallet/core';
+import {
+  AccountWealthHistoryItem,
+  formatDatetime,
+  useAccountBalances,
+  useAppStore,
+} from '@perawallet/core';
 import { useCallback, useState } from 'react';
 
 const PortfolioScreen = () => {
@@ -22,7 +27,9 @@ const PortfolioScreen = () => {
 
   const accounts = useAppStore(state => state.accounts);
   const data = useAccountBalances(accounts);
-  const [chartData, setChartData] = useState<AccountWealthHistoryItem | null>(null)
+  const [chartData, setChartData] = useState<AccountWealthHistoryItem | null>(
+    null,
+  );
 
   const loading = data.some(d => !d.isFetched);
   const algoAmount = data.reduce(
@@ -34,9 +41,12 @@ const PortfolioScreen = () => {
     Decimal(0),
   );
 
-  const chartSelectionChanged = useCallback((data: AccountWealthHistoryItem | null) => {
-    setChartData(data)
-  }, [setChartData])
+  const chartSelectionChanged = useCallback(
+    (chartData: AccountWealthHistoryItem | null) => {
+      setChartData(chartData);
+    },
+    [setChartData],
+  );
 
   return (
     <MainScreenLayout>
@@ -69,17 +79,25 @@ const PortfolioScreen = () => {
           <CurrencyDisplay
             h4
             h4Style={styles.valueTitle}
-            value={chartData ? Decimal(chartData.value_in_currency ?? '0') : usdAmount}
+            value={
+              chartData
+                ? Decimal(chartData.value_in_currency ?? '0')
+                : usdAmount
+            }
             currency="USD"
             prefix="≈ "
             precision={2}
             skeleton={loading}
           />
-          {chartData && <Text h4 h4Style={styles.dateDisplay}>{formatDatetime(chartData.datetime)}</Text>}
+          {chartData && (
+            <Text h4 h4Style={styles.dateDisplay}>
+              {formatDatetime(chartData.datetime)}
+            </Text>
+          )}
         </PeraView>
       </PeraView>
 
-      <PortfolioChart onSelectionChanged={chartSelectionChanged}/>
+      <PortfolioChart onSelectionChanged={chartSelectionChanged} />
 
       <ButtonPanel />
 

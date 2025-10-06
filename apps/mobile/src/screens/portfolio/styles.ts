@@ -22,7 +22,7 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
     secondaryValueBar: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between'
+      justifyContent: 'space-between',
     },
     valueTitleBar: {
       flexDirection: 'row',
@@ -35,7 +35,7 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
     },
     dateDisplay: {
       color: theme.colors.textGray,
-      textAlign: 'left'
+      textAlign: 'left',
     },
     primaryCurrency: {
       color: theme.colors.textMain,

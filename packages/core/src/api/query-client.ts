@@ -65,7 +65,6 @@ export const createFetchClient = (clients: Map<string, KyInstance>) => {
         }
 
         try {
-
             const path = requestConfig.url.startsWith('/')
                 ? requestConfig.url.slice(1)
                 : requestConfig.url
@@ -87,7 +86,7 @@ export const createFetchClient = (clients: Map<string, KyInstance>) => {
             }
         } catch (error) {
             if (config.debugEnabled) {
-                console.log("Query error", error)
+                console.log('Query error', error)
             }
             throw error
         }

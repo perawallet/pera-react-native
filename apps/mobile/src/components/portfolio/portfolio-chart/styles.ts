@@ -7,6 +7,6 @@ export const useStyles = makeStyles(theme => ({
     marginBottom: theme.spacing.xl,
   },
   activity: {
-      color: theme.colors.primary
-  }
+    color: theme.colors.primary,
+  },
 }));

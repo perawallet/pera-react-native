@@ -1,6 +1,5 @@
 import { toByteArray, fromByteArray } from 'base64-js'
 import { Decimal } from 'decimal.js'
-import { Temporal } from '@js-temporal/polyfill';
 
 Decimal.set({ precision: 18, crypto: true, rounding: Decimal.ROUND_HALF_UP })
 
@@ -62,15 +61,17 @@ export const formatCurrency = (
     return `${sign}${currencySymbol}${formattedInteger}${fraction}`
 }
 
-export const formatDatetime = (datetime: string | Date,
-    locale: string = 'en-US') => {
+export const formatDatetime = (
+    datetime: string | Date,
+    locale: string = 'en-US',
+) => {
     let date: number = Date.now()
     if (typeof datetime === 'string') {
         const parts = datetime.split('+')
         date = Date.parse(parts[0]) //TODO: deal with timezones
     }
     return Intl.DateTimeFormat(locale, {
-            dateStyle: 'long',
-            timeStyle: 'short'
-        }).format(date)
+        dateStyle: 'long',
+        timeStyle: 'short',
+    }).format(date)
 }
