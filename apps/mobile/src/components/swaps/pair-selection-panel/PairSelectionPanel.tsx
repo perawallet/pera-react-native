@@ -16,10 +16,14 @@ const PairSelectionPanel = () => {
   const styles = useStyles();
   const { theme } = useTheme();
 
-  const { assets } = useCachedAssets([10458941, 700965019])
-  
-  const algoAsset = assets?.length ? assets.find((a: AssetDetails) => a.unit_name === 'ALGO') : null
-  const usdcAsset = assets?.length ? assets.find((a: AssetDetails) => a.unit_name === 'USDC') : null
+  const { assets } = useCachedAssets([10458941, 700965019]);
+
+  const algoAsset = assets?.length
+    ? assets.find((a: AssetDetails) => a.unit_name === 'ALGO')
+    : null;
+  const usdcAsset = assets?.length
+    ? assets.find((a: AssetDetails) => a.unit_name === 'USDC')
+    : null;
 
   //TODO: some or all of these should probably come from either an account hook, the state store or a calculation
   const [sendAmount, setSendAmount] = useState('0.00');

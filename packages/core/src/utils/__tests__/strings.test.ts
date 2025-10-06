@@ -109,7 +109,9 @@ describe('utils/strings - formatDatetime', () => {
     test('formats Date object', () => {
         const date = new Date('2023-10-05T14:30:00Z')
         const result = formatDatetime(date, 'en-US')
-        expect(result).toMatch(/October \d{1,2}, \d{4} at \d{1,2}:\d{2} (AM|PM)/)
+        expect(result).toMatch(
+            /October \d{1,2}, \d{4} at \d{1,2}:\d{2} (AM|PM)/,
+        )
     })
 
     test('formats ISO string without timezone', () => {

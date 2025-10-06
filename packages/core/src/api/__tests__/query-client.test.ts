@@ -158,7 +158,9 @@ describe('api/query-client', () => {
             fetchClient({ url: '/test', method: 'GET' }),
         ).rejects.toThrow('Network error')
 
-        expect(consoleMock).toHaveBeenCalledWith('Query error', expect.any(Error))
+        expect(consoleMock).toHaveBeenCalledWith(
+            'Query error',
+            expect.any(Error),
+        )
     })
-
 })

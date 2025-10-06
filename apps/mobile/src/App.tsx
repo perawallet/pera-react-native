@@ -24,7 +24,7 @@ function App() {
         const reactQueryPersistor = createAsyncStoragePersister({
           storage: kvService,
         });
-        
+
         setPersister(reactQueryPersistor);
         setBootstrapped(true);
 

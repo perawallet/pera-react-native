@@ -46,6 +46,6 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
     },
     webviewContent: {
       paddingBottom: theme.spacing.xl,
-    }
+    },
   };
 });

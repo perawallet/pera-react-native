@@ -7,6 +7,6 @@ export const useStyles = makeStyles((theme, props: AssetIconProps) => {
       borderRadius: 50,
       width: props.size || '100%',
       height: props.size || '100%',
-    }
+    },
   };
 });

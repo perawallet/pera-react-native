@@ -44,7 +44,7 @@ export default defineConfig({
         //TODO: tests for hooks and boostrap was causing weird syntax error I couldn't figure out so disabling
         //coverage for now
         'src/bootstrap/*',
-        'src/hooks/toast.ts'
+        'src/hooks/toast.ts',
       ],
       reporter: ['text', 'html', 'lcov'],
       reportsDirectory: './coverage',

@@ -1,6 +1,6 @@
 import { config, useAppStore, useDevice, usePolling } from '@perawallet/core';
 import { useEffect, useMemo, useRef } from 'react';
-import { AppState, StatusBar, useColorScheme, View } from 'react-native';
+import { AppState, StatusBar, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { MainRoutes } from '../../routes/routes';
 import { getNavigationTheme, getTheme } from '../../theme/theme';
@@ -17,7 +17,7 @@ const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
   const styles = useStyles(insets);
   const network = useAppStore(state => state.network);
   const navTheme = getNavigationTheme(isDarkMode ? 'dark' : 'light');
-  const { showToast } = useToast()
+  const { showToast } = useToast();
 
   const networkBarStyle = useMemo(() => {
     if (network === 'testnet') {
@@ -29,10 +29,12 @@ const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
   const showError = (error: any) => {
     showToast({
       title: 'Error',
-      body: config.debugEnabled ? `Details: ${error}` : "An error has occured, please try again.",
-      type: 'error'
-    })
-  }
+      body: config.debugEnabled
+        ? `Details: ${error}`
+        : 'An error has occured, please try again.',
+      type: 'error',
+    });
+  };
 
   return (
     <ErrorBoundary onError={showError}>
@@ -48,7 +50,7 @@ const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
 };
 
 export const RootComponent = () => {
-  const isDarkMode = useIsDarkMode()
+  const isDarkMode = useIsDarkMode();
 
   const theme = getTheme(isDarkMode ? 'dark' : 'light');
   const { registerDevice } = useDevice();
@@ -84,7 +86,6 @@ export const RootComponent = () => {
   }, []);
 
   return (
-
     <ThemeProvider theme={theme}>
       <RootContentContainer isDarkMode={isDarkMode} />
     </ThemeProvider>

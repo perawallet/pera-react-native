@@ -1,4 +1,4 @@
-import type { AccountDetailAssetSerializerResponse } from "@api/index";
+import type { AccountDetailAssetSerializerResponse } from '@api/index'
 
 export type AssetDetails = AccountDetailAssetSerializerResponse
 
@@ -9,5 +9,5 @@ export const ALGO_ASSET: AssetDetails = {
     name: 'Algo',
     verification_tier: 'verified',
     collectible: null,
-    last_24_hours_algo_price_change_percentage: 0
+    last_24_hours_algo_price_change_percentage: 0,
 }

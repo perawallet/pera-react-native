@@ -10,12 +10,18 @@ import { AssetDetails, useCachedAssets } from '@perawallet/core';
 
 const TopPairsPanel = () => {
   const themeStyle = useStyles();
-    
-    const { assets } = useCachedAssets([11711, 10458941, 700965019])
-    
-    const algoAsset = assets?.length ? assets.find((a: AssetDetails) => a.unit_name === 'ALGO') : null
-    const usdcAsset = assets?.length ? assets.find((a: AssetDetails) => a.unit_name === 'USDC') : null
-    const vestAsset = assets?.length ? assets.find((a: AssetDetails) => a.unit_name === 'HIPO') : null
+
+  const { assets } = useCachedAssets([11711, 10458941, 700965019]);
+
+  const algoAsset = assets?.length
+    ? assets.find((a: AssetDetails) => a.unit_name === 'ALGO')
+    : null;
+  const usdcAsset = assets?.length
+    ? assets.find((a: AssetDetails) => a.unit_name === 'USDC')
+    : null;
+  const vestAsset = assets?.length
+    ? assets.find((a: AssetDetails) => a.unit_name === 'HIPO')
+    : null;
 
   const renderSwapPair = useCallback(
     ({ item }: { item: any }) => {

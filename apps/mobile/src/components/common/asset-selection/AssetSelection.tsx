@@ -15,7 +15,7 @@ const AssetSelection = ({ asset }: AssetSelectionProps) => {
 
   return (
     <PeraView style={styles.container}>
-      <AssetIcon asset={asset} style={styles.icon}/>
+      <AssetIcon asset={asset} style={styles.icon} />
       <Text h4Style={styles.text} h4>
         {asset.unit_name}
       </Text>

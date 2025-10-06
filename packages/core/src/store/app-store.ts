@@ -35,7 +35,11 @@ import {
     partializeSwapsSlice,
     type SwapsSlice,
 } from '../services/swaps'
-import { createAssetsSlice, partializeAssetsSlice, type AssetsSlice } from '../services/assets'
+import {
+    createAssetsSlice,
+    partializeAssetsSlice,
+    type AssetsSlice,
+} from '../services/assets'
 
 export type AppState = SettingsSlice &
     AccountsSlice &
@@ -43,7 +47,7 @@ export type AppState = SettingsSlice &
     BlockchainSlice &
     DeviceSlice &
     PollingSlice &
-    SwapsSlice 
+    SwapsSlice
 
 type PersistListener<S> = (state: S) => void
 
@@ -114,7 +118,7 @@ export const reinitializeAppStore = () => {
                 ...createDeviceSlice(...a),
                 ...createPollingSlice(...a),
                 ...createSwapsSlice(...a),
-            ...createAssetsSlice(...a),
+                ...createAssetsSlice(...a),
             }),
             {
                 name: 'app-store',
@@ -127,7 +131,7 @@ export const reinitializeAppStore = () => {
                     ...partializeDeviceSlice(state),
                     ...partializePollingSlice(state),
                     ...partializeSwapsSlice(state),
-                ...partializeAssetsSlice(state),
+                    ...partializeAssetsSlice(state),
                 }),
             },
         ),

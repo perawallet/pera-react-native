@@ -278,16 +278,18 @@ export const useAccountBalances = (accounts: WalletAccount[]) => {
         let usdAmount = Decimal(0)
 
         if (accountInfo) {
-            accountInfo.results.forEach((data:AccountDetailAssetSerializerResponse)  => {
-                algoAmount = algoAmount.plus(
-                    Decimal(data.amount ?? '0').div(
-                        Decimal(10).pow(data.fraction_decimals),
-                    ),
-                )
-                usdAmount = usdAmount.plus(
-                    Decimal(data.balance_usd_value ?? '0'),
-                )
-            })
+            accountInfo.results.forEach(
+                (data: AccountDetailAssetSerializerResponse) => {
+                    algoAmount = algoAmount.plus(
+                        Decimal(data.amount ?? '0').div(
+                            Decimal(10).pow(data.fraction_decimals),
+                        ),
+                    )
+                    usdAmount = usdAmount.plus(
+                        Decimal(data.balance_usd_value ?? '0'),
+                    )
+                },
+            )
         }
 
         return {

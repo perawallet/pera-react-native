@@ -52,6 +52,5 @@ export const useStyles = makeStyles(theme => ({
     zIndex: 2,
     width: theme.spacing.xl,
     height: theme.spacing.xl,
-
   },
 }));

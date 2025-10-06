@@ -50,7 +50,10 @@ const PortfolioScreen = () => {
 
   return (
     <MainScreenLayout fullScreen>
-      <ScrollView style={styles.webview} contentContainerStyle={styles.webviewContent}>
+      <ScrollView
+        style={styles.webview}
+        contentContainerStyle={styles.webviewContent}
+      >
         <PeraView style={styles.iconBar}>
           <TouchableOpacity>
             <CameraIcon style={styles.icon} color={theme.colors.textMain} />

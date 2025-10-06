@@ -1,7 +1,7 @@
 import { useStyles } from './styles';
 import PeraView from '../../common/view/PeraView';
 
-import { Alert, FlatList, TouchableOpacity } from 'react-native';
+import { Alert, TouchableOpacity } from 'react-native';
 import { Text } from '@rneui/themed';
 
 import SortIcon from '../../../../assets/icons/list-arrow-down.svg';
@@ -46,7 +46,9 @@ const AccountList = () => {
           </TouchableOpacity>
         </PeraView>
       </PeraView>
-      {accounts.map((account: WalletAccount, index: number) => renderAccount({item: account, index}))}
+      {accounts.map((account: WalletAccount, index: number) =>
+        renderAccount({ item: account, index }),
+      )}
     </PeraView>
   );
 };

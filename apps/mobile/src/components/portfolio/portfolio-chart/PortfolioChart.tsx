@@ -28,7 +28,10 @@ const PortfolioChart = ({ onSelectionChanged }: PortfolioChartProps) => {
   const accounts = useAllAccounts();
   const [unfocusTimer, setUnfocusTimer] = useState<NodeJS.Timeout>();
 
-  const addresses = useMemo(() => accounts.map((a: WalletAccount) => a.address), [accounts]);
+  const addresses = useMemo(
+    () => accounts.map((a: WalletAccount) => a.address),
+    [accounts],
+  );
   const [period, setPeriod] = useState<ChartPeriod>('one-week');
 
   const { data, isPending } = useV2WalletWealthList({

@@ -6,10 +6,10 @@ import {
 import { OmitKeyof, QueryCache, QueryClient } from '@tanstack/react-query';
 
 const cache = new QueryCache({
-  onError: (error) => {
-    console.log('An error has occurred:', error)
-  }
-})
+  onError: error => {
+    console.log('An error has occurred:', error);
+  },
+});
 const queryClient = new QueryClient({
   queryCache: cache,
   defaultOptions: {
@@ -21,7 +21,7 @@ const queryClient = new QueryClient({
     mutations: {
       //TODO do we want to enable throwOnError?
       //throwOnError: true
-    }
+    },
   },
 });
 

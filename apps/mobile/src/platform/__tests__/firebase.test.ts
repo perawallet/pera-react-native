@@ -246,7 +246,8 @@ describe('RNFirebaseService', () => {
         await service.initializeNotifications();
 
         // Get the callback that was passed to onMessage
-        const onMessageCallback = (mockMessaging.onMessage as any).mock.calls[0][0] as (message: any) => Promise<void>;
+        const onMessageCallback = (mockMessaging.onMessage as any).mock
+          .calls[0][0] as (message: any) => Promise<void>;
         expect(onMessageCallback).toBeDefined();
 
         const mockRemoteMessage = {
@@ -274,7 +275,8 @@ describe('RNFirebaseService', () => {
         await service.initializeNotifications();
 
         // Get the callback that was passed to onMessage
-        const onMessageCallback = (mockMessaging.onMessage as any).mock.calls[0][0] as (message: any) => Promise<void>;
+        const onMessageCallback = (mockMessaging.onMessage as any).mock
+          .calls[0][0] as (message: any) => Promise<void>;
         expect(onMessageCallback).toBeDefined();
 
         const mockRemoteMessage = {
@@ -298,7 +300,8 @@ describe('RNFirebaseService', () => {
         await service.initializeNotifications();
 
         // Get the callback that was passed to onForegroundEvent
-        const onForegroundEventCallback = (mockNotifee.onForegroundEvent as any).mock.calls[0][0] as (event: any) => Promise<void>;
+        const onForegroundEventCallback = (mockNotifee.onForegroundEvent as any)
+          .mock.calls[0][0] as (event: any) => Promise<void>;
         expect(onForegroundEventCallback).toBeDefined();
 
         await onForegroundEventCallback({ type: 0 }); // EventType.PRESS
@@ -313,7 +316,8 @@ describe('RNFirebaseService', () => {
         await service.initializeNotifications();
 
         // Get the callback that was passed to onForegroundEvent
-        const onForegroundEventCallback = (mockNotifee.onForegroundEvent as any).mock.calls[0][0] as (event: any) => Promise<void>;
+        const onForegroundEventCallback = (mockNotifee.onForegroundEvent as any)
+          .mock.calls[0][0] as (event: any) => Promise<void>;
         expect(onForegroundEventCallback).toBeDefined();
 
         await onForegroundEventCallback({ type: 1 }); // EventType.ACTION_PRESS
@@ -328,7 +332,8 @@ describe('RNFirebaseService', () => {
         await service.initializeNotifications();
 
         // Get the callback that was passed to onForegroundEvent
-        const onForegroundEventCallback = (mockNotifee.onForegroundEvent as any).mock.calls[0][0] as (event: any) => Promise<void>;
+        const onForegroundEventCallback = (mockNotifee.onForegroundEvent as any)
+          .mock.calls[0][0] as (event: any) => Promise<void>;
         expect(onForegroundEventCallback).toBeDefined();
 
         await onForegroundEventCallback({ type: 999 }); // Unknown event type

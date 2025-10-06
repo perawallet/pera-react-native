@@ -41,7 +41,7 @@ export default defineConfig(() => {
                 },
                 paramsType: 'object',
                 pathParamsType: 'object',
-                parser: 'client',  //TODO: we should replace this with 'zod' once the backend OpenAPI is cleaned up
+                parser: 'client', //TODO: we should replace this with 'zod' once the backend OpenAPI is cleaned up
             }),
             pluginZod({
                 output: {
