@@ -14,6 +14,7 @@ import ChartPeriodSelection, {
   ChartPeriod,
 } from '../../common/chart-period-selection/ChartPeriodSelection';
 import { useTheme } from '@rneui/themed';
+import { Easing } from 'react-native';
 
 const SHOW_ALGO_AMOUNTS = true; //TODO remove this - it's only for debugging when no USD values are present
 const FOCUS_DEBOUNCE_TIME = 200;
@@ -106,6 +107,10 @@ const PortfolioChart = ({ onSelectionChanged }: PortfolioChartProps) => {
         endSpacing={0}
         showStripOnFocus
         showDataPointOnFocus
+        isAnimated
+        animateOnDataChange
+        animationDuration={200}
+        onDataChangeAnimationDuration={200}
         pointerConfig={
           {
             showPointerStrip: true,
