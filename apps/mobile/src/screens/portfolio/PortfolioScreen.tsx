@@ -57,19 +57,19 @@ const PortfolioScreen = () => {
 
   return (
     <MainScreenLayout fullScreen>
+      <PeraView style={styles.iconBar}>
+        <TouchableOpacity>
+          <CameraIcon style={styles.icon} color={theme.colors.textMain} />
+        </TouchableOpacity>
+        <TouchableOpacity>
+          <BellIcon style={styles.icon} color={theme.colors.textMain} />
+        </TouchableOpacity>
+      </PeraView>
       <ScrollView
         scrollEnabled={scrollingEnabled}
         style={styles.webview}
         contentContainerStyle={styles.webviewContent}
       >
-        <PeraView style={styles.iconBar}>
-          <TouchableOpacity>
-            <CameraIcon style={styles.icon} color={theme.colors.textMain} />
-          </TouchableOpacity>
-          <TouchableOpacity>
-            <BellIcon style={styles.icon} color={theme.colors.textMain} />
-          </TouchableOpacity>
-        </PeraView>
         <PeraView style={styles.valueTitleBar}>
           <Text h4Style={styles.valueTitle} h4>
             Portfolio Value

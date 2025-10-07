@@ -4,7 +4,8 @@ import { PropsWithChildren } from 'react';
 export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
   return {
     iconBar: {
-      padding: 0,
+      paddingVertical: 0,
+      paddingHorizontal: theme.spacing.xl,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'flex-end',
