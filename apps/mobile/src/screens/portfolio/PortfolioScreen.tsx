@@ -30,6 +30,7 @@ const PortfolioScreen = () => {
   const [chartData, setChartData] = useState<AccountWealthHistoryItem | null>(
     null,
   );
+  const [scrollingEnabled, setScrollingEnabled] = useState<boolean>(true);
 
   const loading = data.some(d => !d.isFetched);
   const algoAmount = data.reduce(
@@ -44,6 +45,12 @@ const PortfolioScreen = () => {
   const chartSelectionChanged = useCallback(
     (selected: AccountWealthHistoryItem | null) => {
       setChartData(selected);
+
+      if (selected) {
+        setScrollingEnabled(false)
+      } else {
+        setScrollingEnabled(true)
+      }
     },
     [setChartData],
   );
@@ -51,6 +58,7 @@ const PortfolioScreen = () => {
   return (
     <MainScreenLayout fullScreen>
       <ScrollView
+        scrollEnabled={scrollingEnabled}
         style={styles.webview}
         contentContainerStyle={styles.webviewContent}
       >

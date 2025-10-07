@@ -15,8 +15,8 @@ import ChartPeriodSelection, {
 } from '../../common/chart-period-selection/ChartPeriodSelection';
 import { useTheme } from '@rneui/themed';
 
-const UNFOCUS_TIMEOUT = 1000;
 const SHOW_ALGO_AMOUNTS = true; //TODO remove this - it's only for debugging when no USD values are present
+const FOCUS_DEBOUNCE_TIME = 200;
 
 type PortfolioChartProps = {
   onSelectionChanged: (item: AccountWealthHistoryItem | null) => void;
@@ -26,7 +26,8 @@ const PortfolioChart = ({ onSelectionChanged }: PortfolioChartProps) => {
   const { theme } = useTheme();
   const themeStyle = useStyles();
   const accounts = useAllAccounts();
-  const [unfocusTimer, setUnfocusTimer] = useState<NodeJS.Timeout>();
+  const [lastSentIndex, setLastSentIndex] = useState<number>();
+  const [lastSentTime, setLastSentTime] = useState<number>(Date.now());
 
   const addresses = useMemo(
     () => accounts.map((a: WalletAccount) => a.address),
@@ -65,17 +66,20 @@ const PortfolioChart = ({ onSelectionChanged }: PortfolioChartProps) => {
   }, [dataPoints]);
 
   const onFocus = useCallback(
-    (_: any, index: number) => {
-      const dataItem = data?.results?.[index] ?? null;
-      onSelectionChanged(dataItem);
-      if (unfocusTimer) {
-        clearTimeout(unfocusTimer);
+    ({ pointerIndex: index, pointerX }: { pointerIndex: number, pointerX: number }) => {
+      if (Date.now() - lastSentTime > FOCUS_DEBOUNCE_TIME) {
+        if (pointerX > 0 && index >= 0 && index !== lastSentIndex) {
+          const dataItem = data?.results?.[index] ?? null;
+          onSelectionChanged(dataItem);
+          setLastSentIndex(index)
+        } else if (pointerX === 0) {
+          onSelectionChanged(null)
+          setLastSentIndex(undefined)
+        }
+        setLastSentTime(Date.now())
       }
-      setUnfocusTimer(
-        setTimeout(() => onSelectionChanged(null), UNFOCUS_TIMEOUT),
-      );
     },
-    [data, onSelectionChanged, setUnfocusTimer, unfocusTimer],
+    [data, onSelectionChanged, lastSentIndex, setLastSentIndex],
   );
 
   if (!isPending && !dataPoints?.length) {
@@ -94,26 +98,26 @@ const PortfolioChart = ({ onSelectionChanged }: PortfolioChartProps) => {
         startOpacity={0.3}
         endOpacity={0.0}
         areaChart
-        yAxisLabelWidth={0}
+        yAxisLabelWidth={30}
         hideYAxisText
         yAxisOffset={yAxisOffsets[0]}
         maxValue={yAxisOffsets[1]}
         initialSpacing={0}
         endSpacing={0}
-        focusEnabled
         showStripOnFocus
         showDataPointOnFocus
-        stripColor={theme.colors.textGrayLighter}
-        stripWidth={1}
-        stripHeight={140}
-        stripOpacity={1}
-        stripStrokeDashArray={[6, 2]}
-        focusedDataPointColor={theme.colors.helperPositive}
-        focusedDataPointWidth={theme.spacing.md}
-        focusedDataPointHeight={theme.spacing.md}
-        delayBeforeUnFocus={UNFOCUS_TIMEOUT}
+        pointerConfig={
+          {
+            showPointerStrip: true,
+            pointerStripColor: theme.colors.textGrayLighter,
+            pointerStripWidth: 1,
+            pointerStripHeight: 140,
+            pointerColor: theme.colors.helperPositive,
+            strokeDashArray: [6, 2]
+          }
+        }
+        getPointerProps={onFocus}
         disableScroll
-        onFocus={onFocus}
         adjustToWidth
       />
       <ChartPeriodSelection value={period} onChange={setPeriod} />

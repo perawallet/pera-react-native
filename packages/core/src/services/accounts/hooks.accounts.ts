@@ -267,7 +267,6 @@ export const useAccountBalances = (accounts: WalletAccount[]) => {
                         account_address: address,
                         params: { include_algo: true },
                     }),
-                staleTime: Infinity,
             }
         }),
     })
