@@ -18,7 +18,7 @@ end
 
 target 'mobile' do
   config = use_native_modules!
-
+  
   use_frameworks! :linkage => :static
   $RNFirebaseAsStaticFramework = true
 
@@ -29,6 +29,12 @@ target 'mobile' do
   )
 
   post_install do |installer|
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        config.build_settings["GCC_WARN_INHIBIT_ALL_WARNINGS"] = "YES"
+      end
+    end
+
     # https://github.com/facebook/react-native/blob/main/packages/react-native/scripts/react_native_pods.rb#L197-L202
     react_native_post_install(
       installer,
