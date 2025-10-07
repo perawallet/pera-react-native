@@ -7,6 +7,19 @@ import {
     type DeviceInfoService,
 } from '@services/device'
 
+vi.mock('../../../services/blockchain', () => ({
+    Networks: {
+        mainnet: 'mainnet',
+        testnet: 'testnet',
+    },
+}))
+
+vi.mock('../../../api/query-client', () => ({
+    createFetchClient: vi.fn(() => vi.fn()),
+    logRequest: vi.fn(),
+    logResponse: vi.fn(),
+}))
+
 describe('services/device/platform-service', () => {
     test('useDeviceInfoService resolves the registered DeviceInfoService from the container', () => {
         const dummy: DeviceInfoService = {

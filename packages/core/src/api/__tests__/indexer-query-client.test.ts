@@ -11,6 +11,13 @@ vi.mock('../../config/main', () => ({
     config: configMock,
 }))
 
+vi.mock('../../services/blockchain', () => ({
+    Networks: {
+        mainnet: 'mainnet',
+        testnet: 'testnet',
+    },
+}))
+
 // Mocks for ky and zustand store (alias: @store/app-store)
 
 const kyState = vi.hoisted(() => {

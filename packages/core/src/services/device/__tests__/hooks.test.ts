@@ -2,6 +2,27 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { registerTestPlatform } from '@test-utils'
 
+vi.mock('../../../services/blockchain', () => ({
+    Networks: {
+        mainnet: 'mainnet',
+        testnet: 'testnet',
+    },
+}))
+
+vi.mock('../../../api/query-client', () => ({
+    createFetchClient: vi.fn(() => vi.fn()),
+    logRequest: vi.fn(),
+    logResponse: vi.fn(),
+}))
+
+vi.mock('../../../services/assets', () => ({
+    createAssetsSlice: vi.fn(() => ({
+        assetIDs: [],
+        setAssetIDs: vi.fn(),
+    })),
+    partializeAssetsSlice: vi.fn(() => ({ assetIDs: [] })),
+}))
+
 // Hoisted spies for API composables
 const api = vi.hoisted(() => {
     return {
