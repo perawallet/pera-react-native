@@ -33,14 +33,17 @@ catalog:
   zustand: ^5.0.8
 
 onlyBuiltDependencies:
+  - '@firebase/util'
+  - electron
+  - electron-winstaller
+  - es5-ext
+  - esbuild
+  - msw
+  - protobufjs
   - react-native-nitro-modules
   - sharp
-  
+  - simple-git-hooks
+
 supportedArchitectures:
-  os:
-  - win32
-  - darwin
-  - current
-  cpu:
-  - x64
-  - arm64
+  cpu: [x64, arm64]
+  os: [win32, darwin, current]
