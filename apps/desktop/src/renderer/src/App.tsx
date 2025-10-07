@@ -1,34 +1,44 @@
-import Versions from './components/Versions'
-import electronLogo from './assets/electron.svg'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { QueryProvider } from './providers/QueryProvider'
+import Sidebar from './components/Sidebar'
+import PortfolioScreen from './screens/portfolio/PortfolioScreen'
+import DiscoverScreen from './screens/discover/DiscoverScreen'
+import SwapScreen from './screens/swap/SwapScreen'
+import StakingScreen from './screens/staking/StakingScreen'
+import MenuScreen from './screens/menu/MenuScreen'
+import AccountScreen from './screens/account/AccountScreen'
+import AssetDetailsScreen from './screens/asset-details/AssetDetailsScreen'
+import SettingsScreen from './screens/settings/SettingsScreen'
+import SettingsSubPageScreen from './screens/settings-sub-page/SettingsSubPageScreen'
+import OnboardingScreen from './screens/onboarding/OnboardingScreen'
+import NameAccountScreen from './screens/name-account/NameAccountScreen'
+import ImportAccountScreen from './screens/import-account/ImportAccountScreen'
 
-function App(): React.JSX.Element {
-  const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
-
+const App = () => {
   return (
-    <>
-      <img alt="logo" className="logo" src={electronLogo} />
-      <div className="creator">Powered by electron-vite</div>
-      <div className="text">
-        Build an Electron app with <span className="react">React</span>
-        &nbsp;and <span className="ts">TypeScript</span>
-      </div>
-      <p className="tip">
-        Please try pressing <code>F12</code> to open the devTool
-      </p>
-      <div className="actions">
-        <div className="action">
-          <a href="https://electron-vite.org/" target="_blank" rel="noreferrer">
-            Documentation
-          </a>
+    <QueryProvider>
+      <BrowserRouter>
+        <div className="h-screen w-screen bg-white text-gray-900 flex">
+          <Sidebar />
+          <div className="flex-1 overflow-auto">
+            <Routes>
+              <Route path="/" element={<PortfolioScreen />} />
+              <Route path="/discover" element={<DiscoverScreen />} />
+              <Route path="/swap" element={<SwapScreen />} />
+              <Route path="/staking" element={<StakingScreen />} />
+              <Route path="/menu" element={<MenuScreen />} />
+              <Route path="/account" element={<AccountScreen />} />
+              <Route path="/asset-details" element={<AssetDetailsScreen />} />
+              <Route path="/settings" element={<SettingsScreen />} />
+              <Route path="/settings-sub-page" element={<SettingsSubPageScreen />} />
+              <Route path="/onboarding" element={<OnboardingScreen />} />
+              <Route path="/name-account" element={<NameAccountScreen />} />
+              <Route path="/import-account" element={<ImportAccountScreen />} />
+            </Routes>
+          </div>
         </div>
-        <div className="action">
-          <a target="_blank" rel="noreferrer" onClick={ipcHandle}>
-            Send IPC
-          </a>
-        </div>
-      </div>
-      <Versions></Versions>
-    </>
+      </BrowserRouter>
+    </QueryProvider>
   )
 }
 
