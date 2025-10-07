@@ -98,7 +98,7 @@ const PortfolioChart = ({ onSelectionChanged }: PortfolioChartProps) => {
         startOpacity={0.3}
         endOpacity={0.0}
         areaChart
-        yAxisLabelWidth={30}
+        yAxisLabelWidth={1}
         hideYAxisText
         yAxisOffset={yAxisOffsets[0]}
         maxValue={yAxisOffsets[1]}
