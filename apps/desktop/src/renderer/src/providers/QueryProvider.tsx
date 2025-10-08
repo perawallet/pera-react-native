@@ -38,5 +38,3 @@ export function QueryProvider({ persister, children }: QueryProviderProps): Reac
     </PersistQueryClientProvider>
   )
 }
-
-export { queryClient }

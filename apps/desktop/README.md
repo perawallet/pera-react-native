@@ -1,7 +1,6 @@
 # desktop
 
-An Electron application with React and TypeScript.  Note this is just a quick demo to show that it's possible to share some code.  It was largly vibecoded and probably
-needs to be thrown away for a real implementation if we do one.
+An Electron application with React and TypeScript. Note this is just a quick demo to show that it's possible to share some code. It was largly vibecoded and probably needs to be thrown away for a real implementation if we do one.
 
 ## Project Setup
 
