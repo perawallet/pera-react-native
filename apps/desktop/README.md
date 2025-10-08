@@ -1,10 +1,7 @@
 # desktop
 
-An Electron application with React and TypeScript
-
-## Recommended IDE Setup
-
-- [VSCode](https://code.visualstudio.com/) + [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) + [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
+An Electron application with React and TypeScript.  Note this is just a quick demo to show that it's possible to share some code.  It was largly vibecoded and probably
+needs to be thrown away for a real implementation if we do one.
 
 ## Project Setup
 

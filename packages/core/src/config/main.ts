@@ -24,18 +24,15 @@ export const configSchema = z.object({
 export type Config = z.infer<typeof configSchema>
 
 /**
- * Select a validated config object based on the provided env or process env.
+ * Select a validated config object based on the provided env or environment variables.
  * - APP_ENV has precedence over NODE_ENV
  * - Maps 'test' (Vitest) to staging by default
  * - Fallback for unknown values is staging
  */
 export function getConfigForEnv(env?: string): Config {
     const key = (
-        env ??
-        process.env.APP_ENV ??
-        process.env.NODE_ENV ??
-        'staging'
-    ).toLowerCase()
+        env ?? 'staging'
+    )?.toLowerCase() || 'staging'
 
     let selected: Config
     switch (key) {

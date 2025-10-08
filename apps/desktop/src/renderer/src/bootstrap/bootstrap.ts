@@ -1,4 +1,10 @@
-import { registerPlatformServices } from '@perawallet/core';
+import {
+  useCrashReportingService,
+  useRemoteConfigService,
+  useNotificationService,
+  registerPlatformServices,
+  useAppStore,
+} from '@perawallet/core';
 
 // Mock implementations for desktop
 class WebKeyValueStorageService {
@@ -102,6 +108,30 @@ const platformServices = {
 
 registerPlatformServices(platformServices);
 
+
+export const useBootstrapper = () => {
+  const crashlyticsService = useCrashReportingService();
+  const remoteConfigService = useRemoteConfigService();
+  const notificationService = useNotificationService();
+
+  const setFcmToken = useAppStore(state => {
+    return state.setFcmToken;
+  });
+
+  return async () => {
+    const crashlyticsInit = crashlyticsService.initializeCrashReporting();
+    const remoteConfigInit = remoteConfigService.initializeRemoteConfig();
+
+    await Promise.allSettled([crashlyticsInit, remoteConfigInit]);
+
+    const notificationResults =
+      await notificationService.initializeNotifications();
+
+    setFcmToken(notificationResults.token || null);
+
+    return platformServices;
+  };
+};
 export const bootstrap = () => {
   // Initialize if needed
 };

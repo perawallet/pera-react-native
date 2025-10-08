@@ -1,96 +1,183 @@
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Button } from '../../components/ui/button';
-import { Switch } from '../../components/ui/switch';
+import styled from 'styled-components'
+import { useAppStore } from '@perawallet/core'
+import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+
+const Container = styled.div`
+  padding: var(--spacing-xl);
+  max-width: 64rem;
+`
+
+const Header = styled.div`
+  margin-bottom: var(--spacing-xl);
+  h1 {
+    font-size: 2.25rem;
+    font-weight: bold;
+    color: var(--color-text-main);
+    margin-bottom: var(--spacing-sm);
+  }
+  p {
+    font-size: 1.125rem;
+    color: var(--color-text-gray);
+  }
+`
+
+const BackButton = styled.button`
+  background: none;
+  border: none;
+  color: var(--color-text-gray);
+  cursor: pointer;
+  font-size: 1rem;
+  margin-bottom: var(--spacing-sm);
+  padding: 0;
+
+  &:hover {
+    color: var(--color-text-main);
+  }
+`
+
+const SettingsGrid = styled.div`
+  display: grid;
+  gap: var(--spacing-xl);
+`
+
+const SettingCard = styled.div`
+  background-color: var(--color-background);
+  border-radius: var(--spacing-lg);
+  border: 1px solid var(--color-grey2);
+  padding: var(--spacing-xl);
+`
+
+const SettingItem = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-lg);
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+`
+
+const SettingLabel = styled.div`
+  flex: 1;
+  h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-text-main);
+    margin-bottom: var(--spacing-xs);
+  }
+  p {
+    font-size: 0.875rem;
+    color: var(--color-text-gray);
+  }
+`
+
+const ThemeButtons = styled.div`
+  display: flex;
+  gap: var(--spacing-sm);
+`
+
+const ThemeButton = styled.button<{ active: boolean }>`
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border: 1px solid ${props => props.active ? 'var(--color-primary)' : 'var(--color-grey2)'};
+  background-color: ${props => props.active ? 'var(--color-primary)' : 'var(--color-background)'};
+  color: ${props => props.active ? 'var(--color-white)' : 'var(--color-text-main)'};
+  border-radius: var(--spacing-sm);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+
+  &:hover {
+    border-color: var(--color-primary);
+  }
+`
+
+const NetworkSwitch = styled.button`
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border: 1px solid var(--color-grey2);
+  background-color: var(--color-background);
+  color: var(--color-text-main);
+  border-radius: var(--spacing-sm);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+
+  &:hover {
+    border-color: var(--color-primary);
+  }
+`
 
 const SettingsScreen = () => {
+  const navigate = useNavigate()
+  const theme = useAppStore(state => state.theme)
+  const setTheme = useAppStore(state => state.setTheme)
+  const network = useAppStore(state => state.network)
+  const setNetwork = useAppStore(state => state.setNetwork)
+
+  useEffect(() => {
+    const applyTheme = () => {
+      let effectiveTheme = theme
+      if (theme === 'system') {
+        effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+      }
+      document.documentElement.setAttribute('data-theme', effectiveTheme)
+    }
+
+    applyTheme()
+
+    if (theme === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+      const handleChange = () => applyTheme()
+      mediaQuery.addEventListener('change', handleChange)
+      return () => mediaQuery.removeEventListener('change', handleChange)
+    }
+  }, [theme])
+
+  const toggleNetwork = () => {
+    setNetwork(network === 'mainnet' ? 'testnet' : 'mainnet')
+  }
+
   return (
-    <div className="p-8 max-w-4xl space-y-8">
-      <div>
-        <h1 className="text-4xl font-bold text-foreground mb-2">Settings</h1>
-        <p className="text-lg text-muted-foreground">Configure your app preferences and security options</p>
-      </div>
+    <Container>
+      <Header>
+        <BackButton onClick={() => navigate('/menu')}>← Back to Menu</BackButton>
+        <h1>Settings</h1>
+        <p>Configure your app preferences</p>
+      </Header>
 
-      <div className="space-y-6">
-        {/* General Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle>General</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <div className="text-base font-medium">Enable Notifications</div>
-                <div className="text-sm text-muted-foreground">Receive alerts for transactions and updates</div>
-              </div>
-              <Switch defaultChecked />
-            </div>
+      <SettingsGrid>
+        <SettingCard>
+          <SettingItem>
+            <SettingLabel>
+              <h3>Theme</h3>
+              <p>Choose your preferred theme</p>
+            </SettingLabel>
+            <ThemeButtons>
+              <ThemeButton active={theme === 'light'} onClick={() => setTheme('light')}>
+                Light
+              </ThemeButton>
+              <ThemeButton active={theme === 'dark'} onClick={() => setTheme('dark')}>
+                Dark
+              </ThemeButton>
+              <ThemeButton active={theme === 'system'} onClick={() => setTheme('system')}>
+                System
+              </ThemeButton>
+            </ThemeButtons>
+          </SettingItem>
 
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <div className="text-base font-medium">Biometric Authentication</div>
-                <div className="text-sm text-muted-foreground">Use fingerprint or face recognition</div>
-              </div>
-              <Switch />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Security Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Security</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4">
-              <Button className="h-12">
-                🔐 Change PIN
-              </Button>
-              <Button variant="outline" className="h-12">
-                📝 Backup Recovery Phrase
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Network Settings */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Network</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="p-4 bg-muted rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-medium">Current Network</div>
-                  <div className="text-sm text-muted-foreground">Connected to MainNet</div>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-3 h-3 bg-success rounded-full mr-2"></div>
-                  <span className="font-medium">MainNet</span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* About */}
-        <Card>
-          <CardHeader>
-            <CardTitle>About</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
-              <span>Version</span>
-              <span className="font-medium">1.0.0</span>
-            </div>
-            <div className="flex justify-between items-center p-4 bg-muted rounded-lg">
-              <span>Build</span>
-              <span className="font-medium">2024.10.07</span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+          <SettingItem>
+            <SettingLabel>
+              <h3>Network</h3>
+              <p>Switch between MainNet and TestNet</p>
+            </SettingLabel>
+            <NetworkSwitch onClick={toggleNetwork}>
+              {network === 'mainnet' ? 'MainNet' : 'TestNet'}
+            </NetworkSwitch>
+          </SettingItem>
+        </SettingCard>
+      </SettingsGrid>
+    </Container>
   );
 };
 

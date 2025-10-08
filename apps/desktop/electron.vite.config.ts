@@ -1,6 +1,7 @@
 import { resolve } from 'path'
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import react from '@vitejs/plugin-react'
+import { nodePolyfills } from 'vite-plugin-node-polyfills'
 
 export default defineConfig({
   main: {
@@ -12,9 +13,10 @@ export default defineConfig({
   renderer: {
     resolve: {
       alias: {
-        '@renderer': resolve('src/renderer/src')
+        '@renderer': resolve('src/renderer/src'),
+        'crypto': 'crypto-browserify'
       }
     },
-    plugins: [react()]
+    plugins: [react(), nodePolyfills()]
   }
 })

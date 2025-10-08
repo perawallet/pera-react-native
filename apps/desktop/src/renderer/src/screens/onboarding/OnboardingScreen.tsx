@@ -1,18 +1,90 @@
+import { useNavigate } from 'react-router-dom'
+import { useCreateAccount } from '@perawallet/core'
+import { useState } from 'react'
+import styled from 'styled-components'
+
+const Container = styled.div`
+  padding: var(--spacing-xl);
+`
+
+const Title = styled.h1`
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: var(--spacing-lg);
+  color: var(--color-text-main);
+`
+
+const Subtitle = styled.p`
+  color: var(--color-text-gray);
+`
+
+const ButtonContainer = styled.div`
+  margin-top: var(--spacing-xl);
+  text-align: center;
+`
+
+const CreateButton = styled.button`
+  padding: var(--spacing-lg) var(--spacing-xl);
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--spacing-sm);
+  font-size: 1.125rem;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+`
+
+const ImportButton = styled.button`
+  padding: var(--spacing-lg) var(--spacing-xl);
+  background-color: var(--color-grey4);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--spacing-sm);
+  font-size: 1.125rem;
+  cursor: pointer;
+  margin-left: var(--spacing-lg);
+`
+
 const OnboardingScreen = () => {
+  const navigate = useNavigate()
+  const createAccount = useCreateAccount()
+  const [processing, setProcessing] = useState(false)
+
+  const doCreate = async () => {
+    try {
+      const account = await createAccount({ account: 0, keyIndex: 0 })
+      navigate('/name-account', { state: { account } })
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  const createAccountHandler = async () => {
+    setProcessing(true)
+    doCreate()
+  }
+
+  const importAccount = () => {
+    navigate('/import-account')
+  }
+
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Welcome to Pera Wallet</h1>
-      <p>Get started with your crypto journey</p>
-      {/* Placeholder content */}
-      <div className="mt-8 text-center">
-        <button className="px-6 py-3 bg-blue-500 text-white rounded-lg text-lg">
-          Create New Account
-        </button>
-        <button className="px-6 py-3 bg-gray-500 text-white rounded-lg text-lg ml-4">
+    <Container>
+      <Title>Welcome to Pera Wallet</Title>
+      <Subtitle>Get started with your crypto journey</Subtitle>
+      <ButtonContainer>
+        <CreateButton onClick={createAccountHandler} disabled={processing}>
+          {processing ? 'Creating...' : 'Create New Account'}
+        </CreateButton>
+        <ImportButton onClick={importAccount}>
           Import Existing Account
-        </button>
-      </div>
-    </div>
+        </ImportButton>
+      </ButtonContainer>
+    </Container>
   );
 };
 

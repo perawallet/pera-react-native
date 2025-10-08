@@ -4,7 +4,7 @@ import {
     createJSONStorage,
     type PersistOptions,
 } from 'zustand/middleware'
-import { useKeyValueStorageService } from '../services'
+import { useKeyValueStorageService } from '../services/storage/platform-service'
 import {
     createAccountsSlice,
     partializeAccountsSlice,

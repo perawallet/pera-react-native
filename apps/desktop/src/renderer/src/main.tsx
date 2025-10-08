@@ -1,10 +1,9 @@
-import './assets/main.css'
-
+import "reflect-metadata"
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import './assets/theme.css'
 import App from './App'
 
-console.log('RENDERING')
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

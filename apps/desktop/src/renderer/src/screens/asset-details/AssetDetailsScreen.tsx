@@ -1,36 +1,52 @@
+import {
+  AssetDetailsContainer,
+  Header,
+  Description,
+  ContentWrapper,
+  AssetCard,
+  AssetTitle,
+  AssetSubtitle,
+  AssetPrice,
+  InfoGrid,
+  InfoCard,
+  InfoCardTitle,
+  InfoCardValue
+} from './AssetDetailsScreen.styles'
+
 const AssetDetailsScreen = () => {
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Asset Details</h1>
-      <p>Detailed information about the selected asset</p>
-      {/* Placeholder content */}
-      <div className="mt-4">
-        <div className="p-4 border rounded mb-4">
-          <h3 className="font-semibold text-lg">ALGO</h3>
-          <p className="text-sm text-gray-600">Algorand</p>
-          <p className="text-2xl font-bold mt-2">$0.25</p>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="p-4 border rounded">
-            <h4 className="font-semibold">Market Cap</h4>
-            <p>$1.2B</p>
-          </div>
-          <div className="p-4 border rounded">
-            <h4 className="font-semibold">24h Volume</h4>
-            <p>$50M</p>
-          </div>
-          <div className="p-4 border rounded">
-            <h4 className="font-semibold">Circulating Supply</h4>
-            <p>8.1B ALGO</p>
-          </div>
-          <div className="p-4 border rounded">
-            <h4 className="font-semibold">Your Balance</h4>
-            <p>100.50 ALGO</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+    <AssetDetailsContainer>
+      <Header>Asset Details</Header>
+      <Description>Detailed information about the selected asset</Description>
 
-export default AssetDetailsScreen;
+      <ContentWrapper>
+        <AssetCard>
+          <AssetTitle>ALGO</AssetTitle>
+          <AssetSubtitle>Algorand</AssetSubtitle>
+          <AssetPrice>$0.25</AssetPrice>
+        </AssetCard>
+
+        <InfoGrid>
+          <InfoCard>
+            <InfoCardTitle>Market Cap</InfoCardTitle>
+            <InfoCardValue>$1.2B</InfoCardValue>
+          </InfoCard>
+          <InfoCard>
+            <InfoCardTitle>24h Volume</InfoCardTitle>
+            <InfoCardValue>$50M</InfoCardValue>
+          </InfoCard>
+          <InfoCard>
+            <InfoCardTitle>Circulating Supply</InfoCardTitle>
+            <InfoCardValue>8.1B ALGO</InfoCardValue>
+          </InfoCard>
+          <InfoCard>
+            <InfoCardTitle>Your Balance</InfoCardTitle>
+            <InfoCardValue>100.50 ALGO</InfoCardValue>
+          </InfoCard>
+        </InfoGrid>
+      </ContentWrapper>
+    </AssetDetailsContainer>
+  )
+}
+
+export default AssetDetailsScreen

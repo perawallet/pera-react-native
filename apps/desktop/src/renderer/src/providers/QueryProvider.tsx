@@ -1,10 +1,9 @@
-import React, { PropsWithChildren } from 'react';
+import { PropsWithChildren } from 'react';
 import {
   PersistQueryClientProvider,
   PersistQueryClientRootOptions,
 } from '@tanstack/react-query-persist-client';
 import { OmitKeyof, QueryCache, QueryClient } from '@tanstack/react-query';
-import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 
 const cache = new QueryCache({
   onError: error => {
@@ -26,13 +25,13 @@ const queryClient = new QueryClient({
   },
 });
 
-const persister = createSyncStoragePersister({
-  storage: window.localStorage,
-});
+type QueryProviderProps = OmitKeyof<
+  PersistQueryClientRootOptions,
+  'queryClient'
+> &
+  PropsWithChildren;
 
-type QueryProviderProps = PropsWithChildren;
-
-export function QueryProvider({ children }: QueryProviderProps) {
+export function QueryProvider({ persister, children }: QueryProviderProps) {
   return (
     <PersistQueryClientProvider
       client={queryClient}

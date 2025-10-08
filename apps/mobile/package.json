@@ -60,7 +60,6 @@
     "readable-stream": "^4.7.0",
     "reflect-metadata": "catalog:",
     "sharp": "^0.34.4",
-    "tailwindcss": "^4.1.13",
     "tsyringe": "catalog:",
     "util": "catalog:",
     "zustand": "catalog:"
