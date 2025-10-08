@@ -80,9 +80,10 @@ const ThemeButtons = styled.div`
 
 const ThemeButton = styled.button<{ active: boolean }>`
   padding: var(--spacing-sm) var(--spacing-lg);
-  border: 1px solid ${props => props.active ? 'var(--color-primary)' : 'var(--color-grey2)'};
-  background-color: ${props => props.active ? 'var(--color-primary)' : 'var(--color-background)'};
-  color: ${props => props.active ? 'var(--color-white)' : 'var(--color-text-main)'};
+  border: 1px solid ${(props) => (props.active ? 'var(--color-primary)' : 'var(--color-grey2)')};
+  background-color: ${(props) =>
+    props.active ? 'var(--color-primary)' : 'var(--color-background)'};
+  color: ${(props) => (props.active ? 'var(--color-white)' : 'var(--color-text-main)')};
   border-radius: var(--spacing-sm);
   cursor: pointer;
   font-size: 0.875rem;
@@ -108,18 +109,20 @@ const NetworkSwitch = styled.button`
   }
 `
 
-const SettingsScreen = () => {
+const SettingsScreen = (): React.ReactElement => {
   const navigate = useNavigate()
-  const theme = useAppStore(state => state.theme)
-  const setTheme = useAppStore(state => state.setTheme)
-  const network = useAppStore(state => state.network)
-  const setNetwork = useAppStore(state => state.setNetwork)
+  const theme = useAppStore((state) => state.theme)
+  const setTheme = useAppStore((state) => state.setTheme)
+  const network = useAppStore((state) => state.network)
+  const setNetwork = useAppStore((state) => state.setNetwork)
 
   useEffect(() => {
-    const applyTheme = () => {
+    const applyTheme = (): void => {
       let effectiveTheme = theme
       if (theme === 'system') {
-        effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
+          ? 'dark'
+          : 'light'
       }
       document.documentElement.setAttribute('data-theme', effectiveTheme)
     }
@@ -128,13 +131,15 @@ const SettingsScreen = () => {
 
     if (theme === 'system') {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-      const handleChange = () => applyTheme()
+      const handleChange = (): void => applyTheme()
       mediaQuery.addEventListener('change', handleChange)
-      return () => mediaQuery.removeEventListener('change', handleChange)
+      return (): void => mediaQuery.removeEventListener('change', handleChange)
     }
+
+    return () => {}
   }, [theme])
 
-  const toggleNetwork = () => {
+  const toggleNetwork = (): void => {
     setNetwork(network === 'mainnet' ? 'testnet' : 'mainnet')
   }
 
@@ -178,7 +183,7 @@ const SettingsScreen = () => {
         </SettingCard>
       </SettingsGrid>
     </Container>
-  );
-};
+  )
+}
 
-export default SettingsScreen;
+export default SettingsScreen

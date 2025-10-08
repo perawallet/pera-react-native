@@ -4,7 +4,7 @@ import AccountActions from '../../components/account/AccountActions'
 import RecentTransactions from '../../components/account/RecentTransactions'
 import { AccountScreenContainer, Header, BackButton } from './AccountScreen.styles'
 
-const AccountScreen = () => {
+const AccountScreen = (): React.ReactElement => {
   const navigate = useNavigate()
 
   return (

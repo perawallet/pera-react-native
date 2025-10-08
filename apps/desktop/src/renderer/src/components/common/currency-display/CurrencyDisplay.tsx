@@ -1,34 +1,32 @@
-import Decimal from 'decimal.js';
+import Decimal from 'decimal.js'
 
 export type CurrencyDisplayProps = {
-  currency: string;
-  value: Decimal;
-  precision: number;
-  prefix?: string;
-  alignRight?: boolean;
-  showSymbol?: boolean;
-  skeleton?: boolean;
-  units?: 'K' | 'M';
-  h1?: boolean;
-  h4?: boolean;
-  className?: string;
-};
+  currency: string
+  value: Decimal
+  precision: number
+  prefix?: string
+  alignRight?: boolean
+  showSymbol?: boolean
+  skeleton?: boolean
+  units?: 'K' | 'M'
+  h1?: boolean
+  h4?: boolean
+  className?: string
+}
 
 const formatCurrency = (
   value: Decimal,
   precision: number,
-  currency: string,
   locale: string,
-  showSymbol: boolean,
   units?: 'K' | 'M'
 ): string => {
-  let displayValue = value.toFixed(precision);
-  if (units === 'K') displayValue = (value.div(1000)).toFixed(precision) + 'K';
-  if (units === 'M') displayValue = (value.div(1000000)).toFixed(precision) + 'M';
-  return new Intl.NumberFormat(locale).format(parseFloat(displayValue));
-};
+  let displayValue = value.toFixed(precision)
+  if (units === 'K') displayValue = value.div(1000).toFixed(precision) + 'K'
+  if (units === 'M') displayValue = value.div(1000000).toFixed(precision) + 'M'
+  return new Intl.NumberFormat(locale).format(parseFloat(displayValue))
+}
 
-const CurrencyDisplay = (props: CurrencyDisplayProps) => {
+const CurrencyDisplay = (props: CurrencyDisplayProps): React.ReactElement => {
   const {
     currency,
     value,
@@ -39,22 +37,20 @@ const CurrencyDisplay = (props: CurrencyDisplayProps) => {
     skeleton = false,
     h1,
     h4,
-    className,
-  } = props;
+    className
+  } = props
 
-  const isAlgo = currency === 'ALGO';
+  const isAlgo = currency === 'ALGO'
 
   const displayValue = formatCurrency(
     value,
     precision,
-    currency,
     'en-US', // default locale
-    showSymbol,
-    units,
-  );
+    units
+  )
 
   if (skeleton) {
-    return <div className={`animate-pulse bg-gray-300 h-6 w-20 rounded ${className || ''}`}></div>;
+    return <div className={`animate-pulse bg-gray-300 h-6 w-20 rounded ${className || ''}`}></div>
   }
 
   return (
@@ -66,7 +62,7 @@ const CurrencyDisplay = (props: CurrencyDisplayProps) => {
         {units}
       </span>
     </div>
-  );
-};
+  )
+}
 
-export default CurrencyDisplay;
+export default CurrencyDisplay

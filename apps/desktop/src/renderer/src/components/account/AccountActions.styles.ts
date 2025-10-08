@@ -1,12 +1,12 @@
-import styled from 'styled-components';
-import { Button } from '../../components/ui/button';
+import styled from 'styled-components'
+import { Button } from '../../components/ui/button'
 
 export const ActionsContainer = styled.div`
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: var(--spacing-xl);
   margin-bottom: 2rem;
-`;
+`
 
 export const StyledButton = styled(Button)`
   padding: 1rem 1.5rem;
@@ -34,4 +34,4 @@ export const StyledButton = styled(Button)`
       background-color: #dc2626;
     }
   }
-`;
+`

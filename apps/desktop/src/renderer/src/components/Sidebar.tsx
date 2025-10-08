@@ -2,8 +2,9 @@ import { Link, useLocation } from 'react-router-dom'
 import { Button } from './ui/button'
 import { SidebarContainer, LogoContainer, LogoTitle, Nav, ButtonContainer } from './Sidebar.styles'
 import { MenuItem } from './ui/menuitem'
+import React from 'react'
 
-const Sidebar = () => {
+const Sidebar = (): React.ReactElement => {
   const location = useLocation()
 
   const menuItems = [
@@ -40,4 +41,3 @@ const Sidebar = () => {
 }
 
 export default Sidebar
-

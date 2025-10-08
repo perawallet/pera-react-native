@@ -14,7 +14,7 @@ export default defineConfig({
     resolve: {
       alias: {
         '@renderer': resolve('src/renderer/src'),
-        'crypto': 'crypto-browserify'
+        crypto: 'crypto-browserify'
       }
     },
     plugins: [react(), nodePolyfills()]

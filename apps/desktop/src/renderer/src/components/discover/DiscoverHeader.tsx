@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled from 'styled-components'
 
 const HeaderContainer = styled.div`
   display: flex;
@@ -18,15 +18,15 @@ const HeaderContainer = styled.div`
     font-size: 1.125rem;
     color: var(--color-text-gray);
   }
-`;
+`
 
-const DiscoverHeader = () => {
+const DiscoverHeader = (): React.ReactElement => {
   return (
     <HeaderContainer>
       <h1>Discover</h1>
       <p>Discover new assets and opportunities</p>
     </HeaderContainer>
-  );
-};
+  )
+}
 
-export default DiscoverHeader;
+export default DiscoverHeader

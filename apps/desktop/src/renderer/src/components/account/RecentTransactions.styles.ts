@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled from 'styled-components'
 
 export const RecentTransactionsContainer = styled.div`
   background-color: var(--color-background);
@@ -6,20 +6,20 @@ export const RecentTransactionsContainer = styled.div`
   border: 1px solid var(--color-grey2);
   padding: 2rem;
   box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-`;
+`
 
 export const Title = styled.h3`
   font-size: 1.5rem;
   font-weight: 600;
   color: var(--color-text-main);
   margin-bottom: var(--spacing-xl);
-`;
+`
 
 export const TransactionList = styled.div`
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
-`;
+`
 
 export const TransactionItem = styled.div`
   display: flex;
@@ -28,12 +28,12 @@ export const TransactionItem = styled.div`
   padding: var(--spacing-lg);
   background-color: var(--color-layer-gray-lightest);
   border-radius: 0.75rem;
-`;
+`
 
 export const TransactionDetails = styled.div`
   display: flex;
   align-items: center;
-`;
+`
 
 export const TransactionIcon = styled.div`
   width: 2.5rem;
@@ -52,7 +52,7 @@ export const TransactionIcon = styled.div`
   &.sent {
     background-color: var(--color-error);
   }
-`;
+`
 
 export const TransactionInfo = styled.div`
   p:first-child {
@@ -63,7 +63,7 @@ export const TransactionInfo = styled.div`
     font-size: 0.875rem;
     color: var(--color-text-gray);
   }
-`;
+`
 
 export const TransactionAmount = styled.div`
   text-align: right;
@@ -80,4 +80,4 @@ export const TransactionAmount = styled.div`
     font-size: 0.875rem;
     color: var(--color-text-gray);
   }
-`;
+`

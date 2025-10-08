@@ -53,9 +53,10 @@ const StyledCardDescription = styled.p`
   }
 `
 
-const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
-  ({ ...props }, ref) => <StyledCardDescription ref={ref} {...props} />
-)
+const CardDescription = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLParagraphElement>
+>(({ ...props }, ref) => <StyledCardDescription ref={ref} {...props} />)
 CardDescription.displayName = 'CardDescription'
 
 const StyledCardContent = styled.div`
@@ -73,7 +74,7 @@ const StyledCardFooter = styled.div`
   align-items: center;
   padding: var(--spacing-xl);
   padding-top: 0;
- `
+`
 
 const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ ...props }, ref) => <StyledCardFooter ref={ref} {...props} />

@@ -1,7 +1,7 @@
 import { Button } from '../../components/ui/button'
 import { ActionsContainer } from './PortfolioActions.styles'
 
-const PortfolioActions = () => {
+const PortfolioActions = (): React.ReactElement => {
   return (
     <ActionsContainer>
       <Button size="lg">📤 Send</Button>

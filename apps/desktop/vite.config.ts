@@ -7,7 +7,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      'crypto': 'crypto-browserify'
+      crypto: 'crypto-browserify'
     }
   },
   optimizeDeps: {

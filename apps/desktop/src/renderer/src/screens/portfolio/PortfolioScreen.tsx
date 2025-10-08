@@ -3,9 +3,9 @@ import PortfolioActions from '../../components/portfolio/PortfolioActions'
 import AccountList from '../../components/portfolio/AccountList'
 import { PortfolioContainer, Header } from './PortfolioScreen.styles'
 import PortfolioChart from '@renderer/components/portfolio/PortfolioChart'
+import React from 'react'
 
-const PortfolioScreen = () => {
-
+const PortfolioScreen = (): React.ReactElement => {
   return (
     <PortfolioContainer>
       <Header>

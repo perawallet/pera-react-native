@@ -96,7 +96,7 @@ const StyledButton = styled.button<ButtonProps>`
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : StyledButton
-    return <Comp variant={variant} size={size} ref={ref} {...props} asChild={asChild}/>
+    return <Comp variant={variant} size={size} ref={ref} {...props} asChild={asChild} />
   }
 )
 Button.displayName = 'Button'

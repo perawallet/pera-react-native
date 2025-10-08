@@ -74,7 +74,7 @@ const ImportButton = styled.button`
   cursor: pointer;
 `
 
-const ImportAccountScreen = () => {
+const ImportAccountScreen = (): React.ReactElement => {
   return (
     <Container>
       <Title>Import Account</Title>
@@ -91,7 +91,7 @@ const ImportAccountScreen = () => {
         <ImportButton>Import Account</ImportButton>
       </FormContainer>
     </Container>
-  );
-};
+  )
+}
 
-export default ImportAccountScreen;
+export default ImportAccountScreen

@@ -1,4 +1,4 @@
-import "reflect-metadata"
+import 'reflect-metadata'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './assets/theme.css'

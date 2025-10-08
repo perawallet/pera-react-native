@@ -1,5 +1,10 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import { useAllAccounts, getAccountDisplayName, useUpdateAccount, WalletAccount } from '@perawallet/core'
+import {
+  useAllAccounts,
+  getAccountDisplayName,
+  useUpdateAccount,
+  WalletAccount
+} from '@perawallet/core'
 import { useState } from 'react'
 import styled from 'styled-components'
 
@@ -50,7 +55,7 @@ const FinishButton = styled.button`
   cursor: pointer;
 `
 
-const NameAccountScreen = () => {
+const NameAccountScreen = (): React.ReactElement => {
   const location = useLocation()
   const navigate = useNavigate()
   const accounts = useAllAccounts()
@@ -61,7 +66,7 @@ const NameAccountScreen = () => {
   const initialWalletName = getAccountDisplayName(account)
   const [walletDisplay, setWalletDisplay] = useState<string>(initialWalletName)
 
-  const saveName = (value: string) => {
+  const saveName = (value: string): void => {
     if (account) {
       account.name = value
       updateAccount(account)
@@ -69,7 +74,7 @@ const NameAccountScreen = () => {
     }
   }
 
-  const goToHome = () => {
+  const goToHome = (): void => {
     navigate('/')
   }
 
@@ -87,11 +92,9 @@ const NameAccountScreen = () => {
         value={walletDisplay}
         onChange={(e) => saveName(e.target.value)}
       />
-      <FinishButton onClick={goToHome}>
-        Finish Account Creation
-      </FinishButton>
+      <FinishButton onClick={goToHome}>Finish Account Creation</FinishButton>
     </Container>
-  );
-};
+  )
+}
 
-export default NameAccountScreen;
+export default NameAccountScreen

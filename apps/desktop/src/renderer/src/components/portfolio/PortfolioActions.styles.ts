@@ -6,7 +6,6 @@ export const ActionsContainer = styled.div`
   justify-content: center;
   margin-top: var(--spacing-lg);
   gap: var(--spacing-lg);
-
 `
 
 export const ActionButton = styled.button`

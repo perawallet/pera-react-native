@@ -12,8 +12,9 @@ const StyledSwitchRoot = styled(SwitchPrimitives.Root)`
     cursor: pointer;
     border-radius: 9999px; /* rounded-full */
     border: 2px solid transparent;
-    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke,
-      opacity, box-shadow, transform, filter, backdrop-filter;
+    transition-property:
+      color, background-color, border-color, text-decoration-color, fill, stroke, opacity,
+      box-shadow, transform, filter, backdrop-filter;
     transition-duration: 200ms;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); /* transition-colors */
     align-items: center;
@@ -46,7 +47,9 @@ const StyledSwitchThumb = styled(SwitchPrimitives.Thumb)`
   width: 1.25rem; /* w-5 */
   border-radius: 9999px; /* rounded-full */
   background-color: #ffffff; /* bg-background */
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); /* shadow-lg */
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -2px rgb(0 0 0 / 0.1); /* shadow-lg */
   ring: 0;
   transition-property: transform;
   transition-duration: 200ms;

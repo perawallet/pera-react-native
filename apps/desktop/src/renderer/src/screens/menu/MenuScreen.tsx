@@ -9,7 +9,7 @@ import {
   VersionInfo
 } from './MenuScreen.styles'
 
-const MenuScreen = () => {
+const MenuScreen = (): React.ReactElement => {
   return (
     <MenuContainer>
       <Header>
@@ -58,7 +58,7 @@ const MenuScreen = () => {
         <p className="copyright">© 2024 Algorand Foundation</p>
       </VersionInfo>
     </MenuContainer>
-  );
-};
+  )
+}
 
-export default MenuScreen;
+export default MenuScreen

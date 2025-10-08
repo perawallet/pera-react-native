@@ -7,9 +7,9 @@ import {
   TransactionIcon,
   TransactionInfo,
   TransactionAmount
-} from './RecentTransactions.styles';
+} from './RecentTransactions.styles'
 
-const RecentTransactions = () => {
+const RecentTransactions = (): React.ReactElement => {
   return (
     <RecentTransactionsContainer>
       <Title>Recent Transactions</Title>
@@ -43,7 +43,7 @@ const RecentTransactions = () => {
         </TransactionItem>
       </TransactionList>
     </RecentTransactionsContainer>
-  );
-};
+  )
+}
 
-export default RecentTransactions;
+export default RecentTransactions

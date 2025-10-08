@@ -3,7 +3,7 @@ import { StyledView } from './PeraView.styles'
 
 export type PeraViewProps = React.HTMLAttributes<HTMLDivElement>
 
-const PeraView = (props: PeraViewProps) => {
+const PeraView = (props: PeraViewProps): React.ReactElement => {
   return <StyledView {...props}>{props.children}</StyledView>
 }
 

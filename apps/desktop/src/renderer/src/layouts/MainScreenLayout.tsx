@@ -1,6 +1,11 @@
 import React from 'react'
-import PeraView from '../components/common/view/PeraView'
-import { LayoutContainer, HeaderContainer, BackButton, Title, ContentContainer } from './MainScreenLayout.styles'
+import {
+  LayoutContainer,
+  HeaderContainer,
+  BackButton,
+  Title,
+  ContentContainer
+} from './MainScreenLayout.styles'
 
 export type MainScreenLayoutProps = {
   fullScreen?: boolean
@@ -9,8 +14,8 @@ export type MainScreenLayoutProps = {
   header?: boolean
 } & React.HTMLAttributes<HTMLDivElement>
 
-const MainScreenLayout = (props: MainScreenLayoutProps) => {
-  const { fullScreen, showBack, title, header, className, children, ...rest } = props
+const MainScreenLayout = (props: MainScreenLayoutProps): React.ReactElement => {
+  const { showBack, title, header, className, children, ...rest } = props
 
   return (
     <LayoutContainer className={className} {...rest}>

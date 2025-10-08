@@ -1,6 +1,6 @@
 import { ChartPlaceholder } from './PortfolioChart.styles'
 
-const PortfolioChart = () => {
+const PortfolioChart = (): React.ReactElement => {
   return (
     <ChartPlaceholder>
       <div>

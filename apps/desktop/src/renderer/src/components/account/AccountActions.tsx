@@ -1,16 +1,13 @@
-import { ActionsContainer, StyledButton } from './AccountActions.styles';
+import React from 'react'
+import { ActionsContainer, StyledButton } from './AccountActions.styles'
 
-const AccountActions = () => {
+const AccountActions = (): React.ReactElement => {
   return (
     <ActionsContainer>
-      <StyledButton className="export">
-        📤 Export Private Key
-      </StyledButton>
-      <StyledButton className="delete">
-        🗑️ Delete Account
-      </StyledButton>
+      <StyledButton className="export">📤 Export Private Key</StyledButton>
+      <StyledButton className="delete">🗑️ Delete Account</StyledButton>
     </ActionsContainer>
-  );
-};
+  )
+}
 
-export default AccountActions;
+export default AccountActions

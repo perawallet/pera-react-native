@@ -1,3 +1,4 @@
+import React from 'react'
 import {
   SwapContainer,
   Header,
@@ -16,7 +17,7 @@ import {
   ExecuteSwapButton
 } from './SwapScreen.styles'
 
-const SwapScreen = () => {
+const SwapScreen = (): React.ReactElement => {
   return (
     <SwapContainer>
       <Header>
@@ -80,7 +81,7 @@ const SwapScreen = () => {
         <ExecuteSwapButton>🔄 Swap Assets</ExecuteSwapButton>
       </SwapCard>
     </SwapContainer>
-  );
-};
+  )
+}
 
-export default SwapScreen;
+export default SwapScreen

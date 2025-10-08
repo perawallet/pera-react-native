@@ -1,6 +1,7 @@
+import React from 'react'
 import { StakingContainer, Header, Grid, Card } from './StakingScreen.styles'
 
-const StakingScreen = () => {
+const StakingScreen = (): React.ReactElement => {
   return (
     <StakingContainer>
       <Header>
@@ -19,7 +20,7 @@ const StakingScreen = () => {
         </Card>
       </Grid>
     </StakingContainer>
-  );
-};
+  )
+}
 
-export default StakingScreen;
+export default StakingScreen

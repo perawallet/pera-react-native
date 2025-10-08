@@ -49,12 +49,12 @@ const ImportButton = styled.button`
   margin-left: var(--spacing-lg);
 `
 
-const OnboardingScreen = () => {
+const OnboardingScreen = (): React.ReactElement => {
   const navigate = useNavigate()
   const createAccount = useCreateAccount()
   const [processing, setProcessing] = useState(false)
 
-  const doCreate = async () => {
+  const doCreate = async (): Promise<void> => {
     try {
       const account = await createAccount({ account: 0, keyIndex: 0 })
       navigate('/name-account', { state: { account } })
@@ -63,12 +63,12 @@ const OnboardingScreen = () => {
     }
   }
 
-  const createAccountHandler = async () => {
+  const createAccountHandler = async (): Promise<void> => {
     setProcessing(true)
     doCreate()
   }
 
-  const importAccount = () => {
+  const importAccount = (): void => {
     navigate('/import-account')
   }
 
@@ -80,12 +80,10 @@ const OnboardingScreen = () => {
         <CreateButton onClick={createAccountHandler} disabled={processing}>
           {processing ? 'Creating...' : 'Create New Account'}
         </CreateButton>
-        <ImportButton onClick={importAccount}>
-          Import Existing Account
-        </ImportButton>
+        <ImportButton onClick={importAccount}>Import Existing Account</ImportButton>
       </ButtonContainer>
     </Container>
-  );
-};
+  )
+}
 
-export default OnboardingScreen;
+export default OnboardingScreen

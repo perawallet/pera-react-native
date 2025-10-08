@@ -13,7 +13,7 @@ import {
   InfoCardValue
 } from './AssetDetailsScreen.styles'
 
-const AssetDetailsScreen = () => {
+const AssetDetailsScreen = (): React.ReactElement => {
   return (
     <AssetDetailsContainer>
       <Header>Asset Details</Header>

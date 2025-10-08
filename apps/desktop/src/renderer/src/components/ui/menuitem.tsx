@@ -4,7 +4,7 @@ import styled, { css } from 'styled-components'
 const activeStyles = css`
   color: var(--color-text-main);
   font-weight: 600;
-  background: var(--color-layer-gray-lighter)
+  background: var(--color-layer-gray-lighter);
 `
 
 export interface MenuItemProps extends React.PropsWithChildren {

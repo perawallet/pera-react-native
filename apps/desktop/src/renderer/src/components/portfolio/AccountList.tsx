@@ -9,10 +9,15 @@ import {
   AccountDetails,
   AccountBalance
 } from './AccountList.styles'
-import { useAllAccounts, useAccountBalances, WalletAccount, getAccountDisplayName, truncateAlgorandAddress } from '@perawallet/core'
-import { useMemo } from 'react'
+import {
+  useAllAccounts,
+  useAccountBalances,
+  WalletAccount,
+  getAccountDisplayName,
+  truncateAlgorandAddress
+} from '@perawallet/core'
 
-const AccountList = () => {
+const AccountList = (): React.ReactElement => {
   const accounts = useAllAccounts()
   const balances = useAccountBalances(accounts)
 
@@ -22,8 +27,8 @@ const AccountList = () => {
       <AccountGrid>
         {accounts.map((account: WalletAccount, index: number) => {
           const balance = balances[index]
-          const displayName = useMemo(() => getAccountDisplayName(account), [account])
-          const displayAddress = useMemo(() => truncateAlgorandAddress(account.address), [account])
+          const displayName = getAccountDisplayName(account)
+          const displayAddress = truncateAlgorandAddress(account.address)
 
           return (
             <Link key={account.address} to="/account">
@@ -35,7 +40,9 @@ const AccountList = () => {
                       <p>{displayAddress}</p>
                     </AccountDetails>
                     <AccountBalance>
-                      <p>{balance?.isFetched ? `₳${balance.algoAmount.toFixed(2)}` : 'Loading...'}</p>
+                      <p>
+                        {balance?.isFetched ? `₳${balance.algoAmount.toFixed(2)}` : 'Loading...'}
+                      </p>
                       <p>≈ ${balance?.isFetched ? balance.usdAmount.toFixed(2) : '0.00'}</p>
                     </AccountBalance>
                   </AccountInfo>
