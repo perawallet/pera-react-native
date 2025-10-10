@@ -9,8 +9,8 @@ import { Platform, NativeModules } from 'react-native';
 const findDeviceLocale = () => {
   const deviceLanguage =
     Platform.OS === 'ios'
-      ? NativeModules.SettingsManager.settings.AppleLocale ||
-        NativeModules.SettingsManager.settings.AppleLanguages[0]
+      ? NativeModules.SettingsManager.getConstants().settings.AppleLocale ||
+        NativeModules.SettingsManager.getConstants().settings.AppleLanguages[0]
       : NativeModules.I18nManager.getConstants().localeIdentifier;
 
   return deviceLanguage.replaceAll('_', '-');
