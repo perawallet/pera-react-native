@@ -1,5 +1,5 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
-import { snapshotEnv, restoreEnv, withFreshModules } from '../test-utils'
+import { snapshotEnv, restoreEnv } from '../test-utils'
 import { getConfigForEnv, configSchema } from '../main'
 import { config as devConfig } from '../development'
 import { config as stagingConfig } from '../staging'
