@@ -17,7 +17,6 @@ import {
 import { TouchableOpacity } from 'react-native';
 
 import CameraIcon from '../../../assets/icons/camera.svg';
-import BellIcon from '../../../assets/icons/bell.svg';
 import WalletIcon from '../../../assets/icons/wallet.svg';
 import ChevronDown from '../../../assets/icons/chevron-down.svg';
 import InboxIcon from '../../../assets/icons/envelope-letter.svg';
@@ -31,6 +30,7 @@ import CurrencyDisplay from '../../components/common/currency-display/CurrencyDi
 import PeraView from '../../components/common/view/PeraView';
 import WealthChart from '../../components/common/wealth-chart/WealthChart';
 import ButtonPanel from '../../components/account-details/button-panel/ButtonPanel';
+import NotificationsIcon from '../../components/common/notifications-icon/NotificationsIcon';
 
 type AccountScreenProps = StaticScreenProps<{
   account?: WalletAccount;
@@ -100,9 +100,7 @@ const AccountScreen = ({ route }: AccountScreenProps) => {
           <TouchableOpacity>
             <CameraIcon style={styles.icon} color={theme.colors.textMain} />
           </TouchableOpacity>
-          <TouchableOpacity>
-            <BellIcon style={styles.icon} color={theme.colors.textMain} />
-          </TouchableOpacity>
+          <NotificationsIcon style={styles.icon} />
         </PeraView>
       </PeraView>
       <ScrollView

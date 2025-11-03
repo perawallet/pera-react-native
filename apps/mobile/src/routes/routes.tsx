@@ -23,6 +23,7 @@ import SwapIcon from '../../assets/icons/swap.svg';
 import StakingIcon from '../../assets/icons/dot-stack.svg';
 import MenuIcon from '../../assets/icons/horizontal-line-stack.svg';
 import NavigationHeader from '../components/common/navigation-header/NavigationHeader';
+import NotificationsScreen from '../screens/notifications/NotificationsScreen';
 
 const SettingsStack = createNativeStackNavigator({
   initialRouteName: 'SettingsHome',
@@ -99,6 +100,7 @@ const RootStack = createNativeStackNavigator({
     TabBar: {
       screen: TabBarStack,
     },
+    Notifications: NotificationsScreen,
     Settings: SettingsStack,
   },
 });
