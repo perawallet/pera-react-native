@@ -53,6 +53,16 @@ describe('RNDeviceInfoStorageService', () => {
     it('sets up headers and calls updateBackendHeaders', async () => {
       const { updateBackendHeaders } = await import('@perawallet/core');
       const mockUpdateBackendHeaders = vi.mocked(updateBackendHeaders);
+      const mockNativeModules = vi.mocked(RN);
+      mockNativeModules.NativeModules.SettingsManager.getConstants = vi.fn(() => ({
+        settings: {
+          AppleLocale: undefined,
+          AppleLanguages: [
+            'en_US',
+            'fr_FR',
+          ]
+        }
+      }));
 
       service.initializeDeviceInfo();
 
@@ -71,6 +81,16 @@ describe('RNDeviceInfoStorageService', () => {
     it('calls DeviceInfo methods for header values', async () => {
       const DeviceInfo = (await import('react-native-device-info')).default;
       const mockDeviceInfo = vi.mocked(DeviceInfo);
+      const mockNativeModules = vi.mocked(RN);
+      mockNativeModules.NativeModules.SettingsManager.getConstants = vi.fn(() => ({
+        settings: {
+          AppleLocale: undefined,
+          AppleLanguages: [
+            'en_US',
+            'fr_FR',
+          ]
+        }
+      }));
 
       service.initializeDeviceInfo();
 
@@ -132,6 +152,16 @@ describe('RNDeviceInfoStorageService', () => {
 
   describe('getDeviceLocale', () => {
     it('returns formatted locale for iOS', () => {
+      const mockNativeModules = vi.mocked(RN);
+      mockNativeModules.NativeModules.SettingsManager.getConstants = vi.fn(() => ({
+        settings: {
+          AppleLocale: 'en-US',
+          AppleLanguages: [
+            'en_US',
+            'fr_FR',
+          ]
+        }
+      }));
       const locale = service.getDeviceLocale();
 
       expect(locale).toBe('en-US');
@@ -141,8 +171,15 @@ describe('RNDeviceInfoStorageService', () => {
       // Mock iOS without AppleLocale
       const { NativeModules } = await import('react-native');
       const mockNativeModules = vi.mocked(NativeModules);
-      (mockNativeModules.SettingsManager.settings as any).AppleLocale =
-        undefined;
+      mockNativeModules.SettingsManager.getConstants = vi.fn(() => ({
+        settings: {
+          AppleLocale: undefined,
+          AppleLanguages: [
+            'en_US',
+            'fr_FR',
+          ]
+        }
+      }));
 
       const locale = service.getDeviceLocale();
 
@@ -151,12 +188,15 @@ describe('RNDeviceInfoStorageService', () => {
 
     it('returns formatted locale for Android', () => {
       vi.mocked(RN).Platform.OS = 'android';
-      vi.mocked(RN).NativeModules.SettingsManager.settings.AppleLocale =
-        'en_US';
-      vi.mocked(RN).NativeModules.SettingsManager.settings.AppleLanguages = [
-        'en_US',
-        'fr_FR',
-      ];
+      vi.mocked(RN).NativeModules.SettingsManager.getConstants = vi.fn(() => ({
+        settings: {
+          AppleLocale: 'en_US',
+          AppleLanguages: [
+            'en_US',
+            'fr_FR',
+          ]
+        }
+      }));
       vi.mocked(RN).NativeModules.I18nManager.getConstants = vi.fn(() => ({
         isRTL: false,
         doLeftAndRightSwapInRTL: false,
@@ -172,12 +212,15 @@ describe('RNDeviceInfoStorageService', () => {
     it('converts underscores to hyphens in locale', async () => {
       // Spy on the NativeModules to override the AppleLocale value
       vi.mocked(RN).Platform.OS = 'ios';
-      vi.mocked(RN).NativeModules.SettingsManager.settings.AppleLocale =
-        'fr_CA';
-      vi.mocked(RN).NativeModules.SettingsManager.settings.AppleLanguages = [
-        'en_US',
-        'fr_FR',
-      ];
+      vi.mocked(RN).NativeModules.SettingsManager.getConstants = vi.fn(() => ({
+        settings: {
+          AppleLocale: 'fr_CA',
+          AppleLanguages: [
+            'en_US',
+            'fr_FR',
+          ]
+        }
+      }));
       vi.mocked(RN).NativeModules.I18nManager.getConstants = vi.fn(() => ({
         isRTL: false,
         doLeftAndRightSwapInRTL: false,
@@ -212,12 +255,15 @@ describe('RNDeviceInfoStorageService', () => {
     it('replaces all underscores with hyphens', async () => {
       // Spy on the NativeModules to override the AppleLocale value
       vi.mocked(RN).Platform.OS = 'ios';
-      vi.mocked(RN).NativeModules.SettingsManager.settings.AppleLocale =
-        'zh_Hans_CN';
-      vi.mocked(RN).NativeModules.SettingsManager.settings.AppleLanguages = [
-        'en_US',
-        'fr_FR',
-      ];
+      vi.mocked(RN).NativeModules.SettingsManager.getConstants = vi.fn(() => ({
+        settings: {
+          AppleLocale: 'zh_Hans_CN',
+          AppleLanguages: [
+            'en_US',
+            'fr_FR',
+          ]
+        }
+      }));
       vi.mocked(RN).NativeModules.I18nManager.getConstants = vi.fn(() => ({
         isRTL: false,
         doLeftAndRightSwapInRTL: false,

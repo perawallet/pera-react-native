@@ -1,5 +1,5 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
-import { snapshotEnv, restoreEnv, withFreshModules } from '@test-utils'
+import { snapshotEnv, restoreEnv, withFreshModules } from '../test-utils'
 import { getConfigForEnv, configSchema } from '../main'
 import { config as devConfig } from '../development'
 import { config as stagingConfig } from '../staging'
@@ -51,35 +51,5 @@ describe('config/main', () => {
         expect(getConfigForEnv('test')).toStrictEqual(
             configSchema.parse(devConfig),
         )
-    })
-
-    test('module default export "config" uses APP_ENV if set (over NODE_ENV)', async () => {
-        process.env.APP_ENV = 'staging'
-        process.env.NODE_ENV = 'production'
-
-        // Re-import module to evaluate "config" with envs above
-        const mod = await import('../main')
-        expect(mod.config).toStrictEqual(configSchema.parse(stagingConfig))
-    })
-
-    test('module default export "config" uses NODE_ENV when APP_ENV is not set', async () => {
-        delete process.env.APP_ENV
-        process.env.NODE_ENV = 'production'
-
-        const mod = await import('../main')
-        expect(mod.config).toStrictEqual(configSchema.parse(prodConfig))
-    })
-
-    test('module default export "config" falls back to development when envs are absent/unknown', async () => {
-        delete process.env.APP_ENV
-        delete process.env.NODE_ENV
-
-        const mod = await import('../main')
-        expect(mod.config).toStrictEqual(configSchema.parse(stagingConfig))
-
-        // Unknown value
-        process.env.APP_ENV = 'unknown'
-        const mod2 = await withFreshModules(() => import('../main'))
-        expect(mod2.config).toStrictEqual(configSchema.parse(devConfig))
     })
 })

@@ -80,18 +80,18 @@ describe('services/accounts/store', () => {
         state.setAccounts([a1, a2])
 
         // Test default selection (index 0)
-        expect(state.getSelectedAccount()).toEqual(a1)
+        expect(state.getSelectedAccount()).toBeNull()
 
         // Test selecting index 1
-        state.setSelectedAccountIndex(1)
+        state.setSelectedAccountAddress(a2.address)
         expect(state.getSelectedAccount()).toEqual(a2)
 
-        // Test invalid index (negative)
-        state.setSelectedAccountIndex(-1)
+        // Test null address
+        state.setSelectedAccountAddress(null)
         expect(state.getSelectedAccount()).toBeNull()
 
         // Test invalid index (out of bounds)
-        state.setSelectedAccountIndex(10)
+        state.setSelectedAccountAddress("someotheraddressthatdoesn'texist")
         expect(state.getSelectedAccount()).toBeNull()
     })
 
@@ -122,12 +122,12 @@ describe('services/accounts/store', () => {
         }
 
         state.setAccounts([a1, a2])
-        state.setSelectedAccountIndex(1)
-        expect(state.selectedAccountIndex).toBe(1)
+        state.setSelectedAccountAddress(a1.address)
+        expect(state.selectedAccountAddress).toBe(a1.address)
 
         // Setting new accounts should reset index to 0
-        state.setAccounts([a1])
-        expect(state.selectedAccountIndex).toBe(0)
+        state.setAccounts([a2])
+        expect(state.selectedAccountAddress).toBeNull()
     })
 
     test('partializeAccountsSlice returns only the persisted subset', () => {
@@ -141,16 +141,16 @@ describe('services/accounts/store', () => {
                     address: 'ZED-ADDR',
                 },
             ],
-            selectedAccountIndex: 0,
+            selectedAccountAddress: 'ZED-ADDR',
             getSelectedAccount: () => null,
             setAccounts: accounts => {
                 captured = accounts
             },
-            setSelectedAccountIndex: () => {},
+            setSelectedAccountAddress: () => {},
         }
 
         const partial = partializeAccountsSlice(state)
-        expect(partial).toEqual({ accounts: state.accounts })
+        expect(partial).toEqual({ accounts: state.accounts, selectedAccountAddress: state.selectedAccountAddress })
 
         // ensure we didn't accidentally include functions
         expect((partial as any).setAccounts).toBeUndefined()

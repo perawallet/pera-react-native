@@ -69,7 +69,10 @@ export const formatDatetime = (
     if (typeof datetime === 'string') {
         const parts = datetime.split('+')
         date = Date.parse(parts[0]) //TODO: deal with timezones
+    } else {
+        date = datetime.getTime()
     }
+    
     return Intl.DateTimeFormat(locale, {
         dateStyle: 'long',
         timeStyle: 'short',

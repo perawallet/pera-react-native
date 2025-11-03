@@ -7,7 +7,7 @@ const configMock = vi.hoisted(() => ({
     testnetBackendUrl: 'https://testnet.backend.example.com',
     debugEnabled: false,
 }))
-vi.mock('../../config/main', () => ({
+vi.mock('@perawallet/config', () => ({
     config: configMock,
 }))
 

@@ -4,7 +4,7 @@ import { describe, test, expect, beforeEach, vi } from 'vitest'
 const configMock = vi.hoisted(() => ({
     debugEnabled: false,
 }))
-vi.mock('../../config/main', () => ({
+vi.mock('@perawallet/config', () => ({
     config: configMock,
 }))
 
