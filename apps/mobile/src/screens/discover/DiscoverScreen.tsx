@@ -1,4 +1,4 @@
-import { config } from '@perawallet/core';
+import { config } from '@perawallet/config';
 import PeraWebView from '../../components/common/webview/PeraWebView';
 import { useStyles } from './styles';
 import PeraView from '../../components/common/view/PeraView';

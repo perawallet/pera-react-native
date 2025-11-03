@@ -1,5 +1,5 @@
 import ky, { type KyInstance } from 'ky'
-import { config } from '../config/main'
+import { config } from '@perawallet/config'
 import { Networks } from '../services/blockchain/types'
 import { createFetchClient, logRequest, logResponse } from './query-client'
 

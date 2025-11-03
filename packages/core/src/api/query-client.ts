@@ -6,7 +6,7 @@ import type {
     Options,
 } from 'ky'
 import { useAppStore } from '../store/app-store'
-import { config } from '../config/main'
+import { config } from '@perawallet/config'
 
 export interface RequestConfig<TData = unknown> {
     url?: string
