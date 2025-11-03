@@ -21,7 +21,7 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
     },
     headerImage: {
       width: 172,
-      borderWidth: 0
+      borderWidth: 0,
     },
     headerTitle: {
       paddingTop: theme.spacing.xl,

@@ -54,15 +54,14 @@ describe('RNDeviceInfoStorageService', () => {
       const { updateBackendHeaders } = await import('@perawallet/core');
       const mockUpdateBackendHeaders = vi.mocked(updateBackendHeaders);
       const mockNativeModules = vi.mocked(RN);
-      mockNativeModules.NativeModules.SettingsManager.getConstants = vi.fn(() => ({
-        settings: {
-          AppleLocale: undefined,
-          AppleLanguages: [
-            'en_US',
-            'fr_FR',
-          ]
-        }
-      }));
+      mockNativeModules.NativeModules.SettingsManager.getConstants = vi.fn(
+        () => ({
+          settings: {
+            AppleLocale: undefined,
+            AppleLanguages: ['en_US', 'fr_FR'],
+          },
+        }),
+      );
 
       service.initializeDeviceInfo();
 
@@ -82,15 +81,14 @@ describe('RNDeviceInfoStorageService', () => {
       const DeviceInfo = (await import('react-native-device-info')).default;
       const mockDeviceInfo = vi.mocked(DeviceInfo);
       const mockNativeModules = vi.mocked(RN);
-      mockNativeModules.NativeModules.SettingsManager.getConstants = vi.fn(() => ({
-        settings: {
-          AppleLocale: undefined,
-          AppleLanguages: [
-            'en_US',
-            'fr_FR',
-          ]
-        }
-      }));
+      mockNativeModules.NativeModules.SettingsManager.getConstants = vi.fn(
+        () => ({
+          settings: {
+            AppleLocale: undefined,
+            AppleLanguages: ['en_US', 'fr_FR'],
+          },
+        }),
+      );
 
       service.initializeDeviceInfo();
 
@@ -153,15 +151,14 @@ describe('RNDeviceInfoStorageService', () => {
   describe('getDeviceLocale', () => {
     it('returns formatted locale for iOS', () => {
       const mockNativeModules = vi.mocked(RN);
-      mockNativeModules.NativeModules.SettingsManager.getConstants = vi.fn(() => ({
-        settings: {
-          AppleLocale: 'en-US',
-          AppleLanguages: [
-            'en_US',
-            'fr_FR',
-          ]
-        }
-      }));
+      mockNativeModules.NativeModules.SettingsManager.getConstants = vi.fn(
+        () => ({
+          settings: {
+            AppleLocale: 'en-US',
+            AppleLanguages: ['en_US', 'fr_FR'],
+          },
+        }),
+      );
       const locale = service.getDeviceLocale();
 
       expect(locale).toBe('en-US');
@@ -174,11 +171,8 @@ describe('RNDeviceInfoStorageService', () => {
       mockNativeModules.SettingsManager.getConstants = vi.fn(() => ({
         settings: {
           AppleLocale: undefined,
-          AppleLanguages: [
-            'en_US',
-            'fr_FR',
-          ]
-        }
+          AppleLanguages: ['en_US', 'fr_FR'],
+        },
       }));
 
       const locale = service.getDeviceLocale();
@@ -191,11 +185,8 @@ describe('RNDeviceInfoStorageService', () => {
       vi.mocked(RN).NativeModules.SettingsManager.getConstants = vi.fn(() => ({
         settings: {
           AppleLocale: 'en_US',
-          AppleLanguages: [
-            'en_US',
-            'fr_FR',
-          ]
-        }
+          AppleLanguages: ['en_US', 'fr_FR'],
+        },
       }));
       vi.mocked(RN).NativeModules.I18nManager.getConstants = vi.fn(() => ({
         isRTL: false,
@@ -215,11 +206,8 @@ describe('RNDeviceInfoStorageService', () => {
       vi.mocked(RN).NativeModules.SettingsManager.getConstants = vi.fn(() => ({
         settings: {
           AppleLocale: 'fr_CA',
-          AppleLanguages: [
-            'en_US',
-            'fr_FR',
-          ]
-        }
+          AppleLanguages: ['en_US', 'fr_FR'],
+        },
       }));
       vi.mocked(RN).NativeModules.I18nManager.getConstants = vi.fn(() => ({
         isRTL: false,
@@ -258,11 +246,8 @@ describe('RNDeviceInfoStorageService', () => {
       vi.mocked(RN).NativeModules.SettingsManager.getConstants = vi.fn(() => ({
         settings: {
           AppleLocale: 'zh_Hans_CN',
-          AppleLanguages: [
-            'en_US',
-            'fr_FR',
-          ]
-        }
+          AppleLanguages: ['en_US', 'fr_FR'],
+        },
       }));
       vi.mocked(RN).NativeModules.I18nManager.getConstants = vi.fn(() => ({
         isRTL: false,

@@ -4,23 +4,23 @@ import { PropsWithChildren } from 'react';
 export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
   return {
     activeLabel: {
-      color: theme.colors.secondary
+      color: theme.colors.secondary,
     },
     passiveLabel: {
-      color: theme.colors.textMain
+      color: theme.colors.textMain,
     },
     activeItem: {
       backgroundColor: theme.colors.layerGrayLightest,
       borderRadius: theme.spacing.xs,
     },
     passiveItem: {
-      backgroundColor: theme.colors.background
+      backgroundColor: theme.colors.background,
     },
     drawer: {
-      width: '90%'
+      width: '90%',
     },
     drawerItem: {
-      backgroundColor: theme.colors.background
+      backgroundColor: theme.colors.background,
     },
     drawerContainer: {
       padding: 0,

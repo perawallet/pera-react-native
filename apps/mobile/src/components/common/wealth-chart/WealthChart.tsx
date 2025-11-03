@@ -13,13 +13,13 @@ import { useCallback, useMemo, useState } from 'react';
 import ChartPeriodSelection, {
   ChartPeriod,
 } from '../chart-period-selection/ChartPeriodSelection';
-import { Text, useTheme } from '@rneui/themed';
+import { useTheme } from '@rneui/themed';
 
 const SHOW_ALGO_AMOUNTS = true; //TODO remove this - it's only for debugging when no USD values are present
 const FOCUS_DEBOUNCE_TIME = 200;
 
 type WealthChartProps = {
-  account?: WalletAccount
+  account?: WalletAccount;
   onSelectionChanged: (item: AccountWealthHistoryItem | null) => void;
 };
 
@@ -32,7 +32,10 @@ const WealthChart = ({ onSelectionChanged, account }: WealthChartProps) => {
   const [period, setPeriod] = useState<ChartPeriod>('one-week');
   const accounts = useAllAccounts();
   const addresses = useMemo(
-    () => account ? [account.address] : accounts.map((a: WalletAccount) => a.address),
+    () =>
+      account
+        ? [account.address]
+        : accounts.map((a: WalletAccount) => a.address),
     [account, accounts],
   );
 
@@ -67,17 +70,23 @@ const WealthChart = ({ onSelectionChanged, account }: WealthChartProps) => {
   }, [dataPoints]);
 
   const onFocus = useCallback(
-    ({ pointerIndex: index, pointerX }: { pointerIndex: number, pointerX: number }) => {
+    ({
+      pointerIndex: index,
+      pointerX,
+    }: {
+      pointerIndex: number;
+      pointerX: number;
+    }) => {
       if (Date.now() - lastSentTime > FOCUS_DEBOUNCE_TIME) {
         if (pointerX > 0 && index >= 0 && index !== lastSentIndex) {
           const dataItem = data?.results?.[index] ?? null;
           onSelectionChanged(dataItem);
-          setLastSentIndex(index)
+          setLastSentIndex(index);
         } else if (pointerX === 0) {
-          onSelectionChanged(null)
-          setLastSentIndex(undefined)
+          onSelectionChanged(null);
+          setLastSentIndex(undefined);
         }
-        setLastSentTime(Date.now())
+        setLastSentTime(Date.now());
       }
     },
     [data, onSelectionChanged, lastSentIndex, lastSentTime, setLastSentIndex],
@@ -110,16 +119,14 @@ const WealthChart = ({ onSelectionChanged, account }: WealthChartProps) => {
         animateOnDataChange
         animationDuration={200}
         onDataChangeAnimationDuration={200}
-        pointerConfig={
-          {
-            showPointerStrip: true,
-            pointerStripColor: theme.colors.textGrayLighter,
-            pointerStripWidth: 1,
-            pointerStripHeight: 140,
-            pointerColor: theme.colors.helperPositive,
-            strokeDashArray: [6, 2]
-          }
-        }
+        pointerConfig={{
+          showPointerStrip: true,
+          pointerStripColor: theme.colors.textGrayLighter,
+          pointerStripWidth: 1,
+          pointerStripHeight: 140,
+          pointerColor: theme.colors.helperPositive,
+          strokeDashArray: [6, 2],
+        }}
         getPointerProps={onFocus}
         disableScroll
         adjustToWidth

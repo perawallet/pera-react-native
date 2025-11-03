@@ -30,9 +30,7 @@ export type Config = z.infer<typeof configSchema>
  * - Fallback for unknown values is staging
  */
 export function getConfigForEnv(env?: string): Config {
-    const key = (
-        env ?? 'staging'
-    )?.toLowerCase() || 'staging'
+    const key = (env ?? 'staging')?.toLowerCase() || 'staging'
 
     let selected: Config
     switch (key) {

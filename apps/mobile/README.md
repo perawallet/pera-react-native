@@ -8,7 +8,7 @@ Minimal RN quickstart for this monorepo.
 - iOS: Xcode 15+, Ruby bundler + CocoaPods (for mobile app)
 - Android: Android Studio + SDKs, JDK 17 (for mobile app)
 
-Note: at time of writing there is a build issue with React Native Firebase on iOS causing errors.  Remains unresolved, but removing and disabling RNFirebase on the mobile app will fix the build
+Note: at time of writing there is a build issue with React Native Firebase on iOS causing errors. Remains unresolved, but removing and disabling RNFirebase on the mobile app will fix the build
 
 ## Install
 

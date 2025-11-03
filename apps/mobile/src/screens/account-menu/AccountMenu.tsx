@@ -1,12 +1,23 @@
 import { Text, useTheme } from '@rneui/themed';
-import { AccountWealthHistoryItem, getAccountDisplayName, useAllAccounts, useAppStore, WalletAccount } from '@perawallet/core';
+import {
+  AccountWealthHistoryItem,
+  getAccountDisplayName,
+  useAllAccounts,
+  useAppStore,
+  WalletAccount,
+} from '@perawallet/core';
 
 import WalletIcon from '../../../assets/icons/wallet.svg';
 import SortIcon from '../../../assets/icons/list-arrow-down.svg';
 import PlusIcon from '../../../assets/icons/plus-with-border.svg';
 
 import { useStyles } from './styles';
-import { createDrawerNavigator, DrawerContentComponentProps, DrawerContentScrollView, DrawerItem, DrawerItemList } from '@react-navigation/drawer'
+import {
+  createDrawerNavigator,
+  DrawerContentComponentProps,
+  DrawerContentScrollView,
+  DrawerItem,
+} from '@react-navigation/drawer';
 import PortfolioView from '../../components/portfolio/portfolio-view/PortfolioView';
 import PeraView from '../../components/common/view/PeraView';
 import AccountScreen from '../../screens/account/AccountScreen';
@@ -17,36 +28,43 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 type DrawerNavigatorType = {
   AccountScreen: {
-    account: WalletAccount
-  }
-}
+    account: WalletAccount;
+  };
+};
 const AccountMenuDrawer = createDrawerNavigator<DrawerNavigatorType>();
 
 const CustomDrawerContent = (props: DrawerContentComponentProps) => {
-  const styles = useStyles()
-  const { theme } = useTheme()
-  const [scrollingEnabled, setScrollingEnabled] = useState(true)
-  const accounts = useAllAccounts()
-  const { selectedAccountAddress, setSelectedAccountAddress } = useAppStore()
-  const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
+  const styles = useStyles();
+  const { theme } = useTheme();
+  const [scrollingEnabled, setScrollingEnabled] = useState(true);
+  const accounts = useAllAccounts();
+  const { selectedAccountAddress, setSelectedAccountAddress } = useAppStore();
+  const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
 
   const getRouteName = (account?: WalletAccount): string => {
-    return account ? getAccountDisplayName(account) : 'Account'
-  }
+    return account ? getAccountDisplayName(account) : 'Account';
+  };
 
   const getWalletIcon = (acct: WalletAccount) => {
-    return <WalletIcon color={acct.address === selectedAccountAddress ? theme.colors.secondary : theme.colors.textMain} />
-  }
+    return (
+      <WalletIcon
+        color={
+          acct.address === selectedAccountAddress
+            ? theme.colors.secondary
+            : theme.colors.textMain
+        }
+      />
+    );
+  };
 
   const handleTap = (acct: WalletAccount) => {
-    setSelectedAccountAddress(acct.address)
-    navigation.navigate('Home', {screen: 'AccountScreen'})
-  }
+    setSelectedAccountAddress(acct.address);
+    navigation.navigate('Home', { screen: 'AccountScreen' });
+  };
 
   const updateDataSelection = (data: AccountWealthHistoryItem | null) => {
-    setScrollingEnabled(data === null)
-  }
-  
+    setScrollingEnabled(data === null);
+  };
 
   return (
     <DrawerContentScrollView {...props} scrollEnabled={scrollingEnabled}>
@@ -54,43 +72,46 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
       <PeraView style={styles.titleBar}>
         <Text h4>Accounts</Text>
         <PeraView style={styles.titleBarButtonContainer}>
-          <TouchableOpacity
-            style={styles.sortButton}
-          >
+          <TouchableOpacity style={styles.sortButton}>
             <SortIcon />
             <Text style={styles.sortButtonTitle}>Sort</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.sortButton}
-          >
+          <TouchableOpacity style={styles.sortButton}>
             <PlusIcon style={styles.addButton} />
           </TouchableOpacity>
         </PeraView>
       </PeraView>
-      {accounts.map((acct) => 
+      {accounts.map(acct => (
         <DrawerItem
           key={acct.address}
-          label={getRouteName(acct)} 
+          label={getRouteName(acct)}
           icon={() => getWalletIcon(acct)}
-          style={acct.address === selectedAccountAddress ? styles.activeItem : styles.passiveItem }
-          labelStyle={acct.address === selectedAccountAddress ? styles.activeLabel : styles.passiveLabel }
+          style={
+            acct.address === selectedAccountAddress
+              ? styles.activeItem
+              : styles.passiveItem
+          }
+          labelStyle={
+            acct.address === selectedAccountAddress
+              ? styles.activeLabel
+              : styles.passiveLabel
+          }
           activeTintColor={theme.colors.helperPositive}
           inactiveTintColor={theme.colors.textMain}
           onPress={() => handleTap(acct)}
         />
-      )}
+      ))}
     </DrawerContentScrollView>
   );
-}
+};
 
 const AccountMenu = () => {
   const styles = useStyles();
 
-  const accounts = useAllAccounts()
+  const accounts = useAllAccounts();
 
   return (
-    <AccountMenuDrawer.Navigator 
-      
+    <AccountMenuDrawer.Navigator
       initialRouteName={'AccountScreen'}
       drawerContent={CustomDrawerContent}
       screenOptions={{
@@ -100,14 +121,14 @@ const AccountMenu = () => {
         drawerContentContainerStyle: styles.drawerContainer,
         drawerType: 'front',
       }}
-      >
-      {accounts.map((acct) => 
-        <AccountMenuDrawer.Screen 
+    >
+      {accounts.map(acct => (
+        <AccountMenuDrawer.Screen
           key={acct.address}
-          name='AccountScreen' 
+          name="AccountScreen"
           component={AccountScreen}
         />
-      )}
+      ))}
     </AccountMenuDrawer.Navigator>
   );
 };

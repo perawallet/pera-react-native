@@ -29,7 +29,7 @@ describe('services/device/platform-service', () => {
             getDevicePlatform: vi.fn(() => DevicePlatforms.web),
             getDeviceLocale: vi.fn(() => 'testLanguage'),
             getUserAgent: vi.fn(() => 'user_agent'),
-            getAppVersion: vi.fn(() => '1.0.0-test')
+            getAppVersion: vi.fn(() => '1.0.0-test'),
         }
 
         container.register(DeviceInfoServiceContainerKey, { useValue: dummy })

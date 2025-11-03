@@ -24,7 +24,9 @@ export const createAccountsSlice: StateCreator<
             if (!selectedAccountAddress) {
                 return null
             }
-            return accounts.find(a => a.address === selectedAccountAddress) ?? null
+            return (
+                accounts.find(a => a.address === selectedAccountAddress) ?? null
+            )
         },
         setAccounts: (accounts: WalletAccount[]) => {
             const currentSelected = get().selectedAccountAddress
@@ -47,6 +49,6 @@ export const createAccountsSlice: StateCreator<
 export const partializeAccountsSlice = (state: AccountsSlice) => {
     return {
         accounts: state.accounts,
-        selectedAccountAddress: state.selectedAccountAddress
+        selectedAccountAddress: state.selectedAccountAddress,
     }
 }

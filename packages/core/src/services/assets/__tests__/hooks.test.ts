@@ -29,7 +29,9 @@ vi.mock('../../../store/app-store', () => storeMock.create())
 describe('services/assets/hooks', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        storeMock.create().useAppStore.setState({ assetIDs: [], setAssetIDs: vi.fn() })
+        storeMock
+            .create()
+            .useAppStore.setState({ assetIDs: [], setAssetIDs: vi.fn() })
     })
 
     test('returns ALGO asset and empty results when no data', () => {
@@ -49,7 +51,9 @@ describe('services/assets/hooks', () => {
 
     test('does not set assetIDs when ids are already cached', () => {
         const setAssetIDs = vi.fn()
-        storeMock.create().useAppStore.setState({ assetIDs: [1, 2], setAssetIDs })
+        storeMock
+            .create()
+            .useAppStore.setState({ assetIDs: [1, 2], setAssetIDs })
 
         renderHook(() => useCachedAssets([1, 2]))
         expect(setAssetIDs).not.toHaveBeenCalled()

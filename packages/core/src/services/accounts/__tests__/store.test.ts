@@ -150,7 +150,10 @@ describe('services/accounts/store', () => {
         }
 
         const partial = partializeAccountsSlice(state)
-        expect(partial).toEqual({ accounts: state.accounts, selectedAccountAddress: state.selectedAccountAddress })
+        expect(partial).toEqual({
+            accounts: state.accounts,
+            selectedAccountAddress: state.selectedAccountAddress,
+        })
 
         // ensure we didn't accidentally include functions
         expect((partial as any).setAccounts).toBeUndefined()

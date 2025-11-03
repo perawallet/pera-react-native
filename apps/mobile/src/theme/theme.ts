@@ -200,20 +200,20 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
         containerStyle: {
           margin: 0,
           flex: 1,
-          backgroundColor: theme.colors.backdrop
+          backgroundColor: theme.colors.backdrop,
         },
         backdropStyle: {
-          backgroundColor: theme.colors.backdrop
+          backgroundColor: theme.colors.backdrop,
         },
         scrollViewProps: {
           contentContainerStyle: {
             borderTopStartRadius: theme.spacing.xl,
             borderTopEndRadius: theme.spacing.xl,
-          }
+          },
         },
         modalProps: {
-          presentationStyle: "overFullScreen"
-        }
+          presentationStyle: 'overFullScreen',
+        },
       }),
       Text: () => ({
         h1Style: {

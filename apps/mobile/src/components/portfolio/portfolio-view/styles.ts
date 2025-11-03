@@ -23,7 +23,7 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       paddingBottom: theme.spacing.xl * 1.5,
     },
     valueBarCurrencies: {
-      flexShrink: 1
+      flexShrink: 1,
     },
     secondaryValueBar: {
       flexDirection: 'row',
@@ -62,7 +62,7 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       paddingHorizontal: theme.spacing.md,
       borderRadius: theme.spacing.md,
       borderWidth: 1,
-      borderColor: theme.colors.layerGrayLight
-    }
+      borderColor: theme.colors.layerGrayLight,
+    },
   };
 });

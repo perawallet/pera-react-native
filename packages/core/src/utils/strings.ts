@@ -72,7 +72,7 @@ export const formatDatetime = (
     } else {
         date = datetime.getTime()
     }
-    
+
     return Intl.DateTimeFormat(locale, {
         dateStyle: 'long',
         timeStyle: 'short',
