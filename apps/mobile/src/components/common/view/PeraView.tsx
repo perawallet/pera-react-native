@@ -7,7 +7,7 @@ const PeraView = (props: PeraViewProps) => {
   const style = useStyles(props);
 
   return (
-    <View style={style.defaultStyle} {...props}>
+    <View style={[style.defaultStyle, props.style]} {...props}>
       {props.children}
     </View>
   );

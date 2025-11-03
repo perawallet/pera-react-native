@@ -3,10 +3,10 @@ import type { WalletAccount } from './types'
 
 export type AccountsSlice = {
     accounts: WalletAccount[]
-    selectedAccountIndex: number
+    selectedAccountAddress: string | null
     getSelectedAccount: () => WalletAccount | null
     setAccounts: (accounts: WalletAccount[]) => void
-    setSelectedAccountIndex: (index: number) => void
+    setSelectedAccountAddress: (address: string | null) => void
 }
 
 export const createAccountsSlice: StateCreator<
@@ -17,22 +17,26 @@ export const createAccountsSlice: StateCreator<
 > = (set, get) => {
     return {
         accounts: [],
-        selectedAccountIndex: 0,
+        selectedAccountAddress: null,
         getSelectedAccount: () => {
-            const index = get().selectedAccountIndex
+            const address = get().selectedAccountAddress
             const accounts = get().accounts
 
-            if (index < 0 || index >= accounts.length) {
+            if (!address) {
                 return null
             }
-            return accounts[index]
+            return accounts.find(a => a.address === address) ?? null
         },
         setAccounts: (accounts: WalletAccount[]) => {
+            const currentSelected = get().selectedAccountAddress
             set({ accounts })
-            set({ selectedAccountIndex: 0 }) //reset index
+
+            if (!accounts.find(a => a.address === currentSelected)) {
+                set({ selectedAccountAddress: null })
+            }
         },
-        setSelectedAccountIndex: (index: number) => {
-            set({ selectedAccountIndex: index })
+        setSelectedAccountAddress: (address: string | null) => {
+            set({ selectedAccountAddress: address })
         },
     }
 }
@@ -40,5 +44,6 @@ export const createAccountsSlice: StateCreator<
 export const partializeAccountsSlice = (state: AccountsSlice) => {
     return {
         accounts: state.accounts,
+        selectedAccountAddress: state.selectedAccountAddress
     }
 }

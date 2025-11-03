@@ -4,15 +4,13 @@ import {
   NativeStackHeaderProps,
 } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import PortfolioScreen from '../screens/portfolio/PortfolioScreen';
+import AccountMenu from '../screens/account-menu/AccountMenu';
 import DiscoverScreen from '../screens/discover/DiscoverScreen';
 import MenuScreen from '../screens/menu/MenuScreen';
 import StakingScreen from '../screens/staking/StakingScreen';
 import SwapScreen from '../screens/swap/SwapScreen';
 import OnboardingScreen from '../screens/onboarding/OnboardingScreen';
 import NameAccountScreen from '../screens/name-account/NameAccountScreen';
-import AccountScreen from '../screens/account/AccountScreen';
-import AssetDetailsScreen from '../screens/asset-details/AssetDetailsScreen';
 import SettingsScreen from '../screens/settings/SettingsScreen';
 import SettingsSubPageScreen from '../screens/settings-sub-page/SettingsSubPageScreen';
 import ImportAccountScreen from '../screens/import-account/ImportAccountScreen';
@@ -25,30 +23,6 @@ import SwapIcon from '../../assets/icons/swap.svg';
 import StakingIcon from '../../assets/icons/dot-stack.svg';
 import MenuIcon from '../../assets/icons/horizontal-line-stack.svg';
 import NavigationHeader from '../components/common/navigation-header/NavigationHeader';
-
-const PortfolioStack = createNativeStackNavigator({
-  initialRouteName: 'Portfolio',
-  screenOptions: {
-    headerShown: false,
-    header: (props: NativeStackHeaderProps) => <NavigationHeader {...props} />,
-  },
-  screens: {
-    Portfolio: PortfolioScreen,
-    Account: {
-      screen: AccountScreen,
-      options: {
-        headerShown: true,
-        title: 'Account',
-      },
-    },
-    AssetDetails: {
-      screen: AssetDetailsScreen,
-      options: {
-        headerShown: true,
-      },
-    },
-  },
-});
 
 const SettingsStack = createNativeStackNavigator({
   initialRouteName: 'SettingsHome',
@@ -91,7 +65,7 @@ const TabBarStack = createBottomTabNavigator({
     },
   }),
   screens: {
-    Home: PortfolioStack,
+    Home: AccountMenu,
     Discover: DiscoverScreen,
     Swap: SwapScreen,
     Staking: StakingScreen,

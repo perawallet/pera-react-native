@@ -1,7 +1,7 @@
 import { useStyles } from './styles';
 import { LineChart } from 'react-native-gifted-charts';
 
-import PeraView from '../../common/view/PeraView';
+import PeraView from '../view/PeraView';
 import {
   AccountWealthHistoryItem,
   useAllAccounts,
@@ -12,29 +12,29 @@ import {
 import { useCallback, useMemo, useState } from 'react';
 import ChartPeriodSelection, {
   ChartPeriod,
-} from '../../common/chart-period-selection/ChartPeriodSelection';
-import { useTheme } from '@rneui/themed';
-import { Easing } from 'react-native';
+} from '../chart-period-selection/ChartPeriodSelection';
+import { Text, useTheme } from '@rneui/themed';
 
 const SHOW_ALGO_AMOUNTS = true; //TODO remove this - it's only for debugging when no USD values are present
 const FOCUS_DEBOUNCE_TIME = 200;
 
-type PortfolioChartProps = {
+type WealthChartProps = {
+  account?: WalletAccount
   onSelectionChanged: (item: AccountWealthHistoryItem | null) => void;
 };
 
-const PortfolioChart = ({ onSelectionChanged }: PortfolioChartProps) => {
+const WealthChart = ({ onSelectionChanged, account }: WealthChartProps) => {
   const { theme } = useTheme();
   const themeStyle = useStyles();
-  const accounts = useAllAccounts();
   const [lastSentIndex, setLastSentIndex] = useState<number>();
   const [lastSentTime, setLastSentTime] = useState<number>(Date.now());
 
-  const addresses = useMemo(
-    () => accounts.map((a: WalletAccount) => a.address),
-    [accounts],
-  );
   const [period, setPeriod] = useState<ChartPeriod>('one-week');
+  const accounts = useAllAccounts();
+  const addresses = useMemo(
+    () => account ? [account.address] : accounts.map((a: WalletAccount) => a.address),
+    [account, accounts],
+  );
 
   const { data, isPending } = useV2WalletWealthList({
     params: {
@@ -80,7 +80,7 @@ const PortfolioChart = ({ onSelectionChanged }: PortfolioChartProps) => {
         setLastSentTime(Date.now())
       }
     },
-    [data, onSelectionChanged, lastSentIndex, setLastSentIndex],
+    [data, onSelectionChanged, lastSentIndex, lastSentTime, setLastSentIndex],
   );
 
   if (!isPending && !dataPoints?.length) {
@@ -107,7 +107,6 @@ const PortfolioChart = ({ onSelectionChanged }: PortfolioChartProps) => {
         endSpacing={0}
         showStripOnFocus
         showDataPointOnFocus
-        isAnimated
         animateOnDataChange
         animationDuration={200}
         onDataChangeAnimationDuration={200}
@@ -130,4 +129,4 @@ const PortfolioChart = ({ onSelectionChanged }: PortfolioChartProps) => {
   );
 };
 
-export default PortfolioChart;
+export default WealthChart;

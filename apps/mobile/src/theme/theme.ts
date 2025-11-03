@@ -56,6 +56,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
       //Helpers
       helperPositive: '#1F8E9D',
       helperGray200: 'rgba(143, 143, 148, 0.2)',
+      backdrop: 'rgba(0, 0, 0, 0.4)',
 
       // Tab Bar
       tabIconActive: '#18181B',
@@ -112,6 +113,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
       //Helpers
       helperPositive: '#2CB7BC',
       helperGray200: 'rgba(143, 143, 148, 0.2)',
+      backdrop: 'rgba(0, 0, 0, 0.4)',
 
       // Tab Bar
       tabIconActive: '#FAFAFA',
@@ -193,6 +195,25 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
           borderColor: theme.colors.background,
         },
         animation: 'pulse',
+      }),
+      BottomSheet: (_, theme) => ({
+        containerStyle: {
+          margin: 0,
+          flex: 1,
+          backgroundColor: theme.colors.backdrop
+        },
+        backdropStyle: {
+          backgroundColor: theme.colors.backdrop
+        },
+        scrollViewProps: {
+          contentContainerStyle: {
+            borderTopStartRadius: theme.spacing.xl,
+            borderTopEndRadius: theme.spacing.xl,
+          }
+        },
+        modalProps: {
+          presentationStyle: "overFullScreen"
+        }
       }),
       Text: () => ({
         h1Style: {

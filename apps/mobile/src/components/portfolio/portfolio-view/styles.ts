@@ -17,8 +17,13 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       backgroundColor: theme.colors.background,
     },
     valueBar: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
       paddingTop: theme.spacing.md,
       paddingBottom: theme.spacing.xl * 1.5,
+    },
+    valueBarCurrencies: {
+      flexShrink: 1
     },
     secondaryValueBar: {
       flexDirection: 'row',
@@ -29,7 +34,6 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       flexDirection: 'row',
       alignItems: 'center',
       gap: theme.spacing.sm,
-      paddingTop: theme.spacing.xl,
     },
     valueTitle: {
       color: theme.colors.textGray,
@@ -48,5 +52,17 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
     webviewContent: {
       paddingBottom: theme.spacing.xl,
     },
+    chartButton: {
+      verticalAlign: 'middle',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    chartButtonText: {
+      paddingVertical: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.md,
+      borderRadius: theme.spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.layerGrayLight
+    }
   };
 });

@@ -5,7 +5,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import RoundButton from '../../common/round-button/RoundButton';
 
 import SwapIcon from '../../../../assets/icons/swap.svg';
-import BuyIcon from '../../../../assets/icons/buy.svg';
+import MoreIcon from '../../../../assets/icons/ellipsis.svg';
 import StakeIcon from '../../../../assets/icons/dot-stack.svg';
 import SendIcon from '../../../../assets/icons/outflow.svg';
 import { Alert } from 'react-native';
@@ -33,11 +33,6 @@ const ButtonPanel = () => {
         onPress={() => goToRootPage('Swap')}
       />
       <RoundButton
-        title="Buy"
-        icon={<BuyIcon color={theme.colors.textMain} />}
-        onPress={notImplemented}
-      />
-      <RoundButton
         title="Stake"
         icon={<StakeIcon color={theme.colors.textMain} />}
         onPress={() => goToRootPage('Staking')}
@@ -45,6 +40,11 @@ const ButtonPanel = () => {
       <RoundButton
         title="Send"
         icon={<SendIcon color={theme.colors.textMain} />}
+        onPress={notImplemented}
+      />
+      <RoundButton
+        title="More"
+        icon={<MoreIcon color={theme.colors.textMain} />}
         onPress={notImplemented}
       />
     </PeraView>
