@@ -1,5 +1,5 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
+import { renderHook } from '@testing-library/react'
 import { useCachedAssets } from '../hooks'
 
 // Mock the API
@@ -43,7 +43,7 @@ describe('services/assets/hooks', () => {
         const setAssetIDs = vi.fn()
         storeMock.create().useAppStore.setState({ assetIDs: [], setAssetIDs })
 
-        const { result } = renderHook(() => useCachedAssets([1, 2]))
+        renderHook(() => useCachedAssets([1, 2]))
         expect(setAssetIDs).toHaveBeenCalledWith([1, 2])
     })
 
@@ -51,7 +51,7 @@ describe('services/assets/hooks', () => {
         const setAssetIDs = vi.fn()
         storeMock.create().useAppStore.setState({ assetIDs: [1, 2], setAssetIDs })
 
-        const { result } = renderHook(() => useCachedAssets([1, 2]))
+        renderHook(() => useCachedAssets([1, 2]))
         expect(setAssetIDs).not.toHaveBeenCalled()
     })
 })
