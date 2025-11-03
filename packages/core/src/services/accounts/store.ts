@@ -19,17 +19,20 @@ export const createAccountsSlice: StateCreator<
         accounts: [],
         selectedAccountAddress: null,
         getSelectedAccount: () => {
-            const address = get().selectedAccountAddress
-            const accounts = get().accounts
+            const { accounts, selectedAccountAddress } = get()
 
-            if (!address) {
+            if (!selectedAccountAddress) {
                 return null
             }
-            return accounts.find(a => a.address === address) ?? null
+            return accounts.find(a => a.address === selectedAccountAddress) ?? null
         },
         setAccounts: (accounts: WalletAccount[]) => {
             const currentSelected = get().selectedAccountAddress
             set({ accounts })
+
+            if (currentSelected === null && accounts.length) {
+                set({ selectedAccountAddress: accounts.at(0)?.address })
+            }
 
             if (!accounts.find(a => a.address === currentSelected)) {
                 set({ selectedAccountAddress: null })

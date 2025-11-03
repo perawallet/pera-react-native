@@ -7,8 +7,6 @@ export const useCachedAssets = (ids?: number[]) => {
     const assetIDs = useAppStore(state => state.assetIDs)
     const setAssetIDs = useAppStore(state => state.setAssetIDs)
 
-    console.log('AssetIDs', assetIDs)
-
     if (ids && (!assetIDs || !ids.every(id => assetIDs?.find(a => a === id)))) {
         setAssetIDs([...(assetIDs ?? []), ...ids])
     }
