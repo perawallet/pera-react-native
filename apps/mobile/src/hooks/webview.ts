@@ -37,7 +37,7 @@ type WebviewMessage = {
     params: Record<string, any>
 }
 
-export const usePeraWebviewInterface = (webview: WebView) => {
+export const usePeraWebviewInterface = (webview: WebView | null) => {
     const { showToast } = useToast()
     const accounts = useAllAccounts()
     const deviceID = useAppStore(state => state.deviceID)
@@ -83,7 +83,7 @@ export const usePeraWebviewInterface = (webview: WebView) => {
             address: a.address,
             type: "HdKey" //TODO support other types also
         }))
-        webview.postMessage(JSON.stringify(payload))
+        webview?.postMessage(JSON.stringify(payload))
     }
 
     const getSettings = () => {
@@ -103,7 +103,7 @@ export const usePeraWebviewInterface = (webview: WebView) => {
             region: "en-US", //TODO pull from state eventually (or device location or something)
             language: "en-US", //TODO pull from app locale
         }))
-        webview.postMessage(JSON.stringify(payload))
+        webview?.postMessage(JSON.stringify(payload))
     }
     const getPublicSettings = () => {
         const payload = accounts.map(a => ({
@@ -113,7 +113,7 @@ export const usePeraWebviewInterface = (webview: WebView) => {
             currency: "USD", //TODO pull from state eventually
             language: "en-US", //TODO pull from app locale
         }))
-        webview.postMessage(JSON.stringify(payload))
+        webview?.postMessage(JSON.stringify(payload))
     }
     const onBackPressed = () => {
         if (navigation.canGoBack()) {

@@ -40,7 +40,7 @@ const PeraWebView = (props: PeraWebViewProps) => {
   const [loaded, setLoaded] = useState(false);
   const webview = useRef<WebView>(null);
   const { showToast } = useToast();
-  const mobileInterface = usePeraWebviewInterface()
+  const mobileInterface = usePeraWebviewInterface(webview.current)
 
   const deviceInfo = useDeviceInfoService();
 
