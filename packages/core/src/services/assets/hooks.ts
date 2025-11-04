@@ -1,15 +1,24 @@
 import { useV1AssetsList } from '../../api/index'
 import { useAppStore } from '../../store/app-store'
 import { ALGO_ASSET } from './types'
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 
 export const useCachedAssets = (ids?: number[]) => {
-    const assetIDs = useAppStore(state => state.assetIDs)
+    let assetIDs = useAppStore(state => state.assetIDs)
+    let updated = false
     const setAssetIDs = useAppStore(state => state.setAssetIDs)
 
     if (ids && (!assetIDs || !ids.every(id => assetIDs?.find(a => a === id)))) {
-        setAssetIDs([...(assetIDs ?? []), ...ids])
+        var set = new Set([...(assetIDs ?? []), ...ids])
+        assetIDs = [...set]
+        updated = true
     }
+
+    useEffect(() => {
+        if (updated) {
+          setAssetIDs(assetIDs)
+        }
+    }, [ids, assetIDs, setAssetIDs])
 
     const { data, isPending } = useV1AssetsList({
         params: {
