@@ -1,6 +1,5 @@
 import WebView from "react-native-webview"
 import useToast from "./toast"
-import { config } from "@perawallet/config"
 import { Linking } from "react-native"
 import { getAccountDisplayName, useAllAccounts, useAppStore, useDeviceInfoService } from "@perawallet/core"
 import { ParamListBase, useNavigation } from "@react-navigation/native"
