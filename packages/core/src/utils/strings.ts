@@ -78,3 +78,53 @@ export const formatDatetime = (
         timeStyle: 'short',
     }).format(date)
 }
+
+const pluralize = (label: string, time: number) => {
+    const ceil = Math.ceil(time)
+    if (ceil === 1) {
+        if (label === "month" || label === "week" || label === "year") {
+            return `last ${label}`
+        }
+        if (label === "day") {
+            return "yesterday"
+        }
+        return `${ceil} ${label} ago`
+    }
+    return `${ceil} ${label}s ago`
+}
+
+//TODO this is a pretty janky implementation = Intl.RelativeTimeFormat wasn't working and I didn't want to import moment just for this
+export const formatRelativeTime = (
+    datetime: string | Date,
+    locale: string = 'en-US',
+) => {
+    let date: number = Date.now()
+    if (typeof datetime === 'string') {
+        const parts = datetime.split('+')
+        date = Date.parse(parts[0]) //TODO: deal with timezones
+    } else {
+        date = datetime.getTime()
+    }
+    const time = (Date.now() - date) / 1000.0 //get seconds
+
+    if (time < 60 ) { //in the last minute
+        return "just now"
+    }
+    if (time < 60 * 60) { //in the last hour
+        return pluralize("minute", time / (60 * 60))
+    }
+    if (time < 60 * 60 * 24) {
+        return pluralize("hour", time / (60 * 60))
+    }
+    if (time < 60 * 60 * 24 * 7) {
+        return pluralize("day", time / (60 * 60 * 24))
+    }
+    if (time < 60 * 60 * 24 * 7 * 4) {
+        return pluralize("week", time / (60 * 60 * 24 * 7))
+    }
+    if (time < 60 * 60 * 24 * 7 * 52) {
+        return pluralize("month", time / (60 * 60 * 24 * 30))
+    }
+
+    return pluralize("year", time / (60 * 60 * 24 * 365))
+}

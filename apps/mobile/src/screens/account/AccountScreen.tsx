@@ -100,7 +100,7 @@ const AccountScreen = ({ route }: AccountScreenProps) => {
           <TouchableOpacity>
             <CameraIcon style={styles.icon} color={theme.colors.textMain} />
           </TouchableOpacity>
-          <NotificationsIcon style={styles.icon} />
+          <NotificationsIcon style={styles.icon} color={theme.colors.textMain} />
         </PeraView>
       </PeraView>
       <ScrollView

@@ -100,7 +100,13 @@ const RootStack = createNativeStackNavigator({
     TabBar: {
       screen: TabBarStack,
     },
-    Notifications: NotificationsScreen,
+    Notifications: {
+      screen: NotificationsScreen,
+      options: {
+        headerShown: true,
+        header: (props: NativeStackHeaderProps) => <NavigationHeader {...props} />,
+      }
+    },
     Settings: SettingsStack,
   },
 });

@@ -14,6 +14,8 @@
     "lint:fix": "eslint src --fix"
   },
   "dependencies": {
+    "reflect-metadata": "catalog:",
+    "tsyringe": "catalog:",
     "zod": "^4.1.8"
   },
   "devDependencies": {

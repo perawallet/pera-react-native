@@ -28,7 +28,7 @@ const NotificationsIcon = (props: NotificationsIconProps) => {
   })
 
   return <TouchableOpacity onPress={goToNotifications}>{
-    data?.has_new_notification ? <BellIcon {...props} /> : <BellWithBadgeIcon  {...props} />
+    data?.has_new_notification ? <BellWithBadgeIcon {...props} /> : <BellIcon {...props} />
   }</TouchableOpacity>
 };
 

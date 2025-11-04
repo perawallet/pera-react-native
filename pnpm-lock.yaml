@@ -73,10 +73,10 @@ catalogs:
       specifier: 19.1.0
       version: 19.1.0
     reflect-metadata:
-      specifier: ^0.2.2
+      specifier: 0.2.2
       version: 0.2.2
     tsyringe:
-      specifier: ^4.10.0
+      specifier: 4.10.0
       version: 4.10.0
     typescript:
       specifier: ^5.8.3
@@ -532,6 +532,12 @@ importers:
 
   packages/config:
     dependencies:
+      reflect-metadata:
+        specifier: 'catalog:'
+        version: 0.2.2
+      tsyringe:
+        specifier: 'catalog:'
+        version: 4.10.0
       zod:
         specifier: ^4.1.8
         version: 4.1.8
@@ -710,6 +716,9 @@ importers:
 
   packages/xhdwallet:
     dependencies:
+      '@babel/runtime':
+        specifier: 'catalog:'
+        version: 7.28.4
       ajv:
         specifier: ^8.12.0
         version: 8.17.1
