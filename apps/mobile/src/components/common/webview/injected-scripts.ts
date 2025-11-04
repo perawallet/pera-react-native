@@ -10,23 +10,23 @@ if (window.ReactNativeWebView) {
     };
     const peraMobileInterface = {
         version: '2',
-        openSystemBrowser: (params) => sendRNMessage('openSystemBrowser', params),
-        closeWebView: () => sendRNMessage('closeWebView'),
-        openDappWebview: (params) => sendRNMessage('openDappWebview', params),
-        pushDappViewerScreen: (params) => sendRNMessage('pushDappViewerScreen', params),
-        getAuthorizedAddresses: () => sendRNMessage('getAuthorizedAddresses', params),
-        getDeviceId: () => sendRNMessage('getDeviceId'),
-        closePeraCards: () => sendRNMessage('closePeraCards'),
-        handleTokenDetailActionButtonClick: (params) => sendRNMessage('handleTokenDetailActionButtonClick', params),
         pushNewScreen: (params) => sendRNMessage('pushNewScreen', params),
-        pushTokenDetailScreen: (params) => sendRNMessage('pushTokenDetailScreen', params)
+        pushInternalBrowser: (params) => sendRNMessage('pushInternalBrowser', params),
+        openSystemBrowser: (params) => sendRNMessage('openSystemBrowser', params),
+        notifyUser: (params) => sendRNMessage('notifyUser', params),
+        getAddresses: () => sendRNMessage('getAddresses'),
+        getSettings: () => sendRNMessage('getSettings'),
+        getPublicSettings: () => sendRNMessage('getPublicSettings'),
+        onBackPressed: () => sendRNMessage('onBackPressed'),
+        logAnalyticsEvent: (params) => sendRNMessage('logAnalyticsEvent', params),
+        closeWebView: () => sendRNMessage('closeWebView')
     };
     window.peraMobileInterface = peraMobileInterface;
 } 
 else { 
     alert('Failed to connect to Pera Wallet'); 
 }`
-  .replaceAll('\n', '')
+  .replaceAll('\n', '') //TODO this is garbage minification - we should resolve that properly at some point
   .replaceAll(' ', '');
 
 export const peraConnectJS = `function setupPeraConnectObserver(){const e=new MutationObserver(()=>{const \

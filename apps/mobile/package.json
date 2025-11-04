@@ -1,6 +1,6 @@
 {
   "name": "mobile",
-  "version": "0.0.1",
+  "version": "7.0.0-alpha",
   "private": true,
   "scripts": {
     "android": "react-native run-android --verbose",
