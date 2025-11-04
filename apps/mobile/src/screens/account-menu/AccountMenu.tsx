@@ -105,6 +105,7 @@ const CustomDrawerContent = (props: DrawerContentComponentProps) => {
   );
 };
 
+//TODO there is a bad interaction between chart touch events and the drawer gesture recognizer that needs to be fixed
 const AccountMenu = () => {
   const styles = useStyles();
 

@@ -41,11 +41,11 @@ function App() {
       {!bootstrapped && <Text>Loading...</Text>}
       {bootstrapped && persister && (
         <GestureHandlerRootView>
-          <QueryProvider persister={persister}>
             <NotifierWrapper>
-              <RootComponent />
+              <QueryProvider persister={persister}>
+                <RootComponent />
+              </QueryProvider>
             </NotifierWrapper>
-          </QueryProvider>
         </GestureHandlerRootView>
       )}
     </SafeAreaProvider>

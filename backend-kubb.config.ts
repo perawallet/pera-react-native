@@ -39,6 +39,11 @@ export default defineConfig(() => {
                     path: 'hooks',
                     barrelType: 'named',
                 },
+                infinite: {
+                    cursorParam: "next",
+                    queryParam: "cursor",
+                    initialPageParam: ""
+                },
                 paramsType: 'object',
                 pathParamsType: 'object',
                 parser: 'client', //TODO: we should replace this with 'zod' once the backend OpenAPI is cleaned up

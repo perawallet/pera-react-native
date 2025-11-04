@@ -18,6 +18,7 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
     },
     drawer: {
       width: '90%',
+      backgroundColor: theme.colors.background,
     },
     drawerItem: {
       backgroundColor: theme.colors.background,

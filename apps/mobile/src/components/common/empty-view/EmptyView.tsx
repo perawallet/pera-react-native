@@ -14,7 +14,7 @@ const EmptyView = (props: EmptyViewProps) => {
 
   return <PeraView {...rest} style={styles.container}>
     {icon}
-    {title && <Text h3 h3Style={styles.text}>{title}</Text>}
+    {!!title && <Text h3 h3Style={styles.text}>{title}</Text>}
     <Text style={styles.text}>{body}</Text>
   </PeraView>
 };
