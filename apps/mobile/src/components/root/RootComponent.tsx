@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ErrorBoundary from 'react-native-error-boundary';
 import useToast from '../../hooks/toast';
 import { useIsDarkMode } from '../../hooks/theme';
+import { SigningProvider } from '../../providers/SigningProvider';
 
 const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
   const insets = useSafeAreaInsets();
@@ -60,7 +61,6 @@ export const RootComponent = () => {
   const appState = useRef(AppState.currentState);
 
   useEffect(() => {
-    //TODO: this doesn't handle switching networks
     registerDevice();
 
     const subscription = AppState.addEventListener('change', nextAppState => {
@@ -88,7 +88,9 @@ export const RootComponent = () => {
 
   return (
     <ThemeProvider theme={theme}>
-      <RootContentContainer isDarkMode={isDarkMode} />
+      <SigningProvider>
+        <RootContentContainer isDarkMode={isDarkMode} />
+      </SigningProvider>
     </ThemeProvider>
   );
 };

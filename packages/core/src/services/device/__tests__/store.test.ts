@@ -30,20 +30,23 @@ describe('services/device/store', () => {
         expect(state.fcmToken).toBe('FCM-1')
 
         state.setDeviceID(Networks.testnet, 'DEV-1')
-        expect(state.deviceIDs.get(Networks.testnet)).toBe('DEV-1')
-        expect(state.deviceIDs.get(Networks.mainnet)).toBeUndefined()
+        expect(state.deviceIDs[Networks.testnet]).toBe('DEV-1')
+        expect(state.deviceIDs[Networks.mainnet]).toBeUndefined()
 
         // clear values
         state.setFcmToken(null)
         state.setDeviceID(Networks.testnet, null)
         expect(state.fcmToken).toBeNull()
-        expect(state.deviceIDs.get(Networks.testnet)).toBeUndefined()
+        expect(state.deviceIDs[Networks.testnet]).toBeUndefined()
     })
 
     test('partializeDeviceSlice returns only persisted subset', () => {
         const state: DeviceSlice = {
             fcmToken: 'TOK',
-            deviceIDs: new Map([[Networks.testnet, 'ID']]),
+            deviceIDs: {
+                testnet: 'ID',
+                mainnet: null
+            },
             setFcmToken: () => {},
             setDeviceID: () => {},
         }

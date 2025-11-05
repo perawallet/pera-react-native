@@ -55,8 +55,12 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
 
       //Helpers
       helperPositive: '#1F8E9D',
+      helperNegative: '#DB4645',
       helperGray200: 'rgba(143, 143, 148, 0.2)',
       backdrop: 'rgba(0, 0, 0, 0.4)',
+
+      //Links
+      linkPrimary: '#1F8E9D',
 
       // Tab Bar
       tabIconActive: '#18181B',
@@ -112,8 +116,13 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
 
       //Helpers
       helperPositive: '#2CB7BC',
+      helperNegative: '#DB4645',
       helperGray200: 'rgba(143, 143, 148, 0.2)',
       backdrop: 'rgba(0, 0, 0, 0.4)',
+
+      //Links
+      linkPrimary: '#1F8E9D',
+
 
       // Tab Bar
       tabIconActive: '#FAFAFA',

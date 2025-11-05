@@ -27,8 +27,12 @@ declare module '@rneui/themed' {
 
     //Helper colors
     helperPositive: string;
+    helperNegative: string;
     helperGray200: string;
     backdrop: string;
+
+    //Links
+    linkPrimary: string
 
     // Tab Bar
     tabIconActive: string;

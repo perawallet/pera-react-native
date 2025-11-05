@@ -37,6 +37,34 @@ export const useFindAccountbyAddress = (address: string) => {
     return accounts.find(a => a.address === address) ?? null
 }
 
+export const useTransactionSigner = () => {
+    const accounts = useAppStore(state => state.accounts)
+    const { signTransaction } = useHDWallet()
+    const secureStorage = useSecureStorageService()
+    const signTransactionForAddress = async (address: string, transaction: Buffer): Promise<Uint8Array> => {
+        const account =  accounts.find(a => a.address === address) ?? null
+        const hdWalletDetails = account?.hdWalletDetails
+
+        if (!hdWalletDetails) {
+            return Promise.reject(`No HD wallet found for ${address}`)
+        }
+
+        const storageKey = `pk-${account.address}`
+        const mnemonicBase64 = await secureStorage.getItem(storageKey)
+
+        if (!mnemonicBase64) {
+            return Promise.reject(`No signing keys found for ${address}`)
+        }
+
+        const mnemonic = decodeFromBase64(mnemonicBase64).toString()
+        return signTransaction(mnemonic, hdWalletDetails, transaction)
+    }
+
+    return {
+        signTransactionForAddress
+    }
+}
+
 export const useCreateAccount = () => {
     const deviceID = useDeviceID()
     const accounts = useAppStore(state => state.accounts)

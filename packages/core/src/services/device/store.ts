@@ -3,7 +3,7 @@ import type { StateCreator } from 'zustand'
 
 export type DeviceSlice = {
     fcmToken: string | null
-    deviceIDs: Map<Network, string>
+    deviceIDs: Record<Network, string|null>
     setFcmToken: (token: string | null) => void
     setDeviceID: (network: Network, id: string | null) => void
 }
@@ -16,15 +16,14 @@ export const createDeviceSlice: StateCreator<
 > = (set, get) => {
     return {
         fcmToken: null,
-        deviceIDs: new Map(),
+        deviceIDs: {
+            mainnet: null,
+            testnet: null
+        },
         setFcmToken: token => set({ fcmToken: token }),
         setDeviceID: (network, id) => {
             const { deviceIDs } = get()
-            if (id) {
-                deviceIDs.set(network, id)
-            } else {
-                deviceIDs.delete(network)
-            }
+            deviceIDs[network] = id
             
             set({ deviceIDs })
         }

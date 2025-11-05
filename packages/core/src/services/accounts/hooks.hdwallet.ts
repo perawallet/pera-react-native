@@ -12,6 +12,9 @@ import messageSchema from './schema/message-schema.json'
 
 const api = new XHDWalletAPI()
 
+//TODO: we should revist how and where we store the private keys
+
+
 const createPath = (account: number, keyIndex: number) => {
     //m / purpose (bip44) / coin type (algorand) / account / change / address index
     return [44, 283, account, 0, keyIndex]

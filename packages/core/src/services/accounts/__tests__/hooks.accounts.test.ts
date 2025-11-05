@@ -482,7 +482,7 @@ describe('services/accounts/hooks - createAccount', () => {
         const { useCreateAccount } = await import('../hooks.accounts')
 
         // Set deviceID in store
-        useAppStore.setState({ network: Networks.testnet, deviceIDs: new Map([[Networks.testnet, 'TEST_DEVICE_123']]) })
+        useAppStore.setState({ network: Networks.testnet, deviceIDs: { testnet: 'TEST_DEVICE_123', mainnet: null} })
 
         const { result: createRes } = renderHook(() => useCreateAccount())
         await act(async () => {
@@ -820,7 +820,7 @@ describe('services/accounts/hooks - useImportWallet', () => {
         const { useImportWallet } = await import('../hooks.accounts')
 
         // Set deviceID in store
-        useAppStore.setState({ network: Networks.testnet, deviceIDs: new Map([[Networks.testnet, 'TEST_DEVICE_456']]) })
+        useAppStore.setState({ network: Networks.testnet, deviceIDs: { testnet: 'TEST_DEVICE_456', mainnet: null} })
 
         const { result: importRes } = renderHook(() => useImportWallet())
         await act(async () => {
@@ -866,7 +866,7 @@ describe('services/accounts/hooks - useAddAccount', () => {
         const { useAddAccount } = await import('../hooks.accounts')
 
         // Set deviceID in store
-        useAppStore.setState({ network: Networks.testnet, deviceIDs: new Map([[Networks.testnet, 'TEST_DEVICE_789']]) })
+        useAppStore.setState({ network: Networks.testnet, deviceIDs: { testnet: 'TEST_DEVICE_789', mainnet: null} })
 
         const { result: addRes } = renderHook(() => useAddAccount())
 
@@ -972,7 +972,7 @@ describe('services/accounts/hooks - updateAccount', () => {
         const { useAddAccount, useUpdateAccount } = await import(
             '../hooks.accounts'
         )
-        useAppStore.setState({ network: Networks.testnet, deviceIDs: new Map([[Networks.testnet, 'TEST_DEVICE_456']]) })
+        useAppStore.setState({ network: Networks.testnet, deviceIDs: { testnet: 'TEST_DEVICE_456', mainnet: null} })
 
         const { result: addRes } = renderHook(() => useAddAccount())
         const { result: updateRes } = renderHook(() => useUpdateAccount())

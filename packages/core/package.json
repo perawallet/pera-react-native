@@ -16,12 +16,12 @@
   "dependencies": {
     "@perawallet/config": "workspace:*",
     "@algorandfoundation/algokit-utils": "catalog:",
+    "algosdk": "catalog:",
     "@kubb/core": "catalog:",
     "@kubb/plugin-client": "catalog:",
     "@perawallet/xhdwallet": "workspace:*",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-query-persist-client": "catalog:",
-    "algosdk": "^3.4.0",
     "base32-encode": "^2.0.0",
     "base64-js": "^1.5.1",
     "bip39": "catalog:",

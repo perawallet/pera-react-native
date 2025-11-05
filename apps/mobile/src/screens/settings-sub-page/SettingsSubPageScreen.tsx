@@ -6,6 +6,7 @@ import { Network, Networks, useAppStore, useDevice } from '@perawallet/core';
 import { useQueryClient } from '@tanstack/react-query';
 import { useStyles } from './styles';
 import PeraView from '../../components/common/view/PeraView';
+import { Transaction } from '@perawallet/core/src/api/generated/indexer';
 
 type SettingsSubPageScreenProps = StaticScreenProps<{
   title: string;
@@ -13,13 +14,9 @@ type SettingsSubPageScreenProps = StaticScreenProps<{
 
 const SettingsSubPageScreen = ({ route }: SettingsSubPageScreenProps) => {
   const styles = useStyles();
-  const setTheme = useAppStore(state => state.setTheme);
-  const theme = useAppStore(state => state.theme);
-  const network = useAppStore(state => state.network);
-  const setNetwork = useAppStore(state => state.setNetwork);
-  const deviceIDs = useAppStore(state => state.deviceIDs);
+  const { theme, setTheme, network, setNetwork, deviceIDs, addSignRequest } = useAppStore();
   const { registerDevice } = useDevice()
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
 
   const toggleTheme = () => {
     if (theme === 'dark' || theme === 'system') {
@@ -35,12 +32,29 @@ const SettingsSubPageScreen = ({ route }: SettingsSubPageScreenProps) => {
       newNetwork = Networks.testnet
     }
     setNetwork(newNetwork);
-    if (!deviceIDs.has(newNetwork)) {
+    if (!deviceIDs[newNetwork]) {
       await registerDevice()
     }
 
     queryClient.invalidateQueries();
   };
+
+  const createSignRequest = async () => {
+    try {
+      const tx: Transaction = {
+        fee: 1000,
+        "first-valid": 1000,
+        "last-valid": 2000,
+        sender: 'HS4UDE2JA2VLAL3HWXC3QJMCG4XCINHQFFCXH2JXCHYWAHLWEAKY26Z2SI',
+        'tx-type': 'pay'
+      }
+      addSignRequest({
+        txs: [[tx]]
+      })
+    } catch (error) {
+      console.log("Error", error)
+    }
+  }
 
   return (
     <MainScreenLayout>
@@ -53,6 +67,8 @@ const SettingsSubPageScreen = ({ route }: SettingsSubPageScreenProps) => {
         <Button onPress={toggleTheme} title="Toggle Theme" />
 
         <Button onPress={toggleNetwork} title="Toggle Network" />
+
+        <Button onPress={createSignRequest} title="Simulate Signing Request" />
       </PeraView>
     </MainScreenLayout>
   );
