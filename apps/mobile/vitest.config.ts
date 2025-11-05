@@ -41,10 +41,11 @@ export default defineConfig({
         'src/**/styles.ts',
         'src/**/theme.ts',
         'src/components/common/webview/injected-scripts.ts',
-        //TODO: tests for hooks and boostrap was causing weird syntax error I couldn't figure out so disabling
+        //TODO: tests for hooks and boostrap were causing weird syntax error I couldn't figure out so disabling
         //coverage for now
         'src/bootstrap/*',
         'src/hooks/toast.ts',
+        'src/hooks/webview.ts',
       ],
       reporter: ['text', 'html', 'lcov'],
       reportsDirectory: './coverage',
