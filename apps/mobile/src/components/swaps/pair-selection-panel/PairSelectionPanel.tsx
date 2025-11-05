@@ -16,6 +16,7 @@ const PairSelectionPanel = () => {
   const styles = useStyles();
   const { theme } = useTheme();
 
+  // TODO we need to fetch all the assets from the swap backend somehow
   const { assets } = useCachedAssets([10458941, 700965019]);
 
   const algoAsset = assets?.length
