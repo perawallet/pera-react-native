@@ -2,7 +2,7 @@ import { Button, Text } from '@rneui/themed';
 import MainScreenLayout from '../../layouts/MainScreenLayout';
 
 import { StaticScreenProps } from '@react-navigation/native';
-import { useAppStore } from '@perawallet/core';
+import { Network, Networks, useAppStore, useDevice } from '@perawallet/core';
 import { useQueryClient } from '@tanstack/react-query';
 import { useStyles } from './styles';
 import PeraView from '../../components/common/view/PeraView';
@@ -17,6 +17,8 @@ const SettingsSubPageScreen = ({ route }: SettingsSubPageScreenProps) => {
   const theme = useAppStore(state => state.theme);
   const network = useAppStore(state => state.network);
   const setNetwork = useAppStore(state => state.setNetwork);
+  const deviceIDs = useAppStore(state => state.deviceIDs);
+  const { registerDevice } = useDevice()
   const queryClient = useQueryClient();
 
   const toggleTheme = () => {
@@ -27,11 +29,14 @@ const SettingsSubPageScreen = ({ route }: SettingsSubPageScreenProps) => {
     }
   };
 
-  const toggleNetwork = () => {
-    if (network === 'mainnet') {
-      setNetwork('testnet');
-    } else {
-      setNetwork('mainnet');
+  const toggleNetwork = async () => {
+    var newNetwork: Network = Networks.mainnet
+    if (network === Networks.mainnet) {
+      newNetwork = Networks.testnet
+    }
+    setNetwork(newNetwork);
+    if (!deviceIDs.has(newNetwork)) {
+      await registerDevice()
     }
 
     queryClient.invalidateQueries();

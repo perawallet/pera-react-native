@@ -8,6 +8,7 @@
     "lint": "eslint .",
     "start": "react-native start",
     "test": "vitest run",
+    "test:coverage": "vitest --coverage run",
     "test:watch": "vitest --watch"
   },
   "dependencies": {

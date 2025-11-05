@@ -97,21 +97,22 @@ const pluralize = (label: string, time: number) => {
 export const formatRelativeTime = (
     datetime: string | Date,
     locale: string = 'en-US',
+    now: number = Date.now(),
 ) => {
-    let date: number = Date.now()
+    let date: number = now
     if (typeof datetime === 'string') {
         const parts = datetime.split('+')
         date = Date.parse(parts[0]) //TODO: deal with timezones
     } else {
         date = datetime.getTime()
     }
-    const time = (Date.now() - date) / 1000.0 //get seconds
+    const time = (now - date) / 1000.0 //get seconds
 
     if (time < 60 ) { //in the last minute
         return "just now"
     }
     if (time < 60 * 60) { //in the last hour
-        return pluralize("minute", time / (60 * 60))
+        return pluralize("minute", time / 60)
     }
     if (time < 60 * 60 * 24) {
         return pluralize("hour", time / (60 * 60))

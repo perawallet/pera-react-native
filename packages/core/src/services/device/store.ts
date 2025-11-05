@@ -1,10 +1,11 @@
+import type { Network } from '../../services/blockchain'
 import type { StateCreator } from 'zustand'
 
 export type DeviceSlice = {
     fcmToken: string | null
-    deviceID: string | null //TODO: we need to store different deviceIDs per network (mainnet, testnet, etc)
+    deviceIDs: Map<Network, string>
     setFcmToken: (token: string | null) => void
-    setDeviceID: (id: string | null) => void
+    setDeviceID: (network: Network, id: string | null) => void
 }
 
 export const createDeviceSlice: StateCreator<
@@ -12,18 +13,27 @@ export const createDeviceSlice: StateCreator<
     [],
     [],
     DeviceSlice
-> = set => {
+> = (set, get) => {
     return {
         fcmToken: null,
-        deviceID: null,
+        deviceIDs: new Map(),
         setFcmToken: token => set({ fcmToken: token }),
-        setDeviceID: id => set({ deviceID: id }),
+        setDeviceID: (network, id) => {
+            const { deviceIDs } = get()
+            if (id) {
+                deviceIDs.set(network, id)
+            } else {
+                deviceIDs.delete(network)
+            }
+            
+            set({ deviceIDs })
+        }
     }
 }
 
 export const partializeDeviceSlice = (state: DeviceSlice) => {
     return {
         fcmToken: state.fcmToken,
-        deviceID: state.deviceID,
+        deviceIDs: state.deviceIDs,
     }
 }

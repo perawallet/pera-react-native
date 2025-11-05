@@ -1,9 +1,8 @@
 import ky, { type KyInstance, type KyRequest } from 'ky'
 import { config } from '@perawallet/config'
-import { Networks } from '../services/blockchain'
 import { createFetchClient, logRequest, logResponse } from './query-client'
 
-const clients = new Map<string, KyInstance>()
+const clients = new Map<"testnet" | "mainnet", KyInstance>()
 
 const setStandardHeaders = (request: KyRequest) => {
     request.headers.set('Content-Type', 'application/json')
@@ -29,8 +28,8 @@ const testnetClient = ky.create({
     prefixUrl: config.testnetBackendUrl,
 })
 
-clients.set(Networks.mainnet, mainnetClient)
-clients.set(Networks.testnet, testnetClient)
+clients.set("mainnet", mainnetClient)
+clients.set("testnet", testnetClient)
 
 export const updateBackendHeaders = (headers: Map<string, string>) => {
     clients.forEach((client, network) => {

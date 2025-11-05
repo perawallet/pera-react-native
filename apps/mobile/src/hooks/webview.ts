@@ -1,7 +1,7 @@
 import WebView from "react-native-webview"
 import useToast from "./toast"
 import { Linking } from "react-native"
-import { getAccountDisplayName, useAllAccounts, useAppStore, useDeviceInfoService } from "@perawallet/core"
+import { getAccountDisplayName, useAllAccounts, useAppStore, useDeviceID, useDeviceInfoService } from "@perawallet/core"
 import { ParamListBase, useNavigation } from "@react-navigation/native"
 import { NativeStackNavigationProp } from "@react-navigation/native-stack"
 
@@ -39,7 +39,7 @@ type WebviewMessage = {
 export const usePeraWebviewInterface = (webview: WebView | null) => {
     const { showToast } = useToast()
     const accounts = useAllAccounts()
-    const deviceID = useAppStore(state => state.deviceID)
+    const deviceID = useDeviceID()
     const theme = useAppStore(state => state.theme)
     const network = useAppStore(state => state.network)
     const deviceInfo = useDeviceInfoService()

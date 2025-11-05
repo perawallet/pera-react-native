@@ -1,6 +1,6 @@
 import { useTheme } from '@rneui/themed';
 import MainScreenLayout from '../../layouts/MainScreenLayout';
-import { useAppStore, useV1DevicesNotificationsListInfinite, v1DevicesNotificationsListInfiniteQueryKey } from '@perawallet/core';
+import { useDeviceID, useV1DevicesNotificationsListInfinite } from '@perawallet/core';
 import { FlatList } from 'react-native-gesture-handler';
 import PeraView from '../../components/common/view/PeraView';
 import { ActivityIndicator } from 'react-native';
@@ -13,7 +13,7 @@ import { useMemo } from 'react';
 const NotificationsScreen = () => {
   const styles = useStyles()
   const { theme } = useTheme()
-  const deviceID = useAppStore(state => state.deviceID)
+  const deviceID = useDeviceID()
 
   const { data, isPending, fetchNextPage, isFetchingNextPage, hasNextPage } = useV1DevicesNotificationsListInfinite({
     device_id: deviceID!

@@ -4,6 +4,7 @@ import {
     partializeDeviceSlice,
     type DeviceSlice,
 } from '../store'
+import { Networks } from '../../../services/blockchain'
 
 describe('services/device/store', () => {
     test('defaults to nulls and setters update state', () => {
@@ -22,26 +23,27 @@ describe('services/device/store', () => {
 
         // defaults
         expect(state.fcmToken).toBeNull()
-        expect(state.deviceID).toBeNull()
+        expect(state.deviceIDs).toEqual(new Map())
 
         // set values
         state.setFcmToken('FCM-1')
         expect(state.fcmToken).toBe('FCM-1')
 
-        state.setDeviceID('DEV-1')
-        expect(state.deviceID).toBe('DEV-1')
+        state.setDeviceID(Networks.testnet, 'DEV-1')
+        expect(state.deviceIDs.get(Networks.testnet)).toBe('DEV-1')
+        expect(state.deviceIDs.get(Networks.mainnet)).toBeUndefined()
 
         // clear values
         state.setFcmToken(null)
-        state.setDeviceID(null)
+        state.setDeviceID(Networks.testnet, null)
         expect(state.fcmToken).toBeNull()
-        expect(state.deviceID).toBeNull()
+        expect(state.deviceIDs.get(Networks.testnet)).toBeUndefined()
     })
 
     test('partializeDeviceSlice returns only persisted subset', () => {
         const state: DeviceSlice = {
             fcmToken: 'TOK',
-            deviceID: 'ID',
+            deviceIDs: new Map([[Networks.testnet, 'ID']]),
             setFcmToken: () => {},
             setDeviceID: () => {},
         }
@@ -49,7 +51,7 @@ describe('services/device/store', () => {
         const partial = partializeDeviceSlice(state)
         expect(partial).toEqual({
             fcmToken: 'TOK',
-            deviceID: 'ID',
+            deviceIDs: new Map([[Networks.testnet, 'ID']]),
         })
 
         // ensure functions are not included

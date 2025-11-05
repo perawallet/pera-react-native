@@ -1,4 +1,4 @@
-import { useAppStore, useV1DevicesNotificationStatusList } from '@perawallet/core';
+import { useDeviceID, useV1DevicesNotificationStatusList } from '@perawallet/core';
 import BellIcon from '../../../../assets/icons/bell.svg';
 import BellWithBadgeIcon from '../../../../assets/icons/bell-with-badge.svg';
 import { SvgProps } from 'react-native-svg';
@@ -11,7 +11,7 @@ export type NotificationsIconProps = {
 
 const NotificationsIcon = (props: NotificationsIconProps) => {
 
-  const deviceID = useAppStore(state => state.deviceID)
+    const deviceID = useDeviceID()
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
 
   const goToNotifications = () => {

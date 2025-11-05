@@ -1,9 +1,8 @@
 import ky, { type KyInstance } from 'ky'
 import { config } from '@perawallet/config'
-import { Networks } from '../services/blockchain/types'
 import { createFetchClient, logRequest, logResponse } from './query-client'
 
-const clients = new Map<string, KyInstance>()
+const clients = new Map<"testnet" | "mainnet", KyInstance>()
 
 const mainnetClient = ky.create({
     hooks: {
@@ -42,8 +41,8 @@ const testnetClient = ky.create({
     prefixUrl: config.testnetIndexerUrl,
 })
 
-clients.set(Networks.mainnet, mainnetClient)
-clients.set(Networks.testnet, testnetClient)
+clients.set("mainnet", mainnetClient)
+clients.set("testnet", testnetClient)
 
 export const indexerFetchClient = createFetchClient(clients)
 

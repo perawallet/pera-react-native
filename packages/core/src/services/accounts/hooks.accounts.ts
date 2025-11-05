@@ -13,7 +13,7 @@ import {
     type AccountDetailAssetSerializerResponse,
 } from '../../api/generated/backend'
 import Decimal from 'decimal.js'
-import { useDeviceInfoService } from '../device'
+import { useDeviceID, useDeviceInfoService } from '../device'
 import { useQueries } from '@tanstack/react-query'
 
 // Services relating to locally stored accounts
@@ -38,11 +38,11 @@ export const useFindAccountbyAddress = (address: string) => {
 }
 
 export const useCreateAccount = () => {
+    const deviceID = useDeviceID()
     const accounts = useAppStore(state => state.accounts)
     const { createMnemonic, deriveKey } = useHDWallet()
     const secureStorage = useSecureStorageService()
     const setAccounts = useAppStore(state => state.setAccounts)
-    const deviceID = useAppStore(state => state.deviceID)
     const deviceInfo = useDeviceInfoService()
     const { mutateAsync: updateDeviceOnBackend } = useV1DevicesPartialUpdate()
 
@@ -115,7 +115,7 @@ export const useImportWallet = () => {
     const { deriveKey } = useHDWallet()
     const secureStorage = useSecureStorageService()
     const setAccounts = useAppStore(state => state.setAccounts)
-    const deviceID = useAppStore(state => state.deviceID)
+    const deviceID = useDeviceID()
     const deviceInfo = useDeviceInfoService()
     const { mutateAsync: updateDeviceOnBackend } = useV1DevicesPartialUpdate()
 
@@ -181,7 +181,7 @@ export const useUpdateAccount = () => {
     const accounts = useAppStore(state => state.accounts)
     const secureStorage = useSecureStorageService()
     const setAccounts = useAppStore(state => state.setAccounts)
-    const deviceID = useAppStore(state => state.deviceID)
+    const deviceID = useDeviceID()
     const deviceInfo = useDeviceInfoService()
     const { mutateAsync: updateDeviceOnBackend } = useV1DevicesPartialUpdate()
 
@@ -212,7 +212,7 @@ export const useAddAccount = () => {
     const accounts = useAppStore(state => state.accounts)
     const secureStorage = useSecureStorageService()
     const setAccounts = useAppStore(state => state.setAccounts)
-    const deviceID = useAppStore(state => state.deviceID)
+    const deviceID = useDeviceID()
     const deviceInfo = useDeviceInfoService()
     const { mutateAsync: updateDeviceOnBackend } = useV1DevicesPartialUpdate()
 

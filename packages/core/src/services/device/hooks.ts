@@ -3,9 +3,17 @@ import { useAppStore } from '../../store'
 import { useV1DevicesPartialUpdate } from '../../api/generated/backend/hooks/useV1DevicesPartialUpdate'
 import { useDeviceInfoService } from './platform-service'
 
+
+export const useDeviceID = () => {
+    const network = useAppStore(state => state.network)
+    const deviceIDs = useAppStore(state => state.deviceIDs)
+    return deviceIDs.get(network) ?? null
+}
+
 export const useDevice = () => {
     const accounts = useAppStore(state => state.accounts)
-    const deviceID = useAppStore(state => state.deviceID)
+    const network = useAppStore(state => state.network)
+    const deviceID = useDeviceID()
     const setDeviceID = useAppStore(state => state.setDeviceID)
     const fcmToken = useAppStore(state => state.fcmToken)
     const deviceInfoService = useDeviceInfoService()
@@ -28,7 +36,7 @@ export const useDevice = () => {
                     locale: deviceInfoService.getDeviceLocale(),
                 },
             })
-            setDeviceID(result.id ?? null)
+            setDeviceID(network, result.id ?? null)
         } else {
             await updateDevice({
                 device_id: deviceID,

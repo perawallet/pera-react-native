@@ -2,13 +2,6 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { registerTestPlatform } from '@test-utils'
 
-vi.mock('../../../services/blockchain', () => ({
-    Networks: {
-        mainnet: 'mainnet',
-        testnet: 'testnet',
-    },
-}))
-
 vi.mock('../../../api/query-client', () => ({
     createFetchClient: vi.fn(() => vi.fn()),
     logRequest: vi.fn(),
@@ -49,8 +42,9 @@ const storeMock = vi.hoisted(() => {
         create() {
             let state: any = {
                 accounts: [],
-                deviceID: null,
+                deviceID: new Map(),
                 fcmToken: null,
+                network: "testnet"
             }
             const setState = (partial: any) => {
                 state = { ...state, ...partial }
@@ -61,7 +55,7 @@ const storeMock = vi.hoisted(() => {
             // slice updaters that our hook selects
             state = {
                 ...state,
-                setDeviceID: (id: string | null) => setState({ deviceID: id }),
+                setDeviceID: (network: string, id: string | null) => setState({ deviceIDs: new Map([[network, id]]) }),
                 setFcmToken: (token: string | null) =>
                     setState({ fcmToken: token }),
             }
@@ -90,7 +84,8 @@ describe('services/device/hooks', () => {
         ;(useAppStore as any).setState({
             accounts: [{ address: 'A1' }, { address: 'A2' }],
             fcmToken: 'FCM123',
-            deviceID: null,
+            deviceIDs: new Map(),
+            network: "testnet"
         })
 
         const { result } = renderHook(() => useDevice())
@@ -110,7 +105,7 @@ describe('services/device/hooks', () => {
                 locale: 'testLocale',
             },
         })
-        expect((useAppStore as any).getState().deviceID).toBe('NEW_ID')
+        expect((useAppStore as any).getState().deviceIDs.get("testnet")).toBe('NEW_ID')
     })
 
     test('registerDevice updates when deviceID exists', async () => {
@@ -125,7 +120,8 @@ describe('services/device/hooks', () => {
         ;(useAppStore as any).setState({
             accounts: [{ address: 'X' }],
             fcmToken: 'TOKEN',
-            deviceID: 'DEV1',
+            deviceIDs: new Map([["testnet", 'DEV1']]),
+            network: "testnet"
         })
 
         const { result } = renderHook(() => useDevice())
@@ -145,6 +141,52 @@ describe('services/device/hooks', () => {
                 locale: 'testLocale',
             },
         })
-        expect((useAppStore as any).getState().deviceID).toBe('DEV1')
+        expect((useAppStore as any).getState().deviceIDs.get("testnet")).toBe('DEV1')
+    })
+
+    test('getDeviceID when deviceID exists', async () => {
+        vi.resetModules()
+        api.createSpy.mockResolvedValue({})
+        api.updateSpy.mockResolvedValue({})
+        registerTestPlatform()
+
+        const { useAppStore } = await import('../../../store')
+        const { useDeviceID } = await import('../hooks')
+
+        ;(useAppStore as any).setState({
+            accounts: [{ address: 'X' }],
+            fcmToken: 'TOKEN',
+            deviceIDs: new Map([["testnet", 'DEV1']]),
+            network: "testnet"
+        })
+
+        const { result }  = renderHook(() => useDeviceID())
+        await act(async () => {
+            const deviceID = result.current
+            expect(deviceID).toEqual('DEV1')
+        })
+    })
+
+    test('getDeviceID when deviceID does not exists', async () => {
+        vi.resetModules()
+        api.createSpy.mockResolvedValue({})
+        api.updateSpy.mockResolvedValue({})
+        registerTestPlatform()
+
+        const { useAppStore } = await import('../../../store')
+        const { useDeviceID } = await import('../hooks')
+
+        ;(useAppStore as any).setState({
+            accounts: [{ address: 'X' }],
+            fcmToken: 'TOKEN',
+            deviceIDs: new Map([["testnet", 'DEV1']]),
+            network: "mainnet"
+        })
+
+        const { result }  = renderHook(() => useDeviceID())
+        await act(async () => {
+            const deviceID = result.current
+            expect(deviceID).toBeNull()
+        })
     })
 })

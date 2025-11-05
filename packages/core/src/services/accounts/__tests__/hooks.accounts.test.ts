@@ -5,6 +5,7 @@ import { MemoryKeyValueStorage, registerTestPlatform } from '@test-utils'
 import Decimal from 'decimal.js'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
+import { Networks } from '@services/blockchain'
 
 // Hoisted mocks for createAccount path dependencies
 const uuidSpies = vi.hoisted(() => ({ v7: vi.fn() }))
@@ -481,7 +482,7 @@ describe('services/accounts/hooks - createAccount', () => {
         const { useCreateAccount } = await import('../hooks.accounts')
 
         // Set deviceID in store
-        useAppStore.setState({ deviceID: 'TEST_DEVICE_123' })
+        useAppStore.setState({ network: Networks.testnet, deviceIDs: new Map([[Networks.testnet, 'TEST_DEVICE_123']]) })
 
         const { result: createRes } = renderHook(() => useCreateAccount())
         await act(async () => {
@@ -819,7 +820,7 @@ describe('services/accounts/hooks - useImportWallet', () => {
         const { useImportWallet } = await import('../hooks.accounts')
 
         // Set deviceID in store
-        useAppStore.setState({ deviceID: 'TEST_DEVICE_456' })
+        useAppStore.setState({ network: Networks.testnet, deviceIDs: new Map([[Networks.testnet, 'TEST_DEVICE_456']]) })
 
         const { result: importRes } = renderHook(() => useImportWallet())
         await act(async () => {
@@ -865,7 +866,7 @@ describe('services/accounts/hooks - useAddAccount', () => {
         const { useAddAccount } = await import('../hooks.accounts')
 
         // Set deviceID in store
-        useAppStore.setState({ deviceID: 'TEST_DEVICE_789' })
+        useAppStore.setState({ network: Networks.testnet, deviceIDs: new Map([[Networks.testnet, 'TEST_DEVICE_789']]) })
 
         const { result: addRes } = renderHook(() => useAddAccount())
 
@@ -971,7 +972,7 @@ describe('services/accounts/hooks - updateAccount', () => {
         const { useAddAccount, useUpdateAccount } = await import(
             '../hooks.accounts'
         )
-        useAppStore.setState({ deviceID: 'TEST_DEVICE_456' })
+        useAppStore.setState({ network: Networks.testnet, deviceIDs: new Map([[Networks.testnet, 'TEST_DEVICE_456']]) })
 
         const { result: addRes } = renderHook(() => useAddAccount())
         const { result: updateRes } = renderHook(() => useUpdateAccount())
