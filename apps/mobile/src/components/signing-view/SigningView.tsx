@@ -39,7 +39,7 @@ const GroupTransactionView = ({ request }: SigningViewProps) => {
     return <ScrollView contentContainerStyle={styles.body}>
         <TransactionIcon type="group" size='large' />
         <Text h4>{isMultipleGroups ? 'Transaction Groups' : `Group ID: ${truncateAlgorandAddress('SomeIDForAGroup')}`}</Text>
-        <BalanceImpactView />
+        {isMultipleGroups ? <PeraView><Text>This is where we'll show the groups</Text></PeraView> : <BalanceImpactView />}
     </ScrollView>
 }
 
@@ -69,7 +69,7 @@ const SigningView = ({ request }: SigningViewProps) => {
 
             //     allSigs.push(sigs)
             // }
-            
+
             showToast({
                 type: 'info',
                 title: 'Signing Not Fully Implemented',

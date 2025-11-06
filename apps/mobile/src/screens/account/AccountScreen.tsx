@@ -2,6 +2,7 @@ import { Text, useTheme } from '@rneui/themed';
 import MainScreenLayout from '../../layouts/MainScreenLayout';
 import {
   DrawerActions,
+  ParamListBase,
   StaticScreenProps,
   useNavigation,
 } from '@react-navigation/native';
@@ -31,6 +32,7 @@ import PeraView from '../../components/common/view/PeraView';
 import WealthChart from '../../components/common/wealth-chart/WealthChart';
 import ButtonPanel from '../../components/account-details/button-panel/ButtonPanel';
 import NotificationsIcon from '../../components/common/notifications-icon/NotificationsIcon';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 type AccountScreenProps = StaticScreenProps<{
   account?: WalletAccount;
@@ -38,7 +40,7 @@ type AccountScreenProps = StaticScreenProps<{
 const AccountScreen = ({ route }: AccountScreenProps) => {
   const { theme } = useTheme();
   const styles = useStyles();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
   const accounts = useAllAccounts();
   const { getSelectedAccount } = useAppStore();
   const account = (route.params?.account ??
@@ -60,6 +62,10 @@ const AccountScreen = ({ route }: AccountScreenProps) => {
     (acc, cur) => acc.plus(cur.usdAmount),
     Decimal(0),
   );
+
+  const goToQRScanner = () => {
+    navigation.navigate('QRScanner')
+  }
 
   const toggleAccountSelectorVisible = () => {
     navigation.dispatch(DrawerActions.toggleDrawer());
@@ -97,7 +103,7 @@ const AccountScreen = ({ route }: AccountScreenProps) => {
           <TouchableOpacity>
             <InboxIcon style={styles.icon} color={theme.colors.textMain} />
           </TouchableOpacity>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={goToQRScanner}>
             <CameraIcon style={styles.icon} color={theme.colors.textMain} />
           </TouchableOpacity>
           <NotificationsIcon style={styles.icon} color={theme.colors.textMain} />

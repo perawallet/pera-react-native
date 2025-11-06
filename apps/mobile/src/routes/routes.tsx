@@ -14,6 +14,7 @@ import NameAccountScreen from '../screens/name-account/NameAccountScreen';
 import SettingsScreen from '../screens/settings/SettingsScreen';
 import SettingsSubPageScreen from '../screens/settings-sub-page/SettingsSubPageScreen';
 import ImportAccountScreen from '../screens/import-account/ImportAccountScreen';
+import QRScannerScreen from '../screens/qr-scanner/QRScannerScreen';
 
 import { useHasNoAccounts } from '@perawallet/core';
 
@@ -108,6 +109,7 @@ const RootStack = createNativeStackNavigator({
       }
     },
     Settings: SettingsStack,
+    QRScanner: QRScannerScreen,
   },
 });
 
