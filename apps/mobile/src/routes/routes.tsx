@@ -4,7 +4,7 @@ import {
   NativeStackHeaderProps,
 } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import AccountMenu from '../screens/account-menu/AccountMenu';
+import AccountScreen from '../screens/account/AccountScreen';
 import DiscoverScreen from '../screens/discover/DiscoverScreen';
 import MenuScreen from '../screens/menu/MenuScreen';
 import StakingScreen from '../screens/staking/StakingScreen';
@@ -67,7 +67,7 @@ const TabBarStack = createBottomTabNavigator({
     },
   }),
   screens: {
-    Home: AccountMenu,
+    Home: AccountScreen,
     Discover: DiscoverScreen,
     Swap: SwapScreen,
     Staking: StakingScreen,

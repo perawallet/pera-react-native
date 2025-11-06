@@ -5,8 +5,11 @@ import { useStyles } from './styles';
 
 import ChevronDown from '../../../../assets/icons/chevron-down.svg';
 import WalletIcon from '../../../../assets/icons/wallet-in-circle.svg';
+import { TouchableOpacity, TouchableOpacityProps } from 'react-native';
 
-const AccountSelection = () => {
+type AccountSelectionProps = {} & TouchableOpacityProps
+
+const AccountSelection = (props: AccountSelectionProps) => {
   const { theme } = useTheme();
   const styles = useStyles();
   const getSelectedAccount = useAppStore(state => state.getSelectedAccount);
@@ -14,13 +17,15 @@ const AccountSelection = () => {
   const displayName = getAccountDisplayName(account);
 
   return (
-    <PeraView style={styles.container}>
-      <WalletIcon />
-      <Text h4Style={styles.text} h4>
-        {displayName}
-      </Text>
-      <ChevronDown color={theme.colors.textGray} />
-    </PeraView>
+    <TouchableOpacity {...props} activeOpacity={0.8}>
+      <PeraView style={styles.container}>
+        <WalletIcon />
+        <Text h4Style={styles.text} h4>
+          {displayName}
+        </Text>
+        <ChevronDown color={theme.colors.textGray} />
+      </PeraView>
+    </TouchableOpacity>
   );
 };
 

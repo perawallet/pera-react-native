@@ -20,7 +20,7 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       flexDirection: 'row',
       justifyContent: 'space-between',
       paddingTop: theme.spacing.md,
-      paddingBottom: theme.spacing.xl * 1.5,
+      paddingBottom: theme.spacing.md,
     },
     valueBarCurrencies: {
       flexShrink: 1,

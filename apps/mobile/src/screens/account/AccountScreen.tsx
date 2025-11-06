@@ -1,7 +1,6 @@
 import { Text, useTheme } from '@rneui/themed';
 import MainScreenLayout from '../../layouts/MainScreenLayout';
 import {
-  DrawerActions,
   ParamListBase,
   StaticScreenProps,
   useNavigation,
@@ -9,7 +8,6 @@ import {
 import {
   AccountWealthHistoryItem,
   formatDatetime,
-  getAccountDisplayName,
   useAccountBalances,
   useAllAccounts,
   useAppStore,
@@ -18,8 +16,6 @@ import {
 import { TouchableOpacity } from 'react-native';
 
 import CameraIcon from '../../../assets/icons/camera.svg';
-import WalletIcon from '../../../assets/icons/wallet.svg';
-import ChevronDown from '../../../assets/icons/chevron-down.svg';
 import InboxIcon from '../../../assets/icons/envelope-letter.svg';
 
 import { useStyles } from './styles';
@@ -33,6 +29,9 @@ import WealthChart from '../../components/common/wealth-chart/WealthChart';
 import ButtonPanel from '../../components/account-details/button-panel/ButtonPanel';
 import NotificationsIcon from '../../components/common/notifications-icon/NotificationsIcon';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import AccountSelection from '../../components/common/account-selection/AccountSelection';
+import AccountMenu from '../../components/account-menu/AccountMenu';
+import { Drawer } from 'react-native-drawer-layout';
 
 type AccountScreenProps = StaticScreenProps<{
   account?: WalletAccount;
@@ -52,6 +51,7 @@ const AccountScreen = ({ route }: AccountScreenProps) => {
     null,
   );
   const [scrollingEnabled, setScrollingEnabled] = useState<boolean>(true);
+  const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
 
   const loading = data.some(d => !d.isFetched);
   const algoAmount = data.reduce(
@@ -68,7 +68,7 @@ const AccountScreen = ({ route }: AccountScreenProps) => {
   }
 
   const toggleAccountSelectorVisible = () => {
-    navigation.dispatch(DrawerActions.toggleDrawer());
+    setDrawerOpen(true)
   };
 
   const chartSelectionChanged = useCallback(
@@ -85,76 +85,71 @@ const AccountScreen = ({ route }: AccountScreenProps) => {
   );
 
   return (
-    <MainScreenLayout fullScreen>
-      <PeraView style={styles.iconBar}>
-        <PeraView style={styles.iconBarSection}>
-          <TouchableOpacity
-            style={styles.accountSelection}
-            onPress={toggleAccountSelectorVisible}
-          >
-            <WalletIcon style={styles.icon} color={theme.colors.textMain} />
-            <Text h4Style={styles.valueTitle} h4>
-              {getAccountDisplayName(account)}
-            </Text>
-            <ChevronDown />
-          </TouchableOpacity>
-        </PeraView>
-        <PeraView style={styles.iconBarSection}>
-          <TouchableOpacity>
-            <InboxIcon style={styles.icon} color={theme.colors.textMain} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={goToQRScanner}>
-            <CameraIcon style={styles.icon} color={theme.colors.textMain} />
-          </TouchableOpacity>
-          <NotificationsIcon style={styles.icon} color={theme.colors.textMain} />
-        </PeraView>
-      </PeraView>
-      <ScrollView
-        scrollEnabled={scrollingEnabled}
-        style={styles.webview}
-        contentContainerStyle={styles.webviewContent}
-      >
-        <PeraView style={styles.valueBar}>
-          <CurrencyDisplay
-            h1
-            value={chartData ? Decimal(chartData.algo_value) : algoAmount}
-            currency="ALGO"
-            precision={2}
-            h1Style={styles.primaryCurrency}
-            skeleton={loading}
-          />
-          <PeraView style={styles.secondaryValueBar}>
-            <CurrencyDisplay
-              h4
-              h4Style={styles.valueTitle}
-              value={
-                chartData
-                  ? Decimal(chartData.value_in_currency ?? '0')
-                  : usdAmount
-              }
-              currency="USD"
-              prefix="≈ "
-              precision={2}
-              skeleton={loading}
-            />
-            {chartData && (
-              <Text h4 h4Style={styles.dateDisplay}>
-                {formatDatetime(chartData.datetime)}
-              </Text>
-            )}
+    <Drawer open={drawerOpen} onOpen={() => setDrawerOpen(true)} onClose={() => setDrawerOpen(false)}
+        drawerType='front'
+        swipeEnabled
+        drawerStyle={{width: '90%'}}
+        renderDrawerContent={() => <AccountMenu onSelected={() => setDrawerOpen(false)} showInbox /> }>
+      <MainScreenLayout fullScreen>
+        <PeraView style={styles.iconBar}>
+          <PeraView style={styles.iconBarSection}>
+            <AccountSelection onPress={toggleAccountSelectorVisible} />
+          </PeraView>
+          <PeraView style={styles.iconBarSection}>
+            <TouchableOpacity>
+              <InboxIcon style={styles.icon} color={theme.colors.textMain} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={goToQRScanner}>
+              <CameraIcon style={styles.icon} color={theme.colors.textMain} />
+            </TouchableOpacity>
+            <NotificationsIcon style={styles.icon} color={theme.colors.textMain} />
           </PeraView>
         </PeraView>
+        <ScrollView
+          scrollEnabled={scrollingEnabled}
+          style={styles.webview}
+          contentContainerStyle={styles.webviewContent}
+        >
+          <PeraView style={styles.valueBar}>
+            <CurrencyDisplay
+              h1
+              value={chartData ? Decimal(chartData.algo_value) : algoAmount}
+              currency="ALGO"
+              precision={2}
+              h1Style={styles.primaryCurrency}
+              skeleton={loading}
+            />
+            <PeraView style={styles.secondaryValueBar}>
+              <CurrencyDisplay
+                h4
+                h4Style={styles.valueTitle}
+                value={
+                  chartData
+                    ? Decimal(chartData.value_in_currency ?? '0')
+                    : usdAmount
+                }
+                currency="USD"
+                prefix="≈ "
+                precision={2}
+                skeleton={loading}
+              />
+              {chartData && (
+                <Text h4 h4Style={styles.dateDisplay}>
+                  {formatDatetime(chartData.datetime)}
+                </Text>
+              )}
+            </PeraView>
+          </PeraView>
 
-        <WealthChart
-          account={account}
-          onSelectionChanged={chartSelectionChanged}
-        />
+          <WealthChart
+            account={account}
+            onSelectionChanged={chartSelectionChanged}
+          />
 
-        <ButtonPanel />
-
-        {/* TODO: Render asset list here... */}
-      </ScrollView>
-    </MainScreenLayout>
+          <ButtonPanel />
+        </ScrollView>
+      </MainScreenLayout>
+    </Drawer>
   );
 };
 
