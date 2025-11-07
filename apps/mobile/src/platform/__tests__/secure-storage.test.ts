@@ -30,7 +30,7 @@ describe('RNSecureStorageService', () => {
       service.initialize();
 
       // Test by calling setItem and checking the options passed to Keychain
-      await service.setItem('test-key', 'test-value');
+      await service.setItem('test-key', Buffer.from('test-value'));
 
       expect(mockKeychain.setGenericPassword).toHaveBeenCalledWith(
         'user',
@@ -56,7 +56,7 @@ describe('RNSecureStorageService', () => {
         promptDesc: 'Custom Description',
       });
 
-      await service.setItem('test-key', 'test-value');
+      await service.setItem('test-key', Buffer.from('test-value'));
 
       expect(mockKeychain.setGenericPassword).toHaveBeenCalledWith(
         'user',
@@ -78,7 +78,7 @@ describe('RNSecureStorageService', () => {
   describe('setItem', () => {
     it('stores value with service-specific key', async () => {
       service.initialize();
-      await service.setItem('my-key', 'my-value');
+      await service.setItem('my-key', Buffer.from('my-value'));
 
       expect(mockKeychain.setGenericPassword).toHaveBeenCalledWith(
         'user',
@@ -104,7 +104,7 @@ describe('RNSecureStorageService', () => {
 
       const result = await service.getItem('my-key');
 
-      expect(result).toBe('stored-value');
+      expect(result).toEqual(Buffer.from('stored-value'));
       expect(mockKeychain.getGenericPassword).toHaveBeenCalledWith(
         expect.objectContaining({
           service: 'com.algorand.android.my-key',

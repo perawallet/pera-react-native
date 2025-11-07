@@ -12,30 +12,42 @@ import messageSchema from './schema/message-schema.json'
 
 const api = new XHDWalletAPI()
 
-//TODO: we should revist how and where we store the private keys
+const HD_PURPOSE = 44
+const HD_COIN_TYPE = 283
+const HD_MNEMONIC_LENGTH = 256
 
 
 const createPath = (account: number, keyIndex: number) => {
     //m / purpose (bip44) / coin type (algorand) / account / change / address index
-    return [44, 283, account, 0, keyIndex]
+    return [HD_PURPOSE, HD_COIN_TYPE, account, 0, keyIndex]
 }
 
-const createMnemonic = () => {
-    return bip39.generateMnemonic(256)
+//TODO use a specific word list here
+const generateMasterKey = async (mnemonic?: string) => {
+    const storableMnemonic = mnemonic ?? bip39.generateMnemonic(HD_MNEMONIC_LENGTH)
+    const seed = await bip39.mnemonicToSeed(storableMnemonic)
+    const entropy = await bip39.mnemonicToEntropy(storableMnemonic)
+    return {
+        seed,
+        entropy
+    }
+}
+
+const entropyToMnemonic = (entropy: Buffer) => {
+    return bip39.entropyToMnemonic(entropy)
 }
 
 const deriveKey = async ({
-    mnemonic,
+    seed,
     account = 0,
     keyIndex = 0,
     derivationType = BIP32DerivationTypes.Peikert,
 }: {
-    mnemonic: string
+    seed: Buffer
     account?: number
     keyIndex?: number
     derivationType?: BIP32DerivationType
 }) => {
-    const seed = bip39.mnemonicToSeedSync(mnemonic)
     const rootKey = fromSeed(seed)
     const path = createPath(account, keyIndex)
     const key = await api.deriveKey(rootKey, path, true, derivationType)
@@ -52,17 +64,11 @@ const deriveKey = async ({
     }
 }
 
-const mnemonicToRootKey = async (mnemonic: string) => {
-    const seed = await bip39.mnemonicToSeed(mnemonic)
-    return fromSeed(seed)
-}
-
 const signTransaction = (
-    mnemonic: string,
+    seed: Buffer,
     hdWalletDetails: HDWalletDetails,
     transaction: Buffer,
 ) => {
-    const seed = bip39.mnemonicToSeedSync(mnemonic)
     const rootKey = fromSeed(seed)
     return api.signAlgoTransaction(
         rootKey,
@@ -75,11 +81,10 @@ const signTransaction = (
 }
 
 const signData = (
-    mnemonic: string,
+    seed: Buffer,
     hdWalletDetails: HDWalletDetails,
     data: Buffer,
 ) => {
-    const seed = bip39.mnemonicToSeedSync(mnemonic)
     const rootKey = fromSeed(seed)
     const metadata = {
         encoding: Encodings.BASE64,
@@ -97,9 +102,9 @@ const signData = (
 }
 
 export const useHDWallet = () => ({
-    createMnemonic,
+    generateMasterKey,
+    entropyToMnemonic,
     deriveKey,
-    mnemonicToRootKey,
     signTransaction,
     signData,
 })

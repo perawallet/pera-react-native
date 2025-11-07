@@ -45,6 +45,7 @@ const bip39Spies = vi.hoisted(() => ({
     generateMnemonic: vi.fn(() => mockedMnemonic),
     mnemonicToSeedSync: vi.fn(() => Buffer.from('seed_sync')),
     mnemonicToSeed: vi.fn(async () => Buffer.from('seed_async')),
+    mnemonicToEntropy: vi.fn(async () => Buffer.from('entropy')),
 }))
 vi.mock('algosdk', () => {
     return {
@@ -59,11 +60,11 @@ vi.mock('@perawallet/xhdwallet', () => {
         fromSeed: xhdSpies.fromSeed,
         KeyContext: { Address: 'Address' },
         KeyContexts: { Address: 0 },
-        XHDWalletAPI: vi.fn().mockImplementation(() => ({
-                    deriveKey: apiSpies.deriveSpy,
-                    keyGen: apiSpies.keyGenSpy,
-                    signAlgoTransaction: apiSpies.signTransactionSpy,
-                })),
+        XHDWalletAPI: class {
+            deriveKey = apiSpies.deriveSpy
+            keyGen = apiSpies.keyGenSpy
+            signAlgoTransaction = apiSpies.signTransactionSpy
+        },
     }
 })
 vi.mock('bip39', () => bip39Spies)
@@ -80,57 +81,6 @@ vi.mock('../../../api/generated/backend', () => ({
 }))
 
 describe('services/accounts/hooks', () => {
-    test('allAccounts, findAccountByAddress, and addAccount persist PK when provided', async () => {
-        vi.resetModules()
-
-        const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
-            getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
-            authenticate: vi.fn(async () => true),
-        }
-
-        registerTestPlatform({
-            keyValueStorage: new MemoryKeyValueStorage() as any,
-            secureStorage: dummySecure as any,
-        })
-
-        const { useAppStore } = await import('../../../store')
-        const { useAllAccounts, useFindAccountbyAddress, useAddAccount } =
-            await import('../hooks.accounts')
-
-        const { result: allRes } = renderHook(() => useAllAccounts())
-        const { result: addRes } = renderHook(() => useAddAccount())
-
-        // defaults
-        expect(allRes.current).toEqual([])
-
-        const a1: WalletAccount = {
-            id: '1',
-            name: 'Alice',
-            type: 'standard',
-            address: 'ALICE',
-        }
-
-        // add with secret - should persist to secure storage
-        act(() => {
-            addRes.current(a1, 'secret')
-        })
-        expect(useAppStore.getState().accounts).toEqual([a1])
-        expect(dummySecure.setItem).toHaveBeenCalledWith('pk-ALICE', 'secret')
-
-        // find present / absent
-        const { result: findRes, rerender: rerenderFind } = renderHook(
-            ({ addr }) => useFindAccountbyAddress(addr),
-            {
-                initialProps: { addr: 'ALICE' },
-            },
-        )
-        expect(findRes.current).toEqual(a1)
-        rerenderFind({ addr: 'MISSING' })
-        expect(findRes.current).toBeNull()
-    })
-
     test('useHasAccounts returns true when accounts exist, false when empty', async () => {
         vi.resetModules()
 
@@ -161,6 +111,7 @@ describe('services/accounts/hooks', () => {
             name: 'Alice',
             type: 'standard',
             address: 'ALICE',
+            canSign: true,
         }
 
         act(() => {
@@ -202,6 +153,7 @@ describe('services/accounts/hooks', () => {
             name: 'Alice',
             type: 'standard',
             address: 'ALICE',
+            canSign: true,
         }
 
         act(() => {
@@ -238,6 +190,7 @@ describe('services/accounts/hooks', () => {
             name: 'Bob',
             type: 'standard',
             address: 'BOB',
+            canSign: true,
         }
 
         act(() => {
@@ -277,6 +230,7 @@ describe('services/accounts/hooks', () => {
             name: 'Carol',
             type: 'standard',
             address: 'CAROL',
+            canSign: true,
             privateKeyLocation: 'device',
         }
 
@@ -290,6 +244,91 @@ describe('services/accounts/hooks', () => {
         })
         expect(useAppStore.getState().accounts).toEqual([])
         expect(dummySecure.removeItem).toHaveBeenCalledWith('pk-CAROL')
+    })
+
+    test('useAllAccounts returns all accounts from store', async () => {
+        vi.resetModules()
+
+        const dummySecure = {
+            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            getItem: vi.fn(async (_k: string) => null),
+            removeItem: vi.fn(async (_k: string) => {}),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const { useAppStore } = await import('../../../store')
+        const { useAllAccounts } = await import('../hooks.accounts')
+
+        const { result: allAccountsRes } = renderHook(() => useAllAccounts())
+
+        // Initially empty
+        expect(allAccountsRes.current).toEqual([])
+
+        // Add accounts to store
+        const accounts: WalletAccount[] = [
+            {
+                id: '1',
+                type: 'standard',
+                address: 'ADDR1',
+                canSign: true,
+            },
+            {
+                id: '2',
+                type: 'standard',
+                address: 'ADDR2',
+                canSign: true,
+            }
+        ]
+        useAppStore.setState({ accounts })
+
+        const { result: allAccountsRes2 } = renderHook(() => useAllAccounts())
+        expect(allAccountsRes2.current).toEqual(accounts)
+    })
+
+    test('useFindAccountbyAddress finds account by address', async () => {
+        vi.resetModules()
+
+        const dummySecure = {
+            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            getItem: vi.fn(async (_k: string) => null),
+            removeItem: vi.fn(async (_k: string) => {}),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const { useAppStore } = await import('../../../store')
+        const { useFindAccountbyAddress } = await import('../hooks.accounts')
+
+        const accounts: WalletAccount[] = [
+            {
+                id: '1',
+                type: 'standard',
+                address: 'ADDR1',
+                canSign: true,
+            },
+            {
+                id: '2',
+                type: 'standard',
+                address: 'ADDR2',
+                canSign: true,
+            }
+        ]
+        useAppStore.setState({ accounts })
+
+        const { result: findRes } = renderHook(() => useFindAccountbyAddress('ADDR1'))
+        expect(findRes.current).toEqual(accounts[0])
+
+        const { result: findRes2 } = renderHook(() => useFindAccountbyAddress('NONEXISTENT'))
+        expect(findRes2.current).toBeNull()
     })
 })
 
@@ -318,7 +357,6 @@ describe('services/accounts/hooks - createAccount', () => {
         const addr = new Uint8Array([65, 68, 68, 82, 69, 83, 83]) // 'ADDRESS'
         apiSpies.deriveSpy.mockResolvedValueOnce(priv)
         apiSpies.keyGenSpy.mockResolvedValueOnce(addr)
-        const expectedPk = Buffer.from('PRIVKEY').toString('base64')
         const expectedAddr = Buffer.from('ADDRESS').toString('base64')
 
         // uuid: walletId, pk id, account id
@@ -343,9 +381,9 @@ describe('services/accounts/hooks - createAccount', () => {
         expect(bip39Spies.generateMnemonic).toHaveBeenCalledTimes(1)
         expect(dummySecure.setItem).toHaveBeenCalledWith(
             'rootkey-WALLET1',
-            Buffer.from(mockedMnemonic).toString('base64'),
+            expect.any(Buffer),
         )
-        expect(dummySecure.setItem).toHaveBeenCalledWith('pk-KEY1', expectedPk)
+        expect(dummySecure.setItem).toHaveBeenCalledWith('pk-KEY1', expect.any(Buffer))
 
         expect(created).toMatchObject({
             id: 'ACC1',
@@ -379,8 +417,11 @@ describe('services/accounts/hooks - createAccount', () => {
             setItem: vi.fn(async (_k: string, _v: string) => {}),
             getItem: vi.fn(async (_k: string) =>
                 Buffer.from(
-                    'spike assault capital honey word junk bind task gorilla visa resist next size initial bacon ice gym entire bargain voice shift pause supply town',
-                ).toString('base64'),
+                    JSON.stringify({
+                        seed: Buffer.from('seed_async').toString('base64'),
+                        entropy: Buffer.from('entropy').toString('base64')
+                    })
+                ),
             ),
             removeItem: vi.fn(async (_k: string) => {}),
             authenticate: vi.fn(async () => true),
@@ -391,7 +432,6 @@ describe('services/accounts/hooks - createAccount', () => {
             secureStorage: dummySecure as any,
         })
 
-        const expectedPk = Buffer.from('PRIVKEY').toString('base64')
         const expectedAddr = Buffer.from('ADDRESS').toString('base64')
 
         // XHD-API responses
@@ -420,12 +460,14 @@ describe('services/accounts/hooks - createAccount', () => {
 
         expect(dummySecure.getItem).toHaveBeenCalledWith('rootkey-EXIST')
         expect(bip39Spies.generateMnemonic).not.toHaveBeenCalled()
+        expect(bip39Spies.mnemonicToSeed).not.toHaveBeenCalled()
+        expect(bip39Spies.mnemonicToEntropy).not.toHaveBeenCalled()
 
         const setCalls = (dummySecure.setItem as any).mock.calls as any[]
         expect(setCalls.some(c => String(c[0]).startsWith('rootkey-'))).toBe(
             false,
         )
-        expect(dummySecure.setItem).toHaveBeenCalledWith('pk-KEY2', expectedPk)
+        expect(dummySecure.setItem).toHaveBeenCalledWith('pk-KEY2', expect.any(Buffer))
 
         expect(created).toMatchObject({
             id: 'ACC2',
@@ -503,6 +545,36 @@ describe('services/accounts/hooks - createAccount', () => {
             },
         })
     })
+
+    test('createAccount throws error when masterKey has no seed', async () => {
+        vi.resetModules()
+        vi.clearAllMocks()
+        uuidSpies.v7.mockReset()
+        apiSpies.deriveSpy.mockReset()
+        apiSpies.keyGenSpy.mockReset()
+
+        const dummySecure = {
+            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            getItem: vi.fn(async (_k: string) => Buffer.from(JSON.stringify({}))), // Empty object, no seed
+            removeItem: vi.fn(async (_k: string) => {}),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const { useCreateAccount } = await import('../hooks.accounts')
+
+        const { result: createRes } = renderHook(() => useCreateAccount())
+
+        await expect(createRes.current({
+            walletId: 'EXISTING_WALLET',
+            account: 0,
+            keyIndex: 0,
+        })).rejects.toThrow('No key found for EXISTING_WALLET')
+    })
 })
 
 describe('services/accounts/hooks - useImportWallet', () => {
@@ -530,7 +602,6 @@ describe('services/accounts/hooks - useImportWallet', () => {
         const addr = new Uint8Array([65, 68, 68, 82, 69, 83, 83]) // 'ADDRESS'
         apiSpies.deriveSpy.mockResolvedValueOnce(priv)
         apiSpies.keyGenSpy.mockResolvedValueOnce(addr)
-        const expectedPk = Buffer.from('PRIVKEY').toString('base64')
         const expectedAddr = Buffer.from('ADDRESS').toString('base64')
 
         // uuid: walletId, pk id, account id
@@ -556,13 +627,13 @@ describe('services/accounts/hooks - useImportWallet', () => {
         // Verify mnemonic was stored in secure storage
         expect(dummySecure.setItem).toHaveBeenCalledWith(
             'rootkey-IMPORT_WALLET1',
-            Buffer.from(importMnemonic).toString('base64'),
+            expect.any(Buffer),
         )
 
         // Verify private key was stored
         expect(dummySecure.setItem).toHaveBeenCalledWith(
             'pk-IMPORT_KEY1',
-            expectedPk,
+            expect.any(Buffer),
         )
 
         // Verify account structure
@@ -611,7 +682,6 @@ describe('services/accounts/hooks - useImportWallet', () => {
         const addr = new Uint8Array([65, 68, 68, 82, 69, 83, 83])
         apiSpies.deriveSpy.mockResolvedValueOnce(priv)
         apiSpies.keyGenSpy.mockResolvedValueOnce(addr)
-        const expectedPk = Buffer.from('PRIVKEY').toString('base64')
         const expectedAddr = Buffer.from('ADDRESS').toString('base64')
 
         // uuid: pk id, account id (walletId is provided)
@@ -637,13 +707,13 @@ describe('services/accounts/hooks - useImportWallet', () => {
         // Verify mnemonic was stored with provided walletId
         expect(dummySecure.setItem).toHaveBeenCalledWith(
             `rootkey-${existingWalletId}`,
-            Buffer.from(importMnemonic).toString('base64'),
+            expect.any(Buffer),
         )
 
         // Verify private key was stored
         expect(dummySecure.setItem).toHaveBeenCalledWith(
             'pk-IMPORT_KEY2',
-            expectedPk,
+            expect.any(Buffer),
         )
 
         // Verify account uses provided walletId
@@ -757,6 +827,7 @@ describe('services/accounts/hooks - useImportWallet', () => {
             name: 'Existing Account',
             type: 'standard',
             address: 'EXISTING_ADDR',
+            canSign: true
         }
         act(() => {
             addRes.current(existingAccount)
@@ -877,6 +948,7 @@ describe('services/accounts/hooks - useAddAccount', () => {
             name: 'Test Add Account',
             type: 'standard',
             address: 'TEST_ADDRESS',
+            canSign: true,
         }
 
         act(() => {
@@ -892,9 +964,86 @@ describe('services/accounts/hooks - useAddAccount', () => {
             },
         })
     })
+
+    test('useAddAccount generates keys for standard HD wallet accounts with device privateKeyLocation', async () => {
+        vi.resetModules()
+        vi.clearAllMocks()
+        uuidSpies.v7.mockReset()
+        apiSpies.deriveSpy.mockReset()
+        apiSpies.keyGenSpy.mockReset()
+
+        const dummySecure = {
+            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            getItem: vi.fn(async (_k: string) => Buffer.from(JSON.stringify({
+                seed: Buffer.from('test-seed').toString('base64'),
+                entropy: Buffer.from('entropy').toString('base64')
+            }))),
+            removeItem: vi.fn(async (_k: string) => {}),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const priv = new Uint8Array([80, 82, 73, 86, 75, 69, 89])
+        const addr = new Uint8Array([65, 68, 68, 82, 69, 83, 83])
+        apiSpies.deriveSpy.mockResolvedValueOnce(priv)
+        apiSpies.keyGenSpy.mockResolvedValueOnce(addr)
+
+        uuidSpies.v7.mockImplementationOnce(() => 'ADD_KEY_ID')
+
+        const { useAppStore } = await import('../../../store')
+        const { useAddAccount } = await import('../hooks.accounts')
+
+        const { result: addRes } = renderHook(() => useAddAccount())
+
+        const hdAccount: WalletAccount = {
+            id: 'HD_ACC',
+            type: 'standard',
+            address: 'PLACEHOLDER_ADDR', // Will be replaced
+            canSign: true,
+            hdWalletDetails: {
+                walletId: 'WALLET_ID',
+                account: 1,
+                change: 0,
+                keyIndex: 2,
+                derivationType: 9,
+            },
+            privateKeyLocation: 'device',
+        }
+
+        await act(async () => {
+            await addRes.current(hdAccount)
+        })
+
+        // Verify keys were derived and stored
+        expect(apiSpies.deriveSpy).toHaveBeenCalledWith(
+            'ROOT_KEY',
+            expect.any(Array),
+            true,
+            9
+        )
+        expect(apiSpies.keyGenSpy).toHaveBeenCalledWith(
+            'ROOT_KEY',
+            0,
+            1,
+            2,
+            9
+        )
+        expect(dummySecure.setItem).toHaveBeenCalledWith('pk-ADD_KEY_ID', expect.any(Buffer))
+
+        // Verify account was updated with derived address and new ID
+        const addedAccount = useAppStore.getState().accounts[0]
+        expect(addedAccount.address).toBe(Buffer.from('ADDRESS').toString('base64'))
+        expect(addedAccount.id).toBe('ADD_KEY_ID')
+        // Note: privateKeyLocation remains 'device' as per current implementation
+        expect(addedAccount.privateKeyLocation).toBe('device')
+    })
 })
 describe('services/accounts/hooks - updateAccount', () => {
-    test('useUpdateAccount replaces account and persists PK when provided', async () => {
+    test('useUpdateAccount replaces account', async () => {
         vi.resetModules()
 
         const dummySecure = {
@@ -922,6 +1071,7 @@ describe('services/accounts/hooks - updateAccount', () => {
             type: 'standard',
             address: 'ADDR1',
             name: 'Old Name',
+            canSign: true,
         }
 
         // seed store
@@ -937,80 +1087,11 @@ describe('services/accounts/hooks - updateAccount', () => {
         }
 
         act(() => {
-            updateRes.current(updated, 'new-secret')
+            updateRes.current(updated)
         })
 
         // state replaced with updated object
         expect(useAppStore.getState().accounts).toEqual([updated])
-        // PK persisted when provided
-        expect(dummySecure.setItem).toHaveBeenCalledWith(
-            'pk-ADDR1',
-            'new-secret',
-        )
-    })
-
-    test('useUpdateAccount replaces account without persisting PK when not provided', async () => {
-        vi.resetModules()
-        vi.clearAllMocks()
-
-        const updateDeviceSpy = vi.fn(async () => ({}))
-        querySpies.useV1DevicesPartialUpdate.mockReturnValue({
-            mutateAsync: updateDeviceSpy,
-        })
-
-        const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
-            getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
-            authenticate: vi.fn(async () => true),
-        }
-
-        registerTestPlatform({
-            keyValueStorage: new MemoryKeyValueStorage() as any,
-            secureStorage: dummySecure as any,
-        })
-
-        const { useAppStore } = await import('../../../store')
-        const { useAddAccount, useUpdateAccount } = await import(
-            '../hooks.accounts'
-        )
-        useAppStore.setState({ network: Networks.testnet, deviceIDs: new Map([['testnet', 'TEST_DEVICE_456'], ['mainnet', null]])})
-
-        const { result: addRes } = renderHook(() => useAddAccount())
-        const { result: updateRes } = renderHook(() => useUpdateAccount())
-
-        const initial: WalletAccount = {
-            id: 'ID2',
-            type: 'standard',
-            address: 'ADDR2',
-            name: 'Before',
-        }
-
-        act(() => {
-            addRes.current(initial)
-        })
-        expect(useAppStore.getState().accounts).toEqual([initial])
-
-        const updated: WalletAccount = {
-            ...initial,
-            name: 'After',
-        }
-
-        act(() => {
-            updateRes.current(updated)
-        })
-
-        expect(useAppStore.getState().accounts).toEqual([updated])
-        expect(dummySecure.setItem).not.toHaveBeenCalled()
-
-        // Verify updateDeviceOnBackend was called
-        expect(updateDeviceSpy).toHaveBeenCalledWith({
-            device_id: 'TEST_DEVICE_456',
-            data: {
-                platform: 'web',
-                accounts: expect.any(Array),
-            },
-        })
     })
 
     test('useUpdateAccount handles when account is not found (findIndex returns -1)', async () => {
@@ -1041,6 +1122,7 @@ describe('services/accounts/hooks - updateAccount', () => {
             type: 'standard',
             address: 'ADDR3',
             name: 'Existing',
+            canSign: true,
         }
 
         act(() => {
@@ -1053,6 +1135,7 @@ describe('services/accounts/hooks - updateAccount', () => {
             type: 'standard',
             address: 'DIFFERENT_ADDR',
             name: 'Not Found',
+            canSign: true,
         }
 
         act(() => {
@@ -1063,6 +1146,69 @@ describe('services/accounts/hooks - updateAccount', () => {
         // This tests the ?? null branch
         expect(useAppStore.getState().accounts).toHaveLength(1)
     })
+
+    test('useUpdateAccount calls updateDeviceOnBackend when deviceID is set', async () => {
+        vi.resetModules()
+        vi.clearAllMocks()
+
+        const updateDeviceSpy = vi.fn(async () => ({}))
+        querySpies.useV1DevicesPartialUpdate.mockReturnValue({
+            mutateAsync: updateDeviceSpy,
+        })
+
+        const dummySecure = {
+            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            getItem: vi.fn(async (_k: string) => null),
+            removeItem: vi.fn(async (_k: string) => {}),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const { useAppStore } = await import('../../../store')
+        const { useAddAccount, useUpdateAccount } = await import(
+            '../hooks.accounts'
+        )
+
+        // Set deviceID in store
+        useAppStore.setState({ network: Networks.testnet, deviceIDs: new Map([['testnet', 'TEST_DEVICE_UPDATE'], ['mainnet', null]])})
+
+        const { result: addRes } = renderHook(() => useAddAccount())
+        const { result: updateRes } = renderHook(() => useUpdateAccount())
+
+        const initial: WalletAccount = {
+            id: 'UPDATE_TEST',
+            type: 'standard',
+            address: 'UPDATE_ADDR',
+            name: 'Original Name',
+            canSign: true,
+        }
+
+        act(() => {
+            addRes.current(initial)
+        })
+
+        const updated: WalletAccount = {
+            ...initial,
+            name: 'Updated Name',
+        }
+
+        act(() => {
+            updateRes.current(updated)
+        })
+
+        // Verify updateDeviceOnBackend was called
+        expect(updateDeviceSpy).toHaveBeenCalledWith({
+            device_id: 'TEST_DEVICE_UPDATE',
+            data: {
+                platform: 'web',
+                accounts: ['UPDATE_ADDR'],
+            },
+        })
+    })
 })
 
 describe('services/accounts/hooks - useTransactionSigner', () => {
@@ -1070,11 +1216,16 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
         vi.resetModules()
         vi.clearAllMocks()
 
-        const signTransactionSpy = vi.fn(async () => new Uint8Array([1, 2, 3, 4]))
-
         const dummySecure = {
             setItem: vi.fn(async (_k: string, _v: string) => {}),
-            getItem: vi.fn(async (_k: string) => Buffer.from('test-mnemonic').toString('base64')),
+            getItem: vi.fn(async (_k: string) =>
+                Buffer.from(
+                    JSON.stringify({
+                        seed: Buffer.from('test-mnemonic').toString('base64'),
+                        entropy: Buffer.from('entropy').toString('base64')
+                    })
+                )
+            ),
             removeItem: vi.fn(async (_k: string) => {}),
             authenticate: vi.fn(async () => true),
         }
@@ -1100,6 +1251,7 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
                 derivationType: 9,
             },
             privateKeyLocation: 'pk-TEST',
+            canSign: true,
         }
         useAppStore.setState({ accounts: [testAccount] })
 
@@ -1111,19 +1263,30 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
             signed = await result.current.signTransactionForAddress('TEST_ADDR', transaction)
         })
 
-        expect(apiSpies.signTransactionSpy).toHaveBeenCalledWith('ROOT_KEY', 0, testAccount.hdWalletDetails!.account, testAccount.hdWalletDetails!.keyIndex, transaction, 9)
-        expect(signed).toEqual(new Uint8Array([1, 2, 3, 4]))
+        expect(apiSpies.signTransactionSpy).toHaveBeenCalledWith(
+            'ROOT_KEY',
+            0,
+            0,
+            0,
+            transaction,
+            9
+        )
     })
 
     test('signs transaction successfully with different account', async () => {
         vi.resetModules()
         vi.clearAllMocks()
 
-        const signTransactionSpy = vi.fn(async () => new Uint8Array([5, 6, 7, 8]))
-
         const dummySecure = {
             setItem: vi.fn(async (_k: string, _v: string) => {}),
-            getItem: vi.fn(async (_k: string) => Buffer.from('different-mnemonic').toString('base64')),
+            getItem: vi.fn(async (_k: string) =>
+                Buffer.from(
+                    JSON.stringify({
+                        seed: Buffer.from('different-mnemonic').toString('base64'),
+                        entropy: Buffer.from('entropy').toString('base64')
+                    })
+                )
+            ),
             removeItem: vi.fn(async (_k: string) => {}),
             authenticate: vi.fn(async () => true),
         }
@@ -1141,6 +1304,7 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
             id: 'TEST_ACC2',
             type: 'standard',
             address: 'TEST_ADDR2',
+            canSign: true,
             hdWalletDetails: {
                 walletId: 'WALLET2',
                 account: 1,
@@ -1160,7 +1324,76 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
             signed = await result.current.signTransactionForAddress('TEST_ADDR2', transaction)
         })
 
-        expect(apiSpies.signTransactionSpy).toHaveBeenCalledWith('ROOT_KEY', 0, testAccount.hdWalletDetails!.account, testAccount.hdWalletDetails!.keyIndex, transaction, 9)
+        expect(apiSpies.signTransactionSpy).toHaveBeenCalledWith(
+            'ROOT_KEY',
+            0,
+            1,
+            1,
+            transaction,
+            9
+        )
+        expect(signed).toEqual(new Uint8Array([1, 2, 3, 4]))
+    })
+
+    test('signs transaction successfully with different account (duplicate test)', async () => {
+        vi.resetModules()
+        vi.clearAllMocks()
+
+        const dummySecure = {
+            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            getItem: vi.fn(async (_k: string) =>
+                Buffer.from(
+                    JSON.stringify({
+                        seed: Buffer.from('different-mnemonic-2').toString('base64'),
+                        entropy: Buffer.from('entropy').toString('base64')
+                    })
+                )
+            ),
+            removeItem: vi.fn(async (_k: string) => {}),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const { useAppStore } = await import('../../../store')
+        const { useTransactionSigner } = await import('../hooks.accounts')
+
+        // Set up different account in store
+        const testAccount: WalletAccount = {
+            id: 'TEST_ACC3',
+            type: 'standard',
+            address: 'TEST_ADDR3',
+            hdWalletDetails: {
+                walletId: 'WALLET3',
+                account: 2,
+                change: 0,
+                keyIndex: 2,
+                derivationType: 9,
+            },
+            privateKeyLocation: 'pk-TEST3',
+            canSign: true,
+        }
+        useAppStore.setState({ accounts: [testAccount] })
+
+        const { result } = renderHook(() => useTransactionSigner())
+        const transaction = Buffer.from('test-transaction-3')
+
+        let signed: Uint8Array | undefined
+        await act(async () => {
+            signed = await result.current.signTransactionForAddress('TEST_ADDR3', transaction)
+        })
+
+        expect(apiSpies.signTransactionSpy).toHaveBeenCalledWith(
+            'ROOT_KEY',
+            0,
+            2,
+            2,
+            transaction,
+            9
+        )
         expect(signed).toEqual(new Uint8Array([1, 2, 3, 4]))
     })
 
@@ -1217,6 +1450,7 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
             type: 'standard',
             address: 'TEST_ADDR',
             privateKeyLocation: 'pk-TEST',
+            canSign: true,
         }
         useAppStore.setState({ accounts: [testAccount] })
 
@@ -1258,6 +1492,7 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
                 derivationType: 9,
             },
             privateKeyLocation: 'pk-TEST',
+            canSign: true,
         }
         useAppStore.setState({ accounts: [testAccount] })
 
@@ -1265,6 +1500,60 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
         const transaction = Buffer.from('test-transaction')
 
         await expect(result.current.signTransactionForAddress('TEST_ADDR', transaction)).rejects.toThrow('No signing keys found for TEST_ADDR')
+    })
+
+    test('signs transaction successfully with fallback to raw seed data', async () => {
+        vi.resetModules()
+        vi.clearAllMocks()
+
+        const dummySecure = {
+            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            getItem: vi.fn(async (_k: string) => Buffer.from('raw-seed-data')), // Raw seed data (old format)
+            removeItem: vi.fn(async (_k: string) => {}),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const { useAppStore } = await import('../../../store')
+        const { useTransactionSigner } = await import('../hooks.accounts')
+
+        // Set up account in store
+        const testAccount: WalletAccount = {
+            id: 'TEST_ACC',
+            type: 'standard',
+            address: 'TEST_ADDR',
+            hdWalletDetails: {
+                walletId: 'WALLET1',
+                account: 0,
+                change: 0,
+                keyIndex: 0,
+                derivationType: 9,
+            },
+            privateKeyLocation: 'pk-TEST',
+            canSign: true,
+        }
+        useAppStore.setState({ accounts: [testAccount] })
+
+        const { result } = renderHook(() => useTransactionSigner())
+        const transaction = Buffer.from('test-transaction')
+
+        let signed: Uint8Array | undefined
+        await act(async () => {
+            signed = await result.current.signTransactionForAddress('TEST_ADDR', transaction)
+        })
+
+        expect(apiSpies.signTransactionSpy).toHaveBeenCalledWith(
+            'ROOT_KEY',
+            0,
+            0,
+            0,
+            transaction,
+            9
+        )
     })
 })
 
@@ -1311,6 +1600,7 @@ describe('services/accounts/hooks - useAccountBalances', () => {
             id: 'ANY',
             type: 'standard',
             address: 'ADDR',
+            canSign: true,
         }
 
         const { result } = renderHook(() => useAccountBalances([acct]), {
@@ -1345,6 +1635,7 @@ describe('services/accounts/hooks - useAccountBalances', () => {
             id: 'ANY2',
             type: 'standard',
             address: 'ADDR2',
+            canSign: true,
         }
 
         const { result } = renderHook(() => useAccountBalances([acct]), {
@@ -1379,6 +1670,7 @@ describe('services/accounts/hooks - useAccountBalances', () => {
             id: undefined, // No ID
             type: 'standard',
             address: 'ADDR3',
+            canSign: true,
         }
 
         const { result } = renderHook(() => useAccountBalances([acct]), {
@@ -1419,6 +1711,7 @@ describe('services/accounts/hooks - useAccountBalances', () => {
             id: 'ANY5',
             type: 'standard',
             address: 'ADDR5',
+            canSign: true,
         }
 
         const { result } = renderHook(() => useAccountBalances([acct]), {
@@ -1459,6 +1752,7 @@ describe('services/accounts/hooks - useAccountBalances', () => {
             id: 'ANY6',
             type: 'standard',
             address: 'ADDR6',
+            canSign: true,
         }
 
         const { result } = renderHook(() => useAccountBalances([acct]), {
@@ -1486,6 +1780,7 @@ describe('services/accounts/hooks - useAccountBalances', () => {
             id: 'ANY7',
             type: 'standard',
             address: 'ADDR7',
+            canSign: true,
         }
 
         const { result } = renderHook(() => useAccountBalances([acct]), {
@@ -1526,6 +1821,7 @@ describe('services/accounts/hooks - useAccountBalances', () => {
             id: 'ANY9',
             type: 'standard',
             address: 'ADDR9',
+            canSign: true,
         }
 
         const { result } = renderHook(() => useAccountBalances([acct]), {

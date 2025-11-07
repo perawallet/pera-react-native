@@ -1,6 +1,7 @@
 export * from './accounts'
 export * from './assets'
 export * from './blockchain'
+export * from './contacts'
 export * from './device'
 export * from './polling'
 export * from './notifications'

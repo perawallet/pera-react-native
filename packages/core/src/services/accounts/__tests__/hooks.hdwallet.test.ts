@@ -22,6 +22,8 @@ const bip39Spies = vi.hoisted(() => {
         generateMnemonic: vi.fn(() => 'test mnemonic'),
         mnemonicToSeedSync: vi.fn(() => Buffer.from('seed_sync')),
         mnemonicToSeed: vi.fn(async () => Buffer.from('seed_async')),
+        mnemonicToEntropy: vi.fn(async () => Buffer.from('entropy')),
+        entropyToMnemonic: vi.fn(() => 'entropy mnemonic'),
     }
 })
 
@@ -34,12 +36,12 @@ vi.mock('@perawallet/xhdwallet', () => {
         KeyContext: { Address: 'Address' },
         KeyContexts: { Address: 0, Identity: 1 },
         Encodings: { MSGPACK: 'msgpack', BASE64: 'base64', NONE: 'none' },
-        XHDWalletAPI: vi.fn().mockImplementation(() => ({
-            deriveKey: apiSpies.deriveSpy,
-            keyGen: apiSpies.keyGenSpy,
-            signAlgoTransaction: apiSpies.signTxnSpy,
-            signData: apiSpies.signDataSpy,
-        })),
+        XHDWalletAPI: class {
+            deriveKey = apiSpies.deriveSpy
+            keyGen = apiSpies.keyGenSpy
+            signAlgoTransaction = apiSpies.signTxnSpy
+            signData = apiSpies.signDataSpy
+        },
     }
 })
 
@@ -50,31 +52,30 @@ describe('services/accounts/useHDWallet', () => {
         vi.clearAllMocks()
     })
 
-    test('createMnemonic delegates to bip39.generateMnemonic', async () => {
+    test('generateMasterKey generates mnemonic and returns seed/entropy', async () => {
         vi.resetModules()
         const { useHDWallet } = await import('../hooks.hdwallet')
         const { result } = renderHook(() => useHDWallet())
-        const phrase = result.current.createMnemonic()
+        const masterKey = await result.current.generateMasterKey()
         expect(bip39Spies.generateMnemonic).toHaveBeenCalledTimes(1)
-        expect(phrase).toBe('test mnemonic')
+        expect(bip39Spies.mnemonicToSeed).toHaveBeenCalledTimes(1)
+        expect(bip39Spies.mnemonicToEntropy).toHaveBeenCalledTimes(1)
+        expect(masterKey.seed).toEqual(Buffer.from('seed_async'))
+        expect(masterKey.entropy).toEqual(Buffer.from('entropy'))
     })
 
-    test('mnemonicToRootKey derives root key via bip39.mnemonicToSeed + fromSeed', async () => {
+    test('entropyToMnemonic delegates to bip39.entropyToMnemonic', async () => {
         vi.resetModules()
-        const seedBuf = Buffer.from('async_seed')
-        ;(bip39Spies.mnemonicToSeed as any).mockResolvedValueOnce(seedBuf)
         const { useHDWallet } = await import('../hooks.hdwallet')
         const { result } = renderHook(() => useHDWallet())
-        const root = await result.current.mnemonicToRootKey('words')
-        expect(bip39Spies.mnemonicToSeed).toHaveBeenCalledWith('words')
-        expect(xhdSpies.fromSeed).toHaveBeenCalledWith(seedBuf)
-        expect(root).toBe('ROOT_KEY')
+        const mnemonic = result.current.entropyToMnemonic(Buffer.from('entropy'))
+        expect(bip39Spies.entropyToMnemonic).toHaveBeenCalledWith(Buffer.from('entropy'))
+        expect(mnemonic).toBe('entropy mnemonic')
     })
 
-    test('deriveKey uses defaults and returns base64-encoded key material', async () => {
+    test('deriveKey uses seed and returns key material', async () => {
         vi.resetModules()
-        const syncSeed = Buffer.from('sync_seed')
-        ;(bip39Spies.mnemonicToSeedSync as any).mockReturnValueOnce(syncSeed)
+        const seed = Buffer.from('sync_seed')
 
         // Prepare API responses: "PRIVKEY" and "ADDRESS"
         const priv = new Uint8Array([80, 82, 73, 86, 75, 69, 89])
@@ -85,11 +86,11 @@ describe('services/accounts/useHDWallet', () => {
         const { useHDWallet } = await import('../hooks.hdwallet')
         const { result } = renderHook(() => useHDWallet())
         const out = await result.current.deriveKey({
-            mnemonic: 'm n e m o n i c',
+            seed,
         })
 
         // Assert calls
-        expect(xhdSpies.fromSeed).toHaveBeenCalledWith(syncSeed)
+        expect(xhdSpies.fromSeed).toHaveBeenCalledWith(seed)
         expect(apiSpies.deriveSpy).toHaveBeenCalledWith(
             'ROOT_KEY',
             [44, 283, 0, 0, 0],
@@ -105,9 +106,7 @@ describe('services/accounts/useHDWallet', () => {
 
     test('deriveKey allows overriding account, keyIndex and derivationType', async () => {
         vi.resetModules()
-        ;(bip39Spies.mnemonicToSeedSync as any).mockReturnValueOnce(
-            Buffer.from('sync_seed'),
-        )
+        const seed = Buffer.from('sync_seed')
 
         // Mock API responses (values not important)
         apiSpies.deriveSpy.mockResolvedValueOnce(new Uint8Array([49]).buffer)
@@ -117,7 +116,7 @@ describe('services/accounts/useHDWallet', () => {
         const xhd = await import('@perawallet/xhdwallet')
         const { result } = renderHook(() => useHDWallet())
         await result.current.deriveKey({
-            mnemonic: 'x',
+            seed,
             account: 7,
             keyIndex: 9,
             derivationType: (xhd as any).BIP32DerivationType.Other,
@@ -140,9 +139,7 @@ describe('services/accounts/useHDWallet', () => {
 
     test('signTransaction derives root and signs with correct params', async () => {
         vi.resetModules()
-        ;(bip39Spies.mnemonicToSeedSync as any).mockReturnValueOnce(
-            Buffer.from('sync_seed'),
-        )
+        const seed = Buffer.from('sync_seed')
         apiSpies.signTxnSpy.mockResolvedValueOnce('SIGNED_TX')
 
         const { useHDWallet } = await import('../hooks.hdwallet')
@@ -155,7 +152,7 @@ describe('services/accounts/useHDWallet', () => {
             derivationType: 'PEIKERT',
         }
         const txn = Buffer.from('txn')
-        const signed = await result.current.signTransaction('mnemo', hd, txn)
+        const signed = await result.current.signTransaction(seed, hd, txn)
 
         expect(xhdSpies.fromSeed).toHaveBeenCalled()
         expect(apiSpies.signTxnSpy).toHaveBeenCalledWith(
@@ -171,9 +168,7 @@ describe('services/accounts/useHDWallet', () => {
 
     test('signData derives root and signs with BASE64 metadata schema', async () => {
         vi.resetModules()
-        ;(bip39Spies.mnemonicToSeedSync as any).mockReturnValueOnce(
-            Buffer.from('sync_seed'),
-        )
+        const seed = Buffer.from('sync_seed')
         apiSpies.signDataSpy.mockResolvedValueOnce('SIGNED_DATA')
 
         const { useHDWallet } = await import('../hooks.hdwallet')
@@ -186,7 +181,7 @@ describe('services/accounts/useHDWallet', () => {
             derivationType: 'PEIKERT',
         }
         const payload = Buffer.from('data')
-        const signed = await result.current.signData('mnemo', hd, payload)
+        const signed = await result.current.signData(seed, hd, payload)
 
         expect(apiSpies.signDataSpy).toHaveBeenCalled()
         const call = (apiSpies.signDataSpy as any).mock.calls[0]

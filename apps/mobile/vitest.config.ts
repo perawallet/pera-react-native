@@ -46,6 +46,7 @@ export default defineConfig({
         'src/bootstrap/*',
         'src/hooks/toast.ts',
         'src/hooks/webview.ts',
+        'src/hooks/deeplink.ts',
       ],
       reporter: ['text', 'html', 'lcov'],
       reportsDirectory: './coverage',

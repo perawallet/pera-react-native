@@ -35,19 +35,19 @@ export class RNSecureStorageService implements SecureStorageService {
     };
   }
 
-  async setItem(key: string, value: string): Promise<void> {
-    await Keychain.setGenericPassword('user', value, {
+  async setItem(key: string, value: Buffer): Promise<void> {
+    await Keychain.setGenericPassword('user', value.toString('utf-8'), {
       ...this.baseOpts,
       service: `${this.baseOpts.service}.${key}`,
     });
   }
 
-  async getItem(key: string): Promise<string | null> {
+  async getItem(key: string): Promise<Buffer | null> {
     const creds = await Keychain.getGenericPassword({
       ...this.baseOpts,
       service: `${this.baseOpts.service}.${key}`,
-    });
-    return creds ? creds.password : null;
+    })
+    return creds ? Buffer.from(creds.password, 'utf-8') : null
   }
 
   async removeItem(key: string): Promise<void> {

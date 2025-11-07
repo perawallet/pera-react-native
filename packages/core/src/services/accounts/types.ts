@@ -8,7 +8,7 @@ export type DerivationType =
 
 export const AccountTypes = {
     standard: 'standard',
-    ledger: 'ledger',
+    hardware: 'hardware',
     multisig: 'multisig',
     watch: 'watch',
 } as const
@@ -28,13 +28,20 @@ export interface MultiSigDetails {
     addresses: string[]
 }
 
+export interface HardwareWalletDetails {
+    manufacturer: "ledger"
+    //TODO add any additional details here as needed (MAC addresses, models, etc)
+}
+
 export interface WalletAccount {
     id?: string
     name?: string
     type: AccountType
     address: string
+    canSign: boolean
     privateKeyLocation?: string
     hdWalletDetails?: HDWalletDetails
     multisigDetails?: MultiSigDetails
+    hardwareDetails?: HardwareWalletDetails
     rekeyAddress?: string
 }

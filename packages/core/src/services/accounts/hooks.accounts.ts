@@ -4,7 +4,6 @@ import type { WalletAccount } from './types'
 import { BIP32DerivationTypes } from '@perawallet/xhdwallet'
 import { v7 as uuidv7 } from 'uuid'
 import { useHDWallet } from './hooks.hdwallet'
-import { decodeFromBase64, encodeToBase64 } from '../../utils/strings'
 import { encodeAlgorandAddress } from '../blockchain'
 import {
     useV1DevicesPartialUpdate,
@@ -15,6 +14,7 @@ import {
 import Decimal from 'decimal.js'
 import { useDeviceID, useDeviceInfoService } from '../device'
 import { useQueries } from '@tanstack/react-query'
+import { withKey } from './utils'
 
 // Services relating to locally stored accounts
 export const useAllAccounts = () => {
@@ -49,15 +49,24 @@ export const useTransactionSigner = () => {
             return Promise.reject(`No HD wallet found for ${address}`)
         }
 
-        const storageKey = `pk-${account.address}`
-        const mnemonicBase64 = await secureStorage.getItem(storageKey)
+        const storageKey = `rootkey-${hdWalletDetails.walletId}`
+        return withKey(storageKey, secureStorage, async (keyData) => {
+            if (!keyData) {
+                return Promise.reject(`No signing keys found for ${address}`)
+            }
 
-        if (!mnemonicBase64) {
-            return Promise.reject(`No signing keys found for ${address}`)
-        }
+            let seed: Buffer
+            try {
+                // Try to parse as JSON first (new format)
+                const masterKey = JSON.parse(keyData.toString())
+                seed = Buffer.from(masterKey.seed, 'base64')
+            } catch {
+                // Fall back to treating it as raw seed data (old format or tests)
+                seed = keyData
+            }
+            return signTransaction(seed, hdWalletDetails, transaction)
 
-        const mnemonic = decodeFromBase64(mnemonicBase64).toString()
-        return signTransaction(mnemonic, hdWalletDetails, transaction)
+        })
     }
 
     return {
@@ -68,7 +77,7 @@ export const useTransactionSigner = () => {
 export const useCreateAccount = () => {
     const deviceID = useDeviceID()
     const accounts = useAppStore(state => state.accounts)
-    const { createMnemonic, deriveKey } = useHDWallet()
+    const { generateMasterKey, deriveKey } = useHDWallet()
     const secureStorage = useSecureStorageService()
     const setAccounts = useAppStore(state => state.setAccounts)
     const deviceInfo = useDeviceInfoService()
@@ -85,18 +94,28 @@ export const useCreateAccount = () => {
     }) => {
         const rootWalletId = walletId ?? uuidv7()
         const rootKeyLocation = `rootkey-${rootWalletId}`
-        let mnemonic = await secureStorage.getItem(rootKeyLocation)
-        if (!mnemonic) {
-            const generatedMnemonic = createMnemonic()
-            const base64Mnemonic = encodeToBase64(
-                Buffer.from(generatedMnemonic),
-            )
-            await secureStorage.setItem(rootKeyLocation, base64Mnemonic)
-            mnemonic = base64Mnemonic
+        const masterKey = await withKey(rootKeyLocation, secureStorage, async (key) => {
+            if (!key) {
+                const masterKey = await generateMasterKey()
+                const base64Seed = masterKey.seed.toString('base64')
+                const stringifiedObj = JSON.stringify({
+                    seed: base64Seed,
+                    entropy: masterKey.entropy
+                })
+                await secureStorage.setItem(rootKeyLocation, Buffer.from(stringifiedObj))
+                return JSON.parse(stringifiedObj)
+            }
+
+            // Try to parse as JSON first (new format)
+            return JSON.parse(key.toString())
+        })
+
+        if (!masterKey?.seed) {
+            throw Error(`No key found for ${rootWalletId}`)
         }
 
         const { address, privateKey } = await deriveKey({
-            mnemonic: decodeFromBase64(mnemonic).toString(),
+            seed: Buffer.from(masterKey.seed, 'base64'),
             account,
             keyIndex,
             derivationType: BIP32DerivationTypes.Peikert,
@@ -104,14 +123,20 @@ export const useCreateAccount = () => {
 
         const id = uuidv7()
         const keyStoreLocation = `pk-${id}`
+        const keyBuffer = Buffer.from(privateKey)
         await secureStorage.setItem(
             keyStoreLocation,
-            encodeToBase64(privateKey),
+            keyBuffer,
         )
+
+        keyBuffer.fill(0)
+        privateKey.fill(0)
+
         const newAccount: WalletAccount = {
             id: uuidv7(),
             address: encodeAlgorandAddress(address),
             type: 'standard',
+            canSign: true,
             hdWalletDetails: {
                 walletId: rootWalletId,
                 account: account,
@@ -140,7 +165,7 @@ export const useCreateAccount = () => {
 
 export const useImportWallet = () => {
     const accounts = useAppStore(state => state.accounts)
-    const { deriveKey } = useHDWallet()
+    const { generateMasterKey, deriveKey } = useHDWallet()
     const secureStorage = useSecureStorageService()
     const setAccounts = useAppStore(state => state.setAccounts)
     const deviceID = useDeviceID()
@@ -156,14 +181,19 @@ export const useImportWallet = () => {
     }) => {
         const rootWalletId = walletId ?? uuidv7()
         const rootKeyLocation = `rootkey-${rootWalletId}`
-        const base64Mnemonic = encodeToBase64(Buffer.from(mnemonic))
-        secureStorage.setItem(rootKeyLocation, base64Mnemonic)
+        const masterKey = await generateMasterKey(mnemonic)
+        const base64Seed = masterKey.seed.toString('base64')
+        const stringifiedObj = JSON.stringify({
+            seed: base64Seed,
+            entropy: masterKey.entropy
+        })
+        await secureStorage.setItem(rootKeyLocation, Buffer.from(stringifiedObj))
 
         //TODO: we currently just create the 0/0 account but we really should scan the blockchain
         //and look for accounts that might match (see old app logic - we want to scan iteratively
         //until we find 5 empty keyindexes and 5 empty accounts (I think)
         const { address, privateKey } = await deriveKey({
-            mnemonic: mnemonic,
+            seed: masterKey.seed,
             account: 0,
             keyIndex: 0,
             derivationType: BIP32DerivationTypes.Peikert,
@@ -171,14 +201,18 @@ export const useImportWallet = () => {
 
         const id = uuidv7()
         const keyStoreLocation = `pk-${id}`
+        const keyBuffer = Buffer.from(privateKey)
         await secureStorage.setItem(
             keyStoreLocation,
-            encodeToBase64(privateKey),
+            keyBuffer,
         )
+        keyBuffer.fill(0)
+        privateKey.fill(0)
         const newAccount: WalletAccount = {
             id: uuidv7(),
             address: encodeAlgorandAddress(address),
             type: 'standard',
+            canSign: true,
             hdWalletDetails: {
                 walletId: rootWalletId,
                 account: 0,
@@ -207,22 +241,16 @@ export const useImportWallet = () => {
 
 export const useUpdateAccount = () => {
     const accounts = useAppStore(state => state.accounts)
-    const secureStorage = useSecureStorageService()
     const setAccounts = useAppStore(state => state.setAccounts)
     const deviceID = useDeviceID()
     const deviceInfo = useDeviceInfoService()
     const { mutateAsync: updateDeviceOnBackend } = useV1DevicesPartialUpdate()
 
-    return (account: WalletAccount, privateKey?: string) => {
+    return (account: WalletAccount) => {
         const index =
             accounts.findIndex(a => a.address === account.address) ?? null
         accounts[index] = account
         setAccounts([...accounts])
-
-        if (privateKey) {
-            const storageKey = `pk-${account.address}`
-            secureStorage.setItem(storageKey, privateKey)
-        }
 
         if (deviceID) {
             updateDeviceOnBackend({
@@ -243,15 +271,45 @@ export const useAddAccount = () => {
     const deviceID = useDeviceID()
     const deviceInfo = useDeviceInfoService()
     const { mutateAsync: updateDeviceOnBackend } = useV1DevicesPartialUpdate()
+    const { deriveKey } = useHDWallet()
 
-    return (account: WalletAccount, privateKey?: string) => {
+    return async (account: WalletAccount) => {
+        if (account.type === 'standard' && account.hdWalletDetails) {
+            const rootWalletId = account.hdWalletDetails.walletId
+            const rootKeyLocation = `rootkey-${rootWalletId}`
+            const masterKey = await withKey(rootKeyLocation, secureStorage, async (key) => {
+                if (!key) {
+                    throw Error(`No key found for ${rootWalletId}`)
+                }
+
+                return JSON.parse(key.toString())
+            })
+
+            if (!masterKey?.seed) {
+                throw Error(`No key found for ${rootWalletId}`)
+            }
+            const { address, privateKey } = await deriveKey({
+                seed: Buffer.from(masterKey.seed, 'base64'),
+                account: account.hdWalletDetails!.account,
+                keyIndex: account.hdWalletDetails!.keyIndex,
+                derivationType: BIP32DerivationTypes.Peikert,
+            })
+            const id = uuidv7()
+            account.address = encodeAlgorandAddress(address)
+            account.id = id
+
+            const keyStoreLocation = `pk-${id}`
+            const keyBuffer = Buffer.from(privateKey)
+            await secureStorage.setItem(
+                keyStoreLocation,
+                keyBuffer,
+            )
+            keyBuffer.fill(0)
+            privateKey.fill(0)
+        }
+
         accounts.push(account)
         setAccounts([...accounts])
-
-        if (privateKey) {
-            const storageKey = `pk-${account.address}`
-            secureStorage.setItem(storageKey, privateKey)
-        }
 
         if (deviceID) {
             updateDeviceOnBackend({
