@@ -32,7 +32,7 @@ const SettingsSubPageScreen = ({ route }: SettingsSubPageScreenProps) => {
       newNetwork = Networks.testnet
     }
     setNetwork(newNetwork);
-    if (!deviceIDs[newNetwork]) {
+    if (!deviceIDs.get(newNetwork)) {
       await registerDevice()
     }
 

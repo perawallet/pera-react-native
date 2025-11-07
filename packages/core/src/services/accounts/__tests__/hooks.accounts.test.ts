@@ -14,6 +14,7 @@ vi.mock('uuid', () => ({ v7: uuidSpies.v7 }))
 const apiSpies = vi.hoisted(() => ({
     deriveSpy: vi.fn(),
     keyGenSpy: vi.fn(),
+    signTransactionSpy: vi.fn(async () => new Uint8Array([1, 2, 3, 4])),
 }))
 const xhdSpies = vi.hoisted(() => ({
     fromSeed: vi.fn(() => 'ROOT_KEY'),
@@ -59,9 +60,10 @@ vi.mock('@perawallet/xhdwallet', () => {
         KeyContext: { Address: 'Address' },
         KeyContexts: { Address: 0 },
         XHDWalletAPI: vi.fn().mockImplementation(() => ({
-            deriveKey: apiSpies.deriveSpy,
-            keyGen: apiSpies.keyGenSpy,
-        })),
+                    deriveKey: apiSpies.deriveSpy,
+                    keyGen: apiSpies.keyGenSpy,
+                    signAlgoTransaction: apiSpies.signTransactionSpy,
+                })),
     }
 })
 vi.mock('bip39', () => bip39Spies)
@@ -482,7 +484,7 @@ describe('services/accounts/hooks - createAccount', () => {
         const { useCreateAccount } = await import('../hooks.accounts')
 
         // Set deviceID in store
-        useAppStore.setState({ network: Networks.testnet, deviceIDs: { testnet: 'TEST_DEVICE_123', mainnet: null} })
+        useAppStore.setState({ network: Networks.testnet, deviceIDs: new Map([['testnet', 'TEST_DEVICE_123'], ['mainnet', null]])})
 
         const { result: createRes } = renderHook(() => useCreateAccount())
         await act(async () => {
@@ -820,7 +822,7 @@ describe('services/accounts/hooks - useImportWallet', () => {
         const { useImportWallet } = await import('../hooks.accounts')
 
         // Set deviceID in store
-        useAppStore.setState({ network: Networks.testnet, deviceIDs: { testnet: 'TEST_DEVICE_456', mainnet: null} })
+        useAppStore.setState({ network: Networks.testnet, deviceIDs: new Map([['testnet', 'TEST_DEVICE_456'], ['mainnet', null]])})
 
         const { result: importRes } = renderHook(() => useImportWallet())
         await act(async () => {
@@ -866,7 +868,7 @@ describe('services/accounts/hooks - useAddAccount', () => {
         const { useAddAccount } = await import('../hooks.accounts')
 
         // Set deviceID in store
-        useAppStore.setState({ network: Networks.testnet, deviceIDs: { testnet: 'TEST_DEVICE_789', mainnet: null} })
+        useAppStore.setState({ network: Networks.testnet, deviceIDs: new Map([['testnet', 'TEST_DEVICE_789'], ['mainnet', null]])})
 
         const { result: addRes } = renderHook(() => useAddAccount())
 
@@ -972,7 +974,7 @@ describe('services/accounts/hooks - updateAccount', () => {
         const { useAddAccount, useUpdateAccount } = await import(
             '../hooks.accounts'
         )
-        useAppStore.setState({ network: Networks.testnet, deviceIDs: { testnet: 'TEST_DEVICE_456', mainnet: null} })
+        useAppStore.setState({ network: Networks.testnet, deviceIDs: new Map([['testnet', 'TEST_DEVICE_456'], ['mainnet', null]])})
 
         const { result: addRes } = renderHook(() => useAddAccount())
         const { result: updateRes } = renderHook(() => useUpdateAccount())
@@ -1060,6 +1062,209 @@ describe('services/accounts/hooks - updateAccount', () => {
         // The account at index -1 (or undefined) should have been updated
         // This tests the ?? null branch
         expect(useAppStore.getState().accounts).toHaveLength(1)
+    })
+})
+
+describe('services/accounts/hooks - useTransactionSigner', () => {
+    test('signs transaction successfully when account and mnemonic exist', async () => {
+        vi.resetModules()
+        vi.clearAllMocks()
+
+        const signTransactionSpy = vi.fn(async () => new Uint8Array([1, 2, 3, 4]))
+
+        const dummySecure = {
+            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            getItem: vi.fn(async (_k: string) => Buffer.from('test-mnemonic').toString('base64')),
+            removeItem: vi.fn(async (_k: string) => {}),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const { useAppStore } = await import('../../../store')
+        const { useTransactionSigner } = await import('../hooks.accounts')
+
+        // Set up account in store
+        const testAccount: WalletAccount = {
+            id: 'TEST_ACC',
+            type: 'standard',
+            address: 'TEST_ADDR',
+            hdWalletDetails: {
+                walletId: 'WALLET1',
+                account: 0,
+                change: 0,
+                keyIndex: 0,
+                derivationType: 9,
+            },
+            privateKeyLocation: 'pk-TEST',
+        }
+        useAppStore.setState({ accounts: [testAccount] })
+
+        const { result } = renderHook(() => useTransactionSigner())
+        const transaction = Buffer.from('test-transaction')
+
+        let signed: Uint8Array | undefined
+        await act(async () => {
+            signed = await result.current.signTransactionForAddress('TEST_ADDR', transaction)
+        })
+
+        expect(apiSpies.signTransactionSpy).toHaveBeenCalledWith('ROOT_KEY', 0, testAccount.hdWalletDetails!.account, testAccount.hdWalletDetails!.keyIndex, transaction, 9)
+        expect(signed).toEqual(new Uint8Array([1, 2, 3, 4]))
+    })
+
+    test('signs transaction successfully with different account', async () => {
+        vi.resetModules()
+        vi.clearAllMocks()
+
+        const signTransactionSpy = vi.fn(async () => new Uint8Array([5, 6, 7, 8]))
+
+        const dummySecure = {
+            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            getItem: vi.fn(async (_k: string) => Buffer.from('different-mnemonic').toString('base64')),
+            removeItem: vi.fn(async (_k: string) => {}),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const { useAppStore } = await import('../../../store')
+        const { useTransactionSigner } = await import('../hooks.accounts')
+
+        // Set up different account in store
+        const testAccount: WalletAccount = {
+            id: 'TEST_ACC2',
+            type: 'standard',
+            address: 'TEST_ADDR2',
+            hdWalletDetails: {
+                walletId: 'WALLET2',
+                account: 1,
+                change: 0,
+                keyIndex: 1,
+                derivationType: 9,
+            },
+            privateKeyLocation: 'pk-TEST2',
+        }
+        useAppStore.setState({ accounts: [testAccount] })
+
+        const { result } = renderHook(() => useTransactionSigner())
+        const transaction = Buffer.from('test-transaction-2')
+
+        let signed: Uint8Array | undefined
+        await act(async () => {
+            signed = await result.current.signTransactionForAddress('TEST_ADDR2', transaction)
+        })
+
+        expect(apiSpies.signTransactionSpy).toHaveBeenCalledWith('ROOT_KEY', 0, testAccount.hdWalletDetails!.account, testAccount.hdWalletDetails!.keyIndex, transaction, 9)
+        expect(signed).toEqual(new Uint8Array([1, 2, 3, 4]))
+    })
+
+    test('rejects when account not found', async () => {
+        vi.resetModules()
+        vi.clearAllMocks()
+
+        const dummySecure = {
+            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            getItem: vi.fn(async (_k: string) => null),
+            removeItem: vi.fn(async (_k: string) => {}),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const { useAppStore } = await import('../../../store')
+        const { useTransactionSigner } = await import('../hooks.accounts')
+
+        // Empty accounts
+        useAppStore.setState({ accounts: [] })
+
+        const { result } = renderHook(() => useTransactionSigner())
+        const transaction = Buffer.from('test-transaction')
+
+        await expect(result.current.signTransactionForAddress('NONEXISTENT_ADDR', transaction)).rejects.toThrow('No HD wallet found for NONEXISTENT_ADDR')
+    })
+
+    test('rejects when account has no hdWalletDetails', async () => {
+        vi.resetModules()
+        vi.clearAllMocks()
+
+        const dummySecure = {
+            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            getItem: vi.fn(async (_k: string) => null),
+            removeItem: vi.fn(async (_k: string) => {}),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const { useAppStore } = await import('../../../store')
+        const { useTransactionSigner } = await import('../hooks.accounts')
+
+        // Account without hdWalletDetails
+        const testAccount: WalletAccount = {
+            id: 'TEST_ACC',
+            type: 'standard',
+            address: 'TEST_ADDR',
+            privateKeyLocation: 'pk-TEST',
+        }
+        useAppStore.setState({ accounts: [testAccount] })
+
+        const { result } = renderHook(() => useTransactionSigner())
+        const transaction = Buffer.from('test-transaction')
+
+        await expect(result.current.signTransactionForAddress('TEST_ADDR', transaction)).rejects.toThrow('No HD wallet found for TEST_ADDR')
+    })
+
+    test('rejects when mnemonic not found in storage', async () => {
+        vi.resetModules()
+        vi.clearAllMocks()
+
+        const dummySecure = {
+            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            getItem: vi.fn(async (_k: string) => null), // No mnemonic
+            removeItem: vi.fn(async (_k: string) => {}),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const { useAppStore } = await import('../../../store')
+        const { useTransactionSigner } = await import('../hooks.accounts')
+
+        // Account with hdWalletDetails
+        const testAccount: WalletAccount = {
+            id: 'TEST_ACC',
+            type: 'standard',
+            address: 'TEST_ADDR',
+            hdWalletDetails: {
+                walletId: 'WALLET1',
+                account: 0,
+                change: 0,
+                keyIndex: 0,
+                derivationType: 9,
+            },
+            privateKeyLocation: 'pk-TEST',
+        }
+        useAppStore.setState({ accounts: [testAccount] })
+
+        const { result } = renderHook(() => useTransactionSigner())
+        const transaction = Buffer.from('test-transaction')
+
+        await expect(result.current.signTransactionForAddress('TEST_ADDR', transaction)).rejects.toThrow('No signing keys found for TEST_ADDR')
     })
 })
 

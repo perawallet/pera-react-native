@@ -21,11 +21,6 @@ import {
     type SettingsSlice,
 } from '../services/settings/store'
 import {
-    createDeviceSlice,
-    partializeDeviceSlice,
-    type DeviceSlice,
-} from '../services/device/store'
-import {
     createPollingSlice,
     partializePollingSlice,
     type PollingSlice,
@@ -40,11 +35,23 @@ import {
     partializeAssetsSlice,
     type AssetsSlice,
 } from '../services/assets'
+import {
+    createContactsSlice,
+    partializeContactsSlice,
+    type ContactsSlice,
+} from '../services/contacts'
+import {
+    createDeviceSlice,
+    partializeDeviceSlice,
+    rehydrateDeviceSlice,
+    type DeviceSlice,
+} from '../services/device/store'
 
 export type AppState = SettingsSlice &
     AccountsSlice &
     AssetsSlice &
     BlockchainSlice &
+    ContactsSlice &
     DeviceSlice &
     PollingSlice &
     SwapsSlice
@@ -85,6 +92,7 @@ export let useAppStore: UseBoundStore<
         (...a) => ({
             ...createSettingsSlice(...a),
             ...createBlockchainSlice(...a),
+            ...createContactsSlice(...a),
             ...createAccountsSlice(...a),
             ...createDeviceSlice(...a),
             ...createPollingSlice(...a),
@@ -98,12 +106,20 @@ export let useAppStore: UseBoundStore<
             partialize: state => ({
                 ...partializeSettingsSlice(state),
                 ...partializeBlockchainSlice(state),
+                ...partializeContactsSlice(state),
                 ...partializeAccountsSlice(state),
                 ...partializeDeviceSlice(state),
                 ...partializePollingSlice(state),
                 ...partializeSwapsSlice(state),
                 ...partializeAssetsSlice(state),
             }),
+            onRehydrateStorage: () => (state) => {
+                if (state) {
+                    // Rehydrate device slice to convert deviceIDs back to Map
+                    const deviceState = rehydrateDeviceSlice(state)
+                    Object.assign(state, deviceState)
+                }
+            },
         },
     ),
 )
@@ -114,6 +130,7 @@ export const reinitializeAppStore = () => {
             (...a) => ({
                 ...createSettingsSlice(...a),
                 ...createBlockchainSlice(...a),
+                ...createContactsSlice(...a),
                 ...createAccountsSlice(...a),
                 ...createDeviceSlice(...a),
                 ...createPollingSlice(...a),
@@ -127,12 +144,20 @@ export const reinitializeAppStore = () => {
                 partialize: state => ({
                     ...partializeSettingsSlice(state),
                     ...partializeBlockchainSlice(state),
+                    ...partializeContactsSlice(state),
                     ...partializeAccountsSlice(state),
                     ...partializeDeviceSlice(state),
                     ...partializePollingSlice(state),
                     ...partializeSwapsSlice(state),
                     ...partializeAssetsSlice(state),
                 }),
+                onRehydrateStorage: () => (state) => {
+                    if (state) {
+                        // Rehydrate device slice to convert deviceIDs back to Map
+                        const deviceState = rehydrateDeviceSlice(state)
+                        Object.assign(state, deviceState)
+                    }
+                },
             },
         ),
     )

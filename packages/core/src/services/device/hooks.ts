@@ -7,7 +7,7 @@ import { useDeviceInfoService } from './platform-service'
 export const useDeviceID = () => {
     const network = useAppStore(state => state.network)
     const deviceIDs = useAppStore(state => state.deviceIDs)
-    return deviceIDs?.[network] ?? null
+    return deviceIDs?.get(network) ?? null
 }
 
 export const useDevice = () => {

@@ -10,7 +10,7 @@ import ChevronRight from '../../../assets/icons/chevron-right.svg';
 import CardStackIcon from '../../../assets/icons/card-stack.svg';
 import AlgoIcon from '../../../assets/icons/algo.svg';
 import InflowIcon from '../../../assets/icons/inflow.svg';
-import EnvelopeIcon from '../../../assets/icons/envelope-letter.svg';
+import PersonMenuIcon from '../../../assets/icons/person-menu.svg';
 
 import PanelButton from '../../components/common/panel-button/PanelButton';
 import CardPanel from '../../components/cards/card-panel/CardPanel';
@@ -67,9 +67,9 @@ const MenuScreen = () => {
           onPress={() => {}}
         />
         <PanelButton
-          title="Invite Friends"
+          title="Contacts"
           titleWeight="h3"
-          leftIcon={<EnvelopeIcon style={styles.icon} />}
+          leftIcon={<PersonMenuIcon style={styles.icon} />}
           rightIcon={<ChevronRight style={styles.icon} />}
           onPress={() => {}}
         />
