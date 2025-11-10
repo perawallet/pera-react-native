@@ -21,7 +21,7 @@ const NavigationHeader = (props: NativeStackHeaderProps) => {
       <Text h4 style={styles.title}>
         {props.options.title || props.route.name}
       </Text>
-      {props.options.headerRight && props.options.headerRight({})}
+      {props.options.headerRight && <PeraView style={styles.actionContainer}>{props.options.headerRight({})}</PeraView>}
       {!props.options.headerRight && props.navigation.canGoBack() && (
         <PeraView style={styles.backIconContainer} />
       )}

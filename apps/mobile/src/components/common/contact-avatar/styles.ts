@@ -8,7 +8,9 @@ export const useStyles = makeStyles((theme, dimensions: number) => {
       height: dimensions,
       borderRadius: dimensions,
       overflow: 'hidden',
-      backgroundColor: theme.colors.layerGrayLighter
+      backgroundColor: theme.colors.layerGrayLighter,
+      alignItems: 'center',
+      justifyContent: 'center'
     },
   };
 });

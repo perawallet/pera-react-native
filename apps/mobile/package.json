@@ -15,6 +15,7 @@
     "@algorandfoundation/algokit-utils": "catalog:",
     "@algorandfoundation/xhd-wallet-api": "catalog:",
     "@craftzdog/react-native-buffer": "^6.1.0",
+    "@hookform/resolvers": "^5.2.2",
     "@notifee/react-native": "^9.1.8",
     "@perawallet/config": "workspace:*",
     "@perawallet/core": "workspace:*",
@@ -37,6 +38,7 @@
     "bip39": "catalog:",
     "decimal.js": "^10.6.0",
     "react": "catalog:",
+    "react-hook-form": "^7.66.0",
     "react-native": "0.81.1",
     "react-native-advanced-input-mask": "^1.4.5",
     "react-native-bootsplash": "^6.3.11",
@@ -67,6 +69,7 @@
     "sharp": "^0.34.4",
     "tsyringe": "catalog:",
     "util": "catalog:",
+    "zod": "^4.1.8",
     "zustand": "catalog:"
   },
   "devDependencies": {

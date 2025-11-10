@@ -1,7 +1,7 @@
 const MAX_ADDRESS_DISPLAY = 11
-const ADDRESS_DISPLAY_PREFIX_LENGTH = 5
 
-export const truncateAlgorandAddress = (address: string) => {
-    if (address.length <= MAX_ADDRESS_DISPLAY) return address
-    return `${address.substring(0, ADDRESS_DISPLAY_PREFIX_LENGTH)}...${address.substring(address.length - ADDRESS_DISPLAY_PREFIX_LENGTH)}`
+export const truncateAlgorandAddress = (address: string, maxLength: number = MAX_ADDRESS_DISPLAY) => {
+    const prefixLength = maxLength / 2
+    if (address.length <= maxLength) return address
+    return `${address.substring(0, prefixLength)}...${address.substring(address.length - prefixLength)}`
 }

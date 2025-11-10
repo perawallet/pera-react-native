@@ -3,6 +3,8 @@ import { type Contact } from './types'
 
 export type ContactsSlice = {
     contacts: Contact[]
+    selectedContact: Contact | null
+    setSelectedContact: (contact: Contact | null) => void
     setContacts: (contacts: Contact[]) => void
     saveContact: (contact: Contact) => void
     deleteContact: (contact: Contact) => boolean
@@ -16,6 +18,10 @@ export const createContactsSlice: StateCreator<
 > = (set, get) => {
     return {
         contacts: [],
+        selectedContact: null,
+        setSelectedContact: (contact: Contact | null) => {
+            set({ selectedContact: contact })
+        },
         setContacts: (contacts: Contact[]) => {
             set({ contacts })
         },

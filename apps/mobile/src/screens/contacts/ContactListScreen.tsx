@@ -1,24 +1,60 @@
 import { useStyles } from './ContactListScreen.styles'
 import MainScreenLayout from '../../layouts/MainScreenLayout'
 import { Contact, useContacts } from '@perawallet/core'
-import { useCallback } from 'react';
+import { useMemo, useState } from 'react';
 import EmptyView from '../../components/common/empty-view/EmptyView';
 import PersonIcon from '../../../assets/icons/person-menu.svg'
+import SearchIcon from '../../../assets/icons/magnifying-glass.svg'
 import PeraButton from '../../components/common/button/PeraButton';
 import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { SectionList, TouchableOpacity } from 'react-native';
+import { Input, Text, useTheme } from '@rneui/themed';
+import ContactAvatar from '../../components/common/contact-avatar/ContactAvatar';
+import PeraView from '../../components/common/view/PeraView';
 
 const contactSorter = (a: Contact, b: Contact) => a.name.localeCompare(b.name)
 
-const ContactListScreen = () => {
+type ContactSection = {
+  title: string
+  data: Contact[]
+}
+
+const SectionHeader = ({ title }: { title: string }) => {
   const styles = useStyles()
-  const { contacts } = useContacts()
+  return <Text h3 h3Style={styles.sectionHeader}>{title}</Text>
+}
+
+const ContactItem = ({ contact }: { contact: Contact }) => {
+  const { setSelectedContact } = useContacts()
+  const styles = useStyles()
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
 
-  const groupedContacts = useCallback(() => {
+  const viewContact = () => {
+    setSelectedContact(contact)
+    navigation.navigate('ViewContact')
+  }
+  return <TouchableOpacity onPress={viewContact} style={styles.contactContainer} activeOpacity={0.8}>
+    <ContactAvatar contact={contact} size="small" />
+    <Text style={styles.contactName}>{contact.name}</Text>
+  </TouchableOpacity>
+}
+
+const ContactListScreen = () => {
+  const { findContacts, setSelectedContact } = useContacts()
+  const styles = useStyles()
+  const { theme } = useTheme()
+  const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
+  const [search, setSearch] = useState('')
+
+  const groupedContacts = useMemo(() => {
     const groups: Record<string, Contact[]> = {}
 
-    contacts.forEach(c => {
+    findContacts({
+      keyword: search,
+      matchAddress: true,
+      matchName: true
+    }).forEach(c => {
       const initial = c.name.charAt(0).toUpperCase()
       if (!groups[initial]) {
         groups[initial] = [c]
@@ -27,23 +63,38 @@ const ContactListScreen = () => {
       }
     })
 
+    const sectionedContacts: ContactSection[] = []
     Object.entries(groups).forEach(e => {
-      groups[e[0]] = e[1].sort(contactSorter)
+      sectionedContacts.push({
+        title: e[0],
+        data: e[1].sort(contactSorter)
+      })
     })
 
-    return groups
-  }, [contacts])
+    return sectionedContacts.sort((a, b) => a.title.localeCompare(b.title))
+  }, [findContacts, search])
 
   const goToAddContact = () => { 
+    setSelectedContact(null)
     navigation.navigate('AddContact')
   }
 
   return (
     <MainScreenLayout>
-      {!contacts.length 
+      {!groupedContacts.length && !search.length
         && <EmptyView title="No Contacts" body="You haven't added any contacts yet" 
               icon={<PersonIcon />} 
               button={<PeraButton title="Add Contact" onPress={goToAddContact} variant="primary" />} />}
+      {(!!groupedContacts.length || search.length) && 
+        <PeraView style={styles.flex}>
+          <Input placeholder='Search for name or address' onChangeText={setSearch} inputContainerStyle={styles.search} rightIcon={<SearchIcon color={theme.colors.textGray} />} />
+          <SectionList sections={groupedContacts} 
+            contentContainerStyle={groupedContacts.length ? styles.container : styles.flex}
+            renderSectionHeader={(s) => <SectionHeader title={s.section.title} />}
+            renderItem={(item) => <ContactItem contact={item.item} />} 
+            ListEmptyComponent={<EmptyView title="No Matching Contacts" body="There aren't any matching contacts." icon={<PersonIcon />} />} />
+        </PeraView>
+      }
     </MainScreenLayout>
   );
 };

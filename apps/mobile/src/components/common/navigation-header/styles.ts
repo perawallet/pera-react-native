@@ -4,6 +4,7 @@ export const useStyles = makeStyles(theme => ({
   container: {
     flexDirection: 'row',
     padding: theme.spacing.md,
+    alignItems: 'center'
   },
   title: {
     textAlign: 'center',
@@ -15,6 +16,8 @@ export const useStyles = makeStyles(theme => ({
   },
   backIconContainer: {
     paddingHorizontal: theme.spacing.sm,
-    width: theme.spacing.xl * 2,
+  },
+  actionContainer: {
+    paddingHorizontal: theme.spacing.sm,
   },
 }));

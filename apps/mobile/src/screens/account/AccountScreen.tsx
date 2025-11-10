@@ -15,6 +15,7 @@ import { TouchableOpacity } from 'react-native';
 
 import CameraIcon from '../../../assets/icons/camera.svg';
 import InboxIcon from '../../../assets/icons/envelope-letter.svg';
+import CrossIcon from '../../../assets/icons/cross.svg';
 
 import { useStyles } from './styles';
 import { useCallback, useState } from 'react';
@@ -30,6 +31,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AccountSelection from '../../components/common/account-selection/AccountSelection';
 import AccountMenu from '../../components/account-menu/AccountMenu';
 import { Drawer } from 'react-native-drawer-layout';
+import QRScannerView from '../../components/common/qr-scanner/QRScannerView';
 
 type AccountScreenProps = StaticScreenProps<{
 }>;
@@ -45,6 +47,7 @@ const AccountScreen = (props: AccountScreenProps) => {
     null,
   );
   const [scrollingEnabled, setScrollingEnabled] = useState<boolean>(true);
+  const [scannerVisible, setScannerVisible] = useState<boolean>(false);
   const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
 
   const loading = data.some(d => !d.isFetched);
@@ -57,8 +60,12 @@ const AccountScreen = (props: AccountScreenProps) => {
     Decimal(0),
   );
 
-  const goToQRScanner = () => {
-    navigation.navigate('QRScanner')
+  const closeQRScanner = () => {
+    setScannerVisible(false)
+  }
+
+  const openQRScanner = () => {
+    setScannerVisible(true)
   }
 
   const toggleAccountSelectorVisible = () => {
@@ -93,7 +100,7 @@ const AccountScreen = (props: AccountScreenProps) => {
             <TouchableOpacity>
               <InboxIcon style={styles.icon} color={theme.colors.textMain} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={goToQRScanner}>
+            <TouchableOpacity onPress={openQRScanner}>
               <CameraIcon style={styles.icon} color={theme.colors.textMain} />
             </TouchableOpacity>
             <NotificationsIcon style={styles.icon} color={theme.colors.textMain} />
@@ -143,6 +150,11 @@ const AccountScreen = (props: AccountScreenProps) => {
           <ButtonPanel />
         </ScrollView>
       </MainScreenLayout>
+      <QRScannerView visible={scannerVisible} onSuccess={closeQRScanner} animationType='slide'>
+        <TouchableOpacity onPress={closeQRScanner} style={styles.scannerClose}>
+          <CrossIcon color={theme.colors.textWhite} />
+        </TouchableOpacity>
+      </QRScannerView>
     </Drawer>
   );
 };

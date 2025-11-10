@@ -7,17 +7,18 @@ import PeraView from "../view/PeraView"
 
 type ContactAvatarProps = {
     size: "small" | "large"
-    contact: Contact
+    contact?: Contact
 } & SvgProps
 
 const ContactAvatar = ({size, contact, ...rest}: ContactAvatarProps) => {
     const { theme } = useTheme()
     const dimensions = size === "small" ? theme.spacing.xl : theme.spacing.xl * 3
+    const iconSize = size === "small" ? theme.spacing.lg : theme.spacing.xl * 2
     const styles = useStyles(dimensions)
 
     return <PeraView style={styles.container}>
-        {!!contact.image && <Image source={{uri: contact.image}} style={{width: dimensions, height: dimensions }} />}
-        {!contact.image && <PersonIcon {...rest} width={dimensions} height={dimensions} /> }
+        {!!contact?.image && <Image source={{uri: contact.image}} style={{width: iconSize, height: iconSize }} />}
+        {!contact?.image && <PersonIcon {...rest} width={iconSize} height={iconSize} color={theme.colors.textGray} /> }
     </PeraView>
 }
 

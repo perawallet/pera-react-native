@@ -176,7 +176,6 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             theme.mode === 'dark'
               ? theme.colors.textGrayLighter
               : theme.colors.textGray,
-          borderRadius: theme.spacing.xs,
           marginBottom: theme.spacing.xs,
         },
         inputContainerStyle: {
@@ -185,6 +184,9 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
               ? theme.colors.textMain
               : theme.colors.layerGrayLighter,
           borderBottomWidth: 0,
+        },
+        rightIconContainerStyle: {
+          marginVertical: 0,
         },
         cursorColor:
           theme.mode === 'dark' ? theme.colors.textGray : theme.colors.textMain,

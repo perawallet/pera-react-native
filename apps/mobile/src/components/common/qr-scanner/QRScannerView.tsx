@@ -5,10 +5,13 @@ import CameraOverlay from '../../../../assets/images/camera-overlay.svg'
 import { useCameraPermission, useCameraDevice, Camera, useCodeScanner } from 'react-native-vision-camera'
 import { Text } from '@rneui/themed';
 import { PropsWithChildren, useState } from 'react';
+import { Modal } from 'react-native';
 
 
 type QRScannerViewProps = {
-    title?: string
+    title?: string,
+    visible: boolean,
+    animationType: 'slide' |  'fade' | 'none'
     onSuccess: (url: string, restartScanning: () => void) => void
 } & PropsWithChildren
 
@@ -36,7 +39,7 @@ const QRScannerView = (props: QRScannerViewProps) => {
   }
 
   return (
-    <PeraView style={styles.container}>
+    <Modal style={styles.container} visible={props.visible} animationType={props.animationType}>
       {props.children}
       <Camera
           style={styles.camera}
@@ -46,7 +49,7 @@ const QRScannerView = (props: QRScannerViewProps) => {
       />
       <CameraOverlay style={styles.overlay} />
       <Text h2 h2Style={styles.title}>{props.title ?? 'Find a code to scan'}</Text>
-    </PeraView>
+    </Modal>
   );
 };
 

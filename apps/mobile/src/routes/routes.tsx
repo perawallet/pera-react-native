@@ -14,7 +14,10 @@ import NameAccountScreen from '../screens/name-account/NameAccountScreen';
 import SettingsScreen from '../screens/settings/SettingsScreen';
 import SettingsSubPageScreen from '../screens/settings-sub-page/SettingsSubPageScreen';
 import ImportAccountScreen from '../screens/import-account/ImportAccountScreen';
-import QRScannerScreen from '../screens/qr-scanner/QRScannerScreen';
+import NotificationsScreen from '../screens/notifications/NotificationsScreen';
+import ContactListScreen from '../screens/contacts/ContactListScreen';
+import ViewContactScreen from '../screens/contacts/ViewContactScreen';
+import EditContactScreen from '../screens/contacts/EditContactScreen';
 
 import { useHasNoAccounts } from '@perawallet/core';
 
@@ -24,10 +27,8 @@ import SwapIcon from '../../assets/icons/swap.svg';
 import StakingIcon from '../../assets/icons/dot-stack.svg';
 import MenuIcon from '../../assets/icons/horizontal-line-stack.svg';
 import NavigationHeader from '../components/common/navigation-header/NavigationHeader';
-import NotificationsScreen from '../screens/notifications/NotificationsScreen';
-import ContactListScreen from '../screens/contacts/ContactListScreen';
-import ViewContactScreen from '../screens/contacts/ViewContactScreen';
-import EditContactScreen from '../screens/contacts/EditContactScreen';
+import ContactListHeaderButtons from '../components/contacts/ContactListHeaderButtons';
+import ViewContactHeaderButtons from '../components/contacts/ViewContactHeaderButtons';
 
 const SettingsStack = createNativeStackNavigator({
   initialRouteName: 'SettingsHome',
@@ -62,12 +63,14 @@ const ContactsStack = createNativeStackNavigator({
       screen: ContactListScreen,
       options: {
         title: 'Contacts',
+        headerRight: () => <ContactListHeaderButtons />,
       },
     },
     ViewContact: {
       screen: ViewContactScreen,
       options: ({ route }: { route: any }) => ({
         title: 'View Contact',
+        headerRight: () => <ViewContactHeaderButtons />,
       }),
     },
     EditContact: {
@@ -147,7 +150,6 @@ const RootStack = createNativeStackNavigator({
     },
     Settings: SettingsStack,
     Contacts: ContactsStack,
-    QRScanner: QRScannerScreen,
   },
 });
 

@@ -1,7 +1,7 @@
 import { useAppStore } from '../../store'
 
 export const useContacts = () => {
-    const { contacts, saveContact, deleteContact } = useAppStore()
+    const { contacts, saveContact, deleteContact, selectedContact, setSelectedContact } = useAppStore()
 
     const findContacts = ({
         keyword,
@@ -19,7 +19,9 @@ export const useContacts = () => {
     }
 
     return {
+        selectedContact,
         contacts,
+        setSelectedContact,
         findContacts,
         saveContact,
         deleteContact
