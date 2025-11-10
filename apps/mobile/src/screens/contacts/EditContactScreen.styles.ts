@@ -12,11 +12,11 @@ export const useStyles = makeStyles(theme => {
       justifyContent: 'space-between',
     },
     button: {
-      paddingHorizontal: theme.spacing.xl
+      paddingHorizontal: theme.spacing.xl,
     },
     avatar: {
       alignItems: 'center',
-      marginVertical: theme.spacing.xl
+      marginVertical: theme.spacing.xl,
     },
     formContainer: {
       gap: theme.spacing.md,
@@ -29,12 +29,10 @@ export const useStyles = makeStyles(theme => {
           : theme.colors.textGray,
       marginBottom: theme.spacing.xs,
     },
-    value: {
-
-    },
+    value: {},
     addressValueContainer: {
       flexDirection: 'row',
       gap: theme.spacing.xl,
-    }
+    },
   };
 });

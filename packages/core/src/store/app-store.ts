@@ -113,7 +113,7 @@ export let useAppStore: UseBoundStore<
                 ...partializeSwapsSlice(state),
                 ...partializeAssetsSlice(state),
             }),
-            onRehydrateStorage: () => (state) => {
+            onRehydrateStorage: () => state => {
                 if (state) {
                     // Rehydrate device slice to convert deviceIDs back to Map
                     const deviceState = rehydrateDeviceSlice(state)
@@ -151,7 +151,7 @@ export const reinitializeAppStore = () => {
                     ...partializeSwapsSlice(state),
                     ...partializeAssetsSlice(state),
                 }),
-                onRehydrateStorage: () => (state) => {
+                onRehydrateStorage: () => state => {
                     if (state) {
                         // Rehydrate device slice to convert deviceIDs back to Map
                         const deviceState = rehydrateDeviceSlice(state)

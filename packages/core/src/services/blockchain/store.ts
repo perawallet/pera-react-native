@@ -27,10 +27,10 @@ export const createBlockchainSlice: StateCreator<
             const existing = get().pendingSignRequests ?? []
             const newRequest = {
                 ...request,
-                id: request.id ?? uuidv7()
+                id: request.id ?? uuidv7(),
             }
             if (!existing.find(r => r.id === newRequest.id)) {
-                set({pendingSignRequests: [...existing, newRequest]})
+                set({ pendingSignRequests: [...existing, newRequest] })
                 return true
             }
             return false
@@ -40,7 +40,7 @@ export const createBlockchainSlice: StateCreator<
             const remaining = existing.filter(r => r.id !== request.id)
 
             if (remaining.length != existing.length) {
-                set({pendingSignRequests: remaining})
+                set({ pendingSignRequests: remaining })
             }
 
             return remaining.length != existing.length
@@ -51,6 +51,6 @@ export const createBlockchainSlice: StateCreator<
 export const partializeBlockchainSlice = (state: BlockchainSlice) => {
     return {
         network: state.network,
-        pendingSignRequests: state.pendingSignRequests
+        pendingSignRequests: state.pendingSignRequests,
     }
 }

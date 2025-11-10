@@ -16,7 +16,6 @@ const HD_PURPOSE = 44
 const HD_COIN_TYPE = 283
 const HD_MNEMONIC_LENGTH = 256
 
-
 const createPath = (account: number, keyIndex: number) => {
     //m / purpose (bip44) / coin type (algorand) / account / change / address index
     return [HD_PURPOSE, HD_COIN_TYPE, account, 0, keyIndex]
@@ -24,12 +23,13 @@ const createPath = (account: number, keyIndex: number) => {
 
 //TODO use a specific word list here
 const generateMasterKey = async (mnemonic?: string) => {
-    const storableMnemonic = mnemonic ?? bip39.generateMnemonic(HD_MNEMONIC_LENGTH)
+    const storableMnemonic =
+        mnemonic ?? bip39.generateMnemonic(HD_MNEMONIC_LENGTH)
     const seed = await bip39.mnemonicToSeed(storableMnemonic)
     const entropy = await bip39.mnemonicToEntropy(storableMnemonic)
     return {
         seed,
-        entropy
+        entropy,
     }
 }
 

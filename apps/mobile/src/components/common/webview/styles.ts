@@ -1,6 +1,9 @@
 import { makeStyles } from '@rneui/themed';
 
-export const useStyles = makeStyles((theme) => ({
+export const useStyles = makeStyles(theme => ({
+  flex: {
+    flex: 1,
+  },
   webview: {
     alignItems: 'flex-start',
     justifyContent: 'flex-start',
@@ -17,5 +20,5 @@ export const useStyles = makeStyles((theme) => ({
   container: {
     backgroundColor: theme.colors.background,
     flex: 1,
-  }
+  },
 }));

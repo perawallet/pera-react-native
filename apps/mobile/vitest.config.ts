@@ -38,6 +38,7 @@ export default defineConfig({
         'src/**/index.ts',
         'src/test-utils/**',
         'src/**/*.style.ts',
+        'src/**/*.styles.ts',
         'src/**/styles.ts',
         'src/**/theme.ts',
         'src/components/common/webview/injected-scripts.ts',

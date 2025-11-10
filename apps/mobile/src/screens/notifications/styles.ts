@@ -13,6 +13,6 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
     },
     messageContainer: {
       gap: theme.spacing.lg,
-    }
+    },
   };
 });

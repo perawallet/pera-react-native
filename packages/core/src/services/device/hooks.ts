@@ -3,7 +3,6 @@ import { useAppStore } from '../../store'
 import { useV1DevicesPartialUpdate } from '../../api/generated/backend/hooks/useV1DevicesPartialUpdate'
 import { useDeviceInfoService } from './platform-service'
 
-
 export const useDeviceID = () => {
     const network = useAppStore(state => state.network)
     const deviceIDs = useAppStore(state => state.deviceIDs)

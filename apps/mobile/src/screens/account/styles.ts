@@ -3,6 +3,9 @@ import { PropsWithChildren } from 'react';
 
 export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
   return {
+    drawer: {
+      width: '90%',
+    },
     iconBar: {
       paddingVertical: 0,
       paddingHorizontal: theme.spacing.md,
@@ -71,7 +74,7 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       marginLeft: theme.spacing.lg,
       width: theme.spacing.xl * 2,
       height: theme.spacing.xl * 2,
-      zIndex: 2
+      zIndex: 2,
     },
   };
 });

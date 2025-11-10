@@ -15,30 +15,36 @@ import AccountMenu from '../../components/account-menu/AccountMenu';
 const SwapScreen = () => {
   const insets = useSafeAreaInsets();
   const styles = useStyles(insets);
-    const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
+  const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
 
   return (
     <MainScreenLayout fullScreen style={styles.container}>
-      <Drawer open={drawerOpen} onOpen={() => setDrawerOpen(true)} onClose={() => setDrawerOpen(false)}
-          drawerType='front'
-          swipeEnabled
-          drawerStyle={{width: '90%'}}
-          renderDrawerContent={() => <AccountMenu onSelected={() => setDrawerOpen(false)} /> }>
-          <PeraView style={styles.headerContainer}>
-            <PeraView style={styles.titleContainer}>
-              <Text h3 h3Style={styles.titleText}>
-                Swap
-              </Text>
-              <InfoIcon style={styles.titleIcon} />
-            </PeraView>
-            <PeraView style={styles.accountSelection}>
-              <AccountSelection onPress={() => setDrawerOpen(true)} />
-            </PeraView>
+      <Drawer
+        open={drawerOpen}
+        onOpen={() => setDrawerOpen(true)}
+        onClose={() => setDrawerOpen(false)}
+        drawerType="front"
+        swipeEnabled
+        drawerStyle={styles.drawer}
+        renderDrawerContent={() => (
+          <AccountMenu onSelected={() => setDrawerOpen(false)} />
+        )}
+      >
+        <PeraView style={styles.headerContainer}>
+          <PeraView style={styles.titleContainer}>
+            <Text h3 h3Style={styles.titleText}>
+              Swap
+            </Text>
+            <InfoIcon style={styles.titleIcon} />
           </PeraView>
-          <PairSelectionPanel />
-          <SwapHistoryPanel />
-          <TopPairsPanel />
-        </Drawer>
+          <PeraView style={styles.accountSelection}>
+            <AccountSelection onPress={() => setDrawerOpen(true)} />
+          </PeraView>
+        </PeraView>
+        <PairSelectionPanel />
+        <SwapHistoryPanel />
+        <TopPairsPanel />
+      </Drawer>
     </MainScreenLayout>
   );
 };

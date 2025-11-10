@@ -28,12 +28,12 @@ export const createContactsSlice: StateCreator<
         saveContact: (contact: Contact) => {
             const contacts = get().contacts
             const without = contacts.filter(c => c.address !== contact.address)
-            set({contacts: [...without, contact]})
+            set({ contacts: [...without, contact] })
         },
         deleteContact: (contact: Contact) => {
             const contacts = get().contacts
             const without = contacts.filter(c => c.address !== contact.address)
-            set({contacts: without})
+            set({ contacts: without })
             return contacts.length !== without.length
         },
     }

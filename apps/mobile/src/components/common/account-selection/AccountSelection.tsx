@@ -7,7 +7,7 @@ import ChevronDown from '../../../../assets/icons/chevron-down.svg';
 import WalletIcon from '../../../../assets/icons/wallet-in-circle.svg';
 import { TouchableOpacity, TouchableOpacityProps } from 'react-native';
 
-type AccountSelectionProps = {} & TouchableOpacityProps
+type AccountSelectionProps = {} & TouchableOpacityProps;
 
 const AccountSelection = (props: AccountSelectionProps) => {
   const { theme } = useTheme();

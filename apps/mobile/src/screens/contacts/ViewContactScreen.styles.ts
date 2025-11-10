@@ -12,11 +12,9 @@ export const useStyles = makeStyles(theme => {
     },
     avatar: {
       alignItems: 'center',
-      marginVertical: theme.spacing.xl
+      marginVertical: theme.spacing.xl,
     },
-    value: {
-
-    },
+    value: {},
     container: {
       padding: theme.spacing.xl,
       gap: theme.spacing.md,
@@ -24,6 +22,6 @@ export const useStyles = makeStyles(theme => {
     addressValueContainer: {
       flexDirection: 'row',
       gap: theme.spacing.xl,
-    }
+    },
   };
 });

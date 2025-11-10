@@ -68,8 +68,12 @@ describe('services/accounts/useHDWallet', () => {
         vi.resetModules()
         const { useHDWallet } = await import('../hooks.hdwallet')
         const { result } = renderHook(() => useHDWallet())
-        const mnemonic = result.current.entropyToMnemonic(Buffer.from('entropy'))
-        expect(bip39Spies.entropyToMnemonic).toHaveBeenCalledWith(Buffer.from('entropy'))
+        const mnemonic = result.current.entropyToMnemonic(
+            Buffer.from('entropy'),
+        )
+        expect(bip39Spies.entropyToMnemonic).toHaveBeenCalledWith(
+            Buffer.from('entropy'),
+        )
         expect(mnemonic).toBe('entropy mnemonic')
     })
 

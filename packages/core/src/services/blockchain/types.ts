@@ -1,4 +1,4 @@
-import type { Transaction } from "@api/generated/indexer"
+import type { Transaction } from '@api/generated/indexer'
 
 export const Networks = {
     testnet: 'testnet',

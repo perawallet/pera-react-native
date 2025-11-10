@@ -46,8 +46,8 @@ export class RNSecureStorageService implements SecureStorageService {
     const creds = await Keychain.getGenericPassword({
       ...this.baseOpts,
       service: `${this.baseOpts.service}.${key}`,
-    })
-    return creds ? Buffer.from(creds.password, 'utf-8') : null
+    });
+    return creds ? Buffer.from(creds.password, 'utf-8') : null;
   }
 
   async removeItem(key: string): Promise<void> {

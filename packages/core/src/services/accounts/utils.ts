@@ -9,18 +9,21 @@ export const getAccountDisplayName = (account: WalletAccount | null) => {
     return truncateAlgorandAddress(account.address)
 }
 
+export const withKey = async <T>(
+    keyPath: string,
+    secureStorage: SecureStorageService,
+    handler: (key: Buffer | null) => Promise<T>,
+) => {
+    const mnemonic = await secureStorage.getItem(keyPath)
 
-export const withKey = async <T>(keyPath: string, secureStorage: SecureStorageService, handler: (key: Buffer | null) => Promise<T>) => {
-        let mnemonic = await secureStorage.getItem(keyPath)
+    try {
+        const result = await handler(mnemonic)
 
-        try {
-            const result = await handler(mnemonic)
-
-            return result
-        } finally {
-            //blank out the memory again after using
-            if (mnemonic && Buffer.isBuffer(mnemonic)) {
-                mnemonic.fill(0)
-            }
+        return result
+    } finally {
+        //blank out the memory again after using
+        if (mnemonic && Buffer.isBuffer(mnemonic)) {
+            mnemonic.fill(0)
         }
+    }
 }

@@ -9,14 +9,14 @@ export const useCachedAssets = (ids?: number[]) => {
     const setAssetIDs = useAppStore(state => state.setAssetIDs)
 
     if (ids && (!assetIDs || !ids.every(id => assetIDs?.find(a => a === id)))) {
-        var set = new Set([...(assetIDs ?? []), ...ids])
+        const set = new Set([...(assetIDs ?? []), ...ids])
         assetIDs = [...set]
         updated = true
     }
 
     useEffect(() => {
         if (updated) {
-          setAssetIDs(assetIDs)
+            setAssetIDs(assetIDs)
         }
     }, [ids, assetIDs, setAssetIDs])
 

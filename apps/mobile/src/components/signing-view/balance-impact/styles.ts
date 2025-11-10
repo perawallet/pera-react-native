@@ -1,7 +1,6 @@
 import { makeStyles } from '@rneui/themed';
-import { EdgeInsets } from 'react-native-safe-area-context';
 
-export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
+export const useStyles = makeStyles(theme => {
   return {
     impactContainer: {
       width: '100%',
@@ -14,13 +13,13 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
     itemContainer: {
       flexDirection: 'row',
       gap: theme.spacing.md,
-      alignItems: 'center'
+      alignItems: 'center',
     },
     amounts: {
-      gap: theme.spacing.xs
+      gap: theme.spacing.xs,
     },
     secondaryAmount: {
-      color: theme.colors.textGray
-    }
+      color: theme.colors.textGray,
+    },
   };
 });

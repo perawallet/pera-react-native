@@ -41,8 +41,11 @@ export const useTransactionSigner = () => {
     const accounts = useAppStore(state => state.accounts)
     const { signTransaction } = useHDWallet()
     const secureStorage = useSecureStorageService()
-    const signTransactionForAddress = async (address: string, transaction: Buffer): Promise<Uint8Array> => {
-        const account =  accounts.find(a => a.address === address) ?? null
+    const signTransactionForAddress = async (
+        address: string,
+        transaction: Buffer,
+    ): Promise<Uint8Array> => {
+        const account = accounts.find(a => a.address === address) ?? null
         const hdWalletDetails = account?.hdWalletDetails
 
         if (!hdWalletDetails) {
@@ -50,7 +53,7 @@ export const useTransactionSigner = () => {
         }
 
         const storageKey = `rootkey-${hdWalletDetails.walletId}`
-        return withKey(storageKey, secureStorage, async (keyData) => {
+        return withKey(storageKey, secureStorage, async keyData => {
             if (!keyData) {
                 return Promise.reject(`No signing keys found for ${address}`)
             }
@@ -65,12 +68,11 @@ export const useTransactionSigner = () => {
                 seed = keyData
             }
             return signTransaction(seed, hdWalletDetails, transaction)
-
         })
     }
 
     return {
-        signTransactionForAddress
+        signTransactionForAddress,
     }
 }
 
@@ -94,21 +96,28 @@ export const useCreateAccount = () => {
     }) => {
         const rootWalletId = walletId ?? uuidv7()
         const rootKeyLocation = `rootkey-${rootWalletId}`
-        const masterKey = await withKey(rootKeyLocation, secureStorage, async (key) => {
-            if (!key) {
-                const masterKey = await generateMasterKey()
-                const base64Seed = masterKey.seed.toString('base64')
-                const stringifiedObj = JSON.stringify({
-                    seed: base64Seed,
-                    entropy: masterKey.entropy
-                })
-                await secureStorage.setItem(rootKeyLocation, Buffer.from(stringifiedObj))
-                return JSON.parse(stringifiedObj)
-            }
+        const masterKey = await withKey(
+            rootKeyLocation,
+            secureStorage,
+            async key => {
+                if (!key) {
+                    const masterKey = await generateMasterKey()
+                    const base64Seed = masterKey.seed.toString('base64')
+                    const stringifiedObj = JSON.stringify({
+                        seed: base64Seed,
+                        entropy: masterKey.entropy,
+                    })
+                    await secureStorage.setItem(
+                        rootKeyLocation,
+                        Buffer.from(stringifiedObj),
+                    )
+                    return JSON.parse(stringifiedObj)
+                }
 
-            // Try to parse as JSON first (new format)
-            return JSON.parse(key.toString())
-        })
+                // Try to parse as JSON first (new format)
+                return JSON.parse(key.toString())
+            },
+        )
 
         if (!masterKey?.seed) {
             throw Error(`No key found for ${rootWalletId}`)
@@ -124,10 +133,7 @@ export const useCreateAccount = () => {
         const id = uuidv7()
         const keyStoreLocation = `pk-${id}`
         const keyBuffer = Buffer.from(privateKey)
-        await secureStorage.setItem(
-            keyStoreLocation,
-            keyBuffer,
-        )
+        await secureStorage.setItem(keyStoreLocation, keyBuffer)
 
         keyBuffer.fill(0)
         privateKey.fill(0)
@@ -185,9 +191,12 @@ export const useImportWallet = () => {
         const base64Seed = masterKey.seed.toString('base64')
         const stringifiedObj = JSON.stringify({
             seed: base64Seed,
-            entropy: masterKey.entropy
+            entropy: masterKey.entropy,
         })
-        await secureStorage.setItem(rootKeyLocation, Buffer.from(stringifiedObj))
+        await secureStorage.setItem(
+            rootKeyLocation,
+            Buffer.from(stringifiedObj),
+        )
 
         //TODO: we currently just create the 0/0 account but we really should scan the blockchain
         //and look for accounts that might match (see old app logic - we want to scan iteratively
@@ -202,10 +211,7 @@ export const useImportWallet = () => {
         const id = uuidv7()
         const keyStoreLocation = `pk-${id}`
         const keyBuffer = Buffer.from(privateKey)
-        await secureStorage.setItem(
-            keyStoreLocation,
-            keyBuffer,
-        )
+        await secureStorage.setItem(keyStoreLocation, keyBuffer)
         keyBuffer.fill(0)
         privateKey.fill(0)
         const newAccount: WalletAccount = {
@@ -277,13 +283,17 @@ export const useAddAccount = () => {
         if (account.type === 'standard' && account.hdWalletDetails) {
             const rootWalletId = account.hdWalletDetails.walletId
             const rootKeyLocation = `rootkey-${rootWalletId}`
-            const masterKey = await withKey(rootKeyLocation, secureStorage, async (key) => {
-                if (!key) {
-                    throw Error(`No key found for ${rootWalletId}`)
-                }
+            const masterKey = await withKey(
+                rootKeyLocation,
+                secureStorage,
+                async key => {
+                    if (!key) {
+                        throw Error(`No key found for ${rootWalletId}`)
+                    }
 
-                return JSON.parse(key.toString())
-            })
+                    return JSON.parse(key.toString())
+                },
+            )
 
             if (!masterKey?.seed) {
                 throw Error(`No key found for ${rootWalletId}`)
@@ -300,10 +310,7 @@ export const useAddAccount = () => {
 
             const keyStoreLocation = `pk-${id}`
             const keyBuffer = Buffer.from(privateKey)
-            await secureStorage.setItem(
-                keyStoreLocation,
-                keyBuffer,
-            )
+            await secureStorage.setItem(keyStoreLocation, keyBuffer)
             keyBuffer.fill(0)
             privateKey.fill(0)
         }

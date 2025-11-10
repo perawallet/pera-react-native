@@ -68,20 +68,20 @@ const ContactsStack = createNativeStackNavigator({
     },
     ViewContact: {
       screen: ViewContactScreen,
-      options: ({ route }: { route: any }) => ({
+      options: () => ({
         title: 'View Contact',
         headerRight: () => <ViewContactHeaderButtons />,
       }),
     },
     EditContact: {
       screen: EditContactScreen,
-      options: ({ route }: { route: any }) => ({
+      options: () => ({
         title: 'Edit Contact',
       }),
     },
     AddContact: {
       screen: EditContactScreen,
-      options: ({ route }: { route: any }) => ({
+      options: () => ({
         title: 'Add New Contact',
       }),
     },
@@ -145,8 +145,10 @@ const RootStack = createNativeStackNavigator({
       screen: NotificationsScreen,
       options: {
         headerShown: true,
-        header: (props: NativeStackHeaderProps) => <NavigationHeader {...props} />,
-      }
+        header: (props: NativeStackHeaderProps) => (
+          <NavigationHeader {...props} />
+        ),
+      },
     },
     Settings: SettingsStack,
     Contacts: ContactsStack,

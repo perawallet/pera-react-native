@@ -2,10 +2,12 @@ import { Networks, type Network } from '../../services/blockchain/types'
 import type { StateCreator } from 'zustand'
 
 // Helper functions for Map serialization
-const objectToDeviceIDs = (obj: Record<string, string | null> | undefined): Map<Network, string | null> => {
+const objectToDeviceIDs = (
+    obj: Record<string, string | null> | undefined,
+): Map<Network, string | null> => {
     const map = new Map<Network, string | null>([
         [Networks.mainnet, null],
-        [Networks.testnet, null]
+        [Networks.testnet, null],
     ])
     if (obj) {
         for (const [key, value] of Object.entries(obj)) {
@@ -17,9 +19,14 @@ const objectToDeviceIDs = (obj: Record<string, string | null> | undefined): Map<
 
 export type DeviceSlice = {
     fcmToken: string | null
-    deviceIDs: Map<Network, string|null>
+    deviceIDs: Map<Network, string | null>
     setFcmToken: (token: string | null) => void
     setDeviceID: (network: Network, id: string | null) => void
+}
+
+type PersistedDeviceSlice = {
+    fcmToken: string | null | undefined
+    deviceIDs: Record<string, string | null> | undefined
 }
 
 export const createDeviceSlice: StateCreator<
@@ -32,7 +39,7 @@ export const createDeviceSlice: StateCreator<
         fcmToken: null,
         deviceIDs: new Map([
             ['mainnet', null],
-            ['testnet', null]
+            ['testnet', null],
         ]),
         setFcmToken: token => set({ fcmToken: token }),
         setDeviceID: (network, id) => {
@@ -40,7 +47,7 @@ export const createDeviceSlice: StateCreator<
             deviceIDs.set(network, id)
 
             set({ deviceIDs })
-        }
+        },
     }
 }
 
@@ -58,11 +65,13 @@ export const partializeDeviceSlice = (state: DeviceSlice) => {
 }
 
 // Rehydration function to convert persisted object back to Map
-export const rehydrateDeviceSlice = (persistedState: any): Partial<DeviceSlice> => {
+export const rehydrateDeviceSlice = (
+    persistedState: PersistedDeviceSlice,
+): Partial<DeviceSlice> => {
     if (persistedState) {
         return {
             ...persistedState,
-            deviceIDs: objectToDeviceIDs(persistedState.deviceIDs)
+            deviceIDs: objectToDeviceIDs(persistedState.deviceIDs),
         }
     }
     return persistedState

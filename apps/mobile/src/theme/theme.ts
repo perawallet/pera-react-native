@@ -123,7 +123,6 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
       //Links
       linkPrimary: '#1F8E9D',
 
-
       // Tab Bar
       tabIconActive: '#FAFAFA',
       tabIconPassive: '#71717A',

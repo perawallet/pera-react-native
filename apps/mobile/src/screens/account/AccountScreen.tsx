@@ -1,11 +1,6 @@
 import { Text, useTheme } from '@rneui/themed';
 import MainScreenLayout from '../../layouts/MainScreenLayout';
 import {
-  ParamListBase,
-  StaticScreenProps,
-  useNavigation,
-} from '@react-navigation/native';
-import {
   AccountWealthHistoryItem,
   formatDatetime,
   useAccountBalances,
@@ -27,20 +22,16 @@ import PeraView from '../../components/common/view/PeraView';
 import WealthChart from '../../components/common/wealth-chart/WealthChart';
 import ButtonPanel from '../../components/account-details/button-panel/ButtonPanel';
 import NotificationsIcon from '../../components/common/notifications-icon/NotificationsIcon';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AccountSelection from '../../components/common/account-selection/AccountSelection';
 import AccountMenu from '../../components/account-menu/AccountMenu';
 import { Drawer } from 'react-native-drawer-layout';
 import QRScannerView from '../../components/common/qr-scanner/QRScannerView';
 
-type AccountScreenProps = StaticScreenProps<{
-}>;
-const AccountScreen = (props: AccountScreenProps) => {
+const AccountScreen = () => {
   const { theme } = useTheme();
   const styles = useStyles();
-  const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
   const { getSelectedAccount } = useAppStore();
-  const account = getSelectedAccount()
+  const account = getSelectedAccount();
 
   const data = useAccountBalances(account ? [account] : []);
   const [chartData, setChartData] = useState<AccountWealthHistoryItem | null>(
@@ -61,15 +52,15 @@ const AccountScreen = (props: AccountScreenProps) => {
   );
 
   const closeQRScanner = () => {
-    setScannerVisible(false)
-  }
+    setScannerVisible(false);
+  };
 
   const openQRScanner = () => {
-    setScannerVisible(true)
-  }
+    setScannerVisible(true);
+  };
 
   const toggleAccountSelectorVisible = () => {
-    setDrawerOpen(true)
+    setDrawerOpen(true);
   };
 
   const chartSelectionChanged = useCallback(
@@ -86,11 +77,17 @@ const AccountScreen = (props: AccountScreenProps) => {
   );
 
   return (
-    <Drawer open={drawerOpen} onOpen={() => setDrawerOpen(true)} onClose={() => setDrawerOpen(false)}
-        drawerType='front'
-        swipeEnabled
-        drawerStyle={{width: '90%'}}
-        renderDrawerContent={() => <AccountMenu onSelected={() => setDrawerOpen(false)} showInbox /> }>
+    <Drawer
+      open={drawerOpen}
+      onOpen={() => setDrawerOpen(true)}
+      onClose={() => setDrawerOpen(false)}
+      drawerType="front"
+      swipeEnabled
+      drawerStyle={styles.drawer}
+      renderDrawerContent={() => (
+        <AccountMenu onSelected={() => setDrawerOpen(false)} showInbox />
+      )}
+    >
       <MainScreenLayout fullScreen>
         <PeraView style={styles.iconBar}>
           <PeraView style={styles.iconBarSection}>
@@ -103,7 +100,10 @@ const AccountScreen = (props: AccountScreenProps) => {
             <TouchableOpacity onPress={openQRScanner}>
               <CameraIcon style={styles.icon} color={theme.colors.textMain} />
             </TouchableOpacity>
-            <NotificationsIcon style={styles.icon} color={theme.colors.textMain} />
+            <NotificationsIcon
+              style={styles.icon}
+              color={theme.colors.textMain}
+            />
           </PeraView>
         </PeraView>
         <ScrollView
@@ -142,15 +142,21 @@ const AccountScreen = (props: AccountScreenProps) => {
             </PeraView>
           </PeraView>
 
-          {!!account && <WealthChart
-            account={account}
-            onSelectionChanged={chartSelectionChanged}
-          />}
+          {!!account && (
+            <WealthChart
+              account={account}
+              onSelectionChanged={chartSelectionChanged}
+            />
+          )}
 
           <ButtonPanel />
         </ScrollView>
       </MainScreenLayout>
-      <QRScannerView visible={scannerVisible} onSuccess={closeQRScanner} animationType='slide'>
+      <QRScannerView
+        visible={scannerVisible}
+        onSuccess={closeQRScanner}
+        animationType="slide"
+      >
         <TouchableOpacity onPress={closeQRScanner} style={styles.scannerClose}>
           <CrossIcon color={theme.colors.textWhite} />
         </TouchableOpacity>

@@ -24,10 +24,12 @@ describe('services/device/store', () => {
 
         // defaults
         expect(state.fcmToken).toBeNull()
-        expect(state.deviceIDs).toEqual(new Map([
-            ['mainnet', null],
-            ['testnet', null]
-        ]))
+        expect(state.deviceIDs).toEqual(
+            new Map([
+                ['mainnet', null],
+                ['testnet', null],
+            ]),
+        )
 
         // set values
         state.setFcmToken('FCM-1')
@@ -49,7 +51,7 @@ describe('services/device/store', () => {
             fcmToken: 'TOK',
             deviceIDs: new Map([
                 [Networks.testnet, 'ID'],
-                [Networks.mainnet, null]
+                [Networks.mainnet, null],
             ]),
             setFcmToken: () => {},
             setDeviceID: () => {},
@@ -71,10 +73,10 @@ describe('services/device/store', () => {
             fcmToken: 'PERSISTED_TOKEN',
             deviceIDs: {
                 testnet: 'PERSISTED_ID',
-                mainnet: null
+                mainnet: null,
             },
             // Other unrelated state
-            someOtherProperty: 'value'
+            someOtherProperty: 'value',
         }
 
         const rehydrated = rehydrateDeviceSlice(persistedState)

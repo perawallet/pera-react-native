@@ -1,6 +1,6 @@
 import { makeStyles } from '@rneui/themed';
 
-export const useStyles = makeStyles((theme) => ({
+export const useStyles = makeStyles(theme => ({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
@@ -11,6 +11,6 @@ export const useStyles = makeStyles((theme) => ({
   },
   text: {
     color: theme.colors.textMain,
-    textAlign: 'center'
-  }
+    textAlign: 'center',
+  },
 }));

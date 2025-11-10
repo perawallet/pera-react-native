@@ -1,17 +1,16 @@
-import { ParamListBase, useNavigation } from '@react-navigation/native'
-import EditIcon from '../../../assets/icons/edit-pen.svg'
+import { ParamListBase, useNavigation } from '@react-navigation/native';
+import EditIcon from '../../../assets/icons/edit-pen.svg';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '@rneui/themed';
-import { useContacts } from '@perawallet/core';
 
 const ViewContactHeaderButtons = () => {
-  const { theme } = useTheme()
+  const { theme } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
   const goToAdd = () => {
-    navigation.navigate('EditContact')
-  }
+    navigation.navigate('EditContact');
+  };
 
-  return <EditIcon onPress={goToAdd} color={theme.colors.textMain} />
-}
+  return <EditIcon onPress={goToAdd} color={theme.colors.textMain} />;
+};
 
-export default ViewContactHeaderButtons
+export default ViewContactHeaderButtons;

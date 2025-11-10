@@ -39,6 +39,7 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
             id: '5',
             type: 'standard',
             address: 'ABCDEFGHIJKL',
+            canSign: true,
         }
         expect(getAccountDisplayName(acc1)).toEqual('ABCDE...HIJKL')
 
@@ -46,6 +47,7 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
             id: '6',
             type: 'standard',
             address: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+            canSign: true,
         }
         expect(getAccountDisplayName(acc2)).toEqual('ABCDE...VWXYZ')
     })

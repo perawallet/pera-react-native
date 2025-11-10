@@ -1,17 +1,16 @@
 import { makeStyles } from '@rneui/themed';
-import { EdgeInsets } from 'react-native-safe-area-context';
 
-export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
+export const useStyles = makeStyles(theme => {
   return {
     container: {
       flex: 1,
-      minHeight: 500
+      minHeight: 500,
     },
     title: {
       padding: theme.spacing.lg,
       fontWeight: 600,
       textAlign: 'center',
-      marginBottom: theme.spacing.lg
+      marginBottom: theme.spacing.lg,
     },
     body: {
       alignItems: 'center',
@@ -24,7 +23,7 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
       borderTopWidth: 1,
       borderTopColor: theme.colors.layerGrayLighter,
       gap: theme.spacing.sm,
-      boxShadow: '0px 14px 60px 0px #00000029'
+      boxShadow: '0px 14px 60px 0px #00000029',
     },
     buttonContainer: {
       flexDirection: 'row',
@@ -49,17 +48,15 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
       alignItems: 'center',
     },
     feeLabel: {
-      color: theme.colors.textGray
+      color: theme.colors.textGray,
     },
     feeAmount: {
-      color: theme.colors.helperNegative
+      color: theme.colors.helperNegative,
     },
     detailsLabel: {
-      color: theme.colors.linkPrimary
+      color: theme.colors.linkPrimary,
     },
-    mainAmount: {
-    },
-    secondaryAmount: {
-    }
+    mainAmount: {},
+    secondaryAmount: {},
   };
 });

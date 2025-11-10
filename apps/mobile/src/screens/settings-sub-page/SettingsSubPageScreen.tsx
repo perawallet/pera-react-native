@@ -14,9 +14,10 @@ type SettingsSubPageScreenProps = StaticScreenProps<{
 
 const SettingsSubPageScreen = ({ route }: SettingsSubPageScreenProps) => {
   const styles = useStyles();
-  const { theme, setTheme, network, setNetwork, deviceIDs, addSignRequest } = useAppStore();
-  const { registerDevice } = useDevice()
-  const queryClient = useQueryClient()
+  const { theme, setTheme, network, setNetwork, deviceIDs, addSignRequest } =
+    useAppStore();
+  const { registerDevice } = useDevice();
+  const queryClient = useQueryClient();
 
   const toggleTheme = () => {
     if (theme === 'dark' || theme === 'system') {
@@ -27,13 +28,13 @@ const SettingsSubPageScreen = ({ route }: SettingsSubPageScreenProps) => {
   };
 
   const toggleNetwork = async () => {
-    var newNetwork: Network = Networks.mainnet
+    var newNetwork: Network = Networks.mainnet;
     if (network === Networks.mainnet) {
-      newNetwork = Networks.testnet
+      newNetwork = Networks.testnet;
     }
     setNetwork(newNetwork);
     if (!deviceIDs.get(newNetwork)) {
-      await registerDevice()
+      await registerDevice();
     }
 
     queryClient.invalidateQueries();
@@ -43,18 +44,18 @@ const SettingsSubPageScreen = ({ route }: SettingsSubPageScreenProps) => {
     try {
       const tx: Transaction = {
         fee: 1000,
-        "first-valid": 1000,
-        "last-valid": 2000,
+        'first-valid': 1000,
+        'last-valid': 2000,
         sender: 'HS4UDE2JA2VLAL3HWXC3QJMCG4XCINHQFFCXH2JXCHYWAHLWEAKY26Z2SI',
-        'tx-type': 'pay'
-      }
+        'tx-type': 'pay',
+      };
       addSignRequest({
-        txs: [[tx]]
-      })
+        txs: [[tx]],
+      });
     } catch (error) {
-      console.log("Error", error)
+      console.log('Error', error);
     }
-  }
+  };
 
   return (
     <MainScreenLayout>

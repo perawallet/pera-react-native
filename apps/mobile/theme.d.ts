@@ -32,7 +32,7 @@ declare module '@rneui/themed' {
     backdrop: string;
 
     //Links
-    linkPrimary: string
+    linkPrimary: string;
 
     // Tab Bar
     tabIconActive: string;

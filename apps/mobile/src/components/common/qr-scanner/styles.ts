@@ -1,7 +1,6 @@
 import { makeStyles } from '@rneui/themed';
-import { EdgeInsets } from 'react-native-safe-area-context';
 
-export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
+export const useStyles = makeStyles(theme => {
   return {
     container: {
       flex: 1,
@@ -12,7 +11,7 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
       flex: 1,
       position: 'absolute',
       top: 0,
-      bottom: 0, 
+      bottom: 0,
       left: 0,
       right: 0,
     },
@@ -21,7 +20,7 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
       zIndex: 1,
       position: 'absolute',
       top: -100,
-      bottom: 0, 
+      bottom: 0,
       left: 0,
       right: 0,
     },
@@ -30,11 +29,11 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
       textAlign: 'center',
       marginTop: theme.spacing.xl * 1.5,
       marginBottom: theme.spacing.xl,
-      zIndex: 2
+      zIndex: 2,
     },
     icon: {
       color: theme.colors.textWhite,
-      zIndex: 2
-    }
+      zIndex: 2,
+    },
   };
 });

@@ -29,7 +29,7 @@ export interface MultiSigDetails {
 }
 
 export interface HardwareWalletDetails {
-    manufacturer: "ledger"
+    manufacturer: 'ledger'
     //TODO add any additional details here as needed (MAC addresses, models, etc)
 }
 

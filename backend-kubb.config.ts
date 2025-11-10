@@ -40,9 +40,9 @@ export default defineConfig(() => {
                     barrelType: 'named',
                 },
                 infinite: {
-                    cursorParam: "next",
-                    queryParam: "cursor",
-                    initialPageParam: ""
+                    cursorParam: 'next',
+                    queryParam: 'cursor',
+                    initialPageParam: '',
                 },
                 paramsType: 'object',
                 pathParamsType: 'object',

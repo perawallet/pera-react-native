@@ -132,76 +132,76 @@ describe('utils/strings - formatRelativeTime', () => {
 
     test('returns "just now" for times less than 60 seconds ago', () => {
         const date = new Date(now - 30 * 1000) // 30 seconds ago
-        expect(formatRelativeTime(date, 'en-US', now)).toBe('just now')
+        expect(formatRelativeTime(date, now)).toBe('just now')
     })
 
     test('returns minutes ago for times less than 1 hour ago', () => {
         const date = new Date(now - 5 * 60 * 1000) // 5 minutes ago
-        expect(formatRelativeTime(date, 'en-US', now)).toBe('5 minutes ago')
+        expect(formatRelativeTime(date, now)).toBe('5 minutes ago')
     })
 
     test('returns "1 minute ago" for exactly 1 minute ago', () => {
         const date = new Date(now - 60 * 1000) // 1 minute ago
-        expect(formatRelativeTime(date, 'en-US', now)).toBe('1 minute ago')
+        expect(formatRelativeTime(date, now)).toBe('1 minute ago')
     })
 
     test('returns hours ago for times less than 1 day ago', () => {
         const date = new Date(now - 2 * 60 * 60 * 1000) // 2 hours ago
-        expect(formatRelativeTime(date, 'en-US', now)).toBe('2 hours ago')
+        expect(formatRelativeTime(date, now)).toBe('2 hours ago')
     })
 
     test('returns "1 hour ago" for exactly 1 hour ago', () => {
         const date = new Date(now - 60 * 60 * 1000) // 1 hour ago
-        expect(formatRelativeTime(date, 'en-US', now)).toBe('1 hour ago')
+        expect(formatRelativeTime(date, now)).toBe('1 hour ago')
     })
 
     test('returns days ago for times less than 1 week ago', () => {
         const date = new Date(now - 3 * 24 * 60 * 60 * 1000) // 3 days ago
-        expect(formatRelativeTime(date, 'en-US', now)).toBe('3 days ago')
+        expect(formatRelativeTime(date, now)).toBe('3 days ago')
     })
 
     test('returns "yesterday" for exactly 1 day ago', () => {
         const date = new Date(now - 24 * 60 * 60 * 1000) // 1 day ago
-        expect(formatRelativeTime(date, 'en-US', now)).toBe('yesterday')
+        expect(formatRelativeTime(date, now)).toBe('yesterday')
     })
 
     test('returns weeks ago for times less than 1 month ago', () => {
         const date = new Date(now - 2 * 7 * 24 * 60 * 60 * 1000) // 2 weeks ago
-        expect(formatRelativeTime(date, 'en-US', now)).toBe('2 weeks ago')
+        expect(formatRelativeTime(date, now)).toBe('2 weeks ago')
     })
 
     test('returns "last week" for exactly 1 week ago', () => {
         const date = new Date(now - 7 * 24 * 60 * 60 * 1000) // 1 week ago
-        expect(formatRelativeTime(date, 'en-US', now)).toBe('last week')
+        expect(formatRelativeTime(date, now)).toBe('last week')
     })
 
     test('returns months ago for times less than 1 year ago', () => {
         const date = new Date(now - 4 * 30 * 24 * 60 * 60 * 1000) // ~4 months ago
-        expect(formatRelativeTime(date, 'en-US', now)).toBe('4 months ago')
+        expect(formatRelativeTime(date, now)).toBe('4 months ago')
     })
 
     test('returns "last month" for exactly 1 month ago', () => {
         const date = new Date(now - 30 * 24 * 60 * 60 * 1000) // ~1 month ago
-        expect(formatRelativeTime(date, 'en-US', now)).toBe('last month')
+        expect(formatRelativeTime(date, now)).toBe('last month')
     })
 
     test('returns years ago for times more than 1 year ago', () => {
         const date = new Date(now - 2 * 365 * 24 * 60 * 60 * 1000) // 2 years ago
-        expect(formatRelativeTime(date, 'en-US', now)).toBe('2 years ago')
+        expect(formatRelativeTime(date, now)).toBe('2 years ago')
     })
 
     test('returns "last year" for exactly 1 year ago', () => {
         const date = new Date(now - 365 * 24 * 60 * 60 * 1000) // 1 year ago
-        expect(formatRelativeTime(date, 'en-US', now)).toBe('last year')
+        expect(formatRelativeTime(date, now)).toBe('last year')
     })
 
     test('handles string datetime input', () => {
         const pastTime = new Date(now - 10 * 60 * 1000).toISOString() // 10 minutes ago
-        expect(formatRelativeTime(pastTime, 'en-US', now)).toBe('10 minutes ago')
+        expect(formatRelativeTime(pastTime, now)).toBe('10 minutes ago')
     })
 
     test('handles string datetime with timezone', () => {
         const pastTime = new Date(now - 2 * 60 * 60 * 1000).toISOString() // 2 hours ago
-        expect(formatRelativeTime(pastTime, 'en-US', now)).toBe('2 hours ago')
+        expect(formatRelativeTime(pastTime, now)).toBe('2 hours ago')
     })
 })

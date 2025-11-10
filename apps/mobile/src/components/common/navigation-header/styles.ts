@@ -4,7 +4,7 @@ export const useStyles = makeStyles(theme => ({
   container: {
     flexDirection: 'row',
     padding: theme.spacing.md,
-    alignItems: 'center'
+    alignItems: 'center',
   },
   title: {
     textAlign: 'center',

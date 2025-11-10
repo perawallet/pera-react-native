@@ -44,7 +44,7 @@ const storeMock = vi.hoisted(() => {
                 accounts: [],
                 deviceID: new Map(),
                 fcmToken: null,
-                network: "testnet"
+                network: 'testnet',
             }
             const setState = (partial: any) => {
                 state = { ...state, ...partial }
@@ -55,7 +55,8 @@ const storeMock = vi.hoisted(() => {
             // slice updaters that our hook selects
             state = {
                 ...state,
-                setDeviceID: (network: string, id: string | null) => setState({ deviceIDs: new Map([[network, id]]) }),
+                setDeviceID: (network: string, id: string | null) =>
+                    setState({ deviceIDs: new Map([[network, id]]) }),
                 setFcmToken: (token: string | null) =>
                     setState({ fcmToken: token }),
             }
@@ -85,7 +86,7 @@ describe('services/device/hooks', () => {
             accounts: [{ address: 'A1' }, { address: 'A2' }],
             fcmToken: 'FCM123',
             deviceIDs: new Map(),
-            network: "testnet"
+            network: 'testnet',
         })
 
         const { result } = renderHook(() => useDevice())
@@ -105,7 +106,9 @@ describe('services/device/hooks', () => {
                 locale: 'testLocale',
             },
         })
-        expect((useAppStore as any).getState().deviceIDs.get("testnet")).toBe('NEW_ID')
+        expect((useAppStore as any).getState().deviceIDs.get('testnet')).toBe(
+            'NEW_ID',
+        )
     })
 
     test('registerDevice updates when deviceID exists', async () => {
@@ -120,8 +123,8 @@ describe('services/device/hooks', () => {
         ;(useAppStore as any).setState({
             accounts: [{ address: 'X' }],
             fcmToken: 'TOKEN',
-            deviceIDs: new Map([["testnet", 'DEV1']]),
-            network: "testnet"
+            deviceIDs: new Map([['testnet', 'DEV1']]),
+            network: 'testnet',
         })
 
         const { result } = renderHook(() => useDevice())
@@ -141,7 +144,9 @@ describe('services/device/hooks', () => {
                 locale: 'testLocale',
             },
         })
-        expect((useAppStore as any).getState().deviceIDs.get("testnet")).toBe('DEV1')
+        expect((useAppStore as any).getState().deviceIDs.get('testnet')).toBe(
+            'DEV1',
+        )
     })
 
     test('getDeviceID when deviceID exists', async () => {
@@ -156,11 +161,11 @@ describe('services/device/hooks', () => {
         ;(useAppStore as any).setState({
             accounts: [{ address: 'X' }],
             fcmToken: 'TOKEN',
-            deviceIDs: new Map([["testnet", 'DEV1']]),
-            network: "testnet"
+            deviceIDs: new Map([['testnet', 'DEV1']]),
+            network: 'testnet',
         })
 
-        const { result }  = renderHook(() => useDeviceID())
+        const { result } = renderHook(() => useDeviceID())
         await act(async () => {
             const deviceID = result.current
             expect(deviceID).toEqual('DEV1')
@@ -179,11 +184,11 @@ describe('services/device/hooks', () => {
         ;(useAppStore as any).setState({
             accounts: [{ address: 'X' }],
             fcmToken: 'TOKEN',
-            deviceIDs: new Map([["testnet", 'DEV1']]),
-            network: "mainnet"
+            deviceIDs: new Map([['testnet', 'DEV1']]),
+            network: 'mainnet',
         })
 
-        const { result }  = renderHook(() => useDeviceID())
+        const { result } = renderHook(() => useDeviceID())
         await act(async () => {
             const deviceID = result.current
             expect(deviceID).toBeNull()

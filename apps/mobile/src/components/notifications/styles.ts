@@ -4,16 +4,14 @@ import { PropsWithChildren } from 'react';
 export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
   return {
     container: {
-        flexDirection: 'row',
-        gap: theme.spacing.lg,
-        alignItems: 'flex-start'
+      flexDirection: 'row',
+      gap: theme.spacing.lg,
+      alignItems: 'flex-start',
     },
-    messageBox: {
-
-    },
+    messageBox: {},
     timeText: {
       color: theme.colors.textGray,
-      fontSize: 11
+      fontSize: 11,
     },
     iconContainerNoBorder: {
       width: theme.spacing.xl * 1.65,
@@ -38,7 +36,7 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
     imageCircle: {
       aspectRatio: 1,
       width: '100%',
-      borderRadius: '50%'
-    }
+      borderRadius: '50%',
+    },
   };
 });

@@ -1,5 +1,5 @@
 import { useAppStore, useDevice, usePolling } from '@perawallet/core';
-import { config } from '@perawallet/config'
+import { config } from '@perawallet/config';
 import { useEffect, useMemo, useRef } from 'react';
 import { AppState, StatusBar, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';

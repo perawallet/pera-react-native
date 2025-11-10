@@ -282,7 +282,7 @@ describe('services/accounts/hooks', () => {
                 type: 'standard',
                 address: 'ADDR2',
                 canSign: true,
-            }
+            },
         ]
         useAppStore.setState({ accounts })
 
@@ -320,14 +320,18 @@ describe('services/accounts/hooks', () => {
                 type: 'standard',
                 address: 'ADDR2',
                 canSign: true,
-            }
+            },
         ]
         useAppStore.setState({ accounts })
 
-        const { result: findRes } = renderHook(() => useFindAccountbyAddress('ADDR1'))
+        const { result: findRes } = renderHook(() =>
+            useFindAccountbyAddress('ADDR1'),
+        )
         expect(findRes.current).toEqual(accounts[0])
 
-        const { result: findRes2 } = renderHook(() => useFindAccountbyAddress('NONEXISTENT'))
+        const { result: findRes2 } = renderHook(() =>
+            useFindAccountbyAddress('NONEXISTENT'),
+        )
         expect(findRes2.current).toBeNull()
     })
 })
@@ -383,7 +387,10 @@ describe('services/accounts/hooks - createAccount', () => {
             'rootkey-WALLET1',
             expect.any(Buffer),
         )
-        expect(dummySecure.setItem).toHaveBeenCalledWith('pk-KEY1', expect.any(Buffer))
+        expect(dummySecure.setItem).toHaveBeenCalledWith(
+            'pk-KEY1',
+            expect.any(Buffer),
+        )
 
         expect(created).toMatchObject({
             id: 'ACC1',
@@ -419,8 +426,8 @@ describe('services/accounts/hooks - createAccount', () => {
                 Buffer.from(
                     JSON.stringify({
                         seed: Buffer.from('seed_async').toString('base64'),
-                        entropy: Buffer.from('entropy').toString('base64')
-                    })
+                        entropy: Buffer.from('entropy').toString('base64'),
+                    }),
                 ),
             ),
             removeItem: vi.fn(async (_k: string) => {}),
@@ -467,7 +474,10 @@ describe('services/accounts/hooks - createAccount', () => {
         expect(setCalls.some(c => String(c[0]).startsWith('rootkey-'))).toBe(
             false,
         )
-        expect(dummySecure.setItem).toHaveBeenCalledWith('pk-KEY2', expect.any(Buffer))
+        expect(dummySecure.setItem).toHaveBeenCalledWith(
+            'pk-KEY2',
+            expect.any(Buffer),
+        )
 
         expect(created).toMatchObject({
             id: 'ACC2',
@@ -526,7 +536,13 @@ describe('services/accounts/hooks - createAccount', () => {
         const { useCreateAccount } = await import('../hooks.accounts')
 
         // Set deviceID in store
-        useAppStore.setState({ network: Networks.testnet, deviceIDs: new Map([['testnet', 'TEST_DEVICE_123'], ['mainnet', null]])})
+        useAppStore.setState({
+            network: Networks.testnet,
+            deviceIDs: new Map([
+                ['testnet', 'TEST_DEVICE_123'],
+                ['mainnet', null],
+            ]),
+        })
 
         const { result: createRes } = renderHook(() => useCreateAccount())
         await act(async () => {
@@ -555,7 +571,9 @@ describe('services/accounts/hooks - createAccount', () => {
 
         const dummySecure = {
             setItem: vi.fn(async (_k: string, _v: string) => {}),
-            getItem: vi.fn(async (_k: string) => Buffer.from(JSON.stringify({}))), // Empty object, no seed
+            getItem: vi.fn(async (_k: string) =>
+                Buffer.from(JSON.stringify({})),
+            ), // Empty object, no seed
             removeItem: vi.fn(async (_k: string) => {}),
             authenticate: vi.fn(async () => true),
         }
@@ -569,11 +587,13 @@ describe('services/accounts/hooks - createAccount', () => {
 
         const { result: createRes } = renderHook(() => useCreateAccount())
 
-        await expect(createRes.current({
-            walletId: 'EXISTING_WALLET',
-            account: 0,
-            keyIndex: 0,
-        })).rejects.toThrow('No key found for EXISTING_WALLET')
+        await expect(
+            createRes.current({
+                walletId: 'EXISTING_WALLET',
+                account: 0,
+                keyIndex: 0,
+            }),
+        ).rejects.toThrow('No key found for EXISTING_WALLET')
     })
 })
 
@@ -827,7 +847,7 @@ describe('services/accounts/hooks - useImportWallet', () => {
             name: 'Existing Account',
             type: 'standard',
             address: 'EXISTING_ADDR',
-            canSign: true
+            canSign: true,
         }
         act(() => {
             addRes.current(existingAccount)
@@ -893,7 +913,13 @@ describe('services/accounts/hooks - useImportWallet', () => {
         const { useImportWallet } = await import('../hooks.accounts')
 
         // Set deviceID in store
-        useAppStore.setState({ network: Networks.testnet, deviceIDs: new Map([['testnet', 'TEST_DEVICE_456'], ['mainnet', null]])})
+        useAppStore.setState({
+            network: Networks.testnet,
+            deviceIDs: new Map([
+                ['testnet', 'TEST_DEVICE_456'],
+                ['mainnet', null],
+            ]),
+        })
 
         const { result: importRes } = renderHook(() => useImportWallet())
         await act(async () => {
@@ -939,7 +965,13 @@ describe('services/accounts/hooks - useAddAccount', () => {
         const { useAddAccount } = await import('../hooks.accounts')
 
         // Set deviceID in store
-        useAppStore.setState({ network: Networks.testnet, deviceIDs: new Map([['testnet', 'TEST_DEVICE_789'], ['mainnet', null]])})
+        useAppStore.setState({
+            network: Networks.testnet,
+            deviceIDs: new Map([
+                ['testnet', 'TEST_DEVICE_789'],
+                ['mainnet', null],
+            ]),
+        })
 
         const { result: addRes } = renderHook(() => useAddAccount())
 
@@ -974,10 +1006,14 @@ describe('services/accounts/hooks - useAddAccount', () => {
 
         const dummySecure = {
             setItem: vi.fn(async (_k: string, _v: string) => {}),
-            getItem: vi.fn(async (_k: string) => Buffer.from(JSON.stringify({
-                seed: Buffer.from('test-seed').toString('base64'),
-                entropy: Buffer.from('entropy').toString('base64')
-            }))),
+            getItem: vi.fn(async (_k: string) =>
+                Buffer.from(
+                    JSON.stringify({
+                        seed: Buffer.from('test-seed').toString('base64'),
+                        entropy: Buffer.from('entropy').toString('base64'),
+                    }),
+                ),
+            ),
             removeItem: vi.fn(async (_k: string) => {}),
             authenticate: vi.fn(async () => true),
         }
@@ -1023,20 +1059,19 @@ describe('services/accounts/hooks - useAddAccount', () => {
             'ROOT_KEY',
             expect.any(Array),
             true,
-            9
+            9,
         )
-        expect(apiSpies.keyGenSpy).toHaveBeenCalledWith(
-            'ROOT_KEY',
-            0,
-            1,
-            2,
-            9
+        expect(apiSpies.keyGenSpy).toHaveBeenCalledWith('ROOT_KEY', 0, 1, 2, 9)
+        expect(dummySecure.setItem).toHaveBeenCalledWith(
+            'pk-ADD_KEY_ID',
+            expect.any(Buffer),
         )
-        expect(dummySecure.setItem).toHaveBeenCalledWith('pk-ADD_KEY_ID', expect.any(Buffer))
 
         // Verify account was updated with derived address and new ID
         const addedAccount = useAppStore.getState().accounts[0]
-        expect(addedAccount.address).toBe(Buffer.from('ADDRESS').toString('base64'))
+        expect(addedAccount.address).toBe(
+            Buffer.from('ADDRESS').toString('base64'),
+        )
         expect(addedAccount.id).toBe('ADD_KEY_ID')
         // Note: privateKeyLocation remains 'device' as per current implementation
         expect(addedAccount.privateKeyLocation).toBe('device')
@@ -1174,7 +1209,13 @@ describe('services/accounts/hooks - updateAccount', () => {
         )
 
         // Set deviceID in store
-        useAppStore.setState({ network: Networks.testnet, deviceIDs: new Map([['testnet', 'TEST_DEVICE_UPDATE'], ['mainnet', null]])})
+        useAppStore.setState({
+            network: Networks.testnet,
+            deviceIDs: new Map([
+                ['testnet', 'TEST_DEVICE_UPDATE'],
+                ['mainnet', null],
+            ]),
+        })
 
         const { result: addRes } = renderHook(() => useAddAccount())
         const { result: updateRes } = renderHook(() => useUpdateAccount())
@@ -1222,9 +1263,9 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
                 Buffer.from(
                     JSON.stringify({
                         seed: Buffer.from('test-mnemonic').toString('base64'),
-                        entropy: Buffer.from('entropy').toString('base64')
-                    })
-                )
+                        entropy: Buffer.from('entropy').toString('base64'),
+                    }),
+                ),
             ),
             removeItem: vi.fn(async (_k: string) => {}),
             authenticate: vi.fn(async () => true),
@@ -1259,7 +1300,10 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
         const transaction = Buffer.from('test-transaction')
 
         await act(async () => {
-            await result.current.signTransactionForAddress('TEST_ADDR', transaction)
+            await result.current.signTransactionForAddress(
+                'TEST_ADDR',
+                transaction,
+            )
         })
 
         expect(apiSpies.signTransactionSpy).toHaveBeenCalledWith(
@@ -1268,7 +1312,7 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
             0,
             0,
             transaction,
-            9
+            9,
         )
     })
 
@@ -1281,10 +1325,12 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
             getItem: vi.fn(async (_k: string) =>
                 Buffer.from(
                     JSON.stringify({
-                        seed: Buffer.from('different-mnemonic').toString('base64'),
-                        entropy: Buffer.from('entropy').toString('base64')
-                    })
-                )
+                        seed: Buffer.from('different-mnemonic').toString(
+                            'base64',
+                        ),
+                        entropy: Buffer.from('entropy').toString('base64'),
+                    }),
+                ),
             ),
             removeItem: vi.fn(async (_k: string) => {}),
             authenticate: vi.fn(async () => true),
@@ -1320,7 +1366,10 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
 
         let signed: Uint8Array | undefined
         await act(async () => {
-            signed = await result.current.signTransactionForAddress('TEST_ADDR2', transaction)
+            signed = await result.current.signTransactionForAddress(
+                'TEST_ADDR2',
+                transaction,
+            )
         })
 
         expect(apiSpies.signTransactionSpy).toHaveBeenCalledWith(
@@ -1329,7 +1378,7 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
             1,
             1,
             transaction,
-            9
+            9,
         )
         expect(signed).toEqual(new Uint8Array([1, 2, 3, 4]))
     })
@@ -1343,10 +1392,12 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
             getItem: vi.fn(async (_k: string) =>
                 Buffer.from(
                     JSON.stringify({
-                        seed: Buffer.from('different-mnemonic-2').toString('base64'),
-                        entropy: Buffer.from('entropy').toString('base64')
-                    })
-                )
+                        seed: Buffer.from('different-mnemonic-2').toString(
+                            'base64',
+                        ),
+                        entropy: Buffer.from('entropy').toString('base64'),
+                    }),
+                ),
             ),
             removeItem: vi.fn(async (_k: string) => {}),
             authenticate: vi.fn(async () => true),
@@ -1382,7 +1433,10 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
 
         let signed: Uint8Array | undefined
         await act(async () => {
-            signed = await result.current.signTransactionForAddress('TEST_ADDR3', transaction)
+            signed = await result.current.signTransactionForAddress(
+                'TEST_ADDR3',
+                transaction,
+            )
         })
 
         expect(apiSpies.signTransactionSpy).toHaveBeenCalledWith(
@@ -1391,7 +1445,7 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
             2,
             2,
             transaction,
-            9
+            9,
         )
         expect(signed).toEqual(new Uint8Array([1, 2, 3, 4]))
     })
@@ -1421,7 +1475,12 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
         const { result } = renderHook(() => useTransactionSigner())
         const transaction = Buffer.from('test-transaction')
 
-        await expect(result.current.signTransactionForAddress('NONEXISTENT_ADDR', transaction)).rejects.toThrow('No HD wallet found for NONEXISTENT_ADDR')
+        await expect(
+            result.current.signTransactionForAddress(
+                'NONEXISTENT_ADDR',
+                transaction,
+            ),
+        ).rejects.toThrow('No HD wallet found for NONEXISTENT_ADDR')
     })
 
     test('rejects when account has no hdWalletDetails', async () => {
@@ -1456,7 +1515,9 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
         const { result } = renderHook(() => useTransactionSigner())
         const transaction = Buffer.from('test-transaction')
 
-        await expect(result.current.signTransactionForAddress('TEST_ADDR', transaction)).rejects.toThrow('No HD wallet found for TEST_ADDR')
+        await expect(
+            result.current.signTransactionForAddress('TEST_ADDR', transaction),
+        ).rejects.toThrow('No HD wallet found for TEST_ADDR')
     })
 
     test('rejects when mnemonic not found in storage', async () => {
@@ -1498,7 +1559,9 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
         const { result } = renderHook(() => useTransactionSigner())
         const transaction = Buffer.from('test-transaction')
 
-        await expect(result.current.signTransactionForAddress('TEST_ADDR', transaction)).rejects.toThrow('No signing keys found for TEST_ADDR')
+        await expect(
+            result.current.signTransactionForAddress('TEST_ADDR', transaction),
+        ).rejects.toThrow('No signing keys found for TEST_ADDR')
     })
 
     test('signs transaction successfully with fallback to raw seed data', async () => {
@@ -1541,7 +1604,10 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
         const transaction = Buffer.from('test-transaction')
 
         await act(async () => {
-            await result.current.signTransactionForAddress('TEST_ADDR', transaction)
+            await result.current.signTransactionForAddress(
+                'TEST_ADDR',
+                transaction,
+            )
         })
 
         expect(apiSpies.signTransactionSpy).toHaveBeenCalledWith(
@@ -1550,7 +1616,7 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
             0,
             0,
             transaction,
-            9
+            9,
         )
     })
 })

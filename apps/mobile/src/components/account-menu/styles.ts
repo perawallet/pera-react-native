@@ -5,7 +5,7 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
   return {
     portfolioContainer: {
       paddingHorizontal: theme.spacing.xl,
-      paddingTop: theme.spacing.md
+      paddingTop: theme.spacing.md,
     },
     activeLabel: {
       color: theme.colors.secondary,
@@ -22,20 +22,20 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       gap: theme.spacing.md,
       backgroundColor: theme.colors.layerGrayLightest,
       borderRadius: theme.spacing.xs,
-      paddingVertical: theme.spacing.md
+      paddingVertical: theme.spacing.md,
     },
     passiveItem: {
       flexDirection: 'row',
       gap: theme.spacing.md,
       backgroundColor: theme.colors.background,
       borderRadius: theme.spacing.xs,
-      paddingVertical: theme.spacing.md
+      paddingVertical: theme.spacing.md,
     },
     container: {
       padding: 0,
       margin: 0,
       flex: 1,
-      overflow: 'hidden'
+      overflow: 'hidden',
     },
     titleBar: {
       gap: theme.spacing.md,
@@ -50,7 +50,7 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       gap: theme.spacing.md,
       alignItems: 'center',
       justifyContent: 'space-between',
-      width: '100%'
+      width: '100%',
     },
     sortButton: {
       flexDirection: 'row',
@@ -66,7 +66,7 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       alignItems: 'center',
       paddingEnd: theme.spacing.md,
       borderRadius: theme.spacing.sm,
-      gap: theme.spacing.sm
+      gap: theme.spacing.sm,
     },
     addButtonTitle: {
       color: theme.colors.buttonSquareText,
@@ -77,7 +77,7 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       height: 40,
     },
     fullWidth: {
-      width: '100%'
+      width: '100%',
     },
     tabs: {
       paddingHorizontal: 0,
@@ -92,15 +92,15 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
     },
     inactiveTab: {
       padding: 0,
-      margin: 0
+      margin: 0,
     },
     activeTitle: {
       color: theme.colors.textMain,
-      fontSize: 22
+      fontSize: 22,
     },
     inactiveTitle: {
       color: theme.colors.textGrayLighter,
-      fontSize: 22
-    }
+      fontSize: 22,
+    },
   };
 });
