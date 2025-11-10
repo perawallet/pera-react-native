@@ -9,9 +9,7 @@ import {
   AccountWealthHistoryItem,
   formatDatetime,
   useAccountBalances,
-  useAllAccounts,
   useAppStore,
-  WalletAccount,
 } from '@perawallet/core';
 import { TouchableOpacity } from 'react-native';
 
@@ -34,17 +32,13 @@ import AccountMenu from '../../components/account-menu/AccountMenu';
 import { Drawer } from 'react-native-drawer-layout';
 
 type AccountScreenProps = StaticScreenProps<{
-  account?: WalletAccount;
 }>;
-const AccountScreen = ({ route }: AccountScreenProps) => {
+const AccountScreen = (props: AccountScreenProps) => {
   const { theme } = useTheme();
   const styles = useStyles();
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
-  const accounts = useAllAccounts();
   const { getSelectedAccount } = useAppStore();
-  const account = (route.params?.account ??
-    getSelectedAccount() ??
-    accounts.at(0))!;
+  const account = getSelectedAccount()
 
   const data = useAccountBalances(account ? [account] : []);
   const [chartData, setChartData] = useState<AccountWealthHistoryItem | null>(
@@ -141,10 +135,10 @@ const AccountScreen = ({ route }: AccountScreenProps) => {
             </PeraView>
           </PeraView>
 
-          <WealthChart
+          {!!account && <WealthChart
             account={account}
             onSelectionChanged={chartSelectionChanged}
-          />
+          />}
 
           <ButtonPanel />
         </ScrollView>

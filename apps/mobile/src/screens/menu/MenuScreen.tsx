@@ -26,6 +26,10 @@ const MenuScreen = () => {
     navigation.push('Settings');
   };
 
+  const goToContacts = () => {
+    navigation.push('Contacts');
+  };
+
   return (
     <MainScreenLayout>
       <PeraView style={styles.iconBar}>
@@ -71,7 +75,7 @@ const MenuScreen = () => {
           titleWeight="h3"
           leftIcon={<PersonMenuIcon style={styles.icon} />}
           rightIcon={<ChevronRight style={styles.icon} />}
-          onPress={() => {}}
+          onPress={goToContacts}
         />
       </PeraView>
     </MainScreenLayout>

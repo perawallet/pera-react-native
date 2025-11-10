@@ -1258,9 +1258,8 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
         const { result } = renderHook(() => useTransactionSigner())
         const transaction = Buffer.from('test-transaction')
 
-        let signed: Uint8Array | undefined
         await act(async () => {
-            signed = await result.current.signTransactionForAddress('TEST_ADDR', transaction)
+            await result.current.signTransactionForAddress('TEST_ADDR', transaction)
         })
 
         expect(apiSpies.signTransactionSpy).toHaveBeenCalledWith(
@@ -1541,9 +1540,8 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
         const { result } = renderHook(() => useTransactionSigner())
         const transaction = Buffer.from('test-transaction')
 
-        let signed: Uint8Array | undefined
         await act(async () => {
-            signed = await result.current.signTransactionForAddress('TEST_ADDR', transaction)
+            await result.current.signTransactionForAddress('TEST_ADDR', transaction)
         })
 
         expect(apiSpies.signTransactionSpy).toHaveBeenCalledWith(

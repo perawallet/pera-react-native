@@ -25,6 +25,9 @@ import StakingIcon from '../../assets/icons/dot-stack.svg';
 import MenuIcon from '../../assets/icons/horizontal-line-stack.svg';
 import NavigationHeader from '../components/common/navigation-header/NavigationHeader';
 import NotificationsScreen from '../screens/notifications/NotificationsScreen';
+import ContactListScreen from '../screens/contacts/ContactListScreen';
+import ViewContactScreen from '../screens/contacts/ViewContactScreen';
+import EditContactScreen from '../screens/contacts/EditContactScreen';
 
 const SettingsStack = createNativeStackNavigator({
   initialRouteName: 'SettingsHome',
@@ -43,6 +46,40 @@ const SettingsStack = createNativeStackNavigator({
       screen: SettingsSubPageScreen,
       options: ({ route }: { route: any }) => ({
         title: route.params?.title,
+      }),
+    },
+  },
+});
+
+const ContactsStack = createNativeStackNavigator({
+  initialRouteName: 'ContactsList',
+  screenOptions: {
+    headerShown: true,
+    header: (props: NativeStackHeaderProps) => <NavigationHeader {...props} />,
+  },
+  screens: {
+    ContactsList: {
+      screen: ContactListScreen,
+      options: {
+        title: 'Contacts',
+      },
+    },
+    ViewContact: {
+      screen: ViewContactScreen,
+      options: ({ route }: { route: any }) => ({
+        title: 'View Contact',
+      }),
+    },
+    EditContact: {
+      screen: EditContactScreen,
+      options: ({ route }: { route: any }) => ({
+        title: 'Edit Contact',
+      }),
+    },
+    AddContact: {
+      screen: EditContactScreen,
+      options: ({ route }: { route: any }) => ({
+        title: 'Add New Contact',
       }),
     },
   },
@@ -109,6 +146,7 @@ const RootStack = createNativeStackNavigator({
       }
     },
     Settings: SettingsStack,
+    Contacts: ContactsStack,
     QRScanner: QRScannerScreen,
   },
 });
