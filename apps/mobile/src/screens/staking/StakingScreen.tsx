@@ -11,7 +11,7 @@
  */
 
 import { config } from '@perawallet/config';
-import PWWebView from '../../components/common/webview/PWWebView';
+import PWWebView from '../../components/webview/PWWebView';
 import { useStyles } from './styles';
 import PWView from '../../components/common/view/PWView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

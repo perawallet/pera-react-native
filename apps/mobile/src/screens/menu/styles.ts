@@ -41,5 +41,12 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       flexDirection: 'column',
       marginTop: theme.spacing.xl,
     },
+    scannerClose: {
+      marginTop: theme.spacing.xl,
+      marginLeft: theme.spacing.lg,
+      width: theme.spacing.xl * 2,
+      height: theme.spacing.xl * 2,
+      zIndex: 2,
+    },
   };
 });

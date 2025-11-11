@@ -29,11 +29,13 @@ import {
   peraConnectJS,
   peraMobileInterfaceJS,
 } from './injected-scripts';
-import useToast from '../../../hooks/toast';
-import { ActivityIndicator } from 'react-native';
+import useToast from '../../hooks/toast';
+import { ActivityIndicator, StyleSheet } from 'react-native';
 import { useStyles } from './styles';
-import PWView from '../view/PWView';
-import { usePeraWebviewInterface } from '../../../hooks/webview';
+import PWView from '../common/view/PWView';
+import { usePeraWebviewInterface } from '../../hooks/webview';
+import EmptyView from '../common/empty-view/EmptyView';
+import PWButton from '../common/button/PWButton';
 
 export type PWWebViewProps = {
   url: string;
@@ -59,6 +61,10 @@ const PWWebView = (props: PWWebViewProps) => {
   const userAgent = useMemo(() => {
     return `${deviceInfo.getUserAgent()}`;
   }, [deviceInfo]);
+
+  const reload = () => {
+    webview.current?.reload()
+  }
 
   const handleEvent = useCallback(
     (event: WebViewMessageEvent) => {
@@ -88,8 +94,8 @@ const PWWebView = (props: PWWebViewProps) => {
   const showLoadError = useCallback(
     (event: WebViewErrorEvent) => {
       showToast({
-        title: event.nativeEvent.title,
-        body: `${event.nativeEvent.code} - ${event.nativeEvent.url}`,
+        title: "Failed to load resource",
+        body: `${event.nativeEvent.url}`,
         type: 'error',
       });
     },
@@ -143,6 +149,14 @@ const PWWebView = (props: PWWebViewProps) => {
             hidesWhenStopped
           />
         )}
+        renderError={() => {
+          return <PWView style={StyleSheet.absoluteFillObject}>
+            <EmptyView title="Failed to load page" 
+                            body="An error occurred loading this page.  Please 
+                                  check your internet connection and try again." 
+                            button={<PWButton title="Reload" onPress={reload} variant="primary" />}/>
+          </PWView>
+        }}
         containerStyle={styles.container}
         startInLoadingState
         onMessage={handleEvent}

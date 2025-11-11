@@ -22,17 +22,21 @@ import CardStackIcon from '../../../assets/icons/card-stack.svg';
 import AlgoIcon from '../../../assets/icons/algo.svg';
 import InflowIcon from '../../../assets/icons/inflow.svg';
 import PersonMenuIcon from '../../../assets/icons/person-menu.svg';
+import CrossIcon from '../../../assets/icons/cross.svg';
 
 import PanelButton from '../../components/common/panel-button/PanelButton';
 import CardPanel from '../../components/cards/card-panel/CardPanel';
 import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import PWTouchableOpacity from '../../components/common/touchable-opacity/PWTouchableOpacity';
+import QRScannerView from '../../components/common/qr-scanner/QRScannerView';
+import { useState } from 'react';
 
 const MenuScreen = () => {
   const { theme } = useTheme();
   const styles = useStyles();
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
+  const [scannerVisible, setScannerVisible] = useState<boolean>(false);
 
   const goToSettings = () => {
     navigation.push('Settings');
@@ -40,6 +44,14 @@ const MenuScreen = () => {
 
   const goToContacts = () => {
     navigation.push('Contacts');
+  };
+
+  const closeQRScanner = () => {
+    setScannerVisible(false);
+  };
+
+  const openQRScanner = () => {
+    setScannerVisible(true);
   };
 
   return (
@@ -50,7 +62,7 @@ const MenuScreen = () => {
           Menu
         </Text>
         <PWView style={styles.iconBarColumn}>
-          <PWTouchableOpacity>
+          <PWTouchableOpacity onPress={openQRScanner}>
             <CameraIcon style={styles.icon} color={theme.colors.textMain} />
           </PWTouchableOpacity>
           <PWTouchableOpacity onPress={goToSettings}>
@@ -90,6 +102,18 @@ const MenuScreen = () => {
           onPress={goToContacts}
         />
       </PWView>
+      <QRScannerView
+        visible={scannerVisible}
+        onSuccess={closeQRScanner}
+        animationType="slide"
+      >
+        <PWTouchableOpacity
+          onPress={closeQRScanner}
+          style={styles.scannerClose}
+        >
+          <CrossIcon color={theme.colors.textWhite} />
+        </PWTouchableOpacity>
+      </QRScannerView>
     </MainScreenLayout>
   );
 };
