@@ -20,10 +20,11 @@ import SearchIcon from '../../../assets/icons/magnifying-glass.svg';
 import PWButton from '../../components/common/button/PWButton';
 import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { SectionList, TouchableOpacity } from 'react-native';
+import { SectionList } from 'react-native';
 import { Input, Text, useTheme } from '@rneui/themed';
 import ContactAvatar from '../../components/common/contact-avatar/ContactAvatar';
 import PWView from '../../components/common/view/PWView';
+import PWTouchableOpacity from '../../components/common/touchable-opacity/PWTouchableOpacity';
 
 const contactSorter = (a: Contact, b: Contact) => a.name.localeCompare(b.name);
 
@@ -51,14 +52,13 @@ const ContactItem = ({ contact }: { contact: Contact }) => {
     navigation.navigate('ViewContact');
   };
   return (
-    <TouchableOpacity
+    <PWTouchableOpacity
       onPress={viewContact}
       style={styles.contactContainer}
-      activeOpacity={0.8}
     >
       <ContactAvatar contact={contact} size="small" />
       <Text style={styles.contactName}>{contact.name}</Text>
-    </TouchableOpacity>
+    </PWTouchableOpacity>
   );
 };
 
