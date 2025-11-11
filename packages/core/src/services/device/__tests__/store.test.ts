@@ -125,4 +125,12 @@ describe('services/device/store', () => {
         expect(rehydrated.deviceIDs!.get('mainnet')).toBe(null)
         expect(rehydrated.deviceIDs!.get('testnet')).toBe(null)
     })
+
+    test('rehydrateDeviceSlice handles null persisted state', () => {
+        const persistedState = null
+
+        const rehydrated = rehydrateDeviceSlice(persistedState)
+
+        expect(rehydrated).toBe(null)
+    })
 })

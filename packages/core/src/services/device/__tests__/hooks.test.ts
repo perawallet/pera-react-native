@@ -61,7 +61,7 @@ const storeMock = vi.hoisted(() => {
             const setState = (partial: any) => {
                 state = { ...state, ...partial }
             }
-            const useAppStore: any = (selector: any) => selector(state)
+            const useAppStore: any = (selector?: any) => selector ? selector(state) : state
             ;(useAppStore as any).getState = () => state
             ;(useAppStore as any).setState = setState
             // slice updaters that our hook selects
@@ -204,6 +204,130 @@ describe('services/device/hooks', () => {
         await act(async () => {
             const deviceID = result.current
             expect(deviceID).toBeNull()
+        })
+    })
+
+    test('registerDevice handles empty accounts array', async () => {
+        vi.resetModules()
+        api.createSpy.mockResolvedValue({ id: 'NEW_ID' })
+        api.updateSpy.mockResolvedValue({})
+        registerTestPlatform()
+
+        const { useAppStore } = await import('../../../store')
+        const { useDevice } = await import('../hooks')
+
+        ;(useAppStore as any).setState({
+            accounts: [],
+            fcmToken: null,
+            deviceIDs: new Map(),
+            network: 'testnet',
+        })
+
+        const { result } = renderHook(() => useDevice())
+        await act(async () => {
+            await result.current.registerDevice()
+        })
+
+        expect(api.createSpy).toHaveBeenCalledWith({
+            data: {
+                accounts: [],
+                platform: 'web',
+                push_token: undefined,
+                model: 'testModel',
+                application: 'pera',
+                locale: 'testLocale',
+            },
+        })
+    })
+
+    test('registerDevice handles accounts without addresses', async () => {
+        vi.resetModules()
+        api.createSpy.mockResolvedValue({ id: 'NEW_ID' })
+        api.updateSpy.mockResolvedValue({})
+        registerTestPlatform()
+
+        const { useAppStore } = await import('../../../store')
+        const { useDevice } = await import('../hooks')
+
+        ;(useAppStore as any).setState({
+            accounts: [{ name: 'Test Account' }, { address: 'A1' }],
+            fcmToken: 'FCM123',
+            deviceIDs: new Map(),
+            network: 'testnet',
+        })
+
+        const { result } = renderHook(() => useDevice())
+        await act(async () => {
+            await result.current.registerDevice()
+        })
+
+        expect(api.createSpy).toHaveBeenCalledWith({
+            data: {
+                accounts: ['A1'],
+                platform: 'web',
+                push_token: 'FCM123',
+                model: 'testModel',
+                application: 'pera',
+                locale: 'testLocale',
+            },
+        })
+    })
+
+    test('registerDevice handles createDevice returning null id', async () => {
+        vi.resetModules()
+        api.createSpy.mockResolvedValue({ id: null })
+        api.updateSpy.mockResolvedValue({})
+        registerTestPlatform()
+
+        const { useAppStore } = await import('../../../store')
+        const { useDevice } = await import('../hooks')
+
+        ;(useAppStore as any).setState({
+            accounts: [{ address: 'A1' }],
+            fcmToken: null,
+            deviceIDs: new Map(),
+            network: 'testnet',
+        })
+
+        const { result } = renderHook(() => useDevice())
+        await act(async () => {
+            await result.current.registerDevice()
+        })
+
+        expect(api.createSpy).toHaveBeenCalledTimes(1)
+        expect((useAppStore as any).getState().deviceIDs.get('testnet')).toBe(null)
+    })
+
+    test('registerDevice handles updateDevice with null push_token', async () => {
+        vi.resetModules()
+        api.createSpy.mockResolvedValue({})
+        api.updateSpy.mockResolvedValue({})
+        registerTestPlatform()
+
+        const { useAppStore } = await import('../../../store')
+        const { useDevice } = await import('../hooks')
+
+        ;(useAppStore as any).setState({
+            accounts: [{ address: 'X' }],
+            fcmToken: null,
+            deviceIDs: new Map([['testnet', 'DEV1']]),
+            network: 'testnet',
+        })
+
+        const { result } = renderHook(() => useDevice())
+        await act(async () => {
+            await result.current.registerDevice()
+        })
+
+        expect(api.updateSpy).toHaveBeenCalledWith({
+            device_id: 'DEV1',
+            data: {
+                accounts: ['X'],
+                platform: 'web',
+                push_token: undefined,
+                model: 'testModel',
+                locale: 'testLocale',
+            },
         })
     })
 })

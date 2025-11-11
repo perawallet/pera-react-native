@@ -12,14 +12,14 @@
 
 import EmptyView from '../../components/common/empty-view/EmptyView';
 import PWView from '../../components/common/view/PWView';
-import { useAppStore } from '@perawallet/core';
 import { Text } from '@rneui/themed';
 import { useStyles } from './ViewContactScreen.styles';
 import ContactAvatar from '../../components/common/contact-avatar/ContactAvatar';
 import AddressDisplay from '../../components/common/address-display/AddressDisplay';
+import { useContacts } from '@perawallet/core';
 
 const ViewContactScreen = () => {
-  const { selectedContact } = useAppStore();
+  const { selectedContact } = useContacts()
   const styles = useStyles();
 
   if (!selectedContact) {

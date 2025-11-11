@@ -14,7 +14,7 @@ import PWView from '../common/view/PWView';
 import {
   getAccountDisplayName,
   useAllAccounts,
-  useAppStore,
+  useSelectedAccountAddress,
   WalletAccount,
 } from '@perawallet/core';
 import { TouchableOpacity } from 'react-native';
@@ -32,7 +32,7 @@ const AccountsTab = (props: AccountsTabProps) => {
   const styles = useStyles();
   const { theme } = useTheme();
   const accounts = useAllAccounts();
-  const { selectedAccountAddress, setSelectedAccountAddress } = useAppStore();
+  const { selectedAccountAddress, setSelectedAccountAddress } = useSelectedAccountAddress();
 
   const getRouteName = (account?: WalletAccount): string => {
     return account ? getAccountDisplayName(account) : 'Account';

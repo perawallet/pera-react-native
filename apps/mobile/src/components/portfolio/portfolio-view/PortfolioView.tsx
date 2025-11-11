@@ -25,7 +25,7 @@ import {
   AccountWealthHistoryItem,
   formatDatetime,
   useAccountBalances,
-  useAppStore,
+  useAllAccounts,
 } from '@perawallet/core';
 import { useCallback, useState } from 'react';
 
@@ -37,7 +37,7 @@ const PortfolioView = (props: PortfolioViewProps) => {
   const { theme } = useTheme();
   const styles = useStyles();
 
-  const accounts = useAppStore(state => state.accounts);
+  const accounts = useAllAccounts();
   const { loading, totalAlgo, totalLocal } = useAccountBalances(accounts);
   const [chartData, setChartData] = useState<AccountWealthHistoryItem | null>(
     null,

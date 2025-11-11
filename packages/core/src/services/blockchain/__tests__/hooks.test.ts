@@ -13,7 +13,7 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 
-import { useAlgorandClient } from '../hooks'
+import { useAlgorandClient, useNetwork, useSigningRequest } from '../hooks'
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import { useAppStore } from '../../../store'
 
@@ -33,7 +33,7 @@ const storeMock = vi.hoisted(() => {
     let state: any = { network: 'mainnet' }
     return {
         create() {
-            const useAppStore: any = (selector: any) => selector(state)
+            const useAppStore: any = (selector?: any) => selector ? selector(state) : state
             ;(useAppStore as any).getState = () => state
             ;(useAppStore as any).setState = (partial: any) => {
                 state = { ...state, ...partial }
@@ -78,5 +78,31 @@ describe('services/blockchain/hooks', () => {
         expect(AlgorandClient.testNet).not.toHaveBeenCalled()
         expect(AlgorandClient.mainNet).not.toHaveBeenCalled()
         expect(result.current).toBe('ENV_CLIENT')
+    })
+
+    test('useNetwork returns network and setNetwork', () => {
+        ;(useAppStore as any).setState({ network: 'testnet', setNetwork: vi.fn() })
+        const { result } = renderHook(() => useNetwork())
+
+        expect(result.current.network).toBe('testnet')
+        expect(typeof result.current.setNetwork).toBe('function')
+    })
+
+    test('useSigningRequest returns signing request state and methods', () => {
+        const mockRequests = [{ id: '1' }]
+        const mockAdd = vi.fn()
+        const mockRemove = vi.fn()
+
+        ;(useAppStore as any).setState({
+            pendingSignRequests: mockRequests,
+            addSignRequest: mockAdd,
+            removeSignRequest: mockRemove
+        })
+
+        const { result } = renderHook(() => useSigningRequest())
+
+        expect(result.current.pendingSignRequests).toBe(mockRequests)
+        expect(result.current.addSignRequest).toBe(mockAdd)
+        expect(result.current.removeSignRequest).toBe(mockRemove)
     })
 })

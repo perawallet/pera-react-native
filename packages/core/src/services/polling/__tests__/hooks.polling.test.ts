@@ -213,4 +213,45 @@ describe('services/polling/usePolling', () => {
         await flush()
         expect(backendSpies.mutateAsync).toHaveBeenCalledTimes(1)
     })
+
+    test('handles backend errors gracefully', async () => {
+        vi.resetModules()
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: {
+                setItem: vi.fn(),
+                getItem: vi.fn(),
+                removeItem: vi.fn(),
+            } as any,
+        })
+
+        const { useAppStore } = await import('../../../store')
+        useAppStore
+            .getState()
+            .setAccounts([
+                { id: '4', type: 'standard', address: 'ADDR4' } as any,
+            ])
+
+        backendSpies.mutateAsync.mockRejectedValueOnce(new Error('Network error'))
+
+        const { usePolling } = await import('../hooks')
+        const { result } = renderHook(() => usePolling())
+
+        await act(async () => {
+            await result.current.startPolling()
+        })
+
+        act(() => {
+            vi.advanceTimersByTime(3000)
+        })
+        await flush()
+
+        // Should not throw, should log error and continue
+        expect(backendSpies.mutateAsync).toHaveBeenCalledTimes(1)
+
+        await act(async () => {
+            await result.current.stopPolling()
+        })
+    })
 })

@@ -14,7 +14,7 @@ import PWView from '../../common/view/PWView';
 import {
   SignRequest,
   truncateAlgorandAddress,
-  useAppStore,
+  useSigningRequest,
 } from '@perawallet/core';
 import { useStyles } from './styles';
 import { Text, useTheme } from '@rneui/themed';
@@ -88,7 +88,7 @@ const GroupTransactionView = ({ request }: SigningViewProps) => {
 const SigningView = ({ request }: SigningViewProps) => {
   const styles = useStyles();
   const { theme } = useTheme();
-  const { removeSignRequest } = useAppStore();
+  const { removeSignRequest } = useSigningRequest();
   //const { signTransactionForAddress } = useTransactionSigner()
   const { showToast } = useToast();
 

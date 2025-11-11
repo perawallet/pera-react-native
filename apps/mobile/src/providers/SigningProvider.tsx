@@ -12,14 +12,14 @@
 
 import React, { PropsWithChildren } from 'react';
 import PWBottomSheet from '../components/common/bottom-sheet/PWBottomSheet';
-import { useAppStore } from '@perawallet/core';
 import SigningView from '../components/signing/signing-view/SigningView';
 import { useWindowDimensions } from 'react-native';
+import { useSigningRequest } from '@perawallet/core';
 
 type SigningProviderProps = {} & PropsWithChildren;
 
 export function SigningProvider({ children }: SigningProviderProps) {
-  const { pendingSignRequests } = useAppStore();
+  const { pendingSignRequests } = useSigningRequest();
   const nextRequest = pendingSignRequests.at(0);
   const { height } = useWindowDimensions();
 

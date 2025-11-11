@@ -21,12 +21,21 @@ export const useDeviceID = () => {
     return deviceIDs?.get(network) ?? null
 }
 
+export const useFcmToken = () => {
+    const { fcmToken, setFcmToken } = useAppStore()
+    return {
+        fcmToken,
+        setFcmToken,
+    }
+}
+
 export const useDevice = () => {
     const accounts = useAppStore(state => state.accounts)
     const network = useAppStore(state => state.network)
+    const deviceIDs = useAppStore(state => state.deviceIDs)
     const deviceID = useDeviceID()
+    const { fcmToken, setFcmToken } = useAppStore()
     const setDeviceID = useAppStore(state => state.setDeviceID)
-    const fcmToken = useAppStore(state => state.fcmToken)
     const deviceInfoService = useDeviceInfoService()
 
     const { mutateAsync: createDevice } = useV1DevicesCreate()
@@ -63,6 +72,8 @@ export const useDevice = () => {
     }
 
     return {
+        deviceIDs,
+        setDeviceID,
         registerDevice,
     }
 }

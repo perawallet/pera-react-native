@@ -71,4 +71,8 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
         }
         expect(getAccountDisplayName(acc2)).toEqual('ABCDE...VWXYZ')
     })
+
+    test('returns "No Account" when account is null', () => {
+        expect(getAccountDisplayName(null)).toEqual('No Account')
+    })
 })

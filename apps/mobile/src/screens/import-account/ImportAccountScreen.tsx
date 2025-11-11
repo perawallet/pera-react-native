@@ -65,7 +65,7 @@ const ImportAccountScreen = () => {
       try {
         importWallet({ mnemonic: words.join(' ') });
         goToHome();
-      } catch (error) {
+      } catch {
         showToast({
           title: 'Import failed',
           body: 'There was an error trying to import your wallet',

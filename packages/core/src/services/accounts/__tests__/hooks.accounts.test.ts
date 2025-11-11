@@ -346,6 +346,69 @@ describe('services/accounts/hooks', () => {
         )
         expect(findRes2.current).toBeNull()
     })
+
+    test('useSelectedAccount returns selected account from store', async () => {
+        vi.resetModules()
+
+        const dummySecure = {
+            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            getItem: vi.fn(async (_k: string) => null),
+            removeItem: vi.fn(async (_k: string) => {}),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const { useAppStore } = await import('../../../store')
+        const { useSelectedAccount } = await import('../hooks.accounts')
+
+        const selectedAccount: WalletAccount = {
+            id: 'SELECTED',
+            type: 'standard',
+            address: 'SELECTED_ADDR',
+            canSign: true,
+        }
+
+        // Mock getSelectedAccount to return the selected account
+        const mockGetSelectedAccount = vi.fn(() => selectedAccount)
+        useAppStore.setState({ getSelectedAccount: mockGetSelectedAccount })
+
+        const { result } = renderHook(() => useSelectedAccount())
+        expect(result.current).toEqual(selectedAccount)
+        expect(mockGetSelectedAccount).toHaveBeenCalled()
+    })
+
+    test('useSelectedAccountAddress returns selected account address and setter', async () => {
+        vi.resetModules()
+
+        const dummySecure = {
+            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            getItem: vi.fn(async (_k: string) => null),
+            removeItem: vi.fn(async (_k: string) => {}),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const { useAppStore } = await import('../../../store')
+        const { useSelectedAccountAddress } = await import('../hooks.accounts')
+
+        const mockSetSelectedAccountAddress = vi.fn()
+        useAppStore.setState({
+            selectedAccountAddress: 'TEST_SELECTED_ADDR',
+            setSelectedAccountAddress: mockSetSelectedAccountAddress
+        })
+
+        const { result } = renderHook(() => useSelectedAccountAddress())
+        expect(result.current.selectedAccountAddress).toBe('TEST_SELECTED_ADDR')
+        expect(result.current.setSelectedAccountAddress).toBe(mockSetSelectedAccountAddress)
+    })
 })
 
 describe('services/accounts/hooks - createAccount', () => {

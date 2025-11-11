@@ -10,12 +10,12 @@
  limitations under the License
  */
 
-import { useAppStore } from '@perawallet/core';
 import { useMemo } from 'react';
 import { useColorScheme } from 'react-native';
+import { useSettings } from '@perawallet/core'
 
 export const useIsDarkMode = () => {
-  const themeMode = useAppStore(state => state.theme);
+  const { theme: themeMode } = useSettings()
   const scheme = useColorScheme();
   const isDarkMode = useMemo(() => {
     return (

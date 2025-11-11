@@ -50,6 +50,19 @@ export const useFindAccountbyAddress = (address: string) => {
     return accounts.find(a => a.address === address) ?? null
 }
 
+export const useSelectedAccount = () => {
+    const { getSelectedAccount } = useAppStore()
+    return getSelectedAccount()
+}
+
+export const useSelectedAccountAddress = () => {
+    const { selectedAccountAddress, setSelectedAccountAddress } = useAppStore()
+    return {
+        selectedAccountAddress,
+        setSelectedAccountAddress
+    }
+}
+
 export const useTransactionSigner = () => {
     const accounts = useAppStore(state => state.accounts)
     const { signTransaction } = useHDWallet()
@@ -85,6 +98,7 @@ export const useTransactionSigner = () => {
     }
 
     return {
+        
         signTransactionForAddress,
     }
 }

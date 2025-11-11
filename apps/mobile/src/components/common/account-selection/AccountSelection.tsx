@@ -11,7 +11,7 @@
  */
 
 import { Text, useTheme } from '@rneui/themed';
-import { getAccountDisplayName, useAppStore } from '@perawallet/core';
+import { getAccountDisplayName, useSelectedAccount } from '@perawallet/core';
 import PWView from '../view/PWView';
 import { useStyles } from './styles';
 
@@ -24,8 +24,7 @@ type AccountSelectionProps = {} & TouchableOpacityProps;
 const AccountSelection = (props: AccountSelectionProps) => {
   const { theme } = useTheme();
   const styles = useStyles();
-  const getSelectedAccount = useAppStore(state => state.getSelectedAccount);
-  const account = getSelectedAccount();
+  const account = useSelectedAccount();
   const displayName = getAccountDisplayName(account);
 
   //TODO we may want to add support for pending inbox items here too

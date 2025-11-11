@@ -41,17 +41,17 @@ import {
     createSwapsSlice,
     partializeSwapsSlice,
     type SwapsSlice,
-} from '../services/swaps'
+} from '../services/swaps/store'
 import {
     createAssetsSlice,
     partializeAssetsSlice,
     type AssetsSlice,
-} from '../services/assets'
+} from '../services/assets/store'
 import {
     createContactsSlice,
     partializeContactsSlice,
     type ContactsSlice,
-} from '../services/contacts'
+} from '../services/contacts/store'
 import {
     createDeviceSlice,
     partializeDeviceSlice,

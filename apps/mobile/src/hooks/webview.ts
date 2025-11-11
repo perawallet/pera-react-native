@@ -16,9 +16,10 @@ import { Linking } from 'react-native';
 import {
   getAccountDisplayName,
   useAllAccounts,
-  useAppStore,
   useDeviceID,
   useDeviceInfoService,
+  useNetwork,
+  useSettings,
 } from '@perawallet/core';
 import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -55,11 +56,11 @@ type WebviewMessage = {
 };
 
 export const usePeraWebviewInterface = (webview: WebView | null) => {
-  const { showToast } = useToast();
-  const accounts = useAllAccounts();
-  const deviceID = useDeviceID();
-  const theme = useAppStore(state => state.theme);
-  const network = useAppStore(state => state.network);
+  const { showToast } = useToast()
+  const accounts = useAllAccounts()
+  const deviceID = useDeviceID()
+  const { theme } = useSettings()
+  const { network } = useNetwork()
   const deviceInfo = useDeviceInfoService();
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
 

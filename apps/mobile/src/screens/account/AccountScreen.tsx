@@ -16,7 +16,7 @@ import {
   AccountWealthHistoryItem,
   formatDatetime,
   useAccountBalances,
-  useAppStore,
+  useSelectedAccount,
 } from '@perawallet/core';
 
 import CameraIcon from '../../../assets/icons/camera.svg';
@@ -45,8 +45,7 @@ import PWTouchableOpacity from '../../components/common/touchable-opacity/PWTouc
 const AccountScreen = () => {
   const { theme } = useTheme();
   const styles = useStyles();
-  const { getSelectedAccount } = useAppStore();
-  const account = getSelectedAccount();
+  const account = useSelectedAccount();
 
   const { totalAlgo, totalLocal, loading } = useAccountBalances(
     account ? [account] : [],
