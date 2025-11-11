@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { useAppStore } from '../../store'
 
 export const useContacts = () => {
@@ -21,28 +22,32 @@ export const useContacts = () => {
         setSelectedContact,
     } = useAppStore()
 
-    const findContacts = ({
-        keyword,
-        matchAddress = true,
-        matchName = true,
-        matchNFD = true,
-    }: {
-        keyword: string
-        matchAddress?: boolean
-        matchName?: boolean
-        matchNFD?: boolean
-    }) => {
-        const lowerPartial = keyword.toLowerCase()
-        const matches = contacts.filter(c => {
-            return (
-                (matchAddress &&
-                    c.address.toLowerCase().includes(lowerPartial)) ||
-                (matchName && c.name.toLowerCase().includes(lowerPartial)) ||
-                (matchNFD && c.nfd?.toLowerCase().includes(lowerPartial))
-            )
-        })
-        return matches
-    }
+    const findContacts = useCallback(
+        ({
+            keyword,
+            matchAddress = true,
+            matchName = true,
+            matchNFD = true,
+        }: {
+            keyword: string
+            matchAddress?: boolean
+            matchName?: boolean
+            matchNFD?: boolean
+        }) => {
+            const lowerPartial = keyword.toLowerCase()
+            const matches = contacts.filter(c => {
+                return (
+                    (matchAddress &&
+                        c.address.toLowerCase().includes(lowerPartial)) ||
+                    (matchName &&
+                        c.name.toLowerCase().includes(lowerPartial)) ||
+                    (matchNFD && c.nfd?.toLowerCase().includes(lowerPartial))
+                )
+            })
+            return matches
+        },
+        [contacts],
+    )
 
     return {
         selectedContact,

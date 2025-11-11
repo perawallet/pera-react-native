@@ -16,13 +16,14 @@ import { Divider, Text, useTheme } from '@rneui/themed';
 import Decimal from 'decimal.js';
 import AssetSelection from '../../common/asset-selection/AssetSelection';
 import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay';
-import PeraView from '../../common/view/PeraView';
-import { TouchableOpacity, View } from 'react-native';
+import PWView from '../../common/view/PWView';
+import { View } from 'react-native';
 
 import SwitchIcon from '../../../../assets/icons/switch.svg';
 import SlidersIcon from '../../../../assets/icons/sliders.svg';
 import CurrencyInput from '../../common/currency-input/CurrencyInput';
 import { AssetDetails, useCachedAssets } from '@perawallet/core';
+import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity';
 
 const PairSelectionPanel = () => {
   const styles = useStyles();
@@ -53,11 +54,11 @@ const PairSelectionPanel = () => {
   );
 
   return (
-    <PeraView style={styles.container}>
-      <PeraView style={styles.fromContainer}>
-        <PeraView style={styles.titleRow}>
+    <PWView style={styles.container}>
+      <PWView style={styles.fromContainer}>
+        <PWView style={styles.titleRow}>
           <Text style={styles.titleText}>You pay</Text>
-          <PeraView style={styles.titleBalanceContainer}>
+          <PWView style={styles.titleBalanceContainer}>
             <Text style={styles.titleText}>Balance:</Text>
             <CurrencyDisplay
               style={styles.titleCurrency}
@@ -65,10 +66,10 @@ const PairSelectionPanel = () => {
               currency="ALGO"
               value={fromBalance}
             />
-          </PeraView>
-        </PeraView>
-        <PeraView style={styles.inputContainer}>
-          <PeraView style={styles.inputAmountsContainer}>
+          </PWView>
+        </PWView>
+        <PWView style={styles.inputContainer}>
+          <PWView style={styles.inputAmountsContainer}>
             <CurrencyInput
               cursorColor={theme.colors.textGray}
               style={styles.primaryInput}
@@ -84,28 +85,28 @@ const PairSelectionPanel = () => {
               currency="USD"
               value={receiveAmountUSD}
             />
-          </PeraView>
+          </PWView>
           {algoAsset && <AssetSelection asset={algoAsset} />}
-        </PeraView>
-      </PeraView>
+        </PWView>
+      </PWView>
       <View style={styles.floatButtonContainer}>
-        <TouchableOpacity style={styles.floatButton}>
+        <PWTouchableOpacity style={styles.floatButton}>
           <SwitchIcon style={styles.floatButtonIcon} />
-        </TouchableOpacity>
+        </PWTouchableOpacity>
         <View style={styles.floatSplitButton}>
-          <TouchableOpacity style={styles.floatSplitButtonItem}>
+          <PWTouchableOpacity style={styles.floatSplitButtonItem}>
             <SlidersIcon style={styles.greenIcon} />
-          </TouchableOpacity>
+          </PWTouchableOpacity>
           <Divider style={styles.floatSplitDivider} orientation="vertical" />
-          <TouchableOpacity style={styles.floatSplitButtonItem}>
+          <PWTouchableOpacity style={styles.floatSplitButtonItem}>
             <Text style={styles.floatButtonText}>MAX</Text>
-          </TouchableOpacity>
+          </PWTouchableOpacity>
         </View>
       </View>
-      <PeraView style={styles.toContainer}>
-        <PeraView style={styles.titleRow}>
+      <PWView style={styles.toContainer}>
+        <PWView style={styles.titleRow}>
           <Text style={styles.titleText}>You receive</Text>
-          <PeraView style={styles.titleBalanceContainer}>
+          <PWView style={styles.titleBalanceContainer}>
             <Text style={styles.titleText}>Balance:</Text>
             <CurrencyDisplay
               style={styles.titleCurrency}
@@ -113,10 +114,10 @@ const PairSelectionPanel = () => {
               currency="ALGO"
               value={toBalance}
             />
-          </PeraView>
-        </PeraView>
-        <PeraView style={styles.inputContainer}>
-          <PeraView style={styles.inputAmountsContainer}>
+          </PWView>
+        </PWView>
+        <PWView style={styles.inputContainer}>
+          <PWView style={styles.inputAmountsContainer}>
             <CurrencyDisplay
               h2Style={styles.primaryAmountText}
               showSymbol={false}
@@ -131,11 +132,11 @@ const PairSelectionPanel = () => {
               currency="USD"
               value={receiveAmountUSD}
             />
-          </PeraView>
+          </PWView>
           {usdcAsset && <AssetSelection asset={usdcAsset} />}
-        </PeraView>
-      </PeraView>
-    </PeraView>
+        </PWView>
+      </PWView>
+    </PWView>
   );
 };
 

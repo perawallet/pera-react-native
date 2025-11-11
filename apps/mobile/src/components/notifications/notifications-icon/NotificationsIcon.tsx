@@ -17,9 +17,9 @@ import {
 import BellIcon from '../../../../assets/icons/bell.svg';
 import BellWithBadgeIcon from '../../../../assets/icons/bell-with-badge.svg';
 import { SvgProps } from 'react-native-svg';
-import { TouchableOpacity } from 'react-native';
 import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity';
 
 export type NotificationsIconProps = {} & SvgProps;
 
@@ -44,13 +44,13 @@ const NotificationsIcon = (props: NotificationsIconProps) => {
   );
 
   return (
-    <TouchableOpacity onPress={goToNotifications}>
+    <PWTouchableOpacity onPress={goToNotifications}>
       {data?.has_new_notification ? (
         <BellWithBadgeIcon {...props} />
       ) : (
         <BellIcon {...props} />
       )}
-    </TouchableOpacity>
+    </PWTouchableOpacity>
   );
 };
 

@@ -13,10 +13,10 @@
 import { Text } from '@rneui/themed';
 import MainScreenLayout from '../../layouts/MainScreenLayout';
 
-import PeraView from '../../components/common/view/PeraView';
-import PeraButton from '../../components/common/button/PeraButton';
+import PWView from '../../components/common/view/PWView';
+import PWButton from '../../components/common/button/PWButton';
 import { useStyles } from './styles';
-import { ScrollView, TouchableOpacity } from 'react-native';
+import { ScrollView } from 'react-native';
 import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -25,6 +25,7 @@ import ShieldIcon from '../../../assets/icons/gear.svg';
 import { useDeviceInfoService } from '@perawallet/core';
 import { useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import PWTouchableOpacity from '@components/common/touchable-opacity/PWTouchableOpacity';
 
 //TODO: build out all the settins pages
 const settingsOptions = [
@@ -95,20 +96,20 @@ const SettingsScreen = () => {
   };
 
   return (
-    <MainScreenLayout header fullScreen>
+    <MainScreenLayout fullScreen>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollViewContainer}
       >
-        <PeraView style={styles.sectionContainer}>
+        <PWView style={styles.sectionContainer}>
           {settingsOptions.map(item => (
-            <PeraView
+            <PWView
               style={styles.section}
               key={`settings-section-${item.title}`}
             >
               <Text style={styles.sectionTitle}>{item.title}</Text>
               {item.items.map(page => (
-                <TouchableOpacity
+                <PWTouchableOpacity
                   style={styles.sectionRow}
                   key={`settings-sectionrow-${page.title}`}
                   onPress={() => goToSettingsPage(page.route, page.title)}
@@ -116,12 +117,12 @@ const SettingsScreen = () => {
                   {page.icon}
                   <Text style={styles.sectionRowTitle}>{page.title}</Text>
                   <ChevronRight />
-                </TouchableOpacity>
+                </PWTouchableOpacity>
               ))}
-            </PeraView>
+            </PWView>
           ))}
-        </PeraView>
-        <PeraButton variant="tertiary" title="Remove All Accounts and Logout" />
+        </PWView>
+        <PWButton variant="tertiary" title="Remove All Accounts and Logout" />
         <Text style={styles.versionText}>Pera Wallet Version {appVersion}</Text>
       </ScrollView>
     </MainScreenLayout>

@@ -19,7 +19,7 @@ import { useMemo } from 'react';
 import { SvgProps } from 'react-native-svg';
 import { Image } from '@rneui/themed';
 import { useIsDarkMode } from '../../../hooks/theme';
-import PeraView from '../view/PeraView';
+import PWView from '../view/PWView';
 import { useStyles } from './styles';
 
 export type AssetIconProps = {
@@ -88,7 +88,7 @@ const AssetIcon = (props: AssetIconProps) => {
     return <AlgoAssetIcon {...rest} width={size} height={size} />; //TODO: fallback to web URL?  Have a generic icon?
   }, [asset, rest, isDarkMode, size, styles.icon]);
 
-  return <PeraView style={style}>{icon}</PeraView>;
+  return <PWView style={style}>{icon}</PWView>;
 };
 
 export default AssetIcon;

@@ -11,7 +11,7 @@
  */
 
 import { useStyles } from './styles';
-import PeraView from '../../common/view/PeraView';
+import PWView from '../../common/view/PWView';
 import { FlatList } from 'react-native';
 import { Text } from '@rneui/themed';
 import { useCallback } from 'react';
@@ -38,7 +38,7 @@ const TopPairsPanel = () => {
   const renderSwapPair = useCallback(
     ({ item }: { item: any }) => {
       return (
-        <PeraView style={themeStyle.itemRow}>
+        <PWView style={themeStyle.itemRow}>
           <SwapPair
             style={themeStyle.itemContainer}
             fromAsset={item.fromAsset}
@@ -52,7 +52,7 @@ const TopPairsPanel = () => {
             h4
             h4Style={themeStyle.headerText}
           />
-        </PeraView>
+        </PWView>
       );
     },
     [themeStyle],
@@ -78,20 +78,20 @@ const TopPairsPanel = () => {
   ];
 
   return (
-    <PeraView style={themeStyle.container}>
-      <PeraView style={themeStyle.headerContainer}>
+    <PWView style={themeStyle.container}>
+      <PWView style={themeStyle.headerContainer}>
         <Text h4>Top 5 Swaps</Text>
         <Text h4 h4Style={themeStyle.headerText}>
           Volume (24H)
         </Text>
-      </PeraView>
+      </PWView>
       <FlatList
         style={themeStyle.scrollContainer}
         contentContainerStyle={themeStyle.itemScrollContainer}
         data={pairs}
         renderItem={renderSwapPair}
       />
-    </PeraView>
+    </PWView>
   );
 };
 

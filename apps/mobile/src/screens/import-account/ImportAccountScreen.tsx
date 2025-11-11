@@ -14,8 +14,8 @@ import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useStyles } from './styles';
 import { Input, Overlay, Text, useTheme } from '@rneui/themed';
-import PeraView from '../../components/common/view/PeraView';
-import PeraButton from '../../components/common/button/PeraButton';
+import PWView from '../../components/common/view/PWView';
+import PWButton from '../../components/common/button/PWButton';
 import MainScreenLayout from '../../layouts/MainScreenLayout';
 
 import { useImportWallet } from '@perawallet/core';
@@ -37,32 +37,7 @@ const ImportAccountScreen = () => {
   const importWallet = useImportWallet();
   const { showToast } = useToast();
 
-  const [words, setWords] = useState<string[]>([
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-  ]);
+  const [words, setWords] = useState<string[]>(new Array(NUM_WORDS).fill(''));
   const [focused, setFocused] = useState(0);
   const [canImport, setCanImport] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -115,18 +90,18 @@ const ImportAccountScreen = () => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView contentContainerStyle={styles.scrollView}>
-          <PeraView style={styles.wordContainer}>
+          <PWView style={styles.wordContainer}>
             {[0, 1].map(column => {
               const columnOffset = 12 * column;
               return (
-                <PeraView style={styles.column} key={`column-${columnOffset}`}>
+                <PWView style={styles.column} key={`column-${columnOffset}`}>
                   {words
                     .slice(columnOffset, columnOffset + 12)
                     .map((word, index) => {
                       const offsetIndex = index + columnOffset;
 
                       return (
-                        <PeraView
+                        <PWView
                           style={styles.inputContainerRow}
                           key={`wordinput-${offsetIndex}`}
                         >
@@ -159,14 +134,14 @@ const ImportAccountScreen = () => {
                             autoCapitalize="none"
                             autoCorrect
                           />
-                        </PeraView>
+                        </PWView>
                       );
                     })}
-                </PeraView>
+                </PWView>
               );
             })}
-          </PeraView>
-          <PeraButton
+          </PWView>
+          <PWButton
             style={styles.finishButton}
             variant="primary"
             title="Import Wallet"

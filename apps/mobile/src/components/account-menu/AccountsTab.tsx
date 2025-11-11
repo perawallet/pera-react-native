@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import PeraView from '../common/view/PeraView';
+import PWView from '../common/view/PWView';
 import {
   getAccountDisplayName,
   useAllAccounts,
@@ -56,8 +56,8 @@ const AccountsTab = (props: AccountsTabProps) => {
   };
   return (
     <>
-      <PeraView style={styles.titleBar}>
-        <PeraView style={styles.titleBarButtonContainer}>
+      <PWView style={styles.titleBar}>
+        <PWView style={styles.titleBarButtonContainer}>
           <TouchableOpacity style={styles.addButtonContainer}>
             <PlusIcon style={styles.addButton} />
             <Text style={styles.addButtonTitle}>Add Account</Text>
@@ -66,9 +66,9 @@ const AccountsTab = (props: AccountsTabProps) => {
             <SortIcon />
             <Text style={styles.sortButtonTitle}>Sort</Text>
           </TouchableOpacity>
-        </PeraView>
-      </PeraView>
-      <PeraView style={styles.accountContainer}>
+        </PWView>
+      </PWView>
+      <PWView style={styles.accountContainer}>
         {accounts.map(acct => (
           <TouchableOpacity
             key={acct.address}
@@ -91,7 +91,7 @@ const AccountsTab = (props: AccountsTabProps) => {
             </Text>
           </TouchableOpacity>
         ))}
-      </PeraView>
+      </PWView>
     </>
   );
 };

@@ -11,37 +11,37 @@
  */
 
 import { NativeStackHeaderProps } from '@react-navigation/native-stack';
-import PeraView from '../view/PeraView';
+import PWView from '../view/PWView';
 import { Text } from '@rneui/themed';
 import ChevronLeft from '../../../../assets/icons/chevron-left.svg';
 import { useStyles } from './styles';
-import { TouchableOpacity } from 'react-native';
+import PWTouchableOpacity from '../touchable-opacity/PWTouchableOpacity';
 
 const NavigationHeader = (props: NativeStackHeaderProps) => {
   const styles = useStyles();
 
   return (
-    <PeraView style={styles.container}>
+    <PWView style={styles.container}>
       {props.navigation.canGoBack() && (
-        <TouchableOpacity
+        <PWTouchableOpacity
           onPress={props.navigation.goBack}
           style={styles.backIconContainer}
         >
           <ChevronLeft style={styles.backIcon} />
-        </TouchableOpacity>
+        </PWTouchableOpacity>
       )}
       <Text h4 style={styles.title}>
         {props.options.title || props.route.name}
       </Text>
       {props.options.headerRight && (
-        <PeraView style={styles.actionContainer}>
+        <PWView style={styles.actionContainer}>
           {props.options.headerRight({})}
-        </PeraView>
+        </PWView>
       )}
       {!props.options.headerRight && props.navigation.canGoBack() && (
-        <PeraView style={styles.backIconContainer} />
+        <PWView style={styles.backIconContainer} />
       )}
-    </PeraView>
+    </PWView>
   );
 };
 

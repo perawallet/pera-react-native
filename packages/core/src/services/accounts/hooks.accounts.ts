@@ -27,6 +27,7 @@ import Decimal from 'decimal.js'
 import { useDeviceID, useDeviceInfoService } from '../device'
 import { useQueries } from '@tanstack/react-query'
 import { withKey } from './utils'
+import { useMemo } from 'react'
 
 // Services relating to locally stored accounts
 export const useAllAccounts = () => {
@@ -358,7 +359,11 @@ export const useRemoveAccountById = () => {
     }
 }
 
-export const useAccountBalances = (accounts: WalletAccount[]) => {
+//TODO implement local currency
+export const useAccountBalances = (
+    accounts: WalletAccount[],
+    localCurrency: string = 'USD',
+) => {
     const results = useQueries({
         queries: accounts.map(acc => {
             const address = acc.address
@@ -376,33 +381,56 @@ export const useAccountBalances = (accounts: WalletAccount[]) => {
         }),
     })
 
-    return results.map(r => {
-        const accountInfo = r.data
-        let algoAmount = Decimal(0)
-        let usdAmount = Decimal(0)
+    const data = useMemo(
+        () =>
+            results.map(r => {
+                const accountInfo = r.data
+                let algoAmount = Decimal(0)
+                let localAmount = Decimal(0)
 
-        if (accountInfo) {
-            accountInfo.results.forEach(
-                (data: AccountDetailAssetSerializerResponse) => {
-                    algoAmount = algoAmount.plus(
-                        Decimal(data.amount ?? '0').div(
-                            Decimal(10).pow(data.fraction_decimals),
-                        ),
+                if (accountInfo) {
+                    accountInfo.results.forEach(
+                        (data: AccountDetailAssetSerializerResponse) => {
+                            algoAmount = algoAmount.plus(
+                                Decimal(data.amount ?? '0').div(
+                                    Decimal(10).pow(data.fraction_decimals),
+                                ),
+                            )
+                            localAmount = localAmount.plus(
+                                Decimal(data.balance_usd_value ?? '0'),
+                            )
+                        },
                     )
-                    usdAmount = usdAmount.plus(
-                        Decimal(data.balance_usd_value ?? '0'),
-                    )
-                },
-            )
-        }
+                }
 
-        return {
-            algoAmount: algoAmount,
-            usdAmount: usdAmount,
-            isPending: r.isPending,
-            isFetched: r.isFetched,
-            isRefetching: r.isRefetching,
-            isError: r.isError,
-        }
-    })
+                return {
+                    algoAmount: algoAmount,
+                    //TODO implement currency conversion here
+                    localAmount:
+                        localCurrency === 'USD' ? localAmount : localAmount,
+                    isPending: r.isPending,
+                    isFetched: r.isFetched,
+                    isRefetching: r.isRefetching,
+                    isError: r.isError,
+                }
+            }),
+        [results],
+    )
+
+    const loading = useMemo(() => data.some(d => !d.isFetched), [data])
+    const totalAlgo = useMemo(
+        () => data.reduce((acc, cur) => acc.plus(cur.algoAmount), Decimal(0)),
+        [data],
+    )
+    const totalLocal = useMemo(
+        () => data.reduce((acc, cur) => acc.plus(cur.localAmount), Decimal(0)),
+        [data],
+    )
+
+    return {
+        data,
+        loading,
+        totalAlgo,
+        totalLocal,
+    }
 }

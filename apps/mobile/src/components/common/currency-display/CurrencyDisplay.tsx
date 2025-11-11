@@ -12,7 +12,7 @@
 
 import { useStyles } from './styles';
 import { Skeleton, Text, TextProps } from '@rneui/themed';
-import PeraView from '../view/PeraView';
+import PWView from '../view/PWView';
 import { useMemo } from 'react';
 import { formatCurrency, useDeviceInfoService } from '@perawallet/core';
 import { Decimal } from 'decimal.js';
@@ -58,13 +58,13 @@ const CurrencyDisplay = (props: CurrencyDisplayProps) => {
 
   if (skeleton) {
     return (
-      <PeraView style={themeStyle.container}>
+      <PWView style={themeStyle.container}>
         <Skeleton style={themeStyle.skeleton} />
-      </PeraView>
+      </PWView>
     );
   }
   return (
-    <PeraView style={themeStyle.container}>
+    <PWView style={themeStyle.container}>
       {isAlgo && showSymbol && (
         <AlgoIcon
           style={[
@@ -77,14 +77,14 @@ const CurrencyDisplay = (props: CurrencyDisplayProps) => {
           ]}
         />
       )}
-      <PeraView style={themeStyle.textContainer}>
+      <PWView style={themeStyle.textContainer}>
         <Text {...rest}>
           {prefix ? prefix : ''}
           {displayValue}
           {units}
         </Text>
-      </PeraView>
-    </PeraView>
+      </PWView>
+    </PWView>
   );
 };
 

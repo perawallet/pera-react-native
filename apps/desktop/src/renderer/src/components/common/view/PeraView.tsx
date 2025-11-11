@@ -11,12 +11,12 @@
  */
 
 import React from 'react'
-import { StyledView } from './PeraView.styles'
+import { StyledView } from './PWView.styles'
 
-export type PeraViewProps = React.HTMLAttributes<HTMLDivElement>
+export type PWViewProps = React.HTMLAttributes<HTMLDivElement>
 
-const PeraView = (props: PeraViewProps): React.ReactElement => {
+const PWView = (props: PWViewProps): React.ReactElement => {
   return <StyledView {...props}>{props.children}</StyledView>
 }
 
-export default PeraView
+export default PWView

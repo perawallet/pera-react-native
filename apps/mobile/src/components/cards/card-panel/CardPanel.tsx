@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import PeraButton from '../../common/button/PeraButton';
-import PeraView from '../../common/view/PeraView';
+import PWButton from '../../common/button/PWButton';
+import PWView from '../../common/view/PWView';
 import { Image, Text } from '@rneui/themed';
 import { useStyles } from './styles';
 
@@ -24,32 +24,32 @@ const BACKGROUND_URI = Image.resolveAssetSource(CardBackground).uri;
 const CardPanel = () => {
   const styles = useStyles();
   return (
-    <PeraView style={styles.cardContainer}>
-      <PeraView style={styles.cardHeaderContainer}>
-        <PeraView style={styles.cardTextContainer}>
-          <PeraView style={styles.titleContainer}>
+    <PWView style={styles.cardContainer}>
+      <PWView style={styles.cardHeaderContainer}>
+        <PWView style={styles.cardTextContainer}>
+          <PWView style={styles.titleContainer}>
             <CardIcon style={styles.icon} />
             <Text h3>Cards</Text>
-          </PeraView>
+          </PWView>
           <Text style={styles.cardSecondaryText}>
             Get the world's first web3{'\n'}Mastercard.
           </Text>
-        </PeraView>
-        <PeraView style={styles.cardImageContainer}>
+        </PWView>
+        <PWView style={styles.cardImageContainer}>
           <Image
             source={{ uri: BACKGROUND_URI }}
             style={styles.backgroundImage}
           />
-        </PeraView>
-      </PeraView>
-      <PeraView style={styles.cardButtonContainer}>
-        <PeraButton
+        </PWView>
+      </PWView>
+      <PWView style={styles.cardButtonContainer}>
+        <PWButton
           variant="primary"
           title={'Create Pera Card'}
           icon={<PlusIcon style={styles.buttonIcon} />}
         />
-      </PeraView>
-    </PeraView>
+      </PWView>
+    </PWView>
   );
 };
 export default CardPanel;

@@ -32,10 +32,10 @@ import {
 import useToast from '../../../hooks/toast';
 import { ActivityIndicator } from 'react-native';
 import { useStyles } from './styles';
-import PeraView from '../view/PeraView';
+import PWView from '../view/PWView';
 import { usePeraWebviewInterface } from '../../../hooks/webview';
 
-export type PeraWebViewProps = {
+export type PWWebViewProps = {
   url: string;
   enablePeraConnect: boolean;
 } & WebViewProps;
@@ -45,7 +45,7 @@ const updateTheme = (mode: 'light' | 'dark') => {
   return `if (updateTheme) { updateTheme('${jsTheme}'); }`;
 };
 
-const PeraWebView = (props: PeraWebViewProps) => {
+const PWWebView = (props: PWWebViewProps) => {
   const styles = useStyles();
   const { url, enablePeraConnect, ...rest } = props;
   const { theme } = useTheme();
@@ -127,7 +127,7 @@ const PeraWebView = (props: PeraWebViewProps) => {
   }, [theme, loaded, enablePeraConnect]);
 
   return (
-    <PeraView style={styles.flex}>
+    <PWView style={styles.flex}>
       <WebView
         ref={webview}
         {...rest}
@@ -159,8 +159,8 @@ const PeraWebView = (props: PeraWebViewProps) => {
         dataDetectorTypes={[]}
         textInteractionEnabled={false}
       />
-    </PeraView>
+    </PWView>
   );
 };
 
-export default PeraWebView;
+export default PWWebView;

@@ -11,10 +11,10 @@
  */
 
 import { Text } from '@rneui/themed';
-import PeraView from '../view/PeraView';
+import PWView from '../view/PWView';
 import { useStyles } from './styles';
 import { useCallback, useState } from 'react';
-import { TouchableOpacity } from 'react-native';
+import PWTouchableOpacity from '../touchable-opacity/PWTouchableOpacity';
 
 export const ChartPeriods = {
   OneDay: 'one-day',
@@ -48,8 +48,8 @@ const ChartPeriodSelection = ({
   );
 
   return (
-    <PeraView style={styles.container}>
-      <TouchableOpacity
+    <PWView style={styles.container}>
+      <PWTouchableOpacity
         onPress={() => handlePressed(ChartPeriods.OneWeek)}
         style={
           activeValue === ChartPeriods.OneWeek
@@ -58,8 +58,8 @@ const ChartPeriodSelection = ({
         }
       >
         <Text>1W</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
+      </PWTouchableOpacity>
+      <PWTouchableOpacity
         onPress={() => handlePressed(ChartPeriods.OneMonth)}
         style={
           activeValue === ChartPeriods.OneMonth
@@ -68,8 +68,8 @@ const ChartPeriodSelection = ({
         }
       >
         <Text>1M</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
+      </PWTouchableOpacity>
+      <PWTouchableOpacity
         onPress={() => handlePressed(ChartPeriods.OneYear)}
         style={
           activeValue === ChartPeriods.OneYear
@@ -78,8 +78,8 @@ const ChartPeriodSelection = ({
         }
       >
         <Text>1Y</Text>
-      </TouchableOpacity>
-    </PeraView>
+      </PWTouchableOpacity>
+    </PWView>
   );
 };
 

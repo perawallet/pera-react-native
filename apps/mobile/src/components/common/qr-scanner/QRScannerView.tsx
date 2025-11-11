@@ -11,7 +11,7 @@
  */
 
 import { useStyles } from './styles';
-import PeraView from '../../../components/common/view/PeraView';
+import PWView from '../../../components/common/view/PWView';
 import CameraOverlay from '../../../../assets/images/camera-overlay.svg';
 import {
   useCameraPermission,
@@ -51,9 +51,9 @@ const QRScannerView = (props: QRScannerViewProps) => {
   }
   if (device == null) {
     return (
-      <PeraView>
+      <PWView>
         <Text>No camera device found.</Text>
-      </PeraView>
+      </PWView>
     );
   }
 

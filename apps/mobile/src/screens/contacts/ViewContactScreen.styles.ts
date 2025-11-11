@@ -31,9 +31,5 @@ export const useStyles = makeStyles(theme => {
       padding: theme.spacing.xl,
       gap: theme.spacing.md,
     },
-    addressValueContainer: {
-      flexDirection: 'row',
-      gap: theme.spacing.xl,
-    },
   };
 });

@@ -1684,11 +1684,14 @@ describe('services/accounts/hooks - useAccountBalances', () => {
         })
 
         await vi.waitFor(() => {
-            expect(result.current[0].isFetched).toBe(true)
+            expect(result.current.data[0].isFetched).toBe(true)
         })
 
-        expect(result.current[0].usdAmount).toEqual(Decimal(2.5005))
-        expect(result.current[0].algoAmount).toEqual(Decimal(0.501))
+        expect(result.current.data[0].algoAmount).toEqual(Decimal(0.501))
+        expect(result.current.data[0].localAmount).toEqual(Decimal(2.5005))
+        expect(result.current.totalAlgo).toEqual(Decimal(0.501))
+        expect(result.current.totalLocal).toEqual(Decimal(2.5005))
+        expect(result.current.loading).toBe(false)
     })
 
     test('returns fallback algos() when computed USD is zero', async () => {
@@ -1719,11 +1722,11 @@ describe('services/accounts/hooks - useAccountBalances', () => {
         })
 
         await vi.waitFor(() => {
-            expect(result.current[0].isFetched).toBe(true)
+            expect(result.current.data[0].isFetched).toBe(true)
         })
 
-        expect(result.current[0].usdAmount).toEqual(Decimal(0))
-        expect(result.current[0].algoAmount).toEqual(Decimal(0.001))
+        expect(result.current.data[0].localAmount).toEqual(Decimal(0))
+        expect(result.current.data[0].algoAmount).toEqual(Decimal(0.001))
     })
 
     test('returns fallback when account.id is null', async () => {
@@ -1754,11 +1757,11 @@ describe('services/accounts/hooks - useAccountBalances', () => {
         })
 
         await vi.waitFor(() => {
-            expect(result.current[0].isFetched).toBe(true)
+            expect(result.current.data[0].isFetched).toBe(true)
         })
 
-        expect(result.current[0].usdAmount).toEqual(Decimal(0))
-        expect(result.current[0].algoAmount).toEqual(Decimal(0.001))
+        expect(result.current.data[0].localAmount).toEqual(Decimal(0))
+        expect(result.current.data[0].algoAmount).toEqual(Decimal(0.001))
     })
 
     test('handles algoAsset without returning early', async () => {
@@ -1795,11 +1798,11 @@ describe('services/accounts/hooks - useAccountBalances', () => {
         })
 
         await vi.waitFor(() => {
-            expect(result.current[0].isFetched).toBe(true)
+            expect(result.current.data[0].isFetched).toBe(true)
         })
 
-        expect(result.current[0].usdAmount).toEqual(Decimal(12))
-        expect(result.current[0].algoAmount).toEqual(Decimal(2))
+        expect(result.current.data[0].localAmount).toEqual(Decimal(12))
+        expect(result.current.data[0].algoAmount).toEqual(Decimal(2))
     })
 
     test('handles ASA with null usd_value', async () => {
@@ -1836,11 +1839,11 @@ describe('services/accounts/hooks - useAccountBalances', () => {
         })
 
         await vi.waitFor(() => {
-            expect(result.current[0].isFetched).toBe(true)
+            expect(result.current.data[0].isFetched).toBe(true)
         })
 
-        expect(result.current[0].usdAmount).toEqual(Decimal(0.001))
-        expect(result.current[0].algoAmount).toEqual(Decimal(1.001))
+        expect(result.current.data[0].localAmount).toEqual(Decimal(0.001))
+        expect(result.current.data[0].algoAmount).toEqual(Decimal(1.001))
     })
 
     test('handles missing account amount data', async () => {
@@ -1864,11 +1867,11 @@ describe('services/accounts/hooks - useAccountBalances', () => {
         })
 
         await vi.waitFor(() => {
-            expect(result.current[0].isFetched).toBe(true)
+            expect(result.current.data[0].isFetched).toBe(true)
         })
 
-        expect(result.current[0].usdAmount).toEqual(Decimal(0))
-        expect(result.current[0].algoAmount).toEqual(Decimal(0))
+        expect(result.current.data[0].localAmount).toEqual(Decimal(0))
+        expect(result.current.data[0].algoAmount).toEqual(Decimal(0))
     })
 
     test('handles algoAsset with null usd_value in non-zero usdAmount path', async () => {
@@ -1905,10 +1908,10 @@ describe('services/accounts/hooks - useAccountBalances', () => {
         })
 
         await vi.waitFor(() => {
-            expect(result.current[0].isFetched).toBe(true)
+            expect(result.current.data[0].isFetched).toBe(true)
         })
 
-        expect(result.current[0].usdAmount).toEqual(Decimal(6))
-        expect(result.current[0].algoAmount).toEqual(Decimal(4))
+        expect(result.current.data[0].localAmount).toEqual(Decimal(6))
+        expect(result.current.data[0].algoAmount).toEqual(Decimal(4))
     })
 })

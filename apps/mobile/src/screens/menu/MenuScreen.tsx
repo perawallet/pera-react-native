@@ -11,9 +11,8 @@
  */
 
 import MainScreenLayout from '../../layouts/MainScreenLayout';
-import PeraView from '../../components/common/view/PeraView';
+import PWView from '../../components/common/view/PWView';
 import { Text, useTheme } from '@rneui/themed';
-import { TouchableOpacity } from 'react-native';
 import { useStyles } from './styles';
 
 import CameraIcon from '../../../assets/icons/camera.svg';
@@ -28,6 +27,7 @@ import PanelButton from '../../components/common/panel-button/PanelButton';
 import CardPanel from '../../components/cards/card-panel/CardPanel';
 import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import PWTouchableOpacity from '@components/common/touchable-opacity/PWTouchableOpacity';
 
 const MenuScreen = () => {
   const { theme } = useTheme();
@@ -44,22 +44,22 @@ const MenuScreen = () => {
 
   return (
     <MainScreenLayout>
-      <PeraView style={styles.iconBar}>
-        <PeraView style={styles.iconBarColumn} />
+      <PWView style={styles.iconBar}>
+        <PWView style={styles.iconBarColumn} />
         <Text h4 style={styles.iconBarColumn}>
           Menu
         </Text>
-        <PeraView style={styles.iconBarColumn}>
-          <TouchableOpacity>
+        <PWView style={styles.iconBarColumn}>
+          <PWTouchableOpacity>
             <CameraIcon style={styles.icon} color={theme.colors.textMain} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={goToSettings}>
+          </PWTouchableOpacity>
+          <PWTouchableOpacity onPress={goToSettings}>
             <GearIcon style={styles.icon} color={theme.colors.textMain} />
-          </TouchableOpacity>
-        </PeraView>
-      </PeraView>
+          </PWTouchableOpacity>
+        </PWView>
+      </PWView>
 
-      <PeraView style={styles.menuContainer}>
+      <PWView style={styles.menuContainer}>
         <CardPanel />
         <PanelButton
           title="NFTs"
@@ -89,7 +89,7 @@ const MenuScreen = () => {
           rightIcon={<ChevronRight style={styles.icon} />}
           onPress={goToContacts}
         />
-      </PeraView>
+      </PWView>
     </MainScreenLayout>
   );
 };

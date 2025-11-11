@@ -20,12 +20,14 @@ import { OmitKeyof, QueryCache, QueryClient } from '@tanstack/react-query';
 const cache = new QueryCache({
   onError: error => {
     console.log('An error has occurred:', error);
+    //TODO should we use a toast here?
   },
 });
 const queryClient = new QueryClient({
   queryCache: cache,
   defaultOptions: {
     queries: {
+      //TODO maybe move this to config?
       gcTime: 1000 * 60 * 60 * 24,
       staleTime: 1000 * 30,
       retry: 2,
@@ -47,6 +49,7 @@ export function QueryProvider({ persister, children }: QueryProviderProps) {
   return (
     <PersistQueryClientProvider
       client={queryClient}
+      //TODO make the maxAge configurable?
       persistOptions={{ persister, maxAge: 1000 * 60 * 60 * 24 }}
     >
       {children}

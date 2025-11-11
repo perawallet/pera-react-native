@@ -11,9 +11,11 @@
  */
 
 import { useStyles } from './styles';
-import { TouchableOpacity, TouchableOpacityProps } from 'react-native';
 import { Text } from '@rneui/themed';
-import PeraView from '../view/PeraView';
+import PWView from '../view/PWView';
+import PWTouchableOpacity, {
+  type PWTouchableOpacityProps,
+} from '../touchable-opacity/PWTouchableOpacity';
 
 export type PanelButtonProps = {
   leftIcon: React.ReactElement<{}>;
@@ -21,7 +23,7 @@ export type PanelButtonProps = {
   title: string;
   titleWeight: 'h3' | 'h4';
   onPress: () => void;
-} & TouchableOpacityProps;
+} & PWTouchableOpacityProps;
 
 const PanelButton = (props: PanelButtonProps) => {
   const themeStyle = useStyles(props);
@@ -29,8 +31,8 @@ const PanelButton = (props: PanelButtonProps) => {
     props;
 
   return (
-    <TouchableOpacity onPress={onPress}>
-      <PeraView style={[style, themeStyle.buttonStyle]} {...rest}>
+    <PWTouchableOpacity onPress={onPress}>
+      <PWView style={[style, themeStyle.buttonStyle]} {...rest}>
         {leftIcon}
         <Text
           style={themeStyle.textStyle}
@@ -40,8 +42,8 @@ const PanelButton = (props: PanelButtonProps) => {
           {title}
         </Text>
         {rightIcon}
-      </PeraView>
-    </TouchableOpacity>
+      </PWView>
+    </PWTouchableOpacity>
   );
 };
 

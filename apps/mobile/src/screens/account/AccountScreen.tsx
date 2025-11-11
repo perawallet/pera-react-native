@@ -18,10 +18,8 @@ import {
   useAccountBalances,
   useAppStore,
 } from '@perawallet/core';
-import { TouchableOpacity } from 'react-native';
 
 import CameraIcon from '../../../assets/icons/camera.svg';
-import InboxIcon from '../../../assets/icons/envelope-letter.svg';
 import CrossIcon from '../../../assets/icons/cross.svg';
 
 import { useStyles } from './styles';
@@ -30,38 +28,35 @@ import Decimal from 'decimal.js';
 import { ScrollView } from 'react-native-gesture-handler';
 
 import CurrencyDisplay from '../../components/common/currency-display/CurrencyDisplay';
-import PeraView from '../../components/common/view/PeraView';
+import PWView from '../../components/common/view/PWView';
 import WealthChart from '../../components/common/wealth-chart/WealthChart';
 import ButtonPanel from '../../components/account-details/button-panel/ButtonPanel';
-import NotificationsIcon from '../../components/common/notifications-icon/NotificationsIcon';
+import NotificationsIcon from '../../components/notifications/notifications-icon/NotificationsIcon';
 import AccountSelection from '../../components/common/account-selection/AccountSelection';
 import AccountMenu from '../../components/account-menu/AccountMenu';
 import { Drawer } from 'react-native-drawer-layout';
 import QRScannerView from '../../components/common/qr-scanner/QRScannerView';
+import PWTouchableOpacity from '../../components/common/touchable-opacity/PWTouchableOpacity';
 
+//TODO support local currencies correctly
+//TODO hook up all the button panel buttons correctly
+//TODO implement more menu
+//TODO figure out and implement banners/spot banners
 const AccountScreen = () => {
   const { theme } = useTheme();
   const styles = useStyles();
   const { getSelectedAccount } = useAppStore();
   const account = getSelectedAccount();
 
-  const data = useAccountBalances(account ? [account] : []);
+  const { totalAlgo, totalLocal, loading } = useAccountBalances(
+    account ? [account] : [],
+  );
   const [chartData, setChartData] = useState<AccountWealthHistoryItem | null>(
     null,
   );
   const [scrollingEnabled, setScrollingEnabled] = useState<boolean>(true);
   const [scannerVisible, setScannerVisible] = useState<boolean>(false);
   const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
-
-  const loading = data.some(d => !d.isFetched);
-  const algoAmount = data.reduce(
-    (acc, cur) => acc.plus(cur.algoAmount),
-    Decimal(0),
-  );
-  const usdAmount = data.reduce(
-    (acc, cur) => acc.plus(cur.usdAmount),
-    Decimal(0),
-  );
 
   const closeQRScanner = () => {
     setScannerVisible(false);
@@ -101,45 +96,42 @@ const AccountScreen = () => {
       )}
     >
       <MainScreenLayout fullScreen>
-        <PeraView style={styles.iconBar}>
-          <PeraView style={styles.iconBarSection}>
+        <PWView style={styles.iconBar}>
+          <PWView style={styles.iconBarSection}>
             <AccountSelection onPress={toggleAccountSelectorVisible} />
-          </PeraView>
-          <PeraView style={styles.iconBarSection}>
-            <TouchableOpacity>
-              <InboxIcon style={styles.icon} color={theme.colors.textMain} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={openQRScanner}>
+          </PWView>
+          <PWView style={styles.iconBarSection}>
+            <PWTouchableOpacity onPress={openQRScanner}>
               <CameraIcon style={styles.icon} color={theme.colors.textMain} />
-            </TouchableOpacity>
+            </PWTouchableOpacity>
             <NotificationsIcon
               style={styles.icon}
               color={theme.colors.textMain}
             />
-          </PeraView>
-        </PeraView>
+          </PWView>
+        </PWView>
         <ScrollView
           scrollEnabled={scrollingEnabled}
           style={styles.webview}
           contentContainerStyle={styles.webviewContent}
         >
-          <PeraView style={styles.valueBar}>
+          <PWView style={styles.valueBar}>
             <CurrencyDisplay
               h1
-              value={chartData ? Decimal(chartData.algo_value) : algoAmount}
+              value={chartData ? Decimal(chartData.algo_value) : totalAlgo}
               currency="ALGO"
               precision={2}
               h1Style={styles.primaryCurrency}
               skeleton={loading}
             />
-            <PeraView style={styles.secondaryValueBar}>
+            <PWView style={styles.secondaryValueBar}>
               <CurrencyDisplay
                 h4
                 h4Style={styles.valueTitle}
                 value={
                   chartData
                     ? Decimal(chartData.value_in_currency ?? '0')
-                    : usdAmount
+                    : totalLocal
                 }
                 currency="USD"
                 prefix="≈ "
@@ -151,8 +143,8 @@ const AccountScreen = () => {
                   {formatDatetime(chartData.datetime)}
                 </Text>
               )}
-            </PeraView>
-          </PeraView>
+            </PWView>
+          </PWView>
 
           {!!account && (
             <WealthChart
@@ -169,9 +161,12 @@ const AccountScreen = () => {
         onSuccess={closeQRScanner}
         animationType="slide"
       >
-        <TouchableOpacity onPress={closeQRScanner} style={styles.scannerClose}>
+        <PWTouchableOpacity
+          onPress={closeQRScanner}
+          style={styles.scannerClose}
+        >
           <CrossIcon color={theme.colors.textWhite} />
-        </TouchableOpacity>
+        </PWTouchableOpacity>
       </QRScannerView>
     </Drawer>
   );

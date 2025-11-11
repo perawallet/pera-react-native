@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import PeraView from '../common/view/PeraView';
+import PWView from '../../common/view/PWView';
 import {
   SignRequest,
   truncateAlgorandAddress,
@@ -18,15 +18,16 @@ import {
 } from '@perawallet/core';
 import { useStyles } from './styles';
 import { Text, useTheme } from '@rneui/themed';
-import PeraButton from '../common/button/PeraButton';
-import CurrencyDisplay from '../common/currency-display/CurrencyDisplay';
+import PWButton from '../../common/button/PWButton';
+import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay';
 import Decimal from 'decimal.js';
-import { ScrollView, TouchableOpacity } from 'react-native';
+import { ScrollView } from 'react-native';
 
 import ChevronRight from '../../../assets/icons/chevron-right.svg';
-import TransactionIcon from '../common/transaction-icon/TransactionIcon';
-import BalanceImpactView from './balance-impact/BalanceImpactView';
-import useToast from '../../hooks/toast';
+import TransactionIcon from '../../common/transaction-icon/TransactionIcon';
+import BalanceImpactView from '../balance-impact/BalanceImpactView';
+import useToast from '../../../hooks/toast';
+import PWTouchableOpacity from '@components/common/touchable-opacity/PWTouchableOpacity';
 
 type SigningViewProps = {
   request: SignRequest;
@@ -39,7 +40,7 @@ const SingleTransactionView = ({ request }: SigningViewProps) => {
   const tx = request.txs?.at(0)?.at(0)!;
 
   return (
-    <PeraView style={styles.body}>
+    <PWView style={styles.body}>
       <TransactionIcon type="pay" size="large" />
       <Text h4>Transfer to {truncateAlgorandAddress(tx.receiver)}</Text>
       <CurrencyDisplay
@@ -58,7 +59,7 @@ const SingleTransactionView = ({ request }: SigningViewProps) => {
         h3
         h3Style={styles.secondaryAmount}
       />
-    </PeraView>
+    </PWView>
   );
 };
 
@@ -74,9 +75,9 @@ const GroupTransactionView = ({ request }: SigningViewProps) => {
           : `Group ID: ${truncateAlgorandAddress('SomeIDForAGroup')}`}
       </Text>
       {isMultipleGroups ? (
-        <PeraView>
+        <PWView>
           <Text>This is where we'll show the groups</Text>
-        </PeraView>
+        </PWView>
       ) : (
         <BalanceImpactView />
       )}
@@ -133,7 +134,7 @@ const SigningView = ({ request }: SigningViewProps) => {
   };
 
   return (
-    <PeraView style={styles.container}>
+    <PWView style={styles.container}>
       <Text h4 h4Style={styles.title}>
         {isMultipleTransactions ? 'Review Transactions' : 'Review Transaction'}
       </Text>
@@ -142,8 +143,8 @@ const SigningView = ({ request }: SigningViewProps) => {
       ) : (
         <SingleTransactionView request={request} />
       )}
-      <PeraView style={styles.footer}>
-        <PeraView style={styles.feeContainer}>
+      <PWView style={styles.footer}>
+        <PWView style={styles.feeContainer}>
           <Text h4 h4Style={styles.feeLabel}>
             Transaction Fee
           </Text>
@@ -155,29 +156,29 @@ const SigningView = ({ request }: SigningViewProps) => {
             h4
             h4Style={styles.feeAmount}
           />
-        </PeraView>
-        <TouchableOpacity style={styles.detailsContainer}>
+        </PWView>
+        <PWTouchableOpacity style={styles.detailsContainer}>
           <Text h4 h4Style={styles.detailsLabel}>
             Show Transaction Details
           </Text>
           <ChevronRight color={theme.colors.linkPrimary} />
-        </TouchableOpacity>
-        <PeraView style={styles.buttonContainer}>
-          <PeraButton
+        </PWTouchableOpacity>
+        <PWView style={styles.buttonContainer}>
+          <PWButton
             title="Cancel"
             variant="tertiary"
             onPress={rejectRequest}
             containerStyle={styles.button}
           />
-          <PeraButton
+          <PWButton
             title={isMultipleTransactions ? 'Confirm All' : 'Confirm'}
             variant="primary"
             onPress={signAndSend}
             containerStyle={styles.button}
           />
-        </PeraView>
-      </PeraView>
-    </PeraView>
+        </PWView>
+      </PWView>
+    </PWView>
   );
 };
 

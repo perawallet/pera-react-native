@@ -11,7 +11,7 @@
  */
 
 import { useStyles } from './styles';
-import PeraView from '../../common/view/PeraView';
+import PWView from '../../common/view/PWView';
 import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import RoundButton from '../../common/round-button/RoundButton';
@@ -37,7 +37,7 @@ const ButtonPanel = () => {
   };
 
   return (
-    <PeraView style={themeStyle.container}>
+    <PWView style={themeStyle.container}>
       <RoundButton
         buttonStyle={themeStyle.blackButton}
         title="Swap"
@@ -59,7 +59,7 @@ const ButtonPanel = () => {
         icon={<MoreIcon color={theme.colors.textMain} />}
         onPress={notImplemented}
       />
-    </PeraView>
+    </PWView>
   );
 };
 

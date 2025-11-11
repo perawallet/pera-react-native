@@ -15,7 +15,7 @@ import GroupIcon from '../../../../assets/icons/transactions/group.svg';
 
 import { useMemo } from 'react';
 import { SvgProps } from 'react-native-svg';
-import PeraView from '../view/PeraView';
+import PWView from '../view/PWView';
 import { useStyles } from './styles';
 import { useTheme } from '@rneui/themed';
 
@@ -45,7 +45,7 @@ const TransactionIcon = (props: TransactionIconProps) => {
     return <GroupIcon {...rest} width={iconSize} height={iconSize} />;
   }, [type, rest, styles.icon, iconSize]);
 
-  return <PeraView style={[styles.container, style]}>{icon}</PeraView>;
+  return <PWView style={[styles.container, style]}>{icon}</PWView>;
 };
 
 export default TransactionIcon;

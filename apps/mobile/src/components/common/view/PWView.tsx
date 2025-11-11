@@ -13,9 +13,9 @@
 import { useStyles } from './styles';
 import { View, ViewProps } from 'react-native';
 
-export type PeraViewProps = ViewProps;
+export type PWViewProps = ViewProps;
 
-const PeraView = (props: PeraViewProps) => {
+const PWView = (props: PWViewProps) => {
   const style = useStyles(props);
 
   return (
@@ -25,4 +25,4 @@ const PeraView = (props: PeraViewProps) => {
   );
 };
 
-export default PeraView;
+export default PWView;

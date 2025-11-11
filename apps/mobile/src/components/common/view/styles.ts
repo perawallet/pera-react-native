@@ -11,9 +11,9 @@
  */
 
 import { makeStyles } from '@rneui/themed';
-import { PeraViewProps } from './PeraView';
+import { PWViewProps } from './PWView';
 
-export const useStyles = makeStyles((theme, _: PeraViewProps) => ({
+export const useStyles = makeStyles((theme, _: PWViewProps) => ({
   defaultStyle: {
     backgroundColor: theme.colors.background,
   },

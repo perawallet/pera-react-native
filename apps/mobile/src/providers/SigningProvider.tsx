@@ -11,9 +11,9 @@
  */
 
 import React, { PropsWithChildren } from 'react';
-import PeraBottomSheet from '../components/common/bottom-sheet/PeraBottomSheet';
+import PWBottomSheet from '../components/common/bottom-sheet/PWBottomSheet';
 import { useAppStore } from '@perawallet/core';
-import SigningView from '../components/signing-view/SigningView';
+import SigningView from '../components/signing/signing-view/SigningView';
 import { useWindowDimensions } from 'react-native';
 
 type SigningProviderProps = {} & PropsWithChildren;
@@ -26,12 +26,12 @@ export function SigningProvider({ children }: SigningProviderProps) {
   return (
     <>
       {children}
-      <PeraBottomSheet
+      <PWBottomSheet
         innerContainerStyle={{ height: height - 100 }}
         isVisible={!!nextRequest}
       >
         {!!nextRequest && <SigningView request={nextRequest} />}
-      </PeraBottomSheet>
+      </PWBottomSheet>
     </>
   );
 }

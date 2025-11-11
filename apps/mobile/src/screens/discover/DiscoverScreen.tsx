@@ -11,9 +11,9 @@
  */
 
 import { config } from '@perawallet/config';
-import PeraWebView from '../../components/common/webview/PeraWebView';
+import PWWebView from '../../components/common/webview/PWWebView';
 import { useStyles } from './styles';
-import PeraView from '../../components/common/view/PeraView';
+import PWView from '../../components/common/view/PWView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const DiscoverScreen = () => {
@@ -22,13 +22,13 @@ const DiscoverScreen = () => {
   const url = config.discoverBaseUrl;
 
   return (
-    <PeraView style={styles.container}>
-      <PeraWebView
+    <PWView style={styles.container}>
+      <PWWebView
         url={url}
         enablePeraConnect={true}
         containerStyle={styles.webview}
       />
-    </PeraView>
+    </PWView>
   );
 };
 

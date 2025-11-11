@@ -17,13 +17,13 @@ import { useMemo, useState } from 'react';
 import EmptyView from '../../components/common/empty-view/EmptyView';
 import PersonIcon from '../../../assets/icons/person-menu.svg';
 import SearchIcon from '../../../assets/icons/magnifying-glass.svg';
-import PeraButton from '../../components/common/button/PeraButton';
+import PWButton from '../../components/common/button/PWButton';
 import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SectionList, TouchableOpacity } from 'react-native';
 import { Input, Text, useTheme } from '@rneui/themed';
 import ContactAvatar from '../../components/common/contact-avatar/ContactAvatar';
-import PeraView from '../../components/common/view/PeraView';
+import PWView from '../../components/common/view/PWView';
 
 const contactSorter = (a: Contact, b: Contact) => a.name.localeCompare(b.name);
 
@@ -109,7 +109,7 @@ const ContactListScreen = () => {
           body="You haven't added any contacts yet"
           icon={<PersonIcon />}
           button={
-            <PeraButton
+            <PWButton
               title="Add Contact"
               onPress={goToAddContact}
               variant="primary"
@@ -118,7 +118,7 @@ const ContactListScreen = () => {
         />
       )}
       {(!!groupedContacts.length || search.length) && (
-        <PeraView style={styles.flex}>
+        <PWView style={styles.flex}>
           <Input
             placeholder="Search for name or address"
             onChangeText={setSearch}
@@ -140,7 +140,7 @@ const ContactListScreen = () => {
               />
             }
           />
-        </PeraView>
+        </PWView>
       )}
     </MainScreenLayout>
   );

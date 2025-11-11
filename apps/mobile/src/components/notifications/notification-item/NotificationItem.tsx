@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import PeraView from '../common/view/PeraView';
+import PWView from '../../common/view/PWView';
 import {
   formatRelativeTime,
   NotificationV2SerializerResponse,
@@ -18,8 +18,8 @@ import {
 import { Image, Text, useTheme } from '@rneui/themed';
 import { useStyles } from './styles';
 import { useCallback, useMemo } from 'react';
-import { TouchableOpacity } from 'react-native';
-import BellIcon from '../../../assets/icons/bell.svg';
+import BellIcon from '../../../../assets/icons/bell.svg';
+import PWTouchableOpacity from '@components/common/touchable-opacity/PWTouchableOpacity';
 
 type NotificationItemProps = {
   item: NotificationV2SerializerResponse;
@@ -37,7 +37,7 @@ const NotificationItem = ({ item }: NotificationItemProps) => {
 
       if (imageUrl) {
         return (
-          <PeraView style={styles.iconContainerNoBorder}>
+          <PWView style={styles.iconContainerNoBorder}>
             {metadata?.icon?.shape === 'circle' ? (
               <Image
                 source={{ uri: imageUrl }}
@@ -53,13 +53,13 @@ const NotificationItem = ({ item }: NotificationItemProps) => {
                 transition
               />
             )}
-          </PeraView>
+          </PWView>
         );
       } else {
         return (
-          <PeraView style={styles.iconContainer}>
+          <PWView style={styles.iconContainer}>
             <BellIcon color={theme.colors.textGray} />
-          </PeraView>
+          </PWView>
         );
       }
     },
@@ -73,19 +73,15 @@ const NotificationItem = ({ item }: NotificationItemProps) => {
   const image = useMemo(() => getImage(item), [item, getImage]);
 
   return (
-    <TouchableOpacity
-      onPress={handlePress}
-      activeOpacity={1}
-      style={styles.container}
-    >
+    <PWTouchableOpacity onPress={handlePress} style={styles.container}>
       {image}
-      <PeraView style={styles.messageBox}>
+      <PWView style={styles.messageBox}>
         <Text>{item.message}</Text>
         <Text style={styles.timeText}>
           {formatRelativeTime(item.creation_datetime ?? new Date())}
         </Text>
-      </PeraView>
-    </TouchableOpacity>
+      </PWView>
+    </PWTouchableOpacity>
   );
 };
 

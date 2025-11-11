@@ -13,7 +13,7 @@
 import { useStyles } from './styles';
 import { LineChart } from 'react-native-gifted-charts';
 
-import PeraView from '../view/PeraView';
+import PWView from '../view/PWView';
 import {
   AccountWealthHistoryItem,
   useAllAccounts,
@@ -109,7 +109,7 @@ const WealthChart = ({ onSelectionChanged, account }: WealthChartProps) => {
   }
 
   return (
-    <PeraView style={themeStyle.container}>
+    <PWView style={themeStyle.container}>
       <LineChart
         data={dataPoints}
         hideAxesAndRules
@@ -144,7 +144,7 @@ const WealthChart = ({ onSelectionChanged, account }: WealthChartProps) => {
         adjustToWidth
       />
       <ChartPeriodSelection value={period} onChange={setPeriod} />
-    </PeraView>
+    </PWView>
   );
 };
 

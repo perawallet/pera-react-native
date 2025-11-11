@@ -12,7 +12,7 @@
 
 import { Text, useTheme } from '@rneui/themed';
 import { getAccountDisplayName, useAppStore } from '@perawallet/core';
-import PeraView from '../view/PeraView';
+import PWView from '../view/PWView';
 import { useStyles } from './styles';
 
 import ChevronDown from '../../../../assets/icons/chevron-down.svg';
@@ -28,15 +28,17 @@ const AccountSelection = (props: AccountSelectionProps) => {
   const account = getSelectedAccount();
   const displayName = getAccountDisplayName(account);
 
+  //TODO we may want to add support for pending inbox items here too
+  //(like the current inbox since we're using the same screen real estate)
   return (
     <TouchableOpacity {...props} activeOpacity={0.8}>
-      <PeraView style={styles.container}>
+      <PWView style={styles.container}>
         <WalletIcon />
         <Text h4Style={styles.text} h4>
           {displayName}
         </Text>
         <ChevronDown color={theme.colors.textGray} />
-      </PeraView>
+      </PWView>
     </TouchableOpacity>
   );
 };

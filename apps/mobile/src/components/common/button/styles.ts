@@ -11,9 +11,9 @@
  */
 
 import { makeStyles } from '@rneui/themed';
-import { PeraButtonProps } from './PeraButton';
+import { PWButtonProps } from './PWButton';
 
-export const useStyles = makeStyles((theme, props: PeraButtonProps) => {
+export const useStyles = makeStyles((theme, props: PWButtonProps) => {
   let backgroundColor = theme.colors.buttonPrimaryBg;
   let color = theme.colors.buttonPrimaryText;
 

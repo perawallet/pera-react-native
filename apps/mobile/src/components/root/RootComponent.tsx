@@ -19,7 +19,7 @@ import { MainRoutes } from '../../routes/routes';
 import { getNavigationTheme, getTheme } from '../../theme/theme';
 import { ThemeProvider } from '@rneui/themed';
 import { useStyles } from './styles';
-import PeraView from '../../components/common/view/PeraView';
+import PWView from '../../components/common/view/PWView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ErrorBoundary from 'react-native-error-boundary';
 import useToast from '../../hooks/toast';
@@ -52,13 +52,13 @@ const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
 
   return (
     <ErrorBoundary onError={showError}>
-      <PeraView style={styles.container}>
+      <PWView style={styles.container}>
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
         <View style={networkBarStyle} />
         <GestureHandlerRootView>
           <MainRoutes theme={navTheme} />
         </GestureHandlerRootView>
-      </PeraView>
+      </PWView>
     </ErrorBoundary>
   );
 };

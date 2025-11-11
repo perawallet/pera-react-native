@@ -31,7 +31,6 @@ export const useStyles = makeStyles(theme => {
       gap: theme.spacing.xs,
       alignItems: 'center',
     },
-    accountSelection: {},
     titleText: {},
     titleIcon: {
       color: theme.colors.textMain,

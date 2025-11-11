@@ -13,7 +13,7 @@
 import { View, ViewProps } from 'react-native';
 import { useStyles } from './MainScreenLayout.style';
 import { EdgeInsets, useSafeAreaInsets } from 'react-native-safe-area-context';
-import PeraView from '../components/common/view/PeraView';
+import PWView from '../components/common/view/PWView';
 import { useNavigation } from '@react-navigation/native';
 
 import ChevronLeft from '../../assets/icons/chevron-left.svg';
@@ -23,7 +23,6 @@ export type MainScreenLayoutProps = {
   fullScreen?: boolean;
   showBack?: boolean;
   title?: string;
-  header?: boolean;
 } & ViewProps;
 
 export type MainScreenLayoutPropsWithInsets = {
@@ -41,7 +40,7 @@ const MainScreenLayout = (props: MainScreenLayoutProps) => {
   };
 
   return (
-    <PeraView style={[props.style, styles.mainContainer]} {...props}>
+    <PWView style={[props.style, styles.mainContainer]} {...props}>
       <View style={styles.contentContainer}>
         {props.showBack && (
           <ChevronLeft
@@ -58,7 +57,7 @@ const MainScreenLayout = (props: MainScreenLayoutProps) => {
 
         {props.children}
       </View>
-    </PeraView>
+    </PWView>
   );
 };
 

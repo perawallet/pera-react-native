@@ -14,8 +14,8 @@ import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useStyles } from './styles';
 import { Input, Text, useTheme } from '@rneui/themed';
-import PeraView from '../../components/common/view/PeraView';
-import PeraButton from '../../components/common/button/PeraButton';
+import PWView from '../../components/common/view/PWView';
+import PWButton from '../../components/common/button/PWButton';
 import MainScreenLayout from '../../layouts/MainScreenLayout';
 
 import WalletIcon from '../../../assets/icons/wallet.svg';
@@ -70,10 +70,10 @@ const NameAccountScreen = ({ route }: NameAccountScreenProps) => {
           Name your account to easily identify it while using the Pera Wallet.
           These names are stored locally, and can only be seen by you.
         </Text>
-        <PeraView style={styles.walletNameContainer}>
+        <PWView style={styles.walletNameContainer}>
           <WalletIcon color={theme.colors.textGray} />
           <Text h4 style={styles.nameText}>{`Wallet #${numWallets + 1}`}</Text>
-        </PeraView>
+        </PWView>
         <Input
           label="Account name"
           containerStyle={styles.input}
@@ -81,8 +81,8 @@ const NameAccountScreen = ({ route }: NameAccountScreenProps) => {
           onChangeText={saveName}
           autoFocus
         />
-        <PeraView style={styles.spacer} />
-        <PeraButton
+        <PWView style={styles.spacer} />
+        <PWButton
           style={styles.finishButton}
           variant="primary"
           title="Finish Account Creation"

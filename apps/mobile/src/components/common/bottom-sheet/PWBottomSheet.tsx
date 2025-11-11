@@ -11,29 +11,29 @@
  */
 
 import { BottomSheet, BottomSheetProps } from '@rneui/themed';
-import PeraView from '../view/PeraView';
+import PWView from '../view/PWView';
 import { PropsWithChildren } from 'react';
 import { useStyles } from './styles';
 import { StyleProp, ViewStyle } from 'react-native';
 
-type PeraBottomSheetProps = {
+type PWBottomSheetProps = {
   innerContainerStyle?: StyleProp<ViewStyle>;
 } & BottomSheetProps &
   PropsWithChildren;
 
-const PeraBottomSheet = ({
+const PWBottomSheet = ({
   innerContainerStyle,
   children,
   ...rest
-}: PeraBottomSheetProps) => {
+}: PWBottomSheetProps) => {
   const style = useStyles();
   return (
     <BottomSheet {...rest}>
-      <PeraView style={[style.defaultStyle, innerContainerStyle]}>
+      <PWView style={[style.defaultStyle, innerContainerStyle]}>
         {children}
-      </PeraView>
+      </PWView>
     </BottomSheet>
   );
 };
 
-export default PeraBottomSheet;
+export default PWBottomSheet;

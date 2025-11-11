@@ -11,7 +11,7 @@
  */
 
 import { Text } from '@rneui/themed';
-import PeraView from '../../components/common/view/PeraView';
+import PWView from '../../components/common/view/PWView';
 import MainScreenLayout from '../../layouts/MainScreenLayout';
 import { useStyles } from './styles';
 import InfoIcon from '../../../assets/icons/info.svg';
@@ -42,17 +42,15 @@ const SwapScreen = () => {
           <AccountMenu onSelected={() => setDrawerOpen(false)} />
         )}
       >
-        <PeraView style={styles.headerContainer}>
-          <PeraView style={styles.titleContainer}>
+        <PWView style={styles.headerContainer}>
+          <PWView style={styles.titleContainer}>
             <Text h3 h3Style={styles.titleText}>
               Swap
             </Text>
             <InfoIcon style={styles.titleIcon} />
-          </PeraView>
-          <PeraView style={styles.accountSelection}>
-            <AccountSelection onPress={() => setDrawerOpen(true)} />
-          </PeraView>
-        </PeraView>
+          </PWView>
+          <AccountSelection onPress={() => setDrawerOpen(true)} />
+        </PWView>
         <PairSelectionPanel />
         <SwapHistoryPanel />
         <TopPairsPanel />

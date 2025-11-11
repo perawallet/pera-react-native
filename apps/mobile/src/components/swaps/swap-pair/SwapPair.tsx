@@ -11,7 +11,7 @@
  */
 
 import { useStyles } from './styles';
-import PeraView from '../../common/view/PeraView';
+import PWView from '../../common/view/PWView';
 import { ViewStyle } from 'react-native';
 import { Text } from '@rneui/themed';
 import AssetIcon from '../../common/asset-icon/AssetIcon';
@@ -27,15 +27,15 @@ const SwapPair = (props: SwapPairItemProps) => {
   const themeStyle = useStyles();
 
   return (
-    <PeraView style={props.style}>
-      <PeraView style={themeStyle.itemIconContainer}>
+    <PWView style={props.style}>
+      <PWView style={themeStyle.itemIconContainer}>
         <AssetIcon asset={props.fromAsset} style={themeStyle.fromIcon} />
         <AssetIcon asset={props.toAsset} style={themeStyle.toIcon} />
-      </PeraView>
+      </PWView>
       <Text h4>
         {props.fromAsset?.unit_name} to {props.toAsset?.unit_name}
       </Text>
-    </PeraView>
+    </PWView>
   );
 };
 export default SwapPair;

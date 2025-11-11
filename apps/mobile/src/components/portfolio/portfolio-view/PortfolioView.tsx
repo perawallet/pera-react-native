@@ -10,15 +10,16 @@
  limitations under the License
  */
 
-import PeraView from '../../../components/common/view/PeraView';
 import { Text, useTheme } from '@rneui/themed';
 import { useStyles } from './styles';
-import { TouchableOpacity } from 'react-native';
 
 import InfoIcon from '../../../../assets/icons/info.svg';
 
-import CurrencyDisplay from '../../../components/common/currency-display/CurrencyDisplay';
-import WealthChart from '../../../components/common/wealth-chart/WealthChart';
+import PWView from '../../common/view/PWView';
+import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay';
+import WealthChart from '../../common/wealth-chart/WealthChart';
+import { PWViewProps } from '../../common/view/PWView';
+import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity';
 import Decimal from 'decimal.js';
 import {
   AccountWealthHistoryItem,
@@ -27,32 +28,21 @@ import {
   useAppStore,
 } from '@perawallet/core';
 import { useCallback, useState } from 'react';
-import { PeraViewProps } from '@components/common/view/PeraView';
 
 type PortfolioViewProps = {
   onDataSelected?: (selected: AccountWealthHistoryItem | null) => void;
-} & PeraViewProps;
+} & PWViewProps;
 
 const PortfolioView = (props: PortfolioViewProps) => {
   const { theme } = useTheme();
   const styles = useStyles();
 
   const accounts = useAppStore(state => state.accounts);
-  const data = useAccountBalances(accounts);
+  const { loading, totalAlgo, totalLocal } = useAccountBalances(accounts);
   const [chartData, setChartData] = useState<AccountWealthHistoryItem | null>(
     null,
   );
   const [chartVisible, setChartVisible] = useState<boolean>(false);
-
-  const loading = data.some(d => !d.isFetched);
-  const algoAmount = data.reduce(
-    (acc, cur) => acc.plus(cur.algoAmount),
-    Decimal(0),
-  );
-  const usdAmount = data.reduce(
-    (acc, cur) => acc.plus(cur.usdAmount),
-    Decimal(0),
-  );
 
   const toggleChartVisible = () => {
     setChartVisible(!chartVisible);
@@ -67,60 +57,60 @@ const PortfolioView = (props: PortfolioViewProps) => {
   );
 
   return (
-    <PeraView {...props}>
-      <PeraView style={styles.valueTitleBar}>
+    <PWView {...props}>
+      <PWView style={styles.valueTitleBar}>
         <Text h4Style={styles.valueTitle} h4>
           Portfolio Value
         </Text>
-        <TouchableOpacity>
+        <PWTouchableOpacity>
           <InfoIcon style={styles.icon} color={theme.colors.textGray} />
-        </TouchableOpacity>
-      </PeraView>
-      <PeraView style={styles.valueBar}>
-        <PeraView style={styles.valueBarCurrencies}>
+        </PWTouchableOpacity>
+      </PWView>
+      <PWView style={styles.valueBar}>
+        <PWView style={styles.valueBarCurrencies}>
           <CurrencyDisplay
             h1
-            value={chartData ? Decimal(chartData.algo_value) : algoAmount}
+            value={chartData ? Decimal(chartData.algo_value) : totalAlgo}
             currency="ALGO"
             precision={2}
             h1Style={styles.primaryCurrency}
             skeleton={loading}
           />
-          <PeraView style={styles.secondaryValueBar}>
+          <PWView style={styles.secondaryValueBar}>
             <CurrencyDisplay
               h4
               h4Style={styles.valueTitle}
               value={
                 chartData
                   ? Decimal(chartData.value_in_currency ?? '0')
-                  : usdAmount
+                  : totalLocal
               }
               currency="USD"
               prefix="≈ "
               precision={2}
               skeleton={loading}
             />
-          </PeraView>
+          </PWView>
           {chartData && (
             <Text h4 h4Style={styles.dateDisplay}>
               {formatDatetime(chartData.datetime)}
             </Text>
           )}
-        </PeraView>
-        <TouchableOpacity
+        </PWView>
+        <PWTouchableOpacity
           style={styles.chartButton}
           onPress={toggleChartVisible}
         >
           <Text style={styles.chartButtonText}>
             {chartVisible ? 'Hide Chart' : 'Show Chart'}
           </Text>
-        </TouchableOpacity>
-      </PeraView>
+        </PWTouchableOpacity>
+      </PWView>
 
       {chartVisible && (
         <WealthChart onSelectionChanged={chartSelectionChanged} />
       )}
-    </PeraView>
+    </PWView>
   );
 };
 

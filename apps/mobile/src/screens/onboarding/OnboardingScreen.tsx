@@ -14,7 +14,7 @@ import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useStyles } from './styles';
 import { Text, useTheme } from '@rneui/themed';
-import PeraView from '../../components/common/view/PeraView';
+import PWView from '../../components/common/view/PWView';
 import MainScreenLayout from '../../layouts/MainScreenLayout';
 import PanelButton from '../../components/common/panel-button/PanelButton';
 
@@ -54,14 +54,14 @@ const OnboardingScreen = () => {
 
   return (
     <MainScreenLayout style={styles.layout} fullScreen>
-      <PeraView>
-        <PeraView style={styles.headerContainer}>
+      <PWView>
+        <PWView style={styles.headerContainer}>
           <Text style={styles.headerTitle} h1>
             Welcome to {'\n'} Pera Wallet
           </Text>
           <WelcomeImage style={styles.headerImage} />
-        </PeraView>
-        <PeraView style={styles.mainContainer}>
+        </PWView>
+        <PWView style={styles.mainContainer}>
           <Text style={styles.buttonTitle} h4>
             New to Algorand?
           </Text>
@@ -83,8 +83,8 @@ const OnboardingScreen = () => {
             leftIcon={<KeyIcon />}
             rightIcon={<ChevronNext />}
           />
-        </PeraView>
-      </PeraView>
+        </PWView>
+      </PWView>
       <Overlay
         isVisible={processing}
         overlayStyle={styles.overlay}

@@ -15,7 +15,7 @@ import { Image, useTheme } from '@rneui/themed';
 import { SvgProps } from 'react-native-svg';
 import PersonIcon from '../../../../assets/icons/person.svg';
 import { useStyles } from './styles';
-import PeraView from '../view/PeraView';
+import PWView from '../view/PWView';
 
 type ContactAvatarProps = {
   size: 'small' | 'large';
@@ -29,7 +29,7 @@ const ContactAvatar = ({ size, contact, ...rest }: ContactAvatarProps) => {
   const styles = useStyles(dimensions);
 
   return (
-    <PeraView style={styles.container}>
+    <PWView style={styles.container}>
       {!!contact?.image && (
         <Image
           source={{ uri: contact.image }}
@@ -44,7 +44,7 @@ const ContactAvatar = ({ size, contact, ...rest }: ContactAvatarProps) => {
           color={theme.colors.textGray}
         />
       )}
-    </PeraView>
+    </PWView>
   );
 };
 

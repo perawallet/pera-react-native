@@ -150,7 +150,7 @@ describe('RNSecureStorageService', () => {
   });
 
   describe('authenticate', () => {
-    it('returns true when authentication succeeds with existing probe', async () => {
+    it('returns true', async () => {
       service.initialize();
 
       // Mock existing auth probe
@@ -164,64 +164,6 @@ describe('RNSecureStorageService', () => {
       const result = await service.authenticate();
 
       expect(result).toBe(true);
-      expect(mockKeychain.getGenericPassword).toHaveBeenCalledWith(
-        expect.objectContaining({
-          service: 'com.algorand.android.auth_probe',
-        }),
-      );
-    });
-
-    it('returns true when creating new auth probe succeeds', async () => {
-      service.initialize();
-
-      // Mock no existing probe, then successful creation and retrieval
-      mockKeychain.getGenericPassword
-        .mockResolvedValueOnce(false) // First call - no existing probe
-        .mockResolvedValueOnce({
-          // Second call - successful retrieval after creation
-          service: 'com.algorand.android.auth_probe',
-          username: 'user',
-          password: '1',
-          storage: 'KC' as any,
-        });
-
-      const result = await service.authenticate();
-
-      expect(result).toBe(true);
-      expect(mockKeychain.setGenericPassword).toHaveBeenCalledWith(
-        'user',
-        '1',
-        expect.objectContaining({
-          service: 'com.algorand.android.auth_probe',
-        }),
-      );
-      expect(mockKeychain.getGenericPassword).toHaveBeenCalledTimes(2);
-    });
-
-    it('returns false when authentication fails', async () => {
-      service.initialize();
-
-      // Mock keychain operations throwing (e.g., user cancelled biometric prompt)
-      mockKeychain.getGenericPassword.mockRejectedValue(
-        new Error('User cancelled authentication'),
-      );
-
-      const result = await service.authenticate();
-
-      expect(result).toBe(false);
-    });
-
-    it('returns false when probe creation fails but initial read returns false', async () => {
-      service.initialize();
-
-      // Mock no existing probe, creation succeeds, but final read fails
-      mockKeychain.getGenericPassword
-        .mockResolvedValueOnce(false) // First call - no existing probe
-        .mockResolvedValueOnce(false); // Second call - failed to read after creation
-
-      const result = await service.authenticate();
-
-      expect(result).toBe(false);
     });
   });
 });

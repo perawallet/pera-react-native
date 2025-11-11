@@ -12,28 +12,19 @@
 
 import { Dialog, Input, Text, useTheme } from '@rneui/themed';
 import ContactAvatar from '../../components/common/contact-avatar/ContactAvatar';
-import PeraView from '../../components/common/view/PeraView';
+import PWView from '../../components/common/view/PWView';
 import AddressEntryField from '../../components/common/address-entry/AddressEntryField';
-import {
-  Contact,
-  useContacts,
-  contactSchema,
-  truncateAlgorandAddress,
-} from '@perawallet/core';
+import { Contact, useContacts, contactSchema } from '@perawallet/core';
 import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { KeyboardAvoidingView } from 'react-native';
 import { useStyles } from './EditContactScreen.styles';
-import PeraButton from '../../components/common/button/PeraButton';
+import PWButton from '../../components/common/button/PWButton';
 import { ScrollView } from 'react-native-gesture-handler';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, Controller } from 'react-hook-form';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import CopyIcon from '../../../assets/icons/copy.svg';
-import useToast from '../../hooks/toast';
-import Clipboard from '@react-native-clipboard/clipboard';
 import { useState } from 'react';
-
-const LONG_ADDRESS_FORMAT = 20;
+import AddressDisplay from '../../components/common/address-display/AddressDisplay';
 
 const EditContactScreen = () => {
   const styles = useStyles();
@@ -46,8 +37,8 @@ const EditContactScreen = () => {
   } = useContacts();
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
   const { theme } = useTheme();
-  const { showToast } = useToast();
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const isEditMode = !!selectedContact;
 
   const {
     control,
@@ -59,15 +50,6 @@ const EditContactScreen = () => {
     defaultValues: selectedContact ?? {},
   });
 
-  const copyAddress = () => {
-    Clipboard.setString(selectedContact?.address || '');
-    showToast({
-      title: '',
-      body: 'Address copied to clipboard',
-      type: 'info',
-    });
-  };
-
   const openDeleteModal = () => {
     setDeleteModalOpen(true);
   };
@@ -77,7 +59,7 @@ const EditContactScreen = () => {
   };
 
   const save = (data: Contact) => {
-    if (!selectedContact) {
+    if (!isEditMode) {
       const matches = findContacts({
         keyword: data.address,
         matchAddress: true,
@@ -101,7 +83,7 @@ const EditContactScreen = () => {
   };
 
   const removeContact = () => {
-    if (!selectedContact) {
+    if (!isEditMode) {
       navigation.replace('Contacts');
     } else {
       deleteContact(selectedContact);
@@ -113,13 +95,13 @@ const EditContactScreen = () => {
   return (
     <KeyboardAvoidingView behavior="height">
       <ScrollView style={styles.container}>
-        <PeraView style={styles.avatar}>
+        <PWView style={styles.avatar}>
           <ContactAvatar
             size="large"
             contact={selectedContact ?? { name: '', address: '' }}
           />
-        </PeraView>
-        <PeraView style={styles.formContainer}>
+        </PWView>
+        <PWView style={styles.formContainer}>
           <Controller
             control={control}
             name="name"
@@ -133,7 +115,7 @@ const EditContactScreen = () => {
               />
             )}
           />
-          {!selectedContact && (
+          {!isEditMode && (
             <Controller
               control={control}
               name="address"
@@ -149,42 +131,33 @@ const EditContactScreen = () => {
               )}
             />
           )}
-          {!!selectedContact && (
-            <PeraView>
+          {isEditMode && (
+            <PWView>
               <Text style={styles.label}>Address</Text>
-              <PeraView style={styles.addressValueContainer}>
-                <Text style={styles.value}>
-                  {truncateAlgorandAddress(
-                    selectedContact.address,
-                    LONG_ADDRESS_FORMAT,
-                  )}
-                </Text>
-                <CopyIcon
-                  onPress={copyAddress}
-                  color={theme.colors.textGray}
-                  width={theme.spacing.lg}
-                  height={theme.spacing.lg}
-                />
-              </PeraView>
-            </PeraView>
+              <AddressDisplay
+                address={selectedContact.address}
+                showCopy
+                rawDisplay
+              />
+            </PWView>
           )}
-          <PeraView style={styles.buttonContainer}>
-            {!!selectedContact && (
-              <PeraButton
+          <PWView style={styles.buttonContainer}>
+            {isEditMode && (
+              <PWButton
                 onPress={openDeleteModal}
                 title="Delete"
                 variant="destructive"
                 minWidth={100}
               />
             )}
-            <PeraButton
+            <PWButton
               onPress={handleSubmit(save)}
               title="Save"
               variant="primary"
               minWidth={100}
             />
-          </PeraView>
-        </PeraView>
+          </PWView>
+        </PWView>
       </ScrollView>
       <Dialog isVisible={deleteModalOpen} onBackdropPress={closeDeleteModal}>
         <Dialog.Title title="Are you sure?" />

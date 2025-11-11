@@ -11,7 +11,7 @@
  */
 
 import { TouchableOpacity } from 'react-native';
-import PeraView from '../view/PeraView';
+import PWView from '../view/PWView';
 import { useStyles } from './styles';
 
 import CameraIcon from '../../../../assets/icons/camera.svg';
@@ -46,7 +46,7 @@ const AddressEntryField = ({
   };
 
   return (
-    <PeraView>
+    <PWView>
       <Input
         {...rest}
         rightIcon={
@@ -77,7 +77,7 @@ const AddressEntryField = ({
           </TouchableOpacity>
         </QRScannerView>
       )}
-    </PeraView>
+    </PWView>
   );
 };
 

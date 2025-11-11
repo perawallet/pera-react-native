@@ -17,12 +17,12 @@ import {
   useV1DevicesNotificationsListInfinite,
 } from '@perawallet/core';
 import { FlatList } from 'react-native-gesture-handler';
-import PeraView from '../../components/common/view/PeraView';
+import PWView from '../../components/common/view/PWView';
 import { ActivityIndicator } from 'react-native';
 import EmptyView from '../../components/common/empty-view/EmptyView';
 import BellIcon from '../../../assets/icons/bell.svg';
 import { useStyles } from './styles';
-import NotificationItem from '../../components/notifications/NotificationItem';
+import NotificationItem from '../../components/notifications/notification-item/NotificationItem';
 import { useMemo } from 'react';
 
 const NotificationsScreen = () => {
@@ -58,20 +58,20 @@ const NotificationsScreen = () => {
   return (
     <MainScreenLayout>
       {isPending && (
-        <PeraView>
+        <PWView>
           <ActivityIndicator size="large" color={theme.colors.secondary} />
-        </PeraView>
+        </PWView>
       )}
       {!isPending && !items.length && (
         <EmptyView
           icon={
-            <PeraView style={styles.iconContainer}>
+            <PWView style={styles.iconContainer}>
               <BellIcon
                 width={theme.spacing.xl * 2}
                 height={theme.spacing.xl * 2}
                 color={theme.colors.textGray}
               />
-            </PeraView>
+            </PWView>
           }
           title="No current notifications"
           body="Your recent transactions, asset requests and other transactions will appear here"

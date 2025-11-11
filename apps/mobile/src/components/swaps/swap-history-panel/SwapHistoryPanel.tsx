@@ -11,13 +11,14 @@
  */
 
 import { useStyles } from './styles';
-import PeraView from '../../common/view/PeraView';
-import { ScrollView, TouchableOpacity } from 'react-native';
+import PWView from '../../common/view/PWView';
+import { ScrollView } from 'react-native';
 import { Text } from '@rneui/themed';
 import { useCallback } from 'react';
 
 import SwapPair from '../swap-pair/SwapPair';
 import { AssetDetails, useCachedAssets } from '@perawallet/core';
+import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity';
 
 const SwapHistoryPanel = () => {
   const themeStyle = useStyles();
@@ -64,15 +65,15 @@ const SwapHistoryPanel = () => {
   ];
 
   return (
-    <PeraView style={themeStyle.container}>
-      <PeraView style={themeStyle.headerContainer}>
+    <PWView style={themeStyle.container}>
+      <PWView style={themeStyle.headerContainer}>
         <Text h4>Swap History</Text>
-        <TouchableOpacity>
+        <PWTouchableOpacity>
           <Text h4 h4Style={themeStyle.headerText}>
             See all
           </Text>
-        </TouchableOpacity>
-      </PeraView>
+        </PWTouchableOpacity>
+      </PWView>
       <ScrollView
         contentContainerStyle={themeStyle.itemScrollContainer}
         horizontal={true}
@@ -81,7 +82,7 @@ const SwapHistoryPanel = () => {
           return renderSwapPair(item, i);
         })}
       </ScrollView>
-    </PeraView>
+    </PWView>
   );
 };
 

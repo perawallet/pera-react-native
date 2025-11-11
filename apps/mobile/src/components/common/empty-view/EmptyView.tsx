@@ -11,7 +11,7 @@
  */
 
 import { Text } from '@rneui/themed';
-import PeraView, { PeraViewProps } from '../view/PeraView';
+import PWView, { PWViewProps } from '../view/PWView';
 import { useStyles } from './styles';
 
 export type EmptyViewProps = {
@@ -19,14 +19,14 @@ export type EmptyViewProps = {
   body: string;
   icon?: React.ReactElement<{}>;
   button?: React.ReactElement<{}>;
-} & PeraViewProps;
+} & PWViewProps;
 
 const EmptyView = (props: EmptyViewProps) => {
   const styles = useStyles();
   const { title, body, icon, style, button, ...rest } = props;
 
   return (
-    <PeraView {...rest} style={[styles.container, style]}>
+    <PWView {...rest} style={[styles.container, style]}>
       {icon}
       {!!title && (
         <Text h3 h3Style={styles.text}>
@@ -35,7 +35,7 @@ const EmptyView = (props: EmptyViewProps) => {
       )}
       <Text style={styles.text}>{body}</Text>
       {button}
-    </PeraView>
+    </PWView>
   );
 };
 

@@ -11,22 +11,19 @@
  */
 
 import { useStyles } from './styles';
-import {
-  StyleProp,
-  TextStyle,
-  TouchableOpacity,
-  TouchableOpacityProps,
-  ViewStyle,
-} from 'react-native';
-import PeraView from '../view/PeraView';
+import { StyleProp, TextStyle, ViewStyle } from 'react-native';
+import PWView from '../view/PWView';
 import { Text } from '@rneui/themed';
+import PWTouchableOpacity, {
+  type PWTouchableOpacityProps,
+} from '../touchable-opacity/PWTouchableOpacity';
 
 export type RoundButtonProps = {
   icon: React.ReactElement<{}>;
   title?: string;
   textStyle?: StyleProp<TextStyle>;
   buttonStyle?: StyleProp<ViewStyle>;
-} & TouchableOpacityProps;
+} & PWTouchableOpacityProps;
 
 const RoundButton = (props: RoundButtonProps) => {
   const style = useStyles(props);
@@ -40,12 +37,12 @@ const RoundButton = (props: RoundButtonProps) => {
   } = props;
 
   return (
-    <PeraView style={propStyle}>
-      <TouchableOpacity style={[style.buttonStyle, buttonStyle]} {...rest}>
+    <PWView style={propStyle}>
+      <PWTouchableOpacity style={[style.buttonStyle, buttonStyle]} {...rest}>
         {icon}
-      </TouchableOpacity>
+      </PWTouchableOpacity>
       <Text style={[style.titleStyle, textStyle]}>{title}</Text>
-    </PeraView>
+    </PWView>
   );
 };
 
