@@ -2,6 +2,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "setup": "bash tools/setup.sh",
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",

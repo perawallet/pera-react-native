@@ -27,7 +27,12 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
     })
 
     test('returns "No Address Found" when address is missing or empty', () => {
-        const acc: WalletAccount = { id: '2', type: 'standard', address: '', canSign: false, }
+        const acc: WalletAccount = {
+            id: '2',
+            type: 'standard',
+            address: '',
+            canSign: false,
+        }
         expect(getAccountDisplayName(acc)).toEqual('No Address Found')
     })
 

@@ -13,9 +13,13 @@ A concise guide to structure, setup, and daily commands.
 
 ```sh
 pnpm install
+# Set up Git hooks (pre-commit and pre-push)
+pnpm run setup
 # First time iOS only
 (cd apps/mobile/ios && bundle install && bundle exec pod install)
 ```
+
+> **Note:** The `pnpm run setup` command installs Git hooks that automatically run linting, formatting, copyright checks before commits, and tests before pushes.
 
 ## Run the mobile app
 

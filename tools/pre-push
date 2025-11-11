@@ -1,0 +1,25 @@
+#!/bin/sh
+# Pre-push hook for running tests
+
+echo "Running pre-push checks..."
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Run tests
+echo "${YELLOW}Running tests...${NC}"
+pnpm run test
+
+if [ $? -ne 0 ]; then
+  echo "${RED}Tests failed. Please fix the failing tests before pushing.${NC}"
+  echo "${YELLOW}You can run 'pnpm test' to see the test results.${NC}"
+  exit 1
+fi
+
+echo "${GREEN}✓ All tests passed${NC}"
+
+echo "\n${GREEN}All pre-push checks passed!${NC}"
+exit 0
