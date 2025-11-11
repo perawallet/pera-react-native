@@ -17,22 +17,6 @@ echo -e "${YELLOW}Setting up Git hooks...${NC}"
 # Create .git/hooks directory if it doesn't exist
 mkdir -p .git/hooks
 
-# Create symlink for pre-commit hook
-if [ -L .git/hooks/pre-commit ]; then
-  echo "  • Pre-commit hook symlink already exists"
-elif [ -f .git/hooks/pre-commit ]; then
-  echo "  • Backing up existing pre-commit hook to pre-commit.backup"
-  mv .git/hooks/pre-commit .git/hooks/pre-commit.backup
-  ln -s ../../tools/pre-commit .git/hooks/pre-commit
-  echo "  • Pre-commit hook symlink created"
-else
-  ln -s ../../tools/pre-commit .git/hooks/pre-commit
-  echo "  • Pre-commit hook symlink created"
-fi
-
-# Make sure the pre-commit script is executable
-chmod +x tools/pre-commit
-
 # Create symlink for pre-push hook
 if [ -L .git/hooks/pre-push ]; then
   echo "  • Pre-push hook symlink already exists"
@@ -49,6 +33,22 @@ fi
 # Make sure the pre-push script is executable
 chmod +x tools/pre-push
 
+# Create symlink for commit-msg hook
+if [ -L .git/hooks/commit-msg ]; then
+  echo "  • Commit-msg hook symlink already exists"
+elif [ -f .git/hooks/commit-msg ]; then
+  echo "  • Backing up existing commit-msg hook to commit-msg.backup"
+  mv .git/hooks/commit-msg .git/hooks/commit-msg.backup
+  ln -s ../../tools/commit-msg .git/hooks/commit-msg
+  echo "  • Commit-msg hook symlink created"
+else
+  ln -s ../../tools/commit-msg .git/hooks/commit-msg
+  echo "  • Commit-msg hook symlink created"
+fi
+
+# Make sure the commit-msg script is executable
+chmod +x tools/commit-msg
+
 echo -e "${GREEN}✓ Git hooks configured${NC}"
 
 # Add any additional setup steps here in the future
@@ -57,4 +57,6 @@ echo -e "${GREEN}✓ Git hooks configured${NC}"
 # pnpm install
 
 echo -e "\n${GREEN}✅ Project setup complete!${NC}"
-echo -e "Git hooks are now active and will run on every commit and push."
+echo -e "Git hooks are now active:"
+echo -e "  • Commit-msg: conventional commit validation"
+echo -e "  • Pre-push: linting, formatting, copyright checks, and tests"
