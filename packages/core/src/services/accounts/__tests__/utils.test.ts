@@ -9,12 +9,13 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
             type: 'standard',
             address: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
             name: 'Named',
+            canSign: true,
         }
         expect(getAccountDisplayName(acc)).toEqual('Named')
     })
 
     test('returns "No Address Found" when address is missing or empty', () => {
-        const acc: WalletAccount = { id: '2', type: 'standard', address: '' }
+        const acc: WalletAccount = { id: '2', type: 'standard', address: '', canSign: false, }
         expect(getAccountDisplayName(acc)).toEqual('No Address Found')
     })
 
@@ -23,6 +24,7 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
             id: '3',
             type: 'standard',
             address: 'SHORT',
+            canSign: true,
         }
         expect(getAccountDisplayName(acc1)).toEqual('SHORT')
 
@@ -30,6 +32,7 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
             id: '4',
             type: 'standard',
             address: 'ABCDEFGHIJK',
+            canSign: true,
         }
         expect(getAccountDisplayName(acc2)).toEqual('ABCDEFGHIJK')
     })

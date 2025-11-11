@@ -29,12 +29,14 @@ describe('services/accounts/store', () => {
             name: 'Alice',
             type: 'standard',
             address: 'ALICE-ADDR',
+            canSign: true,
         }
         const a2: WalletAccount = {
             id: '2',
             name: 'Bob',
             type: 'standard',
             address: 'BOB-ADDR',
+            canSign: true,
         }
 
         state.setAccounts([a1, a2])
@@ -46,6 +48,7 @@ describe('services/accounts/store', () => {
             name: 'Carol',
             type: 'standard',
             address: 'CAROL-ADDR',
+            canSign: true,
         }
         state.setAccounts([a1, a3])
         expect(state.accounts).toEqual([a1, a3])
@@ -69,12 +72,14 @@ describe('services/accounts/store', () => {
             name: 'Alice',
             type: 'standard',
             address: 'ALICE-ADDR',
+            canSign: true,
         }
         const a2: WalletAccount = {
             id: '2',
             name: 'Bob',
             type: 'standard',
             address: 'BOB-ADDR',
+            canSign: true,
         }
 
         state.setAccounts([a1, a2])
@@ -113,12 +118,14 @@ describe('services/accounts/store', () => {
             name: 'Alice',
             type: 'standard',
             address: 'ALICE-ADDR',
+            canSign: true,
         }
         const a2: WalletAccount = {
             id: '2',
             name: 'Bob',
             type: 'standard',
             address: 'BOB-ADDR',
+            canSign: true,
         }
 
         state.setAccounts([a1, a2])
@@ -139,6 +146,7 @@ describe('services/accounts/store', () => {
                     name: 'Zed',
                     type: 'standard',
                     address: 'ZED-ADDR',
+                    canSign: true,
                 },
             ],
             selectedAccountAddress: 'ZED-ADDR',
@@ -165,6 +173,7 @@ describe('services/accounts/store', () => {
                 name: 'Yen',
                 type: 'standard',
                 address: 'YEN-ADDR',
+                canSign: true,
             },
         ]
         state.setAccounts(updated)

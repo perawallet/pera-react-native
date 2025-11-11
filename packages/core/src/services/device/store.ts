@@ -24,11 +24,6 @@ export type DeviceSlice = {
     setDeviceID: (network: Network, id: string | null) => void
 }
 
-type PersistedDeviceSlice = {
-    fcmToken: string | null | undefined
-    deviceIDs: Record<string, string | null> | undefined
-}
-
 export const createDeviceSlice: StateCreator<
     DeviceSlice,
     [],
@@ -66,7 +61,8 @@ export const partializeDeviceSlice = (state: DeviceSlice) => {
 
 // Rehydration function to convert persisted object back to Map
 export const rehydrateDeviceSlice = (
-    persistedState: PersistedDeviceSlice,
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
+    persistedState: any,
 ): Partial<DeviceSlice> => {
     if (persistedState) {
         return {

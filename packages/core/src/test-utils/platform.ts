@@ -29,7 +29,7 @@ export const buildTestPlatform = (
     overrides: Overrides = {},
 ): PlatformServices => {
     const defaultSecure: SecureStorageService = {
-        async setItem(_k: string, _v: string) {},
+        async setItem(_k: string, _v: Buffer) {},
         async getItem(_k: string) {
             return null
         },
@@ -76,6 +76,12 @@ export const buildTestPlatform = (
         },
         getDeviceLocale() {
             return 'testLocale'
+        },
+        getAppVersion() {
+            return 'testVersion'
+        },
+        getUserAgent() {
+            return 'testUserAgent'
         },
     }
 

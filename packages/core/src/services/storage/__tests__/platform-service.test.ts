@@ -45,7 +45,7 @@ describe('services/storage/platform-service', () => {
 
     test('useSecureStorageService resolves the registered SecureStorageService from the container', async () => {
         const dummy: SecureStorageService = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: Buffer) => {}),
             getItem: vi.fn(async (_k: string) => null),
             removeItem: vi.fn(async (_k: string) => {}),
             authenticate: vi.fn(async () => true),
