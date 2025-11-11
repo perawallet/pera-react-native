@@ -19,7 +19,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useStyles } from './styles';
 import PWView from '../../components/common/view/PWView';
 import { Transaction } from '@perawallet/core/src/api/generated/indexer';
-import PWButton from '@components/common/button/PWButton';
+import PWButton from '../../components/common/button/PWButton';
 
 type SettingsSubPageScreenProps = StaticScreenProps<{
   title: string;

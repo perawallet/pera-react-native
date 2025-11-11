@@ -19,7 +19,7 @@ import { Image, Text, useTheme } from '@rneui/themed';
 import { useStyles } from './styles';
 import { useCallback, useMemo } from 'react';
 import BellIcon from '../../../../assets/icons/bell.svg';
-import PWTouchableOpacity from '@components/common/touchable-opacity/PWTouchableOpacity';
+import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity';
 
 type NotificationItemProps = {
   item: NotificationV2SerializerResponse;

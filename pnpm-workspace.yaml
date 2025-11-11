@@ -14,13 +14,14 @@ catalog:
   '@kubb/plugin-react-query': ^3.18.3
   '@kubb/plugin-ts': ^3.18.3
   '@kubb/plugin-zod': ^3.18.3
-  '@tanstack/query-async-storage-persister': ^5.87.4
-  '@tanstack/query-sync-storage-persister': ^5.87.4
-  '@tanstack/react-query': ^5.87.4
-  '@tanstack/react-query-persist-client': ^5.87.4
-  '@types/react': ^19.1.0
-  '@vitejs/plugin-react': ^5.0.3
+  '@tanstack/query-async-storage-persister': ^5.90.9
+  '@tanstack/query-sync-storage-persister': ^5.90.9
+  '@tanstack/react-query': ^5.90.7
+  '@tanstack/react-query-persist-client': ^5.90.9
+  '@types/react': ^19.2.2
+  '@vitejs/plugin-react': ^5.1.0
   '@vitest/coverage-v8': ^2.1.9
+  algosdk: ^3.5.2
   bip39: ^3.1.0
   eslint: ^8.57.1
   prettier: 3.6.2
@@ -28,12 +29,11 @@ catalog:
   react-dom: 19.1.0
   reflect-metadata: 0.2.2
   tsyringe: 4.10.0
-  typescript: ^5.8.3
+  typescript: ^5.9.3
   util: ^0.12.5
-  vite: ^7.1.2
+  vite: ^7.2.2
   vitest: ^2.1.9
   zustand: ^5.0.8
-  algosdk: ^3.4.0
 
 onlyBuiltDependencies:
   - '@firebase/util'

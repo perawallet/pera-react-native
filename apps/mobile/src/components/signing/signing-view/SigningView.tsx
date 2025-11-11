@@ -23,11 +23,11 @@ import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay';
 import Decimal from 'decimal.js';
 import { ScrollView } from 'react-native';
 
-import ChevronRight from '../../../assets/icons/chevron-right.svg';
+import ChevronRight from '../../../../assets/icons/chevron-right.svg';
 import TransactionIcon from '../../common/transaction-icon/TransactionIcon';
 import BalanceImpactView from '../balance-impact/BalanceImpactView';
 import useToast from '../../../hooks/toast';
-import PWTouchableOpacity from '@components/common/touchable-opacity/PWTouchableOpacity';
+import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity';
 
 type SigningViewProps = {
   request: SignRequest;

@@ -27,7 +27,7 @@ import PanelButton from '../../components/common/panel-button/PanelButton';
 import CardPanel from '../../components/cards/card-panel/CardPanel';
 import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import PWTouchableOpacity from '@components/common/touchable-opacity/PWTouchableOpacity';
+import PWTouchableOpacity from '../../components/common/touchable-opacity/PWTouchableOpacity';
 
 const MenuScreen = () => {
   const { theme } = useTheme();

@@ -4,11 +4,11 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
-    "@typescript-eslint/eslint-plugin": "^7.1.0",
-    "@typescript-eslint/parser": "^7.1.0",
-    "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-erasable-syntax-only": "^0.3.1",
-    "eslint-plugin-package-json": "^0.56.2"
+    "@typescript-eslint/eslint-plugin": "^8.46.4",
+    "@typescript-eslint/parser": "^8.46.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-erasable-syntax-only": "^0.4.0",
+    "eslint-plugin-package-json": "^0.65.3"
   },
   "publishConfig": {
     "access": "public"

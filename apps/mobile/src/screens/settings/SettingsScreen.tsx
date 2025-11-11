@@ -25,7 +25,7 @@ import ShieldIcon from '../../../assets/icons/gear.svg';
 import { useDeviceInfoService } from '@perawallet/core';
 import { useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import PWTouchableOpacity from '@components/common/touchable-opacity/PWTouchableOpacity';
+import PWTouchableOpacity from '../../components/common/touchable-opacity/PWTouchableOpacity';
 
 //TODO: build out all the settins pages
 const settingsOptions = [

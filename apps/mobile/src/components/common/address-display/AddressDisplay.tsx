@@ -2,7 +2,7 @@ import { Text, TextProps, useTheme } from '@rneui/themed';
 import PWView, { PWViewProps } from '../view/PWView';
 import { useStyles } from './styles';
 import { truncateAlgorandAddress, useContacts } from '@perawallet/core';
-import useToast from 'hooks/toast';
+import useToast from '../../../hooks/toast';
 import Clipboard from '@react-native-clipboard/clipboard';
 
 import CopyIcon from '../../../../assets/icons/copy.svg';
