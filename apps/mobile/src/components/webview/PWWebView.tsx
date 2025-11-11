@@ -142,12 +142,14 @@ const PWWebView = (props: PWWebViewProps) => {
         }}
         style={styles.webview}
         renderLoading={() => (
-          <ActivityIndicator
-            style={styles.loading}
-            color={theme.colors.secondary}
-            size="large"
-            hidesWhenStopped
-          />
+          <PWView style={StyleSheet.absoluteFillObject}>
+            <ActivityIndicator
+              style={styles.loading}
+              color={theme.colors.secondary}
+              size="large"
+              hidesWhenStopped
+            />
+          </PWView>
         )}
         renderError={() => {
           return (
