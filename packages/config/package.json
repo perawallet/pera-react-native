@@ -22,6 +22,7 @@
     "@babel/runtime": "catalog:",
     "@perawallet/eslint-config": "workspace:*",
     "@testing-library/react": "^16.3.0",
+    "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "eslint": "catalog:",
     "eslint-plugin-erasable-syntax-only": "^0.3.1",

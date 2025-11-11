@@ -19,6 +19,7 @@ catalog:
   '@tanstack/react-query': ^5.87.4
   '@tanstack/react-query-persist-client': ^5.87.4
   '@types/react': ^19.1.0
+  '@vitejs/plugin-react': ^5.0.3
   '@vitest/coverage-v8': ^2.1.9
   bip39: ^3.1.0
   eslint: ^8.57.1
