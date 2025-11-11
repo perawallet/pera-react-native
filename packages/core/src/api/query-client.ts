@@ -20,26 +20,20 @@ import type {
 import { useAppStore } from '../store/app-store'
 import { config } from '@perawallet/config'
 
-export interface RequestConfig<TData = unknown> {
-    url?: string
-    method: 'GET' | 'PUT' | 'PATCH' | 'POST' | 'DELETE'
-    params?: Record<string, unknown>
-    data?: TData | FormData
-    responseType?:
-        | 'arraybuffer'
-        | 'blob'
-        | 'document'
-        | 'json'
-        | 'text'
-        | 'stream'
-    signal?: AbortSignal
-    headers?: HeadersInit
+export type RequestConfig<TData = unknown> = {
+  url?: string
+  method: 'GET' | 'PUT' | 'PATCH' | 'POST' | 'DELETE'
+  params?: object
+  data?: TData | FormData
+  responseType?: 'arraybuffer' | 'blob' | 'document' | 'json' | 'text' | 'stream'
+  signal?: AbortSignal
+  headers?: HeadersInit
 }
 
-export interface ResponseConfig<TData = unknown> {
-    data: TData
-    status: number
-    statusText: string
+export type ResponseConfig<TData = unknown> = {
+  data: TData
+  status: number
+  statusText: string
 }
 
 export type ResponseErrorConfig<TError = unknown> = TError

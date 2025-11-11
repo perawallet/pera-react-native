@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-export * from './backend-query-client'
-export * from './algod-query-client'
-export * from './indexer-query-client'
+export * from './query-client'
+export { backendFetchClient, updateBackendHeaders } from './backend-query-client'
+export { algodFetchClient } from './algod-query-client'
+export { indexerFetchClient } from './indexer-query-client'
 
 // Avoid duplicate re-exports across generated modules (TS2308)
 export * from './generated/backend'
