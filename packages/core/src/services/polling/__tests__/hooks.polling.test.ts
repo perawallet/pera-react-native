@@ -233,7 +233,9 @@ describe('services/polling/usePolling', () => {
                 { id: '4', type: 'standard', address: 'ADDR4' } as any,
             ])
 
-        backendSpies.mutateAsync.mockRejectedValueOnce(new Error('Network error'))
+        backendSpies.mutateAsync.mockRejectedValueOnce(
+            new Error('Network error'),
+        )
 
         const { usePolling } = await import('../hooks')
         const { result } = renderHook(() => usePolling())

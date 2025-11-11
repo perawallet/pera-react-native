@@ -14,7 +14,14 @@ import { Text } from '@rneui/themed';
 import MainScreenLayout from '../../layouts/MainScreenLayout';
 
 import { StaticScreenProps } from '@react-navigation/native';
-import { Network, Networks, useDevice, useNetwork, useSettings, useSigningRequest } from '@perawallet/core';
+import {
+  Network,
+  Networks,
+  useDevice,
+  useNetwork,
+  useSettings,
+  useSigningRequest,
+} from '@perawallet/core';
 import { useQueryClient } from '@tanstack/react-query';
 import { useStyles } from './styles';
 import PWView from '../../components/common/view/PWView';
@@ -27,9 +34,9 @@ type SettingsSubPageScreenProps = StaticScreenProps<{
 
 const SettingsSubPageScreen = ({ route }: SettingsSubPageScreenProps) => {
   const styles = useStyles();
-  const { theme, setTheme } = useSettings()
-  const { network, setNetwork } = useNetwork()
-  const { deviceIDs } = useDevice()
+  const { theme, setTheme } = useSettings();
+  const { network, setNetwork } = useNetwork();
+  const { deviceIDs } = useDevice();
   const { addSignRequest } = useSigningRequest();
   const { registerDevice } = useDevice();
   const queryClient = useQueryClient();

@@ -52,10 +52,7 @@ const ContactItem = ({ contact }: { contact: Contact }) => {
     navigation.navigate('ViewContact');
   };
   return (
-    <PWTouchableOpacity
-      onPress={viewContact}
-      style={styles.contactContainer}
-    >
+    <PWTouchableOpacity onPress={viewContact} style={styles.contactContainer}>
       <ContactAvatar contact={contact} size="small" />
       <Text style={styles.contactName}>{contact.name}</Text>
     </PWTouchableOpacity>

@@ -56,11 +56,11 @@ type WebviewMessage = {
 };
 
 export const usePeraWebviewInterface = (webview: WebView | null) => {
-  const { showToast } = useToast()
-  const accounts = useAllAccounts()
-  const deviceID = useDeviceID()
-  const { theme } = useSettings()
-  const { network } = useNetwork()
+  const { showToast } = useToast();
+  const accounts = useAllAccounts();
+  const deviceID = useDeviceID();
+  const { theme } = useSettings();
+  const { network } = useNetwork();
   const deviceInfo = useDeviceInfoService();
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
 

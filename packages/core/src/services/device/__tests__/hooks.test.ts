@@ -61,7 +61,8 @@ const storeMock = vi.hoisted(() => {
             const setState = (partial: any) => {
                 state = { ...state, ...partial }
             }
-            const useAppStore: any = (selector?: any) => selector ? selector(state) : state
+            const useAppStore: any = (selector?: any) =>
+                selector ? selector(state) : state
             ;(useAppStore as any).getState = () => state
             ;(useAppStore as any).setState = setState
             // slice updaters that our hook selects
@@ -295,7 +296,9 @@ describe('services/device/hooks', () => {
         })
 
         expect(api.createSpy).toHaveBeenCalledTimes(1)
-        expect((useAppStore as any).getState().deviceIDs.get('testnet')).toBe(null)
+        expect((useAppStore as any).getState().deviceIDs.get('testnet')).toBe(
+            null,
+        )
     })
 
     test('registerDevice handles updateDevice with null push_token', async () => {

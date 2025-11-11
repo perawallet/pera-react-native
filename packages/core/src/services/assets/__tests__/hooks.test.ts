@@ -73,9 +73,7 @@ describe('services/assets/hooks', () => {
 
     test('merges new assetIDs with existing ones', () => {
         const setAssetIDs = vi.fn()
-        storeMock
-            .create()
-            .useAppStore.setState({ assetIDs: [1], setAssetIDs })
+        storeMock.create().useAppStore.setState({ assetIDs: [1], setAssetIDs })
 
         renderHook(() => useCachedAssets([1, 2]))
         expect(setAssetIDs).toHaveBeenCalledWith([1, 2])
@@ -83,9 +81,7 @@ describe('services/assets/hooks', () => {
 
     test('handles null assetIDs from store', () => {
         const setAssetIDs = vi.fn()
-        storeMock
-            .create()
-            .useAppStore.setState({ assetIDs: null, setAssetIDs })
+        storeMock.create().useAppStore.setState({ assetIDs: null, setAssetIDs })
 
         renderHook(() => useCachedAssets([1, 2]))
         expect(setAssetIDs).toHaveBeenCalledWith([1, 2])

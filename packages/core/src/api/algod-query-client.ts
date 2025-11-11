@@ -16,19 +16,25 @@ import { createFetchClient, logRequest, logResponse } from './query-client'
 
 //TODO the kubb generated code looks for these types here so we duplicate in all 3 places
 export type RequestConfig<TData = unknown> = {
-  url?: string
-  method: 'GET' | 'PUT' | 'PATCH' | 'POST' | 'DELETE'
-  params?: object
-  data?: TData | FormData
-  responseType?: 'arraybuffer' | 'blob' | 'document' | 'json' | 'text' | 'stream'
-  signal?: AbortSignal
-  headers?: HeadersInit
+    url?: string
+    method: 'GET' | 'PUT' | 'PATCH' | 'POST' | 'DELETE'
+    params?: object
+    data?: TData | FormData
+    responseType?:
+        | 'arraybuffer'
+        | 'blob'
+        | 'document'
+        | 'json'
+        | 'text'
+        | 'stream'
+    signal?: AbortSignal
+    headers?: HeadersInit
 }
 
 export type ResponseConfig<TData = unknown> = {
-  data: TData
-  status: number
-  statusText: string
+    data: TData
+    status: number
+    statusText: string
 }
 
 export type ResponseErrorConfig<TError = unknown> = TError

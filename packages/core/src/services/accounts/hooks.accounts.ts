@@ -59,7 +59,7 @@ export const useSelectedAccountAddress = () => {
     const { selectedAccountAddress, setSelectedAccountAddress } = useAppStore()
     return {
         selectedAccountAddress,
-        setSelectedAccountAddress
+        setSelectedAccountAddress,
     }
 }
 
@@ -98,7 +98,6 @@ export const useTransactionSigner = () => {
     }
 
     return {
-        
         signTransactionForAddress,
     }
 }

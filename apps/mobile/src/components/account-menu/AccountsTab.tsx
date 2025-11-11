@@ -32,7 +32,8 @@ const AccountsTab = (props: AccountsTabProps) => {
   const styles = useStyles();
   const { theme } = useTheme();
   const accounts = useAllAccounts();
-  const { selectedAccountAddress, setSelectedAccountAddress } = useSelectedAccountAddress();
+  const { selectedAccountAddress, setSelectedAccountAddress } =
+    useSelectedAccountAddress();
 
   const getRouteName = (account?: WalletAccount): string => {
     return account ? getAccountDisplayName(account) : 'Account';

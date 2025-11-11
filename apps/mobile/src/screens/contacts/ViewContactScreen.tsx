@@ -19,7 +19,7 @@ import AddressDisplay from '../../components/common/address-display/AddressDispl
 import { useContacts } from '@perawallet/core';
 
 const ViewContactScreen = () => {
-  const { selectedContact } = useContacts()
+  const { selectedContact } = useContacts();
   const styles = useStyles();
 
   if (!selectedContact) {

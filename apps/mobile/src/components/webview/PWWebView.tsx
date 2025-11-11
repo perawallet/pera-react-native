@@ -63,8 +63,8 @@ const PWWebView = (props: PWWebViewProps) => {
   }, [deviceInfo]);
 
   const reload = () => {
-    webview.current?.reload()
-  }
+    webview.current?.reload();
+  };
 
   const handleEvent = useCallback(
     (event: WebViewMessageEvent) => {
@@ -94,7 +94,7 @@ const PWWebView = (props: PWWebViewProps) => {
   const showLoadError = useCallback(
     (event: WebViewErrorEvent) => {
       showToast({
-        title: "Failed to load resource",
+        title: 'Failed to load resource',
         body: `${event.nativeEvent.url}`,
         type: 'error',
       });
@@ -150,12 +150,18 @@ const PWWebView = (props: PWWebViewProps) => {
           />
         )}
         renderError={() => {
-          return <PWView style={StyleSheet.absoluteFillObject}>
-            <EmptyView title="Failed to load page" 
-                            body="An error occurred loading this page.  Please 
-                                  check your internet connection and try again." 
-                            button={<PWButton title="Reload" onPress={reload} variant="primary" />}/>
-          </PWView>
+          return (
+            <PWView style={StyleSheet.absoluteFillObject}>
+              <EmptyView
+                title="Failed to load page"
+                body="An error occurred loading this page.  Please 
+                                  check your internet connection and try again."
+                button={
+                  <PWButton title="Reload" onPress={reload} variant="primary" />
+                }
+              />
+            </PWView>
+          );
         }}
         containerStyle={styles.container}
         startInLoadingState

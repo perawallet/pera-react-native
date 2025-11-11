@@ -12,10 +12,10 @@
 
 import { useMemo } from 'react';
 import { useColorScheme } from 'react-native';
-import { useSettings } from '@perawallet/core'
+import { useSettings } from '@perawallet/core';
 
 export const useIsDarkMode = () => {
-  const { theme: themeMode } = useSettings()
+  const { theme: themeMode } = useSettings();
   const scheme = useColorScheme();
   const isDarkMode = useMemo(() => {
     return (

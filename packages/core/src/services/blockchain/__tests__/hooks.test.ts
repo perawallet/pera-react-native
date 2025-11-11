@@ -33,7 +33,8 @@ const storeMock = vi.hoisted(() => {
     let state: any = { network: 'mainnet' }
     return {
         create() {
-            const useAppStore: any = (selector?: any) => selector ? selector(state) : state
+            const useAppStore: any = (selector?: any) =>
+                selector ? selector(state) : state
             ;(useAppStore as any).getState = () => state
             ;(useAppStore as any).setState = (partial: any) => {
                 state = { ...state, ...partial }
@@ -81,7 +82,10 @@ describe('services/blockchain/hooks', () => {
     })
 
     test('useNetwork returns network and setNetwork', () => {
-        ;(useAppStore as any).setState({ network: 'testnet', setNetwork: vi.fn() })
+        ;(useAppStore as any).setState({
+            network: 'testnet',
+            setNetwork: vi.fn(),
+        })
         const { result } = renderHook(() => useNetwork())
 
         expect(result.current.network).toBe('testnet')
@@ -96,7 +100,7 @@ describe('services/blockchain/hooks', () => {
         ;(useAppStore as any).setState({
             pendingSignRequests: mockRequests,
             addSignRequest: mockAdd,
-            removeSignRequest: mockRemove
+            removeSignRequest: mockRemove,
         })
 
         const { result } = renderHook(() => useSigningRequest())

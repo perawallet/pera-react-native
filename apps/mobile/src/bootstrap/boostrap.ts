@@ -38,7 +38,7 @@ export const useBootstrapper = () => {
   const crashlyticsService = useCrashReportingService();
   const remoteConfigService = useRemoteConfigService();
   const notificationService = useNotificationService();
-  const { setFcmToken } = useFcmToken()
+  const { setFcmToken } = useFcmToken();
 
   return async () => {
     const crashlyticsInit = crashlyticsService.initializeCrashReporting();

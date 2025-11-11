@@ -30,15 +30,16 @@ export const useNetwork = () => {
     const { network, setNetwork } = useAppStore()
     return {
         network,
-        setNetwork
+        setNetwork,
     }
 }
 
 export const useSigningRequest = () => {
-    const { pendingSignRequests, addSignRequest, removeSignRequest } = useAppStore()
+    const { pendingSignRequests, addSignRequest, removeSignRequest } =
+        useAppStore()
     return {
         pendingSignRequests,
         addSignRequest,
-        removeSignRequest
+        removeSignRequest,
     }
 }

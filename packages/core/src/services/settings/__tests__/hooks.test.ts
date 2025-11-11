@@ -19,7 +19,8 @@ const storeMock = vi.hoisted(() => {
     let state: any = { theme: 'light' }
     return {
         create() {
-            const useAppStore: any = (selector?: any) => selector ? selector(state) : state
+            const useAppStore: any = (selector?: any) =>
+                selector ? selector(state) : state
             ;(useAppStore as any).getState = () => state
             ;(useAppStore as any).setState = (partial: any) => {
                 state = { ...state, ...partial }

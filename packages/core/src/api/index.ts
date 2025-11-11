@@ -11,7 +11,10 @@
  */
 
 export * from './query-client'
-export { backendFetchClient, updateBackendHeaders } from './backend-query-client'
+export {
+    backendFetchClient,
+    updateBackendHeaders,
+} from './backend-query-client'
 export { algodFetchClient } from './algod-query-client'
 export { indexerFetchClient } from './indexer-query-client'
 

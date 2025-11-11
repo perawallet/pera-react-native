@@ -34,7 +34,7 @@ export const useDevice = () => {
     const network = useAppStore(state => state.network)
     const deviceIDs = useAppStore(state => state.deviceIDs)
     const deviceID = useDeviceID()
-    const { fcmToken, setFcmToken } = useAppStore()
+    const { fcmToken } = useAppStore()
     const setDeviceID = useAppStore(state => state.setDeviceID)
     const deviceInfoService = useDeviceInfoService()
 

@@ -402,12 +402,14 @@ describe('services/accounts/hooks', () => {
         const mockSetSelectedAccountAddress = vi.fn()
         useAppStore.setState({
             selectedAccountAddress: 'TEST_SELECTED_ADDR',
-            setSelectedAccountAddress: mockSetSelectedAccountAddress
+            setSelectedAccountAddress: mockSetSelectedAccountAddress,
         })
 
         const { result } = renderHook(() => useSelectedAccountAddress())
         expect(result.current.selectedAccountAddress).toBe('TEST_SELECTED_ADDR')
-        expect(result.current.setSelectedAccountAddress).toBe(mockSetSelectedAccountAddress)
+        expect(result.current.setSelectedAccountAddress).toBe(
+            mockSetSelectedAccountAddress,
+        )
     })
 })
 
