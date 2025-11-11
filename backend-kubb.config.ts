@@ -1,5 +1,4 @@
 import { defineConfig } from '@kubb/core'
-import { pluginMsw } from '@kubb/plugin-msw'
 import { pluginOas } from '@kubb/plugin-oas'
 import { pluginTs } from '@kubb/plugin-ts'
 import { pluginReactQuery } from '@kubb/plugin-react-query'
@@ -57,13 +56,6 @@ export default defineConfig(() => {
                 unknownType: 'unknown',
                 inferred: true,
                 dateType: false, //TODO: zod doesn't support +1000 style offsets - we need to switch the backend to a supported model
-            }),
-            pluginMsw({
-                output: {
-                    path: 'mocks',
-                    barrelType: 'named',
-                },
-                handlers: true,
             }),
         ],
     }
