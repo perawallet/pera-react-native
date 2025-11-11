@@ -21,6 +21,6 @@ export const v1DiscoverLuckySpinAvailabilityList200Schema = z.unknown()
 
 export type V1DiscoverLuckySpinAvailabilityList200Schema = z.infer<typeof v1DiscoverLuckySpinAvailabilityList200Schema>
 
-export const v1DiscoverLuckySpinAvailabilityListQueryResponseSchema = z.lazy(() => v1DiscoverLuckySpinAvailabilityList200Schema)
+export const v1DiscoverLuckySpinAvailabilityListQueryResponseSchema = v1DiscoverLuckySpinAvailabilityList200Schema
 
 export type V1DiscoverLuckySpinAvailabilityListQueryResponseSchema = z.infer<typeof v1DiscoverLuckySpinAvailabilityListQueryResponseSchema>

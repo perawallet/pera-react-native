@@ -15,12 +15,48 @@
 * Do not edit manually.
 */
 
-import type { AccountApplicationInformationQueryResponse } from "../types/AccountApplicationInformation.ts";
+import type { AccountApplicationInformationQueryResponse, AccountApplicationInformation400, AccountApplicationInformation401, AccountApplicationInformation500 } from "../types/AccountApplicationInformation.ts";
 import { http } from "msw";
+
+export function accountApplicationInformationHandlerResponse200(data: AccountApplicationInformationQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function accountApplicationInformationHandlerResponse400(data: AccountApplicationInformation400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function accountApplicationInformationHandlerResponse401(data: AccountApplicationInformation401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function accountApplicationInformationHandlerResponse500(data: AccountApplicationInformation500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function accountApplicationInformationHandler(data?: AccountApplicationInformationQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/accounts/:address/applications/:application-id', function handler(info) {
     if(typeof data === 'function') return data(info)
 

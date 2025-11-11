@@ -22,7 +22,7 @@ import { z } from "zod";
  * @description Initial states of resources that were accessed during simulation.
  */
 export const simulateInitialStatesSchema = z.object({
-    "app-initial-states": z.array(z.lazy(() => applicationInitialStatesSchema).describe("An application's initial global/local/box states that were accessed during simulation.")).describe("The initial states of accessed application before simulation. The order of this array is arbitrary.").optional()
+    "app-initial-states": z.optional(z.array(z.lazy(() => applicationInitialStatesSchema).describe("An application's initial global/local/box states that were accessed during simulation.")).describe("The initial states of accessed application before simulation. The order of this array is arbitrary."))
     }).describe("Initial states of resources that were accessed during simulation.")
 
 export type SimulateInitialStatesSchema = z.infer<typeof simulateInitialStatesSchema>

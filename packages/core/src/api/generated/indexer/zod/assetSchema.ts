@@ -22,9 +22,9 @@ import { z } from "zod";
  * @description Specifies both the unique identifier and the parameters for an asset
  */
 export const assetSchema = z.object({
-    "created-at-round": z.number().int().describe("Round during which this asset was created.").optional(),
-"deleted": z.boolean().describe("Whether or not this asset is currently deleted.").optional(),
-"destroyed-at-round": z.number().int().describe("Round during which this asset was destroyed.").optional(),
+    "created-at-round": z.optional(z.number().int().describe("Round during which this asset was created.")),
+"deleted": z.optional(z.boolean().describe("Whether or not this asset is currently deleted.")),
+"destroyed-at-round": z.optional(z.number().int().describe("Round during which this asset was destroyed.")),
 "index": z.number().int().describe("unique asset identifier"),
 "params": z.lazy(() => assetParamsSchema).describe("AssetParams specifies the parameters for an asset.\n\n\\[apar\\] when part of an AssetConfig transaction.\n\nDefinition:\ndata/transactions/asset.go : AssetParams")
     }).describe("Specifies both the unique identifier and the parameters for an asset")

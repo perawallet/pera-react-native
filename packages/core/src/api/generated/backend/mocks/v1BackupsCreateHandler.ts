@@ -18,9 +18,18 @@
 import type { V1BackupsCreateMutationResponse } from "../types/V1BackupsCreate.ts";
 import { http } from "msw";
 
+export function v1BackupsCreateHandlerResponse201(data: V1BackupsCreateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 201,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1BackupsCreateHandler(data?: V1BackupsCreateMutationResponse | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v1/backups/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

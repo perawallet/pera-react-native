@@ -20,11 +20,11 @@ import { z } from "zod";
 
 export const poolSerializerResponseSchema = z.object({
     "id": z.number().int(),
-"provider_name": z.string().min(1).optional(),
+"provider_name": z.optional(z.string().min(1)),
 "total_value_locked": z.string(),
 "apr_for_last_7_days": z.string(),
-"asset_1": z.lazy(() => simpleAssetSchema).optional(),
-"asset_2": z.lazy(() => simpleAssetSchema).optional()
+"asset_1": z.optional(z.lazy(() => simpleAssetSchema)),
+"asset_2": z.optional(z.lazy(() => simpleAssetSchema))
     })
 
 export type PoolSerializerResponseSchema = z.infer<typeof poolSerializerResponseSchema>

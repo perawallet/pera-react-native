@@ -22,10 +22,10 @@ import { z } from "zod";
  * @description Stores the TEAL eval step data
  */
 export const dryrunStateSchema = z.object({
-    "error": z.string().describe("Evaluation error if any").optional(),
+    "error": z.optional(z.string().describe("Evaluation error if any")),
 "line": z.number().int().describe("Line number"),
 "pc": z.number().int().describe("Program counter"),
-"scratch": z.array(z.lazy(() => tealValueSchema).describe("Represents a TEAL value.")).optional(),
+"scratch": z.optional(z.array(z.lazy(() => tealValueSchema).describe("Represents a TEAL value."))),
 "stack": z.array(z.lazy(() => tealValueSchema).describe("Represents a TEAL value."))
     }).describe("Stores the TEAL eval step data")
 

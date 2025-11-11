@@ -18,9 +18,18 @@
 import type { V1DiscoverPoolsListQueryResponse } from "../types/V1DiscoverPoolsList.ts";
 import { http } from "msw";
 
+export function v1DiscoverPoolsListHandlerResponse200(data: V1DiscoverPoolsListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1DiscoverPoolsListHandler(data?: V1DiscoverPoolsListQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/discover/pools/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

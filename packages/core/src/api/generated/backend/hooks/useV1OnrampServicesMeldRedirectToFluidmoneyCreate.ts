@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1OnrampServicesMeldRedirectToFluidmoneyCreateMutationResponse } from "../types/V1OnrampServicesMeldRedirectToFluidmoneyCreate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1OnrampServicesMeldRedirectToFluidmoneyCreateMutationKey = () => [{ url: '/v1/onramp-services/meld/redirect-to-fluidmoney/' }] as const
 
@@ -35,6 +35,16 @@ export async function v1OnrampServicesMeldRedirectToFluidmoneyCreate(config: Par
   return res.data
 }
 
+export function v1OnrampServicesMeldRedirectToFluidmoneyCreateMutationOptions(config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1OnrampServicesMeldRedirectToFluidmoneyCreateMutationKey()
+  return mutationOptions<V1OnrampServicesMeldRedirectToFluidmoneyCreateMutationResponse, ResponseErrorConfig<Error>, void, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async() => {
+      return v1OnrampServicesMeldRedirectToFluidmoneyCreate(config)
+    },
+  })
+}
+
 /**
  * {@link /v1/onramp-services/meld/redirect-to-fluidmoney/}
  */
@@ -48,11 +58,11 @@ export function useV1OnrampServicesMeldRedirectToFluidmoneyCreate<TContext>(opti
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1OnrampServicesMeldRedirectToFluidmoneyCreateMutationKey()
 
+  const baseOptions = v1OnrampServicesMeldRedirectToFluidmoneyCreateMutationOptions(config) as UseMutationOptions<V1OnrampServicesMeldRedirectToFluidmoneyCreateMutationResponse, ResponseErrorConfig<Error>, void, TContext>
+
   return useMutation<V1OnrampServicesMeldRedirectToFluidmoneyCreateMutationResponse, ResponseErrorConfig<Error>, void, TContext>({
-    mutationFn: async() => {
-      return v1OnrampServicesMeldRedirectToFluidmoneyCreate(config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1OnrampServicesMeldRedirectToFluidmoneyCreateMutationResponse, ResponseErrorConfig<Error>, void, TContext>
 }

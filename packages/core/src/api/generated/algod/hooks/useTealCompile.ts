@@ -18,9 +18,9 @@
 import fetch from "../../../algod-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { TealCompileMutationRequest, TealCompileMutationResponse, TealCompileQueryParams, TealCompile400, TealCompile401, TealCompile404, TealCompile500 } from "../types/TealCompile.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
 import { tealCompileMutationResponseSchema, tealCompileMutationRequestSchema } from "../zod/tealCompileSchema.ts";
-import { useMutation } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const tealCompileMutationKey = () => [{ url: '/v2/teal/compile' }] as const
 
@@ -40,6 +40,16 @@ export async function tealCompile({ data, params }: { data?: TealCompileMutation
   return tealCompileMutationResponseSchema.parse(res.data)
 }
 
+export function tealCompileMutationOptions(config: Partial<RequestConfig<TealCompileMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = tealCompileMutationKey()
+  return mutationOptions<TealCompileMutationResponse, ResponseErrorConfig<TealCompile400 | TealCompile401 | TealCompile404 | TealCompile500>, {data?: TealCompileMutationRequest, params?: TealCompileQueryParams}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ data, params }) => {
+      return tealCompile({ data, params }, config)
+    },
+  })
+}
+
 /**
  * @description Given TEAL source code in plain text, return base64 encoded program bytes and base32 SHA512_256 hash of program bytes (Address style). This endpoint is only enabled when a node's configuration file sets EnableDeveloperAPI to true.
  * @summary Compile TEAL source code to binary, produce its hash
@@ -55,11 +65,11 @@ export function useTealCompile<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? tealCompileMutationKey()
 
+  const baseOptions = tealCompileMutationOptions(config) as UseMutationOptions<TealCompileMutationResponse, ResponseErrorConfig<TealCompile400 | TealCompile401 | TealCompile404 | TealCompile500>, {data?: TealCompileMutationRequest, params?: TealCompileQueryParams}, TContext>
+
   return useMutation<TealCompileMutationResponse, ResponseErrorConfig<TealCompile400 | TealCompile401 | TealCompile404 | TealCompile500>, {data?: TealCompileMutationRequest, params?: TealCompileQueryParams}, TContext>({
-    mutationFn: async({ data, params }) => {
-      return tealCompile({ data, params }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<TealCompileMutationResponse, ResponseErrorConfig<TealCompile400 | TealCompile401 | TealCompile404 | TealCompile500>, {data?: TealCompileMutationRequest, params?: TealCompileQueryParams}, TContext>
 }

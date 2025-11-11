@@ -21,6 +21,6 @@ export const v1DevicesDelete204Schema = z.unknown()
 
 export type V1DevicesDelete204Schema = z.infer<typeof v1DevicesDelete204Schema>
 
-export const v1DevicesDeleteMutationResponseSchema = z.lazy(() => v1DevicesDelete204Schema)
+export const v1DevicesDeleteMutationResponseSchema = v1DevicesDelete204Schema
 
 export type V1DevicesDeleteMutationResponseSchema = z.infer<typeof v1DevicesDeleteMutationResponseSchema>

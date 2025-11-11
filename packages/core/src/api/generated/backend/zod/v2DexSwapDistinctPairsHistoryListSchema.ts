@@ -20,15 +20,15 @@ import { z } from "zod";
 
 export const v2DexSwapDistinctPairsHistoryListQueryParamsSchema = z.object({
     "address": z.string().min(1).describe("Algorand address to get swap pairs history for"),
-"statuses": z.string().min(1).describe("Comma-separated list of swap statuses to filter by. Defaults to 'completed'.").optional()
+"statuses": z.optional(z.string().min(1).describe("Comma-separated list of swap statuses to filter by. Defaults to 'completed'."))
     })
 
 export type V2DexSwapDistinctPairsHistoryListQueryParamsSchema = z.infer<typeof v2DexSwapDistinctPairsHistoryListQueryParamsSchema>
 
-export const v2DexSwapDistinctPairsHistoryList200Schema = z.lazy(() => swapDistinctPairsHistoryViewResponseSchema)
+export const v2DexSwapDistinctPairsHistoryList200Schema = swapDistinctPairsHistoryViewResponseSchema
 
 export type V2DexSwapDistinctPairsHistoryList200Schema = z.infer<typeof v2DexSwapDistinctPairsHistoryList200Schema>
 
-export const v2DexSwapDistinctPairsHistoryListQueryResponseSchema = z.lazy(() => v2DexSwapDistinctPairsHistoryList200Schema)
+export const v2DexSwapDistinctPairsHistoryListQueryResponseSchema = v2DexSwapDistinctPairsHistoryList200Schema
 
 export type V2DexSwapDistinctPairsHistoryListQueryResponseSchema = z.infer<typeof v2DexSwapDistinctPairsHistoryListQueryResponseSchema>

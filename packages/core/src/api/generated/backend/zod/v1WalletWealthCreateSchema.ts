@@ -19,14 +19,14 @@ import { multipleAccountWealthBalanceHistoryRequestSerializerRequestSchema } fro
 import { responseSerializerResponseSchema } from "./responseSerializer/responseSchema.ts";
 import { z } from "zod";
 
-export const v1WalletWealthCreate200Schema = z.lazy(() => responseSerializerResponseSchema)
+export const v1WalletWealthCreate200Schema = responseSerializerResponseSchema
 
 export type V1WalletWealthCreate200Schema = z.infer<typeof v1WalletWealthCreate200Schema>
 
-export const v1WalletWealthCreateMutationRequestSchema = z.lazy(() => multipleAccountWealthBalanceHistoryRequestSerializerRequestSchema)
+export const v1WalletWealthCreateMutationRequestSchema = multipleAccountWealthBalanceHistoryRequestSerializerRequestSchema
 
 export type V1WalletWealthCreateMutationRequestSchema = z.infer<typeof v1WalletWealthCreateMutationRequestSchema>
 
-export const v1WalletWealthCreateMutationResponseSchema = z.lazy(() => v1WalletWealthCreate200Schema)
+export const v1WalletWealthCreateMutationResponseSchema = v1WalletWealthCreate200Schema
 
 export type V1WalletWealthCreateMutationResponseSchema = z.infer<typeof v1WalletWealthCreateMutationResponseSchema>

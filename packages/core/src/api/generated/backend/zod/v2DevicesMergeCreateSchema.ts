@@ -20,19 +20,19 @@ import { deviceV2MergeSerializerResponseSchema } from "./deviceV2MergeSerializer
 import { z } from "zod";
 
 export const v2DevicesMergeCreateHeaderParamsSchema = z.object({
-    "APP-VERSION": z.unknown().optional()
+    "APP-VERSION": z.optional(z.unknown())
     }).optional()
 
 export type V2DevicesMergeCreateHeaderParamsSchema = z.infer<typeof v2DevicesMergeCreateHeaderParamsSchema>
 
-export const v2DevicesMergeCreate201Schema = z.lazy(() => deviceV2MergeSerializerResponseSchema)
+export const v2DevicesMergeCreate201Schema = deviceV2MergeSerializerResponseSchema
 
 export type V2DevicesMergeCreate201Schema = z.infer<typeof v2DevicesMergeCreate201Schema>
 
-export const v2DevicesMergeCreateMutationRequestSchema = z.lazy(() => deviceV2MergeSerializerRequestSchema)
+export const v2DevicesMergeCreateMutationRequestSchema = deviceV2MergeSerializerRequestSchema
 
 export type V2DevicesMergeCreateMutationRequestSchema = z.infer<typeof v2DevicesMergeCreateMutationRequestSchema>
 
-export const v2DevicesMergeCreateMutationResponseSchema = z.lazy(() => v2DevicesMergeCreate201Schema)
+export const v2DevicesMergeCreateMutationResponseSchema = v2DevicesMergeCreate201Schema
 
 export type V2DevicesMergeCreateMutationResponseSchema = z.infer<typeof v2DevicesMergeCreateMutationResponseSchema>

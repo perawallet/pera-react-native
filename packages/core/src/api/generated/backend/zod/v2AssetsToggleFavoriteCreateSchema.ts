@@ -25,14 +25,14 @@ export const v2AssetsToggleFavoriteCreatePathParamsSchema = z.object({
 
 export type V2AssetsToggleFavoriteCreatePathParamsSchema = z.infer<typeof v2AssetsToggleFavoriteCreatePathParamsSchema>
 
-export const v2AssetsToggleFavoriteCreate200Schema = z.lazy(() => assetDetailResponseSerializerV2ResponseSchema)
+export const v2AssetsToggleFavoriteCreate200Schema = assetDetailResponseSerializerV2ResponseSchema
 
 export type V2AssetsToggleFavoriteCreate200Schema = z.infer<typeof v2AssetsToggleFavoriteCreate200Schema>
 
-export const v2AssetsToggleFavoriteCreateMutationRequestSchema = z.lazy(() => toggleAssetRequestSerializerV2RequestSchema)
+export const v2AssetsToggleFavoriteCreateMutationRequestSchema = toggleAssetRequestSerializerV2RequestSchema
 
 export type V2AssetsToggleFavoriteCreateMutationRequestSchema = z.infer<typeof v2AssetsToggleFavoriteCreateMutationRequestSchema>
 
-export const v2AssetsToggleFavoriteCreateMutationResponseSchema = z.lazy(() => v2AssetsToggleFavoriteCreate200Schema)
+export const v2AssetsToggleFavoriteCreateMutationResponseSchema = v2AssetsToggleFavoriteCreate200Schema
 
 export type V2AssetsToggleFavoriteCreateMutationResponseSchema = z.infer<typeof v2AssetsToggleFavoriteCreateMutationResponseSchema>

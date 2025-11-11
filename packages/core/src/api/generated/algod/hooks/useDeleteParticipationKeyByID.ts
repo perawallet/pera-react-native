@@ -18,9 +18,9 @@
 import fetch from "../../../algod-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { DeleteParticipationKeyByIDMutationResponse, DeleteParticipationKeyByIDPathParams, DeleteParticipationKeyByID400, DeleteParticipationKeyByID401, DeleteParticipationKeyByID404, DeleteParticipationKeyByID500 } from "../types/DeleteParticipationKeyByID.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
 import { deleteParticipationKeyByIDMutationResponseSchema } from "../zod/deleteParticipationKeyByIDSchema.ts";
-import { useMutation } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const deleteParticipationKeyByIDMutationKey = () => [{ url: '/v2/participation/:participation-id' }] as const
 
@@ -38,6 +38,16 @@ export async function deleteParticipationKeyByID({ participationId }: { particip
   return deleteParticipationKeyByIDMutationResponseSchema.parse(res.data)
 }
 
+export function deleteParticipationKeyByIDMutationOptions(config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {
+  const mutationKey = deleteParticipationKeyByIDMutationKey()
+  return mutationOptions<DeleteParticipationKeyByIDMutationResponse, ResponseErrorConfig<DeleteParticipationKeyByID400 | DeleteParticipationKeyByID401 | DeleteParticipationKeyByID404 | DeleteParticipationKeyByID500>, {participationId: DeleteParticipationKeyByIDPathParams["participation-id"]}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ participationId }) => {
+      return deleteParticipationKeyByID({ participationId }, config)
+    },
+  })
+}
+
 /**
  * @description Delete a given participation key by ID
  * @summary Delete a given participation key by ID
@@ -53,11 +63,11 @@ export function useDeleteParticipationKeyByID<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? deleteParticipationKeyByIDMutationKey()
 
+  const baseOptions = deleteParticipationKeyByIDMutationOptions(config) as UseMutationOptions<DeleteParticipationKeyByIDMutationResponse, ResponseErrorConfig<DeleteParticipationKeyByID400 | DeleteParticipationKeyByID401 | DeleteParticipationKeyByID404 | DeleteParticipationKeyByID500>, {participationId: DeleteParticipationKeyByIDPathParams["participation-id"]}, TContext>
+
   return useMutation<DeleteParticipationKeyByIDMutationResponse, ResponseErrorConfig<DeleteParticipationKeyByID400 | DeleteParticipationKeyByID401 | DeleteParticipationKeyByID404 | DeleteParticipationKeyByID500>, {participationId: DeleteParticipationKeyByIDPathParams["participation-id"]}, TContext>({
-    mutationFn: async({ participationId }) => {
-      return deleteParticipationKeyByID({ participationId }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<DeleteParticipationKeyByIDMutationResponse, ResponseErrorConfig<DeleteParticipationKeyByID400 | DeleteParticipationKeyByID401 | DeleteParticipationKeyByID404 | DeleteParticipationKeyByID500>, {participationId: DeleteParticipationKeyByIDPathParams["participation-id"]}, TContext>
 }

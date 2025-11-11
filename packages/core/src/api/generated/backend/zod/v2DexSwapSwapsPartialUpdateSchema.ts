@@ -25,14 +25,14 @@ export const v2DexSwapSwapsPartialUpdatePathParamsSchema = z.object({
 
 export type V2DexSwapSwapsPartialUpdatePathParamsSchema = z.infer<typeof v2DexSwapSwapsPartialUpdatePathParamsSchema>
 
-export const v2DexSwapSwapsPartialUpdate200Schema = z.lazy(() => swapStatusUpdateSerializerResponseSchema)
+export const v2DexSwapSwapsPartialUpdate200Schema = swapStatusUpdateSerializerResponseSchema
 
 export type V2DexSwapSwapsPartialUpdate200Schema = z.infer<typeof v2DexSwapSwapsPartialUpdate200Schema>
 
-export const v2DexSwapSwapsPartialUpdateMutationRequestSchema = z.lazy(() => swapStatusUpdateSerializerRequestSchema)
+export const v2DexSwapSwapsPartialUpdateMutationRequestSchema = swapStatusUpdateSerializerRequestSchema
 
 export type V2DexSwapSwapsPartialUpdateMutationRequestSchema = z.infer<typeof v2DexSwapSwapsPartialUpdateMutationRequestSchema>
 
-export const v2DexSwapSwapsPartialUpdateMutationResponseSchema = z.lazy(() => v2DexSwapSwapsPartialUpdate200Schema)
+export const v2DexSwapSwapsPartialUpdateMutationResponseSchema = v2DexSwapSwapsPartialUpdate200Schema
 
 export type V2DexSwapSwapsPartialUpdateMutationResponseSchema = z.infer<typeof v2DexSwapSwapsPartialUpdateMutationResponseSchema>

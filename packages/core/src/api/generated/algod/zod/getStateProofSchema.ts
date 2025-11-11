@@ -28,42 +28,42 @@ export type GetStateProofPathParamsSchema = z.infer<typeof getStateProofPathPara
 /**
  * @description StateProofResponse wraps the StateProof type in a response.
  */
-export const getStateProof200Schema = z.lazy(() => stateProofSchema).describe("Represents a state proof and its corresponding message")
+export const getStateProof200Schema = stateProofSchema.describe("Represents a state proof and its corresponding message")
 
 export type GetStateProof200Schema = z.infer<typeof getStateProof200Schema>
 
 /**
  * @description Invalid API Token
  */
-export const getStateProof401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getStateProof401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetStateProof401Schema = z.infer<typeof getStateProof401Schema>
 
 /**
  * @description Could not find a state proof that covers a given round
  */
-export const getStateProof404Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getStateProof404Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetStateProof404Schema = z.infer<typeof getStateProof404Schema>
 
 /**
  * @description timed out on request
  */
-export const getStateProof408Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getStateProof408Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetStateProof408Schema = z.infer<typeof getStateProof408Schema>
 
 /**
  * @description Internal Error
  */
-export const getStateProof500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getStateProof500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetStateProof500Schema = z.infer<typeof getStateProof500Schema>
 
 /**
  * @description Service Temporarily Unavailable
  */
-export const getStateProof503Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getStateProof503Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetStateProof503Schema = z.infer<typeof getStateProof503Schema>
 
@@ -74,6 +74,6 @@ export const getStateProofErrorSchema = z.unknown()
 
 export type GetStateProofErrorSchema = z.infer<typeof getStateProofErrorSchema>
 
-export const getStateProofQueryResponseSchema = z.lazy(() => getStateProof200Schema)
+export const getStateProofQueryResponseSchema = getStateProof200Schema
 
 export type GetStateProofQueryResponseSchema = z.infer<typeof getStateProofQueryResponseSchema>

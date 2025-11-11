@@ -18,6 +18,6 @@
 import { debugSettingsProfSchema } from "./debugSettingsProfSchema.ts";
 import { z } from "zod";
 
-export const debugSettingsProfResponseSchema = z.lazy(() => debugSettingsProfSchema).describe("algod mutex and blocking profiling state.")
+export const debugSettingsProfResponseSchema = debugSettingsProfSchema.describe("algod mutex and blocking profiling state.")
 
 export type DebugSettingsProfResponseSchema = z.infer<typeof debugSettingsProfResponseSchema>

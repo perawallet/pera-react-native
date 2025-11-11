@@ -18,10 +18,10 @@
 import { deviceV2SerializerResponseSchema } from "./deviceV2Serializer/responseSchema.ts";
 import { z } from "zod";
 
-export const v2DevicesMeRead200Schema = z.lazy(() => deviceV2SerializerResponseSchema)
+export const v2DevicesMeRead200Schema = deviceV2SerializerResponseSchema
 
 export type V2DevicesMeRead200Schema = z.infer<typeof v2DevicesMeRead200Schema>
 
-export const v2DevicesMeReadQueryResponseSchema = z.lazy(() => v2DevicesMeRead200Schema)
+export const v2DevicesMeReadQueryResponseSchema = v2DevicesMeRead200Schema
 
 export type V2DevicesMeReadQueryResponseSchema = z.infer<typeof v2DevicesMeReadQueryResponseSchema>

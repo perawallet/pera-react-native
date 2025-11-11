@@ -15,12 +15,46 @@
 * Do not edit manually.
 */
 
-import type { SetBlockTimeStampOffsetMutationResponse } from "../types/SetBlockTimeStampOffset.ts";
+import type { SetBlockTimeStampOffsetMutationResponse, SetBlockTimeStampOffset400, SetBlockTimeStampOffset401, SetBlockTimeStampOffset500 } from "../types/SetBlockTimeStampOffset.ts";
 import { http } from "msw";
 
-export function setBlockTimeStampOffsetHandler(data?: SetBlockTimeStampOffsetMutationResponse | ((
+export function setBlockTimeStampOffsetHandlerResponse200(data?: SetBlockTimeStampOffsetMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+  
+  })
+}
+
+export function setBlockTimeStampOffsetHandlerResponse400(data: SetBlockTimeStampOffset400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function setBlockTimeStampOffsetHandlerResponse401(data: SetBlockTimeStampOffset401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function setBlockTimeStampOffsetHandlerResponse500(data: SetBlockTimeStampOffset500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function setBlockTimeStampOffsetHandler(data?: string | number | boolean | null | object | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v2/devmode/blocks/offset/:offset', function handler(info) {
     if(typeof data === 'function') return data(info)
 

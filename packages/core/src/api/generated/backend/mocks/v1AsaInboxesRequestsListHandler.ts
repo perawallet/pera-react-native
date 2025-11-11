@@ -18,9 +18,18 @@
 import type { V1AsaInboxesRequestsListQueryResponse } from "../types/V1AsaInboxesRequestsList.ts";
 import { http } from "msw";
 
+export function v1AsaInboxesRequestsListHandlerResponse200(data: V1AsaInboxesRequestsListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1AsaInboxesRequestsListHandler(data?: V1AsaInboxesRequestsListQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/asa-inboxes/requests/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

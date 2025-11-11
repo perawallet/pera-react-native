@@ -20,7 +20,7 @@ import { z } from "zod";
 
 export const transactionsResponseSchema = z.object({
     "current-round": z.number().int().describe("Round at which the results were computed."),
-"next-token": z.string().describe("Used for pagination, when making another request provide this token with the next parameter.").optional(),
+"next-token": z.optional(z.string().describe("Used for pagination, when making another request provide this token with the next parameter.")),
 "transactions": z.array(z.lazy(() => transactionSchema).describe("Contains all fields common to all transactions and serves as an envelope to all transactions type. Represents both regular and inner transactions.\n\nDefinition:\ndata/transactions/signedtxn.go : SignedTxn\ndata/transactions/transaction.go : Transaction\n"))
     })
 

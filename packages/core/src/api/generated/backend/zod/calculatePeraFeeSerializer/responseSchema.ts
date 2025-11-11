@@ -18,7 +18,7 @@
 import { z } from "zod";
 
 export const calculatePeraFeeSerializerResponseSchema = z.object({
-    "pera_fee_amount": z.string().optional()
+    "pera_fee_amount": z.optional(z.string())
     })
 
 export type CalculatePeraFeeSerializerResponseSchema = z.infer<typeof calculatePeraFeeSerializerResponseSchema>

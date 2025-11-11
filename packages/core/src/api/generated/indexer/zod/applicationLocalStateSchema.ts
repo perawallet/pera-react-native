@@ -23,11 +23,11 @@ import { z } from "zod";
  * @description Stores local state associated with an application.
  */
 export const applicationLocalStateSchema = z.object({
-    "closed-out-at-round": z.number().int().describe("Round when account closed out of the application.").optional(),
-"deleted": z.boolean().describe("Whether or not the application local state is currently deleted from its account.").optional(),
+    "closed-out-at-round": z.optional(z.number().int().describe("Round when account closed out of the application.")),
+"deleted": z.optional(z.boolean().describe("Whether or not the application local state is currently deleted from its account.")),
 "id": z.number().int().describe("The application which this local state is for."),
-"key-value": z.lazy(() => tealKeyValueStoreSchema).describe("Represents a key-value store for use in an application.").optional(),
-"opted-in-at-round": z.number().int().describe("Round when the account opted into the application.").optional(),
+"key-value": z.optional(z.lazy(() => tealKeyValueStoreSchema).describe("Represents a key-value store for use in an application.")),
+"opted-in-at-round": z.optional(z.number().int().describe("Round when the account opted into the application.")),
 "schema": z.lazy(() => applicationStateSchemaSchema).describe("Specifies maximums on the number of each type that may be stored.")
     }).describe("Stores local state associated with an application.")
 

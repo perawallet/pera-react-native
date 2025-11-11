@@ -25,15 +25,15 @@ export const v1DevicesSpotBannersListPathParamsSchema = z.object({
 export type V1DevicesSpotBannersListPathParamsSchema = z.infer<typeof v1DevicesSpotBannersListPathParamsSchema>
 
 export const v1DevicesSpotBannersListQueryParamsSchema = z.object({
-    "ordering": z.string().describe("Which field to use when ordering the results.").optional()
+    "ordering": z.optional(z.string().describe("Which field to use when ordering the results."))
     }).optional()
 
 export type V1DevicesSpotBannersListQueryParamsSchema = z.infer<typeof v1DevicesSpotBannersListQueryParamsSchema>
 
-export const v1DevicesSpotBannersList200Schema = z.array(z.lazy(() => spotBannerSerializerResponseSchema))
+export const v1DevicesSpotBannersList200Schema = z.array(spotBannerSerializerResponseSchema)
 
 export type V1DevicesSpotBannersList200Schema = z.infer<typeof v1DevicesSpotBannersList200Schema>
 
-export const v1DevicesSpotBannersListQueryResponseSchema = z.lazy(() => v1DevicesSpotBannersList200Schema)
+export const v1DevicesSpotBannersListQueryResponseSchema = v1DevicesSpotBannersList200Schema
 
 export type V1DevicesSpotBannersListQueryResponseSchema = z.infer<typeof v1DevicesSpotBannersListQueryResponseSchema>

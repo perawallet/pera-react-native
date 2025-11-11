@@ -18,9 +18,18 @@
 import type { V2DexSwapProvidersListQueryResponse } from "../types/V2DexSwapProvidersList.ts";
 import { http } from "msw";
 
+export function v2DexSwapProvidersListHandlerResponse200(data: V2DexSwapProvidersListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v2DexSwapProvidersListHandler(data?: V2DexSwapProvidersListQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/dex-swap/providers/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

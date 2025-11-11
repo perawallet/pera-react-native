@@ -25,17 +25,17 @@ export const v1AsaInboxesRequestsReadPathParamsSchema = z.object({
 export type V1AsaInboxesRequestsReadPathParamsSchema = z.infer<typeof v1AsaInboxesRequestsReadPathParamsSchema>
 
 export const v1AsaInboxesRequestsReadQueryParamsSchema = z.object({
-    "ordering": z.string().describe("Which field to use when ordering the results.").optional(),
-"cursor": z.string().describe("The pagination cursor value.").optional(),
-"limit": z.coerce.number().int().describe("Number of results to return per page.").optional()
+    "ordering": z.optional(z.string().describe("Which field to use when ordering the results.")),
+"cursor": z.optional(z.string().describe("The pagination cursor value.")),
+"limit": z.optional(z.coerce.number().int().describe("Number of results to return per page."))
     }).optional()
 
 export type V1AsaInboxesRequestsReadQueryParamsSchema = z.infer<typeof v1AsaInboxesRequestsReadQueryParamsSchema>
 
-export const v1AsaInboxesRequestsRead200Schema = z.lazy(() => reponseSchema)
+export const v1AsaInboxesRequestsRead200Schema = reponseSchema
 
 export type V1AsaInboxesRequestsRead200Schema = z.infer<typeof v1AsaInboxesRequestsRead200Schema>
 
-export const v1AsaInboxesRequestsReadQueryResponseSchema = z.lazy(() => v1AsaInboxesRequestsRead200Schema)
+export const v1AsaInboxesRequestsReadQueryResponseSchema = v1AsaInboxesRequestsRead200Schema
 
 export type V1AsaInboxesRequestsReadQueryResponseSchema = z.infer<typeof v1AsaInboxesRequestsReadQueryResponseSchema>

@@ -18,9 +18,9 @@
 import fetch from "../../../algod-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { TealDisassembleMutationRequest, TealDisassembleMutationResponse, TealDisassemble400, TealDisassemble401, TealDisassemble404, TealDisassemble500 } from "../types/TealDisassemble.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
 import { tealDisassembleMutationResponseSchema, tealDisassembleMutationRequestSchema } from "../zod/tealDisassembleSchema.ts";
-import { useMutation } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const tealDisassembleMutationKey = () => [{ url: '/v2/teal/disassemble' }] as const
 
@@ -40,6 +40,16 @@ export async function tealDisassemble({ data }: { data?: TealDisassembleMutation
   return tealDisassembleMutationResponseSchema.parse(res.data)
 }
 
+export function tealDisassembleMutationOptions(config: Partial<RequestConfig<TealDisassembleMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = tealDisassembleMutationKey()
+  return mutationOptions<TealDisassembleMutationResponse, ResponseErrorConfig<TealDisassemble400 | TealDisassemble401 | TealDisassemble404 | TealDisassemble500>, {data?: TealDisassembleMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ data }) => {
+      return tealDisassemble({ data }, config)
+    },
+  })
+}
+
 /**
  * @description Given the program bytes, return the TEAL source code in plain text. This endpoint is only enabled when a node's configuration file sets EnableDeveloperAPI to true.
  * @summary Disassemble program bytes into the TEAL source code.
@@ -55,11 +65,11 @@ export function useTealDisassemble<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? tealDisassembleMutationKey()
 
+  const baseOptions = tealDisassembleMutationOptions(config) as UseMutationOptions<TealDisassembleMutationResponse, ResponseErrorConfig<TealDisassemble400 | TealDisassemble401 | TealDisassemble404 | TealDisassemble500>, {data?: TealDisassembleMutationRequest}, TContext>
+
   return useMutation<TealDisassembleMutationResponse, ResponseErrorConfig<TealDisassemble400 | TealDisassemble401 | TealDisassemble404 | TealDisassemble500>, {data?: TealDisassembleMutationRequest}, TContext>({
-    mutationFn: async({ data }) => {
-      return tealDisassemble({ data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<TealDisassembleMutationResponse, ResponseErrorConfig<TealDisassemble400 | TealDisassemble401 | TealDisassemble404 | TealDisassemble500>, {data?: TealDisassembleMutationRequest}, TContext>
 }

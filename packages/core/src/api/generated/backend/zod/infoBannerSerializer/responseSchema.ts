@@ -19,11 +19,11 @@ import { z } from "zod";
 
 export const infoBannerSerializerResponseSchema = z.object({
     "title": z.string().min(1).max(255),
-"subtitle": z.string().max(255).optional(),
-"logo": z.string().url().optional(),
-"image": z.string().url().optional(),
-"color": z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/).min(1).max(18).optional(),
-"text_color": z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/).min(1).max(18).optional(),
+"subtitle": z.optional(z.string().max(255)),
+"logo": z.optional(z.string().url()),
+"image": z.optional(z.string().url()),
+"color": z.optional(z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/)),
+"text_color": z.optional(z.string().regex(/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/)),
 "url": z.string().url().min(1).max(200)
     })
 

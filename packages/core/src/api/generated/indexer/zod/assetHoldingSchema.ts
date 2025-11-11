@@ -23,10 +23,10 @@ import { z } from "zod";
 export const assetHoldingSchema = z.object({
     "amount": z.number().int().describe("number of units held."),
 "asset-id": z.number().int().describe("Asset ID of the holding."),
-"deleted": z.boolean().describe("Whether or not the asset holding is currently deleted from its account.").optional(),
+"deleted": z.optional(z.boolean().describe("Whether or not the asset holding is currently deleted from its account.")),
 "is-frozen": z.boolean().describe("whether or not the holding is frozen."),
-"opted-in-at-round": z.number().int().describe("Round during which the account opted into this asset holding.").optional(),
-"opted-out-at-round": z.number().int().describe("Round during which the account opted out of this asset holding.").optional()
+"opted-in-at-round": z.optional(z.number().int().describe("Round during which the account opted into this asset holding.")),
+"opted-out-at-round": z.optional(z.number().int().describe("Round during which the account opted out of this asset holding."))
     }).describe("Describes an asset held by an account.\n\nDefinition:\ndata/basics/userBalance.go : AssetHolding")
 
 export type AssetHoldingSchema = z.infer<typeof assetHoldingSchema>

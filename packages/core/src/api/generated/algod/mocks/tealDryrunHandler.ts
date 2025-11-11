@@ -15,12 +15,55 @@
 * Do not edit manually.
 */
 
-import type { TealDryrunMutationResponse } from "../types/TealDryrun.ts";
+import type { TealDryrunMutationResponse, TealDryrun400, TealDryrun401, TealDryrun404, TealDryrun500 } from "../types/TealDryrun.ts";
 import { http } from "msw";
+
+export function tealDryrunHandlerResponse200(data: TealDryrunMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function tealDryrunHandlerResponse400(data: TealDryrun400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function tealDryrunHandlerResponse401(data: TealDryrun401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function tealDryrunHandlerResponse404(data?: TealDryrun404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+  
+  })
+}
+
+export function tealDryrunHandlerResponse500(data: TealDryrun500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function tealDryrunHandler(data?: TealDryrunMutationResponse | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v2/teal/dryrun', function handler(info) {
     if(typeof data === 'function') return data(info)
 

@@ -18,9 +18,16 @@
 import type { V1CardsSupportedCountriesListQueryResponse } from "../types/V1CardsSupportedCountriesList.ts";
 import { http } from "msw";
 
-export function v1CardsSupportedCountriesListHandler(data?: V1CardsSupportedCountriesListQueryResponse | ((
+export function v1CardsSupportedCountriesListHandlerResponse200(data?: V1CardsSupportedCountriesListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+  
+  })
+}
+
+export function v1CardsSupportedCountriesListHandler(data?: string | number | boolean | null | object | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/cards/supported-countries/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

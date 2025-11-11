@@ -21,6 +21,6 @@ import { z } from "zod";
 /**
  * @description Application state delta.
  */
-export const stateDeltaSchema = z.array(z.lazy(() => evalDeltaKeyValueSchema).describe("Key-value pairs for StateDelta.")).describe("Application state delta.")
+export const stateDeltaSchema = z.array(evalDeltaKeyValueSchema.describe("Key-value pairs for StateDelta.")).describe("Application state delta.")
 
 export type StateDeltaSchema = z.infer<typeof stateDeltaSchema>

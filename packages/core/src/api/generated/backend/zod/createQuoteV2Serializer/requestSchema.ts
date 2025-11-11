@@ -18,13 +18,13 @@
 import { z } from "zod";
 
 export const createQuoteV2SerializerRequestSchema = z.object({
-    "swapper_address": z.string().regex(/^[A-Z2-7]*$/).min(1).max(58),
+    "swapper_address": z.string().regex(/^[A-Z2-7]*$/),
 "swap_type": z.enum(["fixed-input", "fixed-output"]),
-"device": z.number().int().nullable().nullish(),
+"device": z.number().int().nullish(),
 "asset_in_id": z.number().int(),
 "asset_out_id": z.number().int(),
 "amount": z.string(),
-"slippage": z.string().default("0.0100")
+"slippage": z.optional(z.string().default("0.0100"))
     })
 
 export type CreateQuoteV2SerializerRequestSchema = z.infer<typeof createQuoteV2SerializerRequestSchema>

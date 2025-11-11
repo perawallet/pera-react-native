@@ -18,17 +18,17 @@
 import { z } from "zod";
 
 export const discoverNFTCollectionDetailSerializerResponseSchema = z.object({
-    "slug": z.string().regex(/^[-a-zA-Z0-9_]+$/).min(1).optional(),
-"name": z.string().min(1).optional(),
-"description": z.string().min(1).optional(),
-"image": z.string().url().optional(),
-"banner_image": z.string().url().optional(),
-"supported_marketplace_names": z.string().optional(),
-"highest_nft_sale_amount_in_algo": z.string().optional(),
-"latest_nft_sale_amount_in_algo": z.string().optional(),
-"last_1_day_volume": z.string().describe("in microalgo").optional(),
-"last_7_day_volume": z.string().describe("in microalgo").optional(),
-"last_30_day_volume": z.string().describe("in microalgo").optional(),
+    "slug": z.optional(z.string().regex(/^[-a-zA-Z0-9_]+$/)),
+"name": z.optional(z.string().min(1)),
+"description": z.optional(z.string().min(1)),
+"image": z.optional(z.string().url()),
+"banner_image": z.optional(z.string().url()),
+"supported_marketplace_names": z.optional(z.string()),
+"highest_nft_sale_amount_in_algo": z.optional(z.string()),
+"latest_nft_sale_amount_in_algo": z.optional(z.string()),
+"last_1_day_volume": z.optional(z.string().describe("in microalgo")),
+"last_7_day_volume": z.optional(z.string().describe("in microalgo")),
+"last_30_day_volume": z.optional(z.string().describe("in microalgo")),
 "floor_price": z.string()
     })
 

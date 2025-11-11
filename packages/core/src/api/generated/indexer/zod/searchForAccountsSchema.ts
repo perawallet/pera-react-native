@@ -19,17 +19,17 @@ import { accountSchema } from "./accountSchema.ts";
 import { z } from "zod";
 
 export const searchForAccountsQueryParamsSchema = z.object({
-    "asset-id": z.coerce.number().int().describe("Asset ID").optional(),
-"limit": z.coerce.number().int().describe("Maximum number of results to return. There could be additional pages even if the limit is not reached.").optional(),
-"next": z.string().describe("The next page of results. Use the next token provided by the previous results.").optional(),
-"currency-greater-than": z.coerce.number().int().describe("Results should have an amount greater than this value. MicroAlgos are the default currency unless an asset-id is provided, in which case the asset will be used.").optional(),
-"include-all": z.boolean().describe("Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.").optional(),
-"exclude": z.array(z.enum(["all", "assets", "created-assets", "apps-local-state", "created-apps", "none"])).describe("Exclude additional items such as asset holdings, application local data stored for this account, asset parameters created by this account, and application parameters created by this account.").optional(),
-"currency-less-than": z.coerce.number().int().describe("Results should have an amount less than this value. MicroAlgos are the default currency unless an asset-id is provided, in which case the asset will be used.").optional(),
-"auth-addr": z.string().describe("Include accounts configured to use this spending key.").optional(),
-"round": z.coerce.number().int().describe("Include results for the specified round. For performance reasons, this parameter may be disabled on some configurations. Using application-id or asset-id filters will return both creator and opt-in accounts. Filtering by include-all will return creator and opt-in accounts for deleted assets and accounts. Non-opt-in managers are not included in the results when asset-id is used.").optional(),
-"application-id": z.coerce.number().int().describe("Application ID").optional(),
-"online-only": z.boolean().describe("When this is set to true, return only accounts whose participation status is currently online.").optional()
+    "asset-id": z.optional(z.coerce.number().int().describe("Asset ID")),
+"limit": z.optional(z.coerce.number().int().describe("Maximum number of results to return. There could be additional pages even if the limit is not reached.")),
+"next": z.optional(z.string().describe("The next page of results. Use the next token provided by the previous results.")),
+"currency-greater-than": z.optional(z.coerce.number().int().describe("Results should have an amount greater than this value. MicroAlgos are the default currency unless an asset-id is provided, in which case the asset will be used.")),
+"include-all": z.optional(z.boolean().describe("Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.")),
+"exclude": z.optional(z.array(z.enum(["all", "assets", "created-assets", "apps-local-state", "created-apps", "none"])).describe("Exclude additional items such as asset holdings, application local data stored for this account, asset parameters created by this account, and application parameters created by this account.")),
+"currency-less-than": z.optional(z.coerce.number().int().describe("Results should have an amount less than this value. MicroAlgos are the default currency unless an asset-id is provided, in which case the asset will be used.")),
+"auth-addr": z.optional(z.string().describe("Include accounts configured to use this spending key.")),
+"round": z.optional(z.coerce.number().int().describe("Include results for the specified round. For performance reasons, this parameter may be disabled on some configurations. Using application-id or asset-id filters will return both creator and opt-in accounts. Filtering by include-all will return creator and opt-in accounts for deleted assets and accounts. Non-opt-in managers are not included in the results when asset-id is used.")),
+"application-id": z.optional(z.coerce.number().int().describe("Application ID")),
+"online-only": z.optional(z.boolean().describe("When this is set to true, return only accounts whose participation status is currently online."))
     }).optional()
 
 export type SearchForAccountsQueryParamsSchema = z.infer<typeof searchForAccountsQueryParamsSchema>
@@ -40,7 +40,7 @@ export type SearchForAccountsQueryParamsSchema = z.infer<typeof searchForAccount
 export const searchForAccounts200Schema = z.object({
     "accounts": z.array(z.lazy(() => accountSchema).describe("Account information at a given round.\n\nDefinition:\ndata/basics/userBalance.go : AccountData\n")),
 "current-round": z.number().int().describe("Round at which the results were computed."),
-"next-token": z.string().describe("Used for pagination, when making another request provide this token with the next parameter.").optional()
+"next-token": z.optional(z.string().describe("Used for pagination, when making another request provide this token with the next parameter."))
     })
 
 export type SearchForAccounts200Schema = z.infer<typeof searchForAccounts200Schema>
@@ -49,9 +49,9 @@ export type SearchForAccounts200Schema = z.infer<typeof searchForAccounts200Sche
  * @description Response for errors
  */
 export const searchForAccounts400Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
@@ -61,14 +61,14 @@ export type SearchForAccounts400Schema = z.infer<typeof searchForAccounts400Sche
  * @description Response for errors
  */
 export const searchForAccounts500Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
 export type SearchForAccounts500Schema = z.infer<typeof searchForAccounts500Schema>
 
-export const searchForAccountsQueryResponseSchema = z.lazy(() => searchForAccounts200Schema)
+export const searchForAccountsQueryResponseSchema = searchForAccounts200Schema
 
 export type SearchForAccountsQueryResponseSchema = z.infer<typeof searchForAccountsQueryResponseSchema>

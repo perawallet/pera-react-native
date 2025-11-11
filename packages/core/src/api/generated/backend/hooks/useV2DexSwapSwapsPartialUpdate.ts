@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V2DexSwapSwapsPartialUpdateMutationRequest, V2DexSwapSwapsPartialUpdateMutationResponse, V2DexSwapSwapsPartialUpdatePathParams } from "../types/V2DexSwapSwapsPartialUpdate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v2DexSwapSwapsPartialUpdateMutationKey = () => [{ url: '/v2/dex-swap/swaps/:swap_id/' }] as const
 
@@ -37,6 +37,16 @@ export async function v2DexSwapSwapsPartialUpdate({ swap_id, data }: { swap_id: 
   return res.data
 }
 
+export function v2DexSwapSwapsPartialUpdateMutationOptions(config: Partial<RequestConfig<V2DexSwapSwapsPartialUpdateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v2DexSwapSwapsPartialUpdateMutationKey()
+  return mutationOptions<V2DexSwapSwapsPartialUpdateMutationResponse, ResponseErrorConfig<Error>, {swap_id: V2DexSwapSwapsPartialUpdatePathParams["swap_id"], data: V2DexSwapSwapsPartialUpdateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ swap_id, data }) => {
+      return v2DexSwapSwapsPartialUpdate({ swap_id, data }, config)
+    },
+  })
+}
+
 /**
  * {@link /v2/dex-swap/swaps/:swap_id/}
  */
@@ -50,11 +60,11 @@ export function useV2DexSwapSwapsPartialUpdate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v2DexSwapSwapsPartialUpdateMutationKey()
 
+  const baseOptions = v2DexSwapSwapsPartialUpdateMutationOptions(config) as UseMutationOptions<V2DexSwapSwapsPartialUpdateMutationResponse, ResponseErrorConfig<Error>, {swap_id: V2DexSwapSwapsPartialUpdatePathParams["swap_id"], data: V2DexSwapSwapsPartialUpdateMutationRequest}, TContext>
+
   return useMutation<V2DexSwapSwapsPartialUpdateMutationResponse, ResponseErrorConfig<Error>, {swap_id: V2DexSwapSwapsPartialUpdatePathParams["swap_id"], data: V2DexSwapSwapsPartialUpdateMutationRequest}, TContext>({
-    mutationFn: async({ swap_id, data }) => {
-      return v2DexSwapSwapsPartialUpdate({ swap_id, data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V2DexSwapSwapsPartialUpdateMutationResponse, ResponseErrorConfig<Error>, {swap_id: V2DexSwapSwapsPartialUpdatePathParams["swap_id"], data: V2DexSwapSwapsPartialUpdateMutationRequest}, TContext>
 }

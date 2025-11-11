@@ -26,14 +26,14 @@ export const v1DevicesAssetsAddToFavoritesCreatePathParamsSchema = z.object({
 
 export type V1DevicesAssetsAddToFavoritesCreatePathParamsSchema = z.infer<typeof v1DevicesAssetsAddToFavoritesCreatePathParamsSchema>
 
-export const v1DevicesAssetsAddToFavoritesCreate201Schema = z.lazy(() => favoriteAssetSerializerResponseSchema)
+export const v1DevicesAssetsAddToFavoritesCreate201Schema = favoriteAssetSerializerResponseSchema
 
 export type V1DevicesAssetsAddToFavoritesCreate201Schema = z.infer<typeof v1DevicesAssetsAddToFavoritesCreate201Schema>
 
-export const v1DevicesAssetsAddToFavoritesCreateMutationRequestSchema = z.lazy(() => favoriteAssetSerializerRequestSchema)
+export const v1DevicesAssetsAddToFavoritesCreateMutationRequestSchema = favoriteAssetSerializerRequestSchema
 
 export type V1DevicesAssetsAddToFavoritesCreateMutationRequestSchema = z.infer<typeof v1DevicesAssetsAddToFavoritesCreateMutationRequestSchema>
 
-export const v1DevicesAssetsAddToFavoritesCreateMutationResponseSchema = z.lazy(() => v1DevicesAssetsAddToFavoritesCreate201Schema)
+export const v1DevicesAssetsAddToFavoritesCreateMutationResponseSchema = v1DevicesAssetsAddToFavoritesCreate201Schema
 
 export type V1DevicesAssetsAddToFavoritesCreateMutationResponseSchema = z.infer<typeof v1DevicesAssetsAddToFavoritesCreateMutationResponseSchema>

@@ -15,12 +15,48 @@
 * Do not edit manually.
 */
 
-import type { GetPendingTransactionsQueryResponse } from "../types/GetPendingTransactions.ts";
+import type { GetPendingTransactionsQueryResponse, GetPendingTransactions401, GetPendingTransactions500, GetPendingTransactions503 } from "../types/GetPendingTransactions.ts";
 import { http } from "msw";
+
+export function getPendingTransactionsHandlerResponse200(data: GetPendingTransactionsQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getPendingTransactionsHandlerResponse401(data: GetPendingTransactions401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getPendingTransactionsHandlerResponse500(data: GetPendingTransactions500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getPendingTransactionsHandlerResponse503(data: GetPendingTransactions503) {
+  return new Response(JSON.stringify(data), {
+    status: 503,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function getPendingTransactionsHandler(data?: GetPendingTransactionsQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/transactions/pending', function handler(info) {
     if(typeof data === 'function') return data(info)
 

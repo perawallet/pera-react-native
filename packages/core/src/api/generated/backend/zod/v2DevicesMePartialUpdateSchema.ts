@@ -20,19 +20,19 @@ import { deviceV2SerializerResponseSchema } from "./deviceV2Serializer/responseS
 import { z } from "zod";
 
 export const v2DevicesMePartialUpdateHeaderParamsSchema = z.object({
-    "APP-VERSION": z.unknown().optional()
+    "APP-VERSION": z.optional(z.unknown())
     }).optional()
 
 export type V2DevicesMePartialUpdateHeaderParamsSchema = z.infer<typeof v2DevicesMePartialUpdateHeaderParamsSchema>
 
-export const v2DevicesMePartialUpdate200Schema = z.lazy(() => deviceV2SerializerResponseSchema)
+export const v2DevicesMePartialUpdate200Schema = deviceV2SerializerResponseSchema
 
 export type V2DevicesMePartialUpdate200Schema = z.infer<typeof v2DevicesMePartialUpdate200Schema>
 
-export const v2DevicesMePartialUpdateMutationRequestSchema = z.lazy(() => deviceV2SerializerRequestSchema)
+export const v2DevicesMePartialUpdateMutationRequestSchema = deviceV2SerializerRequestSchema
 
 export type V2DevicesMePartialUpdateMutationRequestSchema = z.infer<typeof v2DevicesMePartialUpdateMutationRequestSchema>
 
-export const v2DevicesMePartialUpdateMutationResponseSchema = z.lazy(() => v2DevicesMePartialUpdate200Schema)
+export const v2DevicesMePartialUpdateMutationResponseSchema = v2DevicesMePartialUpdate200Schema
 
 export type V2DevicesMePartialUpdateMutationResponseSchema = z.infer<typeof v2DevicesMePartialUpdateMutationResponseSchema>

@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V2DevicesMeUpdateMutationRequest, V2DevicesMeUpdateMutationResponse, V2DevicesMeUpdateHeaderParams } from "../types/V2DevicesMeUpdate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v2DevicesMeUpdateMutationKey = () => [{ url: '/v2/devices/me/' }] as const
 
@@ -38,6 +38,16 @@ export async function v2DevicesMeUpdate({ data, headers }: { data: V2DevicesMeUp
   return res.data
 }
 
+export function v2DevicesMeUpdateMutationOptions(config: Partial<RequestConfig<V2DevicesMeUpdateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v2DevicesMeUpdateMutationKey()
+  return mutationOptions<V2DevicesMeUpdateMutationResponse, ResponseErrorConfig<Error>, {data: V2DevicesMeUpdateMutationRequest, headers?: V2DevicesMeUpdateHeaderParams}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ data, headers }) => {
+      return v2DevicesMeUpdate({ data, headers }, config)
+    },
+  })
+}
+
 /**
  * @description You should set `app_version` with `APP-VERSION` header.
  * {@link /v2/devices/me/}
@@ -52,11 +62,11 @@ export function useV2DevicesMeUpdate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v2DevicesMeUpdateMutationKey()
 
+  const baseOptions = v2DevicesMeUpdateMutationOptions(config) as UseMutationOptions<V2DevicesMeUpdateMutationResponse, ResponseErrorConfig<Error>, {data: V2DevicesMeUpdateMutationRequest, headers?: V2DevicesMeUpdateHeaderParams}, TContext>
+
   return useMutation<V2DevicesMeUpdateMutationResponse, ResponseErrorConfig<Error>, {data: V2DevicesMeUpdateMutationRequest, headers?: V2DevicesMeUpdateHeaderParams}, TContext>({
-    mutationFn: async({ data, headers }) => {
-      return v2DevicesMeUpdate({ data, headers }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V2DevicesMeUpdateMutationResponse, ResponseErrorConfig<Error>, {data: V2DevicesMeUpdateMutationRequest, headers?: V2DevicesMeUpdateHeaderParams}, TContext>
 }

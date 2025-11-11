@@ -30,35 +30,35 @@ export type AddParticipationKey200Schema = z.infer<typeof addParticipationKey200
 /**
  * @description Bad Request
  */
-export const addParticipationKey400Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const addParticipationKey400Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type AddParticipationKey400Schema = z.infer<typeof addParticipationKey400Schema>
 
 /**
  * @description Invalid API Token
  */
-export const addParticipationKey401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const addParticipationKey401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type AddParticipationKey401Schema = z.infer<typeof addParticipationKey401Schema>
 
 /**
  * @description Participation Key Not Found
  */
-export const addParticipationKey404Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const addParticipationKey404Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type AddParticipationKey404Schema = z.infer<typeof addParticipationKey404Schema>
 
 /**
  * @description Internal Error
  */
-export const addParticipationKey500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const addParticipationKey500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type AddParticipationKey500Schema = z.infer<typeof addParticipationKey500Schema>
 
 /**
  * @description Service Temporarily Unavailable
  */
-export const addParticipationKey503Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const addParticipationKey503Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type AddParticipationKey503Schema = z.infer<typeof addParticipationKey503Schema>
 
@@ -76,6 +76,6 @@ export const addParticipationKeyMutationRequestSchema = z.instanceof(File)
 
 export type AddParticipationKeyMutationRequestSchema = z.infer<typeof addParticipationKeyMutationRequestSchema>
 
-export const addParticipationKeyMutationResponseSchema = z.lazy(() => addParticipationKey200Schema)
+export const addParticipationKeyMutationResponseSchema = addParticipationKey200Schema
 
 export type AddParticipationKeyMutationResponseSchema = z.infer<typeof addParticipationKeyMutationResponseSchema>

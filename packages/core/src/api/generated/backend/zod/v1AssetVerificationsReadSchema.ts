@@ -24,10 +24,10 @@ export const v1AssetVerificationsReadPathParamsSchema = z.object({
 
 export type V1AssetVerificationsReadPathParamsSchema = z.infer<typeof v1AssetVerificationsReadPathParamsSchema>
 
-export const v1AssetVerificationsRead200Schema = z.lazy(() => publicAssetVerificationDetailSerializerResponseSchema)
+export const v1AssetVerificationsRead200Schema = publicAssetVerificationDetailSerializerResponseSchema
 
 export type V1AssetVerificationsRead200Schema = z.infer<typeof v1AssetVerificationsRead200Schema>
 
-export const v1AssetVerificationsReadQueryResponseSchema = z.lazy(() => v1AssetVerificationsRead200Schema)
+export const v1AssetVerificationsReadQueryResponseSchema = v1AssetVerificationsRead200Schema
 
 export type V1AssetVerificationsReadQueryResponseSchema = z.infer<typeof v1AssetVerificationsReadQueryResponseSchema>

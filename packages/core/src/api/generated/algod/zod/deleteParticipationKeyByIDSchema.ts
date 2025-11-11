@@ -34,28 +34,28 @@ export type DeleteParticipationKeyByID200Schema = z.infer<typeof deleteParticipa
 /**
  * @description Bad Request
  */
-export const deleteParticipationKeyByID400Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const deleteParticipationKeyByID400Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type DeleteParticipationKeyByID400Schema = z.infer<typeof deleteParticipationKeyByID400Schema>
 
 /**
  * @description Invalid API Token
  */
-export const deleteParticipationKeyByID401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const deleteParticipationKeyByID401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type DeleteParticipationKeyByID401Schema = z.infer<typeof deleteParticipationKeyByID401Schema>
 
 /**
  * @description Participation Key Not Found
  */
-export const deleteParticipationKeyByID404Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const deleteParticipationKeyByID404Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type DeleteParticipationKeyByID404Schema = z.infer<typeof deleteParticipationKeyByID404Schema>
 
 /**
  * @description Internal Error
  */
-export const deleteParticipationKeyByID500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const deleteParticipationKeyByID500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type DeleteParticipationKeyByID500Schema = z.infer<typeof deleteParticipationKeyByID500Schema>
 
@@ -66,6 +66,6 @@ export const deleteParticipationKeyByIDErrorSchema = z.unknown()
 
 export type DeleteParticipationKeyByIDErrorSchema = z.infer<typeof deleteParticipationKeyByIDErrorSchema>
 
-export const deleteParticipationKeyByIDMutationResponseSchema = z.lazy(() => deleteParticipationKeyByID200Schema)
+export const deleteParticipationKeyByIDMutationResponseSchema = deleteParticipationKeyByID200Schema
 
 export type DeleteParticipationKeyByIDMutationResponseSchema = z.infer<typeof deleteParticipationKeyByIDMutationResponseSchema>

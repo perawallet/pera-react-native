@@ -35,31 +35,31 @@ export type TransactionParams200Schema = z.infer<typeof transactionParams200Sche
 /**
  * @description Invalid API Token
  */
-export const transactionParams401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const transactionParams401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type TransactionParams401Schema = z.infer<typeof transactionParams401Schema>
 
 /**
  * @description Internal Error
  */
-export const transactionParams500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const transactionParams500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type TransactionParams500Schema = z.infer<typeof transactionParams500Schema>
 
 /**
  * @description Service Temporarily Unavailable
  */
-export const transactionParams503Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const transactionParams503Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type TransactionParams503Schema = z.infer<typeof transactionParams503Schema>
 
 /**
  * @description Unknown Error
  */
-export const transactionParamsErrorSchema = z.unknown().optional()
+export const transactionParamsErrorSchema = z.unknown()
 
 export type TransactionParamsErrorSchema = z.infer<typeof transactionParamsErrorSchema>
 
-export const transactionParamsQueryResponseSchema = z.lazy(() => transactionParams200Schema).optional()
+export const transactionParamsQueryResponseSchema = transactionParams200Schema.optional()
 
 export type TransactionParamsQueryResponseSchema = z.infer<typeof transactionParamsQueryResponseSchema>

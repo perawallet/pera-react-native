@@ -15,12 +15,48 @@
 * Do not edit manually.
 */
 
-import type { LookupApplicationBoxByIDAndNameQueryResponse } from "../types/LookupApplicationBoxByIDAndName.ts";
+import type { LookupApplicationBoxByIDAndNameQueryResponse, LookupApplicationBoxByIDAndName400, LookupApplicationBoxByIDAndName404, LookupApplicationBoxByIDAndName500 } from "../types/LookupApplicationBoxByIDAndName.ts";
 import { http } from "msw";
+
+export function lookupApplicationBoxByIDAndNameHandlerResponse200(data: LookupApplicationBoxByIDAndNameQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupApplicationBoxByIDAndNameHandlerResponse400(data: LookupApplicationBoxByIDAndName400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupApplicationBoxByIDAndNameHandlerResponse404(data: LookupApplicationBoxByIDAndName404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupApplicationBoxByIDAndNameHandlerResponse500(data: LookupApplicationBoxByIDAndName500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function lookupApplicationBoxByIDAndNameHandler(data?: LookupApplicationBoxByIDAndNameQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/applications/:application-id/box', function handler(info) {
     if(typeof data === 'function') return data(info)
 

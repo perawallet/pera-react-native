@@ -19,8 +19,8 @@ import { z } from "zod";
 
 export const backupCreateSerializerRequestSchema = z.object({
     "type": z.enum(["temporary", "permanent"]),
-"encrypted_content": z.string().optional(),
-"creator_device": z.number().int().nullable()
+"encrypted_content": z.optional(z.string()),
+"creator_device": z.nullable(z.number().int())
     })
 
 export type BackupCreateSerializerRequestSchema = z.infer<typeof backupCreateSerializerRequestSchema>

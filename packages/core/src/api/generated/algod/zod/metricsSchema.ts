@@ -31,6 +31,6 @@ export const metrics404Schema = z.unknown()
 
 export type Metrics404Schema = z.infer<typeof metrics404Schema>
 
-export const metricsQueryResponseSchema = z.lazy(() => metrics200Schema)
+export const metricsQueryResponseSchema = metrics200Schema
 
 export type MetricsQueryResponseSchema = z.infer<typeof metricsQueryResponseSchema>

@@ -18,9 +18,18 @@
 import type { V1CardsFundAddressPartialUpdateMutationResponse } from "../types/V1CardsFundAddressPartialUpdate.ts";
 import { http } from "msw";
 
+export function v1CardsFundAddressPartialUpdateHandlerResponse200(data: V1CardsFundAddressPartialUpdateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1CardsFundAddressPartialUpdateHandler(data?: V1CardsFundAddressPartialUpdateMutationResponse | ((
         info: Parameters<Parameters<typeof http.patch>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.patch('/v1/cards/fund-address/:address/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

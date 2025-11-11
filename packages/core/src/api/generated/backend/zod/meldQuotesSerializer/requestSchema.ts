@@ -18,10 +18,10 @@
 import { z } from "zod";
 
 export const meldQuotesSerializerRequestSchema = z.object({
-    "country_code": z.string().regex(/^[A-Z]{2}$/).min(1),
+    "country_code": z.string().regex(/^[A-Z]{2}$/),
 "destination_currency_code": z.enum(["ALGO", "USDC_ALGORAND", "USDT_ALGORAND"]),
 "source_amount": z.string(),
-"source_currency_code": z.string().regex(/^[A-Z]{3}$/).min(1),
+"source_currency_code": z.string().regex(/^[A-Z]{3}$/),
 "payment_method_type": z.string().min(1)
     })
 

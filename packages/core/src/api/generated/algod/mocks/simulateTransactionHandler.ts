@@ -15,12 +15,57 @@
 * Do not edit manually.
 */
 
-import type { SimulateTransactionMutationResponse } from "../types/SimulateTransaction.ts";
+import type { SimulateTransactionMutationResponse, SimulateTransaction400, SimulateTransaction401, SimulateTransaction500, SimulateTransaction503 } from "../types/SimulateTransaction.ts";
 import { http } from "msw";
+
+export function simulateTransactionHandlerResponse200(data: SimulateTransactionMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function simulateTransactionHandlerResponse400(data: SimulateTransaction400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function simulateTransactionHandlerResponse401(data: SimulateTransaction401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function simulateTransactionHandlerResponse500(data: SimulateTransaction500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function simulateTransactionHandlerResponse503(data: SimulateTransaction503) {
+  return new Response(JSON.stringify(data), {
+    status: 503,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function simulateTransactionHandler(data?: SimulateTransactionMutationResponse | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v2/transactions/simulate', function handler(info) {
     if(typeof data === 'function') return data(info)
 

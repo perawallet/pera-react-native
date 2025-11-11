@@ -19,11 +19,11 @@ import { applicationSchema } from "./applicationSchema.ts";
 import { z } from "zod";
 
 export const searchForApplicationsQueryParamsSchema = z.object({
-    "application-id": z.coerce.number().int().describe("Application ID").optional(),
-"creator": z.string().describe("Filter just applications with the given creator address.").optional(),
-"include-all": z.boolean().describe("Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.").optional(),
-"limit": z.coerce.number().int().describe("Maximum number of results to return. There could be additional pages even if the limit is not reached.").optional(),
-"next": z.string().describe("The next page of results. Use the next token provided by the previous results.").optional()
+    "application-id": z.optional(z.coerce.number().int().describe("Application ID")),
+"creator": z.optional(z.string().describe("Filter just applications with the given creator address.")),
+"include-all": z.optional(z.boolean().describe("Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.")),
+"limit": z.optional(z.coerce.number().int().describe("Maximum number of results to return. There could be additional pages even if the limit is not reached.")),
+"next": z.optional(z.string().describe("The next page of results. Use the next token provided by the previous results."))
     }).optional()
 
 export type SearchForApplicationsQueryParamsSchema = z.infer<typeof searchForApplicationsQueryParamsSchema>
@@ -34,7 +34,7 @@ export type SearchForApplicationsQueryParamsSchema = z.infer<typeof searchForApp
 export const searchForApplications200Schema = z.object({
     "applications": z.array(z.lazy(() => applicationSchema).describe("Application index and its parameters")),
 "current-round": z.number().int().describe("Round at which the results were computed."),
-"next-token": z.string().describe("Used for pagination, when making another request provide this token with the next parameter.").optional()
+"next-token": z.optional(z.string().describe("Used for pagination, when making another request provide this token with the next parameter."))
     })
 
 export type SearchForApplications200Schema = z.infer<typeof searchForApplications200Schema>
@@ -43,14 +43,14 @@ export type SearchForApplications200Schema = z.infer<typeof searchForApplication
  * @description Response for errors
  */
 export const searchForApplications500Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
 export type SearchForApplications500Schema = z.infer<typeof searchForApplications500Schema>
 
-export const searchForApplicationsQueryResponseSchema = z.lazy(() => searchForApplications200Schema)
+export const searchForApplicationsQueryResponseSchema = searchForApplications200Schema
 
 export type SearchForApplicationsQueryResponseSchema = z.infer<typeof searchForApplicationsQueryResponseSchema>

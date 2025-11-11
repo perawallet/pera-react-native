@@ -20,12 +20,12 @@ import { z } from "zod";
 
 export const v1DexSwapAvailableAssetsListQueryParamsSchema = z.object({
     "asset_in_id": z.coerce.number().int(),
-"q": z.string().min(1).optional()
+"q": z.optional(z.string().min(1))
     })
 
 export type V1DexSwapAvailableAssetsListQueryParamsSchema = z.infer<typeof v1DexSwapAvailableAssetsListQueryParamsSchema>
 
-export const v1DexSwapAvailableAssetsList200Schema = z.lazy(() => availableAssetsViewSchema)
+export const v1DexSwapAvailableAssetsList200Schema = availableAssetsViewSchema
 
 export type V1DexSwapAvailableAssetsList200Schema = z.infer<typeof v1DexSwapAvailableAssetsList200Schema>
 
@@ -36,6 +36,6 @@ export const v1DexSwapAvailableAssetsList503Schema = z.unknown()
 
 export type V1DexSwapAvailableAssetsList503Schema = z.infer<typeof v1DexSwapAvailableAssetsList503Schema>
 
-export const v1DexSwapAvailableAssetsListQueryResponseSchema = z.lazy(() => v1DexSwapAvailableAssetsList200Schema)
+export const v1DexSwapAvailableAssetsListQueryResponseSchema = v1DexSwapAvailableAssetsList200Schema
 
 export type V1DexSwapAvailableAssetsListQueryResponseSchema = z.infer<typeof v1DexSwapAvailableAssetsListQueryResponseSchema>

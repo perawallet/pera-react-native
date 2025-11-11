@@ -19,26 +19,26 @@ import { DEXSwapAssetSchema } from "./DEXSwapAssetSchema.ts";
 import { z } from "zod";
 
 export const quoteSchema = z.object({
-    "id": z.number().int().optional(),
-"quote_id_str": z.string().optional(),
-"provider": z.enum(["tinyman", "tinyman-v2", "tinyman-swap-router", "vestige-v3", "vestige-v4", "folks-router", "deflex"]).optional(),
-"swap_type": z.enum(["fixed-input", "fixed-output"]).optional(),
-"swapper_address": z.string().min(1).optional(),
-"device": z.number().int().nullable().nullish(),
+    "id": z.optional(z.number().int()),
+"quote_id_str": z.optional(z.string()),
+"provider": z.optional(z.enum(["tinyman", "tinyman-v2", "tinyman-swap-router", "vestige-v3", "vestige-v4", "folks-router", "deflex"])),
+"swap_type": z.optional(z.enum(["fixed-input", "fixed-output"])),
+"swapper_address": z.optional(z.string().min(1)),
+"device": z.number().int().nullish(),
 "asset_in": z.lazy(() => DEXSwapAssetSchema),
 "asset_out": z.lazy(() => DEXSwapAssetSchema),
-"amount_in": z.string().optional(),
-"amount_in_with_slippage": z.string().optional(),
-"amount_in_usd_value": z.string().nullable().nullish(),
-"amount_out": z.string().optional(),
-"amount_out_with_slippage": z.string().optional(),
-"amount_out_usd_value": z.string().nullable().nullish(),
-"slippage": z.string().optional(),
-"price": z.string().optional(),
-"price_impact": z.string().optional(),
-"pera_fee_amount": z.string().describe("As Micro Algo").optional(),
-"exchange_fee_amount": z.string().describe("As Asset In").optional(),
-"transaction_fees": z.string().describe("As Micro Algo, For total fee of individual txs").nullable().nullish()
+"amount_in": z.optional(z.string()),
+"amount_in_with_slippage": z.optional(z.string()),
+"amount_in_usd_value": z.string().nullish(),
+"amount_out": z.optional(z.string()),
+"amount_out_with_slippage": z.optional(z.string()),
+"amount_out_usd_value": z.string().nullish(),
+"slippage": z.optional(z.string()),
+"price": z.optional(z.string()),
+"price_impact": z.optional(z.string()),
+"pera_fee_amount": z.optional(z.string().describe("As Micro Algo")),
+"exchange_fee_amount": z.optional(z.string().describe("As Asset In")),
+"transaction_fees": z.string().describe("As Micro Algo, For total fee of individual txs").nullish()
     })
 
 export type QuoteSchema = z.infer<typeof quoteSchema>

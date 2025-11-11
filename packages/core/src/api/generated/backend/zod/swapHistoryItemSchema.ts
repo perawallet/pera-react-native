@@ -22,14 +22,14 @@ export const swapHistoryItemSchema = z.object({
     "id": z.number().int(),
 "provider": z.enum(["tinyman", "tinyman-v2", "tinyman-swap-router", "vestige-v3", "vestige-v4", "folks-router", "deflex"]),
 "status": z.enum(["pending", "in_progress", "completed", "failed"]),
-"completed_datetime": z.string().nullable(),
-"transaction_group_id": z.string().min(1).nullable(),
+"completed_datetime": z.nullable(z.string()),
+"transaction_group_id": z.nullable(z.string().min(1)),
 "asset_in": z.lazy(() => DEXSwapAssetSchema),
 "asset_out": z.lazy(() => DEXSwapAssetSchema),
 "amount_in": z.string(),
 "amount_out": z.string(),
-"amount_in_usd_value": z.string().nullable(),
-"amount_out_usd_value": z.string().nullable()
+"amount_in_usd_value": z.nullable(z.string()),
+"amount_out_usd_value": z.nullable(z.string())
     })
 
 export type SwapHistoryItemSchema = z.infer<typeof swapHistoryItemSchema>

@@ -24,10 +24,10 @@ export const v1DevicesFeaturesListPathParamsSchema = z.object({
 
 export type V1DevicesFeaturesListPathParamsSchema = z.infer<typeof v1DevicesFeaturesListPathParamsSchema>
 
-export const v1DevicesFeaturesList200Schema = z.lazy(() => featureFlagResponseSerializerResponseSchema)
+export const v1DevicesFeaturesList200Schema = featureFlagResponseSerializerResponseSchema
 
 export type V1DevicesFeaturesList200Schema = z.infer<typeof v1DevicesFeaturesList200Schema>
 
-export const v1DevicesFeaturesListQueryResponseSchema = z.lazy(() => v1DevicesFeaturesList200Schema)
+export const v1DevicesFeaturesListQueryResponseSchema = v1DevicesFeaturesList200Schema
 
 export type V1DevicesFeaturesListQueryResponseSchema = z.infer<typeof v1DevicesFeaturesListQueryResponseSchema>

@@ -24,7 +24,7 @@ export const v1AccountsOverviewListPathParamsSchema = z.object({
 
 export type V1AccountsOverviewListPathParamsSchema = z.infer<typeof v1AccountsOverviewListPathParamsSchema>
 
-export const v1AccountsOverviewList200Schema = z.lazy(() => accountOverviewSchema)
+export const v1AccountsOverviewList200Schema = accountOverviewSchema
 
 export type V1AccountsOverviewList200Schema = z.infer<typeof v1AccountsOverviewList200Schema>
 
@@ -35,6 +35,6 @@ export const v1AccountsOverviewList304Schema = z.unknown()
 
 export type V1AccountsOverviewList304Schema = z.infer<typeof v1AccountsOverviewList304Schema>
 
-export const v1AccountsOverviewListQueryResponseSchema = z.lazy(() => v1AccountsOverviewList200Schema)
+export const v1AccountsOverviewListQueryResponseSchema = v1AccountsOverviewList200Schema
 
 export type V1AccountsOverviewListQueryResponseSchema = z.infer<typeof v1AccountsOverviewListQueryResponseSchema>

@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1AssetRequestsCreateMutationRequest, V1AssetRequestsCreateMutationResponse } from "../types/V1AssetRequestsCreate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1AssetRequestsCreateMutationKey = () => [{ url: '/v1/asset-requests/' }] as const
 
@@ -39,6 +39,16 @@ export async function v1AssetRequestsCreate({ data }: { data: V1AssetRequestsCre
   return res.data
 }
 
+export function v1AssetRequestsCreateMutationOptions(config: Partial<RequestConfig<V1AssetRequestsCreateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1AssetRequestsCreateMutationKey()
+  return mutationOptions<V1AssetRequestsCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1AssetRequestsCreateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ data }) => {
+      return v1AssetRequestsCreate({ data }, config)
+    },
+  })
+}
+
 /**
  * @description This view keeps sender, receiver, and asset information and notifies the receiver that the sender wants to send this asset to you.
  * @summary Create Asset Request
@@ -54,11 +64,11 @@ export function useV1AssetRequestsCreate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1AssetRequestsCreateMutationKey()
 
+  const baseOptions = v1AssetRequestsCreateMutationOptions(config) as UseMutationOptions<V1AssetRequestsCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1AssetRequestsCreateMutationRequest}, TContext>
+
   return useMutation<V1AssetRequestsCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1AssetRequestsCreateMutationRequest}, TContext>({
-    mutationFn: async({ data }) => {
-      return v1AssetRequestsCreate({ data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1AssetRequestsCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1AssetRequestsCreateMutationRequest}, TContext>
 }

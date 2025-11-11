@@ -21,9 +21,9 @@ import { z } from "zod";
  * @description Fields relating to voting for a protocol upgrade.
  */
 export const blockUpgradeVoteSchema = z.object({
-    "upgrade-approve": z.boolean().describe("\\[upgradeyes\\] Indicates a yes vote for the current proposal.").optional(),
-"upgrade-delay": z.number().int().describe("\\[upgradedelay\\] Indicates the time between acceptance and execution.").optional(),
-"upgrade-propose": z.string().describe("\\[upgradeprop\\] Indicates a proposed upgrade.").optional()
+    "upgrade-approve": z.optional(z.boolean().describe("\\[upgradeyes\\] Indicates a yes vote for the current proposal.")),
+"upgrade-delay": z.optional(z.number().int().describe("\\[upgradedelay\\] Indicates the time between acceptance and execution.")),
+"upgrade-propose": z.optional(z.string().describe("\\[upgradeprop\\] Indicates a proposed upgrade."))
     }).describe("Fields relating to voting for a protocol upgrade.")
 
 export type BlockUpgradeVoteSchema = z.infer<typeof blockUpgradeVoteSchema>

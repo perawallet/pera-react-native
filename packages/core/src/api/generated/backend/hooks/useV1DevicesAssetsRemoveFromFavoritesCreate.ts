@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DevicesAssetsRemoveFromFavoritesCreateMutationRequest, V1DevicesAssetsRemoveFromFavoritesCreateMutationResponse, V1DevicesAssetsRemoveFromFavoritesCreatePathParams } from "../types/V1DevicesAssetsRemoveFromFavoritesCreate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1DevicesAssetsRemoveFromFavoritesCreateMutationKey = () => [{ url: '/v1/devices/:device_id/assets/:asset_id/remove-from-favorites/' }] as const
 
@@ -39,6 +39,16 @@ export async function v1DevicesAssetsRemoveFromFavoritesCreate({ asset_id, devic
   return res.data
 }
 
+export function v1DevicesAssetsRemoveFromFavoritesCreateMutationOptions(config: Partial<RequestConfig<V1DevicesAssetsRemoveFromFavoritesCreateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1DevicesAssetsRemoveFromFavoritesCreateMutationKey()
+  return mutationOptions<V1DevicesAssetsRemoveFromFavoritesCreateMutationResponse, ResponseErrorConfig<Error>, {asset_id: V1DevicesAssetsRemoveFromFavoritesCreatePathParams["asset_id"], device_id: V1DevicesAssetsRemoveFromFavoritesCreatePathParams["device_id"], data?: V1DevicesAssetsRemoveFromFavoritesCreateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ asset_id, device_id, data }) => {
+      return v1DevicesAssetsRemoveFromFavoritesCreate({ asset_id, device_id, data }, config)
+    },
+  })
+}
+
 /**
  * @description This device authenticated endpoint is for removing from favorites.
  * @summary Remove Asset from Favorites
@@ -54,11 +64,11 @@ export function useV1DevicesAssetsRemoveFromFavoritesCreate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1DevicesAssetsRemoveFromFavoritesCreateMutationKey()
 
+  const baseOptions = v1DevicesAssetsRemoveFromFavoritesCreateMutationOptions(config) as UseMutationOptions<V1DevicesAssetsRemoveFromFavoritesCreateMutationResponse, ResponseErrorConfig<Error>, {asset_id: V1DevicesAssetsRemoveFromFavoritesCreatePathParams["asset_id"], device_id: V1DevicesAssetsRemoveFromFavoritesCreatePathParams["device_id"], data?: V1DevicesAssetsRemoveFromFavoritesCreateMutationRequest}, TContext>
+
   return useMutation<V1DevicesAssetsRemoveFromFavoritesCreateMutationResponse, ResponseErrorConfig<Error>, {asset_id: V1DevicesAssetsRemoveFromFavoritesCreatePathParams["asset_id"], device_id: V1DevicesAssetsRemoveFromFavoritesCreatePathParams["device_id"], data?: V1DevicesAssetsRemoveFromFavoritesCreateMutationRequest}, TContext>({
-    mutationFn: async({ asset_id, device_id, data }) => {
-      return v1DevicesAssetsRemoveFromFavoritesCreate({ asset_id, device_id, data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1DevicesAssetsRemoveFromFavoritesCreateMutationResponse, ResponseErrorConfig<Error>, {asset_id: V1DevicesAssetsRemoveFromFavoritesCreatePathParams["asset_id"], device_id: V1DevicesAssetsRemoveFromFavoritesCreatePathParams["device_id"], data?: V1DevicesAssetsRemoveFromFavoritesCreateMutationRequest}, TContext>
 }

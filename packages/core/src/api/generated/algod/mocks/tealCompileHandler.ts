@@ -15,12 +15,55 @@
 * Do not edit manually.
 */
 
-import type { TealCompileMutationResponse } from "../types/TealCompile.ts";
+import type { TealCompileMutationResponse, TealCompile400, TealCompile401, TealCompile404, TealCompile500 } from "../types/TealCompile.ts";
 import { http } from "msw";
+
+export function tealCompileHandlerResponse200(data: TealCompileMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function tealCompileHandlerResponse400(data: TealCompile400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function tealCompileHandlerResponse401(data: TealCompile401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function tealCompileHandlerResponse404(data?: TealCompile404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+  
+  })
+}
+
+export function tealCompileHandlerResponse500(data: TealCompile500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function tealCompileHandler(data?: TealCompileMutationResponse | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v2/teal/compile', function handler(info) {
     if(typeof data === 'function') return data(info)
 

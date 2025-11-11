@@ -24,10 +24,10 @@ export const v2DexSwapTopPairsListQueryParamsSchema = z.object({
 
 export type V2DexSwapTopPairsListQueryParamsSchema = z.infer<typeof v2DexSwapTopPairsListQueryParamsSchema>
 
-export const v2DexSwapTopPairsList200Schema = z.lazy(() => topSwappedPairsViewResponseSchema)
+export const v2DexSwapTopPairsList200Schema = topSwappedPairsViewResponseSchema
 
 export type V2DexSwapTopPairsList200Schema = z.infer<typeof v2DexSwapTopPairsList200Schema>
 
-export const v2DexSwapTopPairsListQueryResponseSchema = z.lazy(() => v2DexSwapTopPairsList200Schema)
+export const v2DexSwapTopPairsListQueryResponseSchema = v2DexSwapTopPairsList200Schema
 
 export type V2DexSwapTopPairsListQueryResponseSchema = z.infer<typeof v2DexSwapTopPairsListQueryResponseSchema>

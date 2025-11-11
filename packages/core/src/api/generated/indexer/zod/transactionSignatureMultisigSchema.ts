@@ -22,9 +22,9 @@ import { z } from "zod";
  * @description structure holding multiple subsignatures.\n\nDefinition:\ncrypto/multisig.go : MultisigSig
  */
 export const transactionSignatureMultisigSchema = z.object({
-    "subsignature": z.array(z.lazy(() => transactionSignatureMultisigSubsignatureSchema)).describe("\\[subsig\\] holds pairs of public key and signatures.").optional(),
-"threshold": z.number().int().describe("\\[thr\\]").optional(),
-"version": z.number().int().describe("\\[v\\]").optional()
+    "subsignature": z.optional(z.array(z.lazy(() => transactionSignatureMultisigSubsignatureSchema)).describe("\\[subsig\\] holds pairs of public key and signatures.")),
+"threshold": z.optional(z.number().int().describe("\\[thr\\]")),
+"version": z.optional(z.number().int().describe("\\[v\\]"))
     }).describe("structure holding multiple subsignatures.\n\nDefinition:\ncrypto/multisig.go : MultisigSig")
 
 export type TransactionSignatureMultisigSchema = z.infer<typeof transactionSignatureMultisigSchema>

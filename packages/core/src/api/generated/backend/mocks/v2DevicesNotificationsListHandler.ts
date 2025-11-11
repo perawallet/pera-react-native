@@ -18,9 +18,18 @@
 import type { V2DevicesNotificationsListQueryResponse } from "../types/V2DevicesNotificationsList.ts";
 import { http } from "msw";
 
+export function v2DevicesNotificationsListHandlerResponse200(data: V2DevicesNotificationsListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v2DevicesNotificationsListHandler(data?: V2DevicesNotificationsListQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/devices/:device_id/notifications/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

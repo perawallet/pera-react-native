@@ -15,12 +15,33 @@
 * Do not edit manually.
 */
 
-import type { GetReadyQueryResponse } from "../types/GetReady.ts";
+import type { GetReadyQueryResponse, GetReady500, GetReady503 } from "../types/GetReady.ts";
 import { http } from "msw";
 
-export function getReadyHandler(data?: GetReadyQueryResponse | ((
+export function getReadyHandlerResponse200(data?: GetReadyQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+  
+  })
+}
+
+export function getReadyHandlerResponse500(data?: GetReady500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+  
+  })
+}
+
+export function getReadyHandlerResponse503(data?: GetReady503) {
+  return new Response(JSON.stringify(data), {
+    status: 503,
+  
+  })
+}
+
+export function getReadyHandler(data?: string | number | boolean | null | object | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/ready', function handler(info) {
     if(typeof data === 'function') return data(info)
 

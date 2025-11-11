@@ -19,15 +19,15 @@ import { projectSerializerResponseSchema } from "./projectSerializer/responseSch
 import { z } from "zod";
 
 export const v1DiscoverFeaturedProjectsListQueryParamsSchema = z.object({
-    "ordering": z.string().describe("Which field to use when ordering the results.").optional()
+    "ordering": z.optional(z.string().describe("Which field to use when ordering the results."))
     }).optional()
 
 export type V1DiscoverFeaturedProjectsListQueryParamsSchema = z.infer<typeof v1DiscoverFeaturedProjectsListQueryParamsSchema>
 
-export const v1DiscoverFeaturedProjectsList200Schema = z.array(z.lazy(() => projectSerializerResponseSchema))
+export const v1DiscoverFeaturedProjectsList200Schema = z.array(projectSerializerResponseSchema)
 
 export type V1DiscoverFeaturedProjectsList200Schema = z.infer<typeof v1DiscoverFeaturedProjectsList200Schema>
 
-export const v1DiscoverFeaturedProjectsListQueryResponseSchema = z.lazy(() => v1DiscoverFeaturedProjectsList200Schema)
+export const v1DiscoverFeaturedProjectsListQueryResponseSchema = v1DiscoverFeaturedProjectsList200Schema
 
 export type V1DiscoverFeaturedProjectsListQueryResponseSchema = z.infer<typeof v1DiscoverFeaturedProjectsListQueryResponseSchema>

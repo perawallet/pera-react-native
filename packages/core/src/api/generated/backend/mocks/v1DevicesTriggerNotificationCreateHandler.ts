@@ -18,9 +18,18 @@
 import type { V1DevicesTriggerNotificationCreateMutationResponse } from "../types/V1DevicesTriggerNotificationCreate.ts";
 import { http } from "msw";
 
+export function v1DevicesTriggerNotificationCreateHandlerResponse201(data: V1DevicesTriggerNotificationCreateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 201,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1DevicesTriggerNotificationCreateHandler(data?: V1DevicesTriggerNotificationCreateMutationResponse | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v1/devices/trigger-notification/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

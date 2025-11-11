@@ -24,7 +24,7 @@ import { z } from "zod";
  */
 export const accountAssetHoldingSchema = z.object({
     "asset-holding": z.lazy(() => assetHoldingSchema).describe("Describes an asset held by an account.\n\nDefinition:\ndata/basics/userBalance.go : AssetHolding"),
-"asset-params": z.lazy(() => assetParamsSchema).describe("AssetParams specifies the parameters for an asset.\n\n\\[apar\\] when part of an AssetConfig transaction.\n\nDefinition:\ndata/transactions/asset.go : AssetParams").optional()
+"asset-params": z.optional(z.lazy(() => assetParamsSchema).describe("AssetParams specifies the parameters for an asset.\n\n\\[apar\\] when part of an AssetConfig transaction.\n\nDefinition:\ndata/transactions/asset.go : AssetParams"))
     }).describe("AccountAssetHolding describes the account's asset holding and asset parameters (if either exist) for a specific asset ID.")
 
 export type AccountAssetHoldingSchema = z.infer<typeof accountAssetHoldingSchema>

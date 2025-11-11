@@ -22,7 +22,7 @@ export const wealthDataPointSchema = z.object({
 "datetime": z.string(),
 "algo_value": z.string(),
 "usd_value": z.string(),
-"value_in_currency": z.string().optional()
+"value_in_currency": z.optional(z.string())
     })
 
 export type WealthDataPointSchema = z.infer<typeof wealthDataPointSchema>

@@ -19,18 +19,18 @@ import { swapHistoryViewResponseSchema } from "./swapHistoryViewResponseSchema.t
 import { z } from "zod";
 
 export const v2DexSwapHistoryListQueryParamsSchema = z.object({
-    "cursor": z.string().describe("The pagination cursor value.").optional(),
-"limit": z.coerce.number().int().describe("Number of results to return per page.").optional(),
+    "cursor": z.optional(z.string().describe("The pagination cursor value.")),
+"limit": z.optional(z.coerce.number().int().describe("Number of results to return per page.")),
 "address": z.string().min(1).describe("Algorand address to get swap history for"),
-"statuses": z.string().min(1).describe("Comma-separated list of swap statuses to filter by. Defaults to 'completed'.").optional()
+"statuses": z.optional(z.string().min(1).describe("Comma-separated list of swap statuses to filter by. Defaults to 'completed'."))
     })
 
 export type V2DexSwapHistoryListQueryParamsSchema = z.infer<typeof v2DexSwapHistoryListQueryParamsSchema>
 
-export const v2DexSwapHistoryList200Schema = z.lazy(() => swapHistoryViewResponseSchema)
+export const v2DexSwapHistoryList200Schema = swapHistoryViewResponseSchema
 
 export type V2DexSwapHistoryList200Schema = z.infer<typeof v2DexSwapHistoryList200Schema>
 
-export const v2DexSwapHistoryListQueryResponseSchema = z.lazy(() => v2DexSwapHistoryList200Schema)
+export const v2DexSwapHistoryListQueryResponseSchema = v2DexSwapHistoryList200Schema
 
 export type V2DexSwapHistoryListQueryResponseSchema = z.infer<typeof v2DexSwapHistoryListQueryResponseSchema>

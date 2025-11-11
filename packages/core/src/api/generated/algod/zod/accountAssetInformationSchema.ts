@@ -28,7 +28,7 @@ export const accountAssetInformationPathParamsSchema = z.object({
 export type AccountAssetInformationPathParamsSchema = z.infer<typeof accountAssetInformationPathParamsSchema>
 
 export const accountAssetInformationQueryParamsSchema = z.object({
-    "format": z.enum(["json", "msgpack"]).describe("Configures whether the response object is JSON or MessagePack encoded. If not provided, defaults to JSON.").optional()
+    "format": z.optional(z.enum(["json", "msgpack"]).describe("Configures whether the response object is JSON or MessagePack encoded. If not provided, defaults to JSON."))
     }).optional()
 
 export type AccountAssetInformationQueryParamsSchema = z.infer<typeof accountAssetInformationQueryParamsSchema>
@@ -37,8 +37,8 @@ export type AccountAssetInformationQueryParamsSchema = z.infer<typeof accountAss
  * @description AccountAssetResponse describes the account\'s asset holding and asset parameters (if either exist) for a specific asset ID. Asset parameters will only be returned if the provided address is the asset\'s creator.
  */
 export const accountAssetInformation200Schema = z.object({
-    "asset-holding": z.lazy(() => assetHoldingSchema).describe("Describes an asset held by an account.\n\nDefinition:\ndata/basics/userBalance.go : AssetHolding").optional(),
-"created-asset": z.lazy(() => assetParamsSchema).describe("AssetParams specifies the parameters for an asset.\n\n\\[apar\\] when part of an AssetConfig transaction.\n\nDefinition:\ndata/transactions/asset.go : AssetParams").optional(),
+    "asset-holding": z.optional(z.lazy(() => assetHoldingSchema).describe("Describes an asset held by an account.\n\nDefinition:\ndata/basics/userBalance.go : AssetHolding")),
+"created-asset": z.optional(z.lazy(() => assetParamsSchema).describe("AssetParams specifies the parameters for an asset.\n\n\\[apar\\] when part of an AssetConfig transaction.\n\nDefinition:\ndata/transactions/asset.go : AssetParams")),
 "round": z.number().int().describe("The round for which this information is relevant.")
     })
 
@@ -47,21 +47,21 @@ export type AccountAssetInformation200Schema = z.infer<typeof accountAssetInform
 /**
  * @description Malformed address or asset ID
  */
-export const accountAssetInformation400Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const accountAssetInformation400Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type AccountAssetInformation400Schema = z.infer<typeof accountAssetInformation400Schema>
 
 /**
  * @description Invalid API Token
  */
-export const accountAssetInformation401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const accountAssetInformation401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type AccountAssetInformation401Schema = z.infer<typeof accountAssetInformation401Schema>
 
 /**
  * @description Internal Error
  */
-export const accountAssetInformation500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const accountAssetInformation500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type AccountAssetInformation500Schema = z.infer<typeof accountAssetInformation500Schema>
 
@@ -72,6 +72,6 @@ export const accountAssetInformationErrorSchema = z.unknown()
 
 export type AccountAssetInformationErrorSchema = z.infer<typeof accountAssetInformationErrorSchema>
 
-export const accountAssetInformationQueryResponseSchema = z.lazy(() => accountAssetInformation200Schema)
+export const accountAssetInformationQueryResponseSchema = accountAssetInformation200Schema
 
 export type AccountAssetInformationQueryResponseSchema = z.infer<typeof accountAssetInformationQueryResponseSchema>

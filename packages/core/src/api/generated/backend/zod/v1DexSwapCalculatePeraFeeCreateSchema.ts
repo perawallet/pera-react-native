@@ -19,14 +19,14 @@ import { calculatePeraFeeSerializerRequestSchema } from "./calculatePeraFeeSeria
 import { calculatePeraFeeSerializerResponseSchema } from "./calculatePeraFeeSerializer/responseSchema.ts";
 import { z } from "zod";
 
-export const v1DexSwapCalculatePeraFeeCreate201Schema = z.lazy(() => calculatePeraFeeSerializerResponseSchema)
+export const v1DexSwapCalculatePeraFeeCreate201Schema = calculatePeraFeeSerializerResponseSchema
 
 export type V1DexSwapCalculatePeraFeeCreate201Schema = z.infer<typeof v1DexSwapCalculatePeraFeeCreate201Schema>
 
-export const v1DexSwapCalculatePeraFeeCreateMutationRequestSchema = z.lazy(() => calculatePeraFeeSerializerRequestSchema)
+export const v1DexSwapCalculatePeraFeeCreateMutationRequestSchema = calculatePeraFeeSerializerRequestSchema
 
 export type V1DexSwapCalculatePeraFeeCreateMutationRequestSchema = z.infer<typeof v1DexSwapCalculatePeraFeeCreateMutationRequestSchema>
 
-export const v1DexSwapCalculatePeraFeeCreateMutationResponseSchema = z.lazy(() => v1DexSwapCalculatePeraFeeCreate201Schema)
+export const v1DexSwapCalculatePeraFeeCreateMutationResponseSchema = v1DexSwapCalculatePeraFeeCreate201Schema
 
 export type V1DexSwapCalculatePeraFeeCreateMutationResponseSchema = z.infer<typeof v1DexSwapCalculatePeraFeeCreateMutationResponseSchema>

@@ -26,8 +26,8 @@ export const accountInformationPathParamsSchema = z.object({
 export type AccountInformationPathParamsSchema = z.infer<typeof accountInformationPathParamsSchema>
 
 export const accountInformationQueryParamsSchema = z.object({
-    "exclude": z.enum(["all", "none"]).describe("When set to `all` will exclude asset holdings, application local state, created asset parameters, any created application parameters. Defaults to `none`.").optional(),
-"format": z.enum(["json", "msgpack"]).describe("Configures whether the response object is JSON or MessagePack encoded. If not provided, defaults to JSON.").optional()
+    "exclude": z.optional(z.enum(["all", "none"]).describe("When set to `all` will exclude asset holdings, application local state, created asset parameters, any created application parameters. Defaults to `none`.")),
+"format": z.optional(z.enum(["json", "msgpack"]).describe("Configures whether the response object is JSON or MessagePack encoded. If not provided, defaults to JSON."))
     }).optional()
 
 export type AccountInformationQueryParamsSchema = z.infer<typeof accountInformationQueryParamsSchema>
@@ -35,28 +35,28 @@ export type AccountInformationQueryParamsSchema = z.infer<typeof accountInformat
 /**
  * @description AccountResponse wraps the Account type in a response.
  */
-export const accountInformation200Schema = z.lazy(() => accountSchema).describe("Account information at a given round.\n\nDefinition:\ndata/basics/userBalance.go : AccountData\n")
+export const accountInformation200Schema = accountSchema.describe("Account information at a given round.\n\nDefinition:\ndata/basics/userBalance.go : AccountData\n")
 
 export type AccountInformation200Schema = z.infer<typeof accountInformation200Schema>
 
 /**
  * @description Bad request
  */
-export const accountInformation400Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const accountInformation400Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type AccountInformation400Schema = z.infer<typeof accountInformation400Schema>
 
 /**
  * @description Invalid API Token
  */
-export const accountInformation401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const accountInformation401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type AccountInformation401Schema = z.infer<typeof accountInformation401Schema>
 
 /**
  * @description Internal Error
  */
-export const accountInformation500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const accountInformation500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type AccountInformation500Schema = z.infer<typeof accountInformation500Schema>
 
@@ -67,6 +67,6 @@ export const accountInformationErrorSchema = z.unknown()
 
 export type AccountInformationErrorSchema = z.infer<typeof accountInformationErrorSchema>
 
-export const accountInformationQueryResponseSchema = z.lazy(() => accountInformation200Schema)
+export const accountInformationQueryResponseSchema = accountInformation200Schema
 
 export type AccountInformationQueryResponseSchema = z.infer<typeof accountInformationQueryResponseSchema>

@@ -18,9 +18,18 @@
 import type { V2DevicesMeUpdateMutationResponse } from "../types/V2DevicesMeUpdate.ts";
 import { http } from "msw";
 
+export function v2DevicesMeUpdateHandlerResponse200(data: V2DevicesMeUpdateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v2DevicesMeUpdateHandler(data?: V2DevicesMeUpdateMutationResponse | ((
         info: Parameters<Parameters<typeof http.put>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.put('/v2/devices/me/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

@@ -26,8 +26,8 @@ export const accountAssetsInformationPathParamsSchema = z.object({
 export type AccountAssetsInformationPathParamsSchema = z.infer<typeof accountAssetsInformationPathParamsSchema>
 
 export const accountAssetsInformationQueryParamsSchema = z.object({
-    "limit": z.coerce.number().int().describe("Maximum number of results to return.").optional(),
-"next": z.string().describe("The next page of results. Use the next token provided by the previous results.").optional()
+    "limit": z.optional(z.coerce.number().int().describe("Maximum number of results to return.")),
+"next": z.optional(z.string().describe("The next page of results. Use the next token provided by the previous results."))
     }).optional()
 
 export type AccountAssetsInformationQueryParamsSchema = z.infer<typeof accountAssetsInformationQueryParamsSchema>
@@ -36,8 +36,8 @@ export type AccountAssetsInformationQueryParamsSchema = z.infer<typeof accountAs
  * @description AccountAssetsInformationResponse contains a list of assets held by an account.
  */
 export const accountAssetsInformation200Schema = z.object({
-    "asset-holdings": z.array(z.lazy(() => accountAssetHoldingSchema).describe("AccountAssetHolding describes the account's asset holding and asset parameters (if either exist) for a specific asset ID.")).optional(),
-"next-token": z.string().describe("Used for pagination, when making another request provide this token with the next parameter.").optional(),
+    "asset-holdings": z.optional(z.array(z.lazy(() => accountAssetHoldingSchema).describe("AccountAssetHolding describes the account's asset holding and asset parameters (if either exist) for a specific asset ID."))),
+"next-token": z.optional(z.string().describe("Used for pagination, when making another request provide this token with the next parameter.")),
 "round": z.number().int().describe("The round for which this information is relevant.")
     })
 
@@ -46,21 +46,21 @@ export type AccountAssetsInformation200Schema = z.infer<typeof accountAssetsInfo
 /**
  * @description Malformed address
  */
-export const accountAssetsInformation400Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const accountAssetsInformation400Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type AccountAssetsInformation400Schema = z.infer<typeof accountAssetsInformation400Schema>
 
 /**
  * @description Invalid API Token
  */
-export const accountAssetsInformation401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const accountAssetsInformation401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type AccountAssetsInformation401Schema = z.infer<typeof accountAssetsInformation401Schema>
 
 /**
  * @description Internal Error
  */
-export const accountAssetsInformation500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const accountAssetsInformation500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type AccountAssetsInformation500Schema = z.infer<typeof accountAssetsInformation500Schema>
 
@@ -71,6 +71,6 @@ export const accountAssetsInformationErrorSchema = z.unknown()
 
 export type AccountAssetsInformationErrorSchema = z.infer<typeof accountAssetsInformationErrorSchema>
 
-export const accountAssetsInformationQueryResponseSchema = z.lazy(() => accountAssetsInformation200Schema)
+export const accountAssetsInformationQueryResponseSchema = accountAssetsInformation200Schema
 
 export type AccountAssetsInformationQueryResponseSchema = z.infer<typeof accountAssetsInformationQueryResponseSchema>

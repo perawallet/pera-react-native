@@ -18,9 +18,18 @@
 import type { GetVersionQueryResponse } from "../types/GetVersion.ts";
 import { http } from "msw";
 
+export function getVersionHandlerResponse200(data: GetVersionQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function getVersionHandler(data?: GetVersionQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/versions', function handler(info) {
     if(typeof data === 'function') return data(info)
 

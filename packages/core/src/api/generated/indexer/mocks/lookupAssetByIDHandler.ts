@@ -15,12 +15,48 @@
 * Do not edit manually.
 */
 
-import type { LookupAssetByIDQueryResponse } from "../types/LookupAssetByID.ts";
+import type { LookupAssetByIDQueryResponse, LookupAssetByID400, LookupAssetByID404, LookupAssetByID500 } from "../types/LookupAssetByID.ts";
 import { http } from "msw";
+
+export function lookupAssetByIDHandlerResponse200(data: LookupAssetByIDQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupAssetByIDHandlerResponse400(data: LookupAssetByID400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupAssetByIDHandlerResponse404(data: LookupAssetByID404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupAssetByIDHandlerResponse500(data: LookupAssetByID500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function lookupAssetByIDHandler(data?: LookupAssetByIDQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/assets/:asset-id', function handler(info) {
     if(typeof data === 'function') return data(info)
 

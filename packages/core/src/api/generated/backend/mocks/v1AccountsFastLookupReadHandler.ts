@@ -18,9 +18,18 @@
 import type { V1AccountsFastLookupReadQueryResponse } from "../types/V1AccountsFastLookupRead.ts";
 import { http } from "msw";
 
+export function v1AccountsFastLookupReadHandlerResponse200(data: V1AccountsFastLookupReadQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1AccountsFastLookupReadHandler(data?: V1AccountsFastLookupReadQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/accounts/fast-lookup/:account_address/', function handler(info) {
     if(typeof data === 'function') return data(info)
 
@@ -31,4 +40,15 @@ export function v1AccountsFastLookupReadHandler(data?: V1AccountsFastLookupReadQ
       },
     })
   })
+}
+
+// Polyfill EventTarget for React Native
+if (typeof global !== 'undefined' && !global.EventTarget) {
+  global.EventTarget = class EventTarget {
+    addEventListener() {}
+    removeEventListener() {}
+    dispatchEvent(): boolean {
+      return true;
+    }
+  };
 }

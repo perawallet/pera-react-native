@@ -28,35 +28,35 @@ export type GetParticipationKeyByIDPathParamsSchema = z.infer<typeof getParticip
 /**
  * @description A detailed description of a participation ID
  */
-export const getParticipationKeyByID200Schema = z.lazy(() => participationKeySchema).describe("Represents a participation key used by the node.")
+export const getParticipationKeyByID200Schema = participationKeySchema.describe("Represents a participation key used by the node.")
 
 export type GetParticipationKeyByID200Schema = z.infer<typeof getParticipationKeyByID200Schema>
 
 /**
  * @description Bad Request
  */
-export const getParticipationKeyByID400Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getParticipationKeyByID400Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetParticipationKeyByID400Schema = z.infer<typeof getParticipationKeyByID400Schema>
 
 /**
  * @description Invalid API Token
  */
-export const getParticipationKeyByID401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getParticipationKeyByID401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetParticipationKeyByID401Schema = z.infer<typeof getParticipationKeyByID401Schema>
 
 /**
  * @description Participation Key Not Found
  */
-export const getParticipationKeyByID404Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getParticipationKeyByID404Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetParticipationKeyByID404Schema = z.infer<typeof getParticipationKeyByID404Schema>
 
 /**
  * @description Internal Error
  */
-export const getParticipationKeyByID500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getParticipationKeyByID500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetParticipationKeyByID500Schema = z.infer<typeof getParticipationKeyByID500Schema>
 
@@ -67,6 +67,6 @@ export const getParticipationKeyByIDErrorSchema = z.unknown()
 
 export type GetParticipationKeyByIDErrorSchema = z.infer<typeof getParticipationKeyByIDErrorSchema>
 
-export const getParticipationKeyByIDQueryResponseSchema = z.lazy(() => getParticipationKeyByID200Schema)
+export const getParticipationKeyByIDQueryResponseSchema = getParticipationKeyByID200Schema
 
 export type GetParticipationKeyByIDQueryResponseSchema = z.infer<typeof getParticipationKeyByIDQueryResponseSchema>

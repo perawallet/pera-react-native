@@ -25,10 +25,10 @@ export const v1AccountsNamesReadPathParamsSchema = z.object({
 
 export type V1AccountsNamesReadPathParamsSchema = z.infer<typeof v1AccountsNamesReadPathParamsSchema>
 
-export const v1AccountsNamesRead200Schema = z.lazy(() => simpleNFDomainLookupResponseSerializerResponseSchema)
+export const v1AccountsNamesRead200Schema = simpleNFDomainLookupResponseSerializerResponseSchema
 
 export type V1AccountsNamesRead200Schema = z.infer<typeof v1AccountsNamesRead200Schema>
 
-export const v1AccountsNamesReadQueryResponseSchema = z.lazy(() => v1AccountsNamesRead200Schema)
+export const v1AccountsNamesReadQueryResponseSchema = v1AccountsNamesRead200Schema
 
 export type V1AccountsNamesReadQueryResponseSchema = z.infer<typeof v1AccountsNamesReadQueryResponseSchema>

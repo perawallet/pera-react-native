@@ -22,15 +22,15 @@ import { z } from "zod";
  * @description The execution trace of calling an app or a logic sig, containing the inner app call trace in a recursive way.
  */
 export const simulationTransactionExecTraceSchema = z.object({
-    "approval-program-hash": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("SHA512_256 hash digest of the approval program executed in transaction.").optional(),
-"approval-program-trace": z.array(z.lazy(() => simulationOpcodeTraceUnitSchema).describe("The set of trace information and effect from evaluating a single opcode.")).describe("Program trace that contains a trace of opcode effects in an approval program.").optional(),
-"clear-state-program-hash": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("SHA512_256 hash digest of the clear state program executed in transaction.").optional(),
-"clear-state-program-trace": z.array(z.lazy(() => simulationOpcodeTraceUnitSchema).describe("The set of trace information and effect from evaluating a single opcode.")).describe("Program trace that contains a trace of opcode effects in a clear state program.").optional(),
-"clear-state-rollback": z.boolean().describe("If true, indicates that the clear state program failed and any persistent state changes it produced should be reverted once the program exits.").optional(),
-"clear-state-rollback-error": z.string().describe("The error message explaining why the clear state program failed. This field will only be populated if clear-state-rollback is true and the failure was due to an execution error.").optional(),
-"inner-trace": z.array(z.lazy(() => simulationTransactionExecTraceSchema).describe("The execution trace of calling an app or a logic sig, containing the inner app call trace in a recursive way.")).describe("An array of SimulationTransactionExecTrace representing the execution trace of any inner transactions executed.").optional(),
-"logic-sig-hash": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("SHA512_256 hash digest of the logic sig executed in transaction.").optional(),
-"logic-sig-trace": z.array(z.lazy(() => simulationOpcodeTraceUnitSchema).describe("The set of trace information and effect from evaluating a single opcode.")).describe("Program trace that contains a trace of opcode effects in a logic sig.").optional()
+    "approval-program-hash": z.optional(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("SHA512_256 hash digest of the approval program executed in transaction.")),
+"approval-program-trace": z.optional(z.array(z.lazy(() => simulationOpcodeTraceUnitSchema).describe("The set of trace information and effect from evaluating a single opcode.")).describe("Program trace that contains a trace of opcode effects in an approval program.")),
+"clear-state-program-hash": z.optional(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("SHA512_256 hash digest of the clear state program executed in transaction.")),
+"clear-state-program-trace": z.optional(z.array(z.lazy(() => simulationOpcodeTraceUnitSchema).describe("The set of trace information and effect from evaluating a single opcode.")).describe("Program trace that contains a trace of opcode effects in a clear state program.")),
+"clear-state-rollback": z.optional(z.boolean().describe("If true, indicates that the clear state program failed and any persistent state changes it produced should be reverted once the program exits.")),
+"clear-state-rollback-error": z.optional(z.string().describe("The error message explaining why the clear state program failed. This field will only be populated if clear-state-rollback is true and the failure was due to an execution error.")),
+"inner-trace": z.optional(z.array(z.lazy(() => simulationTransactionExecTraceSchema).describe("The execution trace of calling an app or a logic sig, containing the inner app call trace in a recursive way.")).describe("An array of SimulationTransactionExecTrace representing the execution trace of any inner transactions executed.")),
+"logic-sig-hash": z.optional(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("SHA512_256 hash digest of the logic sig executed in transaction.")),
+"logic-sig-trace": z.optional(z.array(z.lazy(() => simulationOpcodeTraceUnitSchema).describe("The set of trace information and effect from evaluating a single opcode.")).describe("Program trace that contains a trace of opcode effects in a logic sig."))
     }).describe("The execution trace of calling an app or a logic sig, containing the inner app call trace in a recursive way.")
 
 export type SimulationTransactionExecTraceSchema = z.infer<typeof simulationTransactionExecTraceSchema>

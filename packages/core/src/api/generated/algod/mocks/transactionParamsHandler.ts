@@ -15,12 +15,48 @@
 * Do not edit manually.
 */
 
-import type { TransactionParamsQueryResponse } from "../types/TransactionParams.ts";
+import type { TransactionParamsQueryResponse, TransactionParams401, TransactionParams500, TransactionParams503 } from "../types/TransactionParams.ts";
 import { http } from "msw";
+
+export function transactionParamsHandlerResponse200(data: TransactionParamsQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function transactionParamsHandlerResponse401(data: TransactionParams401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function transactionParamsHandlerResponse500(data: TransactionParams500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function transactionParamsHandlerResponse503(data: TransactionParams503) {
+  return new Response(JSON.stringify(data), {
+    status: 503,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function transactionParamsHandler(data?: TransactionParamsQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/transactions/params', function handler(info) {
     if(typeof data === 'function') return data(info)
 

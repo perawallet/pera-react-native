@@ -26,7 +26,7 @@ export const getLedgerStateDeltaForTransactionGroupPathParamsSchema = z.object({
 export type GetLedgerStateDeltaForTransactionGroupPathParamsSchema = z.infer<typeof getLedgerStateDeltaForTransactionGroupPathParamsSchema>
 
 export const getLedgerStateDeltaForTransactionGroupQueryParamsSchema = z.object({
-    "format": z.enum(["json", "msgpack"]).describe("Configures whether the response object is JSON or MessagePack encoded. If not provided, defaults to JSON.").optional()
+    "format": z.optional(z.enum(["json", "msgpack"]).describe("Configures whether the response object is JSON or MessagePack encoded. If not provided, defaults to JSON."))
     }).optional()
 
 export type GetLedgerStateDeltaForTransactionGroupQueryParamsSchema = z.infer<typeof getLedgerStateDeltaForTransactionGroupQueryParamsSchema>
@@ -34,42 +34,42 @@ export type GetLedgerStateDeltaForTransactionGroupQueryParamsSchema = z.infer<ty
 /**
  * @description Response containing a ledger state delta for a single transaction group.
  */
-export const getLedgerStateDeltaForTransactionGroup200Schema = z.lazy(() => ledgerStateDeltaSchema).describe("Ledger StateDelta object")
+export const getLedgerStateDeltaForTransactionGroup200Schema = ledgerStateDeltaSchema.describe("Ledger StateDelta object")
 
 export type GetLedgerStateDeltaForTransactionGroup200Schema = z.infer<typeof getLedgerStateDeltaForTransactionGroup200Schema>
 
 /**
  * @description Invalid API Token
  */
-export const getLedgerStateDeltaForTransactionGroup401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getLedgerStateDeltaForTransactionGroup401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetLedgerStateDeltaForTransactionGroup401Schema = z.infer<typeof getLedgerStateDeltaForTransactionGroup401Schema>
 
 /**
  * @description Could not find a delta for transaction ID or group ID
  */
-export const getLedgerStateDeltaForTransactionGroup404Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getLedgerStateDeltaForTransactionGroup404Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetLedgerStateDeltaForTransactionGroup404Schema = z.infer<typeof getLedgerStateDeltaForTransactionGroup404Schema>
 
 /**
  * @description timed out on request
  */
-export const getLedgerStateDeltaForTransactionGroup408Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getLedgerStateDeltaForTransactionGroup408Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetLedgerStateDeltaForTransactionGroup408Schema = z.infer<typeof getLedgerStateDeltaForTransactionGroup408Schema>
 
 /**
  * @description Internal Error
  */
-export const getLedgerStateDeltaForTransactionGroup500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getLedgerStateDeltaForTransactionGroup500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetLedgerStateDeltaForTransactionGroup500Schema = z.infer<typeof getLedgerStateDeltaForTransactionGroup500Schema>
 
 /**
  * @description Not Implemented
  */
-export const getLedgerStateDeltaForTransactionGroup501Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getLedgerStateDeltaForTransactionGroup501Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetLedgerStateDeltaForTransactionGroup501Schema = z.infer<typeof getLedgerStateDeltaForTransactionGroup501Schema>
 
@@ -80,6 +80,6 @@ export const getLedgerStateDeltaForTransactionGroupErrorSchema = z.unknown()
 
 export type GetLedgerStateDeltaForTransactionGroupErrorSchema = z.infer<typeof getLedgerStateDeltaForTransactionGroupErrorSchema>
 
-export const getLedgerStateDeltaForTransactionGroupQueryResponseSchema = z.lazy(() => getLedgerStateDeltaForTransactionGroup200Schema)
+export const getLedgerStateDeltaForTransactionGroupQueryResponseSchema = getLedgerStateDeltaForTransactionGroup200Schema
 
 export type GetLedgerStateDeltaForTransactionGroupQueryResponseSchema = z.infer<typeof getLedgerStateDeltaForTransactionGroupQueryResponseSchema>

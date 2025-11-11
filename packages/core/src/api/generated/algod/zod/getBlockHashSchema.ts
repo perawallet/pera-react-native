@@ -36,28 +36,28 @@ export type GetBlockHash200Schema = z.infer<typeof getBlockHash200Schema>
 /**
  * @description Bad Request - Non integer number
  */
-export const getBlockHash400Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getBlockHash400Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetBlockHash400Schema = z.infer<typeof getBlockHash400Schema>
 
 /**
  * @description Invalid API Token
  */
-export const getBlockHash401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getBlockHash401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetBlockHash401Schema = z.infer<typeof getBlockHash401Schema>
 
 /**
  * @description None existing block 
  */
-export const getBlockHash404Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getBlockHash404Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetBlockHash404Schema = z.infer<typeof getBlockHash404Schema>
 
 /**
  * @description Internal Error
  */
-export const getBlockHash500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getBlockHash500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetBlockHash500Schema = z.infer<typeof getBlockHash500Schema>
 
@@ -68,6 +68,6 @@ export const getBlockHashErrorSchema = z.unknown()
 
 export type GetBlockHashErrorSchema = z.infer<typeof getBlockHashErrorSchema>
 
-export const getBlockHashQueryResponseSchema = z.lazy(() => getBlockHash200Schema)
+export const getBlockHashQueryResponseSchema = getBlockHash200Schema
 
 export type GetBlockHashQueryResponseSchema = z.infer<typeof getBlockHashQueryResponseSchema>

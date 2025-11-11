@@ -18,9 +18,18 @@
 import type { V2DexSwapSwapsPartialUpdateMutationResponse } from "../types/V2DexSwapSwapsPartialUpdate.ts";
 import { http } from "msw";
 
+export function v2DexSwapSwapsPartialUpdateHandlerResponse200(data: V2DexSwapSwapsPartialUpdateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v2DexSwapSwapsPartialUpdateHandler(data?: V2DexSwapSwapsPartialUpdateMutationResponse | ((
         info: Parameters<Parameters<typeof http.patch>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.patch('/v2/dex-swap/swaps/:swap_id/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

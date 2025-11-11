@@ -25,12 +25,12 @@ export const lookupApplicationLogsByIDPathParamsSchema = z.object({
 export type LookupApplicationLogsByIDPathParamsSchema = z.infer<typeof lookupApplicationLogsByIDPathParamsSchema>
 
 export const lookupApplicationLogsByIDQueryParamsSchema = z.object({
-    "limit": z.coerce.number().int().describe("Maximum number of results to return. There could be additional pages even if the limit is not reached.").optional(),
-"next": z.string().describe("The next page of results. Use the next token provided by the previous results.").optional(),
-"txid": z.string().describe("Lookup the specific transaction by ID.").optional(),
-"min-round": z.coerce.number().int().describe("Include results at or after the specified min-round.").optional(),
-"max-round": z.coerce.number().int().describe("Include results at or before the specified max-round.").optional(),
-"sender-address": z.string().describe("Only include transactions with this sender address.").optional()
+    "limit": z.optional(z.coerce.number().int().describe("Maximum number of results to return. There could be additional pages even if the limit is not reached.")),
+"next": z.optional(z.string().describe("The next page of results. Use the next token provided by the previous results.")),
+"txid": z.optional(z.string().describe("Lookup the specific transaction by ID.")),
+"min-round": z.optional(z.coerce.number().int().describe("Include results at or after the specified min-round.")),
+"max-round": z.optional(z.coerce.number().int().describe("Include results at or before the specified max-round.")),
+"sender-address": z.optional(z.string().describe("Only include transactions with this sender address."))
     }).optional()
 
 export type LookupApplicationLogsByIDQueryParamsSchema = z.infer<typeof lookupApplicationLogsByIDQueryParamsSchema>
@@ -41,12 +41,12 @@ export type LookupApplicationLogsByIDQueryParamsSchema = z.infer<typeof lookupAp
 export const lookupApplicationLogsByID200Schema = z.object({
     "application-id": z.number().int().describe("\\[appidx\\] application index."),
 "current-round": z.number().int().describe("Round at which the results were computed."),
-"log-data": z.array(z.lazy(() => applicationLogDataSchema).describe("Stores the global information associated with an application.")).optional(),
-"next-token": z.string().describe("Used for pagination, when making another request provide this token with the next parameter.").optional()
+"log-data": z.optional(z.array(z.lazy(() => applicationLogDataSchema).describe("Stores the global information associated with an application."))),
+"next-token": z.optional(z.string().describe("Used for pagination, when making another request provide this token with the next parameter."))
     })
 
 export type LookupApplicationLogsByID200Schema = z.infer<typeof lookupApplicationLogsByID200Schema>
 
-export const lookupApplicationLogsByIDQueryResponseSchema = z.lazy(() => lookupApplicationLogsByID200Schema)
+export const lookupApplicationLogsByIDQueryResponseSchema = lookupApplicationLogsByID200Schema
 
 export type LookupApplicationLogsByIDQueryResponseSchema = z.infer<typeof lookupApplicationLogsByIDQueryResponseSchema>

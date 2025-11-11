@@ -38,9 +38,9 @@ export type LookupTransaction200Schema = z.infer<typeof lookupTransaction200Sche
  * @description Response for errors
  */
 export const lookupTransaction400Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
@@ -50,9 +50,9 @@ export type LookupTransaction400Schema = z.infer<typeof lookupTransaction400Sche
  * @description Response for errors
  */
 export const lookupTransaction404Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
@@ -62,14 +62,14 @@ export type LookupTransaction404Schema = z.infer<typeof lookupTransaction404Sche
  * @description Response for errors
  */
 export const lookupTransaction500Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
 export type LookupTransaction500Schema = z.infer<typeof lookupTransaction500Schema>
 
-export const lookupTransactionQueryResponseSchema = z.lazy(() => lookupTransaction200Schema)
+export const lookupTransactionQueryResponseSchema = lookupTransaction200Schema
 
 export type LookupTransactionQueryResponseSchema = z.infer<typeof lookupTransactionQueryResponseSchema>

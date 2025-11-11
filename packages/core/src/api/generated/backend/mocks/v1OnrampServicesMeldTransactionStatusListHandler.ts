@@ -15,12 +15,28 @@
 * Do not edit manually.
 */
 
-import type { V1OnrampServicesMeldTransactionStatusListQueryResponse } from "../types/V1OnrampServicesMeldTransactionStatusList.ts";
+import type { V1OnrampServicesMeldTransactionStatusListQueryResponse, V1OnrampServicesMeldTransactionStatusList400 } from "../types/V1OnrampServicesMeldTransactionStatusList.ts";
 import { http } from "msw";
+
+export function v1OnrampServicesMeldTransactionStatusListHandlerResponse200(data: V1OnrampServicesMeldTransactionStatusListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function v1OnrampServicesMeldTransactionStatusListHandlerResponse400(data?: V1OnrampServicesMeldTransactionStatusList400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+  
+  })
+}
 
 export function v1OnrampServicesMeldTransactionStatusListHandler(data?: V1OnrampServicesMeldTransactionStatusListQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/onramp-services/meld/transaction-status/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

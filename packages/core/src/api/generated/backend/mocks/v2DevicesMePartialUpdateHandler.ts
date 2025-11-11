@@ -18,9 +18,18 @@
 import type { V2DevicesMePartialUpdateMutationResponse } from "../types/V2DevicesMePartialUpdate.ts";
 import { http } from "msw";
 
+export function v2DevicesMePartialUpdateHandlerResponse200(data: V2DevicesMePartialUpdateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v2DevicesMePartialUpdateHandler(data?: V2DevicesMePartialUpdateMutationResponse | ((
         info: Parameters<Parameters<typeof http.patch>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.patch('/v2/devices/me/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

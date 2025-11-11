@@ -28,42 +28,42 @@ export type GetLightBlockHeaderProofPathParamsSchema = z.infer<typeof getLightBl
 /**
  * @description Proof of a light block header.
  */
-export const getLightBlockHeaderProof200Schema = z.lazy(() => lightBlockHeaderProofSchema).describe("Proof of membership and position of a light block header.")
+export const getLightBlockHeaderProof200Schema = lightBlockHeaderProofSchema.describe("Proof of membership and position of a light block header.")
 
 export type GetLightBlockHeaderProof200Schema = z.infer<typeof getLightBlockHeaderProof200Schema>
 
 /**
  * @description Invalid API Token
  */
-export const getLightBlockHeaderProof401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getLightBlockHeaderProof401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetLightBlockHeaderProof401Schema = z.infer<typeof getLightBlockHeaderProof401Schema>
 
 /**
  * @description Could not create proof since some data is missing
  */
-export const getLightBlockHeaderProof404Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getLightBlockHeaderProof404Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetLightBlockHeaderProof404Schema = z.infer<typeof getLightBlockHeaderProof404Schema>
 
 /**
  * @description timed out on request
  */
-export const getLightBlockHeaderProof408Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getLightBlockHeaderProof408Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetLightBlockHeaderProof408Schema = z.infer<typeof getLightBlockHeaderProof408Schema>
 
 /**
  * @description Internal Error
  */
-export const getLightBlockHeaderProof500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getLightBlockHeaderProof500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetLightBlockHeaderProof500Schema = z.infer<typeof getLightBlockHeaderProof500Schema>
 
 /**
  * @description Service Temporarily Unavailable
  */
-export const getLightBlockHeaderProof503Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getLightBlockHeaderProof503Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetLightBlockHeaderProof503Schema = z.infer<typeof getLightBlockHeaderProof503Schema>
 
@@ -74,6 +74,6 @@ export const getLightBlockHeaderProofErrorSchema = z.unknown()
 
 export type GetLightBlockHeaderProofErrorSchema = z.infer<typeof getLightBlockHeaderProofErrorSchema>
 
-export const getLightBlockHeaderProofQueryResponseSchema = z.lazy(() => getLightBlockHeaderProof200Schema)
+export const getLightBlockHeaderProofQueryResponseSchema = getLightBlockHeaderProof200Schema
 
 export type GetLightBlockHeaderProofQueryResponseSchema = z.infer<typeof getLightBlockHeaderProofQueryResponseSchema>

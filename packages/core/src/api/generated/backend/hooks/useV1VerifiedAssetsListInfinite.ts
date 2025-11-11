@@ -40,16 +40,16 @@ export async function v1VerifiedAssetsListInfinite({ params }: { params?: V1Veri
 
 export function v1VerifiedAssetsListInfiniteQueryOptions({ params }: { params?: V1VerifiedAssetsListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {
   const queryKey = v1VerifiedAssetsListInfiniteQueryKey(params)
-  return infiniteQueryOptions<V1VerifiedAssetsListQueryResponse, ResponseErrorConfig<Error>, V1VerifiedAssetsListQueryResponse, typeof queryKey, number>({
+  return infiniteQueryOptions<V1VerifiedAssetsListQueryResponse, ResponseErrorConfig<Error>, InfiniteData<V1VerifiedAssetsListQueryResponse>, typeof queryKey, NonNullable<V1VerifiedAssetsListQueryParams['cursor']>>({
  
    queryKey,
    queryFn: async ({ signal, pageParam }) => {
       config.signal = signal
     
-      if (!params) {
-       params = { }
-      }
-      params['cursor'] = pageParam as unknown as V1VerifiedAssetsListQueryParams['cursor']
+      params = {
+        ...(params ?? {}),
+        ['cursor']: pageParam as unknown as V1VerifiedAssetsListQueryParams['cursor'],
+      } as V1VerifiedAssetsListQueryParams
       return v1VerifiedAssetsListInfinite({ params }, config)
    },
    initialPageParam: "",
@@ -64,9 +64,9 @@ export function v1VerifiedAssetsListInfiniteQueryOptions({ params }: { params?: 
  * {@link /v1/verified-assets/}
  * @deprecated
  */
-export function useV1VerifiedAssetsListInfinite<TData = InfiniteData<V1VerifiedAssetsListQueryResponse>, TQueryData = V1VerifiedAssetsListQueryResponse, TQueryKey extends QueryKey = V1VerifiedAssetsListInfiniteQueryKey>({ params }: { params?: V1VerifiedAssetsListQueryParams }, options: 
+export function useV1VerifiedAssetsListInfinite<TQueryFnData = V1VerifiedAssetsListQueryResponse, TError = ResponseErrorConfig<Error>, TData = InfiniteData<TQueryFnData>, TQueryKey extends QueryKey = V1VerifiedAssetsListInfiniteQueryKey, TPageParam = NonNullable<V1VerifiedAssetsListQueryParams['cursor']>>({ params }: { params?: V1VerifiedAssetsListQueryParams }, options: 
 {
-  query?: Partial<InfiniteQueryObserverOptions<V1VerifiedAssetsListQueryResponse, ResponseErrorConfig<Error>, TQueryData, TQueryKey, TQueryData>> & { client?: QueryClient },
+  query?: Partial<InfiniteQueryObserverOptions<TQueryFnData, TError, TData, TQueryKey, TPageParam>> & { client?: QueryClient },
   client?: Partial<RequestConfig> & { client?: typeof fetch }
 }
  = {}) {
@@ -78,7 +78,7 @@ export function useV1VerifiedAssetsListInfinite<TData = InfiniteData<V1VerifiedA
    ...v1VerifiedAssetsListInfiniteQueryOptions({ params }, config),
    queryKey,
    ...queryOptions
-  } as unknown as InfiniteQueryObserverOptions, queryClient) as UseInfiniteQueryResult<TData, ResponseErrorConfig<Error>> & { queryKey: TQueryKey }
+  } as unknown as InfiniteQueryObserverOptions<TQueryFnData, TError, TData, TQueryKey, TPageParam>, queryClient) as UseInfiniteQueryResult<TData, TError> & { queryKey: TQueryKey }
 
   query.queryKey = queryKey as TQueryKey
 

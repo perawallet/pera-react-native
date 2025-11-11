@@ -24,10 +24,10 @@ export const v1NameServicesSearchListQueryParamsSchema = z.object({
 
 export type V1NameServicesSearchListQueryParamsSchema = z.infer<typeof v1NameServicesSearchListQueryParamsSchema>
 
-export const v1NameServicesSearchList200Schema = z.lazy(() => nameServiceSearchAPIViewSchema)
+export const v1NameServicesSearchList200Schema = nameServiceSearchAPIViewSchema
 
 export type V1NameServicesSearchList200Schema = z.infer<typeof v1NameServicesSearchList200Schema>
 
-export const v1NameServicesSearchListQueryResponseSchema = z.lazy(() => v1NameServicesSearchList200Schema)
+export const v1NameServicesSearchListQueryResponseSchema = v1NameServicesSearchList200Schema
 
 export type V1NameServicesSearchListQueryResponseSchema = z.infer<typeof v1NameServicesSearchListQueryResponseSchema>

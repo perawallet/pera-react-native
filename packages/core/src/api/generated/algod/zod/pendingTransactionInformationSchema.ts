@@ -26,7 +26,7 @@ export const pendingTransactionInformationPathParamsSchema = z.object({
 export type PendingTransactionInformationPathParamsSchema = z.infer<typeof pendingTransactionInformationPathParamsSchema>
 
 export const pendingTransactionInformationQueryParamsSchema = z.object({
-    "format": z.enum(["json", "msgpack"]).describe("Configures whether the response object is JSON or MessagePack encoded. If not provided, defaults to JSON.").optional()
+    "format": z.optional(z.enum(["json", "msgpack"]).describe("Configures whether the response object is JSON or MessagePack encoded. If not provided, defaults to JSON."))
     }).optional()
 
 export type PendingTransactionInformationQueryParamsSchema = z.infer<typeof pendingTransactionInformationQueryParamsSchema>
@@ -34,28 +34,28 @@ export type PendingTransactionInformationQueryParamsSchema = z.infer<typeof pend
 /**
  * @description Given a transaction ID of a recently submitted transaction, it returns information about it.  There are several cases when this might succeed:\n- transaction committed (committed round > 0)\n- transaction still in the pool (committed round = 0, pool error = \"\")\n- transaction removed from pool due to error (committed round = 0, pool error != \"\")\n\nOr the transaction may have happened sufficiently long ago that the node no longer remembers it, and this will return an error.
  */
-export const pendingTransactionInformation200Schema = z.lazy(() => pendingTransactionResponseSchema).describe("Details about a pending transaction. If the transaction was recently confirmed, includes confirmation details like the round and reward details.")
+export const pendingTransactionInformation200Schema = pendingTransactionResponseSchema.describe("Details about a pending transaction. If the transaction was recently confirmed, includes confirmation details like the round and reward details.")
 
 export type PendingTransactionInformation200Schema = z.infer<typeof pendingTransactionInformation200Schema>
 
 /**
  * @description Bad Request
  */
-export const pendingTransactionInformation400Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const pendingTransactionInformation400Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type PendingTransactionInformation400Schema = z.infer<typeof pendingTransactionInformation400Schema>
 
 /**
  * @description Invalid API Token
  */
-export const pendingTransactionInformation401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const pendingTransactionInformation401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type PendingTransactionInformation401Schema = z.infer<typeof pendingTransactionInformation401Schema>
 
 /**
  * @description Transaction Not Found
  */
-export const pendingTransactionInformation404Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const pendingTransactionInformation404Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type PendingTransactionInformation404Schema = z.infer<typeof pendingTransactionInformation404Schema>
 
@@ -66,6 +66,6 @@ export const pendingTransactionInformationErrorSchema = z.unknown()
 
 export type PendingTransactionInformationErrorSchema = z.infer<typeof pendingTransactionInformationErrorSchema>
 
-export const pendingTransactionInformationQueryResponseSchema = z.lazy(() => pendingTransactionInformation200Schema)
+export const pendingTransactionInformationQueryResponseSchema = pendingTransactionInformation200Schema
 
 export type PendingTransactionInformationQueryResponseSchema = z.infer<typeof pendingTransactionInformationQueryResponseSchema>

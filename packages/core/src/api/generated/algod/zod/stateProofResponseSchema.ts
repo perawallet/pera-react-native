@@ -18,6 +18,6 @@
 import { stateProofSchema } from "./stateProofSchema.ts";
 import { z } from "zod";
 
-export const stateProofResponseSchema = z.lazy(() => stateProofSchema).describe("Represents a state proof and its corresponding message")
+export const stateProofResponseSchema = stateProofSchema.describe("Represents a state proof and its corresponding message")
 
 export type StateProofResponseSchema = z.infer<typeof stateProofResponseSchema>

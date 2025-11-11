@@ -19,7 +19,7 @@ import { meldQuotesSerializerRequestSchema } from "./meldQuotesSerializer/reques
 import { meldQuotesSerializerResponseSchema } from "./meldQuotesSerializer/responseSchema.ts";
 import { z } from "zod";
 
-export const v1OnrampServicesMeldQuotesCreate201Schema = z.lazy(() => meldQuotesSerializerResponseSchema)
+export const v1OnrampServicesMeldQuotesCreate201Schema = meldQuotesSerializerResponseSchema
 
 export type V1OnrampServicesMeldQuotesCreate201Schema = z.infer<typeof v1OnrampServicesMeldQuotesCreate201Schema>
 
@@ -30,10 +30,10 @@ export const v1OnrampServicesMeldQuotesCreate400Schema = z.unknown()
 
 export type V1OnrampServicesMeldQuotesCreate400Schema = z.infer<typeof v1OnrampServicesMeldQuotesCreate400Schema>
 
-export const v1OnrampServicesMeldQuotesCreateMutationRequestSchema = z.lazy(() => meldQuotesSerializerRequestSchema)
+export const v1OnrampServicesMeldQuotesCreateMutationRequestSchema = meldQuotesSerializerRequestSchema
 
 export type V1OnrampServicesMeldQuotesCreateMutationRequestSchema = z.infer<typeof v1OnrampServicesMeldQuotesCreateMutationRequestSchema>
 
-export const v1OnrampServicesMeldQuotesCreateMutationResponseSchema = z.lazy(() => v1OnrampServicesMeldQuotesCreate201Schema)
+export const v1OnrampServicesMeldQuotesCreateMutationResponseSchema = v1OnrampServicesMeldQuotesCreate201Schema
 
 export type V1OnrampServicesMeldQuotesCreateMutationResponseSchema = z.infer<typeof v1OnrampServicesMeldQuotesCreateMutationResponseSchema>

@@ -21,11 +21,11 @@ import { z } from "zod";
  * @description A health check response.
  */
 export const healthCheckSchema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "db-available": z.boolean(),
-"errors": z.array(z.string()).optional(),
+"errors": z.optional(z.array(z.string())),
 "is-migrating": z.boolean(),
 "message": z.string(),
 "round": z.number().int(),

@@ -15,12 +15,48 @@
 * Do not edit manually.
 */
 
-import type { AbortCatchupMutationResponse } from "../types/AbortCatchup.ts";
+import type { AbortCatchupMutationResponse, AbortCatchup400, AbortCatchup401, AbortCatchup500 } from "../types/AbortCatchup.ts";
 import { http } from "msw";
+
+export function abortCatchupHandlerResponse200(data: AbortCatchupMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function abortCatchupHandlerResponse400(data: AbortCatchup400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function abortCatchupHandlerResponse401(data: AbortCatchup401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function abortCatchupHandlerResponse500(data: AbortCatchup500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function abortCatchupHandler(data?: AbortCatchupMutationResponse | ((
         info: Parameters<Parameters<typeof http.delete>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.delete('/v2/catchup/:catchpoint', function handler(info) {
     if(typeof data === 'function') return data(info)
 

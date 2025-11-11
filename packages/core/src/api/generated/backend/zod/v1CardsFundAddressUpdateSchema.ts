@@ -25,14 +25,14 @@ export const v1CardsFundAddressUpdatePathParamsSchema = z.object({
 
 export type V1CardsFundAddressUpdatePathParamsSchema = z.infer<typeof v1CardsFundAddressUpdatePathParamsSchema>
 
-export const v1CardsFundAddressUpdate200Schema = z.lazy(() => immersveFundAddressUpdateSerializerResponseSchema)
+export const v1CardsFundAddressUpdate200Schema = immersveFundAddressUpdateSerializerResponseSchema
 
 export type V1CardsFundAddressUpdate200Schema = z.infer<typeof v1CardsFundAddressUpdate200Schema>
 
-export const v1CardsFundAddressUpdateMutationRequestSchema = z.lazy(() => immersveFundAddressUpdateSerializerRequestSchema)
+export const v1CardsFundAddressUpdateMutationRequestSchema = immersveFundAddressUpdateSerializerRequestSchema
 
 export type V1CardsFundAddressUpdateMutationRequestSchema = z.infer<typeof v1CardsFundAddressUpdateMutationRequestSchema>
 
-export const v1CardsFundAddressUpdateMutationResponseSchema = z.lazy(() => v1CardsFundAddressUpdate200Schema)
+export const v1CardsFundAddressUpdateMutationResponseSchema = v1CardsFundAddressUpdate200Schema
 
 export type V1CardsFundAddressUpdateMutationResponseSchema = z.infer<typeof v1CardsFundAddressUpdateMutationResponseSchema>

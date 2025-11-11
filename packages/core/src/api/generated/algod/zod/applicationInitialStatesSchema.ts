@@ -22,9 +22,9 @@ import { z } from "zod";
  * @description An application\'s initial global/local/box states that were accessed during simulation.
  */
 export const applicationInitialStatesSchema = z.object({
-    "app-boxes": z.lazy(() => applicationKVStorageSchema).describe("An application's global/local/box state.").optional(),
-"app-globals": z.lazy(() => applicationKVStorageSchema).describe("An application's global/local/box state.").optional(),
-"app-locals": z.array(z.lazy(() => applicationKVStorageSchema).describe("An application's global/local/box state.")).describe("An application's initial local states tied to different accounts.").optional(),
+    "app-boxes": z.optional(z.lazy(() => applicationKVStorageSchema).describe("An application's global/local/box state.")),
+"app-globals": z.optional(z.lazy(() => applicationKVStorageSchema).describe("An application's global/local/box state.")),
+"app-locals": z.optional(z.array(z.lazy(() => applicationKVStorageSchema).describe("An application's global/local/box state.")).describe("An application's initial local states tied to different accounts.")),
 "id": z.number().int().describe("Application index.")
     }).describe("An application's initial global/local/box states that were accessed during simulation.")
 

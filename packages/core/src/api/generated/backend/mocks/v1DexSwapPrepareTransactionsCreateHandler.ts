@@ -18,9 +18,18 @@
 import type { V1DexSwapPrepareTransactionsCreateMutationResponse } from "../types/V1DexSwapPrepareTransactionsCreate.ts";
 import { http } from "msw";
 
+export function v1DexSwapPrepareTransactionsCreateHandlerResponse201(data: V1DexSwapPrepareTransactionsCreateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 201,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1DexSwapPrepareTransactionsCreateHandler(data?: V1DexSwapPrepareTransactionsCreateMutationResponse | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v1/dex-swap/prepare-transactions/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

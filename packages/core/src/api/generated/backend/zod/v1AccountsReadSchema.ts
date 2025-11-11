@@ -24,10 +24,10 @@ export const v1AccountsReadPathParamsSchema = z.object({
 
 export type V1AccountsReadPathParamsSchema = z.infer<typeof v1AccountsReadPathParamsSchema>
 
-export const v1AccountsRead200Schema = z.lazy(() => accountDetailSerializerResponseSchema)
+export const v1AccountsRead200Schema = accountDetailSerializerResponseSchema
 
 export type V1AccountsRead200Schema = z.infer<typeof v1AccountsRead200Schema>
 
-export const v1AccountsReadQueryResponseSchema = z.lazy(() => v1AccountsRead200Schema)
+export const v1AccountsReadQueryResponseSchema = v1AccountsRead200Schema
 
 export type V1AccountsReadQueryResponseSchema = z.infer<typeof v1AccountsReadQueryResponseSchema>

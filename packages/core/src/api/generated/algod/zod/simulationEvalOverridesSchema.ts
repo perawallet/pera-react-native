@@ -21,12 +21,12 @@ import { z } from "zod";
  * @description The set of parameters and limits override during simulation. If this set of parameters is present, then evaluation parameters may differ from standard evaluation in certain ways.
  */
 export const simulationEvalOverridesSchema = z.object({
-    "allow-empty-signatures": z.boolean().describe("If true, transactions without signatures are allowed and simulated as if they were properly signed.").optional(),
-"allow-unnamed-resources": z.boolean().describe("If true, allows access to unnamed resources during simulation.").optional(),
-"extra-opcode-budget": z.number().int().describe("The extra opcode budget added to each transaction group during simulation").optional(),
-"fix-signers": z.boolean().describe("If true, signers for transactions that are missing signatures will be fixed during evaluation.").optional(),
-"max-log-calls": z.number().int().describe("The maximum log calls one can make during simulation").optional(),
-"max-log-size": z.number().int().describe("The maximum byte number to log during simulation").optional()
+    "allow-empty-signatures": z.optional(z.boolean().describe("If true, transactions without signatures are allowed and simulated as if they were properly signed.")),
+"allow-unnamed-resources": z.optional(z.boolean().describe("If true, allows access to unnamed resources during simulation.")),
+"extra-opcode-budget": z.optional(z.number().int().describe("The extra opcode budget added to each transaction group during simulation")),
+"fix-signers": z.optional(z.boolean().describe("If true, signers for transactions that are missing signatures will be fixed during evaluation.")),
+"max-log-calls": z.optional(z.number().int().describe("The maximum log calls one can make during simulation")),
+"max-log-size": z.optional(z.number().int().describe("The maximum byte number to log during simulation"))
     }).describe("The set of parameters and limits override during simulation. If this set of parameters is present, then evaluation parameters may differ from standard evaluation in certain ways.")
 
 export type SimulationEvalOverridesSchema = z.infer<typeof simulationEvalOverridesSchema>

@@ -30,14 +30,14 @@ export type TealDisassemble200Schema = z.infer<typeof tealDisassemble200Schema>
 /**
  * @description Bad Request - Teal Compile Error
  */
-export const tealDisassemble400Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const tealDisassemble400Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type TealDisassemble400Schema = z.infer<typeof tealDisassemble400Schema>
 
 /**
  * @description Invalid API Token
  */
-export const tealDisassemble401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const tealDisassemble401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type TealDisassemble401Schema = z.infer<typeof tealDisassemble401Schema>
 
@@ -51,7 +51,7 @@ export type TealDisassemble404Schema = z.infer<typeof tealDisassemble404Schema>
 /**
  * @description Internal Error
  */
-export const tealDisassemble500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const tealDisassemble500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type TealDisassemble500Schema = z.infer<typeof tealDisassemble500Schema>
 
@@ -69,6 +69,6 @@ export const tealDisassembleMutationRequestSchema = z.string()
 
 export type TealDisassembleMutationRequestSchema = z.infer<typeof tealDisassembleMutationRequestSchema>
 
-export const tealDisassembleMutationResponseSchema = z.lazy(() => tealDisassemble200Schema)
+export const tealDisassembleMutationResponseSchema = tealDisassemble200Schema
 
 export type TealDisassembleMutationResponseSchema = z.infer<typeof tealDisassembleMutationResponseSchema>

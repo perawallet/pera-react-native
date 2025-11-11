@@ -25,8 +25,8 @@ export const searchForApplicationBoxesPathParamsSchema = z.object({
 export type SearchForApplicationBoxesPathParamsSchema = z.infer<typeof searchForApplicationBoxesPathParamsSchema>
 
 export const searchForApplicationBoxesQueryParamsSchema = z.object({
-    "limit": z.coerce.number().int().describe("Maximum number of results to return. There could be additional pages even if the limit is not reached.").optional(),
-"next": z.string().describe("The next page of results. Use the next token provided by the previous results.").optional()
+    "limit": z.optional(z.coerce.number().int().describe("Maximum number of results to return. There could be additional pages even if the limit is not reached.")),
+"next": z.optional(z.string().describe("The next page of results. Use the next token provided by the previous results."))
     }).optional()
 
 export type SearchForApplicationBoxesQueryParamsSchema = z.infer<typeof searchForApplicationBoxesQueryParamsSchema>
@@ -37,7 +37,7 @@ export type SearchForApplicationBoxesQueryParamsSchema = z.infer<typeof searchFo
 export const searchForApplicationBoxes200Schema = z.object({
     "application-id": z.number().int().describe("\\[appidx\\] application index."),
 "boxes": z.array(z.lazy(() => boxDescriptorSchema).describe("Box descriptor describes an app box without a value.")),
-"next-token": z.string().describe("Used for pagination, when making another request provide this token with the next parameter.").optional()
+"next-token": z.optional(z.string().describe("Used for pagination, when making another request provide this token with the next parameter."))
     })
 
 export type SearchForApplicationBoxes200Schema = z.infer<typeof searchForApplicationBoxes200Schema>
@@ -46,9 +46,9 @@ export type SearchForApplicationBoxes200Schema = z.infer<typeof searchForApplica
  * @description Response for errors
  */
 export const searchForApplicationBoxes400Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
@@ -58,9 +58,9 @@ export type SearchForApplicationBoxes400Schema = z.infer<typeof searchForApplica
  * @description Response for errors
  */
 export const searchForApplicationBoxes404Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
@@ -70,14 +70,14 @@ export type SearchForApplicationBoxes404Schema = z.infer<typeof searchForApplica
  * @description Response for errors
  */
 export const searchForApplicationBoxes500Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
 export type SearchForApplicationBoxes500Schema = z.infer<typeof searchForApplicationBoxes500Schema>
 
-export const searchForApplicationBoxesQueryResponseSchema = z.lazy(() => searchForApplicationBoxes200Schema)
+export const searchForApplicationBoxesQueryResponseSchema = searchForApplicationBoxes200Schema
 
 export type SearchForApplicationBoxesQueryResponseSchema = z.infer<typeof searchForApplicationBoxesQueryResponseSchema>

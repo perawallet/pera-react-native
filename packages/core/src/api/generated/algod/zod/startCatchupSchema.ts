@@ -25,7 +25,7 @@ export const startCatchupPathParamsSchema = z.object({
 export type StartCatchupPathParamsSchema = z.infer<typeof startCatchupPathParamsSchema>
 
 export const startCatchupQueryParamsSchema = z.object({
-    "min": z.coerce.number().int().describe("Specify the minimum number of blocks which the ledger must be advanced by in order to start the catchup. This is useful for simplifying tools which support fast catchup, they can run the catchup unconditionally and the node will skip the catchup if it is not needed.").optional()
+    "min": z.optional(z.coerce.number().int().describe("Specify the minimum number of blocks which the ledger must be advanced by in order to start the catchup. This is useful for simplifying tools which support fast catchup, they can run the catchup unconditionally and the node will skip the catchup if it is not needed."))
     }).optional()
 
 export type StartCatchupQueryParamsSchema = z.infer<typeof startCatchupQueryParamsSchema>
@@ -45,28 +45,28 @@ export type StartCatchup201Schema = z.infer<typeof startCatchup201Schema>
 /**
  * @description Bad Request
  */
-export const startCatchup400Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const startCatchup400Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type StartCatchup400Schema = z.infer<typeof startCatchup400Schema>
 
 /**
  * @description Invalid API Token
  */
-export const startCatchup401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const startCatchup401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type StartCatchup401Schema = z.infer<typeof startCatchup401Schema>
 
 /**
  * @description Request Timeout
  */
-export const startCatchup408Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const startCatchup408Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type StartCatchup408Schema = z.infer<typeof startCatchup408Schema>
 
 /**
  * @description Internal Error
  */
-export const startCatchup500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const startCatchup500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type StartCatchup500Schema = z.infer<typeof startCatchup500Schema>
 
@@ -77,6 +77,6 @@ export const startCatchupErrorSchema = z.unknown()
 
 export type StartCatchupErrorSchema = z.infer<typeof startCatchupErrorSchema>
 
-export const startCatchupMutationResponseSchema = z.union([z.lazy(() => startCatchup200Schema), z.lazy(() => startCatchup201Schema)])
+export const startCatchupMutationResponseSchema = z.union([startCatchup200Schema, startCatchup201Schema])
 
 export type StartCatchupMutationResponseSchema = z.infer<typeof startCatchupMutationResponseSchema>

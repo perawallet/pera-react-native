@@ -18,9 +18,18 @@
 import type { V1DevicesAssetsRemoveFromPriceWatchAssetsCreateMutationResponse } from "../types/V1DevicesAssetsRemoveFromPriceWatchAssetsCreate.ts";
 import { http } from "msw";
 
+export function v1DevicesAssetsRemoveFromPriceWatchAssetsCreateHandlerResponse201(data: V1DevicesAssetsRemoveFromPriceWatchAssetsCreateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 201,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1DevicesAssetsRemoveFromPriceWatchAssetsCreateHandler(data?: V1DevicesAssetsRemoveFromPriceWatchAssetsCreateMutationResponse | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v1/devices/:device_id/assets/:asset_id/remove-from-price-watch-assets/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

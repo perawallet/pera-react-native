@@ -28,35 +28,35 @@ export type AppendKeysPathParamsSchema = z.infer<typeof appendKeysPathParamsSche
 /**
  * @description A detailed description of a participation ID
  */
-export const appendKeys200Schema = z.lazy(() => participationKeySchema).describe("Represents a participation key used by the node.")
+export const appendKeys200Schema = participationKeySchema.describe("Represents a participation key used by the node.")
 
 export type AppendKeys200Schema = z.infer<typeof appendKeys200Schema>
 
 /**
  * @description Bad Request
  */
-export const appendKeys400Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const appendKeys400Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type AppendKeys400Schema = z.infer<typeof appendKeys400Schema>
 
 /**
  * @description Invalid API Token
  */
-export const appendKeys401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const appendKeys401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type AppendKeys401Schema = z.infer<typeof appendKeys401Schema>
 
 /**
  * @description Participation Key Not Found
  */
-export const appendKeys404Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const appendKeys404Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type AppendKeys404Schema = z.infer<typeof appendKeys404Schema>
 
 /**
  * @description Internal Error
  */
-export const appendKeys500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const appendKeys500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type AppendKeys500Schema = z.infer<typeof appendKeys500Schema>
 
@@ -74,6 +74,6 @@ export const appendKeysMutationRequestSchema = z.instanceof(File)
 
 export type AppendKeysMutationRequestSchema = z.infer<typeof appendKeysMutationRequestSchema>
 
-export const appendKeysMutationResponseSchema = z.lazy(() => appendKeys200Schema)
+export const appendKeysMutationResponseSchema = appendKeys200Schema
 
 export type AppendKeysMutationResponseSchema = z.infer<typeof appendKeysMutationResponseSchema>

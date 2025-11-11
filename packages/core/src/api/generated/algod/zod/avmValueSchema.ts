@@ -21,9 +21,9 @@ import { z } from "zod";
  * @description Represents an AVM value.
  */
 export const avmValueSchema = z.object({
-    "bytes": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("bytes value.").optional(),
+    "bytes": z.optional(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("bytes value.")),
 "type": z.number().int().describe("value type. Value `1` refers to **bytes**, value `2` refers to **uint64**"),
-"uint": z.number().int().describe("uint value.").optional()
+"uint": z.optional(z.number().int().describe("uint value."))
     }).describe("Represents an AVM value.")
 
 export type AvmValueSchema = z.infer<typeof avmValueSchema>

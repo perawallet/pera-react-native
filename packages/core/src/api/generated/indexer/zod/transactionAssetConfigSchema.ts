@@ -22,8 +22,8 @@ import { z } from "zod";
  * @description Fields for asset allocation, re-configuration, and destruction.\n\n\nA zero value for asset-id indicates asset creation.\nA zero value for the params indicates asset destruction.\n\nDefinition:\ndata/transactions/asset.go : AssetConfigTxnFields
  */
 export const transactionAssetConfigSchema = z.object({
-    "asset-id": z.number().int().describe("\\[xaid\\] ID of the asset being configured or empty if creating.").optional(),
-"params": z.lazy(() => assetParamsSchema).describe("AssetParams specifies the parameters for an asset.\n\n\\[apar\\] when part of an AssetConfig transaction.\n\nDefinition:\ndata/transactions/asset.go : AssetParams").optional()
+    "asset-id": z.optional(z.number().int().describe("\\[xaid\\] ID of the asset being configured or empty if creating.")),
+"params": z.optional(z.lazy(() => assetParamsSchema).describe("AssetParams specifies the parameters for an asset.\n\n\\[apar\\] when part of an AssetConfig transaction.\n\nDefinition:\ndata/transactions/asset.go : AssetParams"))
     }).describe("Fields for asset allocation, re-configuration, and destruction.\n\n\nA zero value for asset-id indicates asset creation.\nA zero value for the params indicates asset destruction.\n\nDefinition:\ndata/transactions/asset.go : AssetConfigTxnFields")
 
 export type TransactionAssetConfigSchema = z.infer<typeof transactionAssetConfigSchema>

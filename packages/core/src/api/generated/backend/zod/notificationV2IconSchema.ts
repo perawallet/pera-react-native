@@ -19,7 +19,7 @@ import { z } from "zod";
 
 export const notificationV2IconSchema = z.object({
     "logo": z.string().url().min(1),
-"shape": z.enum(["circle", "rectangle"]).default("circle")
+"shape": z.optional(z.enum(["circle", "rectangle"]).default("circle"))
     }).nullable()
 
 export type NotificationV2IconSchema = z.infer<typeof notificationV2IconSchema>

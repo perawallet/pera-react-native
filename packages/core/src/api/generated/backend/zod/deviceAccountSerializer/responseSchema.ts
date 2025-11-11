@@ -18,7 +18,7 @@
 import { z } from "zod";
 
 export const deviceAccountSerializerResponseSchema = z.object({
-    "receive_notifications": z.boolean().optional()
+    "receive_notifications": z.optional(z.boolean())
     })
 
 export type DeviceAccountSerializerResponseSchema = z.infer<typeof deviceAccountSerializerResponseSchema>

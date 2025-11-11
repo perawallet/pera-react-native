@@ -18,9 +18,9 @@
 import fetch from "../../../algod-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { SetBlockTimeStampOffsetMutationResponse, SetBlockTimeStampOffsetPathParams, SetBlockTimeStampOffset400, SetBlockTimeStampOffset401, SetBlockTimeStampOffset500 } from "../types/SetBlockTimeStampOffset.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
 import { setBlockTimeStampOffsetMutationResponseSchema } from "../zod/setBlockTimeStampOffsetSchema.ts";
-import { useMutation } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const setBlockTimeStampOffsetMutationKey = () => [{ url: '/v2/devmode/blocks/offset/:offset' }] as const
 
@@ -38,6 +38,16 @@ export async function setBlockTimeStampOffset({ offset }: { offset: SetBlockTime
   return setBlockTimeStampOffsetMutationResponseSchema.parse(res.data)
 }
 
+export function setBlockTimeStampOffsetMutationOptions(config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {
+  const mutationKey = setBlockTimeStampOffsetMutationKey()
+  return mutationOptions<SetBlockTimeStampOffsetMutationResponse, ResponseErrorConfig<SetBlockTimeStampOffset400 | SetBlockTimeStampOffset401 | SetBlockTimeStampOffset500>, {offset: SetBlockTimeStampOffsetPathParams["offset"]}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ offset }) => {
+      return setBlockTimeStampOffset({ offset }, config)
+    },
+  })
+}
+
 /**
  * @description Sets the timestamp offset (seconds) for blocks in dev mode. Providing an offset of 0 will unset this value and try to use the real clock for the timestamp.
  * @summary Given a timestamp offset in seconds, adds the offset to every subsequent block header's timestamp.
@@ -53,11 +63,11 @@ export function useSetBlockTimeStampOffset<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? setBlockTimeStampOffsetMutationKey()
 
+  const baseOptions = setBlockTimeStampOffsetMutationOptions(config) as UseMutationOptions<SetBlockTimeStampOffsetMutationResponse, ResponseErrorConfig<SetBlockTimeStampOffset400 | SetBlockTimeStampOffset401 | SetBlockTimeStampOffset500>, {offset: SetBlockTimeStampOffsetPathParams["offset"]}, TContext>
+
   return useMutation<SetBlockTimeStampOffsetMutationResponse, ResponseErrorConfig<SetBlockTimeStampOffset400 | SetBlockTimeStampOffset401 | SetBlockTimeStampOffset500>, {offset: SetBlockTimeStampOffsetPathParams["offset"]}, TContext>({
-    mutationFn: async({ offset }) => {
-      return setBlockTimeStampOffset({ offset }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<SetBlockTimeStampOffsetMutationResponse, ResponseErrorConfig<SetBlockTimeStampOffset400 | SetBlockTimeStampOffset401 | SetBlockTimeStampOffset500>, {offset: SetBlockTimeStampOffsetPathParams["offset"]}, TContext>
 }

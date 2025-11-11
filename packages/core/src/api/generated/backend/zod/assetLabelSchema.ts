@@ -19,8 +19,8 @@ import { z } from "zod";
 
 export const assetLabelSchema = z.object({
     "name": z.string().min(1),
-"light_theme_logo": z.string().url().optional(),
-"dark_theme_logo": z.string().url().optional()
+"light_theme_logo": z.optional(z.string().url()),
+"dark_theme_logo": z.optional(z.string().url())
     })
 
 export type AssetLabelSchema = z.infer<typeof assetLabelSchema>

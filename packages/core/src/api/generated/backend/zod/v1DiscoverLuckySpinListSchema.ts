@@ -19,7 +19,7 @@ import { z } from "zod";
 
 export const v1DiscoverLuckySpinListQueryParamsSchema = z.object({
     "address": z.string().min(1).describe("User's Algorand address"),
-"game_id": z.string().uuid().describe("UUID of specific game to play").nullable().nullish()
+"game_id": z.string().uuid().describe("UUID of specific game to play").nullish()
     })
 
 export type V1DiscoverLuckySpinListQueryParamsSchema = z.infer<typeof v1DiscoverLuckySpinListQueryParamsSchema>
@@ -28,6 +28,6 @@ export const v1DiscoverLuckySpinList200Schema = z.unknown()
 
 export type V1DiscoverLuckySpinList200Schema = z.infer<typeof v1DiscoverLuckySpinList200Schema>
 
-export const v1DiscoverLuckySpinListQueryResponseSchema = z.lazy(() => v1DiscoverLuckySpinList200Schema)
+export const v1DiscoverLuckySpinListQueryResponseSchema = v1DiscoverLuckySpinList200Schema
 
 export type V1DiscoverLuckySpinListQueryResponseSchema = z.infer<typeof v1DiscoverLuckySpinListQueryResponseSchema>

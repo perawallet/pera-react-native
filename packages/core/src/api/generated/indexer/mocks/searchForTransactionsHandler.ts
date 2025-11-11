@@ -15,12 +15,39 @@
 * Do not edit manually.
 */
 
-import type { SearchForTransactionsQueryResponse } from "../types/SearchForTransactions.ts";
+import type { SearchForTransactionsQueryResponse, SearchForTransactions400, SearchForTransactions500 } from "../types/SearchForTransactions.ts";
 import { http } from "msw";
+
+export function searchForTransactionsHandlerResponse200(data: SearchForTransactionsQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function searchForTransactionsHandlerResponse400(data: SearchForTransactions400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function searchForTransactionsHandlerResponse500(data: SearchForTransactions500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function searchForTransactionsHandler(data?: SearchForTransactionsQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/transactions', function handler(info) {
     if(typeof data === 'function') return data(info)
 

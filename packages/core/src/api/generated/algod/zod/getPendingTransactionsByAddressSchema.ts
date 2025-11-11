@@ -25,8 +25,8 @@ export const getPendingTransactionsByAddressPathParamsSchema = z.object({
 export type GetPendingTransactionsByAddressPathParamsSchema = z.infer<typeof getPendingTransactionsByAddressPathParamsSchema>
 
 export const getPendingTransactionsByAddressQueryParamsSchema = z.object({
-    "max": z.coerce.number().int().describe("Truncated number of transactions to display. If max=0, returns all pending txns.").optional(),
-"format": z.enum(["json", "msgpack"]).describe("Configures whether the response object is JSON or MessagePack encoded. If not provided, defaults to JSON.").optional()
+    "max": z.optional(z.coerce.number().int().describe("Truncated number of transactions to display. If max=0, returns all pending txns.")),
+"format": z.optional(z.enum(["json", "msgpack"]).describe("Configures whether the response object is JSON or MessagePack encoded. If not provided, defaults to JSON."))
     }).optional()
 
 export type GetPendingTransactionsByAddressQueryParamsSchema = z.infer<typeof getPendingTransactionsByAddressQueryParamsSchema>
@@ -46,28 +46,28 @@ export type GetPendingTransactionsByAddress200Schema = z.infer<typeof getPending
 /**
  * @description Max must be a non-negative integer
  */
-export const getPendingTransactionsByAddress400Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getPendingTransactionsByAddress400Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetPendingTransactionsByAddress400Schema = z.infer<typeof getPendingTransactionsByAddress400Schema>
 
 /**
  * @description Invalid API Token
  */
-export const getPendingTransactionsByAddress401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getPendingTransactionsByAddress401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetPendingTransactionsByAddress401Schema = z.infer<typeof getPendingTransactionsByAddress401Schema>
 
 /**
  * @description Internal Error
  */
-export const getPendingTransactionsByAddress500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getPendingTransactionsByAddress500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetPendingTransactionsByAddress500Schema = z.infer<typeof getPendingTransactionsByAddress500Schema>
 
 /**
  * @description Service Temporarily Unavailable
  */
-export const getPendingTransactionsByAddress503Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getPendingTransactionsByAddress503Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetPendingTransactionsByAddress503Schema = z.infer<typeof getPendingTransactionsByAddress503Schema>
 
@@ -78,6 +78,6 @@ export const getPendingTransactionsByAddressErrorSchema = z.unknown()
 
 export type GetPendingTransactionsByAddressErrorSchema = z.infer<typeof getPendingTransactionsByAddressErrorSchema>
 
-export const getPendingTransactionsByAddressQueryResponseSchema = z.lazy(() => getPendingTransactionsByAddress200Schema)
+export const getPendingTransactionsByAddressQueryResponseSchema = getPendingTransactionsByAddress200Schema
 
 export type GetPendingTransactionsByAddressQueryResponseSchema = z.infer<typeof getPendingTransactionsByAddressQueryResponseSchema>

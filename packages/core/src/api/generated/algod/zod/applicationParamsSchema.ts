@@ -26,11 +26,11 @@ export const applicationParamsSchema = z.object({
     "approval-program": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[approv\\] approval program."),
 "clear-state-program": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[clearp\\] approval program."),
 "creator": z.string().describe("The address that created this application. This is the address where the parameters and global state for this application can be found."),
-"extra-program-pages": z.number().int().describe("\\[epp\\] the amount of extra program pages available to this app.").optional(),
-"global-state": z.lazy(() => tealKeyValueStoreSchema).describe("Represents a key-value store for use in an application.").optional(),
-"global-state-schema": z.lazy(() => applicationStateSchemaSchema).describe("Specifies maximums on the number of each type that may be stored.").optional(),
-"local-state-schema": z.lazy(() => applicationStateSchemaSchema).describe("Specifies maximums on the number of each type that may be stored.").optional(),
-"version": z.number().int().describe("\\[v\\] the number of updates to the application programs").optional()
+"extra-program-pages": z.optional(z.number().int().describe("\\[epp\\] the amount of extra program pages available to this app.")),
+"global-state": z.optional(z.lazy(() => tealKeyValueStoreSchema).describe("Represents a key-value store for use in an application.")),
+"global-state-schema": z.optional(z.lazy(() => applicationStateSchemaSchema).describe("Specifies maximums on the number of each type that may be stored.")),
+"local-state-schema": z.optional(z.lazy(() => applicationStateSchemaSchema).describe("Specifies maximums on the number of each type that may be stored.")),
+"version": z.optional(z.number().int().describe("\\[v\\] the number of updates to the application programs"))
     }).describe("Stores the global information associated with an application.")
 
 export type ApplicationParamsSchema = z.infer<typeof applicationParamsSchema>

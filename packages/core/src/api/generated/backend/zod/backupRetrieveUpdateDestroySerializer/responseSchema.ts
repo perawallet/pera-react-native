@@ -18,10 +18,10 @@
 import { z } from "zod";
 
 export const backupRetrieveUpdateDestroySerializerResponseSchema = z.object({
-    "id": z.string().uuid().optional(),
-"type": z.enum(["temporary", "permanent"]).optional(),
+    "id": z.optional(z.string().uuid()),
+"type": z.optional(z.enum(["temporary", "permanent"])),
 "encrypted_content": z.string(),
-"creator_device": z.number().int().nullable().nullish()
+"creator_device": z.number().int().nullish()
     })
 
 export type BackupRetrieveUpdateDestroySerializerResponseSchema = z.infer<typeof backupRetrieveUpdateDestroySerializerResponseSchema>

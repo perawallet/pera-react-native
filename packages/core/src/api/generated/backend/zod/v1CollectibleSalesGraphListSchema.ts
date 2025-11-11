@@ -25,17 +25,17 @@ export const v1CollectibleSalesGraphListPathParamsSchema = z.object({
 export type V1CollectibleSalesGraphListPathParamsSchema = z.infer<typeof v1CollectibleSalesGraphListPathParamsSchema>
 
 export const v1CollectibleSalesGraphListQueryParamsSchema = z.object({
-    "ordering": z.string().describe("Which field to use when ordering the results.").optional(),
+    "ordering": z.optional(z.string().describe("Which field to use when ordering the results.")),
 "asset_id": z.string(),
 "period": z.enum(["one-year", "one-month", "one-week", "one-day"])
     })
 
 export type V1CollectibleSalesGraphListQueryParamsSchema = z.infer<typeof v1CollectibleSalesGraphListQueryParamsSchema>
 
-export const v1CollectibleSalesGraphList200Schema = z.array(z.lazy(() => collectibleSalesGraphSerializerResponseSchema))
+export const v1CollectibleSalesGraphList200Schema = z.array(collectibleSalesGraphSerializerResponseSchema)
 
 export type V1CollectibleSalesGraphList200Schema = z.infer<typeof v1CollectibleSalesGraphList200Schema>
 
-export const v1CollectibleSalesGraphListQueryResponseSchema = z.lazy(() => v1CollectibleSalesGraphList200Schema)
+export const v1CollectibleSalesGraphListQueryResponseSchema = v1CollectibleSalesGraphList200Schema
 
 export type V1CollectibleSalesGraphListQueryResponseSchema = z.infer<typeof v1CollectibleSalesGraphListQueryResponseSchema>

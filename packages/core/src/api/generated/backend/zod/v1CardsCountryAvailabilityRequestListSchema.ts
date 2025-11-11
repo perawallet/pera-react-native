@@ -19,14 +19,14 @@ import { waitlistResponseSerializerResponseSchema } from "./waitlistResponseSeri
 import { z } from "zod";
 
 export const v1CardsCountryAvailabilityRequestListQueryParamsSchema = z.object({
-    "ordering": z.string().describe("Which field to use when ordering the results.").optional(),
-"device_id": z.string().min(1).optional(),
-"address": z.string().min(1).optional()
+    "ordering": z.optional(z.string().describe("Which field to use when ordering the results.")),
+"device_id": z.optional(z.string().min(1)),
+"address": z.optional(z.string().min(1))
     }).optional()
 
 export type V1CardsCountryAvailabilityRequestListQueryParamsSchema = z.infer<typeof v1CardsCountryAvailabilityRequestListQueryParamsSchema>
 
-export const v1CardsCountryAvailabilityRequestList200Schema = z.lazy(() => waitlistResponseSerializerResponseSchema)
+export const v1CardsCountryAvailabilityRequestList200Schema = waitlistResponseSerializerResponseSchema
 
 export type V1CardsCountryAvailabilityRequestList200Schema = z.infer<typeof v1CardsCountryAvailabilityRequestList200Schema>
 
@@ -37,6 +37,6 @@ export const v1CardsCountryAvailabilityRequestList400Schema = z.unknown()
 
 export type V1CardsCountryAvailabilityRequestList400Schema = z.infer<typeof v1CardsCountryAvailabilityRequestList400Schema>
 
-export const v1CardsCountryAvailabilityRequestListQueryResponseSchema = z.lazy(() => v1CardsCountryAvailabilityRequestList200Schema)
+export const v1CardsCountryAvailabilityRequestListQueryResponseSchema = v1CardsCountryAvailabilityRequestList200Schema
 
 export type V1CardsCountryAvailabilityRequestListQueryResponseSchema = z.infer<typeof v1CardsCountryAvailabilityRequestListQueryResponseSchema>

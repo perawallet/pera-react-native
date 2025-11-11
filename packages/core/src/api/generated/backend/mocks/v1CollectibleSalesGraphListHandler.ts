@@ -18,9 +18,18 @@
 import type { V1CollectibleSalesGraphListQueryResponse } from "../types/V1CollectibleSalesGraphList.ts";
 import { http } from "msw";
 
+export function v1CollectibleSalesGraphListHandlerResponse200(data: V1CollectibleSalesGraphListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1CollectibleSalesGraphListHandler(data?: V1CollectibleSalesGraphListQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/collectible/:asset_id/sales/graph/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

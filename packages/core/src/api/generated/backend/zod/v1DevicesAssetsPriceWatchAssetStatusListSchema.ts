@@ -28,6 +28,6 @@ export const v1DevicesAssetsPriceWatchAssetStatusList200Schema = z.unknown()
 
 export type V1DevicesAssetsPriceWatchAssetStatusList200Schema = z.infer<typeof v1DevicesAssetsPriceWatchAssetStatusList200Schema>
 
-export const v1DevicesAssetsPriceWatchAssetStatusListQueryResponseSchema = z.lazy(() => v1DevicesAssetsPriceWatchAssetStatusList200Schema)
+export const v1DevicesAssetsPriceWatchAssetStatusListQueryResponseSchema = v1DevicesAssetsPriceWatchAssetStatusList200Schema
 
 export type V1DevicesAssetsPriceWatchAssetStatusListQueryResponseSchema = z.infer<typeof v1DevicesAssetsPriceWatchAssetStatusListQueryResponseSchema>

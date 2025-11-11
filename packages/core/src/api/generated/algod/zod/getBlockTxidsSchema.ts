@@ -36,28 +36,28 @@ export type GetBlockTxids200Schema = z.infer<typeof getBlockTxids200Schema>
 /**
  * @description Bad Request - Non integer number
  */
-export const getBlockTxids400Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getBlockTxids400Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetBlockTxids400Schema = z.infer<typeof getBlockTxids400Schema>
 
 /**
  * @description Invalid API Token
  */
-export const getBlockTxids401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getBlockTxids401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetBlockTxids401Schema = z.infer<typeof getBlockTxids401Schema>
 
 /**
  * @description Non existing block
  */
-export const getBlockTxids404Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getBlockTxids404Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetBlockTxids404Schema = z.infer<typeof getBlockTxids404Schema>
 
 /**
  * @description Internal Error
  */
-export const getBlockTxids500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getBlockTxids500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetBlockTxids500Schema = z.infer<typeof getBlockTxids500Schema>
 
@@ -68,6 +68,6 @@ export const getBlockTxidsErrorSchema = z.unknown()
 
 export type GetBlockTxidsErrorSchema = z.infer<typeof getBlockTxidsErrorSchema>
 
-export const getBlockTxidsQueryResponseSchema = z.lazy(() => getBlockTxids200Schema)
+export const getBlockTxidsQueryResponseSchema = getBlockTxids200Schema
 
 export type GetBlockTxidsQueryResponseSchema = z.infer<typeof getBlockTxidsQueryResponseSchema>

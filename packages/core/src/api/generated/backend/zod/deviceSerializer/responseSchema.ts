@@ -18,12 +18,12 @@
 import { z } from "zod";
 
 export const deviceSerializerResponseSchema = z.object({
-    "id": z.string().min(1).optional(),
-"push_token": z.string().optional(),
+    "id": z.optional(z.string().min(1)),
+"push_token": z.optional(z.string()),
 "platform": z.enum(["ios", "android", "web"]),
-"application": z.enum(["pera", "pera-beta", "fifa"]).optional(),
-"model": z.string().min(1).default(""),
-"locale": z.string().min(1).default("")
+"application": z.optional(z.enum(["pera", "pera-beta", "fifa"])),
+"model": z.optional(z.string().min(1).default("")),
+"locale": z.optional(z.string().min(1).default(""))
     })
 
 export type DeviceSerializerResponseSchema = z.infer<typeof deviceSerializerResponseSchema>

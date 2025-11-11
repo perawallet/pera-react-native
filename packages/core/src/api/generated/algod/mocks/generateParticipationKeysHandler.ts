@@ -15,12 +15,57 @@
 * Do not edit manually.
 */
 
-import type { GenerateParticipationKeysMutationResponse } from "../types/GenerateParticipationKeys.ts";
+import type { GenerateParticipationKeysMutationResponse, GenerateParticipationKeys400, GenerateParticipationKeys401, GenerateParticipationKeys500, GenerateParticipationKeys503 } from "../types/GenerateParticipationKeys.ts";
 import { http } from "msw";
+
+export function generateParticipationKeysHandlerResponse200(data: GenerateParticipationKeysMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function generateParticipationKeysHandlerResponse400(data: GenerateParticipationKeys400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function generateParticipationKeysHandlerResponse401(data: GenerateParticipationKeys401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function generateParticipationKeysHandlerResponse500(data: GenerateParticipationKeys500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function generateParticipationKeysHandlerResponse503(data: GenerateParticipationKeys503) {
+  return new Response(JSON.stringify(data), {
+    status: 503,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function generateParticipationKeysHandler(data?: GenerateParticipationKeysMutationResponse | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v2/participation/generate/:address', function handler(info) {
     if(typeof data === 'function') return data(info)
 

@@ -18,9 +18,9 @@
 import fetch from "../../../algod-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { RawTransactionAsyncMutationRequest, RawTransactionAsyncMutationResponse, RawTransactionAsync400, RawTransactionAsync401, RawTransactionAsync404, RawTransactionAsync500, RawTransactionAsync503 } from "../types/RawTransactionAsync.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
 import { rawTransactionAsyncMutationResponseSchema, rawTransactionAsyncMutationRequestSchema } from "../zod/rawTransactionAsyncSchema.ts";
-import { useMutation } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const rawTransactionAsyncMutationKey = () => [{ url: '/v2/transactions/async' }] as const
 
@@ -39,6 +39,16 @@ export async function rawTransactionAsync({ data }: { data?: RawTransactionAsync
   return rawTransactionAsyncMutationResponseSchema.parse(res.data)
 }
 
+export function rawTransactionAsyncMutationOptions(config: Partial<RequestConfig<RawTransactionAsyncMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = rawTransactionAsyncMutationKey()
+  return mutationOptions<RawTransactionAsyncMutationResponse, ResponseErrorConfig<RawTransactionAsync400 | RawTransactionAsync401 | RawTransactionAsync404 | RawTransactionAsync500 | RawTransactionAsync503>, {data?: RawTransactionAsyncMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ data }) => {
+      return rawTransactionAsync({ data }, config)
+    },
+  })
+}
+
 /**
  * @summary Fast track for broadcasting a raw transaction or transaction group to the network through the tx handler without performing most of the checks and reporting detailed errors. Should be only used for development and performance testing.
  * {@link /v2/transactions/async}
@@ -53,11 +63,11 @@ export function useRawTransactionAsync<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? rawTransactionAsyncMutationKey()
 
+  const baseOptions = rawTransactionAsyncMutationOptions(config) as UseMutationOptions<RawTransactionAsyncMutationResponse, ResponseErrorConfig<RawTransactionAsync400 | RawTransactionAsync401 | RawTransactionAsync404 | RawTransactionAsync500 | RawTransactionAsync503>, {data?: RawTransactionAsyncMutationRequest}, TContext>
+
   return useMutation<RawTransactionAsyncMutationResponse, ResponseErrorConfig<RawTransactionAsync400 | RawTransactionAsync401 | RawTransactionAsync404 | RawTransactionAsync500 | RawTransactionAsync503>, {data?: RawTransactionAsyncMutationRequest}, TContext>({
-    mutationFn: async({ data }) => {
-      return rawTransactionAsync({ data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<RawTransactionAsyncMutationResponse, ResponseErrorConfig<RawTransactionAsync400 | RawTransactionAsync401 | RawTransactionAsync404 | RawTransactionAsync500 | RawTransactionAsync503>, {data?: RawTransactionAsyncMutationRequest}, TContext>
 }

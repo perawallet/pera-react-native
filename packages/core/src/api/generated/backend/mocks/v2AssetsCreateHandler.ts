@@ -18,9 +18,18 @@
 import type { V2AssetsCreateMutationResponse } from "../types/V2AssetsCreate.ts";
 import { http } from "msw";
 
+export function v2AssetsCreateHandlerResponse200(data: V2AssetsCreateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v2AssetsCreateHandler(data?: V2AssetsCreateMutationResponse | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v2/assets/:asset_id/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

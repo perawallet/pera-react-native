@@ -15,12 +15,39 @@
 * Do not edit manually.
 */
 
-import type { GetStatusQueryResponse } from "../types/GetStatus.ts";
+import type { GetStatusQueryResponse, GetStatus401, GetStatus500 } from "../types/GetStatus.ts";
 import { http } from "msw";
+
+export function getStatusHandlerResponse200(data: GetStatusQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getStatusHandlerResponse401(data: GetStatus401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getStatusHandlerResponse500(data: GetStatus500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function getStatusHandler(data?: GetStatusQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/status', function handler(info) {
     if(typeof data === 'function') return data(info)
 

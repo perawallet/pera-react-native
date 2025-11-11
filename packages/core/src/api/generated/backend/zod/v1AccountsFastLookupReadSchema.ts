@@ -24,10 +24,10 @@ export const v1AccountsFastLookupReadPathParamsSchema = z.object({
 
 export type V1AccountsFastLookupReadPathParamsSchema = z.infer<typeof v1AccountsFastLookupReadPathParamsSchema>
 
-export const v1AccountsFastLookupRead200Schema = z.lazy(() => fastAccountLookupResponseSerializerResponseSchema)
+export const v1AccountsFastLookupRead200Schema = fastAccountLookupResponseSerializerResponseSchema
 
 export type V1AccountsFastLookupRead200Schema = z.infer<typeof v1AccountsFastLookupRead200Schema>
 
-export const v1AccountsFastLookupReadQueryResponseSchema = z.lazy(() => v1AccountsFastLookupRead200Schema)
+export const v1AccountsFastLookupReadQueryResponseSchema = v1AccountsFastLookupRead200Schema
 
 export type V1AccountsFastLookupReadQueryResponseSchema = z.infer<typeof v1AccountsFastLookupReadQueryResponseSchema>

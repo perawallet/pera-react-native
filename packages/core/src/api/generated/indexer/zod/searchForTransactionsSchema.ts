@@ -19,26 +19,26 @@ import { transactionSchema } from "./transactionSchema.ts";
 import { z } from "zod";
 
 export const searchForTransactionsQueryParamsSchema = z.object({
-    "limit": z.coerce.number().int().describe("Maximum number of results to return. There could be additional pages even if the limit is not reached.").optional(),
-"next": z.string().describe("The next page of results. Use the next token provided by the previous results.").optional(),
-"note-prefix": z.string().describe("Specifies a prefix which must be contained in the note field.").optional(),
-"tx-type": z.enum(["pay", "keyreg", "acfg", "axfer", "afrz", "appl", "stpf", "hb"]).optional(),
-"sig-type": z.enum(["sig", "msig", "lsig"]).describe("SigType filters just results using the specified type of signature:\n* sig - Standard\n* msig - MultiSig\n* lsig - LogicSig").optional(),
-"group-id": z.string().describe("Lookup transactions by group ID. This field must be base64-encoded, and afterwards, base64 characters that are URL-unsafe (i.e. =, /, +) must be URL-encoded").optional(),
-"txid": z.string().describe("Lookup the specific transaction by ID.").optional(),
-"round": z.coerce.number().int().describe("Include results for the specified round.").optional(),
-"min-round": z.coerce.number().int().describe("Include results at or after the specified min-round.").optional(),
-"max-round": z.coerce.number().int().describe("Include results at or before the specified max-round.").optional(),
-"asset-id": z.coerce.number().int().describe("Asset ID").optional(),
-"before-time": z.string().datetime().describe("Include results before the given time. Must be an RFC 3339 formatted string.").optional(),
-"after-time": z.string().datetime().describe("Include results after the given time. Must be an RFC 3339 formatted string.").optional(),
-"currency-greater-than": z.coerce.number().int().describe("Results should have an amount greater than this value. MicroAlgos are the default currency unless an asset-id is provided, in which case the asset will be used.").optional(),
-"currency-less-than": z.coerce.number().int().describe("Results should have an amount less than this value. MicroAlgos are the default currency unless an asset-id is provided, in which case the asset will be used.").optional(),
-"address": z.string().describe("Only include transactions with this address in one of the transaction fields.").optional(),
-"address-role": z.enum(["sender", "receiver", "freeze-target"]).describe("Combine with the address parameter to define what type of address to search for.").optional(),
-"exclude-close-to": z.boolean().describe("Combine with address and address-role parameters to define what type of address to search for. The close to fields are normally treated as a receiver, if you would like to exclude them set this parameter to true.").optional(),
-"rekey-to": z.boolean().describe("Include results which include the rekey-to field.").optional(),
-"application-id": z.coerce.number().int().describe("Application ID").optional()
+    "limit": z.optional(z.coerce.number().int().describe("Maximum number of results to return. There could be additional pages even if the limit is not reached.")),
+"next": z.optional(z.string().describe("The next page of results. Use the next token provided by the previous results.")),
+"note-prefix": z.optional(z.string().describe("Specifies a prefix which must be contained in the note field.")),
+"tx-type": z.optional(z.enum(["pay", "keyreg", "acfg", "axfer", "afrz", "appl", "stpf", "hb"])),
+"sig-type": z.optional(z.enum(["sig", "msig", "lsig"]).describe("SigType filters just results using the specified type of signature:\n* sig - Standard\n* msig - MultiSig\n* lsig - LogicSig")),
+"group-id": z.optional(z.string().describe("Lookup transactions by group ID. This field must be base64-encoded, and afterwards, base64 characters that are URL-unsafe (i.e. =, /, +) must be URL-encoded")),
+"txid": z.optional(z.string().describe("Lookup the specific transaction by ID.")),
+"round": z.optional(z.coerce.number().int().describe("Include results for the specified round.")),
+"min-round": z.optional(z.coerce.number().int().describe("Include results at or after the specified min-round.")),
+"max-round": z.optional(z.coerce.number().int().describe("Include results at or before the specified max-round.")),
+"asset-id": z.optional(z.coerce.number().int().describe("Asset ID")),
+"before-time": z.optional(z.string().datetime().describe("Include results before the given time. Must be an RFC 3339 formatted string.")),
+"after-time": z.optional(z.string().datetime().describe("Include results after the given time. Must be an RFC 3339 formatted string.")),
+"currency-greater-than": z.optional(z.coerce.number().int().describe("Results should have an amount greater than this value. MicroAlgos are the default currency unless an asset-id is provided, in which case the asset will be used.")),
+"currency-less-than": z.optional(z.coerce.number().int().describe("Results should have an amount less than this value. MicroAlgos are the default currency unless an asset-id is provided, in which case the asset will be used.")),
+"address": z.optional(z.string().describe("Only include transactions with this address in one of the transaction fields.")),
+"address-role": z.optional(z.enum(["sender", "receiver", "freeze-target"]).describe("Combine with the address parameter to define what type of address to search for.")),
+"exclude-close-to": z.optional(z.boolean().describe("Combine with address and address-role parameters to define what type of address to search for. The close to fields are normally treated as a receiver, if you would like to exclude them set this parameter to true.")),
+"rekey-to": z.optional(z.boolean().describe("Include results which include the rekey-to field.")),
+"application-id": z.optional(z.coerce.number().int().describe("Application ID"))
     }).optional()
 
 export type SearchForTransactionsQueryParamsSchema = z.infer<typeof searchForTransactionsQueryParamsSchema>
@@ -48,7 +48,7 @@ export type SearchForTransactionsQueryParamsSchema = z.infer<typeof searchForTra
  */
 export const searchForTransactions200Schema = z.object({
     "current-round": z.number().int().describe("Round at which the results were computed."),
-"next-token": z.string().describe("Used for pagination, when making another request provide this token with the next parameter.").optional(),
+"next-token": z.optional(z.string().describe("Used for pagination, when making another request provide this token with the next parameter.")),
 "transactions": z.array(z.lazy(() => transactionSchema).describe("Contains all fields common to all transactions and serves as an envelope to all transactions type. Represents both regular and inner transactions.\n\nDefinition:\ndata/transactions/signedtxn.go : SignedTxn\ndata/transactions/transaction.go : Transaction\n"))
     })
 
@@ -58,9 +58,9 @@ export type SearchForTransactions200Schema = z.infer<typeof searchForTransaction
  * @description Response for errors
  */
 export const searchForTransactions400Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
@@ -70,14 +70,14 @@ export type SearchForTransactions400Schema = z.infer<typeof searchForTransaction
  * @description Response for errors
  */
 export const searchForTransactions500Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
 export type SearchForTransactions500Schema = z.infer<typeof searchForTransactions500Schema>
 
-export const searchForTransactionsQueryResponseSchema = z.lazy(() => searchForTransactions200Schema)
+export const searchForTransactionsQueryResponseSchema = searchForTransactions200Schema
 
 export type SearchForTransactionsQueryResponseSchema = z.infer<typeof searchForTransactionsQueryResponseSchema>

@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1WalletWealthCreateMutationRequest, V1WalletWealthCreateMutationResponse } from "../types/V1WalletWealthCreate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1WalletWealthCreateMutationKey = () => [{ url: '/v1/wallet/wealth/' }] as const
 
@@ -37,6 +37,16 @@ export async function v1WalletWealthCreate({ data }: { data: V1WalletWealthCreat
   return res.data
 }
 
+export function v1WalletWealthCreateMutationOptions(config: Partial<RequestConfig<V1WalletWealthCreateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1WalletWealthCreateMutationKey()
+  return mutationOptions<V1WalletWealthCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1WalletWealthCreateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ data }) => {
+      return v1WalletWealthCreate({ data }, config)
+    },
+  })
+}
+
 /**
  * {@link /v1/wallet/wealth/}
  */
@@ -50,11 +60,11 @@ export function useV1WalletWealthCreate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1WalletWealthCreateMutationKey()
 
+  const baseOptions = v1WalletWealthCreateMutationOptions(config) as UseMutationOptions<V1WalletWealthCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1WalletWealthCreateMutationRequest}, TContext>
+
   return useMutation<V1WalletWealthCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1WalletWealthCreateMutationRequest}, TContext>({
-    mutationFn: async({ data }) => {
-      return v1WalletWealthCreate({ data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1WalletWealthCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1WalletWealthCreateMutationRequest}, TContext>
 }

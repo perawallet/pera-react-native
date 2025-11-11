@@ -18,9 +18,18 @@
 import type { V1DevicesAssetsRemoveFromFavoritesCreateMutationResponse } from "../types/V1DevicesAssetsRemoveFromFavoritesCreate.ts";
 import { http } from "msw";
 
+export function v1DevicesAssetsRemoveFromFavoritesCreateHandlerResponse201(data: V1DevicesAssetsRemoveFromFavoritesCreateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 201,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1DevicesAssetsRemoveFromFavoritesCreateHandler(data?: V1DevicesAssetsRemoveFromFavoritesCreateMutationResponse | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v1/devices/:device_id/assets/:asset_id/remove-from-favorites/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

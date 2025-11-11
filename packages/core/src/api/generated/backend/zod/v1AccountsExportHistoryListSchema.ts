@@ -24,9 +24,9 @@ export const v1AccountsExportHistoryListPathParamsSchema = z.object({
 export type V1AccountsExportHistoryListPathParamsSchema = z.infer<typeof v1AccountsExportHistoryListPathParamsSchema>
 
 export const v1AccountsExportHistoryListQueryParamsSchema = z.object({
-    "start_date": z.string().optional(),
-"end_date": z.string().optional(),
-"asset_id": z.coerce.number().int().optional()
+    "start_date": z.optional(z.string()),
+"end_date": z.optional(z.string()),
+"asset_id": z.optional(z.coerce.number().int())
     }).optional()
 
 export type V1AccountsExportHistoryListQueryParamsSchema = z.infer<typeof v1AccountsExportHistoryListQueryParamsSchema>
@@ -38,6 +38,6 @@ export const v1AccountsExportHistoryList200Schema = z.unknown()
 
 export type V1AccountsExportHistoryList200Schema = z.infer<typeof v1AccountsExportHistoryList200Schema>
 
-export const v1AccountsExportHistoryListQueryResponseSchema = z.lazy(() => v1AccountsExportHistoryList200Schema)
+export const v1AccountsExportHistoryListQueryResponseSchema = v1AccountsExportHistoryList200Schema
 
 export type V1AccountsExportHistoryListQueryResponseSchema = z.infer<typeof v1AccountsExportHistoryListQueryResponseSchema>

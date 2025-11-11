@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V2DevicesMePartialUpdateMutationRequest, V2DevicesMePartialUpdateMutationResponse, V2DevicesMePartialUpdateHeaderParams } from "../types/V2DevicesMePartialUpdate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v2DevicesMePartialUpdateMutationKey = () => [{ url: '/v2/devices/me/' }] as const
 
@@ -38,6 +38,16 @@ export async function v2DevicesMePartialUpdate({ data, headers }: { data: V2Devi
   return res.data
 }
 
+export function v2DevicesMePartialUpdateMutationOptions(config: Partial<RequestConfig<V2DevicesMePartialUpdateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v2DevicesMePartialUpdateMutationKey()
+  return mutationOptions<V2DevicesMePartialUpdateMutationResponse, ResponseErrorConfig<Error>, {data: V2DevicesMePartialUpdateMutationRequest, headers?: V2DevicesMePartialUpdateHeaderParams}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ data, headers }) => {
+      return v2DevicesMePartialUpdate({ data, headers }, config)
+    },
+  })
+}
+
 /**
  * @description You should set `app_version` with `APP-VERSION` header.
  * {@link /v2/devices/me/}
@@ -52,11 +62,11 @@ export function useV2DevicesMePartialUpdate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v2DevicesMePartialUpdateMutationKey()
 
+  const baseOptions = v2DevicesMePartialUpdateMutationOptions(config) as UseMutationOptions<V2DevicesMePartialUpdateMutationResponse, ResponseErrorConfig<Error>, {data: V2DevicesMePartialUpdateMutationRequest, headers?: V2DevicesMePartialUpdateHeaderParams}, TContext>
+
   return useMutation<V2DevicesMePartialUpdateMutationResponse, ResponseErrorConfig<Error>, {data: V2DevicesMePartialUpdateMutationRequest, headers?: V2DevicesMePartialUpdateHeaderParams}, TContext>({
-    mutationFn: async({ data, headers }) => {
-      return v2DevicesMePartialUpdate({ data, headers }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V2DevicesMePartialUpdateMutationResponse, ResponseErrorConfig<Error>, {data: V2DevicesMePartialUpdateMutationRequest, headers?: V2DevicesMePartialUpdateHeaderParams}, TContext>
 }

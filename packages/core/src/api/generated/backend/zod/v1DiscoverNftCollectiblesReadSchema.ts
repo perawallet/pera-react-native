@@ -24,10 +24,10 @@ export const v1DiscoverNftCollectiblesReadPathParamsSchema = z.object({
 
 export type V1DiscoverNftCollectiblesReadPathParamsSchema = z.infer<typeof v1DiscoverNftCollectiblesReadPathParamsSchema>
 
-export const v1DiscoverNftCollectiblesRead200Schema = z.lazy(() => discoverCollectibleDetailSerializerResponseSchema)
+export const v1DiscoverNftCollectiblesRead200Schema = discoverCollectibleDetailSerializerResponseSchema
 
 export type V1DiscoverNftCollectiblesRead200Schema = z.infer<typeof v1DiscoverNftCollectiblesRead200Schema>
 
-export const v1DiscoverNftCollectiblesReadQueryResponseSchema = z.lazy(() => v1DiscoverNftCollectiblesRead200Schema)
+export const v1DiscoverNftCollectiblesReadQueryResponseSchema = v1DiscoverNftCollectiblesRead200Schema
 
 export type V1DiscoverNftCollectiblesReadQueryResponseSchema = z.infer<typeof v1DiscoverNftCollectiblesReadQueryResponseSchema>

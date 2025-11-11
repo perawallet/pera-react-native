@@ -18,10 +18,10 @@
 import { z } from "zod";
 
 export const cheapestListingSchema = z.object({
-    "id": z.number().int().optional(),
-"provider": z.enum(["randgallery", "algoxnft", "shufl", "exa_market"]).optional(),
-"amount_in_algo": z.string().describe("total amount paid to seller, provider and creator in microalgo").optional(),
-"update_datetime": z.string().optional()
+    "id": z.optional(z.number().int()),
+"provider": z.optional(z.enum(["randgallery", "algoxnft", "shufl", "exa_market"])),
+"amount_in_algo": z.optional(z.string().describe("total amount paid to seller, provider and creator in microalgo")),
+"update_datetime": z.optional(z.string())
     })
 
 export type CheapestListingSchema = z.infer<typeof cheapestListingSchema>

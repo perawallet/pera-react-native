@@ -19,18 +19,18 @@ import { z } from "zod";
 
 export const publicAssetSerializerResponseSchema = z.object({
     "asset_id": z.number().int().min(0).max(9223372036854776000),
-"name": z.string().max(255).optional(),
-"unit_name": z.string().max(255).optional(),
+"name": z.optional(z.string().max(255)),
+"unit_name": z.optional(z.string().max(255)),
 "fraction_decimals": z.number().int().min(0).max(2147483647),
 "total_supply": z.number().int(),
 "total_supply_as_str": z.string().min(1),
-"is_deleted": z.string().optional(),
+"is_deleted": z.optional(z.string()),
 "creator_address": z.string().min(1),
-"url": z.string().max(255).optional(),
-"logo": z.string().url().optional(),
+"url": z.optional(z.string().max(255)),
+"logo": z.optional(z.string().url()),
 "verification_tier": z.enum(["verified", "unverified", "suspicious"]),
-"usd_value": z.string().nullable().nullish(),
-"usd_value_24_hour_ago": z.string().nullable().nullish(),
+"usd_value": z.string().nullish(),
+"usd_value_24_hour_ago": z.string().nullish(),
 "is_collectible": z.boolean()
     })
 

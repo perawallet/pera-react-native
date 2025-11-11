@@ -21,9 +21,9 @@ import { z } from "zod";
 export const deviceV2SerializerRequestSchema = z.object({
     "accounts": z.array(z.lazy(() => deviceAccountV2Schema)),
 "locale": z.enum(["en", "tr", "zh", "de", "es", "ko", "pt", "fr", "ja", "it"]),
-"platform": z.enum(["ios", "android", "web"]).optional(),
-"application": z.enum(["pera", "pera-beta", "fifa"]).optional(),
-"push_token": z.string().max(255).optional()
+"platform": z.optional(z.enum(["ios", "android", "web"])),
+"application": z.optional(z.enum(["pera", "pera-beta", "fifa"])),
+"push_token": z.optional(z.string().max(255))
     })
 
 export type DeviceV2SerializerRequestSchema = z.infer<typeof deviceV2SerializerRequestSchema>

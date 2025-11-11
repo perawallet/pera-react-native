@@ -18,6 +18,6 @@
 import { healthCheckSchema } from "./healthCheckSchema.ts";
 import { z } from "zod";
 
-export const healthCheckResponseSchema = z.lazy(() => healthCheckSchema).describe("A health check response.")
+export const healthCheckResponseSchema = healthCheckSchema.describe("A health check response.")
 
 export type HealthCheckResponseSchema = z.infer<typeof healthCheckResponseSchema>

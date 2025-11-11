@@ -19,14 +19,14 @@ import { responseSchema } from "./responseSchema.ts";
 import { shouldRefreshViewRequestBodySerializerRequestSchema } from "./shouldRefreshViewRequestBodySerializer/requestSchema.ts";
 import { z } from "zod";
 
-export const v1AlgorandIndexerShouldRefreshCreate200Schema = z.lazy(() => responseSchema)
+export const v1AlgorandIndexerShouldRefreshCreate200Schema = responseSchema
 
 export type V1AlgorandIndexerShouldRefreshCreate200Schema = z.infer<typeof v1AlgorandIndexerShouldRefreshCreate200Schema>
 
-export const v1AlgorandIndexerShouldRefreshCreateMutationRequestSchema = z.lazy(() => shouldRefreshViewRequestBodySerializerRequestSchema)
+export const v1AlgorandIndexerShouldRefreshCreateMutationRequestSchema = shouldRefreshViewRequestBodySerializerRequestSchema
 
 export type V1AlgorandIndexerShouldRefreshCreateMutationRequestSchema = z.infer<typeof v1AlgorandIndexerShouldRefreshCreateMutationRequestSchema>
 
-export const v1AlgorandIndexerShouldRefreshCreateMutationResponseSchema = z.lazy(() => v1AlgorandIndexerShouldRefreshCreate200Schema)
+export const v1AlgorandIndexerShouldRefreshCreateMutationResponseSchema = v1AlgorandIndexerShouldRefreshCreate200Schema
 
 export type V1AlgorandIndexerShouldRefreshCreateMutationResponseSchema = z.infer<typeof v1AlgorandIndexerShouldRefreshCreateMutationResponseSchema>

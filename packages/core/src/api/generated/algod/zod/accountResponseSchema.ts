@@ -18,6 +18,6 @@
 import { accountSchema } from "./accountSchema.ts";
 import { z } from "zod";
 
-export const accountResponseSchema = z.lazy(() => accountSchema).describe("Account information at a given round.\n\nDefinition:\ndata/basics/userBalance.go : AccountData\n")
+export const accountResponseSchema = accountSchema.describe("Account information at a given round.\n\nDefinition:\ndata/basics/userBalance.go : AccountData\n")
 
 export type AccountResponseSchema = z.infer<typeof accountResponseSchema>

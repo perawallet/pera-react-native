@@ -31,14 +31,14 @@ export const v1BackupsUpdateHeaderParamsSchema = z.object({
 
 export type V1BackupsUpdateHeaderParamsSchema = z.infer<typeof v1BackupsUpdateHeaderParamsSchema>
 
-export const v1BackupsUpdate200Schema = z.lazy(() => backupRetrieveUpdateDestroySerializerResponseSchema)
+export const v1BackupsUpdate200Schema = backupRetrieveUpdateDestroySerializerResponseSchema
 
 export type V1BackupsUpdate200Schema = z.infer<typeof v1BackupsUpdate200Schema>
 
-export const v1BackupsUpdateMutationRequestSchema = z.lazy(() => backupRetrieveUpdateDestroySerializerRequestSchema)
+export const v1BackupsUpdateMutationRequestSchema = backupRetrieveUpdateDestroySerializerRequestSchema
 
 export type V1BackupsUpdateMutationRequestSchema = z.infer<typeof v1BackupsUpdateMutationRequestSchema>
 
-export const v1BackupsUpdateMutationResponseSchema = z.lazy(() => v1BackupsUpdate200Schema)
+export const v1BackupsUpdateMutationResponseSchema = v1BackupsUpdate200Schema
 
 export type V1BackupsUpdateMutationResponseSchema = z.infer<typeof v1BackupsUpdateMutationResponseSchema>

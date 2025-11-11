@@ -20,9 +20,9 @@ import { z } from "zod";
 export const newsDetailSerializerResponseSchema = z.object({
     "id": z.string().min(1),
 "publishing_datetime": z.string().describe("User will see this datetime. If it is set for the future, it will be published in the future."),
-"banner": z.string().url().optional(),
+"banner": z.optional(z.string().url()),
 "title": z.string().min(1).max(255),
-"content_html": z.string().optional()
+"content_html": z.optional(z.string())
     })
 
 export type NewsDetailSerializerResponseSchema = z.infer<typeof newsDetailSerializerResponseSchema>

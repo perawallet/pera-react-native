@@ -18,6 +18,6 @@
 import { lightBlockHeaderProofSchema } from "./lightBlockHeaderProofSchema.ts";
 import { z } from "zod";
 
-export const lightBlockHeaderProofResponseSchema = z.lazy(() => lightBlockHeaderProofSchema).describe("Proof of membership and position of a light block header.")
+export const lightBlockHeaderProofResponseSchema = lightBlockHeaderProofSchema.describe("Proof of membership and position of a light block header.")
 
 export type LightBlockHeaderProofResponseSchema = z.infer<typeof lightBlockHeaderProofResponseSchema>

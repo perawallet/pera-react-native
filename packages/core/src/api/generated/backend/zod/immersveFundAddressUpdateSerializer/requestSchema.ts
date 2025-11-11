@@ -20,7 +20,7 @@ import { z } from "zod";
 export const immersveFundAddressUpdateSerializerRequestSchema = z.object({
     "address": z.string().min(1).max(255),
 "alpha_2_code": z.string().min(1),
-"is_kyc_passed": z.boolean().optional()
+"is_kyc_passed": z.optional(z.boolean())
     })
 
 export type ImmersveFundAddressUpdateSerializerRequestSchema = z.infer<typeof immersveFundAddressUpdateSerializerRequestSchema>

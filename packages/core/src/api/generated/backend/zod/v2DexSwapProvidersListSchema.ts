@@ -18,10 +18,10 @@
 import { providersV2ResponseSchema } from "./providersV2ResponseSchema.ts";
 import { z } from "zod";
 
-export const v2DexSwapProvidersList200Schema = z.lazy(() => providersV2ResponseSchema)
+export const v2DexSwapProvidersList200Schema = providersV2ResponseSchema
 
 export type V2DexSwapProvidersList200Schema = z.infer<typeof v2DexSwapProvidersList200Schema>
 
-export const v2DexSwapProvidersListQueryResponseSchema = z.lazy(() => v2DexSwapProvidersList200Schema)
+export const v2DexSwapProvidersListQueryResponseSchema = v2DexSwapProvidersList200Schema
 
 export type V2DexSwapProvidersListQueryResponseSchema = z.infer<typeof v2DexSwapProvidersListQueryResponseSchema>

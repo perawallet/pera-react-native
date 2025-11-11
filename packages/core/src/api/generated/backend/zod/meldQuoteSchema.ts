@@ -21,7 +21,7 @@ export const meldQuoteSchema = z.object({
     "service_provider": z.string().min(1),
 "source_amount_with_fees": z.string(),
 "destination_amount": z.string(),
-"exchange_rate_with_fees": z.string().optional(),
+"exchange_rate_with_fees": z.optional(z.string()),
 "customer_score": z.string()
     })
 

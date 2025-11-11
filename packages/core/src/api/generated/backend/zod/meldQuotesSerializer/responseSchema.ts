@@ -19,7 +19,7 @@ import { meldQuoteSchema } from "../meldQuoteSchema.ts";
 import { z } from "zod";
 
 export const meldQuotesSerializerResponseSchema = z.object({
-    "results": z.array(z.lazy(() => meldQuoteSchema)).optional()
+    "results": z.optional(z.array(z.lazy(() => meldQuoteSchema)))
     })
 
 export type MeldQuotesSerializerResponseSchema = z.infer<typeof meldQuotesSerializerResponseSchema>

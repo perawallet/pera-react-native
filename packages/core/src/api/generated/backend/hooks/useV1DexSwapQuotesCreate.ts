@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DexSwapQuotesCreateMutationRequest, V1DexSwapQuotesCreateMutationResponse, V1DexSwapQuotesCreate503 } from "../types/V1DexSwapQuotesCreate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1DexSwapQuotesCreateMutationKey = () => [{ url: '/v1/dex-swap/quotes/' }] as const
 
@@ -39,6 +39,16 @@ export async function v1DexSwapQuotesCreate({ data }: { data: V1DexSwapQuotesCre
   return res.data
 }
 
+export function v1DexSwapQuotesCreateMutationOptions(config: Partial<RequestConfig<V1DexSwapQuotesCreateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1DexSwapQuotesCreateMutationKey()
+  return mutationOptions<V1DexSwapQuotesCreateMutationResponse, ResponseErrorConfig<V1DexSwapQuotesCreate503>, {data: V1DexSwapQuotesCreateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ data }) => {
+      return v1DexSwapQuotesCreate({ data }, config)
+    },
+  })
+}
+
 /**
  * @description `asset_in|out_id` is `0` for Algo.Algo might be returned in the response with `asset_id = 0` just like other assets.
  * @summary Create Quotes
@@ -54,11 +64,11 @@ export function useV1DexSwapQuotesCreate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1DexSwapQuotesCreateMutationKey()
 
+  const baseOptions = v1DexSwapQuotesCreateMutationOptions(config) as UseMutationOptions<V1DexSwapQuotesCreateMutationResponse, ResponseErrorConfig<V1DexSwapQuotesCreate503>, {data: V1DexSwapQuotesCreateMutationRequest}, TContext>
+
   return useMutation<V1DexSwapQuotesCreateMutationResponse, ResponseErrorConfig<V1DexSwapQuotesCreate503>, {data: V1DexSwapQuotesCreateMutationRequest}, TContext>({
-    mutationFn: async({ data }) => {
-      return v1DexSwapQuotesCreate({ data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1DexSwapQuotesCreateMutationResponse, ResponseErrorConfig<V1DexSwapQuotesCreate503>, {data: V1DexSwapQuotesCreateMutationRequest}, TContext>
 }

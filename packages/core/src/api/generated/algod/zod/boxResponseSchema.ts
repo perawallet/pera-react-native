@@ -18,6 +18,6 @@
 import { boxSchema } from "./boxSchema.ts";
 import { z } from "zod";
 
-export const boxResponseSchema = z.lazy(() => boxSchema).describe("Box name and its content.")
+export const boxResponseSchema = boxSchema.describe("Box name and its content.")
 
 export type BoxResponseSchema = z.infer<typeof boxResponseSchema>

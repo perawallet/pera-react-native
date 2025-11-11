@@ -25,20 +25,20 @@ export const v2DevicesNotificationsListPathParamsSchema = z.object({
 export type V2DevicesNotificationsListPathParamsSchema = z.infer<typeof v2DevicesNotificationsListPathParamsSchema>
 
 export const v2DevicesNotificationsListQueryParamsSchema = z.object({
-    "ordering": z.string().describe("Which field to use when ordering the results.").optional(),
-"cursor": z.string().describe("The pagination cursor value.").optional()
+    "ordering": z.optional(z.string().describe("Which field to use when ordering the results.")),
+"cursor": z.optional(z.string().describe("The pagination cursor value."))
     }).optional()
 
 export type V2DevicesNotificationsListQueryParamsSchema = z.infer<typeof v2DevicesNotificationsListQueryParamsSchema>
 
 export const v2DevicesNotificationsList200Schema = z.object({
-    "next": z.string().url().nullable().nullish(),
-"previous": z.string().url().nullable().nullish(),
+    "next": z.string().url().nullish(),
+"previous": z.string().url().nullish(),
 "results": z.array(z.lazy(() => notificationV2WithoutMetadataSerializerResponseSchema))
     })
 
 export type V2DevicesNotificationsList200Schema = z.infer<typeof v2DevicesNotificationsList200Schema>
 
-export const v2DevicesNotificationsListQueryResponseSchema = z.lazy(() => v2DevicesNotificationsList200Schema)
+export const v2DevicesNotificationsListQueryResponseSchema = v2DevicesNotificationsList200Schema
 
 export type V2DevicesNotificationsListQueryResponseSchema = z.infer<typeof v2DevicesNotificationsListQueryResponseSchema>

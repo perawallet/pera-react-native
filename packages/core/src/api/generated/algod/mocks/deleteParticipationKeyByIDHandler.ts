@@ -15,12 +15,55 @@
 * Do not edit manually.
 */
 
-import type { DeleteParticipationKeyByIDMutationResponse } from "../types/DeleteParticipationKeyByID.ts";
+import type { DeleteParticipationKeyByIDMutationResponse, DeleteParticipationKeyByID400, DeleteParticipationKeyByID401, DeleteParticipationKeyByID404, DeleteParticipationKeyByID500 } from "../types/DeleteParticipationKeyByID.ts";
 import { http } from "msw";
 
-export function deleteParticipationKeyByIDHandler(data?: DeleteParticipationKeyByIDMutationResponse | ((
+export function deleteParticipationKeyByIDHandlerResponse200(data?: DeleteParticipationKeyByIDMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+  
+  })
+}
+
+export function deleteParticipationKeyByIDHandlerResponse400(data: DeleteParticipationKeyByID400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function deleteParticipationKeyByIDHandlerResponse401(data: DeleteParticipationKeyByID401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function deleteParticipationKeyByIDHandlerResponse404(data: DeleteParticipationKeyByID404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function deleteParticipationKeyByIDHandlerResponse500(data: DeleteParticipationKeyByID500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function deleteParticipationKeyByIDHandler(data?: string | number | boolean | null | object | ((
         info: Parameters<Parameters<typeof http.delete>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.delete('/v2/participation/:participation-id', function handler(info) {
     if(typeof data === 'function') return data(info)
 

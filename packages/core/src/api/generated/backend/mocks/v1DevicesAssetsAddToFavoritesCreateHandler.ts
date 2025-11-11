@@ -18,9 +18,18 @@
 import type { V1DevicesAssetsAddToFavoritesCreateMutationResponse } from "../types/V1DevicesAssetsAddToFavoritesCreate.ts";
 import { http } from "msw";
 
+export function v1DevicesAssetsAddToFavoritesCreateHandlerResponse201(data: V1DevicesAssetsAddToFavoritesCreateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 201,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1DevicesAssetsAddToFavoritesCreateHandler(data?: V1DevicesAssetsAddToFavoritesCreateMutationResponse | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v1/devices/:device_id/assets/:asset_id/add-to-favorites/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

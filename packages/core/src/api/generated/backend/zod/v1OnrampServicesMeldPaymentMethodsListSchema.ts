@@ -19,16 +19,16 @@ import { meldPaymentMethodsResponseSchema } from "./meldPaymentMethodsResponseSc
 import { z } from "zod";
 
 export const v1OnrampServicesMeldPaymentMethodsListQueryParamsSchema = z.object({
-    "ordering": z.string().describe("Which field to use when ordering the results.").optional(),
-"country": z.string().regex(/^[A-Z]{2}$/).min(1)
+    "ordering": z.optional(z.string().describe("Which field to use when ordering the results.")),
+"country": z.string().regex(/^[A-Z]{2}$/)
     })
 
 export type V1OnrampServicesMeldPaymentMethodsListQueryParamsSchema = z.infer<typeof v1OnrampServicesMeldPaymentMethodsListQueryParamsSchema>
 
-export const v1OnrampServicesMeldPaymentMethodsList200Schema = z.lazy(() => meldPaymentMethodsResponseSchema)
+export const v1OnrampServicesMeldPaymentMethodsList200Schema = meldPaymentMethodsResponseSchema
 
 export type V1OnrampServicesMeldPaymentMethodsList200Schema = z.infer<typeof v1OnrampServicesMeldPaymentMethodsList200Schema>
 
-export const v1OnrampServicesMeldPaymentMethodsListQueryResponseSchema = z.lazy(() => v1OnrampServicesMeldPaymentMethodsList200Schema)
+export const v1OnrampServicesMeldPaymentMethodsListQueryResponseSchema = v1OnrampServicesMeldPaymentMethodsList200Schema
 
 export type V1OnrampServicesMeldPaymentMethodsListQueryResponseSchema = z.infer<typeof v1OnrampServicesMeldPaymentMethodsListQueryResponseSchema>

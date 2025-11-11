@@ -25,10 +25,10 @@ export const lookupAccountAssetsPathParamsSchema = z.object({
 export type LookupAccountAssetsPathParamsSchema = z.infer<typeof lookupAccountAssetsPathParamsSchema>
 
 export const lookupAccountAssetsQueryParamsSchema = z.object({
-    "asset-id": z.coerce.number().int().describe("Asset ID").optional(),
-"include-all": z.boolean().describe("Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.").optional(),
-"limit": z.coerce.number().int().describe("Maximum number of results to return. There could be additional pages even if the limit is not reached.").optional(),
-"next": z.string().describe("The next page of results. Use the next token provided by the previous results.").optional()
+    "asset-id": z.optional(z.coerce.number().int().describe("Asset ID")),
+"include-all": z.optional(z.boolean().describe("Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.")),
+"limit": z.optional(z.coerce.number().int().describe("Maximum number of results to return. There could be additional pages even if the limit is not reached.")),
+"next": z.optional(z.string().describe("The next page of results. Use the next token provided by the previous results."))
     }).optional()
 
 export type LookupAccountAssetsQueryParamsSchema = z.infer<typeof lookupAccountAssetsQueryParamsSchema>
@@ -39,7 +39,7 @@ export type LookupAccountAssetsQueryParamsSchema = z.infer<typeof lookupAccountA
 export const lookupAccountAssets200Schema = z.object({
     "assets": z.array(z.lazy(() => assetHoldingSchema).describe("Describes an asset held by an account.\n\nDefinition:\ndata/basics/userBalance.go : AssetHolding")),
 "current-round": z.number().int().describe("Round at which the results were computed."),
-"next-token": z.string().describe("Used for pagination, when making another request provide this token with the next parameter.").optional()
+"next-token": z.optional(z.string().describe("Used for pagination, when making another request provide this token with the next parameter."))
     })
 
 export type LookupAccountAssets200Schema = z.infer<typeof lookupAccountAssets200Schema>
@@ -48,9 +48,9 @@ export type LookupAccountAssets200Schema = z.infer<typeof lookupAccountAssets200
  * @description Response for errors
  */
 export const lookupAccountAssets400Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
@@ -60,9 +60,9 @@ export type LookupAccountAssets400Schema = z.infer<typeof lookupAccountAssets400
  * @description Response for errors
  */
 export const lookupAccountAssets404Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
@@ -72,14 +72,14 @@ export type LookupAccountAssets404Schema = z.infer<typeof lookupAccountAssets404
  * @description Response for errors
  */
 export const lookupAccountAssets500Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
 export type LookupAccountAssets500Schema = z.infer<typeof lookupAccountAssets500Schema>
 
-export const lookupAccountAssetsQueryResponseSchema = z.lazy(() => lookupAccountAssets200Schema)
+export const lookupAccountAssetsQueryResponseSchema = lookupAccountAssets200Schema
 
 export type LookupAccountAssetsQueryResponseSchema = z.infer<typeof lookupAccountAssetsQueryResponseSchema>

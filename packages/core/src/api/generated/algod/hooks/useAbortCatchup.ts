@@ -18,9 +18,9 @@
 import fetch from "../../../algod-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { AbortCatchupMutationResponse, AbortCatchupPathParams, AbortCatchup400, AbortCatchup401, AbortCatchup500 } from "../types/AbortCatchup.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
 import { abortCatchupMutationResponseSchema } from "../zod/abortCatchupSchema.ts";
-import { useMutation } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const abortCatchupMutationKey = () => [{ url: '/v2/catchup/:catchpoint' }] as const
 
@@ -38,6 +38,16 @@ export async function abortCatchup({ catchpoint }: { catchpoint: AbortCatchupPat
   return abortCatchupMutationResponseSchema.parse(res.data)
 }
 
+export function abortCatchupMutationOptions(config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {
+  const mutationKey = abortCatchupMutationKey()
+  return mutationOptions<AbortCatchupMutationResponse, ResponseErrorConfig<AbortCatchup400 | AbortCatchup401 | AbortCatchup500>, {catchpoint: AbortCatchupPathParams["catchpoint"]}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ catchpoint }) => {
+      return abortCatchup({ catchpoint }, config)
+    },
+  })
+}
+
 /**
  * @description Given a catchpoint, it aborts catching up to this catchpoint
  * @summary Aborts a catchpoint catchup.
@@ -53,11 +63,11 @@ export function useAbortCatchup<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? abortCatchupMutationKey()
 
+  const baseOptions = abortCatchupMutationOptions(config) as UseMutationOptions<AbortCatchupMutationResponse, ResponseErrorConfig<AbortCatchup400 | AbortCatchup401 | AbortCatchup500>, {catchpoint: AbortCatchupPathParams["catchpoint"]}, TContext>
+
   return useMutation<AbortCatchupMutationResponse, ResponseErrorConfig<AbortCatchup400 | AbortCatchup401 | AbortCatchup500>, {catchpoint: AbortCatchupPathParams["catchpoint"]}, TContext>({
-    mutationFn: async({ catchpoint }) => {
-      return abortCatchup({ catchpoint }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<AbortCatchupMutationResponse, ResponseErrorConfig<AbortCatchup400 | AbortCatchup401 | AbortCatchup500>, {catchpoint: AbortCatchupPathParams["catchpoint"]}, TContext>
 }

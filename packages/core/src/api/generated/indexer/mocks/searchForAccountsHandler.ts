@@ -15,12 +15,39 @@
 * Do not edit manually.
 */
 
-import type { SearchForAccountsQueryResponse } from "../types/SearchForAccounts.ts";
+import type { SearchForAccountsQueryResponse, SearchForAccounts400, SearchForAccounts500 } from "../types/SearchForAccounts.ts";
 import { http } from "msw";
+
+export function searchForAccountsHandlerResponse200(data: SearchForAccountsQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function searchForAccountsHandlerResponse400(data: SearchForAccounts400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function searchForAccountsHandlerResponse500(data: SearchForAccounts500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function searchForAccountsHandler(data?: SearchForAccountsQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/accounts', function handler(info) {
     if(typeof data === 'function') return data(info)
 

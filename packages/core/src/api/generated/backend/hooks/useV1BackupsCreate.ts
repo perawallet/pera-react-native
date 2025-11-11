@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1BackupsCreateMutationRequest, V1BackupsCreateMutationResponse } from "../types/V1BackupsCreate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1BackupsCreateMutationKey = () => [{ url: '/v1/backups/' }] as const
 
@@ -39,6 +39,16 @@ export async function v1BackupsCreate({ data }: { data: V1BackupsCreateMutationR
   return res.data
 }
 
+export function v1BackupsCreateMutationOptions(config: Partial<RequestConfig<V1BackupsCreateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1BackupsCreateMutationKey()
+  return mutationOptions<V1BackupsCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1BackupsCreateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ data }) => {
+      return v1BackupsCreate({ data }, config)
+    },
+  })
+}
+
 /**
  * @description Creates a backup object.**Save the returned `modification_key` and keep it safe.You will only be able to update the backup object if you have the `modification_key`.**
  * @summary Backup Create
@@ -54,11 +64,11 @@ export function useV1BackupsCreate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1BackupsCreateMutationKey()
 
+  const baseOptions = v1BackupsCreateMutationOptions(config) as UseMutationOptions<V1BackupsCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1BackupsCreateMutationRequest}, TContext>
+
   return useMutation<V1BackupsCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1BackupsCreateMutationRequest}, TContext>({
-    mutationFn: async({ data }) => {
-      return v1BackupsCreate({ data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1BackupsCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1BackupsCreateMutationRequest}, TContext>
 }

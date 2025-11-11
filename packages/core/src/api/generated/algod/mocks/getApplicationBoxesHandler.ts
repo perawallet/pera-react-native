@@ -15,12 +15,48 @@
 * Do not edit manually.
 */
 
-import type { GetApplicationBoxesQueryResponse } from "../types/GetApplicationBoxes.ts";
+import type { GetApplicationBoxesQueryResponse, GetApplicationBoxes400, GetApplicationBoxes401, GetApplicationBoxes500 } from "../types/GetApplicationBoxes.ts";
 import { http } from "msw";
+
+export function getApplicationBoxesHandlerResponse200(data: GetApplicationBoxesQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getApplicationBoxesHandlerResponse400(data: GetApplicationBoxes400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getApplicationBoxesHandlerResponse401(data: GetApplicationBoxes401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getApplicationBoxesHandlerResponse500(data: GetApplicationBoxes500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function getApplicationBoxesHandler(data?: GetApplicationBoxesQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/applications/:application-id/boxes', function handler(info) {
     if(typeof data === 'function') return data(info)
 

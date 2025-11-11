@@ -19,7 +19,7 @@ import { z } from "zod";
 
 export const triggerNotificationAPIViewSerializerRequestSchema = z.object({
     "recipient_address": z.string().min(1),
-"title": z.string().min(1).max(255).nullable().nullish(),
+"title": z.string().min(1).max(255).nullish(),
 "body": z.string().min(1).max(1000),
 "deeplink": z.string().min(1),
 "image_url": z.string().url().min(1)

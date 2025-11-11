@@ -19,7 +19,7 @@ import { z } from "zod";
 
 export const shouldRefreshViewRequestBodySerializerRequestSchema = z.object({
     "account_addresses": z.array(z.string().min(1)).min(1),
-"last_known_round": z.number().int().optional()
+"last_known_round": z.optional(z.number().int())
     })
 
 export type ShouldRefreshViewRequestBodySerializerRequestSchema = z.infer<typeof shouldRefreshViewRequestBodySerializerRequestSchema>

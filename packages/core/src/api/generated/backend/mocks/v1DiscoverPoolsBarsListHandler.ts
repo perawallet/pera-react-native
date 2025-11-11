@@ -18,9 +18,16 @@
 import type { V1DiscoverPoolsBarsListQueryResponse } from "../types/V1DiscoverPoolsBarsList.ts";
 import { http } from "msw";
 
-export function v1DiscoverPoolsBarsListHandler(data?: V1DiscoverPoolsBarsListQueryResponse | ((
+export function v1DiscoverPoolsBarsListHandlerResponse200(data?: V1DiscoverPoolsBarsListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+  
+  })
+}
+
+export function v1DiscoverPoolsBarsListHandler(data?: string | number | boolean | null | object | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/discover/pools/:pool_id/bars/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

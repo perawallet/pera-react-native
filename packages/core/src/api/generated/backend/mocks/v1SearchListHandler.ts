@@ -18,9 +18,18 @@
 import type { V1SearchListQueryResponse } from "../types/V1SearchList.ts";
 import { http } from "msw";
 
+export function v1SearchListHandlerResponse200(data: V1SearchListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1SearchListHandler(data?: V1SearchListQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/search/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

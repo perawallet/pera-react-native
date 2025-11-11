@@ -15,12 +15,48 @@
 * Do not edit manually.
 */
 
-import type { AccountAssetsInformationQueryResponse } from "../types/AccountAssetsInformation.ts";
+import type { AccountAssetsInformationQueryResponse, AccountAssetsInformation400, AccountAssetsInformation401, AccountAssetsInformation500 } from "../types/AccountAssetsInformation.ts";
 import { http } from "msw";
+
+export function accountAssetsInformationHandlerResponse200(data: AccountAssetsInformationQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function accountAssetsInformationHandlerResponse400(data: AccountAssetsInformation400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function accountAssetsInformationHandlerResponse401(data: AccountAssetsInformation401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function accountAssetsInformationHandlerResponse500(data: AccountAssetsInformation500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function accountAssetsInformationHandler(data?: AccountAssetsInformationQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/accounts/:address/assets', function handler(info) {
     if(typeof data === 'function') return data(info)
 

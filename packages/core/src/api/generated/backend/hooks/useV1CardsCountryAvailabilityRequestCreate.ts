@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1CardsCountryAvailabilityRequestCreateMutationRequest, V1CardsCountryAvailabilityRequestCreateMutationResponse, V1CardsCountryAvailabilityRequestCreate400 } from "../types/V1CardsCountryAvailabilityRequestCreate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1CardsCountryAvailabilityRequestCreateMutationKey = () => [{ url: '/v1/cards/country-availability-request/' }] as const
 
@@ -38,6 +38,16 @@ export async function v1CardsCountryAvailabilityRequestCreate({ data }: { data: 
   return res.data
 }
 
+export function v1CardsCountryAvailabilityRequestCreateMutationOptions(config: Partial<RequestConfig<V1CardsCountryAvailabilityRequestCreateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1CardsCountryAvailabilityRequestCreateMutationKey()
+  return mutationOptions<V1CardsCountryAvailabilityRequestCreateMutationResponse, ResponseErrorConfig<V1CardsCountryAvailabilityRequestCreate400>, {data: V1CardsCountryAvailabilityRequestCreateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ data }) => {
+      return v1CardsCountryAvailabilityRequestCreate({ data }, config)
+    },
+  })
+}
+
 /**
  * @description Creates a new country availability request (waitlist entry).Either 'device' or 'address' must be provided, and 'alpha_2_country_code' is always required.
  * {@link /v1/cards/country-availability-request/}
@@ -52,11 +62,11 @@ export function useV1CardsCountryAvailabilityRequestCreate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1CardsCountryAvailabilityRequestCreateMutationKey()
 
+  const baseOptions = v1CardsCountryAvailabilityRequestCreateMutationOptions(config) as UseMutationOptions<V1CardsCountryAvailabilityRequestCreateMutationResponse, ResponseErrorConfig<V1CardsCountryAvailabilityRequestCreate400>, {data: V1CardsCountryAvailabilityRequestCreateMutationRequest}, TContext>
+
   return useMutation<V1CardsCountryAvailabilityRequestCreateMutationResponse, ResponseErrorConfig<V1CardsCountryAvailabilityRequestCreate400>, {data: V1CardsCountryAvailabilityRequestCreateMutationRequest}, TContext>({
-    mutationFn: async({ data }) => {
-      return v1CardsCountryAvailabilityRequestCreate({ data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1CardsCountryAvailabilityRequestCreateMutationResponse, ResponseErrorConfig<V1CardsCountryAvailabilityRequestCreate400>, {data: V1CardsCountryAvailabilityRequestCreateMutationRequest}, TContext>
 }

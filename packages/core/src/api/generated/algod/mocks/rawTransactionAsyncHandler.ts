@@ -15,12 +15,62 @@
 * Do not edit manually.
 */
 
-import type { RawTransactionAsyncMutationResponse } from "../types/RawTransactionAsync.ts";
+import type { RawTransactionAsyncMutationResponse, RawTransactionAsync400, RawTransactionAsync401, RawTransactionAsync404, RawTransactionAsync500, RawTransactionAsync503 } from "../types/RawTransactionAsync.ts";
 import { http } from "msw";
 
-export function rawTransactionAsyncHandler(data?: RawTransactionAsyncMutationResponse | ((
+export function rawTransactionAsyncHandlerResponse200(data?: RawTransactionAsyncMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+  
+  })
+}
+
+export function rawTransactionAsyncHandlerResponse400(data: RawTransactionAsync400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function rawTransactionAsyncHandlerResponse401(data: RawTransactionAsync401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function rawTransactionAsyncHandlerResponse404(data?: RawTransactionAsync404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+  
+  })
+}
+
+export function rawTransactionAsyncHandlerResponse500(data: RawTransactionAsync500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function rawTransactionAsyncHandlerResponse503(data: RawTransactionAsync503) {
+  return new Response(JSON.stringify(data), {
+    status: 503,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function rawTransactionAsyncHandler(data?: string | number | boolean | null | object | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v2/transactions/async', function handler(info) {
     if(typeof data === 'function') return data(info)
 

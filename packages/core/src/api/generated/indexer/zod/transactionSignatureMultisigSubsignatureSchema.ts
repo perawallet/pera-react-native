@@ -18,8 +18,8 @@
 import { z } from "zod";
 
 export const transactionSignatureMultisigSubsignatureSchema = z.object({
-    "public-key": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[pk\\]").optional(),
-"signature": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[s\\]").optional()
+    "public-key": z.optional(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[pk\\]")),
+"signature": z.optional(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[s\\]"))
     })
 
 export type TransactionSignatureMultisigSubsignatureSchema = z.infer<typeof transactionSignatureMultisigSubsignatureSchema>

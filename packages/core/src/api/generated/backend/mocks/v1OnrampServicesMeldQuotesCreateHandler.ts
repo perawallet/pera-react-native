@@ -15,12 +15,28 @@
 * Do not edit manually.
 */
 
-import type { V1OnrampServicesMeldQuotesCreateMutationResponse } from "../types/V1OnrampServicesMeldQuotesCreate.ts";
+import type { V1OnrampServicesMeldQuotesCreateMutationResponse, V1OnrampServicesMeldQuotesCreate400 } from "../types/V1OnrampServicesMeldQuotesCreate.ts";
 import { http } from "msw";
+
+export function v1OnrampServicesMeldQuotesCreateHandlerResponse201(data: V1OnrampServicesMeldQuotesCreateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 201,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function v1OnrampServicesMeldQuotesCreateHandlerResponse400(data?: V1OnrampServicesMeldQuotesCreate400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+  
+  })
+}
 
 export function v1OnrampServicesMeldQuotesCreateHandler(data?: V1OnrampServicesMeldQuotesCreateMutationResponse | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v1/onramp-services/meld/quotes/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

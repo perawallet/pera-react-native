@@ -15,12 +15,57 @@
 * Do not edit manually.
 */
 
-import type { GetTransactionProofQueryResponse } from "../types/GetTransactionProof.ts";
+import type { GetTransactionProofQueryResponse, GetTransactionProof400, GetTransactionProof401, GetTransactionProof404, GetTransactionProof500 } from "../types/GetTransactionProof.ts";
 import { http } from "msw";
+
+export function getTransactionProofHandlerResponse200(data: GetTransactionProofQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getTransactionProofHandlerResponse400(data: GetTransactionProof400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getTransactionProofHandlerResponse401(data: GetTransactionProof401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getTransactionProofHandlerResponse404(data: GetTransactionProof404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getTransactionProofHandlerResponse500(data: GetTransactionProof500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function getTransactionProofHandler(data?: GetTransactionProofQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/blocks/:round/transactions/:txid/proof', function handler(info) {
     if(typeof data === 'function') return data(info)
 

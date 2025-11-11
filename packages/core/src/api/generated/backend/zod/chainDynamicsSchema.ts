@@ -18,16 +18,16 @@
 import { z } from "zod";
 
 export const chainDynamicsSchema = z.object({
-    "last_round": z.string().optional(),
-"transaction_count": z.string().optional(),
-"transactions_per_second": z.string().optional(),
-"algo_price_change_percentage": z.string().optional(),
-"algo_price_in_usd": z.string().optional(),
-"market_cap_in_usd": z.string().optional(),
-"algo_holders_count": z.string().optional(),
-"algo_circulation_supply": z.string().optional(),
-"online_staked_amount": z.string().optional(),
-"online_accounts_count": z.string().optional()
+    "last_round": z.optional(z.string()),
+"transaction_count": z.optional(z.string()),
+"transactions_per_second": z.optional(z.string()),
+"algo_price_change_percentage": z.optional(z.string()),
+"algo_price_in_usd": z.optional(z.string()),
+"market_cap_in_usd": z.optional(z.string()),
+"algo_holders_count": z.optional(z.string()),
+"algo_circulation_supply": z.optional(z.string()),
+"online_staked_amount": z.optional(z.string()),
+"online_accounts_count": z.optional(z.string())
     })
 
 export type ChainDynamicsSchema = z.infer<typeof chainDynamicsSchema>

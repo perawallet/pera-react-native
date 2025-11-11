@@ -25,23 +25,23 @@ export const v1DiscoverNftCollectionsCollectiblesListPathParamsSchema = z.object
 export type V1DiscoverNftCollectionsCollectiblesListPathParamsSchema = z.infer<typeof v1DiscoverNftCollectionsCollectiblesListPathParamsSchema>
 
 export const v1DiscoverNftCollectionsCollectiblesListQueryParamsSchema = z.object({
-    "q": z.string().describe("A search term.").optional(),
-"ordering": z.string().describe("Which field to use when ordering the results.").optional(),
-"limit": z.coerce.number().int().describe("Number of results to return per page.").optional(),
-"offset": z.coerce.number().int().describe("The initial index from which to return the results.").optional()
+    "q": z.optional(z.string().describe("A search term.")),
+"ordering": z.optional(z.string().describe("Which field to use when ordering the results.")),
+"limit": z.optional(z.coerce.number().int().describe("Number of results to return per page.")),
+"offset": z.optional(z.coerce.number().int().describe("The initial index from which to return the results."))
     }).optional()
 
 export type V1DiscoverNftCollectionsCollectiblesListQueryParamsSchema = z.infer<typeof v1DiscoverNftCollectionsCollectiblesListQueryParamsSchema>
 
 export const v1DiscoverNftCollectionsCollectiblesList200Schema = z.object({
     "count": z.number().int(),
-"next": z.string().url().nullable().nullish(),
-"previous": z.string().url().nullable().nullish(),
+"next": z.string().url().nullish(),
+"previous": z.string().url().nullish(),
 "results": z.array(z.lazy(() => discoverCollectibleListSerializerResponseSchema))
     })
 
 export type V1DiscoverNftCollectionsCollectiblesList200Schema = z.infer<typeof v1DiscoverNftCollectionsCollectiblesList200Schema>
 
-export const v1DiscoverNftCollectionsCollectiblesListQueryResponseSchema = z.lazy(() => v1DiscoverNftCollectionsCollectiblesList200Schema)
+export const v1DiscoverNftCollectionsCollectiblesListQueryResponseSchema = v1DiscoverNftCollectionsCollectiblesList200Schema
 
 export type V1DiscoverNftCollectionsCollectiblesListQueryResponseSchema = z.infer<typeof v1DiscoverNftCollectionsCollectiblesListQueryResponseSchema>

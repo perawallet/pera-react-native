@@ -23,19 +23,19 @@ import { z } from "zod";
  * @description Details about a pending transaction. If the transaction was recently confirmed, includes confirmation details like the round and reward details.
  */
 export const pendingTransactionResponseSchema = z.object({
-    "application-index": z.number().int().describe("The application index if the transaction was found and it created an application.").optional(),
-"asset-closing-amount": z.number().int().describe("The number of the asset's unit that were transferred to the close-to address.").optional(),
-"asset-index": z.number().int().describe("The asset index if the transaction was found and it created an asset.").optional(),
-"close-rewards": z.number().int().describe("Rewards in microalgos applied to the close remainder to account.").optional(),
-"closing-amount": z.number().int().describe("Closing amount for the transaction.").optional(),
-"confirmed-round": z.number().int().describe("The round where this transaction was confirmed, if present.").optional(),
-"global-state-delta": z.lazy(() => stateDeltaSchema).describe("Application state delta.").optional(),
-"inner-txns": z.array(z.lazy(() => pendingTransactionResponseSchema).describe("Details about a pending transaction. If the transaction was recently confirmed, includes confirmation details like the round and reward details.")).describe("Inner transactions produced by application execution.").optional(),
-"local-state-delta": z.array(z.lazy(() => accountStateDeltaSchema).describe("Application state delta.")).describe("Local state key/value changes for the application being executed by this transaction.").optional(),
-"logs": z.array(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/)).describe("Logs for the application being executed by this transaction.").optional(),
+    "application-index": z.optional(z.number().int().describe("The application index if the transaction was found and it created an application.")),
+"asset-closing-amount": z.optional(z.number().int().describe("The number of the asset's unit that were transferred to the close-to address.")),
+"asset-index": z.optional(z.number().int().describe("The asset index if the transaction was found and it created an asset.")),
+"close-rewards": z.optional(z.number().int().describe("Rewards in microalgos applied to the close remainder to account.")),
+"closing-amount": z.optional(z.number().int().describe("Closing amount for the transaction.")),
+"confirmed-round": z.optional(z.number().int().describe("The round where this transaction was confirmed, if present.")),
+"global-state-delta": z.optional(z.lazy(() => stateDeltaSchema).describe("Application state delta.")),
+"inner-txns": z.optional(z.array(z.lazy(() => pendingTransactionResponseSchema).describe("Details about a pending transaction. If the transaction was recently confirmed, includes confirmation details like the round and reward details.")).describe("Inner transactions produced by application execution.")),
+"local-state-delta": z.optional(z.array(z.lazy(() => accountStateDeltaSchema).describe("Application state delta.")).describe("Local state key/value changes for the application being executed by this transaction.")),
+"logs": z.optional(z.array(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/)).describe("Logs for the application being executed by this transaction.")),
 "pool-error": z.string().describe("Indicates that the transaction was kicked out of this node's transaction pool (and specifies why that happened).  An empty string indicates the transaction wasn't kicked out of this node's txpool due to an error.\n"),
-"receiver-rewards": z.number().int().describe("Rewards in microalgos applied to the receiver account.").optional(),
-"sender-rewards": z.number().int().describe("Rewards in microalgos applied to the sender account.").optional(),
+"receiver-rewards": z.optional(z.number().int().describe("Rewards in microalgos applied to the receiver account.")),
+"sender-rewards": z.optional(z.number().int().describe("Rewards in microalgos applied to the sender account.")),
 "txn": z.object({
     
     }).describe("The raw signed transaction.")

@@ -26,7 +26,7 @@ export const getTransactionGroupLedgerStateDeltasForRoundPathParamsSchema = z.ob
 export type GetTransactionGroupLedgerStateDeltasForRoundPathParamsSchema = z.infer<typeof getTransactionGroupLedgerStateDeltasForRoundPathParamsSchema>
 
 export const getTransactionGroupLedgerStateDeltasForRoundQueryParamsSchema = z.object({
-    "format": z.enum(["json", "msgpack"]).describe("Configures whether the response object is JSON or MessagePack encoded. If not provided, defaults to JSON.").optional()
+    "format": z.optional(z.enum(["json", "msgpack"]).describe("Configures whether the response object is JSON or MessagePack encoded. If not provided, defaults to JSON."))
     }).optional()
 
 export type GetTransactionGroupLedgerStateDeltasForRoundQueryParamsSchema = z.infer<typeof getTransactionGroupLedgerStateDeltasForRoundQueryParamsSchema>
@@ -43,35 +43,35 @@ export type GetTransactionGroupLedgerStateDeltasForRound200Schema = z.infer<type
 /**
  * @description Invalid API Token
  */
-export const getTransactionGroupLedgerStateDeltasForRound401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getTransactionGroupLedgerStateDeltasForRound401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetTransactionGroupLedgerStateDeltasForRound401Schema = z.infer<typeof getTransactionGroupLedgerStateDeltasForRound401Schema>
 
 /**
  * @description Could not find deltas for round
  */
-export const getTransactionGroupLedgerStateDeltasForRound404Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getTransactionGroupLedgerStateDeltasForRound404Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetTransactionGroupLedgerStateDeltasForRound404Schema = z.infer<typeof getTransactionGroupLedgerStateDeltasForRound404Schema>
 
 /**
  * @description timed out on request
  */
-export const getTransactionGroupLedgerStateDeltasForRound408Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getTransactionGroupLedgerStateDeltasForRound408Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetTransactionGroupLedgerStateDeltasForRound408Schema = z.infer<typeof getTransactionGroupLedgerStateDeltasForRound408Schema>
 
 /**
  * @description Internal Error
  */
-export const getTransactionGroupLedgerStateDeltasForRound500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getTransactionGroupLedgerStateDeltasForRound500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetTransactionGroupLedgerStateDeltasForRound500Schema = z.infer<typeof getTransactionGroupLedgerStateDeltasForRound500Schema>
 
 /**
  * @description Not Implemented
  */
-export const getTransactionGroupLedgerStateDeltasForRound501Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getTransactionGroupLedgerStateDeltasForRound501Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetTransactionGroupLedgerStateDeltasForRound501Schema = z.infer<typeof getTransactionGroupLedgerStateDeltasForRound501Schema>
 
@@ -82,6 +82,6 @@ export const getTransactionGroupLedgerStateDeltasForRoundErrorSchema = z.unknown
 
 export type GetTransactionGroupLedgerStateDeltasForRoundErrorSchema = z.infer<typeof getTransactionGroupLedgerStateDeltasForRoundErrorSchema>
 
-export const getTransactionGroupLedgerStateDeltasForRoundQueryResponseSchema = z.lazy(() => getTransactionGroupLedgerStateDeltasForRound200Schema)
+export const getTransactionGroupLedgerStateDeltasForRoundQueryResponseSchema = getTransactionGroupLedgerStateDeltasForRound200Schema
 
 export type GetTransactionGroupLedgerStateDeltasForRoundQueryResponseSchema = z.infer<typeof getTransactionGroupLedgerStateDeltasForRoundQueryResponseSchema>

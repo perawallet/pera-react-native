@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1OnrampServicesMeldWidgetsCreateMutationRequest, V1OnrampServicesMeldWidgetsCreateMutationResponse } from "../types/V1OnrampServicesMeldWidgetsCreate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1OnrampServicesMeldWidgetsCreateMutationKey = () => [{ url: '/v1/onramp-services/meld/widgets/' }] as const
 
@@ -39,6 +39,16 @@ export async function v1OnrampServicesMeldWidgetsCreate({ data }: { data: V1Onra
   return res.data
 }
 
+export function v1OnrampServicesMeldWidgetsCreateMutationOptions(config: Partial<RequestConfig<V1OnrampServicesMeldWidgetsCreateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1OnrampServicesMeldWidgetsCreateMutationKey()
+  return mutationOptions<V1OnrampServicesMeldWidgetsCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1OnrampServicesMeldWidgetsCreateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ data }) => {
+      return v1OnrampServicesMeldWidgetsCreate({ data }, config)
+    },
+  })
+}
+
 /**
  * @description Creates and returns the details of a widget that is used to complete the payment.
  * @summary Meld Widgets View
@@ -54,11 +64,11 @@ export function useV1OnrampServicesMeldWidgetsCreate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1OnrampServicesMeldWidgetsCreateMutationKey()
 
+  const baseOptions = v1OnrampServicesMeldWidgetsCreateMutationOptions(config) as UseMutationOptions<V1OnrampServicesMeldWidgetsCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1OnrampServicesMeldWidgetsCreateMutationRequest}, TContext>
+
   return useMutation<V1OnrampServicesMeldWidgetsCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1OnrampServicesMeldWidgetsCreateMutationRequest}, TContext>({
-    mutationFn: async({ data }) => {
-      return v1OnrampServicesMeldWidgetsCreate({ data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1OnrampServicesMeldWidgetsCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1OnrampServicesMeldWidgetsCreateMutationRequest}, TContext>
 }

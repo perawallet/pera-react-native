@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DiscoverLuckySpinClaimCreateMutationRequest, V1DiscoverLuckySpinClaimCreateMutationResponse } from "../types/V1DiscoverLuckySpinClaimCreate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1DiscoverLuckySpinClaimCreateMutationKey = () => [{ url: '/v1/discover/lucky-spin/claim/' }] as const
 
@@ -38,6 +38,16 @@ export async function v1DiscoverLuckySpinClaimCreate({ data }: { data: V1Discove
   return res.data
 }
 
+export function v1DiscoverLuckySpinClaimCreateMutationOptions(config: Partial<RequestConfig<V1DiscoverLuckySpinClaimCreateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1DiscoverLuckySpinClaimCreateMutationKey()
+  return mutationOptions<V1DiscoverLuckySpinClaimCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1DiscoverLuckySpinClaimCreateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ data }) => {
+      return v1DiscoverLuckySpinClaimCreate({ data }, config)
+    },
+  })
+}
+
 /**
  * @description Step 2: Lucky Spin Claim PhaseVerifies commitment transaction and returns prize transactions if user won.
  * {@link /v1/discover/lucky-spin/claim/}
@@ -52,11 +62,11 @@ export function useV1DiscoverLuckySpinClaimCreate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1DiscoverLuckySpinClaimCreateMutationKey()
 
+  const baseOptions = v1DiscoverLuckySpinClaimCreateMutationOptions(config) as UseMutationOptions<V1DiscoverLuckySpinClaimCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1DiscoverLuckySpinClaimCreateMutationRequest}, TContext>
+
   return useMutation<V1DiscoverLuckySpinClaimCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1DiscoverLuckySpinClaimCreateMutationRequest}, TContext>({
-    mutationFn: async({ data }) => {
-      return v1DiscoverLuckySpinClaimCreate({ data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1DiscoverLuckySpinClaimCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1DiscoverLuckySpinClaimCreateMutationRequest}, TContext>
 }

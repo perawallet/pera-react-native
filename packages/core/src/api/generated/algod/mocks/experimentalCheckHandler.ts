@@ -15,12 +15,26 @@
 * Do not edit manually.
 */
 
-import type { ExperimentalCheckQueryResponse } from "../types/ExperimentalCheck.ts";
+import type { ExperimentalCheckQueryResponse, ExperimentalCheck404 } from "../types/ExperimentalCheck.ts";
 import { http } from "msw";
 
-export function experimentalCheckHandler(data?: ExperimentalCheckQueryResponse | ((
+export function experimentalCheckHandlerResponse200(data?: ExperimentalCheckQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+  
+  })
+}
+
+export function experimentalCheckHandlerResponse404(data?: ExperimentalCheck404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+  
+  })
+}
+
+export function experimentalCheckHandler(data?: string | number | boolean | null | object | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/experimental', function handler(info) {
     if(typeof data === 'function') return data(info)
 

@@ -18,7 +18,7 @@
 import { z } from "zod";
 
 export const traitSchema = z.object({
-    "display_name": z.string().min(1).optional(),
+    "display_name": z.optional(z.string().min(1)),
 "display_value": z.string().min(1)
     })
 

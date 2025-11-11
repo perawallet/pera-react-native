@@ -18,9 +18,18 @@
 import type { V1AssetVerificationsReadQueryResponse } from "../types/V1AssetVerificationsRead.ts";
 import { http } from "msw";
 
+export function v1AssetVerificationsReadHandlerResponse200(data: V1AssetVerificationsReadQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1AssetVerificationsReadHandler(data?: V1AssetVerificationsReadQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/asset-verifications/:asset_id/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

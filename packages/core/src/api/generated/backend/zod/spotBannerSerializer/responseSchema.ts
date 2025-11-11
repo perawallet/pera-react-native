@@ -18,11 +18,11 @@
 import { z } from "zod";
 
 export const spotBannerSerializerResponseSchema = z.object({
-    "id": z.number().int().optional(),
-"text": z.string().min(1).optional(),
-"image": z.string().url().optional(),
-"url": z.string().min(1).optional(),
-"button_url_is_external": z.boolean().describe("link to be opened in the phones native browser instead of within the Pera Browser").optional()
+    "id": z.optional(z.number().int()),
+"text": z.optional(z.string().min(1)),
+"image": z.optional(z.string().url()),
+"url": z.optional(z.string().min(1)),
+"button_url_is_external": z.optional(z.boolean().describe("link to be opened in the phones native browser instead of within the Pera Browser"))
     })
 
 export type SpotBannerSerializerResponseSchema = z.infer<typeof spotBannerSerializerResponseSchema>

@@ -18,6 +18,6 @@
 import { assetSchema } from "./assetSchema.ts";
 import { z } from "zod";
 
-export const assetResponseSchema = z.lazy(() => assetSchema).describe("Specifies both the unique identifier and the parameters for an asset")
+export const assetResponseSchema = assetSchema.describe("Specifies both the unique identifier and the parameters for an asset")
 
 export type AssetResponseSchema = z.infer<typeof assetResponseSchema>

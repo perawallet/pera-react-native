@@ -21,7 +21,7 @@ import { z } from "zod";
 export const boxesResponseSchema = z.object({
     "application-id": z.number().int().describe("\\[appidx\\] application index."),
 "boxes": z.array(z.lazy(() => boxDescriptorSchema).describe("Box descriptor describes an app box without a value.")),
-"next-token": z.string().describe("Used for pagination, when making another request provide this token with the next parameter.").optional()
+"next-token": z.optional(z.string().describe("Used for pagination, when making another request provide this token with the next parameter."))
     })
 
 export type BoxesResponseSchema = z.infer<typeof boxesResponseSchema>

@@ -24,17 +24,17 @@ import { z } from "zod";
  * @description DryrunTxnResult contains any LogicSig or ApplicationCall program debug information and state updates from a dryrun.
  */
 export const dryrunTxnResultSchema = z.object({
-    "app-call-messages": z.array(z.string()).optional(),
-"app-call-trace": z.array(z.lazy(() => dryrunStateSchema).describe("Stores the TEAL eval step data")).optional(),
-"budget-added": z.number().int().describe("Budget added during execution of app call transaction.").optional(),
-"budget-consumed": z.number().int().describe("Budget consumed during execution of app call transaction.").optional(),
+    "app-call-messages": z.optional(z.array(z.string())),
+"app-call-trace": z.optional(z.array(z.lazy(() => dryrunStateSchema).describe("Stores the TEAL eval step data"))),
+"budget-added": z.optional(z.number().int().describe("Budget added during execution of app call transaction.")),
+"budget-consumed": z.optional(z.number().int().describe("Budget consumed during execution of app call transaction.")),
 "disassembly": z.array(z.string()).describe("Disassembled program line by line."),
-"global-delta": z.lazy(() => stateDeltaSchema).describe("Application state delta.").optional(),
-"local-deltas": z.array(z.lazy(() => accountStateDeltaSchema).describe("Application state delta.")).optional(),
-"logic-sig-disassembly": z.array(z.string()).describe("Disassembled lsig program line by line.").optional(),
-"logic-sig-messages": z.array(z.string()).optional(),
-"logic-sig-trace": z.array(z.lazy(() => dryrunStateSchema).describe("Stores the TEAL eval step data")).optional(),
-"logs": z.array(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/)).optional()
+"global-delta": z.optional(z.lazy(() => stateDeltaSchema).describe("Application state delta.")),
+"local-deltas": z.optional(z.array(z.lazy(() => accountStateDeltaSchema).describe("Application state delta."))),
+"logic-sig-disassembly": z.optional(z.array(z.string()).describe("Disassembled lsig program line by line.")),
+"logic-sig-messages": z.optional(z.array(z.string())),
+"logic-sig-trace": z.optional(z.array(z.lazy(() => dryrunStateSchema).describe("Stores the TEAL eval step data"))),
+"logs": z.optional(z.array(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/)))
     }).describe("DryrunTxnResult contains any LogicSig or ApplicationCall program debug information and state updates from a dryrun.")
 
 export type DryrunTxnResultSchema = z.infer<typeof dryrunTxnResultSchema>

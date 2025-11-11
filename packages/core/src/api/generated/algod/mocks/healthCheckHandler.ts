@@ -18,9 +18,16 @@
 import type { HealthCheckQueryResponse } from "../types/HealthCheck.ts";
 import { http } from "msw";
 
-export function healthCheckHandler(data?: HealthCheckQueryResponse | ((
+export function healthCheckHandlerResponse200(data?: HealthCheckQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+  
+  })
+}
+
+export function healthCheckHandler(data?: string | number | boolean | null | object | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/health', function handler(info) {
     if(typeof data === 'function') return data(info)
 

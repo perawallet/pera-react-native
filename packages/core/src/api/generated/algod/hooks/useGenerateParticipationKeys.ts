@@ -18,9 +18,9 @@
 import fetch from "../../../algod-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { GenerateParticipationKeysMutationResponse, GenerateParticipationKeysPathParams, GenerateParticipationKeysQueryParams, GenerateParticipationKeys400, GenerateParticipationKeys401, GenerateParticipationKeys500, GenerateParticipationKeys503 } from "../types/GenerateParticipationKeys.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
 import { generateParticipationKeysMutationResponseSchema } from "../zod/generateParticipationKeysSchema.ts";
-import { useMutation } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const generateParticipationKeysMutationKey = () => [{ url: '/v2/participation/generate/:address' }] as const
 
@@ -37,6 +37,16 @@ export async function generateParticipationKeys({ address, params }: { address: 
   return generateParticipationKeysMutationResponseSchema.parse(res.data)
 }
 
+export function generateParticipationKeysMutationOptions(config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {
+  const mutationKey = generateParticipationKeysMutationKey()
+  return mutationOptions<GenerateParticipationKeysMutationResponse, ResponseErrorConfig<GenerateParticipationKeys400 | GenerateParticipationKeys401 | GenerateParticipationKeys500 | GenerateParticipationKeys503>, {address: GenerateParticipationKeysPathParams["address"], params: GenerateParticipationKeysQueryParams}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ address, params }) => {
+      return generateParticipationKeys({ address, params }, config)
+    },
+  })
+}
+
 /**
  * @summary Generate and install participation keys to the node.
  * {@link /v2/participation/generate/:address}
@@ -51,11 +61,11 @@ export function useGenerateParticipationKeys<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? generateParticipationKeysMutationKey()
 
+  const baseOptions = generateParticipationKeysMutationOptions(config) as UseMutationOptions<GenerateParticipationKeysMutationResponse, ResponseErrorConfig<GenerateParticipationKeys400 | GenerateParticipationKeys401 | GenerateParticipationKeys500 | GenerateParticipationKeys503>, {address: GenerateParticipationKeysPathParams["address"], params: GenerateParticipationKeysQueryParams}, TContext>
+
   return useMutation<GenerateParticipationKeysMutationResponse, ResponseErrorConfig<GenerateParticipationKeys400 | GenerateParticipationKeys401 | GenerateParticipationKeys500 | GenerateParticipationKeys503>, {address: GenerateParticipationKeysPathParams["address"], params: GenerateParticipationKeysQueryParams}, TContext>({
-    mutationFn: async({ address, params }) => {
-      return generateParticipationKeys({ address, params }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<GenerateParticipationKeysMutationResponse, ResponseErrorConfig<GenerateParticipationKeys400 | GenerateParticipationKeys401 | GenerateParticipationKeys500 | GenerateParticipationKeys503>, {address: GenerateParticipationKeysPathParams["address"], params: GenerateParticipationKeysQueryParams}, TContext>
 }

@@ -18,6 +18,6 @@
 import { ledgerStateDeltaSchema } from "./ledgerStateDeltaSchema.ts";
 import { z } from "zod";
 
-export const ledgerStateDeltaForTransactionGroupResponseSchema = z.lazy(() => ledgerStateDeltaSchema).describe("Ledger StateDelta object")
+export const ledgerStateDeltaForTransactionGroupResponseSchema = ledgerStateDeltaSchema.describe("Ledger StateDelta object")
 
 export type LedgerStateDeltaForTransactionGroupResponseSchema = z.infer<typeof ledgerStateDeltaForTransactionGroupResponseSchema>

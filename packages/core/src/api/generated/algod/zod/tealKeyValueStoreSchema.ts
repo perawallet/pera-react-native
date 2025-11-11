@@ -21,6 +21,6 @@ import { z } from "zod";
 /**
  * @description Represents a key-value store for use in an application.
  */
-export const tealKeyValueStoreSchema = z.array(z.lazy(() => tealKeyValueSchema).describe("Represents a key-value pair in an application store.")).describe("Represents a key-value store for use in an application.")
+export const tealKeyValueStoreSchema = z.array(tealKeyValueSchema.describe("Represents a key-value pair in an application store.")).describe("Represents a key-value store for use in an application.")
 
 export type TealKeyValueStoreSchema = z.infer<typeof tealKeyValueStoreSchema>

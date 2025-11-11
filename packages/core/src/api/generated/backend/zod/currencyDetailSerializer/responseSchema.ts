@@ -18,13 +18,13 @@
 import { z } from "zod";
 
 export const currencyDetailSerializerResponseSchema = z.object({
-    "generated_at": z.string().optional(),
+    "generated_at": z.optional(z.string()),
 "currency_id": z.string().min(1).max(255),
 "name": z.string().min(1).max(255),
 "symbol": z.string().min(1).max(255),
-"exchange_price": z.string().min(1).optional(),
-"last_updated_at": z.string().min(1).optional(),
-"usd_value": z.string().optional()
+"exchange_price": z.optional(z.string().min(1)),
+"last_updated_at": z.optional(z.string().min(1)),
+"usd_value": z.optional(z.string())
     })
 
 export type CurrencyDetailSerializerResponseSchema = z.infer<typeof currencyDetailSerializerResponseSchema>

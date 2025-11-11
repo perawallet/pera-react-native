@@ -22,10 +22,10 @@ export const deviceV2MergeSerializerResponseSchema = z.object({
     "id": z.string().min(1),
 "accounts": z.array(z.lazy(() => deviceAccountV2Schema)),
 "locale": z.enum(["en", "tr", "zh", "de", "es", "ko", "pt", "fr", "ja", "it"]),
-"platform": z.enum(["ios", "android", "web"]).optional(),
-"application": z.enum(["pera", "pera-beta", "fifa"]).optional(),
-"push_token": z.string().max(255).optional(),
-"app_version": z.string().min(1).optional()
+"platform": z.optional(z.enum(["ios", "android", "web"])),
+"application": z.optional(z.enum(["pera", "pera-beta", "fifa"])),
+"push_token": z.optional(z.string().max(255)),
+"app_version": z.optional(z.string().min(1))
     })
 
 export type DeviceV2MergeSerializerResponseSchema = z.infer<typeof deviceV2MergeSerializerResponseSchema>

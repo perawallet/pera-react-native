@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V2DexSwapQuotesCreateMutationRequest, V2DexSwapQuotesCreateMutationResponse, V2DexSwapQuotesCreate503 } from "../types/V2DexSwapQuotesCreate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v2DexSwapQuotesCreateMutationKey = () => [{ url: '/v2/dex-swap/quotes/' }] as const
 
@@ -39,6 +39,16 @@ export async function v2DexSwapQuotesCreate({ data }: { data: V2DexSwapQuotesCre
   return res.data
 }
 
+export function v2DexSwapQuotesCreateMutationOptions(config: Partial<RequestConfig<V2DexSwapQuotesCreateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v2DexSwapQuotesCreateMutationKey()
+  return mutationOptions<V2DexSwapQuotesCreateMutationResponse, ResponseErrorConfig<V2DexSwapQuotesCreate503>, {data: V2DexSwapQuotesCreateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ data }) => {
+      return v2DexSwapQuotesCreate({ data }, config)
+    },
+  })
+}
+
 /**
  * @description Returns all valid quotes from compatible providers for user selection.
  * @summary Create Quotes v2
@@ -54,11 +64,11 @@ export function useV2DexSwapQuotesCreate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v2DexSwapQuotesCreateMutationKey()
 
+  const baseOptions = v2DexSwapQuotesCreateMutationOptions(config) as UseMutationOptions<V2DexSwapQuotesCreateMutationResponse, ResponseErrorConfig<V2DexSwapQuotesCreate503>, {data: V2DexSwapQuotesCreateMutationRequest}, TContext>
+
   return useMutation<V2DexSwapQuotesCreateMutationResponse, ResponseErrorConfig<V2DexSwapQuotesCreate503>, {data: V2DexSwapQuotesCreateMutationRequest}, TContext>({
-    mutationFn: async({ data }) => {
-      return v2DexSwapQuotesCreate({ data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V2DexSwapQuotesCreateMutationResponse, ResponseErrorConfig<V2DexSwapQuotesCreate503>, {data: V2DexSwapQuotesCreateMutationRequest}, TContext>
 }

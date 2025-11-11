@@ -18,9 +18,18 @@
 import type { GetDebugSettingsProfQueryResponse } from "../types/GetDebugSettingsProf.ts";
 import { http } from "msw";
 
+export function getDebugSettingsProfHandlerResponse200(data: GetDebugSettingsProfQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function getDebugSettingsProfHandler(data?: GetDebugSettingsProfQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/debug/settings/pprof', function handler(info) {
     if(typeof data === 'function') return data(info)
 

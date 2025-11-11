@@ -23,12 +23,12 @@ export const genesisAllocationSchema = z.object({
 "state": z.object({
     "algo": z.number().int(),
 "onl": z.number().int(),
-"sel": z.string().optional(),
-"stprf": z.string().optional(),
-"vote": z.string().optional(),
-"voteFst": z.number().int().optional(),
-"voteKD": z.number().int().optional(),
-"voteLst": z.number().int().optional()
+"sel": z.optional(z.string()),
+"stprf": z.optional(z.string()),
+"vote": z.optional(z.string()),
+"voteFst": z.optional(z.number().int()),
+"voteKD": z.optional(z.number().int()),
+"voteLst": z.optional(z.number().int())
     })
     })
 

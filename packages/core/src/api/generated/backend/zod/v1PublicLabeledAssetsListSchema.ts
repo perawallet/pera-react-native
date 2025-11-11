@@ -19,15 +19,15 @@ import { publicSimpleAssetSerializerResponseSchema } from "./publicSimpleAssetSe
 import { z } from "zod";
 
 export const v1PublicLabeledAssetsListQueryParamsSchema = z.object({
-    "ordering": z.string().describe("Which field to use when ordering the results.").optional()
+    "ordering": z.optional(z.string().describe("Which field to use when ordering the results."))
     }).optional()
 
 export type V1PublicLabeledAssetsListQueryParamsSchema = z.infer<typeof v1PublicLabeledAssetsListQueryParamsSchema>
 
-export const v1PublicLabeledAssetsList200Schema = z.array(z.lazy(() => publicSimpleAssetSerializerResponseSchema))
+export const v1PublicLabeledAssetsList200Schema = z.array(publicSimpleAssetSerializerResponseSchema)
 
 export type V1PublicLabeledAssetsList200Schema = z.infer<typeof v1PublicLabeledAssetsList200Schema>
 
-export const v1PublicLabeledAssetsListQueryResponseSchema = z.lazy(() => v1PublicLabeledAssetsList200Schema)
+export const v1PublicLabeledAssetsListQueryResponseSchema = v1PublicLabeledAssetsList200Schema
 
 export type V1PublicLabeledAssetsListQueryResponseSchema = z.infer<typeof v1PublicLabeledAssetsListQueryResponseSchema>

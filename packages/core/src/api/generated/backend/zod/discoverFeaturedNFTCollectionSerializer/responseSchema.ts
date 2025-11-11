@@ -19,7 +19,7 @@ import { discoverNFTCollectionSchema } from "../discoverNFTCollectionSchema.ts";
 import { z } from "zod";
 
 export const discoverFeaturedNFTCollectionSerializerResponseSchema = z.object({
-    "id": z.number().int().optional(),
+    "id": z.optional(z.number().int()),
 "collection": z.lazy(() => discoverNFTCollectionSchema)
     })
 

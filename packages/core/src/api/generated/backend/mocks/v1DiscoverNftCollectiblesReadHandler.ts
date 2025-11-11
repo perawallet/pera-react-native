@@ -18,9 +18,18 @@
 import type { V1DiscoverNftCollectiblesReadQueryResponse } from "../types/V1DiscoverNftCollectiblesRead.ts";
 import { http } from "msw";
 
+export function v1DiscoverNftCollectiblesReadHandlerResponse200(data: V1DiscoverNftCollectiblesReadQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1DiscoverNftCollectiblesReadHandler(data?: V1DiscoverNftCollectiblesReadQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/discover/nft/collectibles/:asset_id/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

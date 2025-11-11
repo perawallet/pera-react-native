@@ -18,10 +18,10 @@
 import { assetSerializerResponseSchema } from "./assetSerializer/responseSchema.ts";
 import { z } from "zod";
 
-export const v1DiscoverAssetsList200Schema = z.array(z.lazy(() => assetSerializerResponseSchema))
+export const v1DiscoverAssetsList200Schema = z.array(assetSerializerResponseSchema)
 
 export type V1DiscoverAssetsList200Schema = z.infer<typeof v1DiscoverAssetsList200Schema>
 
-export const v1DiscoverAssetsListQueryResponseSchema = z.lazy(() => v1DiscoverAssetsList200Schema)
+export const v1DiscoverAssetsListQueryResponseSchema = v1DiscoverAssetsList200Schema
 
 export type V1DiscoverAssetsListQueryResponseSchema = z.infer<typeof v1DiscoverAssetsListQueryResponseSchema>

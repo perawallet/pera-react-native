@@ -19,7 +19,7 @@ import { wealthDataPointSchema } from "../wealthDataPointSchema.ts";
 import { z } from "zod";
 
 export const wealthHistoryResponseSerializerResponseSchema = z.object({
-    "results": z.array(z.lazy(() => wealthDataPointSchema)).optional()
+    "results": z.optional(z.array(z.lazy(() => wealthDataPointSchema)))
     })
 
 export type WealthHistoryResponseSerializerResponseSchema = z.infer<typeof wealthHistoryResponseSerializerResponseSchema>

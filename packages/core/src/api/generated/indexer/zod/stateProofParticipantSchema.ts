@@ -19,8 +19,8 @@ import { stateProofVerifierSchema } from "./stateProofVerifierSchema.ts";
 import { z } from "zod";
 
 export const stateProofParticipantSchema = z.object({
-    "verifier": z.lazy(() => stateProofVerifierSchema).optional(),
-"weight": z.number().int().describe("\\[w\\]").optional()
+    "verifier": z.optional(z.lazy(() => stateProofVerifierSchema)),
+"weight": z.optional(z.number().int().describe("\\[w\\]"))
     })
 
 export type StateProofParticipantSchema = z.infer<typeof stateProofParticipantSchema>

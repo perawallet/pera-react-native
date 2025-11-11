@@ -18,6 +18,6 @@
 import { participationKeySchema } from "./participationKeySchema.ts";
 import { z } from "zod";
 
-export const participationKeysResponseSchema = z.array(z.lazy(() => participationKeySchema).describe("Represents a participation key used by the node."))
+export const participationKeysResponseSchema = z.array(participationKeySchema.describe("Represents a participation key used by the node."))
 
 export type ParticipationKeysResponseSchema = z.infer<typeof participationKeysResponseSchema>

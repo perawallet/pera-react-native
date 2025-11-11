@@ -19,13 +19,13 @@ import { meldTransactionStatusResponseSchema } from "./meldTransactionStatusResp
 import { z } from "zod";
 
 export const v1OnrampServicesMeldTransactionStatusListQueryParamsSchema = z.object({
-    "ordering": z.string().describe("Which field to use when ordering the results.").optional(),
+    "ordering": z.optional(z.string().describe("Which field to use when ordering the results.")),
 "external_session_id": z.string().min(1)
     })
 
 export type V1OnrampServicesMeldTransactionStatusListQueryParamsSchema = z.infer<typeof v1OnrampServicesMeldTransactionStatusListQueryParamsSchema>
 
-export const v1OnrampServicesMeldTransactionStatusList200Schema = z.lazy(() => meldTransactionStatusResponseSchema)
+export const v1OnrampServicesMeldTransactionStatusList200Schema = meldTransactionStatusResponseSchema
 
 export type V1OnrampServicesMeldTransactionStatusList200Schema = z.infer<typeof v1OnrampServicesMeldTransactionStatusList200Schema>
 
@@ -36,6 +36,6 @@ export const v1OnrampServicesMeldTransactionStatusList400Schema = z.unknown()
 
 export type V1OnrampServicesMeldTransactionStatusList400Schema = z.infer<typeof v1OnrampServicesMeldTransactionStatusList400Schema>
 
-export const v1OnrampServicesMeldTransactionStatusListQueryResponseSchema = z.lazy(() => v1OnrampServicesMeldTransactionStatusList200Schema)
+export const v1OnrampServicesMeldTransactionStatusListQueryResponseSchema = v1OnrampServicesMeldTransactionStatusList200Schema
 
 export type V1OnrampServicesMeldTransactionStatusListQueryResponseSchema = z.infer<typeof v1OnrampServicesMeldTransactionStatusListQueryResponseSchema>

@@ -25,21 +25,21 @@ export const v1AccountsNonCollectibleAssetsListPathParamsSchema = z.object({
 export type V1AccountsNonCollectibleAssetsListPathParamsSchema = z.infer<typeof v1AccountsNonCollectibleAssetsListPathParamsSchema>
 
 export const v1AccountsNonCollectibleAssetsListQueryParamsSchema = z.object({
-    "ordering": z.string().describe("Which field to use when ordering the results.").optional(),
-"cursor": z.string().describe("The pagination cursor value.").optional(),
-"limit": z.coerce.number().int().describe("Number of results to return per page.").optional()
+    "ordering": z.optional(z.string().describe("Which field to use when ordering the results.")),
+"cursor": z.optional(z.string().describe("The pagination cursor value.")),
+"limit": z.optional(z.coerce.number().int().describe("Number of results to return per page."))
     }).optional()
 
 export type V1AccountsNonCollectibleAssetsListQueryParamsSchema = z.infer<typeof v1AccountsNonCollectibleAssetsListQueryParamsSchema>
 
 export const v1AccountsNonCollectibleAssetsList200Schema = z.object({
-    "next": z.string().url().nullable().nullish(),
-"previous": z.string().url().nullable().nullish(),
+    "next": z.string().url().nullish(),
+"previous": z.string().url().nullish(),
 "results": z.array(z.lazy(() => accountDetailNonCollectibleAssetSerializerResponseSchema))
     })
 
 export type V1AccountsNonCollectibleAssetsList200Schema = z.infer<typeof v1AccountsNonCollectibleAssetsList200Schema>
 
-export const v1AccountsNonCollectibleAssetsListQueryResponseSchema = z.lazy(() => v1AccountsNonCollectibleAssetsList200Schema)
+export const v1AccountsNonCollectibleAssetsListQueryResponseSchema = v1AccountsNonCollectibleAssetsList200Schema
 
 export type V1AccountsNonCollectibleAssetsListQueryResponseSchema = z.infer<typeof v1AccountsNonCollectibleAssetsListQueryResponseSchema>

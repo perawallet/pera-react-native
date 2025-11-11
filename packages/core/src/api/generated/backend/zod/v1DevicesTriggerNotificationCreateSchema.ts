@@ -19,14 +19,14 @@ import { triggerNotificationAPIViewSerializerRequestSchema } from "./triggerNoti
 import { triggerNotificationAPIViewSerializerResponseSchema } from "./triggerNotificationAPIViewSerializer/responseSchema.ts";
 import { z } from "zod";
 
-export const v1DevicesTriggerNotificationCreate201Schema = z.lazy(() => triggerNotificationAPIViewSerializerResponseSchema)
+export const v1DevicesTriggerNotificationCreate201Schema = triggerNotificationAPIViewSerializerResponseSchema
 
 export type V1DevicesTriggerNotificationCreate201Schema = z.infer<typeof v1DevicesTriggerNotificationCreate201Schema>
 
-export const v1DevicesTriggerNotificationCreateMutationRequestSchema = z.lazy(() => triggerNotificationAPIViewSerializerRequestSchema)
+export const v1DevicesTriggerNotificationCreateMutationRequestSchema = triggerNotificationAPIViewSerializerRequestSchema
 
 export type V1DevicesTriggerNotificationCreateMutationRequestSchema = z.infer<typeof v1DevicesTriggerNotificationCreateMutationRequestSchema>
 
-export const v1DevicesTriggerNotificationCreateMutationResponseSchema = z.lazy(() => v1DevicesTriggerNotificationCreate201Schema)
+export const v1DevicesTriggerNotificationCreateMutationResponseSchema = v1DevicesTriggerNotificationCreate201Schema
 
 export type V1DevicesTriggerNotificationCreateMutationResponseSchema = z.infer<typeof v1DevicesTriggerNotificationCreateMutationResponseSchema>

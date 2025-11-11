@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V2AssetsToggleFavoriteCreateMutationRequest, V2AssetsToggleFavoriteCreateMutationResponse, V2AssetsToggleFavoriteCreatePathParams } from "../types/V2AssetsToggleFavoriteCreate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v2AssetsToggleFavoriteCreateMutationKey = () => [{ url: '/v2/assets/:asset_id/toggle-favorite/' }] as const
 
@@ -39,6 +39,16 @@ export async function v2AssetsToggleFavoriteCreate({ asset_id, data }: { asset_i
   return res.data
 }
 
+export function v2AssetsToggleFavoriteCreateMutationOptions(config: Partial<RequestConfig<V2AssetsToggleFavoriteCreateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v2AssetsToggleFavoriteCreateMutationKey()
+  return mutationOptions<V2AssetsToggleFavoriteCreateMutationResponse, ResponseErrorConfig<Error>, {asset_id: V2AssetsToggleFavoriteCreatePathParams["asset_id"], data: V2AssetsToggleFavoriteCreateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ asset_id, data }) => {
+      return v2AssetsToggleFavoriteCreate({ asset_id, data }, config)
+    },
+  })
+}
+
 /**
  * @description This endpoint sets the favorite status of an asset for the specified device.The client must explicitly specify whether to enable or disable the favorite status.POST /v2/assets/{asset_id}/toggle-favorite/
  * @summary Toggle Asset Favorite Status
@@ -54,11 +64,11 @@ export function useV2AssetsToggleFavoriteCreate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v2AssetsToggleFavoriteCreateMutationKey()
 
+  const baseOptions = v2AssetsToggleFavoriteCreateMutationOptions(config) as UseMutationOptions<V2AssetsToggleFavoriteCreateMutationResponse, ResponseErrorConfig<Error>, {asset_id: V2AssetsToggleFavoriteCreatePathParams["asset_id"], data: V2AssetsToggleFavoriteCreateMutationRequest}, TContext>
+
   return useMutation<V2AssetsToggleFavoriteCreateMutationResponse, ResponseErrorConfig<Error>, {asset_id: V2AssetsToggleFavoriteCreatePathParams["asset_id"], data: V2AssetsToggleFavoriteCreateMutationRequest}, TContext>({
-    mutationFn: async({ asset_id, data }) => {
-      return v2AssetsToggleFavoriteCreate({ asset_id, data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V2AssetsToggleFavoriteCreateMutationResponse, ResponseErrorConfig<Error>, {asset_id: V2AssetsToggleFavoriteCreatePathParams["asset_id"], data: V2AssetsToggleFavoriteCreateMutationRequest}, TContext>
 }

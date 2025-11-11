@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DevicesSpotBannersClosePartialUpdateMutationRequest, V1DevicesSpotBannersClosePartialUpdateMutationResponse, V1DevicesSpotBannersClosePartialUpdatePathParams } from "../types/V1DevicesSpotBannersClosePartialUpdate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1DevicesSpotBannersClosePartialUpdateMutationKey = () => [{ url: '/v1/devices/:device_id/spot-banners/:spot_banner_id/close/' }] as const
 
@@ -37,6 +37,16 @@ export async function v1DevicesSpotBannersClosePartialUpdate({ device_id, spot_b
   return res.data
 }
 
+export function v1DevicesSpotBannersClosePartialUpdateMutationOptions(config: Partial<RequestConfig<V1DevicesSpotBannersClosePartialUpdateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1DevicesSpotBannersClosePartialUpdateMutationKey()
+  return mutationOptions<V1DevicesSpotBannersClosePartialUpdateMutationResponse, ResponseErrorConfig<Error>, {device_id: V1DevicesSpotBannersClosePartialUpdatePathParams["device_id"], spot_banner_id: V1DevicesSpotBannersClosePartialUpdatePathParams["spot_banner_id"], data?: V1DevicesSpotBannersClosePartialUpdateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ device_id, spot_banner_id, data }) => {
+      return v1DevicesSpotBannersClosePartialUpdate({ device_id, spot_banner_id, data }, config)
+    },
+  })
+}
+
 /**
  * {@link /v1/devices/:device_id/spot-banners/:spot_banner_id/close/}
  */
@@ -50,11 +60,11 @@ export function useV1DevicesSpotBannersClosePartialUpdate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1DevicesSpotBannersClosePartialUpdateMutationKey()
 
+  const baseOptions = v1DevicesSpotBannersClosePartialUpdateMutationOptions(config) as UseMutationOptions<V1DevicesSpotBannersClosePartialUpdateMutationResponse, ResponseErrorConfig<Error>, {device_id: V1DevicesSpotBannersClosePartialUpdatePathParams["device_id"], spot_banner_id: V1DevicesSpotBannersClosePartialUpdatePathParams["spot_banner_id"], data?: V1DevicesSpotBannersClosePartialUpdateMutationRequest}, TContext>
+
   return useMutation<V1DevicesSpotBannersClosePartialUpdateMutationResponse, ResponseErrorConfig<Error>, {device_id: V1DevicesSpotBannersClosePartialUpdatePathParams["device_id"], spot_banner_id: V1DevicesSpotBannersClosePartialUpdatePathParams["spot_banner_id"], data?: V1DevicesSpotBannersClosePartialUpdateMutationRequest}, TContext>({
-    mutationFn: async({ device_id, spot_banner_id, data }) => {
-      return v1DevicesSpotBannersClosePartialUpdate({ device_id, spot_banner_id, data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1DevicesSpotBannersClosePartialUpdateMutationResponse, ResponseErrorConfig<Error>, {device_id: V1DevicesSpotBannersClosePartialUpdatePathParams["device_id"], spot_banner_id: V1DevicesSpotBannersClosePartialUpdatePathParams["spot_banner_id"], data?: V1DevicesSpotBannersClosePartialUpdateMutationRequest}, TContext>
 }

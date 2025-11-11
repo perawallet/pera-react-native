@@ -18,10 +18,10 @@
 import { topGainerAssetListSerializerResponseSchema } from "./topGainerAssetListSerializer/responseSchema.ts";
 import { z } from "zod";
 
-export const v1DiscoverAssetsTopGainersList200Schema = z.array(z.lazy(() => topGainerAssetListSerializerResponseSchema))
+export const v1DiscoverAssetsTopGainersList200Schema = z.array(topGainerAssetListSerializerResponseSchema)
 
 export type V1DiscoverAssetsTopGainersList200Schema = z.infer<typeof v1DiscoverAssetsTopGainersList200Schema>
 
-export const v1DiscoverAssetsTopGainersListQueryResponseSchema = z.lazy(() => v1DiscoverAssetsTopGainersList200Schema)
+export const v1DiscoverAssetsTopGainersListQueryResponseSchema = v1DiscoverAssetsTopGainersList200Schema
 
 export type V1DiscoverAssetsTopGainersListQueryResponseSchema = z.infer<typeof v1DiscoverAssetsTopGainersListQueryResponseSchema>

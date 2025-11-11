@@ -18,9 +18,18 @@
 import type { V1DevicesAccountsUpdateMutationResponse } from "../types/V1DevicesAccountsUpdate.ts";
 import { http } from "msw";
 
+export function v1DevicesAccountsUpdateHandlerResponse200(data: V1DevicesAccountsUpdateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1DevicesAccountsUpdateHandler(data?: V1DevicesAccountsUpdateMutationResponse | ((
         info: Parameters<Parameters<typeof http.put>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.put('/v1/devices/:device_id/accounts/:address/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

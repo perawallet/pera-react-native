@@ -18,10 +18,10 @@
 import { ASAInboxListSchema } from "./ASAInboxListSchema.ts";
 import { z } from "zod";
 
-export const v1AsaInboxesRequestsList200Schema = z.lazy(() => ASAInboxListSchema)
+export const v1AsaInboxesRequestsList200Schema = ASAInboxListSchema
 
 export type V1AsaInboxesRequestsList200Schema = z.infer<typeof v1AsaInboxesRequestsList200Schema>
 
-export const v1AsaInboxesRequestsListQueryResponseSchema = z.lazy(() => v1AsaInboxesRequestsList200Schema)
+export const v1AsaInboxesRequestsListQueryResponseSchema = v1AsaInboxesRequestsList200Schema
 
 export type V1AsaInboxesRequestsListQueryResponseSchema = z.infer<typeof v1AsaInboxesRequestsListQueryResponseSchema>

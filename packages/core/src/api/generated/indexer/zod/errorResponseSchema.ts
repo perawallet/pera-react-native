@@ -18,9 +18,9 @@
 import { z } from "zod";
 
 export const errorResponseSchema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 

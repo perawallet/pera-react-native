@@ -21,7 +21,7 @@ import { z } from "zod";
 export const assetsResponseSchema = z.object({
     "assets": z.array(z.lazy(() => assetSchema).describe("Specifies both the unique identifier and the parameters for an asset")),
 "current-round": z.number().int().describe("Round at which the results were computed."),
-"next-token": z.string().describe("Used for pagination, when making another request provide this token with the next parameter.").optional()
+"next-token": z.optional(z.string().describe("Used for pagination, when making another request provide this token with the next parameter."))
     })
 
 export type AssetsResponseSchema = z.infer<typeof assetsResponseSchema>

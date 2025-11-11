@@ -18,9 +18,16 @@
 import type { V2DevicesMeDeleteMutationResponse } from "../types/V2DevicesMeDelete.ts";
 import { http } from "msw";
 
-export function v2DevicesMeDeleteHandler(data?: V2DevicesMeDeleteMutationResponse | ((
+export function v2DevicesMeDeleteHandlerResponse204(data?: V2DevicesMeDeleteMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 204,
+  
+  })
+}
+
+export function v2DevicesMeDeleteHandler(data?: string | number | boolean | null | object | ((
         info: Parameters<Parameters<typeof http.delete>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.delete('/v2/devices/me/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

@@ -30,28 +30,28 @@ export type GetSyncRound200Schema = z.infer<typeof getSyncRound200Schema>
 /**
  * @description Sync round not set.
  */
-export const getSyncRound400Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getSyncRound400Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetSyncRound400Schema = z.infer<typeof getSyncRound400Schema>
 
 /**
  * @description Invalid API Token
  */
-export const getSyncRound401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getSyncRound401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetSyncRound401Schema = z.infer<typeof getSyncRound401Schema>
 
 /**
  * @description Internal Error
  */
-export const getSyncRound500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getSyncRound500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetSyncRound500Schema = z.infer<typeof getSyncRound500Schema>
 
 /**
  * @description Service Temporarily Unavailable
  */
-export const getSyncRound503Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getSyncRound503Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetSyncRound503Schema = z.infer<typeof getSyncRound503Schema>
 
@@ -62,6 +62,6 @@ export const getSyncRoundErrorSchema = z.unknown()
 
 export type GetSyncRoundErrorSchema = z.infer<typeof getSyncRoundErrorSchema>
 
-export const getSyncRoundQueryResponseSchema = z.lazy(() => getSyncRound200Schema)
+export const getSyncRoundQueryResponseSchema = getSyncRound200Schema
 
 export type GetSyncRoundQueryResponseSchema = z.infer<typeof getSyncRoundQueryResponseSchema>

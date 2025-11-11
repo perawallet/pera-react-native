@@ -19,27 +19,27 @@ import { assetSerializerResponseSchema } from "./assetSerializer/responseSchema.
 import { z } from "zod";
 
 export const v1AssetsListQueryParamsSchema = z.object({
-    "has_collectible": z.string().optional(),
-"q": z.string().optional(),
-"available_on_discover_mobile": z.string().optional(),
-"asset_ids": z.string().optional(),
-"status": z.string().optional(),
-"include_deleted": z.string().optional(),
-"ordering": z.string().describe("Which field to use when ordering the results.").optional(),
-"cursor": z.string().describe("The pagination cursor value.").optional(),
-"limit": z.coerce.number().int().describe("Number of results to return per page.").optional()
+    "has_collectible": z.optional(z.string()),
+"q": z.optional(z.string()),
+"available_on_discover_mobile": z.optional(z.string()),
+"asset_ids": z.optional(z.string()),
+"status": z.optional(z.string()),
+"include_deleted": z.optional(z.string()),
+"ordering": z.optional(z.string().describe("Which field to use when ordering the results.")),
+"cursor": z.optional(z.string().describe("The pagination cursor value.")),
+"limit": z.optional(z.coerce.number().int().describe("Number of results to return per page."))
     }).optional()
 
 export type V1AssetsListQueryParamsSchema = z.infer<typeof v1AssetsListQueryParamsSchema>
 
 export const v1AssetsList200Schema = z.object({
-    "next": z.string().url().nullable().nullish(),
-"previous": z.string().url().nullable().nullish(),
+    "next": z.string().url().nullish(),
+"previous": z.string().url().nullish(),
 "results": z.array(z.lazy(() => assetSerializerResponseSchema))
     })
 
 export type V1AssetsList200Schema = z.infer<typeof v1AssetsList200Schema>
 
-export const v1AssetsListQueryResponseSchema = z.lazy(() => v1AssetsList200Schema)
+export const v1AssetsListQueryResponseSchema = v1AssetsList200Schema
 
 export type V1AssetsListQueryResponseSchema = z.infer<typeof v1AssetsListQueryResponseSchema>

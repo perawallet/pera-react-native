@@ -24,10 +24,10 @@ export const v1DevicesNotificationStatusListPathParamsSchema = z.object({
 
 export type V1DevicesNotificationStatusListPathParamsSchema = z.infer<typeof v1DevicesNotificationStatusListPathParamsSchema>
 
-export const v1DevicesNotificationStatusList200Schema = z.lazy(() => deviceNotificationStatusSerializerResponseSchema)
+export const v1DevicesNotificationStatusList200Schema = deviceNotificationStatusSerializerResponseSchema
 
 export type V1DevicesNotificationStatusList200Schema = z.infer<typeof v1DevicesNotificationStatusList200Schema>
 
-export const v1DevicesNotificationStatusListQueryResponseSchema = z.lazy(() => v1DevicesNotificationStatusList200Schema)
+export const v1DevicesNotificationStatusListQueryResponseSchema = v1DevicesNotificationStatusList200Schema
 
 export type V1DevicesNotificationStatusListQueryResponseSchema = z.infer<typeof v1DevicesNotificationStatusListQueryResponseSchema>

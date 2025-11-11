@@ -18,9 +18,9 @@
 import fetch from "../../../algod-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { UnsetSyncRoundMutationResponse, UnsetSyncRound400, UnsetSyncRound401, UnsetSyncRound500, UnsetSyncRound503 } from "../types/UnsetSyncRound.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
 import { unsetSyncRoundMutationResponseSchema } from "../zod/unsetSyncRoundSchema.ts";
-import { useMutation } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const unsetSyncRoundMutationKey = () => [{ url: '/v2/ledger/sync' }] as const
 
@@ -38,6 +38,16 @@ export async function unsetSyncRound(config: Partial<RequestConfig> & { client?:
   return unsetSyncRoundMutationResponseSchema.parse(res.data)
 }
 
+export function unsetSyncRoundMutationOptions(config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {
+  const mutationKey = unsetSyncRoundMutationKey()
+  return mutationOptions<UnsetSyncRoundMutationResponse, ResponseErrorConfig<UnsetSyncRound400 | UnsetSyncRound401 | UnsetSyncRound500 | UnsetSyncRound503>, void, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async() => {
+      return unsetSyncRound(config)
+    },
+  })
+}
+
 /**
  * @description Unset the ledger sync round.
  * @summary Removes minimum sync round restriction from the ledger.
@@ -53,11 +63,11 @@ export function useUnsetSyncRound<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? unsetSyncRoundMutationKey()
 
+  const baseOptions = unsetSyncRoundMutationOptions(config) as UseMutationOptions<UnsetSyncRoundMutationResponse, ResponseErrorConfig<UnsetSyncRound400 | UnsetSyncRound401 | UnsetSyncRound500 | UnsetSyncRound503>, void, TContext>
+
   return useMutation<UnsetSyncRoundMutationResponse, ResponseErrorConfig<UnsetSyncRound400 | UnsetSyncRound401 | UnsetSyncRound500 | UnsetSyncRound503>, void, TContext>({
-    mutationFn: async() => {
-      return unsetSyncRound(config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<UnsetSyncRoundMutationResponse, ResponseErrorConfig<UnsetSyncRound400 | UnsetSyncRound401 | UnsetSyncRound500 | UnsetSyncRound503>, void, TContext>
 }

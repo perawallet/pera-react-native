@@ -22,7 +22,7 @@ import { z } from "zod";
  */
 export const accountParticipationSchema = z.object({
     "selection-participation-key": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("Selection public key (if any) currently registered for this round."),
-"state-proof-key": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("Root of the state proof key (if any)").optional(),
+"state-proof-key": z.optional(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("Root of the state proof key (if any)")),
 "vote-first-valid": z.number().int().describe("First round for which this participation is valid."),
 "vote-key-dilution": z.number().int().describe("Number of subkeys in each batch of participation keys."),
 "vote-last-valid": z.number().int().describe("Last round for which this participation is valid."),

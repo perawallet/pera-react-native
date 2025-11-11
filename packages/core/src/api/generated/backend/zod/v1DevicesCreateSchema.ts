@@ -19,14 +19,14 @@ import { deviceSerializerRequestSchema } from "./deviceSerializer/requestSchema.
 import { deviceSerializerResponseSchema } from "./deviceSerializer/responseSchema.ts";
 import { z } from "zod";
 
-export const v1DevicesCreate201Schema = z.lazy(() => deviceSerializerResponseSchema)
+export const v1DevicesCreate201Schema = deviceSerializerResponseSchema
 
 export type V1DevicesCreate201Schema = z.infer<typeof v1DevicesCreate201Schema>
 
-export const v1DevicesCreateMutationRequestSchema = z.lazy(() => deviceSerializerRequestSchema)
+export const v1DevicesCreateMutationRequestSchema = deviceSerializerRequestSchema
 
 export type V1DevicesCreateMutationRequestSchema = z.infer<typeof v1DevicesCreateMutationRequestSchema>
 
-export const v1DevicesCreateMutationResponseSchema = z.lazy(() => v1DevicesCreate201Schema)
+export const v1DevicesCreateMutationResponseSchema = v1DevicesCreate201Schema
 
 export type V1DevicesCreateMutationResponseSchema = z.infer<typeof v1DevicesCreateMutationResponseSchema>

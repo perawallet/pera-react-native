@@ -19,16 +19,16 @@ import { assetLabelSchema } from "../assetLabelSchema.ts";
 import { z } from "zod";
 
 export const topGainerAssetListSerializerResponseSchema = z.object({
-    "asset_id": z.number().int().optional(),
-"name": z.string().min(1).optional(),
-"unit_name": z.string().min(1).optional(),
+    "asset_id": z.optional(z.number().int()),
+"name": z.optional(z.string().min(1)),
+"unit_name": z.optional(z.string().min(1)),
 "verification_tier": z.enum(["verified", "unverified", "suspicious"]),
-"logo": z.string().url().optional(),
-"usd_value": z.string().optional(),
-"usd_value_change_percent_for_last_24_hours": z.number().optional(),
-"volume_for_last_24_hours": z.string().optional(),
-"labels": z.array(z.lazy(() => assetLabelSchema)).optional(),
-"market_cap": z.string().optional()
+"logo": z.optional(z.string().url()),
+"usd_value": z.optional(z.string()),
+"usd_value_change_percent_for_last_24_hours": z.optional(z.number()),
+"volume_for_last_24_hours": z.optional(z.string()),
+"labels": z.optional(z.array(z.lazy(() => assetLabelSchema))),
+"market_cap": z.optional(z.string())
     })
 
 export type TopGainerAssetListSerializerResponseSchema = z.infer<typeof topGainerAssetListSerializerResponseSchema>

@@ -18,7 +18,7 @@
 import { z } from "zod";
 
 export const updateDeviceLastSeenNotificationSerializerRequestSchema = z.object({
-    "last_seen_notification_id": z.number().int().min(-9223372036854776000).max(9223372036854776000).nullable().nullish()
+    "last_seen_notification_id": z.number().int().min(-9223372036854776000).max(9223372036854776000).nullish()
     })
 
 export type UpdateDeviceLastSeenNotificationSerializerRequestSchema = z.infer<typeof updateDeviceLastSeenNotificationSerializerRequestSchema>

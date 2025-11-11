@@ -34,35 +34,35 @@ export type GetApplicationBoxByNameQueryParamsSchema = z.infer<typeof getApplica
 /**
  * @description Box information
  */
-export const getApplicationBoxByName200Schema = z.lazy(() => boxSchema).describe("Box name and its content.")
+export const getApplicationBoxByName200Schema = boxSchema.describe("Box name and its content.")
 
 export type GetApplicationBoxByName200Schema = z.infer<typeof getApplicationBoxByName200Schema>
 
 /**
  * @description Bad Request
  */
-export const getApplicationBoxByName400Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getApplicationBoxByName400Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetApplicationBoxByName400Schema = z.infer<typeof getApplicationBoxByName400Schema>
 
 /**
  * @description Invalid API Token
  */
-export const getApplicationBoxByName401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getApplicationBoxByName401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetApplicationBoxByName401Schema = z.infer<typeof getApplicationBoxByName401Schema>
 
 /**
  * @description Box Not Found
  */
-export const getApplicationBoxByName404Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getApplicationBoxByName404Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetApplicationBoxByName404Schema = z.infer<typeof getApplicationBoxByName404Schema>
 
 /**
  * @description Internal Error
  */
-export const getApplicationBoxByName500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getApplicationBoxByName500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetApplicationBoxByName500Schema = z.infer<typeof getApplicationBoxByName500Schema>
 
@@ -73,6 +73,6 @@ export const getApplicationBoxByNameErrorSchema = z.unknown()
 
 export type GetApplicationBoxByNameErrorSchema = z.infer<typeof getApplicationBoxByNameErrorSchema>
 
-export const getApplicationBoxByNameQueryResponseSchema = z.lazy(() => getApplicationBoxByName200Schema)
+export const getApplicationBoxByNameQueryResponseSchema = getApplicationBoxByName200Schema
 
 export type GetApplicationBoxByNameQueryResponseSchema = z.infer<typeof getApplicationBoxByNameQueryResponseSchema>

@@ -19,7 +19,7 @@ import { createQuotesV2ViewSchema } from "./createQuotesV2ViewSchema.ts";
 import { createQuoteV2SerializerRequestSchema } from "./createQuoteV2Serializer/requestSchema.ts";
 import { z } from "zod";
 
-export const v2DexSwapQuotesCreate201Schema = z.lazy(() => createQuotesV2ViewSchema)
+export const v2DexSwapQuotesCreate201Schema = createQuotesV2ViewSchema
 
 export type V2DexSwapQuotesCreate201Schema = z.infer<typeof v2DexSwapQuotesCreate201Schema>
 
@@ -30,10 +30,10 @@ export const v2DexSwapQuotesCreate503Schema = z.unknown()
 
 export type V2DexSwapQuotesCreate503Schema = z.infer<typeof v2DexSwapQuotesCreate503Schema>
 
-export const v2DexSwapQuotesCreateMutationRequestSchema = z.lazy(() => createQuoteV2SerializerRequestSchema)
+export const v2DexSwapQuotesCreateMutationRequestSchema = createQuoteV2SerializerRequestSchema
 
 export type V2DexSwapQuotesCreateMutationRequestSchema = z.infer<typeof v2DexSwapQuotesCreateMutationRequestSchema>
 
-export const v2DexSwapQuotesCreateMutationResponseSchema = z.lazy(() => v2DexSwapQuotesCreate201Schema)
+export const v2DexSwapQuotesCreateMutationResponseSchema = v2DexSwapQuotesCreate201Schema
 
 export type V2DexSwapQuotesCreateMutationResponseSchema = z.infer<typeof v2DexSwapQuotesCreateMutationResponseSchema>

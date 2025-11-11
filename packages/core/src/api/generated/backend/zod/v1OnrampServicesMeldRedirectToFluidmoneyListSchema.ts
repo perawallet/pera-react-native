@@ -21,6 +21,6 @@ export const v1OnrampServicesMeldRedirectToFluidmoneyList200Schema = z.unknown()
 
 export type V1OnrampServicesMeldRedirectToFluidmoneyList200Schema = z.infer<typeof v1OnrampServicesMeldRedirectToFluidmoneyList200Schema>
 
-export const v1OnrampServicesMeldRedirectToFluidmoneyListQueryResponseSchema = z.lazy(() => v1OnrampServicesMeldRedirectToFluidmoneyList200Schema)
+export const v1OnrampServicesMeldRedirectToFluidmoneyListQueryResponseSchema = v1OnrampServicesMeldRedirectToFluidmoneyList200Schema
 
 export type V1OnrampServicesMeldRedirectToFluidmoneyListQueryResponseSchema = z.infer<typeof v1OnrampServicesMeldRedirectToFluidmoneyListQueryResponseSchema>

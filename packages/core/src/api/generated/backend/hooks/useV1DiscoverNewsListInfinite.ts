@@ -37,16 +37,16 @@ export async function v1DiscoverNewsListInfinite({ params }: { params?: V1Discov
 
 export function v1DiscoverNewsListInfiniteQueryOptions({ params }: { params?: V1DiscoverNewsListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {
   const queryKey = v1DiscoverNewsListInfiniteQueryKey(params)
-  return infiniteQueryOptions<V1DiscoverNewsListQueryResponse, ResponseErrorConfig<Error>, V1DiscoverNewsListQueryResponse, typeof queryKey, number>({
+  return infiniteQueryOptions<V1DiscoverNewsListQueryResponse, ResponseErrorConfig<Error>, InfiniteData<V1DiscoverNewsListQueryResponse>, typeof queryKey, NonNullable<V1DiscoverNewsListQueryParams['cursor']>>({
  
    queryKey,
    queryFn: async ({ signal, pageParam }) => {
       config.signal = signal
     
-      if (!params) {
-       params = { }
-      }
-      params['cursor'] = pageParam as unknown as V1DiscoverNewsListQueryParams['cursor']
+      params = {
+        ...(params ?? {}),
+        ['cursor']: pageParam as unknown as V1DiscoverNewsListQueryParams['cursor'],
+      } as V1DiscoverNewsListQueryParams
       return v1DiscoverNewsListInfinite({ params }, config)
    },
    initialPageParam: "",
@@ -58,9 +58,9 @@ export function v1DiscoverNewsListInfiniteQueryOptions({ params }: { params?: V1
 /**
  * {@link /v1/discover/news/}
  */
-export function useV1DiscoverNewsListInfinite<TData = InfiniteData<V1DiscoverNewsListQueryResponse>, TQueryData = V1DiscoverNewsListQueryResponse, TQueryKey extends QueryKey = V1DiscoverNewsListInfiniteQueryKey>({ params }: { params?: V1DiscoverNewsListQueryParams }, options: 
+export function useV1DiscoverNewsListInfinite<TQueryFnData = V1DiscoverNewsListQueryResponse, TError = ResponseErrorConfig<Error>, TData = InfiniteData<TQueryFnData>, TQueryKey extends QueryKey = V1DiscoverNewsListInfiniteQueryKey, TPageParam = NonNullable<V1DiscoverNewsListQueryParams['cursor']>>({ params }: { params?: V1DiscoverNewsListQueryParams }, options: 
 {
-  query?: Partial<InfiniteQueryObserverOptions<V1DiscoverNewsListQueryResponse, ResponseErrorConfig<Error>, TQueryData, TQueryKey, TQueryData>> & { client?: QueryClient },
+  query?: Partial<InfiniteQueryObserverOptions<TQueryFnData, TError, TData, TQueryKey, TPageParam>> & { client?: QueryClient },
   client?: Partial<RequestConfig> & { client?: typeof fetch }
 }
  = {}) {
@@ -72,7 +72,7 @@ export function useV1DiscoverNewsListInfinite<TData = InfiniteData<V1DiscoverNew
    ...v1DiscoverNewsListInfiniteQueryOptions({ params }, config),
    queryKey,
    ...queryOptions
-  } as unknown as InfiniteQueryObserverOptions, queryClient) as UseInfiniteQueryResult<TData, ResponseErrorConfig<Error>> & { queryKey: TQueryKey }
+  } as unknown as InfiniteQueryObserverOptions<TQueryFnData, TError, TData, TQueryKey, TPageParam>, queryClient) as UseInfiniteQueryResult<TData, TError> & { queryKey: TQueryKey }
 
   query.queryKey = queryKey as TQueryKey
 

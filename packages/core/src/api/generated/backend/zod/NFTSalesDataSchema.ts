@@ -20,7 +20,7 @@ import { z } from "zod";
 
 export const NFTSalesDataSchema = z.object({
     "datetime": z.string(),
-"sales": z.array(z.lazy(() => NFTSaleDataSchema).nullable()).nullable()
+"sales": z.nullable(z.array(z.lazy(() => NFTSaleDataSchema).nullable()))
     })
 
 export type NFTSalesDataSchema = z.infer<typeof NFTSalesDataSchema>

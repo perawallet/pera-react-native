@@ -15,12 +15,39 @@
 * Do not edit manually.
 */
 
-import type { LookupAccountTransactionsQueryResponse } from "../types/LookupAccountTransactions.ts";
+import type { LookupAccountTransactionsQueryResponse, LookupAccountTransactions400, LookupAccountTransactions500 } from "../types/LookupAccountTransactions.ts";
 import { http } from "msw";
+
+export function lookupAccountTransactionsHandlerResponse200(data: LookupAccountTransactionsQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupAccountTransactionsHandlerResponse400(data: LookupAccountTransactions400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupAccountTransactionsHandlerResponse500(data: LookupAccountTransactions500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function lookupAccountTransactionsHandler(data?: LookupAccountTransactionsQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/accounts/:account-id/transactions', function handler(info) {
     if(typeof data === 'function') return data(info)
 

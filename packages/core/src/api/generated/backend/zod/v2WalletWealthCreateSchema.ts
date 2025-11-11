@@ -19,14 +19,14 @@ import { querySerializerForPostRequestSchema } from "./querySerializerForPost/re
 import { responseSerializerResponseSchema } from "./responseSerializer/responseSchema.ts";
 import { z } from "zod";
 
-export const v2WalletWealthCreate200Schema = z.lazy(() => responseSerializerResponseSchema)
+export const v2WalletWealthCreate200Schema = responseSerializerResponseSchema
 
 export type V2WalletWealthCreate200Schema = z.infer<typeof v2WalletWealthCreate200Schema>
 
-export const v2WalletWealthCreateMutationRequestSchema = z.lazy(() => querySerializerForPostRequestSchema)
+export const v2WalletWealthCreateMutationRequestSchema = querySerializerForPostRequestSchema
 
 export type V2WalletWealthCreateMutationRequestSchema = z.infer<typeof v2WalletWealthCreateMutationRequestSchema>
 
-export const v2WalletWealthCreateMutationResponseSchema = z.lazy(() => v2WalletWealthCreate200Schema)
+export const v2WalletWealthCreateMutationResponseSchema = v2WalletWealthCreate200Schema
 
 export type V2WalletWealthCreateMutationResponseSchema = z.infer<typeof v2WalletWealthCreateMutationResponseSchema>

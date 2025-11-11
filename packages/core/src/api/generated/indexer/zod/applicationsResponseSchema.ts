@@ -21,7 +21,7 @@ import { z } from "zod";
 export const applicationsResponseSchema = z.object({
     "applications": z.array(z.lazy(() => applicationSchema).describe("Application index and its parameters")),
 "current-round": z.number().int().describe("Round at which the results were computed."),
-"next-token": z.string().describe("Used for pagination, when making another request provide this token with the next parameter.").optional()
+"next-token": z.optional(z.string().describe("Used for pagination, when making another request provide this token with the next parameter."))
     })
 
 export type ApplicationsResponseSchema = z.infer<typeof applicationsResponseSchema>

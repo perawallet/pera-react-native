@@ -19,7 +19,7 @@ import { z } from "zod";
 
 export const accountWithNameSchema = z.object({
     "address": z.string().min(1).max(255),
-"name": z.string().describe("Deprecated field. Will always return null.").optional()
+"name": z.optional(z.string().describe("Deprecated field. Will always return null."))
     })
 
 export type AccountWithNameSchema = z.infer<typeof accountWithNameSchema>

@@ -15,12 +15,48 @@
 * Do not edit manually.
 */
 
-import type { LookupAccountAppLocalStatesQueryResponse } from "../types/LookupAccountAppLocalStates.ts";
+import type { LookupAccountAppLocalStatesQueryResponse, LookupAccountAppLocalStates400, LookupAccountAppLocalStates404, LookupAccountAppLocalStates500 } from "../types/LookupAccountAppLocalStates.ts";
 import { http } from "msw";
+
+export function lookupAccountAppLocalStatesHandlerResponse200(data: LookupAccountAppLocalStatesQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupAccountAppLocalStatesHandlerResponse400(data: LookupAccountAppLocalStates400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupAccountAppLocalStatesHandlerResponse404(data: LookupAccountAppLocalStates404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupAccountAppLocalStatesHandlerResponse500(data: LookupAccountAppLocalStates500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function lookupAccountAppLocalStatesHandler(data?: LookupAccountAppLocalStatesQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/accounts/:account-id/apps-local-state', function handler(info) {
     if(typeof data === 'function') return data(info)
 

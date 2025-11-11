@@ -18,9 +18,18 @@
 import type { V1AssetRequestsCreateMutationResponse } from "../types/V1AssetRequestsCreate.ts";
 import { http } from "msw";
 
+export function v1AssetRequestsCreateHandlerResponse201(data: V1AssetRequestsCreateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 201,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1AssetRequestsCreateHandler(data?: V1AssetRequestsCreateMutationResponse | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v1/asset-requests/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

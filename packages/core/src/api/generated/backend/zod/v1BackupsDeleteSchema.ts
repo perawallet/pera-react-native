@@ -33,6 +33,6 @@ export const v1BackupsDelete204Schema = z.unknown()
 
 export type V1BackupsDelete204Schema = z.infer<typeof v1BackupsDelete204Schema>
 
-export const v1BackupsDeleteMutationResponseSchema = z.lazy(() => v1BackupsDelete204Schema)
+export const v1BackupsDeleteMutationResponseSchema = v1BackupsDelete204Schema
 
 export type V1BackupsDeleteMutationResponseSchema = z.infer<typeof v1BackupsDeleteMutationResponseSchema>

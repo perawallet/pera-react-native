@@ -18,9 +18,18 @@
 import type { ShutdownNodeMutationResponse } from "../types/ShutdownNode.ts";
 import { http } from "msw";
 
+export function shutdownNodeHandlerResponse200(data: ShutdownNodeMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function shutdownNodeHandler(data?: ShutdownNodeMutationResponse | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v2/shutdown', function handler(info) {
     if(typeof data === 'function') return data(info)
 

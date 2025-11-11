@@ -18,8 +18,8 @@
 import { z } from "zod";
 
 export const meldWidgetsSerializerResponseSchema = z.object({
-    "external_session_id": z.string().min(1).optional(),
-"widget_url": z.string().url().min(1).optional()
+    "external_session_id": z.optional(z.string().min(1)),
+"widget_url": z.optional(z.string().url().min(1))
     })
 
 export type MeldWidgetsSerializerResponseSchema = z.infer<typeof meldWidgetsSerializerResponseSchema>

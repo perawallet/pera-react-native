@@ -15,12 +15,28 @@
 * Do not edit manually.
 */
 
-import type { V1CardsCountryAvailabilityRequestListQueryResponse } from "../types/V1CardsCountryAvailabilityRequestList.ts";
+import type { V1CardsCountryAvailabilityRequestListQueryResponse, V1CardsCountryAvailabilityRequestList400 } from "../types/V1CardsCountryAvailabilityRequestList.ts";
 import { http } from "msw";
+
+export function v1CardsCountryAvailabilityRequestListHandlerResponse200(data: V1CardsCountryAvailabilityRequestListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function v1CardsCountryAvailabilityRequestListHandlerResponse400(data?: V1CardsCountryAvailabilityRequestList400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+  
+  })
+}
 
 export function v1CardsCountryAvailabilityRequestListHandler(data?: V1CardsCountryAvailabilityRequestListQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/cards/country-availability-request/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

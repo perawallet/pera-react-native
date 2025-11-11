@@ -28,7 +28,7 @@ export const accountApplicationInformationPathParamsSchema = z.object({
 export type AccountApplicationInformationPathParamsSchema = z.infer<typeof accountApplicationInformationPathParamsSchema>
 
 export const accountApplicationInformationQueryParamsSchema = z.object({
-    "format": z.enum(["json", "msgpack"]).describe("Configures whether the response object is JSON or MessagePack encoded. If not provided, defaults to JSON.").optional()
+    "format": z.optional(z.enum(["json", "msgpack"]).describe("Configures whether the response object is JSON or MessagePack encoded. If not provided, defaults to JSON."))
     }).optional()
 
 export type AccountApplicationInformationQueryParamsSchema = z.infer<typeof accountApplicationInformationQueryParamsSchema>
@@ -37,8 +37,8 @@ export type AccountApplicationInformationQueryParamsSchema = z.infer<typeof acco
  * @description AccountApplicationResponse describes the account\'s application local state and global state (AppLocalState and AppParams, if either exists) for a specific application ID. Global state will only be returned if the provided address is the application\'s creator.
  */
 export const accountApplicationInformation200Schema = z.object({
-    "app-local-state": z.lazy(() => applicationLocalStateSchema).describe("Stores local state associated with an application.").optional(),
-"created-app": z.lazy(() => applicationParamsSchema).describe("Stores the global information associated with an application.").optional(),
+    "app-local-state": z.optional(z.lazy(() => applicationLocalStateSchema).describe("Stores local state associated with an application.")),
+"created-app": z.optional(z.lazy(() => applicationParamsSchema).describe("Stores the global information associated with an application.")),
 "round": z.number().int().describe("The round for which this information is relevant.")
     })
 
@@ -47,21 +47,21 @@ export type AccountApplicationInformation200Schema = z.infer<typeof accountAppli
 /**
  * @description Malformed address or application ID
  */
-export const accountApplicationInformation400Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const accountApplicationInformation400Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type AccountApplicationInformation400Schema = z.infer<typeof accountApplicationInformation400Schema>
 
 /**
  * @description Invalid API Token
  */
-export const accountApplicationInformation401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const accountApplicationInformation401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type AccountApplicationInformation401Schema = z.infer<typeof accountApplicationInformation401Schema>
 
 /**
  * @description Internal Error
  */
-export const accountApplicationInformation500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const accountApplicationInformation500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type AccountApplicationInformation500Schema = z.infer<typeof accountApplicationInformation500Schema>
 
@@ -72,6 +72,6 @@ export const accountApplicationInformationErrorSchema = z.unknown()
 
 export type AccountApplicationInformationErrorSchema = z.infer<typeof accountApplicationInformationErrorSchema>
 
-export const accountApplicationInformationQueryResponseSchema = z.lazy(() => accountApplicationInformation200Schema)
+export const accountApplicationInformationQueryResponseSchema = accountApplicationInformation200Schema
 
 export type AccountApplicationInformationQueryResponseSchema = z.infer<typeof accountApplicationInformationQueryResponseSchema>

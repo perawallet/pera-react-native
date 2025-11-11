@@ -23,12 +23,12 @@ import { z } from "zod";
  * @description Simulation result for an atomic transaction group
  */
 export const simulateTransactionGroupResultSchema = z.object({
-    "app-budget-added": z.number().int().describe("Total budget added during execution of app calls in the transaction group.").optional(),
-"app-budget-consumed": z.number().int().describe("Total budget consumed during execution of app calls in the transaction group.").optional(),
-"failed-at": z.array(z.number().int()).describe("If present, indicates which transaction in this group caused the failure. This array represents the path to the failing transaction. Indexes are zero based, the first element indicates the top-level transaction, and successive elements indicate deeper inner transactions.").optional(),
-"failure-message": z.string().describe("If present, indicates that the transaction group failed and specifies why that happened").optional(),
+    "app-budget-added": z.optional(z.number().int().describe("Total budget added during execution of app calls in the transaction group.")),
+"app-budget-consumed": z.optional(z.number().int().describe("Total budget consumed during execution of app calls in the transaction group.")),
+"failed-at": z.optional(z.array(z.number().int()).describe("If present, indicates which transaction in this group caused the failure. This array represents the path to the failing transaction. Indexes are zero based, the first element indicates the top-level transaction, and successive elements indicate deeper inner transactions.")),
+"failure-message": z.optional(z.string().describe("If present, indicates that the transaction group failed and specifies why that happened")),
 "txn-results": z.array(z.lazy(() => simulateTransactionResultSchema).describe("Simulation result for an individual transaction")).describe("Simulation result for individual transactions"),
-"unnamed-resources-accessed": z.lazy(() => simulateUnnamedResourcesAccessedSchema).describe("These are resources that were accessed by this group that would normally have caused failure, but were allowed in simulation. Depending on where this object is in the response, the unnamed resources it contains may or may not qualify for group resource sharing. If this is a field in SimulateTransactionGroupResult, the resources do qualify, but if this is a field in SimulateTransactionResult, they do not qualify. In order to make this group valid for actual submission, resources that qualify for group sharing can be made available by any transaction of the group; otherwise, resources must be placed in the same transaction which accessed them.").optional()
+"unnamed-resources-accessed": z.optional(z.lazy(() => simulateUnnamedResourcesAccessedSchema).describe("These are resources that were accessed by this group that would normally have caused failure, but were allowed in simulation. Depending on where this object is in the response, the unnamed resources it contains may or may not qualify for group resource sharing. If this is a field in SimulateTransactionGroupResult, the resources do qualify, but if this is a field in SimulateTransactionResult, they do not qualify. In order to make this group valid for actual submission, resources that qualify for group sharing can be made available by any transaction of the group; otherwise, resources must be placed in the same transaction which accessed them."))
     }).describe("Simulation result for an atomic transaction group")
 
 export type SimulateTransactionGroupResultSchema = z.infer<typeof simulateTransactionGroupResultSchema>

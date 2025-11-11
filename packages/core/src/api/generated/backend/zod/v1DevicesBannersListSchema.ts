@@ -25,15 +25,15 @@ export const v1DevicesBannersListPathParamsSchema = z.object({
 export type V1DevicesBannersListPathParamsSchema = z.infer<typeof v1DevicesBannersListPathParamsSchema>
 
 export const v1DevicesBannersListQueryParamsSchema = z.object({
-    "ordering": z.string().describe("Which field to use when ordering the results.").optional()
+    "ordering": z.optional(z.string().describe("Which field to use when ordering the results."))
     }).optional()
 
 export type V1DevicesBannersListQueryParamsSchema = z.infer<typeof v1DevicesBannersListQueryParamsSchema>
 
-export const v1DevicesBannersList200Schema = z.lazy(() => deviceBannersViewSchema)
+export const v1DevicesBannersList200Schema = deviceBannersViewSchema
 
 export type V1DevicesBannersList200Schema = z.infer<typeof v1DevicesBannersList200Schema>
 
-export const v1DevicesBannersListQueryResponseSchema = z.lazy(() => v1DevicesBannersList200Schema)
+export const v1DevicesBannersListQueryResponseSchema = v1DevicesBannersList200Schema
 
 export type V1DevicesBannersListQueryResponseSchema = z.infer<typeof v1DevicesBannersListQueryResponseSchema>

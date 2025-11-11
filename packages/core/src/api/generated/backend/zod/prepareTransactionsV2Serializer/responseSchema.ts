@@ -19,9 +19,9 @@ import { transactionGroupSchema } from "../transactionGroupSchema.ts";
 import { z } from "zod";
 
 export const prepareTransactionsV2SerializerResponseSchema = z.object({
-    "transaction_groups": z.array(z.lazy(() => transactionGroupSchema)).optional(),
-"swap_id": z.number().int().optional(),
-"swap_version": z.string().min(1).optional()
+    "transaction_groups": z.optional(z.array(z.lazy(() => transactionGroupSchema))),
+"swap_id": z.optional(z.number().int()),
+"swap_version": z.optional(z.string().min(1))
     })
 
 export type PrepareTransactionsV2SerializerResponseSchema = z.infer<typeof prepareTransactionsV2SerializerResponseSchema>

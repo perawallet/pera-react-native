@@ -19,15 +19,15 @@ import { blockSchema } from "./blockSchema.ts";
 import { z } from "zod";
 
 export const searchForBlockHeadersQueryParamsSchema = z.object({
-    "limit": z.coerce.number().int().describe("Maximum number of results to return. There could be additional pages even if the limit is not reached.").optional(),
-"next": z.string().describe("The next page of results. Use the next token provided by the previous results.").optional(),
-"min-round": z.coerce.number().int().describe("Include results at or after the specified min-round.").optional(),
-"max-round": z.coerce.number().int().describe("Include results at or before the specified max-round.").optional(),
-"before-time": z.string().datetime().describe("Include results before the given time. Must be an RFC 3339 formatted string.").optional(),
-"after-time": z.string().datetime().describe("Include results after the given time. Must be an RFC 3339 formatted string.").optional(),
-"proposers": z.array(z.string()).describe("Accounts marked as proposer in the block header's participation updates. This parameter accepts a comma separated list of addresses.").optional(),
-"expired": z.array(z.string()).describe("Accounts marked as expired in the block header's participation updates. This parameter accepts a comma separated list of addresses.").optional(),
-"absent": z.array(z.string()).describe("Accounts marked as absent in the block header's participation updates. This parameter accepts a comma separated list of addresses.").optional()
+    "limit": z.optional(z.coerce.number().int().describe("Maximum number of results to return. There could be additional pages even if the limit is not reached.")),
+"next": z.optional(z.string().describe("The next page of results. Use the next token provided by the previous results.")),
+"min-round": z.optional(z.coerce.number().int().describe("Include results at or after the specified min-round.")),
+"max-round": z.optional(z.coerce.number().int().describe("Include results at or before the specified max-round.")),
+"before-time": z.optional(z.string().datetime().describe("Include results before the given time. Must be an RFC 3339 formatted string.")),
+"after-time": z.optional(z.string().datetime().describe("Include results after the given time. Must be an RFC 3339 formatted string.")),
+"proposers": z.optional(z.array(z.string()).describe("Accounts marked as proposer in the block header's participation updates. This parameter accepts a comma separated list of addresses.")),
+"expired": z.optional(z.array(z.string()).describe("Accounts marked as expired in the block header's participation updates. This parameter accepts a comma separated list of addresses.")),
+"absent": z.optional(z.array(z.string()).describe("Accounts marked as absent in the block header's participation updates. This parameter accepts a comma separated list of addresses."))
     }).optional()
 
 export type SearchForBlockHeadersQueryParamsSchema = z.infer<typeof searchForBlockHeadersQueryParamsSchema>
@@ -38,7 +38,7 @@ export type SearchForBlockHeadersQueryParamsSchema = z.infer<typeof searchForBlo
 export const searchForBlockHeaders200Schema = z.object({
     "blocks": z.array(z.lazy(() => blockSchema).describe("Block information.\n\nDefinition:\ndata/bookkeeping/block.go : Block")),
 "current-round": z.number().int().describe("Round at which the results were computed."),
-"next-token": z.string().describe("Used for pagination, when making another request provide this token with the next parameter.").optional()
+"next-token": z.optional(z.string().describe("Used for pagination, when making another request provide this token with the next parameter."))
     })
 
 export type SearchForBlockHeaders200Schema = z.infer<typeof searchForBlockHeaders200Schema>
@@ -47,9 +47,9 @@ export type SearchForBlockHeaders200Schema = z.infer<typeof searchForBlockHeader
  * @description Response for errors
  */
 export const searchForBlockHeaders404Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
@@ -59,14 +59,14 @@ export type SearchForBlockHeaders404Schema = z.infer<typeof searchForBlockHeader
  * @description Response for errors
  */
 export const searchForBlockHeaders500Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
 export type SearchForBlockHeaders500Schema = z.infer<typeof searchForBlockHeaders500Schema>
 
-export const searchForBlockHeadersQueryResponseSchema = z.lazy(() => searchForBlockHeaders200Schema)
+export const searchForBlockHeadersQueryResponseSchema = searchForBlockHeaders200Schema
 
 export type SearchForBlockHeadersQueryResponseSchema = z.infer<typeof searchForBlockHeadersQueryResponseSchema>

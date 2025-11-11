@@ -19,8 +19,8 @@ import { z } from "zod";
 
 export const categorySimpleSchema = z.object({
     "id": z.string().min(1),
-"title": z.string().min(1).optional(),
-"order": z.number().int().optional()
+"title": z.optional(z.string().min(1)),
+"order": z.optional(z.number().int())
     })
 
 export type CategorySimpleSchema = z.infer<typeof categorySimpleSchema>

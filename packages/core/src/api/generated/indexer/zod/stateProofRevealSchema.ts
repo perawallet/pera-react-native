@@ -20,9 +20,9 @@ import { stateProofSigSlotSchema } from "./stateProofSigSlotSchema.ts";
 import { z } from "zod";
 
 export const stateProofRevealSchema = z.object({
-    "participant": z.lazy(() => stateProofParticipantSchema).optional(),
-"position": z.number().int().describe("The position in the signature and participants arrays corresponding to this entry.").optional(),
-"sig-slot": z.lazy(() => stateProofSigSlotSchema).optional()
+    "participant": z.optional(z.lazy(() => stateProofParticipantSchema)),
+"position": z.optional(z.number().int().describe("The position in the signature and participants arrays corresponding to this entry.")),
+"sig-slot": z.optional(z.lazy(() => stateProofSigSlotSchema))
     })
 
 export type StateProofRevealSchema = z.infer<typeof stateProofRevealSchema>

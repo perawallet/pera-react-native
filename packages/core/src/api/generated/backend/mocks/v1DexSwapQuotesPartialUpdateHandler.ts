@@ -18,9 +18,18 @@
 import type { V1DexSwapQuotesPartialUpdateMutationResponse } from "../types/V1DexSwapQuotesPartialUpdate.ts";
 import { http } from "msw";
 
+export function v1DexSwapQuotesPartialUpdateHandlerResponse200(data: V1DexSwapQuotesPartialUpdateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1DexSwapQuotesPartialUpdateHandler(data?: V1DexSwapQuotesPartialUpdateMutationResponse | ((
         info: Parameters<Parameters<typeof http.patch>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.patch('/v1/dex-swap/quotes/:quote_id/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

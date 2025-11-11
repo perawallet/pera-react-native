@@ -18,11 +18,11 @@
 import { z } from "zod";
 
 export const indexerStateProofMessageSchema = z.object({
-    "block-headers-commitment": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[b\\]").optional(),
-"first-attested-round": z.number().int().describe("\\[f\\]").optional(),
-"latest-attested-round": z.number().int().describe("\\[l\\]").optional(),
-"ln-proven-weight": z.number().int().describe("\\[P\\]").optional(),
-"voters-commitment": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[v\\]").optional()
+    "block-headers-commitment": z.optional(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[b\\]")),
+"first-attested-round": z.optional(z.number().int().describe("\\[f\\]")),
+"latest-attested-round": z.optional(z.number().int().describe("\\[l\\]")),
+"ln-proven-weight": z.optional(z.number().int().describe("\\[P\\]")),
+"voters-commitment": z.optional(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[v\\]"))
     })
 
 export type IndexerStateProofMessageSchema = z.infer<typeof indexerStateProofMessageSchema>

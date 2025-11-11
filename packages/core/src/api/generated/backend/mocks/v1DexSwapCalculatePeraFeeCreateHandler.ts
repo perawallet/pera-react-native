@@ -18,9 +18,18 @@
 import type { V1DexSwapCalculatePeraFeeCreateMutationResponse } from "../types/V1DexSwapCalculatePeraFeeCreate.ts";
 import { http } from "msw";
 
+export function v1DexSwapCalculatePeraFeeCreateHandlerResponse201(data: V1DexSwapCalculatePeraFeeCreateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 201,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1DexSwapCalculatePeraFeeCreateHandler(data?: V1DexSwapCalculatePeraFeeCreateMutationResponse | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v1/dex-swap/calculate-pera-fee/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

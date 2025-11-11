@@ -18,9 +18,18 @@
 import type { V1DiscoverFeaturedProjectsListQueryResponse } from "../types/V1DiscoverFeaturedProjectsList.ts";
 import { http } from "msw";
 
+export function v1DiscoverFeaturedProjectsListHandlerResponse200(data: V1DiscoverFeaturedProjectsListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1DiscoverFeaturedProjectsListHandler(data?: V1DiscoverFeaturedProjectsListQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/discover/featured-projects/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

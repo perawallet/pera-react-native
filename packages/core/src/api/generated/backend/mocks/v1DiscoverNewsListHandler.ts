@@ -18,9 +18,18 @@
 import type { V1DiscoverNewsListQueryResponse } from "../types/V1DiscoverNewsList.ts";
 import { http } from "msw";
 
+export function v1DiscoverNewsListHandlerResponse200(data: V1DiscoverNewsListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1DiscoverNewsListHandler(data?: V1DiscoverNewsListQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/discover/news/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

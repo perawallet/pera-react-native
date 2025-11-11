@@ -25,14 +25,14 @@ export const v1DexSwapQuotesUpdatePathParamsSchema = z.object({
 
 export type V1DexSwapQuotesUpdatePathParamsSchema = z.infer<typeof v1DexSwapQuotesUpdatePathParamsSchema>
 
-export const v1DexSwapQuotesUpdate200Schema = z.lazy(() => quoteUpdateSerializerResponseSchema)
+export const v1DexSwapQuotesUpdate200Schema = quoteUpdateSerializerResponseSchema
 
 export type V1DexSwapQuotesUpdate200Schema = z.infer<typeof v1DexSwapQuotesUpdate200Schema>
 
-export const v1DexSwapQuotesUpdateMutationRequestSchema = z.lazy(() => quoteUpdateSerializerRequestSchema)
+export const v1DexSwapQuotesUpdateMutationRequestSchema = quoteUpdateSerializerRequestSchema
 
 export type V1DexSwapQuotesUpdateMutationRequestSchema = z.infer<typeof v1DexSwapQuotesUpdateMutationRequestSchema>
 
-export const v1DexSwapQuotesUpdateMutationResponseSchema = z.lazy(() => v1DexSwapQuotesUpdate200Schema)
+export const v1DexSwapQuotesUpdateMutationResponseSchema = v1DexSwapQuotesUpdate200Schema
 
 export type V1DexSwapQuotesUpdateMutationResponseSchema = z.infer<typeof v1DexSwapQuotesUpdateMutationResponseSchema>

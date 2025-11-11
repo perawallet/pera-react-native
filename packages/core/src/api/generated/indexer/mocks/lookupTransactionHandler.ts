@@ -15,12 +15,48 @@
 * Do not edit manually.
 */
 
-import type { LookupTransactionQueryResponse } from "../types/LookupTransaction.ts";
+import type { LookupTransactionQueryResponse, LookupTransaction400, LookupTransaction404, LookupTransaction500 } from "../types/LookupTransaction.ts";
 import { http } from "msw";
+
+export function lookupTransactionHandlerResponse200(data: LookupTransactionQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupTransactionHandlerResponse400(data: LookupTransaction400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupTransactionHandlerResponse404(data: LookupTransaction404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupTransactionHandlerResponse500(data: LookupTransaction500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function lookupTransactionHandler(data?: LookupTransactionQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/transactions/:txid', function handler(info) {
     if(typeof data === 'function') return data(info)
 

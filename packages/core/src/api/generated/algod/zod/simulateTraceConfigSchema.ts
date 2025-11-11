@@ -21,10 +21,10 @@ import { z } from "zod";
  * @description An object that configures simulation execution trace.
  */
 export const simulateTraceConfigSchema = z.object({
-    "enable": z.boolean().describe("A boolean option for opting in execution trace features simulation endpoint.").optional(),
-"scratch-change": z.boolean().describe("A boolean option enabling returning scratch slot changes together with execution trace during simulation.").optional(),
-"stack-change": z.boolean().describe("A boolean option enabling returning stack changes together with execution trace during simulation.").optional(),
-"state-change": z.boolean().describe("A boolean option enabling returning application state changes (global, local, and box changes) with the execution trace during simulation.").optional()
+    "enable": z.optional(z.boolean().describe("A boolean option for opting in execution trace features simulation endpoint.")),
+"scratch-change": z.optional(z.boolean().describe("A boolean option enabling returning scratch slot changes together with execution trace during simulation.")),
+"stack-change": z.optional(z.boolean().describe("A boolean option enabling returning stack changes together with execution trace during simulation.")),
+"state-change": z.optional(z.boolean().describe("A boolean option enabling returning application state changes (global, local, and box changes) with the execution trace during simulation."))
     }).describe("An object that configures simulation execution trace.")
 
 export type SimulateTraceConfigSchema = z.infer<typeof simulateTraceConfigSchema>

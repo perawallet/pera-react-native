@@ -18,9 +18,16 @@
 import type { V1DiscoverLuckySpinListQueryResponse } from "../types/V1DiscoverLuckySpinList.ts";
 import { http } from "msw";
 
-export function v1DiscoverLuckySpinListHandler(data?: V1DiscoverLuckySpinListQueryResponse | ((
+export function v1DiscoverLuckySpinListHandlerResponse200(data?: V1DiscoverLuckySpinListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+  
+  })
+}
+
+export function v1DiscoverLuckySpinListHandler(data?: string | number | boolean | null | object | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/discover/lucky-spin/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

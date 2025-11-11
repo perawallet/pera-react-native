@@ -22,10 +22,10 @@ import { z } from "zod";
  * @description An operation against an application\'s global/local/box state.
  */
 export const applicationStateOperationSchema = z.object({
-    "account": z.string().describe("For local state changes, the address of the account associated with the local state.").optional(),
+    "account": z.optional(z.string().describe("For local state changes, the address of the account associated with the local state.")),
 "app-state-type": z.string().describe("Type of application state. Value `g` is **global state**, `l` is **local state**, `b` is **boxes**."),
 "key": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("The key (name) of the global/local/box state."),
-"new-value": z.lazy(() => avmValueSchema).describe("Represents an AVM value.").optional(),
+"new-value": z.optional(z.lazy(() => avmValueSchema).describe("Represents an AVM value.")),
 "operation": z.string().describe("Operation type. Value `w` is **write**, `d` is **delete**.")
     }).describe("An operation against an application's global/local/box state.")
 

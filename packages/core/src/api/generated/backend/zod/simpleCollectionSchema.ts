@@ -18,9 +18,9 @@
 import { z } from "zod";
 
 export const simpleCollectionSchema = z.object({
-    "id": z.number().int().optional(),
+    "id": z.optional(z.number().int()),
 "name": z.string().min(1).max(255),
-"description": z.string().optional()
+"description": z.optional(z.string())
     })
 
 export type SimpleCollectionSchema = z.infer<typeof simpleCollectionSchema>

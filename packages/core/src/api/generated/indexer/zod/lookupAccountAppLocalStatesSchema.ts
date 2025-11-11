@@ -25,10 +25,10 @@ export const lookupAccountAppLocalStatesPathParamsSchema = z.object({
 export type LookupAccountAppLocalStatesPathParamsSchema = z.infer<typeof lookupAccountAppLocalStatesPathParamsSchema>
 
 export const lookupAccountAppLocalStatesQueryParamsSchema = z.object({
-    "application-id": z.coerce.number().int().describe("Application ID").optional(),
-"include-all": z.boolean().describe("Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.").optional(),
-"limit": z.coerce.number().int().describe("Maximum number of results to return. There could be additional pages even if the limit is not reached.").optional(),
-"next": z.string().describe("The next page of results. Use the next token provided by the previous results.").optional()
+    "application-id": z.optional(z.coerce.number().int().describe("Application ID")),
+"include-all": z.optional(z.boolean().describe("Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.")),
+"limit": z.optional(z.coerce.number().int().describe("Maximum number of results to return. There could be additional pages even if the limit is not reached.")),
+"next": z.optional(z.string().describe("The next page of results. Use the next token provided by the previous results."))
     }).optional()
 
 export type LookupAccountAppLocalStatesQueryParamsSchema = z.infer<typeof lookupAccountAppLocalStatesQueryParamsSchema>
@@ -39,7 +39,7 @@ export type LookupAccountAppLocalStatesQueryParamsSchema = z.infer<typeof lookup
 export const lookupAccountAppLocalStates200Schema = z.object({
     "apps-local-states": z.array(z.lazy(() => applicationLocalStateSchema).describe("Stores local state associated with an application.")),
 "current-round": z.number().int().describe("Round at which the results were computed."),
-"next-token": z.string().describe("Used for pagination, when making another request provide this token with the next parameter.").optional()
+"next-token": z.optional(z.string().describe("Used for pagination, when making another request provide this token with the next parameter."))
     })
 
 export type LookupAccountAppLocalStates200Schema = z.infer<typeof lookupAccountAppLocalStates200Schema>
@@ -48,9 +48,9 @@ export type LookupAccountAppLocalStates200Schema = z.infer<typeof lookupAccountA
  * @description Response for errors
  */
 export const lookupAccountAppLocalStates400Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
@@ -60,9 +60,9 @@ export type LookupAccountAppLocalStates400Schema = z.infer<typeof lookupAccountA
  * @description Response for errors
  */
 export const lookupAccountAppLocalStates404Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
@@ -72,14 +72,14 @@ export type LookupAccountAppLocalStates404Schema = z.infer<typeof lookupAccountA
  * @description Response for errors
  */
 export const lookupAccountAppLocalStates500Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
 export type LookupAccountAppLocalStates500Schema = z.infer<typeof lookupAccountAppLocalStates500Schema>
 
-export const lookupAccountAppLocalStatesQueryResponseSchema = z.lazy(() => lookupAccountAppLocalStates200Schema)
+export const lookupAccountAppLocalStatesQueryResponseSchema = lookupAccountAppLocalStates200Schema
 
 export type LookupAccountAppLocalStatesQueryResponseSchema = z.infer<typeof lookupAccountAppLocalStatesQueryResponseSchema>

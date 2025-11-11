@@ -24,7 +24,7 @@ import { z } from "zod";
  */
 export const applicationLocalStateSchema = z.object({
     "id": z.number().int().describe("The application which this local state is for."),
-"key-value": z.lazy(() => tealKeyValueStoreSchema).describe("Represents a key-value store for use in an application.").optional(),
+"key-value": z.optional(z.lazy(() => tealKeyValueStoreSchema).describe("Represents a key-value store for use in an application.")),
 "schema": z.lazy(() => applicationStateSchemaSchema).describe("Specifies maximums on the number of each type that may be stored.")
     }).describe("Stores local state associated with an application.")
 

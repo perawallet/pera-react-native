@@ -24,10 +24,10 @@ export const v1DiscoverAssetsPoolsListPathParamsSchema = z.object({
 
 export type V1DiscoverAssetsPoolsListPathParamsSchema = z.infer<typeof v1DiscoverAssetsPoolsListPathParamsSchema>
 
-export const v1DiscoverAssetsPoolsList200Schema = z.array(z.lazy(() => poolSerializerResponseSchema))
+export const v1DiscoverAssetsPoolsList200Schema = z.array(poolSerializerResponseSchema)
 
 export type V1DiscoverAssetsPoolsList200Schema = z.infer<typeof v1DiscoverAssetsPoolsList200Schema>
 
-export const v1DiscoverAssetsPoolsListQueryResponseSchema = z.lazy(() => v1DiscoverAssetsPoolsList200Schema)
+export const v1DiscoverAssetsPoolsListQueryResponseSchema = v1DiscoverAssetsPoolsList200Schema
 
 export type V1DiscoverAssetsPoolsListQueryResponseSchema = z.infer<typeof v1DiscoverAssetsPoolsListQueryResponseSchema>

@@ -15,12 +15,28 @@
 * Do not edit manually.
 */
 
-import type { V1DexSwapAvailableAssetsListQueryResponse } from "../types/V1DexSwapAvailableAssetsList.ts";
+import type { V1DexSwapAvailableAssetsListQueryResponse, V1DexSwapAvailableAssetsList503 } from "../types/V1DexSwapAvailableAssetsList.ts";
 import { http } from "msw";
+
+export function v1DexSwapAvailableAssetsListHandlerResponse200(data: V1DexSwapAvailableAssetsListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function v1DexSwapAvailableAssetsListHandlerResponse503(data?: V1DexSwapAvailableAssetsList503) {
+  return new Response(JSON.stringify(data), {
+    status: 503,
+  
+  })
+}
 
 export function v1DexSwapAvailableAssetsListHandler(data?: V1DexSwapAvailableAssetsListQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/dex-swap/available-assets/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

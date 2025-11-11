@@ -21,6 +21,6 @@ export const v1CardsSupportedCountriesList200Schema = z.unknown()
 
 export type V1CardsSupportedCountriesList200Schema = z.infer<typeof v1CardsSupportedCountriesList200Schema>
 
-export const v1CardsSupportedCountriesListQueryResponseSchema = z.lazy(() => v1CardsSupportedCountriesList200Schema)
+export const v1CardsSupportedCountriesListQueryResponseSchema = v1CardsSupportedCountriesList200Schema
 
 export type V1CardsSupportedCountriesListQueryResponseSchema = z.infer<typeof v1CardsSupportedCountriesListQueryResponseSchema>

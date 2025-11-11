@@ -19,7 +19,7 @@ import { errorResponseSchema } from "./errorResponseSchema.ts";
 import { z } from "zod";
 
 export const tealCompileQueryParamsSchema = z.object({
-    "sourcemap": z.boolean().describe("When set to `true`, returns the source map of the program as a JSON. Defaults to `false`.").optional()
+    "sourcemap": z.optional(z.boolean().describe("When set to `true`, returns the source map of the program as a JSON. Defaults to `false`."))
     }).optional()
 
 export type TealCompileQueryParamsSchema = z.infer<typeof tealCompileQueryParamsSchema>
@@ -30,9 +30,9 @@ export type TealCompileQueryParamsSchema = z.infer<typeof tealCompileQueryParams
 export const tealCompile200Schema = z.object({
     "hash": z.string().describe("base32 SHA512_256 of program bytes (Address style)"),
 "result": z.string().describe("base64 encoded program bytes"),
-"sourcemap": z.object({
+"sourcemap": z.optional(z.object({
     
-    }).describe("JSON of the source map").optional()
+    }).describe("JSON of the source map"))
     })
 
 export type TealCompile200Schema = z.infer<typeof tealCompile200Schema>
@@ -40,14 +40,14 @@ export type TealCompile200Schema = z.infer<typeof tealCompile200Schema>
 /**
  * @description Bad Request - Teal Compile Error
  */
-export const tealCompile400Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const tealCompile400Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type TealCompile400Schema = z.infer<typeof tealCompile400Schema>
 
 /**
  * @description Invalid API Token
  */
-export const tealCompile401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const tealCompile401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type TealCompile401Schema = z.infer<typeof tealCompile401Schema>
 
@@ -61,7 +61,7 @@ export type TealCompile404Schema = z.infer<typeof tealCompile404Schema>
 /**
  * @description Internal Error
  */
-export const tealCompile500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const tealCompile500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type TealCompile500Schema = z.infer<typeof tealCompile500Schema>
 
@@ -79,6 +79,6 @@ export const tealCompileMutationRequestSchema = z.instanceof(File)
 
 export type TealCompileMutationRequestSchema = z.infer<typeof tealCompileMutationRequestSchema>
 
-export const tealCompileMutationResponseSchema = z.lazy(() => tealCompile200Schema)
+export const tealCompileMutationResponseSchema = tealCompile200Schema
 
 export type TealCompileMutationResponseSchema = z.infer<typeof tealCompileMutationResponseSchema>

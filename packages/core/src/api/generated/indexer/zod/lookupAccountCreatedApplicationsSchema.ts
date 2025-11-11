@@ -25,10 +25,10 @@ export const lookupAccountCreatedApplicationsPathParamsSchema = z.object({
 export type LookupAccountCreatedApplicationsPathParamsSchema = z.infer<typeof lookupAccountCreatedApplicationsPathParamsSchema>
 
 export const lookupAccountCreatedApplicationsQueryParamsSchema = z.object({
-    "application-id": z.coerce.number().int().describe("Application ID").optional(),
-"include-all": z.boolean().describe("Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.").optional(),
-"limit": z.coerce.number().int().describe("Maximum number of results to return. There could be additional pages even if the limit is not reached.").optional(),
-"next": z.string().describe("The next page of results. Use the next token provided by the previous results.").optional()
+    "application-id": z.optional(z.coerce.number().int().describe("Application ID")),
+"include-all": z.optional(z.boolean().describe("Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.")),
+"limit": z.optional(z.coerce.number().int().describe("Maximum number of results to return. There could be additional pages even if the limit is not reached.")),
+"next": z.optional(z.string().describe("The next page of results. Use the next token provided by the previous results."))
     }).optional()
 
 export type LookupAccountCreatedApplicationsQueryParamsSchema = z.infer<typeof lookupAccountCreatedApplicationsQueryParamsSchema>
@@ -39,7 +39,7 @@ export type LookupAccountCreatedApplicationsQueryParamsSchema = z.infer<typeof l
 export const lookupAccountCreatedApplications200Schema = z.object({
     "applications": z.array(z.lazy(() => applicationSchema).describe("Application index and its parameters")),
 "current-round": z.number().int().describe("Round at which the results were computed."),
-"next-token": z.string().describe("Used for pagination, when making another request provide this token with the next parameter.").optional()
+"next-token": z.optional(z.string().describe("Used for pagination, when making another request provide this token with the next parameter."))
     })
 
 export type LookupAccountCreatedApplications200Schema = z.infer<typeof lookupAccountCreatedApplications200Schema>
@@ -48,9 +48,9 @@ export type LookupAccountCreatedApplications200Schema = z.infer<typeof lookupAcc
  * @description Response for errors
  */
 export const lookupAccountCreatedApplications400Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
@@ -60,9 +60,9 @@ export type LookupAccountCreatedApplications400Schema = z.infer<typeof lookupAcc
  * @description Response for errors
  */
 export const lookupAccountCreatedApplications404Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
@@ -72,14 +72,14 @@ export type LookupAccountCreatedApplications404Schema = z.infer<typeof lookupAcc
  * @description Response for errors
  */
 export const lookupAccountCreatedApplications500Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
 export type LookupAccountCreatedApplications500Schema = z.infer<typeof lookupAccountCreatedApplications500Schema>
 
-export const lookupAccountCreatedApplicationsQueryResponseSchema = z.lazy(() => lookupAccountCreatedApplications200Schema)
+export const lookupAccountCreatedApplicationsQueryResponseSchema = lookupAccountCreatedApplications200Schema
 
 export type LookupAccountCreatedApplicationsQueryResponseSchema = z.infer<typeof lookupAccountCreatedApplicationsQueryResponseSchema>

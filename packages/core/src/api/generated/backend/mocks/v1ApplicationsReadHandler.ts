@@ -18,9 +18,18 @@
 import type { V1ApplicationsReadQueryResponse } from "../types/V1ApplicationsRead.ts";
 import { http } from "msw";
 
+export function v1ApplicationsReadHandlerResponse200(data: V1ApplicationsReadQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1ApplicationsReadHandler(data?: V1ApplicationsReadQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/applications/:application_id/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

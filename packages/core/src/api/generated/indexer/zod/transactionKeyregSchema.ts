@@ -21,13 +21,13 @@ import { z } from "zod";
  * @description Fields for a keyreg transaction.\n\nDefinition:\ndata/transactions/keyreg.go : KeyregTxnFields
  */
 export const transactionKeyregSchema = z.object({
-    "non-participation": z.boolean().describe("\\[nonpart\\] Mark the account as participating or non-participating.").optional(),
-"selection-participation-key": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[selkey\\] Public key used with the Verified Random Function (VRF) result during committee selection.").optional(),
-"state-proof-key": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[sprfkey\\] State proof key used in key registration transactions.").optional(),
-"vote-first-valid": z.number().int().describe("\\[votefst\\] First round this participation key is valid.").optional(),
-"vote-key-dilution": z.number().int().describe("\\[votekd\\] Number of subkeys in each batch of participation keys.").optional(),
-"vote-last-valid": z.number().int().describe("\\[votelst\\] Last round this participation key is valid.").optional(),
-"vote-participation-key": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[votekey\\] Participation public key used in key registration transactions.").optional()
+    "non-participation": z.optional(z.boolean().describe("\\[nonpart\\] Mark the account as participating or non-participating.")),
+"selection-participation-key": z.optional(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[selkey\\] Public key used with the Verified Random Function (VRF) result during committee selection.")),
+"state-proof-key": z.optional(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[sprfkey\\] State proof key used in key registration transactions.")),
+"vote-first-valid": z.optional(z.number().int().describe("\\[votefst\\] First round this participation key is valid.")),
+"vote-key-dilution": z.optional(z.number().int().describe("\\[votekd\\] Number of subkeys in each batch of participation keys.")),
+"vote-last-valid": z.optional(z.number().int().describe("\\[votelst\\] Last round this participation key is valid.")),
+"vote-participation-key": z.optional(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[votekey\\] Participation public key used in key registration transactions."))
     }).describe("Fields for a keyreg transaction.\n\nDefinition:\ndata/transactions/keyreg.go : KeyregTxnFields")
 
 export type TransactionKeyregSchema = z.infer<typeof transactionKeyregSchema>

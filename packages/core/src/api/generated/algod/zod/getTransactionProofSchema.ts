@@ -27,8 +27,8 @@ export const getTransactionProofPathParamsSchema = z.object({
 export type GetTransactionProofPathParamsSchema = z.infer<typeof getTransactionProofPathParamsSchema>
 
 export const getTransactionProofQueryParamsSchema = z.object({
-    "hashtype": z.enum(["sha512_256", "sha256"]).describe("The type of hash function used to create the proof, must be one of: \n* sha512_256 \n* sha256").optional(),
-"format": z.enum(["json", "msgpack"]).describe("Configures whether the response object is JSON or MessagePack encoded. If not provided, defaults to JSON.").optional()
+    "hashtype": z.optional(z.enum(["sha512_256", "sha256"]).describe("The type of hash function used to create the proof, must be one of: \n* sha512_256 \n* sha256")),
+"format": z.optional(z.enum(["json", "msgpack"]).describe("Configures whether the response object is JSON or MessagePack encoded. If not provided, defaults to JSON."))
     }).optional()
 
 export type GetTransactionProofQueryParamsSchema = z.infer<typeof getTransactionProofQueryParamsSchema>
@@ -36,35 +36,35 @@ export type GetTransactionProofQueryParamsSchema = z.infer<typeof getTransaction
 /**
  * @description Proof of transaction in a block.
  */
-export const getTransactionProof200Schema = z.lazy(() => transactionProofSchema).describe("Proof of transaction in a block.")
+export const getTransactionProof200Schema = transactionProofSchema.describe("Proof of transaction in a block.")
 
 export type GetTransactionProof200Schema = z.infer<typeof getTransactionProof200Schema>
 
 /**
  * @description Malformed round number or transaction ID
  */
-export const getTransactionProof400Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getTransactionProof400Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetTransactionProof400Schema = z.infer<typeof getTransactionProof400Schema>
 
 /**
  * @description Invalid API token
  */
-export const getTransactionProof401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getTransactionProof401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetTransactionProof401Schema = z.infer<typeof getTransactionProof401Schema>
 
 /**
  * @description Non-existent block or transaction
  */
-export const getTransactionProof404Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getTransactionProof404Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetTransactionProof404Schema = z.infer<typeof getTransactionProof404Schema>
 
 /**
  * @description Internal error, including protocol not supporting proofs.
  */
-export const getTransactionProof500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getTransactionProof500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetTransactionProof500Schema = z.infer<typeof getTransactionProof500Schema>
 
@@ -75,6 +75,6 @@ export const getTransactionProofErrorSchema = z.unknown()
 
 export type GetTransactionProofErrorSchema = z.infer<typeof getTransactionProofErrorSchema>
 
-export const getTransactionProofQueryResponseSchema = z.lazy(() => getTransactionProof200Schema)
+export const getTransactionProofQueryResponseSchema = getTransactionProof200Schema
 
 export type GetTransactionProofQueryResponseSchema = z.infer<typeof getTransactionProofQueryResponseSchema>

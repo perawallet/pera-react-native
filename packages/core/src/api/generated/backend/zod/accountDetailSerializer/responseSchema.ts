@@ -19,9 +19,9 @@ import { NFDomainLookupResponseSchema } from "../NFDomainLookupResponseSchema.ts
 import { z } from "zod";
 
 export const accountDetailSerializerResponseSchema = z.object({
-    "rekeyed_to": z.string().min(1).nullable().nullish(),
-"name": z.lazy(() => NFDomainLookupResponseSchema).optional().nullable(),
-"minimum_balance": z.number().int().optional()
+    "rekeyed_to": z.string().min(1).nullish(),
+"name": z.optional(z.lazy(() => NFDomainLookupResponseSchema)),
+"minimum_balance": z.optional(z.number().int())
     })
 
 export type AccountDetailSerializerResponseSchema = z.infer<typeof accountDetailSerializerResponseSchema>

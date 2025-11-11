@@ -15,12 +15,57 @@
 * Do not edit manually.
 */
 
-import type { AppendKeysMutationResponse } from "../types/AppendKeys.ts";
+import type { AppendKeysMutationResponse, AppendKeys400, AppendKeys401, AppendKeys404, AppendKeys500 } from "../types/AppendKeys.ts";
 import { http } from "msw";
+
+export function appendKeysHandlerResponse200(data: AppendKeysMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function appendKeysHandlerResponse400(data: AppendKeys400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function appendKeysHandlerResponse401(data: AppendKeys401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function appendKeysHandlerResponse404(data: AppendKeys404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function appendKeysHandlerResponse500(data: AppendKeys500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function appendKeysHandler(data?: AppendKeysMutationResponse | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v2/participation/:participation-id', function handler(info) {
     if(typeof data === 'function') return data(info)
 

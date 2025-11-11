@@ -25,17 +25,17 @@ export const waitForBlockPathParamsSchema = z.object({
 export type WaitForBlockPathParamsSchema = z.infer<typeof waitForBlockPathParamsSchema>
 
 export const waitForBlock200Schema = z.object({
-    "catchpoint": z.string().describe("The current catchpoint that is being caught up to").optional(),
-"catchpoint-acquired-blocks": z.number().int().describe("The number of blocks that have already been obtained by the node as part of the catchup").optional(),
-"catchpoint-processed-accounts": z.number().int().describe("The number of accounts from the current catchpoint that have been processed so far as part of the catchup").optional(),
-"catchpoint-processed-kvs": z.number().int().describe("The number of key-values (KVs) from the current catchpoint that have been processed so far as part of the catchup").optional(),
-"catchpoint-total-accounts": z.number().int().describe("The total number of accounts included in the current catchpoint").optional(),
-"catchpoint-total-blocks": z.number().int().describe("The total number of blocks that are required to complete the current catchpoint catchup").optional(),
-"catchpoint-total-kvs": z.number().int().describe("The total number of key-values (KVs) included in the current catchpoint").optional(),
-"catchpoint-verified-accounts": z.number().int().describe("The number of accounts from the current catchpoint that have been verified so far as part of the catchup").optional(),
-"catchpoint-verified-kvs": z.number().int().describe("The number of key-values (KVs) from the current catchpoint that have been verified so far as part of the catchup").optional(),
+    "catchpoint": z.optional(z.string().describe("The current catchpoint that is being caught up to")),
+"catchpoint-acquired-blocks": z.optional(z.number().int().describe("The number of blocks that have already been obtained by the node as part of the catchup")),
+"catchpoint-processed-accounts": z.optional(z.number().int().describe("The number of accounts from the current catchpoint that have been processed so far as part of the catchup")),
+"catchpoint-processed-kvs": z.optional(z.number().int().describe("The number of key-values (KVs) from the current catchpoint that have been processed so far as part of the catchup")),
+"catchpoint-total-accounts": z.optional(z.number().int().describe("The total number of accounts included in the current catchpoint")),
+"catchpoint-total-blocks": z.optional(z.number().int().describe("The total number of blocks that are required to complete the current catchpoint catchup")),
+"catchpoint-total-kvs": z.optional(z.number().int().describe("The total number of key-values (KVs) included in the current catchpoint")),
+"catchpoint-verified-accounts": z.optional(z.number().int().describe("The number of accounts from the current catchpoint that have been verified so far as part of the catchup")),
+"catchpoint-verified-kvs": z.optional(z.number().int().describe("The number of key-values (KVs) from the current catchpoint that have been verified so far as part of the catchup")),
 "catchup-time": z.number().int().describe("CatchupTime in nanoseconds"),
-"last-catchpoint": z.string().describe("The last catchpoint seen by the node").optional(),
+"last-catchpoint": z.optional(z.string().describe("The last catchpoint seen by the node")),
 "last-round": z.number().int().describe("LastRound indicates the last round seen"),
 "last-version": z.string().describe("LastVersion indicates the last consensus version supported"),
 "next-version": z.string().describe("NextVersion of consensus protocol to use"),
@@ -43,14 +43,14 @@ export const waitForBlock200Schema = z.object({
 "next-version-supported": z.boolean().describe("NextVersionSupported indicates whether the next consensus version is supported by this node"),
 "stopped-at-unsupported-round": z.boolean().describe("StoppedAtUnsupportedRound indicates that the node does not support the new rounds and has stopped making progress"),
 "time-since-last-round": z.number().int().describe("TimeSinceLastRound in nanoseconds"),
-"upgrade-delay": z.number().int().describe("Upgrade delay").optional(),
-"upgrade-next-protocol-vote-before": z.number().int().describe("Next protocol round").optional(),
-"upgrade-no-votes": z.number().int().describe("No votes cast for consensus upgrade").optional(),
-"upgrade-node-vote": z.boolean().describe("This node's upgrade vote").optional(),
-"upgrade-vote-rounds": z.number().int().describe("Total voting rounds for current upgrade").optional(),
-"upgrade-votes": z.number().int().describe("Total votes cast for consensus upgrade").optional(),
-"upgrade-votes-required": z.number().int().describe("Yes votes required for consensus upgrade").optional(),
-"upgrade-yes-votes": z.number().int().describe("Yes votes cast for consensus upgrade").optional()
+"upgrade-delay": z.optional(z.number().int().describe("Upgrade delay")),
+"upgrade-next-protocol-vote-before": z.optional(z.number().int().describe("Next protocol round")),
+"upgrade-no-votes": z.optional(z.number().int().describe("No votes cast for consensus upgrade")),
+"upgrade-node-vote": z.optional(z.boolean().describe("This node's upgrade vote")),
+"upgrade-vote-rounds": z.optional(z.number().int().describe("Total voting rounds for current upgrade")),
+"upgrade-votes": z.optional(z.number().int().describe("Total votes cast for consensus upgrade")),
+"upgrade-votes-required": z.optional(z.number().int().describe("Yes votes required for consensus upgrade")),
+"upgrade-yes-votes": z.optional(z.number().int().describe("Yes votes cast for consensus upgrade"))
     }).describe("NodeStatus contains the information about a node status")
 
 export type WaitForBlock200Schema = z.infer<typeof waitForBlock200Schema>
@@ -58,28 +58,28 @@ export type WaitForBlock200Schema = z.infer<typeof waitForBlock200Schema>
 /**
  * @description Bad Request -- number must be non-negative integer
  */
-export const waitForBlock400Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const waitForBlock400Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type WaitForBlock400Schema = z.infer<typeof waitForBlock400Schema>
 
 /**
  * @description Invalid API Token
  */
-export const waitForBlock401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const waitForBlock401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type WaitForBlock401Schema = z.infer<typeof waitForBlock401Schema>
 
 /**
  * @description Internal Error
  */
-export const waitForBlock500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const waitForBlock500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type WaitForBlock500Schema = z.infer<typeof waitForBlock500Schema>
 
 /**
  * @description Service Temporarily Unavailable
  */
-export const waitForBlock503Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const waitForBlock503Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type WaitForBlock503Schema = z.infer<typeof waitForBlock503Schema>
 
@@ -90,6 +90,6 @@ export const waitForBlockErrorSchema = z.unknown()
 
 export type WaitForBlockErrorSchema = z.infer<typeof waitForBlockErrorSchema>
 
-export const waitForBlockQueryResponseSchema = z.lazy(() => waitForBlock200Schema)
+export const waitForBlockQueryResponseSchema = waitForBlock200Schema
 
 export type WaitForBlockQueryResponseSchema = z.infer<typeof waitForBlockQueryResponseSchema>

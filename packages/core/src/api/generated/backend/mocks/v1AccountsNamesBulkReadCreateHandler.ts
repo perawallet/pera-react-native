@@ -18,9 +18,18 @@
 import type { V1AccountsNamesBulkReadCreateMutationResponse } from "../types/V1AccountsNamesBulkReadCreate.ts";
 import { http } from "msw";
 
+export function v1AccountsNamesBulkReadCreateHandlerResponse200(data: V1AccountsNamesBulkReadCreateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1AccountsNamesBulkReadCreateHandler(data?: V1AccountsNamesBulkReadCreateMutationResponse | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v1/accounts/names/bulk-read/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

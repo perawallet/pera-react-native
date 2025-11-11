@@ -21,15 +21,15 @@ import { projectSchema } from "../projectSchema.ts";
 import { z } from "zod";
 
 export const searchResultSerializerResponseSchema = z.object({
-    "type": z.enum(["asset", "account", "transaction", "block", "transaction_group", "application", "collection", "project"]).optional(),
-"asset": z.lazy(() => assetSearchSchema).optional(),
-"account": z.lazy(() => accountWithNameSchema).optional(),
-"transaction": z.string().optional(),
-"block": z.string().optional(),
-"group": z.string().optional(),
-"application": z.string().optional(),
-"collection": z.string().optional(),
-"project": z.lazy(() => projectSchema).optional()
+    "type": z.optional(z.enum(["asset", "account", "transaction", "block", "transaction_group", "application", "collection", "project"])),
+"asset": z.optional(z.lazy(() => assetSearchSchema)),
+"account": z.optional(z.lazy(() => accountWithNameSchema)),
+"transaction": z.optional(z.string()),
+"block": z.optional(z.string()),
+"group": z.optional(z.string()),
+"application": z.optional(z.string()),
+"collection": z.optional(z.string()),
+"project": z.optional(z.lazy(() => projectSchema))
     })
 
 export type SearchResultSerializerResponseSchema = z.infer<typeof searchResultSerializerResponseSchema>

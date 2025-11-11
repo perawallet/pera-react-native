@@ -18,9 +18,9 @@
 import fetch from "../../../algod-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { SimulateTransactionMutationRequest, SimulateTransactionMutationResponse, SimulateTransactionQueryParams, SimulateTransaction400, SimulateTransaction401, SimulateTransaction500, SimulateTransaction503 } from "../types/SimulateTransaction.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
 import { simulateTransactionMutationResponseSchema, simulateTransactionMutationRequestSchema } from "../zod/simulateTransactionSchema.ts";
-import { useMutation } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const simulateTransactionMutationKey = () => [{ url: '/v2/transactions/simulate' }] as const
 
@@ -39,6 +39,16 @@ export async function simulateTransaction({ data, params }: { data: SimulateTran
   return simulateTransactionMutationResponseSchema.parse(res.data)
 }
 
+export function simulateTransactionMutationOptions(config: Partial<RequestConfig<SimulateTransactionMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = simulateTransactionMutationKey()
+  return mutationOptions<SimulateTransactionMutationResponse, ResponseErrorConfig<SimulateTransaction400 | SimulateTransaction401 | SimulateTransaction500 | SimulateTransaction503>, {data: SimulateTransactionMutationRequest, params?: SimulateTransactionQueryParams}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ data, params }) => {
+      return simulateTransaction({ data, params }, config)
+    },
+  })
+}
+
 /**
  * @summary Simulates a raw transaction or transaction group as it would be evaluated on the network. The simulation will use blockchain state from the latest committed round.
  * {@link /v2/transactions/simulate}
@@ -53,11 +63,11 @@ export function useSimulateTransaction<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? simulateTransactionMutationKey()
 
+  const baseOptions = simulateTransactionMutationOptions(config) as UseMutationOptions<SimulateTransactionMutationResponse, ResponseErrorConfig<SimulateTransaction400 | SimulateTransaction401 | SimulateTransaction500 | SimulateTransaction503>, {data: SimulateTransactionMutationRequest, params?: SimulateTransactionQueryParams}, TContext>
+
   return useMutation<SimulateTransactionMutationResponse, ResponseErrorConfig<SimulateTransaction400 | SimulateTransaction401 | SimulateTransaction500 | SimulateTransaction503>, {data: SimulateTransactionMutationRequest, params?: SimulateTransactionQueryParams}, TContext>({
-    mutationFn: async({ data, params }) => {
-      return simulateTransaction({ data, params }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<SimulateTransactionMutationResponse, ResponseErrorConfig<SimulateTransaction400 | SimulateTransaction401 | SimulateTransaction500 | SimulateTransaction503>, {data: SimulateTransactionMutationRequest, params?: SimulateTransactionQueryParams}, TContext>
 }

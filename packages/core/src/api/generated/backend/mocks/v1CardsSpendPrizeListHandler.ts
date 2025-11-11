@@ -18,9 +18,16 @@
 import type { V1CardsSpendPrizeListQueryResponse } from "../types/V1CardsSpendPrizeList.ts";
 import { http } from "msw";
 
-export function v1CardsSpendPrizeListHandler(data?: V1CardsSpendPrizeListQueryResponse | ((
+export function v1CardsSpendPrizeListHandlerResponse200(data?: V1CardsSpendPrizeListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+  
+  })
+}
+
+export function v1CardsSpendPrizeListHandler(data?: string | number | boolean | null | object | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/cards/spend-prize/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

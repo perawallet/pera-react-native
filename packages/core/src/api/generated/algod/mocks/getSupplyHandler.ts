@@ -15,12 +15,30 @@
 * Do not edit manually.
 */
 
-import type { GetSupplyQueryResponse } from "../types/GetSupply.ts";
+import type { GetSupplyQueryResponse, GetSupply401 } from "../types/GetSupply.ts";
 import { http } from "msw";
+
+export function getSupplyHandlerResponse200(data: GetSupplyQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getSupplyHandlerResponse401(data: GetSupply401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function getSupplyHandler(data?: GetSupplyQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/ledger/supply', function handler(info) {
     if(typeof data === 'function') return data(info)
 

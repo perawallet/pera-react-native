@@ -15,12 +15,57 @@
 * Do not edit manually.
 */
 
-import type { GetApplicationByIDQueryResponse } from "../types/GetApplicationByID.ts";
+import type { GetApplicationByIDQueryResponse, GetApplicationByID400, GetApplicationByID401, GetApplicationByID404, GetApplicationByID500 } from "../types/GetApplicationByID.ts";
 import { http } from "msw";
+
+export function getApplicationByIDHandlerResponse200(data: GetApplicationByIDQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getApplicationByIDHandlerResponse400(data: GetApplicationByID400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getApplicationByIDHandlerResponse401(data: GetApplicationByID401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getApplicationByIDHandlerResponse404(data: GetApplicationByID404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getApplicationByIDHandlerResponse500(data: GetApplicationByID500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function getApplicationByIDHandler(data?: GetApplicationByIDQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/applications/:application-id', function handler(info) {
     if(typeof data === 'function') return data(info)
 

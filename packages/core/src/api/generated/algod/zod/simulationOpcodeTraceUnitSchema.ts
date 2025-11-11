@@ -25,11 +25,11 @@ import { z } from "zod";
  */
 export const simulationOpcodeTraceUnitSchema = z.object({
     "pc": z.number().int().describe("The program counter of the current opcode being evaluated."),
-"scratch-changes": z.array(z.lazy(() => scratchChangeSchema).describe("A write operation into a scratch slot.")).describe("The writes into scratch slots.").optional(),
-"spawned-inners": z.array(z.number().int()).describe("The indexes of the traces for inner transactions spawned by this opcode, if any.").optional(),
-"stack-additions": z.array(z.lazy(() => avmValueSchema).describe("Represents an AVM value.")).describe("The values added by this opcode to the stack.").optional(),
-"stack-pop-count": z.number().int().describe("The number of deleted stack values by this opcode.").optional(),
-"state-changes": z.array(z.lazy(() => applicationStateOperationSchema).describe("An operation against an application's global/local/box state.")).describe("The operations against the current application's states.").optional()
+"scratch-changes": z.optional(z.array(z.lazy(() => scratchChangeSchema).describe("A write operation into a scratch slot.")).describe("The writes into scratch slots.")),
+"spawned-inners": z.optional(z.array(z.number().int()).describe("The indexes of the traces for inner transactions spawned by this opcode, if any.")),
+"stack-additions": z.optional(z.array(z.lazy(() => avmValueSchema).describe("Represents an AVM value.")).describe("The values added by this opcode to the stack.")),
+"stack-pop-count": z.optional(z.number().int().describe("The number of deleted stack values by this opcode.")),
+"state-changes": z.optional(z.array(z.lazy(() => applicationStateOperationSchema).describe("An operation against an application's global/local/box state.")).describe("The operations against the current application's states."))
     }).describe("The set of trace information and effect from evaluating a single opcode.")
 
 export type SimulationOpcodeTraceUnitSchema = z.infer<typeof simulationOpcodeTraceUnitSchema>

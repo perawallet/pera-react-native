@@ -18,9 +18,18 @@
 import type { MakeHealthCheckQueryResponse } from "../types/MakeHealthCheck.ts";
 import { http } from "msw";
 
+export function makeHealthCheckHandlerResponse200(data: MakeHealthCheckQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function makeHealthCheckHandler(data?: MakeHealthCheckQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/health', function handler(info) {
     if(typeof data === 'function') return data(info)
 

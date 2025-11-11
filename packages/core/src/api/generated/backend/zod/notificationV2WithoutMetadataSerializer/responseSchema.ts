@@ -19,13 +19,13 @@ import { notificationV2IconSchema } from "../notificationV2IconSchema.ts";
 import { z } from "zod";
 
 export const notificationV2WithoutMetadataSerializerResponseSchema = z.object({
-    "id": z.number().int().optional(),
-"account_address": z.string().optional(),
-"message": z.string().optional(),
-"url": z.string().optional(),
-"creation_datetime": z.string().optional(),
-"is_unread": z.string().optional(),
-"icon": z.lazy(() => notificationV2IconSchema).optional().nullable()
+    "id": z.optional(z.number().int()),
+"account_address": z.optional(z.string()),
+"message": z.optional(z.string()),
+"url": z.optional(z.string()),
+"creation_datetime": z.optional(z.string()),
+"is_unread": z.optional(z.string()),
+"icon": z.optional(z.lazy(() => notificationV2IconSchema))
     })
 
 export type NotificationV2WithoutMetadataSerializerResponseSchema = z.infer<typeof notificationV2WithoutMetadataSerializerResponseSchema>

@@ -15,12 +15,57 @@
 * Do not edit manually.
 */
 
-import type { GetBlockTxidsQueryResponse } from "../types/GetBlockTxids.ts";
+import type { GetBlockTxidsQueryResponse, GetBlockTxids400, GetBlockTxids401, GetBlockTxids404, GetBlockTxids500 } from "../types/GetBlockTxids.ts";
 import { http } from "msw";
+
+export function getBlockTxidsHandlerResponse200(data: GetBlockTxidsQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getBlockTxidsHandlerResponse400(data: GetBlockTxids400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getBlockTxidsHandlerResponse401(data: GetBlockTxids401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getBlockTxidsHandlerResponse404(data: GetBlockTxids404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getBlockTxidsHandlerResponse500(data: GetBlockTxids500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function getBlockTxidsHandler(data?: GetBlockTxidsQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/blocks/:round/txids', function handler(info) {
     if(typeof data === 'function') return data(info)
 

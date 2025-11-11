@@ -24,10 +24,10 @@ export const v1DiscoverNewsReadPathParamsSchema = z.object({
 
 export type V1DiscoverNewsReadPathParamsSchema = z.infer<typeof v1DiscoverNewsReadPathParamsSchema>
 
-export const v1DiscoverNewsRead200Schema = z.lazy(() => newsDetailSerializerResponseSchema)
+export const v1DiscoverNewsRead200Schema = newsDetailSerializerResponseSchema
 
 export type V1DiscoverNewsRead200Schema = z.infer<typeof v1DiscoverNewsRead200Schema>
 
-export const v1DiscoverNewsReadQueryResponseSchema = z.lazy(() => v1DiscoverNewsRead200Schema)
+export const v1DiscoverNewsReadQueryResponseSchema = v1DiscoverNewsRead200Schema
 
 export type V1DiscoverNewsReadQueryResponseSchema = z.infer<typeof v1DiscoverNewsReadQueryResponseSchema>

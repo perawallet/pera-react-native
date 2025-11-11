@@ -25,16 +25,16 @@ export const v1AccountsWealthListPathParamsSchema = z.object({
 export type V1AccountsWealthListPathParamsSchema = z.infer<typeof v1AccountsWealthListPathParamsSchema>
 
 export const v1AccountsWealthListQueryParamsSchema = z.object({
-    "ordering": z.string().describe("Which field to use when ordering the results.").optional(),
+    "ordering": z.optional(z.string().describe("Which field to use when ordering the results.")),
 "period": z.enum(["one-year", "one-month", "one-week", "one-day"])
     })
 
 export type V1AccountsWealthListQueryParamsSchema = z.infer<typeof v1AccountsWealthListQueryParamsSchema>
 
-export const v1AccountsWealthList200Schema = z.array(z.lazy(() => accountWealthHistorySerializerResponseSchema))
+export const v1AccountsWealthList200Schema = z.array(accountWealthHistorySerializerResponseSchema)
 
 export type V1AccountsWealthList200Schema = z.infer<typeof v1AccountsWealthList200Schema>
 
-export const v1AccountsWealthListQueryResponseSchema = z.lazy(() => v1AccountsWealthList200Schema)
+export const v1AccountsWealthListQueryResponseSchema = v1AccountsWealthList200Schema
 
 export type V1AccountsWealthListQueryResponseSchema = z.infer<typeof v1AccountsWealthListQueryResponseSchema>

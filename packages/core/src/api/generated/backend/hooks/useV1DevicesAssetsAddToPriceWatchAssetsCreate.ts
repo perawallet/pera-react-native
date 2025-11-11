@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DevicesAssetsAddToPriceWatchAssetsCreateMutationRequest, V1DevicesAssetsAddToPriceWatchAssetsCreateMutationResponse, V1DevicesAssetsAddToPriceWatchAssetsCreatePathParams } from "../types/V1DevicesAssetsAddToPriceWatchAssetsCreate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1DevicesAssetsAddToPriceWatchAssetsCreateMutationKey = () => [{ url: '/v1/devices/:device_id/assets/:asset_id/add-to-price-watch-assets/' }] as const
 
@@ -39,6 +39,16 @@ export async function v1DevicesAssetsAddToPriceWatchAssetsCreate({ asset_id, dev
   return res.data
 }
 
+export function v1DevicesAssetsAddToPriceWatchAssetsCreateMutationOptions(config: Partial<RequestConfig<V1DevicesAssetsAddToPriceWatchAssetsCreateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1DevicesAssetsAddToPriceWatchAssetsCreateMutationKey()
+  return mutationOptions<V1DevicesAssetsAddToPriceWatchAssetsCreateMutationResponse, ResponseErrorConfig<Error>, {asset_id: V1DevicesAssetsAddToPriceWatchAssetsCreatePathParams["asset_id"], device_id: V1DevicesAssetsAddToPriceWatchAssetsCreatePathParams["device_id"], data?: V1DevicesAssetsAddToPriceWatchAssetsCreateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ asset_id, device_id, data }) => {
+      return v1DevicesAssetsAddToPriceWatchAssetsCreate({ asset_id, device_id, data }, config)
+    },
+  })
+}
+
 /**
  * @description This device authenticated endpoint is for adding to price watch list.
  * @summary Add Asset to Price Watch Assets
@@ -54,11 +64,11 @@ export function useV1DevicesAssetsAddToPriceWatchAssetsCreate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1DevicesAssetsAddToPriceWatchAssetsCreateMutationKey()
 
+  const baseOptions = v1DevicesAssetsAddToPriceWatchAssetsCreateMutationOptions(config) as UseMutationOptions<V1DevicesAssetsAddToPriceWatchAssetsCreateMutationResponse, ResponseErrorConfig<Error>, {asset_id: V1DevicesAssetsAddToPriceWatchAssetsCreatePathParams["asset_id"], device_id: V1DevicesAssetsAddToPriceWatchAssetsCreatePathParams["device_id"], data?: V1DevicesAssetsAddToPriceWatchAssetsCreateMutationRequest}, TContext>
+
   return useMutation<V1DevicesAssetsAddToPriceWatchAssetsCreateMutationResponse, ResponseErrorConfig<Error>, {asset_id: V1DevicesAssetsAddToPriceWatchAssetsCreatePathParams["asset_id"], device_id: V1DevicesAssetsAddToPriceWatchAssetsCreatePathParams["device_id"], data?: V1DevicesAssetsAddToPriceWatchAssetsCreateMutationRequest}, TContext>({
-    mutationFn: async({ asset_id, device_id, data }) => {
-      return v1DevicesAssetsAddToPriceWatchAssetsCreate({ asset_id, device_id, data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1DevicesAssetsAddToPriceWatchAssetsCreateMutationResponse, ResponseErrorConfig<Error>, {asset_id: V1DevicesAssetsAddToPriceWatchAssetsCreatePathParams["asset_id"], device_id: V1DevicesAssetsAddToPriceWatchAssetsCreatePathParams["device_id"], data?: V1DevicesAssetsAddToPriceWatchAssetsCreateMutationRequest}, TContext>
 }

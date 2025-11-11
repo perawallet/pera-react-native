@@ -23,13 +23,13 @@ import { z } from "zod";
  */
 export const participationKeySchema = z.object({
     "address": z.string().describe("Address the key was generated for."),
-"effective-first-valid": z.number().int().describe("When registered, this is the first round it may be used.").optional(),
-"effective-last-valid": z.number().int().describe("When registered, this is the last round it may be used.").optional(),
+"effective-first-valid": z.optional(z.number().int().describe("When registered, this is the first round it may be used.")),
+"effective-last-valid": z.optional(z.number().int().describe("When registered, this is the last round it may be used.")),
 "id": z.string().describe("The key's ParticipationID."),
 "key": z.lazy(() => accountParticipationSchema).describe("AccountParticipation describes the parameters used by this account in consensus protocol."),
-"last-block-proposal": z.number().int().describe("Round when this key was last used to propose a block.").optional(),
-"last-state-proof": z.number().int().describe("Round when this key was last used to generate a state proof.").optional(),
-"last-vote": z.number().int().describe("Round when this key was last used to vote.").optional()
+"last-block-proposal": z.optional(z.number().int().describe("Round when this key was last used to propose a block.")),
+"last-state-proof": z.optional(z.number().int().describe("Round when this key was last used to generate a state proof.")),
+"last-vote": z.optional(z.number().int().describe("Round when this key was last used to vote."))
     }).describe("Represents a participation key used by the node.")
 
 export type ParticipationKeySchema = z.infer<typeof participationKeySchema>

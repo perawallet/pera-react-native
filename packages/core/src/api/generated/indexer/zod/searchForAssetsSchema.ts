@@ -19,13 +19,13 @@ import { assetSchema } from "./assetSchema.ts";
 import { z } from "zod";
 
 export const searchForAssetsQueryParamsSchema = z.object({
-    "include-all": z.boolean().describe("Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.").optional(),
-"limit": z.coerce.number().int().describe("Maximum number of results to return. There could be additional pages even if the limit is not reached.").optional(),
-"next": z.string().describe("The next page of results. Use the next token provided by the previous results.").optional(),
-"creator": z.string().describe("Filter just assets with the given creator address.").optional(),
-"name": z.string().describe("Filter just assets with the given name.").optional(),
-"unit": z.string().describe("Filter just assets with the given unit.").optional(),
-"asset-id": z.coerce.number().int().describe("Asset ID").optional()
+    "include-all": z.optional(z.boolean().describe("Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.")),
+"limit": z.optional(z.coerce.number().int().describe("Maximum number of results to return. There could be additional pages even if the limit is not reached.")),
+"next": z.optional(z.string().describe("The next page of results. Use the next token provided by the previous results.")),
+"creator": z.optional(z.string().describe("Filter just assets with the given creator address.")),
+"name": z.optional(z.string().describe("Filter just assets with the given name.")),
+"unit": z.optional(z.string().describe("Filter just assets with the given unit.")),
+"asset-id": z.optional(z.coerce.number().int().describe("Asset ID"))
     }).optional()
 
 export type SearchForAssetsQueryParamsSchema = z.infer<typeof searchForAssetsQueryParamsSchema>
@@ -36,7 +36,7 @@ export type SearchForAssetsQueryParamsSchema = z.infer<typeof searchForAssetsQue
 export const searchForAssets200Schema = z.object({
     "assets": z.array(z.lazy(() => assetSchema).describe("Specifies both the unique identifier and the parameters for an asset")),
 "current-round": z.number().int().describe("Round at which the results were computed."),
-"next-token": z.string().describe("Used for pagination, when making another request provide this token with the next parameter.").optional()
+"next-token": z.optional(z.string().describe("Used for pagination, when making another request provide this token with the next parameter."))
     })
 
 export type SearchForAssets200Schema = z.infer<typeof searchForAssets200Schema>
@@ -45,9 +45,9 @@ export type SearchForAssets200Schema = z.infer<typeof searchForAssets200Schema>
  * @description Response for errors
  */
 export const searchForAssets400Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
@@ -57,14 +57,14 @@ export type SearchForAssets400Schema = z.infer<typeof searchForAssets400Schema>
  * @description Response for errors
  */
 export const searchForAssets500Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
 export type SearchForAssets500Schema = z.infer<typeof searchForAssets500Schema>
 
-export const searchForAssetsQueryResponseSchema = z.lazy(() => searchForAssets200Schema)
+export const searchForAssetsQueryResponseSchema = searchForAssets200Schema
 
 export type SearchForAssetsQueryResponseSchema = z.infer<typeof searchForAssetsQueryResponseSchema>

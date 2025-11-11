@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DevicesAssetsAddToFavoritesCreateMutationRequest, V1DevicesAssetsAddToFavoritesCreateMutationResponse, V1DevicesAssetsAddToFavoritesCreatePathParams } from "../types/V1DevicesAssetsAddToFavoritesCreate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1DevicesAssetsAddToFavoritesCreateMutationKey = () => [{ url: '/v1/devices/:device_id/assets/:asset_id/add-to-favorites/' }] as const
 
@@ -39,6 +39,16 @@ export async function v1DevicesAssetsAddToFavoritesCreate({ asset_id, device_id,
   return res.data
 }
 
+export function v1DevicesAssetsAddToFavoritesCreateMutationOptions(config: Partial<RequestConfig<V1DevicesAssetsAddToFavoritesCreateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1DevicesAssetsAddToFavoritesCreateMutationKey()
+  return mutationOptions<V1DevicesAssetsAddToFavoritesCreateMutationResponse, ResponseErrorConfig<Error>, {asset_id: V1DevicesAssetsAddToFavoritesCreatePathParams["asset_id"], device_id: V1DevicesAssetsAddToFavoritesCreatePathParams["device_id"], data?: V1DevicesAssetsAddToFavoritesCreateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ asset_id, device_id, data }) => {
+      return v1DevicesAssetsAddToFavoritesCreate({ asset_id, device_id, data }, config)
+    },
+  })
+}
+
 /**
  * @description This device authenticated endpoint is for adding to favorites.
  * @summary Add Asset to Favorites
@@ -54,11 +64,11 @@ export function useV1DevicesAssetsAddToFavoritesCreate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1DevicesAssetsAddToFavoritesCreateMutationKey()
 
+  const baseOptions = v1DevicesAssetsAddToFavoritesCreateMutationOptions(config) as UseMutationOptions<V1DevicesAssetsAddToFavoritesCreateMutationResponse, ResponseErrorConfig<Error>, {asset_id: V1DevicesAssetsAddToFavoritesCreatePathParams["asset_id"], device_id: V1DevicesAssetsAddToFavoritesCreatePathParams["device_id"], data?: V1DevicesAssetsAddToFavoritesCreateMutationRequest}, TContext>
+
   return useMutation<V1DevicesAssetsAddToFavoritesCreateMutationResponse, ResponseErrorConfig<Error>, {asset_id: V1DevicesAssetsAddToFavoritesCreatePathParams["asset_id"], device_id: V1DevicesAssetsAddToFavoritesCreatePathParams["device_id"], data?: V1DevicesAssetsAddToFavoritesCreateMutationRequest}, TContext>({
-    mutationFn: async({ asset_id, device_id, data }) => {
-      return v1DevicesAssetsAddToFavoritesCreate({ asset_id, device_id, data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1DevicesAssetsAddToFavoritesCreateMutationResponse, ResponseErrorConfig<Error>, {asset_id: V1DevicesAssetsAddToFavoritesCreatePathParams["asset_id"], device_id: V1DevicesAssetsAddToFavoritesCreatePathParams["device_id"], data?: V1DevicesAssetsAddToFavoritesCreateMutationRequest}, TContext>
 }

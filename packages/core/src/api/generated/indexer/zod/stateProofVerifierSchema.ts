@@ -18,8 +18,8 @@
 import { z } from "zod";
 
 export const stateProofVerifierSchema = z.object({
-    "commitment": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[cmt\\] Represents the root of the vector commitment tree.").optional(),
-"key-lifetime": z.number().int().describe("\\[lf\\] Key lifetime.").optional()
+    "commitment": z.optional(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[cmt\\] Represents the root of the vector commitment tree.")),
+"key-lifetime": z.optional(z.number().int().describe("\\[lf\\] Key lifetime."))
     })
 
 export type StateProofVerifierSchema = z.infer<typeof stateProofVerifierSchema>

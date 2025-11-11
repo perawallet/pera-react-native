@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V2AssetsTogglePriceAlertCreateMutationRequest, V2AssetsTogglePriceAlertCreateMutationResponse, V2AssetsTogglePriceAlertCreatePathParams } from "../types/V2AssetsTogglePriceAlertCreate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v2AssetsTogglePriceAlertCreateMutationKey = () => [{ url: '/v2/assets/:asset_id/toggle-price-alert/' }] as const
 
@@ -39,6 +39,16 @@ export async function v2AssetsTogglePriceAlertCreate({ asset_id, data }: { asset
   return res.data
 }
 
+export function v2AssetsTogglePriceAlertCreateMutationOptions(config: Partial<RequestConfig<V2AssetsTogglePriceAlertCreateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v2AssetsTogglePriceAlertCreateMutationKey()
+  return mutationOptions<V2AssetsTogglePriceAlertCreateMutationResponse, ResponseErrorConfig<Error>, {asset_id: V2AssetsTogglePriceAlertCreatePathParams["asset_id"], data: V2AssetsTogglePriceAlertCreateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ asset_id, data }) => {
+      return v2AssetsTogglePriceAlertCreate({ asset_id, data }, config)
+    },
+  })
+}
+
 /**
  * @description This endpoint sets the price alert status of an asset for the specified device.The client must explicitly specify whether to enable or disable the price alert status.POST /v2/assets/{asset_id}/toggle-price-alert/
  * @summary Toggle Asset Price Alert Status
@@ -54,11 +64,11 @@ export function useV2AssetsTogglePriceAlertCreate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v2AssetsTogglePriceAlertCreateMutationKey()
 
+  const baseOptions = v2AssetsTogglePriceAlertCreateMutationOptions(config) as UseMutationOptions<V2AssetsTogglePriceAlertCreateMutationResponse, ResponseErrorConfig<Error>, {asset_id: V2AssetsTogglePriceAlertCreatePathParams["asset_id"], data: V2AssetsTogglePriceAlertCreateMutationRequest}, TContext>
+
   return useMutation<V2AssetsTogglePriceAlertCreateMutationResponse, ResponseErrorConfig<Error>, {asset_id: V2AssetsTogglePriceAlertCreatePathParams["asset_id"], data: V2AssetsTogglePriceAlertCreateMutationRequest}, TContext>({
-    mutationFn: async({ asset_id, data }) => {
-      return v2AssetsTogglePriceAlertCreate({ asset_id, data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V2AssetsTogglePriceAlertCreateMutationResponse, ResponseErrorConfig<Error>, {asset_id: V2AssetsTogglePriceAlertCreatePathParams["asset_id"], data: V2AssetsTogglePriceAlertCreateMutationRequest}, TContext>
 }

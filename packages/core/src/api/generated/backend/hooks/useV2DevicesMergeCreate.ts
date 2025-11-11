@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V2DevicesMergeCreateMutationRequest, V2DevicesMergeCreateMutationResponse, V2DevicesMergeCreateHeaderParams } from "../types/V2DevicesMergeCreate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v2DevicesMergeCreateMutationKey = () => [{ url: '/v2/devices/merge/' }] as const
 
@@ -38,6 +38,16 @@ export async function v2DevicesMergeCreate({ data, headers }: { data: V2DevicesM
   return res.data
 }
 
+export function v2DevicesMergeCreateMutationOptions(config: Partial<RequestConfig<V2DevicesMergeCreateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v2DevicesMergeCreateMutationKey()
+  return mutationOptions<V2DevicesMergeCreateMutationResponse, ResponseErrorConfig<Error>, {data: V2DevicesMergeCreateMutationRequest, headers?: V2DevicesMergeCreateHeaderParams}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ data, headers }) => {
+      return v2DevicesMergeCreate({ data, headers }, config)
+    },
+  })
+}
+
 /**
  * @description This endpoint designed for devices which used device v1 logic and will use device v2 logic. If client doesn'thas 'auth_token' but if it has device 'id' then this endpoint will create new `auth_token` or create very new device.- **IMPORTANT**: Requested device `id` and returned device `id` could be different. This endpoint might create new device.- **IMPORTANT 2**: It is not a "create new auth_token" endpoint. This endpoint **will deprecate** after sometime. Use this only if you know device `id` but don't know `auth_token`. Which means client has used device v1 endpoints before and it is the first time to need to use device v2 endpoints.
  * {@link /v2/devices/merge/}
@@ -52,11 +62,11 @@ export function useV2DevicesMergeCreate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v2DevicesMergeCreateMutationKey()
 
+  const baseOptions = v2DevicesMergeCreateMutationOptions(config) as UseMutationOptions<V2DevicesMergeCreateMutationResponse, ResponseErrorConfig<Error>, {data: V2DevicesMergeCreateMutationRequest, headers?: V2DevicesMergeCreateHeaderParams}, TContext>
+
   return useMutation<V2DevicesMergeCreateMutationResponse, ResponseErrorConfig<Error>, {data: V2DevicesMergeCreateMutationRequest, headers?: V2DevicesMergeCreateHeaderParams}, TContext>({
-    mutationFn: async({ data, headers }) => {
-      return v2DevicesMergeCreate({ data, headers }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V2DevicesMergeCreateMutationResponse, ResponseErrorConfig<Error>, {data: V2DevicesMergeCreateMutationRequest, headers?: V2DevicesMergeCreateHeaderParams}, TContext>
 }

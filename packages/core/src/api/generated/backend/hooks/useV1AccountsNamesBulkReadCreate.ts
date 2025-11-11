@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1AccountsNamesBulkReadCreateMutationRequest, V1AccountsNamesBulkReadCreateMutationResponse } from "../types/V1AccountsNamesBulkReadCreate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1AccountsNamesBulkReadCreateMutationKey = () => [{ url: '/v1/accounts/names/bulk-read/' }] as const
 
@@ -39,6 +39,16 @@ export async function v1AccountsNamesBulkReadCreate({ data }: { data: V1Accounts
   return res.data
 }
 
+export function v1AccountsNamesBulkReadCreateMutationOptions(config: Partial<RequestConfig<V1AccountsNamesBulkReadCreateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1AccountsNamesBulkReadCreateMutationKey()
+  return mutationOptions<V1AccountsNamesBulkReadCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1AccountsNamesBulkReadCreateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ data }) => {
+      return v1AccountsNamesBulkReadCreate({ data }, config)
+    },
+  })
+}
+
 /**
  * @description For every account address that is provided in the request body, account names are returned (if any).
  * @summary Account Name Bulk Read
@@ -54,11 +64,11 @@ export function useV1AccountsNamesBulkReadCreate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1AccountsNamesBulkReadCreateMutationKey()
 
+  const baseOptions = v1AccountsNamesBulkReadCreateMutationOptions(config) as UseMutationOptions<V1AccountsNamesBulkReadCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1AccountsNamesBulkReadCreateMutationRequest}, TContext>
+
   return useMutation<V1AccountsNamesBulkReadCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1AccountsNamesBulkReadCreateMutationRequest}, TContext>({
-    mutationFn: async({ data }) => {
-      return v1AccountsNamesBulkReadCreate({ data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1AccountsNamesBulkReadCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1AccountsNamesBulkReadCreateMutationRequest}, TContext>
 }

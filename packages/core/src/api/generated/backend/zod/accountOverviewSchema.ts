@@ -20,7 +20,7 @@ import { z } from "zod";
 
 export const accountOverviewSchema = z.object({
     "address": z.string().min(1),
-"name": z.lazy(() => NFDomainLookupResponseSchema).nullable(),
+"name": z.nullable(z.lazy(() => NFDomainLookupResponseSchema)),
 "total_usd_value": z.string(),
 "total_algo_value": z.string(),
 "current_round": z.string(),

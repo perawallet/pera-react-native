@@ -19,7 +19,7 @@ import { immersveCountryAvailabilityRequestSerializerRequestSchema } from "./imm
 import { immersveCountryAvailabilityRequestSerializerResponseSchema } from "./immersveCountryAvailabilityRequestSerializer/responseSchema.ts";
 import { z } from "zod";
 
-export const v1CardsCountryAvailabilityRequestCreate201Schema = z.lazy(() => immersveCountryAvailabilityRequestSerializerResponseSchema)
+export const v1CardsCountryAvailabilityRequestCreate201Schema = immersveCountryAvailabilityRequestSerializerResponseSchema
 
 export type V1CardsCountryAvailabilityRequestCreate201Schema = z.infer<typeof v1CardsCountryAvailabilityRequestCreate201Schema>
 
@@ -30,10 +30,10 @@ export const v1CardsCountryAvailabilityRequestCreate400Schema = z.unknown()
 
 export type V1CardsCountryAvailabilityRequestCreate400Schema = z.infer<typeof v1CardsCountryAvailabilityRequestCreate400Schema>
 
-export const v1CardsCountryAvailabilityRequestCreateMutationRequestSchema = z.lazy(() => immersveCountryAvailabilityRequestSerializerRequestSchema)
+export const v1CardsCountryAvailabilityRequestCreateMutationRequestSchema = immersveCountryAvailabilityRequestSerializerRequestSchema
 
 export type V1CardsCountryAvailabilityRequestCreateMutationRequestSchema = z.infer<typeof v1CardsCountryAvailabilityRequestCreateMutationRequestSchema>
 
-export const v1CardsCountryAvailabilityRequestCreateMutationResponseSchema = z.lazy(() => v1CardsCountryAvailabilityRequestCreate201Schema)
+export const v1CardsCountryAvailabilityRequestCreateMutationResponseSchema = v1CardsCountryAvailabilityRequestCreate201Schema
 
 export type V1CardsCountryAvailabilityRequestCreateMutationResponseSchema = z.infer<typeof v1CardsCountryAvailabilityRequestCreateMutationResponseSchema>

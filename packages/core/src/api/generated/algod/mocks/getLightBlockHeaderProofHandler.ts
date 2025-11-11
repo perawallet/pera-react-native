@@ -15,12 +15,66 @@
 * Do not edit manually.
 */
 
-import type { GetLightBlockHeaderProofQueryResponse } from "../types/GetLightBlockHeaderProof.ts";
+import type { GetLightBlockHeaderProofQueryResponse, GetLightBlockHeaderProof401, GetLightBlockHeaderProof404, GetLightBlockHeaderProof408, GetLightBlockHeaderProof500, GetLightBlockHeaderProof503 } from "../types/GetLightBlockHeaderProof.ts";
 import { http } from "msw";
+
+export function getLightBlockHeaderProofHandlerResponse200(data: GetLightBlockHeaderProofQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getLightBlockHeaderProofHandlerResponse401(data: GetLightBlockHeaderProof401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getLightBlockHeaderProofHandlerResponse404(data: GetLightBlockHeaderProof404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getLightBlockHeaderProofHandlerResponse408(data: GetLightBlockHeaderProof408) {
+  return new Response(JSON.stringify(data), {
+    status: 408,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getLightBlockHeaderProofHandlerResponse500(data: GetLightBlockHeaderProof500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getLightBlockHeaderProofHandlerResponse503(data: GetLightBlockHeaderProof503) {
+  return new Response(JSON.stringify(data), {
+    status: 503,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function getLightBlockHeaderProofHandler(data?: GetLightBlockHeaderProofQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/blocks/:round/lightheader/proof', function handler(info) {
     if(typeof data === 'function') return data(info)
 

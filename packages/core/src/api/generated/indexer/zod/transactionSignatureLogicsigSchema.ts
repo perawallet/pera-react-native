@@ -22,11 +22,11 @@ import { z } from "zod";
  * @description \\[lsig\\] Programatic transaction signature.\n\nDefinition:\ndata/transactions/logicsig.go
  */
 export const transactionSignatureLogicsigSchema = z.object({
-    "args": z.array(z.string()).describe("\\[arg\\] Logic arguments, base64 encoded.").optional(),
+    "args": z.optional(z.array(z.string()).describe("\\[arg\\] Logic arguments, base64 encoded.")),
 "logic": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[l\\] Program signed by a signature or multi signature, or hashed to be the address of ana ccount. Base64 encoded TEAL program."),
-"logic-multisig-signature": z.lazy(() => transactionSignatureMultisigSchema).describe("structure holding multiple subsignatures.\n\nDefinition:\ncrypto/multisig.go : MultisigSig").optional(),
-"multisig-signature": z.lazy(() => transactionSignatureMultisigSchema).describe("structure holding multiple subsignatures.\n\nDefinition:\ncrypto/multisig.go : MultisigSig").optional(),
-"signature": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[sig\\] ed25519 signature.").optional()
+"logic-multisig-signature": z.optional(z.lazy(() => transactionSignatureMultisigSchema).describe("structure holding multiple subsignatures.\n\nDefinition:\ncrypto/multisig.go : MultisigSig")),
+"multisig-signature": z.optional(z.lazy(() => transactionSignatureMultisigSchema).describe("structure holding multiple subsignatures.\n\nDefinition:\ncrypto/multisig.go : MultisigSig")),
+"signature": z.optional(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[sig\\] ed25519 signature."))
     }).describe("\\[lsig\\] Programatic transaction signature.\n\nDefinition:\ndata/transactions/logicsig.go")
 
 export type TransactionSignatureLogicsigSchema = z.infer<typeof transactionSignatureLogicsigSchema>

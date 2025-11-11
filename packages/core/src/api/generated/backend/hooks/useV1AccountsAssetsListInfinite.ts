@@ -37,16 +37,16 @@ export async function v1AccountsAssetsListInfinite({ account_address, params }: 
 
 export function v1AccountsAssetsListInfiniteQueryOptions({ account_address, params }: { account_address: V1AccountsAssetsListPathParams["account_address"]; params?: V1AccountsAssetsListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {
   const queryKey = v1AccountsAssetsListInfiniteQueryKey({ account_address }, params)
-  return infiniteQueryOptions<V1AccountsAssetsListQueryResponse, ResponseErrorConfig<Error>, V1AccountsAssetsListQueryResponse, typeof queryKey, number>({
+  return infiniteQueryOptions<V1AccountsAssetsListQueryResponse, ResponseErrorConfig<Error>, InfiniteData<V1AccountsAssetsListQueryResponse>, typeof queryKey, NonNullable<V1AccountsAssetsListQueryParams['cursor']>>({
    enabled: !!(account_address),
    queryKey,
    queryFn: async ({ signal, pageParam }) => {
       config.signal = signal
     
-      if (!params) {
-       params = { }
-      }
-      params['cursor'] = pageParam as unknown as V1AccountsAssetsListQueryParams['cursor']
+      params = {
+        ...(params ?? {}),
+        ['cursor']: pageParam as unknown as V1AccountsAssetsListQueryParams['cursor'],
+      } as V1AccountsAssetsListQueryParams
       return v1AccountsAssetsListInfinite({ account_address, params }, config)
    },
    initialPageParam: "",
@@ -58,9 +58,9 @@ export function v1AccountsAssetsListInfiniteQueryOptions({ account_address, para
 /**
  * {@link /v1/accounts/:account_address/assets/}
  */
-export function useV1AccountsAssetsListInfinite<TData = InfiniteData<V1AccountsAssetsListQueryResponse>, TQueryData = V1AccountsAssetsListQueryResponse, TQueryKey extends QueryKey = V1AccountsAssetsListInfiniteQueryKey>({ account_address, params }: { account_address: V1AccountsAssetsListPathParams["account_address"]; params?: V1AccountsAssetsListQueryParams }, options: 
+export function useV1AccountsAssetsListInfinite<TQueryFnData = V1AccountsAssetsListQueryResponse, TError = ResponseErrorConfig<Error>, TData = InfiniteData<TQueryFnData>, TQueryKey extends QueryKey = V1AccountsAssetsListInfiniteQueryKey, TPageParam = NonNullable<V1AccountsAssetsListQueryParams['cursor']>>({ account_address, params }: { account_address: V1AccountsAssetsListPathParams["account_address"]; params?: V1AccountsAssetsListQueryParams }, options: 
 {
-  query?: Partial<InfiniteQueryObserverOptions<V1AccountsAssetsListQueryResponse, ResponseErrorConfig<Error>, TQueryData, TQueryKey, TQueryData>> & { client?: QueryClient },
+  query?: Partial<InfiniteQueryObserverOptions<TQueryFnData, TError, TData, TQueryKey, TPageParam>> & { client?: QueryClient },
   client?: Partial<RequestConfig> & { client?: typeof fetch }
 }
  = {}) {
@@ -72,7 +72,7 @@ export function useV1AccountsAssetsListInfinite<TData = InfiniteData<V1AccountsA
    ...v1AccountsAssetsListInfiniteQueryOptions({ account_address, params }, config),
    queryKey,
    ...queryOptions
-  } as unknown as InfiniteQueryObserverOptions, queryClient) as UseInfiniteQueryResult<TData, ResponseErrorConfig<Error>> & { queryKey: TQueryKey }
+  } as unknown as InfiniteQueryObserverOptions<TQueryFnData, TError, TData, TQueryKey, TPageParam>, queryClient) as UseInfiniteQueryResult<TData, TError> & { queryKey: TQueryKey }
 
   query.queryKey = queryKey as TQueryKey
 

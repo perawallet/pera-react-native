@@ -15,12 +15,48 @@
 * Do not edit manually.
 */
 
-import type { SearchForApplicationBoxesQueryResponse } from "../types/SearchForApplicationBoxes.ts";
+import type { SearchForApplicationBoxesQueryResponse, SearchForApplicationBoxes400, SearchForApplicationBoxes404, SearchForApplicationBoxes500 } from "../types/SearchForApplicationBoxes.ts";
 import { http } from "msw";
+
+export function searchForApplicationBoxesHandlerResponse200(data: SearchForApplicationBoxesQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function searchForApplicationBoxesHandlerResponse400(data: SearchForApplicationBoxes400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function searchForApplicationBoxesHandlerResponse404(data: SearchForApplicationBoxes404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function searchForApplicationBoxesHandlerResponse500(data: SearchForApplicationBoxes500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function searchForApplicationBoxesHandler(data?: SearchForApplicationBoxesQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/applications/:application-id/boxes', function handler(info) {
     if(typeof data === 'function') return data(info)
 

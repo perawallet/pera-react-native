@@ -25,22 +25,22 @@ export const v1DiscoverNftCollectiblesListingsListPathParamsSchema = z.object({
 export type V1DiscoverNftCollectiblesListingsListPathParamsSchema = z.infer<typeof v1DiscoverNftCollectiblesListingsListPathParamsSchema>
 
 export const v1DiscoverNftCollectiblesListingsListQueryParamsSchema = z.object({
-    "ordering": z.string().describe("Which field to use when ordering the results.").optional(),
-"limit": z.coerce.number().int().describe("Number of results to return per page.").optional(),
-"offset": z.coerce.number().int().describe("The initial index from which to return the results.").optional()
+    "ordering": z.optional(z.string().describe("Which field to use when ordering the results.")),
+"limit": z.optional(z.coerce.number().int().describe("Number of results to return per page.")),
+"offset": z.optional(z.coerce.number().int().describe("The initial index from which to return the results."))
     }).optional()
 
 export type V1DiscoverNftCollectiblesListingsListQueryParamsSchema = z.infer<typeof v1DiscoverNftCollectiblesListingsListQueryParamsSchema>
 
 export const v1DiscoverNftCollectiblesListingsList200Schema = z.object({
     "count": z.number().int(),
-"next": z.string().url().nullable().nullish(),
-"previous": z.string().url().nullable().nullish(),
+"next": z.string().url().nullish(),
+"previous": z.string().url().nullish(),
 "results": z.array(z.lazy(() => discoverListingListSerializerResponseSchema))
     })
 
 export type V1DiscoverNftCollectiblesListingsList200Schema = z.infer<typeof v1DiscoverNftCollectiblesListingsList200Schema>
 
-export const v1DiscoverNftCollectiblesListingsListQueryResponseSchema = z.lazy(() => v1DiscoverNftCollectiblesListingsList200Schema)
+export const v1DiscoverNftCollectiblesListingsListQueryResponseSchema = v1DiscoverNftCollectiblesListingsList200Schema
 
 export type V1DiscoverNftCollectiblesListingsListQueryResponseSchema = z.infer<typeof v1DiscoverNftCollectiblesListingsListQueryResponseSchema>

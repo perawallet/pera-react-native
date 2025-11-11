@@ -23,7 +23,7 @@ export const ASAInboxSendFlowSummaryResponseSchema = z.object({
 "minimum_balance_requirement": z.number().int().describe("Parameter of arc59_sendAsset function."),
 "inner_tx_count": z.number().int().describe("Parameter of arc59_sendAsset function."),
 "total_protocol_and_mbr_fee": z.number().int().describe("Total protocol and min balance fees including arc59 opt-in (if required in first parameter) + min_balance_requirement and all tx fees."),
-"inbox_address": z.string().min(1).describe("Inbox address of account. If null, there is no inbox account for this account.").nullable(),
+"inbox_address": z.nullable(z.string().min(1).describe("Inbox address of account. If null, there is no inbox account for this account.")),
 "algo_fund_amount": z.number().int().describe("Extra algo fund amount should be included."),
 "warning_message": z.lazy(() => ASAInboxSendFlowSummaryWarningMessageSchema).describe("If there is any warning message, it should be included here.")
     })

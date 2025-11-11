@@ -19,14 +19,14 @@ import { bulkAccountRequestSerializerRequestSchema } from "./bulkAccountRequestS
 import { responseSerializerResponseSchema } from "./responseSerializer/responseSchema.ts";
 import { z } from "zod";
 
-export const v1AccountsNamesBulkReadCreate200Schema = z.lazy(() => responseSerializerResponseSchema)
+export const v1AccountsNamesBulkReadCreate200Schema = responseSerializerResponseSchema
 
 export type V1AccountsNamesBulkReadCreate200Schema = z.infer<typeof v1AccountsNamesBulkReadCreate200Schema>
 
-export const v1AccountsNamesBulkReadCreateMutationRequestSchema = z.lazy(() => bulkAccountRequestSerializerRequestSchema)
+export const v1AccountsNamesBulkReadCreateMutationRequestSchema = bulkAccountRequestSerializerRequestSchema
 
 export type V1AccountsNamesBulkReadCreateMutationRequestSchema = z.infer<typeof v1AccountsNamesBulkReadCreateMutationRequestSchema>
 
-export const v1AccountsNamesBulkReadCreateMutationResponseSchema = z.lazy(() => v1AccountsNamesBulkReadCreate200Schema)
+export const v1AccountsNamesBulkReadCreateMutationResponseSchema = v1AccountsNamesBulkReadCreate200Schema
 
 export type V1AccountsNamesBulkReadCreateMutationResponseSchema = z.infer<typeof v1AccountsNamesBulkReadCreateMutationResponseSchema>

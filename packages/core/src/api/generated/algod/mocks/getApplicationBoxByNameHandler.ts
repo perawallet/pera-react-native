@@ -15,12 +15,57 @@
 * Do not edit manually.
 */
 
-import type { GetApplicationBoxByNameQueryResponse } from "../types/GetApplicationBoxByName.ts";
+import type { GetApplicationBoxByNameQueryResponse, GetApplicationBoxByName400, GetApplicationBoxByName401, GetApplicationBoxByName404, GetApplicationBoxByName500 } from "../types/GetApplicationBoxByName.ts";
 import { http } from "msw";
+
+export function getApplicationBoxByNameHandlerResponse200(data: GetApplicationBoxByNameQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getApplicationBoxByNameHandlerResponse400(data: GetApplicationBoxByName400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getApplicationBoxByNameHandlerResponse401(data: GetApplicationBoxByName401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getApplicationBoxByNameHandlerResponse404(data: GetApplicationBoxByName404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getApplicationBoxByNameHandlerResponse500(data: GetApplicationBoxByName500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function getApplicationBoxByNameHandler(data?: GetApplicationBoxByNameQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/applications/:application-id/box', function handler(info) {
     if(typeof data === 'function') return data(info)
 

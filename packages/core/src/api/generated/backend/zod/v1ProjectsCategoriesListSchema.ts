@@ -19,15 +19,15 @@ import { categorySerializerResponseSchema } from "./categorySerializer/responseS
 import { z } from "zod";
 
 export const v1ProjectsCategoriesListQueryParamsSchema = z.object({
-    "ordering": z.string().describe("Which field to use when ordering the results.").optional()
+    "ordering": z.optional(z.string().describe("Which field to use when ordering the results."))
     }).optional()
 
 export type V1ProjectsCategoriesListQueryParamsSchema = z.infer<typeof v1ProjectsCategoriesListQueryParamsSchema>
 
-export const v1ProjectsCategoriesList200Schema = z.array(z.lazy(() => categorySerializerResponseSchema))
+export const v1ProjectsCategoriesList200Schema = z.array(categorySerializerResponseSchema)
 
 export type V1ProjectsCategoriesList200Schema = z.infer<typeof v1ProjectsCategoriesList200Schema>
 
-export const v1ProjectsCategoriesListQueryResponseSchema = z.lazy(() => v1ProjectsCategoriesList200Schema)
+export const v1ProjectsCategoriesListQueryResponseSchema = v1ProjectsCategoriesList200Schema
 
 export type V1ProjectsCategoriesListQueryResponseSchema = z.infer<typeof v1ProjectsCategoriesListQueryResponseSchema>

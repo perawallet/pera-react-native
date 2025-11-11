@@ -21,7 +21,7 @@ import { z } from "zod";
 export const assetHoldingsResponseSchema = z.object({
     "assets": z.array(z.lazy(() => assetHoldingSchema).describe("Describes an asset held by an account.\n\nDefinition:\ndata/basics/userBalance.go : AssetHolding")),
 "current-round": z.number().int().describe("Round at which the results were computed."),
-"next-token": z.string().describe("Used for pagination, when making another request provide this token with the next parameter.").optional()
+"next-token": z.optional(z.string().describe("Used for pagination, when making another request provide this token with the next parameter."))
     })
 
 export type AssetHoldingsResponseSchema = z.infer<typeof assetHoldingsResponseSchema>

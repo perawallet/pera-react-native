@@ -15,12 +15,30 @@
 * Do not edit manually.
 */
 
-import type { SearchForApplicationsQueryResponse } from "../types/SearchForApplications.ts";
+import type { SearchForApplicationsQueryResponse, SearchForApplications500 } from "../types/SearchForApplications.ts";
 import { http } from "msw";
+
+export function searchForApplicationsHandlerResponse200(data: SearchForApplicationsQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function searchForApplicationsHandlerResponse500(data: SearchForApplications500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function searchForApplicationsHandler(data?: SearchForApplicationsQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/applications', function handler(info) {
     if(typeof data === 'function') return data(info)
 

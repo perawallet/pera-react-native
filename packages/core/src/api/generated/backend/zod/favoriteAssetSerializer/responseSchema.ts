@@ -18,8 +18,8 @@
 import { z } from "zod";
 
 export const favoriteAssetSerializerResponseSchema = z.object({
-    "id": z.string().min(1).optional(),
-"creation_datetime": z.string().optional()
+    "id": z.optional(z.string().min(1)),
+"creation_datetime": z.optional(z.string())
     })
 
 export type FavoriteAssetSerializerResponseSchema = z.infer<typeof favoriteAssetSerializerResponseSchema>

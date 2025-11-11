@@ -18,9 +18,9 @@
 import fetch from "../../../algod-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { AddParticipationKeyMutationRequest, AddParticipationKeyMutationResponse, AddParticipationKey400, AddParticipationKey401, AddParticipationKey404, AddParticipationKey500, AddParticipationKey503 } from "../types/AddParticipationKey.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
 import { addParticipationKeyMutationResponseSchema, addParticipationKeyMutationRequestSchema } from "../zod/addParticipationKeySchema.ts";
-import { useMutation } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const addParticipationKeyMutationKey = () => [{ url: '/v2/participation' }] as const
 
@@ -39,6 +39,16 @@ export async function addParticipationKey({ data }: { data?: AddParticipationKey
   return addParticipationKeyMutationResponseSchema.parse(res.data)
 }
 
+export function addParticipationKeyMutationOptions(config: Partial<RequestConfig<AddParticipationKeyMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = addParticipationKeyMutationKey()
+  return mutationOptions<AddParticipationKeyMutationResponse, ResponseErrorConfig<AddParticipationKey400 | AddParticipationKey401 | AddParticipationKey404 | AddParticipationKey500 | AddParticipationKey503>, {data?: AddParticipationKeyMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ data }) => {
+      return addParticipationKey({ data }, config)
+    },
+  })
+}
+
 /**
  * @summary Add a participation key to the node
  * {@link /v2/participation}
@@ -53,11 +63,11 @@ export function useAddParticipationKey<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? addParticipationKeyMutationKey()
 
+  const baseOptions = addParticipationKeyMutationOptions(config) as UseMutationOptions<AddParticipationKeyMutationResponse, ResponseErrorConfig<AddParticipationKey400 | AddParticipationKey401 | AddParticipationKey404 | AddParticipationKey500 | AddParticipationKey503>, {data?: AddParticipationKeyMutationRequest}, TContext>
+
   return useMutation<AddParticipationKeyMutationResponse, ResponseErrorConfig<AddParticipationKey400 | AddParticipationKey401 | AddParticipationKey404 | AddParticipationKey500 | AddParticipationKey503>, {data?: AddParticipationKeyMutationRequest}, TContext>({
-    mutationFn: async({ data }) => {
-      return addParticipationKey({ data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<AddParticipationKeyMutationResponse, ResponseErrorConfig<AddParticipationKey400 | AddParticipationKey401 | AddParticipationKey404 | AddParticipationKey500 | AddParticipationKey503>, {data?: AddParticipationKeyMutationRequest}, TContext>
 }

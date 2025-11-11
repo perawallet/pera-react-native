@@ -20,9 +20,9 @@ import { z } from "zod";
 export const compileResponseSchema = z.object({
     "hash": z.string().describe("base32 SHA512_256 of program bytes (Address style)"),
 "result": z.string().describe("base64 encoded program bytes"),
-"sourcemap": z.object({
+"sourcemap": z.optional(z.object({
     
-    }).describe("JSON of the source map").optional()
+    }).describe("JSON of the source map"))
     })
 
 export type CompileResponseSchema = z.infer<typeof compileResponseSchema>

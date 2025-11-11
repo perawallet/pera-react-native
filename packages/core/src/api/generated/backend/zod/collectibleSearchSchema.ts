@@ -20,8 +20,8 @@ import { z } from "zod";
 
 export const collectibleSearchSchema = z.object({
     "collection": z.lazy(() => simpleCollectionSchema),
-"primary_image": z.string().optional(),
-"title": z.string().min(1).optional()
+"primary_image": z.optional(z.string()),
+"title": z.optional(z.string().min(1))
     })
 
 export type CollectibleSearchSchema = z.infer<typeof collectibleSearchSchema>

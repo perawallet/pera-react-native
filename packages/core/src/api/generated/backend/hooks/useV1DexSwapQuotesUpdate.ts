@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DexSwapQuotesUpdateMutationRequest, V1DexSwapQuotesUpdateMutationResponse, V1DexSwapQuotesUpdatePathParams } from "../types/V1DexSwapQuotesUpdate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1DexSwapQuotesUpdateMutationKey = () => [{ url: '/v1/dex-swap/quotes/:quote_id/' }] as const
 
@@ -37,6 +37,16 @@ export async function v1DexSwapQuotesUpdate({ quote_id, data }: { quote_id: V1De
   return res.data
 }
 
+export function v1DexSwapQuotesUpdateMutationOptions(config: Partial<RequestConfig<V1DexSwapQuotesUpdateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1DexSwapQuotesUpdateMutationKey()
+  return mutationOptions<V1DexSwapQuotesUpdateMutationResponse, ResponseErrorConfig<Error>, {quote_id: V1DexSwapQuotesUpdatePathParams["quote_id"], data?: V1DexSwapQuotesUpdateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ quote_id, data }) => {
+      return v1DexSwapQuotesUpdate({ quote_id, data }, config)
+    },
+  })
+}
+
 /**
  * {@link /v1/dex-swap/quotes/:quote_id/}
  */
@@ -50,11 +60,11 @@ export function useV1DexSwapQuotesUpdate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1DexSwapQuotesUpdateMutationKey()
 
+  const baseOptions = v1DexSwapQuotesUpdateMutationOptions(config) as UseMutationOptions<V1DexSwapQuotesUpdateMutationResponse, ResponseErrorConfig<Error>, {quote_id: V1DexSwapQuotesUpdatePathParams["quote_id"], data?: V1DexSwapQuotesUpdateMutationRequest}, TContext>
+
   return useMutation<V1DexSwapQuotesUpdateMutationResponse, ResponseErrorConfig<Error>, {quote_id: V1DexSwapQuotesUpdatePathParams["quote_id"], data?: V1DexSwapQuotesUpdateMutationRequest}, TContext>({
-    mutationFn: async({ quote_id, data }) => {
-      return v1DexSwapQuotesUpdate({ quote_id, data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1DexSwapQuotesUpdateMutationResponse, ResponseErrorConfig<Error>, {quote_id: V1DexSwapQuotesUpdatePathParams["quote_id"], data?: V1DexSwapQuotesUpdateMutationRequest}, TContext>
 }

@@ -18,12 +18,12 @@
 import { z } from "zod";
 
 export const discoverListingListSerializerResponseSchema = z.object({
-    "id": z.number().int().optional(),
-"provider": z.enum(["randgallery", "algoxnft", "shufl", "exa_market"]).optional(),
-"amount_in_algo": z.string().describe("total amount paid to seller, provider and creator in microalgo").optional(),
-"external_url": z.string().optional(),
-"update_datetime": z.string().optional(),
-"seller_address": z.string().min(1).optional()
+    "id": z.optional(z.number().int()),
+"provider": z.optional(z.enum(["randgallery", "algoxnft", "shufl", "exa_market"])),
+"amount_in_algo": z.optional(z.string().describe("total amount paid to seller, provider and creator in microalgo")),
+"external_url": z.optional(z.string()),
+"update_datetime": z.optional(z.string()),
+"seller_address": z.optional(z.string().min(1))
     })
 
 export type DiscoverListingListSerializerResponseSchema = z.infer<typeof discoverListingListSerializerResponseSchema>

@@ -15,12 +15,57 @@
 * Do not edit manually.
 */
 
-import type { GetBlockLogsQueryResponse } from "../types/GetBlockLogs.ts";
+import type { GetBlockLogsQueryResponse, GetBlockLogs400, GetBlockLogs401, GetBlockLogs404, GetBlockLogs500 } from "../types/GetBlockLogs.ts";
 import { http } from "msw";
+
+export function getBlockLogsHandlerResponse200(data: GetBlockLogsQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getBlockLogsHandlerResponse400(data: GetBlockLogs400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getBlockLogsHandlerResponse401(data: GetBlockLogs401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getBlockLogsHandlerResponse404(data: GetBlockLogs404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getBlockLogsHandlerResponse500(data: GetBlockLogs500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function getBlockLogsHandler(data?: GetBlockLogsQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/blocks/:round/logs', function handler(info) {
     if(typeof data === 'function') return data(info)
 

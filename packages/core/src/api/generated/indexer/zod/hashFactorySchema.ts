@@ -18,7 +18,7 @@
 import { z } from "zod";
 
 export const hashFactorySchema = z.object({
-    "hash-type": z.number().int().describe("\\[t\\]").optional()
+    "hash-type": z.optional(z.number().int().describe("\\[t\\]"))
     })
 
 export type HashFactorySchema = z.infer<typeof hashFactorySchema>

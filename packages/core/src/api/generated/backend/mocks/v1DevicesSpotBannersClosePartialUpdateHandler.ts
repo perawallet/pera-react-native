@@ -18,9 +18,18 @@
 import type { V1DevicesSpotBannersClosePartialUpdateMutationResponse } from "../types/V1DevicesSpotBannersClosePartialUpdate.ts";
 import { http } from "msw";
 
+export function v1DevicesSpotBannersClosePartialUpdateHandlerResponse200(data: V1DevicesSpotBannersClosePartialUpdateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1DevicesSpotBannersClosePartialUpdateHandler(data?: V1DevicesSpotBannersClosePartialUpdateMutationResponse | ((
         info: Parameters<Parameters<typeof http.patch>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.patch('/v1/devices/:device_id/spot-banners/:spot_banner_id/close/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

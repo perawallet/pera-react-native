@@ -15,12 +15,66 @@
 * Do not edit manually.
 */
 
-import type { GetTransactionGroupLedgerStateDeltasForRoundQueryResponse } from "../types/GetTransactionGroupLedgerStateDeltasForRound.ts";
+import type { GetTransactionGroupLedgerStateDeltasForRoundQueryResponse, GetTransactionGroupLedgerStateDeltasForRound401, GetTransactionGroupLedgerStateDeltasForRound404, GetTransactionGroupLedgerStateDeltasForRound408, GetTransactionGroupLedgerStateDeltasForRound500, GetTransactionGroupLedgerStateDeltasForRound501 } from "../types/GetTransactionGroupLedgerStateDeltasForRound.ts";
 import { http } from "msw";
+
+export function getTransactionGroupLedgerStateDeltasForRoundHandlerResponse200(data: GetTransactionGroupLedgerStateDeltasForRoundQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getTransactionGroupLedgerStateDeltasForRoundHandlerResponse401(data: GetTransactionGroupLedgerStateDeltasForRound401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getTransactionGroupLedgerStateDeltasForRoundHandlerResponse404(data: GetTransactionGroupLedgerStateDeltasForRound404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getTransactionGroupLedgerStateDeltasForRoundHandlerResponse408(data: GetTransactionGroupLedgerStateDeltasForRound408) {
+  return new Response(JSON.stringify(data), {
+    status: 408,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getTransactionGroupLedgerStateDeltasForRoundHandlerResponse500(data: GetTransactionGroupLedgerStateDeltasForRound500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getTransactionGroupLedgerStateDeltasForRoundHandlerResponse501(data: GetTransactionGroupLedgerStateDeltasForRound501) {
+  return new Response(JSON.stringify(data), {
+    status: 501,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function getTransactionGroupLedgerStateDeltasForRoundHandler(data?: GetTransactionGroupLedgerStateDeltasForRoundQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/deltas/:round/txn/group', function handler(info) {
     if(typeof data === 'function') return data(info)
 

@@ -27,6 +27,6 @@ export const v1DiscoverPoolsBarsList200Schema = z.unknown()
 
 export type V1DiscoverPoolsBarsList200Schema = z.infer<typeof v1DiscoverPoolsBarsList200Schema>
 
-export const v1DiscoverPoolsBarsListQueryResponseSchema = z.lazy(() => v1DiscoverPoolsBarsList200Schema)
+export const v1DiscoverPoolsBarsListQueryResponseSchema = v1DiscoverPoolsBarsList200Schema
 
 export type V1DiscoverPoolsBarsListQueryResponseSchema = z.infer<typeof v1DiscoverPoolsBarsListQueryResponseSchema>

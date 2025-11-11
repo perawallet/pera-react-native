@@ -19,14 +19,14 @@ import { prepareTransactionsV2SerializerRequestSchema } from "./prepareTransacti
 import { prepareTransactionsV2SerializerResponseSchema } from "./prepareTransactionsV2Serializer/responseSchema.ts";
 import { z } from "zod";
 
-export const v2DexSwapPrepareTransactionsCreate201Schema = z.lazy(() => prepareTransactionsV2SerializerResponseSchema)
+export const v2DexSwapPrepareTransactionsCreate201Schema = prepareTransactionsV2SerializerResponseSchema
 
 export type V2DexSwapPrepareTransactionsCreate201Schema = z.infer<typeof v2DexSwapPrepareTransactionsCreate201Schema>
 
-export const v2DexSwapPrepareTransactionsCreateMutationRequestSchema = z.lazy(() => prepareTransactionsV2SerializerRequestSchema)
+export const v2DexSwapPrepareTransactionsCreateMutationRequestSchema = prepareTransactionsV2SerializerRequestSchema
 
 export type V2DexSwapPrepareTransactionsCreateMutationRequestSchema = z.infer<typeof v2DexSwapPrepareTransactionsCreateMutationRequestSchema>
 
-export const v2DexSwapPrepareTransactionsCreateMutationResponseSchema = z.lazy(() => v2DexSwapPrepareTransactionsCreate201Schema)
+export const v2DexSwapPrepareTransactionsCreateMutationResponseSchema = v2DexSwapPrepareTransactionsCreate201Schema
 
 export type V2DexSwapPrepareTransactionsCreateMutationResponseSchema = z.infer<typeof v2DexSwapPrepareTransactionsCreateMutationResponseSchema>

@@ -22,7 +22,7 @@ import { z } from "zod";
  * @description An application\'s global/local/box state.
  */
 export const applicationKVStorageSchema = z.object({
-    "account": z.string().describe("The address of the account associated with the local state.").optional(),
+    "account": z.optional(z.string().describe("The address of the account associated with the local state.")),
 "kvs": z.array(z.lazy(() => avmKeyValueSchema).describe("Represents an AVM key-value pair in an application store.")).describe("Key-Value pairs representing application states.")
     }).describe("An application's global/local/box state.")
 

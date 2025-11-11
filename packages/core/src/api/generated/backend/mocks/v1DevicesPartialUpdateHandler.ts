@@ -18,9 +18,18 @@
 import type { V1DevicesPartialUpdateMutationResponse } from "../types/V1DevicesPartialUpdate.ts";
 import { http } from "msw";
 
+export function v1DevicesPartialUpdateHandlerResponse200(data: V1DevicesPartialUpdateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1DevicesPartialUpdateHandler(data?: V1DevicesPartialUpdateMutationResponse | ((
         info: Parameters<Parameters<typeof http.patch>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.patch('/v1/devices/:device_id/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

@@ -21,9 +21,9 @@ import { z } from "zod";
  * @description An error response with optional data field.
  */
 export const errorResponseSchema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     }).describe("An error response with optional data field.")
 

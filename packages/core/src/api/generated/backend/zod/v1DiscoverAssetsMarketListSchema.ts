@@ -24,10 +24,10 @@ export const v1DiscoverAssetsMarketListQueryParamsSchema = z.object({
 
 export type V1DiscoverAssetsMarketListQueryParamsSchema = z.infer<typeof v1DiscoverAssetsMarketListQueryParamsSchema>
 
-export const v1DiscoverAssetsMarketList200Schema = z.array(z.lazy(() => marketAssetListSerializerResponseSchema))
+export const v1DiscoverAssetsMarketList200Schema = z.array(marketAssetListSerializerResponseSchema)
 
 export type V1DiscoverAssetsMarketList200Schema = z.infer<typeof v1DiscoverAssetsMarketList200Schema>
 
-export const v1DiscoverAssetsMarketListQueryResponseSchema = z.lazy(() => v1DiscoverAssetsMarketList200Schema)
+export const v1DiscoverAssetsMarketListQueryResponseSchema = v1DiscoverAssetsMarketList200Schema
 
 export type V1DiscoverAssetsMarketListQueryResponseSchema = z.infer<typeof v1DiscoverAssetsMarketListQueryResponseSchema>

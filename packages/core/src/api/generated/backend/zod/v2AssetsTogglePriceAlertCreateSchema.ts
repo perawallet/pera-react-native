@@ -25,14 +25,14 @@ export const v2AssetsTogglePriceAlertCreatePathParamsSchema = z.object({
 
 export type V2AssetsTogglePriceAlertCreatePathParamsSchema = z.infer<typeof v2AssetsTogglePriceAlertCreatePathParamsSchema>
 
-export const v2AssetsTogglePriceAlertCreate200Schema = z.lazy(() => assetDetailResponseSerializerV2ResponseSchema)
+export const v2AssetsTogglePriceAlertCreate200Schema = assetDetailResponseSerializerV2ResponseSchema
 
 export type V2AssetsTogglePriceAlertCreate200Schema = z.infer<typeof v2AssetsTogglePriceAlertCreate200Schema>
 
-export const v2AssetsTogglePriceAlertCreateMutationRequestSchema = z.lazy(() => toggleAssetRequestSerializerV2RequestSchema)
+export const v2AssetsTogglePriceAlertCreateMutationRequestSchema = toggleAssetRequestSerializerV2RequestSchema
 
 export type V2AssetsTogglePriceAlertCreateMutationRequestSchema = z.infer<typeof v2AssetsTogglePriceAlertCreateMutationRequestSchema>
 
-export const v2AssetsTogglePriceAlertCreateMutationResponseSchema = z.lazy(() => v2AssetsTogglePriceAlertCreate200Schema)
+export const v2AssetsTogglePriceAlertCreateMutationResponseSchema = v2AssetsTogglePriceAlertCreate200Schema
 
 export type V2AssetsTogglePriceAlertCreateMutationResponseSchema = z.infer<typeof v2AssetsTogglePriceAlertCreateMutationResponseSchema>

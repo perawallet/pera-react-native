@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DevicesCreateMutationRequest, V1DevicesCreateMutationResponse } from "../types/V1DevicesCreate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1DevicesCreateMutationKey = () => [{ url: '/v1/devices/' }] as const
 
@@ -39,6 +39,16 @@ export async function v1DevicesCreate({ data }: { data: V1DevicesCreateMutationR
   return res.data
 }
 
+export function v1DevicesCreateMutationOptions(config: Partial<RequestConfig<V1DevicesCreateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1DevicesCreateMutationKey()
+  return mutationOptions<V1DevicesCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1DevicesCreateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ data }) => {
+      return v1DevicesCreate({ data }, config)
+    },
+  })
+}
+
 /**
  * @description `push_token` needs to be sent to delete the device.
  * @summary Create & Delete Device View
@@ -54,11 +64,11 @@ export function useV1DevicesCreate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1DevicesCreateMutationKey()
 
+  const baseOptions = v1DevicesCreateMutationOptions(config) as UseMutationOptions<V1DevicesCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1DevicesCreateMutationRequest}, TContext>
+
   return useMutation<V1DevicesCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1DevicesCreateMutationRequest}, TContext>({
-    mutationFn: async({ data }) => {
-      return v1DevicesCreate({ data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1DevicesCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1DevicesCreateMutationRequest}, TContext>
 }

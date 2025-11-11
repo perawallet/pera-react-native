@@ -19,12 +19,12 @@ import { z } from "zod";
 
 export const swapStatusUpdateSerializerResponseSchema = z.object({
     "status": z.enum(["pending", "in_progress", "completed", "failed"]),
-"submitted_transaction_ids": z.array(z.string().min(1)).optional(),
-"reason": z.enum(["other", "user_cancelled", "invalid_submission", "blockchain_error"]).optional(),
-"app_version": z.string().optional(),
-"platform": z.string().optional(),
-"country_code": z.string().optional(),
-"swap_version": z.enum(["v1", "v2"]).optional()
+"submitted_transaction_ids": z.optional(z.array(z.string().min(1))),
+"reason": z.optional(z.enum(["other", "user_cancelled", "invalid_submission", "blockchain_error"])),
+"app_version": z.optional(z.string()),
+"platform": z.optional(z.string()),
+"country_code": z.optional(z.string()),
+"swap_version": z.optional(z.enum(["v1", "v2"]))
     })
 
 export type SwapStatusUpdateSerializerResponseSchema = z.infer<typeof swapStatusUpdateSerializerResponseSchema>

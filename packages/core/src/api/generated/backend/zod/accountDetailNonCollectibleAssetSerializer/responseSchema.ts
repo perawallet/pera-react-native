@@ -19,14 +19,14 @@ import { z } from "zod";
 
 export const accountDetailNonCollectibleAssetSerializerResponseSchema = z.object({
     "asset_id": z.number().int().min(0).max(9223372036854776000),
-"name": z.string().max(255).optional(),
-"unit_name": z.string().max(255).optional(),
-"amount": z.string().optional(),
+"name": z.optional(z.string().max(255)),
+"unit_name": z.optional(z.string().max(255)),
+"amount": z.optional(z.string()),
 "fraction_decimals": z.number().int().min(0).max(2147483647),
 "verification_tier": z.enum(["verified", "unverified", "suspicious"]),
-"type": z.enum(["algo", "standard_asset", "dapp_asset", "collectible"]).optional(),
-"logo": z.string().url().nullable().nullish(),
-"balance_usd_value": z.string().optional()
+"type": z.optional(z.enum(["algo", "standard_asset", "dapp_asset", "collectible"])),
+"logo": z.string().url().nullish(),
+"balance_usd_value": z.optional(z.string())
     })
 
 export type AccountDetailNonCollectibleAssetSerializerResponseSchema = z.infer<typeof accountDetailNonCollectibleAssetSerializerResponseSchema>

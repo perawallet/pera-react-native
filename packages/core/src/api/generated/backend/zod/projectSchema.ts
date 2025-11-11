@@ -19,17 +19,17 @@ import { categorySimpleSchema } from "./categorySimpleSchema.ts";
 import { z } from "zod";
 
 export const projectSchema = z.object({
-    "name": z.string().min(1).optional(),
-"url": z.string().url().min(1).optional(),
-"description": z.string().min(1).describe("LONG DESCRIPTION").optional(),
-"short_description": z.string().min(1).describe("WILL SHOW ON DISCOVER").optional(),
-"logo_png": z.string().url().optional(),
-"verification_tier": z.enum(["verified", "unverified", "suspicious"]).optional(),
-"color": z.string().min(1).optional(),
-"text_color": z.string().min(1).optional(),
-"background_image": z.string().url().optional(),
-"categories": z.array(z.lazy(() => categorySimpleSchema)).optional(),
-"popularity_score": z.number().int().describe("Score based on visits from Google Analytics. Bigger is better.").optional()
+    "name": z.optional(z.string().min(1)),
+"url": z.optional(z.string().url().min(1)),
+"description": z.optional(z.string().min(1).describe("LONG DESCRIPTION")),
+"short_description": z.optional(z.string().min(1).describe("WILL SHOW ON DISCOVER")),
+"logo_png": z.optional(z.string().url()),
+"verification_tier": z.optional(z.enum(["verified", "unverified", "suspicious"])),
+"color": z.optional(z.string().min(1)),
+"text_color": z.optional(z.string().min(1)),
+"background_image": z.optional(z.string().url()),
+"categories": z.optional(z.array(z.lazy(() => categorySimpleSchema))),
+"popularity_score": z.optional(z.number().int().describe("Score based on visits from Google Analytics. Bigger is better."))
     })
 
 export type ProjectSchema = z.infer<typeof projectSchema>

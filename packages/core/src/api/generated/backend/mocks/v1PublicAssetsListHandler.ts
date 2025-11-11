@@ -18,9 +18,18 @@
 import type { V1PublicAssetsListQueryResponse } from "../types/V1PublicAssetsList.ts";
 import { http } from "msw";
 
+export function v1PublicAssetsListHandlerResponse200(data: V1PublicAssetsListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1PublicAssetsListHandler(data?: V1PublicAssetsListQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/public/assets/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

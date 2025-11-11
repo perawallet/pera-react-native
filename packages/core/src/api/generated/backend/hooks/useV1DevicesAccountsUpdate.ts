@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DevicesAccountsUpdateMutationRequest, V1DevicesAccountsUpdateMutationResponse, V1DevicesAccountsUpdatePathParams } from "../types/V1DevicesAccountsUpdate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1DevicesAccountsUpdateMutationKey = () => [{ url: '/v1/devices/:device_id/accounts/:address/' }] as const
 
@@ -37,6 +37,16 @@ export async function v1DevicesAccountsUpdate({ address, device_id, data }: { ad
   return res.data
 }
 
+export function v1DevicesAccountsUpdateMutationOptions(config: Partial<RequestConfig<V1DevicesAccountsUpdateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1DevicesAccountsUpdateMutationKey()
+  return mutationOptions<V1DevicesAccountsUpdateMutationResponse, ResponseErrorConfig<Error>, {address: V1DevicesAccountsUpdatePathParams["address"], device_id: V1DevicesAccountsUpdatePathParams["device_id"], data?: V1DevicesAccountsUpdateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ address, device_id, data }) => {
+      return v1DevicesAccountsUpdate({ address, device_id, data }, config)
+    },
+  })
+}
+
 /**
  * {@link /v1/devices/:device_id/accounts/:address/}
  */
@@ -50,11 +60,11 @@ export function useV1DevicesAccountsUpdate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1DevicesAccountsUpdateMutationKey()
 
+  const baseOptions = v1DevicesAccountsUpdateMutationOptions(config) as UseMutationOptions<V1DevicesAccountsUpdateMutationResponse, ResponseErrorConfig<Error>, {address: V1DevicesAccountsUpdatePathParams["address"], device_id: V1DevicesAccountsUpdatePathParams["device_id"], data?: V1DevicesAccountsUpdateMutationRequest}, TContext>
+
   return useMutation<V1DevicesAccountsUpdateMutationResponse, ResponseErrorConfig<Error>, {address: V1DevicesAccountsUpdatePathParams["address"], device_id: V1DevicesAccountsUpdatePathParams["device_id"], data?: V1DevicesAccountsUpdateMutationRequest}, TContext>({
-    mutationFn: async({ address, device_id, data }) => {
-      return v1DevicesAccountsUpdate({ address, device_id, data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1DevicesAccountsUpdateMutationResponse, ResponseErrorConfig<Error>, {address: V1DevicesAccountsUpdatePathParams["address"], device_id: V1DevicesAccountsUpdatePathParams["device_id"], data?: V1DevicesAccountsUpdateMutationRequest}, TContext>
 }

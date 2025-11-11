@@ -28,35 +28,35 @@ export type GetAssetByIDPathParamsSchema = z.infer<typeof getAssetByIDPathParams
 /**
  * @description Asset information
  */
-export const getAssetByID200Schema = z.lazy(() => assetSchema).describe("Specifies both the unique identifier and the parameters for an asset")
+export const getAssetByID200Schema = assetSchema.describe("Specifies both the unique identifier and the parameters for an asset")
 
 export type GetAssetByID200Schema = z.infer<typeof getAssetByID200Schema>
 
 /**
  * @description Bad Request
  */
-export const getAssetByID400Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getAssetByID400Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetAssetByID400Schema = z.infer<typeof getAssetByID400Schema>
 
 /**
  * @description Invalid API Token
  */
-export const getAssetByID401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getAssetByID401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetAssetByID401Schema = z.infer<typeof getAssetByID401Schema>
 
 /**
  * @description Application Not Found
  */
-export const getAssetByID404Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getAssetByID404Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetAssetByID404Schema = z.infer<typeof getAssetByID404Schema>
 
 /**
  * @description Internal Error
  */
-export const getAssetByID500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getAssetByID500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetAssetByID500Schema = z.infer<typeof getAssetByID500Schema>
 
@@ -67,6 +67,6 @@ export const getAssetByIDErrorSchema = z.unknown()
 
 export type GetAssetByIDErrorSchema = z.infer<typeof getAssetByIDErrorSchema>
 
-export const getAssetByIDQueryResponseSchema = z.lazy(() => getAssetByID200Schema)
+export const getAssetByIDQueryResponseSchema = getAssetByID200Schema
 
 export type GetAssetByIDQueryResponseSchema = z.infer<typeof getAssetByIDQueryResponseSchema>

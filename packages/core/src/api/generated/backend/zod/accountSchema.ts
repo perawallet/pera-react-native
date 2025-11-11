@@ -18,9 +18,9 @@
 import { z } from "zod";
 
 export const accountSchema = z.object({
-    "id": z.number().int().optional(),
+    "id": z.optional(z.number().int()),
 "address": z.string().min(1).max(255),
-"is_verified_asset_creator": z.string().optional()
+"is_verified_asset_creator": z.optional(z.string())
     })
 
 export type AccountSchema = z.infer<typeof accountSchema>

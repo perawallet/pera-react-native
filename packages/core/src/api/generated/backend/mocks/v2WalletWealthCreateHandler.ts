@@ -18,9 +18,18 @@
 import type { V2WalletWealthCreateMutationResponse } from "../types/V2WalletWealthCreate.ts";
 import { http } from "msw";
 
+export function v2WalletWealthCreateHandlerResponse200(data: V2WalletWealthCreateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v2WalletWealthCreateHandler(data?: V2WalletWealthCreateMutationResponse | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v2/wallet/wealth/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

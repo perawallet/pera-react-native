@@ -22,21 +22,21 @@ import { z } from "zod";
 
 export const assetSerializerResponseSchema = z.object({
     "asset_id": z.number().int().min(0).max(9223372036854776000),
-"name": z.string().max(255).optional(),
-"logo": z.string().url().nullable().nullish(),
-"unit_name": z.string().max(255).optional(),
+"name": z.optional(z.string().max(255)),
+"logo": z.string().url().nullish(),
+"unit_name": z.optional(z.string().max(255)),
 "fraction_decimals": z.number().int().min(0).max(2147483647),
 "total": z.string(),
-"usd_value": z.string().nullable().nullish(),
-"is_verified": z.boolean().optional(),
+"usd_value": z.string().nullish(),
+"is_verified": z.optional(z.boolean()),
 "is_deleted": z.boolean(),
 "verification_tier": z.enum(["verified", "unverified", "suspicious"]),
-"explorer_url": z.string().optional(),
-"collectible": z.lazy(() => simpleCollectibleSchema).optional(),
+"explorer_url": z.optional(z.string()),
+"collectible": z.optional(z.lazy(() => simpleCollectibleSchema)),
 "creator": z.lazy(() => accountSchema),
-"type": z.enum(["algo", "standard_asset", "dapp_asset", "collectible"]).optional(),
-"category": z.number().int().nullable(),
-"labels": z.array(z.lazy(() => assetLabelSchema)).optional()
+"type": z.optional(z.enum(["algo", "standard_asset", "dapp_asset", "collectible"])),
+"category": z.nullable(z.number().int()),
+"labels": z.optional(z.array(z.lazy(() => assetLabelSchema)))
     })
 
 export type AssetSerializerResponseSchema = z.infer<typeof assetSerializerResponseSchema>

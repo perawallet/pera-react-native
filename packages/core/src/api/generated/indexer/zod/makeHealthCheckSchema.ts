@@ -21,7 +21,7 @@ import { z } from "zod";
 /**
  * @description (empty)
  */
-export const makeHealthCheck200Schema = z.lazy(() => healthCheckSchema).describe("A health check response.")
+export const makeHealthCheck200Schema = healthCheckSchema.describe("A health check response.")
 
 export type MakeHealthCheck200Schema = z.infer<typeof makeHealthCheck200Schema>
 
@@ -32,6 +32,6 @@ export const makeHealthCheckErrorSchema = z.unknown()
 
 export type MakeHealthCheckErrorSchema = z.infer<typeof makeHealthCheckErrorSchema>
 
-export const makeHealthCheckQueryResponseSchema = z.lazy(() => makeHealthCheck200Schema)
+export const makeHealthCheckQueryResponseSchema = makeHealthCheck200Schema
 
 export type MakeHealthCheckQueryResponseSchema = z.infer<typeof makeHealthCheckQueryResponseSchema>

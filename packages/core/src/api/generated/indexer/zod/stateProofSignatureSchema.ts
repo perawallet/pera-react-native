@@ -19,10 +19,10 @@ import { merkleArrayProofSchema } from "./merkleArrayProofSchema.ts";
 import { z } from "zod";
 
 export const stateProofSignatureSchema = z.object({
-    "falcon-signature": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).optional(),
-"merkle-array-index": z.number().int().optional(),
-"proof": z.lazy(() => merkleArrayProofSchema).optional(),
-"verifying-key": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[vkey\\]").optional()
+    "falcon-signature": z.optional(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/)),
+"merkle-array-index": z.optional(z.number().int()),
+"proof": z.optional(z.lazy(() => merkleArrayProofSchema)),
+"verifying-key": z.optional(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[vkey\\]"))
     })
 
 export type StateProofSignatureSchema = z.infer<typeof stateProofSignatureSchema>

@@ -25,14 +25,14 @@ export type RawTransactionAsync200Schema = z.infer<typeof rawTransactionAsync200
 /**
  * @description Bad Request - Malformed Algorand transaction 
  */
-export const rawTransactionAsync400Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const rawTransactionAsync400Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type RawTransactionAsync400Schema = z.infer<typeof rawTransactionAsync400Schema>
 
 /**
  * @description Invalid API Token
  */
-export const rawTransactionAsync401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const rawTransactionAsync401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type RawTransactionAsync401Schema = z.infer<typeof rawTransactionAsync401Schema>
 
@@ -46,14 +46,14 @@ export type RawTransactionAsync404Schema = z.infer<typeof rawTransactionAsync404
 /**
  * @description Internal Error
  */
-export const rawTransactionAsync500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const rawTransactionAsync500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type RawTransactionAsync500Schema = z.infer<typeof rawTransactionAsync500Schema>
 
 /**
  * @description Service Temporarily Unavailable
  */
-export const rawTransactionAsync503Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const rawTransactionAsync503Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type RawTransactionAsync503Schema = z.infer<typeof rawTransactionAsync503Schema>
 
@@ -71,6 +71,6 @@ export const rawTransactionAsyncMutationRequestSchema = z.instanceof(File)
 
 export type RawTransactionAsyncMutationRequestSchema = z.infer<typeof rawTransactionAsyncMutationRequestSchema>
 
-export const rawTransactionAsyncMutationResponseSchema = z.lazy(() => rawTransactionAsync200Schema)
+export const rawTransactionAsyncMutationResponseSchema = rawTransactionAsync200Schema
 
 export type RawTransactionAsyncMutationResponseSchema = z.infer<typeof rawTransactionAsyncMutationResponseSchema>

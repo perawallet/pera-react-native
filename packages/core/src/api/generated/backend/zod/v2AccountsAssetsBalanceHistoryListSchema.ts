@@ -35,6 +35,6 @@ export const v2AccountsAssetsBalanceHistoryList200Schema = z.unknown()
 
 export type V2AccountsAssetsBalanceHistoryList200Schema = z.infer<typeof v2AccountsAssetsBalanceHistoryList200Schema>
 
-export const v2AccountsAssetsBalanceHistoryListQueryResponseSchema = z.lazy(() => v2AccountsAssetsBalanceHistoryList200Schema)
+export const v2AccountsAssetsBalanceHistoryListQueryResponseSchema = v2AccountsAssetsBalanceHistoryList200Schema
 
 export type V2AccountsAssetsBalanceHistoryListQueryResponseSchema = z.infer<typeof v2AccountsAssetsBalanceHistoryListQueryResponseSchema>

@@ -18,9 +18,18 @@
 import type { LookupApplicationLogsByIDQueryResponse } from "../types/LookupApplicationLogsByID.ts";
 import { http } from "msw";
 
+export function lookupApplicationLogsByIDHandlerResponse200(data: LookupApplicationLogsByIDQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function lookupApplicationLogsByIDHandler(data?: LookupApplicationLogsByIDQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/applications/:application-id/logs', function handler(info) {
     if(typeof data === 'function') return data(info)
 

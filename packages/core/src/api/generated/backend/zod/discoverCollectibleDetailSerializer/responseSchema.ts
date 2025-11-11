@@ -22,14 +22,14 @@ import { traitSchema } from "../traitSchema.ts";
 import { z } from "zod";
 
 export const discoverCollectibleDetailSerializerResponseSchema = z.object({
-    "standards": z.string().optional(),
-"primary_image": z.string().optional(),
-"title": z.string().min(1).optional(),
-"description": z.string().min(1).optional(),
+    "standards": z.optional(z.string()),
+"primary_image": z.optional(z.string()),
+"title": z.optional(z.string().min(1)),
+"description": z.optional(z.string().min(1)),
 "media": z.array(z.lazy(() => mediaSchema)),
-"media_type": z.string().optional(),
-"rarity_score": z.string().nullable().nullish(),
-"rarity_rank": z.string().optional(),
+"media_type": z.optional(z.string()),
+"rarity_score": z.string().nullish(),
+"rarity_rank": z.optional(z.string()),
 "traits": z.array(z.lazy(() => traitSchema)),
 "explorer_url": z.string().url().min(1),
 "collection": z.lazy(() => discoverSimpleNFTCollectionSchema),

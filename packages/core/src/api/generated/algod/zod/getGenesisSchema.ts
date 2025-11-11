@@ -21,7 +21,7 @@ import { z } from "zod";
 /**
  * @description The genesis file in json.
  */
-export const getGenesis200Schema = z.lazy(() => genesisSchema)
+export const getGenesis200Schema = genesisSchema
 
 export type GetGenesis200Schema = z.infer<typeof getGenesis200Schema>
 
@@ -32,6 +32,6 @@ export const getGenesisErrorSchema = z.unknown()
 
 export type GetGenesisErrorSchema = z.infer<typeof getGenesisErrorSchema>
 
-export const getGenesisQueryResponseSchema = z.lazy(() => getGenesis200Schema)
+export const getGenesisQueryResponseSchema = getGenesis200Schema
 
 export type GetGenesisQueryResponseSchema = z.infer<typeof getGenesisQueryResponseSchema>

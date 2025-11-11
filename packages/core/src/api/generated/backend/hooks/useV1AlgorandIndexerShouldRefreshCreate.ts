@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1AlgorandIndexerShouldRefreshCreateMutationRequest, V1AlgorandIndexerShouldRefreshCreateMutationResponse } from "../types/V1AlgorandIndexerShouldRefreshCreate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1AlgorandIndexerShouldRefreshCreateMutationKey = () => [{ url: '/v1/algorand-indexer/should-refresh/' }] as const
 
@@ -39,6 +39,16 @@ export async function v1AlgorandIndexerShouldRefreshCreate({ data }: { data: V1A
   return res.data
 }
 
+export function v1AlgorandIndexerShouldRefreshCreateMutationOptions(config: Partial<RequestConfig<V1AlgorandIndexerShouldRefreshCreateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1AlgorandIndexerShouldRefreshCreateMutationKey()
+  return mutationOptions<V1AlgorandIndexerShouldRefreshCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1AlgorandIndexerShouldRefreshCreateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ data }) => {
+      return v1AlgorandIndexerShouldRefreshCreate({ data }, config)
+    },
+  })
+}
+
 /**
  * @description Takes a list of account_address and last_know_round.Checks if any of the accounts has new transactions since the last_know_round.Implemented with algorand indexer.
  * @summary Should Refresh
@@ -54,11 +64,11 @@ export function useV1AlgorandIndexerShouldRefreshCreate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1AlgorandIndexerShouldRefreshCreateMutationKey()
 
+  const baseOptions = v1AlgorandIndexerShouldRefreshCreateMutationOptions(config) as UseMutationOptions<V1AlgorandIndexerShouldRefreshCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1AlgorandIndexerShouldRefreshCreateMutationRequest}, TContext>
+
   return useMutation<V1AlgorandIndexerShouldRefreshCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1AlgorandIndexerShouldRefreshCreateMutationRequest}, TContext>({
-    mutationFn: async({ data }) => {
-      return v1AlgorandIndexerShouldRefreshCreate({ data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1AlgorandIndexerShouldRefreshCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1AlgorandIndexerShouldRefreshCreateMutationRequest}, TContext>
 }

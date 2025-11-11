@@ -26,7 +26,7 @@ export const getLedgerStateDeltaPathParamsSchema = z.object({
 export type GetLedgerStateDeltaPathParamsSchema = z.infer<typeof getLedgerStateDeltaPathParamsSchema>
 
 export const getLedgerStateDeltaQueryParamsSchema = z.object({
-    "format": z.enum(["json", "msgpack"]).describe("Configures whether the response object is JSON or MessagePack encoded. If not provided, defaults to JSON.").optional()
+    "format": z.optional(z.enum(["json", "msgpack"]).describe("Configures whether the response object is JSON or MessagePack encoded. If not provided, defaults to JSON."))
     }).optional()
 
 export type GetLedgerStateDeltaQueryParamsSchema = z.infer<typeof getLedgerStateDeltaQueryParamsSchema>
@@ -34,42 +34,42 @@ export type GetLedgerStateDeltaQueryParamsSchema = z.infer<typeof getLedgerState
 /**
  * @description Contains ledger deltas
  */
-export const getLedgerStateDelta200Schema = z.lazy(() => ledgerStateDeltaSchema).describe("Ledger StateDelta object")
+export const getLedgerStateDelta200Schema = ledgerStateDeltaSchema.describe("Ledger StateDelta object")
 
 export type GetLedgerStateDelta200Schema = z.infer<typeof getLedgerStateDelta200Schema>
 
 /**
  * @description Invalid API Token
  */
-export const getLedgerStateDelta401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getLedgerStateDelta401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetLedgerStateDelta401Schema = z.infer<typeof getLedgerStateDelta401Schema>
 
 /**
  * @description Could not find a delta for round
  */
-export const getLedgerStateDelta404Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getLedgerStateDelta404Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetLedgerStateDelta404Schema = z.infer<typeof getLedgerStateDelta404Schema>
 
 /**
  * @description timed out on request
  */
-export const getLedgerStateDelta408Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getLedgerStateDelta408Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetLedgerStateDelta408Schema = z.infer<typeof getLedgerStateDelta408Schema>
 
 /**
  * @description Internal Error
  */
-export const getLedgerStateDelta500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getLedgerStateDelta500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetLedgerStateDelta500Schema = z.infer<typeof getLedgerStateDelta500Schema>
 
 /**
  * @description Service Temporarily Unavailable
  */
-export const getLedgerStateDelta503Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getLedgerStateDelta503Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetLedgerStateDelta503Schema = z.infer<typeof getLedgerStateDelta503Schema>
 
@@ -80,6 +80,6 @@ export const getLedgerStateDeltaErrorSchema = z.unknown()
 
 export type GetLedgerStateDeltaErrorSchema = z.infer<typeof getLedgerStateDeltaErrorSchema>
 
-export const getLedgerStateDeltaQueryResponseSchema = z.lazy(() => getLedgerStateDelta200Schema)
+export const getLedgerStateDeltaQueryResponseSchema = getLedgerStateDelta200Schema
 
 export type GetLedgerStateDeltaQueryResponseSchema = z.infer<typeof getLedgerStateDeltaQueryResponseSchema>

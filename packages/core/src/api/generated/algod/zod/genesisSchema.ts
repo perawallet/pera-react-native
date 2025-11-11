@@ -20,8 +20,8 @@ import { z } from "zod";
 
 export const genesisSchema = z.object({
     "alloc": z.array(z.lazy(() => genesisAllocationSchema)),
-"comment": z.string().optional(),
-"devmode": z.boolean().optional(),
+"comment": z.optional(z.string()),
+"devmode": z.optional(z.boolean()),
 "fees": z.string(),
 "id": z.string(),
 "network": z.string(),

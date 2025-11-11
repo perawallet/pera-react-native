@@ -25,28 +25,28 @@ export type UnsetSyncRound200Schema = z.infer<typeof unsetSyncRound200Schema>
 /**
  * @description Sync round not set.
  */
-export const unsetSyncRound400Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const unsetSyncRound400Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type UnsetSyncRound400Schema = z.infer<typeof unsetSyncRound400Schema>
 
 /**
  * @description Invalid API Token
  */
-export const unsetSyncRound401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const unsetSyncRound401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type UnsetSyncRound401Schema = z.infer<typeof unsetSyncRound401Schema>
 
 /**
  * @description Internal Error
  */
-export const unsetSyncRound500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const unsetSyncRound500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type UnsetSyncRound500Schema = z.infer<typeof unsetSyncRound500Schema>
 
 /**
  * @description Service Temporarily Unavailable
  */
-export const unsetSyncRound503Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const unsetSyncRound503Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type UnsetSyncRound503Schema = z.infer<typeof unsetSyncRound503Schema>
 
@@ -57,6 +57,6 @@ export const unsetSyncRoundErrorSchema = z.unknown()
 
 export type UnsetSyncRoundErrorSchema = z.infer<typeof unsetSyncRoundErrorSchema>
 
-export const unsetSyncRoundMutationResponseSchema = z.lazy(() => unsetSyncRound200Schema)
+export const unsetSyncRoundMutationResponseSchema = unsetSyncRound200Schema
 
 export type UnsetSyncRoundMutationResponseSchema = z.infer<typeof unsetSyncRoundMutationResponseSchema>

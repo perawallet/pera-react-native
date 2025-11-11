@@ -24,10 +24,10 @@ export const v1DiscoverAssetsReadPathParamsSchema = z.object({
 
 export type V1DiscoverAssetsReadPathParamsSchema = z.infer<typeof v1DiscoverAssetsReadPathParamsSchema>
 
-export const v1DiscoverAssetsRead200Schema = z.lazy(() => assetDetailSerializerResponseSchema)
+export const v1DiscoverAssetsRead200Schema = assetDetailSerializerResponseSchema
 
 export type V1DiscoverAssetsRead200Schema = z.infer<typeof v1DiscoverAssetsRead200Schema>
 
-export const v1DiscoverAssetsReadQueryResponseSchema = z.lazy(() => v1DiscoverAssetsRead200Schema)
+export const v1DiscoverAssetsReadQueryResponseSchema = v1DiscoverAssetsRead200Schema
 
 export type V1DiscoverAssetsReadQueryResponseSchema = z.infer<typeof v1DiscoverAssetsReadQueryResponseSchema>

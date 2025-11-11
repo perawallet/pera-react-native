@@ -15,12 +15,57 @@
 * Do not edit manually.
 */
 
-import type { GetParticipationKeyByIDQueryResponse } from "../types/GetParticipationKeyByID.ts";
+import type { GetParticipationKeyByIDQueryResponse, GetParticipationKeyByID400, GetParticipationKeyByID401, GetParticipationKeyByID404, GetParticipationKeyByID500 } from "../types/GetParticipationKeyByID.ts";
 import { http } from "msw";
+
+export function getParticipationKeyByIDHandlerResponse200(data: GetParticipationKeyByIDQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getParticipationKeyByIDHandlerResponse400(data: GetParticipationKeyByID400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getParticipationKeyByIDHandlerResponse401(data: GetParticipationKeyByID401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getParticipationKeyByIDHandlerResponse404(data: GetParticipationKeyByID404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getParticipationKeyByIDHandlerResponse500(data: GetParticipationKeyByID500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function getParticipationKeyByIDHandler(data?: GetParticipationKeyByIDQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/participation/:participation-id', function handler(info) {
     if(typeof data === 'function') return data(info)
 

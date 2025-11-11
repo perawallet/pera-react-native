@@ -15,12 +15,39 @@
 * Do not edit manually.
 */
 
-import type { LookupApplicationByIDQueryResponse } from "../types/LookupApplicationByID.ts";
+import type { LookupApplicationByIDQueryResponse, LookupApplicationByID404, LookupApplicationByID500 } from "../types/LookupApplicationByID.ts";
 import { http } from "msw";
+
+export function lookupApplicationByIDHandlerResponse200(data: LookupApplicationByIDQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupApplicationByIDHandlerResponse404(data: LookupApplicationByID404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupApplicationByIDHandlerResponse500(data: LookupApplicationByID500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function lookupApplicationByIDHandler(data?: LookupApplicationByIDQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/applications/:application-id', function handler(info) {
     if(typeof data === 'function') return data(info)
 

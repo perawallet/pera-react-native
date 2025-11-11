@@ -18,9 +18,18 @@
 import type { GetConfigQueryResponse } from "../types/GetConfig.ts";
 import { http } from "msw";
 
+export function getConfigHandlerResponse200(data: GetConfigQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function getConfigHandler(data?: GetConfigQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/debug/settings/config', function handler(info) {
     if(typeof data === 'function') return data(info)
 

@@ -20,16 +20,16 @@ import { collectibleSearchSchema } from "./collectibleSearchSchema.ts";
 import { z } from "zod";
 
 export const assetSearchSchema = z.object({
-    "asset_id": z.number().int().optional(),
-"name": z.string().min(1).optional(),
-"logo": z.string().url().nullable().nullish(),
+    "asset_id": z.optional(z.number().int()),
+"name": z.optional(z.string().min(1)),
+"logo": z.string().url().nullish(),
 "verification_tier": z.enum(["verified", "unverified", "suspicious"]),
-"unit_name": z.string().min(1).optional(),
+"unit_name": z.optional(z.string().min(1)),
 "collectible": z.lazy(() => collectibleSearchSchema),
-"usd_value": z.string().nullable().nullish(),
-"type": z.enum(["algo", "standard_asset", "dapp_asset", "collectible"]).optional(),
-"category": z.number().int().nullable(),
-"labels": z.array(z.lazy(() => assetLabelSchema)).optional()
+"usd_value": z.string().nullish(),
+"type": z.optional(z.enum(["algo", "standard_asset", "dapp_asset", "collectible"])),
+"category": z.nullable(z.number().int()),
+"labels": z.optional(z.array(z.lazy(() => assetLabelSchema)))
     })
 
 export type AssetSearchSchema = z.infer<typeof assetSearchSchema>

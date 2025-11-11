@@ -18,9 +18,16 @@
 import type { V1AccountsExportHistoryListQueryResponse } from "../types/V1AccountsExportHistoryList.ts";
 import { http } from "msw";
 
-export function v1AccountsExportHistoryListHandler(data?: V1AccountsExportHistoryListQueryResponse | ((
+export function v1AccountsExportHistoryListHandlerResponse200(data?: V1AccountsExportHistoryListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+  
+  })
+}
+
+export function v1AccountsExportHistoryListHandler(data?: string | number | boolean | null | object | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/accounts/:account_address/export-history/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

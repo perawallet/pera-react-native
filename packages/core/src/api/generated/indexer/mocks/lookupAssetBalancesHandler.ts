@@ -15,12 +15,39 @@
 * Do not edit manually.
 */
 
-import type { LookupAssetBalancesQueryResponse } from "../types/LookupAssetBalances.ts";
+import type { LookupAssetBalancesQueryResponse, LookupAssetBalances400, LookupAssetBalances500 } from "../types/LookupAssetBalances.ts";
 import { http } from "msw";
+
+export function lookupAssetBalancesHandlerResponse200(data: LookupAssetBalancesQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupAssetBalancesHandlerResponse400(data: LookupAssetBalances400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupAssetBalancesHandlerResponse500(data: LookupAssetBalances500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function lookupAssetBalancesHandler(data?: LookupAssetBalancesQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/assets/:asset-id/balances', function handler(info) {
     if(typeof data === 'function') return data(info)
 

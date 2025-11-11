@@ -33,7 +33,7 @@ export type LookupApplicationBoxByIDAndNameQueryParamsSchema = z.infer<typeof lo
 /**
  * @description Box information
  */
-export const lookupApplicationBoxByIDAndName200Schema = z.lazy(() => boxSchema).describe("Box name and its content.")
+export const lookupApplicationBoxByIDAndName200Schema = boxSchema.describe("Box name and its content.")
 
 export type LookupApplicationBoxByIDAndName200Schema = z.infer<typeof lookupApplicationBoxByIDAndName200Schema>
 
@@ -41,9 +41,9 @@ export type LookupApplicationBoxByIDAndName200Schema = z.infer<typeof lookupAppl
  * @description Response for errors
  */
 export const lookupApplicationBoxByIDAndName400Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
@@ -53,9 +53,9 @@ export type LookupApplicationBoxByIDAndName400Schema = z.infer<typeof lookupAppl
  * @description Response for errors
  */
 export const lookupApplicationBoxByIDAndName404Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
@@ -65,14 +65,14 @@ export type LookupApplicationBoxByIDAndName404Schema = z.infer<typeof lookupAppl
  * @description Response for errors
  */
 export const lookupApplicationBoxByIDAndName500Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
 export type LookupApplicationBoxByIDAndName500Schema = z.infer<typeof lookupApplicationBoxByIDAndName500Schema>
 
-export const lookupApplicationBoxByIDAndNameQueryResponseSchema = z.lazy(() => lookupApplicationBoxByIDAndName200Schema)
+export const lookupApplicationBoxByIDAndNameQueryResponseSchema = lookupApplicationBoxByIDAndName200Schema
 
 export type LookupApplicationBoxByIDAndNameQueryResponseSchema = z.infer<typeof lookupApplicationBoxByIDAndNameQueryResponseSchema>

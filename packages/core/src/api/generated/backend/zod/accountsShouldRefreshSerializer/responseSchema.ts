@@ -18,8 +18,8 @@
 import { z } from "zod";
 
 export const accountsShouldRefreshSerializerResponseSchema = z.object({
-    "refresh": z.boolean().optional(),
-"round": z.number().int().optional()
+    "refresh": z.optional(z.boolean()),
+"round": z.optional(z.number().int())
     })
 
 export type AccountsShouldRefreshSerializerResponseSchema = z.infer<typeof accountsShouldRefreshSerializerResponseSchema>

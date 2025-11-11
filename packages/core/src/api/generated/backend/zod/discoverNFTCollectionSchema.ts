@@ -18,13 +18,13 @@
 import { z } from "zod";
 
 export const discoverNFTCollectionSchema = z.object({
-    "slug": z.string().regex(/^[-a-zA-Z0-9_]+$/).min(1).optional(),
-"name": z.string().min(1).optional(),
-"description": z.string().min(1).optional(),
-"image": z.string().url().optional(),
-"banner_image": z.string().url().optional(),
-"supported_marketplace_names": z.string().optional(),
-"last_1_day_volume": z.string().describe("in microalgo").optional(),
+    "slug": z.optional(z.string().regex(/^[-a-zA-Z0-9_]+$/)),
+"name": z.optional(z.string().min(1)),
+"description": z.optional(z.string().min(1)),
+"image": z.optional(z.string().url()),
+"banner_image": z.optional(z.string().url()),
+"supported_marketplace_names": z.optional(z.string()),
+"last_1_day_volume": z.optional(z.string().describe("in microalgo")),
 "floor_price": z.string()
     })
 

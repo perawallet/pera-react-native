@@ -21,7 +21,7 @@ import { z } from "zod";
 export const blockHeadersResponseSchema = z.object({
     "blocks": z.array(z.lazy(() => blockSchema).describe("Block information.\n\nDefinition:\ndata/bookkeeping/block.go : Block")),
 "current-round": z.number().int().describe("Round at which the results were computed."),
-"next-token": z.string().describe("Used for pagination, when making another request provide this token with the next parameter.").optional()
+"next-token": z.optional(z.string().describe("Used for pagination, when making another request provide this token with the next parameter."))
     })
 
 export type BlockHeadersResponseSchema = z.infer<typeof blockHeadersResponseSchema>

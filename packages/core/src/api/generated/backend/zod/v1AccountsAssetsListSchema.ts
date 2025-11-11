@@ -25,22 +25,22 @@ export const v1AccountsAssetsListPathParamsSchema = z.object({
 export type V1AccountsAssetsListPathParamsSchema = z.infer<typeof v1AccountsAssetsListPathParamsSchema>
 
 export const v1AccountsAssetsListQueryParamsSchema = z.object({
-    "ordering": z.string().describe("Which field to use when ordering the results.").optional(),
-"cursor": z.string().describe("The pagination cursor value.").optional(),
-"limit": z.coerce.number().int().describe("Number of results to return per page.").optional(),
-"include_algo": z.boolean().describe("whether to include the algo asset.").optional()
+    "ordering": z.optional(z.string().describe("Which field to use when ordering the results.")),
+"cursor": z.optional(z.string().describe("The pagination cursor value.")),
+"limit": z.optional(z.coerce.number().int().describe("Number of results to return per page.")),
+"include_algo": z.optional(z.boolean().describe("whether to include the algo asset."))
     }).optional()
 
 export type V1AccountsAssetsListQueryParamsSchema = z.infer<typeof v1AccountsAssetsListQueryParamsSchema>
 
 export const v1AccountsAssetsList200Schema = z.object({
-    "next": z.string().url().nullable().nullish(),
-"previous": z.string().url().nullable().nullish(),
+    "next": z.string().url().nullish(),
+"previous": z.string().url().nullish(),
 "results": z.array(z.lazy(() => accountDetailAssetSerializerResponseSchema))
     })
 
 export type V1AccountsAssetsList200Schema = z.infer<typeof v1AccountsAssetsList200Schema>
 
-export const v1AccountsAssetsListQueryResponseSchema = z.lazy(() => v1AccountsAssetsList200Schema)
+export const v1AccountsAssetsListQueryResponseSchema = v1AccountsAssetsList200Schema
 
 export type V1AccountsAssetsListQueryResponseSchema = z.infer<typeof v1AccountsAssetsListQueryResponseSchema>

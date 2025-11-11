@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1BackupsDeleteMutationResponse, V1BackupsDeletePathParams, V1BackupsDeleteHeaderParams } from "../types/V1BackupsDelete.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1BackupsDeleteMutationKey = () => [{ url: '/v1/backups/:id/' }] as const
 
@@ -37,6 +37,16 @@ export async function v1BackupsDelete({ id, headers }: { id: V1BackupsDeletePath
   return res.data
 }
 
+export function v1BackupsDeleteMutationOptions(config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1BackupsDeleteMutationKey()
+  return mutationOptions<V1BackupsDeleteMutationResponse, ResponseErrorConfig<Error>, {id: V1BackupsDeletePathParams["id"], headers: V1BackupsDeleteHeaderParams}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ id, headers }) => {
+      return v1BackupsDelete({ id, headers }, config)
+    },
+  })
+}
+
 /**
  * @description Deletes the backup object with the given `id`.
  * @summary Backup Delete
@@ -52,11 +62,11 @@ export function useV1BackupsDelete<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1BackupsDeleteMutationKey()
 
+  const baseOptions = v1BackupsDeleteMutationOptions(config) as UseMutationOptions<V1BackupsDeleteMutationResponse, ResponseErrorConfig<Error>, {id: V1BackupsDeletePathParams["id"], headers: V1BackupsDeleteHeaderParams}, TContext>
+
   return useMutation<V1BackupsDeleteMutationResponse, ResponseErrorConfig<Error>, {id: V1BackupsDeletePathParams["id"], headers: V1BackupsDeleteHeaderParams}, TContext>({
-    mutationFn: async({ id, headers }) => {
-      return v1BackupsDelete({ id, headers }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1BackupsDeleteMutationResponse, ResponseErrorConfig<Error>, {id: V1BackupsDeletePathParams["id"], headers: V1BackupsDeleteHeaderParams}, TContext>
 }

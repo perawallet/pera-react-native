@@ -18,10 +18,10 @@
 import { algoDetailSerializerResponseSchema } from "./algoDetailSerializer/responseSchema.ts";
 import { z } from "zod";
 
-export const v1DiscoverAlgoRead200Schema = z.lazy(() => algoDetailSerializerResponseSchema)
+export const v1DiscoverAlgoRead200Schema = algoDetailSerializerResponseSchema
 
 export type V1DiscoverAlgoRead200Schema = z.infer<typeof v1DiscoverAlgoRead200Schema>
 
-export const v1DiscoverAlgoReadQueryResponseSchema = z.lazy(() => v1DiscoverAlgoRead200Schema)
+export const v1DiscoverAlgoReadQueryResponseSchema = v1DiscoverAlgoRead200Schema
 
 export type V1DiscoverAlgoReadQueryResponseSchema = z.infer<typeof v1DiscoverAlgoReadQueryResponseSchema>

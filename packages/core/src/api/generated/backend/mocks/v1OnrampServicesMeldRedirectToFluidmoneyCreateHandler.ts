@@ -18,9 +18,16 @@
 import type { V1OnrampServicesMeldRedirectToFluidmoneyCreateMutationResponse } from "../types/V1OnrampServicesMeldRedirectToFluidmoneyCreate.ts";
 import { http } from "msw";
 
-export function v1OnrampServicesMeldRedirectToFluidmoneyCreateHandler(data?: V1OnrampServicesMeldRedirectToFluidmoneyCreateMutationResponse | ((
+export function v1OnrampServicesMeldRedirectToFluidmoneyCreateHandlerResponse201(data?: V1OnrampServicesMeldRedirectToFluidmoneyCreateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 201,
+  
+  })
+}
+
+export function v1OnrampServicesMeldRedirectToFluidmoneyCreateHandler(data?: string | number | boolean | null | object | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v1/onramp-services/meld/redirect-to-fluidmoney/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

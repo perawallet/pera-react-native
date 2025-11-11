@@ -18,9 +18,9 @@
 import { z } from "zod";
 
 export const discoverAssetSchema = z.object({
-    "asset_id": z.number().int().optional(),
-"total": z.string().optional(),
-"creation_block_datetime": z.string().optional(),
+    "asset_id": z.optional(z.number().int()),
+"total": z.optional(z.string()),
+"creation_block_datetime": z.optional(z.string()),
 "creator_account_address": z.string().min(1),
 "freeze_address": z.string().min(1),
 "clawback_address": z.string().min(1)

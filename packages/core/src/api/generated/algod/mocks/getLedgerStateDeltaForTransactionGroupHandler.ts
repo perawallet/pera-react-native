@@ -15,12 +15,66 @@
 * Do not edit manually.
 */
 
-import type { GetLedgerStateDeltaForTransactionGroupQueryResponse } from "../types/GetLedgerStateDeltaForTransactionGroup.ts";
+import type { GetLedgerStateDeltaForTransactionGroupQueryResponse, GetLedgerStateDeltaForTransactionGroup401, GetLedgerStateDeltaForTransactionGroup404, GetLedgerStateDeltaForTransactionGroup408, GetLedgerStateDeltaForTransactionGroup500, GetLedgerStateDeltaForTransactionGroup501 } from "../types/GetLedgerStateDeltaForTransactionGroup.ts";
 import { http } from "msw";
+
+export function getLedgerStateDeltaForTransactionGroupHandlerResponse200(data: GetLedgerStateDeltaForTransactionGroupQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getLedgerStateDeltaForTransactionGroupHandlerResponse401(data: GetLedgerStateDeltaForTransactionGroup401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getLedgerStateDeltaForTransactionGroupHandlerResponse404(data: GetLedgerStateDeltaForTransactionGroup404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getLedgerStateDeltaForTransactionGroupHandlerResponse408(data: GetLedgerStateDeltaForTransactionGroup408) {
+  return new Response(JSON.stringify(data), {
+    status: 408,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getLedgerStateDeltaForTransactionGroupHandlerResponse500(data: GetLedgerStateDeltaForTransactionGroup500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getLedgerStateDeltaForTransactionGroupHandlerResponse501(data: GetLedgerStateDeltaForTransactionGroup501) {
+  return new Response(JSON.stringify(data), {
+    status: 501,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function getLedgerStateDeltaForTransactionGroupHandler(data?: GetLedgerStateDeltaForTransactionGroupQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/deltas/txn/group/:id', function handler(info) {
     if(typeof data === 'function') return data(info)
 

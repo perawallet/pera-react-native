@@ -25,15 +25,15 @@ export const v1AccountsNamesListPathParamsSchema = z.object({
 export type V1AccountsNamesListPathParamsSchema = z.infer<typeof v1AccountsNamesListPathParamsSchema>
 
 export const v1AccountsNamesListQueryParamsSchema = z.object({
-    "ordering": z.string().describe("Which field to use when ordering the results.").optional()
+    "ordering": z.optional(z.string().describe("Which field to use when ordering the results."))
     }).optional()
 
 export type V1AccountsNamesListQueryParamsSchema = z.infer<typeof v1AccountsNamesListQueryParamsSchema>
 
-export const v1AccountsNamesList200Schema = z.array(z.lazy(() => NFDomainLookupResponseSerializerResponseSchema))
+export const v1AccountsNamesList200Schema = z.array(NFDomainLookupResponseSerializerResponseSchema)
 
 export type V1AccountsNamesList200Schema = z.infer<typeof v1AccountsNamesList200Schema>
 
-export const v1AccountsNamesListQueryResponseSchema = z.lazy(() => v1AccountsNamesList200Schema)
+export const v1AccountsNamesListQueryResponseSchema = v1AccountsNamesList200Schema
 
 export type V1AccountsNamesListQueryResponseSchema = z.infer<typeof v1AccountsNamesListQueryResponseSchema>

@@ -18,9 +18,18 @@
 import type { V1AccountsWealthListQueryResponse } from "../types/V1AccountsWealthList.ts";
 import { http } from "msw";
 
+export function v1AccountsWealthListHandlerResponse200(data: V1AccountsWealthListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1AccountsWealthListHandler(data?: V1AccountsWealthListQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/accounts/:account_address/wealth/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

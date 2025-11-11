@@ -18,9 +18,16 @@
 import type { V1DevicesDeleteMutationResponse } from "../types/V1DevicesDelete.ts";
 import { http } from "msw";
 
-export function v1DevicesDeleteHandler(data?: V1DevicesDeleteMutationResponse | ((
+export function v1DevicesDeleteHandlerResponse204(data?: V1DevicesDeleteMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 204,
+  
+  })
+}
+
+export function v1DevicesDeleteHandler(data?: string | number | boolean | null | object | ((
         info: Parameters<Parameters<typeof http.delete>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.delete('/v1/devices/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

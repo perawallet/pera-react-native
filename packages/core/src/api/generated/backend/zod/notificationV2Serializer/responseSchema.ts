@@ -18,15 +18,15 @@
 import { z } from "zod";
 
 export const notificationV2SerializerResponseSchema = z.object({
-    "id": z.number().int().optional(),
-"account": z.number().int().nullable().nullish(),
-"type": z.enum(["transaction-sent", "transaction-received", "transaction-failed", "asset-support-request", "asset-support-success", "asset-transaction-sent", "asset-transaction-received", "asset-transaction-failed", "broadcast", "rekey-address", "None", "tinyman-v1-1-swap", "tinyman-v1-1-mint", "tinyman-v1-1-burn", "inbox-asset-transaction-received", "inbox-asset-transaction-sent", "inbox-asset-claimed", "inbox-asset-rejected", "custom-text-message", "favorited-asset-price-change", "algo-price-change", "favorited-asset-is-top-mover", "card-payment", "card-refund", "card-spend-incentive", "card-withdraw", "card-deposit", "swap-large-buy", "swap-large-sell", "asset-large-volume", "triggered-via-endpoint", "lucky-spin-cooldown-ended", "lucky-spin-bonus-earned", "lucky-spin-streak-warning"]).optional(),
-"message": z.string().optional(),
-"creation_datetime": z.string().optional(),
+    "id": z.optional(z.number().int()),
+"account": z.number().int().nullish(),
+"type": z.optional(z.enum(["transaction-sent", "transaction-received", "transaction-failed", "asset-support-request", "asset-support-success", "asset-transaction-sent", "asset-transaction-received", "asset-transaction-failed", "broadcast", "rekey-address", "None", "tinyman-v1-1-swap", "tinyman-v1-1-mint", "tinyman-v1-1-burn", "inbox-asset-transaction-received", "inbox-asset-transaction-sent", "inbox-asset-claimed", "inbox-asset-rejected", "custom-text-message", "favorited-asset-price-change", "algo-price-change", "favorited-asset-is-top-mover", "card-payment", "card-refund", "card-spend-incentive", "card-withdraw", "card-deposit", "swap-large-buy", "swap-large-sell", "asset-large-volume", "triggered-via-endpoint", "lucky-spin-cooldown-ended", "lucky-spin-bonus-earned", "lucky-spin-streak-warning"])),
+"message": z.optional(z.string()),
+"creation_datetime": z.optional(z.string()),
 "metadata": z.object({
     
-    }).nullable().nullish(),
-"is_unread": z.string().optional()
+    }).nullish(),
+"is_unread": z.optional(z.string())
     })
 
 export type NotificationV2SerializerResponseSchema = z.infer<typeof notificationV2SerializerResponseSchema>

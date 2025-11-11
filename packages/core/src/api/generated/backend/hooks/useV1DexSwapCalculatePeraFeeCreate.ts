@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DexSwapCalculatePeraFeeCreateMutationRequest, V1DexSwapCalculatePeraFeeCreateMutationResponse } from "../types/V1DexSwapCalculatePeraFeeCreate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1DexSwapCalculatePeraFeeCreateMutationKey = () => [{ url: '/v1/dex-swap/calculate-pera-fee/' }] as const
 
@@ -39,6 +39,16 @@ export async function v1DexSwapCalculatePeraFeeCreate({ data }: { data: V1DexSwa
   return res.data
 }
 
+export function v1DexSwapCalculatePeraFeeCreateMutationOptions(config: Partial<RequestConfig<V1DexSwapCalculatePeraFeeCreateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1DexSwapCalculatePeraFeeCreateMutationKey()
+  return mutationOptions<V1DexSwapCalculatePeraFeeCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1DexSwapCalculatePeraFeeCreateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ data }) => {
+      return v1DexSwapCalculatePeraFeeCreate({ data }, config)
+    },
+  })
+}
+
 /**
  * @description Calculates and returns the maximum possible fee amount that Pera might take in micro Algos.
  * @summary Calculate Pera Fee
@@ -54,11 +64,11 @@ export function useV1DexSwapCalculatePeraFeeCreate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1DexSwapCalculatePeraFeeCreateMutationKey()
 
+  const baseOptions = v1DexSwapCalculatePeraFeeCreateMutationOptions(config) as UseMutationOptions<V1DexSwapCalculatePeraFeeCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1DexSwapCalculatePeraFeeCreateMutationRequest}, TContext>
+
   return useMutation<V1DexSwapCalculatePeraFeeCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1DexSwapCalculatePeraFeeCreateMutationRequest}, TContext>({
-    mutationFn: async({ data }) => {
-      return v1DexSwapCalculatePeraFeeCreate({ data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1DexSwapCalculatePeraFeeCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1DexSwapCalculatePeraFeeCreateMutationRequest}, TContext>
 }

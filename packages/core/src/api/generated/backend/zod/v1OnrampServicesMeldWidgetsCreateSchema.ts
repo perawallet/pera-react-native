@@ -19,14 +19,14 @@ import { meldWidgetsSerializerRequestSchema } from "./meldWidgetsSerializer/requ
 import { meldWidgetsSerializerResponseSchema } from "./meldWidgetsSerializer/responseSchema.ts";
 import { z } from "zod";
 
-export const v1OnrampServicesMeldWidgetsCreate201Schema = z.lazy(() => meldWidgetsSerializerResponseSchema)
+export const v1OnrampServicesMeldWidgetsCreate201Schema = meldWidgetsSerializerResponseSchema
 
 export type V1OnrampServicesMeldWidgetsCreate201Schema = z.infer<typeof v1OnrampServicesMeldWidgetsCreate201Schema>
 
-export const v1OnrampServicesMeldWidgetsCreateMutationRequestSchema = z.lazy(() => meldWidgetsSerializerRequestSchema)
+export const v1OnrampServicesMeldWidgetsCreateMutationRequestSchema = meldWidgetsSerializerRequestSchema
 
 export type V1OnrampServicesMeldWidgetsCreateMutationRequestSchema = z.infer<typeof v1OnrampServicesMeldWidgetsCreateMutationRequestSchema>
 
-export const v1OnrampServicesMeldWidgetsCreateMutationResponseSchema = z.lazy(() => v1OnrampServicesMeldWidgetsCreate201Schema)
+export const v1OnrampServicesMeldWidgetsCreateMutationResponseSchema = v1OnrampServicesMeldWidgetsCreate201Schema
 
 export type V1OnrampServicesMeldWidgetsCreateMutationResponseSchema = z.infer<typeof v1OnrampServicesMeldWidgetsCreateMutationResponseSchema>

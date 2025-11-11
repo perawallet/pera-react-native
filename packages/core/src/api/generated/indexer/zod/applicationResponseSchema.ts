@@ -19,7 +19,7 @@ import { applicationSchema } from "./applicationSchema.ts";
 import { z } from "zod";
 
 export const applicationResponseSchema = z.object({
-    "application": z.lazy(() => applicationSchema).describe("Application index and its parameters").optional(),
+    "application": z.optional(z.lazy(() => applicationSchema).describe("Application index and its parameters")),
 "current-round": z.number().int().describe("Round at which the results were computed.")
     })
 

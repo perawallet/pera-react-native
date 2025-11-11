@@ -15,12 +15,55 @@
 * Do not edit manually.
 */
 
-import type { TealDisassembleMutationResponse } from "../types/TealDisassemble.ts";
+import type { TealDisassembleMutationResponse, TealDisassemble400, TealDisassemble401, TealDisassemble404, TealDisassemble500 } from "../types/TealDisassemble.ts";
 import { http } from "msw";
+
+export function tealDisassembleHandlerResponse200(data: TealDisassembleMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function tealDisassembleHandlerResponse400(data: TealDisassemble400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function tealDisassembleHandlerResponse401(data: TealDisassemble401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function tealDisassembleHandlerResponse404(data?: TealDisassemble404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+  
+  })
+}
+
+export function tealDisassembleHandlerResponse500(data: TealDisassemble500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function tealDisassembleHandler(data?: TealDisassembleMutationResponse | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v2/teal/disassemble', function handler(info) {
     if(typeof data === 'function') return data(info)
 

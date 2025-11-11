@@ -19,15 +19,15 @@ import { chainDynamicsSchema } from "./chainDynamicsSchema.ts";
 import { z } from "zod";
 
 export const v1ExplorerChainDynamicsListQueryParamsSchema = z.object({
-    "ordering": z.string().describe("Which field to use when ordering the results.").optional()
+    "ordering": z.optional(z.string().describe("Which field to use when ordering the results."))
     }).optional()
 
 export type V1ExplorerChainDynamicsListQueryParamsSchema = z.infer<typeof v1ExplorerChainDynamicsListQueryParamsSchema>
 
-export const v1ExplorerChainDynamicsList200Schema = z.lazy(() => chainDynamicsSchema)
+export const v1ExplorerChainDynamicsList200Schema = chainDynamicsSchema
 
 export type V1ExplorerChainDynamicsList200Schema = z.infer<typeof v1ExplorerChainDynamicsList200Schema>
 
-export const v1ExplorerChainDynamicsListQueryResponseSchema = z.lazy(() => v1ExplorerChainDynamicsList200Schema)
+export const v1ExplorerChainDynamicsListQueryResponseSchema = v1ExplorerChainDynamicsList200Schema
 
 export type V1ExplorerChainDynamicsListQueryResponseSchema = z.infer<typeof v1ExplorerChainDynamicsListQueryResponseSchema>

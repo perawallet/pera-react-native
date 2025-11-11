@@ -18,9 +18,9 @@
 import fetch from "../../../algod-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { RawTransactionMutationRequest, RawTransactionMutationResponse, RawTransaction400, RawTransaction401, RawTransaction500, RawTransaction503 } from "../types/RawTransaction.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
 import { rawTransactionMutationResponseSchema, rawTransactionMutationRequestSchema } from "../zod/rawTransactionSchema.ts";
-import { useMutation } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const rawTransactionMutationKey = () => [{ url: '/v2/transactions' }] as const
 
@@ -39,6 +39,16 @@ export async function rawTransaction({ data }: { data?: RawTransactionMutationRe
   return rawTransactionMutationResponseSchema.parse(res.data)
 }
 
+export function rawTransactionMutationOptions(config: Partial<RequestConfig<RawTransactionMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = rawTransactionMutationKey()
+  return mutationOptions<RawTransactionMutationResponse, ResponseErrorConfig<RawTransaction400 | RawTransaction401 | RawTransaction500 | RawTransaction503>, {data?: RawTransactionMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ data }) => {
+      return rawTransaction({ data }, config)
+    },
+  })
+}
+
 /**
  * @summary Broadcasts a raw transaction or transaction group to the network.
  * {@link /v2/transactions}
@@ -53,11 +63,11 @@ export function useRawTransaction<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? rawTransactionMutationKey()
 
+  const baseOptions = rawTransactionMutationOptions(config) as UseMutationOptions<RawTransactionMutationResponse, ResponseErrorConfig<RawTransaction400 | RawTransaction401 | RawTransaction500 | RawTransaction503>, {data?: RawTransactionMutationRequest}, TContext>
+
   return useMutation<RawTransactionMutationResponse, ResponseErrorConfig<RawTransaction400 | RawTransaction401 | RawTransaction500 | RawTransaction503>, {data?: RawTransactionMutationRequest}, TContext>({
-    mutationFn: async({ data }) => {
-      return rawTransaction({ data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<RawTransactionMutationResponse, ResponseErrorConfig<RawTransaction400 | RawTransaction401 | RawTransaction500 | RawTransaction503>, {data?: RawTransactionMutationRequest}, TContext>
 }

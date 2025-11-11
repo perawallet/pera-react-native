@@ -31,6 +31,6 @@ export const getConfigErrorSchema = z.unknown()
 
 export type GetConfigErrorSchema = z.infer<typeof getConfigErrorSchema>
 
-export const getConfigQueryResponseSchema = z.lazy(() => getConfig200Schema)
+export const getConfigQueryResponseSchema = getConfig200Schema
 
 export type GetConfigQueryResponseSchema = z.infer<typeof getConfigQueryResponseSchema>

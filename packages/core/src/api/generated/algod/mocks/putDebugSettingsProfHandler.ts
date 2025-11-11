@@ -18,9 +18,18 @@
 import type { PutDebugSettingsProfMutationResponse } from "../types/PutDebugSettingsProf.ts";
 import { http } from "msw";
 
+export function putDebugSettingsProfHandlerResponse200(data: PutDebugSettingsProfMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function putDebugSettingsProfHandler(data?: PutDebugSettingsProfMutationResponse | ((
         info: Parameters<Parameters<typeof http.put>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.put('/debug/settings/pprof', function handler(info) {
     if(typeof data === 'function') return data(info)
 

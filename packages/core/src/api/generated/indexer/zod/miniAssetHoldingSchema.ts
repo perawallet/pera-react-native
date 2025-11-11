@@ -23,10 +23,10 @@ import { z } from "zod";
 export const miniAssetHoldingSchema = z.object({
     "address": z.string(),
 "amount": z.number().int(),
-"deleted": z.boolean().describe("Whether or not this asset holding is currently deleted from its account.").optional(),
+"deleted": z.optional(z.boolean().describe("Whether or not this asset holding is currently deleted from its account.")),
 "is-frozen": z.boolean(),
-"opted-in-at-round": z.number().int().describe("Round during which the account opted into the asset.").optional(),
-"opted-out-at-round": z.number().int().describe("Round during which the account opted out of the asset.").optional()
+"opted-in-at-round": z.optional(z.number().int().describe("Round during which the account opted into the asset.")),
+"opted-out-at-round": z.optional(z.number().int().describe("Round during which the account opted out of the asset."))
     }).describe("A simplified version of AssetHolding ")
 
 export type MiniAssetHoldingSchema = z.infer<typeof miniAssetHoldingSchema>

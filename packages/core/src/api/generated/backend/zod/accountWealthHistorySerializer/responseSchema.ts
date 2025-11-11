@@ -19,7 +19,7 @@ import { accountWealthHistoryItemSchema } from "../accountWealthHistoryItemSchem
 import { z } from "zod";
 
 export const accountWealthHistorySerializerResponseSchema = z.object({
-    "results": z.array(z.lazy(() => accountWealthHistoryItemSchema)).optional()
+    "results": z.optional(z.array(z.lazy(() => accountWealthHistoryItemSchema)))
     })
 
 export type AccountWealthHistorySerializerResponseSchema = z.infer<typeof accountWealthHistorySerializerResponseSchema>

@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DevicesTriggerNotificationCreateMutationRequest, V1DevicesTriggerNotificationCreateMutationResponse } from "../types/V1DevicesTriggerNotificationCreate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1DevicesTriggerNotificationCreateMutationKey = () => [{ url: '/v1/devices/trigger-notification/' }] as const
 
@@ -37,6 +37,16 @@ export async function v1DevicesTriggerNotificationCreate({ data }: { data: V1Dev
   return res.data
 }
 
+export function v1DevicesTriggerNotificationCreateMutationOptions(config: Partial<RequestConfig<V1DevicesTriggerNotificationCreateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1DevicesTriggerNotificationCreateMutationKey()
+  return mutationOptions<V1DevicesTriggerNotificationCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1DevicesTriggerNotificationCreateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ data }) => {
+      return v1DevicesTriggerNotificationCreate({ data }, config)
+    },
+  })
+}
+
 /**
  * {@link /v1/devices/trigger-notification/}
  */
@@ -50,11 +60,11 @@ export function useV1DevicesTriggerNotificationCreate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1DevicesTriggerNotificationCreateMutationKey()
 
+  const baseOptions = v1DevicesTriggerNotificationCreateMutationOptions(config) as UseMutationOptions<V1DevicesTriggerNotificationCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1DevicesTriggerNotificationCreateMutationRequest}, TContext>
+
   return useMutation<V1DevicesTriggerNotificationCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1DevicesTriggerNotificationCreateMutationRequest}, TContext>({
-    mutationFn: async({ data }) => {
-      return v1DevicesTriggerNotificationCreate({ data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1DevicesTriggerNotificationCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1DevicesTriggerNotificationCreateMutationRequest}, TContext>
 }

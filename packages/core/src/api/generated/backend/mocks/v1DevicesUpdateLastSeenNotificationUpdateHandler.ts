@@ -18,9 +18,18 @@
 import type { V1DevicesUpdateLastSeenNotificationUpdateMutationResponse } from "../types/V1DevicesUpdateLastSeenNotificationUpdate.ts";
 import { http } from "msw";
 
+export function v1DevicesUpdateLastSeenNotificationUpdateHandlerResponse200(data: V1DevicesUpdateLastSeenNotificationUpdateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1DevicesUpdateLastSeenNotificationUpdateHandler(data?: V1DevicesUpdateLastSeenNotificationUpdateMutationResponse | ((
         info: Parameters<Parameters<typeof http.put>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.put('/v1/devices/:device_id/update-last-seen-notification/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

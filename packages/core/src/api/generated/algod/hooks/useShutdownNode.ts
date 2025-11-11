@@ -18,9 +18,9 @@
 import fetch from "../../../algod-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { ShutdownNodeMutationResponse, ShutdownNodeQueryParams } from "../types/ShutdownNode.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
 import { shutdownNodeMutationResponseSchema } from "../zod/shutdownNodeSchema.ts";
-import { useMutation } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const shutdownNodeMutationKey = () => [{ url: '/v2/shutdown' }] as const
 
@@ -37,6 +37,16 @@ export async function shutdownNode({ params }: { params?: ShutdownNodeQueryParam
   return shutdownNodeMutationResponseSchema.parse(res.data)
 }
 
+export function shutdownNodeMutationOptions(config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {
+  const mutationKey = shutdownNodeMutationKey()
+  return mutationOptions<ShutdownNodeMutationResponse, ResponseErrorConfig<Error>, {params?: ShutdownNodeQueryParams}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ params }) => {
+      return shutdownNode({ params }, config)
+    },
+  })
+}
+
 /**
  * @description Special management endpoint to shutdown the node. Optionally provide a timeout parameter to indicate that the node should begin shutting down after a number of seconds.
  * {@link /v2/shutdown}
@@ -51,11 +61,11 @@ export function useShutdownNode<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? shutdownNodeMutationKey()
 
+  const baseOptions = shutdownNodeMutationOptions(config) as UseMutationOptions<ShutdownNodeMutationResponse, ResponseErrorConfig<Error>, {params?: ShutdownNodeQueryParams}, TContext>
+
   return useMutation<ShutdownNodeMutationResponse, ResponseErrorConfig<Error>, {params?: ShutdownNodeQueryParams}, TContext>({
-    mutationFn: async({ params }) => {
-      return shutdownNode({ params }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<ShutdownNodeMutationResponse, ResponseErrorConfig<Error>, {params?: ShutdownNodeQueryParams}, TContext>
 }

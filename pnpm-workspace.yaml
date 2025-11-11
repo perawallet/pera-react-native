@@ -6,14 +6,14 @@ catalog:
   '@algorandfoundation/algokit-utils': ^9.1.2
   '@algorandfoundation/xhd-wallet-api': ^1.0.3
   '@babel/runtime': ^7.28.4
-  '@kubb/cli': ^3.18.3
-  '@kubb/core': ^3.18.3
-  '@kubb/plugin-client': ^3.18.3
-  '@kubb/plugin-msw': ^3.18.3
-  '@kubb/plugin-oas': ^3.18.3
-  '@kubb/plugin-react-query': ^3.18.3
-  '@kubb/plugin-ts': ^3.18.3
-  '@kubb/plugin-zod': ^3.18.3
+  '@kubb/cli': ^4.5.8
+  '@kubb/core': ^4.5.8
+  '@kubb/plugin-client': ^4.5.8
+  '@kubb/plugin-msw': ^4.5.8
+  '@kubb/plugin-oas': ^4.5.8
+  '@kubb/plugin-react-query': ^4.5.8
+  '@kubb/plugin-ts': ^4.5.8
+  '@kubb/plugin-zod': ^4.5.8
   '@tanstack/query-async-storage-persister': ^5.90.9
   '@tanstack/query-sync-storage-persister': ^5.90.9
   '@tanstack/react-query': ^5.90.7

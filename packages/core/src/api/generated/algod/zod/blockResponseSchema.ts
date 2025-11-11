@@ -21,9 +21,9 @@ export const blockResponseSchema = z.object({
     "block": z.object({
     
     }).describe("Block header data."),
-"cert": z.object({
+"cert": z.optional(z.object({
     
-    }).describe("Optional certificate object. This is only included when the format is set to message pack.").optional()
+    }).describe("Optional certificate object. This is only included when the format is set to message pack."))
     })
 
 export type BlockResponseSchema = z.infer<typeof blockResponseSchema>

@@ -21,6 +21,6 @@ export const v1StakingProjectsInformationList200Schema = z.unknown()
 
 export type V1StakingProjectsInformationList200Schema = z.infer<typeof v1StakingProjectsInformationList200Schema>
 
-export const v1StakingProjectsInformationListQueryResponseSchema = z.lazy(() => v1StakingProjectsInformationList200Schema)
+export const v1StakingProjectsInformationListQueryResponseSchema = v1StakingProjectsInformationList200Schema
 
 export type V1StakingProjectsInformationListQueryResponseSchema = z.infer<typeof v1StakingProjectsInformationListQueryResponseSchema>

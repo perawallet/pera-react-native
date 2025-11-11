@@ -19,17 +19,17 @@ import { accountWealthHistorySerializerResponseSchema } from "./accountWealthHis
 import { z } from "zod";
 
 export const v1WalletWealthListQueryParamsSchema = z.object({
-    "ordering": z.string().describe("Which field to use when ordering the results.").optional(),
+    "ordering": z.optional(z.string().describe("Which field to use when ordering the results.")),
 "account_addresses": z.array(z.string().min(1)).max(300),
 "period": z.enum(["one-year", "one-month", "one-week", "one-day"])
     })
 
 export type V1WalletWealthListQueryParamsSchema = z.infer<typeof v1WalletWealthListQueryParamsSchema>
 
-export const v1WalletWealthList200Schema = z.lazy(() => accountWealthHistorySerializerResponseSchema)
+export const v1WalletWealthList200Schema = accountWealthHistorySerializerResponseSchema
 
 export type V1WalletWealthList200Schema = z.infer<typeof v1WalletWealthList200Schema>
 
-export const v1WalletWealthListQueryResponseSchema = z.lazy(() => v1WalletWealthList200Schema)
+export const v1WalletWealthListQueryResponseSchema = v1WalletWealthList200Schema
 
 export type V1WalletWealthListQueryResponseSchema = z.infer<typeof v1WalletWealthListQueryResponseSchema>

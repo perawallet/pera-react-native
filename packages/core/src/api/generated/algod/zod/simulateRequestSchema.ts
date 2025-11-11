@@ -23,13 +23,13 @@ import { z } from "zod";
  * @description Request type for simulation endpoint.
  */
 export const simulateRequestSchema = z.object({
-    "allow-empty-signatures": z.boolean().describe("Allows transactions without signatures to be simulated as if they had correct signatures.").optional(),
-"allow-more-logging": z.boolean().describe("Lifts limits on log opcode usage during simulation.").optional(),
-"allow-unnamed-resources": z.boolean().describe("Allows access to unnamed resources during simulation.").optional(),
-"exec-trace-config": z.lazy(() => simulateTraceConfigSchema).describe("An object that configures simulation execution trace.").optional(),
-"extra-opcode-budget": z.number().int().describe("Applies extra opcode budget during simulation for each transaction group.").optional(),
-"fix-signers": z.boolean().describe("If true, signers for transactions that are missing signatures will be fixed during evaluation.").optional(),
-"round": z.number().int().describe("If provided, specifies the round preceding the simulation. State changes through this round will be used to run this simulation. Usually only the 4 most recent rounds will be available (controlled by the node config value MaxAcctLookback). If not specified, defaults to the latest available round.").optional(),
+    "allow-empty-signatures": z.optional(z.boolean().describe("Allows transactions without signatures to be simulated as if they had correct signatures.")),
+"allow-more-logging": z.optional(z.boolean().describe("Lifts limits on log opcode usage during simulation.")),
+"allow-unnamed-resources": z.optional(z.boolean().describe("Allows access to unnamed resources during simulation.")),
+"exec-trace-config": z.optional(z.lazy(() => simulateTraceConfigSchema).describe("An object that configures simulation execution trace.")),
+"extra-opcode-budget": z.optional(z.number().int().describe("Applies extra opcode budget during simulation for each transaction group.")),
+"fix-signers": z.optional(z.boolean().describe("If true, signers for transactions that are missing signatures will be fixed during evaluation.")),
+"round": z.optional(z.number().int().describe("If provided, specifies the round preceding the simulation. State changes through this round will be used to run this simulation. Usually only the 4 most recent rounds will be available (controlled by the node config value MaxAcctLookback). If not specified, defaults to the latest available round.")),
 "txn-groups": z.array(z.lazy(() => simulateRequestTransactionGroupSchema).describe("A transaction group to simulate.")).describe("The transaction groups to simulate.")
     }).describe("Request type for simulation endpoint.")
 

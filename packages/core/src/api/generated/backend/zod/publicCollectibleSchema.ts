@@ -23,15 +23,15 @@ import { z } from "zod";
  * @description The Algonode IPFS service is used for convenience in thumbnail_url and media.url. We recommend you to sign-up for a dedicated plan from Algonode.
  */
 export const publicCollectibleSchema = z.object({
-    "title": z.string().max(255).optional(),
-"description": z.string().optional(),
+    "title": z.optional(z.string().max(255)),
+"description": z.optional(z.string()),
 "standards": z.array(z.string().nullable()).describe("arc3, arc69, arc19"),
 "thumbnail_url": z.string().url().min(1).describe("Pera or Algonode IPFS URL."),
 "thumbnail_ipfs_cid": z.string().min(1),
 "media": z.array(z.lazy(() => publicMediaSchema)),
 "metadata": z.object({
     
-    }).nullable().nullish(),
+    }).nullish(),
 "traits": z.array(z.lazy(() => traitSchema))
     }).describe("The Algonode IPFS service is used for convenience in thumbnail_url and media.url. We recommend you to sign-up for a dedicated plan from Algonode.")
 

@@ -19,18 +19,18 @@ import { projectSerializerResponseSchema } from "./projectSerializer/responseSch
 import { z } from "zod";
 
 export const v1ProjectsListQueryParamsSchema = z.object({
-    "is_visible_for_discover": z.string().optional(),
-"q": z.string().optional(),
-"ordering": z.string().describe("Which field to use when ordering the results.").optional(),
-"url": z.string().describe("You can give multiple url like url=xxx&url=yyy").optional()
+    "is_visible_for_discover": z.optional(z.string()),
+"q": z.optional(z.string()),
+"ordering": z.optional(z.string().describe("Which field to use when ordering the results.")),
+"url": z.optional(z.string().describe("You can give multiple url like url=xxx&url=yyy"))
     }).optional()
 
 export type V1ProjectsListQueryParamsSchema = z.infer<typeof v1ProjectsListQueryParamsSchema>
 
-export const v1ProjectsList200Schema = z.array(z.lazy(() => projectSerializerResponseSchema))
+export const v1ProjectsList200Schema = z.array(projectSerializerResponseSchema)
 
 export type V1ProjectsList200Schema = z.infer<typeof v1ProjectsList200Schema>
 
-export const v1ProjectsListQueryResponseSchema = z.lazy(() => v1ProjectsList200Schema)
+export const v1ProjectsListQueryResponseSchema = v1ProjectsList200Schema
 
 export type V1ProjectsListQueryResponseSchema = z.infer<typeof v1ProjectsListQueryResponseSchema>

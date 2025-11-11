@@ -18,10 +18,10 @@
 import { z } from "zod";
 
 export const transactionGroupSchema = z.object({
-    "purpose": z.enum(["opt-in", "swap", "fee"]).optional(),
-"transaction_group_id": z.string().min(1).optional(),
-"transactions": z.array(z.string().min(1)).optional(),
-"signed_transactions": z.array(z.string().min(1)).optional()
+    "purpose": z.optional(z.enum(["opt-in", "swap", "fee"])),
+"transaction_group_id": z.optional(z.string().min(1)),
+"transactions": z.optional(z.array(z.string().min(1))),
+"signed_transactions": z.optional(z.array(z.string().min(1)))
     })
 
 export type TransactionGroupSchema = z.infer<typeof transactionGroupSchema>

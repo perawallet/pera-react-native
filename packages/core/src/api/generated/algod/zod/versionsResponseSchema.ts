@@ -18,6 +18,6 @@
 import { versionSchema } from "./versionSchema.ts";
 import { z } from "zod";
 
-export const versionsResponseSchema = z.lazy(() => versionSchema).describe("algod version information.")
+export const versionsResponseSchema = versionSchema.describe("algod version information.")
 
 export type VersionsResponseSchema = z.infer<typeof versionsResponseSchema>

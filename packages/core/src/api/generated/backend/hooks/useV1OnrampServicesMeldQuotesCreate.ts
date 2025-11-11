@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1OnrampServicesMeldQuotesCreateMutationRequest, V1OnrampServicesMeldQuotesCreateMutationResponse, V1OnrampServicesMeldQuotesCreate400 } from "../types/V1OnrampServicesMeldQuotesCreate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1OnrampServicesMeldQuotesCreateMutationKey = () => [{ url: '/v1/onramp-services/meld/quotes/' }] as const
 
@@ -39,6 +39,16 @@ export async function v1OnrampServicesMeldQuotesCreate({ data }: { data: V1Onram
   return res.data
 }
 
+export function v1OnrampServicesMeldQuotesCreateMutationOptions(config: Partial<RequestConfig<V1OnrampServicesMeldQuotesCreateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1OnrampServicesMeldQuotesCreateMutationKey()
+  return mutationOptions<V1OnrampServicesMeldQuotesCreateMutationResponse, ResponseErrorConfig<V1OnrampServicesMeldQuotesCreate400>, {data: V1OnrampServicesMeldQuotesCreateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ data }) => {
+      return v1OnrampServicesMeldQuotesCreate({ data }, config)
+    },
+  })
+}
+
 /**
  * @description Returns a list of quotes from Meld based on the input parameters.
  * @summary Meld Quotes View
@@ -54,11 +64,11 @@ export function useV1OnrampServicesMeldQuotesCreate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1OnrampServicesMeldQuotesCreateMutationKey()
 
+  const baseOptions = v1OnrampServicesMeldQuotesCreateMutationOptions(config) as UseMutationOptions<V1OnrampServicesMeldQuotesCreateMutationResponse, ResponseErrorConfig<V1OnrampServicesMeldQuotesCreate400>, {data: V1OnrampServicesMeldQuotesCreateMutationRequest}, TContext>
+
   return useMutation<V1OnrampServicesMeldQuotesCreateMutationResponse, ResponseErrorConfig<V1OnrampServicesMeldQuotesCreate400>, {data: V1OnrampServicesMeldQuotesCreateMutationRequest}, TContext>({
-    mutationFn: async({ data }) => {
-      return v1OnrampServicesMeldQuotesCreate({ data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1OnrampServicesMeldQuotesCreateMutationResponse, ResponseErrorConfig<V1OnrampServicesMeldQuotesCreate400>, {data: V1OnrampServicesMeldQuotesCreateMutationRequest}, TContext>
 }

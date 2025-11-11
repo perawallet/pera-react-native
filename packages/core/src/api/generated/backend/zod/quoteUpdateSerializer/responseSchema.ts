@@ -18,8 +18,8 @@
 import { z } from "zod";
 
 export const quoteUpdateSerializerResponseSchema = z.object({
-    "id": z.number().int().optional(),
-"exception_text": z.string().describe("Exception text that occurred when a user tried to sign the transactions or send them to the blockchain.").nullable().nullish()
+    "id": z.optional(z.number().int()),
+"exception_text": z.string().describe("Exception text that occurred when a user tried to sign the transactions or send them to the blockchain.").nullish()
     })
 
 export type QuoteUpdateSerializerResponseSchema = z.infer<typeof quoteUpdateSerializerResponseSchema>

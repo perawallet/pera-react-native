@@ -15,12 +15,28 @@
 * Do not edit manually.
 */
 
-import type { V1CardsCountryAvailabilityRequestCreateMutationResponse } from "../types/V1CardsCountryAvailabilityRequestCreate.ts";
+import type { V1CardsCountryAvailabilityRequestCreateMutationResponse, V1CardsCountryAvailabilityRequestCreate400 } from "../types/V1CardsCountryAvailabilityRequestCreate.ts";
 import { http } from "msw";
+
+export function v1CardsCountryAvailabilityRequestCreateHandlerResponse201(data: V1CardsCountryAvailabilityRequestCreateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 201,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function v1CardsCountryAvailabilityRequestCreateHandlerResponse400(data?: V1CardsCountryAvailabilityRequestCreate400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+  
+  })
+}
 
 export function v1CardsCountryAvailabilityRequestCreateHandler(data?: V1CardsCountryAvailabilityRequestCreateMutationResponse | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v1/cards/country-availability-request/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

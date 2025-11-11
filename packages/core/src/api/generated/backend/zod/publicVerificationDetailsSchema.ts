@@ -21,9 +21,9 @@ export const publicVerificationDetailsSchema = z.object({
     "project_name": z.string().min(1).max(255),
 "project_url": z.string().url().min(1).max(255),
 "project_description": z.string().min(1),
-"discord_url": z.string().url().max(255).optional(),
-"telegram_url": z.string().url().max(255).optional(),
-"twitter_username": z.string().regex(/^(\w){1,15}$/).max(255).optional()
+"discord_url": z.optional(z.string().url().max(255)),
+"telegram_url": z.optional(z.string().url().max(255)),
+"twitter_username": z.optional(z.string().regex(/^(\w){1,15}$/))
     })
 
 export type PublicVerificationDetailsSchema = z.infer<typeof publicVerificationDetailsSchema>

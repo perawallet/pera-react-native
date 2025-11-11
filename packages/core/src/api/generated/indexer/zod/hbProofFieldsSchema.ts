@@ -21,11 +21,11 @@ import { z } from "zod";
  * @description \\[hbprf\\] HbProof is a signature using HeartbeatAddress\'s partkey, thereby showing it is online.
  */
 export const hbProofFieldsSchema = z.object({
-    "hb-pk": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[p\\] Public key of the heartbeat message.").optional(),
-"hb-pk1sig": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[p1s\\] Signature of OneTimeSignatureSubkeyOffsetID(PK, Batch, Offset) under the key PK2.").optional(),
-"hb-pk2": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[p2\\] Key for new-style two-level ephemeral signature.").optional(),
-"hb-pk2sig": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[p2s\\] Signature of OneTimeSignatureSubkeyBatchID(PK2, Batch) under the master key (OneTimeSignatureVerifier).").optional(),
-"hb-sig": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[s\\] Signature of the heartbeat message.").optional()
+    "hb-pk": z.optional(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[p\\] Public key of the heartbeat message.")),
+"hb-pk1sig": z.optional(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[p1s\\] Signature of OneTimeSignatureSubkeyOffsetID(PK, Batch, Offset) under the key PK2.")),
+"hb-pk2": z.optional(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[p2\\] Key for new-style two-level ephemeral signature.")),
+"hb-pk2sig": z.optional(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[p2s\\] Signature of OneTimeSignatureSubkeyBatchID(PK2, Batch) under the master key (OneTimeSignatureVerifier).")),
+"hb-sig": z.optional(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[s\\] Signature of the heartbeat message."))
     }).describe("\\[hbprf\\] HbProof is a signature using HeartbeatAddress's partkey, thereby showing it is online.")
 
 export type HbProofFieldsSchema = z.infer<typeof hbProofFieldsSchema>

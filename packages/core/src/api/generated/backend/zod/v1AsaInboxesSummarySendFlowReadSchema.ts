@@ -26,15 +26,15 @@ export const v1AsaInboxesSummarySendFlowReadPathParamsSchema = z.object({
 export type V1AsaInboxesSummarySendFlowReadPathParamsSchema = z.infer<typeof v1AsaInboxesSummarySendFlowReadPathParamsSchema>
 
 export const v1AsaInboxesSummarySendFlowReadQueryParamsSchema = z.object({
-    "ordering": z.string().describe("Which field to use when ordering the results.").optional()
+    "ordering": z.optional(z.string().describe("Which field to use when ordering the results."))
     }).optional()
 
 export type V1AsaInboxesSummarySendFlowReadQueryParamsSchema = z.infer<typeof v1AsaInboxesSummarySendFlowReadQueryParamsSchema>
 
-export const v1AsaInboxesSummarySendFlowRead200Schema = z.lazy(() => ASAInboxSendFlowSummaryResponseSchema)
+export const v1AsaInboxesSummarySendFlowRead200Schema = ASAInboxSendFlowSummaryResponseSchema
 
 export type V1AsaInboxesSummarySendFlowRead200Schema = z.infer<typeof v1AsaInboxesSummarySendFlowRead200Schema>
 
-export const v1AsaInboxesSummarySendFlowReadQueryResponseSchema = z.lazy(() => v1AsaInboxesSummarySendFlowRead200Schema)
+export const v1AsaInboxesSummarySendFlowReadQueryResponseSchema = v1AsaInboxesSummarySendFlowRead200Schema
 
 export type V1AsaInboxesSummarySendFlowReadQueryResponseSchema = z.infer<typeof v1AsaInboxesSummarySendFlowReadQueryResponseSchema>

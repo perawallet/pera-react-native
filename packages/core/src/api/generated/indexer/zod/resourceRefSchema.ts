@@ -24,12 +24,12 @@ import { z } from "zod";
  * @description ResourceRef names a single resource. Only one of the fields should be set.
  */
 export const resourceRefSchema = z.object({
-    "address": z.string().describe("\\[d\\] Account whose balance record is accessible by the executing ApprovalProgram or ClearStateProgram.").optional(),
-"application-id": z.number().int().describe("\\[p\\] Application id whose GlobalState may be read by the executing\n ApprovalProgram or ClearStateProgram.").optional(),
-"asset-id": z.number().int().describe("\\[s\\] Asset whose AssetParams may be read by the executing\n ApprovalProgram or ClearStateProgram.").optional(),
-"box": z.lazy(() => boxReferenceSchema).describe("BoxReference names a box by its name and the application ID it belongs to.").optional(),
-"holding": z.lazy(() => holdingRefSchema).describe("HoldingRef names a holding by referring to an Address and Asset it belongs to.").optional(),
-"local": z.lazy(() => localsRefSchema).describe("LocalsRef names a local state by referring to an Address and App it belongs to.").optional()
+    "address": z.optional(z.string().describe("\\[d\\] Account whose balance record is accessible by the executing ApprovalProgram or ClearStateProgram.")),
+"application-id": z.optional(z.number().int().describe("\\[p\\] Application id whose GlobalState may be read by the executing\n ApprovalProgram or ClearStateProgram.")),
+"asset-id": z.optional(z.number().int().describe("\\[s\\] Asset whose AssetParams may be read by the executing\n ApprovalProgram or ClearStateProgram.")),
+"box": z.optional(z.lazy(() => boxReferenceSchema).describe("BoxReference names a box by its name and the application ID it belongs to.")),
+"holding": z.optional(z.lazy(() => holdingRefSchema).describe("HoldingRef names a holding by referring to an Address and Asset it belongs to.")),
+"local": z.optional(z.lazy(() => localsRefSchema).describe("LocalsRef names a local state by referring to an Address and App it belongs to."))
     }).describe("ResourceRef names a single resource. Only one of the fields should be set.")
 
 export type ResourceRefSchema = z.infer<typeof resourceRefSchema>

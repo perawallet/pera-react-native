@@ -15,12 +15,48 @@
 * Do not edit manually.
 */
 
-import type { LookupAccountCreatedAssetsQueryResponse } from "../types/LookupAccountCreatedAssets.ts";
+import type { LookupAccountCreatedAssetsQueryResponse, LookupAccountCreatedAssets400, LookupAccountCreatedAssets404, LookupAccountCreatedAssets500 } from "../types/LookupAccountCreatedAssets.ts";
 import { http } from "msw";
+
+export function lookupAccountCreatedAssetsHandlerResponse200(data: LookupAccountCreatedAssetsQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupAccountCreatedAssetsHandlerResponse400(data: LookupAccountCreatedAssets400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupAccountCreatedAssetsHandlerResponse404(data: LookupAccountCreatedAssets404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupAccountCreatedAssetsHandlerResponse500(data: LookupAccountCreatedAssets500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function lookupAccountCreatedAssetsHandler(data?: LookupAccountCreatedAssetsQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/accounts/:account-id/created-assets', function handler(info) {
     if(typeof data === 'function') return data(info)
 

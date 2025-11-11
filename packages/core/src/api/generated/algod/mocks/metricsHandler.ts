@@ -15,12 +15,26 @@
 * Do not edit manually.
 */
 
-import type { MetricsQueryResponse } from "../types/Metrics.ts";
+import type { MetricsQueryResponse, Metrics404 } from "../types/Metrics.ts";
 import { http } from "msw";
 
-export function metricsHandler(data?: MetricsQueryResponse | ((
+export function metricsHandlerResponse200(data?: MetricsQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+  
+  })
+}
+
+export function metricsHandlerResponse404(data?: Metrics404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+  
+  })
+}
+
+export function metricsHandler(data?: string | number | boolean | null | object | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/metrics', function handler(info) {
     if(typeof data === 'function') return data(info)
 

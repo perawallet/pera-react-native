@@ -18,9 +18,16 @@
 import type { V1DevicesAssetsPriceWatchAssetStatusListQueryResponse } from "../types/V1DevicesAssetsPriceWatchAssetStatusList.ts";
 import { http } from "msw";
 
-export function v1DevicesAssetsPriceWatchAssetStatusListHandler(data?: V1DevicesAssetsPriceWatchAssetStatusListQueryResponse | ((
+export function v1DevicesAssetsPriceWatchAssetStatusListHandlerResponse200(data?: V1DevicesAssetsPriceWatchAssetStatusListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+  
+  })
+}
+
+export function v1DevicesAssetsPriceWatchAssetStatusListHandler(data?: string | number | boolean | null | object | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/devices/:device_id/assets/:asset_id/price-watch-asset-status/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

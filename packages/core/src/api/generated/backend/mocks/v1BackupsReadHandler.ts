@@ -18,9 +18,18 @@
 import type { V1BackupsReadQueryResponse } from "../types/V1BackupsRead.ts";
 import { http } from "msw";
 
+export function v1BackupsReadHandlerResponse200(data: V1BackupsReadQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1BackupsReadHandler(data?: V1BackupsReadQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/backups/:id/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

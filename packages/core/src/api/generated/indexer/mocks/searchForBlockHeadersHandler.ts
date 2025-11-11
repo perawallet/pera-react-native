@@ -15,12 +15,39 @@
 * Do not edit manually.
 */
 
-import type { SearchForBlockHeadersQueryResponse } from "../types/SearchForBlockHeaders.ts";
+import type { SearchForBlockHeadersQueryResponse, SearchForBlockHeaders404, SearchForBlockHeaders500 } from "../types/SearchForBlockHeaders.ts";
 import { http } from "msw";
+
+export function searchForBlockHeadersHandlerResponse200(data: SearchForBlockHeadersQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function searchForBlockHeadersHandlerResponse404(data: SearchForBlockHeaders404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function searchForBlockHeadersHandlerResponse500(data: SearchForBlockHeaders500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function searchForBlockHeadersHandler(data?: SearchForBlockHeadersQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/block-headers', function handler(info) {
     if(typeof data === 'function') return data(info)
 

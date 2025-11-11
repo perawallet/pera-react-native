@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DevicesUpdateLastSeenNotificationPartialUpdateMutationRequest, V1DevicesUpdateLastSeenNotificationPartialUpdateMutationResponse, V1DevicesUpdateLastSeenNotificationPartialUpdatePathParams } from "../types/V1DevicesUpdateLastSeenNotificationPartialUpdate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1DevicesUpdateLastSeenNotificationPartialUpdateMutationKey = () => [{ url: '/v1/devices/:device_id/update-last-seen-notification/' }] as const
 
@@ -37,6 +37,16 @@ export async function v1DevicesUpdateLastSeenNotificationPartialUpdate({ device_
   return res.data
 }
 
+export function v1DevicesUpdateLastSeenNotificationPartialUpdateMutationOptions(config: Partial<RequestConfig<V1DevicesUpdateLastSeenNotificationPartialUpdateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1DevicesUpdateLastSeenNotificationPartialUpdateMutationKey()
+  return mutationOptions<V1DevicesUpdateLastSeenNotificationPartialUpdateMutationResponse, ResponseErrorConfig<Error>, {device_id: V1DevicesUpdateLastSeenNotificationPartialUpdatePathParams["device_id"], data?: V1DevicesUpdateLastSeenNotificationPartialUpdateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ device_id, data }) => {
+      return v1DevicesUpdateLastSeenNotificationPartialUpdate({ device_id, data }, config)
+    },
+  })
+}
+
 /**
  * {@link /v1/devices/:device_id/update-last-seen-notification/}
  */
@@ -50,11 +60,11 @@ export function useV1DevicesUpdateLastSeenNotificationPartialUpdate<TContext>(op
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1DevicesUpdateLastSeenNotificationPartialUpdateMutationKey()
 
+  const baseOptions = v1DevicesUpdateLastSeenNotificationPartialUpdateMutationOptions(config) as UseMutationOptions<V1DevicesUpdateLastSeenNotificationPartialUpdateMutationResponse, ResponseErrorConfig<Error>, {device_id: V1DevicesUpdateLastSeenNotificationPartialUpdatePathParams["device_id"], data?: V1DevicesUpdateLastSeenNotificationPartialUpdateMutationRequest}, TContext>
+
   return useMutation<V1DevicesUpdateLastSeenNotificationPartialUpdateMutationResponse, ResponseErrorConfig<Error>, {device_id: V1DevicesUpdateLastSeenNotificationPartialUpdatePathParams["device_id"], data?: V1DevicesUpdateLastSeenNotificationPartialUpdateMutationRequest}, TContext>({
-    mutationFn: async({ device_id, data }) => {
-      return v1DevicesUpdateLastSeenNotificationPartialUpdate({ device_id, data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1DevicesUpdateLastSeenNotificationPartialUpdateMutationResponse, ResponseErrorConfig<Error>, {device_id: V1DevicesUpdateLastSeenNotificationPartialUpdatePathParams["device_id"], data?: V1DevicesUpdateLastSeenNotificationPartialUpdateMutationRequest}, TContext>
 }

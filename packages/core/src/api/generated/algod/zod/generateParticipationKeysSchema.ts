@@ -25,7 +25,7 @@ export const generateParticipationKeysPathParamsSchema = z.object({
 export type GenerateParticipationKeysPathParamsSchema = z.infer<typeof generateParticipationKeysPathParamsSchema>
 
 export const generateParticipationKeysQueryParamsSchema = z.object({
-    "dilution": z.coerce.number().int().describe("Key dilution for two-level participation keys (defaults to sqrt of validity window).").optional(),
+    "dilution": z.optional(z.coerce.number().int().describe("Key dilution for two-level participation keys (defaults to sqrt of validity window).")),
 "first": z.coerce.number().int().describe("First round for participation key."),
 "last": z.coerce.number().int().describe("Last round for participation key.")
     })
@@ -42,28 +42,28 @@ export type GenerateParticipationKeys200Schema = z.infer<typeof generateParticip
 /**
  * @description Bad Request
  */
-export const generateParticipationKeys400Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const generateParticipationKeys400Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GenerateParticipationKeys400Schema = z.infer<typeof generateParticipationKeys400Schema>
 
 /**
  * @description Invalid API Token
  */
-export const generateParticipationKeys401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const generateParticipationKeys401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GenerateParticipationKeys401Schema = z.infer<typeof generateParticipationKeys401Schema>
 
 /**
  * @description Internal Error
  */
-export const generateParticipationKeys500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const generateParticipationKeys500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GenerateParticipationKeys500Schema = z.infer<typeof generateParticipationKeys500Schema>
 
 /**
  * @description Service Temporarily Unavailable
  */
-export const generateParticipationKeys503Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const generateParticipationKeys503Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GenerateParticipationKeys503Schema = z.infer<typeof generateParticipationKeys503Schema>
 
@@ -74,6 +74,6 @@ export const generateParticipationKeysErrorSchema = z.unknown()
 
 export type GenerateParticipationKeysErrorSchema = z.infer<typeof generateParticipationKeysErrorSchema>
 
-export const generateParticipationKeysMutationResponseSchema = z.lazy(() => generateParticipationKeys200Schema)
+export const generateParticipationKeysMutationResponseSchema = generateParticipationKeys200Schema
 
 export type GenerateParticipationKeysMutationResponseSchema = z.infer<typeof generateParticipationKeysMutationResponseSchema>

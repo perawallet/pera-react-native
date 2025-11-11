@@ -23,9 +23,9 @@ import { z } from "zod";
  * @description Fields for a state proof transaction. \n\nDefinition:\ndata/transactions/stateproof.go : StateProofTxnFields
  */
 export const transactionStateProofSchema = z.object({
-    "message": z.lazy(() => indexerStateProofMessageSchema).optional(),
-"state-proof": z.lazy(() => stateProofFieldsSchema).describe("\\[sp\\] represents a state proof.\n\nDefinition:\ncrypto/stateproof/structs.go : StateProof").optional(),
-"state-proof-type": z.number().int().describe("\\[sptype\\] Type of the state proof. Integer representing an entry defined in protocol/stateproof.go").optional()
+    "message": z.optional(z.lazy(() => indexerStateProofMessageSchema)),
+"state-proof": z.optional(z.lazy(() => stateProofFieldsSchema).describe("\\[sp\\] represents a state proof.\n\nDefinition:\ncrypto/stateproof/structs.go : StateProof")),
+"state-proof-type": z.optional(z.number().int().describe("\\[sptype\\] Type of the state proof. Integer representing an entry defined in protocol/stateproof.go"))
     }).describe("Fields for a state proof transaction. \n\nDefinition:\ndata/transactions/stateproof.go : StateProofTxnFields")
 
 export type TransactionStateProofSchema = z.infer<typeof transactionStateProofSchema>

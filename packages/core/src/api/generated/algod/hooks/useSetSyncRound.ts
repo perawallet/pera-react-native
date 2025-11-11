@@ -18,9 +18,9 @@
 import fetch from "../../../algod-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { SetSyncRoundMutationResponse, SetSyncRoundPathParams, SetSyncRound400, SetSyncRound401, SetSyncRound500, SetSyncRound503 } from "../types/SetSyncRound.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
 import { setSyncRoundMutationResponseSchema } from "../zod/setSyncRoundSchema.ts";
-import { useMutation } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const setSyncRoundMutationKey = () => [{ url: '/v2/ledger/sync/:round' }] as const
 
@@ -38,6 +38,16 @@ export async function setSyncRound({ round }: { round: SetSyncRoundPathParams["r
   return setSyncRoundMutationResponseSchema.parse(res.data)
 }
 
+export function setSyncRoundMutationOptions(config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {
+  const mutationKey = setSyncRoundMutationKey()
+  return mutationOptions<SetSyncRoundMutationResponse, ResponseErrorConfig<SetSyncRound400 | SetSyncRound401 | SetSyncRound500 | SetSyncRound503>, {round: SetSyncRoundPathParams["round"]}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ round }) => {
+      return setSyncRound({ round }, config)
+    },
+  })
+}
+
 /**
  * @description Sets the minimum sync round on the ledger.
  * @summary Given a round, tells the ledger to keep that round in its cache.
@@ -53,11 +63,11 @@ export function useSetSyncRound<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? setSyncRoundMutationKey()
 
+  const baseOptions = setSyncRoundMutationOptions(config) as UseMutationOptions<SetSyncRoundMutationResponse, ResponseErrorConfig<SetSyncRound400 | SetSyncRound401 | SetSyncRound500 | SetSyncRound503>, {round: SetSyncRoundPathParams["round"]}, TContext>
+
   return useMutation<SetSyncRoundMutationResponse, ResponseErrorConfig<SetSyncRound400 | SetSyncRound401 | SetSyncRound500 | SetSyncRound503>, {round: SetSyncRoundPathParams["round"]}, TContext>({
-    mutationFn: async({ round }) => {
-      return setSyncRound({ round }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<SetSyncRoundMutationResponse, ResponseErrorConfig<SetSyncRound400 | SetSyncRound401 | SetSyncRound500 | SetSyncRound503>, {round: SetSyncRoundPathParams["round"]}, TContext>
 }

@@ -18,8 +18,8 @@
 import { z } from "zod";
 
 export const priceWatchAssetSerializerResponseSchema = z.object({
-    "id": z.string().min(1).optional(),
-"creation_datetime": z.string().optional()
+    "id": z.optional(z.string().min(1)),
+"creation_datetime": z.optional(z.string())
     })
 
 export type PriceWatchAssetSerializerResponseSchema = z.infer<typeof priceWatchAssetSerializerResponseSchema>

@@ -24,10 +24,10 @@ export const v1CurrenciesReadPathParamsSchema = z.object({
 
 export type V1CurrenciesReadPathParamsSchema = z.infer<typeof v1CurrenciesReadPathParamsSchema>
 
-export const v1CurrenciesRead200Schema = z.lazy(() => currencyDetailSerializerResponseSchema)
+export const v1CurrenciesRead200Schema = currencyDetailSerializerResponseSchema
 
 export type V1CurrenciesRead200Schema = z.infer<typeof v1CurrenciesRead200Schema>
 
-export const v1CurrenciesReadQueryResponseSchema = z.lazy(() => v1CurrenciesRead200Schema)
+export const v1CurrenciesReadQueryResponseSchema = v1CurrenciesRead200Schema
 
 export type V1CurrenciesReadQueryResponseSchema = z.infer<typeof v1CurrenciesReadQueryResponseSchema>

@@ -32,7 +32,7 @@ export type GetSupply200Schema = z.infer<typeof getSupply200Schema>
 /**
  * @description Invalid API Token
  */
-export const getSupply401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getSupply401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetSupply401Schema = z.infer<typeof getSupply401Schema>
 
@@ -43,6 +43,6 @@ export const getSupplyErrorSchema = z.unknown()
 
 export type GetSupplyErrorSchema = z.infer<typeof getSupplyErrorSchema>
 
-export const getSupplyQueryResponseSchema = z.lazy(() => getSupply200Schema)
+export const getSupplyQueryResponseSchema = getSupply200Schema
 
 export type GetSupplyQueryResponseSchema = z.infer<typeof getSupplyQueryResponseSchema>

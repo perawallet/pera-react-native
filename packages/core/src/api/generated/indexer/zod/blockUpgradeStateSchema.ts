@@ -22,10 +22,10 @@ import { z } from "zod";
  */
 export const blockUpgradeStateSchema = z.object({
     "current-protocol": z.string().describe("\\[proto\\] The current protocol version."),
-"next-protocol": z.string().describe("\\[nextproto\\] The next proposed protocol version.").optional(),
-"next-protocol-approvals": z.number().int().describe("\\[nextyes\\] Number of blocks which approved the protocol upgrade.").optional(),
-"next-protocol-switch-on": z.number().int().describe("\\[nextswitch\\] Round on which the protocol upgrade will take effect.").optional(),
-"next-protocol-vote-before": z.number().int().describe("\\[nextbefore\\] Deadline round for this protocol upgrade (No votes will be consider after this round).").optional()
+"next-protocol": z.optional(z.string().describe("\\[nextproto\\] The next proposed protocol version.")),
+"next-protocol-approvals": z.optional(z.number().int().describe("\\[nextyes\\] Number of blocks which approved the protocol upgrade.")),
+"next-protocol-switch-on": z.optional(z.number().int().describe("\\[nextswitch\\] Round on which the protocol upgrade will take effect.")),
+"next-protocol-vote-before": z.optional(z.number().int().describe("\\[nextbefore\\] Deadline round for this protocol upgrade (No votes will be consider after this round)."))
     }).describe("Fields relating to a protocol upgrade.")
 
 export type BlockUpgradeStateSchema = z.infer<typeof blockUpgradeStateSchema>

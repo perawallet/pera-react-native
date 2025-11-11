@@ -18,9 +18,16 @@
 import type { V1DevicesAssetsFavoriteStatusListQueryResponse } from "../types/V1DevicesAssetsFavoriteStatusList.ts";
 import { http } from "msw";
 
-export function v1DevicesAssetsFavoriteStatusListHandler(data?: V1DevicesAssetsFavoriteStatusListQueryResponse | ((
+export function v1DevicesAssetsFavoriteStatusListHandlerResponse200(data?: V1DevicesAssetsFavoriteStatusListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+  
+  })
+}
+
+export function v1DevicesAssetsFavoriteStatusListHandler(data?: string | number | boolean | null | object | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/devices/:device_id/assets/:asset_id/favorite-status/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

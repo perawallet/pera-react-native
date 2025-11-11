@@ -19,8 +19,8 @@ import { stateProofSignatureSchema } from "./stateProofSignatureSchema.ts";
 import { z } from "zod";
 
 export const stateProofSigSlotSchema = z.object({
-    "lower-sig-weight": z.number().int().describe("\\[l\\] The total weight of signatures in the lower-numbered slots.").optional(),
-"signature": z.lazy(() => stateProofSignatureSchema).optional()
+    "lower-sig-weight": z.optional(z.number().int().describe("\\[l\\] The total weight of signatures in the lower-numbered slots.")),
+"signature": z.optional(z.lazy(() => stateProofSignatureSchema))
     })
 
 export type StateProofSigSlotSchema = z.infer<typeof stateProofSigSlotSchema>

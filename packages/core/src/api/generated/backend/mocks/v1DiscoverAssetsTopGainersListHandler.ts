@@ -18,9 +18,18 @@
 import type { V1DiscoverAssetsTopGainersListQueryResponse } from "../types/V1DiscoverAssetsTopGainersList.ts";
 import { http } from "msw";
 
+export function v1DiscoverAssetsTopGainersListHandlerResponse200(data: V1DiscoverAssetsTopGainersListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1DiscoverAssetsTopGainersListHandler(data?: V1DiscoverAssetsTopGainersListQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/discover/assets/top-gainers/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

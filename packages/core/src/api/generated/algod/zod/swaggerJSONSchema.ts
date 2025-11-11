@@ -31,6 +31,6 @@ export const swaggerJSONErrorSchema = z.unknown()
 
 export type SwaggerJSONErrorSchema = z.infer<typeof swaggerJSONErrorSchema>
 
-export const swaggerJSONQueryResponseSchema = z.lazy(() => swaggerJSON200Schema)
+export const swaggerJSONQueryResponseSchema = swaggerJSON200Schema
 
 export type SwaggerJSONQueryResponseSchema = z.infer<typeof swaggerJSONQueryResponseSchema>

@@ -18,12 +18,12 @@
 import { z } from "zod";
 
 export const discoverNFTCollectionListSerializerResponseSchema = z.object({
-    "slug": z.string().regex(/^[-a-zA-Z0-9_]+$/).min(1).optional(),
-"name": z.string().min(1).optional(),
-"image": z.string().url().optional(),
-"last_1_day_volume": z.string().describe("in microalgo").optional(),
-"last_7_day_volume": z.string().describe("in microalgo").optional(),
-"last_30_day_volume": z.string().describe("in microalgo").optional(),
+    "slug": z.optional(z.string().regex(/^[-a-zA-Z0-9_]+$/)),
+"name": z.optional(z.string().min(1)),
+"image": z.optional(z.string().url()),
+"last_1_day_volume": z.optional(z.string().describe("in microalgo")),
+"last_7_day_volume": z.optional(z.string().describe("in microalgo")),
+"last_30_day_volume": z.optional(z.string().describe("in microalgo")),
 "floor_price": z.string()
     })
 

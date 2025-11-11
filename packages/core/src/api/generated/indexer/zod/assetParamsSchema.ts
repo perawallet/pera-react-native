@@ -21,21 +21,21 @@ import { z } from "zod";
  * @description AssetParams specifies the parameters for an asset.\n\n\\[apar\\] when part of an AssetConfig transaction.\n\nDefinition:\ndata/transactions/asset.go : AssetParams
  */
 export const assetParamsSchema = z.object({
-    "clawback": z.string().describe("Address of account used to clawback holdings of this asset.  If empty, clawback is not permitted.").optional(),
+    "clawback": z.optional(z.string().describe("Address of account used to clawback holdings of this asset.  If empty, clawback is not permitted.")),
 "creator": z.string().describe("The address that created this asset. This is the address where the parameters for this asset can be found, and also the address where unwanted asset units can be sent in the worst case."),
 "decimals": z.number().int().min(0).max(19).describe("The number of digits to use after the decimal point when displaying this asset. If 0, the asset is not divisible. If 1, the base unit of the asset is in tenths. If 2, the base unit of the asset is in hundredths, and so on. This value must be between 0 and 19 (inclusive)."),
-"default-frozen": z.boolean().describe("Whether holdings of this asset are frozen by default.").optional(),
-"freeze": z.string().describe("Address of account used to freeze holdings of this asset.  If empty, freezing is not permitted.").optional(),
-"manager": z.string().describe("Address of account used to manage the keys of this asset and to destroy it.").optional(),
-"metadata-hash": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("A commitment to some unspecified asset metadata. The format of this metadata is up to the application.").optional(),
-"name": z.string().describe("Name of this asset, as supplied by the creator. Included only when the asset name is composed of printable utf-8 characters.").optional(),
-"name-b64": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("Base64 encoded name of this asset, as supplied by the creator.").optional(),
-"reserve": z.string().describe("Address of account holding reserve (non-minted) units of this asset.").optional(),
+"default-frozen": z.optional(z.boolean().describe("Whether holdings of this asset are frozen by default.")),
+"freeze": z.optional(z.string().describe("Address of account used to freeze holdings of this asset.  If empty, freezing is not permitted.")),
+"manager": z.optional(z.string().describe("Address of account used to manage the keys of this asset and to destroy it.")),
+"metadata-hash": z.optional(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("A commitment to some unspecified asset metadata. The format of this metadata is up to the application.")),
+"name": z.optional(z.string().describe("Name of this asset, as supplied by the creator. Included only when the asset name is composed of printable utf-8 characters.")),
+"name-b64": z.optional(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("Base64 encoded name of this asset, as supplied by the creator.")),
+"reserve": z.optional(z.string().describe("Address of account holding reserve (non-minted) units of this asset.")),
 "total": z.number().int().describe("The total number of units of this asset."),
-"unit-name": z.string().describe("Name of a unit of this asset, as supplied by the creator. Included only when the name of a unit of this asset is composed of printable utf-8 characters.").optional(),
-"unit-name-b64": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("Base64 encoded name of a unit of this asset, as supplied by the creator.").optional(),
-"url": z.string().describe("URL where more information about the asset can be retrieved. Included only when the URL is composed of printable utf-8 characters.").optional(),
-"url-b64": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("Base64 encoded URL where more information about the asset can be retrieved.").optional()
+"unit-name": z.optional(z.string().describe("Name of a unit of this asset, as supplied by the creator. Included only when the name of a unit of this asset is composed of printable utf-8 characters.")),
+"unit-name-b64": z.optional(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("Base64 encoded name of a unit of this asset, as supplied by the creator.")),
+"url": z.optional(z.string().describe("URL where more information about the asset can be retrieved. Included only when the URL is composed of printable utf-8 characters.")),
+"url-b64": z.optional(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("Base64 encoded URL where more information about the asset can be retrieved."))
     }).describe("AssetParams specifies the parameters for an asset.\n\n\\[apar\\] when part of an AssetConfig transaction.\n\nDefinition:\ndata/transactions/asset.go : AssetParams")
 
 export type AssetParamsSchema = z.infer<typeof assetParamsSchema>

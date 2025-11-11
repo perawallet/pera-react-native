@@ -34,14 +34,14 @@ export type TealDryrun200Schema = z.infer<typeof tealDryrun200Schema>
 /**
  * @description Bad Request
  */
-export const tealDryrun400Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const tealDryrun400Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type TealDryrun400Schema = z.infer<typeof tealDryrun400Schema>
 
 /**
  * @description Invalid API Token
  */
-export const tealDryrun401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const tealDryrun401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type TealDryrun401Schema = z.infer<typeof tealDryrun401Schema>
 
@@ -55,7 +55,7 @@ export type TealDryrun404Schema = z.infer<typeof tealDryrun404Schema>
 /**
  * @description Internal Error
  */
-export const tealDryrun500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const tealDryrun500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type TealDryrun500Schema = z.infer<typeof tealDryrun500Schema>
 
@@ -69,10 +69,10 @@ export type TealDryrunErrorSchema = z.infer<typeof tealDryrunErrorSchema>
 /**
  * @description Transaction (or group) and any accompanying state-simulation data.
  */
-export const tealDryrunMutationRequestSchema = z.lazy(() => dryrunRequestSchema).describe("Request data type for dryrun endpoint. Given the Transactions and simulated ledger state upload, run TEAL scripts and return debugging information.")
+export const tealDryrunMutationRequestSchema = dryrunRequestSchema.describe("Request data type for dryrun endpoint. Given the Transactions and simulated ledger state upload, run TEAL scripts and return debugging information.")
 
 export type TealDryrunMutationRequestSchema = z.infer<typeof tealDryrunMutationRequestSchema>
 
-export const tealDryrunMutationResponseSchema = z.lazy(() => tealDryrun200Schema)
+export const tealDryrunMutationResponseSchema = tealDryrun200Schema
 
 export type TealDryrunMutationResponseSchema = z.infer<typeof tealDryrunMutationResponseSchema>

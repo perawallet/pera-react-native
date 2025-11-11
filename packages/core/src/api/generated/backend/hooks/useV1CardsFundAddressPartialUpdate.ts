@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1CardsFundAddressPartialUpdateMutationRequest, V1CardsFundAddressPartialUpdateMutationResponse, V1CardsFundAddressPartialUpdatePathParams } from "../types/V1CardsFundAddressPartialUpdate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1CardsFundAddressPartialUpdateMutationKey = () => [{ url: '/v1/cards/fund-address/:address/' }] as const
 
@@ -37,6 +37,16 @@ export async function v1CardsFundAddressPartialUpdate({ address, data }: { addre
   return res.data
 }
 
+export function v1CardsFundAddressPartialUpdateMutationOptions(config: Partial<RequestConfig<V1CardsFundAddressPartialUpdateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1CardsFundAddressPartialUpdateMutationKey()
+  return mutationOptions<V1CardsFundAddressPartialUpdateMutationResponse, ResponseErrorConfig<Error>, {address: V1CardsFundAddressPartialUpdatePathParams["address"], data: V1CardsFundAddressPartialUpdateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ address, data }) => {
+      return v1CardsFundAddressPartialUpdate({ address, data }, config)
+    },
+  })
+}
+
 /**
  * {@link /v1/cards/fund-address/:address/}
  */
@@ -50,11 +60,11 @@ export function useV1CardsFundAddressPartialUpdate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1CardsFundAddressPartialUpdateMutationKey()
 
+  const baseOptions = v1CardsFundAddressPartialUpdateMutationOptions(config) as UseMutationOptions<V1CardsFundAddressPartialUpdateMutationResponse, ResponseErrorConfig<Error>, {address: V1CardsFundAddressPartialUpdatePathParams["address"], data: V1CardsFundAddressPartialUpdateMutationRequest}, TContext>
+
   return useMutation<V1CardsFundAddressPartialUpdateMutationResponse, ResponseErrorConfig<Error>, {address: V1CardsFundAddressPartialUpdatePathParams["address"], data: V1CardsFundAddressPartialUpdateMutationRequest}, TContext>({
-    mutationFn: async({ address, data }) => {
-      return v1CardsFundAddressPartialUpdate({ address, data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1CardsFundAddressPartialUpdateMutationResponse, ResponseErrorConfig<Error>, {address: V1CardsFundAddressPartialUpdatePathParams["address"], data: V1CardsFundAddressPartialUpdateMutationRequest}, TContext>
 }

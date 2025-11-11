@@ -19,7 +19,7 @@ import { z } from "zod";
 
 export const prepareTransactionsSerializerRequestSchema = z.object({
     "quote": z.number().int(),
-"deposit_address": z.string().min(1).nullable().nullish()
+"deposit_address": z.string().min(1).nullish()
     })
 
 export type PrepareTransactionsSerializerRequestSchema = z.infer<typeof prepareTransactionsSerializerRequestSchema>

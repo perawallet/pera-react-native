@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DevicesAssetsRemoveFromPriceWatchAssetsCreateMutationRequest, V1DevicesAssetsRemoveFromPriceWatchAssetsCreateMutationResponse, V1DevicesAssetsRemoveFromPriceWatchAssetsCreatePathParams } from "../types/V1DevicesAssetsRemoveFromPriceWatchAssetsCreate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1DevicesAssetsRemoveFromPriceWatchAssetsCreateMutationKey = () => [{ url: '/v1/devices/:device_id/assets/:asset_id/remove-from-price-watch-assets/' }] as const
 
@@ -39,6 +39,16 @@ export async function v1DevicesAssetsRemoveFromPriceWatchAssetsCreate({ asset_id
   return res.data
 }
 
+export function v1DevicesAssetsRemoveFromPriceWatchAssetsCreateMutationOptions(config: Partial<RequestConfig<V1DevicesAssetsRemoveFromPriceWatchAssetsCreateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1DevicesAssetsRemoveFromPriceWatchAssetsCreateMutationKey()
+  return mutationOptions<V1DevicesAssetsRemoveFromPriceWatchAssetsCreateMutationResponse, ResponseErrorConfig<Error>, {asset_id: V1DevicesAssetsRemoveFromPriceWatchAssetsCreatePathParams["asset_id"], device_id: V1DevicesAssetsRemoveFromPriceWatchAssetsCreatePathParams["device_id"], data?: V1DevicesAssetsRemoveFromPriceWatchAssetsCreateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ asset_id, device_id, data }) => {
+      return v1DevicesAssetsRemoveFromPriceWatchAssetsCreate({ asset_id, device_id, data }, config)
+    },
+  })
+}
+
 /**
  * @description This device authenticated endpoint is for removing from price watch list.
  * @summary Remove Asset from Price Watch Assets
@@ -54,11 +64,11 @@ export function useV1DevicesAssetsRemoveFromPriceWatchAssetsCreate<TContext>(opt
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1DevicesAssetsRemoveFromPriceWatchAssetsCreateMutationKey()
 
+  const baseOptions = v1DevicesAssetsRemoveFromPriceWatchAssetsCreateMutationOptions(config) as UseMutationOptions<V1DevicesAssetsRemoveFromPriceWatchAssetsCreateMutationResponse, ResponseErrorConfig<Error>, {asset_id: V1DevicesAssetsRemoveFromPriceWatchAssetsCreatePathParams["asset_id"], device_id: V1DevicesAssetsRemoveFromPriceWatchAssetsCreatePathParams["device_id"], data?: V1DevicesAssetsRemoveFromPriceWatchAssetsCreateMutationRequest}, TContext>
+
   return useMutation<V1DevicesAssetsRemoveFromPriceWatchAssetsCreateMutationResponse, ResponseErrorConfig<Error>, {asset_id: V1DevicesAssetsRemoveFromPriceWatchAssetsCreatePathParams["asset_id"], device_id: V1DevicesAssetsRemoveFromPriceWatchAssetsCreatePathParams["device_id"], data?: V1DevicesAssetsRemoveFromPriceWatchAssetsCreateMutationRequest}, TContext>({
-    mutationFn: async({ asset_id, device_id, data }) => {
-      return v1DevicesAssetsRemoveFromPriceWatchAssetsCreate({ asset_id, device_id, data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1DevicesAssetsRemoveFromPriceWatchAssetsCreateMutationResponse, ResponseErrorConfig<Error>, {asset_id: V1DevicesAssetsRemoveFromPriceWatchAssetsCreatePathParams["asset_id"], device_id: V1DevicesAssetsRemoveFromPriceWatchAssetsCreatePathParams["device_id"], data?: V1DevicesAssetsRemoveFromPriceWatchAssetsCreateMutationRequest}, TContext>
 }

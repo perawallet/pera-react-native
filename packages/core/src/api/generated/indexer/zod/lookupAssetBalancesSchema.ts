@@ -25,11 +25,11 @@ export const lookupAssetBalancesPathParamsSchema = z.object({
 export type LookupAssetBalancesPathParamsSchema = z.infer<typeof lookupAssetBalancesPathParamsSchema>
 
 export const lookupAssetBalancesQueryParamsSchema = z.object({
-    "include-all": z.boolean().describe("Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.").optional(),
-"limit": z.coerce.number().int().describe("Maximum number of results to return. There could be additional pages even if the limit is not reached.").optional(),
-"next": z.string().describe("The next page of results. Use the next token provided by the previous results.").optional(),
-"currency-greater-than": z.coerce.number().int().describe("Results should have an amount greater than this value. MicroAlgos are the default currency unless an asset-id is provided, in which case the asset will be used.").optional(),
-"currency-less-than": z.coerce.number().int().describe("Results should have an amount less than this value. MicroAlgos are the default currency unless an asset-id is provided, in which case the asset will be used.").optional()
+    "include-all": z.optional(z.boolean().describe("Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.")),
+"limit": z.optional(z.coerce.number().int().describe("Maximum number of results to return. There could be additional pages even if the limit is not reached.")),
+"next": z.optional(z.string().describe("The next page of results. Use the next token provided by the previous results.")),
+"currency-greater-than": z.optional(z.coerce.number().int().describe("Results should have an amount greater than this value. MicroAlgos are the default currency unless an asset-id is provided, in which case the asset will be used.")),
+"currency-less-than": z.optional(z.coerce.number().int().describe("Results should have an amount less than this value. MicroAlgos are the default currency unless an asset-id is provided, in which case the asset will be used."))
     }).optional()
 
 export type LookupAssetBalancesQueryParamsSchema = z.infer<typeof lookupAssetBalancesQueryParamsSchema>
@@ -40,7 +40,7 @@ export type LookupAssetBalancesQueryParamsSchema = z.infer<typeof lookupAssetBal
 export const lookupAssetBalances200Schema = z.object({
     "balances": z.array(z.lazy(() => miniAssetHoldingSchema).describe("A simplified version of AssetHolding ")),
 "current-round": z.number().int().describe("Round at which the results were computed."),
-"next-token": z.string().describe("Used for pagination, when making another request provide this token with the next parameter.").optional()
+"next-token": z.optional(z.string().describe("Used for pagination, when making another request provide this token with the next parameter."))
     })
 
 export type LookupAssetBalances200Schema = z.infer<typeof lookupAssetBalances200Schema>
@@ -49,9 +49,9 @@ export type LookupAssetBalances200Schema = z.infer<typeof lookupAssetBalances200
  * @description Response for errors
  */
 export const lookupAssetBalances400Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
@@ -61,14 +61,14 @@ export type LookupAssetBalances400Schema = z.infer<typeof lookupAssetBalances400
  * @description Response for errors
  */
 export const lookupAssetBalances500Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
 export type LookupAssetBalances500Schema = z.infer<typeof lookupAssetBalances500Schema>
 
-export const lookupAssetBalancesQueryResponseSchema = z.lazy(() => lookupAssetBalances200Schema)
+export const lookupAssetBalancesQueryResponseSchema = lookupAssetBalances200Schema
 
 export type LookupAssetBalancesQueryResponseSchema = z.infer<typeof lookupAssetBalancesQueryResponseSchema>

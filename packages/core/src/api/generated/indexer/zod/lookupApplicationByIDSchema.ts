@@ -25,7 +25,7 @@ export const lookupApplicationByIDPathParamsSchema = z.object({
 export type LookupApplicationByIDPathParamsSchema = z.infer<typeof lookupApplicationByIDPathParamsSchema>
 
 export const lookupApplicationByIDQueryParamsSchema = z.object({
-    "include-all": z.boolean().describe("Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.").optional()
+    "include-all": z.optional(z.boolean().describe("Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates."))
     }).optional()
 
 export type LookupApplicationByIDQueryParamsSchema = z.infer<typeof lookupApplicationByIDQueryParamsSchema>
@@ -34,7 +34,7 @@ export type LookupApplicationByIDQueryParamsSchema = z.infer<typeof lookupApplic
  * @description (empty)
  */
 export const lookupApplicationByID200Schema = z.object({
-    "application": z.lazy(() => applicationSchema).describe("Application index and its parameters").optional(),
+    "application": z.optional(z.lazy(() => applicationSchema).describe("Application index and its parameters")),
 "current-round": z.number().int().describe("Round at which the results were computed.")
     })
 
@@ -44,9 +44,9 @@ export type LookupApplicationByID200Schema = z.infer<typeof lookupApplicationByI
  * @description Response for errors
  */
 export const lookupApplicationByID404Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
@@ -56,14 +56,14 @@ export type LookupApplicationByID404Schema = z.infer<typeof lookupApplicationByI
  * @description Response for errors
  */
 export const lookupApplicationByID500Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
 export type LookupApplicationByID500Schema = z.infer<typeof lookupApplicationByID500Schema>
 
-export const lookupApplicationByIDQueryResponseSchema = z.lazy(() => lookupApplicationByID200Schema)
+export const lookupApplicationByIDQueryResponseSchema = lookupApplicationByID200Schema
 
 export type LookupApplicationByIDQueryResponseSchema = z.infer<typeof lookupApplicationByIDQueryResponseSchema>

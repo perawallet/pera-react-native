@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DexSwapQuotesPartialUpdateMutationRequest, V1DexSwapQuotesPartialUpdateMutationResponse, V1DexSwapQuotesPartialUpdatePathParams } from "../types/V1DexSwapQuotesPartialUpdate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1DexSwapQuotesPartialUpdateMutationKey = () => [{ url: '/v1/dex-swap/quotes/:quote_id/' }] as const
 
@@ -37,6 +37,16 @@ export async function v1DexSwapQuotesPartialUpdate({ quote_id, data }: { quote_i
   return res.data
 }
 
+export function v1DexSwapQuotesPartialUpdateMutationOptions(config: Partial<RequestConfig<V1DexSwapQuotesPartialUpdateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1DexSwapQuotesPartialUpdateMutationKey()
+  return mutationOptions<V1DexSwapQuotesPartialUpdateMutationResponse, ResponseErrorConfig<Error>, {quote_id: V1DexSwapQuotesPartialUpdatePathParams["quote_id"], data?: V1DexSwapQuotesPartialUpdateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ quote_id, data }) => {
+      return v1DexSwapQuotesPartialUpdate({ quote_id, data }, config)
+    },
+  })
+}
+
 /**
  * {@link /v1/dex-swap/quotes/:quote_id/}
  */
@@ -50,11 +60,11 @@ export function useV1DexSwapQuotesPartialUpdate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1DexSwapQuotesPartialUpdateMutationKey()
 
+  const baseOptions = v1DexSwapQuotesPartialUpdateMutationOptions(config) as UseMutationOptions<V1DexSwapQuotesPartialUpdateMutationResponse, ResponseErrorConfig<Error>, {quote_id: V1DexSwapQuotesPartialUpdatePathParams["quote_id"], data?: V1DexSwapQuotesPartialUpdateMutationRequest}, TContext>
+
   return useMutation<V1DexSwapQuotesPartialUpdateMutationResponse, ResponseErrorConfig<Error>, {quote_id: V1DexSwapQuotesPartialUpdatePathParams["quote_id"], data?: V1DexSwapQuotesPartialUpdateMutationRequest}, TContext>({
-    mutationFn: async({ quote_id, data }) => {
-      return v1DexSwapQuotesPartialUpdate({ quote_id, data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1DexSwapQuotesPartialUpdateMutationResponse, ResponseErrorConfig<Error>, {quote_id: V1DexSwapQuotesPartialUpdatePathParams["quote_id"], data?: V1DexSwapQuotesPartialUpdateMutationRequest}, TContext>
 }

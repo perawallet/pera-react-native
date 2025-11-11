@@ -38,6 +38,6 @@ export const experimentalCheckErrorSchema = z.unknown()
 
 export type ExperimentalCheckErrorSchema = z.infer<typeof experimentalCheckErrorSchema>
 
-export const experimentalCheckQueryResponseSchema = z.lazy(() => experimentalCheck200Schema)
+export const experimentalCheckQueryResponseSchema = experimentalCheck200Schema
 
 export type ExperimentalCheckQueryResponseSchema = z.infer<typeof experimentalCheckQueryResponseSchema>

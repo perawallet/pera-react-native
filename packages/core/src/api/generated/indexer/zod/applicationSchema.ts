@@ -22,9 +22,9 @@ import { z } from "zod";
  * @description Application index and its parameters
  */
 export const applicationSchema = z.object({
-    "created-at-round": z.number().int().describe("Round when this application was created.").optional(),
-"deleted": z.boolean().describe("Whether or not this application is currently deleted.").optional(),
-"deleted-at-round": z.number().int().describe("Round when this application was deleted.").optional(),
+    "created-at-round": z.optional(z.number().int().describe("Round when this application was created.")),
+"deleted": z.optional(z.boolean().describe("Whether or not this application is currently deleted.")),
+"deleted-at-round": z.optional(z.number().int().describe("Round when this application was deleted.")),
 "id": z.number().int().describe("application index."),
 "params": z.lazy(() => applicationParamsSchema).describe("Stores the global information associated with an application.")
     }).describe("Application index and its parameters")

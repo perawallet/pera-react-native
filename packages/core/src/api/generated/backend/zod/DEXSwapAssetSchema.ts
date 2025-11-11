@@ -18,14 +18,14 @@
 import { z } from "zod";
 
 export const DEXSwapAssetSchema = z.object({
-    "asset_id": z.number().int().optional(),
-"logo": z.string().url().nullable().nullish(),
-"name": z.string().min(1).optional(),
-"unit_name": z.string().min(1).optional(),
-"total": z.string().optional(),
-"fraction_decimals": z.number().int().optional(),
+    "asset_id": z.optional(z.number().int()),
+"logo": z.string().url().nullish(),
+"name": z.optional(z.string().min(1)),
+"unit_name": z.optional(z.string().min(1)),
+"total": z.optional(z.string()),
+"fraction_decimals": z.optional(z.number().int()),
 "verification_tier": z.enum(["verified", "unverified", "suspicious"]),
-"usd_value": z.string().nullable().nullish()
+"usd_value": z.string().nullish()
     })
 
 export type DEXSwapAssetSchema = z.infer<typeof DEXSwapAssetSchema>

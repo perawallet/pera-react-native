@@ -30,7 +30,7 @@ export type GetBlockTimeStampOffset200Schema = z.infer<typeof getBlockTimeStampO
 /**
  * @description TimeStamp offset not set.
  */
-export const getBlockTimeStampOffset400Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getBlockTimeStampOffset400Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetBlockTimeStampOffset400Schema = z.infer<typeof getBlockTimeStampOffset400Schema>
 
@@ -41,6 +41,6 @@ export const getBlockTimeStampOffsetErrorSchema = z.unknown()
 
 export type GetBlockTimeStampOffsetErrorSchema = z.infer<typeof getBlockTimeStampOffsetErrorSchema>
 
-export const getBlockTimeStampOffsetQueryResponseSchema = z.lazy(() => getBlockTimeStampOffset200Schema)
+export const getBlockTimeStampOffsetQueryResponseSchema = getBlockTimeStampOffset200Schema
 
 export type GetBlockTimeStampOffsetQueryResponseSchema = z.infer<typeof getBlockTimeStampOffsetQueryResponseSchema>

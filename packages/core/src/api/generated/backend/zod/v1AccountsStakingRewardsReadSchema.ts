@@ -24,10 +24,10 @@ export const v1AccountsStakingRewardsReadPathParamsSchema = z.object({
 
 export type V1AccountsStakingRewardsReadPathParamsSchema = z.infer<typeof v1AccountsStakingRewardsReadPathParamsSchema>
 
-export const v1AccountsStakingRewardsRead200Schema = z.lazy(() => accountStakingRewardsSerializerResponseSchema)
+export const v1AccountsStakingRewardsRead200Schema = accountStakingRewardsSerializerResponseSchema
 
 export type V1AccountsStakingRewardsRead200Schema = z.infer<typeof v1AccountsStakingRewardsRead200Schema>
 
-export const v1AccountsStakingRewardsReadQueryResponseSchema = z.lazy(() => v1AccountsStakingRewardsRead200Schema)
+export const v1AccountsStakingRewardsReadQueryResponseSchema = v1AccountsStakingRewardsRead200Schema
 
 export type V1AccountsStakingRewardsReadQueryResponseSchema = z.infer<typeof v1AccountsStakingRewardsReadQueryResponseSchema>

@@ -23,10 +23,10 @@ import { z } from "zod";
 export const transactionAssetTransferSchema = z.object({
     "amount": z.number().int().describe("\\[aamt\\] Amount of asset to transfer. A zero amount transferred to self allocates that asset in the account's Assets map."),
 "asset-id": z.number().int().describe("\\[xaid\\] ID of the asset being transferred."),
-"close-amount": z.number().int().describe("Number of assets transferred to the close-to account as part of the transaction.").optional(),
-"close-to": z.string().describe("\\[aclose\\] Indicates that the asset should be removed from the account's Assets map, and specifies where the remaining asset holdings should be transferred.  It's always valid to transfer remaining asset holdings to the creator account.").optional(),
+"close-amount": z.optional(z.number().int().describe("Number of assets transferred to the close-to account as part of the transaction.")),
+"close-to": z.optional(z.string().describe("\\[aclose\\] Indicates that the asset should be removed from the account's Assets map, and specifies where the remaining asset holdings should be transferred.  It's always valid to transfer remaining asset holdings to the creator account.")),
 "receiver": z.string().describe("\\[arcv\\] Recipient address of the transfer."),
-"sender": z.string().describe("\\[asnd\\] The effective sender during a clawback transactions. If this is not a zero value, the real transaction sender must be the Clawback address from the AssetParams.").optional()
+"sender": z.optional(z.string().describe("\\[asnd\\] The effective sender during a clawback transactions. If this is not a zero value, the real transaction sender must be the Clawback address from the AssetParams."))
     }).describe("Fields for an asset transfer transaction.\n\nDefinition:\ndata/transactions/asset.go : AssetTransferTxnFields")
 
 export type TransactionAssetTransferSchema = z.infer<typeof transactionAssetTransferSchema>

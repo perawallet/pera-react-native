@@ -15,12 +15,57 @@
 * Do not edit manually.
 */
 
-import type { GetBlockHashQueryResponse } from "../types/GetBlockHash.ts";
+import type { GetBlockHashQueryResponse, GetBlockHash400, GetBlockHash401, GetBlockHash404, GetBlockHash500 } from "../types/GetBlockHash.ts";
 import { http } from "msw";
+
+export function getBlockHashHandlerResponse200(data: GetBlockHashQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getBlockHashHandlerResponse400(data: GetBlockHash400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getBlockHashHandlerResponse401(data: GetBlockHash401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getBlockHashHandlerResponse404(data: GetBlockHash404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getBlockHashHandlerResponse500(data: GetBlockHash500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function getBlockHashHandler(data?: GetBlockHashQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/blocks/:round/hash', function handler(info) {
     if(typeof data === 'function') return data(info)
 

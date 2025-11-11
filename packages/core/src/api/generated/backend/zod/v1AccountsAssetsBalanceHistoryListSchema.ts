@@ -26,7 +26,7 @@ export type V1AccountsAssetsBalanceHistoryListPathParamsSchema = z.infer<typeof 
 
 export const v1AccountsAssetsBalanceHistoryListQueryParamsSchema = z.object({
     "period": z.enum(["one-year", "one-month", "one-week", "one-day"]),
-"currency": z.string().describe("^[A-Z]{3}$").optional()
+"currency": z.optional(z.string().describe("^[A-Z]{3}$"))
     })
 
 export type V1AccountsAssetsBalanceHistoryListQueryParamsSchema = z.infer<typeof v1AccountsAssetsBalanceHistoryListQueryParamsSchema>
@@ -35,6 +35,6 @@ export const v1AccountsAssetsBalanceHistoryList200Schema = z.unknown()
 
 export type V1AccountsAssetsBalanceHistoryList200Schema = z.infer<typeof v1AccountsAssetsBalanceHistoryList200Schema>
 
-export const v1AccountsAssetsBalanceHistoryListQueryResponseSchema = z.lazy(() => v1AccountsAssetsBalanceHistoryList200Schema)
+export const v1AccountsAssetsBalanceHistoryListQueryResponseSchema = v1AccountsAssetsBalanceHistoryList200Schema
 
 export type V1AccountsAssetsBalanceHistoryListQueryResponseSchema = z.infer<typeof v1AccountsAssetsBalanceHistoryListQueryResponseSchema>

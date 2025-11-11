@@ -31,6 +31,6 @@ export const healthCheckErrorSchema = z.unknown()
 
 export type HealthCheckErrorSchema = z.infer<typeof healthCheckErrorSchema>
 
-export const healthCheckQueryResponseSchema = z.lazy(() => healthCheck200Schema)
+export const healthCheckQueryResponseSchema = healthCheck200Schema
 
 export type HealthCheckQueryResponseSchema = z.infer<typeof healthCheckQueryResponseSchema>

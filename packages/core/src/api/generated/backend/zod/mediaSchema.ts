@@ -19,8 +19,8 @@ import { z } from "zod";
 
 export const mediaSchema = z.object({
     "type": z.enum(["image", "video", "audio", "mixed", "unknown"]),
-"download_url": z.string().optional(),
-"preview_url": z.string().optional(),
+"download_url": z.optional(z.string()),
+"preview_url": z.optional(z.string()),
 "extension": z.string().min(1)
     })
 

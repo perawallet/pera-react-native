@@ -19,8 +19,8 @@ import { projectSchema } from "../projectSchema.ts";
 import { z } from "zod";
 
 export const applicationSerializerResponseSchema = z.object({
-    "application_id": z.number().int().optional(),
-"name": z.string().min(1).optional(),
+    "application_id": z.optional(z.number().int()),
+"name": z.optional(z.string().min(1)),
 "project": z.lazy(() => projectSchema)
     })
 

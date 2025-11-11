@@ -18,9 +18,18 @@
 import type { V1WalletWealthListQueryResponse } from "../types/V1WalletWealthList.ts";
 import { http } from "msw";
 
+export function v1WalletWealthListHandlerResponse200(data: V1WalletWealthListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1WalletWealthListHandler(data?: V1WalletWealthListQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/wallet/wealth/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

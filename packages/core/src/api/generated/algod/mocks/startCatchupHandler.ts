@@ -15,12 +15,66 @@
 * Do not edit manually.
 */
 
-import type { StartCatchupMutationResponse } from "../types/StartCatchup.ts";
+import type { StartCatchupMutationResponse, StartCatchup400, StartCatchup401, StartCatchup408, StartCatchup500 } from "../types/StartCatchup.ts";
 import { http } from "msw";
+
+export function startCatchupHandlerResponse200(data: StartCatchupMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function startCatchupHandlerResponse201(data: StartCatchupMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 201,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function startCatchupHandlerResponse400(data: StartCatchup400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function startCatchupHandlerResponse401(data: StartCatchup401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function startCatchupHandlerResponse408(data: StartCatchup408) {
+  return new Response(JSON.stringify(data), {
+    status: 408,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function startCatchupHandlerResponse500(data: StartCatchup500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function startCatchupHandler(data?: StartCatchupMutationResponse | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v2/catchup/:catchpoint', function handler(info) {
     if(typeof data === 'function') return data(info)
 

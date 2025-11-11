@@ -20,8 +20,8 @@ import { applicationParamsSchema } from "./applicationParamsSchema.ts";
 import { z } from "zod";
 
 export const accountApplicationResponseSchema = z.object({
-    "app-local-state": z.lazy(() => applicationLocalStateSchema).describe("Stores local state associated with an application.").optional(),
-"created-app": z.lazy(() => applicationParamsSchema).describe("Stores the global information associated with an application.").optional(),
+    "app-local-state": z.optional(z.lazy(() => applicationLocalStateSchema).describe("Stores local state associated with an application.")),
+"created-app": z.optional(z.lazy(() => applicationParamsSchema).describe("Stores the global information associated with an application.")),
 "round": z.number().int().describe("The round for which this information is relevant.")
     })
 

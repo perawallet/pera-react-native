@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V2DexSwapSwapsUpdateMutationRequest, V2DexSwapSwapsUpdateMutationResponse, V2DexSwapSwapsUpdatePathParams } from "../types/V2DexSwapSwapsUpdate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v2DexSwapSwapsUpdateMutationKey = () => [{ url: '/v2/dex-swap/swaps/:swap_id/' }] as const
 
@@ -37,6 +37,16 @@ export async function v2DexSwapSwapsUpdate({ swap_id, data }: { swap_id: V2DexSw
   return res.data
 }
 
+export function v2DexSwapSwapsUpdateMutationOptions(config: Partial<RequestConfig<V2DexSwapSwapsUpdateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v2DexSwapSwapsUpdateMutationKey()
+  return mutationOptions<V2DexSwapSwapsUpdateMutationResponse, ResponseErrorConfig<Error>, {swap_id: V2DexSwapSwapsUpdatePathParams["swap_id"], data: V2DexSwapSwapsUpdateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ swap_id, data }) => {
+      return v2DexSwapSwapsUpdate({ swap_id, data }, config)
+    },
+  })
+}
+
 /**
  * {@link /v2/dex-swap/swaps/:swap_id/}
  */
@@ -50,11 +60,11 @@ export function useV2DexSwapSwapsUpdate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v2DexSwapSwapsUpdateMutationKey()
 
+  const baseOptions = v2DexSwapSwapsUpdateMutationOptions(config) as UseMutationOptions<V2DexSwapSwapsUpdateMutationResponse, ResponseErrorConfig<Error>, {swap_id: V2DexSwapSwapsUpdatePathParams["swap_id"], data: V2DexSwapSwapsUpdateMutationRequest}, TContext>
+
   return useMutation<V2DexSwapSwapsUpdateMutationResponse, ResponseErrorConfig<Error>, {swap_id: V2DexSwapSwapsUpdatePathParams["swap_id"], data: V2DexSwapSwapsUpdateMutationRequest}, TContext>({
-    mutationFn: async({ swap_id, data }) => {
-      return v2DexSwapSwapsUpdate({ swap_id, data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V2DexSwapSwapsUpdateMutationResponse, ResponseErrorConfig<Error>, {swap_id: V2DexSwapSwapsUpdatePathParams["swap_id"], data: V2DexSwapSwapsUpdateMutationRequest}, TContext>
 }

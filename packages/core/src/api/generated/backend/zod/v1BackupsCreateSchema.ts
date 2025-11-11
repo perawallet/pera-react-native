@@ -19,14 +19,14 @@ import { backupCreateSerializerRequestSchema } from "./backupCreateSerializer/re
 import { backupCreateSerializerResponseSchema } from "./backupCreateSerializer/responseSchema.ts";
 import { z } from "zod";
 
-export const v1BackupsCreate201Schema = z.lazy(() => backupCreateSerializerResponseSchema)
+export const v1BackupsCreate201Schema = backupCreateSerializerResponseSchema
 
 export type V1BackupsCreate201Schema = z.infer<typeof v1BackupsCreate201Schema>
 
-export const v1BackupsCreateMutationRequestSchema = z.lazy(() => backupCreateSerializerRequestSchema)
+export const v1BackupsCreateMutationRequestSchema = backupCreateSerializerRequestSchema
 
 export type V1BackupsCreateMutationRequestSchema = z.infer<typeof v1BackupsCreateMutationRequestSchema>
 
-export const v1BackupsCreateMutationResponseSchema = z.lazy(() => v1BackupsCreate201Schema)
+export const v1BackupsCreateMutationResponseSchema = v1BackupsCreate201Schema
 
 export type V1BackupsCreateMutationResponseSchema = z.infer<typeof v1BackupsCreateMutationResponseSchema>

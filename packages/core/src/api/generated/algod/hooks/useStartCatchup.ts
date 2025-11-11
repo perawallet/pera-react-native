@@ -18,9 +18,9 @@
 import fetch from "../../../algod-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { StartCatchupMutationResponse, StartCatchupPathParams, StartCatchupQueryParams, StartCatchup400, StartCatchup401, StartCatchup408, StartCatchup500 } from "../types/StartCatchup.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
 import { startCatchupMutationResponseSchema } from "../zod/startCatchupSchema.ts";
-import { useMutation } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const startCatchupMutationKey = () => [{ url: '/v2/catchup/:catchpoint' }] as const
 
@@ -38,6 +38,16 @@ export async function startCatchup({ catchpoint, params }: { catchpoint: StartCa
   return startCatchupMutationResponseSchema.parse(res.data)
 }
 
+export function startCatchupMutationOptions(config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {
+  const mutationKey = startCatchupMutationKey()
+  return mutationOptions<StartCatchupMutationResponse, ResponseErrorConfig<StartCatchup400 | StartCatchup401 | StartCatchup408 | StartCatchup500>, {catchpoint: StartCatchupPathParams["catchpoint"], params?: StartCatchupQueryParams}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ catchpoint, params }) => {
+      return startCatchup({ catchpoint, params }, config)
+    },
+  })
+}
+
 /**
  * @description Given a catchpoint, it starts catching up to this catchpoint
  * @summary Starts a catchpoint catchup.
@@ -53,11 +63,11 @@ export function useStartCatchup<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? startCatchupMutationKey()
 
+  const baseOptions = startCatchupMutationOptions(config) as UseMutationOptions<StartCatchupMutationResponse, ResponseErrorConfig<StartCatchup400 | StartCatchup401 | StartCatchup408 | StartCatchup500>, {catchpoint: StartCatchupPathParams["catchpoint"], params?: StartCatchupQueryParams}, TContext>
+
   return useMutation<StartCatchupMutationResponse, ResponseErrorConfig<StartCatchup400 | StartCatchup401 | StartCatchup408 | StartCatchup500>, {catchpoint: StartCatchupPathParams["catchpoint"], params?: StartCatchupQueryParams}, TContext>({
-    mutationFn: async({ catchpoint, params }) => {
-      return startCatchup({ catchpoint, params }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<StartCatchupMutationResponse, ResponseErrorConfig<StartCatchup400 | StartCatchup401 | StartCatchup408 | StartCatchup500>, {catchpoint: StartCatchupPathParams["catchpoint"], params?: StartCatchupQueryParams}, TContext>
 }

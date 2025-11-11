@@ -25,14 +25,14 @@ export const v1DevicesUpdatePathParamsSchema = z.object({
 
 export type V1DevicesUpdatePathParamsSchema = z.infer<typeof v1DevicesUpdatePathParamsSchema>
 
-export const v1DevicesUpdate200Schema = z.lazy(() => deviceSerializerResponseSchema)
+export const v1DevicesUpdate200Schema = deviceSerializerResponseSchema
 
 export type V1DevicesUpdate200Schema = z.infer<typeof v1DevicesUpdate200Schema>
 
-export const v1DevicesUpdateMutationRequestSchema = z.lazy(() => deviceSerializerRequestSchema)
+export const v1DevicesUpdateMutationRequestSchema = deviceSerializerRequestSchema
 
 export type V1DevicesUpdateMutationRequestSchema = z.infer<typeof v1DevicesUpdateMutationRequestSchema>
 
-export const v1DevicesUpdateMutationResponseSchema = z.lazy(() => v1DevicesUpdate200Schema)
+export const v1DevicesUpdateMutationResponseSchema = v1DevicesUpdate200Schema
 
 export type V1DevicesUpdateMutationResponseSchema = z.infer<typeof v1DevicesUpdateMutationResponseSchema>

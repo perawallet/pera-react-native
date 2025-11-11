@@ -18,6 +18,6 @@
 import { blockSchema } from "./blockSchema.ts";
 import { z } from "zod";
 
-export const blockResponseSchema = z.lazy(() => blockSchema).describe("Block information.\n\nDefinition:\ndata/bookkeeping/block.go : Block")
+export const blockResponseSchema = blockSchema.describe("Block information.\n\nDefinition:\ndata/bookkeeping/block.go : Block")
 
 export type BlockResponseSchema = z.infer<typeof blockResponseSchema>

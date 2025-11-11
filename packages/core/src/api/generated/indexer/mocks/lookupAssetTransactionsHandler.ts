@@ -15,12 +15,39 @@
 * Do not edit manually.
 */
 
-import type { LookupAssetTransactionsQueryResponse } from "../types/LookupAssetTransactions.ts";
+import type { LookupAssetTransactionsQueryResponse, LookupAssetTransactions400, LookupAssetTransactions500 } from "../types/LookupAssetTransactions.ts";
 import { http } from "msw";
+
+export function lookupAssetTransactionsHandlerResponse200(data: LookupAssetTransactionsQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupAssetTransactionsHandlerResponse400(data: LookupAssetTransactions400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupAssetTransactionsHandlerResponse500(data: LookupAssetTransactions500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function lookupAssetTransactionsHandler(data?: LookupAssetTransactionsQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/assets/:asset-id/transactions', function handler(info) {
     if(typeof data === 'function') return data(info)
 

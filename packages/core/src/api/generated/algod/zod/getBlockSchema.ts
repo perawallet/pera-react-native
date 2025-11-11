@@ -25,8 +25,8 @@ export const getBlockPathParamsSchema = z.object({
 export type GetBlockPathParamsSchema = z.infer<typeof getBlockPathParamsSchema>
 
 export const getBlockQueryParamsSchema = z.object({
-    "header-only": z.boolean().describe("If true, only the block header (exclusive of payset or certificate) may be included in response.").optional(),
-"format": z.enum(["json", "msgpack"]).describe("Configures whether the response object is JSON or MessagePack encoded. If not provided, defaults to JSON.").optional()
+    "header-only": z.optional(z.boolean().describe("If true, only the block header (exclusive of payset or certificate) may be included in response.")),
+"format": z.optional(z.enum(["json", "msgpack"]).describe("Configures whether the response object is JSON or MessagePack encoded. If not provided, defaults to JSON."))
     }).optional()
 
 export type GetBlockQueryParamsSchema = z.infer<typeof getBlockQueryParamsSchema>
@@ -38,9 +38,9 @@ export const getBlock200Schema = z.object({
     "block": z.object({
     
     }).describe("Block header data."),
-"cert": z.object({
+"cert": z.optional(z.object({
     
-    }).describe("Optional certificate object. This is only included when the format is set to message pack.").optional()
+    }).describe("Optional certificate object. This is only included when the format is set to message pack."))
     })
 
 export type GetBlock200Schema = z.infer<typeof getBlock200Schema>
@@ -48,28 +48,28 @@ export type GetBlock200Schema = z.infer<typeof getBlock200Schema>
 /**
  * @description Bad Request - Non integer number
  */
-export const getBlock400Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getBlock400Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetBlock400Schema = z.infer<typeof getBlock400Schema>
 
 /**
  * @description Invalid API Token
  */
-export const getBlock401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getBlock401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetBlock401Schema = z.infer<typeof getBlock401Schema>
 
 /**
  * @description None existing block 
  */
-export const getBlock404Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getBlock404Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetBlock404Schema = z.infer<typeof getBlock404Schema>
 
 /**
  * @description Internal Error
  */
-export const getBlock500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getBlock500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetBlock500Schema = z.infer<typeof getBlock500Schema>
 
@@ -80,6 +80,6 @@ export const getBlockErrorSchema = z.unknown()
 
 export type GetBlockErrorSchema = z.infer<typeof getBlockErrorSchema>
 
-export const getBlockQueryResponseSchema = z.lazy(() => getBlock200Schema)
+export const getBlockQueryResponseSchema = getBlock200Schema
 
 export type GetBlockQueryResponseSchema = z.infer<typeof getBlockQueryResponseSchema>

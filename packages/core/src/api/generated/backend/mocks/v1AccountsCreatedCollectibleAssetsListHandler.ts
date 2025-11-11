@@ -18,9 +18,18 @@
 import type { V1AccountsCreatedCollectibleAssetsListQueryResponse } from "../types/V1AccountsCreatedCollectibleAssetsList.ts";
 import { http } from "msw";
 
+export function v1AccountsCreatedCollectibleAssetsListHandlerResponse200(data: V1AccountsCreatedCollectibleAssetsListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1AccountsCreatedCollectibleAssetsListHandler(data?: V1AccountsCreatedCollectibleAssetsListQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/accounts/:account_address/created-collectible-assets/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

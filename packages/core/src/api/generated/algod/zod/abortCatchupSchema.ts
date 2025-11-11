@@ -33,21 +33,21 @@ export type AbortCatchup200Schema = z.infer<typeof abortCatchup200Schema>
 /**
  * @description Bad Request
  */
-export const abortCatchup400Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const abortCatchup400Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type AbortCatchup400Schema = z.infer<typeof abortCatchup400Schema>
 
 /**
  * @description Invalid API Token
  */
-export const abortCatchup401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const abortCatchup401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type AbortCatchup401Schema = z.infer<typeof abortCatchup401Schema>
 
 /**
  * @description Internal Error
  */
-export const abortCatchup500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const abortCatchup500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type AbortCatchup500Schema = z.infer<typeof abortCatchup500Schema>
 
@@ -58,6 +58,6 @@ export const abortCatchupErrorSchema = z.unknown()
 
 export type AbortCatchupErrorSchema = z.infer<typeof abortCatchupErrorSchema>
 
-export const abortCatchupMutationResponseSchema = z.lazy(() => abortCatchup200Schema)
+export const abortCatchupMutationResponseSchema = abortCatchup200Schema
 
 export type AbortCatchupMutationResponseSchema = z.infer<typeof abortCatchupMutationResponseSchema>

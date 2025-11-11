@@ -15,12 +15,55 @@
 * Do not edit manually.
 */
 
-import type { UnsetSyncRoundMutationResponse } from "../types/UnsetSyncRound.ts";
+import type { UnsetSyncRoundMutationResponse, UnsetSyncRound400, UnsetSyncRound401, UnsetSyncRound500, UnsetSyncRound503 } from "../types/UnsetSyncRound.ts";
 import { http } from "msw";
 
-export function unsetSyncRoundHandler(data?: UnsetSyncRoundMutationResponse | ((
+export function unsetSyncRoundHandlerResponse200(data?: UnsetSyncRoundMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+  
+  })
+}
+
+export function unsetSyncRoundHandlerResponse400(data: UnsetSyncRound400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function unsetSyncRoundHandlerResponse401(data: UnsetSyncRound401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function unsetSyncRoundHandlerResponse500(data: UnsetSyncRound500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function unsetSyncRoundHandlerResponse503(data: UnsetSyncRound503) {
+  return new Response(JSON.stringify(data), {
+    status: 503,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function unsetSyncRoundHandler(data?: string | number | boolean | null | object | ((
         info: Parameters<Parameters<typeof http.delete>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.delete('/v2/ledger/sync', function handler(info) {
     if(typeof data === 'function') return data(info)
 

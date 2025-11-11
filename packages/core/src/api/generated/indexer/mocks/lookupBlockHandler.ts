@@ -15,12 +15,39 @@
 * Do not edit manually.
 */
 
-import type { LookupBlockQueryResponse } from "../types/LookupBlock.ts";
+import type { LookupBlockQueryResponse, LookupBlock404, LookupBlock500 } from "../types/LookupBlock.ts";
 import { http } from "msw";
+
+export function lookupBlockHandlerResponse200(data: LookupBlockQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupBlockHandlerResponse404(data: LookupBlock404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupBlockHandlerResponse500(data: LookupBlock500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function lookupBlockHandler(data?: LookupBlockQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/blocks/:round-number', function handler(info) {
     if(typeof data === 'function') return data(info)
 

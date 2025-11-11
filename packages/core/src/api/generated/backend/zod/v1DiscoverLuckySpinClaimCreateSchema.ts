@@ -19,14 +19,14 @@ import { luckySpinClaimSerializerRequestSchema } from "./luckySpinClaimSerialize
 import { luckySpinClaimSerializerResponseSchema } from "./luckySpinClaimSerializer/responseSchema.ts";
 import { z } from "zod";
 
-export const v1DiscoverLuckySpinClaimCreate201Schema = z.lazy(() => luckySpinClaimSerializerResponseSchema)
+export const v1DiscoverLuckySpinClaimCreate201Schema = luckySpinClaimSerializerResponseSchema
 
 export type V1DiscoverLuckySpinClaimCreate201Schema = z.infer<typeof v1DiscoverLuckySpinClaimCreate201Schema>
 
-export const v1DiscoverLuckySpinClaimCreateMutationRequestSchema = z.lazy(() => luckySpinClaimSerializerRequestSchema)
+export const v1DiscoverLuckySpinClaimCreateMutationRequestSchema = luckySpinClaimSerializerRequestSchema
 
 export type V1DiscoverLuckySpinClaimCreateMutationRequestSchema = z.infer<typeof v1DiscoverLuckySpinClaimCreateMutationRequestSchema>
 
-export const v1DiscoverLuckySpinClaimCreateMutationResponseSchema = z.lazy(() => v1DiscoverLuckySpinClaimCreate201Schema)
+export const v1DiscoverLuckySpinClaimCreateMutationResponseSchema = v1DiscoverLuckySpinClaimCreate201Schema
 
 export type V1DiscoverLuckySpinClaimCreateMutationResponseSchema = z.infer<typeof v1DiscoverLuckySpinClaimCreateMutationResponseSchema>

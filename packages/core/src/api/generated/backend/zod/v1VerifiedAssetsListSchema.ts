@@ -19,21 +19,21 @@ import { publicSimpleAssetSerializerResponseSchema } from "./publicSimpleAssetSe
 import { z } from "zod";
 
 export const v1VerifiedAssetsListQueryParamsSchema = z.object({
-    "ordering": z.string().describe("Which field to use when ordering the results.").optional(),
-"cursor": z.string().describe("The pagination cursor value.").optional(),
-"limit": z.coerce.number().int().describe("Number of results to return per page.").optional()
+    "ordering": z.optional(z.string().describe("Which field to use when ordering the results.")),
+"cursor": z.optional(z.string().describe("The pagination cursor value.")),
+"limit": z.optional(z.coerce.number().int().describe("Number of results to return per page."))
     }).optional()
 
 export type V1VerifiedAssetsListQueryParamsSchema = z.infer<typeof v1VerifiedAssetsListQueryParamsSchema>
 
 export const v1VerifiedAssetsList200Schema = z.object({
-    "next": z.string().url().nullable().nullish(),
-"previous": z.string().url().nullable().nullish(),
+    "next": z.string().url().nullish(),
+"previous": z.string().url().nullish(),
 "results": z.array(z.lazy(() => publicSimpleAssetSerializerResponseSchema))
     })
 
 export type V1VerifiedAssetsList200Schema = z.infer<typeof v1VerifiedAssetsList200Schema>
 
-export const v1VerifiedAssetsListQueryResponseSchema = z.lazy(() => v1VerifiedAssetsList200Schema)
+export const v1VerifiedAssetsListQueryResponseSchema = v1VerifiedAssetsList200Schema
 
 export type V1VerifiedAssetsListQueryResponseSchema = z.infer<typeof v1VerifiedAssetsListQueryResponseSchema>

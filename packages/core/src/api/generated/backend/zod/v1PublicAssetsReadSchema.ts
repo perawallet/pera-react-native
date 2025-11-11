@@ -30,10 +30,10 @@ export const v1PublicAssetsReadQueryParamsSchema = z.object({
 
 export type V1PublicAssetsReadQueryParamsSchema = z.infer<typeof v1PublicAssetsReadQueryParamsSchema>
 
-export const v1PublicAssetsRead200Schema = z.lazy(() => publicAssetDetailSerializerResponseSchema)
+export const v1PublicAssetsRead200Schema = publicAssetDetailSerializerResponseSchema
 
 export type V1PublicAssetsRead200Schema = z.infer<typeof v1PublicAssetsRead200Schema>
 
-export const v1PublicAssetsReadQueryResponseSchema = z.lazy(() => v1PublicAssetsRead200Schema)
+export const v1PublicAssetsReadQueryResponseSchema = v1PublicAssetsRead200Schema
 
 export type V1PublicAssetsReadQueryResponseSchema = z.infer<typeof v1PublicAssetsReadQueryResponseSchema>

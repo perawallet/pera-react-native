@@ -25,7 +25,7 @@ export const lookupBlockPathParamsSchema = z.object({
 export type LookupBlockPathParamsSchema = z.infer<typeof lookupBlockPathParamsSchema>
 
 export const lookupBlockQueryParamsSchema = z.object({
-    "header-only": z.boolean().describe("Header only flag. When this is set to true, returned block does not contain the transactions").optional()
+    "header-only": z.optional(z.boolean().describe("Header only flag. When this is set to true, returned block does not contain the transactions"))
     }).optional()
 
 export type LookupBlockQueryParamsSchema = z.infer<typeof lookupBlockQueryParamsSchema>
@@ -33,7 +33,7 @@ export type LookupBlockQueryParamsSchema = z.infer<typeof lookupBlockQueryParams
 /**
  * @description (empty)
  */
-export const lookupBlock200Schema = z.lazy(() => blockSchema).describe("Block information.\n\nDefinition:\ndata/bookkeeping/block.go : Block")
+export const lookupBlock200Schema = blockSchema.describe("Block information.\n\nDefinition:\ndata/bookkeeping/block.go : Block")
 
 export type LookupBlock200Schema = z.infer<typeof lookupBlock200Schema>
 
@@ -41,9 +41,9 @@ export type LookupBlock200Schema = z.infer<typeof lookupBlock200Schema>
  * @description Response for errors
  */
 export const lookupBlock404Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
@@ -53,14 +53,14 @@ export type LookupBlock404Schema = z.infer<typeof lookupBlock404Schema>
  * @description Response for errors
  */
 export const lookupBlock500Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
 export type LookupBlock500Schema = z.infer<typeof lookupBlock500Schema>
 
-export const lookupBlockQueryResponseSchema = z.lazy(() => lookupBlock200Schema)
+export const lookupBlockQueryResponseSchema = lookupBlock200Schema
 
 export type LookupBlockQueryResponseSchema = z.infer<typeof lookupBlockQueryResponseSchema>

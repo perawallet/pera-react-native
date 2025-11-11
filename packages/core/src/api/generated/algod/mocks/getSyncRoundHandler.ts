@@ -15,12 +15,57 @@
 * Do not edit manually.
 */
 
-import type { GetSyncRoundQueryResponse } from "../types/GetSyncRound.ts";
+import type { GetSyncRoundQueryResponse, GetSyncRound400, GetSyncRound401, GetSyncRound500, GetSyncRound503 } from "../types/GetSyncRound.ts";
 import { http } from "msw";
+
+export function getSyncRoundHandlerResponse200(data: GetSyncRoundQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getSyncRoundHandlerResponse400(data: GetSyncRound400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getSyncRoundHandlerResponse401(data: GetSyncRound401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getSyncRoundHandlerResponse500(data: GetSyncRound500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getSyncRoundHandlerResponse503(data: GetSyncRound503) {
+  return new Response(JSON.stringify(data), {
+    status: 503,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function getSyncRoundHandler(data?: GetSyncRoundQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/ledger/sync', function handler(info) {
     if(typeof data === 'function') return data(info)
 

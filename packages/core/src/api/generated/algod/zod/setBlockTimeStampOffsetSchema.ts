@@ -34,21 +34,21 @@ export type SetBlockTimeStampOffset200Schema = z.infer<typeof setBlockTimeStampO
 /**
  * @description Cannot set timestamp offset to a negative integer.
  */
-export const setBlockTimeStampOffset400Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const setBlockTimeStampOffset400Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type SetBlockTimeStampOffset400Schema = z.infer<typeof setBlockTimeStampOffset400Schema>
 
 /**
  * @description Invalid API Token
  */
-export const setBlockTimeStampOffset401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const setBlockTimeStampOffset401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type SetBlockTimeStampOffset401Schema = z.infer<typeof setBlockTimeStampOffset401Schema>
 
 /**
  * @description Internal Error
  */
-export const setBlockTimeStampOffset500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const setBlockTimeStampOffset500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type SetBlockTimeStampOffset500Schema = z.infer<typeof setBlockTimeStampOffset500Schema>
 
@@ -59,6 +59,6 @@ export const setBlockTimeStampOffsetErrorSchema = z.unknown()
 
 export type SetBlockTimeStampOffsetErrorSchema = z.infer<typeof setBlockTimeStampOffsetErrorSchema>
 
-export const setBlockTimeStampOffsetMutationResponseSchema = z.lazy(() => setBlockTimeStampOffset200Schema)
+export const setBlockTimeStampOffsetMutationResponseSchema = setBlockTimeStampOffset200Schema
 
 export type SetBlockTimeStampOffsetMutationResponseSchema = z.infer<typeof setBlockTimeStampOffsetMutationResponseSchema>

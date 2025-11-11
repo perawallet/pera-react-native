@@ -18,8 +18,8 @@
 import { z } from "zod";
 
 export const immersveCountryAvailabilityRequestSerializerRequestSchema = z.object({
-    "device": z.number().int().nullable().nullish(),
-"address": z.string().max(255).nullable().nullish(),
+    "device": z.number().int().nullish(),
+"address": z.string().max(255).nullish(),
 "alpha_2_country_code": z.string().min(1).max(2)
     })
 

@@ -20,19 +20,19 @@ import { deviceV2SerializerResponseSchema } from "./deviceV2Serializer/responseS
 import { z } from "zod";
 
 export const v2DevicesCreateHeaderParamsSchema = z.object({
-    "APP-VERSION": z.unknown().optional()
+    "APP-VERSION": z.optional(z.unknown())
     }).optional()
 
 export type V2DevicesCreateHeaderParamsSchema = z.infer<typeof v2DevicesCreateHeaderParamsSchema>
 
-export const v2DevicesCreate201Schema = z.lazy(() => deviceV2SerializerResponseSchema)
+export const v2DevicesCreate201Schema = deviceV2SerializerResponseSchema
 
 export type V2DevicesCreate201Schema = z.infer<typeof v2DevicesCreate201Schema>
 
-export const v2DevicesCreateMutationRequestSchema = z.lazy(() => deviceV2SerializerRequestSchema)
+export const v2DevicesCreateMutationRequestSchema = deviceV2SerializerRequestSchema
 
 export type V2DevicesCreateMutationRequestSchema = z.infer<typeof v2DevicesCreateMutationRequestSchema>
 
-export const v2DevicesCreateMutationResponseSchema = z.lazy(() => v2DevicesCreate201Schema)
+export const v2DevicesCreateMutationResponseSchema = v2DevicesCreate201Schema
 
 export type V2DevicesCreateMutationResponseSchema = z.infer<typeof v2DevicesCreateMutationResponseSchema>

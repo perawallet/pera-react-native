@@ -18,9 +18,18 @@
 import type { V1AccountsNamesReadQueryResponse } from "../types/V1AccountsNamesRead.ts";
 import { http } from "msw";
 
+export function v1AccountsNamesReadHandlerResponse200(data: V1AccountsNamesReadQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1AccountsNamesReadHandler(data?: V1AccountsNamesReadQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/accounts/:account_address/names/:name/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

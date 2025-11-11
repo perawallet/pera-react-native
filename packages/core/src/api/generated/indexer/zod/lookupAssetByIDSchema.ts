@@ -25,7 +25,7 @@ export const lookupAssetByIDPathParamsSchema = z.object({
 export type LookupAssetByIDPathParamsSchema = z.infer<typeof lookupAssetByIDPathParamsSchema>
 
 export const lookupAssetByIDQueryParamsSchema = z.object({
-    "include-all": z.boolean().describe("Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.").optional()
+    "include-all": z.optional(z.boolean().describe("Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates."))
     }).optional()
 
 export type LookupAssetByIDQueryParamsSchema = z.infer<typeof lookupAssetByIDQueryParamsSchema>
@@ -44,9 +44,9 @@ export type LookupAssetByID200Schema = z.infer<typeof lookupAssetByID200Schema>
  * @description Response for errors
  */
 export const lookupAssetByID400Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
@@ -56,9 +56,9 @@ export type LookupAssetByID400Schema = z.infer<typeof lookupAssetByID400Schema>
  * @description Response for errors
  */
 export const lookupAssetByID404Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
@@ -68,14 +68,14 @@ export type LookupAssetByID404Schema = z.infer<typeof lookupAssetByID404Schema>
  * @description Response for errors
  */
 export const lookupAssetByID500Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
 export type LookupAssetByID500Schema = z.infer<typeof lookupAssetByID500Schema>
 
-export const lookupAssetByIDQueryResponseSchema = z.lazy(() => lookupAssetByID200Schema)
+export const lookupAssetByIDQueryResponseSchema = lookupAssetByID200Schema
 
 export type LookupAssetByIDQueryResponseSchema = z.infer<typeof lookupAssetByIDQueryResponseSchema>

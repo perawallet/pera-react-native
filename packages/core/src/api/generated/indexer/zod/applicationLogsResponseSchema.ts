@@ -21,8 +21,8 @@ import { z } from "zod";
 export const applicationLogsResponseSchema = z.object({
     "application-id": z.number().int().describe("\\[appidx\\] application index."),
 "current-round": z.number().int().describe("Round at which the results were computed."),
-"log-data": z.array(z.lazy(() => applicationLogDataSchema).describe("Stores the global information associated with an application.")).optional(),
-"next-token": z.string().describe("Used for pagination, when making another request provide this token with the next parameter.").optional()
+"log-data": z.optional(z.array(z.lazy(() => applicationLogDataSchema).describe("Stores the global information associated with an application."))),
+"next-token": z.optional(z.string().describe("Used for pagination, when making another request provide this token with the next parameter."))
     })
 
 export type ApplicationLogsResponseSchema = z.infer<typeof applicationLogsResponseSchema>

@@ -18,9 +18,18 @@
 import type { V2AssetsToggleFavoriteCreateMutationResponse } from "../types/V2AssetsToggleFavoriteCreate.ts";
 import { http } from "msw";
 
+export function v2AssetsToggleFavoriteCreateHandlerResponse200(data: V2AssetsToggleFavoriteCreateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v2AssetsToggleFavoriteCreateHandler(data?: V2AssetsToggleFavoriteCreateMutationResponse | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v2/assets/:asset_id/toggle-favorite/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

@@ -18,9 +18,9 @@
 import fetch from "../../../algod-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { TealDryrunMutationRequest, TealDryrunMutationResponse, TealDryrun400, TealDryrun401, TealDryrun404, TealDryrun500 } from "../types/TealDryrun.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
 import { tealDryrunMutationResponseSchema, tealDryrunMutationRequestSchema } from "../zod/tealDryrunSchema.ts";
-import { useMutation } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const tealDryrunMutationKey = () => [{ url: '/v2/teal/dryrun' }] as const
 
@@ -40,6 +40,16 @@ export async function tealDryrun({ data }: { data: TealDryrunMutationRequest }, 
   return tealDryrunMutationResponseSchema.parse(res.data)
 }
 
+export function tealDryrunMutationOptions(config: Partial<RequestConfig<TealDryrunMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = tealDryrunMutationKey()
+  return mutationOptions<TealDryrunMutationResponse, ResponseErrorConfig<TealDryrun400 | TealDryrun401 | TealDryrun404 | TealDryrun500>, {data: TealDryrunMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ data }) => {
+      return tealDryrun({ data }, config)
+    },
+  })
+}
+
 /**
  * @description Executes TEAL program(s) in context and returns debugging information about the execution. This endpoint is only enabled when a node's configuration file sets EnableDeveloperAPI to true.
  * @summary Provide debugging information for a transaction (or group).
@@ -55,11 +65,11 @@ export function useTealDryrun<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? tealDryrunMutationKey()
 
+  const baseOptions = tealDryrunMutationOptions(config) as UseMutationOptions<TealDryrunMutationResponse, ResponseErrorConfig<TealDryrun400 | TealDryrun401 | TealDryrun404 | TealDryrun500>, {data: TealDryrunMutationRequest}, TContext>
+
   return useMutation<TealDryrunMutationResponse, ResponseErrorConfig<TealDryrun400 | TealDryrun401 | TealDryrun404 | TealDryrun500>, {data: TealDryrunMutationRequest}, TContext>({
-    mutationFn: async({ data }) => {
-      return tealDryrun({ data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<TealDryrunMutationResponse, ResponseErrorConfig<TealDryrun400 | TealDryrun401 | TealDryrun404 | TealDryrun500>, {data: TealDryrunMutationRequest}, TContext>
 }

@@ -18,7 +18,7 @@
 import { z } from "zod";
 
 export const accountStakingRewardsSerializerResponseSchema = z.object({
-    "rewards_total": z.string().optional()
+    "rewards_total": z.optional(z.string())
     })
 
 export type AccountStakingRewardsSerializerResponseSchema = z.infer<typeof accountStakingRewardsSerializerResponseSchema>

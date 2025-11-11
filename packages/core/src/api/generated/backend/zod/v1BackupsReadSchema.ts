@@ -24,10 +24,10 @@ export const v1BackupsReadPathParamsSchema = z.object({
 
 export type V1BackupsReadPathParamsSchema = z.infer<typeof v1BackupsReadPathParamsSchema>
 
-export const v1BackupsRead200Schema = z.lazy(() => backupRetrieveUpdateDestroySerializerResponseSchema)
+export const v1BackupsRead200Schema = backupRetrieveUpdateDestroySerializerResponseSchema
 
 export type V1BackupsRead200Schema = z.infer<typeof v1BackupsRead200Schema>
 
-export const v1BackupsReadQueryResponseSchema = z.lazy(() => v1BackupsRead200Schema)
+export const v1BackupsReadQueryResponseSchema = v1BackupsRead200Schema
 
 export type V1BackupsReadQueryResponseSchema = z.infer<typeof v1BackupsReadQueryResponseSchema>

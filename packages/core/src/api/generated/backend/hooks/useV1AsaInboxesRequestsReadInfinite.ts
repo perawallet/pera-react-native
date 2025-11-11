@@ -37,16 +37,16 @@ export async function v1AsaInboxesRequestsReadInfinite({ account_address, params
 
 export function v1AsaInboxesRequestsReadInfiniteQueryOptions({ account_address, params }: { account_address: V1AsaInboxesRequestsReadPathParams["account_address"]; params?: V1AsaInboxesRequestsReadQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {
   const queryKey = v1AsaInboxesRequestsReadInfiniteQueryKey({ account_address }, params)
-  return infiniteQueryOptions<V1AsaInboxesRequestsReadQueryResponse, ResponseErrorConfig<Error>, V1AsaInboxesRequestsReadQueryResponse, typeof queryKey, number>({
+  return infiniteQueryOptions<V1AsaInboxesRequestsReadQueryResponse, ResponseErrorConfig<Error>, InfiniteData<V1AsaInboxesRequestsReadQueryResponse>, typeof queryKey, NonNullable<V1AsaInboxesRequestsReadQueryParams['cursor']>>({
    enabled: !!(account_address),
    queryKey,
    queryFn: async ({ signal, pageParam }) => {
       config.signal = signal
     
-      if (!params) {
-       params = { }
-      }
-      params['cursor'] = pageParam as unknown as V1AsaInboxesRequestsReadQueryParams['cursor']
+      params = {
+        ...(params ?? {}),
+        ['cursor']: pageParam as unknown as V1AsaInboxesRequestsReadQueryParams['cursor'],
+      } as V1AsaInboxesRequestsReadQueryParams
       return v1AsaInboxesRequestsReadInfinite({ account_address, params }, config)
    },
    initialPageParam: "",
@@ -58,9 +58,9 @@ export function v1AsaInboxesRequestsReadInfiniteQueryOptions({ account_address, 
 /**
  * {@link /v1/asa-inboxes/requests/:account_address/}
  */
-export function useV1AsaInboxesRequestsReadInfinite<TData = InfiniteData<V1AsaInboxesRequestsReadQueryResponse>, TQueryData = V1AsaInboxesRequestsReadQueryResponse, TQueryKey extends QueryKey = V1AsaInboxesRequestsReadInfiniteQueryKey>({ account_address, params }: { account_address: V1AsaInboxesRequestsReadPathParams["account_address"]; params?: V1AsaInboxesRequestsReadQueryParams }, options: 
+export function useV1AsaInboxesRequestsReadInfinite<TQueryFnData = V1AsaInboxesRequestsReadQueryResponse, TError = ResponseErrorConfig<Error>, TData = InfiniteData<TQueryFnData>, TQueryKey extends QueryKey = V1AsaInboxesRequestsReadInfiniteQueryKey, TPageParam = NonNullable<V1AsaInboxesRequestsReadQueryParams['cursor']>>({ account_address, params }: { account_address: V1AsaInboxesRequestsReadPathParams["account_address"]; params?: V1AsaInboxesRequestsReadQueryParams }, options: 
 {
-  query?: Partial<InfiniteQueryObserverOptions<V1AsaInboxesRequestsReadQueryResponse, ResponseErrorConfig<Error>, TQueryData, TQueryKey, TQueryData>> & { client?: QueryClient },
+  query?: Partial<InfiniteQueryObserverOptions<TQueryFnData, TError, TData, TQueryKey, TPageParam>> & { client?: QueryClient },
   client?: Partial<RequestConfig> & { client?: typeof fetch }
 }
  = {}) {
@@ -72,7 +72,7 @@ export function useV1AsaInboxesRequestsReadInfinite<TData = InfiniteData<V1AsaIn
    ...v1AsaInboxesRequestsReadInfiniteQueryOptions({ account_address, params }, config),
    queryKey,
    ...queryOptions
-  } as unknown as InfiniteQueryObserverOptions, queryClient) as UseInfiniteQueryResult<TData, ResponseErrorConfig<Error>> & { queryKey: TQueryKey }
+  } as unknown as InfiniteQueryObserverOptions<TQueryFnData, TError, TData, TQueryKey, TPageParam>, queryClient) as UseInfiniteQueryResult<TData, TError> & { queryKey: TQueryKey }
 
   query.queryKey = queryKey as TQueryKey
 

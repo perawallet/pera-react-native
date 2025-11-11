@@ -23,13 +23,13 @@ import { z } from "zod";
  * @description \\[sp\\] represents a state proof.\n\nDefinition:\ncrypto/stateproof/structs.go : StateProof
  */
 export const stateProofFieldsSchema = z.object({
-    "part-proofs": z.lazy(() => merkleArrayProofSchema).optional(),
-"positions-to-reveal": z.array(z.number().int()).describe("\\[pr\\] Sequence of reveal positions.").optional(),
-"reveals": z.array(z.lazy(() => stateProofRevealSchema)).describe("\\[r\\] Note that this is actually stored as a map[uint64] - Reveal in the actual msgp").optional(),
-"salt-version": z.number().int().describe("\\[v\\] Salt version of the merkle signature.").optional(),
-"sig-commit": z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[c\\]").optional(),
-"sig-proofs": z.lazy(() => merkleArrayProofSchema).optional(),
-"signed-weight": z.number().int().describe("\\[w\\]").optional()
+    "part-proofs": z.optional(z.lazy(() => merkleArrayProofSchema)),
+"positions-to-reveal": z.optional(z.array(z.number().int()).describe("\\[pr\\] Sequence of reveal positions.")),
+"reveals": z.optional(z.array(z.lazy(() => stateProofRevealSchema)).describe("\\[r\\] Note that this is actually stored as a map[uint64] - Reveal in the actual msgp")),
+"salt-version": z.optional(z.number().int().describe("\\[v\\] Salt version of the merkle signature.")),
+"sig-commit": z.optional(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/).describe("\\[c\\]")),
+"sig-proofs": z.optional(z.lazy(() => merkleArrayProofSchema)),
+"signed-weight": z.optional(z.number().int().describe("\\[w\\]"))
     }).describe("\\[sp\\] represents a state proof.\n\nDefinition:\ncrypto/stateproof/structs.go : StateProof")
 
 export type StateProofFieldsSchema = z.infer<typeof stateProofFieldsSchema>

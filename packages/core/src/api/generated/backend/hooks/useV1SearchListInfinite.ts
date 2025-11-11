@@ -39,16 +39,16 @@ export async function v1SearchListInfinite({ params }: { params?: V1SearchListQu
 
 export function v1SearchListInfiniteQueryOptions({ params }: { params?: V1SearchListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {
   const queryKey = v1SearchListInfiniteQueryKey(params)
-  return infiniteQueryOptions<V1SearchListQueryResponse, ResponseErrorConfig<Error>, V1SearchListQueryResponse, typeof queryKey, number>({
+  return infiniteQueryOptions<V1SearchListQueryResponse, ResponseErrorConfig<Error>, InfiniteData<V1SearchListQueryResponse>, typeof queryKey, NonNullable<V1SearchListQueryParams['cursor']>>({
  
    queryKey,
    queryFn: async ({ signal, pageParam }) => {
       config.signal = signal
     
-      if (!params) {
-       params = { }
-      }
-      params['cursor'] = pageParam as unknown as V1SearchListQueryParams['cursor']
+      params = {
+        ...(params ?? {}),
+        ['cursor']: pageParam as unknown as V1SearchListQueryParams['cursor'],
+      } as V1SearchListQueryParams
       return v1SearchListInfinite({ params }, config)
    },
    initialPageParam: "",
@@ -62,9 +62,9 @@ export function v1SearchListInfiniteQueryOptions({ params }: { params?: V1Search
  * @summary Search View
  * {@link /v1/search/}
  */
-export function useV1SearchListInfinite<TData = InfiniteData<V1SearchListQueryResponse>, TQueryData = V1SearchListQueryResponse, TQueryKey extends QueryKey = V1SearchListInfiniteQueryKey>({ params }: { params?: V1SearchListQueryParams }, options: 
+export function useV1SearchListInfinite<TQueryFnData = V1SearchListQueryResponse, TError = ResponseErrorConfig<Error>, TData = InfiniteData<TQueryFnData>, TQueryKey extends QueryKey = V1SearchListInfiniteQueryKey, TPageParam = NonNullable<V1SearchListQueryParams['cursor']>>({ params }: { params?: V1SearchListQueryParams }, options: 
 {
-  query?: Partial<InfiniteQueryObserverOptions<V1SearchListQueryResponse, ResponseErrorConfig<Error>, TQueryData, TQueryKey, TQueryData>> & { client?: QueryClient },
+  query?: Partial<InfiniteQueryObserverOptions<TQueryFnData, TError, TData, TQueryKey, TPageParam>> & { client?: QueryClient },
   client?: Partial<RequestConfig> & { client?: typeof fetch }
 }
  = {}) {
@@ -76,7 +76,7 @@ export function useV1SearchListInfinite<TData = InfiniteData<V1SearchListQueryRe
    ...v1SearchListInfiniteQueryOptions({ params }, config),
    queryKey,
    ...queryOptions
-  } as unknown as InfiniteQueryObserverOptions, queryClient) as UseInfiniteQueryResult<TData, ResponseErrorConfig<Error>> & { queryKey: TQueryKey }
+  } as unknown as InfiniteQueryObserverOptions<TQueryFnData, TError, TData, TQueryKey, TPageParam>, queryClient) as UseInfiniteQueryResult<TData, TError> & { queryKey: TQueryKey }
 
   query.queryKey = queryKey as TQueryKey
 

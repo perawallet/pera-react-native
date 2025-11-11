@@ -25,21 +25,21 @@ export const v1AccountsCreatedCollectibleAssetsListPathParamsSchema = z.object({
 export type V1AccountsCreatedCollectibleAssetsListPathParamsSchema = z.infer<typeof v1AccountsCreatedCollectibleAssetsListPathParamsSchema>
 
 export const v1AccountsCreatedCollectibleAssetsListQueryParamsSchema = z.object({
-    "ordering": z.string().describe("Which field to use when ordering the results.").optional(),
-"cursor": z.string().describe("The pagination cursor value.").optional(),
-"limit": z.coerce.number().int().describe("Number of results to return per page.").optional()
+    "ordering": z.optional(z.string().describe("Which field to use when ordering the results.")),
+"cursor": z.optional(z.string().describe("The pagination cursor value.")),
+"limit": z.optional(z.coerce.number().int().describe("Number of results to return per page."))
     }).optional()
 
 export type V1AccountsCreatedCollectibleAssetsListQueryParamsSchema = z.infer<typeof v1AccountsCreatedCollectibleAssetsListQueryParamsSchema>
 
 export const v1AccountsCreatedCollectibleAssetsList200Schema = z.object({
-    "next": z.string().url().nullable().nullish(),
-"previous": z.string().url().nullable().nullish(),
+    "next": z.string().url().nullish(),
+"previous": z.string().url().nullish(),
 "results": z.array(z.lazy(() => accountDetailCollectibleAssetSerializerResponseSchema))
     })
 
 export type V1AccountsCreatedCollectibleAssetsList200Schema = z.infer<typeof v1AccountsCreatedCollectibleAssetsList200Schema>
 
-export const v1AccountsCreatedCollectibleAssetsListQueryResponseSchema = z.lazy(() => v1AccountsCreatedCollectibleAssetsList200Schema)
+export const v1AccountsCreatedCollectibleAssetsListQueryResponseSchema = v1AccountsCreatedCollectibleAssetsList200Schema
 
 export type V1AccountsCreatedCollectibleAssetsListQueryResponseSchema = z.infer<typeof v1AccountsCreatedCollectibleAssetsListQueryResponseSchema>

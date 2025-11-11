@@ -19,15 +19,15 @@ import { poolSerializerResponseSchema } from "./poolSerializer/responseSchema.ts
 import { z } from "zod";
 
 export const v1DiscoverPoolsListQueryParamsSchema = z.object({
-    "ordering": z.string().describe("Which field to use when ordering the results.").optional()
+    "ordering": z.optional(z.string().describe("Which field to use when ordering the results."))
     }).optional()
 
 export type V1DiscoverPoolsListQueryParamsSchema = z.infer<typeof v1DiscoverPoolsListQueryParamsSchema>
 
-export const v1DiscoverPoolsList200Schema = z.array(z.lazy(() => poolSerializerResponseSchema))
+export const v1DiscoverPoolsList200Schema = z.array(poolSerializerResponseSchema)
 
 export type V1DiscoverPoolsList200Schema = z.infer<typeof v1DiscoverPoolsList200Schema>
 
-export const v1DiscoverPoolsListQueryResponseSchema = z.lazy(() => v1DiscoverPoolsList200Schema)
+export const v1DiscoverPoolsListQueryResponseSchema = v1DiscoverPoolsList200Schema
 
 export type V1DiscoverPoolsListQueryResponseSchema = z.infer<typeof v1DiscoverPoolsListQueryResponseSchema>

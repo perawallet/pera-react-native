@@ -22,8 +22,8 @@ import { z } from "zod";
  */
 export const evalDeltaSchema = z.object({
     "action": z.number().int().describe("\\[at\\] delta action."),
-"bytes": z.string().describe("\\[bs\\] bytes value.").optional(),
-"uint": z.number().int().describe("\\[ui\\] uint value.").optional()
+"bytes": z.optional(z.string().describe("\\[bs\\] bytes value.")),
+"uint": z.optional(z.number().int().describe("\\[ui\\] uint value."))
     }).describe("Represents a TEAL value delta.")
 
 export type EvalDeltaSchema = z.infer<typeof evalDeltaSchema>

@@ -18,9 +18,18 @@
 import type { V1OnrampServicesMeldWidgetsCreateMutationResponse } from "../types/V1OnrampServicesMeldWidgetsCreate.ts";
 import { http } from "msw";
 
+export function v1OnrampServicesMeldWidgetsCreateHandlerResponse201(data: V1OnrampServicesMeldWidgetsCreateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 201,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1OnrampServicesMeldWidgetsCreateHandler(data?: V1OnrampServicesMeldWidgetsCreateMutationResponse | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v1/onramp-services/meld/widgets/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

@@ -18,9 +18,18 @@
 import type { V1DiscoverLuckySpinClaimCreateMutationResponse } from "../types/V1DiscoverLuckySpinClaimCreate.ts";
 import { http } from "msw";
 
+export function v1DiscoverLuckySpinClaimCreateHandlerResponse201(data: V1DiscoverLuckySpinClaimCreateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 201,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1DiscoverLuckySpinClaimCreateHandler(data?: V1DiscoverLuckySpinClaimCreateMutationResponse | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v1/discover/lucky-spin/claim/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

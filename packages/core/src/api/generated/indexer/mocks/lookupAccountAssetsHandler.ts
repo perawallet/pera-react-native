@@ -15,12 +15,48 @@
 * Do not edit manually.
 */
 
-import type { LookupAccountAssetsQueryResponse } from "../types/LookupAccountAssets.ts";
+import type { LookupAccountAssetsQueryResponse, LookupAccountAssets400, LookupAccountAssets404, LookupAccountAssets500 } from "../types/LookupAccountAssets.ts";
 import { http } from "msw";
+
+export function lookupAccountAssetsHandlerResponse200(data: LookupAccountAssetsQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupAccountAssetsHandlerResponse400(data: LookupAccountAssets400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupAccountAssetsHandlerResponse404(data: LookupAccountAssets404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupAccountAssetsHandlerResponse500(data: LookupAccountAssets500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function lookupAccountAssetsHandler(data?: LookupAccountAssetsQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/accounts/:account-id/assets', function handler(info) {
     if(typeof data === 'function') return data(info)
 

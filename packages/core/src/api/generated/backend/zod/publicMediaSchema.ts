@@ -19,8 +19,8 @@ import { z } from "zod";
 
 export const publicMediaSchema = z.object({
     "type": z.enum(["image", "video", "audio", "mixed", "unknown"]),
-"url": z.string().describe("Pera or Algonode IPFS URL.").optional(),
-"ipfs_cid": z.string().optional(),
+"url": z.optional(z.string().describe("Pera or Algonode IPFS URL.")),
+"ipfs_cid": z.optional(z.string()),
 "extension": z.string().min(1)
     })
 

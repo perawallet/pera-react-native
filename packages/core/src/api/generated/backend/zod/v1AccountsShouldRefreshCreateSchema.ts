@@ -19,14 +19,14 @@ import { accountsShouldRefreshSerializerRequestSchema } from "./accountsShouldRe
 import { accountsShouldRefreshSerializerResponseSchema } from "./accountsShouldRefreshSerializer/responseSchema.ts";
 import { z } from "zod";
 
-export const v1AccountsShouldRefreshCreate201Schema = z.lazy(() => accountsShouldRefreshSerializerResponseSchema)
+export const v1AccountsShouldRefreshCreate201Schema = accountsShouldRefreshSerializerResponseSchema
 
 export type V1AccountsShouldRefreshCreate201Schema = z.infer<typeof v1AccountsShouldRefreshCreate201Schema>
 
-export const v1AccountsShouldRefreshCreateMutationRequestSchema = z.lazy(() => accountsShouldRefreshSerializerRequestSchema)
+export const v1AccountsShouldRefreshCreateMutationRequestSchema = accountsShouldRefreshSerializerRequestSchema
 
 export type V1AccountsShouldRefreshCreateMutationRequestSchema = z.infer<typeof v1AccountsShouldRefreshCreateMutationRequestSchema>
 
-export const v1AccountsShouldRefreshCreateMutationResponseSchema = z.lazy(() => v1AccountsShouldRefreshCreate201Schema)
+export const v1AccountsShouldRefreshCreateMutationResponseSchema = v1AccountsShouldRefreshCreate201Schema
 
 export type V1AccountsShouldRefreshCreateMutationResponseSchema = z.infer<typeof v1AccountsShouldRefreshCreateMutationResponseSchema>

@@ -18,9 +18,18 @@
 import type { V1DevicesAssetsAddToPriceWatchAssetsCreateMutationResponse } from "../types/V1DevicesAssetsAddToPriceWatchAssetsCreate.ts";
 import { http } from "msw";
 
+export function v1DevicesAssetsAddToPriceWatchAssetsCreateHandlerResponse201(data: V1DevicesAssetsAddToPriceWatchAssetsCreateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 201,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1DevicesAssetsAddToPriceWatchAssetsCreateHandler(data?: V1DevicesAssetsAddToPriceWatchAssetsCreateMutationResponse | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v1/devices/:device_id/assets/:asset_id/add-to-price-watch-assets/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

@@ -15,12 +15,66 @@
 * Do not edit manually.
 */
 
-import type { GetLedgerStateDeltaQueryResponse } from "../types/GetLedgerStateDelta.ts";
+import type { GetLedgerStateDeltaQueryResponse, GetLedgerStateDelta401, GetLedgerStateDelta404, GetLedgerStateDelta408, GetLedgerStateDelta500, GetLedgerStateDelta503 } from "../types/GetLedgerStateDelta.ts";
 import { http } from "msw";
+
+export function getLedgerStateDeltaHandlerResponse200(data: GetLedgerStateDeltaQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getLedgerStateDeltaHandlerResponse401(data: GetLedgerStateDelta401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getLedgerStateDeltaHandlerResponse404(data: GetLedgerStateDelta404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getLedgerStateDeltaHandlerResponse408(data: GetLedgerStateDelta408) {
+  return new Response(JSON.stringify(data), {
+    status: 408,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getLedgerStateDeltaHandlerResponse500(data: GetLedgerStateDelta500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getLedgerStateDeltaHandlerResponse503(data: GetLedgerStateDelta503) {
+  return new Response(JSON.stringify(data), {
+    status: 503,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function getLedgerStateDeltaHandler(data?: GetLedgerStateDeltaQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/deltas/:round', function handler(info) {
     if(typeof data === 'function') return data(info)
 

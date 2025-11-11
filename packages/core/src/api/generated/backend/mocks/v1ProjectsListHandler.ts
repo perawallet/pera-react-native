@@ -18,9 +18,18 @@
 import type { V1ProjectsListQueryResponse } from "../types/V1ProjectsList.ts";
 import { http } from "msw";
 
+export function v1ProjectsListHandlerResponse200(data: V1ProjectsListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1ProjectsListHandler(data?: V1ProjectsListQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/projects/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

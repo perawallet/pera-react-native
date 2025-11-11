@@ -19,9 +19,9 @@ import { hashFactorySchema } from "./hashFactorySchema.ts";
 import { z } from "zod";
 
 export const merkleArrayProofSchema = z.object({
-    "hash-factory": z.lazy(() => hashFactorySchema).optional(),
-"path": z.array(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/)).describe("\\[pth\\]").optional(),
-"tree-depth": z.number().int().describe("\\[td\\]").optional()
+    "hash-factory": z.optional(z.lazy(() => hashFactorySchema)),
+"path": z.optional(z.array(z.string().regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/)).describe("\\[pth\\]")),
+"tree-depth": z.optional(z.number().int().describe("\\[td\\]"))
     })
 
 export type MerkleArrayProofSchema = z.infer<typeof merkleArrayProofSchema>

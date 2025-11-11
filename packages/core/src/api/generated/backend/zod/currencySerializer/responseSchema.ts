@@ -18,7 +18,7 @@
 import { z } from "zod";
 
 export const currencySerializerResponseSchema = z.object({
-    "generated_at": z.string().optional(),
+    "generated_at": z.optional(z.string()),
 "currency_id": z.string().min(1).max(255),
 "name": z.string().min(1).max(255),
 "symbol": z.string().min(1).max(255)

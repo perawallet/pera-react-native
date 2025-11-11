@@ -19,9 +19,9 @@ import { simpleCollectionSchema } from "./simpleCollectionSchema.ts";
 import { z } from "zod";
 
 export const simpleCollectibleSchema = z.object({
-    "title": z.string().min(1).optional(),
-"standard": z.enum(["arc3", "arc69"]).optional(),
-"primary_image": z.string().optional(),
+    "title": z.optional(z.string().min(1)),
+"standard": z.optional(z.enum(["arc3", "arc69"])),
+"primary_image": z.optional(z.string()),
 "media_type": z.enum(["image", "video", "audio", "mixed", "unknown"]),
 "explorer_url": z.string().url().min(1),
 "collection": z.lazy(() => simpleCollectionSchema)

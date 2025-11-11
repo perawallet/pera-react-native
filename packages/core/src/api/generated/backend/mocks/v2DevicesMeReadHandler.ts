@@ -18,9 +18,18 @@
 import type { V2DevicesMeReadQueryResponse } from "../types/V2DevicesMeRead.ts";
 import { http } from "msw";
 
+export function v2DevicesMeReadHandlerResponse200(data: V2DevicesMeReadQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v2DevicesMeReadHandler(data?: V2DevicesMeReadQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/devices/me/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

@@ -15,12 +15,28 @@
 * Do not edit manually.
 */
 
-import type { V1DexSwapQuotesCreateMutationResponse } from "../types/V1DexSwapQuotesCreate.ts";
+import type { V1DexSwapQuotesCreateMutationResponse, V1DexSwapQuotesCreate503 } from "../types/V1DexSwapQuotesCreate.ts";
 import { http } from "msw";
+
+export function v1DexSwapQuotesCreateHandlerResponse201(data: V1DexSwapQuotesCreateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 201,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function v1DexSwapQuotesCreateHandlerResponse503(data?: V1DexSwapQuotesCreate503) {
+  return new Response(JSON.stringify(data), {
+    status: 503,
+  
+  })
+}
 
 export function v1DexSwapQuotesCreateHandler(data?: V1DexSwapQuotesCreateMutationResponse | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v1/dex-swap/quotes/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

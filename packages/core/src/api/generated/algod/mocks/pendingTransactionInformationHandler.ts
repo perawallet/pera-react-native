@@ -15,12 +15,48 @@
 * Do not edit manually.
 */
 
-import type { PendingTransactionInformationQueryResponse } from "../types/PendingTransactionInformation.ts";
+import type { PendingTransactionInformationQueryResponse, PendingTransactionInformation400, PendingTransactionInformation401, PendingTransactionInformation404 } from "../types/PendingTransactionInformation.ts";
 import { http } from "msw";
+
+export function pendingTransactionInformationHandlerResponse200(data: PendingTransactionInformationQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function pendingTransactionInformationHandlerResponse400(data: PendingTransactionInformation400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function pendingTransactionInformationHandlerResponse401(data: PendingTransactionInformation401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function pendingTransactionInformationHandlerResponse404(data: PendingTransactionInformation404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function pendingTransactionInformationHandler(data?: PendingTransactionInformationQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/transactions/pending/:txid', function handler(info) {
     if(typeof data === 'function') return data(info)
 

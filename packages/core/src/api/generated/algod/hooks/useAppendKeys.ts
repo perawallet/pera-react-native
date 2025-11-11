@@ -18,9 +18,9 @@
 import fetch from "../../../algod-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { AppendKeysMutationRequest, AppendKeysMutationResponse, AppendKeysPathParams, AppendKeys400, AppendKeys401, AppendKeys404, AppendKeys500 } from "../types/AppendKeys.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
 import { appendKeysMutationResponseSchema, appendKeysMutationRequestSchema } from "../zod/appendKeysSchema.ts";
-import { useMutation } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const appendKeysMutationKey = () => [{ url: '/v2/participation/:participation-id' }] as const
 
@@ -40,6 +40,16 @@ export async function appendKeys({ participationId, data }: { participationId: A
   return appendKeysMutationResponseSchema.parse(res.data)
 }
 
+export function appendKeysMutationOptions(config: Partial<RequestConfig<AppendKeysMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = appendKeysMutationKey()
+  return mutationOptions<AppendKeysMutationResponse, ResponseErrorConfig<AppendKeys400 | AppendKeys401 | AppendKeys404 | AppendKeys500>, {participationId: AppendKeysPathParams["participation-id"], data?: AppendKeysMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ participationId, data }) => {
+      return appendKeys({ participationId, data }, config)
+    },
+  })
+}
+
 /**
  * @description Given a participation ID, append state proof keys to a particular set of participation keys
  * @summary Append state proof keys to a participation key
@@ -55,11 +65,11 @@ export function useAppendKeys<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? appendKeysMutationKey()
 
+  const baseOptions = appendKeysMutationOptions(config) as UseMutationOptions<AppendKeysMutationResponse, ResponseErrorConfig<AppendKeys400 | AppendKeys401 | AppendKeys404 | AppendKeys500>, {participationId: AppendKeysPathParams["participation-id"], data?: AppendKeysMutationRequest}, TContext>
+
   return useMutation<AppendKeysMutationResponse, ResponseErrorConfig<AppendKeys400 | AppendKeys401 | AppendKeys404 | AppendKeys500>, {participationId: AppendKeysPathParams["participation-id"], data?: AppendKeysMutationRequest}, TContext>({
-    mutationFn: async({ participationId, data }) => {
-      return appendKeys({ participationId, data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<AppendKeysMutationResponse, ResponseErrorConfig<AppendKeys400 | AppendKeys401 | AppendKeys404 | AppendKeys500>, {participationId: AppendKeysPathParams["participation-id"], data?: AppendKeysMutationRequest}, TContext>
 }

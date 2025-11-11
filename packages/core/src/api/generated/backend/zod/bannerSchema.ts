@@ -18,14 +18,14 @@
 import { z } from "zod";
 
 export const bannerSchema = z.object({
-    "id": z.number().int().optional(),
-"type": z.enum(["generic", "governance", "staking", "card", "retail"]).optional(),
-"title": z.string().min(1).optional(),
-"subtitle": z.string().min(1).optional(),
-"button_label": z.string().min(1).optional(),
-"button_url": z.string().min(1).describe("Mobile should use this field.").optional(),
-"button_web_url": z.string().min(1).describe("Web should use this field.").optional(),
-"is_button_url_external": z.boolean().describe("link to be opened in the phones native browser instead of within the Pera Browser").optional()
+    "id": z.optional(z.number().int()),
+"type": z.optional(z.enum(["generic", "governance", "staking", "card", "retail"])),
+"title": z.optional(z.string().min(1)),
+"subtitle": z.optional(z.string().min(1)),
+"button_label": z.optional(z.string().min(1)),
+"button_url": z.optional(z.string().min(1).describe("Mobile should use this field.")),
+"button_web_url": z.optional(z.string().min(1).describe("Web should use this field.")),
+"is_button_url_external": z.optional(z.boolean().describe("link to be opened in the phones native browser instead of within the Pera Browser"))
     })
 
 export type BannerSchema = z.infer<typeof bannerSchema>

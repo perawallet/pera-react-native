@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DexSwapPrepareTransactionsCreateMutationRequest, V1DexSwapPrepareTransactionsCreateMutationResponse } from "../types/V1DexSwapPrepareTransactionsCreate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1DexSwapPrepareTransactionsCreateMutationKey = () => [{ url: '/v1/dex-swap/prepare-transactions/' }] as const
 
@@ -39,6 +39,16 @@ export async function v1DexSwapPrepareTransactionsCreate({ data }: { data: V1Dex
   return res.data
 }
 
+export function v1DexSwapPrepareTransactionsCreateMutationOptions(config: Partial<RequestConfig<V1DexSwapPrepareTransactionsCreateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1DexSwapPrepareTransactionsCreateMutationKey()
+  return mutationOptions<V1DexSwapPrepareTransactionsCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1DexSwapPrepareTransactionsCreateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ data }) => {
+      return v1DexSwapPrepareTransactionsCreate({ data }, config)
+    },
+  })
+}
+
 /**
  * @description `transactions`: List of `msgpack` encoded transactions that need to be signed by user to be able to complete the swap operation.`signed_transactions`: List of `msgpack` encoded signed transactions that need to be sent to the node to be able to complete the swap operation.Note that `transactions[i]` is the unsigned version of `signed_transactions[i]`. If `signed_transactions[i]` is `null`,`transactions[i]` needs to be signed by the user and replaced with `signed_transactions[i]`.
  * @summary Prepare Transactions
@@ -54,11 +64,11 @@ export function useV1DexSwapPrepareTransactionsCreate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1DexSwapPrepareTransactionsCreateMutationKey()
 
+  const baseOptions = v1DexSwapPrepareTransactionsCreateMutationOptions(config) as UseMutationOptions<V1DexSwapPrepareTransactionsCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1DexSwapPrepareTransactionsCreateMutationRequest}, TContext>
+
   return useMutation<V1DexSwapPrepareTransactionsCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1DexSwapPrepareTransactionsCreateMutationRequest}, TContext>({
-    mutationFn: async({ data }) => {
-      return v1DexSwapPrepareTransactionsCreate({ data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1DexSwapPrepareTransactionsCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1DexSwapPrepareTransactionsCreateMutationRequest}, TContext>
 }

@@ -18,11 +18,11 @@
 import { z } from "zod";
 
 export const backupCreateSerializerResponseSchema = z.object({
-    "id": z.string().uuid().optional(),
+    "id": z.optional(z.string().uuid()),
 "type": z.enum(["temporary", "permanent"]),
-"encrypted_content": z.string().optional(),
-"creator_device": z.number().int().nullable(),
-"modification_key": z.string().min(1).optional()
+"encrypted_content": z.optional(z.string()),
+"creator_device": z.nullable(z.number().int()),
+"modification_key": z.optional(z.string().min(1))
     })
 
 export type BackupCreateSerializerResponseSchema = z.infer<typeof backupCreateSerializerResponseSchema>

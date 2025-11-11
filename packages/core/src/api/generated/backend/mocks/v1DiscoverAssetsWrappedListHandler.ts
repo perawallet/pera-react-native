@@ -18,9 +18,18 @@
 import type { V1DiscoverAssetsWrappedListQueryResponse } from "../types/V1DiscoverAssetsWrappedList.ts";
 import { http } from "msw";
 
+export function v1DiscoverAssetsWrappedListHandlerResponse200(data: V1DiscoverAssetsWrappedListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1DiscoverAssetsWrappedListHandler(data?: V1DiscoverAssetsWrappedListQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/discover/assets/wrapped/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

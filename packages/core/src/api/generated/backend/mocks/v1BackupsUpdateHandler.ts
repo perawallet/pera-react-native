@@ -18,9 +18,18 @@
 import type { V1BackupsUpdateMutationResponse } from "../types/V1BackupsUpdate.ts";
 import { http } from "msw";
 
+export function v1BackupsUpdateHandlerResponse200(data: V1BackupsUpdateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1BackupsUpdateHandler(data?: V1BackupsUpdateMutationResponse | ((
         info: Parameters<Parameters<typeof http.put>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.put('/v1/backups/:id/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

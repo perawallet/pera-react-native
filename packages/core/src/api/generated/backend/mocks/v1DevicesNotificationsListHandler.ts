@@ -18,9 +18,18 @@
 import type { V1DevicesNotificationsListQueryResponse } from "../types/V1DevicesNotificationsList.ts";
 import { http } from "msw";
 
+export function v1DevicesNotificationsListHandlerResponse200(data: V1DevicesNotificationsListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1DevicesNotificationsListHandler(data?: V1DevicesNotificationsListQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/devices/:device_id/notifications/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

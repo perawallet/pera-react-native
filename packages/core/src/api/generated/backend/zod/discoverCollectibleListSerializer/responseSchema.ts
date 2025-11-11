@@ -20,9 +20,9 @@ import { z } from "zod";
 
 export const discoverCollectibleListSerializerResponseSchema = z.object({
     "asset_id": z.number().int(),
-"title": z.string().min(1).optional(),
-"primary_image": z.string().optional(),
-"rarity_score": z.string().nullable().nullish(),
+"title": z.optional(z.string().min(1)),
+"primary_image": z.optional(z.string()),
+"rarity_score": z.string().nullish(),
 "cheapest_listing": z.lazy(() => cheapestListingSchema)
     })
 

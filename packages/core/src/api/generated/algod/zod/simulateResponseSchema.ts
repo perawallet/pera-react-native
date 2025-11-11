@@ -22,9 +22,9 @@ import { simulationEvalOverridesSchema } from "./simulationEvalOverridesSchema.t
 import { z } from "zod";
 
 export const simulateResponseSchema = z.object({
-    "eval-overrides": z.lazy(() => simulationEvalOverridesSchema).describe("The set of parameters and limits override during simulation. If this set of parameters is present, then evaluation parameters may differ from standard evaluation in certain ways.").optional(),
-"exec-trace-config": z.lazy(() => simulateTraceConfigSchema).describe("An object that configures simulation execution trace.").optional(),
-"initial-states": z.lazy(() => simulateInitialStatesSchema).describe("Initial states of resources that were accessed during simulation.").optional(),
+    "eval-overrides": z.optional(z.lazy(() => simulationEvalOverridesSchema).describe("The set of parameters and limits override during simulation. If this set of parameters is present, then evaluation parameters may differ from standard evaluation in certain ways.")),
+"exec-trace-config": z.optional(z.lazy(() => simulateTraceConfigSchema).describe("An object that configures simulation execution trace.")),
+"initial-states": z.optional(z.lazy(() => simulateInitialStatesSchema).describe("Initial states of resources that were accessed during simulation.")),
 "last-round": z.number().int().describe("The round immediately preceding this simulation. State changes through this round were used to run this simulation."),
 "txn-groups": z.array(z.lazy(() => simulateTransactionGroupResultSchema).describe("Simulation result for an atomic transaction group")).describe("A result object for each transaction group that was simulated."),
 "version": z.number().int().describe("The version of this response object.")

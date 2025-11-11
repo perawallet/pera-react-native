@@ -18,10 +18,10 @@
 import { countryDetailItemSchema } from "./countryDetailItemSchema.ts";
 import { z } from "zod";
 
-export const v1CountriesCurrentCountryList200Schema = z.lazy(() => countryDetailItemSchema)
+export const v1CountriesCurrentCountryList200Schema = countryDetailItemSchema
 
 export type V1CountriesCurrentCountryList200Schema = z.infer<typeof v1CountriesCurrentCountryList200Schema>
 
-export const v1CountriesCurrentCountryListQueryResponseSchema = z.lazy(() => v1CountriesCurrentCountryList200Schema)
+export const v1CountriesCurrentCountryListQueryResponseSchema = v1CountriesCurrentCountryList200Schema
 
 export type V1CountriesCurrentCountryListQueryResponseSchema = z.infer<typeof v1CountriesCurrentCountryListQueryResponseSchema>

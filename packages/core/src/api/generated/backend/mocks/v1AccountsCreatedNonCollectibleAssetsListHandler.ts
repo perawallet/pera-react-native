@@ -18,9 +18,18 @@
 import type { V1AccountsCreatedNonCollectibleAssetsListQueryResponse } from "../types/V1AccountsCreatedNonCollectibleAssetsList.ts";
 import { http } from "msw";
 
+export function v1AccountsCreatedNonCollectibleAssetsListHandlerResponse200(data: V1AccountsCreatedNonCollectibleAssetsListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1AccountsCreatedNonCollectibleAssetsListHandler(data?: V1AccountsCreatedNonCollectibleAssetsListQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/accounts/:account_address/created-non-collectible-assets/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

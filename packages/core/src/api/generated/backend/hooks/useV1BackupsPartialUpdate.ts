@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1BackupsPartialUpdateMutationRequest, V1BackupsPartialUpdateMutationResponse, V1BackupsPartialUpdatePathParams, V1BackupsPartialUpdateHeaderParams } from "../types/V1BackupsPartialUpdate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1BackupsPartialUpdateMutationKey = () => [{ url: '/v1/backups/:id/' }] as const
 
@@ -39,6 +39,16 @@ export async function v1BackupsPartialUpdate({ id, data, headers }: { id: V1Back
   return res.data
 }
 
+export function v1BackupsPartialUpdateMutationOptions(config: Partial<RequestConfig<V1BackupsPartialUpdateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1BackupsPartialUpdateMutationKey()
+  return mutationOptions<V1BackupsPartialUpdateMutationResponse, ResponseErrorConfig<Error>, {id: V1BackupsPartialUpdatePathParams["id"], data: V1BackupsPartialUpdateMutationRequest, headers: V1BackupsPartialUpdateHeaderParams}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ id, data, headers }) => {
+      return v1BackupsPartialUpdate({ id, data, headers }, config)
+    },
+  })
+}
+
 /**
  * @description Updates the `encrypted_content` of the backup object with the given `id`.
  * @summary Backup Partial Update
@@ -54,11 +64,11 @@ export function useV1BackupsPartialUpdate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1BackupsPartialUpdateMutationKey()
 
+  const baseOptions = v1BackupsPartialUpdateMutationOptions(config) as UseMutationOptions<V1BackupsPartialUpdateMutationResponse, ResponseErrorConfig<Error>, {id: V1BackupsPartialUpdatePathParams["id"], data: V1BackupsPartialUpdateMutationRequest, headers: V1BackupsPartialUpdateHeaderParams}, TContext>
+
   return useMutation<V1BackupsPartialUpdateMutationResponse, ResponseErrorConfig<Error>, {id: V1BackupsPartialUpdatePathParams["id"], data: V1BackupsPartialUpdateMutationRequest, headers: V1BackupsPartialUpdateHeaderParams}, TContext>({
-    mutationFn: async({ id, data, headers }) => {
-      return v1BackupsPartialUpdate({ id, data, headers }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1BackupsPartialUpdateMutationResponse, ResponseErrorConfig<Error>, {id: V1BackupsPartialUpdatePathParams["id"], data: V1BackupsPartialUpdateMutationRequest, headers: V1BackupsPartialUpdateHeaderParams}, TContext>
 }

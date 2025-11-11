@@ -15,12 +15,39 @@
 * Do not edit manually.
 */
 
-import type { SearchForAssetsQueryResponse } from "../types/SearchForAssets.ts";
+import type { SearchForAssetsQueryResponse, SearchForAssets400, SearchForAssets500 } from "../types/SearchForAssets.ts";
 import { http } from "msw";
+
+export function searchForAssetsHandlerResponse200(data: SearchForAssetsQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function searchForAssetsHandlerResponse400(data: SearchForAssets400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function searchForAssetsHandlerResponse500(data: SearchForAssets500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function searchForAssetsHandler(data?: SearchForAssetsQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/assets', function handler(info) {
     if(typeof data === 'function') return data(info)
 

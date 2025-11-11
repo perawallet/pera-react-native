@@ -19,7 +19,7 @@ import { createQuoteSerializerRequestSchema } from "./createQuoteSerializer/requ
 import { createQuotesViewSchema } from "./createQuotesViewSchema.ts";
 import { z } from "zod";
 
-export const v1DexSwapQuotesCreate201Schema = z.lazy(() => createQuotesViewSchema)
+export const v1DexSwapQuotesCreate201Schema = createQuotesViewSchema
 
 export type V1DexSwapQuotesCreate201Schema = z.infer<typeof v1DexSwapQuotesCreate201Schema>
 
@@ -30,10 +30,10 @@ export const v1DexSwapQuotesCreate503Schema = z.unknown()
 
 export type V1DexSwapQuotesCreate503Schema = z.infer<typeof v1DexSwapQuotesCreate503Schema>
 
-export const v1DexSwapQuotesCreateMutationRequestSchema = z.lazy(() => createQuoteSerializerRequestSchema)
+export const v1DexSwapQuotesCreateMutationRequestSchema = createQuoteSerializerRequestSchema
 
 export type V1DexSwapQuotesCreateMutationRequestSchema = z.infer<typeof v1DexSwapQuotesCreateMutationRequestSchema>
 
-export const v1DexSwapQuotesCreateMutationResponseSchema = z.lazy(() => v1DexSwapQuotesCreate201Schema)
+export const v1DexSwapQuotesCreateMutationResponseSchema = v1DexSwapQuotesCreate201Schema
 
 export type V1DexSwapQuotesCreateMutationResponseSchema = z.infer<typeof v1DexSwapQuotesCreateMutationResponseSchema>

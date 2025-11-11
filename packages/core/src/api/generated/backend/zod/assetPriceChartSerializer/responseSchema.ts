@@ -21,7 +21,7 @@ import { z } from "zod";
 export const assetPriceChartSerializerResponseSchema = z.object({
     "asset_id": z.number().int(),
 "period": z.enum(["one-year", "one-month", "one-week", "one-day"]),
-"results": z.array(z.lazy(() => assetPriceChartItemSchema)).optional()
+"results": z.optional(z.array(z.lazy(() => assetPriceChartItemSchema)))
     })
 
 export type AssetPriceChartSerializerResponseSchema = z.infer<typeof assetPriceChartSerializerResponseSchema>

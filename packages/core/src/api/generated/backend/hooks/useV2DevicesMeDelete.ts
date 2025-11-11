@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V2DevicesMeDeleteMutationResponse } from "../types/V2DevicesMeDelete.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v2DevicesMeDeleteMutationKey = () => [{ url: '/v2/devices/me/' }] as const
 
@@ -35,6 +35,16 @@ export async function v2DevicesMeDelete(config: Partial<RequestConfig> & { clien
   return res.data
 }
 
+export function v2DevicesMeDeleteMutationOptions(config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {
+  const mutationKey = v2DevicesMeDeleteMutationKey()
+  return mutationOptions<V2DevicesMeDeleteMutationResponse, ResponseErrorConfig<Error>, void, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async() => {
+      return v2DevicesMeDelete(config)
+    },
+  })
+}
+
 /**
  * {@link /v2/devices/me/}
  */
@@ -48,11 +58,11 @@ export function useV2DevicesMeDelete<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v2DevicesMeDeleteMutationKey()
 
+  const baseOptions = v2DevicesMeDeleteMutationOptions(config) as UseMutationOptions<V2DevicesMeDeleteMutationResponse, ResponseErrorConfig<Error>, void, TContext>
+
   return useMutation<V2DevicesMeDeleteMutationResponse, ResponseErrorConfig<Error>, void, TContext>({
-    mutationFn: async() => {
-      return v2DevicesMeDelete(config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V2DevicesMeDeleteMutationResponse, ResponseErrorConfig<Error>, void, TContext>
 }

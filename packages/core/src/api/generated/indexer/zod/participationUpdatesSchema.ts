@@ -21,8 +21,8 @@ import { z } from "zod";
  * @description Participation account data that needs to be checked/acted on by the network.
  */
 export const participationUpdatesSchema = z.object({
-    "absent-participation-accounts": z.array(z.string()).describe("\\[partupabs\\] a list of online accounts that need to be suspended.").optional(),
-"expired-participation-accounts": z.array(z.string()).describe("\\[partupdrmv\\] a list of online accounts that needs to be converted to offline since their participation key expired.").optional()
+    "absent-participation-accounts": z.optional(z.array(z.string()).describe("\\[partupabs\\] a list of online accounts that need to be suspended.")),
+"expired-participation-accounts": z.optional(z.array(z.string()).describe("\\[partupdrmv\\] a list of online accounts that needs to be converted to offline since their participation key expired."))
     }).describe("Participation account data that needs to be checked/acted on by the network.")
 
 export type ParticipationUpdatesSchema = z.infer<typeof participationUpdatesSchema>

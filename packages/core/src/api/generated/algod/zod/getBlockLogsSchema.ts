@@ -37,31 +37,31 @@ export type GetBlockLogs200Schema = z.infer<typeof getBlockLogs200Schema>
 /**
  * @description Bad Request - Non integer number
  */
-export const getBlockLogs400Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getBlockLogs400Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetBlockLogs400Schema = z.infer<typeof getBlockLogs400Schema>
 
 /**
  * @description Invalid API Token
  */
-export const getBlockLogs401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getBlockLogs401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetBlockLogs401Schema = z.infer<typeof getBlockLogs401Schema>
 
 /**
  * @description Nonexistent block 
  */
-export const getBlockLogs404Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getBlockLogs404Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetBlockLogs404Schema = z.infer<typeof getBlockLogs404Schema>
 
 /**
  * @description Internal Error
  */
-export const getBlockLogs500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getBlockLogs500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetBlockLogs500Schema = z.infer<typeof getBlockLogs500Schema>
 
-export const getBlockLogsQueryResponseSchema = z.lazy(() => getBlockLogs200Schema)
+export const getBlockLogsQueryResponseSchema = getBlockLogs200Schema
 
 export type GetBlockLogsQueryResponseSchema = z.infer<typeof getBlockLogsQueryResponseSchema>

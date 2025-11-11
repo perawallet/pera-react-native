@@ -18,9 +18,18 @@
 import type { V2DevicesMergeCreateMutationResponse } from "../types/V2DevicesMergeCreate.ts";
 import { http } from "msw";
 
+export function v2DevicesMergeCreateHandlerResponse201(data: V2DevicesMergeCreateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 201,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v2DevicesMergeCreateHandler(data?: V2DevicesMergeCreateMutationResponse | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v2/devices/merge/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

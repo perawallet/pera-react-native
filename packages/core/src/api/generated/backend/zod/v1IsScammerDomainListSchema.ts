@@ -21,6 +21,6 @@ export const v1IsScammerDomainList200Schema = z.unknown()
 
 export type V1IsScammerDomainList200Schema = z.infer<typeof v1IsScammerDomainList200Schema>
 
-export const v1IsScammerDomainListQueryResponseSchema = z.lazy(() => v1IsScammerDomainList200Schema)
+export const v1IsScammerDomainListQueryResponseSchema = v1IsScammerDomainList200Schema
 
 export type V1IsScammerDomainListQueryResponseSchema = z.infer<typeof v1IsScammerDomainListQueryResponseSchema>

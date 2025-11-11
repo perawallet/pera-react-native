@@ -26,14 +26,14 @@ export const v1DevicesAssetsRemoveFromFavoritesCreatePathParamsSchema = z.object
 
 export type V1DevicesAssetsRemoveFromFavoritesCreatePathParamsSchema = z.infer<typeof v1DevicesAssetsRemoveFromFavoritesCreatePathParamsSchema>
 
-export const v1DevicesAssetsRemoveFromFavoritesCreate201Schema = z.lazy(() => favoriteAssetSerializerResponseSchema)
+export const v1DevicesAssetsRemoveFromFavoritesCreate201Schema = favoriteAssetSerializerResponseSchema
 
 export type V1DevicesAssetsRemoveFromFavoritesCreate201Schema = z.infer<typeof v1DevicesAssetsRemoveFromFavoritesCreate201Schema>
 
-export const v1DevicesAssetsRemoveFromFavoritesCreateMutationRequestSchema = z.lazy(() => favoriteAssetSerializerRequestSchema)
+export const v1DevicesAssetsRemoveFromFavoritesCreateMutationRequestSchema = favoriteAssetSerializerRequestSchema
 
 export type V1DevicesAssetsRemoveFromFavoritesCreateMutationRequestSchema = z.infer<typeof v1DevicesAssetsRemoveFromFavoritesCreateMutationRequestSchema>
 
-export const v1DevicesAssetsRemoveFromFavoritesCreateMutationResponseSchema = z.lazy(() => v1DevicesAssetsRemoveFromFavoritesCreate201Schema)
+export const v1DevicesAssetsRemoveFromFavoritesCreateMutationResponseSchema = v1DevicesAssetsRemoveFromFavoritesCreate201Schema
 
 export type V1DevicesAssetsRemoveFromFavoritesCreateMutationResponseSchema = z.infer<typeof v1DevicesAssetsRemoveFromFavoritesCreateMutationResponseSchema>

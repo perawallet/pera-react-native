@@ -19,24 +19,24 @@ import { assetSearchSerializerResponseSchema } from "./assetSearchSerializer/res
 import { z } from "zod";
 
 export const v1AssetsSearchListQueryParamsSchema = z.object({
-    "has_collectible": z.string().optional(),
-"q": z.string().optional(),
-"available_on_discover_mobile": z.string().optional(),
-"ordering": z.string().describe("Which field to use when ordering the results.").optional(),
-"cursor": z.string().describe("The pagination cursor value.").optional(),
-"limit": z.coerce.number().int().describe("Number of results to return per page.").optional()
+    "has_collectible": z.optional(z.string()),
+"q": z.optional(z.string()),
+"available_on_discover_mobile": z.optional(z.string()),
+"ordering": z.optional(z.string().describe("Which field to use when ordering the results.")),
+"cursor": z.optional(z.string().describe("The pagination cursor value.")),
+"limit": z.optional(z.coerce.number().int().describe("Number of results to return per page."))
     }).optional()
 
 export type V1AssetsSearchListQueryParamsSchema = z.infer<typeof v1AssetsSearchListQueryParamsSchema>
 
 export const v1AssetsSearchList200Schema = z.object({
-    "next": z.string().url().nullable().nullish(),
-"previous": z.string().url().nullable().nullish(),
+    "next": z.string().url().nullish(),
+"previous": z.string().url().nullish(),
 "results": z.array(z.lazy(() => assetSearchSerializerResponseSchema))
     })
 
 export type V1AssetsSearchList200Schema = z.infer<typeof v1AssetsSearchList200Schema>
 
-export const v1AssetsSearchListQueryResponseSchema = z.lazy(() => v1AssetsSearchList200Schema)
+export const v1AssetsSearchListQueryResponseSchema = v1AssetsSearchList200Schema
 
 export type V1AssetsSearchListQueryResponseSchema = z.infer<typeof v1AssetsSearchListQueryResponseSchema>

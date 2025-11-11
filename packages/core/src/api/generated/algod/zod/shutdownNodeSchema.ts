@@ -29,6 +29,6 @@ export const shutdownNode200Schema = z.object({
 
 export type ShutdownNode200Schema = z.infer<typeof shutdownNode200Schema>
 
-export const shutdownNodeMutationResponseSchema = z.lazy(() => shutdownNode200Schema)
+export const shutdownNodeMutationResponseSchema = shutdownNode200Schema
 
 export type ShutdownNodeMutationResponseSchema = z.infer<typeof shutdownNodeMutationResponseSchema>

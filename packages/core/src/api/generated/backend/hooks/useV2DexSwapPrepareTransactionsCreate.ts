@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V2DexSwapPrepareTransactionsCreateMutationRequest, V2DexSwapPrepareTransactionsCreateMutationResponse } from "../types/V2DexSwapPrepareTransactionsCreate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v2DexSwapPrepareTransactionsCreateMutationKey = () => [{ url: '/v2/dex-swap/prepare-transactions/' }] as const
 
@@ -39,6 +39,16 @@ export async function v2DexSwapPrepareTransactionsCreate({ data }: { data: V2Dex
   return res.data
 }
 
+export function v2DexSwapPrepareTransactionsCreateMutationOptions(config: Partial<RequestConfig<V2DexSwapPrepareTransactionsCreateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v2DexSwapPrepareTransactionsCreateMutationKey()
+  return mutationOptions<V2DexSwapPrepareTransactionsCreateMutationResponse, ResponseErrorConfig<Error>, {data: V2DexSwapPrepareTransactionsCreateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ data }) => {
+      return v2DexSwapPrepareTransactionsCreate({ data }, config)
+    },
+  })
+}
+
 /**
  * @description Enhanced transaction preparation with better group structure handling.
  * @summary Prepare Transactions v2
@@ -54,11 +64,11 @@ export function useV2DexSwapPrepareTransactionsCreate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v2DexSwapPrepareTransactionsCreateMutationKey()
 
+  const baseOptions = v2DexSwapPrepareTransactionsCreateMutationOptions(config) as UseMutationOptions<V2DexSwapPrepareTransactionsCreateMutationResponse, ResponseErrorConfig<Error>, {data: V2DexSwapPrepareTransactionsCreateMutationRequest}, TContext>
+
   return useMutation<V2DexSwapPrepareTransactionsCreateMutationResponse, ResponseErrorConfig<Error>, {data: V2DexSwapPrepareTransactionsCreateMutationRequest}, TContext>({
-    mutationFn: async({ data }) => {
-      return v2DexSwapPrepareTransactionsCreate({ data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V2DexSwapPrepareTransactionsCreateMutationResponse, ResponseErrorConfig<Error>, {data: V2DexSwapPrepareTransactionsCreateMutationRequest}, TContext>
 }

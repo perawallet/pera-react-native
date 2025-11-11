@@ -18,9 +18,16 @@
 import type { V1AccountsAssetsBalanceHistoryListQueryResponse } from "../types/V1AccountsAssetsBalanceHistoryList.ts";
 import { http } from "msw";
 
-export function v1AccountsAssetsBalanceHistoryListHandler(data?: V1AccountsAssetsBalanceHistoryListQueryResponse | ((
+export function v1AccountsAssetsBalanceHistoryListHandlerResponse200(data?: V1AccountsAssetsBalanceHistoryListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+  
+  })
+}
+
+export function v1AccountsAssetsBalanceHistoryListHandler(data?: string | number | boolean | null | object | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/accounts/:account_address/assets/:asset_id/balance-history/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

@@ -15,12 +15,57 @@
 * Do not edit manually.
 */
 
-import type { GetAssetByIDQueryResponse } from "../types/GetAssetByID.ts";
+import type { GetAssetByIDQueryResponse, GetAssetByID400, GetAssetByID401, GetAssetByID404, GetAssetByID500 } from "../types/GetAssetByID.ts";
 import { http } from "msw";
+
+export function getAssetByIDHandlerResponse200(data: GetAssetByIDQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getAssetByIDHandlerResponse400(data: GetAssetByID400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getAssetByIDHandlerResponse401(data: GetAssetByID401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getAssetByIDHandlerResponse404(data: GetAssetByID404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getAssetByIDHandlerResponse500(data: GetAssetByID500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function getAssetByIDHandler(data?: GetAssetByIDQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/assets/:asset-id', function handler(info) {
     if(typeof data === 'function') return data(info)
 

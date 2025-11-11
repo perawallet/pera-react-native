@@ -45,6 +45,6 @@ export const getReadyErrorSchema = z.unknown()
 
 export type GetReadyErrorSchema = z.infer<typeof getReadyErrorSchema>
 
-export const getReadyQueryResponseSchema = z.lazy(() => getReady200Schema)
+export const getReadyQueryResponseSchema = getReady200Schema
 
 export type GetReadyQueryResponseSchema = z.infer<typeof getReadyQueryResponseSchema>

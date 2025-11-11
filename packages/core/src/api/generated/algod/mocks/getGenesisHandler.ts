@@ -18,9 +18,18 @@
 import type { GetGenesisQueryResponse } from "../types/GetGenesis.ts";
 import { http } from "msw";
 
+export function getGenesisHandlerResponse200(data: GetGenesisQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function getGenesisHandler(data?: GetGenesisQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/genesis', function handler(info) {
     if(typeof data === 'function') return data(info)
 

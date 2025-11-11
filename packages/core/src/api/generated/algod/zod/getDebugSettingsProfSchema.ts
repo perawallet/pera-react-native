@@ -21,10 +21,10 @@ import { z } from "zod";
 /**
  * @description DebugPprof is the response to the /debug/extra/pprof endpoint
  */
-export const getDebugSettingsProf200Schema = z.lazy(() => debugSettingsProfSchema).describe("algod mutex and blocking profiling state.")
+export const getDebugSettingsProf200Schema = debugSettingsProfSchema.describe("algod mutex and blocking profiling state.")
 
 export type GetDebugSettingsProf200Schema = z.infer<typeof getDebugSettingsProf200Schema>
 
-export const getDebugSettingsProfQueryResponseSchema = z.lazy(() => getDebugSettingsProf200Schema)
+export const getDebugSettingsProfQueryResponseSchema = getDebugSettingsProf200Schema
 
 export type GetDebugSettingsProfQueryResponseSchema = z.infer<typeof getDebugSettingsProfQueryResponseSchema>

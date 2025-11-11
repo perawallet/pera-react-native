@@ -18,9 +18,18 @@
 import type { V1DevicesSpotBannersListQueryResponse } from "../types/V1DevicesSpotBannersList.ts";
 import { http } from "msw";
 
+export function v1DevicesSpotBannersListHandlerResponse200(data: V1DevicesSpotBannersListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1DevicesSpotBannersListHandler(data?: V1DevicesSpotBannersListQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/devices/:device_id/spot-banners/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

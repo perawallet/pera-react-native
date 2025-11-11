@@ -18,9 +18,18 @@
 import type { V1AlgorandIndexerShouldRefreshCreateMutationResponse } from "../types/V1AlgorandIndexerShouldRefreshCreate.ts";
 import { http } from "msw";
 
+export function v1AlgorandIndexerShouldRefreshCreateHandlerResponse200(data: V1AlgorandIndexerShouldRefreshCreateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1AlgorandIndexerShouldRefreshCreateHandler(data?: V1AlgorandIndexerShouldRefreshCreateMutationResponse | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v1/algorand-indexer/should-refresh/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

@@ -21,7 +21,7 @@ import { z } from "zod";
 export const accountsResponseSchema = z.object({
     "accounts": z.array(z.lazy(() => accountSchema).describe("Account information at a given round.\n\nDefinition:\ndata/basics/userBalance.go : AccountData\n")),
 "current-round": z.number().int().describe("Round at which the results were computed."),
-"next-token": z.string().describe("Used for pagination, when making another request provide this token with the next parameter.").optional()
+"next-token": z.optional(z.string().describe("Used for pagination, when making another request provide this token with the next parameter."))
     })
 
 export type AccountsResponseSchema = z.infer<typeof accountsResponseSchema>

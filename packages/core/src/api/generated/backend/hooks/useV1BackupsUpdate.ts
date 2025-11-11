@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1BackupsUpdateMutationRequest, V1BackupsUpdateMutationResponse, V1BackupsUpdatePathParams, V1BackupsUpdateHeaderParams } from "../types/V1BackupsUpdate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1BackupsUpdateMutationKey = () => [{ url: '/v1/backups/:id/' }] as const
 
@@ -39,6 +39,16 @@ export async function v1BackupsUpdate({ id, data, headers }: { id: V1BackupsUpda
   return res.data
 }
 
+export function v1BackupsUpdateMutationOptions(config: Partial<RequestConfig<V1BackupsUpdateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1BackupsUpdateMutationKey()
+  return mutationOptions<V1BackupsUpdateMutationResponse, ResponseErrorConfig<Error>, {id: V1BackupsUpdatePathParams["id"], data: V1BackupsUpdateMutationRequest, headers: V1BackupsUpdateHeaderParams}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ id, data, headers }) => {
+      return v1BackupsUpdate({ id, data, headers }, config)
+    },
+  })
+}
+
 /**
  * @description Updates the `encrypted_content` of the backup object with the given `id`.
  * @summary Backup Update
@@ -54,11 +64,11 @@ export function useV1BackupsUpdate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1BackupsUpdateMutationKey()
 
+  const baseOptions = v1BackupsUpdateMutationOptions(config) as UseMutationOptions<V1BackupsUpdateMutationResponse, ResponseErrorConfig<Error>, {id: V1BackupsUpdatePathParams["id"], data: V1BackupsUpdateMutationRequest, headers: V1BackupsUpdateHeaderParams}, TContext>
+
   return useMutation<V1BackupsUpdateMutationResponse, ResponseErrorConfig<Error>, {id: V1BackupsUpdatePathParams["id"], data: V1BackupsUpdateMutationRequest, headers: V1BackupsUpdateHeaderParams}, TContext>({
-    mutationFn: async({ id, data, headers }) => {
-      return v1BackupsUpdate({ id, data, headers }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1BackupsUpdateMutationResponse, ResponseErrorConfig<Error>, {id: V1BackupsUpdatePathParams["id"], data: V1BackupsUpdateMutationRequest, headers: V1BackupsUpdateHeaderParams}, TContext>
 }

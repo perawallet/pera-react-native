@@ -15,12 +15,57 @@
 * Do not edit manually.
 */
 
-import type { GetPendingTransactionsByAddressQueryResponse } from "../types/GetPendingTransactionsByAddress.ts";
+import type { GetPendingTransactionsByAddressQueryResponse, GetPendingTransactionsByAddress400, GetPendingTransactionsByAddress401, GetPendingTransactionsByAddress500, GetPendingTransactionsByAddress503 } from "../types/GetPendingTransactionsByAddress.ts";
 import { http } from "msw";
+
+export function getPendingTransactionsByAddressHandlerResponse200(data: GetPendingTransactionsByAddressQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getPendingTransactionsByAddressHandlerResponse400(data: GetPendingTransactionsByAddress400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getPendingTransactionsByAddressHandlerResponse401(data: GetPendingTransactionsByAddress401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getPendingTransactionsByAddressHandlerResponse500(data: GetPendingTransactionsByAddress500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getPendingTransactionsByAddressHandlerResponse503(data: GetPendingTransactionsByAddress503) {
+  return new Response(JSON.stringify(data), {
+    status: 503,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function getPendingTransactionsByAddressHandler(data?: GetPendingTransactionsByAddressQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/accounts/:address/transactions/pending', function handler(info) {
     if(typeof data === 'function') return data(info)
 

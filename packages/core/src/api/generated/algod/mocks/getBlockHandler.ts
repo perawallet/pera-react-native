@@ -15,12 +15,57 @@
 * Do not edit manually.
 */
 
-import type { GetBlockQueryResponse } from "../types/GetBlock.ts";
+import type { GetBlockQueryResponse, GetBlock400, GetBlock401, GetBlock404, GetBlock500 } from "../types/GetBlock.ts";
 import { http } from "msw";
+
+export function getBlockHandlerResponse200(data: GetBlockQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getBlockHandlerResponse400(data: GetBlock400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getBlockHandlerResponse401(data: GetBlock401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getBlockHandlerResponse404(data: GetBlock404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getBlockHandlerResponse500(data: GetBlock500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function getBlockHandler(data?: GetBlockQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/blocks/:round', function handler(info) {
     if(typeof data === 'function') return data(info)
 

@@ -19,14 +19,14 @@ import { assetRequestSerializerRequestSchema } from "./assetRequestSerializer/re
 import { assetRequestSerializerResponseSchema } from "./assetRequestSerializer/responseSchema.ts";
 import { z } from "zod";
 
-export const v1AssetRequestsCreate201Schema = z.lazy(() => assetRequestSerializerResponseSchema)
+export const v1AssetRequestsCreate201Schema = assetRequestSerializerResponseSchema
 
 export type V1AssetRequestsCreate201Schema = z.infer<typeof v1AssetRequestsCreate201Schema>
 
-export const v1AssetRequestsCreateMutationRequestSchema = z.lazy(() => assetRequestSerializerRequestSchema)
+export const v1AssetRequestsCreateMutationRequestSchema = assetRequestSerializerRequestSchema
 
 export type V1AssetRequestsCreateMutationRequestSchema = z.infer<typeof v1AssetRequestsCreateMutationRequestSchema>
 
-export const v1AssetRequestsCreateMutationResponseSchema = z.lazy(() => v1AssetRequestsCreate201Schema)
+export const v1AssetRequestsCreateMutationResponseSchema = v1AssetRequestsCreate201Schema
 
 export type V1AssetRequestsCreateMutationResponseSchema = z.infer<typeof v1AssetRequestsCreateMutationResponseSchema>

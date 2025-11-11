@@ -15,12 +15,66 @@
 * Do not edit manually.
 */
 
-import type { GetStateProofQueryResponse } from "../types/GetStateProof.ts";
+import type { GetStateProofQueryResponse, GetStateProof401, GetStateProof404, GetStateProof408, GetStateProof500, GetStateProof503 } from "../types/GetStateProof.ts";
 import { http } from "msw";
+
+export function getStateProofHandlerResponse200(data: GetStateProofQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getStateProofHandlerResponse401(data: GetStateProof401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getStateProofHandlerResponse404(data: GetStateProof404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getStateProofHandlerResponse408(data: GetStateProof408) {
+  return new Response(JSON.stringify(data), {
+    status: 408,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getStateProofHandlerResponse500(data: GetStateProof500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getStateProofHandlerResponse503(data: GetStateProof503) {
+  return new Response(JSON.stringify(data), {
+    status: 503,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function getStateProofHandler(data?: GetStateProofQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/stateproofs/:round', function handler(info) {
     if(typeof data === 'function') return data(info)
 

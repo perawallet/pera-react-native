@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V2AssetsCreateMutationRequest, V2AssetsCreateMutationResponse, V2AssetsCreatePathParams } from "../types/V2AssetsCreate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v2AssetsCreateMutationKey = () => [{ url: '/v2/assets/:asset_id/' }] as const
 
@@ -39,6 +39,16 @@ export async function v2AssetsCreate({ asset_id, data }: { asset_id: V2AssetsCre
   return res.data
 }
 
+export function v2AssetsCreateMutationOptions(config: Partial<RequestConfig<V2AssetsCreateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v2AssetsCreateMutationKey()
+  return mutationOptions<V2AssetsCreateMutationResponse, ResponseErrorConfig<Error>, {asset_id: V2AssetsCreatePathParams["asset_id"], data: V2AssetsCreateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ asset_id, data }) => {
+      return v2AssetsCreate({ asset_id, data }, config)
+    },
+  })
+}
+
 /**
  * @description This endpoint returns `Asset` information about a specific `ASA` on the Algorand blockchain.It also includes `Collectible` information when applicable.This endpoint also returns the favorite and price alert status of the asset for the specified device.
  * @summary Asset Detail V2
@@ -54,11 +64,11 @@ export function useV2AssetsCreate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v2AssetsCreateMutationKey()
 
+  const baseOptions = v2AssetsCreateMutationOptions(config) as UseMutationOptions<V2AssetsCreateMutationResponse, ResponseErrorConfig<Error>, {asset_id: V2AssetsCreatePathParams["asset_id"], data: V2AssetsCreateMutationRequest}, TContext>
+
   return useMutation<V2AssetsCreateMutationResponse, ResponseErrorConfig<Error>, {asset_id: V2AssetsCreatePathParams["asset_id"], data: V2AssetsCreateMutationRequest}, TContext>({
-    mutationFn: async({ asset_id, data }) => {
-      return v2AssetsCreate({ asset_id, data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V2AssetsCreateMutationResponse, ResponseErrorConfig<Error>, {asset_id: V2AssetsCreatePathParams["asset_id"], data: V2AssetsCreateMutationRequest}, TContext>
 }

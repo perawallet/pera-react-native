@@ -19,15 +19,15 @@ import { infoBannerSerializerResponseSchema } from "./infoBannerSerializer/respo
 import { z } from "zod";
 
 export const v1DiscoverInfoBannersListQueryParamsSchema = z.object({
-    "ordering": z.string().describe("Which field to use when ordering the results.").optional()
+    "ordering": z.optional(z.string().describe("Which field to use when ordering the results."))
     }).optional()
 
 export type V1DiscoverInfoBannersListQueryParamsSchema = z.infer<typeof v1DiscoverInfoBannersListQueryParamsSchema>
 
-export const v1DiscoverInfoBannersList200Schema = z.array(z.lazy(() => infoBannerSerializerResponseSchema))
+export const v1DiscoverInfoBannersList200Schema = z.array(infoBannerSerializerResponseSchema)
 
 export type V1DiscoverInfoBannersList200Schema = z.infer<typeof v1DiscoverInfoBannersList200Schema>
 
-export const v1DiscoverInfoBannersListQueryResponseSchema = z.lazy(() => v1DiscoverInfoBannersList200Schema)
+export const v1DiscoverInfoBannersListQueryResponseSchema = v1DiscoverInfoBannersList200Schema
 
 export type V1DiscoverInfoBannersListQueryResponseSchema = z.infer<typeof v1DiscoverInfoBannersListQueryResponseSchema>

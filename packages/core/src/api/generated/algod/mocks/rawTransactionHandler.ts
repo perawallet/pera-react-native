@@ -15,12 +15,57 @@
 * Do not edit manually.
 */
 
-import type { RawTransactionMutationResponse } from "../types/RawTransaction.ts";
+import type { RawTransactionMutationResponse, RawTransaction400, RawTransaction401, RawTransaction500, RawTransaction503 } from "../types/RawTransaction.ts";
 import { http } from "msw";
+
+export function rawTransactionHandlerResponse200(data: RawTransactionMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function rawTransactionHandlerResponse400(data: RawTransaction400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function rawTransactionHandlerResponse401(data: RawTransaction401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function rawTransactionHandlerResponse500(data: RawTransaction500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function rawTransactionHandlerResponse503(data: RawTransaction503) {
+  return new Response(JSON.stringify(data), {
+    status: 503,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function rawTransactionHandler(data?: RawTransactionMutationResponse | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v2/transactions', function handler(info) {
     if(typeof data === 'function') return data(info)
 

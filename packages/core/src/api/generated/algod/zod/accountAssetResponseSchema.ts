@@ -20,8 +20,8 @@ import { assetParamsSchema } from "./assetParamsSchema.ts";
 import { z } from "zod";
 
 export const accountAssetResponseSchema = z.object({
-    "asset-holding": z.lazy(() => assetHoldingSchema).describe("Describes an asset held by an account.\n\nDefinition:\ndata/basics/userBalance.go : AssetHolding").optional(),
-"created-asset": z.lazy(() => assetParamsSchema).describe("AssetParams specifies the parameters for an asset.\n\n\\[apar\\] when part of an AssetConfig transaction.\n\nDefinition:\ndata/transactions/asset.go : AssetParams").optional(),
+    "asset-holding": z.optional(z.lazy(() => assetHoldingSchema).describe("Describes an asset held by an account.\n\nDefinition:\ndata/basics/userBalance.go : AssetHolding")),
+"created-asset": z.optional(z.lazy(() => assetParamsSchema).describe("AssetParams specifies the parameters for an asset.\n\n\\[apar\\] when part of an AssetConfig transaction.\n\nDefinition:\ndata/transactions/asset.go : AssetParams")),
 "round": z.number().int().describe("The round for which this information is relevant.")
     })
 

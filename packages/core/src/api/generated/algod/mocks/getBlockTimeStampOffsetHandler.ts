@@ -15,12 +15,30 @@
 * Do not edit manually.
 */
 
-import type { GetBlockTimeStampOffsetQueryResponse } from "../types/GetBlockTimeStampOffset.ts";
+import type { GetBlockTimeStampOffsetQueryResponse, GetBlockTimeStampOffset400 } from "../types/GetBlockTimeStampOffset.ts";
 import { http } from "msw";
+
+export function getBlockTimeStampOffsetHandlerResponse200(data: GetBlockTimeStampOffsetQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getBlockTimeStampOffsetHandlerResponse400(data: GetBlockTimeStampOffset400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function getBlockTimeStampOffsetHandler(data?: GetBlockTimeStampOffsetQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/devmode/blocks/offset', function handler(info) {
     if(typeof data === 'function') return data(info)
 

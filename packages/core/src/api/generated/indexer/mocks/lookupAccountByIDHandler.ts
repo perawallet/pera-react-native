@@ -15,12 +15,48 @@
 * Do not edit manually.
 */
 
-import type { LookupAccountByIDQueryResponse } from "../types/LookupAccountByID.ts";
+import type { LookupAccountByIDQueryResponse, LookupAccountByID400, LookupAccountByID404, LookupAccountByID500 } from "../types/LookupAccountByID.ts";
 import { http } from "msw";
+
+export function lookupAccountByIDHandlerResponse200(data: LookupAccountByIDQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupAccountByIDHandlerResponse400(data: LookupAccountByID400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupAccountByIDHandlerResponse404(data: LookupAccountByID404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function lookupAccountByIDHandlerResponse500(data: LookupAccountByID500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function lookupAccountByIDHandler(data?: LookupAccountByIDQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/accounts/:account-id', function handler(info) {
     if(typeof data === 'function') return data(info)
 

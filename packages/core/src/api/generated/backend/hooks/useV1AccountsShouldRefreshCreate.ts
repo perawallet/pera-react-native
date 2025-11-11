@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1AccountsShouldRefreshCreateMutationRequest, V1AccountsShouldRefreshCreateMutationResponse } from "../types/V1AccountsShouldRefreshCreate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1AccountsShouldRefreshCreateMutationKey = () => [{ url: '/v1/accounts/should-refresh/' }] as const
 
@@ -39,6 +39,16 @@ export async function v1AccountsShouldRefreshCreate({ data }: { data: V1Accounts
   return res.data
 }
 
+export function v1AccountsShouldRefreshCreateMutationOptions(config: Partial<RequestConfig<V1AccountsShouldRefreshCreateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1AccountsShouldRefreshCreateMutationKey()
+  return mutationOptions<V1AccountsShouldRefreshCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1AccountsShouldRefreshCreateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ data }) => {
+      return v1AccountsShouldRefreshCreate({ data }, config)
+    },
+  })
+}
+
 /**
  * @description Takes a list of account_address and last_know_round and returns ifclient should refresh asset or position information for all of the provided accounts.
  * @summary Accounts Should Refresh(aka: Should Refresh V2)
@@ -54,11 +64,11 @@ export function useV1AccountsShouldRefreshCreate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1AccountsShouldRefreshCreateMutationKey()
 
+  const baseOptions = v1AccountsShouldRefreshCreateMutationOptions(config) as UseMutationOptions<V1AccountsShouldRefreshCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1AccountsShouldRefreshCreateMutationRequest}, TContext>
+
   return useMutation<V1AccountsShouldRefreshCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1AccountsShouldRefreshCreateMutationRequest}, TContext>({
-    mutationFn: async({ data }) => {
-      return v1AccountsShouldRefreshCreate({ data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1AccountsShouldRefreshCreateMutationResponse, ResponseErrorConfig<Error>, {data: V1AccountsShouldRefreshCreateMutationRequest}, TContext>
 }

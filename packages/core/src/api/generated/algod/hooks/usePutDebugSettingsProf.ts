@@ -18,9 +18,9 @@
 import fetch from "../../../algod-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../algod-query-client";
 import type { PutDebugSettingsProfMutationResponse } from "../types/PutDebugSettingsProf.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
 import { putDebugSettingsProfMutationResponseSchema } from "../zod/putDebugSettingsProfSchema.ts";
-import { useMutation } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const putDebugSettingsProfMutationKey = () => [{ url: '/debug/settings/pprof' }] as const
 
@@ -37,6 +37,16 @@ export async function putDebugSettingsProf(config: Partial<RequestConfig> & { cl
   return putDebugSettingsProfMutationResponseSchema.parse(res.data)
 }
 
+export function putDebugSettingsProfMutationOptions(config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {
+  const mutationKey = putDebugSettingsProfMutationKey()
+  return mutationOptions<PutDebugSettingsProfMutationResponse, ResponseErrorConfig<Error>, void, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async() => {
+      return putDebugSettingsProf(config)
+    },
+  })
+}
+
 /**
  * @description Enables blocking and mutex profiles, and returns the old settings
  * {@link /debug/settings/pprof}
@@ -51,11 +61,11 @@ export function usePutDebugSettingsProf<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? putDebugSettingsProfMutationKey()
 
+  const baseOptions = putDebugSettingsProfMutationOptions(config) as UseMutationOptions<PutDebugSettingsProfMutationResponse, ResponseErrorConfig<Error>, void, TContext>
+
   return useMutation<PutDebugSettingsProfMutationResponse, ResponseErrorConfig<Error>, void, TContext>({
-    mutationFn: async() => {
-      return putDebugSettingsProf(config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<PutDebugSettingsProfMutationResponse, ResponseErrorConfig<Error>, void, TContext>
 }

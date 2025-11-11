@@ -19,8 +19,8 @@ import { errorResponseSchema } from "./errorResponseSchema.ts";
 import { z } from "zod";
 
 export const getPendingTransactionsQueryParamsSchema = z.object({
-    "max": z.coerce.number().int().describe("Truncated number of transactions to display. If max=0, returns all pending txns.").optional(),
-"format": z.enum(["json", "msgpack"]).describe("Configures whether the response object is JSON or MessagePack encoded. If not provided, defaults to JSON.").optional()
+    "max": z.optional(z.coerce.number().int().describe("Truncated number of transactions to display. If max=0, returns all pending txns.")),
+"format": z.optional(z.enum(["json", "msgpack"]).describe("Configures whether the response object is JSON or MessagePack encoded. If not provided, defaults to JSON."))
     }).optional()
 
 export type GetPendingTransactionsQueryParamsSchema = z.infer<typeof getPendingTransactionsQueryParamsSchema>
@@ -40,21 +40,21 @@ export type GetPendingTransactions200Schema = z.infer<typeof getPendingTransacti
 /**
  * @description Invalid API Token
  */
-export const getPendingTransactions401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getPendingTransactions401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetPendingTransactions401Schema = z.infer<typeof getPendingTransactions401Schema>
 
 /**
  * @description Internal Error
  */
-export const getPendingTransactions500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getPendingTransactions500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetPendingTransactions500Schema = z.infer<typeof getPendingTransactions500Schema>
 
 /**
  * @description Service Temporarily Unavailable
  */
-export const getPendingTransactions503Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const getPendingTransactions503Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type GetPendingTransactions503Schema = z.infer<typeof getPendingTransactions503Schema>
 
@@ -65,6 +65,6 @@ export const getPendingTransactionsErrorSchema = z.unknown()
 
 export type GetPendingTransactionsErrorSchema = z.infer<typeof getPendingTransactionsErrorSchema>
 
-export const getPendingTransactionsQueryResponseSchema = z.lazy(() => getPendingTransactions200Schema)
+export const getPendingTransactionsQueryResponseSchema = getPendingTransactions200Schema
 
 export type GetPendingTransactionsQueryResponseSchema = z.infer<typeof getPendingTransactionsQueryResponseSchema>

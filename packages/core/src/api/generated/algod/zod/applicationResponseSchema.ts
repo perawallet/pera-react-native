@@ -18,6 +18,6 @@
 import { applicationSchema } from "./applicationSchema.ts";
 import { z } from "zod";
 
-export const applicationResponseSchema = z.lazy(() => applicationSchema).describe("Application index and its parameters")
+export const applicationResponseSchema = applicationSchema.describe("Application index and its parameters")
 
 export type ApplicationResponseSchema = z.infer<typeof applicationResponseSchema>

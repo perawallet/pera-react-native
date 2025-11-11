@@ -18,9 +18,18 @@
 import type { V2DexSwapSwapsUpdateMutationResponse } from "../types/V2DexSwapSwapsUpdate.ts";
 import { http } from "msw";
 
+export function v2DexSwapSwapsUpdateHandlerResponse200(data: V2DexSwapSwapsUpdateMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v2DexSwapSwapsUpdateHandler(data?: V2DexSwapSwapsUpdateMutationResponse | ((
         info: Parameters<Parameters<typeof http.put>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.put('/v2/dex-swap/swaps/:swap_id/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

@@ -19,12 +19,12 @@ import { assetLabelSchema } from "./assetLabelSchema.ts";
 import { z } from "zod";
 
 export const simpleAssetSchema = z.object({
-    "asset_id": z.number().int().optional(),
-"name": z.string().min(1).optional(),
-"unit_name": z.string().min(1).optional(),
+    "asset_id": z.optional(z.number().int()),
+"name": z.optional(z.string().min(1)),
+"unit_name": z.optional(z.string().min(1)),
 "verification_tier": z.enum(["verified", "unverified", "suspicious"]),
-"logo": z.string().url().optional(),
-"labels": z.array(z.lazy(() => assetLabelSchema)).optional()
+"logo": z.optional(z.string().url()),
+"labels": z.optional(z.array(z.lazy(() => assetLabelSchema)))
     })
 
 export type SimpleAssetSchema = z.infer<typeof simpleAssetSchema>

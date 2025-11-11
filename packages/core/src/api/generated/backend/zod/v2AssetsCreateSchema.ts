@@ -25,14 +25,14 @@ export const v2AssetsCreatePathParamsSchema = z.object({
 
 export type V2AssetsCreatePathParamsSchema = z.infer<typeof v2AssetsCreatePathParamsSchema>
 
-export const v2AssetsCreate200Schema = z.lazy(() => assetDetailResponseSerializerV2ResponseSchema)
+export const v2AssetsCreate200Schema = assetDetailResponseSerializerV2ResponseSchema
 
 export type V2AssetsCreate200Schema = z.infer<typeof v2AssetsCreate200Schema>
 
-export const v2AssetsCreateMutationRequestSchema = z.lazy(() => assetDetailRequestSerializerV2RequestSchema)
+export const v2AssetsCreateMutationRequestSchema = assetDetailRequestSerializerV2RequestSchema
 
 export type V2AssetsCreateMutationRequestSchema = z.infer<typeof v2AssetsCreateMutationRequestSchema>
 
-export const v2AssetsCreateMutationResponseSchema = z.lazy(() => v2AssetsCreate200Schema)
+export const v2AssetsCreateMutationResponseSchema = v2AssetsCreate200Schema
 
 export type V2AssetsCreateMutationResponseSchema = z.infer<typeof v2AssetsCreateMutationResponseSchema>

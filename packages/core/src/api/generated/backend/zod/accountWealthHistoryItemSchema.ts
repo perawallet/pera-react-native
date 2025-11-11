@@ -22,7 +22,7 @@ export const accountWealthHistoryItemSchema = z.object({
 "usd_value": z.string(),
 "algo_value": z.string(),
 "round": z.number().int(),
-"value_in_currency": z.string().optional()
+"value_in_currency": z.optional(z.string())
     })
 
 export type AccountWealthHistoryItemSchema = z.infer<typeof accountWealthHistoryItemSchema>

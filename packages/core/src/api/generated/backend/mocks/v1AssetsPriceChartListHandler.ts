@@ -18,9 +18,18 @@
 import type { V1AssetsPriceChartListQueryResponse } from "../types/V1AssetsPriceChartList.ts";
 import { http } from "msw";
 
+export function v1AssetsPriceChartListHandlerResponse200(data: V1AssetsPriceChartListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v1AssetsPriceChartListHandler(data?: V1AssetsPriceChartListQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/assets/price-chart/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

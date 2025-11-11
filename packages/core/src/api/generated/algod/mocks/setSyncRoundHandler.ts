@@ -15,12 +15,55 @@
 * Do not edit manually.
 */
 
-import type { SetSyncRoundMutationResponse } from "../types/SetSyncRound.ts";
+import type { SetSyncRoundMutationResponse, SetSyncRound400, SetSyncRound401, SetSyncRound500, SetSyncRound503 } from "../types/SetSyncRound.ts";
 import { http } from "msw";
 
-export function setSyncRoundHandler(data?: SetSyncRoundMutationResponse | ((
+export function setSyncRoundHandlerResponse200(data?: SetSyncRoundMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+  
+  })
+}
+
+export function setSyncRoundHandlerResponse400(data: SetSyncRound400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function setSyncRoundHandlerResponse401(data: SetSyncRound401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function setSyncRoundHandlerResponse500(data: SetSyncRound500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function setSyncRoundHandlerResponse503(data: SetSyncRound503) {
+  return new Response(JSON.stringify(data), {
+    status: 503,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function setSyncRoundHandler(data?: string | number | boolean | null | object | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v2/ledger/sync/:round', function handler(info) {
     if(typeof data === 'function') return data(info)
 

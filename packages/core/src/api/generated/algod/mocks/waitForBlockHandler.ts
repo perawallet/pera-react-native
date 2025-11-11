@@ -15,12 +15,57 @@
 * Do not edit manually.
 */
 
-import type { WaitForBlockQueryResponse } from "../types/WaitForBlock.ts";
+import type { WaitForBlockQueryResponse, WaitForBlock400, WaitForBlock401, WaitForBlock500, WaitForBlock503 } from "../types/WaitForBlock.ts";
 import { http } from "msw";
+
+export function waitForBlockHandlerResponse200(data: WaitForBlockQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function waitForBlockHandlerResponse400(data: WaitForBlock400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function waitForBlockHandlerResponse401(data: WaitForBlock401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function waitForBlockHandlerResponse500(data: WaitForBlock500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function waitForBlockHandlerResponse503(data: WaitForBlock503) {
+  return new Response(JSON.stringify(data), {
+    status: 503,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function waitForBlockHandler(data?: WaitForBlockQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/status/wait-for-block-after/:round', function handler(info) {
     if(typeof data === 'function') return data(info)
 

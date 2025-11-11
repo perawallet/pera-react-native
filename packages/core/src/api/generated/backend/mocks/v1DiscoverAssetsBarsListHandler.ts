@@ -18,9 +18,16 @@
 import type { V1DiscoverAssetsBarsListQueryResponse } from "../types/V1DiscoverAssetsBarsList.ts";
 import { http } from "msw";
 
-export function v1DiscoverAssetsBarsListHandler(data?: V1DiscoverAssetsBarsListQueryResponse | ((
+export function v1DiscoverAssetsBarsListHandlerResponse200(data?: V1DiscoverAssetsBarsListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+  
+  })
+}
+
+export function v1DiscoverAssetsBarsListHandler(data?: string | number | boolean | null | object | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/discover/assets/:asset_id/bars/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

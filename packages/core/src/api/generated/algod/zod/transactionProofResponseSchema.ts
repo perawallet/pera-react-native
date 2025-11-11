@@ -18,6 +18,6 @@
 import { transactionProofSchema } from "./transactionProofSchema.ts";
 import { z } from "zod";
 
-export const transactionProofResponseSchema = z.lazy(() => transactionProofSchema).describe("Proof of transaction in a block.")
+export const transactionProofResponseSchema = transactionProofSchema.describe("Proof of transaction in a block.")
 
 export type TransactionProofResponseSchema = z.infer<typeof transactionProofResponseSchema>

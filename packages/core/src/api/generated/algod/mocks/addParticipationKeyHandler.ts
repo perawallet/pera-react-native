@@ -15,12 +15,66 @@
 * Do not edit manually.
 */
 
-import type { AddParticipationKeyMutationResponse } from "../types/AddParticipationKey.ts";
+import type { AddParticipationKeyMutationResponse, AddParticipationKey400, AddParticipationKey401, AddParticipationKey404, AddParticipationKey500, AddParticipationKey503 } from "../types/AddParticipationKey.ts";
 import { http } from "msw";
+
+export function addParticipationKeyHandlerResponse200(data: AddParticipationKeyMutationResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function addParticipationKeyHandlerResponse400(data: AddParticipationKey400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function addParticipationKeyHandlerResponse401(data: AddParticipationKey401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function addParticipationKeyHandlerResponse404(data: AddParticipationKey404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function addParticipationKeyHandlerResponse500(data: AddParticipationKey500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function addParticipationKeyHandlerResponse503(data: AddParticipationKey503) {
+  return new Response(JSON.stringify(data), {
+    status: 503,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function addParticipationKeyHandler(data?: AddParticipationKeyMutationResponse | ((
         info: Parameters<Parameters<typeof http.post>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.post('/v2/participation', function handler(info) {
     if(typeof data === 'function') return data(info)
 

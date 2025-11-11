@@ -38,16 +38,16 @@ export async function v1AccountsCreatedNonCollectibleAssetsListInfinite({ accoun
 
 export function v1AccountsCreatedNonCollectibleAssetsListInfiniteQueryOptions({ account_address, params }: { account_address: V1AccountsCreatedNonCollectibleAssetsListPathParams["account_address"]; params?: V1AccountsCreatedNonCollectibleAssetsListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {
   const queryKey = v1AccountsCreatedNonCollectibleAssetsListInfiniteQueryKey({ account_address }, params)
-  return infiniteQueryOptions<V1AccountsCreatedNonCollectibleAssetsListQueryResponse, ResponseErrorConfig<Error>, V1AccountsCreatedNonCollectibleAssetsListQueryResponse, typeof queryKey, number>({
+  return infiniteQueryOptions<V1AccountsCreatedNonCollectibleAssetsListQueryResponse, ResponseErrorConfig<Error>, InfiniteData<V1AccountsCreatedNonCollectibleAssetsListQueryResponse>, typeof queryKey, NonNullable<V1AccountsCreatedNonCollectibleAssetsListQueryParams['cursor']>>({
    enabled: !!(account_address),
    queryKey,
    queryFn: async ({ signal, pageParam }) => {
       config.signal = signal
     
-      if (!params) {
-       params = { }
-      }
-      params['cursor'] = pageParam as unknown as V1AccountsCreatedNonCollectibleAssetsListQueryParams['cursor']
+      params = {
+        ...(params ?? {}),
+        ['cursor']: pageParam as unknown as V1AccountsCreatedNonCollectibleAssetsListQueryParams['cursor'],
+      } as V1AccountsCreatedNonCollectibleAssetsListQueryParams
       return v1AccountsCreatedNonCollectibleAssetsListInfinite({ account_address, params }, config)
    },
    initialPageParam: "",
@@ -60,9 +60,9 @@ export function v1AccountsCreatedNonCollectibleAssetsListInfiniteQueryOptions({ 
  * @description Ordered by asset_id DESC.
  * {@link /v1/accounts/:account_address/created-non-collectible-assets/}
  */
-export function useV1AccountsCreatedNonCollectibleAssetsListInfinite<TData = InfiniteData<V1AccountsCreatedNonCollectibleAssetsListQueryResponse>, TQueryData = V1AccountsCreatedNonCollectibleAssetsListQueryResponse, TQueryKey extends QueryKey = V1AccountsCreatedNonCollectibleAssetsListInfiniteQueryKey>({ account_address, params }: { account_address: V1AccountsCreatedNonCollectibleAssetsListPathParams["account_address"]; params?: V1AccountsCreatedNonCollectibleAssetsListQueryParams }, options: 
+export function useV1AccountsCreatedNonCollectibleAssetsListInfinite<TQueryFnData = V1AccountsCreatedNonCollectibleAssetsListQueryResponse, TError = ResponseErrorConfig<Error>, TData = InfiniteData<TQueryFnData>, TQueryKey extends QueryKey = V1AccountsCreatedNonCollectibleAssetsListInfiniteQueryKey, TPageParam = NonNullable<V1AccountsCreatedNonCollectibleAssetsListQueryParams['cursor']>>({ account_address, params }: { account_address: V1AccountsCreatedNonCollectibleAssetsListPathParams["account_address"]; params?: V1AccountsCreatedNonCollectibleAssetsListQueryParams }, options: 
 {
-  query?: Partial<InfiniteQueryObserverOptions<V1AccountsCreatedNonCollectibleAssetsListQueryResponse, ResponseErrorConfig<Error>, TQueryData, TQueryKey, TQueryData>> & { client?: QueryClient },
+  query?: Partial<InfiniteQueryObserverOptions<TQueryFnData, TError, TData, TQueryKey, TPageParam>> & { client?: QueryClient },
   client?: Partial<RequestConfig> & { client?: typeof fetch }
 }
  = {}) {
@@ -74,7 +74,7 @@ export function useV1AccountsCreatedNonCollectibleAssetsListInfinite<TData = Inf
    ...v1AccountsCreatedNonCollectibleAssetsListInfiniteQueryOptions({ account_address, params }, config),
    queryKey,
    ...queryOptions
-  } as unknown as InfiniteQueryObserverOptions, queryClient) as UseInfiniteQueryResult<TData, ResponseErrorConfig<Error>> & { queryKey: TQueryKey }
+  } as unknown as InfiniteQueryObserverOptions<TQueryFnData, TError, TData, TQueryKey, TPageParam>, queryClient) as UseInfiniteQueryResult<TData, TError> & { queryKey: TQueryKey }
 
   query.queryKey = queryKey as TQueryKey
 

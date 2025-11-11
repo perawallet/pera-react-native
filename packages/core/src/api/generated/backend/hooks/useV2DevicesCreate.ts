@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V2DevicesCreateMutationRequest, V2DevicesCreateMutationResponse, V2DevicesCreateHeaderParams } from "../types/V2DevicesCreate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v2DevicesCreateMutationKey = () => [{ url: '/v2/devices/' }] as const
 
@@ -38,6 +38,16 @@ export async function v2DevicesCreate({ data, headers }: { data: V2DevicesCreate
   return res.data
 }
 
+export function v2DevicesCreateMutationOptions(config: Partial<RequestConfig<V2DevicesCreateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v2DevicesCreateMutationKey()
+  return mutationOptions<V2DevicesCreateMutationResponse, ResponseErrorConfig<Error>, {data: V2DevicesCreateMutationRequest, headers?: V2DevicesCreateHeaderParams}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ data, headers }) => {
+      return v2DevicesCreate({ data, headers }, config)
+    },
+  })
+}
+
 /**
  * @description - Creates a device and an authentication token (`auth_token`) for it. If you call with same(`push_token`, `platform`) pair, will update device and re-create `auth_token`.- **Please note that you cannot get the authentication token again except the time of creation.**- You can set `app_version` with `APP-VERSION` header.
  * {@link /v2/devices/}
@@ -52,11 +62,11 @@ export function useV2DevicesCreate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v2DevicesCreateMutationKey()
 
+  const baseOptions = v2DevicesCreateMutationOptions(config) as UseMutationOptions<V2DevicesCreateMutationResponse, ResponseErrorConfig<Error>, {data: V2DevicesCreateMutationRequest, headers?: V2DevicesCreateHeaderParams}, TContext>
+
   return useMutation<V2DevicesCreateMutationResponse, ResponseErrorConfig<Error>, {data: V2DevicesCreateMutationRequest, headers?: V2DevicesCreateHeaderParams}, TContext>({
-    mutationFn: async({ data, headers }) => {
-      return v2DevicesCreate({ data, headers }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V2DevicesCreateMutationResponse, ResponseErrorConfig<Error>, {data: V2DevicesCreateMutationRequest, headers?: V2DevicesCreateHeaderParams}, TContext>
 }

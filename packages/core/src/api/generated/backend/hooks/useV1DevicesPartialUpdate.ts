@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DevicesPartialUpdateMutationRequest, V1DevicesPartialUpdateMutationResponse, V1DevicesPartialUpdatePathParams } from "../types/V1DevicesPartialUpdate.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1DevicesPartialUpdateMutationKey = () => [{ url: '/v1/devices/:device_id/' }] as const
 
@@ -37,6 +37,16 @@ export async function v1DevicesPartialUpdate({ device_id, data }: { device_id: V
   return res.data
 }
 
+export function v1DevicesPartialUpdateMutationOptions(config: Partial<RequestConfig<V1DevicesPartialUpdateMutationRequest>> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1DevicesPartialUpdateMutationKey()
+  return mutationOptions<V1DevicesPartialUpdateMutationResponse, ResponseErrorConfig<Error>, {device_id: V1DevicesPartialUpdatePathParams["device_id"], data: V1DevicesPartialUpdateMutationRequest}, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async({ device_id, data }) => {
+      return v1DevicesPartialUpdate({ device_id, data }, config)
+    },
+  })
+}
+
 /**
  * {@link /v1/devices/:device_id/}
  */
@@ -50,11 +60,11 @@ export function useV1DevicesPartialUpdate<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1DevicesPartialUpdateMutationKey()
 
+  const baseOptions = v1DevicesPartialUpdateMutationOptions(config) as UseMutationOptions<V1DevicesPartialUpdateMutationResponse, ResponseErrorConfig<Error>, {device_id: V1DevicesPartialUpdatePathParams["device_id"], data: V1DevicesPartialUpdateMutationRequest}, TContext>
+
   return useMutation<V1DevicesPartialUpdateMutationResponse, ResponseErrorConfig<Error>, {device_id: V1DevicesPartialUpdatePathParams["device_id"], data: V1DevicesPartialUpdateMutationRequest}, TContext>({
-    mutationFn: async({ device_id, data }) => {
-      return v1DevicesPartialUpdate({ device_id, data }, config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1DevicesPartialUpdateMutationResponse, ResponseErrorConfig<Error>, {device_id: V1DevicesPartialUpdatePathParams["device_id"], data: V1DevicesPartialUpdateMutationRequest}, TContext>
 }

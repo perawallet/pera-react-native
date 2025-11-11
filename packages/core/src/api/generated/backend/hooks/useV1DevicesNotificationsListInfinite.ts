@@ -37,16 +37,16 @@ export async function v1DevicesNotificationsListInfinite({ device_id, params }: 
 
 export function v1DevicesNotificationsListInfiniteQueryOptions({ device_id, params }: { device_id: V1DevicesNotificationsListPathParams["device_id"]; params?: V1DevicesNotificationsListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {
   const queryKey = v1DevicesNotificationsListInfiniteQueryKey({ device_id }, params)
-  return infiniteQueryOptions<V1DevicesNotificationsListQueryResponse, ResponseErrorConfig<Error>, V1DevicesNotificationsListQueryResponse, typeof queryKey, number>({
+  return infiniteQueryOptions<V1DevicesNotificationsListQueryResponse, ResponseErrorConfig<Error>, InfiniteData<V1DevicesNotificationsListQueryResponse>, typeof queryKey, NonNullable<V1DevicesNotificationsListQueryParams['cursor']>>({
    enabled: !!(device_id),
    queryKey,
    queryFn: async ({ signal, pageParam }) => {
       config.signal = signal
     
-      if (!params) {
-       params = { }
-      }
-      params['cursor'] = pageParam as unknown as V1DevicesNotificationsListQueryParams['cursor']
+      params = {
+        ...(params ?? {}),
+        ['cursor']: pageParam as unknown as V1DevicesNotificationsListQueryParams['cursor'],
+      } as V1DevicesNotificationsListQueryParams
       return v1DevicesNotificationsListInfinite({ device_id, params }, config)
    },
    initialPageParam: "",
@@ -58,9 +58,9 @@ export function v1DevicesNotificationsListInfiniteQueryOptions({ device_id, para
 /**
  * {@link /v1/devices/:device_id/notifications/}
  */
-export function useV1DevicesNotificationsListInfinite<TData = InfiniteData<V1DevicesNotificationsListQueryResponse>, TQueryData = V1DevicesNotificationsListQueryResponse, TQueryKey extends QueryKey = V1DevicesNotificationsListInfiniteQueryKey>({ device_id, params }: { device_id: V1DevicesNotificationsListPathParams["device_id"]; params?: V1DevicesNotificationsListQueryParams }, options: 
+export function useV1DevicesNotificationsListInfinite<TQueryFnData = V1DevicesNotificationsListQueryResponse, TError = ResponseErrorConfig<Error>, TData = InfiniteData<TQueryFnData>, TQueryKey extends QueryKey = V1DevicesNotificationsListInfiniteQueryKey, TPageParam = NonNullable<V1DevicesNotificationsListQueryParams['cursor']>>({ device_id, params }: { device_id: V1DevicesNotificationsListPathParams["device_id"]; params?: V1DevicesNotificationsListQueryParams }, options: 
 {
-  query?: Partial<InfiniteQueryObserverOptions<V1DevicesNotificationsListQueryResponse, ResponseErrorConfig<Error>, TQueryData, TQueryKey, TQueryData>> & { client?: QueryClient },
+  query?: Partial<InfiniteQueryObserverOptions<TQueryFnData, TError, TData, TQueryKey, TPageParam>> & { client?: QueryClient },
   client?: Partial<RequestConfig> & { client?: typeof fetch }
 }
  = {}) {
@@ -72,7 +72,7 @@ export function useV1DevicesNotificationsListInfinite<TData = InfiniteData<V1Dev
    ...v1DevicesNotificationsListInfiniteQueryOptions({ device_id, params }, config),
    queryKey,
    ...queryOptions
-  } as unknown as InfiniteQueryObserverOptions, queryClient) as UseInfiniteQueryResult<TData, ResponseErrorConfig<Error>> & { queryKey: TQueryKey }
+  } as unknown as InfiniteQueryObserverOptions<TQueryFnData, TError, TData, TQueryKey, TPageParam>, queryClient) as UseInfiniteQueryResult<TData, TError> & { queryKey: TQueryKey }
 
   query.queryKey = queryKey as TQueryKey
 

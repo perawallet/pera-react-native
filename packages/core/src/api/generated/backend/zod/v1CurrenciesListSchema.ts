@@ -19,15 +19,15 @@ import { currencySerializerResponseSchema } from "./currencySerializer/responseS
 import { z } from "zod";
 
 export const v1CurrenciesListQueryParamsSchema = z.object({
-    "ordering": z.string().describe("Which field to use when ordering the results.").optional()
+    "ordering": z.optional(z.string().describe("Which field to use when ordering the results."))
     }).optional()
 
 export type V1CurrenciesListQueryParamsSchema = z.infer<typeof v1CurrenciesListQueryParamsSchema>
 
-export const v1CurrenciesList200Schema = z.array(z.lazy(() => currencySerializerResponseSchema))
+export const v1CurrenciesList200Schema = z.array(currencySerializerResponseSchema)
 
 export type V1CurrenciesList200Schema = z.infer<typeof v1CurrenciesList200Schema>
 
-export const v1CurrenciesListQueryResponseSchema = z.lazy(() => v1CurrenciesList200Schema)
+export const v1CurrenciesListQueryResponseSchema = v1CurrenciesList200Schema
 
 export type V1CurrenciesListQueryResponseSchema = z.infer<typeof v1CurrenciesListQueryResponseSchema>

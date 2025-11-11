@@ -18,9 +18,16 @@
 import type { V1StakingProjectsInformationListQueryResponse } from "../types/V1StakingProjectsInformationList.ts";
 import { http } from "msw";
 
-export function v1StakingProjectsInformationListHandler(data?: V1StakingProjectsInformationListQueryResponse | ((
+export function v1StakingProjectsInformationListHandlerResponse200(data?: V1StakingProjectsInformationListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+  
+  })
+}
+
+export function v1StakingProjectsInformationListHandler(data?: string | number | boolean | null | object | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v1/staking/projects-information/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

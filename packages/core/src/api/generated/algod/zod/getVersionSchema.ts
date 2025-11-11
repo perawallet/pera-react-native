@@ -21,10 +21,10 @@ import { z } from "zod";
 /**
  * @description VersionsResponse is the response to \'GET /versions\'
  */
-export const getVersion200Schema = z.lazy(() => versionSchema).describe("algod version information.")
+export const getVersion200Schema = versionSchema.describe("algod version information.")
 
 export type GetVersion200Schema = z.infer<typeof getVersion200Schema>
 
-export const getVersionQueryResponseSchema = z.lazy(() => getVersion200Schema)
+export const getVersionQueryResponseSchema = getVersion200Schema
 
 export type GetVersionQueryResponseSchema = z.infer<typeof getVersionQueryResponseSchema>

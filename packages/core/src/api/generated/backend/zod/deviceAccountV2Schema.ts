@@ -20,7 +20,7 @@ import { z } from "zod";
 export const deviceAccountV2Schema = z.object({
     "address": z.string().min(1),
 "receive_notifications": z.boolean(),
-"is_watch_account": z.boolean().nullable()
+"is_watch_account": z.nullable(z.boolean())
     })
 
 export type DeviceAccountV2Schema = z.infer<typeof deviceAccountV2Schema>

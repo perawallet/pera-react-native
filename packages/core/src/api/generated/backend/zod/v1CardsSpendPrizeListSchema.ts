@@ -21,6 +21,6 @@ export const v1CardsSpendPrizeList200Schema = z.unknown()
 
 export type V1CardsSpendPrizeList200Schema = z.infer<typeof v1CardsSpendPrizeList200Schema>
 
-export const v1CardsSpendPrizeListQueryResponseSchema = z.lazy(() => v1CardsSpendPrizeList200Schema)
+export const v1CardsSpendPrizeListQueryResponseSchema = v1CardsSpendPrizeList200Schema
 
 export type V1CardsSpendPrizeListQueryResponseSchema = z.infer<typeof v1CardsSpendPrizeListQueryResponseSchema>

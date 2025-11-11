@@ -19,8 +19,8 @@ import { accountAssetHoldingSchema } from "./accountAssetHoldingSchema.ts";
 import { z } from "zod";
 
 export const accountAssetsInformationResponseSchema = z.object({
-    "asset-holdings": z.array(z.lazy(() => accountAssetHoldingSchema).describe("AccountAssetHolding describes the account's asset holding and asset parameters (if either exist) for a specific asset ID.")).optional(),
-"next-token": z.string().describe("Used for pagination, when making another request provide this token with the next parameter.").optional(),
+    "asset-holdings": z.optional(z.array(z.lazy(() => accountAssetHoldingSchema).describe("AccountAssetHolding describes the account's asset holding and asset parameters (if either exist) for a specific asset ID."))),
+"next-token": z.optional(z.string().describe("Used for pagination, when making another request provide this token with the next parameter.")),
 "round": z.number().int().describe("The round for which this information is relevant.")
     })
 

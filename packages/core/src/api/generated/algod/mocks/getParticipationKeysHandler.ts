@@ -15,12 +15,57 @@
 * Do not edit manually.
 */
 
-import type { GetParticipationKeysQueryResponse } from "../types/GetParticipationKeys.ts";
+import type { GetParticipationKeysQueryResponse, GetParticipationKeys400, GetParticipationKeys401, GetParticipationKeys404, GetParticipationKeys500 } from "../types/GetParticipationKeys.ts";
 import { http } from "msw";
+
+export function getParticipationKeysHandlerResponse200(data: GetParticipationKeysQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getParticipationKeysHandlerResponse400(data: GetParticipationKeys400) {
+  return new Response(JSON.stringify(data), {
+    status: 400,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getParticipationKeysHandlerResponse401(data: GetParticipationKeys401) {
+  return new Response(JSON.stringify(data), {
+    status: 401,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getParticipationKeysHandlerResponse404(data: GetParticipationKeys404) {
+  return new Response(JSON.stringify(data), {
+    status: 404,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
+export function getParticipationKeysHandlerResponse500(data: GetParticipationKeys500) {
+  return new Response(JSON.stringify(data), {
+    status: 500,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
 
 export function getParticipationKeysHandler(data?: GetParticipationKeysQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/participation', function handler(info) {
     if(typeof data === 'function') return data(info)
 

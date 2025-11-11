@@ -18,9 +18,18 @@
 import type { V2DexSwapHistoryListQueryResponse } from "../types/V2DexSwapHistoryList.ts";
 import { http } from "msw";
 
+export function v2DexSwapHistoryListHandlerResponse200(data: V2DexSwapHistoryListQueryResponse) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+      headers: {
+      'Content-Type': 'application/json'
+    },
+  })
+}
+
 export function v2DexSwapHistoryListHandler(data?: V2DexSwapHistoryListQueryResponse | ((
         info: Parameters<Parameters<typeof http.get>[1]>[0],
-      ) => Response)) {
+      ) => Response | Promise<Response>)) {
   return http.get('/v2/dex-swap/history/', function handler(info) {
     if(typeof data === 'function') return data(info)
 

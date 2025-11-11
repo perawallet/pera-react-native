@@ -26,14 +26,14 @@ export const v1DevicesSpotBannersClosePartialUpdatePathParamsSchema = z.object({
 
 export type V1DevicesSpotBannersClosePartialUpdatePathParamsSchema = z.infer<typeof v1DevicesSpotBannersClosePartialUpdatePathParamsSchema>
 
-export const v1DevicesSpotBannersClosePartialUpdate200Schema = z.lazy(() => spotBannerSerializerResponseSchema)
+export const v1DevicesSpotBannersClosePartialUpdate200Schema = spotBannerSerializerResponseSchema
 
 export type V1DevicesSpotBannersClosePartialUpdate200Schema = z.infer<typeof v1DevicesSpotBannersClosePartialUpdate200Schema>
 
-export const v1DevicesSpotBannersClosePartialUpdateMutationRequestSchema = z.lazy(() => spotBannerSerializerRequestSchema)
+export const v1DevicesSpotBannersClosePartialUpdateMutationRequestSchema = spotBannerSerializerRequestSchema
 
 export type V1DevicesSpotBannersClosePartialUpdateMutationRequestSchema = z.infer<typeof v1DevicesSpotBannersClosePartialUpdateMutationRequestSchema>
 
-export const v1DevicesSpotBannersClosePartialUpdateMutationResponseSchema = z.lazy(() => v1DevicesSpotBannersClosePartialUpdate200Schema)
+export const v1DevicesSpotBannersClosePartialUpdateMutationResponseSchema = v1DevicesSpotBannersClosePartialUpdate200Schema
 
 export type V1DevicesSpotBannersClosePartialUpdateMutationResponseSchema = z.infer<typeof v1DevicesSpotBannersClosePartialUpdateMutationResponseSchema>

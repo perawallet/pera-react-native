@@ -18,8 +18,8 @@
 import fetch from "../../../backend-query-client";
 import type { RequestConfig, ResponseErrorConfig } from "../../../backend-query-client";
 import type { V1DevicesDeleteMutationResponse } from "../types/V1DevicesDelete.ts";
-import type { UseMutationOptions, QueryClient } from "@tanstack/react-query";
-import { useMutation } from "@tanstack/react-query";
+import type { UseMutationOptions, UseMutationResult, QueryClient } from "@tanstack/react-query";
+import { mutationOptions, useMutation } from "@tanstack/react-query";
 
 export const v1DevicesDeleteMutationKey = () => [{ url: '/v1/devices/' }] as const
 
@@ -37,6 +37,16 @@ export async function v1DevicesDelete(config: Partial<RequestConfig> & { client?
   return res.data
 }
 
+export function v1DevicesDeleteMutationOptions(config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {
+  const mutationKey = v1DevicesDeleteMutationKey()
+  return mutationOptions<V1DevicesDeleteMutationResponse, ResponseErrorConfig<Error>, void, typeof mutationKey>({
+    mutationKey,
+    mutationFn: async() => {
+      return v1DevicesDelete(config)
+    },
+  })
+}
+
 /**
  * @description `push_token` needs to be sent to delete the device.
  * @summary Create & Delete Device View
@@ -52,11 +62,11 @@ export function useV1DevicesDelete<TContext>(options:
   const { client: queryClient, ...mutationOptions } = mutation;
   const mutationKey = mutationOptions.mutationKey ?? v1DevicesDeleteMutationKey()
 
+  const baseOptions = v1DevicesDeleteMutationOptions(config) as UseMutationOptions<V1DevicesDeleteMutationResponse, ResponseErrorConfig<Error>, void, TContext>
+
   return useMutation<V1DevicesDeleteMutationResponse, ResponseErrorConfig<Error>, void, TContext>({
-    mutationFn: async() => {
-      return v1DevicesDelete(config)
-    },
+    ...baseOptions,
     mutationKey,
-    ...mutationOptions
-  }, queryClient)
+    ...mutationOptions,
+  }, queryClient) as UseMutationResult<V1DevicesDeleteMutationResponse, ResponseErrorConfig<Error>, void, TContext>
 }

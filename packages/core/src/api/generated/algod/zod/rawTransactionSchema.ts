@@ -30,28 +30,28 @@ export type RawTransaction200Schema = z.infer<typeof rawTransaction200Schema>
 /**
  * @description Bad Request - Malformed Algorand transaction 
  */
-export const rawTransaction400Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const rawTransaction400Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type RawTransaction400Schema = z.infer<typeof rawTransaction400Schema>
 
 /**
  * @description Invalid API Token
  */
-export const rawTransaction401Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const rawTransaction401Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type RawTransaction401Schema = z.infer<typeof rawTransaction401Schema>
 
 /**
  * @description Internal Error
  */
-export const rawTransaction500Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const rawTransaction500Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type RawTransaction500Schema = z.infer<typeof rawTransaction500Schema>
 
 /**
  * @description Service Temporarily Unavailable
  */
-export const rawTransaction503Schema = z.lazy(() => errorResponseSchema).describe("An error response with optional data field.")
+export const rawTransaction503Schema = errorResponseSchema.describe("An error response with optional data field.")
 
 export type RawTransaction503Schema = z.infer<typeof rawTransaction503Schema>
 
@@ -69,6 +69,6 @@ export const rawTransactionMutationRequestSchema = z.instanceof(File)
 
 export type RawTransactionMutationRequestSchema = z.infer<typeof rawTransactionMutationRequestSchema>
 
-export const rawTransactionMutationResponseSchema = z.lazy(() => rawTransaction200Schema)
+export const rawTransactionMutationResponseSchema = rawTransaction200Schema
 
 export type RawTransactionMutationResponseSchema = z.infer<typeof rawTransactionMutationResponseSchema>

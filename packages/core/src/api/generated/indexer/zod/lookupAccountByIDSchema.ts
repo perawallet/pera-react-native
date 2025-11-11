@@ -25,9 +25,9 @@ export const lookupAccountByIDPathParamsSchema = z.object({
 export type LookupAccountByIDPathParamsSchema = z.infer<typeof lookupAccountByIDPathParamsSchema>
 
 export const lookupAccountByIDQueryParamsSchema = z.object({
-    "round": z.coerce.number().int().describe("Include results for the specified round.").optional(),
-"include-all": z.boolean().describe("Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.").optional(),
-"exclude": z.array(z.enum(["all", "assets", "created-assets", "apps-local-state", "created-apps", "none"])).describe("Exclude additional items such as asset holdings, application local data stored for this account, asset parameters created by this account, and application parameters created by this account.").optional()
+    "round": z.optional(z.coerce.number().int().describe("Include results for the specified round.")),
+"include-all": z.optional(z.boolean().describe("Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.")),
+"exclude": z.optional(z.array(z.enum(["all", "assets", "created-assets", "apps-local-state", "created-apps", "none"])).describe("Exclude additional items such as asset holdings, application local data stored for this account, asset parameters created by this account, and application parameters created by this account."))
     }).optional()
 
 export type LookupAccountByIDQueryParamsSchema = z.infer<typeof lookupAccountByIDQueryParamsSchema>
@@ -46,9 +46,9 @@ export type LookupAccountByID200Schema = z.infer<typeof lookupAccountByID200Sche
  * @description Response for errors
  */
 export const lookupAccountByID400Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
@@ -58,9 +58,9 @@ export type LookupAccountByID400Schema = z.infer<typeof lookupAccountByID400Sche
  * @description Response for errors
  */
 export const lookupAccountByID404Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
@@ -70,14 +70,14 @@ export type LookupAccountByID404Schema = z.infer<typeof lookupAccountByID404Sche
  * @description Response for errors
  */
 export const lookupAccountByID500Schema = z.object({
-    "data": z.object({
+    "data": z.optional(z.object({
     
-    }).optional(),
+    })),
 "message": z.string()
     })
 
 export type LookupAccountByID500Schema = z.infer<typeof lookupAccountByID500Schema>
 
-export const lookupAccountByIDQueryResponseSchema = z.lazy(() => lookupAccountByID200Schema)
+export const lookupAccountByIDQueryResponseSchema = lookupAccountByID200Schema
 
 export type LookupAccountByIDQueryResponseSchema = z.infer<typeof lookupAccountByIDQueryResponseSchema>

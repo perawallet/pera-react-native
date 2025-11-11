@@ -22,8 +22,8 @@ import { z } from "zod";
  */
 export const transactionPaymentSchema = z.object({
     "amount": z.number().int().describe("\\[amt\\] number of MicroAlgos intended to be transferred."),
-"close-amount": z.number().int().describe("Number of MicroAlgos that were sent to the close-remainder-to address when closing the sender account.").optional(),
-"close-remainder-to": z.string().describe("\\[close\\] when set, indicates that the sending account should be closed and all remaining funds be transferred to this address.").optional(),
+"close-amount": z.optional(z.number().int().describe("Number of MicroAlgos that were sent to the close-remainder-to address when closing the sender account.")),
+"close-remainder-to": z.optional(z.string().describe("\\[close\\] when set, indicates that the sending account should be closed and all remaining funds be transferred to this address.")),
 "receiver": z.string().describe("\\[rcv\\] receiver's address.")
     }).describe("Fields for a payment transaction.\n\nDefinition:\ndata/transactions/payment.go : PaymentTxnFields")
 

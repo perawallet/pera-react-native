@@ -24,12 +24,12 @@ import { z } from "zod";
  * @description Simulation result for an individual transaction
  */
 export const simulateTransactionResultSchema = z.object({
-    "app-budget-consumed": z.number().int().describe("Budget used during execution of an app call transaction. This value includes budged used by inner app calls spawned by this transaction.").optional(),
-"exec-trace": z.lazy(() => simulationTransactionExecTraceSchema).describe("The execution trace of calling an app or a logic sig, containing the inner app call trace in a recursive way.").optional(),
-"fixed-signer": z.string().describe("The account that needed to sign this transaction when no signature was provided and the provided signer was incorrect.").optional(),
-"logic-sig-budget-consumed": z.number().int().describe("Budget used during execution of a logic sig transaction.").optional(),
+    "app-budget-consumed": z.optional(z.number().int().describe("Budget used during execution of an app call transaction. This value includes budged used by inner app calls spawned by this transaction.")),
+"exec-trace": z.optional(z.lazy(() => simulationTransactionExecTraceSchema).describe("The execution trace of calling an app or a logic sig, containing the inner app call trace in a recursive way.")),
+"fixed-signer": z.optional(z.string().describe("The account that needed to sign this transaction when no signature was provided and the provided signer was incorrect.")),
+"logic-sig-budget-consumed": z.optional(z.number().int().describe("Budget used during execution of a logic sig transaction.")),
 "txn-result": z.lazy(() => pendingTransactionResponseSchema).describe("Details about a pending transaction. If the transaction was recently confirmed, includes confirmation details like the round and reward details."),
-"unnamed-resources-accessed": z.lazy(() => simulateUnnamedResourcesAccessedSchema).describe("These are resources that were accessed by this group that would normally have caused failure, but were allowed in simulation. Depending on where this object is in the response, the unnamed resources it contains may or may not qualify for group resource sharing. If this is a field in SimulateTransactionGroupResult, the resources do qualify, but if this is a field in SimulateTransactionResult, they do not qualify. In order to make this group valid for actual submission, resources that qualify for group sharing can be made available by any transaction of the group; otherwise, resources must be placed in the same transaction which accessed them.").optional()
+"unnamed-resources-accessed": z.optional(z.lazy(() => simulateUnnamedResourcesAccessedSchema).describe("These are resources that were accessed by this group that would normally have caused failure, but were allowed in simulation. Depending on where this object is in the response, the unnamed resources it contains may or may not qualify for group resource sharing. If this is a field in SimulateTransactionGroupResult, the resources do qualify, but if this is a field in SimulateTransactionResult, they do not qualify. In order to make this group valid for actual submission, resources that qualify for group sharing can be made available by any transaction of the group; otherwise, resources must be placed in the same transaction which accessed them."))
     }).describe("Simulation result for an individual transaction")
 
 export type SimulateTransactionResultSchema = z.infer<typeof simulateTransactionResultSchema>
