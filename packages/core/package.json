@@ -41,7 +41,7 @@
     "@perawallet/eslint-config": "workspace:*",
     "@testing-library/react": "^16.3.0",
     "@types/react": "catalog:",
-    "@vitejs/plugin-react": "^5.0.3",
+    "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "eslint": "catalog:",
     "eslint-plugin-erasable-syntax-only": "^0.3.1",
