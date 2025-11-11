@@ -20,7 +20,8 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       paddingTop: theme.spacing.md,
     },
     activeLabel: {
-      color: theme.colors.secondary,
+      color: theme.colors.textMain,
+      fontWeight: '600'
     },
     passiveLabel: {
       color: theme.colors.textMain,
@@ -35,6 +36,8 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       backgroundColor: theme.colors.layerGrayLightest,
       borderRadius: theme.spacing.xs,
       paddingVertical: theme.spacing.md,
+      paddingHorizontal: theme.spacing.sm,
+      alignItems: 'center'
     },
     passiveItem: {
       flexDirection: 'row',
@@ -42,6 +45,8 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       backgroundColor: theme.colors.background,
       borderRadius: theme.spacing.xs,
       paddingVertical: theme.spacing.md,
+      paddingHorizontal: theme.spacing.sm,
+      alignItems: 'center'
     },
     container: {
       padding: 0,

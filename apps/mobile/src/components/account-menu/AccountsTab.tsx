@@ -17,13 +17,13 @@ import {
   useSelectedAccountAddress,
   WalletAccount,
 } from '@perawallet/core';
-import { TouchableOpacity } from 'react-native';
 import { useStyles } from './styles';
 import { Text, useTheme } from '@rneui/themed';
 
-import WalletIcon from '../../../assets/icons/wallet.svg';
 import SortIcon from '../../../assets/icons/list-arrow-down.svg';
 import PlusIcon from '../../../assets/icons/plus-with-border.svg';
+import AccountIcon from '../../components/common/account-icon/AccountIcon';
+import PWTouchableOpacity from '../../components/common/touchable-opacity/PWTouchableOpacity';
 
 type AccountsTabProps = {
   onSelected: (account: WalletAccount) => void;
@@ -41,7 +41,8 @@ const AccountsTab = (props: AccountsTabProps) => {
 
   const getWalletIcon = (acct: WalletAccount) => {
     return (
-      <WalletIcon
+      <AccountIcon
+        account={acct}
         color={
           acct.address === selectedAccountAddress
             ? theme.colors.secondary
@@ -59,19 +60,19 @@ const AccountsTab = (props: AccountsTabProps) => {
     <>
       <PWView style={styles.titleBar}>
         <PWView style={styles.titleBarButtonContainer}>
-          <TouchableOpacity style={styles.addButtonContainer}>
+          <PWTouchableOpacity style={styles.addButtonContainer}>
             <PlusIcon style={styles.addButton} />
             <Text style={styles.addButtonTitle}>Add Account</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.sortButton}>
+          </PWTouchableOpacity>
+          <PWTouchableOpacity style={styles.sortButton}>
             <SortIcon />
             <Text style={styles.sortButtonTitle}>Sort</Text>
-          </TouchableOpacity>
+          </PWTouchableOpacity>
         </PWView>
       </PWView>
       <PWView style={styles.accountContainer}>
         {accounts.map(acct => (
-          <TouchableOpacity
+          <PWTouchableOpacity
             key={acct.address}
             style={
               acct.address === selectedAccountAddress
@@ -82,7 +83,8 @@ const AccountsTab = (props: AccountsTabProps) => {
           >
             {getWalletIcon(acct)}
             <Text
-              style={
+              h4
+              h4Style={
                 acct.address === selectedAccountAddress
                   ? styles.activeLabel
                   : styles.passiveLabel
@@ -90,7 +92,7 @@ const AccountsTab = (props: AccountsTabProps) => {
             >
               {getRouteName(acct)}
             </Text>
-          </TouchableOpacity>
+          </PWTouchableOpacity>
         ))}
       </PWView>
     </>

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import HDWalletIcon from '../../../../assets/icons/wallet-with-algo.svg';
+import HDWalletIcon from '../../../../assets/icons/wallet-in-circle.svg';
 import LegacyWalletIcon from '../../../../assets/icons/wallet.svg';
 
 import { useMemo } from 'react';

@@ -16,8 +16,8 @@ import PWView from '../view/PWView';
 import { useStyles } from './styles';
 
 import ChevronDown from '../../../../assets/icons/chevron-down.svg';
-import WalletIcon from '../../../../assets/icons/wallet-in-circle.svg';
 import { TouchableOpacity, TouchableOpacityProps } from 'react-native';
+import AccountIcon from '../account-icon/AccountIcon';
 
 type AccountSelectionProps = {} & TouchableOpacityProps;
 
@@ -32,7 +32,7 @@ const AccountSelection = (props: AccountSelectionProps) => {
   return (
     <TouchableOpacity {...props} activeOpacity={0.8}>
       <PWView style={styles.container}>
-        <WalletIcon />
+        {!!account && <AccountIcon account={account} color={theme.colors.textMain} />}
         <Text h4Style={styles.text} h4>
           {displayName}
         </Text>
