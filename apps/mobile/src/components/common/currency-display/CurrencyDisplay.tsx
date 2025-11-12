@@ -22,6 +22,7 @@ export type CurrencyDisplayProps = {
   currency: string;
   value: Decimal;
   precision: number;
+  minPrecision?: number;
   prefix?: string;
   alignRight?: boolean;
   showSymbol?: boolean;
@@ -40,6 +41,7 @@ const CurrencyDisplay = (props: CurrencyDisplayProps) => {
     units,
     showSymbol = true,
     skeleton = false,
+    minPrecision,
     ...rest
   } = props;
 
@@ -53,6 +55,7 @@ const CurrencyDisplay = (props: CurrencyDisplayProps) => {
       deviceInfo.getDeviceLocale(),
       showSymbol,
       units,
+      minPrecision
     );
   }, [value, precision, currency, deviceInfo, showSymbol, units]);
 

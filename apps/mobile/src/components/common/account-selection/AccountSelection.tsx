@@ -18,8 +18,10 @@ import { useStyles } from './styles';
 import ChevronDown from '../../../../assets/icons/chevron-down.svg';
 import { TouchableOpacity, TouchableOpacityProps } from 'react-native';
 import AccountIcon from '../account-icon/AccountIcon';
+import AccountDisplay from '../account-display/AccountDisplay';
 
-type AccountSelectionProps = {} & TouchableOpacityProps;
+type AccountSelectionProps = {
+} & TouchableOpacityProps;
 
 const AccountSelection = (props: AccountSelectionProps) => {
   const { theme } = useTheme();
@@ -31,13 +33,7 @@ const AccountSelection = (props: AccountSelectionProps) => {
   //(like the current inbox since we're using the same screen real estate)
   return (
     <TouchableOpacity {...props} activeOpacity={0.8}>
-      <PWView style={styles.container}>
-        {!!account && <AccountIcon account={account} color={theme.colors.textMain} />}
-        <Text h4Style={styles.text} h4>
-          {displayName}
-        </Text>
-        <ChevronDown color={theme.colors.textGray} />
-      </PWView>
+      <AccountDisplay account={account ?? undefined} style={styles.container} />
     </TouchableOpacity>
   );
 };

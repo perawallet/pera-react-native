@@ -377,6 +377,14 @@ export const useAccountBalances = (
     accounts: WalletAccount[],
     localCurrency: string = 'USD',
 ) => {
+    if (!accounts.length) {
+        return {
+            data: [],
+            loading: false,
+            totalAlgo: Decimal(0),
+            totalLocal: Decimal(0),
+        }
+    }
     const results = useQueries({
         queries: accounts.map(acc => {
             const address = acc.address
@@ -417,6 +425,7 @@ export const useAccountBalances = (
                 }
 
                 return {
+                    accountInfo,
                     algoAmount: algoAmount,
                     //TODO implement currency conversion here
                     localAmount:

@@ -48,6 +48,7 @@ export const formatCurrency = (
     locale: string = 'en-US',
     showSymbol: boolean = true,
     units?: 'K' | 'M',
+    minPrecision?: number
 ) => {
     const decimal = toUnits(new Decimal(value), units).toFixed(precision)
     const currencySymbol =
@@ -61,7 +62,12 @@ export const formatCurrency = (
         style: 'decimal',
     })
     let formattedInteger = formatter.format(Number(integer))
-    const fraction = parts.length > 1 ? '.' + parts[1] : ''
+    let fraction = parts.length > 1 ? '.' + parts[1] : ''
+
+    const truncateToPrecision = minPrecision ?? precision
+    while (fraction.length - 1 > truncateToPrecision && fraction.endsWith('0')) {
+        fraction = fraction.substring(0, fraction.length - 1)
+    }
 
     let sign = ''
     if (formattedInteger.startsWith('-') || formattedInteger.startsWith('+')) {

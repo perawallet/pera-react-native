@@ -16,7 +16,7 @@ import { PropsWithChildren } from 'react';
 import { useStyles } from './styles';
 import { StyleProp, ViewStyle } from 'react-native';
 
-type PWBottomSheetProps = {
+export type PWBottomSheetProps = {
   innerContainerStyle?: StyleProp<ViewStyle>;
 } & BottomSheetProps &
   PropsWithChildren;

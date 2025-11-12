@@ -22,11 +22,14 @@ import StakeIcon from '../../../../assets/icons/dot-stack.svg';
 import SendIcon from '../../../../assets/icons/outflow.svg';
 import { Alert } from 'react-native';
 import { useTheme } from '@rneui/themed';
+import { useState } from 'react';
+import SendFundsBottomSheet from '../../send-funds/bottom-sheet/SendFundsBottomSheet';
 
 const ButtonPanel = () => {
   const { theme } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
   const themeStyle = useStyles();
+  const [sendFundsOpen, setSendFundsOpen] = useState<boolean>(false);
 
   const goToRootPage = (name: string) => {
     navigation.replace('TabBar', { screen: name });
@@ -34,6 +37,14 @@ const ButtonPanel = () => {
 
   const notImplemented = () => {
     Alert.alert('Not Implemented');
+  };
+  
+  const closeSendFunds = () => {
+    setSendFundsOpen(false);
+  };
+
+  const openSendFunds = () => {
+    setSendFundsOpen(true);
   };
 
   return (
@@ -52,13 +63,14 @@ const ButtonPanel = () => {
       <RoundButton
         title="Send"
         icon={<SendIcon color={theme.colors.textMain} />}
-        onPress={notImplemented}
+        onPress={openSendFunds}
       />
       <RoundButton
         title="More"
         icon={<MoreIcon color={theme.colors.textMain} />}
         onPress={notImplemented}
       />
+      <SendFundsBottomSheet onClose={closeSendFunds} isVisible={sendFundsOpen} />
     </PWView>
   );
 };

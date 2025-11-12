@@ -11,7 +11,7 @@
  */
 
 // TODO: is this the right way to do it?
-import { AssetSerializerResponse } from '@perawallet/core';
+import { PeraAsset } from '@perawallet/core';
 import AlgoAssetIcon from '../../../../assets/icons/assets/algo.svg';
 import USDCAssetIcon from '../../../../assets/icons/assets/usdc.svg';
 import VestAssetIcon from '../../../../assets/icons/assets/vest.svg';
@@ -22,8 +22,13 @@ import { useIsDarkMode } from '../../../hooks/theme';
 import PWView from '../view/PWView';
 import { useStyles } from './styles';
 
+type LabelType = {
+  dark_theme_logo: string
+  light_theme_logo: string
+}
+
 export type AssetIconProps = {
-  asset: AssetSerializerResponse;
+  asset: PeraAsset,
   size?: number;
 } & SvgProps;
 
@@ -72,8 +77,8 @@ const AssetIcon = (props: AssetIconProps) => {
       );
     if (asset.labels) {
       const labelLogo = isDarkMode
-        ? asset.labels?.find(l => l.dark_theme_logo)?.dark_theme_logo
-        : asset.labels?.find(l => l.light_theme_logo)?.light_theme_logo;
+        ? asset.labels?.find((l: LabelType) => l.dark_theme_logo)?.dark_theme_logo
+        : asset.labels?.find((l: LabelType) => l.light_theme_logo)?.light_theme_logo;
       if (labelLogo) {
         return (
           <Image
@@ -88,7 +93,7 @@ const AssetIcon = (props: AssetIconProps) => {
     return <AlgoAssetIcon {...rest} width={size} height={size} />; //TODO: fallback to web URL?  Have a generic icon?
   }, [asset, rest, isDarkMode, size, styles.icon]);
 
-  return <PWView style={style}>{icon}</PWView>;
+  return <PWView style={[style, styles.container]}>{icon}</PWView>;
 };
 
 export default AssetIcon;

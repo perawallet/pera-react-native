@@ -11,18 +11,23 @@
  */
 
 import { makeStyles } from '@rneui/themed';
-import { AssetIconProps } from './AssetIcon';
 
-export const useStyles = makeStyles((theme, props: AssetIconProps) => {
+export const useStyles = makeStyles((theme) => {
   return {
-    container: {
+    container: {      
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    row: {
+      width: '100%',
+      flexDirection: 'row',
+      justifyContent: 'space-between'
+    },
+    key: {
+      width: theme.spacing.xl * 3,
+      height: theme.spacing.xl * 2.5,
       alignItems: 'center',
       justifyContent: 'center'
-    },
-    icon: {
-      borderRadius: 50,
-      width: props.size || '100%',
-      height: props.size || '100%',
-    },
+    }
   };
 });
