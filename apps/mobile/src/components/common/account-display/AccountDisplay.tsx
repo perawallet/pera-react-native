@@ -30,10 +30,8 @@ const AccountDisplay = ({account, iconProps, showChevron = true, textProps, ...r
   const styles = useStyles();
   const displayName = account ? getAccountDisplayName(account) : 'No Account';
 
-  //TODO we may want to add support for pending inbox items here too
-  //(like the current inbox since we're using the same screen real estate)
   return (
-      <PWView {...rest}>
+      <PWView {...rest} style={[styles.container, rest.style]}>
         {!!account && <AccountIcon account={account} color={theme.colors.textMain} {...iconProps} />}
         <Text {...textProps} h4Style={textProps ? textProps.h4Style : styles.text} h4={!textProps}>
           {displayName}

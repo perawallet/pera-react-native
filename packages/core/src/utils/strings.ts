@@ -50,7 +50,7 @@ export const formatCurrency = (
     units?: 'K' | 'M',
     minPrecision?: number
 ) => {
-    const decimal = toUnits(new Decimal(value), units).toFixed(precision)
+    const decimal = toUnits(new Decimal(value), units).toFixed(Math.max(precision ?? 0, minPrecision ?? 0))
     const currencySymbol =
         !showSymbol || currency === 'ALGO'
             ? ''

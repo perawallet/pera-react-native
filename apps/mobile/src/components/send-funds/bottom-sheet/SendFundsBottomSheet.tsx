@@ -1,4 +1,4 @@
-import { PeraAsset, useSelectedAccount } from "@perawallet/core"
+import { formatCurrency, PeraAsset, useSelectedAccount } from "@perawallet/core"
 import PWBottomSheet from "../../common/bottom-sheet/PWBottomSheet"
 import EmptyView from "../../common/empty-view/EmptyView"
 import SendFundsAssetSelectionView from "../asset-selection/SendFundsAssetSelectionView"
@@ -18,6 +18,7 @@ import SendFundsSelectDestination from "../select-destination/SendFundsSelectDes
 import SendFundsTransactionConfirmation from "../transaction-confirmation/SendFundsTransactionConfirmation"
 import SendFundsProvider, { SendFundsContext } from "../../../providers/SendFundsProvider"
 import AssetIcon from "../../common/asset-icon/AssetIcon"
+import useToast from "../../../hooks/toast"
 
 type SendFundsBottomSheetProps = {
     asset?: PeraAsset
@@ -68,6 +69,7 @@ const TitleComponent = ({screenState, handleBack} : TitleComponentProps) => {
     </PWView>
 }
 
+//TODO: add support for ASA Inbox sends (check whether destination account is opted into asset)
 const SendFundsBottomSheet = ({asset, onClose, isVisible}: SendFundsBottomSheetProps) => {
     const selectedAccount = useSelectedAccount()
     const [screenState, setScreenState] = useState<ScreenState>("select-asset")
@@ -75,6 +77,7 @@ const SendFundsBottomSheet = ({asset, onClose, isVisible}: SendFundsBottomSheetP
     const styles = useStyles(dimensions)
     const { canSelectAsset, setSelectedAsset, 
         setCanSelectAsset, setNote, setAmount, setDestination } = useContext(SendFundsContext)
+    const { showToast } = useToast()
 
     useLayoutEffect(() => {
         if (asset) {

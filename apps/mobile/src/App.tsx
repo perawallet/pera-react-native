@@ -22,11 +22,12 @@ import { RootComponent } from './components/root/RootComponent';
 import BootSplash from 'react-native-bootsplash';
 import { NotifierWrapper } from 'react-native-notifier';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { config } from '@perawallet/config';
 
 function App() {
-  const [bootstrapped, setBootstrapped] = useState(false);
   const [persister, setPersister] = useState<Persister>();
 
+  const [bootstrapped, setBootstrapped] = useState(false);
   const bootstrap = useBootstrapper();
   const kvService = useKeyValueStorageService();
 
@@ -46,7 +47,14 @@ function App() {
         }, 200);
       });
     }
-  }, [bootstrapped, bootstrap, kvService]);
+
+    //Sometimes on a dev mode reload the spash doesn't disappear
+    if (config.debugEnabled) {
+      setTimeout(() => {
+        BootSplash.hide({ fade: true})
+      }, 3000)
+    }
+  }, [bootstrapped, bootstrap, kvService, config.debugEnabled]);
 
   return (
     <SafeAreaProvider>

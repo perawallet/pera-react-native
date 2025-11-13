@@ -12,15 +12,28 @@
 
 import { makeStyles } from '@rneui/themed';
 
-export const useStyles = makeStyles(theme => {
+export const useStyles = makeStyles((theme) => {
   return {
     container: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.md,
+        marginTop: theme.spacing.xl,
+        gap: theme.spacing.xl,
+        flex: 1,
     },
-    text: {
-      color: theme.colors.textGray,
+    divider: {
+        paddingTop: theme.spacing.md,
+        marginBottom: theme.spacing.md
     },
+    secondaryAmount: {
+        color: theme.colors.textGray
+    },
+    buttonContainer: {
+        flexGrow: 1,
+        justifyContent: 'flex-end',
+        paddingBottom: theme.spacing.xl,
+    },
+    link: {
+        color: theme.colors.linkPrimary
+    }
   };
 });

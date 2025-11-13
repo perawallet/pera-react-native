@@ -100,12 +100,14 @@ const SigningView = ({ request }: SigningViewProps) => {
     try {
       // TODO when we have valid TXs we'll need to sign them and then send them to the server
       // We might do this using algokit-utils or we can do it ourselves
+      // Same with the signing - maybe we can hook up our infra to algokit-util's Signer
       //
       // let allSigs = []
       // for(let group of request.txs) {
       //     let sigs = []
 
       //     for(let tx of group) {
+      //         //TODO maybe we should turn the binary tx into a Transaction using decodeTransaction from algokit  
       //         const sig = await signTransactionForAddress(tx.sender, tx)
       //         sigs.push(sig)
       //     }

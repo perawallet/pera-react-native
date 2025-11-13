@@ -377,7 +377,7 @@ export const useAccountBalances = (
     accounts: WalletAccount[],
     localCurrency: string = 'USD',
 ) => {
-    if (!accounts.length) {
+    if (!accounts?.length) {
         return {
             data: [],
             loading: false,
@@ -410,7 +410,7 @@ export const useAccountBalances = (
                 let localAmount = Decimal(0)
 
                 if (accountInfo) {
-                    accountInfo.results.forEach(
+                    accountInfo.results?.forEach(
                         (data: AccountDetailAssetSerializerResponse) => {
                             algoAmount = algoAmount.plus(
                                 Decimal(data.amount ?? '0').div(
@@ -439,13 +439,13 @@ export const useAccountBalances = (
         [results],
     )
 
-    const loading = useMemo(() => data.some(d => !d.isFetched), [data])
+    const loading = useMemo(() => data?.some(d => !d.isFetched), [data])
     const totalAlgo = useMemo(
-        () => data.reduce((acc, cur) => acc.plus(cur.algoAmount), Decimal(0)),
+        () => (data ?? []).reduce((acc, cur) => acc.plus(cur.algoAmount), Decimal(0)),
         [data],
     )
     const totalLocal = useMemo(
-        () => data.reduce((acc, cur) => acc.plus(cur.localAmount), Decimal(0)),
+        () => (data ?? []).reduce((acc, cur) => acc.plus(cur.localAmount), Decimal(0)),
         [data],
     )
 

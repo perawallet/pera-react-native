@@ -13,7 +13,7 @@
 import { Text, TextProps, useTheme } from '@rneui/themed';
 import PWView, { PWViewProps } from '../view/PWView';
 import { useStyles } from './styles';
-import { truncateAlgorandAddress, useContacts } from '@perawallet/core';
+import { truncateAlgorandAddress, useAllAccounts, useContacts } from '@perawallet/core';
 import useToast from '../../../hooks/toast';
 import Clipboard from '@react-native-clipboard/clipboard';
 
@@ -21,6 +21,7 @@ import CopyIcon from '../../../../assets/icons/copy.svg';
 import { SvgProps } from 'react-native-svg';
 import { useMemo } from 'react';
 import ContactAvatar from '../contact-avatar/ContactAvatar';
+import AccountDisplay from '../account-display/AccountDisplay';
 
 type AddressDisplayProps = {
   address: string;
@@ -56,7 +57,16 @@ const AddressDisplay = ({
     });
   };
 
+  const accounts = useAllAccounts()
   const { findContacts } = useContacts();
+
+  const account = useMemo(() => {
+    if (rawDisplay) {
+      return null
+    }
+
+    return accounts.find(a => a.address === address)
+  }, [accounts, rawDisplay, address])
 
   const contact = useMemo(() => {
     if (rawDisplay) {
@@ -79,14 +89,18 @@ const AddressDisplay = ({
 
   return (
     <PWView {...rest} style={[rest.style, styles.addressValueContainer]}>
-      {!!contact && (
+      {!!account && (
+        <AccountDisplay account={account} iconProps={{width: theme.spacing.xl, height: theme.spacing.xl}} showChevron={false} />
+      )}
+
+      {!!contact && !account && (
         <PWView style={styles.contactContainer}>
           <ContactAvatar size="small" contact={contact} />
           <Text>{contact.name}</Text>
         </PWView>
       )}
 
-      {!contact && <Text {...textProps}>{truncatedAddress}</Text>}
+      {!contact && !account && <Text {...textProps}>{truncatedAddress}</Text>}
 
       {showCopy && (
         <CopyIcon
