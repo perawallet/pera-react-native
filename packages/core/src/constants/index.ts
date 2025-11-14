@@ -1,1 +1,0 @@
-export const MAX_TX_NOTE_BYTES = 1024

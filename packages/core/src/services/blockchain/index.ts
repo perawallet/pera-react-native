@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+ export const MAX_TX_NOTE_BYTES = 1024
+
 export * from './hooks'
 export * from './types'
 export * from './utils'
