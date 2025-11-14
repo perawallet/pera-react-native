@@ -67,6 +67,7 @@ export const useTransactionSigner = () => {
     const accounts = useAppStore(state => state.accounts)
     const { signTransaction } = useHDWallet()
     const secureStorage = useSecureStorageService()
+    
     const signTransactionForAddress = async (
         address: string,
         transaction: Buffer,

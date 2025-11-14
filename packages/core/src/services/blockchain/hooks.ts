@@ -11,19 +11,27 @@
  */
 
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
+
 import { useAppStore } from '../../store'
 import { Networks } from './types'
+import { config } from '@perawallet/config'
+import { useMemo } from 'react'
 
 export const useAlgorandClient = () => {
     const network = useAppStore(state => state.network)
-
-    if (network === Networks.testnet) {
-        return AlgorandClient.testNet()
-    } else if (network === Networks.mainnet) {
-        return AlgorandClient.mainNet()
-    }
-
-    return AlgorandClient.fromEnvironment()
+    
+    return useMemo(() => {
+        const isMainnet = network === Networks.mainnet
+        const algodConfig = {
+            server: isMainnet ? config.mainnetAlgodUrl : config.testnetAlgodUrl,
+            token: config.algodApiKey 
+        }
+        const indexerConfig = {
+            server: isMainnet ? config.mainnetIndexerUrl : config.testnetIndexerUrl,
+            token: config.algodApiKey 
+        }
+        return AlgorandClient.fromConfig({ algodConfig, indexerConfig })
+    }, [network])
 }
 
 export const useNetwork = () => {

@@ -3,7 +3,7 @@ packages:
   - packages/*
 
 catalog:
-  '@algorandfoundation/algokit-utils': ^9.1.2
+  '@algorandfoundation/algokit-utils': ^9.2.0-beta.4
   '@algorandfoundation/xhd-wallet-api': ^1.0.3
   '@babel/runtime': ^7.28.4
   '@kubb/cli': ^4.5.8
