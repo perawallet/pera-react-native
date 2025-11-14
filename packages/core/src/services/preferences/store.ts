@@ -13,9 +13,9 @@
 import type { StateCreator } from 'zustand'
 
 export type PreferencesSlice = {
-    preferences: Record<string, string>
-    getPreference: (key: string) => string | null
-    setPreference: (key: string, value: string) => void
+    preferences: Record<string, string | boolean | number>
+    getPreference: (key: string) => string | boolean | number | null
+    setPreference: (key: string, value: string | boolean | number) => void
     deletePreference: (key: string) => void
 }
 
@@ -27,7 +27,7 @@ export const createPreferencesSlice: StateCreator<
 > = (set, get) => {
     return {
         preferences: {},
-        setPreference: (key: string, value: string) => {
+        setPreference: (key: string, value: string | boolean | number) => {
             const existing = get().preferences
             set({ preferences: {
                 ...existing,

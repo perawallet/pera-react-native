@@ -12,15 +12,17 @@ import PWTouchableOpacity from "../../common/touchable-opacity/PWTouchableOpacit
 import { useStyles } from "./styles"
 import PWButton from "../../common/button/PWButton"
 import useToast from "../../../hooks/toast"
+import SendFundsTitlePanel from "../title-panel/SendFundsTitlePanel"
 
 type SendFundsTransactionConfirmationProps = {
     onNext: () => void
+    onBack: () => void
 }
 
 //TODO figure out fee calculation
 //TODO add local currency conversion and display
 //TODO add note
-const SendFundsTransactionConfirmation = ({ onNext }: SendFundsTransactionConfirmationProps) => {
+const SendFundsTransactionConfirmation = ({ onNext, onBack }: SendFundsTransactionConfirmationProps) => {
     const { theme } = useTheme()
     const styles = useStyles()
     const {selectedAsset, amount, destination, note} = useContext(SendFundsContext)
@@ -86,7 +88,13 @@ const SendFundsTransactionConfirmation = ({ onNext }: SendFundsTransactionConfir
         }
     }
 
+    //not ready to render yet
+    if (!selectedAccount || !selectedAsset || !amount) {
+        return <></>
+    }
+
     return <PWView style={styles.container}>
+        <SendFundsTitlePanel handleBack={onBack} screenState="confirm-transaction" />
         <RowTitledItem title="Amount">
             <CurrencyDisplay h3 currency={selectedAsset.name} precision={selectedAsset.precision} minPrecision={2}
                 showSymbol value={amount ?? Decimal(0)} />

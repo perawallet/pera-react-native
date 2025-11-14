@@ -23,8 +23,8 @@ const PWButton = (props: PWButtonProps) => {
 
   return (
     <Button
-      buttonStyle={[style.buttonStyle]}
-      titleStyle={[style.titleStyle]}
+      buttonStyle={style.buttonStyle}
+      titleStyle={style.titleStyle}
       {...props}
     />
   );

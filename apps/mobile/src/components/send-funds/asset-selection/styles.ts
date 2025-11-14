@@ -16,15 +16,13 @@ export const useStyles = makeStyles((theme) => {
   return {
     container: {
       flex: 1,
+      alignItems: 'flex-start',
     },
     loadingContainer: {
       gap: theme.spacing.md
     },
-    assetListContainer: {
-      flex: 1
-    },
-    assetList: {
-      flex: 1
+    item: {
+      width: '100%'
     }
   };
 });

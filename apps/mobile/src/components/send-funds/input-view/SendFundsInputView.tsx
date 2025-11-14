@@ -8,19 +8,20 @@ import AccountAssetItemView from "../../assets/asset-item/AccountAssetItemView"
 import { Button } from "@rneui/themed"
 import NumberPad from "../../common/number-pad/NumberPad"
 import { SendFundsContext } from "../../../providers/SendFundsProvider"
+import SendFundsTitlePanel from "../title-panel/SendFundsTitlePanel"
 
 type SendFundsInputViewProps = {
     onNext: () => void
+    onBack: () => void
 }
 
 //TODO: handle local currency conversion
 //TODO: handle max precision (currently we don't show them but we're still adding characters)
 //TODO: handle max & add note buttons
 //TODO: show account amounts for the asset in AccountAssetDisplayItem
-//TODO: Handle ifno icon popup (and show first time user launches screen)
 //TODO: Should be using DMMono font for numbers
 //TODO: handle next validation (don't allow next without value or with an amount that's too high)
-const SendFundsInputView = ({onNext}: SendFundsInputViewProps) => {
+const SendFundsInputView = ({onNext, onBack}: SendFundsInputViewProps) => {
     const styles = useStyles()
     const { selectedAsset, note, setNote, setAmount } = useContext(SendFundsContext)
     const [value, setValue] = useState<string | null>()
@@ -49,6 +50,7 @@ const SendFundsInputView = ({onNext}: SendFundsInputViewProps) => {
     if (!selectedAsset) return <></>
 
     return <PWView style={styles.container}>
+        <SendFundsTitlePanel handleBack={onBack} screenState="input-amount" />
         <CurrencyDisplay h1 currency={selectedAsset.unit_name} precision={selectedAsset.fraction_decimals} 
             value={value ? Decimal(value) : Decimal(0)} h1Style={value ? styles.amount : styles.amountPlaceholder} 
             showSymbol={false} minPrecision={2} />

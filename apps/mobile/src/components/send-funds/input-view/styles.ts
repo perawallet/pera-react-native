@@ -16,7 +16,6 @@ export const useStyles = makeStyles((theme) => {
   return {
     container: {
         flex: 1,
-        marginTop: theme.spacing.xl,
         justifyContent: 'flex-start',
         alignItems: 'center',
         gap: theme.spacing.lg

@@ -10,15 +10,13 @@
  limitations under the License
  */
 
-export * from './accounts'
-export * from './assets'
-export * from './blockchain'
-export * from './contacts'
-export * from './device'
-export * from './polling'
-export * from './preferences'
-export * from './notifications'
-export * from './remote-config'
-export * from './reporting'
-export * from './settings'
-export * from './storage'
+import { makeStyles } from '@rneui/themed';
+
+export const useStyles = makeStyles((theme) => {
+  return {
+    container: {
+        flex: 1,
+        gap: theme.spacing.lg
+    },
+  };
+});

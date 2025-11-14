@@ -47,14 +47,7 @@ function App() {
         }, 200);
       });
     }
-
-    //Sometimes on a dev mode reload the spash doesn't disappear
-    if (config.debugEnabled) {
-      setTimeout(() => {
-        BootSplash.hide({ fade: true})
-      }, 3000)
-    }
-  }, [bootstrapped, bootstrap, kvService, config.debugEnabled]);
+  }, [bootstrapped, bootstrap, kvService, config.debugEnabled])
 
   return (
     <SafeAreaProvider>
