@@ -12,7 +12,6 @@ import PWTouchableOpacity from "../../common/touchable-opacity/PWTouchableOpacit
 import { useStyles } from "./styles"
 import PWButton from "../../common/button/PWButton"
 import useToast from "../../../hooks/toast"
-import { microAlgos } from "@algorandfoundation/algokit-utils"
 
 type SendFundsTransactionConfirmationProps = {
     onNext: () => void

@@ -24,6 +24,7 @@ vi.mock('@algorandfoundation/algokit-utils', () => {
             testNet: vi.fn(() => 'TESTNET_CLIENT'),
             mainNet: vi.fn(() => 'MAINNET_CLIENT'),
             fromEnvironment: vi.fn(() => 'ENV_CLIENT'),
+            fromConfig: vi.fn(() => 'FROM_CONFIG_CLIENT'),
         },
     }
 })
@@ -51,34 +52,37 @@ describe('services/blockchain/hooks', () => {
         ;(useAppStore as any).setState({ network: 'mainnet' })
     })
 
-    test('returns mainNet client when network is mainnet', () => {
+    test('returns fromConfig client for mainnet', () => {
         ;(useAppStore as any).setState({ network: 'mainnet' })
         const { result } = renderHook(() => useAlgorandClient())
 
-        expect(AlgorandClient.mainNet).toHaveBeenCalledTimes(1)
+        expect(AlgorandClient.fromConfig).toHaveBeenCalledTimes(1)
         expect(AlgorandClient.testNet).not.toHaveBeenCalled()
+        expect(AlgorandClient.mainNet).not.toHaveBeenCalled()
         expect(AlgorandClient.fromEnvironment).not.toHaveBeenCalled()
-        expect(result.current).toBe('MAINNET_CLIENT')
+        expect(result.current).toBe('FROM_CONFIG_CLIENT')
     })
 
-    test('returns testNet client when network is testnet', () => {
+    test('returns fromConfig client for testnet', () => {
         ;(useAppStore as any).setState({ network: 'testnet' })
         const { result } = renderHook(() => useAlgorandClient())
 
-        expect(AlgorandClient.testNet).toHaveBeenCalledTimes(1)
+        expect(AlgorandClient.fromConfig).toHaveBeenCalledTimes(1)
+        expect(AlgorandClient.testNet).not.toHaveBeenCalled()
         expect(AlgorandClient.mainNet).not.toHaveBeenCalled()
         expect(AlgorandClient.fromEnvironment).not.toHaveBeenCalled()
-        expect(result.current).toBe('TESTNET_CLIENT')
+        expect(result.current).toBe('FROM_CONFIG_CLIENT')
     })
 
-    test('returns fromEnvironment client when network is unknown', () => {
+    test('returns fromConfig client for unknown network', () => {
         ;(useAppStore as any).setState({ network: 'devnet' as any })
         const { result } = renderHook(() => useAlgorandClient())
 
-        expect(AlgorandClient.fromEnvironment).toHaveBeenCalledTimes(1)
+        expect(AlgorandClient.fromConfig).toHaveBeenCalledTimes(1)
         expect(AlgorandClient.testNet).not.toHaveBeenCalled()
         expect(AlgorandClient.mainNet).not.toHaveBeenCalled()
-        expect(result.current).toBe('ENV_CLIENT')
+        expect(AlgorandClient.fromEnvironment).not.toHaveBeenCalled()
+        expect(result.current).toBe('FROM_CONFIG_CLIENT')
     })
 
     test('useNetwork returns network and setNetwork', () => {

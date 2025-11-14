@@ -53,7 +53,7 @@ export default defineConfig({
         'src/**/*.styles.ts',
         'src/**/styles.ts',
         'src/**/theme.ts',
-        'src/components/common/webview/injected-scripts.ts',
+        'src/components/webview/injected-scripts.ts',
         //TODO: tests for hooks and boostrap were causing weird syntax error I couldn't figure out so disabling
         //coverage for now
         'src/bootstrap/*',

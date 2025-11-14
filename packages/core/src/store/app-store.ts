@@ -38,6 +38,11 @@ import {
     type PollingSlice,
 } from '../services/polling/store'
 import {
+    createPreferencesSlice,
+    partializePreferencesSlice,
+    type PreferencesSlice,
+} from '../services/preferences/store'
+import {
     createSwapsSlice,
     partializeSwapsSlice,
     type SwapsSlice,
@@ -66,6 +71,7 @@ export type AppState = SettingsSlice &
     ContactsSlice &
     DeviceSlice &
     PollingSlice &
+    PreferencesSlice &
     SwapsSlice
 
 type PersistListener<S> = (state: S) => void
@@ -108,6 +114,7 @@ export let useAppStore: UseBoundStore<
             ...createAccountsSlice(...a),
             ...createDeviceSlice(...a),
             ...createPollingSlice(...a),
+            ...createPreferencesSlice(...a),
             ...createSwapsSlice(...a),
             ...createAssetsSlice(...a),
         }),
@@ -122,6 +129,7 @@ export let useAppStore: UseBoundStore<
                 ...partializeAccountsSlice(state),
                 ...partializeDeviceSlice(state),
                 ...partializePollingSlice(state),
+                ...partializePreferencesSlice(state),
                 ...partializeSwapsSlice(state),
                 ...partializeAssetsSlice(state),
             }),
@@ -146,6 +154,7 @@ export const reinitializeAppStore = () => {
                 ...createAccountsSlice(...a),
                 ...createDeviceSlice(...a),
                 ...createPollingSlice(...a),
+                ...createPreferencesSlice(...a),
                 ...createSwapsSlice(...a),
                 ...createAssetsSlice(...a),
             }),
@@ -160,6 +169,7 @@ export const reinitializeAppStore = () => {
                     ...partializeAccountsSlice(state),
                     ...partializeDeviceSlice(state),
                     ...partializePollingSlice(state),
+                    ...partializePreferencesSlice(state),
                     ...partializeSwapsSlice(state),
                     ...partializeAssetsSlice(state),
                 }),
