@@ -46,6 +46,11 @@ export const useStyles = makeStyles((theme) => {
       color: theme.colors.textGray,
       fontSize: theme.spacing.md,
       alignSelf: 'flex-end'
-    }
+    },
+    row: {
+      flexDirection: 'row',
+      gap: theme.spacing.xs,
+      alignItems: 'center'
+    },
   };
 });

@@ -5,6 +5,11 @@ import { ALGO_ASSET_ID, PeraAsset } from "@perawallet/core"
 import { Text, useTheme } from "@rneui/themed"
 import Decimal from "decimal.js"
 import { useStyles } from "./styles"
+import { useMemo } from "react"
+
+import TrustedIcon from "../../../../assets/icons/assets/trusted.svg"
+import VerifiedIcon from "../../../../assets/icons/assets/verified.svg"
+import SuspiciousIcon from "../../../../assets/icons/assets/suspicious.svg"
 
 type AccountAssetItemViewProps = {
     asset: PeraAsset
@@ -16,11 +21,27 @@ type AccountAssetItemViewProps = {
 const AccountAssetItemView = ({ asset, amount, localAmount, iconSize, ...rest}: AccountAssetItemViewProps) => {
     const { theme } = useTheme()
     const styles = useStyles()
+
+    const verificationIcon = useMemo(() => {
+        if (asset.asset_id === ALGO_ASSET_ID) {
+            return <TrustedIcon width={theme.spacing.md} height={theme.spacing.md} />
+        }
+        if (asset.verification_tier === "verified") {
+            return <VerifiedIcon width={theme.spacing.md} height={theme.spacing.md}  />
+        }
+        if (asset.verification_tier === "suspicious") {
+            return <SuspiciousIcon width={theme.spacing.md} height={theme.spacing.md}  />
+        }
+        return undefined
+    }, [asset])
+
     return <PWView {...rest} style={[styles.container, rest.style]}>
         <AssetIcon asset={asset} size={iconSize ?? theme.spacing.xl * 1.5} />
         <PWView style={styles.dataContainer}>
             <PWView style={styles.unitContainer}>
-                <Text style={styles.primaryUnit}>{asset.name}</Text>
+                <PWView style={styles.row}>
+                    <Text style={styles.primaryUnit}>{asset.name}</Text> {verificationIcon}
+                </PWView>
                 <Text style={styles.secondaryUnit}>{asset.unit_name}{asset.asset_id !== ALGO_ASSET_ID && ` - ${asset.asset_id}`}</Text>
             </PWView>
             {!!amount && !!localAmount && <PWView style={styles.amountContainer}>
