@@ -22,7 +22,7 @@ const NavigationHeader = (props: NativeStackHeaderProps) => {
 
   return (
     <PWView style={styles.container}>
-      {props.navigation.canGoBack() && (
+      {!!props.navigation.canGoBack() && (
         <PWTouchableOpacity
           onPress={props.navigation.goBack}
           style={styles.backIconContainer}
@@ -33,12 +33,12 @@ const NavigationHeader = (props: NativeStackHeaderProps) => {
       <Text h4 style={styles.title}>
         {props.options.title || props.route.name}
       </Text>
-      {props.options.headerRight && (
+      {!!props.options.headerRight && (
         <PWView style={styles.actionContainer}>
           {props.options.headerRight({})}
         </PWView>
       )}
-      {!props.options.headerRight && props.navigation.canGoBack() && (
+      {!props.options.headerRight && !!props.navigation.canGoBack() && (
         <PWView style={styles.backIconContainer} />
       )}
     </PWView>
