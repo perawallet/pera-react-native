@@ -10,24 +10,17 @@
  limitations under the License
  */
 
-import { Text, useTheme } from '@rneui/themed';
-import { getAccountDisplayName, useSelectedAccount } from '@perawallet/core';
-import PWView from '../view/PWView';
+import { useSelectedAccount } from '@perawallet/core';
 import { useStyles } from './styles';
 
-import ChevronDown from '../../../../assets/icons/chevron-down.svg';
 import { TouchableOpacity, TouchableOpacityProps } from 'react-native';
-import AccountIcon from '../account-icon/AccountIcon';
 import AccountDisplay from '../account-display/AccountDisplay';
 
-type AccountSelectionProps = {
-} & TouchableOpacityProps;
+type AccountSelectionProps = {} & TouchableOpacityProps;
 
 const AccountSelection = (props: AccountSelectionProps) => {
-  const { theme } = useTheme();
   const styles = useStyles();
   const account = useSelectedAccount();
-  const displayName = getAccountDisplayName(account);
 
   //TODO we may want to add support for pending inbox items here too
   //(like the current inbox since we're using the same screen real estate)

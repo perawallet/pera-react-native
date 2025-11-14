@@ -55,9 +55,9 @@ const CurrencyDisplay = (props: CurrencyDisplayProps) => {
       deviceInfo.getDeviceLocale(),
       showSymbol,
       units,
-      minPrecision
+      minPrecision,
     );
-  }, [value, precision, currency, deviceInfo, showSymbol, units]);
+  }, [value, precision, currency, deviceInfo, showSymbol, units, minPrecision]);
 
   if (skeleton) {
     return (

@@ -38,7 +38,7 @@ const ButtonPanel = () => {
   const notImplemented = () => {
     Alert.alert('Not Implemented');
   };
-  
+
   const closeSendFunds = () => {
     setSendFundsOpen(false);
   };
@@ -70,7 +70,10 @@ const ButtonPanel = () => {
         icon={<MoreIcon color={theme.colors.textMain} />}
         onPress={notImplemented}
       />
-      <SendFundsBottomSheet onClose={closeSendFunds} isVisible={sendFundsOpen} />
+      <SendFundsBottomSheet
+        onClose={closeSendFunds}
+        isVisible={sendFundsOpen}
+      />
     </PWView>
   );
 };

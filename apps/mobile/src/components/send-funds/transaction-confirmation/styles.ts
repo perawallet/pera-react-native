@@ -12,33 +12,33 @@
 
 import { makeStyles } from '@rneui/themed';
 
-export const useStyles = makeStyles((theme) => {
+export const useStyles = makeStyles(theme => {
   return {
     container: {
-        paddingHorizontal: theme.spacing.md,
-        gap: theme.spacing.xl,
-        flex: 1,
+      paddingHorizontal: theme.spacing.md,
+      gap: theme.spacing.xl,
+      flex: 1,
     },
     divider: {
-        paddingTop: theme.spacing.md,
-        marginBottom: theme.spacing.md
+      paddingTop: theme.spacing.md,
+      marginBottom: theme.spacing.md,
     },
     secondaryAmount: {
-        color: theme.colors.textGray
+      color: theme.colors.textGray,
     },
     buttonContainer: {
-        flexGrow: 1,
-        justifyContent: 'flex-end',
-        paddingBottom: theme.spacing.xl,
+      flexGrow: 1,
+      justifyContent: 'flex-end',
+      paddingBottom: theme.spacing.xl,
     },
     linkContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: theme.spacing.xs,
-        gap: theme.spacing.sm
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: theme.spacing.xs,
+      gap: theme.spacing.sm,
     },
     link: {
-        color: theme.colors.linkPrimary
-    }
+      color: theme.colors.linkPrimary,
+    },
   };
 });

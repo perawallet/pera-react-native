@@ -25,13 +25,11 @@ export const useStyles = makeStyles(theme => {
       marginTop: theme.spacing.lg,
       gap: theme.spacing.md,
     },
-    title: {
-
-    },
+    title: {},
     accountDisplay: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: theme.spacing.md,
-    }
+    },
   };
 });

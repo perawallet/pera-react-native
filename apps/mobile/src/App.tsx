@@ -22,7 +22,6 @@ import { RootComponent } from './components/root/RootComponent';
 import BootSplash from 'react-native-bootsplash';
 import { NotifierWrapper } from 'react-native-notifier';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { config } from '@perawallet/config';
 
 function App() {
   const [persister, setPersister] = useState<Persister>();
@@ -47,7 +46,7 @@ function App() {
         }, 200);
       });
     }
-  }, [bootstrapped, bootstrap, kvService, config.debugEnabled])
+  }, [bootstrapped, bootstrap, kvService]);
 
   return (
     <SafeAreaProvider>

@@ -28,7 +28,7 @@ describe('services/preferences/store', () => {
         store.getState().setPreference('theme', 'dark')
 
         expect(store.getState().preferences).toEqual({
-            theme: 'dark'
+            theme: 'dark',
         })
     })
 
@@ -39,7 +39,7 @@ describe('services/preferences/store', () => {
         store.getState().setPreference('theme', 'dark')
 
         expect(store.getState().preferences).toEqual({
-            theme: 'dark'
+            theme: 'dark',
         })
     })
 
@@ -53,7 +53,7 @@ describe('services/preferences/store', () => {
         expect(store.getState().preferences).toEqual({
             theme: 'dark',
             language: 'en',
-            notifications: 'enabled'
+            notifications: 'enabled',
         })
     })
 
@@ -80,7 +80,7 @@ describe('services/preferences/store', () => {
         store.getState().deletePreference('theme')
 
         expect(store.getState().preferences).toEqual({
-            language: 'en'
+            language: 'en',
         })
     })
 
@@ -92,7 +92,7 @@ describe('services/preferences/store', () => {
         store.getState().deletePreference('nonexistent')
 
         expect(store.getState().preferences).toEqual({
-            theme: 'dark'
+            theme: 'dark',
         })
     })
 
@@ -107,7 +107,7 @@ describe('services/preferences/store', () => {
 
         expect(store.getState().preferences).toEqual({
             theme: 'dark',
-            notifications: 'enabled'
+            notifications: 'enabled',
         })
     })
 
@@ -122,7 +122,7 @@ describe('services/preferences/store', () => {
         const partialized = partializePreferencesSlice(fullState)
 
         expect(partialized).toEqual({
-            preferences: { theme: 'dark' }
+            preferences: { theme: 'dark' },
         })
     })
 
@@ -137,7 +137,7 @@ describe('services/preferences/store', () => {
         const partialized = partializePreferencesSlice(fullState)
 
         expect(partialized).toEqual({
-            preferences: {}
+            preferences: {},
         })
     })
 
@@ -164,7 +164,7 @@ describe('services/preferences/store', () => {
         store.getState().setPreference('empty-pref', '')
 
         expect(store.getState().preferences).toEqual({
-            'empty-pref': ''
+            'empty-pref': '',
         })
         expect(store.getState().getPreference('empty-pref')).toBe('')
     })

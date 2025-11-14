@@ -11,41 +11,40 @@
  */
 
 import { makeStyles } from '@rneui/themed';
-import { ScaledSize } from 'react-native';
 
-export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
+export const useStyles = makeStyles(theme => {
   return {
     titleContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        width: '100%',
-        alignItems: 'center',
-        height: theme.spacing.xl * 2,
-        marginBottom: theme.spacing.xl
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      width: '100%',
+      alignItems: 'center',
+      height: theme.spacing.xl * 2,
+      marginBottom: theme.spacing.xl,
     },
     titleButtonContainer: {
-        width: theme.spacing.xl * 1.5,
-        alignItems: 'center',
-        justifyContent: 'center'
+      width: theme.spacing.xl * 1.5,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
-    accountTitleContainer: { 
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: theme.spacing.xs / 2,
+    accountTitleContainer: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: theme.spacing.xs / 2,
     },
     assetTitleContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: theme.spacing.sm,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: theme.spacing.sm,
     },
     accountDisplay: {
-        flexDirection: 'row',
-        gap: theme.spacing.xs,
-        alignItems: 'center',
+      flexDirection: 'row',
+      gap: theme.spacing.xs,
+      alignItems: 'center',
     },
     accountDisplaySubHeading: {
-        fontSize: theme.spacing.md
+      fontSize: theme.spacing.md,
     },
   };
 });

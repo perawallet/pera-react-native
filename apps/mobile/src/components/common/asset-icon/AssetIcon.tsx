@@ -23,12 +23,12 @@ import PWView from '../view/PWView';
 import { useStyles } from './styles';
 
 type LabelType = {
-  dark_theme_logo: string
-  light_theme_logo: string
-}
+  dark_theme_logo: string;
+  light_theme_logo: string;
+};
 
 export type AssetIconProps = {
-  asset: PeraAsset,
+  asset: PeraAsset;
   size?: number;
 } & SvgProps;
 
@@ -77,8 +77,10 @@ const AssetIcon = (props: AssetIconProps) => {
       );
     if (asset.labels) {
       const labelLogo = isDarkMode
-        ? asset.labels?.find((l: LabelType) => l.dark_theme_logo)?.dark_theme_logo
-        : asset.labels?.find((l: LabelType) => l.light_theme_logo)?.light_theme_logo;
+        ? asset.labels?.find((l: LabelType) => l.dark_theme_logo)
+            ?.dark_theme_logo
+        : asset.labels?.find((l: LabelType) => l.light_theme_logo)
+            ?.light_theme_logo;
       if (labelLogo) {
         return (
           <Image

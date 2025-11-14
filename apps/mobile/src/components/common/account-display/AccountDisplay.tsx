@@ -11,7 +11,7 @@
  */
 
 import { Text, TextProps, useTheme } from '@rneui/themed';
-import { getAccountDisplayName, useSelectedAccount, WalletAccount } from '@perawallet/core';
+import { getAccountDisplayName, WalletAccount } from '@perawallet/core';
 import PWView, { PWViewProps } from '../view/PWView';
 import { useStyles } from './styles';
 
@@ -19,25 +19,41 @@ import ChevronDown from '../../../../assets/icons/chevron-down.svg';
 import AccountIcon, { AccountIconProps } from '../account-icon/AccountIcon';
 
 type AccountDisplayProps = {
-  account?: WalletAccount
-  iconProps?: Omit<AccountIconProps, "account">
-  textProps?: TextProps
-  showChevron?: boolean
+  account?: WalletAccount;
+  iconProps?: Omit<AccountIconProps, 'account'>;
+  textProps?: TextProps;
+  showChevron?: boolean;
 } & PWViewProps;
 
-const AccountDisplay = ({account, iconProps, showChevron = true, textProps, ...rest}: AccountDisplayProps) => {
+const AccountDisplay = ({
+  account,
+  iconProps,
+  showChevron = true,
+  textProps,
+  ...rest
+}: AccountDisplayProps) => {
   const { theme } = useTheme();
   const styles = useStyles();
   const displayName = account ? getAccountDisplayName(account) : 'No Account';
 
   return (
-      <PWView {...rest} style={[styles.container, rest.style]}>
-        {!!account && <AccountIcon account={account} color={theme.colors.textMain} {...iconProps} />}
-        <Text {...textProps} h4Style={textProps ? textProps.h4Style : styles.text} h4={!textProps}>
-          {displayName}
-        </Text>
-        {showChevron && <ChevronDown color={theme.colors.textGray} />}
-      </PWView>
+    <PWView {...rest} style={[styles.container, rest.style]}>
+      {!!account && (
+        <AccountIcon
+          account={account}
+          color={theme.colors.textMain}
+          {...iconProps}
+        />
+      )}
+      <Text
+        {...textProps}
+        h4Style={textProps ? textProps.h4Style : styles.text}
+        h4={!textProps}
+      >
+        {displayName}
+      </Text>
+      {showChevron && <ChevronDown color={theme.colors.textGray} />}
+    </PWView>
   );
 };
 

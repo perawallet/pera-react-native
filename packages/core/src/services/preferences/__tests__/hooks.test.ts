@@ -64,7 +64,7 @@ describe('services/preferences/hooks', () => {
 
         // Set a preference in the store
         useAppStore.setState({
-            preferences: { 'test-key': 'test-value' }
+            preferences: { 'test-key': 'test-value' },
         })
 
         const { result } = renderHook(() => usePreferences())
@@ -94,9 +94,9 @@ describe('services/preferences/hooks', () => {
         // Set preferences in the store
         useAppStore.setState({
             preferences: {
-                'key1': 'value1',
-                'key2': 'value2'
-            }
+                key1: 'value1',
+                key2: 'value2',
+            },
         })
 
         const { result } = renderHook(() => usePreferences())
@@ -137,7 +137,9 @@ describe('services/preferences/hooks', () => {
             result.current.setPreference('new-key', 'updated-value')
         })
 
-        expect(useAppStore.getState().preferences['new-key']).toBe('updated-value')
+        expect(useAppStore.getState().preferences['new-key']).toBe(
+            'updated-value',
+        )
     })
 
     test('deletePreference removes the preference from store', async () => {
@@ -161,9 +163,9 @@ describe('services/preferences/hooks', () => {
         // Set initial preferences
         useAppStore.setState({
             preferences: {
-                'keep': 'value',
-                'remove': 'gone'
-            }
+                keep: 'value',
+                remove: 'gone',
+            },
         })
 
         const { result } = renderHook(() => usePreferences())
@@ -173,7 +175,7 @@ describe('services/preferences/hooks', () => {
         })
 
         expect(useAppStore.getState().preferences).toEqual({
-            'keep': 'value'
+            keep: 'value',
         })
         expect(result.current.getPreference('remove')).toBeNull()
     })
@@ -198,7 +200,7 @@ describe('services/preferences/hooks', () => {
 
         // Set initial preferences
         useAppStore.setState({
-            preferences: { 'existing': 'value' }
+            preferences: { existing: 'value' },
         })
 
         const { result } = renderHook(() => usePreferences())
@@ -209,7 +211,7 @@ describe('services/preferences/hooks', () => {
 
         // Should not affect existing preferences
         expect(useAppStore.getState().preferences).toEqual({
-            'existing': 'value'
+            existing: 'value',
         })
     })
 })

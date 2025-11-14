@@ -13,7 +13,11 @@
 import { Text, TextProps, useTheme } from '@rneui/themed';
 import PWView, { PWViewProps } from '../view/PWView';
 import { useStyles } from './styles';
-import { truncateAlgorandAddress, useAllAccounts, useContacts } from '@perawallet/core';
+import {
+  truncateAlgorandAddress,
+  useAllAccounts,
+  useContacts,
+} from '@perawallet/core';
 import useToast from '../../../hooks/toast';
 import Clipboard from '@react-native-clipboard/clipboard';
 
@@ -57,16 +61,16 @@ const AddressDisplay = ({
     });
   };
 
-  const accounts = useAllAccounts()
+  const accounts = useAllAccounts();
   const { findContacts } = useContacts();
 
   const account = useMemo(() => {
     if (rawDisplay) {
-      return null
+      return null;
     }
 
-    return accounts.find(a => a.address === address)
-  }, [accounts, rawDisplay, address])
+    return accounts.find(a => a.address === address);
+  }, [accounts, rawDisplay, address]);
 
   const contact = useMemo(() => {
     if (rawDisplay) {
@@ -90,7 +94,11 @@ const AddressDisplay = ({
   return (
     <PWView {...rest} style={[rest.style, styles.addressValueContainer]}>
       {!!account && (
-        <AccountDisplay account={account} iconProps={{width: theme.spacing.xl, height: theme.spacing.xl}} showChevron={false} />
+        <AccountDisplay
+          account={account}
+          iconProps={{ width: theme.spacing.xl, height: theme.spacing.xl }}
+          showChevron={false}
+        />
       )}
 
       {!!contact && !account && (

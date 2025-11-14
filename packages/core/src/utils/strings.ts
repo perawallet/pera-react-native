@@ -48,9 +48,11 @@ export const formatCurrency = (
     locale: string = 'en-US',
     showSymbol: boolean = true,
     units?: 'K' | 'M',
-    minPrecision?: number
+    minPrecision?: number,
 ) => {
-    const decimal = toUnits(new Decimal(value), units).toFixed(Math.max(precision ?? 0, minPrecision ?? 0))
+    const decimal = toUnits(new Decimal(value), units).toFixed(
+        Math.max(precision ?? 0, minPrecision ?? 0),
+    )
     const currencySymbol =
         !showSymbol || currency === 'ALGO'
             ? ''
@@ -65,7 +67,10 @@ export const formatCurrency = (
     let fraction = parts.length > 1 ? '.' + parts[1] : ''
 
     const truncateToPrecision = minPrecision ?? precision
-    while (fraction.length - 1 > truncateToPrecision && fraction.endsWith('0')) {
+    while (
+        fraction.length - 1 > truncateToPrecision &&
+        fraction.endsWith('0')
+    ) {
         fraction = fraction.substring(0, fraction.length - 1)
     }
 

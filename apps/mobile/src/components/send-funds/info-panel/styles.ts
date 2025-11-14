@@ -14,66 +14,64 @@ import { makeStyles } from '@rneui/themed';
 import { ScaledSize } from 'react-native';
 
 export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
-    const height = dimensions.height - 200
+  const height = dimensions.height - 200;
   return {
     container: {
-        height,
-        padding: theme.spacing.xl,
-        paddingTop: theme.spacing.xl * 2,
-        borderTopStartRadius: theme.spacing.sm,
-        borderTopEndRadius: theme.spacing.sm,
-        overflow: 'hidden',
-        alignItems: 'center',
-        gap: theme.spacing.lg,
+      height,
+      padding: theme.spacing.xl,
+      paddingTop: theme.spacing.xl * 2,
+      borderTopStartRadius: theme.spacing.sm,
+      borderTopEndRadius: theme.spacing.sm,
+      overflow: 'hidden',
+      alignItems: 'center',
+      gap: theme.spacing.lg,
     },
     bodyContainer: {
-        gap: theme.spacing.lg,
-        padding: theme.spacing.xl,
+      gap: theme.spacing.lg,
+      padding: theme.spacing.xl,
     },
     title: {
-        textAlign: 'center',
-
+      textAlign: 'center',
     },
     preamble: {
-        textAlign: 'center',
-        paddingHorizontal: theme.spacing.lg
+      textAlign: 'center',
+      paddingHorizontal: theme.spacing.lg,
     },
     postamble: {
-        paddingHorizontal: theme.spacing.lg,
+      paddingHorizontal: theme.spacing.lg,
     },
     tipsContainer: {
-        gap: theme.spacing.xl,
-        marginHorizontal: theme.spacing.xl,
+      gap: theme.spacing.xl,
+      marginHorizontal: theme.spacing.xl,
     },
     tip: {
-        flexDirection: 'row',
-        gap: theme.spacing.xl,
-        alignItems: 'center',
+      flexDirection: 'row',
+      gap: theme.spacing.xl,
+      alignItems: 'center',
     },
     tipNumberContainer: {
-        borderRadius: theme.spacing.xl * 2,
-        borderColor: theme.colors.layerGrayLight,
-        boxShadow: '1px 1px 1px 0px #00000015',
-        borderWidth: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: theme.spacing.xl * 2,
-        height: theme.spacing.xl * 2,
+      borderRadius: theme.spacing.xl * 2,
+      borderColor: theme.colors.layerGrayLight,
+      boxShadow: '1px 1px 1px 0px #00000015',
+      borderWidth: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: theme.spacing.xl * 2,
+      height: theme.spacing.xl * 2,
     },
     tipNumber: {
-        fontSize: theme.spacing.lg,
+      fontSize: theme.spacing.lg,
     },
     tipText: {
-        flexWrap: 'wrap',
-        flexShrink: 1,
+      flexWrap: 'wrap',
+      flexShrink: 1,
     },
     redText: {
-        color: theme.colors.error
+      color: theme.colors.error,
     },
-    linkContainer: {
-    },
+    linkContainer: {},
     link: {
-        color: theme.colors.linkPrimary,
-    }
+      color: theme.colors.linkPrimary,
+    },
   };
 });

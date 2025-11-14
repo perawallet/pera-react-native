@@ -12,17 +12,17 @@
 
 import { makeStyles } from '@rneui/themed';
 
-export const useStyles = makeStyles((theme) => {
+export const useStyles = makeStyles(theme => {
   return {
     container: {
       flex: 1,
       alignItems: 'flex-start',
     },
     loadingContainer: {
-      gap: theme.spacing.md
+      gap: theme.spacing.md,
     },
     item: {
-      width: '100%'
-    }
+      width: '100%',
+    },
   };
 });

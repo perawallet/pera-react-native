@@ -12,20 +12,20 @@
 
 import { makeStyles } from '@rneui/themed';
 
-export const useStyles = makeStyles((theme) => {
+export const useStyles = makeStyles(theme => {
   return {
-    container: {      
+    container: {
       flexDirection: 'row',
       alignItems: 'flex-start',
       flexWrap: 'nowrap',
     },
     label: {
       color: theme.colors.textGray,
-      width: '40%'
+      width: '40%',
     },
     childContainer: {
       alignItems: 'flex-start',
-      flexGrow: 1
-    }
-  }
-})
+      flexGrow: 1,
+    },
+  };
+});

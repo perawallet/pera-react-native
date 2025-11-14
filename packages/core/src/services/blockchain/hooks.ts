@@ -19,16 +19,18 @@ import { useMemo } from 'react'
 
 export const useAlgorandClient = () => {
     const network = useAppStore(state => state.network)
-    
+
     return useMemo(() => {
         const isMainnet = network === Networks.mainnet
         const algodConfig = {
             server: isMainnet ? config.mainnetAlgodUrl : config.testnetAlgodUrl,
-            token: config.algodApiKey 
+            token: config.algodApiKey,
         }
         const indexerConfig = {
-            server: isMainnet ? config.mainnetIndexerUrl : config.testnetIndexerUrl,
-            token: config.algodApiKey 
+            server: isMainnet
+                ? config.mainnetIndexerUrl
+                : config.testnetIndexerUrl,
+            token: config.algodApiKey,
         }
         return AlgorandClient.fromConfig({ algodConfig, indexerConfig })
     }, [network])

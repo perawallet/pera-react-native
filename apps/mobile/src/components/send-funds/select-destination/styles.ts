@@ -12,11 +12,11 @@
 
 import { makeStyles } from '@rneui/themed';
 
-export const useStyles = makeStyles((theme) => {
+export const useStyles = makeStyles(theme => {
   return {
     container: {
-        flex: 1,
-        gap: theme.spacing.lg
+      flex: 1,
+      gap: theme.spacing.lg,
     },
   };
 });

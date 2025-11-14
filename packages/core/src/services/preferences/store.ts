@@ -29,10 +29,12 @@ export const createPreferencesSlice: StateCreator<
         preferences: {},
         setPreference: (key: string, value: string | boolean | number) => {
             const existing = get().preferences
-            set({ preferences: {
-                ...existing,
-                [key]: value
-            } })
+            set({
+                preferences: {
+                    ...existing,
+                    [key]: value,
+                },
+            })
         },
         getPreference: (key: string) => {
             return get().preferences[key] ?? null
@@ -40,9 +42,11 @@ export const createPreferencesSlice: StateCreator<
         deletePreference: (key: string) => {
             const existing = get().preferences
             delete existing[key]
-            set({ preferences: {
-                ...existing,
-            } })
+            set({
+                preferences: {
+                    ...existing,
+                },
+            })
         },
     }
 }

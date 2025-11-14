@@ -14,20 +14,19 @@ import { useCallback } from 'react'
 import { useAppStore } from '../../store'
 
 export const usePreferences = () => {
-    const {
-        getPreference,
-        setPreference,
-        deletePreference
-    } = useAppStore()
+    const { getPreference, setPreference, deletePreference } = useAppStore()
 
-    const hasPreference = useCallback((key: string) => {
-        return !!getPreference(key)
-    }, [getPreference])
+    const hasPreference = useCallback(
+        (key: string) => {
+            return !!getPreference(key)
+        },
+        [getPreference],
+    )
 
     return {
         hasPreference,
         getPreference,
         setPreference,
-        deletePreference
+        deletePreference,
     }
 }

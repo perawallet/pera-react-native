@@ -12,22 +12,22 @@
 
 import { makeStyles } from '@rneui/themed';
 
-export const useStyles = makeStyles((theme) => {
+export const useStyles = makeStyles(theme => {
   return {
-    container: {      
+    container: {
       alignItems: 'center',
       justifyContent: 'center',
     },
     row: {
       width: '100%',
       flexDirection: 'row',
-      justifyContent: 'space-between'
+      justifyContent: 'space-between',
     },
     key: {
       width: theme.spacing.xl * 3,
       height: theme.spacing.xl * 2.5,
       alignItems: 'center',
-      justifyContent: 'center'
-    }
+      justifyContent: 'center',
+    },
   };
 });

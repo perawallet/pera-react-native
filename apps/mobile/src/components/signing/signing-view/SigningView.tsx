@@ -107,7 +107,7 @@ const SigningView = ({ request }: SigningViewProps) => {
       //     let sigs = []
 
       //     for(let tx of group) {
-      //         //TODO maybe we should turn the binary tx into a Transaction using decodeTransaction from algokit  
+      //         //TODO maybe we should turn the binary tx into a Transaction using decodeTransaction from algokit
       //         const sig = await signTransactionForAddress(tx.sender, tx)
       //         sigs.push(sig)
       //     }

@@ -67,7 +67,7 @@ export const useTransactionSigner = () => {
     const accounts = useAppStore(state => state.accounts)
     const { signTransaction } = useHDWallet()
     const secureStorage = useSecureStorageService()
-    
+
     const signTransactionForAddress = async (
         address: string,
         transaction: Buffer,
@@ -442,11 +442,19 @@ export const useAccountBalances = (
 
     const loading = useMemo(() => data?.some(d => !d.isFetched), [data])
     const totalAlgo = useMemo(
-        () => (data ?? []).reduce((acc, cur) => acc.plus(cur.algoAmount), Decimal(0)),
+        () =>
+            (data ?? []).reduce(
+                (acc, cur) => acc.plus(cur.algoAmount),
+                Decimal(0),
+            ),
         [data],
     )
     const totalLocal = useMemo(
-        () => (data ?? []).reduce((acc, cur) => acc.plus(cur.localAmount), Decimal(0)),
+        () =>
+            (data ?? []).reduce(
+                (acc, cur) => acc.plus(cur.localAmount),
+                Decimal(0),
+            ),
         [data],
     )
 
