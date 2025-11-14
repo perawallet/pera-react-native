@@ -20,7 +20,7 @@ type SendFundsInputViewProps = {
 
 //TODO: handle local currency conversion
 //TODO: handle max precision (currently we don't show them but we're still adding characters)
-//TODO: handle max button & max amount validation (+ max amount popup)
+//TODO: max amount validation (+ max amount popup)
 //TODO: Should be using DMMono font for numbers
 const SendFundsInputView = ({onNext, onBack}: SendFundsInputViewProps) => {
     const styles = useStyles()
@@ -31,10 +31,10 @@ const SendFundsInputView = ({onNext, onBack}: SendFundsInputViewProps) => {
     const { showToast } = useToast()
 
     const { data } = useAccountBalances(selectedAccount ? [selectedAccount] : [])
-    const { algoAmount, usdAmount } = useMemo(() => {
+    const { tokenAmount, usdAmount } = useMemo(() => {
         const asset = data.at(0)?.accountInfo?.results?.find((info) => info.asset_id === selectedAsset?.asset_id)
         return {
-            algoAmount: asset?.amount ? Decimal(asset?.amount) : Decimal(0),
+            tokenAmount: asset?.amount ? Decimal(asset?.amount) : Decimal(0),
             usdAmount: asset?.balance_usd_value ?  Decimal(asset?.balance_usd_value) : Decimal(0),
         }
     }, [data])
@@ -45,6 +45,10 @@ const SendFundsInputView = ({onNext, onBack}: SendFundsInputViewProps) => {
 
     const closeNote = () => {
         setNoteOpen(false)
+    }
+
+    const setMax = () => {
+        setAmount(tokenAmount)
     }
 
     const handleNext = () => {
@@ -88,14 +92,14 @@ const SendFundsInputView = ({onNext, onBack}: SendFundsInputViewProps) => {
 
         <PWView style={styles.buttonContainer}>
             <Button title={!!note ? 'Edit Note' : `+ Add Note`} buttonStyle={styles.secondaryButton} titleStyle={styles.secondaryButtonTitle} onPress={openNote}/>
-            <Button title="MAX" buttonStyle={styles.secondaryButton} titleStyle={styles.secondaryButtonTitle}  />
+            <Button title="MAX" buttonStyle={styles.secondaryButton} titleStyle={styles.secondaryButtonTitle} onPress={setMax} />
         </PWView>
 
         <PWView style={styles.numpadContainer}>
             <NumberPad onPress={handleKey} />
         </PWView>
 
-        <AccountAssetItemView asset={selectedAsset} amount={algoAmount} localAmount={usdAmount} style={styles.assetDisplay} />
+        <AccountAssetItemView asset={selectedAsset} amount={tokenAmount} localAmount={usdAmount} style={styles.assetDisplay} />
             
         <PWButton variant="primary" 
             title="Next" containerStyle={styles.nextButton} onPress={handleNext} disabled={!value} />
