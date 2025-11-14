@@ -11,34 +11,24 @@
  */
 
 import { makeStyles } from '@rneui/themed';
+import { ScaledSize } from 'react-native';
 
-export const useStyles = makeStyles((theme) => {
+export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
+    const height = dimensions.height - 200
   return {
     container: {
-        paddingHorizontal: theme.spacing.md,
-        gap: theme.spacing.xl,
         flex: 1,
+        padding: theme.spacing.xl,
+        borderTopStartRadius: theme.spacing.sm,
+        borderTopEndRadius: theme.spacing.sm,
+        overflow: 'hidden',
     },
-    divider: {
-        paddingTop: theme.spacing.md,
-        marginBottom: theme.spacing.md
-    },
-    secondaryAmount: {
-        color: theme.colors.textGray
-    },
-    buttonContainer: {
-        flexGrow: 1,
-        justifyContent: 'flex-end',
-        paddingBottom: theme.spacing.xl,
-    },
-    linkContainer: {
+    titleContainer: {
         flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
         alignItems: 'center',
-        marginTop: theme.spacing.xs,
-        gap: theme.spacing.sm
+        marginBottom: theme.spacing.sm,
     },
-    link: {
-        color: theme.colors.linkPrimary
-    }
   };
 });

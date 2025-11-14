@@ -1,7 +1,7 @@
-import { useContext, useMemo } from "react"
+import { useContext, useMemo, useState } from "react"
 import PWView from "../../common/view/PWView"
 import { SendFundsContext } from "../../../providers/SendFundsProvider"
-import { ALGO_ASSET_ID, formatCurrency, useAccountBalances, useAlgorandClient, useSelectedAccount } from "@perawallet/core"
+import { ALGO_ASSET_ID, formatCurrency, useAccountBalances, useSelectedAccount } from "@perawallet/core"
 import RowTitledItem from "../../common/row-titled-item/RowTitledItem"
 import CurrencyDisplay from "../../common/currency-display/CurrencyDisplay"
 import Decimal from "decimal.js"
@@ -13,6 +13,8 @@ import { useStyles } from "./styles"
 import PWButton from "../../common/button/PWButton"
 import useToast from "../../../hooks/toast"
 import SendFundsTitlePanel from "../title-panel/SendFundsTitlePanel"
+import AddNotePanel from "../add-note-panel/AddNotePanel"
+import EditIcon from "../../../../assets/icons/edit-pen.svg"
 
 type SendFundsTransactionConfirmationProps = {
     onNext: () => void
@@ -21,13 +23,21 @@ type SendFundsTransactionConfirmationProps = {
 
 //TODO figure out fee calculation
 //TODO add local currency conversion and display
-//TODO add note
 const SendFundsTransactionConfirmation = ({ onNext, onBack }: SendFundsTransactionConfirmationProps) => {
     const { theme } = useTheme()
     const styles = useStyles()
     const {selectedAsset, amount, destination, note} = useContext(SendFundsContext)
     const selectedAccount = useSelectedAccount()
     const { showToast } = useToast()
+    const [noteOpen, setNoteOpen] = useState(false)
+
+    const openNote = () => {
+        setNoteOpen(true)
+    }
+
+    const closeNote = () => {
+        setNoteOpen(false)
+    }
 
     const { data } = useAccountBalances(selectedAccount ? [selectedAccount] : [])
     const currentBalance = useMemo(() => {
@@ -121,11 +131,17 @@ const SendFundsTransactionConfirmation = ({ onNext, onBack }: SendFundsTransacti
         <Divider style={styles.divider} />
         <RowTitledItem title="Note">
             {!!note && <Text>{note}</Text>}
-            {!note && <PWTouchableOpacity><Text style={styles.link}>+ Add Note</Text></PWTouchableOpacity>}
+            {!!note && <PWTouchableOpacity onPress={openNote} style={styles.linkContainer}>
+                <EditIcon color={theme.colors.linkPrimary} width={theme.spacing.lg} height={theme.spacing.lg} />
+                <Text style={styles.link}>Edit</Text>
+            </PWTouchableOpacity>}
+            {!note && <PWTouchableOpacity><Text style={styles.link} onPress={openNote}>+ Add Note</Text></PWTouchableOpacity>}
         </RowTitledItem>
         <PWView style={styles.buttonContainer}>
             <PWButton title="Confirm transfer" variant="primary" onPress={handleConfirm}/>
         </PWView>
+
+        <AddNotePanel isVisible={noteOpen} onClose={closeNote}/>
     </PWView>
 }
 

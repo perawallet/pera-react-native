@@ -9,6 +9,7 @@ import { Button } from "@rneui/themed"
 import NumberPad from "../../common/number-pad/NumberPad"
 import { SendFundsContext } from "../../../providers/SendFundsProvider"
 import SendFundsTitlePanel from "../title-panel/SendFundsTitlePanel"
+import AddNotePanel from "../add-note-panel/AddNotePanel"
 
 type SendFundsInputViewProps = {
     onNext: () => void
@@ -17,7 +18,7 @@ type SendFundsInputViewProps = {
 
 //TODO: handle local currency conversion
 //TODO: handle max precision (currently we don't show them but we're still adding characters)
-//TODO: handle max & add note buttons
+//TODO: handle max button
 //TODO: show account amounts for the asset in AccountAssetDisplayItem
 //TODO: Should be using DMMono font for numbers
 //TODO: handle next validation (don't allow next without value or with an amount that's too high)
@@ -25,6 +26,15 @@ const SendFundsInputView = ({onNext, onBack}: SendFundsInputViewProps) => {
     const styles = useStyles()
     const { selectedAsset, note, setNote, setAmount } = useContext(SendFundsContext)
     const [value, setValue] = useState<string | null>()
+    const [noteOpen, setNoteOpen] = useState(false)
+
+    const openNote = () => {
+        setNoteOpen(true)
+    }
+
+    const closeNote = () => {
+        setNoteOpen(false)
+    }
 
     const handleNext = () => {
         setAmount(Decimal(value ?? '0'))
@@ -59,7 +69,7 @@ const SendFundsInputView = ({onNext, onBack}: SendFundsInputViewProps) => {
             showSymbol minPrecision={2} />
 
         <PWView style={styles.buttonContainer}>
-            <Button title="+ Add Note" buttonStyle={styles.secondaryButton} titleStyle={styles.secondaryButtonTitle} />
+            <Button title={!!note ? 'Edit Note' : `+ Add Note`} buttonStyle={styles.secondaryButton} titleStyle={styles.secondaryButtonTitle} onPress={openNote}/>
             <Button title="MAX" buttonStyle={styles.secondaryButton} titleStyle={styles.secondaryButtonTitle}  />
         </PWView>
 
@@ -71,6 +81,8 @@ const SendFundsInputView = ({onNext, onBack}: SendFundsInputViewProps) => {
             
         <PWButton variant="primary" 
             title="Next" containerStyle={styles.nextButton} onPress={handleNext} disabled={!value} />
+
+        <AddNotePanel isVisible={noteOpen} onClose={closeNote}/>
     </PWView>
 }
 

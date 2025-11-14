@@ -25,7 +25,6 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
         overflow: 'hidden',
         alignItems: 'center',
         gap: theme.spacing.lg,
-        borderWidth: 1
     },
     bodyContainer: {
         gap: theme.spacing.lg,

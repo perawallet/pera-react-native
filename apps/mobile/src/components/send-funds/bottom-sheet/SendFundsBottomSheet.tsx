@@ -71,7 +71,8 @@ const SendFundsBottomSheet = ({asset, onClose, isVisible}: SendFundsBottomSheetP
     return <PWBottomSheet isVisible={isVisible} innerContainerStyle={styles.container}>
         <SendFundsProvider>
             {!!selectedAccount ? 
-                <TabView value={screenIndex} animationType="timing" animationConfig={{duration: 200, useNativeDriver: true}}>
+                <TabView value={screenIndex} animationType="timing" 
+                animationConfig={{duration: 200, useNativeDriver: true}} disableSwipe>
                     <TabView.Item style={styles.tabItem}>
                         <SendFundsAssetSelectionView onSelected={handleNext} onBack={handleBack} />
                     </TabView.Item>
