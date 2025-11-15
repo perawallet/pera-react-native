@@ -9,9 +9,17 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
-import type { Asset, AssetDetailSerializerResponse, AssetSerializerResponse } from '@api/index'
 
-export type PeraAsset = Asset | AssetDetailSerializerResponse | AssetSerializerResponse
+import type {
+    Asset,
+    AssetDetailSerializerResponse,
+    AssetSerializerResponse,
+} from '@api/index'
+
+export type PeraAsset =
+    | Asset
+    | AssetDetailSerializerResponse
+    | AssetSerializerResponse
 
 export const ALGO_ASSET: PeraAsset = {
     asset_id: 0,
@@ -23,8 +31,8 @@ export const ALGO_ASSET: PeraAsset = {
     total: '0',
     is_deleted: false,
     creator: {
-        address: ''
+        address: '',
     },
     is_verified: true,
-    category: 0
+    category: 0,
 }
