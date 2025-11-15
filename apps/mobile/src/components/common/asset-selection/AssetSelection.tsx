@@ -16,10 +16,10 @@ import { useStyles } from './styles';
 
 import ChevronRight from '../../../../assets/icons/chevron-right.svg';
 import AssetIcon from '../asset-icon/AssetIcon';
-import { AssetSerializerResponse } from '@perawallet/core';
+import { PeraAsset } from '@perawallet/core';
 
 export type AssetSelectionProps = {
-  asset: AssetSerializerResponse;
+  asset: PeraAsset;
 };
 
 const AssetSelection = ({ asset }: AssetSelectionProps) => {

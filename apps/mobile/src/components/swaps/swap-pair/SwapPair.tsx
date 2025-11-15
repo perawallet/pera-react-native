@@ -15,11 +15,11 @@ import PWView from '../../common/view/PWView';
 import { ViewStyle } from 'react-native';
 import { Text } from '@rneui/themed';
 import AssetIcon from '../../common/asset-icon/AssetIcon';
-import { AssetDetailSerializerResponse } from '@perawallet/core';
+import { PeraAsset } from '@perawallet/core';
 
 type SwapPairItemProps = {
-  fromAsset: AssetDetailSerializerResponse;
-  toAsset: AssetDetailSerializerResponse;
+  fromAsset: PeraAsset;
+  toAsset: PeraAsset;
   style: ViewStyle;
 };
 

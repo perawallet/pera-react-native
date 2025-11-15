@@ -13,7 +13,6 @@
 import { Skeleton } from '@rneui/themed';
 import PWView from '../../common/view/PWView';
 import {
-  AccountDetailAssetSerializerResponse,
   PeraAsset,
   useAccountBalances,
   useSelectedAccount,
@@ -63,7 +62,7 @@ const SendFundsAssetSelectionView = ({
 
   const balanceData = useMemo(() => data.at(0)?.accountInfo?.results, [data]);
   const renderItem = useCallback(
-    (item: AccountDetailAssetSerializerResponse) => {
+    (item: PeraAsset) => {
       return (
         <PWTouchableOpacity
           onPress={() => handleSelected(item)}

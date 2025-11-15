@@ -22,7 +22,7 @@ import NumberPad from '../../common/number-pad/NumberPad';
 import { SendFundsContext } from '../../../providers/SendFundsProvider';
 import SendFundsTitlePanel from '../title-panel/SendFundsTitlePanel';
 import AddNotePanel from '../add-note-panel/AddNotePanel';
-import useToast from 'hooks/toast';
+import useToast from '../../../hooks/toast';
 import { useAccountBalances, useSelectedAccount } from '@perawallet/core';
 
 type SendFundsInputViewProps = {
