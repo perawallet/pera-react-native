@@ -18,7 +18,7 @@ import { useCallback } from 'react';
 
 import SwapPair from '../swap-pair/SwapPair';
 import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay';
-import { AssetDetails, useCachedAssets } from '@perawallet/core';
+import { PeraAsset, useCachedAssets } from '@perawallet/core';
 
 const TopPairsPanel = () => {
   const themeStyle = useStyles();
@@ -26,13 +26,13 @@ const TopPairsPanel = () => {
   const { assets } = useCachedAssets([11711, 10458941, 700965019]);
 
   const algoAsset = assets?.length
-    ? assets.find((a: AssetDetails) => a.unit_name === 'ALGO')
+    ? assets.find((a: PeraAsset) => a.unit_name === 'ALGO')
     : null;
   const usdcAsset = assets?.length
-    ? assets.find((a: AssetDetails) => a.unit_name === 'USDC')
+    ? assets.find((a: PeraAsset) => a.unit_name === 'USDC')
     : null;
   const vestAsset = assets?.length
-    ? assets.find((a: AssetDetails) => a.unit_name === 'HIPO')
+    ? assets.find((a: PeraAsset) => a.unit_name === 'HIPO')
     : null;
 
   const renderSwapPair = useCallback(

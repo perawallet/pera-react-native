@@ -22,7 +22,7 @@ import { View } from 'react-native';
 import SwitchIcon from '../../../../assets/icons/switch.svg';
 import SlidersIcon from '../../../../assets/icons/sliders.svg';
 import CurrencyInput from '../../common/currency-input/CurrencyInput';
-import { AssetDetails, useCachedAssets } from '@perawallet/core';
+import { PeraAsset, useCachedAssets } from '@perawallet/core';
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity';
 
 const PairSelectionPanel = () => {
@@ -33,10 +33,10 @@ const PairSelectionPanel = () => {
   const { assets } = useCachedAssets([10458941, 700965019]);
 
   const algoAsset = assets?.length
-    ? assets.find((a: AssetDetails) => a.unit_name === 'ALGO')
+    ? assets.find((a: PeraAsset) => a.unit_name === 'ALGO')
     : null;
   const usdcAsset = assets?.length
-    ? assets.find((a: AssetDetails) => a.unit_name === 'USDC')
+    ? assets.find((a: PeraAsset) => a.unit_name === 'USDC')
     : null;
 
   //TODO: some or all of these should probably come from either an account hook, the state store or a calculation
