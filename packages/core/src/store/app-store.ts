@@ -23,6 +23,11 @@ import {
     type AccountsSlice,
 } from '../services/accounts/store'
 import {
+    createCurrenciesSlice,
+    partializeCurrenciesSlice,
+    type CurrenciesSlice,
+} from '../services/currencies/store'
+import {
     createBlockchainSlice,
     partializeBlockchainSlice,
     type BlockchainSlice,
@@ -72,7 +77,8 @@ export type AppState = SettingsSlice &
     DeviceSlice &
     PollingSlice &
     PreferencesSlice &
-    SwapsSlice
+    SwapsSlice & 
+    CurrenciesSlice
 
 type PersistListener<S> = (state: S) => void
 
@@ -111,6 +117,7 @@ export let useAppStore: UseBoundStore<
             ...createSettingsSlice(...a),
             ...createBlockchainSlice(...a),
             ...createContactsSlice(...a),
+            ...createCurrenciesSlice(...a),
             ...createAccountsSlice(...a),
             ...createDeviceSlice(...a),
             ...createPollingSlice(...a),
@@ -126,6 +133,7 @@ export let useAppStore: UseBoundStore<
                 ...partializeSettingsSlice(state),
                 ...partializeBlockchainSlice(state),
                 ...partializeContactsSlice(state),
+                ...partializeCurrenciesSlice(state),
                 ...partializeAccountsSlice(state),
                 ...partializeDeviceSlice(state),
                 ...partializePollingSlice(state),
@@ -151,6 +159,7 @@ export const reinitializeAppStore = () => {
                 ...createSettingsSlice(...a),
                 ...createBlockchainSlice(...a),
                 ...createContactsSlice(...a),
+                ...createCurrenciesSlice(...a),
                 ...createAccountsSlice(...a),
                 ...createDeviceSlice(...a),
                 ...createPollingSlice(...a),
@@ -166,6 +175,7 @@ export const reinitializeAppStore = () => {
                     ...partializeSettingsSlice(state),
                     ...partializeBlockchainSlice(state),
                     ...partializeContactsSlice(state),
+                    ...partializeCurrenciesSlice(state),
                     ...partializeAccountsSlice(state),
                     ...partializeDeviceSlice(state),
                     ...partializePollingSlice(state),
