@@ -20,7 +20,7 @@ import PWButton from '../../components/common/button/PWButton';
 import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SectionList } from 'react-native';
-import { Text, useTheme } from '@rneui/themed';
+import { Text } from '@rneui/themed';
 import ContactAvatar from '../../components/common/contact-avatar/ContactAvatar';
 import PWView from '../../components/common/view/PWView';
 import PWTouchableOpacity from '../../components/common/touchable-opacity/PWTouchableOpacity';
@@ -62,7 +62,6 @@ const ContactItem = ({ contact }: { contact: Contact }) => {
 const ContactListScreen = () => {
   const { findContacts, setSelectedContact } = useContacts();
   const styles = useStyles();
-  const { theme } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
   const [search, setSearch] = useState('');
 

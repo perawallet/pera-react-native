@@ -106,7 +106,16 @@ const AccountScreen = () => {
           <Tab.Item title="NFTs" />
           <Tab.Item title="History" />
         </Tab>
-        <TabView value={tabIndex} onChange={setTabIndex} animationType="spring" animationConfig={{duration: 150, bounciness: 1, useNativeDriver: true}}>
+        <TabView
+          value={tabIndex}
+          onChange={setTabIndex}
+          animationType="spring"
+          animationConfig={{
+            duration: 150,
+            bounciness: 1,
+            useNativeDriver: true
+          }}
+        >
           <TabView.Item style={styles.fullWidth}>
             <AccountOverview account={account} />
           </TabView.Item>

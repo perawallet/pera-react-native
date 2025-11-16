@@ -6,7 +6,7 @@ type AccountHistoryProps = {
 };
 
 //TODO implement
-const AccountHistory = ({ account }: AccountHistoryProps) => {
+const AccountHistory = (_: AccountHistoryProps) => {
   return (
     <EmptyView
       title="Not Implemented"

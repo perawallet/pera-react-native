@@ -35,6 +35,7 @@ type WealthChartProps = {
   onSelectionChanged: (item: AccountWealthHistoryItem | null) => void;
 };
 
+//TODO: Need to implement the trend display somehow (might need a UI layout change)
 const WealthChart = ({ onSelectionChanged, account }: WealthChartProps) => {
   const { theme } = useTheme();
   const { preferredCurrency } = useCurrency();

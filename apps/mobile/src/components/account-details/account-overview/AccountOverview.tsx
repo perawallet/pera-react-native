@@ -34,11 +34,11 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
     null
   );
   const [scrollingEnabled, setScrollingEnabled] = useState<boolean>(true);
-  const { privacyMode, setPrivacyMode } = useSettings()
+  const { privacyMode, setPrivacyMode } = useSettings();
 
   const togglePrivacyMode = () => {
-    setPrivacyMode(!privacyMode)
-  }
+    setPrivacyMode(!privacyMode);
+  };
 
   const chartSelectionChanged = useCallback(
     (selected: AccountWealthHistoryItem | null) => {

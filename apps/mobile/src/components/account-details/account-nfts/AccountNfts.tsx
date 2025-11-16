@@ -6,7 +6,7 @@ type AccountNftsProps = {
 };
 
 //TODO implement
-const AccountNfts = ({ account }: AccountNftsProps) => {
+const AccountNfts = (_: AccountNftsProps) => {
   return (
     <EmptyView
       title="Not Implemented"

@@ -19,6 +19,6 @@ export const useSettings = () => {
         theme,
         privacyMode,
         setTheme,
-        setPrivacyMode
+        setPrivacyMode,
     }
 }

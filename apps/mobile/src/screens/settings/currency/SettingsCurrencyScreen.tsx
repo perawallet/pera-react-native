@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Text, useTheme } from '@rneui/themed';
+import { Text } from '@rneui/themed';
 import MainScreenLayout from '../../../layouts/MainScreenLayout';
 
 import { useStyles } from './styles';
@@ -28,7 +28,6 @@ import SearchInput from '../../../components/common/search-input/SearchInput';
 
 const SettingsCurrencyScreen = () => {
   const styles = useStyles();
-  const { theme } = useTheme();
   const { preferredCurrency, setPreferredCurrency } = useCurrency();
   const [search, setSearch] = useState<string>();
   const [filteredData, setFilteredData] = useState<

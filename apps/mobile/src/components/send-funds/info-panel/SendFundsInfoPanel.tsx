@@ -18,7 +18,7 @@ import { Text, useTheme } from '@rneui/themed';
 import { useEffect, useState } from 'react';
 import InfoIcon from '../../../../assets/icons/info.svg';
 import PWButton from '../../common/button/PWButton';
-import { UserPreferences } from '../../../constants/user-references';
+import { UserPreferences } from '../../../constants/user-preferences';
 import { useStyles } from './styles';
 import PWView from '../../common/view/PWView';
 
