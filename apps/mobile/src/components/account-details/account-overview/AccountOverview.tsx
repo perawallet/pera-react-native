@@ -4,6 +4,7 @@ import {
   formatDatetime,
   useAccountBalances,
   useCurrency,
+  useSettings,
   WalletAccount
 } from '@perawallet/core';
 import { ScrollView } from 'react-native';
@@ -15,12 +16,13 @@ import AccountAssetList from '../asset-list/AccountAssetList';
 import { Text } from '@rneui/themed';
 import { useCallback, useState } from 'react';
 import { useStyles } from './styles';
+import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity';
 
 type AccountOverviewProps = {
   account: WalletAccount;
 };
 
-//TODO implement
+//TODO implement min balance display and info icon
 const AccountOverview = ({ account }: AccountOverviewProps) => {
   const { preferredCurrency } = useCurrency();
   const styles = useStyles();
@@ -32,6 +34,11 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
     null
   );
   const [scrollingEnabled, setScrollingEnabled] = useState<boolean>(true);
+  const { privacyMode, setPrivacyMode } = useSettings()
+
+  const togglePrivacyMode = () => {
+    setPrivacyMode(!privacyMode)
+  }
 
   const chartSelectionChanged = useCallback(
     (selected: AccountWealthHistoryItem | null) => {
@@ -53,7 +60,7 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollViewContent}
       >
-        <PWView style={styles.valueBar}>
+        <PWTouchableOpacity onPress={togglePrivacyMode} style={styles.valueBar}>
           <CurrencyDisplay
             h1
             value={chartData ? Decimal(chartData.algo_value) : totalAlgo}
@@ -82,7 +89,7 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
               </Text>
             )}
           </PWView>
-        </PWView>
+        </PWTouchableOpacity>
 
         {!!account && (
           <WealthChart

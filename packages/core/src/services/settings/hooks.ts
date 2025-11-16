@@ -13,10 +13,12 @@
 import { useAppStore } from '../../store/app-store'
 
 export const useSettings = () => {
-    const { theme, setTheme } = useAppStore()
+    const { theme, privacyMode, setTheme, setPrivacyMode } = useAppStore()
 
     return {
         theme,
+        privacyMode,
         setTheme,
+        setPrivacyMode
     }
 }

@@ -14,7 +14,7 @@ import { useStyles } from './styles';
 import { Skeleton, Text, TextProps } from '@rneui/themed';
 import PWView from '../view/PWView';
 import { useMemo } from 'react';
-import { formatCurrency, useDeviceInfoService } from '@perawallet/core';
+import { formatCurrency, useDeviceInfoService, useSettings } from '@perawallet/core';
 import { Decimal } from 'decimal.js';
 import AlgoIcon from '../../../../assets/icons/algo.svg';
 
@@ -46,9 +46,10 @@ const CurrencyDisplay = (props: CurrencyDisplayProps) => {
   } = props;
 
   const isAlgo = useMemo(() => currency === 'ALGO', [currency]);
+  const {privacyMode} = useSettings()
 
   const displayValue = useMemo(() => {
-    return formatCurrency(
+    return privacyMode? "****" : formatCurrency(
       value,
       precision,
       currency,
@@ -57,7 +58,7 @@ const CurrencyDisplay = (props: CurrencyDisplayProps) => {
       units,
       minPrecision
     );
-  }, [value, precision, currency, deviceInfo, showSymbol, units, minPrecision]);
+  }, [value, precision, currency, deviceInfo, showSymbol, units, minPrecision, privacyMode]);
 
   if (skeleton) {
     return (

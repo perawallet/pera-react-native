@@ -15,7 +15,9 @@ import type { ThemeMode } from './types'
 
 export type SettingsSlice = {
     theme: ThemeMode
+    privacyMode: boolean
     setTheme: (theme: ThemeMode) => void
+    setPrivacyMode: (enabled: boolean) => void
 }
 
 export const createSettingsSlice: StateCreator<
@@ -26,12 +28,15 @@ export const createSettingsSlice: StateCreator<
 > = set => {
     return {
         theme: 'system',
+        privacyMode: false,
         setTheme: theme => set({ theme }),
+        setPrivacyMode: privacyMode => set({ privacyMode }),
     }
 }
 
 export const partializeSettingsSlice = (state: SettingsSlice) => {
     return {
         theme: state.theme,
+        privacyMode: state.privacyMode,
     }
 }
