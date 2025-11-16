@@ -25,8 +25,8 @@ export const useStyles = makeStyles((theme, props: TransactionIconProps) => {
       width: size,
       height: size,
       alignItems: 'center',
-      justifyContent: 'center',
+      justifyContent: 'center'
     },
-    icon: {},
+    icon: {}
   };
 });

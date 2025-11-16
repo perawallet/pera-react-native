@@ -15,6 +15,6 @@ import { PWViewProps } from './PWView';
 
 export const useStyles = makeStyles((theme, _: PWViewProps) => ({
   defaultStyle: {
-    backgroundColor: theme.colors.background,
-  },
+    backgroundColor: theme.colors.background
+  }
 }));

@@ -14,7 +14,7 @@ import { useStyles } from './styles';
 import { Text } from '@rneui/themed';
 import PWView from '../view/PWView';
 import PWTouchableOpacity, {
-  type PWTouchableOpacityProps,
+  type PWTouchableOpacityProps
 } from '../touchable-opacity/PWTouchableOpacity';
 
 export type PanelButtonProps = {

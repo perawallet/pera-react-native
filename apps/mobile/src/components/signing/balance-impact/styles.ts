@@ -17,21 +17,21 @@ export const useStyles = makeStyles(theme => {
     impactContainer: {
       width: '100%',
       padding: theme.spacing.xl,
-      gap: theme.spacing.md,
+      gap: theme.spacing.md
     },
     impactHeading: {
-      color: theme.colors.textGray,
+      color: theme.colors.textGray
     },
     itemContainer: {
       flexDirection: 'row',
       gap: theme.spacing.md,
-      alignItems: 'center',
+      alignItems: 'center'
     },
     amounts: {
-      gap: theme.spacing.xs,
+      gap: theme.spacing.xs
     },
     secondaryAmount: {
-      color: theme.colors.textGray,
-    },
+      color: theme.colors.textGray
+    }
   };
 });

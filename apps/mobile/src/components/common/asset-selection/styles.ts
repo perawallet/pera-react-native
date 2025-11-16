@@ -22,13 +22,13 @@ export const useStyles = makeStyles(theme => {
       gap: theme.spacing.sm,
       borderRadius: theme.spacing.lg,
       backgroundColor: theme.colors.layerGrayLightest,
-      width: theme.spacing.xl * 5,
+      width: theme.spacing.xl * 5
     },
     text: {},
     icon: {
       width: theme.spacing.xl,
       height: theme.spacing.xl,
-      borderRadius: theme.spacing.xl / 2,
-    },
+      borderRadius: theme.spacing.xl / 2
+    }
   };
 });

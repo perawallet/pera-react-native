@@ -20,7 +20,7 @@ import {
   useDevice,
   useNetwork,
   useSettings,
-  useSigningRequest,
+  useSigningRequest
 } from '@perawallet/core';
 import { useQueryClient } from '@tanstack/react-query';
 import { useStyles } from './styles';
@@ -69,10 +69,10 @@ const SettingsSubPageScreen = ({ route }: SettingsSubPageScreenProps) => {
         'first-valid': 1000,
         'last-valid': 2000,
         sender: 'HS4UDE2JA2VLAL3HWXC3QJMCG4XCINHQFFCXH2JXCHYWAHLWEAKY26Z2SI',
-        'tx-type': 'pay',
+        'tx-type': 'pay'
       };
       addSignRequest({
-        txs: [[tx]],
+        txs: [[tx]]
       });
     } catch (error) {
       console.log('Error', error);

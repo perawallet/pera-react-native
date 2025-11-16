@@ -18,13 +18,13 @@ import PWView from '../../../components/common/view/PWView';
 import {
   CurrencySerializerResponse,
   useCurrency,
-  useV1CurrenciesList,
+  useV1CurrenciesList
 } from '@perawallet/core';
 import { useEffect, useState } from 'react';
 import { FlatList } from 'react-native';
-import PWTouchableOpacity from '../../../components/common/touchable-opacity/PWTouchableOpacity';
 
 import SearchIcon from '../../../../assets/icons/magnifying-glass.svg';
+import RadioButton from '../../../components/common/radio-button/RadioButton';
 
 const SettingsCurrencyScreen = () => {
   const styles = useStyles();
@@ -46,27 +46,19 @@ const SettingsCurrencyScreen = () => {
         (data ?? []).filter(
           d =>
             d.name.toLowerCase().includes(lowercaseSearch) ||
-            d.currency_id.toLowerCase().includes(lowercaseSearch),
-        ),
+            d.currency_id.toLowerCase().includes(lowercaseSearch)
+        )
       );
     }
   }, [data, search]);
 
   const renderItem = ({ item }: { item: CurrencySerializerResponse }) => {
     return (
-      <PWTouchableOpacity
+      <RadioButton
+        title={`${item.name} (${item.currency_id})`}
         onPress={() => setPreferredCurrency(item.currency_id)}
-        style={styles.row}
-      >
-        <Text h4>
-          {item.name} ({item.currency_id})
-        </Text>
-        <PWView style={styles.radioContainer}>
-          {preferredCurrency === item.currency_id && (
-            <PWView style={styles.selectedRadio} />
-          )}
-        </PWView>
-      </PWTouchableOpacity>
+        selected={preferredCurrency === item.currency_id}
+      />
     );
   };
 

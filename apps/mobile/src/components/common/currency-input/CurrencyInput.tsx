@@ -13,7 +13,7 @@
 import { useMemo } from 'react';
 import {
   MaskedTextInput,
-  MaskedTextInputProps,
+  MaskedTextInputProps
 } from 'react-native-advanced-input-mask';
 
 type CurrencyInputProps = {

@@ -16,11 +16,11 @@ import { PropsWithChildren } from 'react';
 export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
   return {
     mainContainer: {
-      flex: 1,
+      flex: 1
     },
     helperText: {
       color: theme.colors.textGray,
-      paddingBottom: theme.spacing.xl * 2,
+      paddingBottom: theme.spacing.xl * 2
     },
     walletNameContainer: {
       backgroundColor: theme.colors.layerGrayLighter,
@@ -30,62 +30,62 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       flexWrap: 'nowrap',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: theme.spacing.sm,
+      gap: theme.spacing.sm
     },
     nameText: {
       color: theme.colors.textGray,
-      alignSelf: 'center',
+      alignSelf: 'center'
     },
     finishButton: {
-      marginHorizontal: theme.spacing.xl,
+      marginHorizontal: theme.spacing.xl
     },
     spacer: {
-      flexGrow: 1,
+      flexGrow: 1
     },
     wordContainer: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      marginBottom: theme.spacing.lg,
+      marginBottom: theme.spacing.lg
     },
     column: {
-      width: '47%',
+      width: '47%'
     },
     scrollView: {
-      paddingBottom: theme.spacing.lg,
+      paddingBottom: theme.spacing.lg
     },
     inputContainerRow: {
       marginTop: theme.spacing.sm,
       flexDirection: 'row',
       gap: theme.spacing.sm,
-      alignItems: 'center',
+      alignItems: 'center'
     },
     label: {
-      color: theme.colors.textGray,
+      color: theme.colors.textGray
     },
     focusedLabel: {
-      color: theme.colors.textMain,
+      color: theme.colors.textMain
     },
     inputOuterContainer: {
-      flexShrink: 1,
+      flexShrink: 1
     },
     inputContainer: {
       backgroundColor: theme.colors.background,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.layerGray,
-      flexShrink: 1,
+      flexShrink: 1
     },
     focusedInputContainer: {
       backgroundColor: theme.colors.background,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.textMain,
-      flexShrink: 1,
+      flexShrink: 1
     },
     input: {
       flexShrink: 1,
-      backgroundColor: 'transparent',
+      backgroundColor: 'transparent'
     },
     overlayBackdrop: {
-      backgroundColor: 'rgba(52, 52, 52, 0.8)',
+      backgroundColor: 'rgba(52, 52, 52, 0.8)'
     },
     overlay: {
       padding: theme.spacing.xl,
@@ -93,7 +93,7 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       justifyContent: 'center',
       backgroundColor: theme.colors.layerGray,
       borderRadius: theme.spacing.lg,
-      gap: theme.spacing.lg,
-    },
+      gap: theme.spacing.lg
+    }
   };
 });

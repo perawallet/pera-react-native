@@ -34,7 +34,7 @@ type SendFundsTitlePanelProps = {
 
 const SendFundsTitlePanel = ({
   screenState,
-  handleBack,
+  handleBack
 }: SendFundsTitlePanelProps) => {
   const { theme } = useTheme();
   const selectedAccount = useSelectedAccount();

@@ -17,38 +17,38 @@ export const useStyles = makeStyles(theme => {
     container: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.lg,
+      gap: theme.spacing.lg
     },
     dataContainer: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      flexGrow: 1,
+      flexGrow: 1
     },
     unitContainer: {
-      gap: theme.spacing.xs / 2,
+      gap: theme.spacing.xs / 2
     },
     amountContainer: {
-      gap: theme.spacing.xs / 2,
+      gap: theme.spacing.xs / 2
     },
     primaryUnit: {},
     secondaryUnit: {
       color: theme.colors.textGrayLighter,
-      fontSize: theme.spacing.md,
+      fontSize: theme.spacing.md
     },
     primaryAmount: {
-      textAlign: 'right',
+      textAlign: 'right'
     },
     secondaryAmount: {
       textAlign: 'right',
       color: theme.colors.textGray,
       fontSize: theme.spacing.md,
-      alignSelf: 'flex-end',
+      alignSelf: 'flex-end'
     },
     row: {
       flexDirection: 'row',
       gap: theme.spacing.xs,
-      alignItems: 'center',
-    },
+      alignItems: 'center'
+    }
   };
 });

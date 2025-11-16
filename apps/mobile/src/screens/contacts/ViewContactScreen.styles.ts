@@ -20,16 +20,16 @@ export const useStyles = makeStyles(theme => {
         theme.mode === 'dark'
           ? theme.colors.textGrayLighter
           : theme.colors.textGray,
-      marginBottom: theme.spacing.xs,
+      marginBottom: theme.spacing.xs
     },
     avatar: {
       alignItems: 'center',
-      marginVertical: theme.spacing.xl,
+      marginVertical: theme.spacing.xl
     },
     value: {},
     container: {
       padding: theme.spacing.xl,
-      gap: theme.spacing.md,
-    },
+      gap: theme.spacing.md
+    }
   };
 });

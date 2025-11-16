@@ -16,7 +16,7 @@ export const useStyles = makeStyles(theme => ({
   container: {
     paddingHorizontal: theme.spacing.lg,
     flexShrink: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: theme.colors.background
   },
   headerContainer: {
     gap: theme.spacing.md,
@@ -24,22 +24,22 @@ export const useStyles = makeStyles(theme => ({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: theme.colors.background,
-    zIndex: 2,
+    zIndex: 2
   },
   headerText: {
-    color: theme.colors.textGray,
+    color: theme.colors.textGray
   },
   itemRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-between'
   },
   itemScrollContainer: {
     gap: theme.spacing.md,
     marginTop: theme.spacing.xs,
-    paddingBottom: theme.spacing.md,
+    paddingBottom: theme.spacing.md
   },
   scrollContainer: {
-    flexGrow: 1,
+    flexGrow: 1
   },
   itemContainer: {
     paddingVertical: theme.spacing.xs,
@@ -47,6 +47,6 @@ export const useStyles = makeStyles(theme => ({
     backgroundColor: theme.colors.background,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.lg,
-  },
+    gap: theme.spacing.lg
+  }
 }));

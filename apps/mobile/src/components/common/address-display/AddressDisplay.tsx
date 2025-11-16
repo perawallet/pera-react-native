@@ -16,7 +16,7 @@ import { useStyles } from './styles';
 import {
   truncateAlgorandAddress,
   useAllAccounts,
-  useContacts,
+  useContacts
 } from '@perawallet/core';
 import useToast from '../../../hooks/toast';
 import Clipboard from '@react-native-clipboard/clipboard';
@@ -57,7 +57,7 @@ const AddressDisplay = ({
     showToast({
       title: '',
       body: 'Address copied to clipboard',
-      type: 'info',
+      type: 'info'
     });
   };
 
@@ -80,7 +80,7 @@ const AddressDisplay = ({
       keyword: address,
       matchAddress: true,
       matchName: false,
-      matchNFD: false,
+      matchNFD: false
     }).at(0);
   }, [rawDisplay, address, findContacts]);
 

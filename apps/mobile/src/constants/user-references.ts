@@ -11,5 +11,5 @@
  */
 
 export const UserPreferences = {
-  spendAgreed: 'send-fund-agreed',
+  spendAgreed: 'send-fund-agreed'
 } as const;

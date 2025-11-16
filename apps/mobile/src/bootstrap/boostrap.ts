@@ -19,7 +19,7 @@ import {
   useRemoteConfigService,
   useNotificationService,
   registerPlatformServices,
-  useFcmToken,
+  useFcmToken
 } from '@perawallet/core';
 
 const firebaseService = new RNFirebaseService();
@@ -29,7 +29,7 @@ const platformServices = {
   remoteConfig: firebaseService,
   secureStorage: new RNSecureStorageService(),
   keyValueStorage: new RNKeyValueStorageService(),
-  deviceInfo: new RNDeviceInfoStorageService(),
+  deviceInfo: new RNDeviceInfoStorageService()
 };
 
 registerPlatformServices(platformServices);

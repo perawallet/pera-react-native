@@ -33,7 +33,7 @@ const EditContactScreen = () => {
     findContacts,
     deleteContact,
     selectedContact,
-    setSelectedContact,
+    setSelectedContact
   } = useContacts();
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
   const { theme } = useTheme();
@@ -44,10 +44,10 @@ const EditContactScreen = () => {
     control,
     handleSubmit,
     setError,
-    formState: { isValid, errors },
+    formState: { isValid, errors }
   } = useForm({
     resolver: zodResolver(contactSchema),
-    defaultValues: selectedContact ?? {},
+    defaultValues: selectedContact ?? {}
   });
 
   const openDeleteModal = () => {
@@ -64,12 +64,12 @@ const EditContactScreen = () => {
         keyword: data.address,
         matchAddress: true,
         matchName: false,
-        matchNFD: false,
+        matchNFD: false
       });
 
       if (matches?.length) {
         setError('address', {
-          message: 'Contact for this address already exists.',
+          message: 'Contact for this address already exists.'
         });
         return;
       }

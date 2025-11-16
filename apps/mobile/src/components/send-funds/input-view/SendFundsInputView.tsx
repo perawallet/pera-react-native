@@ -26,7 +26,7 @@ import useToast from '../../../hooks/toast';
 import {
   useAccountBalances,
   useCurrencyConverter,
-  useSelectedAccount,
+  useSelectedAccount
 } from '@perawallet/core';
 
 type SendFundsInputViewProps = {
@@ -54,13 +54,13 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
     const asset = data
       .at(0)
       ?.accountInfo?.results?.find(
-        info => info.asset_id === selectedAsset?.asset_id,
+        info => info.asset_id === selectedAsset?.asset_id
       );
     return {
       tokenAmount: asset?.amount ? Decimal(asset?.amount) : Decimal(0),
       usdAmount: asset?.balance_usd_value
         ? Decimal(asset?.balance_usd_value)
-        : Decimal(0),
+        : Decimal(0)
     };
   }, [data, selectedAsset?.asset_id]);
 
@@ -81,7 +81,7 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
       showToast({
         title: 'Invalid Amount',
         body: 'Please enter a valid amount.',
-        type: 'error',
+        type: 'error'
       });
     }
     setAmount(Decimal(value ?? '0'));

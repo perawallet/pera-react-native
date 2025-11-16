@@ -14,22 +14,22 @@ import { makeStyles } from '@rneui/themed';
 
 export const useStyles = makeStyles(theme => ({
   container: {
-    padding: theme.spacing.lg,
+    padding: theme.spacing.lg
   },
   headerContainer: {
     gap: theme.spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'space-between'
   },
   headerText: {
-    color: theme.colors.helperPositive,
+    color: theme.colors.helperPositive
   },
   itemScrollContainer: {
     gap: theme.spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: theme.spacing.sm,
+    marginVertical: theme.spacing.sm
   },
   itemContainer: {
     paddingVertical: theme.spacing.xs,
@@ -41,6 +41,6 @@ export const useStyles = makeStyles(theme => ({
     borderColor: theme.colors.layerGrayLighter,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.lg,
-  },
+    gap: theme.spacing.lg
+  }
 }));

@@ -17,61 +17,61 @@ import { RNFirebaseService } from '../firebase';
 vi.mock('react-native', () => ({
   Platform: {
     OS: 'ios',
-    select: vi.fn(config => config.ios),
-  },
+    select: vi.fn(config => config.ios)
+  }
 }));
 
 // Mock Firebase modules with simple implementations
 vi.mock('@react-native-firebase/crashlytics', () => ({
   getCrashlytics: () => ({
     setCrashlyticsCollectionEnabled: vi.fn().mockResolvedValue(null),
-    recordError: vi.fn(),
-  }),
+    recordError: vi.fn()
+  })
 }));
 
 const mockRemoteConfig = vi.hoisted(() => ({
   setConfigSettings: vi.fn().mockResolvedValue(undefined),
   setDefaults: vi.fn().mockResolvedValue(undefined),
   fetchAndActivate: vi.fn().mockResolvedValue(true),
-  getValue: vi.fn(),
+  getValue: vi.fn()
 }));
 
 vi.mock('@react-native-firebase/remote-config', () => ({
-  getRemoteConfig: () => mockRemoteConfig,
+  getRemoteConfig: () => mockRemoteConfig
 }));
 
 const mockMessaging = vi.hoisted(() => ({
   registerDeviceForRemoteMessages: vi.fn().mockResolvedValue(undefined),
   getToken: vi.fn().mockResolvedValue('mock-fcm-token'),
-  onMessage: vi.fn(() => vi.fn()),
+  onMessage: vi.fn(() => vi.fn())
 }));
 
 vi.mock('@react-native-firebase/messaging', () => ({
-  getMessaging: () => mockMessaging,
+  getMessaging: () => mockMessaging
 }));
 
 const mockNotifee = vi.hoisted(() => ({
   requestPermission: vi.fn().mockResolvedValue(1),
   createChannel: vi.fn().mockResolvedValue(undefined),
   displayNotification: vi.fn().mockResolvedValue(undefined),
-  onForegroundEvent: vi.fn(() => vi.fn()),
+  onForegroundEvent: vi.fn(() => vi.fn())
 }));
 
 vi.mock('@notifee/react-native', () => ({
   default: mockNotifee,
   AndroidImportance: {
-    DEFAULT: 3,
+    DEFAULT: 3
   },
   EventType: {
     ACTION_PRESS: 1,
-    PRESS: 0,
+    PRESS: 0
   },
   AuthorizationStatus: {
     NOT_DETERMINED: -1,
     DENIED: 0,
     AUTHORIZED: 1,
-    PROVISIONAL: 2,
-  },
+    PROVISIONAL: 2
+  }
 }));
 
 describe('RNFirebaseService', () => {
@@ -90,7 +90,7 @@ describe('RNFirebaseService', () => {
 
       it('should handle fetch errors gracefully', async () => {
         mockRemoteConfig.fetchAndActivate.mockRejectedValueOnce(
-          new Error('Fetch failed'),
+          new Error('Fetch failed')
         );
         await expect(service.initializeRemoteConfig()).resolves.not.toThrow();
       });
@@ -101,7 +101,7 @@ describe('RNFirebaseService', () => {
         mockRemoteConfig.getValue.mockReturnValueOnce({
           asString: () => 'mock-string-value',
           asBoolean: () => true,
-          asNumber: () => 42,
+          asNumber: () => 42
         });
         const result = service.getStringValue('welcome_message');
         expect(result).toBe('mock-string-value');
@@ -111,7 +111,7 @@ describe('RNFirebaseService', () => {
         mockRemoteConfig.getValue.mockReturnValueOnce({
           asString: () => 'mock-string-value',
           asBoolean: () => true,
-          asNumber: () => 42,
+          asNumber: () => 42
         });
         const result = service.getStringValue('welcome_message', 'fallback');
         expect(result).toBe('mock-string-value');
@@ -129,7 +129,7 @@ describe('RNFirebaseService', () => {
         mockRemoteConfig.getValue.mockReturnValueOnce({
           asString: () => 'mock-string-value',
           asBoolean: () => true,
-          asNumber: () => 42,
+          asNumber: () => 42
         });
         const result = service.getBooleanValue('welcome_message');
         expect(result).toEqual(true);
@@ -139,7 +139,7 @@ describe('RNFirebaseService', () => {
         mockRemoteConfig.getValue.mockReturnValueOnce({
           asString: () => 'mock-string-value',
           asBoolean: () => true,
-          asNumber: () => 42,
+          asNumber: () => 42
         });
         const result = service.getBooleanValue('welcome_message', false);
         expect(result).toEqual(true);
@@ -157,7 +157,7 @@ describe('RNFirebaseService', () => {
         mockRemoteConfig.getValue.mockReturnValueOnce({
           asString: () => 'mock-string-value',
           asBoolean: () => true,
-          asNumber: () => 42,
+          asNumber: () => 42
         });
         const result = service.getNumberValue('welcome_message');
         expect(result).toEqual(42);
@@ -167,7 +167,7 @@ describe('RNFirebaseService', () => {
         mockRemoteConfig.getValue.mockReturnValueOnce({
           asString: () => 'mock-string-value',
           asBoolean: () => true,
-          asNumber: () => 42,
+          asNumber: () => 42
         });
         const result = service.getNumberValue('welcome_message', 100);
         expect(result).toEqual(42);
@@ -185,7 +185,7 @@ describe('RNFirebaseService', () => {
     describe('initializeNotifications', () => {
       it('should initialize notifications successfully', async () => {
         mockNotifee.requestPermission.mockResolvedValue({
-          authorizationStatus: 1, //AUTHORIZED
+          authorizationStatus: 1 //AUTHORIZED
         });
         const result = await service.initializeNotifications();
 
@@ -199,10 +199,10 @@ describe('RNFirebaseService', () => {
         const { Platform } = await import('react-native');
         vi.mocked(Platform).OS = 'android';
         vi.mocked(Platform.select).mockImplementation(
-          (config: any) => config.android,
+          (config: any) => config.android
         );
         mockNotifee.requestPermission.mockResolvedValue({
-          authorizationStatus: 1,
+          authorizationStatus: 1
         });
 
         const result = await service.initializeNotifications();
@@ -220,7 +220,7 @@ describe('RNFirebaseService', () => {
 
       it('should handle permission request errors', async () => {
         mockNotifee.requestPermission.mockResolvedValue({
-          authorizationStatus: 'DENIED',
+          authorizationStatus: 'DENIED'
         });
 
         const result = await service.initializeNotifications();
@@ -231,7 +231,7 @@ describe('RNFirebaseService', () => {
 
       it('should handle messaging registration errors', async () => {
         mockMessaging.registerDeviceForRemoteMessages.mockRejectedValueOnce(
-          new Error('Registration failed'),
+          new Error('Registration failed')
         );
         mockMessaging.getToken.mockRejectedValueOnce(new Error('Token failed'));
 
@@ -243,7 +243,7 @@ describe('RNFirebaseService', () => {
 
       it('should register onMessage and onForegroundEvent handlers', async () => {
         mockNotifee.requestPermission.mockResolvedValue({
-          authorizationStatus: 1, //AUTHORIZED
+          authorizationStatus: 1 //AUTHORIZED
         });
         await service.initializeNotifications();
 
@@ -253,7 +253,7 @@ describe('RNFirebaseService', () => {
 
       it('should handle onMessage callback with notification data', async () => {
         mockNotifee.requestPermission.mockResolvedValue({
-          authorizationStatus: 1, //AUTHORIZED
+          authorizationStatus: 1 //AUTHORIZED
         });
         await service.initializeNotifications();
 
@@ -265,9 +265,9 @@ describe('RNFirebaseService', () => {
         const mockRemoteMessage = {
           notification: {
             title: 'Test Title',
-            body: 'Test Body',
+            body: 'Test Body'
           },
-          data: { key: 'value' },
+          data: { key: 'value' }
         };
 
         await onMessageCallback(mockRemoteMessage);
@@ -276,13 +276,13 @@ describe('RNFirebaseService', () => {
           title: 'Test Title',
           body: 'Test Body',
           data: { key: 'value' },
-          android: { channelId: 'default' }, // Platform.select returns android value due to mock
+          android: { channelId: 'default' } // Platform.select returns android value due to mock
         });
       });
 
       it('should handle onMessage callback with missing notification data', async () => {
         mockNotifee.requestPermission.mockResolvedValue({
-          authorizationStatus: 1, //AUTHORIZED
+          authorizationStatus: 1 //AUTHORIZED
         });
         await service.initializeNotifications();
 
@@ -292,7 +292,7 @@ describe('RNFirebaseService', () => {
         expect(onMessageCallback).toBeDefined();
 
         const mockRemoteMessage = {
-          data: { key: 'value' },
+          data: { key: 'value' }
         };
 
         await onMessageCallback(mockRemoteMessage);
@@ -301,13 +301,13 @@ describe('RNFirebaseService', () => {
           title: 'Notification',
           body: undefined,
           data: { key: 'value' },
-          android: { channelId: 'default' }, // Platform.select returns android value due to mock
+          android: { channelId: 'default' } // Platform.select returns android value due to mock
         });
       });
 
       it('should handle onForegroundEvent callback for PRESS event', async () => {
         mockNotifee.requestPermission.mockResolvedValue({
-          authorizationStatus: 1, //AUTHORIZED
+          authorizationStatus: 1 //AUTHORIZED
         });
         await service.initializeNotifications();
 
@@ -323,7 +323,7 @@ describe('RNFirebaseService', () => {
 
       it('should handle onForegroundEvent callback for ACTION_PRESS event', async () => {
         mockNotifee.requestPermission.mockResolvedValue({
-          authorizationStatus: 1, //AUTHORIZED
+          authorizationStatus: 1 //AUTHORIZED
         });
         await service.initializeNotifications();
 
@@ -339,7 +339,7 @@ describe('RNFirebaseService', () => {
 
       it('should handle onForegroundEvent callback for unknown event type', async () => {
         mockNotifee.requestPermission.mockResolvedValue({
-          authorizationStatus: 1, //AUTHORIZED
+          authorizationStatus: 1 //AUTHORIZED
         });
         await service.initializeNotifications();
 

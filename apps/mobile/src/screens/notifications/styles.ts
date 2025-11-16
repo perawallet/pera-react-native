@@ -21,10 +21,10 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       borderRadius: theme.spacing.xl * 4,
       backgroundColor: theme.colors.layerGrayLighter,
       alignItems: 'center',
-      justifyContent: 'center',
+      justifyContent: 'center'
     },
     messageContainer: {
-      gap: theme.spacing.lg,
-    },
+      gap: theme.spacing.lg
+    }
   };
 });

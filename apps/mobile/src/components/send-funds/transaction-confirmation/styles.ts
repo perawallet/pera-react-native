@@ -17,28 +17,28 @@ export const useStyles = makeStyles(theme => {
     container: {
       paddingHorizontal: theme.spacing.md,
       gap: theme.spacing.xl,
-      flex: 1,
+      flex: 1
     },
     divider: {
       paddingTop: theme.spacing.md,
-      marginBottom: theme.spacing.md,
+      marginBottom: theme.spacing.md
     },
     secondaryAmount: {
-      color: theme.colors.textGray,
+      color: theme.colors.textGray
     },
     buttonContainer: {
       flexGrow: 1,
       justifyContent: 'flex-end',
-      paddingBottom: theme.spacing.xl,
+      paddingBottom: theme.spacing.xl
     },
     linkContainer: {
       flexDirection: 'row',
       alignItems: 'center',
       marginTop: theme.spacing.xs,
-      gap: theme.spacing.sm,
+      gap: theme.spacing.sm
     },
     link: {
-      color: theme.colors.linkPrimary,
-    },
+      color: theme.colors.linkPrimary
+    }
   };
 });

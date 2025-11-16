@@ -20,21 +20,21 @@ export const useStyles = makeStyles(theme => {
       alignItems: 'center',
       justifyContent: 'center',
       gap: theme.spacing.sm,
-      marginTop: theme.spacing.xs,
+      marginTop: theme.spacing.xs
     },
     selectedButtonContainer: {
       backgroundColor: theme.colors.layerGrayLighter,
       borderWidth: 0,
       borderRadius: theme.spacing.sm,
       paddingVertical: theme.spacing.xs,
-      paddingHorizontal: theme.spacing.md,
+      paddingHorizontal: theme.spacing.md
     },
     unselectedButtonContainer: {
       backgroundColor: theme.colors.background,
       borderWidth: 0,
       borderRadius: theme.spacing.sm,
       paddingVertical: theme.spacing.xs,
-      paddingHorizontal: theme.spacing.md,
-    },
+      paddingHorizontal: theme.spacing.md
+    }
   };
 });

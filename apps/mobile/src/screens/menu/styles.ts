@@ -20,33 +20,33 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'flex-end',
-      gap: theme.spacing.lg,
+      gap: theme.spacing.lg
     },
     iconBarColumn: {
       width: '33.3333%',
       flexDirection: 'row',
       justifyContent: 'center',
       textAlign: 'center',
-      gap: theme.spacing.xl,
+      gap: theme.spacing.xl
     },
     icon: {
       width: 24,
       height: 24,
       backgroundColor: 'transparent',
-      color: theme.colors.textMain,
+      color: theme.colors.textMain
     },
     menuContainer: {
       gap: theme.spacing.md,
       flex: 1,
       flexDirection: 'column',
-      marginTop: theme.spacing.xl,
+      marginTop: theme.spacing.xl
     },
     scannerClose: {
       marginTop: theme.spacing.xl,
       marginLeft: theme.spacing.lg,
       width: theme.spacing.xl * 2,
       height: theme.spacing.xl * 2,
-      zIndex: 2,
-    },
+      zIndex: 2
+    }
   };
 });

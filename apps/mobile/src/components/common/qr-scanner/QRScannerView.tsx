@@ -17,7 +17,7 @@ import {
   useCameraPermission,
   useCameraDevice,
   Camera,
-  useCodeScanner,
+  useCodeScanner
 } from 'react-native-vision-camera';
 import { Text } from '@rneui/themed';
 import { PropsWithChildren, useState } from 'react';
@@ -43,7 +43,7 @@ const QRScannerView = (props: QRScannerViewProps) => {
       if (url) {
         props.onSuccess(url, () => setScanningEnabled(true));
       }
-    },
+    }
   });
 
   if (!hasPermission) {

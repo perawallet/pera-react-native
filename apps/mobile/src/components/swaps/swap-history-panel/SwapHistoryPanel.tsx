@@ -46,22 +46,22 @@ const SwapHistoryPanel = () => {
         />
       );
     },
-    [themeStyle.itemContainer],
+    [themeStyle.itemContainer]
   );
 
   const pairs = [
     {
       fromAsset: vestAsset,
-      toAsset: algoAsset,
+      toAsset: algoAsset
     },
     {
       fromAsset: algoAsset,
-      toAsset: usdcAsset,
+      toAsset: usdcAsset
     },
     {
       fromAsset: algoAsset,
-      toAsset: vestAsset,
-    },
+      toAsset: vestAsset
+    }
   ];
 
   return (

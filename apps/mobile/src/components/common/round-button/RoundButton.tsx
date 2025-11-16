@@ -15,7 +15,7 @@ import { StyleProp, TextStyle, ViewStyle } from 'react-native';
 import PWView from '../view/PWView';
 import { Text } from '@rneui/themed';
 import PWTouchableOpacity, {
-  type PWTouchableOpacityProps,
+  type PWTouchableOpacityProps
 } from '../touchable-opacity/PWTouchableOpacity';
 
 export type RoundButtonProps = {

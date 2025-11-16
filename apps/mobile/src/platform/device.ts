@@ -13,7 +13,7 @@
 import {
   type DeviceInfoService,
   type DevicePlatform,
-  updateBackendHeaders,
+  updateBackendHeaders
 } from '@perawallet/core';
 import DeviceInfo from 'react-native-device-info';
 import { Platform, NativeModules } from 'react-native';

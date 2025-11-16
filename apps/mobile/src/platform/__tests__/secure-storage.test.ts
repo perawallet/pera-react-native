@@ -17,14 +17,14 @@ const mockKeychain = vi.hoisted(() => ({
   getGenericPassword: vi.fn(),
   resetGenericPassword: vi.fn(async () => true),
   ACCESSIBLE: {
-    WHEN_UNLOCKED_THIS_DEVICE_ONLY: 'WhenUnlockedThisDeviceOnly',
+    WHEN_UNLOCKED_THIS_DEVICE_ONLY: 'WhenUnlockedThisDeviceOnly'
   },
   ACCESS_CONTROL: {
-    BIOMETRY_CURRENT_SET: 'BiometryCurrentSet',
+    BIOMETRY_CURRENT_SET: 'BiometryCurrentSet'
   },
   SECURITY_LEVEL: {
-    SECURE_HARDWARE: 'SecureHardware',
-  },
+    SECURE_HARDWARE: 'SecureHardware'
+  }
 }));
 
 vi.mock('react-native-keychain', () => mockKeychain);
@@ -54,9 +54,9 @@ describe('RNSecureStorageService', () => {
           securityLevel: 'SecureHardware',
           authenticationPrompt: {
             title: 'Authenticate',
-            description: 'Access secure data',
-          },
-        }),
+            description: 'Access secure data'
+          }
+        })
       );
     });
 
@@ -65,7 +65,7 @@ describe('RNSecureStorageService', () => {
         service: 'custom.service',
         requireBiometrics: false,
         promptTitle: 'Custom Title',
-        promptDesc: 'Custom Description',
+        promptDesc: 'Custom Description'
       });
 
       await service.setItem('test-key', Buffer.from('test-value'));
@@ -80,9 +80,9 @@ describe('RNSecureStorageService', () => {
           securityLevel: 'SecureHardware',
           authenticationPrompt: {
             title: 'Custom Title',
-            description: 'Custom Description',
-          },
-        }),
+            description: 'Custom Description'
+          }
+        })
       );
     });
   });
@@ -96,8 +96,8 @@ describe('RNSecureStorageService', () => {
         'user',
         'my-value',
         expect.objectContaining({
-          service: 'com.algorand.android.my-key',
-        }),
+          service: 'com.algorand.android.my-key'
+        })
       );
     });
   });
@@ -111,7 +111,7 @@ describe('RNSecureStorageService', () => {
         service: 'com.algorand.android.my-key',
         username: 'user',
         password: 'stored-value',
-        storage: 'KC' as any,
+        storage: 'KC' as any
       });
 
       const result = await service.getItem('my-key');
@@ -119,8 +119,8 @@ describe('RNSecureStorageService', () => {
       expect(result).toEqual(Buffer.from('stored-value'));
       expect(mockKeychain.getGenericPassword).toHaveBeenCalledWith(
         expect.objectContaining({
-          service: 'com.algorand.android.my-key',
-        }),
+          service: 'com.algorand.android.my-key'
+        })
       );
     });
 
@@ -143,8 +143,8 @@ describe('RNSecureStorageService', () => {
 
       expect(mockKeychain.resetGenericPassword).toHaveBeenCalledWith(
         expect.objectContaining({
-          service: 'com.algorand.android.my-key',
-        }),
+          service: 'com.algorand.android.my-key'
+        })
       );
     });
   });
@@ -158,7 +158,7 @@ describe('RNSecureStorageService', () => {
         service: 'com.algorand.android.auth_probe',
         username: 'user',
         password: '1',
-        storage: 'KC' as any,
+        storage: 'KC' as any
       });
 
       const result = await service.authenticate();

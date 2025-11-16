@@ -21,7 +21,7 @@ export const mockWalletAccount = {
   balance: new Decimal('100.5'),
   assets: [],
   type: 'standard' as const,
-  isWatchOnly: false,
+  isWatchOnly: false
 };
 
 export const mockWalletAccounts = [
@@ -33,7 +33,7 @@ export const mockWalletAccounts = [
     balance: new Decimal('250.75'),
     assets: [],
     type: 'standard' as const,
-    isWatchOnly: false,
+    isWatchOnly: false
   },
   {
     id: 'test-account-3',
@@ -42,8 +42,8 @@ export const mockWalletAccounts = [
     balance: new Decimal('0'),
     assets: [],
     type: 'watch' as const,
-    isWatchOnly: true,
-  },
+    isWatchOnly: true
+  }
 ];
 
 // Mock asset data
@@ -59,14 +59,14 @@ export const mockAsset = {
   manager: 'MANAGER_ADDRESS',
   reserve: 'RESERVE_ADDRESS',
   freeze: 'FREEZE_ADDRESS',
-  clawback: 'CLAWBACK_ADDRESS',
+  clawback: 'CLAWBACK_ADDRESS'
 };
 
 // Mock currency values
 export const mockCurrencyValues = {
   algo: new Decimal('100.50'),
   usd: new Decimal('25.75'),
-  btc: new Decimal('0.001'),
+  btc: new Decimal('0.001')
 };
 
 // Mock device info
@@ -78,7 +78,7 @@ export const mockDeviceInfo = {
   buildNumber: '100',
   deviceId: 'test-device-id',
   locale: 'en-US',
-  timeZone: 'America/New_York',
+  timeZone: 'America/New_York'
 };
 
 // Mock network configurations
@@ -88,15 +88,15 @@ export const mockNetworks = {
     name: 'MainNet',
     algodUrl: 'https://mainnet-api.algonode.cloud',
     indexerUrl: 'https://mainnet-idx.algonode.cloud',
-    isTestNet: false,
+    isTestNet: false
   },
   testnet: {
     id: 'testnet',
     name: 'TestNet',
     algodUrl: 'https://testnet-api.algonode.cloud',
     indexerUrl: 'https://testnet-idx.algonode.cloud',
-    isTestNet: true,
-  },
+    isTestNet: true
+  }
 };
 
 // Mock platform service responses
@@ -105,29 +105,29 @@ export const mockPlatformServices = {
     getItem: vi.fn().mockResolvedValue(null),
     setItem: vi.fn().mockResolvedValue(true),
     removeItem: vi.fn().mockResolvedValue(true),
-    authenticate: vi.fn().mockResolvedValue(true),
+    authenticate: vi.fn().mockResolvedValue(true)
   },
   keyValueStorage: {
     getItem: vi.fn().mockReturnValue(null),
     setItem: vi.fn(),
     removeItem: vi.fn(),
     getJSON: vi.fn().mockReturnValue(null),
-    setJSON: vi.fn(),
+    setJSON: vi.fn()
   },
   deviceInfo: {
     getDeviceInfo: vi.fn().mockReturnValue(mockDeviceInfo),
-    getDeviceLocale: vi.fn().mockReturnValue('en-US'),
-  },
+    getDeviceLocale: vi.fn().mockReturnValue('en-US')
+  }
 };
 
 // Helper to create test props with defaults
 export const createTestProps = <T extends Record<string, any>>(
-  overrides: Partial<T> = {} as Partial<T>,
+  overrides: Partial<T> = {} as Partial<T>
 ) => {
   const defaults = {
     testID: 'test-component',
     accessibilityLabel: 'Test Component',
-    ...overrides,
+    ...overrides
   };
   return defaults as unknown as T;
 };
@@ -138,7 +138,7 @@ export const createMockButtonProps = (overrides = {}) => ({
   variant: 'primary' as const,
   onPress: vi.fn(),
   testID: 'test-button',
-  ...overrides,
+  ...overrides
 });
 
 export const createMockCurrencyDisplayProps = (overrides = {}) => ({
@@ -146,12 +146,12 @@ export const createMockCurrencyDisplayProps = (overrides = {}) => ({
   value: new Decimal('100.5'),
   precision: 2,
   testID: 'test-currency-display',
-  ...overrides,
+  ...overrides
 });
 
 export const createMockAccountListProps = (overrides = {}) => ({
   accounts: mockWalletAccounts,
   onAccountPress: vi.fn(),
   testID: 'test-account-list',
-  ...overrides,
+  ...overrides
 });

@@ -11,7 +11,7 @@
  */
 
 import PWBottomSheet, {
-  PWBottomSheetProps,
+  PWBottomSheetProps
 } from '../../common/bottom-sheet/PWBottomSheet';
 import { Input, Text } from '@rneui/themed';
 import { useContext, useEffect, useState } from 'react';
@@ -32,9 +32,9 @@ const NOTE_SCHEMA = z.object({
   note: z
     .string()
     .refine(data => Buffer.from(data).byteLength <= MAX_TX_NOTE_BYTES, {
-      error: 'Notes may not exceed 1kb in length',
+      error: 'Notes may not exceed 1kb in length'
     })
-    .optional(),
+    .optional()
 });
 
 const AddNotePanel = ({ isVisible, onClose, ...rest }: AddNotePanelProps) => {
@@ -46,10 +46,10 @@ const AddNotePanel = ({ isVisible, onClose, ...rest }: AddNotePanelProps) => {
     control,
     handleSubmit,
     reset,
-    formState: { errors },
+    formState: { errors }
   } = useForm({
     resolver: zodResolver(NOTE_SCHEMA),
-    defaultValues: { note },
+    defaultValues: { note }
   });
 
   const handleClose = () => {

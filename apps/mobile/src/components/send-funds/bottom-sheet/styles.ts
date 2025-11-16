@@ -21,7 +21,7 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
       paddingVertical: theme.spacing.md,
       borderTopStartRadius: theme.spacing.sm,
       borderTopEndRadius: theme.spacing.sm,
-      overflow: 'hidden',
+      overflow: 'hidden'
     },
     titleContainer: {
       flexDirection: 'row',
@@ -29,35 +29,35 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
       width: '100%',
       alignItems: 'center',
       height: theme.spacing.xl * 2,
-      marginBottom: theme.spacing.xl,
+      marginBottom: theme.spacing.xl
     },
     titleButtonContainer: {
       width: theme.spacing.xl * 1.5,
       alignItems: 'center',
-      justifyContent: 'center',
+      justifyContent: 'center'
     },
     accountTitleContainer: {
       alignItems: 'center',
       justifyContent: 'center',
-      gap: theme.spacing.xs / 2,
+      gap: theme.spacing.xs / 2
     },
     assetTitleContainer: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: theme.spacing.sm,
+      gap: theme.spacing.sm
     },
     accountDisplay: {
       flexDirection: 'row',
       gap: theme.spacing.xs,
-      alignItems: 'center',
+      alignItems: 'center'
     },
     accountDisplaySubHeading: {
-      fontSize: theme.spacing.md,
+      fontSize: theme.spacing.md
     },
     tabItem: {
       width: '100%',
-      paddingHorizontal: theme.spacing.lg,
-    },
+      paddingHorizontal: theme.spacing.lg
+    }
   };
 });

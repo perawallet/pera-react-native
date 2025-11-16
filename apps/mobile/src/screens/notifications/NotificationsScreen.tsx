@@ -14,7 +14,7 @@ import { useTheme } from '@rneui/themed';
 import MainScreenLayout from '../../layouts/MainScreenLayout';
 import {
   useDeviceID,
-  useV1DevicesNotificationsListInfinite,
+  useV1DevicesNotificationsListInfinite
 } from '@perawallet/core';
 import { FlatList } from 'react-native-gesture-handler';
 import PWView from '../../components/common/view/PWView';
@@ -33,13 +33,13 @@ const NotificationsScreen = () => {
   const { data, isPending, fetchNextPage, isFetchingNextPage, hasNextPage } =
     useV1DevicesNotificationsListInfinite(
       {
-        device_id: deviceID!,
+        device_id: deviceID!
       },
       {
         query: {
-          enabled: !!deviceID,
-        },
-      },
+          enabled: !!deviceID
+        }
+      }
     );
 
   const renderItem = (info: any) => {

@@ -14,7 +14,7 @@ import PWView from '../../common/view/PWView';
 import {
   SignRequest,
   truncateAlgorandAddress,
-  useSigningRequest,
+  useSigningRequest
 } from '@perawallet/core';
 import { useStyles } from './styles';
 import { Text, useTheme } from '@rneui/themed';
@@ -119,7 +119,7 @@ const SigningView = ({ request }: SigningViewProps) => {
       showToast({
         type: 'info',
         title: 'Signing Not Fully Implemented',
-        body: `The transaction signing has not been fully implemented, no TXs were sent yet.`,
+        body: `The transaction signing has not been fully implemented, no TXs were sent yet.`
       });
 
       removeSignRequest(request);
@@ -127,7 +127,7 @@ const SigningView = ({ request }: SigningViewProps) => {
       showToast({
         type: 'error',
         title: 'Signing Failed',
-        body: `${error}`,
+        body: `${error}`
       });
     }
   };

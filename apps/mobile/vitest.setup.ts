@@ -26,26 +26,26 @@ vi.mock('react-native-device-info', () => ({
     getSystemVersion: () => '17.0',
     getDeviceId: () => 'test-device',
     getUniqueId: () => Promise.resolve('unique-id'),
-    getModel: () => 'iPhone',
-  },
+    getModel: () => 'iPhone'
+  }
 }));
 
 vi.mock('react-native-keychain', () => ({
   setGenericPassword: vi.fn().mockResolvedValue(true),
   getGenericPassword: vi.fn().mockResolvedValue({
     username: 'user',
-    password: 'test-password',
+    password: 'test-password'
   }),
   resetGenericPassword: vi.fn().mockResolvedValue(true),
   ACCESSIBLE: {
-    WHEN_UNLOCKED_THIS_DEVICE_ONLY: 'WhenUnlockedThisDeviceOnly',
+    WHEN_UNLOCKED_THIS_DEVICE_ONLY: 'WhenUnlockedThisDeviceOnly'
   },
   ACCESS_CONTROL: {
-    BIOMETRY_CURRENT_SET: 'BiometryCurrentSet',
+    BIOMETRY_CURRENT_SET: 'BiometryCurrentSet'
   },
   SECURITY_LEVEL: {
-    SECURE_HARDWARE: 'SecureHardware',
-  },
+    SECURE_HARDWARE: 'SecureHardware'
+  }
 }));
 
 // // Mock React Native core modules
@@ -55,32 +55,32 @@ vi.mock('react-native', async () => {
     ...RN,
     Platform: {
       OS: 'ios',
-      select: vi.fn(obj => obj.ios || obj.default),
+      select: vi.fn(obj => obj.ios || obj.default)
     },
     NativeModules: {
       SettingsManager: {
         settings: {
           AppleLocale: 'en_US',
-          AppleLanguages: ['en_US', 'fr_FR'],
-        },
+          AppleLanguages: ['en_US', 'fr_FR']
+        }
       },
       I18nManager: {
         getConstants: vi.fn(() => ({
-          localeIdentifier: 'en_US',
-        })),
-      },
+          localeIdentifier: 'en_US'
+        }))
+      }
     },
     Dimensions: {
       get: vi.fn(() => ({ width: 375, height: 812 })),
       addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
+      removeEventListener: vi.fn()
     },
     StatusBar: {
       setBarStyle: vi.fn(),
-      setBackgroundColor: vi.fn(),
+      setBackgroundColor: vi.fn()
     },
     Alert: {
-      alert: vi.fn(),
+      alert: vi.fn()
     },
     StyleSheet: {
       create: vi.fn(styles => styles),
@@ -90,12 +90,12 @@ vi.mock('react-native', async () => {
         top: 0,
         left: 0,
         bottom: 0,
-        right: 0,
-      },
+        right: 0
+      }
     },
     TouchableOpacity: vi.fn().mockImplementation(({ children }) => children),
     View: vi.fn().mockImplementation(({ children }) => children),
-    Text: vi.fn().mockImplementation(({ children }) => children),
+    Text: vi.fn().mockImplementation(({ children }) => children)
   };
 });
 
@@ -106,7 +106,7 @@ vi.mock('react-native-safe-area-context', () => {
     SafeAreaConsumer: vi
       .fn()
       .mockImplementation(({ children }) => children(inset)),
-    useSafeAreaInsets: vi.fn().mockImplementation(() => inset),
+    useSafeAreaInsets: vi.fn().mockImplementation(() => inset)
   };
 });
 
@@ -124,48 +124,48 @@ vi.mock('@react-navigation/native', () => ({
     navigate: vi.fn(),
     goBack: vi.fn(),
     reset: vi.fn(),
-    setOptions: vi.fn(),
+    setOptions: vi.fn()
   }),
   useRoute: () => ({
-    params: {},
+    params: {}
   }),
   useFocusEffect: vi.fn(),
-  NavigationContainer: ({ children }: any) => children,
+  NavigationContainer: ({ children }: any) => children
 }));
 
 vi.mock('@react-navigation/bottom-tabs', () => ({
   createBottomTabNavigator: vi.fn(() => ({
     Navigator: ({ children }: any) => children,
-    Screen: ({ children }: any) => children,
-  })),
+    Screen: ({ children }: any) => children
+  }))
 }));
 
 vi.mock('@react-navigation/native-stack', () => ({
   createNativeStackNavigator: vi.fn(() => ({
     Navigator: ({ children }: any) => children,
-    Screen: ({ children }: any) => children,
-  })),
+    Screen: ({ children }: any) => children
+  }))
 }));
 
 // Common native modules used in the app, stubbed with minimal implementations
 vi.mock('@react-native-firebase/app', () => ({
-  default: { app: vi.fn(() => ({})) },
+  default: { app: vi.fn(() => ({})) }
 }));
 
 vi.mock('@react-native-firebase/crashlytics', () => ({
   getCrashlytics: () => ({
     setCrashlyticsCollectionEnabled: vi.fn(),
     recordError: vi.fn(),
-    log: vi.fn(),
-  }),
+    log: vi.fn()
+  })
 }));
 
 vi.mock('@react-native-firebase/messaging', () => ({
   getMessaging: () => ({
     registerDeviceForRemoteMessages: vi.fn(),
     onMessage: vi.fn(() => vi.fn()),
-    getToken: vi.fn(async () => 'token'),
-  }),
+    getToken: vi.fn(async () => 'token')
+  })
 }));
 
 vi.mock('@react-native-firebase/remote-config', () => ({
@@ -176,16 +176,16 @@ vi.mock('@react-native-firebase/remote-config', () => ({
     getValue: vi.fn(() => ({
       asString: () => '',
       asBoolean: () => false,
-      asNumber: () => 0,
-    })),
-  }),
+      asNumber: () => 0
+    }))
+  })
 }));
 
 vi.mock('@notifee/react-native', () => ({
   default: {
     requestPermission: vi.fn(async () => true),
-    onForegroundEvent: vi.fn(() => vi.fn()),
-  },
+    onForegroundEvent: vi.fn(() => vi.fn())
+  }
 }));
 
 vi.mock('react-native-mmkv', () => {
@@ -211,7 +211,7 @@ vi.mock('@notifee/react-native', () => {
       requestPermission: vi.fn(),
       createChannel: vi.fn(),
       displayNotification: vi.fn(),
-      onForegroundEvent: vi.fn(),
-    },
+      onForegroundEvent: vi.fn()
+    }
   };
 });

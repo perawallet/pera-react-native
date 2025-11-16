@@ -23,7 +23,7 @@ export const useStyles = makeStyles((theme, _: PanelButtonProps) => ({
     padding: theme.spacing.lg,
     backgroundColor: theme.colors.layerGrayLighter,
     color: theme.colors.textMain,
-    borderRadius: theme.spacing.lg,
+    borderRadius: theme.spacing.lg
   },
   containerStyle: {},
   textStyle: {
@@ -31,6 +31,6 @@ export const useStyles = makeStyles((theme, _: PanelButtonProps) => ({
     color: theme.colors.textMain,
     flexGrow: 1,
     height: 28,
-    verticalAlign: 'middle',
-  },
+    verticalAlign: 'middle'
+  }
 }));

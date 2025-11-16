@@ -55,7 +55,7 @@ const CurrencyDisplay = (props: CurrencyDisplayProps) => {
       deviceInfo.getDeviceLocale(),
       showSymbol,
       units,
-      minPrecision,
+      minPrecision
     );
   }, [value, precision, currency, deviceInfo, showSymbol, units, minPrecision]);
 
@@ -76,7 +76,7 @@ const CurrencyDisplay = (props: CurrencyDisplayProps) => {
             props.h1Style,
             props.h2Style,
             props.h3Style,
-            props.h4Style,
+            props.h4Style
           ]}
         />
       )}

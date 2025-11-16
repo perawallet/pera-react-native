@@ -50,7 +50,7 @@ const PairSelectionPanel = () => {
     (formatted: string) => {
       setSendAmount(formatted);
     },
-    [setSendAmount],
+    [setSendAmount]
   );
 
   return (

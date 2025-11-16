@@ -30,13 +30,13 @@ export const useDeepLink = () => {
     replaceCurrentScreen: boolean = false,
     source: LinkSource,
     onError?: () => void,
-    onSuccess?: () => void,
+    onSuccess?: () => void
   ) => {
     if (isValidDeepLink(url, source)) {
       //TODO implement fully
       const destination = 'TabBar';
       const params = {
-        screen: 'Home',
+        screen: 'Home'
       };
 
       if (replaceCurrentScreen) {
@@ -48,14 +48,14 @@ export const useDeepLink = () => {
       showToast({
         title: 'Not Implemented Yet',
         body: "Deeplinking hasn't been implemented fully yet",
-        type: 'info',
+        type: 'info'
       });
       onSuccess?.();
     } else {
       showToast({
         title: 'Invalid Link',
         body: 'The detected link does not appear to be valid',
-        type: 'error',
+        type: 'error'
       });
       onError?.();
     }
@@ -63,6 +63,6 @@ export const useDeepLink = () => {
 
   return {
     isValidDeepLink,
-    handleDeepLink,
+    handleDeepLink
   };
 };

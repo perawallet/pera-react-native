@@ -17,7 +17,7 @@ import {
   formatDatetime,
   useAccountBalances,
   useCurrency,
-  useSelectedAccount,
+  useSelectedAccount
 } from '@perawallet/core';
 
 import CameraIcon from '../../../assets/icons/camera.svg';
@@ -50,10 +50,10 @@ const AccountScreen = () => {
   const { preferredCurrency } = useCurrency();
 
   const { totalAlgo, totalLocal, loading } = useAccountBalances(
-    account ? [account] : [],
+    account ? [account] : []
   );
   const [chartData, setChartData] = useState<AccountWealthHistoryItem | null>(
-    null,
+    null
   );
   const [scrollingEnabled, setScrollingEnabled] = useState<boolean>(true);
   const [scannerVisible, setScannerVisible] = useState<boolean>(false);
@@ -81,7 +81,7 @@ const AccountScreen = () => {
         setScrollingEnabled(true);
       }
     },
-    [setChartData],
+    [setChartData]
   );
 
   return (

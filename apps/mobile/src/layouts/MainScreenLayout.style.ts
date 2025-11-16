@@ -20,25 +20,25 @@ export const useStyles = makeStyles(
       mainContainer: {
         flex: 1,
         backgroundColor: theme.colors.background,
-        padding: 0,
+        padding: 0
       },
       testnetContainer: {
         backgroundColor: theme.colors.primary,
-        height: theme.spacing.lg * 2,
+        height: theme.spacing.lg * 2
       },
       backContainer: {
-        paddingVertical: theme.spacing.sm,
+        paddingVertical: theme.spacing.sm
       },
       title: {
-        marginVertical: theme.spacing.lg,
+        marginVertical: theme.spacing.lg
       },
       contentContainer: {
         flex: 1,
         paddingLeft: fullScreen ? 0 : insets.left + theme.spacing.xl,
         paddingRight: fullScreen ? 0 : insets.right + theme.spacing.xl,
         paddingTop: theme.spacing.xl,
-        paddingBottom: fullScreen ? 0 : insets.bottom + theme.spacing.xl,
-      },
+        paddingBottom: fullScreen ? 0 : insets.bottom + theme.spacing.xl
+      }
     };
-  },
+  }
 );

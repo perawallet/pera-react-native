@@ -21,7 +21,7 @@ export const useStyles = makeStyles((theme, dimensions: number) => {
       overflow: 'hidden',
       backgroundColor: theme.colors.layerGrayLighter,
       alignItems: 'center',
-      justifyContent: 'center',
-    },
+      justifyContent: 'center'
+    }
   };
 });

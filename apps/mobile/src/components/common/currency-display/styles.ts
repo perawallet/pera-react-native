@@ -29,20 +29,20 @@ export const useStyles = makeStyles((theme, props: CurrencyDisplayProps) => {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'flex-start',
-      flexShrink: 1,
+      flexShrink: 1
     },
     skeleton: {
       maxWidth: 150,
-      height: size,
+      height: size
     },
     textContainer: {
       flexGrow: 1,
-      alignItems: props.alignRight ? 'flex-end' : 'flex-start',
+      alignItems: props.alignRight ? 'flex-end' : 'flex-start'
     },
     algoIcon: {
       width: size,
       height: size,
-      flexShrink: 1,
-    },
+      flexShrink: 1
+    }
   };
 });

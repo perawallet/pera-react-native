@@ -20,7 +20,7 @@ import {
   useDeviceID,
   useDeviceInfoService,
   useNetwork,
-  useSettings,
+  useSettings
 } from '@perawallet/core';
 import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -80,7 +80,7 @@ export const usePeraWebviewInterface = (webview: WebView | null) => {
         showToast({
           title: "Can't open webpage",
           body: "The page you're viewing has sent an invalid message format.",
-          type: 'error',
+          type: 'error'
         });
       }
     });
@@ -91,7 +91,7 @@ export const usePeraWebviewInterface = (webview: WebView | null) => {
       showToast({
         title: '',
         body: params.message ?? '',
-        type: 'info',
+        type: 'info'
       });
     }
     //TODO add sound and haptic (and maybe message.banner) support
@@ -101,7 +101,7 @@ export const usePeraWebviewInterface = (webview: WebView | null) => {
     const payload = accounts.map(a => ({
       name: getAccountDisplayName(a),
       address: a.address,
-      type: 'HdKey', //TODO support other types also
+      type: 'HdKey' //TODO support other types also
     }));
     webview?.postMessage(JSON.stringify(payload));
   };
@@ -121,7 +121,7 @@ export const usePeraWebviewInterface = (webview: WebView | null) => {
       network,
       currency: preferredCurrency,
       region: 'en-US', //TODO pull from state eventually (or device location or something)
-      language: 'en-US', //TODO pull from app locale
+      language: 'en-US' //TODO pull from app locale
     };
     webview?.postMessage(JSON.stringify(payload));
   };
@@ -130,7 +130,7 @@ export const usePeraWebviewInterface = (webview: WebView | null) => {
       theme,
       network,
       currency: preferredCurrency,
-      language: 'en-US', //TODO pull from app locale
+      language: 'en-US' //TODO pull from app locale
     };
     webview?.postMessage(JSON.stringify(payload));
   };
@@ -182,13 +182,13 @@ export const usePeraWebviewInterface = (webview: WebView | null) => {
         showToast({
           title: 'Invalid message received.',
           body: "The page you're viewing has sent an invalid message format.",
-          type: 'error',
+          type: 'error'
         });
         break;
     }
   };
 
   return {
-    handleMessage,
+    handleMessage
   };
 };

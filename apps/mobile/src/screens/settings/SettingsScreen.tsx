@@ -35,25 +35,24 @@ const settingsOptions = [
     title: 'Account',
     items: [
       { route: 'SettingsSubPage', icon: <ShieldIcon />, title: 'Security' },
-      { route: 'SettingsSubPage', icon: <ShieldIcon />, title: 'Contacts' },
       {
         route: 'SettingsSubPage',
         icon: <ShieldIcon />,
-        title: 'Notifications',
+        title: 'Notifications'
       },
       {
         route: 'SettingsSubPage',
         icon: <ShieldIcon />,
-        title: 'WalletConnect Sessions',
-      },
-    ],
+        title: 'WalletConnect Sessions'
+      }
+    ]
   },
   {
     title: 'App Preferences',
     items: [
       { route: 'Currency', icon: <DollarIcon />, title: 'Currency' },
-      { route: 'SettingsSubPage', icon: <MoonIcon />, title: 'Theme' },
-    ],
+      { route: 'Theme', icon: <MoonIcon />, title: 'Theme' }
+    ]
   },
   {
     title: 'Support',
@@ -62,25 +61,25 @@ const settingsOptions = [
       {
         route: 'SettingsSubPage',
         icon: <ShieldIcon />,
-        title: 'Rate Pera Wallet',
+        title: 'Rate Pera Wallet'
       },
       {
         route: 'SettingsSubPage',
         icon: <ShieldIcon />,
-        title: 'Terms and Services',
+        title: 'Terms and Services'
       },
       {
         route: 'SettingsSubPage',
         icon: <ShieldIcon />,
-        title: 'Privacy Policy',
+        title: 'Privacy Policy'
       },
       {
         route: 'SettingsSubPage',
         icon: <ShieldIcon />,
-        title: 'Developer Settings',
-      },
-    ],
-  },
+        title: 'Developer Settings'
+      }
+    ]
+  }
 ];
 
 const SettingsScreen = () => {

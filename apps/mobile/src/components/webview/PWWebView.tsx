@@ -17,17 +17,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   WebView,
   WebViewMessageEvent,
-  WebViewProps,
+  WebViewProps
 } from 'react-native-webview';
 import {
   WebViewErrorEvent,
   WebViewHttpErrorEvent,
-  WebViewNavigationEvent,
+  WebViewNavigationEvent
 } from 'react-native-webview/lib/WebViewTypes';
 import {
   baseJS,
   peraConnectJS,
-  peraMobileInterfaceJS,
+  peraMobileInterfaceJS
 } from './injected-scripts';
 import useToast from '../../hooks/toast';
 import { ActivityIndicator, StyleSheet } from 'react-native';
@@ -77,14 +77,14 @@ const PWWebView = (props: PWWebViewProps) => {
         showToast({
           title: 'Invalid message received',
           body: `Pera Wallet mobile interface received an invalid event`,
-          type: 'error',
+          type: 'error'
         });
       }
 
       const data = JSON.parse(dataString);
       mobileInterface.handleMessage(data);
     },
-    [showToast, mobileInterface],
+    [showToast, mobileInterface]
   );
 
   const verifyLoad = useCallback((event: WebViewNavigationEvent) => {
@@ -96,10 +96,10 @@ const PWWebView = (props: PWWebViewProps) => {
       showToast({
         title: 'Failed to load resource',
         body: `${event.nativeEvent.url}`,
-        type: 'error',
+        type: 'error'
       });
     },
-    [showToast],
+    [showToast]
   );
 
   const showError = useCallback(
@@ -107,10 +107,10 @@ const PWWebView = (props: PWWebViewProps) => {
       showToast({
         title: event.nativeEvent.title,
         body: `${event.nativeEvent.statusCode} - ${event.nativeEvent.description}`,
-        type: 'error',
+        type: 'error'
       });
     },
-    [showToast],
+    [showToast]
   );
 
   const jsToLoad = useMemo(() => {
@@ -138,7 +138,7 @@ const PWWebView = (props: PWWebViewProps) => {
         ref={webview}
         {...rest}
         source={{
-          uri: url,
+          uri: url
         }}
         style={styles.webview}
         renderLoading={() => (

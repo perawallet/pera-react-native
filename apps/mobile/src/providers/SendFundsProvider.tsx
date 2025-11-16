@@ -33,7 +33,7 @@ export const SendFundsContext = createContext<SendFundsState>({
   setSelectedAsset: (_?: PeraAsset) => {},
   setAmount: (_?: Decimal) => {},
   setNote: (_?: string) => {},
-  setDestination: (_?: string) => {},
+  setDestination: (_?: string) => {}
 });
 
 const SendFundsProvider = ({ children }: PropsWithChildren) => {
@@ -55,7 +55,7 @@ const SendFundsProvider = ({ children }: PropsWithChildren) => {
         setSelectedAsset,
         setAmount,
         setNote,
-        setDestination,
+        setDestination
       }}
     >
       {children}

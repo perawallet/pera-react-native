@@ -20,11 +20,11 @@ import {
   useCurrency,
   useV2WalletWealthList,
   V1WalletWealthListQueryParamsPeriodEnum,
-  WalletAccount,
+  WalletAccount
 } from '@perawallet/core';
 import { useCallback, useMemo, useState } from 'react';
 import ChartPeriodSelection, {
-  ChartPeriod,
+  ChartPeriod
 } from '../chart-period-selection/ChartPeriodSelection';
 import { useTheme } from '@rneui/themed';
 
@@ -49,25 +49,25 @@ const WealthChart = ({ onSelectionChanged, account }: WealthChartProps) => {
       account
         ? [account.address]
         : accounts.map((a: WalletAccount) => a.address),
-    [account, accounts],
+    [account, accounts]
   );
 
   const { data, isPending } = useV2WalletWealthList({
     params: {
       account_addresses: addresses,
       period: period as V1WalletWealthListQueryParamsPeriodEnum,
-      currency: preferredCurrency,
-    },
+      currency: preferredCurrency
+    }
   });
 
   const dataPoints = useMemo(
     () =>
       data?.results?.map(p => {
         return {
-          value: Number(p.value_in_currency),
+          value: Number(p.value_in_currency)
         };
       }) ?? [],
-    [data],
+    [data]
   );
 
   const yAxisOffsets = useMemo(() => {
@@ -83,7 +83,7 @@ const WealthChart = ({ onSelectionChanged, account }: WealthChartProps) => {
   const onFocus = useCallback(
     ({
       pointerIndex: index,
-      pointerX,
+      pointerX
     }: {
       pointerIndex: number;
       pointerX: number;
@@ -100,7 +100,7 @@ const WealthChart = ({ onSelectionChanged, account }: WealthChartProps) => {
         setLastSentTime(Date.now());
       }
     },
-    [data, onSelectionChanged, lastSentIndex, lastSentTime, setLastSentIndex],
+    [data, onSelectionChanged, lastSentIndex, lastSentTime, setLastSentIndex]
   );
 
   if (!isPending && !dataPoints?.length) {
@@ -136,7 +136,7 @@ const WealthChart = ({ onSelectionChanged, account }: WealthChartProps) => {
           pointerStripWidth: 1,
           pointerStripHeight: 140,
           pointerColor: theme.colors.helperPositive,
-          strokeDashArray: [6, 2],
+          strokeDashArray: [6, 2]
         }}
         getPointerProps={onFocus}
         disableScroll

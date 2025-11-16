@@ -18,7 +18,7 @@ import {
   formatCurrency,
   useAccountBalances,
   useCurrencyConverter,
-  useSelectedAccount,
+  useSelectedAccount
 } from '@perawallet/core';
 import RowTitledItem from '../../common/row-titled-item/RowTitledItem';
 import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay';
@@ -43,7 +43,7 @@ type SendFundsTransactionConfirmationProps = {
 //TODO add local currency conversion and display
 const SendFundsTransactionConfirmation = ({
   onNext,
-  onBack,
+  onBack
 }: SendFundsTransactionConfirmationProps) => {
   const { theme } = useTheme();
   const styles = useStyles();
@@ -57,7 +57,7 @@ const SendFundsTransactionConfirmation = ({
   const usdAssetPrice = useMemo(
     () =>
       selectedAsset?.usd_price ? Decimal(selectedAsset?.usd_price) : Decimal(0),
-    [selectedAsset?.usd_price],
+    [selectedAsset?.usd_price]
   );
 
   const openNote = () => {
@@ -88,9 +88,9 @@ const SendFundsTransactionConfirmation = ({
         'en-US',
         false,
         undefined,
-        2,
+        2
       )} ${selectedAsset!.unit_name}.`,
-      type: 'success',
+      type: 'success'
     });
     onNext();
   };
@@ -100,7 +100,7 @@ const SendFundsTransactionConfirmation = ({
       showToast({
         title: 'Invalid transaction',
         body: 'Something appears to have gone wrong with this transaction.',
-        type: 'error',
+        type: 'error'
       });
     }
 
@@ -160,7 +160,7 @@ const SendFundsTransactionConfirmation = ({
           showSymbol
           value={convertAssetValueToPreferredCurrency(
             amount ?? Decimal(0),
-            usdAssetPrice,
+            usdAssetPrice
           )}
         />
       </RowTitledItem>
@@ -205,7 +205,7 @@ const SendFundsTransactionConfirmation = ({
               currentBalance.balance_usd_value
                 ? Decimal(currentBalance.balance_usd_value)
                 : Decimal(0),
-              usdAssetPrice,
+              usdAssetPrice
             )}
           />
         </RowTitledItem>

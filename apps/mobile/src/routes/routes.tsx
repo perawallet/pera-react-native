@@ -13,7 +13,7 @@
 import { createStaticNavigation } from '@react-navigation/native';
 import {
   createNativeStackNavigator,
-  NativeStackHeaderProps,
+  NativeStackHeaderProps
 } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import AccountScreen from '../screens/account/AccountScreen';
@@ -42,69 +42,76 @@ import NavigationHeader from '../components/common/navigation-header/NavigationH
 import ContactListHeaderButtons from '../components/contacts/ContactListHeaderButtons';
 import ViewContactHeaderButtons from '../components/contacts/ViewContactHeaderButtons';
 import SettingsCurrencyScreen from '../screens/settings/currency/SettingsCurrencyScreen';
+import SettingsThemeScreen from '../screens/settings/theme/SettingsThemeScreen';
 
 const SettingsStack = createNativeStackNavigator({
   initialRouteName: 'SettingsHome',
   screenOptions: {
     headerShown: true,
-    header: (props: NativeStackHeaderProps) => <NavigationHeader {...props} />,
+    header: (props: NativeStackHeaderProps) => <NavigationHeader {...props} />
   },
   screens: {
     SettingsHome: {
       screen: SettingsScreen,
       options: {
-        title: 'Settings',
-      },
+        title: 'Settings'
+      }
     },
     Currency: {
       screen: SettingsCurrencyScreen,
       options: {
-        title: 'Currency',
-      },
+        title: 'Currency'
+      }
+    },
+    Theme: {
+      screen: SettingsThemeScreen,
+      options: {
+        title: 'Theme'
+      }
     },
     SettingsSubPage: {
       screen: SettingsSubPageScreen,
       options: ({ route }: { route: any }) => ({
-        title: route.params?.title,
-      }),
-    },
-  },
+        title: route.params?.title
+      })
+    }
+  }
 });
 
 const ContactsStack = createNativeStackNavigator({
   initialRouteName: 'ContactsList',
   screenOptions: {
     headerShown: true,
-    header: (props: NativeStackHeaderProps) => <NavigationHeader {...props} />,
+    header: (props: NativeStackHeaderProps) => <NavigationHeader {...props} />
   },
   screens: {
     ContactsList: {
       screen: ContactListScreen,
       options: {
         title: 'Contacts',
-        headerRight: () => <ContactListHeaderButtons />,
-      },
+        headerRight: () => <ContactListHeaderButtons />
+      }
     },
     ViewContact: {
       screen: ViewContactScreen,
       options: () => ({
         title: 'View Contact',
-        headerRight: () => <ViewContactHeaderButtons />,
-      }),
+        headerRight: () => <ViewContactHeaderButtons />
+      })
     },
     EditContact: {
       screen: EditContactScreen,
       options: () => ({
-        title: 'Edit Contact',
-      }),
+        title: 'Edit Contact'
+      })
     },
     AddContact: {
       screen: EditContactScreen,
       options: () => ({
-        title: 'Add New Contact',
-      }),
-    },
-  },
+        title: 'Add New Contact'
+      })
+    }
+  }
 });
 
 const TabBarStack = createBottomTabNavigator({
@@ -113,7 +120,7 @@ const TabBarStack = createBottomTabNavigator({
     headerShown: false,
     tabBarStyle: {
       backgroundColor: theme.colors.background,
-      borderTopWidth: 0,
+      borderTopWidth: 0
     },
     tabBarIcon: ({ focused }) => {
       const style = focused ? theme.colors.primary : theme.colors.text;
@@ -123,42 +130,42 @@ const TabBarStack = createBottomTabNavigator({
       if (route.name === 'Swap') return <SwapIcon color={style} />;
       if (route.name === 'Staking') return <StakingIcon color={style} />;
       if (route.name === 'Menu') return <MenuIcon color={style} />;
-    },
+    }
   }),
   screens: {
     Home: AccountScreen,
     Discover: DiscoverScreen,
     Swap: SwapScreen,
     Staking: StakingScreen,
-    Menu: MenuScreen,
-  },
+    Menu: MenuScreen
+  }
 });
 
 const OnboardingStack = createNativeStackNavigator({
   initialRouteName: 'OnboardingHome',
   screenOptions: {
-    headerShown: false,
+    headerShown: false
   },
   screens: {
     OnboardingHome: OnboardingScreen,
     NameAccount: NameAccountScreen,
-    ImportAccount: ImportAccountScreen,
-  },
+    ImportAccount: ImportAccountScreen
+  }
 });
 
 const RootStack = createNativeStackNavigator({
   screenOptions: {
     headerShown: false,
     animation: 'default',
-    animationDuration: 50,
+    animationDuration: 50
   },
   screens: {
     Onboarding: {
       if: useHasNoAccounts,
-      screen: OnboardingStack,
+      screen: OnboardingStack
     },
     TabBar: {
-      screen: TabBarStack,
+      screen: TabBarStack
     },
     Notifications: {
       screen: NotificationsScreen,
@@ -166,12 +173,12 @@ const RootStack = createNativeStackNavigator({
         headerShown: true,
         header: (props: NativeStackHeaderProps) => (
           <NavigationHeader {...props} />
-        ),
-      },
+        )
+      }
     },
     Settings: SettingsStack,
-    Contacts: ContactsStack,
-  },
+    Contacts: ContactsStack
+  }
 });
 
 export const MainRoutes = createStaticNavigation(RootStack);

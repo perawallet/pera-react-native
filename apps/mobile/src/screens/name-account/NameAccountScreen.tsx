@@ -23,7 +23,7 @@ import {
   useAllAccounts,
   getAccountDisplayName,
   WalletAccount,
-  useUpdateAccount,
+  useUpdateAccount
 } from '@perawallet/core';
 import { useState } from 'react';
 import type { StaticScreenProps } from '@react-navigation/native';
@@ -56,7 +56,7 @@ const NameAccountScreen = ({ route }: NameAccountScreenProps) => {
 
   const goToHome = () => {
     navigation.replace('TabBar', {
-      screen: 'Home',
+      screen: 'Home'
     });
   };
 

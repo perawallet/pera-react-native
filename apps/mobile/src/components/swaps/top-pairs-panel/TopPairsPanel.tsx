@@ -55,7 +55,7 @@ const TopPairsPanel = () => {
         </PWView>
       );
     },
-    [themeStyle],
+    [themeStyle]
   );
 
   //TODO: this is local data for now...replace with server data
@@ -63,18 +63,18 @@ const TopPairsPanel = () => {
     {
       fromAsset: vestAsset,
       toAsset: algoAsset,
-      volume: 20000,
+      volume: 20000
     },
     {
       fromAsset: algoAsset,
       toAsset: usdcAsset,
-      volume: 234240,
+      volume: 234240
     },
     {
       fromAsset: algoAsset,
       toAsset: vestAsset,
-      volume: 422210,
-    },
+      volume: 422210
+    }
   ];
 
   return (

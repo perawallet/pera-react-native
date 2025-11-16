@@ -17,15 +17,15 @@ export const useStyles = makeStyles(theme => {
     container: {
       flexDirection: 'row',
       alignItems: 'flex-start',
-      flexWrap: 'nowrap',
+      flexWrap: 'nowrap'
     },
     label: {
       color: theme.colors.textGray,
-      width: '40%',
+      width: '40%'
     },
     childContainer: {
       alignItems: 'flex-start',
-      flexGrow: 1,
-    },
+      flexGrow: 1
+    }
   };
 });

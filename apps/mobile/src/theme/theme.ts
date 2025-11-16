@@ -19,9 +19,9 @@ export const getNavigationTheme = (mode: 'light' | 'dark' = 'light') => ({
     ...DefaultTheme.colors,
     background: mode === 'light' ? '#FFFFFF' : '#18181B',
     text: mode === 'light' ? '#A1A1AA' : '#71717A',
-    primary: mode === 'light' ? '#18181B' : '#FAFAFA',
+    primary: mode === 'light' ? '#18181B' : '#FAFAFA'
   },
-  dark: mode === 'dark',
+  dark: mode === 'dark'
 });
 
 export const getTheme = (mode: 'light' | 'dark' = 'light') =>
@@ -85,7 +85,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
       warning: '#FFEE55', // Link/primary (dark variant) used as generic warning
       error: '#DB4645', // Alert/negative (light)
       // Misc
-      divider: 'rgba(0,0,0,0.05)', // Border/default (light)
+      divider: 'rgba(0,0,0,0.05)' // Border/default (light)
     },
     darkColors: {
       // Primary/secondary brand (dark variants)
@@ -146,7 +146,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
       warning: '#FFEE55', // Link/primary (dark)
       error: '#FF6D5F', // Alert/negative (dark)
       // Misc
-      divider: 'rgba(255,255,255,0.05)', // Border/default (dark)
+      divider: 'rgba(255,255,255,0.05)' // Border/default (dark)
     },
     mode,
     spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 24 },
@@ -155,19 +155,19 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
         containerStyle: {
           backgroundColor: theme.colors.primary,
           color: theme.colors.textMain,
-          borderRadius: theme.spacing.xs,
+          borderRadius: theme.spacing.xs
         },
         disabledStyle: {
-          backgroundColor: theme.colors.textGray,
+          backgroundColor: theme.colors.textGray
         },
         disabledTitleStyle: {
-          color: theme.colors.textGrayLighter,
-        },
+          color: theme.colors.textGrayLighter
+        }
       }),
       Input: (_, theme) => ({
         containerStyle: {
           backgroundColor: theme.colors.background,
-          paddingHorizontal: 0,
+          paddingHorizontal: 0
         },
         inputStyle: {
           fontFamily: 'DMSans-Regular',
@@ -177,7 +177,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             theme.mode === 'dark'
               ? theme.colors.textGrayLighter
               : theme.colors.textMain,
-          borderRadius: theme.spacing.xs,
+          borderRadius: theme.spacing.xs
         },
         labelStyle: {
           fontFamily: 'DMSans-Regular',
@@ -187,17 +187,17 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             theme.mode === 'dark'
               ? theme.colors.textGrayLighter
               : theme.colors.textGray,
-          marginBottom: theme.spacing.xs,
+          marginBottom: theme.spacing.xs
         },
         inputContainerStyle: {
           backgroundColor:
             theme.mode === 'dark'
               ? theme.colors.textMain
               : theme.colors.layerGrayLighter,
-          borderBottomWidth: 0,
+          borderBottomWidth: 0
         },
         rightIconContainerStyle: {
-          marginVertical: 0,
+          marginVertical: 0
         },
         cursorColor:
           theme.mode === 'dark' ? theme.colors.textGray : theme.colors.textMain,
@@ -205,68 +205,68 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
           theme.mode === 'dark'
             ? theme.colors.textGrayLighter
             : theme.colors.textGray,
-        renderErrorMessage: false,
+        renderErrorMessage: false
       }),
       Skeleton: (_, theme) => ({
         skeletonStyle: {
-          backgroundColor: theme.colors.layerGrayLighter,
+          backgroundColor: theme.colors.layerGrayLighter
         },
         style: {
           backgroundColor: theme.colors.layerGrayLight,
           borderWidth: 2,
-          borderColor: theme.colors.background,
+          borderColor: theme.colors.background
         },
-        animation: 'pulse',
+        animation: 'pulse'
       }),
       BottomSheet: (_, theme) => ({
         containerStyle: {
           margin: 0,
           flex: 1,
-          backgroundColor: theme.colors.backdrop,
+          backgroundColor: theme.colors.backdrop
         },
         backdropStyle: {
-          backgroundColor: theme.colors.backdrop,
+          backgroundColor: theme.colors.backdrop
         },
         scrollViewProps: {
           contentContainerStyle: {
             borderTopStartRadius: theme.spacing.xl,
-            borderTopEndRadius: theme.spacing.xl,
-          },
+            borderTopEndRadius: theme.spacing.xl
+          }
         },
         modalProps: {
-          presentationStyle: 'overFullScreen',
-        },
+          presentationStyle: 'overFullScreen'
+        }
       }),
       Text: () => ({
         h1Style: {
           fontFamily: 'DMSans-Medium',
           fontWeight: '500',
           fontSize: 32,
-          lineHeight: 40,
+          lineHeight: 40
         },
         h2Style: {
           fontFamily: 'DMSans-Medium',
           fontWeight: '500',
           fontSize: 25,
-          lineHeight: 24,
+          lineHeight: 24
         },
         h3Style: {
           fontFamily: 'DMSans-Medium',
           fontWeight: '500',
           fontSize: 19,
-          lineHeight: 24,
+          lineHeight: 24
         },
         h4Style: {
           fontFamily: 'DMSans-Medium',
           fontWeight: '500',
           fontSize: 15,
-          lineHeight: 24,
+          lineHeight: 24
         },
         style: {
           fontFamily: 'DMSans-Regular',
           fontWeight: '400',
-          fontSize: 13,
-        },
-      }),
-    },
+          fontSize: 13
+        }
+      })
+    }
   });

@@ -46,7 +46,7 @@ const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
       body: config.debugEnabled
         ? `Details: ${error}`
         : 'An error has occured, please try again.',
-      type: 'error',
+      type: 'error'
     });
   };
 

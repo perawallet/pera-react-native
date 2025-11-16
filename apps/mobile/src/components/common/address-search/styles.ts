@@ -15,21 +15,21 @@ import { makeStyles } from '@rneui/themed';
 export const useStyles = makeStyles(theme => {
   return {
     container: {
-      flex: 1,
+      flex: 1
     },
     searchField: {
       borderRadius: theme.spacing.sm,
-      paddingHorizontal: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.sm
     },
     section: {
       marginTop: theme.spacing.lg,
-      gap: theme.spacing.md,
+      gap: theme.spacing.md
     },
     title: {},
     accountDisplay: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.md,
-    },
+      gap: theme.spacing.md
+    }
   };
 });

@@ -15,7 +15,7 @@ import {
   getAccountDisplayName,
   useAllAccounts,
   useSelectedAccountAddress,
-  WalletAccount,
+  WalletAccount
 } from '@perawallet/core';
 import { useStyles } from './styles';
 import { Text, useTheme } from '@rneui/themed';

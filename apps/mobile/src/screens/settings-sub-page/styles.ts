@@ -17,7 +17,7 @@ export const useStyles = makeStyles(theme => {
     container: {
       flex: 1,
       flexDirection: 'column',
-      gap: theme.spacing.xl,
-    },
+      gap: theme.spacing.xl
+    }
   };
 });

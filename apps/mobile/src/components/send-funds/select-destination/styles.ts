@@ -16,7 +16,7 @@ export const useStyles = makeStyles(theme => {
   return {
     container: {
       flex: 1,
-      gap: theme.spacing.lg,
-    },
+      gap: theme.spacing.lg
+    }
   };
 });

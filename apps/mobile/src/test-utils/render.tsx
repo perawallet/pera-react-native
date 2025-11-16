@@ -26,7 +26,7 @@ const testTheme = createTheme({
     warning: '#FF9500',
     error: '#FF3B30',
     background: '#FFFFFF',
-    disabled: '#C7C7CC',
+    disabled: '#C7C7CC'
   },
   darkColors: {
     primary: '#0A84FF',
@@ -35,8 +35,8 @@ const testTheme = createTheme({
     warning: '#FF9F0A',
     error: '#FF453A',
     background: '#000000',
-    disabled: '#48484A',
-  },
+    disabled: '#48484A'
+  }
 });
 
 // Extend theme with custom colors after creation
@@ -55,12 +55,12 @@ const createTestQueryClient = () => {
     defaultOptions: {
       queries: {
         retry: false,
-        gcTime: 0,
+        gcTime: 0
       },
       mutations: {
-        retry: false,
-      },
-    },
+        retry: false
+      }
+    }
   });
 };
 
@@ -75,7 +75,7 @@ const TestProviders = ({
   children,
   queryClient,
   theme = testTheme,
-  navigationProps = {},
+  navigationProps = {}
 }: TestProvidersProps) => {
   const client = queryClient || createTestQueryClient();
 
@@ -83,7 +83,7 @@ const TestProviders = ({
     <SafeAreaProvider
       initialMetrics={{
         frame: { x: 0, y: 0, width: 375, height: 812 },
-        insets: { top: 44, left: 0, right: 0, bottom: 34 },
+        insets: { top: 44, left: 0, right: 0, bottom: 34 }
       }}
     >
       <ThemeProvider theme={theme}>
@@ -110,7 +110,7 @@ const customRender = (
     theme,
     navigationProps,
     ...renderOptions
-  }: CustomRenderOptions = {},
+  }: CustomRenderOptions = {}
 ) => {
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
     <TestProviders

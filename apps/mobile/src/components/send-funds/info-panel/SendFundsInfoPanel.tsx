@@ -11,7 +11,7 @@
  */
 
 import PWBottomSheet, {
-  PWBottomSheetProps,
+  PWBottomSheetProps
 } from '../../common/bottom-sheet/PWBottomSheet';
 import { usePreferences } from '@perawallet/core';
 import { Text, useTheme } from '@rneui/themed';

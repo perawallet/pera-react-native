@@ -19,7 +19,7 @@ import AddressEntryField from '../address-entry/AddressEntryField';
 import {
   truncateAlgorandAddress,
   useAllAccounts,
-  useContacts,
+  useContacts
 } from '@perawallet/core';
 import { ScrollView } from 'react-native';
 import PWTouchableOpacity from '../touchable-opacity/PWTouchableOpacity';
@@ -44,15 +44,15 @@ const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
   //for address validity
   const isValidAddress = useMemo(
     () => new RegExp('^[0-9a-zA-Z]{58}$').test(value),
-    [value],
+    [value]
   );
   const matchingAccounts = useMemo(
     () => accounts.filter(a => a.address.includes(value)),
-    [value, accounts],
+    [value, accounts]
   );
   const matchingContacts = useMemo(
     () => (value.length ? findContacts({ keyword: value }) : []),
-    [value, findContacts],
+    [value, findContacts]
   );
   return (
     <PWView style={styles.container}>

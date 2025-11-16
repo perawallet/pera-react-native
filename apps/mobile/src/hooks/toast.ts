@@ -25,32 +25,32 @@ const useStyles = makeStyles(theme => {
     baseStyle: {
       zIndex: 10000,
       marginTop: theme.spacing.xl,
-      borderWidth: 0,
+      borderWidth: 0
     },
     successStyle: {
-      backgroundColor: theme.colors.success,
+      backgroundColor: theme.colors.success
     },
     successStyleText: {
-      color: theme.colors.white,
+      color: theme.colors.white
     },
     errorStyle: {
-      backgroundColor: theme.colors.error,
+      backgroundColor: theme.colors.error
     },
     errorStyleText: {
-      color: theme.colors.white,
+      color: theme.colors.white
     },
     infoStyle: {
-      backgroundColor: theme.colors.background,
+      backgroundColor: theme.colors.background
     },
     infoStyleText: {
-      color: theme.colors.textMain,
+      color: theme.colors.textMain
     },
     warningStyle: {
-      backgroundColor: theme.colors.error,
+      backgroundColor: theme.colors.error
     },
     warningStyleText: {
-      color: theme.colors.white,
-    },
+      color: theme.colors.white
+    }
   };
 });
 
@@ -78,15 +78,15 @@ const useToast = () => {
         componentProps: {
           containerStyle: [styles.baseStyle, containerStyle],
           titleStyle: textStyle,
-          descriptionStyle: textStyle,
-        },
+          descriptionStyle: textStyle
+        }
       });
     },
-    [styles],
+    [styles]
   );
 
   return {
-    showToast,
+    showToast
   };
 };
 

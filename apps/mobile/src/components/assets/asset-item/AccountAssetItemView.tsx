@@ -16,7 +16,7 @@ import PWView, { PWViewProps } from '../../common/view/PWView';
 import {
   ALGO_ASSET_ID,
   PeraAsset,
-  useCurrencyConverter,
+  useCurrencyConverter
 } from '@perawallet/core';
 import { Text, useTheme } from '@rneui/themed';
 import Decimal from 'decimal.js';

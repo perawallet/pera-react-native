@@ -15,23 +15,23 @@ import { makeStyles } from '@rneui/themed';
 export const useStyles = makeStyles(theme => ({
   container: {
     paddingHorizontal: theme.spacing.sm,
-    marginTop: theme.spacing.xl,
+    marginTop: theme.spacing.xl
   },
   fromContainer: {
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.xl,
-    gap: theme.spacing.md,
+    gap: theme.spacing.md
   },
   toContainer: {
     backgroundColor: theme.colors.layerGrayLighter,
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.xl,
     borderRadius: theme.spacing.md,
-    gap: theme.spacing.md,
+    gap: theme.spacing.md
   },
   floatButtonContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-between'
   },
   floatButton: {
     position: 'absolute',
@@ -49,12 +49,12 @@ export const useStyles = makeStyles(theme => ({
     verticalAlign: 'middle',
     color: theme.colors.helperPositive,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'center'
   },
   floatButtonIcon: {
     width: theme.spacing.lg,
     height: theme.spacing.lg,
-    color: theme.colors.textMain,
+    color: theme.colors.textMain
   },
   floatSplitButton: {
     position: 'absolute',
@@ -74,46 +74,46 @@ export const useStyles = makeStyles(theme => ({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: theme.spacing.xs,
+    gap: theme.spacing.xs
   },
   floatSplitButtonItem: {},
   floatSplitDivider: {
-    margin: theme.spacing.xs,
+    margin: theme.spacing.xs
   },
   floatButtonText: {
     color: theme.colors.helperPositive,
     fontWeight: '700',
-    fontSize: 11,
+    fontSize: 11
   },
   greenIcon: {
     color: theme.colors.helperPositive,
     width: theme.spacing.lg,
-    height: theme.spacing.lg,
+    height: theme.spacing.lg
   },
   inputAmountsContainer: {
-    flexGrow: 1,
+    flexGrow: 1
   },
   inputContainer: {
     flexDirection: 'row',
     flexWrap: 'nowrap',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'center'
   },
   titleRow: {
     flexDirection: 'row',
     flexWrap: 'nowrap',
-    justifyContent: 'space-between',
+    justifyContent: 'space-between'
   },
   titleBalanceContainer: {
     flexDirection: 'row',
-    gap: theme.spacing.xs,
+    gap: theme.spacing.xs
   },
   titleText: {
-    color: theme.colors.textGray,
+    color: theme.colors.textGray
   },
   titleCurrency: {
     color: theme.colors.textGray,
-    flexShrink: 1,
+    flexShrink: 1
   },
   primaryInput: {
     color: theme.colors.textGray,
@@ -124,12 +124,12 @@ export const useStyles = makeStyles(theme => ({
     padding: 0,
     margin: 0,
     top: 0,
-    height: 48,
+    height: 48
   },
   primaryAmountText: {
-    color: theme.colors.textGray,
+    color: theme.colors.textGray
   },
   secondaryAmountText: {
-    color: theme.colors.textGray,
-  },
+    color: theme.colors.textGray
+  }
 }));

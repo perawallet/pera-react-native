@@ -26,7 +26,7 @@ import {
   formatDatetime,
   useAccountBalances,
   useAllAccounts,
-  useCurrency,
+  useCurrency
 } from '@perawallet/core';
 import { useCallback, useState } from 'react';
 
@@ -42,7 +42,7 @@ const PortfolioView = (props: PortfolioViewProps) => {
   const accounts = useAllAccounts();
   const { loading, totalAlgo, totalLocal } = useAccountBalances(accounts);
   const [chartData, setChartData] = useState<AccountWealthHistoryItem | null>(
-    null,
+    null
   );
   const [chartVisible, setChartVisible] = useState<boolean>(false);
 
@@ -55,7 +55,7 @@ const PortfolioView = (props: PortfolioViewProps) => {
       setChartData(selected);
       props.onDataSelected?.(selected);
     },
-    [setChartData, props],
+    [setChartData, props]
   );
 
   return (

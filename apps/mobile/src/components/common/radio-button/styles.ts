@@ -14,20 +14,31 @@ import { makeStyles } from '@rneui/themed';
 
 export const useStyles = makeStyles(theme => {
   return {
-    container: {
-      alignItems: 'center',
-      justifyContent: 'center'
-    },
     row: {
-      width: '100%',
       flexDirection: 'row',
-      justifyContent: 'space-between'
+      paddingVertical: theme.spacing.md,
+      paddingHorizontal: theme.spacing.md,
+      justifyContent: 'space-between',
+      alignItems: 'center'
     },
-    key: {
-      width: theme.spacing.xl * 3,
-      height: theme.spacing.xl * 2.5,
-      alignItems: 'center',
-      justifyContent: 'center'
+    radioContainer: {
+      borderWidth: 1,
+      borderRadius: theme.spacing.xl,
+      borderColor: theme.colors.layerGrayLight,
+      width: theme.spacing.xl,
+      height: theme.spacing.xl,
+      justifyContent: 'center',
+      alignItems: 'center'
+    },
+    selectedRadio: {
+      borderRadius: theme.spacing.lg,
+      width: theme.spacing.lg,
+      height: theme.spacing.lg,
+      backgroundColor: theme.colors.helperPositive
+    },
+    input: {
+      paddingHorizontal: theme.spacing.md,
+      borderRadius: theme.spacing.sm
     }
   };
 });

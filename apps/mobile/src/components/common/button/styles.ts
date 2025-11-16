@@ -32,14 +32,14 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
     buttonStyle: {
       backgroundColor,
       gap: theme.spacing.sm,
-      minWidth: props.minWidth ?? 0,
+      minWidth: props.minWidth ?? 0
     },
     titleStyle: {
       fontFamily: 'DMSans-Medium',
       fontWeight: '500',
       fontSize: 15,
       lineHeight: 24,
-      color,
-    },
+      color
+    }
   };
 });

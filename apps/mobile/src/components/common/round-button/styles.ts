@@ -23,12 +23,12 @@ export const useStyles = makeStyles((theme, _: RoundButtonProps) => ({
     alignContent: 'center',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 32,
+    borderRadius: 32
   },
   titleStyle: {
     color: theme.colors.textMain,
     alignItems: 'center',
     justifyContent: 'center',
-    textAlign: 'center',
-  },
+    textAlign: 'center'
+  }
 }));

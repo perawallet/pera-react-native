@@ -17,13 +17,13 @@ import { Platform } from 'react-native';
 import notifee, {
   AndroidImportance,
   AuthorizationStatus,
-  EventType,
+  EventType
 } from '@notifee/react-native';
 import {
   CrashReportingService,
   NotificationsInitResult,
   RemoteConfigKey,
-  RemoteConfigService,
+  RemoteConfigService
 } from '@perawallet/core';
 
 export class RNFirebaseService
@@ -32,7 +32,7 @@ export class RNFirebaseService
   async initializeRemoteConfig() {
     // Configure fetch interval (1 hour)
     await getRemoteConfig().setConfigSettings({
-      minimumFetchIntervalMillis: 60 * 60 * 1000,
+      minimumFetchIntervalMillis: 60 * 60 * 1000
     });
 
     // TODO: setup defaults here but load them from somewhere central? Config?
@@ -74,7 +74,7 @@ export class RNFirebaseService
     if (settings.authorizationStatus !== AuthorizationStatus.AUTHORIZED) {
       return {
         token: undefined,
-        unsubscribe: () => {},
+        unsubscribe: () => {}
       };
     }
 
@@ -84,7 +84,7 @@ export class RNFirebaseService
         id: 'default',
         name: 'Default',
         importance: AndroidImportance.DEFAULT,
-        vibration: true,
+        vibration: true
       });
     }
 
@@ -110,10 +110,10 @@ export class RNFirebaseService
           data: remoteMessage.data,
           android: Platform.select({
             android: { channelId: 'default' },
-            ios: undefined,
-          }) as any,
+            ios: undefined
+          }) as any
         });
-      },
+      }
     );
 
     // Foreground notification events
@@ -127,7 +127,7 @@ export class RNFirebaseService
           default:
             break;
         }
-      },
+      }
     );
 
     return {
@@ -135,7 +135,7 @@ export class RNFirebaseService
       unsubscribe: () => {
         unsubscribeOnMessage();
         unsubscribeNotifeeForeground();
-      },
+      }
     };
   }
 

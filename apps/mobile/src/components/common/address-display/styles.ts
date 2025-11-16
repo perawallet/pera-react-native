@@ -17,12 +17,12 @@ export const useStyles = makeStyles(theme => {
     addressValueContainer: {
       flexDirection: 'row',
       gap: theme.spacing.xl,
-      alignItems: 'center',
+      alignItems: 'center'
     },
     contactContainer: {
       flexDirection: 'row',
       gap: theme.spacing.sm,
-      alignItems: 'center',
-    },
+      alignItems: 'center'
+    }
   };
 });

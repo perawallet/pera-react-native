@@ -24,7 +24,7 @@ type SendFundsSelectDestinationProps = {
 
 const SendFundsSelectDestination = ({
   onNext,
-  onBack,
+  onBack
 }: SendFundsSelectDestinationProps) => {
   const { setDestination } = useContext(SendFundsContext);
   const styles = useStyles();

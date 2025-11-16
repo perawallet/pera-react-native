@@ -26,8 +26,8 @@ export default defineConfig({
       '@layouts': resolve(__dirname, 'src/layouts'),
       '@routes': resolve(__dirname, 'src/routes'),
       '@theme': resolve(__dirname, 'src/theme'),
-      '@test-utils': resolve(__dirname, 'src/test-utils'),
-    },
+      '@test-utils': resolve(__dirname, 'src/test-utils')
+    }
   },
   test: {
     globals: true,
@@ -59,7 +59,7 @@ export default defineConfig({
         'src/bootstrap/*',
         'src/hooks/toast.ts',
         'src/hooks/webview.ts',
-        'src/hooks/deeplink.ts',
+        'src/hooks/deeplink.ts'
       ],
       reporter: ['text', 'html', 'lcov'],
       reportsDirectory: './coverage',
@@ -68,9 +68,9 @@ export default defineConfig({
           branches: 90,
           functions: 90,
           lines: 90,
-          statements: 90,
-        },
-      },
-    },
-  },
+          statements: 90
+        }
+      }
+    }
+  }
 });

@@ -32,7 +32,7 @@ export class RNSecureStorageService implements SecureStorageService {
       service = SERVICE_PREFIX,
       requireBiometrics = true,
       promptTitle = 'Authenticate',
-      promptDesc = 'Access secure data',
+      promptDesc = 'Access secure data'
     } = options;
 
     this.baseOpts = {
@@ -43,23 +43,23 @@ export class RNSecureStorageService implements SecureStorageService {
         : undefined,
       authenticationPrompt: {
         title: promptTitle,
-        description: promptDesc,
+        description: promptDesc
       },
-      securityLevel: Keychain.SECURITY_LEVEL.SECURE_HARDWARE,
+      securityLevel: Keychain.SECURITY_LEVEL.SECURE_HARDWARE
     };
   }
 
   async setItem(key: string, value: Buffer): Promise<void> {
     await Keychain.setGenericPassword('user', value.toString('utf-8'), {
       ...this.baseOpts,
-      service: `${this.baseOpts.service}.${key}`,
+      service: `${this.baseOpts.service}.${key}`
     });
   }
 
   async getItem(key: string): Promise<Buffer | null> {
     const creds = await Keychain.getGenericPassword({
       ...this.baseOpts,
-      service: `${this.baseOpts.service}.${key}`,
+      service: `${this.baseOpts.service}.${key}`
     });
     return creds ? Buffer.from(creds.password, 'utf-8') : null;
   }
@@ -67,7 +67,7 @@ export class RNSecureStorageService implements SecureStorageService {
   async removeItem(key: string): Promise<void> {
     await Keychain.resetGenericPassword({
       ...this.baseOpts,
-      service: `${this.baseOpts.service}.${key}`,
+      service: `${this.baseOpts.service}.${key}`
     });
   }
 

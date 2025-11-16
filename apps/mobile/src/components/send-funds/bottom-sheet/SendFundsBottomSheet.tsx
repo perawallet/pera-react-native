@@ -23,7 +23,7 @@ import { TabView } from '@rneui/themed';
 import SendFundsSelectDestination from '../select-destination/SendFundsSelectDestination';
 import SendFundsTransactionConfirmation from '../transaction-confirmation/SendFundsTransactionConfirmation';
 import SendFundsProvider, {
-  SendFundsContext,
+  SendFundsContext
 } from '../../../providers/SendFundsProvider';
 
 type SendFundsBottomSheetProps = {
@@ -42,7 +42,7 @@ const SCREENS: ScreenState[] = [
   'select-asset',
   'input-amount',
   'select-destination',
-  'confirm-transaction',
+  'confirm-transaction'
 ];
 
 //TODO: add support for ASA Inbox sends (check whether destination account is opted into asset)
@@ -50,7 +50,7 @@ const SCREENS: ScreenState[] = [
 const SendFundsBottomSheet = ({
   asset,
   onClose,
-  isVisible,
+  isVisible
 }: SendFundsBottomSheetProps) => {
   const selectedAccount = useSelectedAccount();
   const [screenIndex, setScreenIndex] = useState(0);
@@ -62,7 +62,7 @@ const SendFundsBottomSheet = ({
     setCanSelectAsset,
     setNote,
     setAmount,
-    setDestination,
+    setDestination
   } = useContext(SendFundsContext);
 
   useLayoutEffect(() => {

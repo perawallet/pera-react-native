@@ -13,7 +13,7 @@
 import React, { PropsWithChildren } from 'react';
 import {
   PersistQueryClientProvider,
-  PersistQueryClientRootOptions,
+  PersistQueryClientRootOptions
 } from '@tanstack/react-query-persist-client';
 import { OmitKeyof, QueryCache, QueryClient } from '@tanstack/react-query';
 
@@ -21,7 +21,7 @@ const cache = new QueryCache({
   onError: error => {
     console.log('An error has occurred:', error);
     //TODO should we use a toast here?
-  },
+  }
 });
 const queryClient = new QueryClient({
   queryCache: cache,
@@ -30,13 +30,13 @@ const queryClient = new QueryClient({
       //TODO maybe move this to config?
       gcTime: 1000 * 60 * 60 * 24,
       staleTime: 1000 * 30,
-      retry: 2,
+      retry: 2
     },
     mutations: {
       //TODO do we want to enable throwOnError?
       //throwOnError: true
-    },
-  },
+    }
+  }
 });
 
 type QueryProviderProps = OmitKeyof<

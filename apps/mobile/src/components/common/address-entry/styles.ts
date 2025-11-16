@@ -16,7 +16,7 @@ export const useStyles = makeStyles(theme => {
   return {
     container: {
       padding: 0,
-      margin: 0,
+      margin: 0
     },
     icon: {},
     closeIcon: {},
@@ -25,7 +25,7 @@ export const useStyles = makeStyles(theme => {
       marginLeft: theme.spacing.lg,
       width: theme.spacing.xl * 2,
       height: theme.spacing.xl * 2,
-      zIndex: 2,
-    },
+      zIndex: 2
+    }
   };
 });

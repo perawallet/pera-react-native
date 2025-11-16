@@ -19,10 +19,10 @@ export const useStyles = makeStyles(theme => ({
     alignItems: 'center',
     justifyContent: 'center',
     textAlign: 'center',
-    gap: theme.spacing.xl,
+    gap: theme.spacing.xl
   },
   text: {
     color: theme.colors.textMain,
-    textAlign: 'center',
-  },
+    textAlign: 'center'
+  }
 }));

@@ -34,7 +34,7 @@ function App() {
     if (!bootstrapped) {
       bootstrap().then(() => {
         const reactQueryPersistor = createAsyncStoragePersister({
-          storage: kvService,
+          storage: kvService
         });
 
         setPersister(reactQueryPersistor);

@@ -24,10 +24,10 @@ export const useStyles = makeStyles(theme => {
       borderRadius: theme.spacing.xl,
       backgroundColor: theme.colors.background,
       borderWidth: 1,
-      borderColor: theme.colors.helperGray200,
+      borderColor: theme.colors.helperGray200
     },
     text: {
-      color: theme.colors.textGray,
-    },
+      color: theme.colors.textGray
+    }
   };
 });

@@ -72,7 +72,7 @@ const ContactListScreen = () => {
     findContacts({
       keyword: search,
       matchAddress: true,
-      matchName: true,
+      matchName: true
     }).forEach(c => {
       const initial = c.name.charAt(0).toUpperCase();
       if (!groups[initial]) {
@@ -86,7 +86,7 @@ const ContactListScreen = () => {
     Object.entries(groups).forEach(e => {
       sectionedContacts.push({
         title: e[0],
-        data: e[1].sort(contactSorter),
+        data: e[1].sort(contactSorter)
       });
     });
 

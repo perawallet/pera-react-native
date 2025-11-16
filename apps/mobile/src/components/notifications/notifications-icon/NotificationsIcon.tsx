@@ -12,7 +12,7 @@
 
 import {
   useDeviceID,
-  useV1DevicesNotificationStatusList,
+  useV1DevicesNotificationStatusList
 } from '@perawallet/core';
 import BellIcon from '../../../../assets/icons/bell.svg';
 import BellWithBadgeIcon from '../../../../assets/icons/bell-with-badge.svg';
@@ -33,14 +33,14 @@ const NotificationsIcon = (props: NotificationsIconProps) => {
 
   const { data } = useV1DevicesNotificationStatusList(
     {
-      device_id: deviceID!,
+      device_id: deviceID!
     },
     {
       query: {
         enabled: !!deviceID,
-        staleTime: 30_000, //TODO make configurable or at least store somewhere sensible
-      },
-    },
+        staleTime: 30_000 //TODO make configurable or at least store somewhere sensible
+      }
+    }
   );
 
   return (

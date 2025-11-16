@@ -15,7 +15,7 @@ import PWView from '../../common/view/PWView';
 import {
   PeraAsset,
   useAccountBalances,
-  useSelectedAccount,
+  useSelectedAccount
 } from '@perawallet/core';
 import { useCallback, useContext, useMemo } from 'react';
 import AccountAssetItemView from '../../assets/asset-item/AccountAssetItemView';
@@ -43,13 +43,13 @@ const LoadingView = () => {
 
 const SendFundsAssetSelectionView = ({
   onSelected,
-  onBack,
+  onBack
 }: SendFundsAssetSelectionViewProps) => {
   const styles = useStyles();
   const selectedAccount = useSelectedAccount();
   const { setSelectedAsset } = useContext(SendFundsContext);
   const { data, loading } = useAccountBalances(
-    selectedAccount ? [selectedAccount] : [],
+    selectedAccount ? [selectedAccount] : []
   );
 
   const handleSelected = useCallback(
@@ -57,7 +57,7 @@ const SendFundsAssetSelectionView = ({
       setSelectedAsset(item);
       onSelected();
     },
-    [onSelected, setSelectedAsset],
+    [onSelected, setSelectedAsset]
   );
 
   const balanceData = useMemo(() => data.at(0)?.accountInfo?.results, [data]);
@@ -81,7 +81,7 @@ const SendFundsAssetSelectionView = ({
         </PWTouchableOpacity>
       );
     },
-    [handleSelected, styles],
+    [handleSelected, styles]
   );
 
   return (

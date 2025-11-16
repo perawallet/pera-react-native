@@ -20,7 +20,7 @@ export const ChartPeriods = {
   OneDay: 'one-day',
   OneWeek: 'one-week',
   OneMonth: 'one-month',
-  OneYear: 'one-year',
+  OneYear: 'one-year'
 };
 
 export type ChartPeriod = (typeof ChartPeriods)[keyof typeof ChartPeriods];
@@ -32,7 +32,7 @@ type ChartPeriodSelectionProps = {
 
 const ChartPeriodSelection = ({
   value,
-  onChange,
+  onChange
 }: ChartPeriodSelectionProps) => {
   const styles = useStyles();
   const [activeValue, setActiveValue] = useState<ChartPeriod>(value);
@@ -44,7 +44,7 @@ const ChartPeriodSelection = ({
         onChange(newValue);
       }
     },
-    [onChange, setActiveValue, activeValue],
+    [onChange, setActiveValue, activeValue]
   );
 
   return (

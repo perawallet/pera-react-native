@@ -13,7 +13,7 @@
 import PWView from '../../common/view/PWView';
 import {
   formatRelativeTime,
-  NotificationV2SerializerResponse,
+  NotificationV2SerializerResponse
 } from '@perawallet/core';
 import { Image, Text, useTheme } from '@rneui/themed';
 import { useStyles } from './styles';
@@ -63,7 +63,7 @@ const NotificationItem = ({ item }: NotificationItemProps) => {
         );
       }
     },
-    [styles, theme],
+    [styles, theme]
   );
 
   const handlePress = () => {

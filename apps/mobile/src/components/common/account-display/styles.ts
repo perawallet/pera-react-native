@@ -17,10 +17,10 @@ export const useStyles = makeStyles(theme => {
     container: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.sm,
+      gap: theme.spacing.sm
     },
     text: {
-      color: theme.colors.textGray,
-    },
+      color: theme.colors.textGray
+    }
   };
 });

@@ -16,7 +16,7 @@ import * as RN from 'react-native';
 
 // Mock @perawallet/core
 vi.mock('@perawallet/core', () => ({
-  updateBackendHeaders: vi.fn(),
+  updateBackendHeaders: vi.fn()
 }));
 
 // Mock react-native-device-info
@@ -29,28 +29,28 @@ vi.mock('react-native-device-info', () => ({
     getDeviceId: vi.fn(() => 'iPhone13,2'),
     getUniqueId: vi.fn(() => Promise.resolve('unique-device-id')),
     getModel: vi.fn(() => 'iPhone 13'),
-    getBuildNumber: vi.fn(() => '1'),
-  },
+    getBuildNumber: vi.fn(() => '1')
+  }
 }));
 
 // Mock react-native Platform and NativeModules
 vi.mock('react-native', () => ({
   Platform: {
-    OS: 'ios',
+    OS: 'ios'
   },
   NativeModules: {
     SettingsManager: {
       settings: {
         AppleLocale: 'en_US',
-        AppleLanguages: ['en_US', 'fr_FR'],
-      },
+        AppleLanguages: ['en_US', 'fr_FR']
+      }
     },
     I18nManager: {
       getConstants: vi.fn(() => ({
-        localeIdentifier: 'en_US',
-      })),
-    },
-  },
+        localeIdentifier: 'en_US'
+      }))
+    }
+  }
 }));
 
 describe('RNDeviceInfoStorageService', () => {
@@ -70,9 +70,9 @@ describe('RNDeviceInfoStorageService', () => {
         () => ({
           settings: {
             AppleLocale: undefined,
-            AppleLanguages: ['en_US', 'fr_FR'],
-          },
-        }),
+            AppleLanguages: ['en_US', 'fr_FR']
+          }
+        })
       );
 
       service.initializeDeviceInfo();
@@ -97,9 +97,9 @@ describe('RNDeviceInfoStorageService', () => {
         () => ({
           settings: {
             AppleLocale: undefined,
-            AppleLanguages: ['en_US', 'fr_FR'],
-          },
-        }),
+            AppleLanguages: ['en_US', 'fr_FR']
+          }
+        })
       );
 
       service.initializeDeviceInfo();
@@ -167,9 +167,9 @@ describe('RNDeviceInfoStorageService', () => {
         () => ({
           settings: {
             AppleLocale: 'en-US',
-            AppleLanguages: ['en_US', 'fr_FR'],
-          },
-        }),
+            AppleLanguages: ['en_US', 'fr_FR']
+          }
+        })
       );
       const locale = service.getDeviceLocale();
 
@@ -183,8 +183,8 @@ describe('RNDeviceInfoStorageService', () => {
       mockNativeModules.SettingsManager.getConstants = vi.fn(() => ({
         settings: {
           AppleLocale: undefined,
-          AppleLanguages: ['en_US', 'fr_FR'],
-        },
+          AppleLanguages: ['en_US', 'fr_FR']
+        }
       }));
 
       const locale = service.getDeviceLocale();
@@ -197,13 +197,13 @@ describe('RNDeviceInfoStorageService', () => {
       vi.mocked(RN).NativeModules.SettingsManager.getConstants = vi.fn(() => ({
         settings: {
           AppleLocale: 'en_US',
-          AppleLanguages: ['en_US', 'fr_FR'],
-        },
+          AppleLanguages: ['en_US', 'fr_FR']
+        }
       }));
       vi.mocked(RN).NativeModules.I18nManager.getConstants = vi.fn(() => ({
         isRTL: false,
         doLeftAndRightSwapInRTL: false,
-        localeIdentifier: 'en_GB',
+        localeIdentifier: 'en_GB'
       }));
 
       const androidService = new RNDeviceInfoStorageService();
@@ -218,13 +218,13 @@ describe('RNDeviceInfoStorageService', () => {
       vi.mocked(RN).NativeModules.SettingsManager.getConstants = vi.fn(() => ({
         settings: {
           AppleLocale: 'fr_CA',
-          AppleLanguages: ['en_US', 'fr_FR'],
-        },
+          AppleLanguages: ['en_US', 'fr_FR']
+        }
       }));
       vi.mocked(RN).NativeModules.I18nManager.getConstants = vi.fn(() => ({
         isRTL: false,
         doLeftAndRightSwapInRTL: false,
-        localeIdentifier: 'en_GB',
+        localeIdentifier: 'en_GB'
       }));
 
       const locale = service.getDeviceLocale();
@@ -258,13 +258,13 @@ describe('RNDeviceInfoStorageService', () => {
       vi.mocked(RN).NativeModules.SettingsManager.getConstants = vi.fn(() => ({
         settings: {
           AppleLocale: 'zh_Hans_CN',
-          AppleLanguages: ['en_US', 'fr_FR'],
-        },
+          AppleLanguages: ['en_US', 'fr_FR']
+        }
       }));
       vi.mocked(RN).NativeModules.I18nManager.getConstants = vi.fn(() => ({
         isRTL: false,
         doLeftAndRightSwapInRTL: false,
-        localeIdentifier: 'en_GB',
+        localeIdentifier: 'en_GB'
       }));
 
       const locale = service.getDeviceLocale();

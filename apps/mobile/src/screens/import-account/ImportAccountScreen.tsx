@@ -24,7 +24,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
+  ScrollView
 } from 'react-native';
 import useToast from '../../hooks/toast';
 
@@ -69,7 +69,7 @@ const ImportAccountScreen = () => {
         showToast({
           title: 'Import failed',
           body: 'There was an error trying to import your wallet',
-          type: 'error',
+          type: 'error'
         });
       } finally {
         setProcessing(false);
@@ -79,7 +79,7 @@ const ImportAccountScreen = () => {
 
   const goToHome = () => {
     navigation.replace('TabBar', {
-      screen: 'Home',
+      screen: 'Home'
     });
   };
 

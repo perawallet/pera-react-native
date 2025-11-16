@@ -24,30 +24,30 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
       borderTopEndRadius: theme.spacing.sm,
       overflow: 'hidden',
       alignItems: 'center',
-      gap: theme.spacing.lg,
+      gap: theme.spacing.lg
     },
     bodyContainer: {
       gap: theme.spacing.lg,
-      padding: theme.spacing.xl,
+      padding: theme.spacing.xl
     },
     title: {
-      textAlign: 'center',
+      textAlign: 'center'
     },
     preamble: {
       textAlign: 'center',
-      paddingHorizontal: theme.spacing.lg,
+      paddingHorizontal: theme.spacing.lg
     },
     postamble: {
-      paddingHorizontal: theme.spacing.lg,
+      paddingHorizontal: theme.spacing.lg
     },
     tipsContainer: {
       gap: theme.spacing.xl,
-      marginHorizontal: theme.spacing.xl,
+      marginHorizontal: theme.spacing.xl
     },
     tip: {
       flexDirection: 'row',
       gap: theme.spacing.xl,
-      alignItems: 'center',
+      alignItems: 'center'
     },
     tipNumberContainer: {
       borderRadius: theme.spacing.xl * 2,
@@ -57,21 +57,21 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
       alignItems: 'center',
       justifyContent: 'center',
       width: theme.spacing.xl * 2,
-      height: theme.spacing.xl * 2,
+      height: theme.spacing.xl * 2
     },
     tipNumber: {
-      fontSize: theme.spacing.lg,
+      fontSize: theme.spacing.lg
     },
     tipText: {
       flexWrap: 'wrap',
-      flexShrink: 1,
+      flexShrink: 1
     },
     redText: {
-      color: theme.colors.error,
+      color: theme.colors.error
     },
     linkContainer: {},
     link: {
-      color: theme.colors.linkPrimary,
-    },
+      color: theme.colors.linkPrimary
+    }
   };
 });
