@@ -28,6 +28,10 @@ const apiSpies = vi.hoisted(() => ({
     keyGenSpy: vi.fn(),
     signTransactionSpy: vi.fn(async () => new Uint8Array([1, 2, 3, 4])),
 }))
+
+const currencySpies = vi.hoisted(() => ({
+    useV1CurrenciesRead: vi.fn(),
+}))
 const xhdSpies = vi.hoisted(() => ({
     fromSeed: vi.fn(() => 'ROOT_KEY'),
 }))
@@ -90,6 +94,9 @@ vi.mock('../../../api/generated/backend', () => ({
     useV1DevicesPartialUpdate: querySpies.useV1DevicesPartialUpdate,
     v1AccountsAssetsListQueryKey: querySpies.v1AccountsAssetsListQueryKey,
     v1AccountsAssetsList: querySpies.v1AccountsAssetsList,
+}))
+vi.mock('../../../api/index', () => ({
+    useV1CurrenciesRead: currencySpies.useV1CurrenciesRead,
 }))
 
 describe('services/accounts/hooks', () => {
@@ -1719,6 +1726,11 @@ describe('services/accounts/hooks - useAccountBalances', () => {
         vi.resetModules()
         vi.clearAllMocks()
 
+        currencySpies.useV1CurrenciesRead.mockReturnValue({
+            data: { usd_value: '1.0' },
+            isPending: false,
+        })
+
         querySpies.v1AccountsAssetsList.mockResolvedValue({
             results: [
                 {
@@ -1763,6 +1775,11 @@ describe('services/accounts/hooks - useAccountBalances', () => {
         vi.resetModules()
         vi.clearAllMocks()
 
+        currencySpies.useV1CurrenciesRead.mockReturnValue({
+            data: { usd_value: '1.0' },
+            isPending: false,
+        })
+
         querySpies.v1AccountsAssetsList.mockResolvedValue({
             results: [
                 {
@@ -1798,6 +1815,11 @@ describe('services/accounts/hooks - useAccountBalances', () => {
         vi.resetModules()
         vi.clearAllMocks()
 
+        currencySpies.useV1CurrenciesRead.mockReturnValue({
+            data: { usd_value: '1.0' },
+            isPending: false,
+        })
+
         querySpies.v1AccountsAssetsList.mockResolvedValue({
             results: [
                 {
@@ -1832,6 +1854,11 @@ describe('services/accounts/hooks - useAccountBalances', () => {
     test('handles algoAsset without returning early', async () => {
         vi.resetModules()
         vi.clearAllMocks()
+
+        currencySpies.useV1CurrenciesRead.mockReturnValue({
+            data: { usd_value: '1.0' },
+            isPending: false,
+        })
 
         querySpies.v1AccountsAssetsList.mockResolvedValue({
             results: [
@@ -1874,6 +1901,11 @@ describe('services/accounts/hooks - useAccountBalances', () => {
         vi.resetModules()
         vi.clearAllMocks()
 
+        currencySpies.useV1CurrenciesRead.mockReturnValue({
+            data: { usd_value: '1.0' },
+            isPending: false,
+        })
+
         querySpies.v1AccountsAssetsList.mockResolvedValue({
             results: [
                 {
@@ -1915,6 +1947,11 @@ describe('services/accounts/hooks - useAccountBalances', () => {
         vi.resetModules()
         vi.clearAllMocks()
 
+        currencySpies.useV1CurrenciesRead.mockReturnValue({
+            data: { usd_value: '1.0' },
+            isPending: false,
+        })
+
         querySpies.v1AccountsAssetsList.mockResolvedValue({
             results: [],
         })
@@ -1942,6 +1979,11 @@ describe('services/accounts/hooks - useAccountBalances', () => {
     test('handles algoAsset with null usd_value in non-zero usdAmount path', async () => {
         vi.resetModules()
         vi.clearAllMocks()
+
+        currencySpies.useV1CurrenciesRead.mockReturnValue({
+            data: { usd_value: '1.0' },
+            isPending: false,
+        })
 
         querySpies.v1AccountsAssetsList.mockResolvedValue({
             results: [
