@@ -14,14 +14,12 @@ import MainScreenLayout from '../../../layouts/MainScreenLayout';
 
 import { useStyles } from './styles';
 import PWView from '../../../components/common/view/PWView';
-import {
-  useSettings
-} from '@perawallet/core';
+import { useSettings } from '@perawallet/core';
 import RadioButton from '../../../components/common/radio-button/RadioButton';
 
 const SettingsThemeScreen = () => {
   const styles = useStyles();
-  const { theme, setTheme } = useSettings()
+  const { theme, setTheme } = useSettings();
 
   return (
     <MainScreenLayout>
