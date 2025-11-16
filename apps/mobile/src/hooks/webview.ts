@@ -16,6 +16,7 @@ import { Linking } from 'react-native';
 import {
   getAccountDisplayName,
   useAllAccounts,
+  useCurrency,
   useDeviceID,
   useDeviceInfoService,
   useNetwork,
@@ -63,6 +64,7 @@ export const usePeraWebviewInterface = (webview: WebView | null) => {
   const { network } = useNetwork();
   const deviceInfo = useDeviceInfoService();
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
+  const { preferredCurrency } = useCurrency()
 
   const pushNewScreen = (_: PushNewScreenParams) => {
     //TODO navigate to deeplink
@@ -117,7 +119,7 @@ export const usePeraWebviewInterface = (webview: WebView | null) => {
       deviceModel: deviceInfo.getDeviceModel(),
       theme,
       network,
-      currency: 'USD', //TODO pull from state eventually
+      currency: preferredCurrency,
       region: 'en-US', //TODO pull from state eventually (or device location or something)
       language: 'en-US', //TODO pull from app locale
     };
@@ -127,7 +129,7 @@ export const usePeraWebviewInterface = (webview: WebView | null) => {
     const payload = {
       theme,
       network,
-      currency: 'USD', //TODO pull from state eventually
+      currency: preferredCurrency,
       language: 'en-US', //TODO pull from app locale
     };
     webview?.postMessage(JSON.stringify(payload));

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useV1CurrenciesRead } from '@api/index'
+import { useV1CurrenciesRead } from '../../api/index'
 import { useAppStore } from '../../store'
 import Decimal from 'decimal.js'
 import { useCallback } from 'react'
@@ -35,7 +35,7 @@ export const useCurrencyConverter = () => {
 
     const convertUSDToPreferredCurrency = useCallback((usdAmount: Decimal) => {
         if (isPending) {
-            return 0
+            return Decimal(0)
         }
 
         const usdValue = data?.usd_value ?? "0"
@@ -43,7 +43,19 @@ export const useCurrencyConverter = () => {
         return usdAmount.mul(Decimal(safeUsdValue))
     }, [data, isPending])
 
+    const convertAssetValueToPreferredCurrency = useCallback((amount: Decimal, usdPrice: Decimal) => {
+        if (isPending) {
+            return Decimal(0)
+        }
+
+        const usdValue = data?.usd_value ?? "0"
+        const safeUsdValue = usdValue || "0"
+        return amount.mul(usdPrice).mul(Decimal(safeUsdValue))
+    }, [data, isPending])
+
     return {
+        preferredCurrency,
+        convertAssetValueToPreferredCurrency,
         convertUSDToPreferredCurrency
     }
 }

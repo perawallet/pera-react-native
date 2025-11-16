@@ -13,7 +13,7 @@
 import AssetIcon from '../../common/asset-icon/AssetIcon';
 import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay';
 import PWView, { PWViewProps } from '../../common/view/PWView';
-import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/core';
+import { ALGO_ASSET_ID, PeraAsset, useCurrencyConverter } from '@perawallet/core';
 import { Text, useTheme } from '@rneui/themed';
 import Decimal from 'decimal.js';
 import { useStyles } from './styles';
@@ -26,19 +26,21 @@ import SuspiciousIcon from '../../../../assets/icons/assets/suspicious.svg';
 type AccountAssetItemViewProps = {
   asset: PeraAsset;
   amount?: Decimal;
-  localAmount?: Decimal;
+  usdAmount?: Decimal;
   iconSize?: number;
 } & PWViewProps;
 
 const AccountAssetItemView = ({
   asset,
   amount,
-  localAmount,
+  usdAmount,
   iconSize,
   ...rest
 }: AccountAssetItemViewProps) => {
   const { theme } = useTheme();
   const styles = useStyles();
+
+  const { preferredCurrency, convertUSDToPreferredCurrency } = useCurrencyConverter()
 
   const verificationIcon = useMemo(() => {
     if (asset.asset_id === ALGO_ASSET_ID) {
@@ -63,7 +65,7 @@ const AccountAssetItemView = ({
       <PWView style={styles.dataContainer}>
         <PWView style={styles.unitContainer}>
           <PWView style={styles.row}>
-            <Text style={styles.primaryUnit}>{asset.name}</Text>{' '}
+            <Text style={styles.primaryUnit}>{asset.name}</Text>
             {verificationIcon}
           </PWView>
           <Text style={styles.secondaryUnit}>
@@ -71,25 +73,22 @@ const AccountAssetItemView = ({
             {asset.asset_id !== ALGO_ASSET_ID && ` - ${asset.asset_id}`}
           </Text>
         </PWView>
-        {!!amount && !!localAmount && (
-          <PWView style={styles.amountContainer}>
-            <CurrencyDisplay
-              currency={asset.unit_name}
-              value={amount}
-              precision={6}
-              showSymbol
-              style={styles.primaryAmount}
-            />
-            {/* TODO support currencies */}
-            <CurrencyDisplay
-              currency={'USD'}
-              value={localAmount}
-              precision={6}
-              showSymbol
-              style={styles.secondaryAmount}
-            />
-          </PWView>
-        )}
+        <PWView style={styles.amountContainer}>
+        <CurrencyDisplay
+            currency={asset.unit_name}
+            value={amount ?? Decimal(0)}
+            precision={6}
+            showSymbol
+            style={styles.primaryAmount}
+        />
+        <CurrencyDisplay
+            currency={preferredCurrency}
+            value={convertUSDToPreferredCurrency(usdAmount ?? Decimal(0))}
+            precision={6}
+            showSymbol
+            style={styles.secondaryAmount}
+        />
+        </PWView>
       </PWView>
     </PWView>
   );

@@ -41,6 +41,7 @@ import MenuIcon from '../../assets/icons/horizontal-line-stack.svg';
 import NavigationHeader from '../components/common/navigation-header/NavigationHeader';
 import ContactListHeaderButtons from '../components/contacts/ContactListHeaderButtons';
 import ViewContactHeaderButtons from '../components/contacts/ViewContactHeaderButtons';
+import SettingsCurrencyScreen from '../screens/settings/currency/SettingsCurrencyScreen';
 
 const SettingsStack = createNativeStackNavigator({
   initialRouteName: 'SettingsHome',
@@ -54,6 +55,12 @@ const SettingsStack = createNativeStackNavigator({
       options: {
         title: 'Settings',
       },
+    },
+    Currency: {
+      screen: SettingsCurrencyScreen,
+      options: {
+        title: 'Currency'
+      }
     },
     SettingsSubPage: {
       screen: SettingsSubPageScreen,

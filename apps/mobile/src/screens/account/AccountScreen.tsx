@@ -16,6 +16,7 @@ import {
   AccountWealthHistoryItem,
   formatDatetime,
   useAccountBalances,
+  useCurrency,
   useSelectedAccount,
 } from '@perawallet/core';
 
@@ -46,6 +47,7 @@ const AccountScreen = () => {
   const { theme } = useTheme();
   const styles = useStyles();
   const account = useSelectedAccount();
+  const { preferredCurrency } = useCurrency()
 
   const { totalAlgo, totalLocal, loading } = useAccountBalances(
     account ? [account] : [],
@@ -134,7 +136,7 @@ const AccountScreen = () => {
                     ? Decimal(chartData.value_in_currency ?? '0')
                     : totalLocal
                 }
-                currency="USD"
+                currency={preferredCurrency}
                 prefix="≈ "
                 precision={2}
                 skeleton={loading}

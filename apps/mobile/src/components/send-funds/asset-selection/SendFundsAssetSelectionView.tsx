@@ -72,7 +72,7 @@ const SendFundsAssetSelectionView = ({
           <AccountAssetItemView
             asset={item}
             amount={item.amount ? Decimal(item.amount) : undefined}
-            localAmount={
+            usdAmount={
               item.balance_usd_value
                 ? Decimal(item.balance_usd_value)
                 : undefined

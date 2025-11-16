@@ -26,6 +26,7 @@ import {
   formatDatetime,
   useAccountBalances,
   useAllAccounts,
+  useCurrency,
 } from '@perawallet/core';
 import { useCallback, useState } from 'react';
 
@@ -36,6 +37,7 @@ type PortfolioViewProps = {
 const PortfolioView = (props: PortfolioViewProps) => {
   const { theme } = useTheme();
   const styles = useStyles();
+  const { preferredCurrency } = useCurrency()
 
   const accounts = useAllAccounts();
   const { loading, totalAlgo, totalLocal } = useAccountBalances(accounts);
@@ -85,7 +87,7 @@ const PortfolioView = (props: PortfolioViewProps) => {
                   ? Decimal(chartData.value_in_currency ?? '0')
                   : totalLocal
               }
-              currency="USD"
+              currency={preferredCurrency}
               prefix="≈ "
               precision={2}
               skeleton={loading}

@@ -35,6 +35,7 @@ type SigningViewProps = {
 
 //TODO: we need to support all tx types here
 //TODO: use real data from the TXs
+//TODO: convert usd amounts to preferred currency
 const SingleTransactionView = ({ request }: SigningViewProps) => {
   const styles = useStyles();
   const tx = request.txs?.at(0)?.at(0)!;

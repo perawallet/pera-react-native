@@ -19,13 +19,16 @@ import { useStyles } from './styles';
 import { ScrollView } from 'react-native';
 import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-
-import ChevronRight from '../../../assets/icons/chevron-right.svg';
-import ShieldIcon from '../../../assets/icons/gear.svg';
 import { useDeviceInfoService } from '@perawallet/core';
 import { useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PWTouchableOpacity from '../../components/common/touchable-opacity/PWTouchableOpacity';
+
+import ChevronRight from '../../../assets/icons/chevron-right.svg';
+import ShieldIcon from '../../../assets/icons/gear.svg';
+import DollarIcon from '../../../assets/icons/dollar.svg';
+import MoonIcon from '../../../assets/icons/moon.svg';
+
 
 //TODO: build out all the settins pages
 const settingsOptions = [
@@ -49,8 +52,8 @@ const settingsOptions = [
   {
     title: 'App Preferences',
     items: [
-      { route: 'SettingsSubPage', icon: <ShieldIcon />, title: 'Currency' },
-      { route: 'SettingsSubPage', icon: <ShieldIcon />, title: 'Theme' },
+      { route: 'Currency', icon: <DollarIcon />, title: 'Currency' },
+      { route: 'SettingsSubPage', icon: <MoonIcon />, title: 'Theme' },
     ],
   },
   {

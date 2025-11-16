@@ -17,6 +17,7 @@ import {
   ALGO_ASSET_ID,
   formatCurrency,
   useAccountBalances,
+  useCurrencyConverter,
   useSelectedAccount,
 } from '@perawallet/core';
 import RowTitledItem from '../../common/row-titled-item/RowTitledItem';
@@ -51,6 +52,10 @@ const SendFundsTransactionConfirmation = ({
   const selectedAccount = useSelectedAccount();
   const { showToast } = useToast();
   const [noteOpen, setNoteOpen] = useState(false);
+  const { preferredCurrency, convertAssetValueToPreferredCurrency } = useCurrencyConverter()
+  const usdAssetPrice = useMemo(() => 
+    selectedAsset?.usd_price ? Decimal(selectedAsset?.usd_price) : Decimal(0), 
+  [selectedAsset?.usd_price])
 
   const openNote = () => {
     setNoteOpen(true);
@@ -139,18 +144,18 @@ const SendFundsTransactionConfirmation = ({
         <CurrencyDisplay
           h3
           currency={selectedAsset.name}
-          precision={selectedAsset.precision}
+          precision={selectedAsset.fraction_decimals}
           minPrecision={2}
           showSymbol
           value={amount ?? Decimal(0)}
         />
         <CurrencyDisplay
           style={styles.secondaryAmount}
-          currency={'USD'}
-          precision={selectedAsset.precision}
+          currency={preferredCurrency}
+          precision={selectedAsset.fraction_decimals}
           minPrecision={2}
           showSymbol
-          value={amount ?? Decimal(0)}
+          value={convertAssetValueToPreferredCurrency(amount ?? Decimal(0), usdAssetPrice)}
         />
       </RowTitledItem>
       <Divider style={styles.divider} />
@@ -186,14 +191,16 @@ const SendFundsTransactionConfirmation = ({
             }
           />
           <CurrencyDisplay
-            currency={'USD'}
+            currency={preferredCurrency}
             precision={selectedAsset.precision}
             minPrecision={2}
             showSymbol
             value={
-              currentBalance.balance_usd_value
-                ? Decimal(currentBalance.balance_usd_value)
-                : Decimal(0)
+              convertAssetValueToPreferredCurrency(
+                (currentBalance.balance_usd_value
+                    ? Decimal(currentBalance.balance_usd_value)
+                    : Decimal(0)),
+                usdAssetPrice)
             }
           />
         </RowTitledItem>

@@ -12,7 +12,7 @@
 
 import PWView from '../../common/view/PWView';
 import Decimal from 'decimal.js';
-import { useContext, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay';
 import { useStyles } from './styles';
 import PWButton from '../../common/button/PWButton';
@@ -23,7 +23,7 @@ import { SendFundsContext } from '../../../providers/SendFundsProvider';
 import SendFundsTitlePanel from '../title-panel/SendFundsTitlePanel';
 import AddNotePanel from '../add-note-panel/AddNotePanel';
 import useToast from '../../../hooks/toast';
-import { useAccountBalances, useSelectedAccount } from '@perawallet/core';
+import { useAccountBalances, useCurrencyConverter, useSelectedAccount } from '@perawallet/core';
 
 type SendFundsInputViewProps = {
   onNext: () => void;
@@ -37,6 +37,7 @@ type SendFundsInputViewProps = {
 const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
   const styles = useStyles();
   const selectedAccount = useSelectedAccount();
+  const { preferredCurrency, convertUSDToPreferredCurrency } = useCurrencyConverter()
   const { selectedAsset, note, setNote, setAmount } =
     useContext(SendFundsContext);
   const [value, setValue] = useState<string | null>();
@@ -96,7 +97,15 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
         }
       }
     }
-  };
+  }
+
+  const usdValue = useMemo(() => {
+    if (!value || !selectedAsset?.usd_price) {
+        return null
+    }
+    
+    return Decimal(value).mul(Decimal(selectedAsset.usd_price))
+  }, [value, selectedAsset?.usd_price])
 
   if (!selectedAsset) return <></>;
 
@@ -113,9 +122,9 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
         minPrecision={2}
       />
       <CurrencyDisplay
-        currency={'USD'}
+        currency={preferredCurrency}
         precision={6}
-        value={value ? Decimal(value) : Decimal(0)}
+        value={usdValue ? convertUSDToPreferredCurrency(usdValue) : Decimal(0)}
         style={styles.amountPlaceholder}
         showSymbol
         minPrecision={2}
@@ -143,7 +152,7 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
       <AccountAssetItemView
         asset={selectedAsset}
         amount={tokenAmount}
-        localAmount={usdAmount}
+        usdAmount={usdAmount}
         style={styles.assetDisplay}
       />
 
