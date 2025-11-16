@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Input, Text, useTheme } from '@rneui/themed';
+import { Text, useTheme } from '@rneui/themed';
 import MainScreenLayout from '../../../layouts/MainScreenLayout';
 
 import { useStyles } from './styles';
@@ -23,8 +23,8 @@ import {
 import { useEffect, useState } from 'react';
 import { FlatList } from 'react-native';
 
-import SearchIcon from '../../../../assets/icons/magnifying-glass.svg';
 import RadioButton from '../../../components/common/radio-button/RadioButton';
+import SearchInput from '../../../components/common/search-input/SearchInput';
 
 const SettingsCurrencyScreen = () => {
   const styles = useStyles();
@@ -70,12 +70,10 @@ const SettingsCurrencyScreen = () => {
           Select a currency as your main local currency for displaying asset
           values.
         </Text>
-        <Input
+        <SearchInput
           placeholder="Search"
-          inputContainerStyle={styles.input}
           value={search}
           onChangeText={setSearch}
-          leftIcon={<SearchIcon color={theme.colors.textGray} />}
         />
         <FlatList data={filteredData} renderItem={renderItem} />
       </PWView>

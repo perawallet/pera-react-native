@@ -88,18 +88,6 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       width: theme.spacing.xl * 2,
       height: theme.spacing.xl * 2,
       zIndex: 2
-    },
-    tabs: {
-      paddingTop: theme.spacing.sm
-    },
-    fullWidth: {
-      width: '100%'
-    },
-    tabItem: {
-      color: theme.colors.textMain
-    },
-    indicator: {
-      backgroundColor: theme.colors.textMain
     }
   };
 });

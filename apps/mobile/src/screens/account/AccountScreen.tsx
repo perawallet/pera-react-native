@@ -10,54 +10,39 @@
  limitations under the License
  */
 
-import { Text, useTheme } from '@rneui/themed';
+import { Tab, TabView, useTheme } from '@rneui/themed';
 import MainScreenLayout from '../../layouts/MainScreenLayout';
-import {
-  AccountWealthHistoryItem,
-  formatDatetime,
-  useAccountBalances,
-  useCurrency,
-  useSelectedAccount
-} from '@perawallet/core';
+import { useSelectedAccount } from '@perawallet/core';
 
 import CameraIcon from '../../../assets/icons/camera.svg';
 import CrossIcon from '../../../assets/icons/cross.svg';
 
 import { useStyles } from './styles';
-import { useCallback, useState } from 'react';
-import Decimal from 'decimal.js';
-import { ScrollView } from 'react-native-gesture-handler';
-
-import CurrencyDisplay from '../../components/common/currency-display/CurrencyDisplay';
+import { useState } from 'react';
 import PWView from '../../components/common/view/PWView';
-import WealthChart from '../../components/common/wealth-chart/WealthChart';
-import ButtonPanel from '../../components/account-details/button-panel/ButtonPanel';
 import NotificationsIcon from '../../components/notifications/notifications-icon/NotificationsIcon';
 import AccountSelection from '../../components/common/account-selection/AccountSelection';
 import AccountMenu from '../../components/account-menu/AccountMenu';
 import { Drawer } from 'react-native-drawer-layout';
 import QRScannerView from '../../components/common/qr-scanner/QRScannerView';
 import PWTouchableOpacity from '../../components/common/touchable-opacity/PWTouchableOpacity';
+import EmptyView from '../../components/common/empty-view/EmptyView';
+import AccountOverview from '../../components/account-details/account-overview/AccountOverview';
+import AccountNfts from '../../components/account-details/account-nfts/AccountNFTs';
+import AccountHistory from '../../components/account-details/account-history/AccountHistory';
 
-//TODO support local currencies correctly
 //TODO hook up all the button panel buttons correctly
 //TODO implement more menu
 //TODO figure out and implement banners/spot banners
+//TODO implement nft and history tabs
+//TODO implement account info screen somewhere (see old app top right corner)
 const AccountScreen = () => {
   const { theme } = useTheme();
   const styles = useStyles();
   const account = useSelectedAccount();
-  const { preferredCurrency } = useCurrency();
-
-  const { totalAlgo, totalLocal, loading } = useAccountBalances(
-    account ? [account] : []
-  );
-  const [chartData, setChartData] = useState<AccountWealthHistoryItem | null>(
-    null
-  );
-  const [scrollingEnabled, setScrollingEnabled] = useState<boolean>(true);
   const [scannerVisible, setScannerVisible] = useState<boolean>(false);
   const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
+  const [tabIndex, setTabIndex] = useState(0);
 
   const closeQRScanner = () => {
     setScannerVisible(false);
@@ -71,18 +56,14 @@ const AccountScreen = () => {
     setDrawerOpen(true);
   };
 
-  const chartSelectionChanged = useCallback(
-    (selected: AccountWealthHistoryItem | null) => {
-      setChartData(selected);
-
-      if (selected) {
-        setScrollingEnabled(false);
-      } else {
-        setScrollingEnabled(true);
-      }
-    },
-    [setChartData]
-  );
+  if (!account) {
+    return (
+      <EmptyView
+        title="No Account Selected"
+        body="There is currently no account selected"
+      />
+    );
+  }
 
   return (
     <Drawer
@@ -113,51 +94,29 @@ const AccountScreen = () => {
             />
           </PWView>
         </PWView>
-        <ScrollView
-          scrollEnabled={scrollingEnabled}
-          style={styles.webview}
-          contentContainerStyle={styles.webviewContent}
+        <Tab
+          value={tabIndex}
+          onChange={e => setTabIndex(e)}
+          containerStyle={styles.tabs}
+          indicatorStyle={styles.indicator}
+          titleStyle={styles.tabItem}
+          dense
         >
-          <PWView style={styles.valueBar}>
-            <CurrencyDisplay
-              h1
-              value={chartData ? Decimal(chartData.algo_value) : totalAlgo}
-              currency="ALGO"
-              precision={2}
-              h1Style={styles.primaryCurrency}
-              skeleton={loading}
-            />
-            <PWView style={styles.secondaryValueBar}>
-              <CurrencyDisplay
-                h4
-                h4Style={styles.valueTitle}
-                value={
-                  chartData
-                    ? Decimal(chartData.value_in_currency ?? '0')
-                    : totalLocal
-                }
-                currency={preferredCurrency}
-                prefix="≈ "
-                precision={2}
-                skeleton={loading}
-              />
-              {chartData && (
-                <Text h4 h4Style={styles.dateDisplay}>
-                  {formatDatetime(chartData.datetime)}
-                </Text>
-              )}
-            </PWView>
-          </PWView>
-
-          {!!account && (
-            <WealthChart
-              account={account}
-              onSelectionChanged={chartSelectionChanged}
-            />
-          )}
-
-          <ButtonPanel />
-        </ScrollView>
+          <Tab.Item title="Overview" />
+          <Tab.Item title="NFTs" />
+          <Tab.Item title="History" />
+        </Tab>
+        <TabView value={tabIndex} onChange={setTabIndex} animationType="spring" animationConfig={{duration: 150, bounciness: 1, useNativeDriver: true}}>
+          <TabView.Item style={styles.fullWidth}>
+            <AccountOverview account={account} />
+          </TabView.Item>
+          <TabView.Item style={styles.fullWidth}>
+            <AccountNfts account={account} />
+          </TabView.Item>
+          <TabView.Item style={styles.fullWidth}>
+            <AccountHistory account={account} />
+          </TabView.Item>
+        </TabView>
       </MainScreenLayout>
       <QRScannerView
         visible={scannerVisible}

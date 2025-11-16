@@ -28,6 +28,7 @@ import { useDeviceID, useDeviceInfoService } from '../device'
 import { useQueries } from '@tanstack/react-query'
 import { withKey } from './utils'
 import { useMemo } from 'react'
+import { useCurrencyConverter } from '../../services/currencies'
 
 // Services relating to locally stored accounts
 export const useAllAccounts = () => {
@@ -374,10 +375,8 @@ export const useRemoveAccountById = () => {
 }
 
 //TODO implement local currency
-export const useAccountBalances = (
-    accounts: WalletAccount[],
-    localCurrency: string = 'USD',
-) => {
+export const useAccountBalances = (accounts: WalletAccount[]) => {
+    const { convertUSDToPreferredCurrency } = useCurrencyConverter()
     if (!accounts?.length) {
         return {
             data: [],
@@ -428,9 +427,7 @@ export const useAccountBalances = (
                 return {
                     accountInfo,
                     algoAmount: algoAmount,
-                    //TODO implement currency conversion here
-                    localAmount:
-                        localCurrency === 'USD' ? localAmount : localAmount,
+                    localAmount: convertUSDToPreferredCurrency(localAmount),
                     isPending: r.isPending,
                     isFetched: r.isFetched,
                     isRefetching: r.isRefetching,
