@@ -47,7 +47,7 @@ const AccountScreen = () => {
   const { theme } = useTheme();
   const styles = useStyles();
   const account = useSelectedAccount();
-  const { preferredCurrency } = useCurrency()
+  const { preferredCurrency } = useCurrency();
 
   const { totalAlgo, totalLocal, loading } = useAccountBalances(
     account ? [account] : [],

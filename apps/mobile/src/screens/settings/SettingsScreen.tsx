@@ -29,7 +29,6 @@ import ShieldIcon from '../../../assets/icons/gear.svg';
 import DollarIcon from '../../../assets/icons/dollar.svg';
 import MoonIcon from '../../../assets/icons/moon.svg';
 
-
 //TODO: build out all the settins pages
 const settingsOptions = [
   {

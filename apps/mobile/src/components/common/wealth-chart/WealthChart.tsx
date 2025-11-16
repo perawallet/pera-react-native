@@ -36,21 +36,21 @@ type WealthChartProps = {
 };
 
 const WealthChart = ({ onSelectionChanged, account }: WealthChartProps) => {
-  const { theme } = useTheme()
-  const { preferredCurrency } = useCurrency()
-  const themeStyle = useStyles()
-  const [lastSentIndex, setLastSentIndex] = useState<number>()
-  const [lastSentTime, setLastSentTime] = useState<number>(Date.now())
+  const { theme } = useTheme();
+  const { preferredCurrency } = useCurrency();
+  const themeStyle = useStyles();
+  const [lastSentIndex, setLastSentIndex] = useState<number>();
+  const [lastSentTime, setLastSentTime] = useState<number>(Date.now());
 
-  const [period, setPeriod] = useState<ChartPeriod>('one-week')
-  const accounts = useAllAccounts()
+  const [period, setPeriod] = useState<ChartPeriod>('one-week');
+  const accounts = useAllAccounts();
   const addresses = useMemo(
     () =>
       account
         ? [account.address]
         : accounts.map((a: WalletAccount) => a.address),
     [account, accounts],
-  )
+  );
 
   const { data, isPending } = useV2WalletWealthList({
     params: {
@@ -58,7 +58,7 @@ const WealthChart = ({ onSelectionChanged, account }: WealthChartProps) => {
       period: period as V1WalletWealthListQueryParamsPeriodEnum,
       currency: preferredCurrency,
     },
-  })
+  });
 
   const dataPoints = useMemo(
     () =>
@@ -68,43 +68,43 @@ const WealthChart = ({ onSelectionChanged, account }: WealthChartProps) => {
         };
       }) ?? [],
     [data],
-  )
+  );
 
   const yAxisOffsets = useMemo(() => {
-    const minValue = Math.min(...dataPoints.map(p => p.value))
-    const maxValue = Math.max(...dataPoints.map(p => p.value))
+    const minValue = Math.min(...dataPoints.map(p => p.value));
+    const maxValue = Math.max(...dataPoints.map(p => p.value));
     if (minValue === 0 && maxValue === 0) {
-      return [-1, 1]
+      return [-1, 1];
     } else {
-      return [minValue - minValue / 10, maxValue + maxValue / 10]
+      return [minValue - minValue / 10, maxValue + maxValue / 10];
     }
-  }, [dataPoints])
+  }, [dataPoints]);
 
   const onFocus = useCallback(
     ({
       pointerIndex: index,
       pointerX,
     }: {
-      pointerIndex: number
-      pointerX: number
+      pointerIndex: number;
+      pointerX: number;
     }) => {
       if (Date.now() - lastSentTime > FOCUS_DEBOUNCE_TIME) {
         if (pointerX > 0 && index >= 0 && index !== lastSentIndex) {
-          const dataItem = data?.results?.[index] ?? null
-          onSelectionChanged(dataItem)
-          setLastSentIndex(index)
+          const dataItem = data?.results?.[index] ?? null;
+          onSelectionChanged(dataItem);
+          setLastSentIndex(index);
         } else if (pointerX === 0) {
-          onSelectionChanged(null)
-          setLastSentIndex(undefined)
+          onSelectionChanged(null);
+          setLastSentIndex(undefined);
         }
-        setLastSentTime(Date.now())
+        setLastSentTime(Date.now());
       }
     },
     [data, onSelectionChanged, lastSentIndex, lastSentTime, setLastSentIndex],
-  )
+  );
 
   if (!isPending && !dataPoints?.length) {
-    return <></>
+    return <></>;
   }
 
   return (
@@ -144,7 +144,7 @@ const WealthChart = ({ onSelectionChanged, account }: WealthChartProps) => {
       />
       <ChartPeriodSelection value={period} onChange={setPeriod} />
     </PWView>
-  )
-}
+  );
+};
 
-export default WealthChart
+export default WealthChart;

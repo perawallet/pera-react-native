@@ -16,10 +16,7 @@ import Decimal from 'decimal.js'
 import { useCallback } from 'react'
 
 export const useCurrency = () => {
-    const {
-        preferredCurrency,
-        setPreferredCurrency,
-    } = useAppStore()
+    const { preferredCurrency, setPreferredCurrency } = useAppStore()
 
     return {
         preferredCurrency,
@@ -30,32 +27,38 @@ export const useCurrency = () => {
 export const useCurrencyConverter = () => {
     const preferredCurrency = useAppStore(state => state.preferredCurrency)
     const { data, isPending } = useV1CurrenciesRead({
-        currency_id: preferredCurrency
+        currency_id: preferredCurrency,
     })
 
-    const convertUSDToPreferredCurrency = useCallback((usdAmount: Decimal) => {
-        if (isPending) {
-            return Decimal(0)
-        }
+    const convertUSDToPreferredCurrency = useCallback(
+        (usdAmount: Decimal) => {
+            if (isPending) {
+                return Decimal(0)
+            }
 
-        const usdValue = data?.usd_value ?? "0"
-        const safeUsdValue = usdValue || "0"
-        return usdAmount.mul(Decimal(safeUsdValue))
-    }, [data, isPending])
+            const usdValue = data?.usd_value ?? '0'
+            const safeUsdValue = usdValue || '0'
+            return usdAmount.mul(Decimal(safeUsdValue))
+        },
+        [data, isPending],
+    )
 
-    const convertAssetValueToPreferredCurrency = useCallback((amount: Decimal, usdPrice: Decimal) => {
-        if (isPending) {
-            return Decimal(0)
-        }
+    const convertAssetValueToPreferredCurrency = useCallback(
+        (amount: Decimal, usdPrice: Decimal) => {
+            if (isPending) {
+                return Decimal(0)
+            }
 
-        const usdValue = data?.usd_value ?? "0"
-        const safeUsdValue = usdValue || "0"
-        return amount.mul(usdPrice).mul(Decimal(safeUsdValue))
-    }, [data, isPending])
+            const usdValue = data?.usd_value ?? '0'
+            const safeUsdValue = usdValue || '0'
+            return amount.mul(usdPrice).mul(Decimal(safeUsdValue))
+        },
+        [data, isPending],
+    )
 
     return {
         preferredCurrency,
         convertAssetValueToPreferredCurrency,
-        convertUSDToPreferredCurrency
+        convertUSDToPreferredCurrency,
     }
 }

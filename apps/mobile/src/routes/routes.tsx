@@ -59,8 +59,8 @@ const SettingsStack = createNativeStackNavigator({
     Currency: {
       screen: SettingsCurrencyScreen,
       options: {
-        title: 'Currency'
-      }
+        title: 'Currency',
+      },
     },
     SettingsSubPage: {
       screen: SettingsSubPageScreen,

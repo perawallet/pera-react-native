@@ -52,10 +52,13 @@ const SendFundsTransactionConfirmation = ({
   const selectedAccount = useSelectedAccount();
   const { showToast } = useToast();
   const [noteOpen, setNoteOpen] = useState(false);
-  const { preferredCurrency, convertAssetValueToPreferredCurrency } = useCurrencyConverter()
-  const usdAssetPrice = useMemo(() => 
-    selectedAsset?.usd_price ? Decimal(selectedAsset?.usd_price) : Decimal(0), 
-  [selectedAsset?.usd_price])
+  const { preferredCurrency, convertAssetValueToPreferredCurrency } =
+    useCurrencyConverter();
+  const usdAssetPrice = useMemo(
+    () =>
+      selectedAsset?.usd_price ? Decimal(selectedAsset?.usd_price) : Decimal(0),
+    [selectedAsset?.usd_price],
+  );
 
   const openNote = () => {
     setNoteOpen(true);
@@ -155,7 +158,10 @@ const SendFundsTransactionConfirmation = ({
           precision={selectedAsset.fraction_decimals}
           minPrecision={2}
           showSymbol
-          value={convertAssetValueToPreferredCurrency(amount ?? Decimal(0), usdAssetPrice)}
+          value={convertAssetValueToPreferredCurrency(
+            amount ?? Decimal(0),
+            usdAssetPrice,
+          )}
         />
       </RowTitledItem>
       <Divider style={styles.divider} />
@@ -195,13 +201,12 @@ const SendFundsTransactionConfirmation = ({
             precision={selectedAsset.precision}
             minPrecision={2}
             showSymbol
-            value={
-              convertAssetValueToPreferredCurrency(
-                (currentBalance.balance_usd_value
-                    ? Decimal(currentBalance.balance_usd_value)
-                    : Decimal(0)),
-                usdAssetPrice)
-            }
+            value={convertAssetValueToPreferredCurrency(
+              currentBalance.balance_usd_value
+                ? Decimal(currentBalance.balance_usd_value)
+                : Decimal(0),
+              usdAssetPrice,
+            )}
           />
         </RowTitledItem>
       )}

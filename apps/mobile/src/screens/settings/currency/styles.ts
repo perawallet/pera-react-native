@@ -24,7 +24,7 @@ export const useStyles = makeStyles(theme => {
       paddingVertical: theme.spacing.md,
       paddingHorizontal: theme.spacing.md,
       justifyContent: 'space-between',
-      alignItems: 'center'
+      alignItems: 'center',
     },
     radioContainer: {
       borderWidth: 1,
@@ -33,17 +33,17 @@ export const useStyles = makeStyles(theme => {
       width: theme.spacing.xl,
       height: theme.spacing.xl,
       justifyContent: 'center',
-      alignItems: 'center'
+      alignItems: 'center',
     },
     selectedRadio: {
       borderRadius: theme.spacing.lg,
       width: theme.spacing.lg,
       height: theme.spacing.lg,
-      backgroundColor: theme.colors.helperPositive
+      backgroundColor: theme.colors.helperPositive,
     },
     input: {
       paddingHorizontal: theme.spacing.md,
-      borderRadius: theme.spacing.sm
-    }
+      borderRadius: theme.spacing.sm,
+    },
   };
 });

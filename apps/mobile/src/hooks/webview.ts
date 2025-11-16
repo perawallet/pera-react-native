@@ -64,7 +64,7 @@ export const usePeraWebviewInterface = (webview: WebView | null) => {
   const { network } = useNetwork();
   const deviceInfo = useDeviceInfoService();
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
-  const { preferredCurrency } = useCurrency()
+  const { preferredCurrency } = useCurrency();
 
   const pushNewScreen = (_: PushNewScreenParams) => {
     //TODO navigate to deeplink

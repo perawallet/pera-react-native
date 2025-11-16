@@ -13,7 +13,7 @@
 import type { StateCreator } from 'zustand'
 
 export type CurrenciesSlice = {
-    preferredCurrency: string,
+    preferredCurrency: string
     setPreferredCurrency: (currency: string) => void
 }
 
@@ -22,11 +22,11 @@ export const createCurrenciesSlice: StateCreator<
     [],
     [],
     CurrenciesSlice
-> = (set) => {
+> = set => {
     return {
-        preferredCurrency: "USD",
+        preferredCurrency: 'USD',
         setPreferredCurrency: (currency: string) => {
-            set({ preferredCurrency: currency})
+            set({ preferredCurrency: currency })
         },
     }
 }

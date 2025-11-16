@@ -13,56 +13,78 @@
 import { Input, Text, useTheme } from '@rneui/themed';
 import MainScreenLayout from '../../../layouts/MainScreenLayout';
 
-import { StaticScreenProps } from '@react-navigation/native';
 import { useStyles } from './styles';
 import PWView from '../../../components/common/view/PWView';
-import { CurrencySerializerResponse, useCurrency, useV1CurrenciesList } from '@perawallet/core';
+import {
+  CurrencySerializerResponse,
+  useCurrency,
+  useV1CurrenciesList,
+} from '@perawallet/core';
 import { useEffect, useState } from 'react';
 import { FlatList } from 'react-native';
 import PWTouchableOpacity from '../../../components/common/touchable-opacity/PWTouchableOpacity';
 
-import SearchIcon from "../../../../assets/icons/magnifying-glass.svg"
+import SearchIcon from '../../../../assets/icons/magnifying-glass.svg';
 
-type SettingsSubPSettingsCurrencyScreenProps = StaticScreenProps<{}>;
-
-const SettingsCurrencyScreen = ({ route }: SettingsSubPSettingsCurrencyScreenProps) => {
+const SettingsCurrencyScreen = () => {
   const styles = useStyles();
-  const { theme } = useTheme()
+  const { theme } = useTheme();
   const { preferredCurrency, setPreferredCurrency } = useCurrency();
-  const [ search, setSearch ] = useState<string>()
-  const [ filteredData, setFilteredData ] = useState<CurrencySerializerResponse[]>([])
+  const [search, setSearch] = useState<string>();
+  const [filteredData, setFilteredData] = useState<
+    CurrencySerializerResponse[]
+  >([]);
 
-  const { data, isPending } = useV1CurrenciesList({})
+  const { data } = useV1CurrenciesList({});
 
   useEffect(() => {
     if (!search?.length) {
-      setFilteredData(data ?? [])
+      setFilteredData(data ?? []);
     } else {
-      const lowercaseSearch = search.toLowerCase()
-      setFilteredData((data ?? [])
-        .filter(d => d.name.toLowerCase().includes(lowercaseSearch)
-          || d.currency_id.toLowerCase().includes(lowercaseSearch)))
+      const lowercaseSearch = search.toLowerCase();
+      setFilteredData(
+        (data ?? []).filter(
+          d =>
+            d.name.toLowerCase().includes(lowercaseSearch) ||
+            d.currency_id.toLowerCase().includes(lowercaseSearch),
+        ),
+      );
     }
-  }, [data, search])
+  }, [data, search]);
 
-  const renderItem = ({item}: {item: CurrencySerializerResponse}) => {
-    return <PWTouchableOpacity onPress={() => setPreferredCurrency(item.currency_id)} style={styles.row}>
-      <Text h4>{item.name} ({item.currency_id})</Text>
-      <PWView style={styles.radioContainer}>
-        { preferredCurrency === item.currency_id && <PWView style={styles.selectedRadio} /> }
-      </PWView>
-    </PWTouchableOpacity>
-  }
+  const renderItem = ({ item }: { item: CurrencySerializerResponse }) => {
+    return (
+      <PWTouchableOpacity
+        onPress={() => setPreferredCurrency(item.currency_id)}
+        style={styles.row}
+      >
+        <Text h4>
+          {item.name} ({item.currency_id})
+        </Text>
+        <PWView style={styles.radioContainer}>
+          {preferredCurrency === item.currency_id && (
+            <PWView style={styles.selectedRadio} />
+          )}
+        </PWView>
+      </PWTouchableOpacity>
+    );
+  };
 
   return (
     <MainScreenLayout>
       <PWView style={styles.container}>
         <Text h3>Main Currency</Text>
         <Text>
-          Select a currency as your main local currency for displaying asset values.
+          Select a currency as your main local currency for displaying asset
+          values.
         </Text>
-        <Input placeholder='Search' inputContainerStyle={styles.input} value={search} onChangeText={setSearch}
-        leftIcon={<SearchIcon color={theme.colors.textGray} />} />
+        <Input
+          placeholder="Search"
+          inputContainerStyle={styles.input}
+          value={search}
+          onChangeText={setSearch}
+          leftIcon={<SearchIcon color={theme.colors.textGray} />}
+        />
         <FlatList data={filteredData} renderItem={renderItem} />
       </PWView>
     </MainScreenLayout>

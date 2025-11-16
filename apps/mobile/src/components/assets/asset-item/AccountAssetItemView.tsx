@@ -13,7 +13,11 @@
 import AssetIcon from '../../common/asset-icon/AssetIcon';
 import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay';
 import PWView, { PWViewProps } from '../../common/view/PWView';
-import { ALGO_ASSET_ID, PeraAsset, useCurrencyConverter } from '@perawallet/core';
+import {
+  ALGO_ASSET_ID,
+  PeraAsset,
+  useCurrencyConverter,
+} from '@perawallet/core';
 import { Text, useTheme } from '@rneui/themed';
 import Decimal from 'decimal.js';
 import { useStyles } from './styles';
@@ -40,7 +44,8 @@ const AccountAssetItemView = ({
   const { theme } = useTheme();
   const styles = useStyles();
 
-  const { preferredCurrency, convertUSDToPreferredCurrency } = useCurrencyConverter()
+  const { preferredCurrency, convertUSDToPreferredCurrency } =
+    useCurrencyConverter();
 
   const verificationIcon = useMemo(() => {
     if (asset.asset_id === ALGO_ASSET_ID) {
@@ -74,20 +79,20 @@ const AccountAssetItemView = ({
           </Text>
         </PWView>
         <PWView style={styles.amountContainer}>
-        <CurrencyDisplay
+          <CurrencyDisplay
             currency={asset.unit_name}
             value={amount ?? Decimal(0)}
             precision={6}
             showSymbol
             style={styles.primaryAmount}
-        />
-        <CurrencyDisplay
+          />
+          <CurrencyDisplay
             currency={preferredCurrency}
             value={convertUSDToPreferredCurrency(usdAmount ?? Decimal(0))}
             precision={6}
             showSymbol
             style={styles.secondaryAmount}
-        />
+          />
         </PWView>
       </PWView>
     </PWView>

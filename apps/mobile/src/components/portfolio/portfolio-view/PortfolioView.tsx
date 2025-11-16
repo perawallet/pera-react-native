@@ -37,7 +37,7 @@ type PortfolioViewProps = {
 const PortfolioView = (props: PortfolioViewProps) => {
   const { theme } = useTheme();
   const styles = useStyles();
-  const { preferredCurrency } = useCurrency()
+  const { preferredCurrency } = useCurrency();
 
   const accounts = useAllAccounts();
   const { loading, totalAlgo, totalLocal } = useAccountBalances(accounts);

@@ -77,7 +77,7 @@ export type AppState = SettingsSlice &
     DeviceSlice &
     PollingSlice &
     PreferencesSlice &
-    SwapsSlice & 
+    SwapsSlice &
     CurrenciesSlice
 
 type PersistListener<S> = (state: S) => void
