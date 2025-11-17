@@ -13,9 +13,9 @@
 import { NativeStackHeaderProps } from '@react-navigation/native-stack';
 import PWView from '../view/PWView';
 import { Text } from '@rneui/themed';
-import ChevronLeft from '../../../../assets/icons/chevron-left.svg';
 import { useStyles } from './styles';
 import PWTouchableOpacity from '../touchable-opacity/PWTouchableOpacity';
+import PWIcon from '../icons/PWIcon';
 
 const NavigationHeader = (props: NativeStackHeaderProps) => {
   const styles = useStyles();
@@ -27,7 +27,7 @@ const NavigationHeader = (props: NativeStackHeaderProps) => {
           onPress={props.navigation.goBack}
           style={styles.backIconContainer}
         >
-          <ChevronLeft style={styles.backIcon} />
+          <PWIcon name="chevron-left" />
         </PWTouchableOpacity>
       )}
       <Text h4 style={styles.title}>

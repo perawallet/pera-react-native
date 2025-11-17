@@ -13,8 +13,8 @@
 import { Text } from '@rneui/themed';
 import PWView from '../view/PWView';
 import { useStyles } from './styles';
+import PWIcon from '../icons/PWIcon';
 
-import ChevronRight from '../../../../assets/icons/chevron-right.svg';
 import AssetIcon from '../asset-icon/AssetIcon';
 import { PeraAsset } from '@perawallet/core';
 
@@ -31,7 +31,7 @@ const AssetSelection = ({ asset }: AssetSelectionProps) => {
       <Text h4Style={styles.text} h4>
         {asset.unit_name}
       </Text>
-      <ChevronRight />
+      <PWIcon name="chevron-right" />
     </PWView>
   );
 };

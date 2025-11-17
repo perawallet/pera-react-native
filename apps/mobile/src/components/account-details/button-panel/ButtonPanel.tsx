@@ -16,17 +16,12 @@ import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import RoundButton from '../../common/round-button/RoundButton';
 
-import SwapIcon from '../../../../assets/icons/swap.svg';
-import MoreIcon from '../../../../assets/icons/ellipsis.svg';
-import StakeIcon from '../../../../assets/icons/dot-stack.svg';
-import SendIcon from '../../../../assets/icons/outflow.svg';
 import { Alert } from 'react-native';
-import { useTheme } from '@rneui/themed';
 import { useState } from 'react';
 import SendFundsBottomSheet from '../../send-funds/bottom-sheet/SendFundsBottomSheet';
+import PWIcon from '../../common/icons/PWIcon';
 
 const ButtonPanel = () => {
-  const { theme } = useTheme();
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
   const themeStyle = useStyles();
   const [sendFundsOpen, setSendFundsOpen] = useState<boolean>(false);
@@ -52,22 +47,22 @@ const ButtonPanel = () => {
       <RoundButton
         buttonStyle={themeStyle.blackButton}
         title="Swap"
-        icon={<SwapIcon color={theme.colors.buttonHelperText} />}
+        icon={<PWIcon name="swap" variant="helper" />}
         onPress={() => goToRootPage('Swap')}
       />
       <RoundButton
         title="Stake"
-        icon={<StakeIcon color={theme.colors.textMain} />}
+        icon={<PWIcon name="dot-stack" />}
         onPress={() => goToRootPage('Staking')}
       />
       <RoundButton
         title="Send"
-        icon={<SendIcon color={theme.colors.textMain} />}
+        icon={<PWIcon name="outflow" />}
         onPress={openSendFunds}
       />
       <RoundButton
         title="More"
-        icon={<MoreIcon color={theme.colors.textMain} />}
+        icon={<PWIcon name="ellipsis" />}
         onPress={notImplemented}
       />
       <SendFundsBottomSheet

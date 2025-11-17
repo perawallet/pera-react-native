@@ -17,11 +17,9 @@ import { Text, useTheme } from '@rneui/themed';
 import PWView from '../../components/common/view/PWView';
 import MainScreenLayout from '../../layouts/MainScreenLayout';
 import PanelButton from '../../components/common/panel-button/PanelButton';
+import PWIcon from '../../components/common/icons/PWIcon';
 
 import WelcomeImage from '../../../assets/images/welcome-background.svg';
-import WalletIcon from '../../../assets/icons/wallet-with-algo.svg';
-import KeyIcon from '../../../assets/icons/key.svg';
-import ChevronNext from '../../../assets/icons/chevron-right.svg';
 import { ActivityIndicator } from 'react-native';
 import { useCreateAccount } from '@perawallet/core';
 import { Overlay } from '@rneui/themed';
@@ -69,8 +67,8 @@ const OnboardingScreen = () => {
             title="Create a new wallet"
             titleWeight="h4"
             onPress={createAccountHandler}
-            leftIcon={<WalletIcon />}
-            rightIcon={<ChevronNext />}
+            leftIcon={<PWIcon name="wallet-with-algo" />}
+            rightIcon={<PWIcon name="chevron-right" />}
           />
 
           <Text style={styles.buttonTitle} h4>
@@ -80,8 +78,8 @@ const OnboardingScreen = () => {
             title="Import an account"
             titleWeight="h4"
             onPress={importAccount}
-            leftIcon={<KeyIcon />}
-            rightIcon={<ChevronNext />}
+            leftIcon={<PWIcon name="key" />}
+            rightIcon={<PWIcon name="chevron-right" />}
           />
         </PWView>
       </PWView>

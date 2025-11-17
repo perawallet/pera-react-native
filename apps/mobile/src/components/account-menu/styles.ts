@@ -88,11 +88,6 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
     addButtonTitle: {
       color: theme.colors.buttonSquareText
     },
-    addButton: {
-      color: theme.colors.buttonSquareText,
-      width: 40,
-      height: 40
-    },
     fullWidth: {
       width: '100%'
     },

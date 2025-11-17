@@ -17,17 +17,17 @@ import {
   useSigningRequest
 } from '@perawallet/core';
 import { useStyles } from './styles';
-import { Text, useTheme } from '@rneui/themed';
+import { Text } from '@rneui/themed';
 import PWButton from '../../common/button/PWButton';
 import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay';
 import Decimal from 'decimal.js';
 import { ScrollView } from 'react-native';
 
-import ChevronRight from '../../../../assets/icons/chevron-right.svg';
 import TransactionIcon from '../../common/transaction-icon/TransactionIcon';
 import BalanceImpactView from '../balance-impact/BalanceImpactView';
 import useToast from '../../../hooks/toast';
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity';
+import PWIcon from '../../common/icons/PWIcon';
 
 type SigningViewProps = {
   request: SignRequest;
@@ -88,7 +88,6 @@ const GroupTransactionView = ({ request }: SigningViewProps) => {
 
 const SigningView = ({ request }: SigningViewProps) => {
   const styles = useStyles();
-  const { theme } = useTheme();
   const { removeSignRequest } = useSigningRequest();
   //const { signTransactionForAddress } = useTransactionSigner()
   const { showToast } = useToast();
@@ -164,7 +163,7 @@ const SigningView = ({ request }: SigningViewProps) => {
           <Text h4 h4Style={styles.detailsLabel}>
             Show Transaction Details
           </Text>
-          <ChevronRight color={theme.colors.linkPrimary} />
+          <PWIcon variant="link" name="chevron-right" />
         </PWTouchableOpacity>
         <PWView style={styles.buttonContainer}>
           <PWButton

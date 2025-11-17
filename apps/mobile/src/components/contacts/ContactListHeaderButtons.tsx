@@ -11,9 +11,9 @@
  */
 
 import { ParamListBase, useNavigation } from '@react-navigation/native';
-import PlusIcon from '../../../assets/icons/plus.svg';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useContacts } from '@perawallet/core';
+import PWIcon from '../common/icons/PWIcon';
 
 const ContactListHeaderButtons = () => {
   const { setSelectedContact } = useContacts();
@@ -23,7 +23,7 @@ const ContactListHeaderButtons = () => {
     navigation.navigate('AddContact');
   };
 
-  return <PlusIcon onPress={goToAdd} />;
+  return <PWIcon name="plus" onPress={goToAdd} />;
 };
 
 export default ContactListHeaderButtons;

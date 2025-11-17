@@ -22,10 +22,6 @@ export const useStyles = makeStyles(theme => ({
     textAlign: 'center',
     flexGrow: 1
   },
-  backIcon: {
-    width: theme.spacing.xl * 2,
-    color: theme.colors.textMain
-  },
   backIconContainer: {
     paddingHorizontal: theme.spacing.sm
   },

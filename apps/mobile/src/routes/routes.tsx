@@ -33,17 +33,12 @@ import EditContactScreen from '../screens/contacts/EditContactScreen';
 
 import { useHasNoAccounts } from '@perawallet/core';
 
-import HomeIcon from '../../assets/icons/house.svg';
-import DiscoverIcon from '../../assets/icons/globe.svg';
-import SwapIcon from '../../assets/icons/swap.svg';
-import StakingIcon from '../../assets/icons/dot-stack.svg';
-import MenuIcon from '../../assets/icons/horizontal-line-stack.svg';
 import NavigationHeader from '../components/common/navigation-header/NavigationHeader';
 import ContactListHeaderButtons from '../components/contacts/ContactListHeaderButtons';
 import ViewContactHeaderButtons from '../components/contacts/ViewContactHeaderButtons';
 import SettingsCurrencyScreen from '../screens/settings/currency/SettingsCurrencyScreen';
 import SettingsThemeScreen from '../screens/settings/theme/SettingsThemeScreen';
-
+import PWIcon, { IconName } from '../components/common/icons/PWIcon';
 const SettingsStack = createNativeStackNavigator({
   initialRouteName: 'SettingsHome',
   screenOptions: {
@@ -123,13 +118,19 @@ const TabBarStack = createBottomTabNavigator({
       borderTopWidth: 0
     },
     tabBarIcon: ({ focused }) => {
-      const style = focused ? theme.colors.primary : theme.colors.text;
+      const style = focused ? 'primary' : 'secondary';
+      const iconNames: Record<string, IconName> = {
+        Home: 'house',
+        Discover: 'globe',
+        Swap: 'swap',
+        Staking: 'dot-stack',
+        Menu: 'horizontal-line-stack'
+      };
 
-      if (route.name === 'Home') return <HomeIcon color={style} />;
-      if (route.name === 'Discover') return <DiscoverIcon color={style} />;
-      if (route.name === 'Swap') return <SwapIcon color={style} />;
-      if (route.name === 'Staking') return <StakingIcon color={style} />;
-      if (route.name === 'Menu') return <MenuIcon color={style} />;
+      const iconName = iconNames[route.name];
+      if (!iconName) return null;
+
+      return <PWIcon name={iconName} variant={style} />;
     }
   }),
   screens: {

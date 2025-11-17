@@ -18,8 +18,6 @@ export const useStyles = makeStyles(theme => {
       padding: 0,
       margin: 0
     },
-    icon: {},
-    closeIcon: {},
     closeIconButton: {
       marginTop: theme.spacing.xl,
       marginLeft: theme.spacing.lg,

@@ -14,11 +14,9 @@ import PWButton from '../../common/button/PWButton';
 import PWView from '../../common/view/PWView';
 import { Image, Text } from '@rneui/themed';
 import { useStyles } from './styles';
+import PWIcon from '../../common/icons/PWIcon';
 
-import CardIcon from '../../../../assets/icons/card.svg';
-import PlusIcon from '../../../../assets/icons/plus.svg';
 import CardBackground from '../../../../assets/images/card-background.png';
-
 const BACKGROUND_URI = Image.resolveAssetSource(CardBackground).uri;
 
 const CardPanel = () => {
@@ -28,7 +26,7 @@ const CardPanel = () => {
       <PWView style={styles.cardHeaderContainer}>
         <PWView style={styles.cardTextContainer}>
           <PWView style={styles.titleContainer}>
-            <CardIcon style={styles.icon} />
+            <PWIcon name="card" style={styles.icon} />
             <Text h3>Cards</Text>
           </PWView>
           <Text style={styles.cardSecondaryText}>
@@ -46,7 +44,7 @@ const CardPanel = () => {
         <PWButton
           variant="primary"
           title={'Create Pera Card'}
-          icon={<PlusIcon style={styles.buttonIcon} />}
+          icon={<PWIcon name="plus" style={styles.buttonIcon} />}
         />
       </PWView>
     </PWView>

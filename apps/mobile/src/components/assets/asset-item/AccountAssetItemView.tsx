@@ -22,10 +22,7 @@ import { Text, useTheme } from '@rneui/themed';
 import Decimal from 'decimal.js';
 import { useStyles } from './styles';
 import { useMemo } from 'react';
-
-import TrustedIcon from '../../../../assets/icons/assets/trusted.svg';
-import VerifiedIcon from '../../../../assets/icons/assets/verified.svg';
-import SuspiciousIcon from '../../../../assets/icons/assets/suspicious.svg';
+import PWIcon from '../../common/icons/PWIcon';
 
 type AccountAssetItemViewProps = {
   asset: PeraAsset;
@@ -49,20 +46,16 @@ const AccountAssetItemView = ({
 
   const verificationIcon = useMemo(() => {
     if (asset.asset_id === ALGO_ASSET_ID) {
-      return <TrustedIcon width={theme.spacing.md} height={theme.spacing.md} />;
+      return <PWIcon name="assets/trusted" size="xs" />;
     }
     if (asset.verification_tier === 'verified') {
-      return (
-        <VerifiedIcon width={theme.spacing.md} height={theme.spacing.md} />
-      );
+      return <PWIcon name="assets/verified" size="xs" />;
     }
     if (asset.verification_tier === 'suspicious') {
-      return (
-        <SuspiciousIcon width={theme.spacing.md} height={theme.spacing.md} />
-      );
+      return <PWIcon name="assets/suspicious" size="xs" />;
     }
     return undefined;
-  }, [asset, theme.spacing.md]);
+  }, [asset]);
 
   return (
     <PWView {...rest} style={[styles.container, rest.style]}>

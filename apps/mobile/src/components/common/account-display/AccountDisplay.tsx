@@ -15,8 +15,8 @@ import { getAccountDisplayName, WalletAccount } from '@perawallet/core';
 import PWView, { PWViewProps } from '../view/PWView';
 import { useStyles } from './styles';
 
-import ChevronDown from '../../../../assets/icons/chevron-down.svg';
 import AccountIcon, { AccountIconProps } from '../account-icon/AccountIcon';
+import PWIcon from '../icons/PWIcon';
 
 type AccountDisplayProps = {
   account?: WalletAccount;
@@ -52,7 +52,7 @@ const AccountDisplay = ({
       >
         {displayName}
       </Text>
-      {showChevron && <ChevronDown color={theme.colors.textGray} />}
+      {showChevron && <PWIcon variant="secondary" name="chevron-down" />}
     </PWView>
   );
 };

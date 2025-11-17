@@ -14,7 +14,7 @@ import { Text } from '@rneui/themed';
 import PWView from '../../components/common/view/PWView';
 import MainScreenLayout from '../../layouts/MainScreenLayout';
 import { useStyles } from './styles';
-import InfoIcon from '../../../assets/icons/info.svg';
+import PWIcon from '../../components/common/icons/PWIcon';
 import PairSelectionPanel from '../../components/swaps/pair-selection-panel/PairSelectionPanel';
 import SwapHistoryPanel from '../../components/swaps/swap-history-panel/SwapHistoryPanel';
 import TopPairsPanel from '../../components/swaps/top-pairs-panel/TopPairsPanel';
@@ -47,7 +47,7 @@ const SwapScreen = () => {
             <Text h3 h3Style={styles.titleText}>
               Swap
             </Text>
-            <InfoIcon style={styles.titleIcon} />
+            <PWIcon name="info" style={styles.titleIcon} />
           </PWView>
           <AccountSelection onPress={() => setDrawerOpen(true)} />
         </PWView>

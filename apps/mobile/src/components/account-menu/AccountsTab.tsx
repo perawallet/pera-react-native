@@ -11,6 +11,9 @@
  */
 
 import PWView from '../common/view/PWView';
+import AccountIcon from '../common/account-icon/AccountIcon';
+import PWTouchableOpacity from '../common/touchable-opacity/PWTouchableOpacity';
+import PWIcon from '../common/icons/PWIcon';
 import {
   getAccountDisplayName,
   useAllAccounts,
@@ -19,11 +22,6 @@ import {
 } from '@perawallet/core';
 import { useStyles } from './styles';
 import { Text, useTheme } from '@rneui/themed';
-
-import SortIcon from '../../../assets/icons/list-arrow-down.svg';
-import PlusIcon from '../../../assets/icons/plus-with-border.svg';
-import AccountIcon from '../../components/common/account-icon/AccountIcon';
-import PWTouchableOpacity from '../../components/common/touchable-opacity/PWTouchableOpacity';
 
 type AccountsTabProps = {
   onSelected: (account: WalletAccount) => void;
@@ -61,11 +59,11 @@ const AccountsTab = (props: AccountsTabProps) => {
       <PWView style={styles.titleBar}>
         <PWView style={styles.titleBarButtonContainer}>
           <PWTouchableOpacity style={styles.addButtonContainer}>
-            <PlusIcon style={styles.addButton} />
+            <PWIcon variant="helper" name="plus-with-border" />
             <Text style={styles.addButtonTitle}>Add Account</Text>
           </PWTouchableOpacity>
           <PWTouchableOpacity style={styles.sortButton}>
-            <SortIcon />
+            <PWIcon variant="helper" name="list-arrow-down" />
             <Text style={styles.sortButtonTitle}>Sort</Text>
           </PWTouchableOpacity>
         </PWView>

@@ -15,7 +15,7 @@ import PWBottomSheet, {
 } from '../../common/bottom-sheet/PWBottomSheet';
 import { Input, Text } from '@rneui/themed';
 import { useContext, useEffect, useState } from 'react';
-import CrossIcon from '../../../../assets/icons/cross.svg';
+import PWIcon from '../../common/icons/PWIcon';
 import { useForm, Controller } from 'react-hook-form';
 import { useStyles } from './styles';
 import PWView from '../../common/view/PWView';
@@ -70,7 +70,7 @@ const AddNotePanel = ({ isVisible, onClose, ...rest }: AddNotePanelProps) => {
     <PWBottomSheet isVisible={isVisible} {...rest}>
       <PWView style={styles.container}>
         <PWView style={styles.titleContainer}>
-          <CrossIcon onPress={handleClose} />
+          <PWIcon name="cross" variant="secondary" onPress={handleClose} />
           <Text h4>{isEdit ? 'Edit' : 'Add'} Note</Text>
           <Text onPress={handleSubmit(done)}>Done</Text>
         </PWView>

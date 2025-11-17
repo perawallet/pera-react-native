@@ -29,12 +29,6 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       textAlign: 'center',
       gap: theme.spacing.xl
     },
-    icon: {
-      width: 24,
-      height: 24,
-      backgroundColor: 'transparent',
-      color: theme.colors.textMain
-    },
     menuContainer: {
       gap: theme.spacing.md,
       flex: 1,

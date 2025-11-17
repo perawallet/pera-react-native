@@ -1,3 +1,15 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity';
 import AccountAssetItemView from '../../assets/asset-item/AccountAssetItemView';
 import PWView from '../../common/view/PWView';
@@ -7,9 +19,8 @@ import { useMemo } from 'react';
 import { useStyles } from './styles';
 import { Skeleton, Text } from '@rneui/themed';
 
-import ManageIcon from '../../../../assets/icons/sliders.svg';
-import PlusIcon from '../../../../assets/icons/plus.svg';
 import SearchInput from '../../common/search-input/SearchInput';
+import PWIcon from '../../common/icons/PWIcon';
 
 type AccountAssetListProps = {
   account: WalletAccount;
@@ -51,10 +62,10 @@ const AccountAssetList = ({ account }: AccountAssetListProps) => {
         <Text style={styles.title}>Assets</Text>
         <PWView style={styles.titleBarButtonContainer}>
           <PWTouchableOpacity style={styles.manageButtonContainer}>
-            <ManageIcon style={styles.manageButton} />
+            <PWIcon variant="helper" name="sliders" />
           </PWTouchableOpacity>
           <PWTouchableOpacity style={styles.addButtonContainer}>
-            <PlusIcon style={styles.addButton} />
+            <PWIcon variant="helper" name="plus" />
             <Text style={styles.addButtonTitle}>Add Asset</Text>
           </PWTouchableOpacity>
         </PWView>

@@ -13,9 +13,9 @@
 import { Contact } from '@perawallet/core';
 import { Image, useTheme } from '@rneui/themed';
 import { SvgProps } from 'react-native-svg';
-import PersonIcon from '../../../../assets/icons/person.svg';
 import { useStyles } from './styles';
 import PWView from '../view/PWView';
+import PWIcon from '../icons/PWIcon';
 
 type ContactAvatarProps = {
   size: 'small' | 'large';
@@ -25,7 +25,8 @@ type ContactAvatarProps = {
 const ContactAvatar = ({ size, contact, ...rest }: ContactAvatarProps) => {
   const { theme } = useTheme();
   const dimensions = size === 'small' ? theme.spacing.xl : theme.spacing.xl * 3;
-  const iconSize = size === 'small' ? theme.spacing.lg : theme.spacing.xl * 2;
+  const imageSize = size === 'small' ? theme.spacing.lg : theme.spacing.xl * 2;
+  const iconSize = size === 'small' ? 'sm' : 'lg';
   const styles = useStyles(dimensions);
 
   return (
@@ -33,16 +34,11 @@ const ContactAvatar = ({ size, contact, ...rest }: ContactAvatarProps) => {
       {!!contact?.image && (
         <Image
           source={{ uri: contact.image }}
-          style={{ width: iconSize, height: iconSize }}
+          style={{ width: imageSize, height: imageSize }}
         />
       )}
       {!contact?.image && (
-        <PersonIcon
-          {...rest}
-          width={iconSize}
-          height={iconSize}
-          color={theme.colors.textGray}
-        />
+        <PWIcon {...rest} name="person" size={iconSize} variant="secondary" />
       )}
     </PWView>
   );

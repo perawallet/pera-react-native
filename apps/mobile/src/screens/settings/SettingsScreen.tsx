@@ -23,26 +23,26 @@ import { useDeviceInfoService } from '@perawallet/core';
 import { useMemo } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PWTouchableOpacity from '../../components/common/touchable-opacity/PWTouchableOpacity';
-
-import ChevronRight from '../../../assets/icons/chevron-right.svg';
-import ShieldIcon from '../../../assets/icons/gear.svg';
-import DollarIcon from '../../../assets/icons/dollar.svg';
-import MoonIcon from '../../../assets/icons/moon.svg';
+import PWIcon, { IconName } from '../../components/common/icons/PWIcon';
 
 //TODO: build out all the settins pages
 const settingsOptions = [
   {
     title: 'Account',
     items: [
-      { route: 'SettingsSubPage', icon: <ShieldIcon />, title: 'Security' },
       {
         route: 'SettingsSubPage',
-        icon: <ShieldIcon />,
+        icon: 'gear',
+        title: 'Security'
+      },
+      {
+        route: 'SettingsSubPage',
+        icon: 'gear',
         title: 'Notifications'
       },
       {
         route: 'SettingsSubPage',
-        icon: <ShieldIcon />,
+        icon: 'gear',
         title: 'WalletConnect Sessions'
       }
     ]
@@ -50,32 +50,44 @@ const settingsOptions = [
   {
     title: 'App Preferences',
     items: [
-      { route: 'Currency', icon: <DollarIcon />, title: 'Currency' },
-      { route: 'Theme', icon: <MoonIcon />, title: 'Theme' }
+      {
+        route: 'Currency',
+        icon: 'dollar',
+        title: 'Currency'
+      },
+      {
+        route: 'Theme',
+        icon: 'moon',
+        title: 'Theme'
+      }
     ]
   },
   {
     title: 'Support',
     items: [
-      { route: 'SettingsSubPage', icon: <ShieldIcon />, title: 'Get Help' },
       {
         route: 'SettingsSubPage',
-        icon: <ShieldIcon />,
+        icon: 'gear',
+        title: 'Get Help'
+      },
+      {
+        route: 'SettingsSubPage',
+        icon: 'gear',
         title: 'Rate Pera Wallet'
       },
       {
         route: 'SettingsSubPage',
-        icon: <ShieldIcon />,
+        icon: 'gear',
         title: 'Terms and Services'
       },
       {
         route: 'SettingsSubPage',
-        icon: <ShieldIcon />,
+        icon: 'gear',
         title: 'Privacy Policy'
       },
       {
         route: 'SettingsSubPage',
-        icon: <ShieldIcon />,
+        icon: 'gear',
         title: 'Developer Settings'
       }
     ]
@@ -115,9 +127,9 @@ const SettingsScreen = () => {
                   key={`settings-sectionrow-${page.title}`}
                   onPress={() => goToSettingsPage(page.route, page.title)}
                 >
-                  {page.icon}
+                  <PWIcon name={page.icon as IconName} />
                   <Text style={styles.sectionRowTitle}>{page.title}</Text>
-                  <ChevronRight />
+                  <PWIcon name="chevron-right" variant="secondary" />
                 </PWTouchableOpacity>
               ))}
             </PWView>

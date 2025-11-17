@@ -14,9 +14,8 @@ import {
   useDeviceID,
   useV1DevicesNotificationStatusList
 } from '@perawallet/core';
-import BellIcon from '../../../../assets/icons/bell.svg';
-import BellWithBadgeIcon from '../../../../assets/icons/bell-with-badge.svg';
 import { SvgProps } from 'react-native-svg';
+import PWIcon from '../../common/icons/PWIcon';
 import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity';
@@ -45,11 +44,10 @@ const NotificationsIcon = (props: NotificationsIconProps) => {
 
   return (
     <PWTouchableOpacity onPress={goToNotifications}>
-      {data?.has_new_notification ? (
-        <BellWithBadgeIcon {...props} />
-      ) : (
-        <BellIcon {...props} />
-      )}
+      <PWIcon
+        {...props}
+        name={data?.has_new_notification ? 'bell-with-badge' : 'bell'}
+      />
     </PWTouchableOpacity>
   );
 };

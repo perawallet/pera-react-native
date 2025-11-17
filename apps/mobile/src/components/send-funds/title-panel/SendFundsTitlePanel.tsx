@@ -21,11 +21,8 @@ import PWView from '../../common/view/PWView';
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity';
 import AccountDisplay from '../../common/account-display/AccountDisplay';
 import AssetIcon from '../../common/asset-icon/AssetIcon';
-
-import InfoIcon from '../../../../assets/icons/info.svg';
-import CrossIcon from '../../../../assets/icons/cross.svg';
-import BackIcon from '../../../../assets/icons/chevron-left.svg';
 import SendFundsInfoPanel from '../info-panel/SendFundsInfoPanel';
+import PWIcon from '../../common/icons/PWIcon';
 
 type SendFundsTitlePanelProps = {
   screenState: ScreenState;
@@ -58,9 +55,9 @@ const SendFundsTitlePanel = ({
       >
         {screenState === 'select-asset' ||
         (screenState === 'input-amount' && !canSelectAsset) ? (
-          <CrossIcon />
+          <PWIcon name="cross" />
         ) : (
-          <BackIcon />
+          <PWIcon name="chevron-left" />
         )}
       </PWTouchableOpacity>
       {screenState === 'select-asset' && <Text h4>Select Asset</Text>}
@@ -86,7 +83,9 @@ const SendFundsTitlePanel = ({
         <Text h4>Confirm Transaction</Text>
       )}
       <PWView style={styles.titleButtonContainer}>
-        {screenState === 'input-amount' && <InfoIcon onPress={openInfo} />}
+        {screenState === 'input-amount' && (
+          <PWIcon name="info" onPress={openInfo} />
+        )}
       </PWView>
       {screenState === 'input-amount' && (
         <SendFundsInfoPanel isVisible={infoOpen} onClose={closeInfo} />

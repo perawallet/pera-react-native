@@ -44,11 +44,6 @@ export const useStyles = makeStyles(theme => ({
     alignItems: 'center',
     justifyContent: 'center'
   },
-  manageButton: {
-    color: theme.colors.buttonSquareText,
-    width: 24,
-    height: 24
-  },
   addButtonContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -60,10 +55,5 @@ export const useStyles = makeStyles(theme => ({
   },
   addButtonTitle: {
     color: theme.colors.buttonSquareText
-  },
-  addButton: {
-    color: theme.colors.buttonSquareText,
-    width: 40,
-    height: 40
   }
 }));

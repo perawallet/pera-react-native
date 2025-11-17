@@ -15,10 +15,10 @@ import {
   formatRelativeTime,
   NotificationV2SerializerResponse
 } from '@perawallet/core';
-import { Image, Text, useTheme } from '@rneui/themed';
+import { Image, Text } from '@rneui/themed';
 import { useStyles } from './styles';
 import { useCallback, useMemo } from 'react';
-import BellIcon from '../../../../assets/icons/bell.svg';
+import PWIcon from '../../common/icons/PWIcon';
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity';
 
 type NotificationItemProps = {
@@ -26,7 +26,6 @@ type NotificationItemProps = {
 };
 
 const NotificationItem = ({ item }: NotificationItemProps) => {
-  const { theme } = useTheme();
   const styles = useStyles();
 
   const getImage = useCallback(
@@ -42,14 +41,14 @@ const NotificationItem = ({ item }: NotificationItemProps) => {
               <Image
                 source={{ uri: imageUrl }}
                 containerStyle={styles.imageCircle}
-                PlaceholderContent={<BellIcon color={theme.colors.textGray} />}
+                PlaceholderContent={<PWIcon name="bell" variant="secondary" />}
                 transition
               />
             ) : (
               <Image
                 source={{ uri: imageUrl }}
                 containerStyle={styles.image}
-                PlaceholderContent={<BellIcon color={theme.colors.textGray} />}
+                PlaceholderContent={<PWIcon name="bell" variant="secondary" />}
                 transition
               />
             )}
@@ -58,12 +57,12 @@ const NotificationItem = ({ item }: NotificationItemProps) => {
       } else {
         return (
           <PWView style={styles.iconContainer}>
-            <BellIcon color={theme.colors.textGray} />
+            <PWIcon name="bell" variant="secondary" />
           </PWView>
         );
       }
     },
-    [styles, theme]
+    [styles]
   );
 
   const handlePress = () => {

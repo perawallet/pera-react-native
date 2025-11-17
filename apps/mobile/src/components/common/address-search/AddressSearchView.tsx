@@ -14,7 +14,7 @@ import PWView from '../view/PWView';
 import { useStyles } from './styles';
 
 import { useMemo, useState } from 'react';
-import { Text, useTheme } from '@rneui/themed';
+import { Text } from '@rneui/themed';
 import AddressEntryField from '../address-entry/AddressEntryField';
 import {
   truncateAlgorandAddress,
@@ -26,8 +26,7 @@ import PWTouchableOpacity from '../touchable-opacity/PWTouchableOpacity';
 import AccountDisplay from '../account-display/AccountDisplay';
 import EmptyView from '../empty-view/EmptyView';
 import AddressDisplay from '../address-display/AddressDisplay';
-
-import SearchIcon from '../../../../assets/icons/magnifying-glass.svg';
+import PWIcon from '../icons/PWIcon';
 
 type AddressSearchViewProps = {
   onSelected: (address: string) => void;
@@ -35,7 +34,6 @@ type AddressSearchViewProps = {
 
 const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
   const styles = useStyles();
-  const { theme } = useTheme();
   const [value, setValue] = useState('');
   const { findContacts } = useContacts();
   const accounts = useAllAccounts();
@@ -62,7 +60,7 @@ const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
         allowQRCode
         placeholder="Account address or short name"
         inputContainerStyle={styles.searchField}
-        leftIcon={<SearchIcon color={theme.colors.textGrayLighter} />}
+        leftIcon={<PWIcon variant="secondary" name="magnifying-glass" />}
       />
       {!isValidAddress &&
       !matchingAccounts.length &&

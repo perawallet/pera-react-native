@@ -10,10 +10,8 @@
  limitations under the License
  */
 
-import { Text, useTheme } from '@rneui/themed';
+import { Text } from '@rneui/themed';
 import { useStyles } from './styles';
-
-import InfoIcon from '../../../../assets/icons/info.svg';
 
 import PWView from '../../common/view/PWView';
 import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay';
@@ -29,13 +27,13 @@ import {
   useCurrency
 } from '@perawallet/core';
 import { useCallback, useState } from 'react';
+import PWIcon from '../../common/icons/PWIcon';
 
 type PortfolioViewProps = {
   onDataSelected?: (selected: AccountWealthHistoryItem | null) => void;
 } & PWViewProps;
 
 const PortfolioView = (props: PortfolioViewProps) => {
-  const { theme } = useTheme();
   const styles = useStyles();
   const { preferredCurrency } = useCurrency();
 
@@ -65,7 +63,7 @@ const PortfolioView = (props: PortfolioViewProps) => {
           Portfolio Value
         </Text>
         <PWTouchableOpacity>
-          <InfoIcon style={styles.icon} color={theme.colors.textGray} />
+          <PWIcon name="info" variant="secondary" />
         </PWTouchableOpacity>
       </PWView>
       <PWView style={styles.valueBar}>

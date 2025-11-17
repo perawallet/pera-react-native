@@ -14,9 +14,9 @@ import PWBottomSheet, {
   PWBottomSheetProps
 } from '../../common/bottom-sheet/PWBottomSheet';
 import { usePreferences } from '@perawallet/core';
-import { Text, useTheme } from '@rneui/themed';
+import { Text } from '@rneui/themed';
 import { useEffect, useState } from 'react';
-import InfoIcon from '../../../../assets/icons/info.svg';
+import PWIcon from '../../common/icons/PWIcon';
 import PWButton from '../../common/button/PWButton';
 import { UserPreferences } from '../../../constants/user-preferences';
 import { useStyles } from './styles';
@@ -33,7 +33,6 @@ const SendFundsInfoPanel = ({
 }: SendFundsInfoPanelProps) => {
   const styles = useStyles();
   const { getPreference, setPreference } = usePreferences();
-  const { theme } = useTheme();
   const [forceOpen, setForceOpen] = useState(false);
 
   useEffect(() => {
@@ -56,11 +55,7 @@ const SendFundsInfoPanel = ({
       {...rest}
       innerContainerStyle={styles.container}
     >
-      <InfoIcon
-        width={theme.spacing.xl * 3}
-        height={theme.spacing.xl * 3}
-        color={theme.colors.helperPositive}
-      />
+      <PWIcon name="info" size="xl" variant="helper" />
       <PWView style={styles.bodyContainer}>
         <Text h3 h3Style={styles.title}>
           Transacting Tips

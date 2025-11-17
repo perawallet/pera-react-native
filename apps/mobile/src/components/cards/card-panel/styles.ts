@@ -44,7 +44,6 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       padding: theme.spacing.lg
     },
     icon: {
-      color: theme.colors.textMain,
       backgroundColor: theme.colors.layerGrayLighter
     },
     buttonIcon: {

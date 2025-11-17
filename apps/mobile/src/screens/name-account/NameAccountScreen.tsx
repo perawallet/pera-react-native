@@ -13,12 +13,12 @@
 import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useStyles } from './styles';
-import { Input, Text, useTheme } from '@rneui/themed';
+import { Input, Text } from '@rneui/themed';
 import PWView from '../../components/common/view/PWView';
 import PWButton from '../../components/common/button/PWButton';
 import MainScreenLayout from '../../layouts/MainScreenLayout';
+import PWIcon from '../../components/common/icons/PWIcon';
 
-import WalletIcon from '../../../assets/icons/wallet.svg';
 import {
   useAllAccounts,
   getAccountDisplayName,
@@ -36,7 +36,6 @@ type NameAccountScreenProps = StaticScreenProps<{
 const NameAccountScreen = ({ route }: NameAccountScreenProps) => {
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
   const styles = useStyles();
-  const { theme } = useTheme();
   const accounts = useAllAccounts();
   const updateAccount = useUpdateAccount();
 
@@ -71,7 +70,7 @@ const NameAccountScreen = ({ route }: NameAccountScreenProps) => {
           These names are stored locally, and can only be seen by you.
         </Text>
         <PWView style={styles.walletNameContainer}>
-          <WalletIcon color={theme.colors.textGray} />
+          <PWIcon name="wallet" variant="secondary" />
           <Text h4 style={styles.nameText}>{`Wallet #${numWallets + 1}`}</Text>
         </PWView>
         <Input

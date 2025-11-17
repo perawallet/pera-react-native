@@ -39,16 +39,6 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       alignItems: 'center',
       gap: theme.spacing.sm
     },
-    icon: {
-      width: 24,
-      height: 24,
-      backgroundColor: theme.colors.background
-    },
-    iconLight: {
-      width: 24,
-      height: 24,
-      backgroundColor: theme.colors.layerGray
-    },
     valueBar: {
       paddingTop: theme.spacing.md,
       paddingBottom: theme.spacing.xl * 1.5

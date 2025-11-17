@@ -20,7 +20,7 @@ import { FlatList } from 'react-native-gesture-handler';
 import PWView from '../../components/common/view/PWView';
 import { ActivityIndicator } from 'react-native';
 import EmptyView from '../../components/common/empty-view/EmptyView';
-import BellIcon from '../../../assets/icons/bell.svg';
+import PWIcon from '../../components/common/icons/PWIcon';
 import { useStyles } from './styles';
 import NotificationItem from '../../components/notifications/notification-item/NotificationItem';
 import { useMemo } from 'react';
@@ -66,11 +66,7 @@ const NotificationsScreen = () => {
         <EmptyView
           icon={
             <PWView style={styles.iconContainer}>
-              <BellIcon
-                width={theme.spacing.xl * 2}
-                height={theme.spacing.xl * 2}
-                color={theme.colors.textGray}
-              />
+              <PWIcon name="bell" variant="secondary" size="lg" />
             </PWView>
           }
           title="No current notifications"

@@ -14,11 +14,10 @@ import { TouchableOpacity } from 'react-native';
 import PWView from '../view/PWView';
 import { useStyles } from './styles';
 
-import CameraIcon from '../../../../assets/icons/camera.svg';
-import CloseIcon from '../../../../assets/icons/cross.svg';
 import QRScannerView from '../qr-scanner/QRScannerView';
 import { useState } from 'react';
-import { Input, InputProps, useTheme } from '@rneui/themed';
+import { Input, InputProps } from '@rneui/themed';
+import PWIcon from '../icons/PWIcon';
 
 export type AddressEntryFieldProps = {
   allowQRCode?: boolean;
@@ -29,7 +28,6 @@ const AddressEntryField = ({
   ...rest
 }: AddressEntryFieldProps) => {
   const styles = useStyles();
-  const { theme } = useTheme();
   const [scannerVisible, setScannerVisible] = useState(false);
 
   const addressScanned = (_: string) => {
@@ -50,13 +48,7 @@ const AddressEntryField = ({
       <Input
         {...rest}
         rightIcon={
-          allowQRCode && (
-            <CameraIcon
-              style={styles.icon}
-              onPress={showScanner}
-              color={theme.colors.textMain}
-            />
-          )
+          allowQRCode && <PWIcon name="camera" onPress={showScanner} />
         }
       />
       {scannerVisible && (
@@ -70,10 +62,7 @@ const AddressEntryField = ({
             onPress={hideScanner}
             style={styles.closeIconButton}
           >
-            <CloseIcon
-              style={styles.closeIcon}
-              color={theme.colors.textWhite}
-            />
+            <PWIcon name="cross" variant="white" />
           </TouchableOpacity>
         </QRScannerView>
       )}

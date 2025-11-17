@@ -51,11 +51,6 @@ export const useStyles = makeStyles(theme => ({
     alignItems: 'center',
     justifyContent: 'center'
   },
-  floatButtonIcon: {
-    width: theme.spacing.lg,
-    height: theme.spacing.lg,
-    color: theme.colors.textMain
-  },
   floatSplitButton: {
     position: 'absolute',
     top: -16,
@@ -84,11 +79,6 @@ export const useStyles = makeStyles(theme => ({
     color: theme.colors.helperPositive,
     fontWeight: '700',
     fontSize: 11
-  },
-  greenIcon: {
-    color: theme.colors.helperPositive,
-    width: theme.spacing.lg,
-    height: theme.spacing.lg
   },
   inputAmountsContainer: {
     flexGrow: 1

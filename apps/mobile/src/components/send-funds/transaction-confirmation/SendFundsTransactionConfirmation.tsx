@@ -32,7 +32,7 @@ import PWButton from '../../common/button/PWButton';
 import useToast from '../../../hooks/toast';
 import SendFundsTitlePanel from '../title-panel/SendFundsTitlePanel';
 import AddNotePanel from '../add-note-panel/AddNotePanel';
-import EditIcon from '../../../../assets/icons/edit-pen.svg';
+import PWIcon from '../../common/icons/PWIcon';
 
 type SendFundsTransactionConfirmationProps = {
   onNext: () => void;
@@ -215,11 +215,7 @@ const SendFundsTransactionConfirmation = ({
         {!!note && <Text>{note}</Text>}
         {!!note && (
           <PWTouchableOpacity onPress={openNote} style={styles.linkContainer}>
-            <EditIcon
-              color={theme.colors.linkPrimary}
-              width={theme.spacing.lg}
-              height={theme.spacing.lg}
-            />
+            <PWIcon name="edit-pen" variant="link" size="sm" />
             <Text style={styles.link}>Edit</Text>
           </PWTouchableOpacity>
         )}

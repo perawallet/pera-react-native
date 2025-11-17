@@ -21,11 +21,11 @@ import {
 import useToast from '../../../hooks/toast';
 import Clipboard from '@react-native-clipboard/clipboard';
 
-import CopyIcon from '../../../../assets/icons/copy.svg';
 import { SvgProps } from 'react-native-svg';
 import { useMemo } from 'react';
 import ContactAvatar from '../contact-avatar/ContactAvatar';
 import AccountDisplay from '../account-display/AccountDisplay';
+import PWIcon from '../icons/PWIcon';
 
 type AddressDisplayProps = {
   address: string;
@@ -111,10 +111,10 @@ const AddressDisplay = ({
       {!contact && !account && <Text {...textProps}>{truncatedAddress}</Text>}
 
       {showCopy && (
-        <CopyIcon
-          color={theme.colors.textGray}
-          width={theme.spacing.lg}
-          height={theme.spacing.lg}
+        <PWIcon
+          name="copy"
+          size="sm"
+          variant="secondary"
           {...iconProps}
           onPress={copyAddress}
         />

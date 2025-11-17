@@ -15,7 +15,6 @@ import MainScreenLayout from '../../layouts/MainScreenLayout';
 import { Contact, useContacts } from '@perawallet/core';
 import { useMemo, useState } from 'react';
 import EmptyView from '../../components/common/empty-view/EmptyView';
-import PersonIcon from '../../../assets/icons/person-menu.svg';
 import PWButton from '../../components/common/button/PWButton';
 import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -25,6 +24,7 @@ import ContactAvatar from '../../components/common/contact-avatar/ContactAvatar'
 import PWView from '../../components/common/view/PWView';
 import PWTouchableOpacity from '../../components/common/touchable-opacity/PWTouchableOpacity';
 import SearchInput from '../../components/common/search-input/SearchInput';
+import PWIcon from '../../components/common/icons/PWIcon';
 
 const contactSorter = (a: Contact, b: Contact) => a.name.localeCompare(b.name);
 
@@ -103,7 +103,7 @@ const ContactListScreen = () => {
         <EmptyView
           title="No Contacts"
           body="You haven't added any contacts yet"
-          icon={<PersonIcon />}
+          icon={<PWIcon name="person" />}
           button={
             <PWButton
               title="Add Contact"
@@ -130,7 +130,7 @@ const ContactListScreen = () => {
               <EmptyView
                 title="No Matching Contacts"
                 body="There aren't any matching contacts."
-                icon={<PersonIcon />}
+                icon={<PWIcon name="person" />}
               />
             }
           />

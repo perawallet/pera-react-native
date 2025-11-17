@@ -12,18 +12,17 @@
 
 import PWView from '../../common/view/PWView';
 import { useStyles } from './styles';
-import { Text, useTheme } from '@rneui/themed';
+import { Text } from '@rneui/themed';
 import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay';
 import Decimal from 'decimal.js';
-import AlgoIcon from '../../../../assets/icons/assets/algo.svg';
+import PWIcon from '../../common/icons/PWIcon';
 
 const AssetImpact = () => {
-  const { theme } = useTheme();
   const styles = useStyles();
 
   return (
     <PWView style={styles.itemContainer}>
-      <AlgoIcon width={theme.spacing.xl * 2} height={theme.spacing.xl * 2} />
+      <PWIcon size="lg" name="assets/algo" />
       <PWView style={styles.amounts}>
         <CurrencyDisplay
           currency="ALGO"

@@ -23,11 +23,6 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       justifyContent: 'flex-end',
       gap: theme.spacing.lg
     },
-    icon: {
-      width: 24,
-      height: 24,
-      backgroundColor: theme.colors.background
-    },
     valueBar: {
       flexDirection: 'row',
       justifyContent: 'space-between',

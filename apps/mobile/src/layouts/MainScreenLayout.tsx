@@ -16,8 +16,8 @@ import { EdgeInsets, useSafeAreaInsets } from 'react-native-safe-area-context';
 import PWView from '../components/common/view/PWView';
 import { useNavigation } from '@react-navigation/native';
 
-import ChevronLeft from '../../assets/icons/chevron-left.svg';
-import { Text, useTheme } from '@rneui/themed';
+import { Text } from '@rneui/themed';
+import PWIcon from '../components/common/icons/PWIcon';
 
 export type MainScreenLayoutProps = {
   fullScreen?: boolean;
@@ -32,7 +32,6 @@ export type MainScreenLayoutPropsWithInsets = {
 const MainScreenLayout = (props: MainScreenLayoutProps) => {
   const insets = useSafeAreaInsets();
   const styles = useStyles({ ...props, insets });
-  const { theme } = useTheme();
   const navigation = useNavigation();
 
   const goBack = () => {
@@ -43,8 +42,9 @@ const MainScreenLayout = (props: MainScreenLayoutProps) => {
     <PWView style={[props.style, styles.mainContainer]} {...props}>
       <View style={styles.contentContainer}>
         {props.showBack && (
-          <ChevronLeft
-            stroke={theme.colors.textMain}
+          <PWIcon
+            name="chevron-left"
+            variant="secondary"
             onPress={goBack}
             style={styles.backContainer}
           />

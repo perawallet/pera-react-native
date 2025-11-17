@@ -19,11 +19,10 @@ import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay';
 import PWView from '../../common/view/PWView';
 import { View } from 'react-native';
 
-import SwitchIcon from '../../../../assets/icons/switch.svg';
-import SlidersIcon from '../../../../assets/icons/sliders.svg';
 import CurrencyInput from '../../common/currency-input/CurrencyInput';
 import { PeraAsset, useCachedAssets } from '@perawallet/core';
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity';
+import PWIcon from '../../common/icons/PWIcon';
 
 const PairSelectionPanel = () => {
   const styles = useStyles();
@@ -91,11 +90,11 @@ const PairSelectionPanel = () => {
       </PWView>
       <View style={styles.floatButtonContainer}>
         <PWTouchableOpacity style={styles.floatButton}>
-          <SwitchIcon style={styles.floatButtonIcon} />
+          <PWIcon size="sm" name="switch" />
         </PWTouchableOpacity>
         <View style={styles.floatSplitButton}>
           <PWTouchableOpacity style={styles.floatSplitButtonItem}>
-            <SlidersIcon style={styles.greenIcon} />
+            <PWIcon size="sm" name="sliders" variant="helper" />
           </PWTouchableOpacity>
           <Divider style={styles.floatSplitDivider} orientation="vertical" />
           <PWTouchableOpacity style={styles.floatSplitButtonItem}>

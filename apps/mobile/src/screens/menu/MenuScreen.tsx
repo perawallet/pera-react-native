@@ -12,17 +12,9 @@
 
 import MainScreenLayout from '../../layouts/MainScreenLayout';
 import PWView from '../../components/common/view/PWView';
-import { Text, useTheme } from '@rneui/themed';
+import { Text } from '@rneui/themed';
 import { useStyles } from './styles';
-
-import CameraIcon from '../../../assets/icons/camera.svg';
-import GearIcon from '../../../assets/icons/gear.svg';
-import ChevronRight from '../../../assets/icons/chevron-right.svg';
-import CardStackIcon from '../../../assets/icons/card-stack.svg';
-import AlgoIcon from '../../../assets/icons/algo.svg';
-import InflowIcon from '../../../assets/icons/inflow.svg';
-import PersonMenuIcon from '../../../assets/icons/person-menu.svg';
-import CrossIcon from '../../../assets/icons/cross.svg';
+import PWIcon from '../../components/common/icons/PWIcon';
 
 import PanelButton from '../../components/common/panel-button/PanelButton';
 import CardPanel from '../../components/cards/card-panel/CardPanel';
@@ -33,7 +25,6 @@ import QRScannerView from '../../components/common/qr-scanner/QRScannerView';
 import { useState } from 'react';
 
 const MenuScreen = () => {
-  const { theme } = useTheme();
   const styles = useStyles();
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
   const [scannerVisible, setScannerVisible] = useState<boolean>(false);
@@ -63,10 +54,10 @@ const MenuScreen = () => {
         </Text>
         <PWView style={styles.iconBarColumn}>
           <PWTouchableOpacity onPress={openQRScanner}>
-            <CameraIcon style={styles.icon} color={theme.colors.textMain} />
+            <PWIcon name="camera" variant="primary" />
           </PWTouchableOpacity>
           <PWTouchableOpacity onPress={goToSettings}>
-            <GearIcon style={styles.icon} color={theme.colors.textMain} />
+            <PWIcon name="gear" variant="primary" />
           </PWTouchableOpacity>
         </PWView>
       </PWView>
@@ -76,29 +67,29 @@ const MenuScreen = () => {
         <PanelButton
           title="NFTs"
           titleWeight="h3"
-          leftIcon={<CardStackIcon style={styles.icon} />}
-          rightIcon={<ChevronRight style={styles.icon} />}
+          leftIcon={<PWIcon name="card-stack" />}
+          rightIcon={<PWIcon name="chevron-right" />}
           onPress={() => {}}
         />
         <PanelButton
           title="Buy ALGO"
           titleWeight="h3"
-          leftIcon={<AlgoIcon style={styles.icon} />}
-          rightIcon={<ChevronRight style={styles.icon} />}
+          leftIcon={<PWIcon name="algo" />}
+          rightIcon={<PWIcon name="chevron-right" />}
           onPress={() => {}}
         />
         <PanelButton
           title="Receive"
           titleWeight="h3"
-          leftIcon={<InflowIcon style={styles.icon} />}
-          rightIcon={<ChevronRight style={styles.icon} />}
+          leftIcon={<PWIcon name="inflow" />}
+          rightIcon={<PWIcon name="chevron-right" />}
           onPress={() => {}}
         />
         <PanelButton
           title="Contacts"
           titleWeight="h3"
-          leftIcon={<PersonMenuIcon style={styles.icon} />}
-          rightIcon={<ChevronRight style={styles.icon} />}
+          leftIcon={<PWIcon name="person-menu" />}
+          rightIcon={<PWIcon name="chevron-right" />}
           onPress={goToContacts}
         />
       </PWView>
@@ -111,7 +102,7 @@ const MenuScreen = () => {
           onPress={closeQRScanner}
           style={styles.scannerClose}
         >
-          <CrossIcon color={theme.colors.textWhite} />
+          <PWIcon name="cross" variant="white" />
         </PWTouchableOpacity>
       </QRScannerView>
     </MainScreenLayout>

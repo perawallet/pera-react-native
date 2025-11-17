@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import HDWalletIcon from '../../../../assets/icons/wallet-in-circle.svg';
-import LegacyWalletIcon from '../../../../assets/icons/wallet.svg';
+import PWIcon from '../icons/PWIcon';
 
 import { useMemo } from 'react';
 import { SvgProps } from 'react-native-svg';
@@ -19,7 +18,7 @@ import { WalletAccount } from '@perawallet/core';
 
 //TODO support all account types
 export type AccountIconProps = {
-  account: WalletAccount;
+  account?: WalletAccount;
 } & SvgProps;
 
 const AccountIcon = (props: AccountIconProps) => {
@@ -27,8 +26,8 @@ const AccountIcon = (props: AccountIconProps) => {
 
   const icon = useMemo(() => {
     if (!account) return <></>;
-    if (account.hdWalletDetails) return <HDWalletIcon {...rest} />;
-    return <LegacyWalletIcon {...rest} />;
+    const name = account.hdWalletDetails ? 'wallet-in-circle' : 'wallet';
+    return <PWIcon {...rest} name={name} />;
   }, [account, rest]);
 
   return icon;

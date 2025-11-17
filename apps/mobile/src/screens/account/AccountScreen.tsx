@@ -10,12 +10,10 @@
  limitations under the License
  */
 
-import { Tab, TabView, useTheme } from '@rneui/themed';
+import { Tab, TabView } from '@rneui/themed';
 import MainScreenLayout from '../../layouts/MainScreenLayout';
 import { useSelectedAccount } from '@perawallet/core';
-
-import CameraIcon from '../../../assets/icons/camera.svg';
-import CrossIcon from '../../../assets/icons/cross.svg';
+import PWIcon from '../../components/common/icons/PWIcon';
 
 import { useStyles } from './styles';
 import { useState } from 'react';
@@ -37,7 +35,6 @@ import AccountHistory from '../../components/account-details/account-history/Acc
 //TODO implement nft and history tabs
 //TODO implement account info screen somewhere (see old app top right corner)
 const AccountScreen = () => {
-  const { theme } = useTheme();
   const styles = useStyles();
   const account = useSelectedAccount();
   const [scannerVisible, setScannerVisible] = useState<boolean>(false);
@@ -86,12 +83,9 @@ const AccountScreen = () => {
           </PWView>
           <PWView style={styles.iconBarSection}>
             <PWTouchableOpacity onPress={openQRScanner}>
-              <CameraIcon style={styles.icon} color={theme.colors.textMain} />
+              <PWIcon name="camera" />
             </PWTouchableOpacity>
-            <NotificationsIcon
-              style={styles.icon}
-              color={theme.colors.textMain}
-            />
+            <NotificationsIcon />
           </PWView>
         </PWView>
         <Tab
@@ -136,7 +130,7 @@ const AccountScreen = () => {
           onPress={closeQRScanner}
           style={styles.scannerClose}
         >
-          <CrossIcon color={theme.colors.textWhite} />
+          <PWIcon name="cross" variant="white" />
         </PWTouchableOpacity>
       </QRScannerView>
     </Drawer>

@@ -14,8 +14,7 @@ import { Text } from '@rneui/themed';
 import PWTouchableOpacity from '../touchable-opacity/PWTouchableOpacity';
 import PWView from '../view/PWView';
 import { useStyles } from './styles';
-
-import DeleteIcon from '../../../../assets/icons/delete.svg';
+import PWIcon from '../icons/PWIcon';
 
 type NumberPadProps = {
   onPress: (key?: string) => void;
@@ -41,7 +40,7 @@ const NumberPad = ({ onPress }: NumberPadProps) => {
               style={styles.key}
             >
               {!!key && <Text h2>{key}</Text>}
-              {!key && <DeleteIcon width={24} height={24} />}
+              {!key && <PWIcon name="delete" />}
             </PWTouchableOpacity>
           ))}
         </PWView>
