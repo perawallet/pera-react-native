@@ -18,13 +18,13 @@ import { StyleProp, ViewStyle } from 'react-native';
 
 export type PWButtonProps = {
   variant: 'primary' | 'secondary' | 'helper' | 'link' | 'destructive';
-  title?: string
-  icon?: IconName
-  onPress?: () => void
+  title?: string;
+  icon?: IconName;
+  onPress?: () => void;
   minWidth?: number;
-  style?: StyleProp<ViewStyle>
-  disabled?: boolean
-  dense?: boolean
+  style?: StyleProp<ViewStyle>;
+  disabled?: boolean;
+  dense?: boolean;
 };
 
 const PWButton = (props: PWButtonProps) => {
@@ -36,9 +36,14 @@ const PWButton = (props: PWButtonProps) => {
       onPress={props.onPress}
       disabled={props.disabled}
     >
-      {!!props.icon && <PWIcon name={props.icon} variant={props.variant === 'destructive' ? 'white' : props.variant} />}
+      {!!props.icon && (
+        <PWIcon
+          name={props.icon}
+          variant={props.variant === 'destructive' ? 'white' : props.variant}
+        />
+      )}
       {!!props.title && <Text style={styles.titleStyle}>{props.title}</Text>}
-      </PWTouchableOpacity>
+    </PWTouchableOpacity>
   );
 };
 

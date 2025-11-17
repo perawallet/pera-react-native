@@ -14,21 +14,21 @@ import { makeStyles } from '@rneui/themed';
 import { PWButtonProps } from './PWButton';
 
 export const useStyles = makeStyles((theme, props: PWButtonProps) => {
-  let backgroundColor = theme.colors.buttonPrimaryBg
-  let color = theme.colors.buttonPrimaryText
-  
+  let backgroundColor = theme.colors.buttonPrimaryBg;
+  let color = theme.colors.buttonPrimaryText;
+
   if (props.variant === 'secondary') {
-    backgroundColor = theme.colors.layerGrayLighter,
-    color = theme.colors.textMain
+    backgroundColor = theme.colors.layerGrayLighter;
+    color = theme.colors.textMain;
   } else if (props.variant === 'helper') {
-      backgroundColor = theme.colors.buttonSquareBg,
-      color = theme.colors.buttonSquareText
+    backgroundColor = theme.colors.buttonSquareBg;
+    color = theme.colors.buttonSquareText;
   } else if (props.variant === 'destructive') {
-      backgroundColor = theme.colors.error,
-      color = theme.colors.textWhite
+    backgroundColor = theme.colors.error;
+    color = theme.colors.textWhite;
   } else if (props.variant === 'link') {
-      backgroundColor = theme.colors.background,
-      color = theme.colors.linkPrimary
+    backgroundColor = theme.colors.background;
+    color = theme.colors.linkPrimary;
   }
 
   return {
@@ -41,7 +41,9 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
       minWidth: props.minWidth ?? 0,
       borderRadius: theme.spacing.sm,
       paddingVertical: props.dense ? theme.spacing.sm : theme.spacing.lg,
-      paddingHorizontal: props.dense ? theme.spacing.md : theme.spacing.xl * 1.5,
+      paddingHorizontal: props.dense
+        ? theme.spacing.md
+        : theme.spacing.xl * 1.5,
       opacity: props.disabled ? 0.7 : 1,
       backgroundColor
     },
