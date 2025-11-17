@@ -168,15 +168,15 @@ const SigningView = ({ request }: SigningViewProps) => {
         <PWView style={styles.buttonContainer}>
           <PWButton
             title="Cancel"
-            variant="tertiary"
+            variant="secondary"
             onPress={rejectRequest}
-            containerStyle={styles.button}
+            style={styles.button}
           />
           <PWButton
             title={isMultipleTransactions ? 'Confirm All' : 'Confirm'}
             variant="primary"
             onPress={signAndSend}
-            containerStyle={styles.button}
+            style={styles.button}
           />
         </PWView>
       </PWView>

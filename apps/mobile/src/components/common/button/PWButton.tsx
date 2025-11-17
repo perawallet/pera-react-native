@@ -10,23 +10,35 @@
  limitations under the License
  */
 
-import { Button, ButtonProps } from '@rneui/themed';
+import { Text } from '@rneui/themed';
 import { useStyles } from './styles';
+import PWIcon, { IconName } from '../icons/PWIcon';
+import PWTouchableOpacity from '../touchable-opacity/PWTouchableOpacity';
+import { StyleProp, ViewStyle } from 'react-native';
 
 export type PWButtonProps = {
-  variant: 'primary' | 'secondary' | 'tertiary' | 'destructive';
+  variant: 'primary' | 'secondary' | 'helper' | 'link' | 'destructive';
+  title?: string
+  icon?: IconName
+  onPress?: () => void
   minWidth?: number;
-} & ButtonProps;
+  style?: StyleProp<ViewStyle>
+  disabled?: boolean
+  dense?: boolean
+};
 
 const PWButton = (props: PWButtonProps) => {
-  const style = useStyles(props);
+  const styles = useStyles(props);
 
   return (
-    <Button
-      buttonStyle={style.buttonStyle}
-      titleStyle={style.titleStyle}
-      {...props}
-    />
+    <PWTouchableOpacity
+      style={[styles.buttonStyle, props.style]}
+      onPress={props.onPress}
+      disabled={props.disabled}
+    >
+      {!!props.icon && <PWIcon name={props.icon} variant={props.variant === 'destructive' ? 'white' : props.variant} />}
+      {!!props.title && <Text style={styles.titleStyle}>{props.title}</Text>}
+      </PWTouchableOpacity>
   );
 };
 

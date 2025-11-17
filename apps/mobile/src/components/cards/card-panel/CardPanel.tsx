@@ -44,8 +44,7 @@ const CardPanel = () => {
         <PWButton
           variant="primary"
           title={'Create Pera Card'}
-          icon={<PWIcon name="plus" style={styles.buttonIcon} />}
-        />
+          icon="plus" />
       </PWView>
     </PWView>
   );

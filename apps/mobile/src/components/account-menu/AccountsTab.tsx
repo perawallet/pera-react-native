@@ -13,7 +13,6 @@
 import PWView from '../common/view/PWView';
 import AccountIcon from '../common/account-icon/AccountIcon';
 import PWTouchableOpacity from '../common/touchable-opacity/PWTouchableOpacity';
-import PWIcon from '../common/icons/PWIcon';
 import {
   getAccountDisplayName,
   useAllAccounts,
@@ -22,6 +21,7 @@ import {
 } from '@perawallet/core';
 import { useStyles } from './styles';
 import { Text, useTheme } from '@rneui/themed';
+import PWButton from '../common/button/PWButton';
 
 type AccountsTabProps = {
   onSelected: (account: WalletAccount) => void;
@@ -58,14 +58,8 @@ const AccountsTab = (props: AccountsTabProps) => {
     <>
       <PWView style={styles.titleBar}>
         <PWView style={styles.titleBarButtonContainer}>
-          <PWTouchableOpacity style={styles.addButtonContainer}>
-            <PWIcon variant="helper" name="plus-with-border" />
-            <Text style={styles.addButtonTitle}>Add Account</Text>
-          </PWTouchableOpacity>
-          <PWTouchableOpacity style={styles.sortButton}>
-            <PWIcon variant="helper" name="list-arrow-down" />
-            <Text style={styles.sortButtonTitle}>Sort</Text>
-          </PWTouchableOpacity>
+          <PWButton variant="helper" icon="plus" title="Add Account" dense />
+          <PWButton variant="link" icon="list-arrow-down" title="Sort" dense />
         </PWView>
       </PWView>
       <PWView style={styles.accountContainer}>

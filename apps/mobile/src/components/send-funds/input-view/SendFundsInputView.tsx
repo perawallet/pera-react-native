@@ -188,7 +188,7 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
       <PWButton
         variant="primary"
         title="Next"
-        containerStyle={styles.nextButton}
+        style={styles.nextButton}
         onPress={handleNext}
         disabled={!value}
       />

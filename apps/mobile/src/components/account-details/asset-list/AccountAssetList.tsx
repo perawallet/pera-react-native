@@ -21,6 +21,7 @@ import { Skeleton, Text } from '@rneui/themed';
 
 import SearchInput from '../../common/search-input/SearchInput';
 import PWIcon from '../../common/icons/PWIcon';
+import PWButton from '../../common/button/PWButton';
 
 type AccountAssetListProps = {
   account: WalletAccount;
@@ -61,13 +62,8 @@ const AccountAssetList = ({ account }: AccountAssetListProps) => {
       <PWView style={styles.titleBar}>
         <Text style={styles.title}>Assets</Text>
         <PWView style={styles.titleBarButtonContainer}>
-          <PWTouchableOpacity style={styles.manageButtonContainer}>
-            <PWIcon variant="helper" name="sliders" />
-          </PWTouchableOpacity>
-          <PWTouchableOpacity style={styles.addButtonContainer}>
-            <PWIcon variant="helper" name="plus" />
-            <Text style={styles.addButtonTitle}>Add Asset</Text>
-          </PWTouchableOpacity>
+            <PWButton icon="sliders" variant='helper' dense />
+            <PWButton icon="plus" title="Add Asset" variant='helper' dense />
         </PWView>
       </PWView>
       {loading && <LoadingView />}

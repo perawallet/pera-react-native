@@ -135,7 +135,7 @@ const SettingsScreen = () => {
             </PWView>
           ))}
         </PWView>
-        <PWButton variant="tertiary" title="Remove All Accounts and Logout" />
+        <PWButton variant="secondary" title="Remove All Accounts and Logout" />
         <Text style={styles.versionText}>Pera Wallet Version {appVersion}</Text>
       </ScrollView>
     </MainScreenLayout>

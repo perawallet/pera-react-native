@@ -92,7 +92,7 @@ const SendFundsInfoPanel = ({
           <Text style={styles.link}>tap here</Text>
         </Text>
         <PWButton
-          variant="tertiary"
+          variant="secondary"
           onPress={handleClose}
           title="I Understand"
         />
