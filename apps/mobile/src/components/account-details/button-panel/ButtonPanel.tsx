@@ -47,7 +47,7 @@ const ButtonPanel = () => {
       <RoundButton
         buttonStyle={themeStyle.blackButton}
         title="Swap"
-        icon={<PWIcon name="swap" variant="helper" />}
+        icon={<PWIcon name="swap" variant="white" />}
         onPress={() => goToRootPage('Swap')}
       />
       <RoundButton

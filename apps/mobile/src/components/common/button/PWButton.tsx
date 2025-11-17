@@ -12,7 +12,7 @@
 
 import { Text } from '@rneui/themed';
 import { useStyles } from './styles';
-import PWIcon, { IconName } from '../icons/PWIcon';
+import PWIcon, { IconName, PWIconVariant } from '../icons/PWIcon';
 import PWTouchableOpacity from '../touchable-opacity/PWTouchableOpacity';
 import { StyleProp, ViewStyle } from 'react-native';
 
@@ -27,8 +27,18 @@ export type PWButtonProps = {
   dense?: boolean;
 };
 
+const ICON_VARIANT_MAP: Record<string, PWIconVariant> = {
+  primary: 'white',
+  secondary: 'primary',
+  helper: 'helper',
+  link: 'link',
+  destructive: 'white'
+}
+
 const PWButton = (props: PWButtonProps) => {
   const styles = useStyles(props);
+
+  const iconVariant = ICON_VARIANT_MAP[props.variant]
 
   return (
     <PWTouchableOpacity
@@ -39,7 +49,7 @@ const PWButton = (props: PWButtonProps) => {
       {!!props.icon && (
         <PWIcon
           name={props.icon}
-          variant={props.variant === 'destructive' ? 'white' : props.variant}
+          variant={iconVariant}
         />
       )}
       {!!props.title && <Text style={styles.titleStyle}>{props.title}</Text>}
