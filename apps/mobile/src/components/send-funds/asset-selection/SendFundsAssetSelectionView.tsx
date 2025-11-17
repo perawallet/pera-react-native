@@ -23,7 +23,7 @@ import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacit
 import { useStyles } from './styles';
 import Decimal from 'decimal.js';
 import { SendFundsContext } from '../../../providers/SendFundsProvider';
-import SendFundsTitlePanel from '../title-panel/SendFundsTitlePanel';
+import PWHeader from '../../common/header/PWHeader';
 
 type SendFundsAssetSelectionViewProps = {
   onSelected: () => void;
@@ -86,7 +86,7 @@ const SendFundsAssetSelectionView = ({
 
   return (
     <PWView style={styles.container}>
-      <SendFundsTitlePanel handleBack={onBack} screenState="select-asset" />
+      <PWHeader leftIcon="cross" onLeftPress={onBack} title="Select Asset" />
       {loading && <LoadingView />}
       {!loading && balanceData?.map(b => renderItem(b))}
     </PWView>

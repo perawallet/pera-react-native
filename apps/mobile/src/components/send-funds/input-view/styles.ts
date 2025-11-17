@@ -60,6 +60,15 @@ export const useStyles = makeStyles(theme => {
     },
     numpadContainer: {
       paddingHorizontal: theme.spacing.xl
+    },
+    accountDisplay: {
+      flexDirection: 'row',
+      gap: theme.spacing.sm,
+      alignItems: 'center'
+    },
+    accountDisplaySubHeading: {
+      fontSize: theme.spacing.md,
+      marginTop: theme.spacing.xs / 2
     }
   };
 });

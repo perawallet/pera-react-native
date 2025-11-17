@@ -15,15 +15,21 @@ import { makeStyles } from '@rneui/themed';
 export const useStyles = makeStyles(theme => ({
   container: {
     flexDirection: 'row',
-    padding: theme.spacing.md,
-    alignItems: 'center'
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: theme.spacing.sm,
+    paddingBottom: theme.spacing.md,
+    marginBottom: theme.spacing.md
+  },
+  childContainer: {
+    flexGrow: 1,
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   title: {
-    textAlign: 'center',
-    flexGrow: 1
+    textAlign: 'center'
   },
-  backIconContainer: {
-    paddingHorizontal: theme.spacing.sm,
+  iconContainer: {
     width: theme.spacing.xl * 2
   }
 }));

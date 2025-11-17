@@ -17,10 +17,9 @@ import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay';
 import { useStyles } from './styles';
 import PWButton from '../../common/button/PWButton';
 import AccountAssetItemView from '../../assets/asset-item/AccountAssetItemView';
-import { Button } from '@rneui/themed';
+import { Button, Text } from '@rneui/themed';
 import NumberPad from '../../common/number-pad/NumberPad';
 import { SendFundsContext } from '../../../providers/SendFundsProvider';
-import SendFundsTitlePanel from '../title-panel/SendFundsTitlePanel';
 import AddNotePanel from '../add-note-panel/AddNotePanel';
 import useToast from '../../../hooks/toast';
 import {
@@ -28,6 +27,9 @@ import {
   useCurrencyConverter,
   useSelectedAccount
 } from '@perawallet/core';
+import PWHeader from '../../common/header/PWHeader';
+import AccountDisplay from '../../common/account-display/AccountDisplay';
+import SendFundsInfoPanel from '../info-panel/SendFundsInfoPanel';
 
 type SendFundsInputViewProps = {
   onNext: () => void;
@@ -43,10 +45,11 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
   const selectedAccount = useSelectedAccount();
   const { preferredCurrency, convertUSDToPreferredCurrency } =
     useCurrencyConverter();
-  const { selectedAsset, note, setNote, setAmount } =
+  const { canSelectAsset, selectedAsset, note, setNote, setAmount } =
     useContext(SendFundsContext);
   const [value, setValue] = useState<string | null>();
   const [noteOpen, setNoteOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
   const { showToast } = useToast();
 
   const { data } = useAccountBalances(selectedAccount ? [selectedAccount] : []);
@@ -70,6 +73,13 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
 
   const closeNote = () => {
     setNoteOpen(false);
+  };
+
+  const openInfo = () => {
+    setInfoOpen(true);
+  };
+  const closeInfo = () => {
+    setInfoOpen(false);
   };
 
   const setMax = () => {
@@ -116,7 +126,21 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
 
   return (
     <PWView style={styles.container}>
-      <SendFundsTitlePanel handleBack={onBack} screenState="input-amount" />
+      <PWHeader
+        leftIcon={!canSelectAsset ? 'chevron-left' : 'cross'}
+        onLeftPress={onBack}
+        rightIcon="info"
+        onRightPress={openInfo}
+      >
+        <Text>Send {selectedAsset?.name}</Text>
+        <AccountDisplay
+          account={selectedAccount ?? undefined}
+          style={styles.accountDisplay}
+          iconProps={{ width: 16, height: 16 }}
+          textProps={{ style: styles.accountDisplaySubHeading }}
+          showChevron={false}
+        />
+      </PWHeader>
       <CurrencyDisplay
         h1
         currency={selectedAsset.unit_name}
@@ -170,6 +194,7 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
       />
 
       <AddNotePanel isVisible={noteOpen} onClose={closeNote} />
+      <SendFundsInfoPanel isVisible={infoOpen} onClose={closeInfo} />
     </PWView>
   );
 };

@@ -17,6 +17,12 @@ export const useStyles = makeStyles(theme => {
     container: {
       flex: 1,
       gap: theme.spacing.lg
+    },
+    assetTitleContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: theme.spacing.sm
     }
   };
 });

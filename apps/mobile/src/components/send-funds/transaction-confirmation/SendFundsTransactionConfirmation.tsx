@@ -30,9 +30,9 @@ import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacit
 import { useStyles } from './styles';
 import PWButton from '../../common/button/PWButton';
 import useToast from '../../../hooks/toast';
-import SendFundsTitlePanel from '../title-panel/SendFundsTitlePanel';
 import AddNotePanel from '../add-note-panel/AddNotePanel';
 import PWIcon from '../../common/icons/PWIcon';
+import PWHeader from '../../common/header/PWHeader';
 
 type SendFundsTransactionConfirmationProps = {
   onNext: () => void;
@@ -139,9 +139,10 @@ const SendFundsTransactionConfirmation = ({
 
   return (
     <PWView style={styles.container}>
-      <SendFundsTitlePanel
-        handleBack={onBack}
-        screenState="confirm-transaction"
+      <PWHeader
+        leftIcon="chevron-left"
+        title="Confirm Transaction"
+        onLeftPress={onBack}
       />
       <RowTitledItem title="Amount">
         <CurrencyDisplay

@@ -14,7 +14,6 @@ import { NativeStackHeaderProps } from '@react-navigation/native-stack';
 import PWView from '../view/PWView';
 import { Text } from '@rneui/themed';
 import { useStyles } from './styles';
-import PWTouchableOpacity from '../touchable-opacity/PWTouchableOpacity';
 import PWIcon from '../icons/PWIcon';
 
 const NavigationHeader = (props: NativeStackHeaderProps) => {
@@ -22,25 +21,17 @@ const NavigationHeader = (props: NativeStackHeaderProps) => {
 
   return (
     <PWView style={styles.container}>
-      {!!props.navigation.canGoBack() && (
-        <PWTouchableOpacity
-          onPress={props.navigation.goBack}
-          style={styles.backIconContainer}
-        >
-          <PWIcon name="chevron-left" />
-        </PWTouchableOpacity>
-      )}
+      <PWView style={styles.backIconContainer}>
+        {!!props.navigation.canGoBack() && (
+          <PWIcon name="chevron-left" onPress={props.navigation.goBack} />
+        )}
+      </PWView>
       <Text h4 style={styles.title}>
         {props.options.title || props.route.name}
       </Text>
-      {!!props.options.headerRight && (
-        <PWView style={styles.actionContainer}>
-          {props.options.headerRight({})}
-        </PWView>
-      )}
-      {!props.options.headerRight && !!props.navigation.canGoBack() && (
-        <PWView style={styles.backIconContainer} />
-      )}
+      <PWView style={styles.backIconContainer}>
+        {props.options?.headerRight?.({})}
+      </PWView>
     </PWView>
   );
 };
