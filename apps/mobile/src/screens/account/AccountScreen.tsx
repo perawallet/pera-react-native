@@ -34,6 +34,8 @@ import AccountHistory from '../../components/account-details/account-history/Acc
 //TODO figure out and implement banners/spot banners
 //TODO implement nft and history tabs
 //TODO implement account info screen somewhere (see old app top right corner)
+//TODO add navigation to asset details screen
+//TODO implement rekey information && multisig information
 const AccountScreen = () => {
   const styles = useStyles();
   const account = useSelectedAccount();

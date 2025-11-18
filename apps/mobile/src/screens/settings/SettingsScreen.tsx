@@ -37,7 +37,7 @@ const settingsOptions = [
       },
       {
         route: 'SettingsSubPage',
-        icon: 'gear',
+        icon: 'bell',
         title: 'Notifications'
       },
       {

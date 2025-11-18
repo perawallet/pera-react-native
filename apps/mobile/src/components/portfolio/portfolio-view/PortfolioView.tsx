@@ -36,6 +36,7 @@ type PortfolioViewProps = {
   onDataSelected?: (selected: AccountWealthHistoryItem | null) => void;
 } & PWViewProps;
 
+//TODO layout and spacing needs a bit of clean up
 const PortfolioView = (props: PortfolioViewProps) => {
   const styles = useStyles();
   const { preferredCurrency } = useCurrency();

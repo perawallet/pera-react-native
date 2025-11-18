@@ -29,6 +29,10 @@ export const configSchema = z.object({
     notificationRefreshTime: z.int(),
     remoteConfigRefreshTime: z.int(),
 
+    reactQueryDefaultGCTime: z.int(),
+    reactQueryDefaultStaleTime: z.int(),
+    reactQueryPersistenceAge: z.int(),
+
     discoverBaseUrl: z.url(),
     stakingBaseUrl: z.url(),
 

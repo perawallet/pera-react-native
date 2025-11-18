@@ -26,6 +26,10 @@ export const config: Config = {
 
     notificationRefreshTime: 30 * 1000,
     remoteConfigRefreshTime: 60 * 60 * 1000,
+    
+    reactQueryDefaultGCTime: 60 * 60 * 1000,
+    reactQueryDefaultStaleTime: 30 * 1000,
+    reactQueryPersistenceAge: 1000 * 60 * 60 * 24,
 
     discoverBaseUrl: 'https://discover-mobile.perawallet.app/',
     stakingBaseUrl: 'https://staking-mobile.perawallet.app/',

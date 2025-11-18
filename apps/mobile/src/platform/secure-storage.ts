@@ -23,7 +23,8 @@ type Options = {
 };
 
 //TODO currently we're storing data in the keychain with a different "service" per key
-//Is that right or should we be storing it differently?
+//Is that right or should we be storing it differently?  Should this mirror the current
+//native storage so we don't have to move things?
 export class RNSecureStorageService implements SecureStorageService {
   private baseOpts: Keychain.SetOptions = {};
 

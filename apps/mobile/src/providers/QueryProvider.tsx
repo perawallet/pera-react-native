@@ -16,6 +16,7 @@ import {
   PersistQueryClientRootOptions
 } from '@tanstack/react-query-persist-client';
 import { OmitKeyof, QueryCache, QueryClient } from '@tanstack/react-query';
+import { config } from '@perawallet/config';
 
 const cache = new QueryCache({
   onError: error => {
@@ -27,14 +28,12 @@ const queryClient = new QueryClient({
   queryCache: cache,
   defaultOptions: {
     queries: {
-      //TODO maybe move this to config?
-      gcTime: 1000 * 60 * 60 * 24,
-      staleTime: 1000 * 30,
+      gcTime: config.reactQueryDefaultGCTime,
+      staleTime: config.reactQueryDefaultStaleTime,
       retry: 2
     },
     mutations: {
-      //TODO do we want to enable throwOnError?
-      //throwOnError: true
+      throwOnError: true
     }
   }
 });
@@ -49,8 +48,7 @@ export function QueryProvider({ persister, children }: QueryProviderProps) {
   return (
     <PersistQueryClientProvider
       client={queryClient}
-      //TODO make the maxAge configurable?
-      persistOptions={{ persister, maxAge: 1000 * 60 * 60 * 24 }}
+      persistOptions={{ persister, maxAge: config.reactQueryPersistenceAge }}
     >
       {children}
     </PersistQueryClientProvider>

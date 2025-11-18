@@ -37,6 +37,7 @@ type AccountOverviewProps = {
 };
 
 //TODO implement min balance display and info icon
+//TODO layout and spacing needs a bit of clean up
 const AccountOverview = ({ account }: AccountOverviewProps) => {
   const { preferredCurrency } = useCurrency();
   const styles = useStyles();
