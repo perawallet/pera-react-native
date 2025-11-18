@@ -45,15 +45,15 @@ export const useNetwork = () => {
 }
 
 export const useAlgorandUtils = () => {
-    const isValidAddress = (address?: string) => { 
+    const isValidAddress = (address?: string) => {
         if (!address) {
             return false
         }
-        return new RegExp('^[0-9a-zA-Z]{58}$').test(address) 
+        return new RegExp('^[0-9a-zA-Z]{58}$').test(address)
     }
 
     return {
-        isValidAddress
+        isValidAddress,
     }
 }
 

@@ -23,27 +23,24 @@ import {
   WalletAccount
 } from '@perawallet/core';
 import { useCallback, useMemo, useState } from 'react';
-import ChartPeriodSelection, {
-  ChartPeriod
-} from '../chart-period-selection/ChartPeriodSelection';
 import { useTheme } from '@rneui/themed';
+import { ChartPeriod } from '../chart-period-selection/ChartPeriodSelection';
 
 const FOCUS_DEBOUNCE_TIME = 200;
 
 type WealthChartProps = {
   account?: WalletAccount;
+    period: ChartPeriod;
   onSelectionChanged: (item: AccountWealthHistoryItem | null) => void;
 };
 
-//TODO: Need to implement the trend display somehow (might need a UI layout change)
-const WealthChart = ({ onSelectionChanged, account }: WealthChartProps) => {
+const WealthChart = ({ onSelectionChanged, account, period }: WealthChartProps) => {
   const { theme } = useTheme();
   const { preferredCurrency } = useCurrency();
   const themeStyle = useStyles();
   const [lastSentIndex, setLastSentIndex] = useState<number>();
   const [lastSentTime, setLastSentTime] = useState<number>(Date.now());
 
-  const [period, setPeriod] = useState<ChartPeriod>('one-week');
   const accounts = useAllAccounts();
   const addresses = useMemo(
     () =>
@@ -143,7 +140,6 @@ const WealthChart = ({ onSelectionChanged, account }: WealthChartProps) => {
         disableScroll
         adjustToWidth
       />
-      <ChartPeriodSelection value={period} onChange={setPeriod} />
     </PWView>
   );
 };

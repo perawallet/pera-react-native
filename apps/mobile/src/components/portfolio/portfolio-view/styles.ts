@@ -27,15 +27,11 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       flexDirection: 'row',
       justifyContent: 'space-between',
       paddingTop: theme.spacing.md,
-      paddingBottom: theme.spacing.md
-    },
-    valueBarCurrencies: {
-      flexShrink: 1
     },
     secondaryValueBar: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between'
+      gap: theme.spacing.sm
     },
     valueTitleBar: {
       flexDirection: 'row',
@@ -47,7 +43,8 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
     },
     dateDisplay: {
       color: theme.colors.textGray,
-      textAlign: 'left'
+      textAlign: 'right',
+      flexGrow: 1,
     },
     primaryCurrency: {
       color: theme.colors.textMain

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../platform/utils', () => ({
-  isIOS: vi.fn(),
+  isIOS: vi.fn()
 }));
 
 const loadFontFamilies = async (isOnIOS: boolean) => {

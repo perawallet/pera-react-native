@@ -41,7 +41,7 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
       gap: theme.spacing.sm,
       minWidth: props.minWidth ?? 0,
       borderRadius: theme.spacing.sm,
-      paddingVertical: props.dense ? theme.spacing.sm : theme.spacing.lg,
+      paddingVertical: props.dense ? theme.spacing.xs : theme.spacing.lg,
       paddingHorizontal: props.dense
         ? theme.spacing.md
         : theme.spacing.xl * 1.5,

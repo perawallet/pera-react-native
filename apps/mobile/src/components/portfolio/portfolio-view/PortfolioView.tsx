@@ -28,6 +28,9 @@ import {
 } from '@perawallet/core';
 import { useCallback, useState } from 'react';
 import PWIcon from '../../common/icons/PWIcon';
+import WealthTrend from '../../common/wealth-trend/WealthTrend';
+import ChartPeriodSelection, { ChartPeriod } from '../../common/chart-period-selection/ChartPeriodSelection';
+import PWButton from '../../common/button/PWButton';
 
 type PortfolioViewProps = {
   onDataSelected?: (selected: AccountWealthHistoryItem | null) => void;
@@ -39,6 +42,7 @@ const PortfolioView = (props: PortfolioViewProps) => {
 
   const accounts = useAllAccounts();
   const { loading, totalAlgo, totalLocal } = useAccountBalances(accounts);
+    const [period, setPeriod] = useState<ChartPeriod>('one-week');
   const [chartData, setChartData] = useState<AccountWealthHistoryItem | null>(
     null
   );
@@ -67,48 +71,45 @@ const PortfolioView = (props: PortfolioViewProps) => {
         </PWTouchableOpacity>
       </PWView>
       <PWView style={styles.valueBar}>
-        <PWView style={styles.valueBarCurrencies}>
-          <CurrencyDisplay
-            h1
-            value={chartData ? Decimal(chartData.algo_value) : totalAlgo}
-            currency="ALGO"
-            precision={2}
-            h1Style={styles.primaryCurrency}
-            skeleton={loading}
-          />
-          <PWView style={styles.secondaryValueBar}>
-            <CurrencyDisplay
-              h4
-              h4Style={styles.valueTitle}
-              value={
-                chartData
-                  ? Decimal(chartData.value_in_currency ?? '0')
-                  : totalLocal
-              }
-              currency={preferredCurrency}
-              prefix="≈ "
-              precision={2}
-              skeleton={loading}
-            />
-          </PWView>
-          {chartData && (
-            <Text h4 h4Style={styles.dateDisplay}>
-              {formatDatetime(chartData.datetime)}
-            </Text>
-          )}
-        </PWView>
-        <PWTouchableOpacity
-          style={styles.chartButton}
-          onPress={toggleChartVisible}
-        >
-          <Text style={styles.chartButtonText}>
-            {chartVisible ? 'Hide Chart' : 'Show Chart'}
+        <CurrencyDisplay
+          h1
+          value={chartData ? Decimal(chartData.algo_value) : totalAlgo}
+          currency="ALGO"
+          precision={2}
+          h1Style={styles.primaryCurrency}
+          skeleton={loading}
+        />
+        <PWButton title={chartVisible ? 'Hide Chart' : 'Show Chart'} variant="helper" dense onPress={toggleChartVisible} />
+      </PWView>
+      <PWView style={styles.secondaryValueBar}>
+        <CurrencyDisplay
+          h4
+          h4Style={styles.valueTitle}
+          value={
+            chartData
+              ? Decimal(chartData.value_in_currency ?? '0')
+              : totalLocal
+          }
+          currency={preferredCurrency}
+          prefix="≈ "
+          precision={2}
+          skeleton={loading}
+        />
+        {!chartData && (
+            <WealthTrend period={period} />
+        )}
+        {chartData && (
+          <Text h4 h4Style={styles.dateDisplay}>
+            {formatDatetime(chartData.datetime)}
           </Text>
-        </PWTouchableOpacity>
+        )}
       </PWView>
 
       {chartVisible && (
-        <WealthChart onSelectionChanged={chartSelectionChanged} />
+        <>
+        <WealthChart period={period} onSelectionChanged={chartSelectionChanged} />
+         <ChartPeriodSelection value={period} onChange={setPeriod} />
+         </>
       )}
     </PWView>
   );

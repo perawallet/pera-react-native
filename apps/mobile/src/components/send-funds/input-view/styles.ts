@@ -22,8 +22,8 @@ export const useStyles = makeStyles(theme => {
       gap: theme.spacing.lg
     },
     h1: {
-        fontSize: 32,
-        lineHeight: 40
+      fontSize: 32,
+      lineHeight: 40
     },
     amount: {
       color: theme.colors.textMain,

@@ -6,8 +6,8 @@ vi.mock('react-native', () => ({
   Platform: {
     get OS() {
       return platformOS;
-    },
-  },
+    }
+  }
 }));
 
 import { isIOS } from '../utils';

@@ -33,12 +33,12 @@ const ICON_VARIANT_MAP: Record<string, PWIconVariant> = {
   helper: 'helper',
   link: 'link',
   destructive: 'white'
-}
+};
 
 const PWButton = (props: PWButtonProps) => {
   const styles = useStyles(props);
 
-  const iconVariant = ICON_VARIANT_MAP[props.variant]
+  const iconVariant = ICON_VARIANT_MAP[props.variant];
 
   return (
     <PWTouchableOpacity
@@ -46,12 +46,7 @@ const PWButton = (props: PWButtonProps) => {
       onPress={props.onPress}
       disabled={props.disabled}
     >
-      {!!props.icon && (
-        <PWIcon
-          name={props.icon}
-          variant={iconVariant}
-        />
-      )}
+      {!!props.icon && <PWIcon name={props.icon} variant={iconVariant} />}
       {!!props.title && <Text style={styles.titleStyle}>{props.title}</Text>}
     </PWTouchableOpacity>
   );

@@ -15,6 +15,8 @@ import { useTheme } from '@rneui/themed';
 
 import AlgoIcon from '../../../../assets/icons/algo.svg';
 import AppLogo from '../../../../assets/icons/app_logo.svg';
+import ArrowUpIcon from '../../../../assets/icons/arrow-up.svg';
+import ArrowDownIcon from '../../../../assets/icons/arrow-down.svg';
 import BellIcon from '../../../../assets/icons/bell.svg';
 import BellWithBadgeIcon from '../../../../assets/icons/bell-with-badge.svg';
 import BuyIcon from '../../../../assets/icons/buy.svg';
@@ -67,6 +69,8 @@ import PaymentIcon from '../../../../assets/icons/transactions/payment.svg';
 const ICON_LIBRARY = {
   algo: AlgoIcon,
   app_logo: AppLogo,
+  'arrow-up': ArrowUpIcon,
+  'arrow-down': ArrowDownIcon,
   bell: BellIcon,
   'bell-with-badge': BellWithBadgeIcon,
   buy: BuyIcon,
@@ -114,7 +118,7 @@ const ICON_LIBRARY = {
   'assets/verified': VerifiedAssetIcon,
   'assets/vest': VestAssetIcon,
   'transactions/group': GroupIcon,
-  'transactions/payment': PaymentIcon
+  'transactions/payment': PaymentIcon,
 } as const;
 
 export type IconName = keyof typeof ICON_LIBRARY;
@@ -125,7 +129,8 @@ export type PWIconVariant =
   | 'secondary'
   | 'helper'
   | 'white'
-  | 'link';
+  | 'link'
+  | "error";
 
 export type PWIconProps = {
   name: IconName;
@@ -155,7 +160,8 @@ const PWIcon = ({
     secondary: theme.colors.textGray,
     helper: theme.colors.buttonSquareText,
     white: theme.colors.textWhite,
-    link: theme.colors.linkPrimary
+    link: theme.colors.linkPrimary,
+    error: theme.colors.error
   };
 
   if (!IconComponent) return null;

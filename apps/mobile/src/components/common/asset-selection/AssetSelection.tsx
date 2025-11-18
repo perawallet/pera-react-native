@@ -28,9 +28,7 @@ const AssetSelection = ({ asset }: AssetSelectionProps) => {
   return (
     <PWView style={styles.container}>
       <AssetIcon asset={asset} style={styles.icon} />
-      <Text h4>
-        {asset.unit_name}
-      </Text>
+      <Text h4>{asset.unit_name}</Text>
       <PWIcon name="chevron-right" />
     </PWView>
   );

@@ -22,7 +22,7 @@ export const getFontFamily = (
     ? fontFamilies.DMMONO
     : fontFamilies.DMSANS;
   return selectedFontFamily[weight];
-}
+};
 
 export const getNavigationTheme = (mode: 'light' | 'dark' = 'light') => ({
   ...DefaultTheme,
