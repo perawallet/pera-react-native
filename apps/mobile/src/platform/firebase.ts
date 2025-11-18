@@ -22,21 +22,21 @@ import notifee, {
 import {
   CrashReportingService,
   NotificationsInitResult,
+  RemoteConfigDefaults,
   RemoteConfigKey,
   RemoteConfigService
 } from '@perawallet/core';
+import { config } from '@perawallet/config';
 
 export class RNFirebaseService
   implements CrashReportingService, RemoteConfigService, CrashReportingService
 {
   async initializeRemoteConfig() {
-    // Configure fetch interval (1 hour)
     await getRemoteConfig().setConfigSettings({
-      minimumFetchIntervalMillis: 60 * 60 * 1000
+      minimumFetchIntervalMillis: config.remoteConfigRefreshTime
     });
 
-    // TODO: setup defaults here but load them from somewhere central? Config?
-    await getRemoteConfig().setDefaults({});
+    await getRemoteConfig().setDefaults(RemoteConfigDefaults);
 
     try {
       await getRemoteConfig().fetchAndActivate();
@@ -95,7 +95,6 @@ export class RNFirebaseService
       token = await getMessaging().getToken();
     } catch {
       // noop
-      // TODO: do we want to do something here?
     }
 
     // Foreground message handler (show a local notification)
@@ -122,7 +121,7 @@ export class RNFirebaseService
         switch (type) {
           case EventType.ACTION_PRESS:
           case EventType.PRESS:
-            // TODO: Handle taps or actions
+            // TODO: Handle taps or actions using deeplink parser when we have it
             break;
           default:
             break;

@@ -19,16 +19,12 @@ import { useIsDarkMode } from '../../../hooks/theme';
 import PWView from '../view/PWView';
 import { useStyles } from './styles';
 
-type LabelType = {
-  dark_theme_logo: string;
-  light_theme_logo: string;
-};
-
 export type AssetIconProps = {
   asset: PeraAsset;
   size?: number;
 } & SvgProps;
 
+//TODO: we may want a few more "local" asset icons for popular icons (e.g. USDC, DEFLY, etc)
 const AssetIcon = (props: AssetIconProps) => {
   const { asset, size, style, ...rest } = props;
   const styles = useStyles(props);

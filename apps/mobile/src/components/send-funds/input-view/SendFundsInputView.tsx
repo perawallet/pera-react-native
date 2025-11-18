@@ -36,10 +36,8 @@ type SendFundsInputViewProps = {
   onBack: () => void;
 };
 
-//TODO: handle local currency conversion
 //TODO: handle max precision (currently we don't show them but we're still adding characters)
 //TODO: max amount validation (+ max amount popup)
-//TODO: Should be using DMMono font for numbers
 const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
   const styles = useStyles();
   const selectedAccount = useSelectedAccount();

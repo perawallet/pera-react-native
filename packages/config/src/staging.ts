@@ -27,7 +27,8 @@ export const config: Config = {
     discoverBaseUrl: 'https://discover-mobile-staging.perawallet.app/',
     stakingBaseUrl: 'https://staking-mobile-staging.perawallet.app/',
 
-    notificationRefreshTime: 30_000,
+    notificationRefreshTime: 30 * 1000,
+    remoteConfigRefreshTime: 60 * 60 * 1000,
 
     debugEnabled: true,
     profilingEnabled: false,

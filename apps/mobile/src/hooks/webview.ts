@@ -94,7 +94,7 @@ export const usePeraWebviewInterface = (webview: WebView | null) => {
         type: 'info'
       });
     }
-    //TODO add sound and haptic (and maybe message.banner) support
+    //TODO add haptic (and maybe message.banner) support and maybe sound
   };
 
   const getAddresses = () => {

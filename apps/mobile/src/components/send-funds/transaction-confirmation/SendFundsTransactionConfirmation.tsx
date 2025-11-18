@@ -40,7 +40,6 @@ type SendFundsTransactionConfirmationProps = {
 };
 
 //TODO figure out fee calculation
-//TODO add local currency conversion and display
 const SendFundsTransactionConfirmation = ({
   onNext,
   onBack

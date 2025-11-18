@@ -27,6 +27,7 @@ export const configSchema = z.object({
     indexerApiKey: z.string(),
 
     notificationRefreshTime: z.int(),
+    remoteConfigRefreshTime: z.int(),
 
     discoverBaseUrl: z.url(),
     stakingBaseUrl: z.url(),

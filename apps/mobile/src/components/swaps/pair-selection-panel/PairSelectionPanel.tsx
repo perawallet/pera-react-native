@@ -24,11 +24,11 @@ import { PeraAsset, useCachedAssets } from '@perawallet/core';
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity';
 import PWIcon from '../../common/icons/PWIcon';
 
+//TODO this iz a mock implementation - implement properly
 const PairSelectionPanel = () => {
   const styles = useStyles();
   const { theme } = useTheme();
 
-  // TODO we need to fetch all the assets from the swap backend somehow
   const { assets } = useCachedAssets([10458941, 700965019]);
 
   const algoAsset = assets?.length
@@ -38,7 +38,6 @@ const PairSelectionPanel = () => {
     ? assets.find((a: PeraAsset) => a.unit_name === 'USDC')
     : null;
 
-  //TODO: some or all of these should probably come from either an account hook, the state store or a calculation
   const [sendAmount, setSendAmount] = useState('0.00');
   const [receiveAmount, _] = useState(Decimal(0));
   const [receiveAmountUSD, __] = useState(Decimal(0));
@@ -74,7 +73,7 @@ const PairSelectionPanel = () => {
               style={styles.primaryInput}
               value={sendAmount}
               minPrecision={2}
-              maxPrecision={18} //TODO: replace with asset precision
+              maxPrecision={18}
               onChangeText={handleAmountChange}
               affinityCalculationStrategy={0}
             />

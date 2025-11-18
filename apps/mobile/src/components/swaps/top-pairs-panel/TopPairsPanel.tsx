@@ -20,6 +20,7 @@ import SwapPair from '../swap-pair/SwapPair';
 import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay';
 import { PeraAsset, useCachedAssets } from '@perawallet/core';
 
+//TODO this iz a mock implementation - implement properly
 const TopPairsPanel = () => {
   const themeStyle = useStyles();
 
@@ -58,7 +59,6 @@ const TopPairsPanel = () => {
     [themeStyle]
   );
 
-  //TODO: this is local data for now...replace with server data
   const pairs = [
     {
       fromAsset: vestAsset,

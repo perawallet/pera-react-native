@@ -24,7 +24,8 @@ export const config: Config = {
     algodApiKey: '',
     indexerApiKey: '',
 
-    notificationRefreshTime: 30_000,
+    notificationRefreshTime: 30 * 1000,
+    remoteConfigRefreshTime: 60 * 60 * 1000,
 
     discoverBaseUrl: 'https://discover-mobile.perawallet.app/',
     stakingBaseUrl: 'https://staking-mobile.perawallet.app/',
