@@ -103,7 +103,7 @@ const ContactListScreen = () => {
         <EmptyView
           title="No Contacts"
           body="You haven't added any contacts yet"
-          icon={<PWIcon name="person" />}
+          icon="person"
           button={
             <PWButton
               title="Add Contact"
@@ -130,7 +130,7 @@ const ContactListScreen = () => {
               <EmptyView
                 title="No Matching Contacts"
                 body="There aren't any matching contacts."
-                icon={<PWIcon name="person" />}
+                icon="person"
               />
             }
           />

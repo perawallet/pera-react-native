@@ -45,19 +45,14 @@ import ViewContactHeaderButtons from '../components/contacts/ViewContactHeaderBu
 import SettingsCurrencyScreen from '../screens/settings/currency/SettingsCurrencyScreen';
 import SettingsThemeScreen from '../screens/settings/theme/SettingsThemeScreen';
 import PWIcon, { IconName } from '../components/common/icons/PWIcon';
-// {
-//               const previousRouteName = routeNameRef.current;
-//               const currentRouteName = navigationRef.current?.getCurrentRoute()?.name.toLowerCase() ?? null;
-
-//               if (previousRouteName !== currentRouteName) {
-//                 console.log("ROUTING", previousRouteName, "TO", currentRouteName)
-//                 analytics.logEvent(`scr_${currentRouteName}_view`, {
-//                   previous: previousRouteName,
-//                   path: navigationRef.current?.getCurrentRoute()?.path
-//                 });
-//               }
-//               routeNameRef.current = currentRouteName;
-//             }
+import SettingsSecurityScreen from '../screens/settings/security/SettingsSecurtyScreen';
+import SettingsNotificationsScreen from '../screens/settings/notifications/SettingsNotificationsScreen';
+import SettingsWalletConnectScreen from '../screens/settings/wallet-connect/SettingsWalletConnectScreen';
+import SettingsPasskeyScreen from '../screens/settings/passkeys/SettingsPasskeysScreen';
+import SettingsDeveloperScreen from '../screens/settings/developer/SettingsDeveloperScreen';
+import SettingsGetHelpScreen from '../screens/settings/get-help/SettingsGetHelpScreen';
+import SettingsTermsAndServicsScreen from '../screens/settings/terms-and-services/SettingsTermsAndServicesScreen';
+import SettingsPrivacyPolicyScreen from '../screens/settings/privacy-policy/SettingsPrivacyPolicyScreen';
 
 const NAVIGATION_STACK_NAMES = new Set([
   "tabbar",
@@ -104,16 +99,64 @@ const SettingsStack = createNativeStackNavigator({
         title: 'Settings'
       }
     },
-    Currency: {
+    SecuritySettings: {
+      screen: SettingsSecurityScreen,
+      options: {
+        title: 'Security'
+      }
+    },
+    NotificationsSettings: {
+      screen: SettingsNotificationsScreen,
+      options: {
+        title: 'Notifications'
+      }
+    },
+    WalletConnectSettings: {
+      screen: SettingsWalletConnectScreen,
+      options: {
+        title: 'Wallet Connect'
+      }
+    },
+    PasskeysSettings: {
+      screen: SettingsPasskeyScreen,
+      options: {
+        title: 'Passkeys'
+      }
+    },
+    CurrencySettings: {
       screen: SettingsCurrencyScreen,
       options: {
         title: 'Currency'
       }
     },
-    Theme: {
+    ThemeSettings: {
       screen: SettingsThemeScreen,
       options: {
         title: 'Theme'
+      }
+    },
+    GetHelpSettings: {
+      screen: SettingsGetHelpScreen,
+      options: {
+        title: 'Get Help'
+      }
+    },
+    TermsAndServicesSettings: {
+      screen: SettingsTermsAndServicsScreen,
+      options: {
+        title: 'Terms and Services'
+      }
+    },
+    PrivacyPolicySettings: {
+      screen: SettingsPrivacyPolicyScreen,
+      options: {
+        title: 'Privacy Policy'
+      }
+    },
+    DeveloperSettings: {
+      screen: SettingsDeveloperScreen,
+      options: {
+        title: 'Developer'
       }
     },
     SettingsSubPage: {

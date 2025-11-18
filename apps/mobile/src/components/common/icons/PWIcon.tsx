@@ -23,9 +23,11 @@ import BuyIcon from '../../../../assets/icons/buy.svg';
 import CameraIcon from '../../../../assets/icons/camera.svg';
 import CardIcon from '../../../../assets/icons/card.svg';
 import CardStackIcon from '../../../../assets/icons/card-stack.svg';
+import ChartIcon from '../../../../assets/icons/chart.svg'
 import ChevronDownIcon from '../../../../assets/icons/chevron-down.svg';
 import ChevronLeftIcon from '../../../../assets/icons/chevron-left.svg';
 import ChevronRightIcon from '../../../../assets/icons/chevron-right.svg';
+import CodeIcon from '../../../../assets/icons/code.svg'
 import CopyIcon from '../../../../assets/icons/copy.svg';
 import CrossIcon from '../../../../assets/icons/cross.svg';
 import DeleteIcon from '../../../../assets/icons/delete.svg';
@@ -35,6 +37,7 @@ import EditPenIcon from '../../../../assets/icons/edit-pen.svg';
 import EllipsisIcon from '../../../../assets/icons/ellipsis.svg';
 import EnvelopeLetterIcon from '../../../../assets/icons/envelope-letter.svg';
 import EyeInCircleIcon from '../../../../assets/icons/eye-in-circle.svg';
+import FeedbackIcon from '../../../../assets/icons/feedback.svg'
 import GearIcon from '../../../../assets/icons/gear.svg';
 import GlobeIcon from '../../../../assets/icons/globe.svg';
 import HorizontalLineStackIcon from '../../../../assets/icons/horizontal-line-stack.svg';
@@ -47,13 +50,18 @@ import ListArrowDownIcon from '../../../../assets/icons/list-arrow-down.svg';
 import MagnifyingGlassIcon from '../../../../assets/icons/magnifying-glass.svg';
 import MoonIcon from '../../../../assets/icons/moon.svg';
 import OutflowIcon from '../../../../assets/icons/outflow.svg';
+import PersonKeyIcon from '../../../../assets/icons/person-key.svg'
 import PersonMenuIcon from '../../../../assets/icons/person-menu.svg';
 import PersonIcon from '../../../../assets/icons/person.svg';
 import PlusWithBorderIcon from '../../../../assets/icons/plus-with-border.svg';
 import PlusIcon from '../../../../assets/icons/plus.svg';
+import ShieldCheckIcon from '../../../../assets/icons/shield-check.svg'
 import SlidersIcon from '../../../../assets/icons/sliders.svg';
+import StarIcon from '../../../../assets/icons/star.svg'
 import SwapIcon from '../../../../assets/icons/swap.svg';
 import SwitchIcon from '../../../../assets/icons/switch.svg';
+import TextDocumentIcon from '../../../../assets/icons/text-document.svg'
+import WalletConnectIcon from '../../../../assets/icons/wallet-connect.svg'
 import WalletInCircleIcon from '../../../../assets/icons/wallet-in-circle.svg';
 import WalletWithAlgoIcon from '../../../../assets/icons/wallet-with-algo.svg';
 import WalletIcon from '../../../../assets/icons/wallet.svg';
@@ -77,10 +85,12 @@ const ICON_LIBRARY = {
   camera: CameraIcon,
   card: CardIcon,
   'card-stack': CardStackIcon,
+  chart: ChartIcon,
   'chevron-down': ChevronDownIcon,
   'chevron-left': ChevronLeftIcon,
   'chevron-right': ChevronRightIcon,
   copy: CopyIcon,
+  code: CodeIcon,
   cross: CrossIcon,
   delete: DeleteIcon,
   dollar: DollarIcon,
@@ -89,6 +99,7 @@ const ICON_LIBRARY = {
   ellipsis: EllipsisIcon,
   'envelope-letter': EnvelopeLetterIcon,
   'eye-in-circle': EyeInCircleIcon,
+  feedback: FeedbackIcon,
   gear: GearIcon,
   globe: GlobeIcon,
   'horizontal-line-stack': HorizontalLineStackIcon,
@@ -103,11 +114,16 @@ const ICON_LIBRARY = {
   outflow: OutflowIcon,
   'person-menu': PersonMenuIcon,
   person: PersonIcon,
+  'person-key': PersonKeyIcon,
   'plus-with-border': PlusWithBorderIcon,
   plus: PlusIcon,
+  'shield-check': ShieldCheckIcon,
   sliders: SlidersIcon,
+  star: StarIcon,
   swap: SwapIcon,
   switch: SwitchIcon,
+  'text-document': TextDocumentIcon,
+  'wallet-connect': WalletConnectIcon,
   'wallet-in-circle': WalletInCircleIcon,
   'wallet-with-algo': WalletWithAlgoIcon,
   wallet: WalletIcon,

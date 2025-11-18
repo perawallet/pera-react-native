@@ -21,6 +21,14 @@ export const useStyles = makeStyles(theme => ({
     textAlign: 'center',
     gap: theme.spacing.xl
   },
+  iconContainer: {
+    width: theme.spacing.xl * 3,
+    height: theme.spacing.xl * 3,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: theme.spacing.xl * 1.5,
+    backgroundColor: theme.colors.layerGrayLighter,
+  },
   text: {
     color: theme.colors.textMain,
     textAlign: 'center'

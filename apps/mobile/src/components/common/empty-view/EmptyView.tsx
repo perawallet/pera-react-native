@@ -13,11 +13,12 @@
 import { Text } from '@rneui/themed';
 import PWView, { PWViewProps } from '../view/PWView';
 import { useStyles } from './styles';
+import PWIcon, { IconName } from '../icons/PWIcon';
 
 export type EmptyViewProps = {
   title?: string;
   body: string;
-  icon?: React.ReactElement<{}>;
+  icon?: IconName;
   button?: React.ReactElement<{}>;
 } & PWViewProps;
 
@@ -27,7 +28,7 @@ const EmptyView = (props: EmptyViewProps) => {
 
   return (
     <PWView {...rest} style={[styles.container, style]}>
-      {icon}
+      {!!icon && <PWView style={styles.iconContainer}><PWIcon name={icon} variant="secondary" size="lg" /></PWView> }
       {!!title && (
         <Text h3 h3Style={styles.text}>
           {title}

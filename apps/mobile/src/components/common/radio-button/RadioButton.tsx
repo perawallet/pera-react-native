@@ -25,7 +25,7 @@ const RadioButton = ({ onPress, title, selected }: RadioButtonProps) => {
 
   return (
     <PWTouchableOpacity onPress={onPress} style={styles.row}>
-      <Text h4>{title}</Text>
+      <Text>{title}</Text>
       <PWView style={styles.radioContainer}>
         {selected && <PWView style={styles.selectedRadio} />}
       </PWView>

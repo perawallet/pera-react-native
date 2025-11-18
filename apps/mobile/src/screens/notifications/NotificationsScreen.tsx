@@ -64,11 +64,7 @@ const NotificationsScreen = () => {
       )}
       {!isPending && !items.length && (
         <EmptyView
-          icon={
-            <PWView style={styles.iconContainer}>
-              <PWIcon name="bell" variant="secondary" size="lg" />
-            </PWView>
-          }
+          icon="bell"
           title="No current notifications"
           body="Your recent transactions, asset requests and other transactions will appear here"
         />

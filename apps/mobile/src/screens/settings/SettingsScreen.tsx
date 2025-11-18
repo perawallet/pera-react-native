@@ -20,7 +20,7 @@ import { ScrollView } from 'react-native';
 import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useDeviceInfoService } from '@perawallet/core';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PWTouchableOpacity from '../../components/common/touchable-opacity/PWTouchableOpacity';
 import PWIcon, { IconName } from '../../components/common/icons/PWIcon';
@@ -31,19 +31,24 @@ const settingsOptions = [
     title: 'Account',
     items: [
       {
-        route: 'SettingsSubPage',
-        icon: 'gear',
+        route: 'SecuritySettings',
+        icon: 'shield-check',
         title: 'Security'
       },
       {
-        route: 'SettingsSubPage',
+        route: 'NotificationsSettings',
         icon: 'bell',
         title: 'Notifications'
       },
       {
-        route: 'SettingsSubPage',
-        icon: 'gear',
+        route: 'WalletConnectSettings',
+        icon: 'wallet-connect',
         title: 'WalletConnect Sessions'
+      },
+      {
+        route: 'PasskeysSettings',
+        icon: 'person-key',
+        title: 'Passkeys'
       }
     ]
   },
@@ -51,12 +56,12 @@ const settingsOptions = [
     title: 'App Preferences',
     items: [
       {
-        route: 'Currency',
+        route: 'CurrencySettings',
         icon: 'dollar',
         title: 'Currency'
       },
       {
-        route: 'Theme',
+        route: 'ThemeSettings',
         icon: 'moon',
         title: 'Theme'
       }
@@ -66,28 +71,27 @@ const settingsOptions = [
     title: 'Support',
     items: [
       {
-        route: 'SettingsSubPage',
-        icon: 'gear',
+        route: 'GetHelpSettings',
+        icon: 'feedback',
         title: 'Get Help'
       },
       {
-        route: 'SettingsSubPage',
-        icon: 'gear',
+        icon: 'star',
         title: 'Rate Pera Wallet'
       },
       {
-        route: 'SettingsSubPage',
-        icon: 'gear',
+        route: 'TermsAndServicesSettings',
+        icon: 'text-document',
         title: 'Terms and Services'
       },
       {
-        route: 'SettingsSubPage',
-        icon: 'gear',
+        route: 'PrivacyPolicySettings',
+        icon: 'text-document',
         title: 'Privacy Policy'
       },
       {
-        route: 'SettingsSubPage',
-        icon: 'gear',
+        route: 'DeveloperSettings',
+        icon: 'code',
         title: 'Developer Settings'
       }
     ]
@@ -99,6 +103,7 @@ const SettingsScreen = () => {
   const styles = useStyles(insets);
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
   const { getAppVersion } = useDeviceInfoService();
+  const [ratingOpen, setRatingOpen] = useState(false);
 
   const appVersion = useMemo(() => {
     return getAppVersion();
@@ -107,6 +112,10 @@ const SettingsScreen = () => {
   const goToSettingsPage = (route: string, title: string) => {
     navigation.push(route, { title });
   };
+
+  const openRating = () => {
+    setRatingOpen(true)
+  }
 
   return (
     <MainScreenLayout fullScreen>
@@ -125,7 +134,7 @@ const SettingsScreen = () => {
                 <PWTouchableOpacity
                   style={styles.sectionRow}
                   key={`settings-sectionrow-${page.title}`}
-                  onPress={() => goToSettingsPage(page.route, page.title)}
+                  onPress={() => { page.route ? goToSettingsPage(page.route, page.title) : openRating() }}
                 >
                   <PWIcon name={page.icon as IconName} />
                   <Text style={styles.sectionRowTitle}>{page.title}</Text>
