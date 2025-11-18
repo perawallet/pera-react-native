@@ -40,7 +40,6 @@ vi.mock('@react-native-firebase/remote-config', () => ({
   getRemoteConfig: () => mockRemoteConfig
 }));
 
-
 const mockAnalytics = vi.hoisted(() => ({
   logEvent: vi.fn()
 }));
@@ -418,12 +417,15 @@ describe('RNFirebaseService', () => {
     it('logEvent forwards payload to Firebase analytics', () => {
       service.logEvent('test_event', { foo: 'bar' });
       expect(mockAnalytics.logEvent).toHaveBeenCalledWith('test_event', {
-        foo: 'bar',
+        foo: 'bar'
       });
     });
     it('logEvent forwards event without payload to Firebase analytics', () => {
       service.logEvent('test_event');
-      expect(mockAnalytics.logEvent).toHaveBeenCalledWith('test_event', undefined);
+      expect(mockAnalytics.logEvent).toHaveBeenCalledWith(
+        'test_event',
+        undefined
+      );
     });
 
     it('initializeAnalytics is callable without throwing', () => {
