@@ -19,6 +19,7 @@ import PWIcon from '../../common/icons/PWIcon';
 import { ParamListBase, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity';
+import { config } from '@perawallet/config';
 
 export type NotificationsIconProps = {} & SvgProps;
 
@@ -37,7 +38,7 @@ const NotificationsIcon = (props: NotificationsIconProps) => {
     {
       query: {
         enabled: !!deviceID,
-        staleTime: 30_000 //TODO make configurable or at least store somewhere sensible
+        staleTime: config.notificationRefreshTime
       }
     }
   );

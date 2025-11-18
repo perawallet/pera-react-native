@@ -26,6 +26,8 @@ export const configSchema = z.object({
     algodApiKey: z.string(),
     indexerApiKey: z.string(),
 
+    notificationRefreshTime: z.int(),
+
     discoverBaseUrl: z.url(),
     stakingBaseUrl: z.url(),
 
