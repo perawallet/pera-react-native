@@ -37,6 +37,7 @@ const LoadingView = () => {
   );
 };
 
+//TODO implement links and buttons
 const AccountAssetList = ({ account }: AccountAssetListProps) => {
   const styles = useStyles();
   const { data, loading } = useAccountBalances([account]);

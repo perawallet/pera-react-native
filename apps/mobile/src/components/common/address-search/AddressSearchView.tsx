@@ -18,6 +18,7 @@ import { Text } from '@rneui/themed';
 import AddressEntryField from '../address-entry/AddressEntryField';
 import {
   truncateAlgorandAddress,
+  useAlgorandUtils,
   useAllAccounts,
   useContacts
 } from '@perawallet/core';
@@ -37,11 +38,10 @@ const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
   const [value, setValue] = useState('');
   const { findContacts } = useContacts();
   const accounts = useAllAccounts();
+  const { isValidAddress } = useAlgorandUtils()
 
-  //TODO extract this regex to somewhere - maybe a packages/core hook that can test strings
-  //for address validity
-  const isValidAddress = useMemo(
-    () => new RegExp('^[0-9a-zA-Z]{58}$').test(value),
+  const addressIsValid = useMemo(
+    () => isValidAddress(value),
     [value]
   );
   const matchingAccounts = useMemo(
@@ -71,7 +71,7 @@ const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
         />
       ) : (
         <ScrollView>
-          {isValidAddress && (
+          {addressIsValid && (
             <PWTouchableOpacity onPress={() => onSelected(value)}>
               <Text h4 h4Style={styles.title}>
                 Address

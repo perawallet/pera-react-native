@@ -55,7 +55,7 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
       flexWrap: 'nowrap',
       textAlign: 'center',
       borderWidth: 1,
-      borderColor: backgroundColor,
+      borderColor: 'transparent',
       color
     }
   };

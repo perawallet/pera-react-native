@@ -44,6 +44,19 @@ export const useNetwork = () => {
     }
 }
 
+export const useAlgorandUtils = () => {
+    const isValidAddress = (address?: string) => { 
+        if (!address) {
+            return false
+        }
+        return new RegExp('^[0-9a-zA-Z]{58}$').test(address) 
+    }
+
+    return {
+        isValidAddress
+    }
+}
+
 export const useSigningRequest = () => {
     const { pendingSignRequests, addSignRequest, removeSignRequest } =
         useAppStore()

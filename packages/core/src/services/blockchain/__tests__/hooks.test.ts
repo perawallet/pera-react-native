@@ -12,8 +12,13 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
-
-import { useAlgorandClient, useNetwork, useSigningRequest } from '../hooks'
+ 
+import {
+    useAlgorandClient,
+    useAlgorandUtils,
+    useNetwork,
+    useSigningRequest,
+} from '../hooks'
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import { useAppStore } from '../../../store'
 
@@ -77,14 +82,32 @@ describe('services/blockchain/hooks', () => {
     test('returns fromConfig client for unknown network', () => {
         ;(useAppStore as any).setState({ network: 'devnet' as any })
         const { result } = renderHook(() => useAlgorandClient())
-
+ 
         expect(AlgorandClient.fromConfig).toHaveBeenCalledTimes(1)
         expect(AlgorandClient.testNet).not.toHaveBeenCalled()
         expect(AlgorandClient.mainNet).not.toHaveBeenCalled()
         expect(AlgorandClient.fromEnvironment).not.toHaveBeenCalled()
         expect(result.current).toBe('FROM_CONFIG_CLIENT')
     })
-
+ 
+    test('isValidAddress returns true for valid Algorand address', () => {
+        const { result } = renderHook(() => useAlgorandUtils())
+        expect(
+            result.current.isValidAddress(
+                'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnop'
+                    .slice(0, 58),
+            ),
+        ).toBe(true)
+    })
+ 
+    test('isValidAddress returns false for invalid Algorand address', () => {
+        const { result } = renderHook(() => useAlgorandUtils())
+        expect(result.current.isValidAddress('short')).toBe(false)
+        expect(result.current.isValidAddress('A'.repeat(57))).toBe(false)
+        expect(result.current.isValidAddress('A'.repeat(59))).toBe(false)
+        expect(result.current.isValidAddress(undefined)).toBe(false)
+    })
+ 
     test('useNetwork returns network and setNetwork', () => {
         ;(useAppStore as any).setState({
             network: 'testnet',

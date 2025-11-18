@@ -12,7 +12,6 @@
 
 import { makeStyles } from '@rneui/themed';
 
-//TODO implement links and buttons
 export const useStyles = makeStyles(theme => ({
   container: {
     marginTop: theme.spacing.xl
