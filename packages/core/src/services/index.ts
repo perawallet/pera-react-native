@@ -11,6 +11,7 @@
  */
 
 export * from './accounts'
+export * from './analytics'
 export * from './assets'
 export * from './blockchain'
 export * from './contacts'

@@ -24,6 +24,7 @@ import {
 
 const firebaseService = new RNFirebaseService();
 const platformServices = {
+  analytics: firebaseService,
   crashReporting: firebaseService,
   notification: firebaseService,
   remoteConfig: firebaseService,

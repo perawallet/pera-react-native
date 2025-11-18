@@ -15,7 +15,7 @@ import { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import { useAppStore } from '../../store'
 import { Networks } from './types'
 import { config } from '@perawallet/config'
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 
 export const useAlgorandClient = () => {
     const network = useAppStore(state => state.network)
@@ -45,12 +45,12 @@ export const useNetwork = () => {
 }
 
 export const useAlgorandUtils = () => {
-    const isValidAddress = (address?: string) => {
+    const isValidAddress = useCallback((address?: string) => {
         if (!address) {
             return false
         }
         return new RegExp('^[0-9a-zA-Z]{58}$').test(address)
-    }
+    }, [])
 
     return {
         isValidAddress,

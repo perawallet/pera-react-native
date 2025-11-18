@@ -40,6 +40,15 @@ vi.mock('@react-native-firebase/remote-config', () => ({
   getRemoteConfig: () => mockRemoteConfig
 }));
 
+
+const mockAnalytics = vi.hoisted(() => ({
+  logEvent: vi.fn()
+}));
+
+vi.mock('@react-native-firebase/analytics', () => ({
+  getAnalytics: () => mockAnalytics
+}));
+
 const mockMessaging = vi.hoisted(() => ({
   registerDeviceForRemoteMessages: vi.fn().mockResolvedValue(undefined),
   getToken: vi.fn().mockResolvedValue('mock-fcm-token'),
@@ -107,7 +116,7 @@ describe('RNFirebaseService', () => {
         expect(result).toBe('mock-string-value');
       });
 
-      it('should return fallback value when provided', () => {
+      it('should return value even when fallback provided', () => {
         mockRemoteConfig.getValue.mockReturnValueOnce({
           asString: () => 'mock-string-value',
           asBoolean: () => true,
@@ -115,6 +124,12 @@ describe('RNFirebaseService', () => {
         });
         const result = service.getStringValue('welcome_message', 'fallback');
         expect(result).toBe('mock-string-value');
+      });
+
+      it('should return fallback string when provided and getValue nothing', async () => {
+        mockRemoteConfig.getValue.mockRejectedValue(new Error('no value'));
+        const result = service.getStringValue('welcome_message', 'fallback');
+        expect(result).toBe('fallback');
       });
 
       it('should return empty string when no fallback and getValue nothing', async () => {
@@ -150,6 +165,12 @@ describe('RNFirebaseService', () => {
         const result = service.getBooleanValue('welcome_message', true);
         expect(result).toEqual(true);
       });
+
+      it('should return default when no fallback provided ', async () => {
+        mockRemoteConfig.getValue.mockRejectedValue(new Error('no value'));
+        const result = service.getBooleanValue('welcome_message');
+        expect(result).toEqual(false);
+      });
     });
 
     describe('getNumberValue', () => {
@@ -177,6 +198,12 @@ describe('RNFirebaseService', () => {
         mockRemoteConfig.getValue.mockRejectedValue(new Error('no value'));
         const result = service.getNumberValue('welcome_message', 100);
         expect(result).toEqual(100);
+      });
+
+      it('should return 0 value when no value or fallback', () => {
+        mockRemoteConfig.getValue.mockRejectedValue(new Error('no value'));
+        const result = service.getNumberValue('welcome_message');
+        expect(result).toEqual(0);
       });
     });
   });
@@ -384,6 +411,23 @@ describe('RNFirebaseService', () => {
         const objectError = { message: 'Object error', code: 500 };
         expect(() => service.recordNonFatalError(objectError)).not.toThrow();
       });
+    });
+  });
+
+  describe('Analytics', () => {
+    it('logEvent forwards payload to Firebase analytics', () => {
+      service.logEvent('test_event', { foo: 'bar' });
+      expect(mockAnalytics.logEvent).toHaveBeenCalledWith('test_event', {
+        foo: 'bar',
+      });
+    });
+    it('logEvent forwards event without payload to Firebase analytics', () => {
+      service.logEvent('test_event');
+      expect(mockAnalytics.logEvent).toHaveBeenCalledWith('test_event', undefined);
+    });
+
+    it('initializeAnalytics is callable without throwing', () => {
+      expect(() => service.initializeAnalytics()).not.toThrow();
     });
   });
 

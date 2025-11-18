@@ -30,11 +30,15 @@ const FOCUS_DEBOUNCE_TIME = 200;
 
 type WealthChartProps = {
   account?: WalletAccount;
-    period: ChartPeriod;
+  period: ChartPeriod;
   onSelectionChanged: (item: AccountWealthHistoryItem | null) => void;
 };
 
-const WealthChart = ({ onSelectionChanged, account, period }: WealthChartProps) => {
+const WealthChart = ({
+  onSelectionChanged,
+  account,
+  period
+}: WealthChartProps) => {
   const { theme } = useTheme();
   const { preferredCurrency } = useCurrency();
   const themeStyle = useStyles();

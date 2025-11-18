@@ -13,6 +13,7 @@
 import { getCrashlytics } from '@react-native-firebase/crashlytics';
 import { getRemoteConfig } from '@react-native-firebase/remote-config';
 import { getMessaging } from '@react-native-firebase/messaging';
+import { getAnalytics } from '@react-native-firebase/analytics';
 import { Platform } from 'react-native';
 import notifee, {
   AndroidImportance,
@@ -24,12 +25,17 @@ import {
   NotificationsInitResult,
   RemoteConfigDefaults,
   RemoteConfigKey,
-  RemoteConfigService
+  RemoteConfigService,
+  AnalyticsService
 } from '@perawallet/core';
 import { config } from '@perawallet/config';
 
 export class RNFirebaseService
-  implements CrashReportingService, RemoteConfigService, CrashReportingService
+  implements
+    CrashReportingService,
+    RemoteConfigService,
+    CrashReportingService,
+    AnalyticsService
 {
   async initializeRemoteConfig() {
     await getRemoteConfig().setConfigSettings({
@@ -150,5 +156,11 @@ export class RNFirebaseService
     } else {
       getCrashlytics().recordError(new Error(String(error)));
     }
+  }
+
+  initializeAnalytics(): void {}
+
+  logEvent(key: string, payload?: any): void {
+    getAnalytics().logEvent(key, payload);
   }
 }

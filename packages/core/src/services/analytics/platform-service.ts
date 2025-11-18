@@ -10,8 +10,14 @@
  limitations under the License
  */
 
-import { Platform } from 'react-native';
+import { container } from 'tsyringe'
 
-export const isIOS = () => {
-  return Platform.OS === 'ios';
-};
+export const AnalyticsServiceContainerKey = 'AnalyticsService'
+
+export interface AnalyticsService {
+    initializeAnalytics(): void
+    logEvent(key: string, payload?: unknown): void
+}
+
+export const useAnalyticsService = () =>
+    container.resolve<AnalyticsService>(AnalyticsServiceContainerKey)

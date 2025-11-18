@@ -28,7 +28,7 @@ export const useStyles = makeStyles((theme, props: CurrencyDisplayProps) => {
     container: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'flex-start',
+      justifyContent: 'flex-start'
     },
     skeleton: {
       maxWidth: 150,
@@ -39,7 +39,7 @@ export const useStyles = makeStyles((theme, props: CurrencyDisplayProps) => {
     },
     algoIcon: {
       width: size,
-      height: size,
+      height: size
     }
   };
 });

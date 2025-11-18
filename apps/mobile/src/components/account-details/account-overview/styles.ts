@@ -56,7 +56,7 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
     secondaryValueBar: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.sm,
+      gap: theme.spacing.sm
     },
     valueTitleBar: {
       flexDirection: 'row',
@@ -65,7 +65,7 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       paddingTop: theme.spacing.xl
     },
     valueTitle: {
-      color: theme.colors.textGray,
+      color: theme.colors.textGray
     },
     dateDisplay: {
       color: theme.colors.textGray,

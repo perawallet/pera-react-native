@@ -374,7 +374,6 @@ export const useRemoveAccountById = () => {
     }
 }
 
-//TODO implement local currency
 export const useAccountBalances = (accounts: WalletAccount[]) => {
     const { convertUSDToPreferredCurrency } = useCurrencyConverter()
     if (!accounts?.length) {

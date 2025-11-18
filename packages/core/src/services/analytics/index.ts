@@ -10,8 +10,4 @@
  limitations under the License
  */
 
-import { Platform } from 'react-native';
-
-export const isIOS = () => {
-  return Platform.OS === 'ios';
-};
+export * from './platform-service'

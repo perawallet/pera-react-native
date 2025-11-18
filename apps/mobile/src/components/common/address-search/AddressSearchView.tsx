@@ -40,7 +40,10 @@ const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
   const accounts = useAllAccounts();
   const { isValidAddress } = useAlgorandUtils();
 
-  const addressIsValid = useMemo(() => isValidAddress(value), [value]);
+  const addressIsValid = useMemo(
+    () => isValidAddress(value),
+    [value, isValidAddress]
+  );
   const matchingAccounts = useMemo(
     () => accounts.filter(a => a.address.includes(value)),
     [value, accounts]

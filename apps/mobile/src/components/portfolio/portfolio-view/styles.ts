@@ -26,7 +26,7 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
     valueBar: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      paddingTop: theme.spacing.md,
+      paddingTop: theme.spacing.md
     },
     secondaryValueBar: {
       flexDirection: 'row',
@@ -44,7 +44,7 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
     dateDisplay: {
       color: theme.colors.textGray,
       textAlign: 'right',
-      flexGrow: 1,
+      flexGrow: 1
     },
     primaryCurrency: {
       color: theme.colors.textMain

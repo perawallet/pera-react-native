@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { createStaticNavigation } from '@react-navigation/native';
+import { createStaticNavigation, EventArg } from '@react-navigation/native';
 import {
   createNativeStackNavigator,
   NativeStackHeaderProps
@@ -31,7 +31,13 @@ import ContactListScreen from '../screens/contacts/ContactListScreen';
 import ViewContactScreen from '../screens/contacts/ViewContactScreen';
 import EditContactScreen from '../screens/contacts/EditContactScreen';
 
-import { useHasNoAccounts } from '@perawallet/core';
+import {
+  AnalyticsService,
+  AnalyticsServiceContainerKey,
+  useHasNoAccounts
+} from '@perawallet/core';
+
+import { container } from 'tsyringe';
 
 import NavigationHeader from '../components/common/navigation-header/NavigationHeader';
 import ContactListHeaderButtons from '../components/contacts/ContactListHeaderButtons';
@@ -39,12 +45,25 @@ import ViewContactHeaderButtons from '../components/contacts/ViewContactHeaderBu
 import SettingsCurrencyScreen from '../screens/settings/currency/SettingsCurrencyScreen';
 import SettingsThemeScreen from '../screens/settings/theme/SettingsThemeScreen';
 import PWIcon, { IconName } from '../components/common/icons/PWIcon';
+
+const screenListeners = ({}) => ({
+  focus: (e: EventArg<'focus', false, undefined>) => {
+    const analyticsService = container.resolve<AnalyticsService>(
+      AnalyticsServiceContainerKey
+    );
+    analyticsService.logEvent(
+      `scr_${e.target?.toLowerCase() ?? 'unknown'}_view`
+    );
+  }
+});
+
 const SettingsStack = createNativeStackNavigator({
   initialRouteName: 'SettingsHome',
   screenOptions: {
     headerShown: true,
     header: (props: NativeStackHeaderProps) => <NavigationHeader {...props} />
   },
+  screenListeners,
   screens: {
     SettingsHome: {
       screen: SettingsScreen,
@@ -79,6 +98,7 @@ const ContactsStack = createNativeStackNavigator({
     headerShown: true,
     header: (props: NativeStackHeaderProps) => <NavigationHeader {...props} />
   },
+  screenListeners,
   screens: {
     ContactsList: {
       screen: ContactListScreen,
@@ -133,6 +153,7 @@ const TabBarStack = createBottomTabNavigator({
       return <PWIcon name={iconName} variant={style} />;
     }
   }),
+  screenListeners,
   screens: {
     Home: AccountScreen,
     Discover: DiscoverScreen,
@@ -160,6 +181,7 @@ const RootStack = createNativeStackNavigator({
     animation: 'default',
     animationDuration: 50
   },
+  screenListeners,
   screens: {
     Onboarding: {
       if: useHasNoAccounts,

@@ -118,7 +118,7 @@ const ICON_LIBRARY = {
   'assets/verified': VerifiedAssetIcon,
   'assets/vest': VestAssetIcon,
   'transactions/group': GroupIcon,
-  'transactions/payment': PaymentIcon,
+  'transactions/payment': PaymentIcon
 } as const;
 
 export type IconName = keyof typeof ICON_LIBRARY;
@@ -130,7 +130,7 @@ export type PWIconVariant =
   | 'helper'
   | 'white'
   | 'link'
-  | "error";
+  | 'error';
 
 export type PWIconProps = {
   name: IconName;

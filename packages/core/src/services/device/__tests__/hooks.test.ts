@@ -84,6 +84,26 @@ describe('services/device/hooks', () => {
         vi.clearAllMocks()
     })
 
+    test('useFcmToken exposes fcmToken and setter', async () => {
+        vi.resetModules()
+        registerTestPlatform()
+
+        const { useAppStore } = await import('../../../store')
+        const { useFcmToken } = await import('../hooks')
+
+        ;(useAppStore as any).setState({ fcmToken: 'OLD_TOKEN' })
+
+        const { result } = renderHook(() => useFcmToken())
+
+        expect(result.current.fcmToken).toBe('OLD_TOKEN')
+
+        act(() => {
+            result.current.setFcmToken('NEW_TOKEN')
+        })
+
+        expect((useAppStore as any).getState().fcmToken).toBe('NEW_TOKEN')
+    })
+
     test('registerDevice creates when no deviceID and persists id', async () => {
         vi.resetModules()
         api.createSpy.mockResolvedValue({ id: 'NEW_ID' })

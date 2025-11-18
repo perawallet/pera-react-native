@@ -29,7 +29,9 @@ import {
 import { useCallback, useState } from 'react';
 import PWIcon from '../../common/icons/PWIcon';
 import WealthTrend from '../../common/wealth-trend/WealthTrend';
-import ChartPeriodSelection, { ChartPeriod } from '../../common/chart-period-selection/ChartPeriodSelection';
+import ChartPeriodSelection, {
+  ChartPeriod
+} from '../../common/chart-period-selection/ChartPeriodSelection';
 import PWButton from '../../common/button/PWButton';
 
 type PortfolioViewProps = {
@@ -43,7 +45,7 @@ const PortfolioView = (props: PortfolioViewProps) => {
 
   const accounts = useAllAccounts();
   const { loading, totalAlgo, totalLocal } = useAccountBalances(accounts);
-    const [period, setPeriod] = useState<ChartPeriod>('one-week');
+  const [period, setPeriod] = useState<ChartPeriod>('one-week');
   const [chartData, setChartData] = useState<AccountWealthHistoryItem | null>(
     null
   );
@@ -80,25 +82,26 @@ const PortfolioView = (props: PortfolioViewProps) => {
           h1Style={styles.primaryCurrency}
           skeleton={loading}
         />
-        <PWButton title={chartVisible ? 'Hide Chart' : 'Show Chart'} variant="helper" dense onPress={toggleChartVisible} />
+        <PWButton
+          title={chartVisible ? 'Hide Chart' : 'Show Chart'}
+          variant="helper"
+          dense
+          onPress={toggleChartVisible}
+        />
       </PWView>
       <PWView style={styles.secondaryValueBar}>
         <CurrencyDisplay
           h4
           h4Style={styles.valueTitle}
           value={
-            chartData
-              ? Decimal(chartData.value_in_currency ?? '0')
-              : totalLocal
+            chartData ? Decimal(chartData.value_in_currency ?? '0') : totalLocal
           }
           currency={preferredCurrency}
           prefix="≈ "
           precision={2}
           skeleton={loading}
         />
-        {!chartData && (
-            <WealthTrend period={period} />
-        )}
+        {!chartData && <WealthTrend period={period} />}
         {chartData && (
           <Text h4 h4Style={styles.dateDisplay}>
             {formatDatetime(chartData.datetime)}
@@ -108,9 +111,12 @@ const PortfolioView = (props: PortfolioViewProps) => {
 
       {chartVisible && (
         <>
-        <WealthChart period={period} onSelectionChanged={chartSelectionChanged} />
-         <ChartPeriodSelection value={period} onChange={setPeriod} />
-         </>
+          <WealthChart
+            period={period}
+            onSelectionChanged={chartSelectionChanged}
+          />
+          <ChartPeriodSelection value={period} onChange={setPeriod} />
+        </>
       )}
     </PWView>
   );

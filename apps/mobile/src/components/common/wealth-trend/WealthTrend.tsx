@@ -1,8 +1,20 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
 import { Text } from '@rneui/themed';
 import PWView from '../view/PWView';
 import { useStyles } from './styles';
 import {
-    formatCurrency,
+  formatCurrency,
   useAllAccounts,
   useCurrency,
   useSettings,
@@ -45,32 +57,39 @@ const WealthTrend = ({ account, period }: WealthTrendProps) => {
   const dataPoints = useMemo(
     () =>
       data?.results?.map(p => {
-        return Number(p.value_in_currency)
+        return Number(p.value_in_currency);
       }) ?? [],
     [data]
   );
 
   const [absolute, percentage, isPositive] = useMemo(() => {
-    const firstDp = dataPoints.at(0) ?? 0
-    const lastDp = dataPoints.at(-1) ?? 0
+    const firstDp = dataPoints.at(0) ?? 0;
+    const lastDp = dataPoints.at(-1) ?? 0;
 
-    return [Decimal(lastDp - firstDp), 
-        lastDp ? (firstDp - lastDp) / lastDp : 0, 
-        lastDp >= firstDp
-    ]
-  }, [dataPoints])
+    return [
+      Decimal(lastDp - firstDp),
+      lastDp ? (firstDp - lastDp) / lastDp : 0,
+      lastDp >= firstDp
+    ];
+  }, [dataPoints]);
 
-  return (
-    isPending || privacyMode ? <></> : <PWView style={styles.container}>
+  return isPending || privacyMode ? (
+    <></>
+  ) : (
+    <PWView style={styles.container}>
       <Text style={isPositive ? styles.itemUp : styles.itemDown} h4>
-        {isPositive ? "+" : "-"}{formatCurrency(absolute, 2, preferredCurrency, undefined, true)}
+        {isPositive ? '+' : '-'}
+        {formatCurrency(absolute, 2, preferredCurrency, undefined, true)}
       </Text>
       <PWView style={styles.percentageContainer}>
-        <PWIcon name={isPositive ? "arrow-up" : "arrow-down"} 
-            variant={isPositive ? "helper" : "error"} size="sm" 
-            style={isPositive ? styles.trendIconUp : styles.trendIconDown} />
+        <PWIcon
+          name={isPositive ? 'arrow-up' : 'arrow-down'}
+          variant={isPositive ? 'helper' : 'error'}
+          size="sm"
+          style={isPositive ? styles.trendIconUp : styles.trendIconDown}
+        />
         <Text style={isPositive ? styles.itemUp : styles.itemDown} h4>
-            {percentage.toFixed(2)}%
+          {percentage.toFixed(2)}%
         </Text>
       </PWView>
     </PWView>

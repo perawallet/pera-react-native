@@ -21,8 +21,11 @@ export const RemoteConfigKeys = {
 export type RemoteConfigKey =
     (typeof RemoteConfigKeys)[keyof typeof RemoteConfigKeys]
 
-export const RemoteConfigDefaults: Record<RemoteConfigKey, string | boolean | number> = {
-    welcome_message: 'Hello'
+export const RemoteConfigDefaults: Record<
+    RemoteConfigKey,
+    string | boolean | number
+> = {
+    welcome_message: 'Hello',
 }
 
 export interface RemoteConfigService {

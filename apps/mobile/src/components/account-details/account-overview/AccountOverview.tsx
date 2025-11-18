@@ -30,7 +30,9 @@ import { useCallback, useState } from 'react';
 import { useStyles } from './styles';
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity';
 import WealthTrend from '../../common/wealth-trend/WealthTrend';
-import ChartPeriodSelection, { ChartPeriod } from '../../common/chart-period-selection/ChartPeriodSelection';
+import ChartPeriodSelection, {
+  ChartPeriod
+} from '../../common/chart-period-selection/ChartPeriodSelection';
 
 type AccountOverviewProps = {
   account: WalletAccount;
@@ -100,9 +102,7 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
               precision={2}
               skeleton={loading}
             />
-            {!chartData && (
-                <WealthTrend account={account} period={period} />
-            )}
+            {!chartData && <WealthTrend account={account} period={period} />}
             {chartData && (
               <Text h4 h4Style={styles.dateDisplay}>
                 {formatDatetime(chartData.datetime)}
@@ -112,14 +112,14 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
         </PWTouchableOpacity>
 
         {!!account && (
-            <>
-          <WealthChart
-            account={account}
-            period={period}
-            onSelectionChanged={chartSelectionChanged}
-          />
-         <ChartPeriodSelection value={period} onChange={setPeriod} />
-         </>
+          <>
+            <WealthChart
+              account={account}
+              period={period}
+              onSelectionChanged={chartSelectionChanged}
+            />
+            <ChartPeriodSelection value={period} onChange={setPeriod} />
+          </>
         )}
 
         <ButtonPanel />

@@ -20,6 +20,7 @@
     "@perawallet/config": "workspace:*",
     "@perawallet/core": "workspace:*",
     "@react-native-clipboard/clipboard": "^1.16.3",
+    "@react-native-firebase/analytics": "^23.5.0",
     "@react-native-firebase/app": "^23.5.0",
     "@react-native-firebase/crashlytics": "^23.5.0",
     "@react-native-firebase/messaging": "^23.5.0",

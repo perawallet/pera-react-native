@@ -24,16 +24,14 @@ export const useStyles = makeStyles(theme => ({
     alignItems: 'center'
   },
   itemUp: {
-    color: theme.colors.buttonSquareText,
+    color: theme.colors.buttonSquareText
   },
   itemDown: {
-    color: theme.colors.error,
+    color: theme.colors.error
   },
   trendIconUp: {
     backgroundColor: theme.colors.buttonSquareBg,
-    borderRadius: theme.spacing.xl,
+    borderRadius: theme.spacing.xl
   },
-  trendIconDown: {
-
-  }
+  trendIconDown: {}
 }));

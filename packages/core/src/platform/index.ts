@@ -20,6 +20,10 @@ import {
     type RemoteConfigService,
 } from '../services/remote-config'
 import {
+    AnalyticsServiceContainerKey,
+    type AnalyticsService,
+} from '../services/analytics'
+import {
     KeyValueStorageServiceContainerKey,
     SecureStorageServiceContainerKey,
     type KeyValueStorageService,
@@ -40,6 +44,7 @@ export interface PlatformServices {
     secureStorage: SecureStorageService
     notification: NotificationService
     remoteConfig: RemoteConfigService
+    analytics: AnalyticsService
     crashReporting: CrashReportingService
     deviceInfo: DeviceInfoService
 }
@@ -54,6 +59,9 @@ export const registerPlatformServices = (platform: PlatformServices) => {
     })
     container.register<RemoteConfigService>(RemoteConfigServiceContainerKey, {
         useValue: platform.remoteConfig,
+    })
+    container.register<AnalyticsService>(AnalyticsServiceContainerKey, {
+        useValue: platform.analytics,
     })
     container.register<NotificationService>(NotificationServiceContainerKey, {
         useValue: platform.notification,

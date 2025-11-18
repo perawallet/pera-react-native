@@ -15,7 +15,6 @@ import AlgoAssetIcon from '../../../../assets/icons/assets/algo.svg';
 import { useMemo } from 'react';
 import { SvgProps } from 'react-native-svg';
 import { Image, Text } from '@rneui/themed';
-import { useIsDarkMode } from '../../../hooks/theme';
 import PWView from '../view/PWView';
 import { useStyles } from './styles';
 
@@ -28,7 +27,6 @@ export type AssetIconProps = {
 const AssetIcon = (props: AssetIconProps) => {
   const { asset, size, style, ...rest } = props;
   const styles = useStyles(props);
-  const isDarkMode = useIsDarkMode();
 
   const icon = useMemo(() => {
     if (!asset) return <></>;
@@ -57,7 +55,7 @@ const AssetIcon = (props: AssetIconProps) => {
         <Text>{asset?.unit_name?.slice(0, 1)}</Text>
       </PWView>
     );
-  }, [asset, rest, isDarkMode, size, styles.icon, styles.defaultAsset]);
+  }, [asset, rest, size, styles.icon, styles.defaultAsset]);
 
   return <PWView style={[style, styles.container]}>{icon}</PWView>;
 };
