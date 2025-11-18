@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { createStaticNavigation, EventArg } from '@react-navigation/native';
+import { createStaticNavigation, EventArg, ParamListBase, RouteProp } from '@react-navigation/native';
 import {
   createNativeStackNavigator,
   NativeStackHeaderProps
@@ -45,15 +45,48 @@ import ViewContactHeaderButtons from '../components/contacts/ViewContactHeaderBu
 import SettingsCurrencyScreen from '../screens/settings/currency/SettingsCurrencyScreen';
 import SettingsThemeScreen from '../screens/settings/theme/SettingsThemeScreen';
 import PWIcon, { IconName } from '../components/common/icons/PWIcon';
+// {
+//               const previousRouteName = routeNameRef.current;
+//               const currentRouteName = navigationRef.current?.getCurrentRoute()?.name.toLowerCase() ?? null;
 
-const screenListeners = ({}) => ({
+//               if (previousRouteName !== currentRouteName) {
+//                 console.log("ROUTING", previousRouteName, "TO", currentRouteName)
+//                 analytics.logEvent(`scr_${currentRouteName}_view`, {
+//                   previous: previousRouteName,
+//                   path: navigationRef.current?.getCurrentRoute()?.path
+//                 });
+//               }
+//               routeNameRef.current = currentRouteName;
+//             }
+
+const NAVIGATION_STACK_NAMES = new Set([
+  "tabbar",
+  "settings",
+  "onboarding",
+  "contacts"
+])
+
+let previousRouteName: string | null = null
+const screenListeners = ({route}: {route: RouteProp<ParamListBase>}) => ({
   focus: (e: EventArg<'focus', false, undefined>) => {
-    const analyticsService = container.resolve<AnalyticsService>(
-      AnalyticsServiceContainerKey
-    );
-    analyticsService.logEvent(
-      `scr_${e.target?.toLowerCase() ?? 'unknown'}_view`
-    );
+    {
+      const currentRouteName = route.name.toLowerCase() ?? null;
+
+      if (!NAVIGATION_STACK_NAMES.has(currentRouteName) 
+        && previousRouteName !== currentRouteName) {
+        const analyticsService = container.resolve<AnalyticsService>(
+          AnalyticsServiceContainerKey
+        );
+        analyticsService.logEvent(
+          `scr_${currentRouteName ?? 'unknown'}_view`,
+          {
+            previous: previousRouteName,
+            path: route.path
+          }
+        );
+        previousRouteName = currentRouteName;
+      }
+    }
   }
 });
 

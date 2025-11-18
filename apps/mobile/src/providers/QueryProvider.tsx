@@ -33,7 +33,8 @@ const queryClient = new QueryClient({
       retry: 2
     },
     mutations: {
-      throwOnError: true
+      //TODO should we enable throwOnError and handle exceptions everywhere or should we just show a toast here?
+      // throwOnError: true
     }
   }
 });

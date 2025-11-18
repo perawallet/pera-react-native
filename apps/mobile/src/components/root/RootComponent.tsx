@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useDevice, useNetwork, usePolling } from '@perawallet/core';
+import { useAnalyticsService, useDevice, useNetwork, usePolling } from '@perawallet/core';
 import { config } from '@perawallet/config';
 import { useEffect, useMemo, useRef } from 'react';
 import { AppState, StatusBar, View } from 'react-native';
@@ -25,6 +25,7 @@ import ErrorBoundary from 'react-native-error-boundary';
 import useToast from '../../hooks/toast';
 import { useIsDarkMode } from '../../hooks/theme';
 import { SigningProvider } from '../../providers/SigningProvider';
+import { ParamListBase } from '@react-navigation/native';
 
 const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
   const insets = useSafeAreaInsets();
