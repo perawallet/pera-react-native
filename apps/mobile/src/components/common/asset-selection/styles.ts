@@ -24,7 +24,6 @@ export const useStyles = makeStyles(theme => {
       backgroundColor: theme.colors.layerGrayLightest,
       width: theme.spacing.xl * 5
     },
-    text: {},
     icon: {
       width: theme.spacing.xl,
       height: theme.spacing.xl,
