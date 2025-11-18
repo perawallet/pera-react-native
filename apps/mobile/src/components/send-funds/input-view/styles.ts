@@ -11,6 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed';
+import { getFontFamily } from '../../../theme/theme';
 
 export const useStyles = makeStyles(theme => {
   return {
@@ -20,14 +21,18 @@ export const useStyles = makeStyles(theme => {
       alignItems: 'center',
       gap: theme.spacing.lg
     },
+    h1: {
+        fontSize: 32,
+        lineHeight: 40
+    },
     amount: {
       color: theme.colors.textMain,
-      fontFamily: 'DMMono-Regular',
+      fontFamily: getFontFamily(true, 400),
       alignSelf: 'center'
     },
     amountPlaceholder: {
       color: theme.colors.textGrayLighter,
-      fontFamily: 'DMMono-Regular',
+      fontFamily: getFontFamily(true, 400),
       alignSelf: 'center'
     },
     buttonContainer: {

@@ -11,6 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed';
+import { getFontFamily } from '../../../theme/theme';
 
 export const useStyles = makeStyles(theme => ({
   container: {
@@ -108,8 +109,7 @@ export const useStyles = makeStyles(theme => ({
   primaryInput: {
     color: theme.colors.textGray,
     backgroundColor: theme.colors.background,
-    fontFamily: 'DMSans-Medium',
-    fontWeight: '500',
+    fontFamily: getFontFamily(false, 500),
     fontSize: 25,
     padding: 0,
     margin: 0,

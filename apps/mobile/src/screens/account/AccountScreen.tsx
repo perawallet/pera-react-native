@@ -26,7 +26,7 @@ import QRScannerView from '../../components/common/qr-scanner/QRScannerView';
 import PWTouchableOpacity from '../../components/common/touchable-opacity/PWTouchableOpacity';
 import EmptyView from '../../components/common/empty-view/EmptyView';
 import AccountOverview from '../../components/account-details/account-overview/AccountOverview';
-import AccountNfts from '../../components/account-details/account-nfts/AccountNFTs';
+import AccountNfts from '../../components/account-details/account-nfts/AccountNfts';
 import AccountHistory from '../../components/account-details/account-history/AccountHistory';
 
 //TODO hook up all the button panel buttons correctly

@@ -142,11 +142,10 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
         />
       </PWHeader>
       <CurrencyDisplay
-        h1
         currency={selectedAsset.unit_name}
         precision={selectedAsset.fraction_decimals}
         value={value ? Decimal(value) : Decimal(0)}
-        h1Style={value ? styles.amount : styles.amountPlaceholder}
+        style={[value ? styles.amount : styles.amountPlaceholder, styles.h1]} //h1Style doesn't seem to override fontfamily
         showSymbol={false}
         minPrecision={2}
       />

@@ -12,6 +12,17 @@
 
 import { DefaultTheme } from '@react-navigation/native';
 import { createTheme } from '@rneui/themed';
+import { fontFamilies } from '../constants/fonts';
+
+export const getFontFamily = (
+  isMonoSpace: boolean,
+  weight: 300 | 400 | 500 | 600 | 700
+) => {
+  const selectedFontFamily = isMonoSpace
+    ? fontFamilies.DMMONO
+    : fontFamilies.DMSANS;
+  return selectedFontFamily[weight];
+}
 
 export const getNavigationTheme = (mode: 'light' | 'dark' = 'light') => ({
   ...DefaultTheme,
@@ -170,8 +181,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
           paddingHorizontal: 0
         },
         inputStyle: {
-          fontFamily: 'DMSans-Regular',
-          fontWeight: '400',
+          fontFamily: getFontFamily(false, 400),
           fontSize: 13,
           color:
             theme.mode === 'dark'
@@ -180,8 +190,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
           borderRadius: theme.spacing.xs
         },
         labelStyle: {
-          fontFamily: 'DMSans-Regular',
-          fontWeight: '400',
+          fontFamily: getFontFamily(false, 400),
           fontSize: 13,
           color:
             theme.mode === 'dark'
@@ -239,32 +248,27 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
       }),
       Text: () => ({
         h1Style: {
-          fontFamily: 'DMSans-Medium',
-          fontWeight: '500',
+          fontFamily: getFontFamily(false, 500),
           fontSize: 32,
           lineHeight: 40
         },
         h2Style: {
-          fontFamily: 'DMSans-Medium',
-          fontWeight: '500',
+          fontFamily: getFontFamily(false, 500),
           fontSize: 25,
           lineHeight: 24
         },
         h3Style: {
-          fontFamily: 'DMSans-Medium',
-          fontWeight: '500',
+          fontFamily: getFontFamily(false, 500),
           fontSize: 19,
           lineHeight: 24
         },
         h4Style: {
-          fontFamily: 'DMSans-Medium',
-          fontWeight: '500',
+          fontFamily: getFontFamily(false, 500),
           fontSize: 15,
           lineHeight: 24
         },
         style: {
-          fontFamily: 'DMSans-Regular',
-          fontWeight: '400',
+          fontFamily: getFontFamily(false, 400),
           fontSize: 13
         }
       })

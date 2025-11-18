@@ -12,6 +12,7 @@
 
 import { makeStyles } from '@rneui/themed';
 import { PWButtonProps } from './PWButton';
+import { getFontFamily } from '../../../theme/theme';
 
 export const useStyles = makeStyles((theme, props: PWButtonProps) => {
   let backgroundColor = theme.colors.buttonPrimaryBg;
@@ -48,8 +49,7 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
       backgroundColor
     },
     titleStyle: {
-      fontFamily: 'DMSans-Medium',
-      fontWeight: '500',
+      fontFamily: getFontFamily(false, 500),
       fontSize: 15,
       lineHeight: 24,
       flexWrap: 'nowrap',
