@@ -1760,8 +1760,10 @@ describe('services/accounts/hooks - useAccountBalances', () => {
             wrapper: createWrapper(),
         })
 
-        await vi.waitFor(() => {
-            expect(result.current.data[0].isFetched).toBe(true)
+        await act(async () => {
+            await vi.waitFor(() => {
+                expect(result.current.data[0].isFetched).toBe(true)
+            })
         })
 
         expect(result.current.data[0].algoAmount).toEqual(Decimal(0.501))
@@ -1803,8 +1805,10 @@ describe('services/accounts/hooks - useAccountBalances', () => {
             wrapper: createWrapper(),
         })
 
-        await vi.waitFor(() => {
-            expect(result.current.data[0].isFetched).toBe(true)
+        await act(async () => {
+            await vi.waitFor(() => {
+                expect(result.current.data[0].isFetched).toBe(true)
+            })
         })
 
         expect(result.current.data[0].localAmount).toEqual(Decimal(0))
@@ -1843,8 +1847,10 @@ describe('services/accounts/hooks - useAccountBalances', () => {
             wrapper: createWrapper(),
         })
 
-        await vi.waitFor(() => {
-            expect(result.current.data[0].isFetched).toBe(true)
+        await act(async () => {
+            await vi.waitFor(() => {
+                expect(result.current.data[0].isFetched).toBe(true)
+            })
         })
 
         expect(result.current.data[0].localAmount).toEqual(Decimal(0))
@@ -1889,8 +1895,10 @@ describe('services/accounts/hooks - useAccountBalances', () => {
             wrapper: createWrapper(),
         })
 
-        await vi.waitFor(() => {
-            expect(result.current.data[0].isFetched).toBe(true)
+        await act(async () => {
+            await vi.waitFor(() => {
+                expect(result.current.data[0].isFetched).toBe(true)
+            })
         })
 
         expect(result.current.data[0].localAmount).toEqual(Decimal(12))
@@ -1935,8 +1943,10 @@ describe('services/accounts/hooks - useAccountBalances', () => {
             wrapper: createWrapper(),
         })
 
-        await vi.waitFor(() => {
-            expect(result.current.data[0].isFetched).toBe(true)
+        await act(async () => {
+            await vi.waitFor(() => {
+                expect(result.current.data[0].isFetched).toBe(true)
+            })
         })
 
         expect(result.current.data[0].localAmount).toEqual(Decimal(0.001))
@@ -1968,8 +1978,10 @@ describe('services/accounts/hooks - useAccountBalances', () => {
             wrapper: createWrapper(),
         })
 
-        await vi.waitFor(() => {
-            expect(result.current.data[0].isFetched).toBe(true)
+        await act(async () => {
+            await vi.waitFor(() => {
+                expect(result.current.data[0].isFetched).toBe(true)
+            })
         })
 
         expect(result.current.data[0].localAmount).toEqual(Decimal(0))
@@ -2014,8 +2026,10 @@ describe('services/accounts/hooks - useAccountBalances', () => {
             wrapper: createWrapper(),
         })
 
-        await vi.waitFor(() => {
-            expect(result.current.data[0].isFetched).toBe(true)
+        await act(async () => {
+            await vi.waitFor(() => {
+                expect(result.current.data[0].isFetched).toBe(true)
+            })
         })
 
         expect(result.current.data[0].localAmount).toEqual(Decimal(6))

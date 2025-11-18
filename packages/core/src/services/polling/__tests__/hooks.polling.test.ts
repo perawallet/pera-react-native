@@ -59,12 +59,9 @@ describe('services/polling/usePolling', () => {
 
         await act(async () => {
             await result.current.startPolling()
-        })
-
-        act(() => {
             vi.advanceTimersByTime(3000)
+            await flush()
         })
-        await flush()
 
         expect(backendSpies.mutateAsync).not.toHaveBeenCalled()
 
@@ -100,12 +97,9 @@ describe('services/polling/usePolling', () => {
 
         await act(async () => {
             await result.current.startPolling()
-        })
-
-        act(() => {
             vi.advanceTimersByTime(3000)
+            await flush()
         })
-        await flush()
 
         expect(backendSpies.mutateAsync).toHaveBeenCalledTimes(1)
         const callArg = (backendSpies.mutateAsync as any).mock.calls[0][0]
@@ -154,12 +148,9 @@ describe('services/polling/usePolling', () => {
 
         await act(async () => {
             await result.current.startPolling()
-        })
-
-        act(() => {
             vi.advanceTimersByTime(3000)
+            await flush()
         })
-        await flush()
 
         expect(useAppStore.getState().lastRefreshedRound).toBe(99)
 
@@ -194,23 +185,17 @@ describe('services/polling/usePolling', () => {
 
         await act(async () => {
             await result.current.startPolling()
-        })
-
-        // First tick -> one call
-        act(() => {
             vi.advanceTimersByTime(3000)
+            await flush()
         })
-        await flush()
         expect(backendSpies.mutateAsync).toHaveBeenCalledTimes(1)
 
         // Stop and ensure no additional calls on further ticks
         await act(async () => {
             await result.current.stopPolling()
-        })
-        act(() => {
             vi.advanceTimersByTime(9000)
+            await flush()
         })
-        await flush()
         expect(backendSpies.mutateAsync).toHaveBeenCalledTimes(1)
     })
 
@@ -242,12 +227,9 @@ describe('services/polling/usePolling', () => {
 
         await act(async () => {
             await result.current.startPolling()
-        })
-
-        act(() => {
             vi.advanceTimersByTime(3000)
+            await flush()
         })
-        await flush()
 
         // Should not throw, should log error and continue
         expect(backendSpies.mutateAsync).toHaveBeenCalledTimes(1)
