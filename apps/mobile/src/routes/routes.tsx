@@ -53,12 +53,14 @@ import SettingsDeveloperScreen from '../screens/settings/developer/SettingsDevel
 import SettingsGetHelpScreen from '../screens/settings/get-help/SettingsGetHelpScreen';
 import SettingsTermsAndServicsScreen from '../screens/settings/terms-and-services/SettingsTermsAndServicesScreen';
 import SettingsPrivacyPolicyScreen from '../screens/settings/privacy-policy/SettingsPrivacyPolicyScreen';
+import AssetDetailsScreen from '../screens/asset-details/AssetDetailsScreen';
 
 const NAVIGATION_STACK_NAMES = new Set([
   "tabbar",
   "settings",
   "onboarding",
-  "contacts"
+  "contacts",
+  "home"
 ])
 
 let previousRouteName: string | null = null
@@ -205,6 +207,24 @@ const ContactsStack = createNativeStackNavigator({
   }
 });
 
+const AccountStack = createNativeStackNavigator({
+  initialRouteName: 'AccountDetails',
+  screenOptions: {
+    headerShown: false,
+  },
+  screenListeners,
+  screens: {
+    AccountDetails: AccountScreen,
+    AssetDetails: {
+      screen: AssetDetailsScreen,
+      options: {
+        headerShown: true,
+        header: (props: NativeStackHeaderProps) => <NavigationHeader {...props} />
+      }
+    }
+  }
+});
+
 const TabBarStack = createBottomTabNavigator({
   initialRouteName: 'Home',
   screenOptions: ({ route, theme }) => ({
@@ -231,7 +251,7 @@ const TabBarStack = createBottomTabNavigator({
   }),
   screenListeners,
   screens: {
-    Home: AccountScreen,
+    Home: AccountStack,
     Discover: DiscoverScreen,
     Swap: SwapScreen,
     Staking: StakingScreen,
@@ -242,12 +262,25 @@ const TabBarStack = createBottomTabNavigator({
 const OnboardingStack = createNativeStackNavigator({
   initialRouteName: 'OnboardingHome',
   screenOptions: {
-    headerShown: false
+    headerShown: false,
+    header: (props: NativeStackHeaderProps) => <NavigationHeader {...props} />
   },
   screens: {
     OnboardingHome: OnboardingScreen,
-    NameAccount: NameAccountScreen,
-    ImportAccount: ImportAccountScreen
+    NameAccount: {
+      screen: NameAccountScreen,
+      options: {
+        headerShown: true,
+        headerTitle: "Name your account"
+      }
+    },
+    ImportAccount: {
+      screen: ImportAccountScreen,
+      options: {
+        headerShown: true,
+        headerTitle: "Enter your Recovery Passphrase"
+      }
+    }
   }
 });
 

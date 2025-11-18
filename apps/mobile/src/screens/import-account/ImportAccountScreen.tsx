@@ -84,7 +84,7 @@ const ImportAccountScreen = () => {
   };
 
   return (
-    <MainScreenLayout title="Enter your Recovery Passphrase" showBack>
+    <MainScreenLayout>
       <KeyboardAvoidingView
         style={styles.mainContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

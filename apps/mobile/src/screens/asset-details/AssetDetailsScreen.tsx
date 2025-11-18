@@ -10,14 +10,58 @@
  limitations under the License
  */
 
-import { Text } from '@rneui/themed';
+import { Tab, TabView } from '@rneui/themed';
 import MainScreenLayout from '../../layouts/MainScreenLayout';
+import { StaticScreenProps } from '@react-navigation/native';
+import { PeraAsset, WalletAccount } from '@perawallet/core';
+import { useState } from 'react';
+import { useStyles } from './styles';
+import AssetMarkets from '../../components/asset-details/market/AssetMarkets';
+import AssetHoldings from '../../components/asset-details/holdings/AssetHoldings';
+
+type AssetDetailsScreenProps = {
+  account: WalletAccount
+  asset: PeraAsset
+}
 
 //TODO implement me
-const AssetDetailsScreen = () => {
+const AssetDetailsScreen = ({ route }: StaticScreenProps<AssetDetailsScreenProps>) => {
+  const asset = route.params?.asset
+  const account = route.params?.account
+
+  const styles = useStyles()
+  const [tabIndex, setTabIndex] = useState(0)
+
   return (
-    <MainScreenLayout>
-      <Text>This is the asset details details screen</Text>
+    <MainScreenLayout fullScreen header>
+      <Tab
+          value={tabIndex}
+          onChange={e => setTabIndex(e)}
+          containerStyle={styles.tabs}
+          indicatorStyle={styles.indicator}
+          titleStyle={styles.tabItem}
+          dense
+        >
+        <Tab.Item title="Holdings" />
+        <Tab.Item title="Market" />
+      </Tab>
+      <TabView
+          value={tabIndex}
+          onChange={setTabIndex}
+          animationType="spring"
+          animationConfig={{
+            duration: 150,
+            bounciness: 1,
+            useNativeDriver: true
+          }}
+        >
+        <TabView.Item style={styles.fullWidth}>
+          <AssetHoldings account={account} asset={asset} />
+        </TabView.Item>
+        <TabView.Item style={styles.fullWidth}>
+          <AssetMarkets account={account} asset={asset} />
+        </TabView.Item>
+      </TabView>
     </MainScreenLayout>
   );
 };

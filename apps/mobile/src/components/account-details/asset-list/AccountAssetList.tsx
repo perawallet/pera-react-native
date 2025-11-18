@@ -21,6 +21,8 @@ import { Skeleton, Text } from '@rneui/themed';
 
 import SearchInput from '../../common/search-input/SearchInput';
 import PWButton from '../../common/button/PWButton';
+import { ParamListBase, useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 type AccountAssetListProps = {
   account: WalletAccount;
@@ -43,9 +45,18 @@ const AccountAssetList = ({ account }: AccountAssetListProps) => {
   const { data, loading } = useAccountBalances([account]);
   const balanceData = useMemo(() => data.at(0)?.accountInfo?.results, [data]);
 
+  const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
+
+  const goToAssetScreen = (asset: PeraAsset) => {
+    navigation.navigate('AssetDetails', {
+        asset,
+        account
+    })
+  }
+
   const renderItem = (item: PeraAsset) => {
     return (
-      <PWTouchableOpacity onPress={() => {}} key={`asset-key-${item.asset_id}`}>
+      <PWTouchableOpacity onPress={() => goToAssetScreen(item.asset_id)} key={`asset-key-${item.asset_id}`}>
         <AccountAssetItemView
           asset={item}
           amount={item.amount ? Decimal(item.amount) : undefined}

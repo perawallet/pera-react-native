@@ -10,19 +10,14 @@
  limitations under the License
  */
 
-import { View, ViewProps } from 'react-native';
+import { ViewProps } from 'react-native';
 import { useStyles } from './MainScreenLayout.style';
 import { EdgeInsets, useSafeAreaInsets } from 'react-native-safe-area-context';
 import PWView from '../components/common/view/PWView';
-import { useNavigation } from '@react-navigation/native';
-
-import { Text } from '@rneui/themed';
-import PWIcon from '../components/common/icons/PWIcon';
 
 export type MainScreenLayoutProps = {
   fullScreen?: boolean;
-  showBack?: boolean;
-  title?: string;
+  header?: boolean
 } & ViewProps;
 
 export type MainScreenLayoutPropsWithInsets = {
@@ -32,31 +27,10 @@ export type MainScreenLayoutPropsWithInsets = {
 const MainScreenLayout = (props: MainScreenLayoutProps) => {
   const insets = useSafeAreaInsets();
   const styles = useStyles({ ...props, insets });
-  const navigation = useNavigation();
-
-  const goBack = () => {
-    navigation.goBack();
-  };
 
   return (
-    <PWView style={[props.style, styles.mainContainer]} {...props}>
-      <View style={styles.contentContainer}>
-        {props.showBack && (
-          <PWIcon
-            name="chevron-left"
-            variant="secondary"
-            onPress={goBack}
-            style={styles.backContainer}
-          />
-        )}
-        {props.title && (
-          <Text h1 style={styles.title}>
-            {props.title}
-          </Text>
-        )}
-
-        {props.children}
-      </View>
+    <PWView style={styles.contentContainer} {...props}>
+      {props.children}
     </PWView>
   );
 };

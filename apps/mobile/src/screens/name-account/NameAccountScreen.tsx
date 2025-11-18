@@ -60,7 +60,7 @@ const NameAccountScreen = ({ route }: NameAccountScreenProps) => {
   };
 
   return (
-    <MainScreenLayout title="Name your account" showBack>
+    <MainScreenLayout>
       <KeyboardAvoidingView
         style={styles.mainContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
