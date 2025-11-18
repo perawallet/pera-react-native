@@ -11,15 +11,30 @@
  */
 
 import { makeStyles } from '@rneui/themed';
+import { AssetIconProps } from './AssetIcon';
 
-export const useStyles = makeStyles(() => {
+export const useStyles = makeStyles((theme, props: AssetIconProps) => {
+  const resolvedSize = props.size ?? theme.spacing.xl;
   return {
     container: {
       alignItems: 'center',
-      justifyContent: 'center'
+      justifyContent: 'center',
+      width: resolvedSize,
+      height: resolvedSize,
+      overflow: 'hidden',
+      borderRadius: resolvedSize / 2
     },
     icon: {
-      borderRadius: 50
+      backgroundColor: theme.colors.background,
+      width: resolvedSize,
+      height: resolvedSize
+    },
+    defaultAsset: {
+      backgroundColor: theme.colors.layerGrayLighter,
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: resolvedSize,
+      height: resolvedSize
     }
   };
 });

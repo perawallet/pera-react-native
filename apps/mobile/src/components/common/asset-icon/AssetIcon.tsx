@@ -10,14 +10,11 @@
  limitations under the License
  */
 
-// TODO: is this the right way to do it?
-import { PeraAsset } from '@perawallet/core';
+import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/core';
 import AlgoAssetIcon from '../../../../assets/icons/assets/algo.svg';
-import USDCAssetIcon from '../../../../assets/icons/assets/usdc.svg';
-import VestAssetIcon from '../../../../assets/icons/assets/vest.svg';
 import { useMemo } from 'react';
 import { SvgProps } from 'react-native-svg';
-import { Image } from '@rneui/themed';
+import { Image, Text } from '@rneui/themed';
 import { useIsDarkMode } from '../../../hooks/theme';
 import PWView from '../view/PWView';
 import { useStyles } from './styles';
@@ -39,7 +36,7 @@ const AssetIcon = (props: AssetIconProps) => {
 
   const icon = useMemo(() => {
     if (!asset) return <></>;
-    if (asset.unit_name === 'ALGO')
+    if (asset.id === ALGO_ASSET_ID || asset.asset_id === ALGO_ASSET_ID)
       return (
         <AlgoAssetIcon
           {...rest}
@@ -48,52 +45,23 @@ const AssetIcon = (props: AssetIconProps) => {
           height={size}
         />
       );
-    if (asset.unit_name === 'USDC')
-      return (
-        <USDCAssetIcon
-          {...rest}
-          style={styles.icon}
-          width={size}
-          height={size}
-        />
-      );
-    if (asset.unit_name === 'VEST')
-      return (
-        <VestAssetIcon
-          {...rest}
-          style={styles.icon}
-          width={size}
-          height={size}
-        />
-      );
-    if (asset.logo)
+    if (asset.logo) {
       return (
         <Image
+          resizeMode="contain"
           source={{ uri: asset.logo }}
           style={styles.icon}
           width={size}
           height={size}
         />
       );
-    if (asset.labels) {
-      const labelLogo = isDarkMode
-        ? asset.labels?.find((l: LabelType) => l.dark_theme_logo)
-            ?.dark_theme_logo
-        : asset.labels?.find((l: LabelType) => l.light_theme_logo)
-            ?.light_theme_logo;
-      if (labelLogo) {
-        return (
-          <Image
-            source={{ uri: labelLogo }}
-            style={styles.icon}
-            width={size}
-            height={size}
-          />
-        );
-      }
     }
-    return <AlgoAssetIcon {...rest} width={size} height={size} />; //TODO: fallback to web URL?  Have a generic icon?
-  }, [asset, rest, isDarkMode, size, styles.icon]);
+    return (
+      <PWView style={styles.defaultAsset}>
+        <Text>{asset?.unit_name?.slice(0, 1)}</Text>
+      </PWView>
+    );
+  }, [asset, rest, isDarkMode, size, styles.icon, styles.defaultAsset]);
 
   return <PWView style={[style, styles.container]}>{icon}</PWView>;
 };
