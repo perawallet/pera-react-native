@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import { getCrashlytics } from '@react-native-firebase/crashlytics'
-import { getRemoteConfig } from '@react-native-firebase/remote-config'
-import { getMessaging } from '@react-native-firebase/messaging'
-import { getAnalytics } from '@react-native-firebase/analytics'
+import { FirebaseCrashlyticsTypes, getCrashlytics, setCrashlyticsCollectionEnabled } from '@react-native-firebase/crashlytics'
+import { fetchAndActivate, FirebaseRemoteConfigTypes, getRemoteConfig, setConfigSettings, setDefaults } from '@react-native-firebase/remote-config'
+import { FirebaseMessagingTypes, getMessaging, getToken, onMessage, registerDeviceForRemoteMessages } from '@react-native-firebase/messaging'
+import { FirebaseAnalyticsTypes, getAnalytics, logEvent } from '@react-native-firebase/analytics'
 import { Platform } from 'react-native'
 import notifee, {
     AndroidImportance,
@@ -32,20 +32,26 @@ import { config } from '@perawallet/config'
 
 export class RNFirebaseService
     implements
-        CrashReportingService,
-        RemoteConfigService,
-        CrashReportingService,
-        AnalyticsService
-{
+    CrashReportingService,
+    RemoteConfigService,
+    CrashReportingService,
+    AnalyticsService {
+
+    remoteConfig: FirebaseRemoteConfigTypes.Module | null = null
+    messaging: FirebaseMessagingTypes.Module | null = null
+    analytics: FirebaseAnalyticsTypes.Module | null = null
+    crashlytics: FirebaseCrashlyticsTypes.Module | null = null
+
     async initializeRemoteConfig() {
-        await getRemoteConfig().setConfigSettings({
+        this.remoteConfig = await getRemoteConfig()
+        await setConfigSettings(this.remoteConfig, {
             minimumFetchIntervalMillis: config.remoteConfigRefreshTime,
         })
 
-        await getRemoteConfig().setDefaults(RemoteConfigDefaults)
+        await setDefaults(this.remoteConfig, RemoteConfigDefaults)
 
         try {
-            await getRemoteConfig().fetchAndActivate()
+            await fetchAndActivate(this.remoteConfig)
         } catch {
             // ignore fetch errors, rely on cached/default values
         }
@@ -53,21 +59,30 @@ export class RNFirebaseService
 
     getStringValue(key: RemoteConfigKey, fallback?: string): string {
         try {
-            return getRemoteConfig().getValue(key).asString()
+            if (!this.remoteConfig) {
+                return fallback ?? ''
+            }
+            return this.remoteConfig.getValue(key).asString()
         } catch {
             return fallback ?? ''
         }
     }
     getBooleanValue(key: RemoteConfigKey, fallback?: boolean): boolean {
         try {
-            return getRemoteConfig().getValue(key).asBoolean()
+            if (!this.remoteConfig) {
+                return fallback ?? false
+            }
+            return this.remoteConfig.getValue(key).asBoolean()
         } catch {
             return fallback ?? false
         }
     }
     getNumberValue(key: RemoteConfigKey, fallback?: number): number {
         try {
-            return getRemoteConfig().getValue(key).asNumber()
+            if (!this.remoteConfig) {
+                return fallback ?? 0
+            }
+            return this.remoteConfig.getValue(key).asNumber()
         } catch {
             return fallback ?? 0
         }
@@ -80,7 +95,7 @@ export class RNFirebaseService
         if (settings.authorizationStatus !== AuthorizationStatus.AUTHORIZED) {
             return {
                 token: undefined,
-                unsubscribe: () => {},
+                unsubscribe: () => { },
             }
         }
 
@@ -97,14 +112,15 @@ export class RNFirebaseService
         // FCM registration + token
         let token: string | undefined
         try {
-            await getMessaging().registerDeviceForRemoteMessages()
-            token = await getMessaging().getToken()
+            this.messaging = await getMessaging()
+            registerDeviceForRemoteMessages(this.messaging)
+            token = await getToken(this.messaging)
         } catch {
             // noop
         }
 
         // Foreground message handler (show a local notification)
-        const unsubscribeOnMessage = getMessaging().onMessage(
+        const unsubscribeOnMessage = this.messaging ? onMessage(this.messaging,
             async remoteMessage => {
                 const title =
                     remoteMessage.notification?.title ?? 'Notification'
@@ -120,7 +136,7 @@ export class RNFirebaseService
                     }) as any,
                 })
             },
-        )
+        ) : () => { }
 
         // Foreground notification events
         const unsubscribeNotifeeForeground = notifee.onForegroundEvent(
@@ -139,29 +155,32 @@ export class RNFirebaseService
         return {
             token,
             unsubscribe: () => {
-                unsubscribeOnMessage()
+                unsubscribeOnMessage?.()
                 unsubscribeNotifeeForeground()
             },
         }
     }
 
     initializeCrashReporting(): void {
-        getCrashlytics()
-            .setCrashlyticsCollectionEnabled(true)
-            .catch(() => {})
+        this.crashlytics = getCrashlytics()
+        setCrashlyticsCollectionEnabled(this.crashlytics, true)
     }
 
     recordNonFatalError(error: unknown): void {
         if (error instanceof Error) {
-            getCrashlytics().recordError(error)
+            this.crashlytics?.recordError(error)
         } else {
-            getCrashlytics().recordError(new Error(String(error)))
+            this.crashlytics?.recordError(new Error(String(error)))
         }
     }
 
-    initializeAnalytics(): void {}
+    initializeAnalytics(): void {
+        this.analytics = getAnalytics()
+    }
 
     logEvent(key: string, payload?: any): void {
-        getAnalytics().logEvent(key, payload)
+        if (this.analytics) {
+            logEvent(this.analytics, key, payload)
+        }
     }
 }

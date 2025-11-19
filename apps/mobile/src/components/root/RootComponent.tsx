@@ -27,87 +27,89 @@ import { useIsDarkMode } from '../../hooks/theme'
 import { SigningProvider } from '../../providers/SigningProvider'
 
 const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
-    const { network } = useNetwork()
-    const navTheme = getNavigationTheme(isDarkMode ? 'dark' : 'light')
-    const { showToast } = useToast()
+  const insets = useSafeAreaInsets()
+  const styles = useStyles(insets)
+  const { network } = useNetwork()
+  const navTheme = getNavigationTheme(isDarkMode ? 'dark' : 'light')
+  const { showToast } = useToast()
 
-    const networkBarStyle = useMemo(() => {
-        if (network === 'testnet') {
-            return styles.testnetBar
-        }
-        return styles.mainnetBar
-    }, [network, styles.testnetBar, styles.mainnetBar])
-
-    const showError = (error: any) => {
-        showToast({
-            title: 'Error',
-            body: config.debugEnabled
-                ? `Details: ${error}`
-                : 'An error has occured, please try again.',
-            type: 'error',
-        })
+  const networkBarStyle = useMemo(() => {
+    if (network === 'testnet') {
+      return styles.testnetBar
     }
+    return styles.mainnetBar
+  }, [network, styles.testnetBar, styles.mainnetBar])
 
-    return (
-        <ErrorBoundary onError={showError}>
-            <PWView style={styles.container}>
-                <StatusBar
-                    barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-                />
-                <View style={networkBarStyle} />
-                <GestureHandlerRootView>
-                    <MainRoutes theme={navTheme} />
-                </GestureHandlerRootView>
-            </PWView>
-        </ErrorBoundary>
-    )
+  const showError = (error: any) => {
+    showToast({
+      title: 'Error',
+      body: config.debugEnabled
+        ? `Details: ${error}`
+        : 'An error has occured, please try again.',
+      type: 'error',
+    })
+  }
+
+  return (
+    <ErrorBoundary onError={showError}>
+      <PWView style={styles.container}>
+        <StatusBar
+          barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+        />
+        <View style={networkBarStyle} />
+        <GestureHandlerRootView>
+          <MainRoutes theme={navTheme} />
+        </GestureHandlerRootView>
+      </PWView>
+    </ErrorBoundary>
+  )
 }
 
 export const RootComponent = () => {
-    const isDarkMode = useIsDarkMode()
+  const isDarkMode = useIsDarkMode()
 
-    const theme = getTheme(isDarkMode ? 'dark' : 'light')
-    const { registerDevice } = useDevice()
-    const { startPolling, stopPolling } = usePolling()
+  const theme = getTheme(isDarkMode ? 'dark' : 'light')
+  const { registerDevice } = useDevice()
+  const { startPolling, stopPolling } = usePolling()
 
-    const appState = useRef(AppState.currentState)
+  const appState = useRef(AppState.currentState)
 
-    useEffect(() => {
-        registerDevice()
+  useEffect(() => {
+    registerDevice()
 
-        const subscription = AppState.addEventListener(
-            'change',
-            nextAppState => {
-                if (
-                    appState.current.match(/inactive|background/) &&
-                    nextAppState === 'active'
-                ) {
-                    startPolling()
-                } else if (
-                    appState.current === 'active' &&
-                    nextAppState.match(/inactive|background/)
-                ) {
-                    stopPolling()
-                }
-
-                appState.current = nextAppState
-            },
-        )
-
-        return () => {
+    if (config.pollingEnabled) {
+      const subscription = AppState.addEventListener(
+        'change',
+        nextAppState => {
+          if (
+            appState.current.match(/inactive|background/) &&
+            nextAppState === 'active'
+          ) {
+            startPolling()
+          } else if (
+            appState.current === 'active' &&
+            nextAppState.match(/inactive|background/)
+          ) {
             stopPolling()
-            subscription.remove()
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+          }
 
-    return (
-        <ThemeProvider theme={theme}>
-            <SigningProvider>
-                <RootContentContainer isDarkMode={isDarkMode} />
-            </SigningProvider>
-        </ThemeProvider>
-    )
+          appState.current = nextAppState
+        },
+      )
+
+      return () => {
+        stopPolling()
+        subscription.remove()
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  return (
+    <ThemeProvider theme={theme}>
+      <SigningProvider>
+        <RootContentContainer isDarkMode={isDarkMode} />
+      </SigningProvider>
+    </ThemeProvider>
+  )
 }

@@ -36,4 +36,5 @@ export const config: Config = {
 
     debugEnabled: false,
     profilingEnabled: false,
+    pollingEnabled: true,
 }

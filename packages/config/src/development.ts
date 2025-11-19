@@ -36,4 +36,5 @@ export const config: Config = {
 
     debugEnabled: true,
     profilingEnabled: false,
+    pollingEnabled: false, //Disable polling to avoid spam in the console
 }

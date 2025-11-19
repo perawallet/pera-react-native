@@ -20,6 +20,7 @@ import {
     useNotificationService,
     registerPlatformServices,
     useFcmToken,
+    useAnalyticsService,
 } from '@perawallet/core'
 
 const firebaseService = new RNFirebaseService()
@@ -39,11 +40,13 @@ export const useBootstrapper = () => {
     const crashlyticsService = useCrashReportingService()
     const remoteConfigService = useRemoteConfigService()
     const notificationService = useNotificationService()
+    const analyticsService = useAnalyticsService()
     const { setFcmToken } = useFcmToken()
 
     return async () => {
         const crashlyticsInit = crashlyticsService.initializeCrashReporting()
         const remoteConfigInit = remoteConfigService.initializeRemoteConfig()
+        const analyticsInit = analyticsService.initializeAnalytics()
 
         await Promise.allSettled([crashlyticsInit, remoteConfigInit])
 

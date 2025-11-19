@@ -38,6 +38,7 @@ export const configSchema = z.object({
 
     debugEnabled: z.boolean(),
     profilingEnabled: z.boolean(),
+    pollingEnabled: z.boolean(),
 })
 
 export type Config = z.infer<typeof configSchema>
@@ -49,7 +50,7 @@ export type Config = z.infer<typeof configSchema>
  * - Fallback for unknown values is staging
  */
 export function getConfigForEnv(env?: string): Config {
-    const key = (env ?? 'staging')?.toLowerCase() || 'staging'
+    const key = (env ?? 'development')?.toLowerCase() || 'development'
 
     let selected: Config
     switch (key) {
