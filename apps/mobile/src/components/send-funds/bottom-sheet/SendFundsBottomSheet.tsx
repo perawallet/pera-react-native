@@ -47,6 +47,7 @@ const getScreenCount = (canSelectAsset: boolean) => {
 
 //TODO: add support for ASA Inbox sends (check whether destination account is opted into asset)
 //TODO: we need to useCachedAssets so that we get the USD price and can show that
+//TODO: something isn't working with canSelectAsset
 const SendFundsBottomSheet = ({
     asset,
     onClose,
