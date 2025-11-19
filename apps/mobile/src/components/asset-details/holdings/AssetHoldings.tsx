@@ -26,7 +26,7 @@ import ChartPeriodSelection, {
 import { useState, useMemo } from 'react'
 import AssetActionButtons from './asset-action-buttons/AssetActionButtons'
 import AssetTransactionList from './asset-transaction-list/AssetTransactionList'
-import { ScrollView } from 'react-native'
+
 import { useStyles } from './styles'
 import AssetTitle from '../../assets/asset-title/AssetTitle'
 import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
@@ -76,62 +76,56 @@ const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
     }
 
     return (
-        <ScrollView
-            style={styles.container}
-            contentContainerStyle={styles.contentContainer}
-        >
-            <PWView style={styles.header}>
-                <PWView style={styles.assetRow}>
-                    <AssetTitle asset={asset} />
-                    <PWView style={styles.headerIcons}>
-                        <RoundButton
-                            icon='bell'
-                            size='sm'
-                            variant='secondary'
-                        />
-                        <RoundButton
-                            icon='star'
-                            size='sm'
-                            variant='secondary'
-                        />
+        <AssetTransactionList account={account} asset={asset}>
+            <PWView style={styles.contentContainer}>
+                <PWView style={styles.header}>
+                    <PWView style={styles.assetRow}>
+                        <AssetTitle asset={asset} />
+                        <PWView style={styles.headerIcons}>
+                            <RoundButton
+                                icon='bell'
+                                size='sm'
+                                variant='secondary'
+                            />
+                            <RoundButton
+                                icon='star'
+                                size='sm'
+                                variant='secondary'
+                            />
+                        </PWView>
                     </PWView>
+
+                    <CurrencyDisplay
+                        h1
+                        value={cryptoAmount}
+                        currency={asset.unit_name}
+                        precision={asset.fraction_decimals}
+                        minPrecision={2}
+                    />
+                    <CurrencyDisplay
+                        value={fiatAmount}
+                        currency={preferredCurrency}
+                        precision={2}
+                        minPrecision={2}
+                    />
                 </PWView>
 
-                <CurrencyDisplay
-                    h1
-                    value={cryptoAmount}
-                    currency={asset.unit_name}
-                    precision={asset.fraction_decimals}
-                    minPrecision={2}
-                />
-                <CurrencyDisplay
-                    value={fiatAmount}
-                    currency={preferredCurrency}
-                    precision={2}
-                    minPrecision={2}
-                />
+                <PWView style={styles.chartContainer}>
+                    <AssetWealthChart
+                        account={account}
+                        asset={asset}
+                        period={period}
+                        onSelectionChanged={setSelectedPoint}
+                    />
+                    <ChartPeriodSelection
+                        value={period}
+                        onChange={setPeriod}
+                    />
+                </PWView>
+
+                <AssetActionButtons asset={asset} />
             </PWView>
-
-            <PWView style={styles.chartContainer}>
-                <AssetWealthChart
-                    account={account}
-                    asset={asset}
-                    period={period}
-                    onSelectionChanged={setSelectedPoint}
-                />
-                <ChartPeriodSelection
-                    value={period}
-                    onChange={setPeriod}
-                />
-            </PWView>
-
-            <AssetActionButtons asset={asset} />
-
-            <AssetTransactionList
-                account={account}
-                asset={asset}
-            />
-        </ScrollView>
+        </AssetTransactionList>
     )
 }
 

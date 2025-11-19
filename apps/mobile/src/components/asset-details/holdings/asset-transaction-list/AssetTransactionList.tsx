@@ -21,10 +21,15 @@ import EmptyView from '../../../common/empty-view/EmptyView'
 type AssetTransactionListProps = {
     account: WalletAccount
     asset: PeraAsset
+    children?: React.ReactNode
 }
 
 //TODO implement fully
-const AssetTransactionList = (_: AssetTransactionListProps) => {
+const AssetTransactionList = ({
+    account,
+    asset,
+    children,
+}: AssetTransactionListProps) => {
     const styles = useStyles()
 
     // TODO: Replace with actual infinite query hook when identified.
@@ -40,30 +45,34 @@ const AssetTransactionList = (_: AssetTransactionListProps) => {
 
     return (
         <PWView style={styles.container}>
-            <PWView style={styles.header}>
-                <Text h4>Transactions</Text>
-                <PWView style={styles.actions}>
-                    <PWButton
-                        title='Filter'
-                        variant='link'
-                        icon='sliders'
-                        dense
-                    />
-                    <PWButton
-                        title='CSV'
-                        variant='helper'
-                        icon='text-document'
-                        dense
-                    />
-                </PWView>
-            </PWView>
-
             <FlatList
                 contentContainerStyle={styles.list}
                 data={transactions}
                 renderItem={renderItem}
                 onEndReached={handleEndReached}
                 onEndReachedThreshold={0.5}
+                ListHeaderComponent={
+                    <>
+                        {children}
+                        <PWView style={styles.header}>
+                            <Text h4>Transactions</Text>
+                            <PWView style={styles.actions}>
+                                <PWButton
+                                    title='Filter'
+                                    variant='link'
+                                    icon='sliders'
+                                    dense
+                                />
+                                <PWButton
+                                    title='CSV'
+                                    variant='helper'
+                                    icon='text-document'
+                                    dense
+                                />
+                            </PWView>
+                        </PWView>
+                    </>
+                }
                 ListEmptyComponent={
                     <EmptyView
                         title='No Transactions'
