@@ -10,86 +10,110 @@
  limitations under the License
  */
 
-import AssetIcon from '../../common/asset-icon/AssetIcon';
-import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay';
-import PWView, { PWViewProps } from '../../common/view/PWView';
+import AssetIcon from '../../common/asset-icon/AssetIcon'
+import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay'
+import PWView, { PWViewProps } from '../../common/view/PWView'
 import {
-  ALGO_ASSET_ID,
-  PeraAsset,
-  useCurrencyConverter
-} from '@perawallet/core';
-import { Text, useTheme } from '@rneui/themed';
-import Decimal from 'decimal.js';
-import { useStyles } from './styles';
-import { useMemo } from 'react';
-import PWIcon from '../../common/icons/PWIcon';
+    ALGO_ASSET_ID,
+    PeraAsset,
+    useCurrencyConverter,
+} from '@perawallet/core'
+import { Text, useTheme } from '@rneui/themed'
+import Decimal from 'decimal.js'
+import { useStyles } from './styles'
+import { useMemo } from 'react'
+import PWIcon from '../../common/icons/PWIcon'
 
 type AccountAssetItemViewProps = {
-  asset: PeraAsset;
-  amount?: Decimal;
-  usdAmount?: Decimal;
-  iconSize?: number;
-} & PWViewProps;
+    asset: PeraAsset
+    amount?: Decimal
+    usdAmount?: Decimal
+    iconSize?: number
+} & PWViewProps
 
 const AccountAssetItemView = ({
-  asset,
-  amount,
-  usdAmount,
-  iconSize,
-  ...rest
+    asset,
+    amount,
+    usdAmount,
+    iconSize,
+    ...rest
 }: AccountAssetItemViewProps) => {
-  const { theme } = useTheme();
-  const styles = useStyles();
+    const { theme } = useTheme()
+    const styles = useStyles()
 
-  const { preferredCurrency, convertUSDToPreferredCurrency } =
-    useCurrencyConverter();
+    const { preferredCurrency, convertUSDToPreferredCurrency } =
+        useCurrencyConverter()
 
-  const verificationIcon = useMemo(() => {
-    if (asset.asset_id === ALGO_ASSET_ID) {
-      return <PWIcon name="assets/trusted" size="xs" />;
-    }
-    if (asset.verification_tier === 'verified') {
-      return <PWIcon name="assets/verified" size="xs" />;
-    }
-    if (asset.verification_tier === 'suspicious') {
-      return <PWIcon name="assets/suspicious" size="xs" />;
-    }
-    return undefined;
-  }, [asset]);
+    const verificationIcon = useMemo(() => {
+        if (asset.asset_id === ALGO_ASSET_ID) {
+            return (
+                <PWIcon
+                    name='assets/trusted'
+                    size='xs'
+                />
+            )
+        }
+        if (asset.verification_tier === 'verified') {
+            return (
+                <PWIcon
+                    name='assets/verified'
+                    size='xs'
+                />
+            )
+        }
+        if (asset.verification_tier === 'suspicious') {
+            return (
+                <PWIcon
+                    name='assets/suspicious'
+                    size='xs'
+                />
+            )
+        }
+        return undefined
+    }, [asset])
 
-  return (
-    <PWView {...rest} style={[styles.container, rest.style]}>
-      <AssetIcon asset={asset} size={iconSize ?? theme.spacing.xl * 1.5} />
-      <PWView style={styles.dataContainer}>
-        <PWView style={styles.unitContainer}>
-          <PWView style={styles.row}>
-            <Text style={styles.primaryUnit}>{asset.name}</Text>
-            {verificationIcon}
-          </PWView>
-          <Text style={styles.secondaryUnit}>
-            {asset.unit_name}
-            {asset.asset_id !== ALGO_ASSET_ID && ` - ${asset.asset_id}`}
-          </Text>
+    return (
+        <PWView
+            {...rest}
+            style={[styles.container, rest.style]}
+        >
+            <AssetIcon
+                asset={asset}
+                size={iconSize ?? theme.spacing.xl * 1.5}
+            />
+            <PWView style={styles.dataContainer}>
+                <PWView style={styles.unitContainer}>
+                    <PWView style={styles.row}>
+                        <Text style={styles.primaryUnit}>{asset.name}</Text>
+                        {verificationIcon}
+                    </PWView>
+                    <Text style={styles.secondaryUnit}>
+                        {asset.unit_name}
+                        {asset.asset_id !== ALGO_ASSET_ID &&
+                            ` - ${asset.asset_id}`}
+                    </Text>
+                </PWView>
+                <PWView style={styles.amountContainer}>
+                    <CurrencyDisplay
+                        currency={asset.unit_name}
+                        value={amount ?? Decimal(0)}
+                        precision={6}
+                        showSymbol
+                        style={styles.primaryAmount}
+                    />
+                    <CurrencyDisplay
+                        currency={preferredCurrency}
+                        value={convertUSDToPreferredCurrency(
+                            usdAmount ?? Decimal(0),
+                        )}
+                        precision={6}
+                        showSymbol
+                        style={styles.secondaryAmount}
+                    />
+                </PWView>
+            </PWView>
         </PWView>
-        <PWView style={styles.amountContainer}>
-          <CurrencyDisplay
-            currency={asset.unit_name}
-            value={amount ?? Decimal(0)}
-            precision={6}
-            showSymbol
-            style={styles.primaryAmount}
-          />
-          <CurrencyDisplay
-            currency={preferredCurrency}
-            value={convertUSDToPreferredCurrency(usdAmount ?? Decimal(0))}
-            precision={6}
-            showSymbol
-            style={styles.secondaryAmount}
-          />
-        </PWView>
-      </PWView>
-    </PWView>
-  );
-};
+    )
+}
 
-export default AccountAssetItemView;
+export default AccountAssetItemView

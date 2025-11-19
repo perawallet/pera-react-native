@@ -10,57 +10,57 @@
  limitations under the License
  */
 
-import { PeraAsset } from '@perawallet/core';
-import Decimal from 'decimal.js';
-import { createContext, PropsWithChildren, useState } from 'react';
+import { PeraAsset } from '@perawallet/core'
+import Decimal from 'decimal.js'
+import { createContext, PropsWithChildren, useState } from 'react'
 
 type SendFundsState = {
-  selectedAsset?: PeraAsset;
-  canSelectAsset?: boolean;
-  amount?: Decimal;
-  note?: string;
-  destination?: string;
-  setCanSelectAsset: (canSelect: boolean) => void;
-  setSelectedAsset: (asset?: PeraAsset) => void;
-  setAmount: (amount?: Decimal) => void;
-  setNote: (note?: string) => void;
-  setDestination: (address?: string) => void;
-};
+    selectedAsset?: PeraAsset
+    canSelectAsset?: boolean
+    amount?: Decimal
+    note?: string
+    destination?: string
+    setCanSelectAsset: (canSelect: boolean) => void
+    setSelectedAsset: (asset?: PeraAsset) => void
+    setAmount: (amount?: Decimal) => void
+    setNote: (note?: string) => void
+    setDestination: (address?: string) => void
+}
 
 export const SendFundsContext = createContext<SendFundsState>({
-  canSelectAsset: true,
-  setCanSelectAsset: (_: boolean) => {},
-  setSelectedAsset: (_?: PeraAsset) => {},
-  setAmount: (_?: Decimal) => {},
-  setNote: (_?: string) => {},
-  setDestination: (_?: string) => {}
-});
+    canSelectAsset: true,
+    setCanSelectAsset: (_: boolean) => {},
+    setSelectedAsset: (_?: PeraAsset) => {},
+    setAmount: (_?: Decimal) => {},
+    setNote: (_?: string) => {},
+    setDestination: (_?: string) => {},
+})
 
 const SendFundsProvider = ({ children }: PropsWithChildren) => {
-  const [canSelectAsset, setCanSelectAsset] = useState(false);
-  const [selectedAsset, setSelectedAsset] = useState<PeraAsset>();
-  const [amount, setAmount] = useState<Decimal>();
-  const [note, setNote] = useState<string>();
-  const [destination, setDestination] = useState<string>();
+    const [canSelectAsset, setCanSelectAsset] = useState(false)
+    const [selectedAsset, setSelectedAsset] = useState<PeraAsset>()
+    const [amount, setAmount] = useState<Decimal>()
+    const [note, setNote] = useState<string>()
+    const [destination, setDestination] = useState<string>()
 
-  return (
-    <SendFundsContext.Provider
-      value={{
-        canSelectAsset,
-        selectedAsset,
-        amount,
-        note,
-        destination,
-        setCanSelectAsset,
-        setSelectedAsset,
-        setAmount,
-        setNote,
-        setDestination
-      }}
-    >
-      {children}
-    </SendFundsContext.Provider>
-  );
-};
+    return (
+        <SendFundsContext.Provider
+            value={{
+                canSelectAsset,
+                selectedAsset,
+                amount,
+                note,
+                destination,
+                setCanSelectAsset,
+                setSelectedAsset,
+                setAmount,
+                setNote,
+                setDestination,
+            }}
+        >
+            {children}
+        </SendFundsContext.Provider>
+    )
+}
 
-export default SendFundsProvider;
+export default SendFundsProvider

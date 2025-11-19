@@ -10,19 +10,19 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed';
+import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
-  return {
-    container: {
-      flex: 1,
-      alignItems: 'flex-start'
-    },
-    loadingContainer: {
-      gap: theme.spacing.md
-    },
-    item: {
-      width: '100%'
+    return {
+        container: {
+            flex: 1,
+            alignItems: 'flex-start',
+        },
+        loadingContainer: {
+            gap: theme.spacing.md,
+        },
+        item: {
+            width: '100%',
+        },
     }
-  };
-});
+})

@@ -10,11 +10,11 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed';
-import { PWViewProps } from './PWView';
+import { makeStyles } from '@rneui/themed'
+import { PWViewProps } from './PWView'
 
 export const useStyles = makeStyles((theme, _: PWViewProps) => ({
-  defaultStyle: {
-    backgroundColor: theme.colors.background
-  }
-}));
+    defaultStyle: {
+        backgroundColor: theme.colors.background,
+    },
+}))

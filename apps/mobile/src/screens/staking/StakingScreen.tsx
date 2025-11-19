@@ -10,27 +10,27 @@
  limitations under the License
  */
 
-import { config } from '@perawallet/config';
-import PWWebView from '../../components/webview/PWWebView';
-import { useStyles } from './styles';
-import PWView from '../../components/common/view/PWView';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { config } from '@perawallet/config'
+import PWWebView from '../../components/webview/PWWebView'
+import { useStyles } from './styles'
+import PWView from '../../components/common/view/PWView'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const StakingScreen = () => {
-  const insets = useSafeAreaInsets();
-  const styles = useStyles(insets);
-  const url = config.stakingBaseUrl;
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
+    const url = config.stakingBaseUrl
 
-  return (
-    <PWView style={styles.container}>
-      <PWWebView
-        url={url}
-        enablePeraConnect={true}
-        style={styles.webview}
-        containerStyle={styles.webview}
-      />
-    </PWView>
-  );
-};
+    return (
+        <PWView style={styles.container}>
+            <PWWebView
+                url={url}
+                enablePeraConnect={true}
+                style={styles.webview}
+                containerStyle={styles.webview}
+            />
+        </PWView>
+    )
+}
 
-export default StakingScreen;
+export default StakingScreen

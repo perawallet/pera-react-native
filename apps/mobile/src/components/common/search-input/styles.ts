@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed';
+import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
-  return {
-    search: {
-      borderRadius: theme.spacing.sm,
-      paddingHorizontal: theme.spacing.sm
+    return {
+        search: {
+            borderRadius: theme.spacing.sm,
+            paddingHorizontal: theme.spacing.sm,
+        },
     }
-  };
-});
+})

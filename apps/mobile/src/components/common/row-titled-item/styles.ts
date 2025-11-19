@@ -10,22 +10,22 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed';
+import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
-  return {
-    container: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      flexWrap: 'nowrap'
-    },
-    label: {
-      color: theme.colors.textGray,
-      width: '40%'
-    },
-    childContainer: {
-      alignItems: 'flex-start',
-      flexGrow: 1
+    return {
+        container: {
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            flexWrap: 'nowrap',
+        },
+        label: {
+            color: theme.colors.textGray,
+            width: '40%',
+        },
+        childContainer: {
+            alignItems: 'flex-start',
+            flexGrow: 1,
+        },
     }
-  };
-});
+})

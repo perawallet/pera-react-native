@@ -10,19 +10,19 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed';
+import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
-  return {
-    addressValueContainer: {
-      flexDirection: 'row',
-      gap: theme.spacing.xl,
-      alignItems: 'center'
-    },
-    contactContainer: {
-      flexDirection: 'row',
-      gap: theme.spacing.sm,
-      alignItems: 'center'
+    return {
+        addressValueContainer: {
+            flexDirection: 'row',
+            gap: theme.spacing.xl,
+            alignItems: 'center',
+        },
+        contactContainer: {
+            flexDirection: 'row',
+            gap: theme.spacing.sm,
+            alignItems: 'center',
+        },
     }
-  };
-});
+})

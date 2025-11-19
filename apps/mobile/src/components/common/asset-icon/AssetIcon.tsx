@@ -10,54 +10,54 @@
  limitations under the License
  */
 
-import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/core';
-import AlgoAssetIcon from '../../../../assets/icons/assets/algo.svg';
-import { useMemo } from 'react';
-import { SvgProps } from 'react-native-svg';
-import { Image, Text } from '@rneui/themed';
-import PWView from '../view/PWView';
-import { useStyles } from './styles';
+import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/core'
+import AlgoAssetIcon from '../../../../assets/icons/assets/algo.svg'
+import { useMemo } from 'react'
+import { SvgProps } from 'react-native-svg'
+import { Image, Text } from '@rneui/themed'
+import PWView from '../view/PWView'
+import { useStyles } from './styles'
 
 export type AssetIconProps = {
-  asset: PeraAsset;
-  size?: number;
-} & SvgProps;
+    asset: PeraAsset
+    size?: number
+} & SvgProps
 
 //TODO: we may want a few more "local" asset icons for popular icons (e.g. USDC, DEFLY, etc)
 const AssetIcon = (props: AssetIconProps) => {
-  const { asset, size, style, ...rest } = props;
-  const styles = useStyles(props);
+    const { asset, size, style, ...rest } = props
+    const styles = useStyles(props)
 
-  const icon = useMemo(() => {
-    if (!asset) return <></>;
-    if (asset.id === ALGO_ASSET_ID || asset.asset_id === ALGO_ASSET_ID)
-      return (
-        <AlgoAssetIcon
-          {...rest}
-          style={styles.icon}
-          width={size}
-          height={size}
-        />
-      );
-    if (asset.logo) {
-      return (
-        <Image
-          resizeMode="contain"
-          source={{ uri: asset.logo }}
-          style={styles.icon}
-          width={size}
-          height={size}
-        />
-      );
-    }
-    return (
-      <PWView style={styles.defaultAsset}>
-        <Text>{asset?.unit_name?.slice(0, 1)}</Text>
-      </PWView>
-    );
-  }, [asset, rest, size, styles.icon, styles.defaultAsset]);
+    const icon = useMemo(() => {
+        if (!asset) return <></>
+        if (asset.id === ALGO_ASSET_ID || asset.asset_id === ALGO_ASSET_ID)
+            return (
+                <AlgoAssetIcon
+                    {...rest}
+                    style={styles.icon}
+                    width={size}
+                    height={size}
+                />
+            )
+        if (asset.logo) {
+            return (
+                <Image
+                    resizeMode='contain'
+                    source={{ uri: asset.logo }}
+                    style={styles.icon}
+                    width={size}
+                    height={size}
+                />
+            )
+        }
+        return (
+            <PWView style={styles.defaultAsset}>
+                <Text>{asset?.unit_name?.slice(0, 1)}</Text>
+            </PWView>
+        )
+    }, [asset, rest, size, styles.icon, styles.defaultAsset])
 
-  return <PWView style={[style, styles.container]}>{icon}</PWView>;
-};
+    return <PWView style={[style, styles.container]}>{icon}</PWView>
+}
 
-export default AssetIcon;
+export default AssetIcon

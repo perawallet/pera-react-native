@@ -10,87 +10,98 @@
  limitations under the License
  */
 
-import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity';
-import AccountAssetItemView from '../../assets/asset-item/AccountAssetItemView';
-import PWView from '../../common/view/PWView';
-import { PeraAsset, useAccountBalances, WalletAccount } from '@perawallet/core';
-import Decimal from 'decimal.js';
-import { useMemo } from 'react';
-import { useStyles } from './styles';
-import { Skeleton, Text } from '@rneui/themed';
+import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity'
+import AccountAssetItemView from '../../assets/asset-item/AccountAssetItemView'
+import PWView from '../../common/view/PWView'
+import { PeraAsset, useAccountBalances, WalletAccount } from '@perawallet/core'
+import Decimal from 'decimal.js'
+import { useMemo } from 'react'
+import { useStyles } from './styles'
+import { Skeleton, Text } from '@rneui/themed'
 
-import SearchInput from '../../common/search-input/SearchInput';
-import PWButton from '../../common/button/PWButton';
-import { ParamListBase, useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import SearchInput from '../../common/search-input/SearchInput'
+import PWButton from '../../common/button/PWButton'
+import { ParamListBase, useNavigation } from '@react-navigation/native'
+import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 
 type AccountAssetListProps = {
-  account: WalletAccount;
-};
+    account: WalletAccount
+}
 
 const LoadingView = () => {
-  const styles = useStyles();
-  return (
-    <PWView style={styles.loadingContainer}>
-      <Skeleton />
-      <Skeleton />
-      <Skeleton />
-    </PWView>
-  );
-};
+    const styles = useStyles()
+    return (
+        <PWView style={styles.loadingContainer}>
+            <Skeleton />
+            <Skeleton />
+            <Skeleton />
+        </PWView>
+    )
+}
 
 //TODO implement links and buttons
 const AccountAssetList = ({ account }: AccountAssetListProps) => {
-  const styles = useStyles();
-  const { data, loading } = useAccountBalances([account]);
-  const balanceData = useMemo(() => data.at(0)?.accountInfo?.results, [data]);
+    const styles = useStyles()
+    const { data, loading } = useAccountBalances([account])
+    const balanceData = useMemo(() => data.at(0)?.accountInfo?.results, [data])
 
-  const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
+    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
 
-  const goToAssetScreen = (asset: PeraAsset) => {
-    navigation.navigate('AssetDetails', {
-      asset,
-      account
-    });
-  };
+    const goToAssetScreen = (asset: PeraAsset) => {
+        navigation.navigate('AssetDetails', {
+            asset,
+            account,
+        })
+    }
 
-  const renderItem = (item: PeraAsset) => {
+    const renderItem = (item: PeraAsset) => {
+        return (
+            <PWTouchableOpacity
+                onPress={() => goToAssetScreen(item)}
+                key={`asset-key-${item.asset_id}`}
+            >
+                <AccountAssetItemView
+                    asset={item}
+                    amount={item.amount ? Decimal(item.amount) : undefined}
+                    usdAmount={
+                        item.balance_usd_value
+                            ? Decimal(item.balance_usd_value)
+                            : undefined
+                    }
+                />
+            </PWTouchableOpacity>
+        )
+    }
+
     return (
-      <PWTouchableOpacity
-        onPress={() => goToAssetScreen(item)}
-        key={`asset-key-${item.asset_id}`}
-      >
-        <AccountAssetItemView
-          asset={item}
-          amount={item.amount ? Decimal(item.amount) : undefined}
-          usdAmount={
-            item.balance_usd_value ? Decimal(item.balance_usd_value) : undefined
-          }
-        />
-      </PWTouchableOpacity>
-    );
-  };
-
-  return (
-    <PWView style={styles.container}>
-      <PWView style={styles.titleBar}>
-        <Text style={styles.title}>Assets</Text>
-        <PWView style={styles.titleBarButtonContainer}>
-          <PWButton icon="sliders" variant="helper" dense />
-          <PWButton icon="plus" title="Add Asset" variant="helper" dense />
+        <PWView style={styles.container}>
+            <PWView style={styles.titleBar}>
+                <Text style={styles.title}>Assets</Text>
+                <PWView style={styles.titleBarButtonContainer}>
+                    <PWButton
+                        icon='sliders'
+                        variant='helper'
+                        dense
+                    />
+                    <PWButton
+                        icon='plus'
+                        title='Add Asset'
+                        variant='helper'
+                        dense
+                    />
+                </PWView>
+            </PWView>
+            {loading && <LoadingView />}
+            {!loading && (
+                <>
+                    <SearchInput placeholder='Search assets' />
+                    <PWView style={styles.listContainer}>
+                        {balanceData?.map(item => renderItem(item))}
+                    </PWView>
+                </>
+            )}
         </PWView>
-      </PWView>
-      {loading && <LoadingView />}
-      {!loading && (
-        <>
-          <SearchInput placeholder="Search assets" />
-          <PWView style={styles.listContainer}>
-            {balanceData?.map(item => renderItem(item))}
-          </PWView>
-        </>
-      )}
-    </PWView>
-  );
-};
+    )
+}
 
-export default AccountAssetList;
+export default AccountAssetList

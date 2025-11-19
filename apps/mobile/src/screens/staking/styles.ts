@@ -10,17 +10,17 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed';
+import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
-  return {
-    container: {
-      flex: 1,
-      backgroundColor: theme.colors.background
-    },
-    webview: {
-      flexGrow: 1,
-      backgroundColor: theme.colors.background
+    return {
+        container: {
+            flex: 1,
+            backgroundColor: theme.colors.background,
+        },
+        webview: {
+            flexGrow: 1,
+            backgroundColor: theme.colors.background,
+        },
     }
-  };
-});
+})

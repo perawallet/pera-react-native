@@ -10,38 +10,48 @@
  limitations under the License
  */
 
-import { Text } from '@rneui/themed';
-import PWView, { PWViewProps } from '../view/PWView';
-import { useStyles } from './styles';
-import PWIcon, { IconName } from '../icons/PWIcon';
+import { Text } from '@rneui/themed'
+import PWView, { PWViewProps } from '../view/PWView'
+import { useStyles } from './styles'
+import PWIcon, { IconName } from '../icons/PWIcon'
 
 export type EmptyViewProps = {
-  title?: string;
-  body: string;
-  icon?: IconName;
-  button?: React.ReactElement<{}>;
-} & PWViewProps;
+    title?: string
+    body: string
+    icon?: IconName
+    button?: React.ReactElement<{}>
+} & PWViewProps
 
 const EmptyView = (props: EmptyViewProps) => {
-  const styles = useStyles();
-  const { title, body, icon, style, button, ...rest } = props;
+    const styles = useStyles()
+    const { title, body, icon, style, button, ...rest } = props
 
-  return (
-    <PWView {...rest} style={[styles.container, style]}>
-      {!!icon && (
-        <PWView style={styles.iconContainer}>
-          <PWIcon name={icon} variant="secondary" size="lg" />
+    return (
+        <PWView
+            {...rest}
+            style={[styles.container, style]}
+        >
+            {!!icon && (
+                <PWView style={styles.iconContainer}>
+                    <PWIcon
+                        name={icon}
+                        variant='secondary'
+                        size='lg'
+                    />
+                </PWView>
+            )}
+            {!!title && (
+                <Text
+                    h3
+                    h3Style={styles.text}
+                >
+                    {title}
+                </Text>
+            )}
+            <Text style={styles.text}>{body}</Text>
+            {button}
         </PWView>
-      )}
-      {!!title && (
-        <Text h3 h3Style={styles.text}>
-          {title}
-        </Text>
-      )}
-      <Text style={styles.text}>{body}</Text>
-      {button}
-    </PWView>
-  );
-};
+    )
+}
 
-export default EmptyView;
+export default EmptyView

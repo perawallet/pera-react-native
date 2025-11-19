@@ -10,38 +10,44 @@
  limitations under the License
  */
 
-import { Contact } from '@perawallet/core';
-import { Image, useTheme } from '@rneui/themed';
-import { SvgProps } from 'react-native-svg';
-import { useStyles } from './styles';
-import PWView from '../view/PWView';
-import PWIcon from '../icons/PWIcon';
+import { Contact } from '@perawallet/core'
+import { Image, useTheme } from '@rneui/themed'
+import { SvgProps } from 'react-native-svg'
+import { useStyles } from './styles'
+import PWView from '../view/PWView'
+import PWIcon from '../icons/PWIcon'
 
 type ContactAvatarProps = {
-  size: 'small' | 'large';
-  contact?: Contact;
-} & SvgProps;
+    size: 'small' | 'large'
+    contact?: Contact
+} & SvgProps
 
 const ContactAvatar = ({ size, contact, ...rest }: ContactAvatarProps) => {
-  const { theme } = useTheme();
-  const dimensions = size === 'small' ? theme.spacing.xl : theme.spacing.xl * 3;
-  const imageSize = size === 'small' ? theme.spacing.lg : theme.spacing.xl * 2;
-  const iconSize = size === 'small' ? 'sm' : 'lg';
-  const styles = useStyles(dimensions);
+    const { theme } = useTheme()
+    const dimensions =
+        size === 'small' ? theme.spacing.xl : theme.spacing.xl * 3
+    const imageSize = size === 'small' ? theme.spacing.lg : theme.spacing.xl * 2
+    const iconSize = size === 'small' ? 'sm' : 'lg'
+    const styles = useStyles(dimensions)
 
-  return (
-    <PWView style={styles.container}>
-      {!!contact?.image && (
-        <Image
-          source={{ uri: contact.image }}
-          style={{ width: imageSize, height: imageSize }}
-        />
-      )}
-      {!contact?.image && (
-        <PWIcon {...rest} name="person" size={iconSize} variant="secondary" />
-      )}
-    </PWView>
-  );
-};
+    return (
+        <PWView style={styles.container}>
+            {!!contact?.image && (
+                <Image
+                    source={{ uri: contact.image }}
+                    style={{ width: imageSize, height: imageSize }}
+                />
+            )}
+            {!contact?.image && (
+                <PWIcon
+                    {...rest}
+                    name='person'
+                    size={iconSize}
+                    variant='secondary'
+                />
+            )}
+        </PWView>
+    )
+}
 
-export default ContactAvatar;
+export default ContactAvatar

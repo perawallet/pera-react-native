@@ -10,40 +10,47 @@
  limitations under the License
  */
 
-import PWButton from '../../common/button/PWButton';
-import PWView from '../../common/view/PWView';
-import { Image, Text } from '@rneui/themed';
-import { useStyles } from './styles';
-import PWIcon from '../../common/icons/PWIcon';
+import PWButton from '../../common/button/PWButton'
+import PWView from '../../common/view/PWView'
+import { Image, Text } from '@rneui/themed'
+import { useStyles } from './styles'
+import PWIcon from '../../common/icons/PWIcon'
 
-import CardBackground from '../../../../assets/images/card-background.png';
-const BACKGROUND_URI = Image.resolveAssetSource(CardBackground).uri;
+import CardBackground from '../../../../assets/images/card-background.png'
+const BACKGROUND_URI = Image.resolveAssetSource(CardBackground).uri
 
 const CardPanel = () => {
-  const styles = useStyles();
-  return (
-    <PWView style={styles.cardContainer}>
-      <PWView style={styles.cardHeaderContainer}>
-        <PWView style={styles.cardTextContainer}>
-          <PWView style={styles.titleContainer}>
-            <PWIcon name="card" style={styles.icon} />
-            <Text h3>Cards</Text>
-          </PWView>
-          <Text style={styles.cardSecondaryText}>
-            Get the world's first web3{'\n'}Mastercard.
-          </Text>
+    const styles = useStyles()
+    return (
+        <PWView style={styles.cardContainer}>
+            <PWView style={styles.cardHeaderContainer}>
+                <PWView style={styles.cardTextContainer}>
+                    <PWView style={styles.titleContainer}>
+                        <PWIcon
+                            name='card'
+                            style={styles.icon}
+                        />
+                        <Text h3>Cards</Text>
+                    </PWView>
+                    <Text style={styles.cardSecondaryText}>
+                        Get the world's first web3{'\n'}Mastercard.
+                    </Text>
+                </PWView>
+                <PWView style={styles.cardImageContainer}>
+                    <Image
+                        source={{ uri: BACKGROUND_URI }}
+                        style={styles.backgroundImage}
+                    />
+                </PWView>
+            </PWView>
+            <PWView style={styles.cardButtonContainer}>
+                <PWButton
+                    variant='primary'
+                    title={'Create Pera Card'}
+                    icon='plus'
+                />
+            </PWView>
         </PWView>
-        <PWView style={styles.cardImageContainer}>
-          <Image
-            source={{ uri: BACKGROUND_URI }}
-            style={styles.backgroundImage}
-          />
-        </PWView>
-      </PWView>
-      <PWView style={styles.cardButtonContainer}>
-        <PWButton variant="primary" title={'Create Pera Card'} icon="plus" />
-      </PWView>
-    </PWView>
-  );
-};
-export default CardPanel;
+    )
+}
+export default CardPanel

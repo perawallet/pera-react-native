@@ -10,40 +10,40 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed';
+import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
-  return {
-    container: {
-      flex: 1,
-      flexDirection: 'column',
-      gap: theme.spacing.md
-    },
-    row: {
-      flexDirection: 'row',
-      paddingVertical: theme.spacing.md,
-      paddingHorizontal: theme.spacing.md,
-      justifyContent: 'space-between',
-      alignItems: 'center'
-    },
-    radioContainer: {
-      borderWidth: 1,
-      borderRadius: theme.spacing.xl,
-      borderColor: theme.colors.layerGrayLight,
-      width: theme.spacing.xl,
-      height: theme.spacing.xl,
-      justifyContent: 'center',
-      alignItems: 'center'
-    },
-    selectedRadio: {
-      borderRadius: theme.spacing.lg,
-      width: theme.spacing.lg,
-      height: theme.spacing.lg,
-      backgroundColor: theme.colors.helperPositive
-    },
-    input: {
-      paddingHorizontal: theme.spacing.md,
-      borderRadius: theme.spacing.sm
+    return {
+        container: {
+            flex: 1,
+            flexDirection: 'column',
+            gap: theme.spacing.md,
+        },
+        row: {
+            flexDirection: 'row',
+            paddingVertical: theme.spacing.md,
+            paddingHorizontal: theme.spacing.md,
+            justifyContent: 'space-between',
+            alignItems: 'center',
+        },
+        radioContainer: {
+            borderWidth: 1,
+            borderRadius: theme.spacing.xl,
+            borderColor: theme.colors.layerGrayLight,
+            width: theme.spacing.xl,
+            height: theme.spacing.xl,
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        selectedRadio: {
+            borderRadius: theme.spacing.lg,
+            width: theme.spacing.lg,
+            height: theme.spacing.lg,
+            backgroundColor: theme.colors.helperPositive,
+        },
+        input: {
+            paddingHorizontal: theme.spacing.md,
+            borderRadius: theme.spacing.sm,
+        },
     }
-  };
-});
+})

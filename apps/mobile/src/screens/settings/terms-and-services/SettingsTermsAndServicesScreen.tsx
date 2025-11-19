@@ -10,17 +10,20 @@
  limitations under the License
  */
 
-import MainScreenLayout from '../../../layouts/MainScreenLayout';
-import PWWebView from '../../../components/webview/PWWebView';
+import MainScreenLayout from '../../../layouts/MainScreenLayout'
+import PWWebView from '../../../components/webview/PWWebView'
 
 //TODO implement UI controls in webview component
 //TODO set correct URL
 const SettingsTermsAndServicsScreen = () => {
-  return (
-    <MainScreenLayout>
-      <PWWebView url={'https://perawallet.app'} enablePeraConnect={false} />
-    </MainScreenLayout>
-  );
-};
+    return (
+        <MainScreenLayout>
+            <PWWebView
+                url={'https://perawallet.app'}
+                enablePeraConnect={false}
+            />
+        </MainScreenLayout>
+    )
+}
 
-export default SettingsTermsAndServicsScreen;
+export default SettingsTermsAndServicsScreen

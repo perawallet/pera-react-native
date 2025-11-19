@@ -10,28 +10,31 @@
  limitations under the License
  */
 
-import { Text } from '@rneui/themed';
-import PWView from '../view/PWView';
-import { useStyles } from './styles';
-import PWIcon from '../icons/PWIcon';
+import { Text } from '@rneui/themed'
+import PWView from '../view/PWView'
+import { useStyles } from './styles'
+import PWIcon from '../icons/PWIcon'
 
-import AssetIcon from '../asset-icon/AssetIcon';
-import { PeraAsset } from '@perawallet/core';
+import AssetIcon from '../asset-icon/AssetIcon'
+import { PeraAsset } from '@perawallet/core'
 
 export type AssetSelectionProps = {
-  asset: PeraAsset;
-};
+    asset: PeraAsset
+}
 
 const AssetSelection = ({ asset }: AssetSelectionProps) => {
-  const styles = useStyles();
+    const styles = useStyles()
 
-  return (
-    <PWView style={styles.container}>
-      <AssetIcon asset={asset} style={styles.icon} />
-      <Text h4>{asset.unit_name}</Text>
-      <PWIcon name="chevron-right" />
-    </PWView>
-  );
-};
+    return (
+        <PWView style={styles.container}>
+            <AssetIcon
+                asset={asset}
+                style={styles.icon}
+            />
+            <Text h4>{asset.unit_name}</Text>
+            <PWIcon name='chevron-right' />
+        </PWView>
+    )
+}
 
-export default AssetSelection;
+export default AssetSelection

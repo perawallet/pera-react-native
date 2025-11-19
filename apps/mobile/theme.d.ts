@@ -10,47 +10,47 @@
  limitations under the License
  */
 
-import '@rneui/themed';
+import '@rneui/themed'
 
 declare module '@rneui/themed' {
-  export interface Colors {
-    //Layer colors
-    layerGray: string;
-    layerGrayLight: string;
-    layerGrayLighter: string;
-    layerGrayLightest: string;
+    export interface Colors {
+        //Layer colors
+        layerGray: string
+        layerGrayLight: string
+        layerGrayLighter: string
+        layerGrayLightest: string
 
-    //Text colors
-    textGray: string;
-    textGrayLighter: string;
-    textMain: string;
-    textSonicSilver: string;
-    textWhite: string;
+        //Text colors
+        textGray: string
+        textGrayLighter: string
+        textMain: string
+        textSonicSilver: string
+        textWhite: string
 
-    //Button colors
-    buttonPrimaryBg: string;
-    buttonPrimaryText: string;
+        //Button colors
+        buttonPrimaryBg: string
+        buttonPrimaryText: string
 
-    buttonHelperBg: string;
-    buttonHelperText: string;
+        buttonHelperBg: string
+        buttonHelperText: string
 
-    buttonSquareBg: string;
-    buttonSquareText: string;
+        buttonSquareBg: string
+        buttonSquareText: string
 
-    //Helper colors
-    helperPositive: string;
-    helperNegative: string;
-    helperGray200: string;
-    backdrop: string;
+        //Helper colors
+        helperPositive: string
+        helperNegative: string
+        helperGray200: string
+        backdrop: string
 
-    //Links
-    linkPrimary: string;
+        //Links
+        linkPrimary: string
 
-    // Tab Bar
-    tabIconActive: string;
-    tabIconPassive: string;
+        // Tab Bar
+        tabIconActive: string
+        tabIconPassive: string
 
-    //Backgrounds
-    testnetBackground: string;
-  }
+        //Backgrounds
+        testnetBackground: string
+    }
 }

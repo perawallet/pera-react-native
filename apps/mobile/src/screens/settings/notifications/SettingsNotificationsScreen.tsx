@@ -10,19 +10,19 @@
  limitations under the License
  */
 
-import MainScreenLayout from '../../../layouts/MainScreenLayout';
-import EmptyView from '../../../components/common/empty-view/EmptyView';
+import MainScreenLayout from '../../../layouts/MainScreenLayout'
+import EmptyView from '../../../components/common/empty-view/EmptyView'
 
 const SettingsNotificationsScreen = () => {
-  return (
-    <MainScreenLayout>
-      <EmptyView
-        icon="bell"
-        title="Not Implemented"
-        body="This screen has not yet been implemented"
-      />
-    </MainScreenLayout>
-  );
-};
+    return (
+        <MainScreenLayout>
+            <EmptyView
+                icon='bell'
+                title='Not Implemented'
+                body='This screen has not yet been implemented'
+            />
+        </MainScreenLayout>
+    )
+}
 
-export default SettingsNotificationsScreen;
+export default SettingsNotificationsScreen

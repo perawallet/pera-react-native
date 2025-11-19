@@ -10,56 +10,65 @@
  limitations under the License
  */
 
-import PWView from '../../common/view/PWView';
-import { useStyles } from './styles';
-import { Text } from '@rneui/themed';
-import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay';
-import Decimal from 'decimal.js';
-import PWIcon from '../../common/icons/PWIcon';
+import PWView from '../../common/view/PWView'
+import { useStyles } from './styles'
+import { Text } from '@rneui/themed'
+import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay'
+import Decimal from 'decimal.js'
+import PWIcon from '../../common/icons/PWIcon'
 
 const AssetImpact = () => {
-  const styles = useStyles();
+    const styles = useStyles()
 
-  return (
-    <PWView style={styles.itemContainer}>
-      <PWIcon size="lg" name="assets/algo" />
-      <PWView style={styles.amounts}>
-        <CurrencyDisplay
-          currency="ALGO"
-          value={Decimal(200)}
-          precision={2}
-          showSymbol
-          h3
-        />
-        <CurrencyDisplay
-          currency="USD"
-          value={Decimal(12.74)}
-          precision={2}
-          showSymbol
-          style={styles.secondaryAmount}
-        />
-      </PWView>
-    </PWView>
-  );
-};
+    return (
+        <PWView style={styles.itemContainer}>
+            <PWIcon
+                size='lg'
+                name='assets/algo'
+            />
+            <PWView style={styles.amounts}>
+                <CurrencyDisplay
+                    currency='ALGO'
+                    value={Decimal(200)}
+                    precision={2}
+                    showSymbol
+                    h3
+                />
+                <CurrencyDisplay
+                    currency='USD'
+                    value={Decimal(12.74)}
+                    precision={2}
+                    showSymbol
+                    style={styles.secondaryAmount}
+                />
+            </PWView>
+        </PWView>
+    )
+}
 
 const BalanceImpactView = () => {
-  const styles = useStyles();
+    const styles = useStyles()
 
-  return (
-    <PWView style={styles.impactContainer}>
-      <Text h4 h4Style={styles.impactHeading}>
-        YOU WILL RECEIVE
-      </Text>
-      <AssetImpact />
-      <AssetImpact />
-      <Text h4 h4Style={styles.impactHeading}>
-        YOU WILL SPEND
-      </Text>
-      <AssetImpact />
-      <AssetImpact />
-    </PWView>
-  );
-};
+    return (
+        <PWView style={styles.impactContainer}>
+            <Text
+                h4
+                h4Style={styles.impactHeading}
+            >
+                YOU WILL RECEIVE
+            </Text>
+            <AssetImpact />
+            <AssetImpact />
+            <Text
+                h4
+                h4Style={styles.impactHeading}
+            >
+                YOU WILL SPEND
+            </Text>
+            <AssetImpact />
+            <AssetImpact />
+        </PWView>
+    )
+}
 
-export default BalanceImpactView;
+export default BalanceImpactView

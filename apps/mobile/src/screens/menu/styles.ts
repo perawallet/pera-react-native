@@ -10,37 +10,37 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed';
-import { PropsWithChildren } from 'react';
+import { makeStyles } from '@rneui/themed'
+import { PropsWithChildren } from 'react'
 
 export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
-  return {
-    iconBar: {
-      padding: 0,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'flex-end',
-      gap: theme.spacing.lg
-    },
-    iconBarColumn: {
-      width: '33.3333%',
-      flexDirection: 'row',
-      justifyContent: 'center',
-      textAlign: 'center',
-      gap: theme.spacing.xl
-    },
-    menuContainer: {
-      gap: theme.spacing.md,
-      flex: 1,
-      flexDirection: 'column',
-      marginTop: theme.spacing.xl
-    },
-    scannerClose: {
-      marginTop: theme.spacing.xl,
-      marginLeft: theme.spacing.lg,
-      width: theme.spacing.xl * 2,
-      height: theme.spacing.xl * 2,
-      zIndex: 2
+    return {
+        iconBar: {
+            padding: 0,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: theme.spacing.lg,
+        },
+        iconBarColumn: {
+            width: '33.3333%',
+            flexDirection: 'row',
+            justifyContent: 'center',
+            textAlign: 'center',
+            gap: theme.spacing.xl,
+        },
+        menuContainer: {
+            gap: theme.spacing.md,
+            flex: 1,
+            flexDirection: 'column',
+            marginTop: theme.spacing.xl,
+        },
+        scannerClose: {
+            marginTop: theme.spacing.xl,
+            marginLeft: theme.spacing.lg,
+            width: theme.spacing.xl * 2,
+            height: theme.spacing.xl * 2,
+            zIndex: 2,
+        },
     }
-  };
-});
+})

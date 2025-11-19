@@ -10,17 +10,17 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed';
+import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-  container: {
-    gap: theme.spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: theme.spacing.xl
-  },
-  blackButton: {
-    backgroundColor: theme.colors.buttonHelperBg
-  }
-}));
+    container: {
+        gap: theme.spacing.md,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: theme.spacing.xl,
+    },
+    blackButton: {
+        backgroundColor: theme.colors.buttonHelperBg,
+    },
+}))

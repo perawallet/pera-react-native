@@ -10,84 +10,94 @@
  limitations under the License
  */
 
-import PWView from '../common/view/PWView';
-import AccountIcon from '../common/account-icon/AccountIcon';
-import PWTouchableOpacity from '../common/touchable-opacity/PWTouchableOpacity';
+import PWView from '../common/view/PWView'
+import AccountIcon from '../common/account-icon/AccountIcon'
+import PWTouchableOpacity from '../common/touchable-opacity/PWTouchableOpacity'
 import {
-  getAccountDisplayName,
-  useAllAccounts,
-  useSelectedAccountAddress,
-  WalletAccount
-} from '@perawallet/core';
-import { useStyles } from './styles';
-import { Text, useTheme } from '@rneui/themed';
-import PWButton from '../common/button/PWButton';
+    getAccountDisplayName,
+    useAllAccounts,
+    useSelectedAccountAddress,
+    WalletAccount,
+} from '@perawallet/core'
+import { useStyles } from './styles'
+import { Text, useTheme } from '@rneui/themed'
+import PWButton from '../common/button/PWButton'
 
 type AccountsTabProps = {
-  onSelected: (account: WalletAccount) => void;
-};
+    onSelected: (account: WalletAccount) => void
+}
 const AccountsTab = (props: AccountsTabProps) => {
-  const styles = useStyles();
-  const { theme } = useTheme();
-  const accounts = useAllAccounts();
-  const { selectedAccountAddress, setSelectedAccountAddress } =
-    useSelectedAccountAddress();
+    const styles = useStyles()
+    const { theme } = useTheme()
+    const accounts = useAllAccounts()
+    const { selectedAccountAddress, setSelectedAccountAddress } =
+        useSelectedAccountAddress()
 
-  const getRouteName = (account?: WalletAccount): string => {
-    return account ? getAccountDisplayName(account) : 'Account';
-  };
+    const getRouteName = (account?: WalletAccount): string => {
+        return account ? getAccountDisplayName(account) : 'Account'
+    }
 
-  const getWalletIcon = (acct: WalletAccount) => {
+    const getWalletIcon = (acct: WalletAccount) => {
+        return (
+            <AccountIcon
+                account={acct}
+                color={
+                    acct.address === selectedAccountAddress
+                        ? theme.colors.secondary
+                        : theme.colors.textMain
+                }
+            />
+        )
+    }
+
+    const handleTap = (acct: WalletAccount) => {
+        setSelectedAccountAddress(acct.address)
+        props?.onSelected?.(acct)
+    }
     return (
-      <AccountIcon
-        account={acct}
-        color={
-          acct.address === selectedAccountAddress
-            ? theme.colors.secondary
-            : theme.colors.textMain
-        }
-      />
-    );
-  };
-
-  const handleTap = (acct: WalletAccount) => {
-    setSelectedAccountAddress(acct.address);
-    props?.onSelected?.(acct);
-  };
-  return (
-    <>
-      <PWView style={styles.titleBar}>
-        <PWView style={styles.titleBarButtonContainer}>
-          <PWButton variant="helper" icon="plus" title="Add Account" dense />
-          <PWButton variant="link" icon="list-arrow-down" title="Sort" dense />
-        </PWView>
-      </PWView>
-      <PWView style={styles.accountContainer}>
-        {accounts.map(acct => (
-          <PWTouchableOpacity
-            key={acct.address}
-            style={
-              acct.address === selectedAccountAddress
-                ? styles.activeItem
-                : styles.passiveItem
-            }
-            onPress={() => handleTap(acct)}
-          >
-            {getWalletIcon(acct)}
-            <Text
-              h4
-              h4Style={
-                acct.address === selectedAccountAddress
-                  ? styles.activeLabel
-                  : styles.passiveLabel
-              }
-            >
-              {getRouteName(acct)}
-            </Text>
-          </PWTouchableOpacity>
-        ))}
-      </PWView>
-    </>
-  );
-};
-export default AccountsTab;
+        <>
+            <PWView style={styles.titleBar}>
+                <PWView style={styles.titleBarButtonContainer}>
+                    <PWButton
+                        variant='helper'
+                        icon='plus'
+                        title='Add Account'
+                        dense
+                    />
+                    <PWButton
+                        variant='link'
+                        icon='list-arrow-down'
+                        title='Sort'
+                        dense
+                    />
+                </PWView>
+            </PWView>
+            <PWView style={styles.accountContainer}>
+                {accounts.map(acct => (
+                    <PWTouchableOpacity
+                        key={acct.address}
+                        style={
+                            acct.address === selectedAccountAddress
+                                ? styles.activeItem
+                                : styles.passiveItem
+                        }
+                        onPress={() => handleTap(acct)}
+                    >
+                        {getWalletIcon(acct)}
+                        <Text
+                            h4
+                            h4Style={
+                                acct.address === selectedAccountAddress
+                                    ? styles.activeLabel
+                                    : styles.passiveLabel
+                            }
+                        >
+                            {getRouteName(acct)}
+                        </Text>
+                    </PWTouchableOpacity>
+                ))}
+            </PWView>
+        </>
+    )
+}
+export default AccountsTab

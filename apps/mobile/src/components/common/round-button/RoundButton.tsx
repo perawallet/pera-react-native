@@ -10,40 +10,43 @@
  limitations under the License
  */
 
-import { useStyles } from './styles';
-import { StyleProp, TextStyle, ViewStyle } from 'react-native';
-import PWView from '../view/PWView';
-import { Text } from '@rneui/themed';
+import { useStyles } from './styles'
+import { StyleProp, TextStyle, ViewStyle } from 'react-native'
+import PWView from '../view/PWView'
+import { Text } from '@rneui/themed'
 import PWTouchableOpacity, {
-  type PWTouchableOpacityProps
-} from '../touchable-opacity/PWTouchableOpacity';
+    type PWTouchableOpacityProps,
+} from '../touchable-opacity/PWTouchableOpacity'
 
 export type RoundButtonProps = {
-  icon: React.ReactElement<{}>;
-  title?: string;
-  textStyle?: StyleProp<TextStyle>;
-  buttonStyle?: StyleProp<ViewStyle>;
-} & PWTouchableOpacityProps;
+    icon: React.ReactElement<{}>
+    title?: string
+    textStyle?: StyleProp<TextStyle>
+    buttonStyle?: StyleProp<ViewStyle>
+} & PWTouchableOpacityProps
 
 const RoundButton = (props: RoundButtonProps) => {
-  const style = useStyles(props);
-  const {
-    icon,
-    title,
-    buttonStyle,
-    textStyle,
-    style: propStyle,
-    ...rest
-  } = props;
+    const style = useStyles(props)
+    const {
+        icon,
+        title,
+        buttonStyle,
+        textStyle,
+        style: propStyle,
+        ...rest
+    } = props
 
-  return (
-    <PWView style={propStyle}>
-      <PWTouchableOpacity style={[style.buttonStyle, buttonStyle]} {...rest}>
-        {icon}
-      </PWTouchableOpacity>
-      <Text style={[style.titleStyle, textStyle]}>{title}</Text>
-    </PWView>
-  );
-};
+    return (
+        <PWView style={propStyle}>
+            <PWTouchableOpacity
+                style={[style.buttonStyle, buttonStyle]}
+                {...rest}
+            >
+                {icon}
+            </PWTouchableOpacity>
+            <Text style={[style.titleStyle, textStyle]}>{title}</Text>
+        </PWView>
+    )
+}
 
-export default RoundButton;
+export default RoundButton

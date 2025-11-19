@@ -10,70 +10,70 @@
  limitations under the License
  */
 
-import * as Keychain from 'react-native-keychain';
-import type { SecureStorageService } from '@perawallet/core';
+import * as Keychain from 'react-native-keychain'
+import type { SecureStorageService } from '@perawallet/core'
 
-const SERVICE_PREFIX = 'com.algorand.android';
+const SERVICE_PREFIX = 'com.algorand.android'
 
 type Options = {
-  service?: string;
-  requireBiometrics?: boolean;
-  promptTitle?: string;
-  promptDesc?: string;
-};
+    service?: string
+    requireBiometrics?: boolean
+    promptTitle?: string
+    promptDesc?: string
+}
 
 //TODO currently we're storing data in the keychain with a different "service" per key
 //Is that right or should we be storing it differently?  Should this mirror the current
 //native storage so we don't have to move things?
 export class RNSecureStorageService implements SecureStorageService {
-  private baseOpts: Keychain.SetOptions = {};
+    private baseOpts: Keychain.SetOptions = {}
 
-  async initialize(options: Options = {}) {
-    const {
-      service = SERVICE_PREFIX,
-      requireBiometrics = true,
-      promptTitle = 'Authenticate',
-      promptDesc = 'Access secure data'
-    } = options;
+    async initialize(options: Options = {}) {
+        const {
+            service = SERVICE_PREFIX,
+            requireBiometrics = true,
+            promptTitle = 'Authenticate',
+            promptDesc = 'Access secure data',
+        } = options
 
-    this.baseOpts = {
-      service,
-      accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
-      accessControl: requireBiometrics
-        ? Keychain.ACCESS_CONTROL.BIOMETRY_CURRENT_SET
-        : undefined,
-      authenticationPrompt: {
-        title: promptTitle,
-        description: promptDesc
-      },
-      securityLevel: Keychain.SECURITY_LEVEL.SECURE_HARDWARE
-    };
-  }
+        this.baseOpts = {
+            service,
+            accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+            accessControl: requireBiometrics
+                ? Keychain.ACCESS_CONTROL.BIOMETRY_CURRENT_SET
+                : undefined,
+            authenticationPrompt: {
+                title: promptTitle,
+                description: promptDesc,
+            },
+            securityLevel: Keychain.SECURITY_LEVEL.SECURE_HARDWARE,
+        }
+    }
 
-  async setItem(key: string, value: Buffer): Promise<void> {
-    await Keychain.setGenericPassword('user', value.toString('utf-8'), {
-      ...this.baseOpts,
-      service: `${this.baseOpts.service}.${key}`
-    });
-  }
+    async setItem(key: string, value: Buffer): Promise<void> {
+        await Keychain.setGenericPassword('user', value.toString('utf-8'), {
+            ...this.baseOpts,
+            service: `${this.baseOpts.service}.${key}`,
+        })
+    }
 
-  async getItem(key: string): Promise<Buffer | null> {
-    const creds = await Keychain.getGenericPassword({
-      ...this.baseOpts,
-      service: `${this.baseOpts.service}.${key}`
-    });
-    return creds ? Buffer.from(creds.password, 'utf-8') : null;
-  }
+    async getItem(key: string): Promise<Buffer | null> {
+        const creds = await Keychain.getGenericPassword({
+            ...this.baseOpts,
+            service: `${this.baseOpts.service}.${key}`,
+        })
+        return creds ? Buffer.from(creds.password, 'utf-8') : null
+    }
 
-  async removeItem(key: string): Promise<void> {
-    await Keychain.resetGenericPassword({
-      ...this.baseOpts,
-      service: `${this.baseOpts.service}.${key}`
-    });
-  }
+    async removeItem(key: string): Promise<void> {
+        await Keychain.resetGenericPassword({
+            ...this.baseOpts,
+            service: `${this.baseOpts.service}.${key}`,
+        })
+    }
 
-  async authenticate(): Promise<boolean> {
-    //TODO implement me
-    return true;
-  }
+    async authenticate(): Promise<boolean> {
+        //TODO implement me
+        return true
+    }
 }

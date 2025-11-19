@@ -10,20 +10,25 @@
  limitations under the License
  */
 
-import { ParamListBase, useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useContacts } from '@perawallet/core';
-import PWIcon from '../common/icons/PWIcon';
+import { ParamListBase, useNavigation } from '@react-navigation/native'
+import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { useContacts } from '@perawallet/core'
+import PWIcon from '../common/icons/PWIcon'
 
 const ContactListHeaderButtons = () => {
-  const { setSelectedContact } = useContacts();
-  const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
-  const goToAdd = () => {
-    setSelectedContact(null);
-    navigation.navigate('AddContact');
-  };
+    const { setSelectedContact } = useContacts()
+    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
+    const goToAdd = () => {
+        setSelectedContact(null)
+        navigation.navigate('AddContact')
+    }
 
-  return <PWIcon name="plus" onPress={goToAdd} />;
-};
+    return (
+        <PWIcon
+            name='plus'
+            onPress={goToAdd}
+        />
+    )
+}
 
-export default ContactListHeaderButtons;
+export default ContactListHeaderButtons

@@ -10,29 +10,32 @@
  limitations under the License
  */
 
-import { ViewProps } from 'react-native';
-import { useStyles } from './MainScreenLayout.style';
-import { EdgeInsets, useSafeAreaInsets } from 'react-native-safe-area-context';
-import PWView from '../components/common/view/PWView';
+import { ViewProps } from 'react-native'
+import { useStyles } from './MainScreenLayout.style'
+import { EdgeInsets, useSafeAreaInsets } from 'react-native-safe-area-context'
+import PWView from '../components/common/view/PWView'
 
 export type MainScreenLayoutProps = {
-  fullScreen?: boolean;
-  header?: boolean;
-} & ViewProps;
+    fullScreen?: boolean
+    header?: boolean
+} & ViewProps
 
 export type MainScreenLayoutPropsWithInsets = {
-  insets: EdgeInsets;
-} & MainScreenLayoutProps;
+    insets: EdgeInsets
+} & MainScreenLayoutProps
 
 const MainScreenLayout = (props: MainScreenLayoutProps) => {
-  const insets = useSafeAreaInsets();
-  const styles = useStyles({ ...props, insets });
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({ ...props, insets })
 
-  return (
-    <PWView style={styles.contentContainer} {...props}>
-      {props.children}
-    </PWView>
-  );
-};
+    return (
+        <PWView
+            style={styles.contentContainer}
+            {...props}
+        >
+            {props.children}
+        </PWView>
+    )
+}
 
-export default MainScreenLayout;
+export default MainScreenLayout

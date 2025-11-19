@@ -10,11 +10,14 @@
  limitations under the License
  */
 
-import { describe, expect, it } from 'vitest';
-import { UserPreferences } from '../user-preferences';
+import { describe, expect, it } from 'vitest'
+import { UserPreferences } from '../user-preferences'
 
 describe('UserPreferences', () => {
-  it('exposes the expected spend agreement key', () => {
-    expect(UserPreferences).toHaveProperty('spendAgreed', 'send-fund-agreed');
-  });
-});
+    it('exposes the expected spend agreement key', () => {
+        expect(UserPreferences).toHaveProperty(
+            'spendAgreed',
+            'send-fund-agreed',
+        )
+    })
+})

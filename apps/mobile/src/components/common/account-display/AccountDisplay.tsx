@@ -10,51 +10,59 @@
  limitations under the License
  */
 
-import { Text, TextProps, useTheme } from '@rneui/themed';
-import { getAccountDisplayName, WalletAccount } from '@perawallet/core';
-import PWView, { PWViewProps } from '../view/PWView';
-import { useStyles } from './styles';
+import { Text, TextProps, useTheme } from '@rneui/themed'
+import { getAccountDisplayName, WalletAccount } from '@perawallet/core'
+import PWView, { PWViewProps } from '../view/PWView'
+import { useStyles } from './styles'
 
-import AccountIcon, { AccountIconProps } from '../account-icon/AccountIcon';
-import PWIcon from '../icons/PWIcon';
+import AccountIcon, { AccountIconProps } from '../account-icon/AccountIcon'
+import PWIcon from '../icons/PWIcon'
 
 type AccountDisplayProps = {
-  account?: WalletAccount;
-  iconProps?: Omit<AccountIconProps, 'account'>;
-  textProps?: TextProps;
-  showChevron?: boolean;
-} & PWViewProps;
+    account?: WalletAccount
+    iconProps?: Omit<AccountIconProps, 'account'>
+    textProps?: TextProps
+    showChevron?: boolean
+} & PWViewProps
 
 const AccountDisplay = ({
-  account,
-  iconProps,
-  showChevron = true,
-  textProps,
-  ...rest
+    account,
+    iconProps,
+    showChevron = true,
+    textProps,
+    ...rest
 }: AccountDisplayProps) => {
-  const { theme } = useTheme();
-  const styles = useStyles();
-  const displayName = account ? getAccountDisplayName(account) : 'No Account';
+    const { theme } = useTheme()
+    const styles = useStyles()
+    const displayName = account ? getAccountDisplayName(account) : 'No Account'
 
-  return (
-    <PWView {...rest} style={[styles.container, rest.style]}>
-      {!!account && (
-        <AccountIcon
-          account={account}
-          color={theme.colors.textMain}
-          {...iconProps}
-        />
-      )}
-      <Text
-        {...textProps}
-        h4Style={textProps ? textProps.h4Style : styles.text}
-        h4={!textProps}
-      >
-        {displayName}
-      </Text>
-      {showChevron && <PWIcon variant="secondary" name="chevron-down" />}
-    </PWView>
-  );
-};
+    return (
+        <PWView
+            {...rest}
+            style={[styles.container, rest.style]}
+        >
+            {!!account && (
+                <AccountIcon
+                    account={account}
+                    color={theme.colors.textMain}
+                    {...iconProps}
+                />
+            )}
+            <Text
+                {...textProps}
+                h4Style={textProps ? textProps.h4Style : styles.text}
+                h4={!textProps}
+            >
+                {displayName}
+            </Text>
+            {showChevron && (
+                <PWIcon
+                    variant='secondary'
+                    name='chevron-down'
+                />
+            )}
+        </PWView>
+    )
+}
 
-export default AccountDisplay;
+export default AccountDisplay

@@ -10,32 +10,38 @@
  limitations under the License
  */
 
-import { useStyles } from './styles';
-import PWView from '../../common/view/PWView';
-import { ViewStyle } from 'react-native';
-import { Text } from '@rneui/themed';
-import AssetIcon from '../../common/asset-icon/AssetIcon';
-import { PeraAsset } from '@perawallet/core';
+import { useStyles } from './styles'
+import PWView from '../../common/view/PWView'
+import { ViewStyle } from 'react-native'
+import { Text } from '@rneui/themed'
+import AssetIcon from '../../common/asset-icon/AssetIcon'
+import { PeraAsset } from '@perawallet/core'
 
 type SwapPairItemProps = {
-  fromAsset: PeraAsset;
-  toAsset: PeraAsset;
-  style: ViewStyle;
-};
+    fromAsset: PeraAsset
+    toAsset: PeraAsset
+    style: ViewStyle
+}
 
 const SwapPair = (props: SwapPairItemProps) => {
-  const themeStyle = useStyles();
+    const themeStyle = useStyles()
 
-  return (
-    <PWView style={props.style}>
-      <PWView style={themeStyle.itemIconContainer}>
-        <AssetIcon asset={props.fromAsset} style={themeStyle.fromIcon} />
-        <AssetIcon asset={props.toAsset} style={themeStyle.toIcon} />
-      </PWView>
-      <Text h4>
-        {props.fromAsset?.unit_name} to {props.toAsset?.unit_name}
-      </Text>
-    </PWView>
-  );
-};
-export default SwapPair;
+    return (
+        <PWView style={props.style}>
+            <PWView style={themeStyle.itemIconContainer}>
+                <AssetIcon
+                    asset={props.fromAsset}
+                    style={themeStyle.fromIcon}
+                />
+                <AssetIcon
+                    asset={props.toAsset}
+                    style={themeStyle.toIcon}
+                />
+            </PWView>
+            <Text h4>
+                {props.fromAsset?.unit_name} to {props.toAsset?.unit_name}
+            </Text>
+        </PWView>
+    )
+}
+export default SwapPair

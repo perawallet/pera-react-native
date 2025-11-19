@@ -10,42 +10,49 @@
  limitations under the License
  */
 
-import EmptyView from '../../components/common/empty-view/EmptyView';
-import PWView from '../../components/common/view/PWView';
-import { Text } from '@rneui/themed';
-import { useStyles } from './ViewContactScreen.styles';
-import ContactAvatar from '../../components/common/contact-avatar/ContactAvatar';
-import AddressDisplay from '../../components/common/address-display/AddressDisplay';
-import { useContacts } from '@perawallet/core';
+import EmptyView from '../../components/common/empty-view/EmptyView'
+import PWView from '../../components/common/view/PWView'
+import { Text } from '@rneui/themed'
+import { useStyles } from './ViewContactScreen.styles'
+import ContactAvatar from '../../components/common/contact-avatar/ContactAvatar'
+import AddressDisplay from '../../components/common/address-display/AddressDisplay'
+import { useContacts } from '@perawallet/core'
 
 const ViewContactScreen = () => {
-  const { selectedContact } = useContacts();
-  const styles = useStyles();
+    const { selectedContact } = useContacts()
+    const styles = useStyles()
 
-  if (!selectedContact) {
+    if (!selectedContact) {
+        return (
+            <EmptyView
+                title='No contact found'
+                body="Something appears to have gone wrong.  Couldn't find the contact specified"
+            />
+        )
+    }
+
     return (
-      <EmptyView
-        title="No contact found"
-        body="Something appears to have gone wrong.  Couldn't find the contact specified"
-      />
-    );
-  }
+        <PWView style={styles.container}>
+            <PWView style={styles.avatar}>
+                <ContactAvatar
+                    contact={selectedContact}
+                    size='large'
+                />
+            </PWView>
+            <PWView>
+                <Text style={styles.label}>Name</Text>
+                <Text style={styles.value}>{selectedContact.name}</Text>
+            </PWView>
+            <PWView>
+                <Text style={styles.label}>Address</Text>
+                <AddressDisplay
+                    address={selectedContact.address}
+                    showCopy
+                    rawDisplay
+                />
+            </PWView>
+        </PWView>
+    )
+}
 
-  return (
-    <PWView style={styles.container}>
-      <PWView style={styles.avatar}>
-        <ContactAvatar contact={selectedContact} size="large" />
-      </PWView>
-      <PWView>
-        <Text style={styles.label}>Name</Text>
-        <Text style={styles.value}>{selectedContact.name}</Text>
-      </PWView>
-      <PWView>
-        <Text style={styles.label}>Address</Text>
-        <AddressDisplay address={selectedContact.address} showCopy rawDisplay />
-      </PWView>
-    </PWView>
-  );
-};
-
-export default ViewContactScreen;
+export default ViewContactScreen

@@ -10,78 +10,96 @@
  limitations under the License
  */
 
-import PWView from '../../common/view/PWView';
+import PWView from '../../common/view/PWView'
 import {
-  formatRelativeTime,
-  NotificationV2SerializerResponse
-} from '@perawallet/core';
-import { Image, Text } from '@rneui/themed';
-import { useStyles } from './styles';
-import { useCallback, useMemo } from 'react';
-import PWIcon from '../../common/icons/PWIcon';
-import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity';
+    formatRelativeTime,
+    NotificationV2SerializerResponse,
+} from '@perawallet/core'
+import { Image, Text } from '@rneui/themed'
+import { useStyles } from './styles'
+import { useCallback, useMemo } from 'react'
+import PWIcon from '../../common/icons/PWIcon'
+import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity'
 
 type NotificationItemProps = {
-  item: NotificationV2SerializerResponse;
-};
+    item: NotificationV2SerializerResponse
+}
 
 const NotificationItem = ({ item }: NotificationItemProps) => {
-  const styles = useStyles();
+    const styles = useStyles()
 
-  const getImage = useCallback(
-    (notification: NotificationV2SerializerResponse) => {
-      const metadata = notification.metadata as any;
-      const imageUrl =
-        metadata?.image_url ?? metadata?.asset?.logo ?? metadata?.icon?.logo;
+    const getImage = useCallback(
+        (notification: NotificationV2SerializerResponse) => {
+            const metadata = notification.metadata as any
+            const imageUrl =
+                metadata?.image_url ??
+                metadata?.asset?.logo ??
+                metadata?.icon?.logo
 
-      if (imageUrl) {
-        return (
-          <PWView style={styles.iconContainerNoBorder}>
-            {metadata?.icon?.shape === 'circle' ? (
-              <Image
-                source={{ uri: imageUrl }}
-                containerStyle={styles.imageCircle}
-                PlaceholderContent={<PWIcon name="bell" variant="secondary" />}
-                transition
-              />
-            ) : (
-              <Image
-                source={{ uri: imageUrl }}
-                containerStyle={styles.image}
-                PlaceholderContent={<PWIcon name="bell" variant="secondary" />}
-                transition
-              />
-            )}
-          </PWView>
-        );
-      } else {
-        return (
-          <PWView style={styles.iconContainer}>
-            <PWIcon name="bell" variant="secondary" />
-          </PWView>
-        );
-      }
-    },
-    [styles]
-  );
+            if (imageUrl) {
+                return (
+                    <PWView style={styles.iconContainerNoBorder}>
+                        {metadata?.icon?.shape === 'circle' ? (
+                            <Image
+                                source={{ uri: imageUrl }}
+                                containerStyle={styles.imageCircle}
+                                PlaceholderContent={
+                                    <PWIcon
+                                        name='bell'
+                                        variant='secondary'
+                                    />
+                                }
+                                transition
+                            />
+                        ) : (
+                            <Image
+                                source={{ uri: imageUrl }}
+                                containerStyle={styles.image}
+                                PlaceholderContent={
+                                    <PWIcon
+                                        name='bell'
+                                        variant='secondary'
+                                    />
+                                }
+                                transition
+                            />
+                        )}
+                    </PWView>
+                )
+            } else {
+                return (
+                    <PWView style={styles.iconContainer}>
+                        <PWIcon
+                            name='bell'
+                            variant='secondary'
+                        />
+                    </PWView>
+                )
+            }
+        },
+        [styles],
+    )
 
-  const handlePress = () => {
-    //TODO: we need to invoke relevant deeplinks here as we implement them
-  };
+    const handlePress = () => {
+        //TODO: we need to invoke relevant deeplinks here as we implement them
+    }
 
-  const image = useMemo(() => getImage(item), [item, getImage]);
+    const image = useMemo(() => getImage(item), [item, getImage])
 
-  return (
-    <PWTouchableOpacity onPress={handlePress} style={styles.container}>
-      {image}
-      <PWView style={styles.messageBox}>
-        <Text>{item.message}</Text>
-        <Text style={styles.timeText}>
-          {formatRelativeTime(item.creation_datetime ?? new Date())}
-        </Text>
-      </PWView>
-    </PWTouchableOpacity>
-  );
-};
+    return (
+        <PWTouchableOpacity
+            onPress={handlePress}
+            style={styles.container}
+        >
+            {image}
+            <PWView style={styles.messageBox}>
+                <Text>{item.message}</Text>
+                <Text style={styles.timeText}>
+                    {formatRelativeTime(item.creation_datetime ?? new Date())}
+                </Text>
+            </PWView>
+        </PWTouchableOpacity>
+    )
+}
 
-export default NotificationItem;
+export default NotificationItem

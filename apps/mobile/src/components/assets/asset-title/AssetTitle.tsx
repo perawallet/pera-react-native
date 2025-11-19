@@ -10,35 +10,38 @@
  limitations under the License
  */
 
-import { PeraAsset } from '@perawallet/core';
-import PWView from '../../common/view/PWView';
-import { useStyles } from './styles';
-import AssetIcon from '../../common/asset-icon/AssetIcon';
-import { Text, useTheme } from '@rneui/themed';
-import { Icon } from '@rneui/base';
+import { PeraAsset } from '@perawallet/core'
+import PWView from '../../common/view/PWView'
+import { useStyles } from './styles'
+import AssetIcon from '../../common/asset-icon/AssetIcon'
+import { Text, useTheme } from '@rneui/themed'
+import { Icon } from '@rneui/base'
 
 export type AssetTitleProps = {
-  asset: PeraAsset;
-};
+    asset: PeraAsset
+}
 
 const AssetTitle = ({ asset }: AssetTitleProps) => {
-  const styles = useStyles();
-  const { theme } = useTheme();
+    const styles = useStyles()
+    const { theme } = useTheme()
 
-  return (
-    <PWView style={styles.container}>
-      <AssetIcon asset={asset} size={theme.spacing.xl * 1.5} />
-      <Text style={styles.name}>{asset.name}</Text>
-      {asset.verificationTier === 'verified' && (
-        <Icon
-          name="check-decagram"
-          type="material-community"
-          color={theme.colors.primary}
-          size={16}
-        />
-      )}
-    </PWView>
-  );
-};
+    return (
+        <PWView style={styles.container}>
+            <AssetIcon
+                asset={asset}
+                size={theme.spacing.xl * 1.5}
+            />
+            <Text style={styles.name}>{asset.name}</Text>
+            {asset.verificationTier === 'verified' && (
+                <Icon
+                    name='check-decagram'
+                    type='material-community'
+                    color={theme.colors.primary}
+                    size={16}
+                />
+            )}
+        </PWView>
+    )
+}
 
-export default AssetTitle;
+export default AssetTitle

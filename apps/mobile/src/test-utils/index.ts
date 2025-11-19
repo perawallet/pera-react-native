@@ -10,6 +10,6 @@
  limitations under the License
  */
 
-export * from './render';
-export * from './mocks';
-export * from './test-data';
+export * from './render'
+export * from './mocks'
+export * from './test-data'

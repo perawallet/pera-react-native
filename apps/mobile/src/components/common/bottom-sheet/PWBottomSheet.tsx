@@ -10,30 +10,30 @@
  limitations under the License
  */
 
-import { BottomSheet, BottomSheetProps } from '@rneui/themed';
-import PWView from '../view/PWView';
-import { PropsWithChildren } from 'react';
-import { useStyles } from './styles';
-import { StyleProp, ViewStyle } from 'react-native';
+import { BottomSheet, BottomSheetProps } from '@rneui/themed'
+import PWView from '../view/PWView'
+import { PropsWithChildren } from 'react'
+import { useStyles } from './styles'
+import { StyleProp, ViewStyle } from 'react-native'
 
 export type PWBottomSheetProps = {
-  innerContainerStyle?: StyleProp<ViewStyle>;
+    innerContainerStyle?: StyleProp<ViewStyle>
 } & BottomSheetProps &
-  PropsWithChildren;
+    PropsWithChildren
 
 const PWBottomSheet = ({
-  innerContainerStyle,
-  children,
-  ...rest
+    innerContainerStyle,
+    children,
+    ...rest
 }: PWBottomSheetProps) => {
-  const style = useStyles();
-  return (
-    <BottomSheet {...rest}>
-      <PWView style={[style.defaultStyle, innerContainerStyle]}>
-        {children}
-      </PWView>
-    </BottomSheet>
-  );
-};
+    const style = useStyles()
+    return (
+        <BottomSheet {...rest}>
+            <PWView style={[style.defaultStyle, innerContainerStyle]}>
+                {children}
+            </PWView>
+        </BottomSheet>
+    )
+}
 
-export default PWBottomSheet;
+export default PWBottomSheet

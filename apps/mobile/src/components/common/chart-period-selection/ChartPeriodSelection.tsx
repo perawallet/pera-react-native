@@ -10,77 +10,77 @@
  limitations under the License
  */
 
-import { Text } from '@rneui/themed';
-import PWView from '../view/PWView';
-import { useStyles } from './styles';
-import { useCallback, useState } from 'react';
-import PWTouchableOpacity from '../touchable-opacity/PWTouchableOpacity';
+import { Text } from '@rneui/themed'
+import PWView from '../view/PWView'
+import { useStyles } from './styles'
+import { useCallback, useState } from 'react'
+import PWTouchableOpacity from '../touchable-opacity/PWTouchableOpacity'
 
 export const ChartPeriods = {
-  OneDay: 'one-day',
-  OneWeek: 'one-week',
-  OneMonth: 'one-month',
-  OneYear: 'one-year'
-};
+    OneDay: 'one-day',
+    OneWeek: 'one-week',
+    OneMonth: 'one-month',
+    OneYear: 'one-year',
+}
 
-export type ChartPeriod = (typeof ChartPeriods)[keyof typeof ChartPeriods];
+export type ChartPeriod = (typeof ChartPeriods)[keyof typeof ChartPeriods]
 
 type ChartPeriodSelectionProps = {
-  value: ChartPeriod;
-  onChange: (val: ChartPeriod) => void;
-};
+    value: ChartPeriod
+    onChange: (val: ChartPeriod) => void
+}
 
 const ChartPeriodSelection = ({
-  value,
-  onChange
+    value,
+    onChange,
 }: ChartPeriodSelectionProps) => {
-  const styles = useStyles();
-  const [activeValue, setActiveValue] = useState<ChartPeriod>(value);
+    const styles = useStyles()
+    const [activeValue, setActiveValue] = useState<ChartPeriod>(value)
 
-  const handlePressed = useCallback(
-    (newValue: ChartPeriod) => {
-      if (activeValue !== newValue) {
-        setActiveValue(newValue);
-        onChange(newValue);
-      }
-    },
-    [onChange, setActiveValue, activeValue]
-  );
+    const handlePressed = useCallback(
+        (newValue: ChartPeriod) => {
+            if (activeValue !== newValue) {
+                setActiveValue(newValue)
+                onChange(newValue)
+            }
+        },
+        [onChange, setActiveValue, activeValue],
+    )
 
-  return (
-    <PWView style={styles.container}>
-      <PWTouchableOpacity
-        onPress={() => handlePressed(ChartPeriods.OneWeek)}
-        style={
-          activeValue === ChartPeriods.OneWeek
-            ? styles.selectedButtonContainer
-            : styles.unselectedButtonContainer
-        }
-      >
-        <Text>1W</Text>
-      </PWTouchableOpacity>
-      <PWTouchableOpacity
-        onPress={() => handlePressed(ChartPeriods.OneMonth)}
-        style={
-          activeValue === ChartPeriods.OneMonth
-            ? styles.selectedButtonContainer
-            : styles.unselectedButtonContainer
-        }
-      >
-        <Text>1M</Text>
-      </PWTouchableOpacity>
-      <PWTouchableOpacity
-        onPress={() => handlePressed(ChartPeriods.OneYear)}
-        style={
-          activeValue === ChartPeriods.OneYear
-            ? styles.selectedButtonContainer
-            : styles.unselectedButtonContainer
-        }
-      >
-        <Text>1Y</Text>
-      </PWTouchableOpacity>
-    </PWView>
-  );
-};
+    return (
+        <PWView style={styles.container}>
+            <PWTouchableOpacity
+                onPress={() => handlePressed(ChartPeriods.OneWeek)}
+                style={
+                    activeValue === ChartPeriods.OneWeek
+                        ? styles.selectedButtonContainer
+                        : styles.unselectedButtonContainer
+                }
+            >
+                <Text>1W</Text>
+            </PWTouchableOpacity>
+            <PWTouchableOpacity
+                onPress={() => handlePressed(ChartPeriods.OneMonth)}
+                style={
+                    activeValue === ChartPeriods.OneMonth
+                        ? styles.selectedButtonContainer
+                        : styles.unselectedButtonContainer
+                }
+            >
+                <Text>1M</Text>
+            </PWTouchableOpacity>
+            <PWTouchableOpacity
+                onPress={() => handlePressed(ChartPeriods.OneYear)}
+                style={
+                    activeValue === ChartPeriods.OneYear
+                        ? styles.selectedButtonContainer
+                        : styles.unselectedButtonContainer
+                }
+            >
+                <Text>1Y</Text>
+            </PWTouchableOpacity>
+        </PWView>
+    )
+}
 
-export default ChartPeriodSelection;
+export default ChartPeriodSelection

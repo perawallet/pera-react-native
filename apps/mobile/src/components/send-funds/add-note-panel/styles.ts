@@ -10,23 +10,23 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed';
+import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
-  return {
-    container: {
-      flex: 1,
-      padding: theme.spacing.xl,
-      borderTopStartRadius: theme.spacing.sm,
-      borderTopEndRadius: theme.spacing.sm,
-      overflow: 'hidden'
-    },
-    titleContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      width: '100%',
-      alignItems: 'center',
-      marginBottom: theme.spacing.sm
+    return {
+        container: {
+            flex: 1,
+            padding: theme.spacing.xl,
+            borderTopStartRadius: theme.spacing.sm,
+            borderTopEndRadius: theme.spacing.sm,
+            overflow: 'hidden',
+        },
+        titleContainer: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            width: '100%',
+            alignItems: 'center',
+            marginBottom: theme.spacing.sm,
+        },
     }
-  };
-});
+})

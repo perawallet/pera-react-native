@@ -10,39 +10,44 @@
  limitations under the License
  */
 
-import { useStyles } from './styles';
-import PWView from '../../../common/view/PWView';
-import RoundButton from '../../../common/round-button/RoundButton';
-import PWIcon from '../../../common/icons/PWIcon';
+import { useStyles } from './styles'
+import PWView from '../../../common/view/PWView'
+import RoundButton from '../../../common/round-button/RoundButton'
+import PWIcon from '../../../common/icons/PWIcon'
 
 const AssetActionButtons = () => {
-  const styles = useStyles();
+    const styles = useStyles()
 
-  return (
-    <PWView style={styles.container}>
-      <RoundButton
-        buttonStyle={styles.blackButton}
-        title="Swap"
-        icon={<PWIcon name="swap" variant="white" />}
-        onPress={() => {}}
-      />
-      <RoundButton
-        title="Buy / Sell"
-        icon={<PWIcon name="dollar" />}
-        onPress={() => {}}
-      />
-      <RoundButton
-        title="Send"
-        icon={<PWIcon name="arrow-up" />}
-        onPress={() => {}}
-      />
-      <RoundButton
-        title="Receive"
-        icon={<PWIcon name="arrow-down" />}
-        onPress={() => {}}
-      />
-    </PWView>
-  );
-};
+    return (
+        <PWView style={styles.container}>
+            <RoundButton
+                buttonStyle={styles.blackButton}
+                title='Swap'
+                icon={
+                    <PWIcon
+                        name='swap'
+                        variant='white'
+                    />
+                }
+                onPress={() => {}}
+            />
+            <RoundButton
+                title='Buy / Sell'
+                icon={<PWIcon name='dollar' />}
+                onPress={() => {}}
+            />
+            <RoundButton
+                title='Send'
+                icon={<PWIcon name='arrow-up' />}
+                onPress={() => {}}
+            />
+            <RoundButton
+                title='Receive'
+                icon={<PWIcon name='arrow-down' />}
+                onPress={() => {}}
+            />
+        </PWView>
+    )
+}
 
-export default AssetActionButtons;
+export default AssetActionButtons

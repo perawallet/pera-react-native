@@ -10,24 +10,24 @@
  limitations under the License
  */
 
-import { Tab, TabView } from '@rneui/themed';
-import MainScreenLayout from '../../layouts/MainScreenLayout';
-import { useSelectedAccount } from '@perawallet/core';
-import PWIcon from '../../components/common/icons/PWIcon';
+import { Tab, TabView } from '@rneui/themed'
+import MainScreenLayout from '../../layouts/MainScreenLayout'
+import { useSelectedAccount } from '@perawallet/core'
+import PWIcon from '../../components/common/icons/PWIcon'
 
-import { useStyles } from './styles';
-import { useState } from 'react';
-import PWView from '../../components/common/view/PWView';
-import NotificationsIcon from '../../components/notifications/notifications-icon/NotificationsIcon';
-import AccountSelection from '../../components/common/account-selection/AccountSelection';
-import AccountMenu from '../../components/account-menu/AccountMenu';
-import { Drawer } from 'react-native-drawer-layout';
-import QRScannerView from '../../components/common/qr-scanner/QRScannerView';
-import PWTouchableOpacity from '../../components/common/touchable-opacity/PWTouchableOpacity';
-import EmptyView from '../../components/common/empty-view/EmptyView';
-import AccountOverview from '../../components/account-details/account-overview/AccountOverview';
-import AccountNfts from '../../components/account-details/account-nfts/AccountNfts';
-import AccountHistory from '../../components/account-details/account-history/AccountHistory';
+import { useStyles } from './styles'
+import { useState } from 'react'
+import PWView from '../../components/common/view/PWView'
+import NotificationsIcon from '../../components/notifications/notifications-icon/NotificationsIcon'
+import AccountSelection from '../../components/common/account-selection/AccountSelection'
+import AccountMenu from '../../components/account-menu/AccountMenu'
+import { Drawer } from 'react-native-drawer-layout'
+import QRScannerView from '../../components/common/qr-scanner/QRScannerView'
+import PWTouchableOpacity from '../../components/common/touchable-opacity/PWTouchableOpacity'
+import EmptyView from '../../components/common/empty-view/EmptyView'
+import AccountOverview from '../../components/account-details/account-overview/AccountOverview'
+import AccountNfts from '../../components/account-details/account-nfts/AccountNfts'
+import AccountHistory from '../../components/account-details/account-history/AccountHistory'
 
 //TODO hook up all the button panel buttons correctly
 //TODO implement more menu
@@ -37,106 +37,114 @@ import AccountHistory from '../../components/account-details/account-history/Acc
 //TODO add navigation to asset details screen
 //TODO implement rekey information && multisig information
 const AccountScreen = () => {
-  const styles = useStyles();
-  const account = useSelectedAccount();
-  const [scannerVisible, setScannerVisible] = useState<boolean>(false);
-  const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
-  const [tabIndex, setTabIndex] = useState(0);
+    const styles = useStyles()
+    const account = useSelectedAccount()
+    const [scannerVisible, setScannerVisible] = useState<boolean>(false)
+    const [drawerOpen, setDrawerOpen] = useState<boolean>(false)
+    const [tabIndex, setTabIndex] = useState(0)
 
-  const closeQRScanner = () => {
-    setScannerVisible(false);
-  };
+    const closeQRScanner = () => {
+        setScannerVisible(false)
+    }
 
-  const openQRScanner = () => {
-    setScannerVisible(true);
-  };
+    const openQRScanner = () => {
+        setScannerVisible(true)
+    }
 
-  const toggleAccountSelectorVisible = () => {
-    setDrawerOpen(true);
-  };
+    const toggleAccountSelectorVisible = () => {
+        setDrawerOpen(true)
+    }
 
-  if (!account) {
+    if (!account) {
+        return (
+            <EmptyView
+                title='No Account Selected'
+                body='There is currently no account selected'
+            />
+        )
+    }
+
     return (
-      <EmptyView
-        title="No Account Selected"
-        body="There is currently no account selected"
-      />
-    );
-  }
-
-  return (
-    <Drawer
-      open={drawerOpen}
-      onOpen={() => setDrawerOpen(true)}
-      onClose={() => setDrawerOpen(false)}
-      drawerType="front"
-      swipeEnabled
-      drawerStyle={styles.drawer}
-      renderDrawerContent={() => (
-        <AccountMenu onSelected={() => setDrawerOpen(false)} showInbox />
-      )}
-    >
-      <MainScreenLayout fullScreen>
-        <PWView style={styles.iconBar}>
-          <PWView style={styles.iconBarSection}>
-            {/* TODO we may want to add support for pending inbox items here too
+        <Drawer
+            open={drawerOpen}
+            onOpen={() => setDrawerOpen(true)}
+            onClose={() => setDrawerOpen(false)}
+            drawerType='front'
+            swipeEnabled
+            drawerStyle={styles.drawer}
+            renderDrawerContent={() => (
+                <AccountMenu
+                    onSelected={() => setDrawerOpen(false)}
+                    showInbox
+                />
+            )}
+        >
+            <MainScreenLayout fullScreen>
+                <PWView style={styles.iconBar}>
+                    <PWView style={styles.iconBarSection}>
+                        {/* TODO we may want to add support for pending inbox items here too
             (like the current inbox since we're using the same screen real estate) */}
-            <AccountSelection onPress={toggleAccountSelectorVisible} />
-          </PWView>
-          <PWView style={styles.iconBarSection}>
-            <PWTouchableOpacity onPress={openQRScanner}>
-              <PWIcon name="camera" />
-            </PWTouchableOpacity>
-            <NotificationsIcon />
-          </PWView>
-        </PWView>
-        <Tab
-          value={tabIndex}
-          onChange={e => setTabIndex(e)}
-          containerStyle={styles.tabs}
-          indicatorStyle={styles.indicator}
-          titleStyle={styles.tabItem}
-          dense
-        >
-          <Tab.Item title="Overview" />
-          <Tab.Item title="NFTs" />
-          <Tab.Item title="History" />
-        </Tab>
-        <TabView
-          value={tabIndex}
-          onChange={setTabIndex}
-          animationType="spring"
-          animationConfig={{
-            duration: 150,
-            bounciness: 1,
-            useNativeDriver: true
-          }}
-        >
-          <TabView.Item style={styles.fullWidth}>
-            <AccountOverview account={account} />
-          </TabView.Item>
-          <TabView.Item style={styles.fullWidth}>
-            <AccountNfts account={account} />
-          </TabView.Item>
-          <TabView.Item style={styles.fullWidth}>
-            <AccountHistory account={account} />
-          </TabView.Item>
-        </TabView>
-      </MainScreenLayout>
-      <QRScannerView
-        visible={scannerVisible}
-        onSuccess={closeQRScanner}
-        animationType="slide"
-      >
-        <PWTouchableOpacity
-          onPress={closeQRScanner}
-          style={styles.scannerClose}
-        >
-          <PWIcon name="cross" variant="white" />
-        </PWTouchableOpacity>
-      </QRScannerView>
-    </Drawer>
-  );
-};
+                        <AccountSelection
+                            onPress={toggleAccountSelectorVisible}
+                        />
+                    </PWView>
+                    <PWView style={styles.iconBarSection}>
+                        <PWTouchableOpacity onPress={openQRScanner}>
+                            <PWIcon name='camera' />
+                        </PWTouchableOpacity>
+                        <NotificationsIcon />
+                    </PWView>
+                </PWView>
+                <Tab
+                    value={tabIndex}
+                    onChange={e => setTabIndex(e)}
+                    containerStyle={styles.tabs}
+                    indicatorStyle={styles.indicator}
+                    titleStyle={styles.tabItem}
+                    dense
+                >
+                    <Tab.Item title='Overview' />
+                    <Tab.Item title='NFTs' />
+                    <Tab.Item title='History' />
+                </Tab>
+                <TabView
+                    value={tabIndex}
+                    onChange={setTabIndex}
+                    animationType='spring'
+                    animationConfig={{
+                        duration: 150,
+                        bounciness: 1,
+                        useNativeDriver: true,
+                    }}
+                >
+                    <TabView.Item style={styles.fullWidth}>
+                        <AccountOverview account={account} />
+                    </TabView.Item>
+                    <TabView.Item style={styles.fullWidth}>
+                        <AccountNfts account={account} />
+                    </TabView.Item>
+                    <TabView.Item style={styles.fullWidth}>
+                        <AccountHistory account={account} />
+                    </TabView.Item>
+                </TabView>
+            </MainScreenLayout>
+            <QRScannerView
+                visible={scannerVisible}
+                onSuccess={closeQRScanner}
+                animationType='slide'
+            >
+                <PWTouchableOpacity
+                    onPress={closeQRScanner}
+                    style={styles.scannerClose}
+                >
+                    <PWIcon
+                        name='cross'
+                        variant='white'
+                    />
+                </PWTouchableOpacity>
+            </QRScannerView>
+        </Drawer>
+    )
+}
 
-export default AccountScreen;
+export default AccountScreen

@@ -11,46 +11,46 @@
  */
 
 import {
-  useDeviceID,
-  useV1DevicesNotificationStatusList
-} from '@perawallet/core';
-import { SvgProps } from 'react-native-svg';
-import PWIcon from '../../common/icons/PWIcon';
-import { ParamListBase, useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity';
-import { config } from '@perawallet/config';
+    useDeviceID,
+    useV1DevicesNotificationStatusList,
+} from '@perawallet/core'
+import { SvgProps } from 'react-native-svg'
+import PWIcon from '../../common/icons/PWIcon'
+import { ParamListBase, useNavigation } from '@react-navigation/native'
+import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity'
+import { config } from '@perawallet/config'
 
-export type NotificationsIconProps = {} & SvgProps;
+export type NotificationsIconProps = {} & SvgProps
 
 const NotificationsIcon = (props: NotificationsIconProps) => {
-  const deviceID = useDeviceID();
-  const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
+    const deviceID = useDeviceID()
+    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
 
-  const goToNotifications = () => {
-    navigation.navigate('Notifications');
-  };
-
-  const { data } = useV1DevicesNotificationStatusList(
-    {
-      device_id: deviceID!
-    },
-    {
-      query: {
-        enabled: !!deviceID,
-        staleTime: config.notificationRefreshTime
-      }
+    const goToNotifications = () => {
+        navigation.navigate('Notifications')
     }
-  );
 
-  return (
-    <PWTouchableOpacity onPress={goToNotifications}>
-      <PWIcon
-        {...props}
-        name={data?.has_new_notification ? 'bell-with-badge' : 'bell'}
-      />
-    </PWTouchableOpacity>
-  );
-};
+    const { data } = useV1DevicesNotificationStatusList(
+        {
+            device_id: deviceID!,
+        },
+        {
+            query: {
+                enabled: !!deviceID,
+                staleTime: config.notificationRefreshTime,
+            },
+        },
+    )
 
-export default NotificationsIcon;
+    return (
+        <PWTouchableOpacity onPress={goToNotifications}>
+            <PWIcon
+                {...props}
+                name={data?.has_new_notification ? 'bell-with-badge' : 'bell'}
+            />
+        </PWTouchableOpacity>
+    )
+}
+
+export default NotificationsIcon

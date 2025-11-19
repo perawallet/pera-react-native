@@ -10,49 +10,49 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed';
+import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-  container: {
-    marginTop: theme.spacing.xl
-  },
-  loadingContainer: {
-    gap: theme.spacing.md
-  },
-  title: {},
-  titleBar: {
-    gap: theme.spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: theme.spacing.sm
-  },
-  titleBarButtonContainer: {
-    flexDirection: 'row',
-    gap: theme.spacing.md,
-    alignItems: 'center'
-  },
-  listContainer: {
-    marginTop: theme.spacing.xl
-  },
-  manageButtonContainer: {
-    backgroundColor: theme.colors.buttonSquareBg,
-    borderRadius: theme.spacing.sm,
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  addButtonContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: theme.spacing.md,
-    borderRadius: theme.spacing.sm,
-    gap: theme.spacing.sm,
-    backgroundColor: theme.colors.buttonSquareBg,
-    height: 40
-  },
-  addButtonTitle: {
-    color: theme.colors.buttonSquareText
-  }
-}));
+    container: {
+        marginTop: theme.spacing.xl,
+    },
+    loadingContainer: {
+        gap: theme.spacing.md,
+    },
+    title: {},
+    titleBar: {
+        gap: theme.spacing.md,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: theme.spacing.sm,
+    },
+    titleBarButtonContainer: {
+        flexDirection: 'row',
+        gap: theme.spacing.md,
+        alignItems: 'center',
+    },
+    listContainer: {
+        marginTop: theme.spacing.xl,
+    },
+    manageButtonContainer: {
+        backgroundColor: theme.colors.buttonSquareBg,
+        borderRadius: theme.spacing.sm,
+        width: 40,
+        height: 40,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    addButtonContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: theme.spacing.md,
+        borderRadius: theme.spacing.sm,
+        gap: theme.spacing.sm,
+        backgroundColor: theme.colors.buttonSquareBg,
+        height: 40,
+    },
+    addButtonTitle: {
+        color: theme.colors.buttonSquareText,
+    },
+}))

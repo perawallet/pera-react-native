@@ -10,21 +10,21 @@
  limitations under the License
  */
 
-import EmptyView from '../../common/empty-view/EmptyView';
-import { WalletAccount } from '@perawallet/core';
+import EmptyView from '../../common/empty-view/EmptyView'
+import { WalletAccount } from '@perawallet/core'
 
 type AccountHistoryProps = {
-  account: WalletAccount;
-};
+    account: WalletAccount
+}
 
 //TODO implement
 const AccountHistory = (_: AccountHistoryProps) => {
-  return (
-    <EmptyView
-      title="Not Implemented"
-      body="This part of the app hasn't been implemented yet"
-    />
-  );
-};
+    return (
+        <EmptyView
+            title='Not Implemented'
+            body="This part of the app hasn't been implemented yet"
+        />
+    )
+}
 
-export default AccountHistory;
+export default AccountHistory

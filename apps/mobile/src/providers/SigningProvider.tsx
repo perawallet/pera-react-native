@@ -10,28 +10,28 @@
  limitations under the License
  */
 
-import React, { PropsWithChildren } from 'react';
-import PWBottomSheet from '../components/common/bottom-sheet/PWBottomSheet';
-import SigningView from '../components/signing/signing-view/SigningView';
-import { useWindowDimensions } from 'react-native';
-import { useSigningRequest } from '@perawallet/core';
+import React, { PropsWithChildren } from 'react'
+import PWBottomSheet from '../components/common/bottom-sheet/PWBottomSheet'
+import SigningView from '../components/signing/signing-view/SigningView'
+import { useWindowDimensions } from 'react-native'
+import { useSigningRequest } from '@perawallet/core'
 
-type SigningProviderProps = {} & PropsWithChildren;
+type SigningProviderProps = {} & PropsWithChildren
 
 export function SigningProvider({ children }: SigningProviderProps) {
-  const { pendingSignRequests } = useSigningRequest();
-  const nextRequest = pendingSignRequests.at(0);
-  const { height } = useWindowDimensions();
+    const { pendingSignRequests } = useSigningRequest()
+    const nextRequest = pendingSignRequests.at(0)
+    const { height } = useWindowDimensions()
 
-  return (
-    <>
-      {children}
-      <PWBottomSheet
-        innerContainerStyle={{ height: height - 100 }}
-        isVisible={!!nextRequest}
-      >
-        {!!nextRequest && <SigningView request={nextRequest} />}
-      </PWBottomSheet>
-    </>
-  );
+    return (
+        <>
+            {children}
+            <PWBottomSheet
+                innerContainerStyle={{ height: height - 100 }}
+                isVisible={!!nextRequest}
+            >
+                {!!nextRequest && <SigningView request={nextRequest} />}
+            </PWBottomSheet>
+        </>
+    )
 }

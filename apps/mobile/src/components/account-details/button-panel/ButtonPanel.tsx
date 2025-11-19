@@ -10,67 +10,72 @@
  limitations under the License
  */
 
-import { useStyles } from './styles';
-import PWView from '../../common/view/PWView';
-import { ParamListBase, useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import RoundButton from '../../common/round-button/RoundButton';
+import { useStyles } from './styles'
+import PWView from '../../common/view/PWView'
+import { ParamListBase, useNavigation } from '@react-navigation/native'
+import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import RoundButton from '../../common/round-button/RoundButton'
 
-import { Alert } from 'react-native';
-import { useState } from 'react';
-import SendFundsBottomSheet from '../../send-funds/bottom-sheet/SendFundsBottomSheet';
-import PWIcon from '../../common/icons/PWIcon';
+import { Alert } from 'react-native'
+import { useState } from 'react'
+import SendFundsBottomSheet from '../../send-funds/bottom-sheet/SendFundsBottomSheet'
+import PWIcon from '../../common/icons/PWIcon'
 
 const ButtonPanel = () => {
-  const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
-  const themeStyle = useStyles();
-  const [sendFundsOpen, setSendFundsOpen] = useState<boolean>(false);
+    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
+    const themeStyle = useStyles()
+    const [sendFundsOpen, setSendFundsOpen] = useState<boolean>(false)
 
-  const goToRootPage = (name: string) => {
-    navigation.replace('TabBar', { screen: name });
-  };
+    const goToRootPage = (name: string) => {
+        navigation.replace('TabBar', { screen: name })
+    }
 
-  const notImplemented = () => {
-    Alert.alert('Not Implemented');
-  };
+    const notImplemented = () => {
+        Alert.alert('Not Implemented')
+    }
 
-  const closeSendFunds = () => {
-    setSendFundsOpen(false);
-  };
+    const closeSendFunds = () => {
+        setSendFundsOpen(false)
+    }
 
-  const openSendFunds = () => {
-    setSendFundsOpen(true);
-  };
+    const openSendFunds = () => {
+        setSendFundsOpen(true)
+    }
 
-  return (
-    <PWView style={themeStyle.container}>
-      <RoundButton
-        buttonStyle={themeStyle.blackButton}
-        title="Swap"
-        icon={<PWIcon name="swap" variant="white" />}
-        onPress={() => goToRootPage('Swap')}
-      />
-      <RoundButton
-        title="Stake"
-        icon={<PWIcon name="dot-stack" />}
-        onPress={() => goToRootPage('Staking')}
-      />
-      <RoundButton
-        title="Send"
-        icon={<PWIcon name="outflow" />}
-        onPress={openSendFunds}
-      />
-      <RoundButton
-        title="More"
-        icon={<PWIcon name="ellipsis" />}
-        onPress={notImplemented}
-      />
-      <SendFundsBottomSheet
-        onClose={closeSendFunds}
-        isVisible={sendFundsOpen}
-      />
-    </PWView>
-  );
-};
+    return (
+        <PWView style={themeStyle.container}>
+            <RoundButton
+                buttonStyle={themeStyle.blackButton}
+                title='Swap'
+                icon={
+                    <PWIcon
+                        name='swap'
+                        variant='white'
+                    />
+                }
+                onPress={() => goToRootPage('Swap')}
+            />
+            <RoundButton
+                title='Stake'
+                icon={<PWIcon name='dot-stack' />}
+                onPress={() => goToRootPage('Staking')}
+            />
+            <RoundButton
+                title='Send'
+                icon={<PWIcon name='outflow' />}
+                onPress={openSendFunds}
+            />
+            <RoundButton
+                title='More'
+                icon={<PWIcon name='ellipsis' />}
+                onPress={notImplemented}
+            />
+            <SendFundsBottomSheet
+                onClose={closeSendFunds}
+                isVisible={sendFundsOpen}
+            />
+        </PWView>
+    )
+}
 
-export default ButtonPanel;
+export default ButtonPanel

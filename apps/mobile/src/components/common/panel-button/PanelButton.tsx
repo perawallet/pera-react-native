@@ -10,41 +10,44 @@
  limitations under the License
  */
 
-import { useStyles } from './styles';
-import { Text } from '@rneui/themed';
-import PWView from '../view/PWView';
+import { useStyles } from './styles'
+import { Text } from '@rneui/themed'
+import PWView from '../view/PWView'
 import PWTouchableOpacity, {
-  type PWTouchableOpacityProps
-} from '../touchable-opacity/PWTouchableOpacity';
+    type PWTouchableOpacityProps,
+} from '../touchable-opacity/PWTouchableOpacity'
 
 export type PanelButtonProps = {
-  leftIcon: React.ReactElement<{}>;
-  rightIcon: React.ReactElement<{}>;
-  title: string;
-  titleWeight: 'h3' | 'h4';
-  onPress: () => void;
-} & PWTouchableOpacityProps;
+    leftIcon: React.ReactElement<{}>
+    rightIcon: React.ReactElement<{}>
+    title: string
+    titleWeight: 'h3' | 'h4'
+    onPress: () => void
+} & PWTouchableOpacityProps
 
 const PanelButton = (props: PanelButtonProps) => {
-  const themeStyle = useStyles(props);
-  const { style, leftIcon, rightIcon, title, titleWeight, onPress, ...rest } =
-    props;
+    const themeStyle = useStyles(props)
+    const { style, leftIcon, rightIcon, title, titleWeight, onPress, ...rest } =
+        props
 
-  return (
-    <PWTouchableOpacity onPress={onPress}>
-      <PWView style={[style, themeStyle.buttonStyle]} {...rest}>
-        {leftIcon}
-        <Text
-          style={themeStyle.textStyle}
-          h4={titleWeight === 'h4'}
-          h3={titleWeight === 'h3'}
-        >
-          {title}
-        </Text>
-        {rightIcon}
-      </PWView>
-    </PWTouchableOpacity>
-  );
-};
+    return (
+        <PWTouchableOpacity onPress={onPress}>
+            <PWView
+                style={[style, themeStyle.buttonStyle]}
+                {...rest}
+            >
+                {leftIcon}
+                <Text
+                    style={themeStyle.textStyle}
+                    h4={titleWeight === 'h4'}
+                    h3={titleWeight === 'h3'}
+                >
+                    {title}
+                </Text>
+                {rightIcon}
+            </PWView>
+        </PWTouchableOpacity>
+    )
+}
 
-export default PanelButton;
+export default PanelButton

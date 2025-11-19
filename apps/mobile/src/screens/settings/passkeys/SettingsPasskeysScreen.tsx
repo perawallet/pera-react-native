@@ -10,19 +10,19 @@
  limitations under the License
  */
 
-import MainScreenLayout from '../../../layouts/MainScreenLayout';
-import EmptyView from '../../../components/common/empty-view/EmptyView';
+import MainScreenLayout from '../../../layouts/MainScreenLayout'
+import EmptyView from '../../../components/common/empty-view/EmptyView'
 
 const SettingsPasskeyScreen = () => {
-  return (
-    <MainScreenLayout>
-      <EmptyView
-        icon="person-key"
-        title="Not Implemented"
-        body="This screen has not yet been implemented"
-      />
-    </MainScreenLayout>
-  );
-};
+    return (
+        <MainScreenLayout>
+            <EmptyView
+                icon='person-key'
+                title='Not Implemented'
+                body='This screen has not yet been implemented'
+            />
+        </MainScreenLayout>
+    )
+}
 
-export default SettingsPasskeyScreen;
+export default SettingsPasskeyScreen

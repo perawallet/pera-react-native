@@ -10,27 +10,27 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed';
+import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    textAlign: 'center',
-    gap: theme.spacing.xl
-  },
-  iconContainer: {
-    width: theme.spacing.xl * 3,
-    height: theme.spacing.xl * 3,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: theme.spacing.xl * 1.5,
-    backgroundColor: theme.colors.layerGrayLighter
-  },
-  text: {
-    color: theme.colors.textMain,
-    textAlign: 'center'
-  }
-}));
+    container: {
+        flex: 1,
+        backgroundColor: theme.colors.background,
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+        gap: theme.spacing.xl,
+    },
+    iconContainer: {
+        width: theme.spacing.xl * 3,
+        height: theme.spacing.xl * 3,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: theme.spacing.xl * 1.5,
+        backgroundColor: theme.colors.layerGrayLighter,
+    },
+    text: {
+        color: theme.colors.textMain,
+        textAlign: 'center',
+    },
+}))

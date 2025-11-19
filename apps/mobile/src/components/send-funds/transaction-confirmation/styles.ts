@@ -10,35 +10,35 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed';
+import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
-  return {
-    container: {
-      paddingHorizontal: theme.spacing.md,
-      gap: theme.spacing.xl,
-      flex: 1
-    },
-    divider: {
-      paddingTop: theme.spacing.md,
-      marginBottom: theme.spacing.md
-    },
-    secondaryAmount: {
-      color: theme.colors.textGray
-    },
-    buttonContainer: {
-      flexGrow: 1,
-      justifyContent: 'flex-end',
-      paddingBottom: theme.spacing.xl
-    },
-    linkContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginTop: theme.spacing.xs,
-      gap: theme.spacing.sm
-    },
-    link: {
-      color: theme.colors.linkPrimary
+    return {
+        container: {
+            paddingHorizontal: theme.spacing.md,
+            gap: theme.spacing.xl,
+            flex: 1,
+        },
+        divider: {
+            paddingTop: theme.spacing.md,
+            marginBottom: theme.spacing.md,
+        },
+        secondaryAmount: {
+            color: theme.colors.textGray,
+        },
+        buttonContainer: {
+            flexGrow: 1,
+            justifyContent: 'flex-end',
+            paddingBottom: theme.spacing.xl,
+        },
+        linkContainer: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginTop: theme.spacing.xs,
+            gap: theme.spacing.sm,
+        },
+        link: {
+            color: theme.colors.linkPrimary,
+        },
     }
-  };
-});
+})

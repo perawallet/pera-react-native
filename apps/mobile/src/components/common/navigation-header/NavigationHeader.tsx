@@ -10,30 +10,36 @@
  limitations under the License
  */
 
-import { NativeStackHeaderProps } from '@react-navigation/native-stack';
-import PWView from '../view/PWView';
-import { Text } from '@rneui/themed';
-import { useStyles } from './styles';
-import PWIcon from '../icons/PWIcon';
+import { NativeStackHeaderProps } from '@react-navigation/native-stack'
+import PWView from '../view/PWView'
+import { Text } from '@rneui/themed'
+import { useStyles } from './styles'
+import PWIcon from '../icons/PWIcon'
 
 const NavigationHeader = (props: NativeStackHeaderProps) => {
-  const styles = useStyles();
+    const styles = useStyles()
 
-  return (
-    <PWView style={styles.container}>
-      <PWView style={styles.backIconContainer}>
-        {!!props.navigation.canGoBack() && (
-          <PWIcon name="chevron-left" onPress={props.navigation.goBack} />
-        )}
-      </PWView>
-      <Text h4 style={styles.title}>
-        {props.options.title || props.route.name}
-      </Text>
-      <PWView style={styles.backIconContainer}>
-        {props.options?.headerRight?.({})}
-      </PWView>
-    </PWView>
-  );
-};
+    return (
+        <PWView style={styles.container}>
+            <PWView style={styles.backIconContainer}>
+                {!!props.navigation.canGoBack() && (
+                    <PWIcon
+                        name='chevron-left'
+                        onPress={props.navigation.goBack}
+                    />
+                )}
+            </PWView>
+            <Text
+                h4
+                style={styles.title}
+            >
+                {props.options.title || props.route.name}
+            </Text>
+            <PWView style={styles.backIconContainer}>
+                {props.options?.headerRight?.({})}
+            </PWView>
+        </PWView>
+    )
+}
 
-export default NavigationHeader;
+export default NavigationHeader

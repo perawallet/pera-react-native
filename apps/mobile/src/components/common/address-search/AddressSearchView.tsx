@@ -10,114 +10,131 @@
  limitations under the License
  */
 
-import PWView from '../view/PWView';
-import { useStyles } from './styles';
+import PWView from '../view/PWView'
+import { useStyles } from './styles'
 
-import { useMemo, useState } from 'react';
-import { Text } from '@rneui/themed';
-import AddressEntryField from '../address-entry/AddressEntryField';
+import { useMemo, useState } from 'react'
+import { Text } from '@rneui/themed'
+import AddressEntryField from '../address-entry/AddressEntryField'
 import {
-  truncateAlgorandAddress,
-  useAlgorandUtils,
-  useAllAccounts,
-  useContacts
-} from '@perawallet/core';
-import { ScrollView } from 'react-native';
-import PWTouchableOpacity from '../touchable-opacity/PWTouchableOpacity';
-import AccountDisplay from '../account-display/AccountDisplay';
-import EmptyView from '../empty-view/EmptyView';
-import AddressDisplay from '../address-display/AddressDisplay';
-import PWIcon from '../icons/PWIcon';
+    truncateAlgorandAddress,
+    useAlgorandUtils,
+    useAllAccounts,
+    useContacts,
+} from '@perawallet/core'
+import { ScrollView } from 'react-native'
+import PWTouchableOpacity from '../touchable-opacity/PWTouchableOpacity'
+import AccountDisplay from '../account-display/AccountDisplay'
+import EmptyView from '../empty-view/EmptyView'
+import AddressDisplay from '../address-display/AddressDisplay'
+import PWIcon from '../icons/PWIcon'
 
 type AddressSearchViewProps = {
-  onSelected: (address: string) => void;
-};
+    onSelected: (address: string) => void
+}
 
 const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
-  const styles = useStyles();
-  const [value, setValue] = useState('');
-  const { findContacts } = useContacts();
-  const accounts = useAllAccounts();
-  const { isValidAddress } = useAlgorandUtils();
+    const styles = useStyles()
+    const [value, setValue] = useState('')
+    const { findContacts } = useContacts()
+    const accounts = useAllAccounts()
+    const { isValidAddress } = useAlgorandUtils()
 
-  const addressIsValid = useMemo(
-    () => isValidAddress(value),
-    [value, isValidAddress]
-  );
-  const matchingAccounts = useMemo(
-    () => accounts.filter(a => a.address.includes(value)),
-    [value, accounts]
-  );
-  const matchingContacts = useMemo(
-    () => (value.length ? findContacts({ keyword: value }) : []),
-    [value, findContacts]
-  );
-  return (
-    <PWView style={styles.container}>
-      <AddressEntryField
-        onChangeText={setValue}
-        value={value}
-        allowQRCode
-        placeholder="Account address or short name"
-        inputContainerStyle={styles.searchField}
-        leftIcon={<PWIcon variant="secondary" name="magnifying-glass" />}
-      />
-      {!isValidAddress &&
-      !matchingAccounts.length &&
-      !matchingContacts.length ? (
-        <EmptyView
-          title="No Accounts Found"
-          body="There are no matching accounts"
-        />
-      ) : (
-        <ScrollView>
-          {addressIsValid && (
-            <PWTouchableOpacity onPress={() => onSelected(value)}>
-              <Text h4 h4Style={styles.title}>
-                Address
-              </Text>
-              <Text>{truncateAlgorandAddress(value)}</Text>
-            </PWTouchableOpacity>
-          )}
-          {!!matchingContacts.length && (
-            <PWView style={styles.section}>
-              <Text h4 h4Style={styles.title}>
-                Contacts
-              </Text>
-              {matchingContacts.map(c => (
-                <PWTouchableOpacity
-                  key={`contact-${c.address}`}
-                  onPress={() => onSelected(c.address)}
-                >
-                  {/* TODO: probably inefficient to use AddressDisplay - maybe we need a ContactItem or something */}
-                  <AddressDisplay address={c.address} showCopy={false} />
-                </PWTouchableOpacity>
-              ))}
-            </PWView>
-          )}
-          {!!matchingAccounts.length && (
-            <PWView style={styles.section}>
-              <Text h4 h4Style={styles.title}>
-                My Accounts
-              </Text>
-              {matchingAccounts.map(acct => (
-                <PWTouchableOpacity
-                  key={`account-${acct.address}`}
-                  onPress={() => onSelected(acct.address)}
-                >
-                  <AccountDisplay
-                    account={acct}
-                    showChevron={false}
-                    style={styles.accountDisplay}
-                  />
-                </PWTouchableOpacity>
-              ))}
-            </PWView>
-          )}
-        </ScrollView>
-      )}
-    </PWView>
-  );
-};
+    const addressIsValid = useMemo(
+        () => isValidAddress(value),
+        [value, isValidAddress],
+    )
+    const matchingAccounts = useMemo(
+        () => accounts.filter(a => a.address.includes(value)),
+        [value, accounts],
+    )
+    const matchingContacts = useMemo(
+        () => (value.length ? findContacts({ keyword: value }) : []),
+        [value, findContacts],
+    )
+    return (
+        <PWView style={styles.container}>
+            <AddressEntryField
+                onChangeText={setValue}
+                value={value}
+                allowQRCode
+                placeholder='Account address or short name'
+                inputContainerStyle={styles.searchField}
+                leftIcon={
+                    <PWIcon
+                        variant='secondary'
+                        name='magnifying-glass'
+                    />
+                }
+            />
+            {!isValidAddress &&
+            !matchingAccounts.length &&
+            !matchingContacts.length ? (
+                <EmptyView
+                    title='No Accounts Found'
+                    body='There are no matching accounts'
+                />
+            ) : (
+                <ScrollView>
+                    {addressIsValid && (
+                        <PWTouchableOpacity onPress={() => onSelected(value)}>
+                            <Text
+                                h4
+                                h4Style={styles.title}
+                            >
+                                Address
+                            </Text>
+                            <Text>{truncateAlgorandAddress(value)}</Text>
+                        </PWTouchableOpacity>
+                    )}
+                    {!!matchingContacts.length && (
+                        <PWView style={styles.section}>
+                            <Text
+                                h4
+                                h4Style={styles.title}
+                            >
+                                Contacts
+                            </Text>
+                            {matchingContacts.map(c => (
+                                <PWTouchableOpacity
+                                    key={`contact-${c.address}`}
+                                    onPress={() => onSelected(c.address)}
+                                >
+                                    {/* TODO: probably inefficient to use AddressDisplay - maybe we need a ContactItem or something */}
+                                    <AddressDisplay
+                                        address={c.address}
+                                        showCopy={false}
+                                    />
+                                </PWTouchableOpacity>
+                            ))}
+                        </PWView>
+                    )}
+                    {!!matchingAccounts.length && (
+                        <PWView style={styles.section}>
+                            <Text
+                                h4
+                                h4Style={styles.title}
+                            >
+                                My Accounts
+                            </Text>
+                            {matchingAccounts.map(acct => (
+                                <PWTouchableOpacity
+                                    key={`account-${acct.address}`}
+                                    onPress={() => onSelected(acct.address)}
+                                >
+                                    <AccountDisplay
+                                        account={acct}
+                                        showChevron={false}
+                                        style={styles.accountDisplay}
+                                    />
+                                </PWTouchableOpacity>
+                            ))}
+                        </PWView>
+                    )}
+                </ScrollView>
+            )}
+        </PWView>
+    )
+}
 
-export default AddressSearchView;
+export default AddressSearchView

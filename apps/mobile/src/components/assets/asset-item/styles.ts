@@ -10,45 +10,45 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed';
+import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
-  return {
-    container: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: theme.spacing.lg
-    },
-    dataContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      flexGrow: 1
-    },
-    unitContainer: {
-      gap: theme.spacing.xs / 2
-    },
-    amountContainer: {
-      gap: theme.spacing.xs / 2
-    },
-    primaryUnit: {},
-    secondaryUnit: {
-      color: theme.colors.textGrayLighter,
-      fontSize: theme.spacing.md
-    },
-    primaryAmount: {
-      textAlign: 'right'
-    },
-    secondaryAmount: {
-      textAlign: 'right',
-      color: theme.colors.textGray,
-      fontSize: theme.spacing.md,
-      alignSelf: 'flex-end'
-    },
-    row: {
-      flexDirection: 'row',
-      gap: theme.spacing.xs,
-      alignItems: 'center'
+    return {
+        container: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.lg,
+        },
+        dataContainer: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexGrow: 1,
+        },
+        unitContainer: {
+            gap: theme.spacing.xs / 2,
+        },
+        amountContainer: {
+            gap: theme.spacing.xs / 2,
+        },
+        primaryUnit: {},
+        secondaryUnit: {
+            color: theme.colors.textGrayLighter,
+            fontSize: theme.spacing.md,
+        },
+        primaryAmount: {
+            textAlign: 'right',
+        },
+        secondaryAmount: {
+            textAlign: 'right',
+            color: theme.colors.textGray,
+            fontSize: theme.spacing.md,
+            alignSelf: 'flex-end',
+        },
+        row: {
+            flexDirection: 'row',
+            gap: theme.spacing.xs,
+            alignItems: 'center',
+        },
     }
-  };
-});
+})

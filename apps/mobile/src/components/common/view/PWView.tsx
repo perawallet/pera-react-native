@@ -10,19 +10,22 @@
  limitations under the License
  */
 
-import { useStyles } from './styles';
-import { View, ViewProps } from 'react-native';
+import { useStyles } from './styles'
+import { View, ViewProps } from 'react-native'
 
-export type PWViewProps = ViewProps;
+export type PWViewProps = ViewProps
 
 const PWView = (props: PWViewProps) => {
-  const style = useStyles(props);
+    const style = useStyles(props)
 
-  return (
-    <View style={[style.defaultStyle, props.style]} {...props}>
-      {props.children}
-    </View>
-  );
-};
+    return (
+        <View
+            style={[style.defaultStyle, props.style]}
+            {...props}
+        >
+            {props.children}
+        </View>
+    )
+}
 
-export default PWView;
+export default PWView

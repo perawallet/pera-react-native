@@ -10,190 +10,205 @@
  limitations under the License
  */
 
-import PWView from '../../common/view/PWView';
-import Decimal from 'decimal.js';
-import { useContext, useMemo, useState } from 'react';
-import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay';
-import { useStyles } from './styles';
-import PWButton from '../../common/button/PWButton';
-import AccountAssetItemView from '../../assets/asset-item/AccountAssetItemView';
-import { Button, Text } from '@rneui/themed';
-import NumberPad from '../../common/number-pad/NumberPad';
-import { SendFundsContext } from '../../../providers/SendFundsProvider';
-import AddNotePanel from '../add-note-panel/AddNotePanel';
-import useToast from '../../../hooks/toast';
+import PWView from '../../common/view/PWView'
+import Decimal from 'decimal.js'
+import { useContext, useMemo, useState } from 'react'
+import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay'
+import { useStyles } from './styles'
+import PWButton from '../../common/button/PWButton'
+import AccountAssetItemView from '../../assets/asset-item/AccountAssetItemView'
+import { Button, Text } from '@rneui/themed'
+import NumberPad from '../../common/number-pad/NumberPad'
+import { SendFundsContext } from '../../../providers/SendFundsProvider'
+import AddNotePanel from '../add-note-panel/AddNotePanel'
+import useToast from '../../../hooks/toast'
 import {
-  useAccountBalances,
-  useCurrencyConverter,
-  useSelectedAccount
-} from '@perawallet/core';
-import PWHeader from '../../common/header/PWHeader';
-import AccountDisplay from '../../common/account-display/AccountDisplay';
-import SendFundsInfoPanel from '../info-panel/SendFundsInfoPanel';
+    useAccountBalances,
+    useCurrencyConverter,
+    useSelectedAccount,
+} from '@perawallet/core'
+import PWHeader from '../../common/header/PWHeader'
+import AccountDisplay from '../../common/account-display/AccountDisplay'
+import SendFundsInfoPanel from '../info-panel/SendFundsInfoPanel'
 
 type SendFundsInputViewProps = {
-  onNext: () => void;
-  onBack: () => void;
-};
+    onNext: () => void
+    onBack: () => void
+}
 
 //TODO: handle max precision (currently we don't show them but we're still adding characters)
 //TODO: max amount validation (+ max amount popup)
 const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
-  const styles = useStyles();
-  const selectedAccount = useSelectedAccount();
-  const { preferredCurrency, convertUSDToPreferredCurrency } =
-    useCurrencyConverter();
-  const { canSelectAsset, selectedAsset, note, setNote, setAmount } =
-    useContext(SendFundsContext);
-  const [value, setValue] = useState<string | null>();
-  const [noteOpen, setNoteOpen] = useState(false);
-  const [infoOpen, setInfoOpen] = useState(false);
-  const { showToast } = useToast();
+    const styles = useStyles()
+    const selectedAccount = useSelectedAccount()
+    const { preferredCurrency, convertUSDToPreferredCurrency } =
+        useCurrencyConverter()
+    const { canSelectAsset, selectedAsset, note, setNote, setAmount } =
+        useContext(SendFundsContext)
+    const [value, setValue] = useState<string | null>()
+    const [noteOpen, setNoteOpen] = useState(false)
+    const [infoOpen, setInfoOpen] = useState(false)
+    const { showToast } = useToast()
 
-  const { data } = useAccountBalances(selectedAccount ? [selectedAccount] : []);
-  const { tokenAmount, usdAmount } = useMemo(() => {
-    const asset = data
-      .at(0)
-      ?.accountInfo?.results?.find(
-        info => info.asset_id === selectedAsset?.asset_id
-      );
-    return {
-      tokenAmount: asset?.amount ? Decimal(asset?.amount) : Decimal(0),
-      usdAmount: asset?.balance_usd_value
-        ? Decimal(asset?.balance_usd_value)
-        : Decimal(0)
-    };
-  }, [data, selectedAsset?.asset_id]);
-
-  const openNote = () => {
-    setNoteOpen(true);
-  };
-
-  const closeNote = () => {
-    setNoteOpen(false);
-  };
-
-  const openInfo = () => {
-    setInfoOpen(true);
-  };
-  const closeInfo = () => {
-    setInfoOpen(false);
-  };
-
-  const setMax = () => {
-    setAmount(tokenAmount);
-  };
-
-  const handleNext = () => {
-    if (!value || Decimal(value) <= Decimal(0)) {
-      showToast({
-        title: 'Invalid Amount',
-        body: 'Please enter a valid amount.',
-        type: 'error'
-      });
-    }
-    setAmount(Decimal(value ?? '0'));
-    setNote(note ?? undefined);
-    onNext();
-  };
-
-  const handleKey = (key?: string) => {
-    if (key) {
-      setValue((value ?? '') + key);
-    } else {
-      if (value?.length) {
-        const newValue = value.substring(0, value.length - 1);
-        if (newValue.length) {
-          setValue(newValue);
-        } else {
-          setValue(null);
+    const { data } = useAccountBalances(
+        selectedAccount ? [selectedAccount] : [],
+    )
+    const { tokenAmount, usdAmount } = useMemo(() => {
+        const asset = data
+            .at(0)
+            ?.accountInfo?.results?.find(
+                info => info.asset_id === selectedAsset?.asset_id,
+            )
+        return {
+            tokenAmount: asset?.amount ? Decimal(asset?.amount) : Decimal(0),
+            usdAmount: asset?.balance_usd_value
+                ? Decimal(asset?.balance_usd_value)
+                : Decimal(0),
         }
-      }
-    }
-  };
+    }, [data, selectedAsset?.asset_id])
 
-  const usdValue = useMemo(() => {
-    if (!value || !selectedAsset?.usd_price) {
-      return null;
+    const openNote = () => {
+        setNoteOpen(true)
     }
 
-    return Decimal(value).mul(Decimal(selectedAsset.usd_price));
-  }, [value, selectedAsset?.usd_price]);
+    const closeNote = () => {
+        setNoteOpen(false)
+    }
 
-  if (!selectedAsset) return <></>;
+    const openInfo = () => {
+        setInfoOpen(true)
+    }
+    const closeInfo = () => {
+        setInfoOpen(false)
+    }
 
-  return (
-    <PWView style={styles.container}>
-      <PWHeader
-        leftIcon={!canSelectAsset ? 'chevron-left' : 'cross'}
-        onLeftPress={onBack}
-        rightIcon="info"
-        onRightPress={openInfo}
-      >
-        <Text>Send {selectedAsset?.name}</Text>
-        <AccountDisplay
-          account={selectedAccount ?? undefined}
-          style={styles.accountDisplay}
-          iconProps={{ width: 16, height: 16 }}
-          textProps={{ style: styles.accountDisplaySubHeading }}
-          showChevron={false}
-        />
-      </PWHeader>
-      <CurrencyDisplay
-        currency={selectedAsset.unit_name}
-        precision={selectedAsset.fraction_decimals}
-        value={value ? Decimal(value) : Decimal(0)}
-        style={[value ? styles.amount : styles.amountPlaceholder, styles.h1]} //h1Style doesn't seem to override fontfamily
-        showSymbol={false}
-        minPrecision={2}
-      />
-      <CurrencyDisplay
-        currency={preferredCurrency}
-        precision={6}
-        value={usdValue ? convertUSDToPreferredCurrency(usdValue) : Decimal(0)}
-        style={styles.amountPlaceholder}
-        showSymbol
-        minPrecision={2}
-      />
+    const setMax = () => {
+        setAmount(tokenAmount)
+    }
 
-      <PWView style={styles.buttonContainer}>
-        <Button
-          title={note ? 'Edit Note' : `+ Add Note`}
-          buttonStyle={styles.secondaryButton}
-          titleStyle={styles.secondaryButtonTitle}
-          onPress={openNote}
-        />
-        <Button
-          title="MAX"
-          buttonStyle={styles.secondaryButton}
-          titleStyle={styles.secondaryButtonTitle}
-          onPress={setMax}
-        />
-      </PWView>
+    const handleNext = () => {
+        if (!value || Decimal(value) <= Decimal(0)) {
+            showToast({
+                title: 'Invalid Amount',
+                body: 'Please enter a valid amount.',
+                type: 'error',
+            })
+        }
+        setAmount(Decimal(value ?? '0'))
+        setNote(note ?? undefined)
+        onNext()
+    }
 
-      <PWView style={styles.numpadContainer}>
-        <NumberPad onPress={handleKey} />
-      </PWView>
+    const handleKey = (key?: string) => {
+        if (key) {
+            setValue((value ?? '') + key)
+        } else {
+            if (value?.length) {
+                const newValue = value.substring(0, value.length - 1)
+                if (newValue.length) {
+                    setValue(newValue)
+                } else {
+                    setValue(null)
+                }
+            }
+        }
+    }
 
-      <AccountAssetItemView
-        asset={selectedAsset}
-        amount={tokenAmount}
-        usdAmount={usdAmount}
-        style={styles.assetDisplay}
-      />
+    const usdValue = useMemo(() => {
+        if (!value || !selectedAsset?.usd_price) {
+            return null
+        }
 
-      <PWButton
-        variant="primary"
-        title="Next"
-        style={styles.nextButton}
-        onPress={handleNext}
-        disabled={!value}
-      />
+        return Decimal(value).mul(Decimal(selectedAsset.usd_price))
+    }, [value, selectedAsset?.usd_price])
 
-      <AddNotePanel isVisible={noteOpen} onClose={closeNote} />
-      <SendFundsInfoPanel isVisible={infoOpen} onClose={closeInfo} />
-    </PWView>
-  );
-};
+    if (!selectedAsset) return <></>
 
-export default SendFundsInputView;
+    return (
+        <PWView style={styles.container}>
+            <PWHeader
+                leftIcon={!canSelectAsset ? 'chevron-left' : 'cross'}
+                onLeftPress={onBack}
+                rightIcon='info'
+                onRightPress={openInfo}
+            >
+                <Text>Send {selectedAsset?.name}</Text>
+                <AccountDisplay
+                    account={selectedAccount ?? undefined}
+                    style={styles.accountDisplay}
+                    iconProps={{ width: 16, height: 16 }}
+                    textProps={{ style: styles.accountDisplaySubHeading }}
+                    showChevron={false}
+                />
+            </PWHeader>
+            <CurrencyDisplay
+                currency={selectedAsset.unit_name}
+                precision={selectedAsset.fraction_decimals}
+                value={value ? Decimal(value) : Decimal(0)}
+                style={[
+                    value ? styles.amount : styles.amountPlaceholder,
+                    styles.h1,
+                ]} //h1Style doesn't seem to override fontfamily
+                showSymbol={false}
+                minPrecision={2}
+            />
+            <CurrencyDisplay
+                currency={preferredCurrency}
+                precision={6}
+                value={
+                    usdValue
+                        ? convertUSDToPreferredCurrency(usdValue)
+                        : Decimal(0)
+                }
+                style={styles.amountPlaceholder}
+                showSymbol
+                minPrecision={2}
+            />
+
+            <PWView style={styles.buttonContainer}>
+                <Button
+                    title={note ? 'Edit Note' : `+ Add Note`}
+                    buttonStyle={styles.secondaryButton}
+                    titleStyle={styles.secondaryButtonTitle}
+                    onPress={openNote}
+                />
+                <Button
+                    title='MAX'
+                    buttonStyle={styles.secondaryButton}
+                    titleStyle={styles.secondaryButtonTitle}
+                    onPress={setMax}
+                />
+            </PWView>
+
+            <PWView style={styles.numpadContainer}>
+                <NumberPad onPress={handleKey} />
+            </PWView>
+
+            <AccountAssetItemView
+                asset={selectedAsset}
+                amount={tokenAmount}
+                usdAmount={usdAmount}
+                style={styles.assetDisplay}
+            />
+
+            <PWButton
+                variant='primary'
+                title='Next'
+                style={styles.nextButton}
+                onPress={handleNext}
+                disabled={!value}
+            />
+
+            <AddNotePanel
+                isVisible={noteOpen}
+                onClose={closeNote}
+            />
+            <SendFundsInfoPanel
+                isVisible={infoOpen}
+                onClose={closeInfo}
+            />
+        </PWView>
+    )
+}
+
+export default SendFundsInputView

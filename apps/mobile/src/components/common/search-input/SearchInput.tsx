@@ -10,25 +10,30 @@
  limitations under the License
  */
 
-import { InputProps } from '@rneui/base';
+import { InputProps } from '@rneui/base'
 
-import { Input } from '@rneui/themed';
-import PWIcon from '../icons/PWIcon';
-import { useStyles } from './styles';
+import { Input } from '@rneui/themed'
+import PWIcon from '../icons/PWIcon'
+import { useStyles } from './styles'
 
-type SearchInputProps = {} & Omit<InputProps, 'leftIcon'>;
+type SearchInputProps = {} & Omit<InputProps, 'leftIcon'>
 
 const SearchInput = (props: SearchInputProps) => {
-  const styles = useStyles();
+    const styles = useStyles()
 
-  return (
-    <Input
-      {...props}
-      inputContainerStyle={[props.inputContainerStyle, styles.search]}
-      placeholder={props.placeholder ?? 'Search'}
-      leftIcon={<PWIcon name="magnifying-glass" variant="secondary" />}
-    />
-  );
-};
+    return (
+        <Input
+            {...props}
+            inputContainerStyle={[props.inputContainerStyle, styles.search]}
+            placeholder={props.placeholder ?? 'Search'}
+            leftIcon={
+                <PWIcon
+                    name='magnifying-glass'
+                    variant='secondary'
+                />
+            }
+        />
+    )
+}
 
-export default SearchInput;
+export default SearchInput

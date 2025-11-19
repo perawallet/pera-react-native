@@ -10,27 +10,32 @@
  limitations under the License
  */
 
-import PWIcon from '../icons/PWIcon';
+import PWIcon from '../icons/PWIcon'
 
-import { useMemo } from 'react';
-import { SvgProps } from 'react-native-svg';
-import { WalletAccount } from '@perawallet/core';
+import { useMemo } from 'react'
+import { SvgProps } from 'react-native-svg'
+import { WalletAccount } from '@perawallet/core'
 
 //TODO support all account types
 export type AccountIconProps = {
-  account?: WalletAccount;
-} & SvgProps;
+    account?: WalletAccount
+} & SvgProps
 
 const AccountIcon = (props: AccountIconProps) => {
-  const { account, ...rest } = props;
+    const { account, ...rest } = props
 
-  const icon = useMemo(() => {
-    if (!account) return <></>;
-    const name = account.hdWalletDetails ? 'wallet-in-circle' : 'wallet';
-    return <PWIcon {...rest} name={name} />;
-  }, [account, rest]);
+    const icon = useMemo(() => {
+        if (!account) return <></>
+        const name = account.hdWalletDetails ? 'wallet-in-circle' : 'wallet'
+        return (
+            <PWIcon
+                {...rest}
+                name={name}
+            />
+        )
+    }, [account, rest])
 
-  return icon;
-};
+    return icon
+}
 
-export default AccountIcon;
+export default AccountIcon

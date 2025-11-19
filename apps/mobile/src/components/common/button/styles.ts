@@ -10,53 +10,53 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed';
-import { PWButtonProps } from './PWButton';
-import { getFontFamily } from '../../../theme/theme';
+import { makeStyles } from '@rneui/themed'
+import { PWButtonProps } from './PWButton'
+import { getFontFamily } from '../../../theme/theme'
 
 export const useStyles = makeStyles((theme, props: PWButtonProps) => {
-  let backgroundColor = theme.colors.buttonPrimaryBg;
-  let color = theme.colors.buttonPrimaryText;
+    let backgroundColor = theme.colors.buttonPrimaryBg
+    let color = theme.colors.buttonPrimaryText
 
-  if (props.variant === 'secondary') {
-    backgroundColor = theme.colors.layerGrayLighter;
-    color = theme.colors.textMain;
-  } else if (props.variant === 'helper') {
-    backgroundColor = theme.colors.buttonSquareBg;
-    color = theme.colors.buttonSquareText;
-  } else if (props.variant === 'destructive') {
-    backgroundColor = theme.colors.error;
-    color = theme.colors.textWhite;
-  } else if (props.variant === 'link') {
-    backgroundColor = theme.colors.background;
-    color = theme.colors.linkPrimary;
-  }
-
-  return {
-    buttonStyle: {
-      flexDirection: 'row',
-      flexWrap: 'nowrap',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: theme.spacing.sm,
-      minWidth: props.minWidth ?? 0,
-      borderRadius: theme.spacing.sm,
-      paddingVertical: props.dense ? theme.spacing.xs : theme.spacing.lg,
-      paddingHorizontal: props.dense
-        ? theme.spacing.md
-        : theme.spacing.xl * 1.5,
-      opacity: props.disabled ? 0.7 : 1,
-      backgroundColor
-    },
-    titleStyle: {
-      fontFamily: getFontFamily(false, 500),
-      fontSize: 15,
-      lineHeight: 24,
-      flexWrap: 'nowrap',
-      textAlign: 'center',
-      borderWidth: 1,
-      borderColor: 'transparent',
-      color
+    if (props.variant === 'secondary') {
+        backgroundColor = theme.colors.layerGrayLighter
+        color = theme.colors.textMain
+    } else if (props.variant === 'helper') {
+        backgroundColor = theme.colors.buttonSquareBg
+        color = theme.colors.buttonSquareText
+    } else if (props.variant === 'destructive') {
+        backgroundColor = theme.colors.error
+        color = theme.colors.textWhite
+    } else if (props.variant === 'link') {
+        backgroundColor = theme.colors.background
+        color = theme.colors.linkPrimary
     }
-  };
-});
+
+    return {
+        buttonStyle: {
+            flexDirection: 'row',
+            flexWrap: 'nowrap',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: theme.spacing.sm,
+            minWidth: props.minWidth ?? 0,
+            borderRadius: theme.spacing.sm,
+            paddingVertical: props.dense ? theme.spacing.xs : theme.spacing.lg,
+            paddingHorizontal: props.dense
+                ? theme.spacing.md
+                : theme.spacing.xl * 1.5,
+            opacity: props.disabled ? 0.7 : 1,
+            backgroundColor,
+        },
+        titleStyle: {
+            fontFamily: getFontFamily(false, 500),
+            fontSize: 15,
+            lineHeight: 24,
+            flexWrap: 'nowrap',
+            textAlign: 'center',
+            borderWidth: 1,
+            borderColor: 'transparent',
+            color,
+        },
+    }
+})

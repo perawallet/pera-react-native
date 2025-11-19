@@ -10,48 +10,48 @@
  limitations under the License
  */
 
-import { RNDeviceInfoStorageService } from '../platform/device';
-import { RNFirebaseService } from '../platform/firebase';
-import { RNKeyValueStorageService } from '../platform/key-value-storage';
-import { RNSecureStorageService } from '../platform/secure-storage';
+import { RNDeviceInfoStorageService } from '../platform/device'
+import { RNFirebaseService } from '../platform/firebase'
+import { RNKeyValueStorageService } from '../platform/key-value-storage'
+import { RNSecureStorageService } from '../platform/secure-storage'
 import {
-  useCrashReportingService,
-  useRemoteConfigService,
-  useNotificationService,
-  registerPlatformServices,
-  useFcmToken
-} from '@perawallet/core';
+    useCrashReportingService,
+    useRemoteConfigService,
+    useNotificationService,
+    registerPlatformServices,
+    useFcmToken,
+} from '@perawallet/core'
 
-const firebaseService = new RNFirebaseService();
+const firebaseService = new RNFirebaseService()
 const platformServices = {
-  analytics: firebaseService,
-  crashReporting: firebaseService,
-  notification: firebaseService,
-  remoteConfig: firebaseService,
-  secureStorage: new RNSecureStorageService(),
-  keyValueStorage: new RNKeyValueStorageService(),
-  deviceInfo: new RNDeviceInfoStorageService()
-};
+    analytics: firebaseService,
+    crashReporting: firebaseService,
+    notification: firebaseService,
+    remoteConfig: firebaseService,
+    secureStorage: new RNSecureStorageService(),
+    keyValueStorage: new RNKeyValueStorageService(),
+    deviceInfo: new RNDeviceInfoStorageService(),
+}
 
-registerPlatformServices(platformServices);
+registerPlatformServices(platformServices)
 
 export const useBootstrapper = () => {
-  const crashlyticsService = useCrashReportingService();
-  const remoteConfigService = useRemoteConfigService();
-  const notificationService = useNotificationService();
-  const { setFcmToken } = useFcmToken();
+    const crashlyticsService = useCrashReportingService()
+    const remoteConfigService = useRemoteConfigService()
+    const notificationService = useNotificationService()
+    const { setFcmToken } = useFcmToken()
 
-  return async () => {
-    const crashlyticsInit = crashlyticsService.initializeCrashReporting();
-    const remoteConfigInit = remoteConfigService.initializeRemoteConfig();
+    return async () => {
+        const crashlyticsInit = crashlyticsService.initializeCrashReporting()
+        const remoteConfigInit = remoteConfigService.initializeRemoteConfig()
 
-    await Promise.allSettled([crashlyticsInit, remoteConfigInit]);
+        await Promise.allSettled([crashlyticsInit, remoteConfigInit])
 
-    const notificationResults =
-      await notificationService.initializeNotifications();
+        const notificationResults =
+            await notificationService.initializeNotifications()
 
-    setFcmToken(notificationResults.token || null);
+        setFcmToken(notificationResults.token || null)
 
-    return platformServices;
-  };
-};
+        return platformServices
+    }
+}

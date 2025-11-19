@@ -10,57 +10,67 @@
  limitations under the License
  */
 
-import { useStyles } from './styles';
-import PWView from '../../../common/view/PWView';
-import { PeraAsset, WalletAccount } from '@perawallet/core';
-import { FlatList } from 'react-native';
-import PWButton from '../../../common/button/PWButton';
-import { Text } from '@rneui/themed';
-import EmptyView from '../../../common/empty-view/EmptyView';
+import { useStyles } from './styles'
+import PWView from '../../../common/view/PWView'
+import { PeraAsset, WalletAccount } from '@perawallet/core'
+import { FlatList } from 'react-native'
+import PWButton from '../../../common/button/PWButton'
+import { Text } from '@rneui/themed'
+import EmptyView from '../../../common/empty-view/EmptyView'
 
 type AssetTransactionListProps = {
-  account: WalletAccount;
-  asset: PeraAsset;
-};
+    account: WalletAccount
+    asset: PeraAsset
+}
 
 const AssetTransactionList = (_: AssetTransactionListProps) => {
-  const styles = useStyles();
+    const styles = useStyles()
 
-  // TODO: Replace with actual infinite query hook when identified.
-  // Example: const { data, fetchNextPage, hasNextPage } = useV1AccountsAssetsTransactionsListInfinite(...)
-  const transactions: any[] = [];
-  const handleEndReached = () => {
-    // fetchNextPage();
-  };
+    // TODO: Replace with actual infinite query hook when identified.
+    // Example: const { data, fetchNextPage, hasNextPage } = useV1AccountsAssetsTransactionsListInfinite(...)
+    const transactions: any[] = []
+    const handleEndReached = () => {
+        // fetchNextPage();
+    }
 
-  const renderItem = () => {
-    return <Text>Transaction Item</Text>;
-  };
+    const renderItem = () => {
+        return <Text>Transaction Item</Text>
+    }
 
-  return (
-    <PWView style={styles.container}>
-      <PWView style={styles.header}>
-        <Text h4>Transactions</Text>
-        <PWView style={styles.actions}>
-          <PWButton title="Filter" variant="link" icon="sliders" dense />
-          <PWButton title="CSV" variant="helper" icon="text-document" dense />
+    return (
+        <PWView style={styles.container}>
+            <PWView style={styles.header}>
+                <Text h4>Transactions</Text>
+                <PWView style={styles.actions}>
+                    <PWButton
+                        title='Filter'
+                        variant='link'
+                        icon='sliders'
+                        dense
+                    />
+                    <PWButton
+                        title='CSV'
+                        variant='helper'
+                        icon='text-document'
+                        dense
+                    />
+                </PWView>
+            </PWView>
+
+            <FlatList
+                data={transactions}
+                renderItem={renderItem}
+                onEndReached={handleEndReached}
+                onEndReachedThreshold={0.5}
+                ListEmptyComponent={
+                    <EmptyView
+                        title='No Transactions'
+                        body='There are no transactions to be displayed'
+                    />
+                }
+            />
         </PWView>
-      </PWView>
+    )
+}
 
-      <FlatList
-        data={transactions}
-        renderItem={renderItem}
-        onEndReached={handleEndReached}
-        onEndReachedThreshold={0.5}
-        ListEmptyComponent={
-          <EmptyView
-            title="No Transactions"
-            body="There are no transactions to be displayed"
-          />
-        }
-      />
-    </PWView>
-  );
-};
-
-export default AssetTransactionList;
+export default AssetTransactionList

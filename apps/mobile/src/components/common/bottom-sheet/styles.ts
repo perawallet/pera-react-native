@@ -10,12 +10,12 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed';
+import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-  defaultStyle: {
-    backgroundColor: theme.colors.background,
-    borderTopStartRadius: theme.spacing.xl,
-    borderTopEndRadius: theme.spacing.xl
-  }
-}));
+    defaultStyle: {
+        backgroundColor: theme.colors.background,
+        borderTopStartRadius: theme.spacing.xl,
+        borderTopEndRadius: theme.spacing.xl,
+    },
+}))

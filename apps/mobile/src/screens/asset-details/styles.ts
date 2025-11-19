@@ -10,20 +10,20 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed';
-import { PropsWithChildren } from 'react';
+import { makeStyles } from '@rneui/themed'
+import { PropsWithChildren } from 'react'
 
 export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
-  return {
-    tabs: {},
-    fullWidth: {
-      width: '100%'
-    },
-    tabItem: {
-      color: theme.colors.textMain
-    },
-    indicator: {
-      backgroundColor: theme.colors.textMain
+    return {
+        tabs: {},
+        fullWidth: {
+            width: '100%',
+        },
+        tabItem: {
+            color: theme.colors.textMain,
+        },
+        indicator: {
+            backgroundColor: theme.colors.textMain,
+        },
     }
-  };
-});
+})

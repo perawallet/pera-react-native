@@ -10,74 +10,77 @@
  limitations under the License
  */
 
-import { Text } from '@rneui/themed';
-import MainScreenLayout from '../../../layouts/MainScreenLayout';
+import { Text } from '@rneui/themed'
+import MainScreenLayout from '../../../layouts/MainScreenLayout'
 
-import { useStyles } from './styles';
-import PWView from '../../../components/common/view/PWView';
+import { useStyles } from './styles'
+import PWView from '../../../components/common/view/PWView'
 import {
-  CurrencySerializerResponse,
-  useCurrency,
-  useV1CurrenciesList
-} from '@perawallet/core';
-import { useEffect, useState } from 'react';
-import { FlatList } from 'react-native';
+    CurrencySerializerResponse,
+    useCurrency,
+    useV1CurrenciesList,
+} from '@perawallet/core'
+import { useEffect, useState } from 'react'
+import { FlatList } from 'react-native'
 
-import RadioButton from '../../../components/common/radio-button/RadioButton';
-import SearchInput from '../../../components/common/search-input/SearchInput';
+import RadioButton from '../../../components/common/radio-button/RadioButton'
+import SearchInput from '../../../components/common/search-input/SearchInput'
 
 const SettingsCurrencyScreen = () => {
-  const styles = useStyles();
-  const { preferredCurrency, setPreferredCurrency } = useCurrency();
-  const [search, setSearch] = useState<string>();
-  const [filteredData, setFilteredData] = useState<
-    CurrencySerializerResponse[]
-  >([]);
+    const styles = useStyles()
+    const { preferredCurrency, setPreferredCurrency } = useCurrency()
+    const [search, setSearch] = useState<string>()
+    const [filteredData, setFilteredData] = useState<
+        CurrencySerializerResponse[]
+    >([])
 
-  const { data } = useV1CurrenciesList({});
+    const { data } = useV1CurrenciesList({})
 
-  useEffect(() => {
-    if (!search?.length) {
-      setFilteredData(data ?? []);
-    } else {
-      const lowercaseSearch = search.toLowerCase();
-      setFilteredData(
-        (data ?? []).filter(
-          d =>
-            d.name.toLowerCase().includes(lowercaseSearch) ||
-            d.currency_id.toLowerCase().includes(lowercaseSearch)
+    useEffect(() => {
+        if (!search?.length) {
+            setFilteredData(data ?? [])
+        } else {
+            const lowercaseSearch = search.toLowerCase()
+            setFilteredData(
+                (data ?? []).filter(
+                    d =>
+                        d.name.toLowerCase().includes(lowercaseSearch) ||
+                        d.currency_id.toLowerCase().includes(lowercaseSearch),
+                ),
+            )
+        }
+    }, [data, search])
+
+    const renderItem = ({ item }: { item: CurrencySerializerResponse }) => {
+        return (
+            <RadioButton
+                title={`${item.name} (${item.currency_id})`}
+                onPress={() => setPreferredCurrency(item.currency_id)}
+                selected={preferredCurrency === item.currency_id}
+            />
         )
-      );
     }
-  }, [data, search]);
 
-  const renderItem = ({ item }: { item: CurrencySerializerResponse }) => {
     return (
-      <RadioButton
-        title={`${item.name} (${item.currency_id})`}
-        onPress={() => setPreferredCurrency(item.currency_id)}
-        selected={preferredCurrency === item.currency_id}
-      />
-    );
-  };
+        <MainScreenLayout>
+            <PWView style={styles.container}>
+                <Text h3>Main Currency</Text>
+                <Text>
+                    Select a currency as your main local currency for displaying
+                    asset values.
+                </Text>
+                <SearchInput
+                    placeholder='Search'
+                    value={search}
+                    onChangeText={setSearch}
+                />
+                <FlatList
+                    data={filteredData}
+                    renderItem={renderItem}
+                />
+            </PWView>
+        </MainScreenLayout>
+    )
+}
 
-  return (
-    <MainScreenLayout>
-      <PWView style={styles.container}>
-        <Text h3>Main Currency</Text>
-        <Text>
-          Select a currency as your main local currency for displaying asset
-          values.
-        </Text>
-        <SearchInput
-          placeholder="Search"
-          value={search}
-          onChangeText={setSearch}
-        />
-        <FlatList data={filteredData} renderItem={renderItem} />
-      </PWView>
-    </MainScreenLayout>
-  );
-};
-
-export default SettingsCurrencyScreen;
+export default SettingsCurrencyScreen

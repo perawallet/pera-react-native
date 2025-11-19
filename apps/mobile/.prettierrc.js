@@ -11,8 +11,19 @@
  */
 
 module.exports = {
-  arrowParens: 'avoid',
+  arrowParens: "avoid",
+  bracketSameLine: false,
+  bracketSpacing: true,
+  embeddedLanguageFormatting: "auto",
+  endOfLine: "lf",
+  jsxSingleQuote: true,
+  plugins: [],
+  printWidth: 80,
+  quoteProps: "as-needed",
+  semi: false,
+  singleAttributePerLine: true,
   singleQuote: true,
-  trailingComma: 'always',
-  semicolons: false,
+  tabWidth: 4,
+  useTabs: false,
+  trailingComma: "all",
 };

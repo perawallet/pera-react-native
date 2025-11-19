@@ -10,117 +10,128 @@
  limitations under the License
  */
 
-import { Text, TextProps, useTheme } from '@rneui/themed';
-import PWView, { PWViewProps } from '../view/PWView';
-import { useStyles } from './styles';
+import { Text, TextProps, useTheme } from '@rneui/themed'
+import PWView, { PWViewProps } from '../view/PWView'
+import { useStyles } from './styles'
 import {
-  truncateAlgorandAddress,
-  useAllAccounts,
-  useContacts
-} from '@perawallet/core';
-import useToast from '../../../hooks/toast';
-import Clipboard from '@react-native-clipboard/clipboard';
+    truncateAlgorandAddress,
+    useAllAccounts,
+    useContacts,
+} from '@perawallet/core'
+import useToast from '../../../hooks/toast'
+import Clipboard from '@react-native-clipboard/clipboard'
 
-import { SvgProps } from 'react-native-svg';
-import { useMemo } from 'react';
-import ContactAvatar from '../contact-avatar/ContactAvatar';
-import AccountDisplay from '../account-display/AccountDisplay';
-import PWIcon from '../icons/PWIcon';
+import { SvgProps } from 'react-native-svg'
+import { useMemo } from 'react'
+import ContactAvatar from '../contact-avatar/ContactAvatar'
+import AccountDisplay from '../account-display/AccountDisplay'
+import PWIcon from '../icons/PWIcon'
 
 type AddressDisplayProps = {
-  address: string;
-  addressFormat?: 'short' | 'long' | 'full';
-  rawDisplay?: boolean;
-  showCopy?: boolean;
-  textProps?: TextProps;
-  iconProps?: SvgProps;
-} & PWViewProps;
+    address: string
+    addressFormat?: 'short' | 'long' | 'full'
+    rawDisplay?: boolean
+    showCopy?: boolean
+    textProps?: TextProps
+    iconProps?: SvgProps
+} & PWViewProps
 
-const LONG_ADDRESS_FORMAT = 20;
+const LONG_ADDRESS_FORMAT = 20
 
 //TODO add support for NFDs
 const AddressDisplay = ({
-  address,
-  addressFormat = 'short',
-  rawDisplay,
-  showCopy = true,
-  textProps,
-  iconProps,
-  ...rest
+    address,
+    addressFormat = 'short',
+    rawDisplay,
+    showCopy = true,
+    textProps,
+    iconProps,
+    ...rest
 }: AddressDisplayProps) => {
-  const styles = useStyles();
-  const { theme } = useTheme();
-  const { showToast } = useToast();
+    const styles = useStyles()
+    const { theme } = useTheme()
+    const { showToast } = useToast()
 
-  const copyAddress = () => {
-    Clipboard.setString(address);
-    showToast({
-      title: '',
-      body: 'Address copied to clipboard',
-      type: 'info'
-    });
-  };
-
-  const accounts = useAllAccounts();
-  const { findContacts } = useContacts();
-
-  const account = useMemo(() => {
-    if (rawDisplay) {
-      return null;
+    const copyAddress = () => {
+        Clipboard.setString(address)
+        showToast({
+            title: '',
+            body: 'Address copied to clipboard',
+            type: 'info',
+        })
     }
 
-    return accounts.find(a => a.address === address);
-  }, [accounts, rawDisplay, address]);
+    const accounts = useAllAccounts()
+    const { findContacts } = useContacts()
 
-  const contact = useMemo(() => {
-    if (rawDisplay) {
-      return null;
-    }
-    return findContacts({
-      keyword: address,
-      matchAddress: true,
-      matchName: false,
-      matchNFD: false
-    }).at(0);
-  }, [rawDisplay, address, findContacts]);
+    const account = useMemo(() => {
+        if (rawDisplay) {
+            return null
+        }
 
-  const truncatedAddress =
-    addressFormat === 'full'
-      ? address
-      : addressFormat === 'long'
-        ? truncateAlgorandAddress(address, LONG_ADDRESS_FORMAT)
-        : truncateAlgorandAddress(address);
+        return accounts.find(a => a.address === address)
+    }, [accounts, rawDisplay, address])
 
-  return (
-    <PWView {...rest} style={[rest.style, styles.addressValueContainer]}>
-      {!!account && (
-        <AccountDisplay
-          account={account}
-          iconProps={{ width: theme.spacing.xl, height: theme.spacing.xl }}
-          showChevron={false}
-        />
-      )}
+    const contact = useMemo(() => {
+        if (rawDisplay) {
+            return null
+        }
+        return findContacts({
+            keyword: address,
+            matchAddress: true,
+            matchName: false,
+            matchNFD: false,
+        }).at(0)
+    }, [rawDisplay, address, findContacts])
 
-      {!!contact && !account && (
-        <PWView style={styles.contactContainer}>
-          <ContactAvatar size="small" contact={contact} />
-          <Text>{contact.name}</Text>
+    const truncatedAddress =
+        addressFormat === 'full'
+            ? address
+            : addressFormat === 'long'
+              ? truncateAlgorandAddress(address, LONG_ADDRESS_FORMAT)
+              : truncateAlgorandAddress(address)
+
+    return (
+        <PWView
+            {...rest}
+            style={[rest.style, styles.addressValueContainer]}
+        >
+            {!!account && (
+                <AccountDisplay
+                    account={account}
+                    iconProps={{
+                        width: theme.spacing.xl,
+                        height: theme.spacing.xl,
+                    }}
+                    showChevron={false}
+                />
+            )}
+
+            {!!contact && !account && (
+                <PWView style={styles.contactContainer}>
+                    <ContactAvatar
+                        size='small'
+                        contact={contact}
+                    />
+                    <Text>{contact.name}</Text>
+                </PWView>
+            )}
+
+            {!contact && !account && (
+                <Text {...textProps}>{truncatedAddress}</Text>
+            )}
+
+            {showCopy && (
+                <PWIcon
+                    name='copy'
+                    size='sm'
+                    variant='secondary'
+                    {...iconProps}
+                    onPress={copyAddress}
+                />
+            )}
         </PWView>
-      )}
+    )
+}
 
-      {!contact && !account && <Text {...textProps}>{truncatedAddress}</Text>}
-
-      {showCopy && (
-        <PWIcon
-          name="copy"
-          size="sm"
-          variant="secondary"
-          {...iconProps}
-          onPress={copyAddress}
-        />
-      )}
-    </PWView>
-  );
-};
-
-export default AddressDisplay;
+export default AddressDisplay

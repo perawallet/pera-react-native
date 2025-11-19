@@ -10,44 +10,50 @@
  limitations under the License
  */
 
-import PWView from '../../common/view/PWView';
-import AddressSearchView from '../../common/address-search/AddressSearchView';
-import { useContext } from 'react';
-import { SendFundsContext } from '../../../providers/SendFundsProvider';
-import { useStyles } from './styles';
-import PWHeader from '../../common/header/PWHeader';
-import AssetIcon from '../../common/asset-icon/AssetIcon';
-import { Text, useTheme } from '@rneui/themed';
+import PWView from '../../common/view/PWView'
+import AddressSearchView from '../../common/address-search/AddressSearchView'
+import { useContext } from 'react'
+import { SendFundsContext } from '../../../providers/SendFundsProvider'
+import { useStyles } from './styles'
+import PWHeader from '../../common/header/PWHeader'
+import AssetIcon from '../../common/asset-icon/AssetIcon'
+import { Text, useTheme } from '@rneui/themed'
 
 type SendFundsSelectDestinationProps = {
-  onNext: () => void;
-  onBack: () => void;
-};
+    onNext: () => void
+    onBack: () => void
+}
 
 const SendFundsSelectDestination = ({
-  onNext,
-  onBack
+    onNext,
+    onBack,
 }: SendFundsSelectDestinationProps) => {
-  const { selectedAsset, setDestination } = useContext(SendFundsContext);
-  const styles = useStyles();
-  const { theme } = useTheme();
+    const { selectedAsset, setDestination } = useContext(SendFundsContext)
+    const styles = useStyles()
+    const { theme } = useTheme()
 
-  const handleSelected = (address: string) => {
-    setDestination(address);
-    onNext();
-  };
+    const handleSelected = (address: string) => {
+        setDestination(address)
+        onNext()
+    }
 
-  return (
-    <PWView style={styles.container}>
-      <PWHeader leftIcon="chevron-left" onLeftPress={onBack}>
-        <PWView style={styles.assetTitleContainer}>
-          <AssetIcon asset={selectedAsset} size={theme.spacing.xl} />
-          <Text>{selectedAsset?.name}</Text>
+    return (
+        <PWView style={styles.container}>
+            <PWHeader
+                leftIcon='chevron-left'
+                onLeftPress={onBack}
+            >
+                <PWView style={styles.assetTitleContainer}>
+                    <AssetIcon
+                        asset={selectedAsset}
+                        size={theme.spacing.xl}
+                    />
+                    <Text>{selectedAsset?.name}</Text>
+                </PWView>
+            </PWHeader>
+            <AddressSearchView onSelected={handleSelected} />
         </PWView>
-      </PWHeader>
-      <AddressSearchView onSelected={handleSelected} />
-    </PWView>
-  );
-};
+    )
+}
 
-export default SendFundsSelectDestination;
+export default SendFundsSelectDestination

@@ -10,25 +10,31 @@
  limitations under the License
  */
 
-import { useSelectedAccount } from '@perawallet/core';
-import { useStyles } from './styles';
+import { useSelectedAccount } from '@perawallet/core'
+import { useStyles } from './styles'
 
-import { TouchableOpacity, TouchableOpacityProps } from 'react-native';
-import AccountDisplay from '../account-display/AccountDisplay';
+import { TouchableOpacity, TouchableOpacityProps } from 'react-native'
+import AccountDisplay from '../account-display/AccountDisplay'
 
-type AccountSelectionProps = {} & TouchableOpacityProps;
+type AccountSelectionProps = {} & TouchableOpacityProps
 
 const AccountSelection = (props: AccountSelectionProps) => {
-  const styles = useStyles();
-  const account = useSelectedAccount();
+    const styles = useStyles()
+    const account = useSelectedAccount()
 
-  //TODO we may want to add support for pending inbox items here too
-  //(like the current inbox since we're using the same screen real estate)
-  return (
-    <TouchableOpacity {...props} activeOpacity={0.8}>
-      <AccountDisplay account={account ?? undefined} style={styles.container} />
-    </TouchableOpacity>
-  );
-};
+    //TODO we may want to add support for pending inbox items here too
+    //(like the current inbox since we're using the same screen real estate)
+    return (
+        <TouchableOpacity
+            {...props}
+            activeOpacity={0.8}
+        >
+            <AccountDisplay
+                account={account ?? undefined}
+                style={styles.container}
+            />
+        </TouchableOpacity>
+    )
+}
 
-export default AccountSelection;
+export default AccountSelection

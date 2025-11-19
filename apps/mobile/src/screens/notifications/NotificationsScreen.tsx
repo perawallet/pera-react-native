@@ -10,82 +10,85 @@
  limitations under the License
  */
 
-import { useTheme } from '@rneui/themed';
-import MainScreenLayout from '../../layouts/MainScreenLayout';
+import { useTheme } from '@rneui/themed'
+import MainScreenLayout from '../../layouts/MainScreenLayout'
 import {
-  useDeviceID,
-  useV1DevicesNotificationsListInfinite
-} from '@perawallet/core';
-import { FlatList } from 'react-native-gesture-handler';
-import PWView from '../../components/common/view/PWView';
-import { ActivityIndicator } from 'react-native';
-import EmptyView from '../../components/common/empty-view/EmptyView';
-import { useStyles } from './styles';
-import NotificationItem from '../../components/notifications/notification-item/NotificationItem';
-import { useMemo } from 'react';
+    useDeviceID,
+    useV1DevicesNotificationsListInfinite,
+} from '@perawallet/core'
+import { FlatList } from 'react-native-gesture-handler'
+import PWView from '../../components/common/view/PWView'
+import { ActivityIndicator } from 'react-native'
+import EmptyView from '../../components/common/empty-view/EmptyView'
+import { useStyles } from './styles'
+import NotificationItem from '../../components/notifications/notification-item/NotificationItem'
+import { useMemo } from 'react'
 
 const NotificationsScreen = () => {
-  const styles = useStyles();
-  const { theme } = useTheme();
-  const deviceID = useDeviceID();
+    const styles = useStyles()
+    const { theme } = useTheme()
+    const deviceID = useDeviceID()
 
-  const { data, isPending, fetchNextPage, isFetchingNextPage, hasNextPage } =
-    useV1DevicesNotificationsListInfinite(
-      {
-        device_id: deviceID!
-      },
-      {
-        query: {
-          enabled: !!deviceID
-        }
-      }
-    );
+    const { data, isPending, fetchNextPage, isFetchingNextPage, hasNextPage } =
+        useV1DevicesNotificationsListInfinite(
+            {
+                device_id: deviceID!,
+            },
+            {
+                query: {
+                    enabled: !!deviceID,
+                },
+            },
+        )
 
-  const renderItem = (info: any) => {
-    return <NotificationItem item={info.item} />;
-  };
-
-  const loadMoreItems = async () => {
-    if (hasNextPage) {
-      await fetchNextPage({});
+    const renderItem = (info: any) => {
+        return <NotificationItem item={info.item} />
     }
-  };
 
-  const items =
-    useMemo(() => data?.pages.flatMap(p => p.results), [data]) ?? [];
+    const loadMoreItems = async () => {
+        if (hasNextPage) {
+            await fetchNextPage({})
+        }
+    }
 
-  return (
-    <MainScreenLayout>
-      {isPending && (
-        <PWView>
-          <ActivityIndicator size="large" color={theme.colors.secondary} />
-        </PWView>
-      )}
-      {!isPending && !items.length && (
-        <EmptyView
-          icon="bell"
-          title="No current notifications"
-          body="Your recent transactions, asset requests and other transactions will appear here"
-        />
-      )}
-      {!isPending && !!items.length && (
-        <FlatList
-          data={items}
-          renderItem={renderItem}
-          contentContainerStyle={styles.messageContainer}
-          onEndReached={loadMoreItems}
-          onEndReachedThreshold={0.1}
-          ListFooterComponent={
-            isFetchingNextPage ? (
-              <ActivityIndicator color={theme.colors.layerGray} />
-            ) : (
-              <></>
-            )
-          }
-        />
-      )}
-    </MainScreenLayout>
-  );
-};
+    const items =
+        useMemo(() => data?.pages.flatMap(p => p.results), [data]) ?? []
 
-export default NotificationsScreen;
+    return (
+        <MainScreenLayout>
+            {isPending && (
+                <PWView>
+                    <ActivityIndicator
+                        size='large'
+                        color={theme.colors.secondary}
+                    />
+                </PWView>
+            )}
+            {!isPending && !items.length && (
+                <EmptyView
+                    icon='bell'
+                    title='No current notifications'
+                    body='Your recent transactions, asset requests and other transactions will appear here'
+                />
+            )}
+            {!isPending && !!items.length && (
+                <FlatList
+                    data={items}
+                    renderItem={renderItem}
+                    contentContainerStyle={styles.messageContainer}
+                    onEndReached={loadMoreItems}
+                    onEndReachedThreshold={0.1}
+                    ListFooterComponent={
+                        isFetchingNextPage ? (
+                            <ActivityIndicator color={theme.colors.layerGray} />
+                        ) : (
+                            <></>
+                        )
+                    }
+                />
+            )}
+        </MainScreenLayout>
+    )
+}
+
+export default NotificationsScreen

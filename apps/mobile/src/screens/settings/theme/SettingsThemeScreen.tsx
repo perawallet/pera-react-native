@@ -10,38 +10,38 @@
  limitations under the License
  */
 
-import MainScreenLayout from '../../../layouts/MainScreenLayout';
+import MainScreenLayout from '../../../layouts/MainScreenLayout'
 
-import { useStyles } from './styles';
-import PWView from '../../../components/common/view/PWView';
-import { useSettings } from '@perawallet/core';
-import RadioButton from '../../../components/common/radio-button/RadioButton';
+import { useStyles } from './styles'
+import PWView from '../../../components/common/view/PWView'
+import { useSettings } from '@perawallet/core'
+import RadioButton from '../../../components/common/radio-button/RadioButton'
 
 const SettingsThemeScreen = () => {
-  const styles = useStyles();
-  const { theme, setTheme } = useSettings();
+    const styles = useStyles()
+    const { theme, setTheme } = useSettings()
 
-  return (
-    <MainScreenLayout>
-      <PWView style={styles.container}>
-        <RadioButton
-          title="System"
-          onPress={() => setTheme('system')}
-          selected={!theme || theme === 'system'}
-        />
-        <RadioButton
-          title="Light"
-          onPress={() => setTheme('light')}
-          selected={theme === 'light'}
-        />
-        <RadioButton
-          title="Dark"
-          onPress={() => setTheme('dark')}
-          selected={theme === 'dark'}
-        />
-      </PWView>
-    </MainScreenLayout>
-  );
-};
+    return (
+        <MainScreenLayout>
+            <PWView style={styles.container}>
+                <RadioButton
+                    title='System'
+                    onPress={() => setTheme('system')}
+                    selected={!theme || theme === 'system'}
+                />
+                <RadioButton
+                    title='Light'
+                    onPress={() => setTheme('light')}
+                    selected={theme === 'light'}
+                />
+                <RadioButton
+                    title='Dark'
+                    onPress={() => setTheme('dark')}
+                    selected={theme === 'dark'}
+                />
+            </PWView>
+        </MainScreenLayout>
+    )
+}
 
-export default SettingsThemeScreen;
+export default SettingsThemeScreen

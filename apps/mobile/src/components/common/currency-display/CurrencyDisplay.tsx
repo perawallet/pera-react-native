@@ -10,101 +10,101 @@
  limitations under the License
  */
 
-import { useStyles } from './styles';
-import { Skeleton, Text, TextProps } from '@rneui/themed';
-import PWView from '../view/PWView';
-import { useMemo } from 'react';
+import { useStyles } from './styles'
+import { Skeleton, Text, TextProps } from '@rneui/themed'
+import PWView from '../view/PWView'
+import { useMemo } from 'react'
 import {
-  formatCurrency,
-  useDeviceInfoService,
-  useSettings
-} from '@perawallet/core';
-import { Decimal } from 'decimal.js';
-import AlgoIcon from '../../../../assets/icons/algo.svg';
+    formatCurrency,
+    useDeviceInfoService,
+    useSettings,
+} from '@perawallet/core'
+import { Decimal } from 'decimal.js'
+import AlgoIcon from '../../../../assets/icons/algo.svg'
 
 export type CurrencyDisplayProps = {
-  currency: string;
-  value: Decimal;
-  precision: number;
-  minPrecision?: number;
-  prefix?: string;
-  alignRight?: boolean;
-  showSymbol?: boolean;
-  skeleton?: boolean;
-  units?: 'K' | 'M';
-} & TextProps;
+    currency: string
+    value: Decimal
+    precision: number
+    minPrecision?: number
+    prefix?: string
+    alignRight?: boolean
+    showSymbol?: boolean
+    skeleton?: boolean
+    units?: 'K' | 'M'
+} & TextProps
 
 const CurrencyDisplay = (props: CurrencyDisplayProps) => {
-  const themeStyle = useStyles(props);
-  const deviceInfo = useDeviceInfoService();
-  const {
-    currency,
-    value,
-    precision,
-    prefix,
-    units,
-    showSymbol = true,
-    skeleton = false,
-    minPrecision,
-    ...rest
-  } = props;
+    const themeStyle = useStyles(props)
+    const deviceInfo = useDeviceInfoService()
+    const {
+        currency,
+        value,
+        precision,
+        prefix,
+        units,
+        showSymbol = true,
+        skeleton = false,
+        minPrecision,
+        ...rest
+    } = props
 
-  const isAlgo = useMemo(() => currency === 'ALGO', [currency]);
-  const { privacyMode } = useSettings();
+    const isAlgo = useMemo(() => currency === 'ALGO', [currency])
+    const { privacyMode } = useSettings()
 
-  const displayValue = useMemo(() => {
-    return privacyMode
-      ? '****'
-      : formatCurrency(
-          value,
-          precision,
-          currency,
-          deviceInfo.getDeviceLocale(),
-          showSymbol,
-          units,
-          minPrecision
-        );
-  }, [
-    value,
-    precision,
-    currency,
-    deviceInfo,
-    showSymbol,
-    units,
-    minPrecision,
-    privacyMode
-  ]);
+    const displayValue = useMemo(() => {
+        return privacyMode
+            ? '****'
+            : formatCurrency(
+                  value,
+                  precision,
+                  currency,
+                  deviceInfo.getDeviceLocale(),
+                  showSymbol,
+                  units,
+                  minPrecision,
+              )
+    }, [
+        value,
+        precision,
+        currency,
+        deviceInfo,
+        showSymbol,
+        units,
+        minPrecision,
+        privacyMode,
+    ])
 
-  if (skeleton) {
+    if (skeleton) {
+        return (
+            <PWView style={themeStyle.container}>
+                <Skeleton style={themeStyle.skeleton} />
+            </PWView>
+        )
+    }
     return (
-      <PWView style={themeStyle.container}>
-        <Skeleton style={themeStyle.skeleton} />
-      </PWView>
-    );
-  }
-  return (
-    <PWView style={themeStyle.container}>
-      {isAlgo && showSymbol && (
-        <AlgoIcon
-          style={[
-            themeStyle.algoIcon,
-            props.style,
-            props.h1Style,
-            props.h2Style,
-            props.h3Style,
-            props.h4Style
-          ]}
-        />
-      )}
-      <PWView style={themeStyle.textContainer}>
-        <Text {...rest}>
-          {prefix ? prefix : ''}
-          {displayValue}
-          {units}
-        </Text>
-      </PWView>
-    </PWView>
-  );
-};
+        <PWView style={themeStyle.container}>
+            {isAlgo && showSymbol && (
+                <AlgoIcon
+                    style={[
+                        themeStyle.algoIcon,
+                        props.style,
+                        props.h1Style,
+                        props.h2Style,
+                        props.h3Style,
+                        props.h4Style,
+                    ]}
+                />
+            )}
+            <PWView style={themeStyle.textContainer}>
+                <Text {...rest}>
+                    {prefix ? prefix : ''}
+                    {displayValue}
+                    {units}
+                </Text>
+            </PWView>
+        </PWView>
+    )
+}
 
-export default CurrencyDisplay;
+export default CurrencyDisplay

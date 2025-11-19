@@ -10,50 +10,53 @@
  limitations under the License
  */
 
-import React, { PropsWithChildren } from 'react';
+import React, { PropsWithChildren } from 'react'
 import {
-  PersistQueryClientProvider,
-  PersistQueryClientRootOptions
-} from '@tanstack/react-query-persist-client';
-import { OmitKeyof, QueryCache, QueryClient } from '@tanstack/react-query';
-import { config } from '@perawallet/config';
+    PersistQueryClientProvider,
+    PersistQueryClientRootOptions,
+} from '@tanstack/react-query-persist-client'
+import { OmitKeyof, QueryCache, QueryClient } from '@tanstack/react-query'
+import { config } from '@perawallet/config'
 
 const cache = new QueryCache({
-  onError: error => {
-    console.log('An error has occurred:', error);
-    //TODO should we use a toast here?
-  }
-});
-const queryClient = new QueryClient({
-  queryCache: cache,
-  defaultOptions: {
-    queries: {
-      gcTime: config.reactQueryDefaultGCTime,
-      staleTime: config.reactQueryDefaultStaleTime,
-      retry: 2
+    onError: error => {
+        console.log('An error has occurred:', error)
+        //TODO should we use a toast here?
     },
-    mutations: {
-      //TODO should we enable throwOnError and handle exceptions everywhere or should we just show a toast here?
-      // throwOnError: true
-    }
-  }
-});
+})
+const queryClient = new QueryClient({
+    queryCache: cache,
+    defaultOptions: {
+        queries: {
+            gcTime: config.reactQueryDefaultGCTime,
+            staleTime: config.reactQueryDefaultStaleTime,
+            retry: 2,
+        },
+        mutations: {
+            //TODO should we enable throwOnError and handle exceptions everywhere or should we just show a toast here?
+            // throwOnError: true
+        },
+    },
+})
 
 type QueryProviderProps = OmitKeyof<
-  PersistQueryClientRootOptions,
-  'queryClient'
+    PersistQueryClientRootOptions,
+    'queryClient'
 > &
-  PropsWithChildren;
+    PropsWithChildren
 
 export function QueryProvider({ persister, children }: QueryProviderProps) {
-  return (
-    <PersistQueryClientProvider
-      client={queryClient}
-      persistOptions={{ persister, maxAge: config.reactQueryPersistenceAge }}
-    >
-      {children}
-    </PersistQueryClientProvider>
-  );
+    return (
+        <PersistQueryClientProvider
+            client={queryClient}
+            persistOptions={{
+                persister,
+                maxAge: config.reactQueryPersistenceAge,
+            }}
+        >
+            {children}
+        </PersistQueryClientProvider>
+    )
 }
 
-export { queryClient };
+export { queryClient }
