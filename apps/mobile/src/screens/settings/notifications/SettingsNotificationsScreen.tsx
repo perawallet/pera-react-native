@@ -16,7 +16,11 @@ import EmptyView from '../../../components/common/empty-view/EmptyView';
 const SettingsNotificationsScreen = () => {
   return (
     <MainScreenLayout>
-      <EmptyView icon="bell" title="Not Implemented" body="This screen has not yet been implemented" />
+      <EmptyView
+        icon="bell"
+        title="Not Implemented"
+        body="This screen has not yet been implemented"
+      />
     </MainScreenLayout>
   );
 };

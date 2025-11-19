@@ -24,7 +24,6 @@ import ContactAvatar from '../../components/common/contact-avatar/ContactAvatar'
 import PWView from '../../components/common/view/PWView';
 import PWTouchableOpacity from '../../components/common/touchable-opacity/PWTouchableOpacity';
 import SearchInput from '../../components/common/search-input/SearchInput';
-import PWIcon from '../../components/common/icons/PWIcon';
 
 const contactSorter = (a: Contact, b: Contact) => a.name.localeCompare(b.name);
 

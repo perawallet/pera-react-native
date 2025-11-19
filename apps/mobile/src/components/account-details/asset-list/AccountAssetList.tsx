@@ -49,14 +49,17 @@ const AccountAssetList = ({ account }: AccountAssetListProps) => {
 
   const goToAssetScreen = (asset: PeraAsset) => {
     navigation.navigate('AssetDetails', {
-        asset,
-        account
-    })
-  }
+      asset,
+      account
+    });
+  };
 
   const renderItem = (item: PeraAsset) => {
     return (
-      <PWTouchableOpacity onPress={() => goToAssetScreen(item.asset_id)} key={`asset-key-${item.asset_id}`}>
+      <PWTouchableOpacity
+        onPress={() => goToAssetScreen(item)}
+        key={`asset-key-${item.asset_id}`}
+      >
         <AccountAssetItemView
           asset={item}
           amount={item.amount ? Decimal(item.amount) : undefined}

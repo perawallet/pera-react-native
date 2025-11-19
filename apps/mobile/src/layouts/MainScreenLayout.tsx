@@ -17,7 +17,7 @@ import PWView from '../components/common/view/PWView';
 
 export type MainScreenLayoutProps = {
   fullScreen?: boolean;
-  header?: boolean
+  header?: boolean;
 } & ViewProps;
 
 export type MainScreenLayoutPropsWithInsets = {

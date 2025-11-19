@@ -16,7 +16,6 @@ import PWWebView from '../../../components/webview/PWWebView';
 //TODO implement UI controls in webview component
 //TODO set correct URL
 const SettingsPrivacyPolicyScreen = () => {
-
   return (
     <MainScreenLayout>
       <PWWebView url={'https://perawallet.app'} enablePeraConnect={false} />

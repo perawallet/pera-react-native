@@ -27,7 +27,7 @@ export const useStyles = makeStyles(theme => ({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: theme.spacing.xl * 1.5,
-    backgroundColor: theme.colors.layerGrayLighter,
+    backgroundColor: theme.colors.layerGrayLighter
   },
   text: {
     color: theme.colors.textMain,

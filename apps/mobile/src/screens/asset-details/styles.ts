@@ -15,8 +15,7 @@ import { PropsWithChildren } from 'react';
 
 export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
   return {
-    tabs: {
-    },
+    tabs: {},
     fullWidth: {
       width: '100%'
     },
@@ -24,7 +23,7 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
       color: theme.colors.textMain
     },
     indicator: {
-      backgroundColor: theme.colors.textMain,
+      backgroundColor: theme.colors.textMain
     }
   };
 });

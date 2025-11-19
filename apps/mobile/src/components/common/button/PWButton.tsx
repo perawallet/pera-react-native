@@ -46,7 +46,13 @@ const PWButton = (props: PWButtonProps) => {
       onPress={props.onPress}
       disabled={props.disabled}
     >
-      {!!props.icon && <PWIcon name={props.icon} variant={iconVariant} />}
+      {!!props.icon && (
+        <PWIcon
+          name={props.icon}
+          variant={iconVariant}
+          size={props.dense ? 'sm' : 'md'}
+        />
+      )}
       {!!props.title && <Text style={styles.titleStyle}>{props.title}</Text>}
     </PWTouchableOpacity>
   );

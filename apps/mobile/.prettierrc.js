@@ -13,5 +13,6 @@
 module.exports = {
   arrowParens: 'avoid',
   singleQuote: true,
-  trailingComma: 'none',
+  trailingComma: 'always',
+  semicolons: false,
 };

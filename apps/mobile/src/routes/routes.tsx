@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { createStaticNavigation, EventArg, ParamListBase, RouteProp } from '@react-navigation/native';
+import {
+  createStaticNavigation,
+  ParamListBase,
+  RouteProp
+} from '@react-navigation/native';
 import {
   createNativeStackNavigator,
   NativeStackHeaderProps
@@ -56,33 +60,30 @@ import SettingsPrivacyPolicyScreen from '../screens/settings/privacy-policy/Sett
 import AssetDetailsScreen from '../screens/asset-details/AssetDetailsScreen';
 
 const NAVIGATION_STACK_NAMES = new Set([
-  "tabbar",
-  "settings",
-  "onboarding",
-  "contacts",
-  "home"
-])
+  'tabbar',
+  'settings',
+  'onboarding',
+  'contacts',
+  'home'
+]);
 
-let previousRouteName: string | null = null
-const screenListeners = ({route}: {route: RouteProp<ParamListBase>}) => ({
-  focus: (e: EventArg<'focus', false, undefined>) => {
-    {
-      const currentRouteName = route.name.toLowerCase() ?? null;
+let previousRouteName: string | null = null;
+const screenListeners = ({ route }: { route: RouteProp<ParamListBase> }) => ({
+  focus: () => {
+    const currentRouteName = route.name.toLowerCase() ?? null;
 
-      if (!NAVIGATION_STACK_NAMES.has(currentRouteName) 
-        && previousRouteName !== currentRouteName) {
-        const analyticsService = container.resolve<AnalyticsService>(
-          AnalyticsServiceContainerKey
-        );
-        analyticsService.logEvent(
-          `scr_${currentRouteName ?? 'unknown'}_view`,
-          {
-            previous: previousRouteName,
-            path: route.path
-          }
-        );
-        previousRouteName = currentRouteName;
-      }
+    if (
+      !NAVIGATION_STACK_NAMES.has(currentRouteName) &&
+      previousRouteName !== currentRouteName
+    ) {
+      const analyticsService = container.resolve<AnalyticsService>(
+        AnalyticsServiceContainerKey
+      );
+      analyticsService.logEvent(`scr_${currentRouteName ?? 'unknown'}_view`, {
+        previous: previousRouteName,
+        path: route.path
+      });
+      previousRouteName = currentRouteName;
     }
   }
 });
@@ -210,7 +211,7 @@ const ContactsStack = createNativeStackNavigator({
 const AccountStack = createNativeStackNavigator({
   initialRouteName: 'AccountDetails',
   screenOptions: {
-    headerShown: false,
+    headerShown: false
   },
   screenListeners,
   screens: {
@@ -219,7 +220,9 @@ const AccountStack = createNativeStackNavigator({
       screen: AssetDetailsScreen,
       options: {
         headerShown: true,
-        header: (props: NativeStackHeaderProps) => <NavigationHeader {...props} />
+        header: (props: NativeStackHeaderProps) => (
+          <NavigationHeader {...props} />
+        )
       }
     }
   }
@@ -271,14 +274,14 @@ const OnboardingStack = createNativeStackNavigator({
       screen: NameAccountScreen,
       options: {
         headerShown: true,
-        headerTitle: "Name your account"
+        headerTitle: 'Name your account'
       }
     },
     ImportAccount: {
       screen: ImportAccountScreen,
       options: {
         headerShown: true,
-        headerTitle: "Enter your Recovery Passphrase"
+        headerTitle: 'Enter your Recovery Passphrase'
       }
     }
   }

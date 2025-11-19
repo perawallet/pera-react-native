@@ -14,10 +14,13 @@ import MainScreenLayout from '../../../layouts/MainScreenLayout';
 import EmptyView from '../../../components/common/empty-view/EmptyView';
 
 const SettingsWalletConnectScreen = () => {
-
   return (
     <MainScreenLayout>
-      <EmptyView icon="wallet-connect" title="Not Implemented" body="This screen has not yet been implemented" />
+      <EmptyView
+        icon="wallet-connect"
+        title="Not Implemented"
+        body="This screen has not yet been implemented"
+      />
     </MainScreenLayout>
   );
 };

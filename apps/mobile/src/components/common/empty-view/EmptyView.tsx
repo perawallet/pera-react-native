@@ -28,7 +28,11 @@ const EmptyView = (props: EmptyViewProps) => {
 
   return (
     <PWView {...rest} style={[styles.container, style]}>
-      {!!icon && <PWView style={styles.iconContainer}><PWIcon name={icon} variant="secondary" size="lg" /></PWView> }
+      {!!icon && (
+        <PWView style={styles.iconContainer}>
+          <PWIcon name={icon} variant="secondary" size="lg" />
+        </PWView>
+      )}
       {!!title && (
         <Text h3 h3Style={styles.text}>
           {title}

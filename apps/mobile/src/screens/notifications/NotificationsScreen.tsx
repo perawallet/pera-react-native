@@ -20,7 +20,6 @@ import { FlatList } from 'react-native-gesture-handler';
 import PWView from '../../components/common/view/PWView';
 import { ActivityIndicator } from 'react-native';
 import EmptyView from '../../components/common/empty-view/EmptyView';
-import PWIcon from '../../components/common/icons/PWIcon';
 import { useStyles } from './styles';
 import NotificationItem from '../../components/notifications/notification-item/NotificationItem';
 import { useMemo } from 'react';

@@ -14,10 +14,13 @@ import MainScreenLayout from '../../../layouts/MainScreenLayout';
 import EmptyView from '../../../components/common/empty-view/EmptyView';
 
 const SettingsSecurityScreen = () => {
-
   return (
     <MainScreenLayout>
-      <EmptyView icon="shield-check" title="Not Implemented" body="This screen has not yet been implemented" />
+      <EmptyView
+        icon="shield-check"
+        title="Not Implemented"
+        body="This screen has not yet been implemented"
+      />
     </MainScreenLayout>
   );
 };

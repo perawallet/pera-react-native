@@ -247,6 +247,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
         }
       }),
       Text: () => ({
+        //TODO: It seems to be selecting the wrong font at larger sizes - we may need additional font files
         h1Style: {
           fontFamily: getFontFamily(false, 500),
           fontSize: 32,

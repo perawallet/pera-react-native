@@ -25,7 +25,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PWTouchableOpacity from '../../components/common/touchable-opacity/PWTouchableOpacity';
 import PWIcon, { IconName } from '../../components/common/icons/PWIcon';
 
-//TODO: build out all the settins pages
+//TODO: add ratings view handling
 const settingsOptions = [
   {
     title: 'Account',
@@ -103,7 +103,7 @@ const SettingsScreen = () => {
   const styles = useStyles(insets);
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>();
   const { getAppVersion } = useDeviceInfoService();
-  const [ratingOpen, setRatingOpen] = useState(false);
+  const [_, setRatingOpen] = useState(false);
 
   const appVersion = useMemo(() => {
     return getAppVersion();
@@ -114,8 +114,8 @@ const SettingsScreen = () => {
   };
 
   const openRating = () => {
-    setRatingOpen(true)
-  }
+    setRatingOpen(true);
+  };
 
   return (
     <MainScreenLayout fullScreen>
@@ -134,7 +134,11 @@ const SettingsScreen = () => {
                 <PWTouchableOpacity
                   style={styles.sectionRow}
                   key={`settings-sectionrow-${page.title}`}
-                  onPress={() => { page.route ? goToSettingsPage(page.route, page.title) : openRating() }}
+                  onPress={() => {
+                    page.route
+                      ? goToSettingsPage(page.route, page.title)
+                      : openRating();
+                  }}
                 >
                   <PWIcon name={page.icon as IconName} />
                   <Text style={styles.sectionRowTitle}>{page.title}</Text>

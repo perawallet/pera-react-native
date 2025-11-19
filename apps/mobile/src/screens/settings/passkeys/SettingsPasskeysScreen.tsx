@@ -14,10 +14,13 @@ import MainScreenLayout from '../../../layouts/MainScreenLayout';
 import EmptyView from '../../../components/common/empty-view/EmptyView';
 
 const SettingsPasskeyScreen = () => {
-
   return (
     <MainScreenLayout>
-      <EmptyView icon="person-key" title="Not Implemented" body="This screen has not yet been implemented" />
+      <EmptyView
+        icon="person-key"
+        title="Not Implemented"
+        body="This screen has not yet been implemented"
+      />
     </MainScreenLayout>
   );
 };

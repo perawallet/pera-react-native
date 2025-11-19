@@ -17,7 +17,8 @@ export const useStyles = makeStyles(theme => ({
     gap: theme.spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    marginTop: theme.spacing.xl
   },
   blackButton: {
     backgroundColor: theme.colors.buttonHelperBg
