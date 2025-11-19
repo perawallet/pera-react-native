@@ -17,7 +17,7 @@ import { Text } from '@rneui/themed'
 import { useCallback } from 'react'
 
 import SwapPair from '../swap-pair/SwapPair'
-import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay'
+import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
 import { PeraAsset, useCachedAssets } from '@perawallet/core'
 
 //TODO this iz a mock implementation - implement properly

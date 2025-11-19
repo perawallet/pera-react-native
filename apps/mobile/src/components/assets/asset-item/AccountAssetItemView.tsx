@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import AssetIcon from '../../common/asset-icon/AssetIcon'
-import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay'
+import AssetIcon from '../asset-icon/AssetIcon'
+import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
 import PWView, { PWViewProps } from '../../common/view/PWView'
 import {
     ALGO_ASSET_ID,

@@ -14,7 +14,7 @@ import { Text } from '@rneui/themed'
 import { useStyles } from './styles'
 
 import PWView from '../../common/view/PWView'
-import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay'
+import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
 import WealthChart from '../../common/wealth-chart/WealthChart'
 import { PWViewProps } from '../../common/view/PWView'
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity'

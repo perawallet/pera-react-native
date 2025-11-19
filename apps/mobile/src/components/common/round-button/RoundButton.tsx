@@ -11,18 +11,18 @@
  */
 
 import { useStyles } from './styles'
-import { StyleProp, TextStyle, ViewStyle } from 'react-native'
 import PWView from '../view/PWView'
 import { Text } from '@rneui/themed'
 import PWTouchableOpacity, {
     type PWTouchableOpacityProps,
 } from '../touchable-opacity/PWTouchableOpacity'
+import PWIcon, { IconName } from '../icons/PWIcon'
 
 export type RoundButtonProps = {
-    icon: React.ReactElement<{}>
+    icon: IconName
     title?: string
-    textStyle?: StyleProp<TextStyle>
-    buttonStyle?: StyleProp<ViewStyle>
+    size?: 'sm' | 'lg'
+    variant?: 'primary' | 'secondary'
 } & PWTouchableOpacityProps
 
 const RoundButton = (props: RoundButtonProps) => {
@@ -30,21 +30,28 @@ const RoundButton = (props: RoundButtonProps) => {
     const {
         icon,
         title,
-        buttonStyle,
-        textStyle,
+        size = 'lg',
+        variant = 'secondary',
         style: propStyle,
         ...rest
     } = props
 
+    const iconSize = size === 'lg' ? 'md' : 'sm'
+    const iconVariant = variant === 'primary' ? 'white' : 'primary'
+
     return (
         <PWView style={propStyle}>
             <PWTouchableOpacity
-                style={[style.buttonStyle, buttonStyle]}
+                style={style.buttonStyle}
                 {...rest}
             >
-                {icon}
+                <PWIcon
+                    name={icon}
+                    size={iconSize}
+                    variant={iconVariant}
+                />
             </PWTouchableOpacity>
-            <Text style={[style.titleStyle, textStyle]}>{title}</Text>
+            <Text style={style.titleStyle}>{title}</Text>
         </PWView>
     )
 }

@@ -13,7 +13,7 @@
 import { PeraAsset } from '@perawallet/core'
 import PWView from '../../common/view/PWView'
 import { useStyles } from './styles'
-import AssetIcon from '../../common/asset-icon/AssetIcon'
+import AssetIcon from '../asset-icon/AssetIcon'
 import { Text, useTheme } from '@rneui/themed'
 import { Icon } from '@rneui/base'
 

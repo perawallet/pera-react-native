@@ -13,7 +13,7 @@
 import PWView from '../../common/view/PWView'
 import Decimal from 'decimal.js'
 import { useContext, useMemo, useState } from 'react'
-import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay'
+import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
 import { useStyles } from './styles'
 import PWButton from '../../common/button/PWButton'
 import AccountAssetItemView from '../../assets/asset-item/AccountAssetItemView'
@@ -28,7 +28,7 @@ import {
     useSelectedAccount,
 } from '@perawallet/core'
 import PWHeader from '../../common/header/PWHeader'
-import AccountDisplay from '../../common/account-display/AccountDisplay'
+import AccountDisplay from '../../accounts/account-display/AccountDisplay'
 import SendFundsInfoPanel from '../info-panel/SendFundsInfoPanel'
 
 type SendFundsInputViewProps = {

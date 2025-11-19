@@ -29,7 +29,7 @@ import AssetTransactionList from './asset-transaction-list/AssetTransactionList'
 import { ScrollView } from 'react-native'
 import { useStyles } from './styles'
 import AssetTitle from '../../assets/asset-title/AssetTitle'
-import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay'
+import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import PWIcon from '../../common/icons/PWIcon'
 
@@ -66,8 +66,8 @@ const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
         const currentUSD = selectedPoint
             ? Decimal(selectedPoint.value_in_currency ?? 0)
             : convertUSDToPreferredCurrency(
-                  Decimal(assetHolding?.balance_usd_value ?? 0),
-              )
+                Decimal(assetHolding?.balance_usd_value ?? 0),
+            )
         return currentUSD
     }, [assetHolding, selectedPoint, convertUSDToPreferredCurrency])
 

@@ -21,30 +21,28 @@ const AssetActionButtons = () => {
     return (
         <PWView style={styles.container}>
             <RoundButton
-                buttonStyle={styles.blackButton}
                 title='Swap'
-                icon={
-                    <PWIcon
-                        name='swap'
-                        variant='white'
-                    />
-                }
-                onPress={() => {}}
+                icon='swap'
+                variant='primary'
+                onPress={() => { }}
             />
             <RoundButton
                 title='Buy / Sell'
-                icon={<PWIcon name='dollar' />}
-                onPress={() => {}}
+                icon='dollar'
+                variant='secondary'
+                onPress={() => { }}
             />
             <RoundButton
                 title='Send'
-                icon={<PWIcon name='arrow-up' />}
-                onPress={() => {}}
+                icon='arrow-up'
+                variant='secondary'
+                onPress={() => { }}
             />
             <RoundButton
                 title='Receive'
-                icon={<PWIcon name='arrow-down' />}
-                onPress={() => {}}
+                icon='arrow-down'
+                variant='secondary'
+                onPress={() => { }}
             />
         </PWView>
     )

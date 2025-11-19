@@ -39,12 +39,12 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
             alignItems: 'center',
             justifyContent: 'center',
             gap: theme.spacing.sm,
-            minWidth: props.minWidth ?? 0,
             borderRadius: theme.spacing.sm,
-            paddingVertical: props.dense ? theme.spacing.xs : theme.spacing.lg,
             paddingHorizontal: props.dense
                 ? theme.spacing.md
                 : theme.spacing.xl * 1.5,
+            minWidth: props.minWidth ?? props.dense ? theme.spacing.xl * 1.5 : theme.spacing.xl * 2,
+            height: props.dense ? theme.spacing.xl * 1.5 : theme.spacing.xl * 2,
             opacity: props.disabled ? 0.7 : 1,
             backgroundColor,
         },

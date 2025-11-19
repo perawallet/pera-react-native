@@ -11,7 +11,7 @@
  */
 
 import { Text, TextProps, useTheme } from '@rneui/themed'
-import PWView, { PWViewProps } from '../view/PWView'
+import PWView, { PWViewProps } from '../../common/view/PWView'
 import { useStyles } from './styles'
 import {
     truncateAlgorandAddress,
@@ -23,9 +23,9 @@ import Clipboard from '@react-native-clipboard/clipboard'
 
 import { SvgProps } from 'react-native-svg'
 import { useMemo } from 'react'
-import ContactAvatar from '../contact-avatar/ContactAvatar'
-import AccountDisplay from '../account-display/AccountDisplay'
-import PWIcon from '../icons/PWIcon'
+import ContactAvatar from '../../common/contact-avatar/ContactAvatar'
+import AccountDisplay from '../../accounts/account-display/AccountDisplay'
+import PWIcon from '../../common/icons/PWIcon'
 
 type AddressDisplayProps = {
     address: string
@@ -88,8 +88,8 @@ const AddressDisplay = ({
         addressFormat === 'full'
             ? address
             : addressFormat === 'long'
-              ? truncateAlgorandAddress(address, LONG_ADDRESS_FORMAT)
-              : truncateAlgorandAddress(address)
+                ? truncateAlgorandAddress(address, LONG_ADDRESS_FORMAT)
+                : truncateAlgorandAddress(address)
 
     return (
         <PWView

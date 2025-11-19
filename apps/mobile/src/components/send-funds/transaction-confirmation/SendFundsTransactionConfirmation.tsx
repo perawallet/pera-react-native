@@ -21,10 +21,10 @@ import {
     useSelectedAccount,
 } from '@perawallet/core'
 import RowTitledItem from '../../common/row-titled-item/RowTitledItem'
-import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay'
+import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
 import Decimal from 'decimal.js'
-import AccountDisplay from '../../common/account-display/AccountDisplay'
-import AddressDisplay from '../../common/address-display/AddressDisplay'
+import AccountDisplay from '../../accounts/account-display/AccountDisplay'
+import AddressDisplay from '../../address/address-display/AddressDisplay'
 import { Divider, Text, useTheme } from '@rneui/themed'
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity'
 import { useStyles } from './styles'

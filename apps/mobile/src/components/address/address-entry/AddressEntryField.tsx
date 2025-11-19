@@ -11,13 +11,13 @@
  */
 
 import { TouchableOpacity } from 'react-native'
-import PWView from '../view/PWView'
+import PWView from '../../common/view/PWView'
 import { useStyles } from './styles'
 
-import QRScannerView from '../qr-scanner/QRScannerView'
+import QRScannerView from '../../common/qr-scanner/QRScannerView'
 import { useState } from 'react'
 import { Input, InputProps } from '@rneui/themed'
-import PWIcon from '../icons/PWIcon'
+import PWIcon from '../../common/icons/PWIcon'
 
 export type AddressEntryFieldProps = {
     allowQRCode?: boolean

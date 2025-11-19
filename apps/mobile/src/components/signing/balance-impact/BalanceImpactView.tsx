@@ -13,7 +13,7 @@
 import PWView from '../../common/view/PWView'
 import { useStyles } from './styles'
 import { Text } from '@rneui/themed'
-import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay'
+import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import PWIcon from '../../common/icons/PWIcon'
 

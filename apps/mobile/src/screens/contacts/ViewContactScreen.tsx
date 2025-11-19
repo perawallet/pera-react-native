@@ -15,7 +15,7 @@ import PWView from '../../components/common/view/PWView'
 import { Text } from '@rneui/themed'
 import { useStyles } from './ViewContactScreen.styles'
 import ContactAvatar from '../../components/common/contact-avatar/ContactAvatar'
-import AddressDisplay from '../../components/common/address-display/AddressDisplay'
+import AddressDisplay from '../../components/address/address-display/AddressDisplay'
 import { useContacts } from '@perawallet/core'
 
 const ViewContactScreen = () => {

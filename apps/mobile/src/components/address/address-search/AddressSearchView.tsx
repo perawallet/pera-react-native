@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import PWView from '../view/PWView'
+import PWView from '../../common/view/PWView'
 import { useStyles } from './styles'
 
 import { useMemo, useState } from 'react'
@@ -23,11 +23,11 @@ import {
     useContacts,
 } from '@perawallet/core'
 import { ScrollView } from 'react-native'
-import PWTouchableOpacity from '../touchable-opacity/PWTouchableOpacity'
-import AccountDisplay from '../account-display/AccountDisplay'
-import EmptyView from '../empty-view/EmptyView'
+import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity'
+import AccountDisplay from '../../accounts/account-display/AccountDisplay'
+import EmptyView from '../../common/empty-view/EmptyView'
 import AddressDisplay from '../address-display/AddressDisplay'
-import PWIcon from '../icons/PWIcon'
+import PWIcon from '../../common/icons/PWIcon'
 
 type AddressSearchViewProps = {
     onSelected: (address: string) => void
@@ -68,8 +68,8 @@ const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
                 }
             />
             {!isValidAddress &&
-            !matchingAccounts.length &&
-            !matchingContacts.length ? (
+                !matchingAccounts.length &&
+                !matchingContacts.length ? (
                 <EmptyView
                     title='No Accounts Found'
                     body='There are no matching accounts'

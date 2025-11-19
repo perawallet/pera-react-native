@@ -19,7 +19,7 @@ import {
 import { useStyles } from './styles'
 import { Text } from '@rneui/themed'
 import PWButton from '../../common/button/PWButton'
-import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay'
+import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import { ScrollView } from 'react-native'
 

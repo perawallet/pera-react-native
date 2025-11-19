@@ -20,7 +20,7 @@ import {
     WalletAccount,
 } from '@perawallet/core'
 import { ScrollView } from 'react-native'
-import CurrencyDisplay from '../../common/currency-display/CurrencyDisplay'
+import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import WealthChart from '../../common/wealth-chart/WealthChart'
 import ButtonPanel from '../button-panel/ButtonPanel'
@@ -102,8 +102,8 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
                             value={
                                 chartData
                                     ? Decimal(
-                                          chartData.value_in_currency ?? '0',
-                                      )
+                                        chartData.value_in_currency ?? '0',
+                                    )
                                     : totalLocal
                             }
                             currency={preferredCurrency}

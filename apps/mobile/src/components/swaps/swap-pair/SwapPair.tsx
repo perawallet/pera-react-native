@@ -14,7 +14,7 @@ import { useStyles } from './styles'
 import PWView from '../../common/view/PWView'
 import { ViewStyle } from 'react-native'
 import { Text } from '@rneui/themed'
-import AssetIcon from '../../common/asset-icon/AssetIcon'
+import AssetIcon from '../../assets/asset-icon/AssetIcon'
 import { PeraAsset } from '@perawallet/core'
 
 type SwapPairItemProps = {

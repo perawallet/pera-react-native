@@ -13,7 +13,7 @@
 import { Dialog, Input, Text, useTheme } from '@rneui/themed'
 import ContactAvatar from '../../components/common/contact-avatar/ContactAvatar'
 import PWView from '../../components/common/view/PWView'
-import AddressEntryField from '../../components/common/address-entry/AddressEntryField'
+import AddressEntryField from '../../components/address/address-entry/AddressEntryField'
 import { Contact, useContacts, contactSchema } from '@perawallet/core'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { KeyboardAvoidingView } from 'react-native'
@@ -24,7 +24,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, Controller } from 'react-hook-form'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useState } from 'react'
-import AddressDisplay from '../../components/common/address-display/AddressDisplay'
+import AddressDisplay from '../../components/address/address-display/AddressDisplay'
 
 const EditContactScreen = () => {
     const styles = useStyles()

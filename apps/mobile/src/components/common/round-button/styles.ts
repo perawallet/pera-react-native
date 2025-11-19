@@ -13,22 +13,26 @@
 import { makeStyles } from '@rneui/themed'
 import { RoundButtonProps } from './RoundButton'
 
-export const useStyles = makeStyles((theme, _: RoundButtonProps) => ({
-    buttonStyle: {
-        backgroundColor: theme.colors.layerGrayLighter,
-        color: theme.colors.textMain,
-        marginBottom: theme.spacing.sm,
-        width: 64,
-        height: 64,
-        alignContent: 'center',
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderRadius: 32,
-    },
-    titleStyle: {
-        color: theme.colors.textMain,
-        alignItems: 'center',
-        justifyContent: 'center',
-        textAlign: 'center',
-    },
-}))
+export const useStyles = makeStyles((theme, props: RoundButtonProps) => {
+    const { size = 'lg', variant = 'secondary' } = props
+    const buttonSize = size === 'lg' ? theme.spacing.xl * 3 : theme.spacing.xl
+    const backgroundColor = variant === 'primary' ? theme.colors.buttonPrimaryBg : theme.colors.layerGrayLighter
+
+    return {
+        buttonStyle: {
+            backgroundColor,
+            marginBottom: theme.spacing.sm,
+            width: buttonSize,
+            height: buttonSize,
+            alignContent: 'center',
+            justifyContent: 'center',
+            alignItems: 'center',
+            borderRadius: buttonSize / 2,
+        },
+        titleStyle: {
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+        },
+    }
+})

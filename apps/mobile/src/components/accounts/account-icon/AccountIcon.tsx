@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import PWIcon from '../icons/PWIcon'
+import PWIcon from '../../common/icons/PWIcon'
 
 import { useMemo } from 'react'
 import { SvgProps } from 'react-native-svg'

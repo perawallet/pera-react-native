@@ -11,12 +11,12 @@
  */
 
 import PWView from '../../common/view/PWView'
-import AddressSearchView from '../../common/address-search/AddressSearchView'
+import AddressSearchView from '../../address/address-search/AddressSearchView'
 import { useContext } from 'react'
 import { SendFundsContext } from '../../../providers/SendFundsProvider'
 import { useStyles } from './styles'
 import PWHeader from '../../common/header/PWHeader'
-import AssetIcon from '../../common/asset-icon/AssetIcon'
+import AssetIcon from '../../assets/asset-icon/AssetIcon'
 import { Text, useTheme } from '@rneui/themed'
 
 type SendFundsSelectDestinationProps = {

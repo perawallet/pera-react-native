@@ -11,7 +11,7 @@
  */
 
 import PWView from '../common/view/PWView'
-import AccountIcon from '../common/account-icon/AccountIcon'
+import AccountIcon from '../accounts/account-icon/AccountIcon'
 import PWTouchableOpacity from '../common/touchable-opacity/PWTouchableOpacity'
 import {
     getAccountDisplayName,

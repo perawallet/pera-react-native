@@ -12,7 +12,7 @@
 
 import { useStyles } from './styles'
 import { Skeleton, Text, TextProps } from '@rneui/themed'
-import PWView from '../view/PWView'
+import PWView from '../../common/view/PWView'
 import { useMemo } from 'react'
 import {
     formatCurrency,
@@ -56,14 +56,14 @@ const CurrencyDisplay = (props: CurrencyDisplayProps) => {
         return privacyMode
             ? '****'
             : formatCurrency(
-                  value,
-                  precision,
-                  currency,
-                  deviceInfo.getDeviceLocale(),
-                  showSymbol,
-                  units,
-                  minPrecision,
-              )
+                value,
+                precision,
+                currency,
+                deviceInfo.getDeviceLocale(),
+                showSymbol,
+                units,
+                minPrecision,
+            )
     }, [
         value,
         precision,
