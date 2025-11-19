@@ -16,6 +16,7 @@ import { useTheme } from '@rneui/themed'
 import AlgoIcon from '../../../../assets/icons/algo.svg'
 import AppLogo from '../../../../assets/icons/app_logo.svg'
 import ArrowUpIcon from '../../../../assets/icons/arrow-up.svg'
+import ArrowUpRightIcon from '../../../../assets/icons/arrow-up-right.svg'
 import ArrowDownIcon from '../../../../assets/icons/arrow-down.svg'
 import BellIcon from '../../../../assets/icons/bell.svg'
 import BellWithBadgeIcon from '../../../../assets/icons/bell-with-badge.svg'
@@ -57,6 +58,7 @@ import PlusWithBorderIcon from '../../../../assets/icons/plus-with-border.svg'
 import PlusIcon from '../../../../assets/icons/plus.svg'
 import ShieldCheckIcon from '../../../../assets/icons/shield-check.svg'
 import SlidersIcon from '../../../../assets/icons/sliders.svg'
+import SnowflakeIcon from '../../../../assets/icons/snowflake.svg'
 import StarIcon from '../../../../assets/icons/star.svg'
 import SwapIcon from '../../../../assets/icons/swap.svg'
 import SwitchIcon from '../../../../assets/icons/switch.svg'
@@ -68,16 +70,21 @@ import WalletIcon from '../../../../assets/icons/wallet.svg'
 import AlgoAssetIcon from '../../../../assets/icons/assets/algo.svg'
 import SuspiciousAssetIcon from '../../../../assets/icons/assets/suspicious.svg'
 import TrustedAssetIcon from '../../../../assets/icons/assets/trusted.svg'
+import UndoIcon from '../../../../assets/icons/undo.svg'
 import USDCAssetIcon from '../../../../assets/icons/assets/usdc.svg'
 import VerifiedAssetIcon from '../../../../assets/icons/assets/verified.svg'
 import VestAssetIcon from '../../../../assets/icons/assets/vest.svg'
 import GroupIcon from '../../../../assets/icons/transactions/group.svg'
 import PaymentIcon from '../../../../assets/icons/transactions/payment.svg'
+import DiscordIcon from '../../../../assets/icons/socials/discord.svg'
+import TelegramIcon from '../../../../assets/icons/socials/telegram.svg'
+import TwitterIcon from '../../../../assets/icons/socials/twitter.svg'
 
 const ICON_LIBRARY = {
     algo: AlgoIcon,
     app_logo: AppLogo,
     'arrow-up': ArrowUpIcon,
+    'arrow-up-right': ArrowUpRightIcon,
     'arrow-down': ArrowDownIcon,
     bell: BellIcon,
     'bell-with-badge': BellWithBadgeIcon,
@@ -119,10 +126,12 @@ const ICON_LIBRARY = {
     plus: PlusIcon,
     'shield-check': ShieldCheckIcon,
     sliders: SlidersIcon,
+    snowflake: SnowflakeIcon,
     star: StarIcon,
     swap: SwapIcon,
     switch: SwitchIcon,
     'text-document': TextDocumentIcon,
+    undo: UndoIcon,
     'wallet-connect': WalletConnectIcon,
     'wallet-in-circle': WalletInCircleIcon,
     'wallet-with-algo': WalletWithAlgoIcon,
@@ -135,6 +144,9 @@ const ICON_LIBRARY = {
     'assets/vest': VestAssetIcon,
     'transactions/group': GroupIcon,
     'transactions/payment': PaymentIcon,
+    'socials/discord': DiscordIcon,
+    'socials/telegram': TelegramIcon,
+    'socials/twitter': TwitterIcon,
 } as const
 
 export type IconName = keyof typeof ICON_LIBRARY

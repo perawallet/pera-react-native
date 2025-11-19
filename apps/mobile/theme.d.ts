@@ -41,6 +41,15 @@ declare module '@rneui/themed' {
         helperPositive: string
         helperNegative: string
         helperGray200: string
+
+        //ASA
+        asaTrustedText: string
+        asaTrustedBg: string
+        asaVerifiedText: string
+        asaVerifiedBg: string
+        asaSuspiciousText: string
+        asaSuspiciousBg: string
+
         backdrop: string
 
         //Links

@@ -67,7 +67,7 @@ const AssetDetailsScreen = ({
         dense
       >
         <Tab.Item title='Holdings' />
-        <Tab.Item title='Market' />
+        <Tab.Item title='Markets' />
       </Tab>
       <TabView
         value={tabIndex}
@@ -87,7 +87,6 @@ const AssetDetailsScreen = ({
         </TabView.Item>
         <TabView.Item style={styles.fullWidth}>
           <AssetMarkets
-            account={account}
             asset={asset}
           />
         </TabView.Item>
