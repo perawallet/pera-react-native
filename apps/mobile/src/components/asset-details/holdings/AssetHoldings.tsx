@@ -31,7 +31,7 @@ import { useStyles } from './styles'
 import AssetTitle from '../../assets/asset-title/AssetTitle'
 import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
 import Decimal from 'decimal.js'
-import PWIcon from '../../common/icons/PWIcon'
+import RoundButton from '../../common/round-button/RoundButton'
 
 type AssetHoldingsProps = {
     account: WalletAccount
@@ -84,13 +84,13 @@ const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
                 <PWView style={styles.assetRow}>
                     <AssetTitle asset={asset} />
                     <PWView style={styles.headerIcons}>
-                        <PWIcon
-                            name='bell'
+                        <RoundButton
+                            icon='bell'
                             size='sm'
                             variant='secondary'
                         />
-                        <PWIcon
-                            name='star'
+                        <RoundButton
+                            icon='star'
                             size='sm'
                             variant='secondary'
                         />
@@ -102,11 +102,13 @@ const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
                     value={cryptoAmount}
                     currency={asset.unit_name}
                     precision={asset.fraction_decimals}
+                    minPrecision={2}
                 />
                 <CurrencyDisplay
                     value={fiatAmount}
                     currency={preferredCurrency}
                     precision={2}
+                    minPrecision={2}
                 />
             </PWView>
 
@@ -123,7 +125,7 @@ const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
                 />
             </PWView>
 
-            <AssetActionButtons />
+            <AssetActionButtons asset={asset} />
 
             <AssetTransactionList
                 account={account}

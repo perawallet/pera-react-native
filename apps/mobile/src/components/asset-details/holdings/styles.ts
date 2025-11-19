@@ -17,14 +17,12 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: theme.spacing.sm,
+        marginBottom: theme.spacing.md,
     },
     headerIcons: {
         flexDirection: 'row',
         alignItems: 'center',
-    },
-    headerIcon: {
-        marginLeft: theme.spacing.md,
+        gap: theme.spacing.sm,
     },
     fiatText: {
         color: theme.colors.textGray,

@@ -23,6 +23,7 @@ type AssetTransactionListProps = {
     asset: PeraAsset
 }
 
+//TODO implement fully
 const AssetTransactionList = (_: AssetTransactionListProps) => {
     const styles = useStyles()
 
@@ -58,6 +59,7 @@ const AssetTransactionList = (_: AssetTransactionListProps) => {
             </PWView>
 
             <FlatList
+                contentContainerStyle={styles.list}
                 data={transactions}
                 renderItem={renderItem}
                 onEndReached={handleEndReached}

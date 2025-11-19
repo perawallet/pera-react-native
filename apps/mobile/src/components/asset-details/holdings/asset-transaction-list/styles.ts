@@ -16,4 +16,7 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
     },
+    list: {
+        flex: 1,
+    },
 }))

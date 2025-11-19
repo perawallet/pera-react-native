@@ -13,10 +13,43 @@
 import { useStyles } from './styles'
 import PWView from '../../../common/view/PWView'
 import RoundButton from '../../../common/round-button/RoundButton'
-import PWIcon from '../../../common/icons/PWIcon'
+import { ParamListBase, useNavigation } from '@react-navigation/native'
+import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { useState } from 'react'
+import SendFundsBottomSheet from '../../../send-funds/bottom-sheet/SendFundsBottomSheet'
+import useToast from '../../../../hooks/toast'
+import { PeraAsset } from '@perawallet/core'
 
-const AssetActionButtons = () => {
+type AssetActionButtonsProps = {
+    asset: PeraAsset
+}
+//TODO hook up missing actions
+const AssetActionButtons = ({ asset }: AssetActionButtonsProps) => {
     const styles = useStyles()
+    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
+    const { showToast } = useToast()
+
+    const [sendFundsOpen, setSendFundsOpen] = useState<boolean>(false)
+
+    const goToRootPage = (name: string) => {
+        navigation.replace('TabBar', { screen: name })
+    }
+
+    const notImplemented = () => {
+        showToast({
+            title: 'Not implemented',
+            body: 'This feature is not implemented yet',
+            type: 'error',
+        })
+    }
+
+    const closeSendFunds = () => {
+        setSendFundsOpen(false)
+    }
+
+    const openSendFunds = () => {
+        setSendFundsOpen(true)
+    }
 
     return (
         <PWView style={styles.container}>
@@ -24,25 +57,30 @@ const AssetActionButtons = () => {
                 title='Swap'
                 icon='swap'
                 variant='primary'
-                onPress={() => { }}
+                onPress={() => goToRootPage('Swap')}
             />
             <RoundButton
                 title='Buy / Sell'
                 icon='dollar'
                 variant='secondary'
-                onPress={() => { }}
+                onPress={notImplemented}
             />
             <RoundButton
                 title='Send'
-                icon='arrow-up'
+                icon='outflow'
                 variant='secondary'
-                onPress={() => { }}
+                onPress={openSendFunds}
             />
             <RoundButton
                 title='Receive'
-                icon='arrow-down'
+                icon='inflow'
                 variant='secondary'
-                onPress={() => { }}
+                onPress={notImplemented}
+            />
+            <SendFundsBottomSheet
+                asset={asset}
+                onClose={closeSendFunds}
+                isVisible={sendFundsOpen}
             />
         </PWView>
     )

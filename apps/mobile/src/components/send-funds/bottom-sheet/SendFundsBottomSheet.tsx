@@ -19,7 +19,7 @@ import SendFundsInputView from '../input-view/SendFundsInputView'
 import { useContext, useLayoutEffect, useState } from 'react'
 import { useStyles } from './styles'
 import { useWindowDimensions } from 'react-native'
-import { TabView } from '@rneui/themed'
+import { TabView, Text } from '@rneui/themed'
 import SendFundsSelectDestination from '../select-destination/SendFundsSelectDestination'
 import SendFundsTransactionConfirmation from '../transaction-confirmation/SendFundsTransactionConfirmation'
 import SendFundsProvider, {
@@ -38,12 +38,12 @@ export type ScreenState =
     | 'select-destination'
     | 'confirm-transaction'
 
-const SCREENS: ScreenState[] = [
-    'select-asset',
-    'input-amount',
-    'select-destination',
-    'confirm-transaction',
-]
+const getScreenCount = (canSelectAsset: boolean) => {
+    if (canSelectAsset) {
+        return 4
+    }
+    return 3
+}
 
 //TODO: add support for ASA Inbox sends (check whether destination account is opted into asset)
 //TODO: we need to useCachedAssets so that we get the USD price and can show that
@@ -69,12 +69,11 @@ const SendFundsBottomSheet = ({
         if (asset) {
             setSelectedAsset(asset)
             setCanSelectAsset(false)
-            setScreenIndex(SCREENS.findIndex(s => s === 'input-amount'))
         }
     }, [asset, setCanSelectAsset, setSelectedAsset])
 
     const handleNext = () => {
-        if (screenIndex >= SCREENS.length - 1) {
+        if (screenIndex >= getScreenCount(!!canSelectAsset) - 1) {
             clearContext()
             onClose()
         } else {
@@ -83,7 +82,7 @@ const SendFundsBottomSheet = ({
     }
 
     const handleBack = () => {
-        if (screenIndex === 0 || (screenIndex === 1 && !canSelectAsset)) {
+        if (screenIndex === 0) {
             clearContext()
             onClose()
         } else {
@@ -113,12 +112,12 @@ const SendFundsBottomSheet = ({
                         }}
                         disableSwipe
                     >
-                        <TabView.Item style={styles.tabItem}>
+                        {!!canSelectAsset && <TabView.Item style={styles.tabItem}>
                             <SendFundsAssetSelectionView
                                 onSelected={handleNext}
                                 onBack={handleBack}
                             />
-                        </TabView.Item>
+                        </TabView.Item>}
                         <TabView.Item style={styles.tabItem}>
                             <SendFundsInputView
                                 onNext={handleNext}

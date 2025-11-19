@@ -51,7 +51,7 @@ const RoundButton = (props: RoundButtonProps) => {
                     variant={iconVariant}
                 />
             </PWTouchableOpacity>
-            <Text style={style.titleStyle}>{title}</Text>
+            {!!title && <Text style={style.titleStyle}>{title}</Text>}
         </PWView>
     )
 }
