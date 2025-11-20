@@ -26,12 +26,12 @@ export type RequestConfig<TData = unknown> = {
     params?: object
     data?: TData | FormData
     responseType?:
-        | 'arraybuffer'
-        | 'blob'
-        | 'document'
-        | 'json'
-        | 'text'
-        | 'stream'
+    | 'arraybuffer'
+    | 'blob'
+    | 'document'
+    | 'json'
+    | 'text'
+    | 'stream'
     signal?: AbortSignal
     headers?: HeadersInit
 }
@@ -90,6 +90,14 @@ export const createFetchClient = (clients: Map<string, KyInstance>) => {
             })
 
             const data = await response.json<TData>()
+            if (config.debugEnabled) {
+                console.log('Received parsed data', {
+                    url: response.url,
+                    data,
+                    status: response.status,
+                    statusText: response.statusText,
+                })
+            }
 
             return {
                 data,

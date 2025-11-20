@@ -31,7 +31,7 @@ export type CurrencyDisplayProps = {
     alignRight?: boolean
     showSymbol?: boolean
     skeleton?: boolean
-    units?: 'K' | 'M'
+    truncateToUnits?: boolean
 } & TextProps
 
 const CurrencyDisplay = (props: CurrencyDisplayProps) => {
@@ -42,7 +42,7 @@ const CurrencyDisplay = (props: CurrencyDisplayProps) => {
         value,
         precision,
         prefix,
-        units,
+        truncateToUnits,
         showSymbol = true,
         skeleton = false,
         minPrecision,
@@ -61,7 +61,7 @@ const CurrencyDisplay = (props: CurrencyDisplayProps) => {
                 currency,
                 deviceInfo.getDeviceLocale(),
                 showSymbol,
-                units,
+                truncateToUnits,
                 minPrecision,
             )
     }, [
@@ -70,7 +70,7 @@ const CurrencyDisplay = (props: CurrencyDisplayProps) => {
         currency,
         deviceInfo,
         showSymbol,
-        units,
+        truncateToUnits,
         minPrecision,
         privacyMode,
     ])
@@ -100,7 +100,6 @@ const CurrencyDisplay = (props: CurrencyDisplayProps) => {
                 <Text {...rest}>
                     {prefix ? prefix : ''}
                     {displayValue}
-                    {units}
                 </Text>
             </PWView>
         </PWView>

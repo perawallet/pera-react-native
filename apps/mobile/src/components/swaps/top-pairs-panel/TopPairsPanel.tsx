@@ -49,7 +49,7 @@ const TopPairsPanel = () => {
                         currency='USD'
                         precision={2}
                         value={item.volume}
-                        units='K'
+                        truncateToUnits
                         h4
                         h4Style={themeStyle.headerText}
                     />

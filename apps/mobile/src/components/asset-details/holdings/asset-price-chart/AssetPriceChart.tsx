@@ -16,14 +16,16 @@ import { LineChart } from 'react-native-gifted-charts'
 import PWView from '../../../common/view/PWView'
 import {
     PeraAsset,
-    useV1AssetsPriceChartList,
-    V1AssetsPriceChartListQueryParamsPeriodEnum,
     useCurrencyConverter,
+    useAssetPriceChartData,
+    AssetPriceChartPeriod,
+    AssetPriceChartDataItem,
 } from '@perawallet/core'
-import { useCallback, useMemo, useState } from 'react'
+import { Suspense, useCallback, useMemo, useState } from 'react'
 import { useTheme } from '@rneui/themed'
 import { ChartPeriod } from '../../../common/chart-period-selection/ChartPeriodSelection'
 import Decimal from 'decimal.js'
+import LoadingView from '../../../common/loading/LoadingView'
 
 const FOCUS_DEBOUNCE_TIME = 200
 
@@ -31,7 +33,7 @@ type AssetPriceChartProps = {
     asset: PeraAsset
     period: ChartPeriod
     onSelectionChanged: (
-        item: { timestamp: string; value: number } | null,
+        item: AssetPriceChartDataItem | null,
     ) => void
 }
 
@@ -46,16 +48,16 @@ const AssetPriceChart = ({
     const [lastSentIndex, setLastSentIndex] = useState<number>()
     const [lastSentTime, setLastSentTime] = useState<number>(Date.now())
 
-    const { data, isPending } = useV1AssetsPriceChartList({
+    const { data } = useAssetPriceChartData({
         params: {
-            asset_id: asset.assetId,
-            period: period as V1AssetsPriceChartListQueryParamsPeriodEnum,
+            asset_id: asset.asset_id,
+            period: period as AssetPriceChartPeriod,
         },
     })
 
     const dataPoints = useMemo(
         () =>
-            data?.[0]?.results?.map(p => {
+            data?.map(p => {
                 return {
                     value: convertUSDToPreferredCurrency(
                         Decimal(p.price),
@@ -90,8 +92,8 @@ const AssetPriceChart = ({
                     const dataItem = dataPoints?.[index] ?? null
                     if (dataItem) {
                         onSelectionChanged({
-                            timestamp: dataItem.timestamp,
-                            value: Number(dataItem.value),
+                            datetime: dataItem.timestamp,
+                            price: Number(dataItem.value),
                         })
                     }
                     setLastSentIndex(index)
@@ -111,46 +113,44 @@ const AssetPriceChart = ({
         ],
     )
 
-    if (!isPending && !dataPoints?.length) {
-        return <></>
-    }
-
     return (
-        <PWView style={themeStyle.container}>
-            <LineChart
-                data={dataPoints}
-                hideAxesAndRules
-                height={140}
-                color={theme.colors.helperPositive}
-                startFillColor='#28A79B'
-                endFillColor='#28A79B'
-                startOpacity={0.3}
-                endOpacity={0.0}
-                areaChart
-                yAxisLabelWidth={1}
-                hideYAxisText
-                yAxisOffset={yAxisOffsets[0]}
-                maxValue={yAxisOffsets[1]}
-                initialSpacing={0}
-                endSpacing={0}
-                showStripOnFocus
-                showDataPointOnFocus
-                animateOnDataChange
-                animationDuration={200}
-                onDataChangeAnimationDuration={200}
-                pointerConfig={{
-                    showPointerStrip: true,
-                    pointerStripColor: theme.colors.textGrayLighter,
-                    pointerStripWidth: 1,
-                    pointerStripHeight: 140,
-                    pointerColor: theme.colors.helperPositive,
-                    strokeDashArray: [6, 2],
-                }}
-                getPointerProps={onFocus}
-                disableScroll
-                adjustToWidth
-            />
-        </PWView>
+        <Suspense fallback={<LoadingView variant="circle" size="lg" />}>
+            <PWView style={themeStyle.container}>
+                <LineChart
+                    data={dataPoints}
+                    hideAxesAndRules
+                    height={140}
+                    color={theme.colors.helperPositive}
+                    startFillColor='#28A79B'
+                    endFillColor='#28A79B'
+                    startOpacity={0.3}
+                    endOpacity={0.0}
+                    areaChart
+                    yAxisLabelWidth={1}
+                    hideYAxisText
+                    yAxisOffset={yAxisOffsets[0]}
+                    maxValue={yAxisOffsets[1]}
+                    initialSpacing={0}
+                    endSpacing={0}
+                    showStripOnFocus
+                    showDataPointOnFocus
+                    animateOnDataChange
+                    animationDuration={200}
+                    onDataChangeAnimationDuration={200}
+                    pointerConfig={{
+                        showPointerStrip: true,
+                        pointerStripColor: theme.colors.textGrayLighter,
+                        pointerStripWidth: 1,
+                        pointerStripHeight: 140,
+                        pointerColor: theme.colors.helperPositive,
+                        strokeDashArray: [6, 2],
+                    }}
+                    getPointerProps={onFocus}
+                    disableScroll
+                    adjustToWidth
+                />
+            </PWView>
+        </Suspense>
     )
 }
 

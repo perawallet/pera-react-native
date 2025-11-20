@@ -93,7 +93,7 @@ const PortfolioView = (props: PortfolioViewProps) => {
                 <PWButton
                     title={chartVisible ? 'Hide Chart' : 'Show Chart'}
                     variant='helper'
-                    dense
+                    paddingStyle="dense"
                     onPress={toggleChartVisible}
                 />
             </PWView>

@@ -1,10 +1,12 @@
 import { ScrollView } from 'react-native'
 import {
     PeraAsset,
-    useV1AssetsRead,
+    useAssetDetails,
     useCurrencyConverter,
     ALGO_ASSET_ID,
     ALGO_ASSET,
+    AssetPriceChartDataItem,
+    formatDatetime,
 } from '@perawallet/core'
 import { useStyles } from './styles'
 import AssetTitle from '../../assets/asset-title/AssetTitle'
@@ -50,24 +52,13 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
     const { preferredCurrency, convertUSDToPreferredCurrency } =
         useCurrencyConverter()
     const [period, setPeriod] = useState<ChartPeriod>(ChartPeriods.OneWeek)
-    const [selectedPoint, setSelectedPoint] = useState<{
-        timestamp: string
-        value: number
-    } | null>(null)
+    const [selectedPoint, setSelectedPoint] = useState<AssetPriceChartDataItem>()
     const { showToast } = useToast()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
 
-    const { data: assetData, isError: assetError, isPending: assetPending } = useV1AssetsRead({
+    const { data: assetDetails, isError, isPending } = useAssetDetails({
         asset_id: asset.asset_id,
-    }, {
-        query: {
-            enabled: !!asset.asset_id,
-        },
     })
-
-    const assetDetails = asset.asset_id === ALGO_ASSET_ID ? ALGO_ASSET : assetData
-    const isError = asset.asset_id === ALGO_ASSET_ID ? false : assetError
-    const isPending = asset.asset_id === ALGO_ASSET_ID ? false : assetPending
 
     const notImplemented = () => {
         showToast({
@@ -79,7 +70,7 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
 
     const currentPrice = useMemo(() => {
         if (selectedPoint) {
-            return new Decimal(selectedPoint.value)
+            return new Decimal(selectedPoint.price)
         }
         return convertUSDToPreferredCurrency(
             new Decimal(assetDetails?.usd_value ?? 0),
@@ -91,6 +82,10 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
         navigation.navigate('TabBar', {
             screen: 'Discover',
         })
+    }
+
+    const handleDataPointSelection = (item: AssetPriceChartDataItem | null) => {
+        setSelectedPoint(item ?? undefined)
     }
 
     if (isError) {
@@ -138,14 +133,17 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
                     minPrecision={2}
                 />
 
-                <PriceTrend assetId={asset.asset_id} period={period} />
+                <PWView style={styles.trendContainer}>
+                    <PriceTrend assetId={asset.asset_id} period={period} showAbsolute selectedDataPoint={selectedPoint} />
+                    {!!selectedPoint && <Text>{formatDatetime(selectedPoint.datetime)}</Text>}
+                </PWView>
             </PWView>
 
             <PWView style={styles.chartContainer}>
                 <AssetPriceChart
                     asset={asset}
                     period={period}
-                    onSelectionChanged={setSelectedPoint}
+                    onSelectionChanged={handleDataPointSelection}
                 />
                 <ChartPeriodSelection value={period} onChange={setPeriod} />
             </PWView>
@@ -155,7 +153,7 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
                 onPress={openDiscover}
             >
                 <Text style={styles.discoverText}>
-                    PWView more details on Discover
+                    See more details on Discover
                 </Text>
                 <PWView style={styles.discoverLink}>
                     <Text style={styles.discoverLinkText} h4>Markets</Text>

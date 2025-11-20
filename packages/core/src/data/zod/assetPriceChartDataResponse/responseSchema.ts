@@ -10,9 +10,11 @@
  limitations under the License
  */
 
-export * from './api'
-export * from './data'
-export * from './platform'
-export * from './services'
-export * from './store'
-export * from './utils'
+import { z } from "zod";
+
+export const assetPriceChartDataResponseSchema = z.array(z.object({
+    "datetime": z.string(),
+    "price": z.number()
+}))
+
+export type AssetPriceChartDataResponseSchema = z.infer<typeof assetPriceChartDataResponseSchema>

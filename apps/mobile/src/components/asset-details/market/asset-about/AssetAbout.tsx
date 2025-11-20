@@ -1,6 +1,6 @@
 import { View, Linking } from 'react-native'
 import { useStyles } from './styles'
-import { AssetDetailSerializerResponse, truncateAlgorandAddress } from '@perawallet/core'
+import { ALGO_ASSET_ID, AssetDetailSerializerResponse, truncateAlgorandAddress } from '@perawallet/core'
 import Clipboard from '@react-native-clipboard/clipboard'
 import { Text, useTheme } from '@rneui/themed'
 import PWButton from '../../../common/button/PWButton'
@@ -25,6 +25,11 @@ const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
         })
     }
 
+    const extractDomain = (url: string) => {
+        const urlObj = new URL(url)
+        return urlObj.hostname.startsWith('www.') ? urlObj.hostname.slice(4) : urlObj.hostname
+    }
+
     const openLink = (url: string) => {
         // TODO: Open link in webview
         Linking.openURL(url)
@@ -34,51 +39,56 @@ const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
         <View style={styles.container}>
             {!!assetDetails.asset_id && <Text style={styles.sectionTitle}>About {assetDetails.name}</Text>}
             {!!assetDetails.asset_id && (
-                <RowTitledItem title='ASA ID'>
+                <RowTitledItem title='ASA ID' verticalAlignment='center'>
                     <PWButton
                         title={assetDetails.asset_id.toString()}
                         onPress={() =>
                             copyToClipboard(assetDetails.asset_id.toString())
                         }
                         variant='link'
+                        paddingStyle="none"
                     />
                 </RowTitledItem>)}
 
             {!!assetDetails.creator?.address && (
-                <RowTitledItem title='Creator'>
+                <RowTitledItem title='Creator' verticalAlignment='center'>
                     <PWButton
                         title={truncateAlgorandAddress(assetDetails.creator.address)}
                         onPress={() =>
                             copyToClipboard(assetDetails.creator.address)
                         }
                         variant='link'
+                        paddingStyle="none"
                     />
                 </RowTitledItem>)}
 
-            {!!assetDetails.url && (
-                <RowTitledItem title='ASA URL'>
+            {!!assetDetails.url?.length && (
+                <RowTitledItem title={assetDetails.asset_id === ALGO_ASSET_ID ? 'URL' : 'ASA URL'} verticalAlignment='center'>
                     <PWButton
                         onPress={() =>
                             openLink(assetDetails.url ?? '')
                         }
+                        title={extractDomain(assetDetails.url ?? '')}
                         variant="link"
+                        paddingStyle="none"
                     />
                 </RowTitledItem>
             )}
 
             {!!assetDetails.explorer_url?.length && (
-                <RowTitledItem title='Show on'>
+                <RowTitledItem title='Show on' verticalAlignment='center'>
                     <PWButton
                         onPress={() =>
                             assetDetails.explorer_url &&
                             openLink(assetDetails.explorer_url)
                         }
                         variant="link"
+                        paddingStyle="none"
                     />
                 </RowTitledItem>)}
 
             {!!assetDetails.project_url?.length && (
-                <RowTitledItem title='Project website'>
+                <RowTitledItem title='Project website' verticalAlignment='center'>
                     <PWButton
                         title='Open with Browser'
                         onPress={() => openLink(assetDetails.project_url!)}

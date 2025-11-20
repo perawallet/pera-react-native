@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useDevice, useNetwork, usePolling } from '@perawallet/core'
+import { Networks, useDevice, useNetwork, usePolling } from '@perawallet/core'
 import { config } from '@perawallet/config'
 import { useEffect, useMemo, useRef } from 'react'
 import { AppState, StatusBar, View } from 'react-native'
@@ -25,11 +25,12 @@ import ErrorBoundary from 'react-native-error-boundary'
 import useToast from '../../hooks/toast'
 import { useIsDarkMode } from '../../hooks/theme'
 import { SigningProvider } from '../../providers/SigningProvider'
+import PWTouchableOpacity from '../../components/common/touchable-opacity/PWTouchableOpacity'
 
 const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
   const insets = useSafeAreaInsets()
   const styles = useStyles(insets)
-  const { network } = useNetwork()
+  const { network, setNetwork } = useNetwork()
   const navTheme = getNavigationTheme(isDarkMode ? 'dark' : 'light')
   const { showToast } = useToast()
 
@@ -50,13 +51,22 @@ const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
     })
   }
 
+  //TODO remove this later
+  const toggleNetwork = () => {
+    if (network === Networks.mainnet) {
+      setNetwork(Networks.testnet)
+    } else {
+      setNetwork(Networks.mainnet)
+    }
+  }
+
   return (
     <ErrorBoundary onError={showError}>
       <PWView style={styles.container}>
         <StatusBar
           barStyle={isDarkMode ? 'light-content' : 'dark-content'}
         />
-        <View style={networkBarStyle} />
+        <PWTouchableOpacity style={networkBarStyle} onLongPress={toggleNetwork} />
         <GestureHandlerRootView>
           <MainRoutes theme={navTheme} />
         </GestureHandlerRootView>

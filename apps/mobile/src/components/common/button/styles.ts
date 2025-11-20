@@ -32,6 +32,23 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
         color = theme.colors.linkPrimary
     }
 
+    let paddingHorizontal = theme.spacing.xl * 1.5
+    if (props.paddingStyle === 'dense') {
+        paddingHorizontal = theme.spacing.md
+    } else if (props.paddingStyle === 'none') {
+        paddingHorizontal = 0
+    }
+
+    let paddingVertical = theme.spacing.md
+    if (props.paddingStyle === 'none') {
+        paddingVertical = 0
+    }
+
+    let minWidth: number | undefined = undefined
+    if (props.paddingStyle === 'dense') {
+        minWidth = theme.spacing.xl * 1.5
+    }
+
     return {
         buttonStyle: {
             flexDirection: 'row',
@@ -40,11 +57,9 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
             justifyContent: 'center',
             gap: theme.spacing.sm,
             borderRadius: theme.spacing.sm,
-            paddingHorizontal: props.dense
-                ? theme.spacing.md
-                : theme.spacing.xl * 1.5,
-            minWidth: props.minWidth ?? props.dense ? theme.spacing.xl * 1.5 : theme.spacing.xl * 2,
-            height: props.dense ? theme.spacing.xl * 1.5 : theme.spacing.xl * 2,
+            paddingHorizontal,
+            paddingVertical,
+            minWidth,
             opacity: props.disabled ? 0.7 : 1,
             backgroundColor,
         },
@@ -54,8 +69,9 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
             lineHeight: 24,
             flexWrap: 'nowrap',
             textAlign: 'center',
-            borderWidth: 1,
-            borderColor: 'transparent',
+            verticalAlign: 'middle',
+            justifyContent: 'center',
+            padding: 0,
             color,
         },
     }

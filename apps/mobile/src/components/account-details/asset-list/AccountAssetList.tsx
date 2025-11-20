@@ -81,13 +81,13 @@ const AccountAssetList = ({ account }: AccountAssetListProps) => {
           <PWButton
             icon='sliders'
             variant='helper'
-            dense
+            paddingStyle="dense"
           />
           <PWButton
             icon='plus'
             title='Add Asset'
             variant='helper'
-            dense
+            paddingStyle="dense"
           />
         </PWView>
       </PWView>

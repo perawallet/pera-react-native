@@ -62,13 +62,13 @@ const AccountsTab = (props: AccountsTabProps) => {
                         variant='helper'
                         icon='plus'
                         title='Add Account'
-                        dense
+                        paddingStyle="dense"
                     />
                     <PWButton
                         variant='link'
                         icon='list-arrow-down'
                         title='Sort'
-                        dense
+                        paddingStyle="dense"
                     />
                 </PWView>
             </PWView>

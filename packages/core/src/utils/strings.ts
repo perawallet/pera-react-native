@@ -32,31 +32,15 @@ const currencySymbols: Record<string, string> = {
     GBP: '£',
 }
 
-const toUnits = (amount: Decimal, units: '' | 'K' | 'M' = '') => {
-    if (units === 'K') {
-        return amount.div(1_000)
-    } else if (units === 'M') {
-        return amount.div(1_000_000)
-    }
-    return amount
-}
-
-export const formatCurrency = (
-    value: Decimal | string | number,
+export const formatNumber = (
+    amount: Decimal,
     precision: number,
-    currency: string,
     locale: string = 'en-US',
-    showSymbol: boolean = true,
-    units?: 'K' | 'M',
     minPrecision?: number,
 ) => {
-    const decimal = toUnits(new Decimal(value), units).toFixed(
+    const decimal = amount.toFixed(
         Math.max(precision ?? 0, minPrecision ?? 0),
     )
-    const currencySymbol =
-        !showSymbol || currency === 'ALGO'
-            ? ''
-            : (currencySymbols[currency] ?? '$')
 
     const parts = decimal.split('.')
     const integer = parts[0]
@@ -80,8 +64,66 @@ export const formatCurrency = (
         formattedInteger = formattedInteger.substring(1)
     }
 
+    return { sign, integer: formattedInteger, fraction }
+}
+
+export const formatWithUnits = (
+    amount: Decimal,
+    units?: '' | 'K' | 'M' | 'B' | 'T',
+) => {
+    let resultAmount = amount
+    let resultUnit = units
+
+    if (!units) {
+        const absAmount = amount.abs()
+        if (absAmount.gte(1_000_000_000_000)) {
+            resultUnit = 'T'
+        } else if (absAmount.gte(1_000_000_000)) {
+            resultUnit = 'B'
+        } else if (absAmount.gte(1_000_000)) {
+            resultUnit = 'M'
+        } else if (absAmount.gte(1_000)) {
+            resultUnit = 'K'
+        }
+    }
+
+    switch (resultUnit) {
+        case 'K':
+            resultAmount = amount.div(1_000)
+            break
+        case 'M':
+            resultAmount = amount.div(1_000_000)
+            break
+        case 'B':
+            resultAmount = amount.div(1_000_000_000)
+            break
+        case 'T':
+            resultAmount = amount.div(1_000_000_000_000)
+            break
+    }
+
+    return { amount: resultAmount, unit: resultUnit ?? '' }
+}
+
+export const formatCurrency = (
+    value: Decimal | string | number,
+    precision: number,
+    currency: string,
+    locale: string = 'en-US',
+    showSymbol: boolean = true,
+    truncateToUnits: boolean = false,
+    minPrecision?: number,
+) => {
+    const { amount, unit } = truncateToUnits ? formatWithUnits(new Decimal(value)) : { amount: new Decimal(value), unit: '' }
+
+    const { sign, integer, fraction } = formatNumber(amount, precision, locale, minPrecision)
+    const currencySymbol =
+        !showSymbol || currency === 'ALGO'
+            ? ''
+            : (currencySymbols[currency] ?? '$')
+
     //TODO this is pretty limited formatting - it's not very locale specific
-    return `${sign}${currencySymbol}${formattedInteger}${fraction}`
+    return `${sign}${currencySymbol}${integer}${fraction}${unit}`
 }
 
 export const formatDatetime = (

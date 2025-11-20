@@ -14,12 +14,14 @@ import PWView, { PWViewProps } from '../view/PWView'
 import { useStyles } from './styles'
 import { Text } from '@rneui/themed'
 
-type RowTitledItemProps = {
-    title: string
+export type RowTitledItemProps = {
+    title: string,
+    verticalAlignment?: 'center' | 'top'
 } & PWViewProps
 
-const RowTitledItem = ({ title, children, ...rest }: RowTitledItemProps) => {
-    const styles = useStyles()
+const RowTitledItem = (props: RowTitledItemProps) => {
+    const { title, verticalAlignment = 'top', children, ...rest } = props
+    const styles = useStyles(props)
     return (
         <PWView
             {...rest}

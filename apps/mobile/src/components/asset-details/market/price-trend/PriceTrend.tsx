@@ -2,10 +2,11 @@ import { View } from 'react-native'
 import { Text, useTheme } from '@rneui/themed'
 import { useStyles } from './styles'
 import {
+    AssetPriceChartDataItem,
+    AssetPriceChartPeriod,
     formatCurrency,
+    useAssetPriceChartData,
     useCurrency,
-    useV1AssetsPriceChartList,
-    V1AssetsPriceChartListQueryParamsPeriodEnum,
 } from '@perawallet/core'
 import PWIcon from '../../../common/icons/PWIcon'
 import Decimal from 'decimal.js'
@@ -15,52 +16,40 @@ import { ChartPeriod } from '../../../common/chart-period-selection/ChartPeriodS
 type PriceTrendProps = {
     assetId?: number
     period?: ChartPeriod
-    changePercentage?: number
-    changeValue?: Decimal
-    showValue?: boolean
+    selectedDataPoint?: AssetPriceChartDataItem
+    showAbsolute?: boolean
 }
 
 const PriceTrend = ({
     assetId,
     period,
-    changePercentage: manualPercentage,
-    changeValue: manualValue,
-    showValue = false,
+    selectedDataPoint,
+    showAbsolute = false
 }: PriceTrendProps) => {
     const styles = useStyles()
-    const { theme } = useTheme()
     const { preferredCurrency } = useCurrency()
 
-    const { data: chartData } = useV1AssetsPriceChartList({
+    const { data: chartData } = useAssetPriceChartData({
         params: {
             asset_id: assetId ?? 0,
-            period: period as V1AssetsPriceChartListQueryParamsPeriodEnum,
+            period: period as AssetPriceChartPeriod,
         }
-    },
-        {
-            query: {
-                enabled: !!assetId && !!period,
-            },
-        })
+    })
 
     const [calculatedPercentage, calculatedValue] = useMemo(() => {
-        if (manualPercentage !== undefined) {
-            return [manualPercentage, manualValue]
-        }
-
         const dataPoints =
-            chartData?.[0]?.results?.map(p => Number(p.price)) ?? []
+            chartData?.map(p => Number(p.price)) ?? []
 
         const firstDp = dataPoints.at(0) ?? 0
-        const lastDp = dataPoints.at(-1) ?? 0
+        const lastDp = selectedDataPoint?.price ?? (dataPoints.at(-1) ?? 0)
 
         if (lastDp === 0) return [0, new Decimal(0)]
 
         return [
-            ((firstDp - lastDp) / lastDp) * 100,
+            ((lastDp - firstDp) / lastDp) * 100,
             new Decimal(lastDp - firstDp),
         ]
-    }, [chartData, manualPercentage, manualValue])
+    }, [chartData, selectedDataPoint])
 
     const changePercentage = calculatedPercentage ?? 0
     const changeValue = calculatedValue
@@ -69,7 +58,7 @@ const PriceTrend = ({
 
     return (
         <View style={styles.container}>
-            {showValue && changeValue && (
+            {showAbsolute && changeValue && (
                 <Text
                     style={isPositive ? styles.itemUp : styles.itemDown}
                     h4

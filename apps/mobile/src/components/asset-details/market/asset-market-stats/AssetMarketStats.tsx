@@ -1,10 +1,11 @@
 import { useStyles } from './styles'
-import { AssetDetailSerializerResponse, useCurrencyConverter } from '@perawallet/core'
+import { AssetDetailSerializerResponse, formatNumber, formatWithUnits, useCurrencyConverter } from '@perawallet/core'
 import CurrencyDisplay from '../../../currency/currency-display/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import { Text } from '@rneui/themed'
 import PWIcon from '../../../common/icons/PWIcon'
 import PWView from '../../../common/view/PWView'
+import { useMemo } from 'react'
 
 type AssetMarketStatsProps = {
     assetDetails: AssetDetailSerializerResponse
@@ -13,6 +14,18 @@ type AssetMarketStatsProps = {
 const AssetMarketStats = ({ assetDetails }: AssetMarketStatsProps) => {
     const styles = useStyles()
     const { preferredCurrency } = useCurrencyConverter()
+
+    const supply = useMemo(() => {
+        if (!assetDetails.total_supply) {
+            return '-'
+        }
+
+        const totalSupplyMicroUnits = new Decimal(assetDetails.total_supply)
+        const totalSupply = totalSupplyMicroUnits.div(Decimal.pow(10, assetDetails.fraction_decimals))
+        const { amount, unit } = formatWithUnits(totalSupply)
+        const { integer, fraction } = formatNumber(amount, 2)
+        return `${integer}${fraction}${unit}`
+    }, [assetDetails.total_supply])
 
     return (
         <PWView style={styles.container}>
@@ -39,10 +52,7 @@ const AssetMarketStats = ({ assetDetails }: AssetMarketStatsProps) => {
                         />
                     </PWView>
                     <Text style={styles.value} h2>
-                        {/* //TODO: truncate and use suffix */}
-                        {assetDetails.total_supply
-                            ? new Decimal(assetDetails.total_supply).toFixed(2)
-                            : '-'}
+                        {supply}
                     </Text>
                 </PWView>
             </PWView>

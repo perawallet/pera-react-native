@@ -85,5 +85,10 @@ export const useStyles = () => {
             height: theme.spacing.xl * 6,
             width: '100%',
         },
+        trendContainer: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+        }
     })
 }

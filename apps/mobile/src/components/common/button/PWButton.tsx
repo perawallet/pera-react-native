@@ -17,47 +17,47 @@ import PWTouchableOpacity from '../touchable-opacity/PWTouchableOpacity'
 import { StyleProp, ViewStyle } from 'react-native'
 
 export type PWButtonProps = {
-    variant: 'primary' | 'secondary' | 'helper' | 'link' | 'destructive'
-    title?: string
-    icon?: IconName
-    onPress?: () => void
-    minWidth?: number
-    style?: StyleProp<ViewStyle>
-    disabled?: boolean
-    dense?: boolean
+  variant: 'primary' | 'secondary' | 'helper' | 'link' | 'destructive'
+  title?: string
+  icon?: IconName
+  onPress?: () => void
+  minWidth?: number
+  style?: StyleProp<ViewStyle>
+  disabled?: boolean
+  paddingStyle?: 'none' | 'dense' | 'normal'
 }
 
 const ICON_VARIANT_MAP: Record<string, PWIconVariant> = {
-    primary: 'white',
-    secondary: 'primary',
-    helper: 'helper',
-    link: 'link',
-    destructive: 'white',
+  primary: 'white',
+  secondary: 'primary',
+  helper: 'helper',
+  link: 'link',
+  destructive: 'white',
 }
 
 const PWButton = (props: PWButtonProps) => {
-    const styles = useStyles(props)
+  const styles = useStyles(props)
 
-    const iconVariant = ICON_VARIANT_MAP[props.variant]
+  const iconVariant = ICON_VARIANT_MAP[props.variant]
 
-    return (
-        <PWTouchableOpacity
-            style={[styles.buttonStyle, props.style]}
-            onPress={props.onPress}
-            disabled={props.disabled}
-        >
-            {!!props.icon && (
-                <PWIcon
-                    name={props.icon}
-                    variant={iconVariant}
-                    size={props.dense ? 'sm' : 'md'}
-                />
-            )}
-            {!!props.title && (
-                <Text style={styles.titleStyle}>{props.title}</Text>
-            )}
-        </PWTouchableOpacity>
-    )
+  return (
+    <PWTouchableOpacity
+      style={[styles.buttonStyle, props.style]}
+      onPress={props.onPress}
+      disabled={props.disabled}
+    >
+      {!!props.icon && (
+        <PWIcon
+          name={props.icon}
+          variant={iconVariant}
+          size={props.paddingStyle === 'dense' || props.paddingStyle === 'none' ? 'sm' : 'md'}
+        />
+      )}
+      {!!props.title && (
+        <Text style={styles.titleStyle}>{props.title}</Text>
+      )}
+    </PWTouchableOpacity>
+  )
 }
 
 export default PWButton

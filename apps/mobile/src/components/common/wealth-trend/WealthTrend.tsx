@@ -68,7 +68,7 @@ const WealthTrend = ({ account, period }: WealthTrendProps) => {
 
         return [
             Decimal(lastDp - firstDp),
-            lastDp ? (firstDp - lastDp) / lastDp : 0,
+            lastDp ? (lastDp - firstDp) / lastDp : 0,
             lastDp >= firstDp,
         ]
     }, [dataPoints])
