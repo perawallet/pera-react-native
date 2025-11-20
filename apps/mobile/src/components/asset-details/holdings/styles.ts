@@ -29,4 +29,9 @@ export const useStyles = makeStyles(theme => ({
     chartContainer: {
         marginBottom: theme.spacing.lg,
     },
+    secondaryValueContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
 }))

@@ -16,6 +16,7 @@ import {
     useAccountBalances,
     useCurrencyConverter,
     AccountWealthHistoryItem,
+    formatDatetime,
 } from '@perawallet/core'
 import PWView from '../../common/view/PWView'
 import AssetWealthChart from './asset-wealth-chart/AssetWealthChart'
@@ -32,6 +33,7 @@ import AssetTitle from '../../assets/asset-title/AssetTitle'
 import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import RoundButton from '../../common/round-button/RoundButton'
+import { Text } from '@rneui/themed'
 
 type AssetHoldingsProps = {
     account: WalletAccount
@@ -102,12 +104,16 @@ const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
                         precision={asset.fraction_decimals}
                         minPrecision={2}
                     />
-                    <CurrencyDisplay
-                        value={fiatAmount}
-                        currency={preferredCurrency}
-                        precision={2}
-                        minPrecision={2}
-                    />
+
+                    <PWView style={styles.secondaryValueContainer}>
+                        <CurrencyDisplay
+                            value={fiatAmount}
+                            currency={preferredCurrency}
+                            precision={2}
+                            minPrecision={2}
+                        />
+                        {!!selectedPoint && <Text>{formatDatetime(selectedPoint.datetime)}</Text>}
+                    </PWView>
                 </PWView>
 
                 <PWView style={styles.chartContainer}>

@@ -21,7 +21,7 @@ import type { V1AccountsAssetsBalanceHistoryListQueryResponse, V1AccountsAssetsB
 import type { QueryKey, QueryClient, QueryObserverOptions, UseQueryResult } from "@tanstack/react-query";
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
-export const v1AccountsAssetsBalanceHistoryListQueryKey = ({ account_address, asset_id }: { account_address: V1AccountsAssetsBalanceHistoryListPathParams["account_address"]; asset_id: V1AccountsAssetsBalanceHistoryListPathParams["asset_id"] }, params: V1AccountsAssetsBalanceHistoryListQueryParams) => [{ url: '/v1/accounts/:account_address/assets/:asset_id/balance-history/', params: {account_address:account_address,asset_id:asset_id} }, ...(params ? [params] : [])] as const
+export const v1AccountsAssetsBalanceHistoryListQueryKey = ({ account_address, asset_id }: { account_address: V1AccountsAssetsBalanceHistoryListPathParams["account_address"]; asset_id: V1AccountsAssetsBalanceHistoryListPathParams["asset_id"] }, params: V1AccountsAssetsBalanceHistoryListQueryParams) => [{ url: '/v1/accounts/:account_address/assets/:asset_id/balance-history/', params: { account_address: account_address, asset_id: asset_id } }, ...(params ? [params] : [])] as const
 
 export type V1AccountsAssetsBalanceHistoryListQueryKey = ReturnType<typeof v1AccountsAssetsBalanceHistoryListQueryKey>
 
@@ -31,21 +31,21 @@ export type V1AccountsAssetsBalanceHistoryListQueryKey = ReturnType<typeof v1Acc
  * {@link /v1/accounts/:account_address/assets/:asset_id/balance-history/}
  */
 export async function v1AccountsAssetsBalanceHistoryList({ account_address, asset_id, params }: { account_address: V1AccountsAssetsBalanceHistoryListPathParams["account_address"]; asset_id: V1AccountsAssetsBalanceHistoryListPathParams["asset_id"]; params: V1AccountsAssetsBalanceHistoryListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {
-  const { client: request = fetch, ...requestConfig } = config  
-  
-  const res = await request<V1AccountsAssetsBalanceHistoryListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method : "GET", url : `/v1/accounts/${account_address}/assets/${asset_id}/balance-history/`, params, ... requestConfig })  
+  const { client: request = fetch, ...requestConfig } = config
+
+  const res = await request<V1AccountsAssetsBalanceHistoryListQueryResponse, ResponseErrorConfig<Error>, unknown>({ method: "GET", url: `/v1/accounts/${account_address}/assets/${asset_id}/balance-history/`, params, ...requestConfig })
   return res.data
 }
 
 export function v1AccountsAssetsBalanceHistoryListQueryOptions({ account_address, asset_id, params }: { account_address: V1AccountsAssetsBalanceHistoryListPathParams["account_address"]; asset_id: V1AccountsAssetsBalanceHistoryListPathParams["asset_id"]; params: V1AccountsAssetsBalanceHistoryListQueryParams }, config: Partial<RequestConfig> & { client?: typeof fetch } = {}) {
   const queryKey = v1AccountsAssetsBalanceHistoryListQueryKey({ account_address, asset_id }, params)
   return queryOptions<V1AccountsAssetsBalanceHistoryListQueryResponse, ResponseErrorConfig<Error>, V1AccountsAssetsBalanceHistoryListQueryResponse, typeof queryKey>({
-   enabled: !!(account_address&& asset_id&& params),
-   queryKey,
-   queryFn: async ({ signal }) => {
+    enabled: !!(account_address && asset_id && params),
+    queryKey,
+    queryFn: async ({ signal }) => {
       config.signal = signal
       return v1AccountsAssetsBalanceHistoryList({ account_address, asset_id, params }, config)
-   },
+    },
   })
 }
 
@@ -54,20 +54,20 @@ export function v1AccountsAssetsBalanceHistoryListQueryOptions({ account_address
  * @summary Account Asset Balance History
  * {@link /v1/accounts/:account_address/assets/:asset_id/balance-history/}
  */
-export function useV1AccountsAssetsBalanceHistoryList<TData = V1AccountsAssetsBalanceHistoryListQueryResponse, TQueryData = V1AccountsAssetsBalanceHistoryListQueryResponse, TQueryKey extends QueryKey = V1AccountsAssetsBalanceHistoryListQueryKey>({ account_address, asset_id, params }: { account_address: V1AccountsAssetsBalanceHistoryListPathParams["account_address"]; asset_id: V1AccountsAssetsBalanceHistoryListPathParams["asset_id"]; params: V1AccountsAssetsBalanceHistoryListQueryParams }, options: 
-{
-  query?: Partial<QueryObserverOptions<V1AccountsAssetsBalanceHistoryListQueryResponse, ResponseErrorConfig<Error>, TData, TQueryData, TQueryKey>> & { client?: QueryClient },
-  client?: Partial<RequestConfig> & { client?: typeof fetch }
-}
- = {}) {
+export function useV1AccountsAssetsBalanceHistoryList<TData = V1AccountsAssetsBalanceHistoryListQueryResponse, TQueryData = V1AccountsAssetsBalanceHistoryListQueryResponse, TQueryKey extends QueryKey = V1AccountsAssetsBalanceHistoryListQueryKey>({ account_address, asset_id, params }: { account_address: V1AccountsAssetsBalanceHistoryListPathParams["account_address"]; asset_id: V1AccountsAssetsBalanceHistoryListPathParams["asset_id"]; params: V1AccountsAssetsBalanceHistoryListQueryParams }, options:
+  {
+    query?: Partial<QueryObserverOptions<V1AccountsAssetsBalanceHistoryListQueryResponse, ResponseErrorConfig<Error>, TData, TQueryData, TQueryKey>> & { client?: QueryClient },
+    client?: Partial<RequestConfig> & { client?: typeof fetch }
+  }
+  = {}) {
   const { query: queryConfig = {}, client: config = {} } = options ?? {}
   const { client: queryClient, ...queryOptions } = queryConfig
   const queryKey = queryOptions?.queryKey ?? v1AccountsAssetsBalanceHistoryListQueryKey({ account_address, asset_id }, params)
 
   const query = useQuery({
-   ...v1AccountsAssetsBalanceHistoryListQueryOptions({ account_address, asset_id, params }, config),
-   queryKey,
-   ...queryOptions
+    ...v1AccountsAssetsBalanceHistoryListQueryOptions({ account_address, asset_id, params }, config),
+    queryKey,
+    ...queryOptions
   } as unknown as QueryObserverOptions, queryClient) as UseQueryResult<TData, ResponseErrorConfig<Error>> & { queryKey: TQueryKey }
 
   query.queryKey = queryKey as TQueryKey

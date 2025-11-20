@@ -24,6 +24,7 @@ export type MainScreenLayoutPropsWithInsets = {
     insets: EdgeInsets
 } & MainScreenLayoutProps
 
+//TODO: Make this a proper layout system with slots as needed
 const MainScreenLayout = (props: MainScreenLayoutProps) => {
     const insets = useSafeAreaInsets()
     const styles = useStyles({ ...props, insets })

@@ -58,7 +58,7 @@ const AssetWealthChart = ({
 
     const { data, isPending } = useV1AccountsAssetsBalanceHistoryList({
         account_address: account.address,
-        asset_id: asset.asset_id,
+        asset_id: `${asset.asset_id}`,
         params: {
             period: period as V1AccountsAssetsBalanceHistoryListQueryParamsPeriodEnum,
             currency: preferredCurrency,
@@ -66,17 +66,17 @@ const AssetWealthChart = ({
     })
 
     const dataPoints = useMemo(
-        () =>
+        () => {
             // @ts-ignore: The generated type is unknown
-            (data?.results?.map((p: any) => {
+            return (data?.results?.map((p: any) => {
                 return {
                     value: convertUSDToPreferredCurrency(
-                        new Decimal(p.value_in_currency || 0),
+                        new Decimal(p.usd_value ?? 0),
                     ).toNumber(),
-                    timestamp: p.timestamp,
+                    timestamp: p.datetime,
                 }
-            }) ?? []) as DataPoint[],
-        [data, convertUSDToPreferredCurrency],
+            }) ?? []) as DataPoint[]
+        }, [data, convertUSDToPreferredCurrency],
     )
 
     const yAxisOffsets = useMemo(() => {
@@ -101,12 +101,18 @@ const AssetWealthChart = ({
             if (Date.now() - lastSentTime > FOCUS_DEBOUNCE_TIME) {
                 if (pointerX > 0 && index >= 0 && index !== lastSentIndex) {
                     const dataItem =
-                        (data as AccountWealthHistorySerializerResponse)
-                            ?.results?.[index] ?? null
-                    if (dataItem) {
-                        onSelectionChanged(dataItem)
-                    }
+                        // @ts-ignore: The generated type is unknown
+                        ((data as any)?.results?.[index]) ?? null
                     setLastSentIndex(index)
+                    if (dataItem) {
+                        onSelectionChanged({
+                            algo_value: dataItem.amount,
+                            datetime: dataItem.datetime,
+                            usd_value: dataItem.usd_value,
+                            value_in_currency: dataItem.value_in_currency,
+                            round: 0,
+                        })
+                    }
                 } else if (pointerX === 0) {
                     onSelectionChanged(null)
                     setLastSentIndex(undefined)
