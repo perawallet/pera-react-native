@@ -87,6 +87,41 @@ describe('useSingleAssetDetails', () => {
             expect(result.current.isLoading).toBe(false)
         })
 
+        it('calls algoRefetch when refetch is called for ALGO asset', () => {
+            const algoRefetchMock = vi.fn()
+            mockUseV1AssetsRead.mockReturnValue({
+                data: undefined,
+                isLoading: false,
+                isError: false,
+                isPending: false,
+                error: null,
+                refetch: vi.fn(),
+            })
+            mockUseLookupAssetByID.mockReturnValue({
+                data: undefined,
+                isLoading: false,
+                isError: false,
+                isPending: false,
+                error: null,
+                refetch: vi.fn(),
+            })
+            mockUseV1PublicAssetsRead.mockReturnValue({
+                data: undefined,
+                refetch: algoRefetchMock,
+            })
+
+            const { result } = renderHook(() =>
+                useSingleAssetDetails({ asset_id: ALGO_ASSET_ID }),
+                {
+                    wrapper: createWrapper(),
+                },
+            )
+
+            result.current.refetch()
+
+            expect(algoRefetchMock).toHaveBeenCalled()
+        })
+
         it('combines indexer and pera data for other assets', () => {
             mockUseV1AssetsRead.mockReturnValue({
                 data: { asset_id: 123, name: 'Pera Name' },
@@ -125,6 +160,49 @@ describe('useSingleAssetDetails', () => {
             expect(result.current.data?.asset_id).toBe(123)
             expect(result.current.data?.name).toBe('Pera Name') // Pera data overrides indexer
             expect(result.current.data?.unit_name).toBe('TEST') // From indexer
+        })
+
+        it('calls both peraRefetch and indexerRefetch when refetch is called for non-ALGO asset', () => {
+            const peraRefetchMock = vi.fn()
+            const indexerRefetchMock = vi.fn()
+
+            mockUseV1AssetsRead.mockReturnValue({
+                data: { asset_id: 123, name: 'Pera Name' },
+                isLoading: false,
+                isError: false,
+                isPending: false,
+                refetch: peraRefetchMock,
+            })
+
+            mockUseLookupAssetByID.mockReturnValue({
+                data: {
+                    asset: {
+                        index: 123,
+                        params: {
+                            decimals: 6,
+                            'unit-name': 'TEST',
+                            name: 'Indexer Name',
+                            total: 1000,
+                        },
+                    },
+                },
+                isLoading: false,
+                isError: false,
+                isPending: false,
+                refetch: indexerRefetchMock,
+            })
+
+            const { result } = renderHook(() =>
+                useSingleAssetDetails({ asset_id: 123 }),
+                {
+                    wrapper: createWrapper(),
+                },
+            )
+
+            result.current.refetch()
+
+            expect(peraRefetchMock).toHaveBeenCalled()
+            expect(indexerRefetchMock).toHaveBeenCalled()
         })
 
         it('handles loading state', () => {

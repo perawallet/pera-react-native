@@ -26,10 +26,10 @@ const storeMock = vi.hoisted(() => {
     return {
         create() {
             const useAppStore: any = (selector: any) => selector(state)
-            ;(useAppStore as any).getState = () => state
-            ;(useAppStore as any).setState = (partial: any) => {
-                state = { ...state, ...partial }
-            }
+                ; (useAppStore as any).getState = () => state
+                ; (useAppStore as any).setState = (partial: any) => {
+                    state = { ...state, ...partial }
+                }
             return { useAppStore }
         },
     }
@@ -37,7 +37,7 @@ const storeMock = vi.hoisted(() => {
 vi.mock('@store/app-store', () => storeMock.create())
 
 // Mock console.log
-const consoleMock = vi.spyOn(console, 'log').mockImplementation(() => {})
+const consoleMock = vi.spyOn(console, 'log').mockImplementation(() => { })
 
 describe('api/query-client', () => {
     beforeEach(() => {
@@ -174,5 +174,32 @@ describe('api/query-client', () => {
             'Query error',
             expect.any(Error),
         )
+    })
+
+    test('createFetchClient logs parsed data when debugEnabled is true', async () => {
+        const { createFetchClient } = await import('../query-client')
+        const { useAppStore } = await import('@store/app-store')
+
+        const mockClient = vi.fn().mockResolvedValue({
+            json: vi.fn().mockResolvedValue({ test: 'data' }),
+            url: 'https://test.com/api/endpoint',
+            status: 200,
+            statusText: 'OK',
+        })
+
+        const clients = new Map([['mainnet', mockClient as any]])
+        const fetchClient = createFetchClient(clients)
+
+        useAppStore.setState({ network: 'mainnet' })
+        configMock.debugEnabled = true
+
+        await fetchClient({ url: '/test', method: 'GET' })
+
+        expect(consoleMock).toHaveBeenCalledWith('Received parsed data', {
+            url: 'https://test.com/api/endpoint',
+            data: { test: 'data' },
+            status: 200,
+            statusText: 'OK',
+        })
     })
 })

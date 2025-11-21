@@ -190,5 +190,20 @@ describe('services/currencies/hooks', () => {
 
             expect(converted).toEqual(new Decimal(376.25))
         })
+
+        it('returns USD amount unchanged when preferred currency is USD', () => {
+            mockUseAppStore.mockReturnValue({ preferredCurrency: 'USD' })
+            mockUsePreferredCurrencyPrice.mockReturnValue({
+                data: { usd_value: '1.0' },
+                isPending: false,
+            })
+
+            const { result } = renderHook(() => useCurrencyConverter())
+
+            const usdAmount = new Decimal(100)
+            const converted = result.current.usdToPreferred(usdAmount)
+
+            expect(converted).toEqual(new Decimal(100))
+        })
     })
 })
