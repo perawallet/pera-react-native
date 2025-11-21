@@ -71,6 +71,7 @@ const mapIndexerToPeraAsset = (
 const mapPublicToPeraAsset = (
     asset: PublicAssetDetailSerializerResponse,
 ): PeraAsset => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { total_supply, ...rest } = asset
     return {
         ...rest,
@@ -87,9 +88,9 @@ const mapPublicToPeraAsset = (
 export const useSingleAssetDetailsQueryKeys = (
     asset_id: V1AssetsReadPathParams['asset_id'],
 ) => [
-    v1AssetsReadQueryKey({ asset_id }),
-    lookupAssetByIDQueryKey({ assetId: asset_id }),
-]
+        v1AssetsReadQueryKey({ asset_id }),
+        lookupAssetByIDQueryKey({ assetId: asset_id }),
+    ]
 
 //Fetches data from the indexer and Pera backend and returns the combined data
 export function useSingleAssetDetails<
@@ -182,11 +183,11 @@ export function useSingleAssetDetails<
             data:
                 indexerData && peraData
                     ? ({
-                          ...mapIndexerToPeraAsset(indexerData),
-                          ...peraData,
-                      } as PeraAsset)
+                        ...mapIndexerToPeraAsset(indexerData),
+                        ...peraData,
+                    } as PeraAsset)
                     : ((peraData as PeraAsset) ??
-                      mapIndexerToPeraAsset(indexerData)),
+                        mapIndexerToPeraAsset(indexerData)),
             isLoading: peraLoading || indexerLoading,
             isError: peraIsError && indexerIsError,
             error: indexerError ?? peraError,

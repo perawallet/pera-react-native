@@ -19,7 +19,6 @@ import RoundButton from '../../common/round-button/RoundButton'
 import { Alert } from 'react-native'
 import { useState } from 'react'
 import SendFundsBottomSheet from '../../send-funds/bottom-sheet/SendFundsBottomSheet'
-import PWIcon from '../../common/icons/PWIcon'
 
 const ButtonPanel = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()

@@ -44,7 +44,7 @@ type SendFundsInputViewProps = {
 const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
     const styles = useStyles()
     const selectedAccount = useSelectedAccount()
-    const { preferredCurrency, usdToPreferred } = useCurrencyConverter()
+    const { preferredCurrency } = useCurrencyConverter()
     const { canSelectAsset, selectedAsset, note, setNote, setAmount } =
         useContext(SendFundsContext)
     const [value, setValue] = useState<string | null>()
@@ -75,7 +75,7 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
             ) as AssetWithAccountBalance
         const assetAmount = asset?.amount ? Decimal(asset.amount) : Decimal(0)
         return assetAmount
-    }, [data, selectedAsset?.asset_id])
+    }, [data, selectedAsset?.asset_id, selectedAccount])
 
     const openNote = () => {
         setNoteOpen(true)

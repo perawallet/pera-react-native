@@ -57,7 +57,7 @@ const WealthTrend = ({ account, period }: WealthTrendProps) => {
             data?.results?.map(p => {
                 return usdToPreferred(Decimal(p.usd_value)).toNumber()
             }) ?? [],
-        [data],
+        [data, usdToPreferred],
     )
 
     const [absolute, percentage, isPositive] = useMemo(() => {

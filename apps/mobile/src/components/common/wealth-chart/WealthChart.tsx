@@ -69,7 +69,7 @@ const WealthChart = ({
                     value: usdToPreferred(Decimal(p.usd_value)).toNumber(),
                 }
             }) ?? [],
-        [data],
+        [data, usdToPreferred],
     )
 
     const yAxisOffsets = useMemo(() => {

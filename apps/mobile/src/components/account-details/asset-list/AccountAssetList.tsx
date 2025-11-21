@@ -14,10 +14,10 @@ import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacit
 import AccountAssetItemView from '../../assets/asset-item/AccountAssetItemView'
 import PWView from '../../common/view/PWView'
 import {
-    AssetBalances,
-    AssetWithAccountBalance,
-    useAccountBalances,
-    WalletAccount,
+  AssetBalances,
+  AssetWithAccountBalance,
+  useAccountBalances,
+  WalletAccount,
 } from '@perawallet/core'
 import { useMemo } from 'react'
 import { useStyles } from './styles'
@@ -29,84 +29,84 @@ import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 
 type AccountAssetListProps = {
-    account: WalletAccount
+  account: WalletAccount
 }
 
 const LoadingView = () => {
-    const styles = useStyles()
-    return (
-        <PWView style={styles.loadingContainer}>
-            <Skeleton />
-            <Skeleton />
-            <Skeleton />
-        </PWView>
-    )
+  const styles = useStyles()
+  return (
+    <PWView style={styles.loadingContainer}>
+      <Skeleton />
+      <Skeleton />
+      <Skeleton />
+    </PWView>
+  )
 }
 
 //TODO implement links and buttons
 //TODO Convert to flatlist/flashlist which wraps teh other content as a header
 const AccountAssetList = ({ account }: AccountAssetListProps) => {
-    const styles = useStyles()
-    const { data, loading } = useAccountBalances([account])
-    //TODO not sure why this cast is needed - TS seems to think it's an any type otherwise
-    const balanceData = useMemo(
-        () => data.get(account.address)?.assetBalances as AssetBalances,
-        [data],
-    )
-    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
+  const styles = useStyles()
+  const { data, loading } = useAccountBalances([account])
+  //TODO not sure why this cast is needed - TS seems to think it's an any type otherwise
+  const balanceData = useMemo(
+    () => data.get(account.address)?.assetBalances as AssetBalances,
+    [data, account.address],
+  )
+  const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
 
-    const goToAssetScreen = (asset: AssetWithAccountBalance) => {
-        navigation.navigate('AssetDetails', {
-            asset,
-            account,
-        })
-    }
+  const goToAssetScreen = (asset: AssetWithAccountBalance) => {
+    navigation.navigate('AssetDetails', {
+      asset,
+      account,
+    })
+  }
 
-    const renderItem = (item: AssetWithAccountBalance) => {
-        return (
-            <PWTouchableOpacity
-                onPress={() => goToAssetScreen(item)}
-                key={`asset-key-${item.asset_id}`}
-            >
-                <AccountAssetItemView asset={item} />
-            </PWTouchableOpacity>
-        )
-    }
-
+  const renderItem = (item: AssetWithAccountBalance) => {
     return (
-        <PWView style={styles.container}>
-            <PWView style={styles.titleBar}>
-                <Text
-                    style={styles.title}
-                    h4
-                >
-                    Assets
-                </Text>
-                <PWView style={styles.titleBarButtonContainer}>
-                    <PWButton
-                        icon='sliders'
-                        variant='helper'
-                        paddingStyle='dense'
-                    />
-                    <PWButton
-                        icon='plus'
-                        title='Add Asset'
-                        variant='helper'
-                        paddingStyle='dense'
-                    />
-                </PWView>
-            </PWView>
-            {loading && <LoadingView />}
-            {!loading && (
-                <>
-                    <SearchInput placeholder='Search assets' />
-                    <PWView style={styles.listContainer}>
-                        {balanceData?.map(item => renderItem(item))}
-                    </PWView>
-                </>
-            )}
-        </PWView>
+      <PWTouchableOpacity
+        onPress={() => goToAssetScreen(item)}
+        key={`asset-key-${item.asset_id}`}
+      >
+        <AccountAssetItemView asset={item} />
+      </PWTouchableOpacity>
     )
+  }
+
+  return (
+    <PWView style={styles.container}>
+      <PWView style={styles.titleBar}>
+        <Text
+          style={styles.title}
+          h4
+        >
+          Assets
+        </Text>
+        <PWView style={styles.titleBarButtonContainer}>
+          <PWButton
+            icon='sliders'
+            variant='helper'
+            paddingStyle='dense'
+          />
+          <PWButton
+            icon='plus'
+            title='Add Asset'
+            variant='helper'
+            paddingStyle='dense'
+          />
+        </PWView>
+      </PWView>
+      {loading && <LoadingView />}
+      {!loading && (
+        <>
+          <SearchInput placeholder='Search assets' />
+          <PWView style={styles.listContainer}>
+            {balanceData?.map(item => renderItem(item))}
+          </PWView>
+        </>
+      )}
+    </PWView>
+  )
 }
 
 export default AccountAssetList

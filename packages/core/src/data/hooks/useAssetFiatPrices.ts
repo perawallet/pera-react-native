@@ -22,8 +22,8 @@ export const useAssetFiatPricesQueryKeys = () => {
 }
 
 export const useAssetFiatPrices = () => {
-    let assetIDs = useAppStore(state => state.assetIDs)
-    let { usdToPreferred } = useCurrencyConverter()
+    const assetIDs = useAppStore(state => state.assetIDs)
+    const { usdToPreferred } = useCurrencyConverter()
 
     const { data, isPending, isError, error, refetch, isLoading } =
         useV1AssetsList(

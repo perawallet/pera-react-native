@@ -48,7 +48,7 @@ export const useBootstrapper = () => {
         const remoteConfigInit = remoteConfigService.initializeRemoteConfig()
         const analyticsInit = analyticsService.initializeAnalytics()
 
-        await Promise.allSettled([crashlyticsInit, remoteConfigInit])
+        await Promise.allSettled([crashlyticsInit, remoteConfigInit, analyticsInit])
 
         const notificationResults =
             await notificationService.initializeNotifications()

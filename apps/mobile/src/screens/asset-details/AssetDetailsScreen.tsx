@@ -18,7 +18,7 @@ import {
     PeraAsset,
     WalletAccount,
 } from '@perawallet/core'
-import { useLayoutEffect, useState } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useState } from 'react'
 import { useStyles } from './styles'
 import AssetMarkets from '../../components/asset-details/market/AssetMarkets'
 import AssetHoldings from '../../components/asset-details/holdings/AssetHoldings'
@@ -43,25 +43,29 @@ const AssetDetailsScreen = ({
 
     const navigation = useNavigation()
 
-    const notImplemented = () => {
+    const notImplemented = useCallback(() => {
         showToast({
             title: 'Not implemented',
             body: 'This feature is not implemented yet',
             type: 'error',
         })
-    }
+    }, [showToast])
+
+    const headerIcon = useMemo(() => {
+        return (
+            <AccountIcon
+                account={account}
+                onPress={notImplemented}
+            />
+        )
+    }, [account, notImplemented])
 
     useLayoutEffect(() => {
         navigation.setOptions({
             title: getAccountDisplayName(account),
-            headerRight: () => (
-                <AccountIcon
-                    account={account}
-                    onPress={notImplemented}
-                />
-            ),
+            headerRight: () => headerIcon,
         })
-    }, [navigation, account])
+    }, [navigation, account, headerIcon])
     return (
         <MainScreenLayout
             fullScreen

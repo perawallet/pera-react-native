@@ -32,7 +32,7 @@ const AssetMarketStats = ({ assetDetails }: AssetMarketStatsProps) => {
         const { amount, unit } = formatWithUnits(totalSupply)
         const { integer, fraction } = formatNumber(amount, 2)
         return `${integer}${fraction}${unit}`
-    }, [assetDetails.total_supply])
+    }, [assetDetails.total_supply, assetDetails.fraction_decimals])
 
     return (
         <PWView style={styles.container}>

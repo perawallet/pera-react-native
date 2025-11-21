@@ -6,7 +6,7 @@ import {
     truncateAlgorandAddress,
 } from '@perawallet/core'
 import Clipboard from '@react-native-clipboard/clipboard'
-import { Text, useTheme } from '@rneui/themed'
+import { Text } from '@rneui/themed'
 import PWButton from '../../../common/button/PWButton'
 import RowTitledItem from '../../../common/row-titled-item/RowTitledItem'
 import useToast from '../../../../hooks/toast'
@@ -17,7 +17,6 @@ type AssetAboutProps = {
 
 const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
     const styles = useStyles()
-    const { theme } = useTheme()
     const { showToast } = useToast()
 
     const copyToClipboard = (text: string) => {

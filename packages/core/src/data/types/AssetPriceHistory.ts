@@ -42,5 +42,6 @@ export type AssetPriceChartDataQueryResponse = AssetPriceHistoryResponse
 export type AssetPriceHistoryQuery = {
     Response: AssetPriceHistoryResponse
     QueryParams: AssetPriceHistoryQueryParams
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Errors: any
 }

@@ -16,7 +16,7 @@ import { useAppStore } from '../../store/app-store'
 import { useEffect, useMemo } from 'react'
 
 export const useAssetsQueryKeys = () => {
-    let assetIDs = useAppStore(state => state.assetIDs)
+    const assetIDs = useAppStore(state => state.assetIDs)
     return useMemo(
         () => [
             v1AssetsListQueryKey({
@@ -61,6 +61,7 @@ export const useAssets = (ids?: number[]) => {
     }>(
         () => ({
             data: [
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 ...(data?.results?.map(({ usd_value, ...rest }) => rest) ?? []),
                 ALGO_ASSET,
             ],

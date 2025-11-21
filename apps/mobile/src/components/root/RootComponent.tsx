@@ -13,7 +13,7 @@
 import { Networks, useDevice, useNetwork, usePolling } from '@perawallet/core'
 import { config } from '@perawallet/config'
 import { useEffect, useMemo, useRef } from 'react'
-import { AppState, StatusBar, View } from 'react-native'
+import { AppState, StatusBar } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { MainRoutes } from '../../routes/routes'
 import { getNavigationTheme, getTheme } from '../../theme/theme'

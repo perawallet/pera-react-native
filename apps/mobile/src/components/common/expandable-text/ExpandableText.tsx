@@ -1,6 +1,5 @@
 import { TextStyle, StyleProp } from 'react-native'
 import { useState } from 'react'
-import { useStyles } from './styles'
 import PWButton from '../button/PWButton'
 import { Text } from '@rneui/themed'
 

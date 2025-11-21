@@ -41,10 +41,6 @@ const AssetVerificationCard = ({
         !isTrusted && assetDetails.verification_tier === 'verified'
     const isSuspicious = assetDetails.verification_tier === 'suspicious'
 
-    if (!isVerified && !isTrusted && !isSuspicious) {
-        return null
-    }
-
     const [cardConfig, containerStyle, textStyle] = useMemo(() => {
         if (isTrusted) {
             return [
@@ -60,12 +56,23 @@ const AssetVerificationCard = ({
                 { color: theme.colors.asaVerifiedText },
             ]
         }
+        if (isSuspicious) {
+            return [
+                CARD_CONFIGS.suspicious,
+                { backgroundColor: theme.colors.asaSuspiciousBg },
+                { color: theme.colors.asaSuspiciousText },
+            ]
+        }
         return [
             CARD_CONFIGS.suspicious,
             { backgroundColor: theme.colors.asaSuspiciousBg },
             { color: theme.colors.asaSuspiciousText },
         ]
-    }, [isTrusted, isVerified, isSuspicious])
+    }, [isTrusted, isVerified, isSuspicious, theme])
+
+    if (!isVerified && !isTrusted && !isSuspicious) {
+        return null
+    }
 
     return (
         <PWView>

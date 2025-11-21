@@ -20,7 +20,7 @@ export type RowTitledItemProps = {
 } & PWViewProps
 
 const RowTitledItem = (props: RowTitledItemProps) => {
-    const { title, verticalAlignment = 'top', children, ...rest } = props
+    const { title, children, ...rest } = props
     const styles = useStyles(props)
     return (
         <PWView

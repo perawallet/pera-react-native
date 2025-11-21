@@ -67,7 +67,7 @@ const SendFundsTransactionConfirmation = ({
             return amount?.mul(price) ?? null
         }
         return null
-    }, [selectedAsset, fiatPrices])
+    }, [selectedAsset, fiatPrices, amount])
 
     const openNote = () => {
         setNoteOpen(true)
@@ -82,19 +82,19 @@ const SendFundsTransactionConfirmation = ({
         selectedAsset?.asset_id,
     )
     const currentBalance = useMemo<Balance>(() => {
-        const { amount, balance_usd_value } = data ?? {}
+        const { amount: dataAmount, balance_usd_value } = data ?? {}
         return data
             ? {
-                  cryptoAmount: amount ? Decimal(amount) : null,
-                  fiatAmount: balance_usd_value
-                      ? usdToPreferred(Decimal(balance_usd_value))
-                      : null,
-              }
+                cryptoAmount: dataAmount ? Decimal(dataAmount) : null,
+                fiatAmount: balance_usd_value
+                    ? usdToPreferred(Decimal(balance_usd_value))
+                    : null,
+            }
             : ({
-                  cryptoAmount: Decimal(0),
-                  fiatAmount: Decimal(0),
-              } as Balance)
-    }, [data, selectedAsset])
+                cryptoAmount: Decimal(0),
+                fiatAmount: Decimal(0),
+            } as Balance)
+    }, [data, usdToPreferred])
 
     const onSuccess = () => {
         showToast({

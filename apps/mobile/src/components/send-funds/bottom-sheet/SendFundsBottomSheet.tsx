@@ -11,9 +11,7 @@
  */
 
 import {
-    PeraAsset,
     useAccountAssetBalance,
-    useAccountBalances,
     useSelectedAccount,
 } from '@perawallet/core'
 import PWBottomSheet from '../../common/bottom-sheet/PWBottomSheet'
@@ -24,7 +22,7 @@ import SendFundsInputView from '../input-view/SendFundsInputView'
 import { useContext, useLayoutEffect, useState } from 'react'
 import { useStyles } from './styles'
 import { useWindowDimensions } from 'react-native'
-import { TabView, Text } from '@rneui/themed'
+import { TabView } from '@rneui/themed'
 import SendFundsSelectDestination from '../select-destination/SendFundsSelectDestination'
 import SendFundsTransactionConfirmation from '../transaction-confirmation/SendFundsTransactionConfirmation'
 import SendFundsProvider, {

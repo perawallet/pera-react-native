@@ -26,8 +26,6 @@ type AssetTransactionListProps = {
 
 //TODO implement fully
 const AssetTransactionList = ({
-    account,
-    asset,
     children,
 }: AssetTransactionListProps) => {
     const styles = useStyles()

@@ -44,7 +44,7 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
         paddingVertical = 0
     }
 
-    let minWidth: number | undefined = undefined
+    let minWidth: number | undefined
     if (props.paddingStyle === 'dense') {
         minWidth = theme.spacing.xl * 1.5
     }

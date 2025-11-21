@@ -83,12 +83,12 @@ export const useAccountBalances = (
     }, [results, accounts])
 
     const loading = useMemo(
-        () => [...data?.values()].some(d => !d.isFetched),
+        () => [...(data ? data.values() : [])].some(d => !d.isFetched),
         [data],
     )
     const totalAlgoBalance = useMemo(
         () =>
-            [...data?.values()].reduce(
+            [...(data ? data.values() : [])].reduce(
                 (acc, cur) => acc.plus(cur.algoBalance),
                 Decimal(0),
             ),
@@ -96,7 +96,7 @@ export const useAccountBalances = (
     )
     const totalFiatBalance = useMemo(
         () =>
-            [...data?.values()].reduce(
+            [...(data ? data.values() : [])].reduce(
                 (acc, cur) => acc.plus(cur.fiatBalance),
                 Decimal(0),
             ),

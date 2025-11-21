@@ -15,16 +15,13 @@ import PWView from '../../common/view/PWView'
 import {
     AssetBalances,
     AssetWithAccountBalance,
-    PeraAsset,
     useAccountBalances,
-    useAssets,
     useSelectedAccount,
 } from '@perawallet/core'
 import { useCallback, useContext, useMemo } from 'react'
 import AccountAssetItemView from '../../assets/asset-item/AccountAssetItemView'
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity'
 import { useStyles } from './styles'
-import Decimal from 'decimal.js'
 import { SendFundsContext } from '../../../providers/SendFundsProvider'
 import PWHeader from '../../common/header/PWHeader'
 
@@ -66,7 +63,7 @@ const SendFundsAssetSelectionView = ({
     const balanceData = useMemo(
         () =>
             data.get(selectedAccount?.address)?.assetBalances as AssetBalances,
-        [data],
+        [data, selectedAccount?.address],
     )
     const renderItem = useCallback(
         (item: AssetWithAccountBalance) => {
