@@ -22,58 +22,58 @@ import SendFundsBottomSheet from '../../send-funds/bottom-sheet/SendFundsBottomS
 import PWIcon from '../../common/icons/PWIcon'
 
 const ButtonPanel = () => {
-  const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-  const themeStyle = useStyles()
-  const [sendFundsOpen, setSendFundsOpen] = useState<boolean>(false)
+    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
+    const themeStyle = useStyles()
+    const [sendFundsOpen, setSendFundsOpen] = useState<boolean>(false)
 
-  const goToRootPage = (name: string) => {
-    navigation.replace('TabBar', { screen: name })
-  }
+    const goToRootPage = (name: string) => {
+        navigation.replace('TabBar', { screen: name })
+    }
 
-  const notImplemented = () => {
-    Alert.alert('Not Implemented')
-  }
+    const notImplemented = () => {
+        Alert.alert('Not Implemented')
+    }
 
-  const closeSendFunds = () => {
-    setSendFundsOpen(false)
-  }
+    const closeSendFunds = () => {
+        setSendFundsOpen(false)
+    }
 
-  const openSendFunds = () => {
-    setSendFundsOpen(true)
-  }
+    const openSendFunds = () => {
+        setSendFundsOpen(true)
+    }
 
-  return (
-    <PWView style={themeStyle.container}>
-      <RoundButton
-        title='Swap'
-        icon="swap"
-        variant="primary"
-        onPress={() => goToRootPage('Swap')}
-      />
-      <RoundButton
-        title='Stake'
-        icon="dot-stack"
-        variant="secondary"
-        onPress={() => goToRootPage('Staking')}
-      />
-      <RoundButton
-        title='Send'
-        icon="outflow"
-        variant="secondary"
-        onPress={openSendFunds}
-      />
-      <RoundButton
-        title='More'
-        icon="ellipsis"
-        variant="secondary"
-        onPress={notImplemented}
-      />
-      <SendFundsBottomSheet
-        onClose={closeSendFunds}
-        isVisible={sendFundsOpen}
-      />
-    </PWView>
-  )
+    return (
+        <PWView style={themeStyle.container}>
+            <RoundButton
+                title='Swap'
+                icon='swap'
+                variant='primary'
+                onPress={() => goToRootPage('Swap')}
+            />
+            <RoundButton
+                title='Stake'
+                icon='dot-stack'
+                variant='secondary'
+                onPress={() => goToRootPage('Staking')}
+            />
+            <RoundButton
+                title='Send'
+                icon='outflow'
+                variant='secondary'
+                onPress={openSendFunds}
+            />
+            <RoundButton
+                title='More'
+                icon='ellipsis'
+                variant='secondary'
+                onPress={notImplemented}
+            />
+            <SendFundsBottomSheet
+                onClose={closeSendFunds}
+                isVisible={sendFundsOpen}
+            />
+        </PWView>
+    )
 }
 
 export default ButtonPanel

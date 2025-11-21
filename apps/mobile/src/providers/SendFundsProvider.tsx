@@ -29,16 +29,17 @@ type SendFundsState = {
 
 export const SendFundsContext = createContext<SendFundsState>({
     canSelectAsset: true,
-    setCanSelectAsset: (_: boolean) => { },
-    setSelectedAsset: (_?: AssetWithAccountBalance) => { },
-    setAmount: (_?: Decimal) => { },
-    setNote: (_?: string) => { },
-    setDestination: (_?: string) => { },
+    setCanSelectAsset: (_: boolean) => {},
+    setSelectedAsset: (_?: AssetWithAccountBalance) => {},
+    setAmount: (_?: Decimal) => {},
+    setNote: (_?: string) => {},
+    setDestination: (_?: string) => {},
 })
 
 const SendFundsProvider = ({ children }: PropsWithChildren) => {
     const [canSelectAsset, setCanSelectAsset] = useState(false)
-    const [selectedAsset, setSelectedAsset] = useState<AssetWithAccountBalance>()
+    const [selectedAsset, setSelectedAsset] =
+        useState<AssetWithAccountBalance>()
     const [amount, setAmount] = useState<Decimal>()
     const [note, setNote] = useState<string>()
     const [destination, setDestination] = useState<string>()

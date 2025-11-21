@@ -1,6 +1,10 @@
 import { View, Linking } from 'react-native'
 import { useStyles } from './styles'
-import { ALGO_ASSET_ID, PeraAsset, truncateAlgorandAddress } from '@perawallet/core'
+import {
+    ALGO_ASSET_ID,
+    PeraAsset,
+    truncateAlgorandAddress,
+} from '@perawallet/core'
 import Clipboard from '@react-native-clipboard/clipboard'
 import { Text, useTheme } from '@rneui/themed'
 import PWButton from '../../../common/button/PWButton'
@@ -27,7 +31,9 @@ const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
 
     const extractDomain = (url: string) => {
         const urlObj = new URL(url)
-        return urlObj.hostname.startsWith('www.') ? urlObj.hostname.slice(4) : urlObj.hostname
+        return urlObj.hostname.startsWith('www.')
+            ? urlObj.hostname.slice(4)
+            : urlObj.hostname
     }
 
     const openLink = (url: string) => {
@@ -37,62 +43,88 @@ const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
 
     return (
         <View style={styles.container}>
-            {!!assetDetails.asset_id && <Text style={styles.sectionTitle}>About {assetDetails.name}</Text>}
             {!!assetDetails.asset_id && (
-                <RowTitledItem title='ASA ID' verticalAlignment='center'>
+                <Text style={styles.sectionTitle}>
+                    About {assetDetails.name}
+                </Text>
+            )}
+            {!!assetDetails.asset_id && (
+                <RowTitledItem
+                    title='ASA ID'
+                    verticalAlignment='center'
+                >
                     <PWButton
                         title={assetDetails.asset_id.toString()}
                         onPress={() =>
                             copyToClipboard(assetDetails.asset_id.toString())
                         }
                         variant='link'
-                        paddingStyle="none"
+                        paddingStyle='none'
                     />
-                </RowTitledItem>)}
+                </RowTitledItem>
+            )}
 
             {!!assetDetails.creator?.address && (
-                <RowTitledItem title='Creator' verticalAlignment='center'>
+                <RowTitledItem
+                    title='Creator'
+                    verticalAlignment='center'
+                >
                     <PWButton
-                        title={truncateAlgorandAddress(assetDetails.creator.address)}
+                        title={truncateAlgorandAddress(
+                            assetDetails.creator.address,
+                        )}
                         onPress={() =>
                             copyToClipboard(assetDetails.creator.address)
                         }
                         variant='link'
-                        paddingStyle="none"
+                        paddingStyle='none'
                     />
-                </RowTitledItem>)}
+                </RowTitledItem>
+            )}
 
             {!!assetDetails.url?.length && (
-                <RowTitledItem title={assetDetails.asset_id === ALGO_ASSET_ID ? 'URL' : 'ASA URL'} verticalAlignment='center'>
+                <RowTitledItem
+                    title={
+                        assetDetails.asset_id === ALGO_ASSET_ID
+                            ? 'URL'
+                            : 'ASA URL'
+                    }
+                    verticalAlignment='center'
+                >
                     <PWButton
-                        onPress={() =>
-                            openLink(assetDetails.url ?? '')
-                        }
+                        onPress={() => openLink(assetDetails.url ?? '')}
                         title={extractDomain(assetDetails.url ?? '')}
-                        variant="link"
-                        paddingStyle="none"
+                        variant='link'
+                        paddingStyle='none'
                     />
                 </RowTitledItem>
             )}
 
             {!!assetDetails.explorer_url?.length && (
-                <RowTitledItem title='Show on' verticalAlignment='center'>
+                <RowTitledItem
+                    title='Show on'
+                    verticalAlignment='center'
+                >
                     <PWButton
                         onPress={() =>
                             assetDetails.explorer_url &&
                             openLink(assetDetails.explorer_url)
                         }
-                        variant="link"
-                        paddingStyle="none"
+                        variant='link'
+                        paddingStyle='none'
                     />
-                </RowTitledItem>)}
+                </RowTitledItem>
+            )}
 
             {!!assetDetails.project_url?.length && (
-                <RowTitledItem title='Project website' verticalAlignment='center'>
+                <RowTitledItem
+                    title='Project website'
+                    verticalAlignment='center'
+                >
                     <PWButton
                         title='Open with Browser'
                         onPress={() => openLink(assetDetails.project_url!)}
-                        variant="link"
+                        variant='link'
                     />
                 </RowTitledItem>
             )}

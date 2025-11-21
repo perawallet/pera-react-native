@@ -10,10 +10,14 @@
  limitations under the License
  */
 
-import { useV1WalletWealthList, v1WalletWealthListQueryKey, type V1WalletWealthListQueryParams } from "../../api/index"
+import {
+    useV1WalletWealthList,
+    v1WalletWealthListQueryKey,
+    type V1WalletWealthListQueryParams,
+} from '../../api/index'
 
-export const useAccountsBalanceHistoryQueryKeys = (params: V1WalletWealthListQueryParams) => [
-  v1WalletWealthListQueryKey(params)
-]
+export const useAccountsBalanceHistoryQueryKeys = (
+    params: V1WalletWealthListQueryParams,
+) => [v1WalletWealthListQueryKey(params)]
 
 export const useAccountsBalanceHistory = useV1WalletWealthList

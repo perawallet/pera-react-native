@@ -17,9 +17,14 @@ import { useEffect, useMemo } from 'react'
 
 export const useAssetsQueryKeys = () => {
     let assetIDs = useAppStore(state => state.assetIDs)
-    return useMemo(() => [v1AssetsListQueryKey({
-        asset_ids: [...assetIDs.values()].join(','),
-    })], [assetIDs])
+    return useMemo(
+        () => [
+            v1AssetsListQueryKey({
+                asset_ids: [...assetIDs.values()].join(','),
+            }),
+        ],
+        [assetIDs],
+    )
 }
 
 export const useAssets = (ids?: number[]) => {
@@ -39,27 +44,31 @@ export const useAssets = (ids?: number[]) => {
         }
     }, [ids, assetIDs, setAssetIDs])
 
-    const { data, isPending, isError, error, refetch, isLoading } = useV1AssetsList({
-        params: {
-            asset_ids: [...assetIDs.values()].join(','),
-        },
-    })
+    const { data, isPending, isError, error, refetch, isLoading } =
+        useV1AssetsList({
+            params: {
+                asset_ids: [...assetIDs.values()].join(','),
+            },
+        })
 
     return useMemo<{
-        data: PeraAsset[],
-        isPending: boolean,
-        isError: boolean,
-        error: unknown,
-        refetch: () => void,
+        data: PeraAsset[]
+        isPending: boolean
+        isError: boolean
+        error: unknown
+        refetch: () => void
         isLoading: boolean
     }>(
         () => ({
-            data: [...(data?.results?.map(({ usd_value, ...rest }) => rest) ?? []), ALGO_ASSET],
+            data: [
+                ...(data?.results?.map(({ usd_value, ...rest }) => rest) ?? []),
+                ALGO_ASSET,
+            ],
             isPending,
             isError,
             error,
             refetch,
-            isLoading
+            isLoading,
         }),
         [data, isPending, isError, error, refetch, isLoading],
     )

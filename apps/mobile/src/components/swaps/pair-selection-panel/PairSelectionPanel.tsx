@@ -20,7 +20,7 @@ import PWView from '../../common/view/PWView'
 import { View } from 'react-native'
 
 import CurrencyInput from '../../currency/currency-input/CurrencyInput'
-import { PeraAsset, useCachedAssets } from '@perawallet/core'
+import { PeraAsset, useAssets } from '@perawallet/core'
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity'
 import PWIcon from '../../common/icons/PWIcon'
 
@@ -29,7 +29,7 @@ const PairSelectionPanel = () => {
     const styles = useStyles()
     const { theme } = useTheme()
 
-    const { assets } = useCachedAssets([10458941, 700965019])
+    const { data: assets } = useAssets([10458941, 700965019])
 
     const algoAsset = assets?.length
         ? assets.find((a: PeraAsset) => a.unit_name === 'ALGO')

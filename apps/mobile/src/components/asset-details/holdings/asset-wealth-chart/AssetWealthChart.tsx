@@ -48,8 +48,7 @@ const AssetWealthChart = ({
     period,
 }: AssetWealthChartProps) => {
     const { theme } = useTheme()
-    const { preferredCurrency, usdToPreferred } =
-        useCurrencyConverter()
+    const { preferredCurrency, usdToPreferred } = useCurrencyConverter()
     const themeStyle = useStyles()
     const [lastSentIndex, setLastSentIndex] = useState<number>()
     const [lastSentTime, setLastSentTime] = useState<number>(Date.now())
@@ -64,19 +63,15 @@ const AssetWealthChart = ({
     })
 
     //TODO: move the currency conversion processing into the useAccountsAsseetsBalanceHistory hook
-    const dataPoints = useMemo(
-        () => {
-            // @ts-ignore: The generated type is unknown
-            return (data?.results?.map((p: any) => {
-                return {
-                    value: usdToPreferred(
-                        new Decimal(p.usd_value ?? 0),
-                    ).toNumber(),
-                    timestamp: p.datetime,
-                }
-            }) ?? []) as DataPoint[]
-        }, [data, usdToPreferred],
-    )
+    const dataPoints = useMemo(() => {
+        // @ts-ignore: The generated type is unknown
+        return (data?.results?.map((p: any) => {
+            return {
+                value: usdToPreferred(new Decimal(p.usd_value ?? 0)).toNumber(),
+                timestamp: p.datetime,
+            }
+        }) ?? []) as DataPoint[]
+    }, [data, usdToPreferred])
 
     const yAxisOffsets = useMemo(() => {
         if (dataPoints.length === 0) return [-1, 1]
@@ -101,7 +96,7 @@ const AssetWealthChart = ({
                 if (pointerX > 0 && index >= 0 && index !== lastSentIndex) {
                     const dataItem =
                         // @ts-ignore: The generated type is unknown
-                        ((data as any)?.results?.[index]) ?? null
+                        (data as any)?.results?.[index] ?? null
                     setLastSentIndex(index)
                     if (dataItem) {
                         onSelectionChanged({

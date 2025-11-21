@@ -60,13 +60,13 @@ const AssetTransactionList = ({
                                     title='Filter'
                                     variant='link'
                                     icon='sliders'
-                                    paddingStyle="dense"
+                                    paddingStyle='dense'
                                 />
                                 <PWButton
                                     title='CSV'
                                     variant='helper'
                                     icon='text-document'
-                                    paddingStyle="dense"
+                                    paddingStyle='dense'
                                 />
                             </PWView>
                         </PWView>

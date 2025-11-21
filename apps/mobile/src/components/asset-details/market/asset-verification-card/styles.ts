@@ -13,10 +13,10 @@ export const useStyles = () => {
             marginBottom: theme.spacing.md,
         },
         content: {
-            gap: theme.spacing.md
+            gap: theme.spacing.md,
         },
         icon: {
-            marginTop: theme.spacing.xs
+            marginTop: theme.spacing.xs,
         },
         learnMoreContainer: {
             flexDirection: 'row',

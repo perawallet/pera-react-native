@@ -57,19 +57,17 @@ const SendFundsTransactionConfirmation = ({
     const selectedAccount = useSelectedAccount()
     const { showToast } = useToast()
     const [noteOpen, setNoteOpen] = useState(false)
-    const { preferredCurrency, usdToPreferred } =
-        useCurrencyConverter()
+    const { preferredCurrency, usdToPreferred } = useCurrencyConverter()
     const { data: fiatPrices } = useAssetFiatPrices()
-    const fiatPrice = useMemo<Decimal | null>(
-        () => {
-            const price = selectedAsset ? fiatPrices.get(selectedAsset?.asset_id) : null
-            if (price) {
-                return amount?.mul(price) ?? null
-            }
-            return null
-        },
-        [selectedAsset, fiatPrices],
-    )
+    const fiatPrice = useMemo<Decimal | null>(() => {
+        const price = selectedAsset
+            ? fiatPrices.get(selectedAsset?.asset_id)
+            : null
+        if (price) {
+            return amount?.mul(price) ?? null
+        }
+        return null
+    }, [selectedAsset, fiatPrices])
 
     const openNote = () => {
         setNoteOpen(true)
@@ -79,17 +77,23 @@ const SendFundsTransactionConfirmation = ({
         setNoteOpen(false)
     }
 
-    const { data } = useAccountAssetBalance(selectedAccount ?? undefined, selectedAsset?.asset_id)
+    const { data } = useAccountAssetBalance(
+        selectedAccount ?? undefined,
+        selectedAsset?.asset_id,
+    )
     const currentBalance = useMemo<Balance>(() => {
         const { amount, balance_usd_value } = data ?? {}
-        return data ?
-            {
-                cryptoAmount: amount ? Decimal(amount) : null,
-                fiatAmount: balance_usd_value ? usdToPreferred(Decimal(balance_usd_value)) : null,
-            } : {
-                cryptoAmount: Decimal(0),
-                fiatAmount: Decimal(0),
-            } as Balance
+        return data
+            ? {
+                  cryptoAmount: amount ? Decimal(amount) : null,
+                  fiatAmount: balance_usd_value
+                      ? usdToPreferred(Decimal(balance_usd_value))
+                      : null,
+              }
+            : ({
+                  cryptoAmount: Decimal(0),
+                  fiatAmount: Decimal(0),
+              } as Balance)
     }, [data, selectedAsset])
 
     const onSuccess = () => {

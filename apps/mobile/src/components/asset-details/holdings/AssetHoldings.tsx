@@ -40,13 +40,15 @@ type AssetHoldingsProps = {
 
 const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
     const styles = useStyles()
-    const { preferredCurrency, usdToPreferred } =
-        useCurrencyConverter()
+    const { preferredCurrency, usdToPreferred } = useCurrencyConverter()
     const [period, setPeriod] = useState<HistoryPeriod>('one-week')
     const [selectedPoint, setSelectedPoint] =
         useState<AccountWealthHistoryItem | null>(null)
 
-    const { data: assetHolding } = useAccountAssetBalance(account, asset.asset_id)
+    const { data: assetHolding } = useAccountAssetBalance(
+        account,
+        asset.asset_id,
+    )
 
     const cryptoAmount = useMemo(() => {
         const currentCrypto = selectedPoint
@@ -58,9 +60,7 @@ const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
     const fiatAmount = useMemo(() => {
         const currentUSD = selectedPoint
             ? Decimal(selectedPoint.value_in_currency ?? 0)
-            : usdToPreferred(
-                Decimal(assetHolding?.balance_usd_value ?? 0),
-            )
+            : usdToPreferred(Decimal(assetHolding?.balance_usd_value ?? 0))
         return currentUSD
     }, [assetHolding, selectedPoint, usdToPreferred])
 
@@ -69,7 +69,10 @@ const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
     }
 
     return (
-        <AssetTransactionList account={account} asset={asset}>
+        <AssetTransactionList
+            account={account}
+            asset={asset}
+        >
             <PWView style={styles.contentContainer}>
                 <PWView style={styles.header}>
                     <PWView style={styles.assetRow}>
@@ -103,7 +106,11 @@ const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
                             precision={2}
                             minPrecision={2}
                         />
-                        {!!selectedPoint && <Text>{formatDatetime(selectedPoint.datetime)}</Text>}
+                        {!!selectedPoint && (
+                            <Text>
+                                {formatDatetime(selectedPoint.datetime)}
+                            </Text>
+                        )}
                     </PWView>
                 </PWView>
 

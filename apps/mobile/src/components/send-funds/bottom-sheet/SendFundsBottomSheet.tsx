@@ -10,7 +10,12 @@
  limitations under the License
  */
 
-import { PeraAsset, useAccountAssetBalance, useAccountBalances, useSelectedAccount } from '@perawallet/core'
+import {
+    PeraAsset,
+    useAccountAssetBalance,
+    useAccountBalances,
+    useSelectedAccount,
+} from '@perawallet/core'
 import PWBottomSheet from '../../common/bottom-sheet/PWBottomSheet'
 import EmptyView from '../../common/empty-view/EmptyView'
 import SendFundsAssetSelectionView from '../asset-selection/SendFundsAssetSelectionView'
@@ -64,7 +69,10 @@ const SendFundsBottomSheet = ({
         setAmount,
         setDestination,
     } = useContext(SendFundsContext)
-    const { data: assetBalance } = useAccountAssetBalance(selectedAccount ?? undefined, assetId)
+    const { data: assetBalance } = useAccountAssetBalance(
+        selectedAccount ?? undefined,
+        assetId,
+    )
 
     useLayoutEffect(() => {
         if (assetId != null) {
@@ -113,12 +121,14 @@ const SendFundsBottomSheet = ({
                         }}
                         disableSwipe
                     >
-                        {!!canSelectAsset && <TabView.Item style={styles.tabItem}>
-                            <SendFundsAssetSelectionView
-                                onSelected={handleNext}
-                                onBack={handleBack}
-                            />
-                        </TabView.Item>}
+                        {!!canSelectAsset && (
+                            <TabView.Item style={styles.tabItem}>
+                                <SendFundsAssetSelectionView
+                                    onSelected={handleNext}
+                                    onBack={handleBack}
+                                />
+                            </TabView.Item>
+                        )}
                         <TabView.Item style={styles.tabItem}>
                             <SendFundsInputView
                                 onNext={handleNext}

@@ -10,10 +10,30 @@
  limitations under the License
  */
 
-import { FirebaseCrashlyticsTypes, getCrashlytics, setCrashlyticsCollectionEnabled } from '@react-native-firebase/crashlytics'
-import { fetchAndActivate, FirebaseRemoteConfigTypes, getRemoteConfig, setConfigSettings, setDefaults } from '@react-native-firebase/remote-config'
-import { FirebaseMessagingTypes, getMessaging, getToken, onMessage, registerDeviceForRemoteMessages } from '@react-native-firebase/messaging'
-import { FirebaseAnalyticsTypes, getAnalytics, logEvent } from '@react-native-firebase/analytics'
+import {
+    FirebaseCrashlyticsTypes,
+    getCrashlytics,
+    setCrashlyticsCollectionEnabled,
+} from '@react-native-firebase/crashlytics'
+import {
+    fetchAndActivate,
+    FirebaseRemoteConfigTypes,
+    getRemoteConfig,
+    setConfigSettings,
+    setDefaults,
+} from '@react-native-firebase/remote-config'
+import {
+    FirebaseMessagingTypes,
+    getMessaging,
+    getToken,
+    onMessage,
+    registerDeviceForRemoteMessages,
+} from '@react-native-firebase/messaging'
+import {
+    FirebaseAnalyticsTypes,
+    getAnalytics,
+    logEvent,
+} from '@react-native-firebase/analytics'
 import { Platform } from 'react-native'
 import notifee, {
     AndroidImportance,
@@ -32,11 +52,11 @@ import { config } from '@perawallet/config'
 
 export class RNFirebaseService
     implements
-    CrashReportingService,
-    RemoteConfigService,
-    CrashReportingService,
-    AnalyticsService {
-
+        CrashReportingService,
+        RemoteConfigService,
+        CrashReportingService,
+        AnalyticsService
+{
     remoteConfig: FirebaseRemoteConfigTypes.Module | null = null
     messaging: FirebaseMessagingTypes.Module | null = null
     analytics: FirebaseAnalyticsTypes.Module | null = null
@@ -95,7 +115,7 @@ export class RNFirebaseService
         if (settings.authorizationStatus !== AuthorizationStatus.AUTHORIZED) {
             return {
                 token: undefined,
-                unsubscribe: () => { },
+                unsubscribe: () => {},
             }
         }
 
@@ -120,23 +140,23 @@ export class RNFirebaseService
         }
 
         // Foreground message handler (show a local notification)
-        const unsubscribeOnMessage = this.messaging ? onMessage(this.messaging,
-            async remoteMessage => {
-                const title =
-                    remoteMessage.notification?.title ?? 'Notification'
-                const body = remoteMessage.notification?.body ?? undefined
+        const unsubscribeOnMessage = this.messaging
+            ? onMessage(this.messaging, async remoteMessage => {
+                  const title =
+                      remoteMessage.notification?.title ?? 'Notification'
+                  const body = remoteMessage.notification?.body ?? undefined
 
-                await notifee.displayNotification({
-                    title,
-                    body,
-                    data: remoteMessage.data,
-                    android: Platform.select({
-                        android: { channelId: 'default' },
-                        ios: undefined,
-                    }) as any,
-                })
-            },
-        ) : () => { }
+                  await notifee.displayNotification({
+                      title,
+                      body,
+                      data: remoteMessage.data,
+                      android: Platform.select({
+                          android: { channelId: 'default' },
+                          ios: undefined,
+                      }) as any,
+                  })
+              })
+            : () => {}
 
         // Foreground notification events
         const unsubscribeNotifeeForeground = notifee.onForegroundEvent(

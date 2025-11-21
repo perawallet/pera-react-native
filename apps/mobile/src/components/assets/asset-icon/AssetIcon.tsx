@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { ALGO_ASSET_ID, AssetWithAccountBalance, PeraAsset } from '@perawallet/core'
+import {
+    ALGO_ASSET_ID,
+    AssetWithAccountBalance,
+    PeraAsset,
+} from '@perawallet/core'
 import AlgoAssetIcon from '../../../../assets/icons/assets/algo.svg'
 import { useMemo } from 'react'
 import { SvgProps } from 'react-native-svg'

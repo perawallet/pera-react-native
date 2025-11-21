@@ -12,9 +12,7 @@
 
 import { useTheme } from '@rneui/themed'
 import MainScreenLayout from '../../layouts/MainScreenLayout'
-import {
-    useNotificationsList,
-} from '@perawallet/core'
+import { useNotificationsList } from '@perawallet/core'
 import { FlatList } from 'react-native-gesture-handler'
 import PWView from '../../components/common/view/PWView'
 import { ActivityIndicator } from 'react-native'
@@ -30,7 +28,8 @@ const NotificationsScreen = () => {
         return <NotificationItem item={info.item} />
     }
 
-    const { data, isPending, loadMoreItems, isFetchingNextPage } = useNotificationsList()
+    const { data, isPending, loadMoreItems, isFetchingNextPage } =
+        useNotificationsList()
 
     return (
         <MainScreenLayout>

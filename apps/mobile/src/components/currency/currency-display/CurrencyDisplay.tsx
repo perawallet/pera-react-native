@@ -54,20 +54,20 @@ const CurrencyDisplay = (props: CurrencyDisplayProps) => {
 
     const displayValue = useMemo(() => {
         if (value == null) {
-            return "---"
+            return '---'
         }
 
         return privacyMode
             ? '****'
             : formatCurrency(
-                value,
-                precision,
-                currency,
-                deviceInfo.getDeviceLocale(),
-                showSymbol,
-                truncateToUnits,
-                minPrecision,
-            )
+                  value,
+                  precision,
+                  currency,
+                  deviceInfo.getDeviceLocale(),
+                  showSymbol,
+                  truncateToUnits,
+                  minPrecision,
+              )
     }, [
         value,
         precision,

@@ -17,7 +17,8 @@ export const useStyles = makeStyles((theme, props: RowTitledItemProps) => {
     return {
         container: {
             flexDirection: 'row',
-            alignItems: props.verticalAlignment === 'top' ? 'flex-start' : 'center',
+            alignItems:
+                props.verticalAlignment === 'top' ? 'flex-start' : 'center',
             flexWrap: 'nowrap',
         },
         label: {

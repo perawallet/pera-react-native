@@ -23,7 +23,7 @@ const PriceTrend = ({
     assetId,
     period,
     selectedDataPoint,
-    showAbsolute = false
+    showAbsolute = false,
 }: PriceTrendProps) => {
     const styles = useStyles()
     const { preferredCurrency } = useCurrency()
@@ -32,15 +32,14 @@ const PriceTrend = ({
         params: {
             asset_id: assetId ?? 0,
             period: period ?? 'one-week',
-        }
+        },
     })
 
     const [calculatedPercentage, calculatedValue] = useMemo(() => {
-        const dataPoints =
-            chartData?.map(p => Number(p.price)) ?? []
+        const dataPoints = chartData?.map(p => Number(p.price)) ?? []
 
         const firstDp = dataPoints.at(0) ?? 0
-        const lastDp = selectedDataPoint?.price ?? (dataPoints.at(-1) ?? 0)
+        const lastDp = selectedDataPoint?.price ?? dataPoints.at(-1) ?? 0
 
         if (lastDp === 0) return [0, new Decimal(0)]
 

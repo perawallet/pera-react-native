@@ -54,14 +54,14 @@ const AssetSocialMedia = ({ assetDetails }: AssetSocialMediaProps) => {
                     <PWView style={styles.labelContainer}>
                         <PWIcon
                             name={link.icon}
-                            size="md"
+                            size='md'
                             variant='secondary'
                         />
                         <Text style={styles.label}>{link.label}</Text>
                     </PWView>
                     <PWIcon
                         name='arrow-up-right'
-                        size="sm"
+                        size='sm'
                         variant='secondary'
                     />
                 </PWTouchableOpacity>

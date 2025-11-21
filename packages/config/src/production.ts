@@ -1,6 +1,11 @@
-import { type Config } from "./main";
-import { ONE_DAY, ONE_HOUR, ONE_MINUTE, ONE_SECOND, THIRTY_SECONDS } from "./constants"
-
+import { type Config } from './main'
+import {
+    ONE_DAY,
+    ONE_HOUR,
+    ONE_MINUTE,
+    ONE_SECOND,
+    THIRTY_SECONDS,
+} from './constants'
 
 export const productionConfig: Config = {
     mainnetBackendUrl: 'https://mainnet.staging.api.perawallet.app',

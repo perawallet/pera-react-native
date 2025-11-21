@@ -10,29 +10,37 @@
  limitations under the License
  */
 
-import type { V1AccountsAssetsBalanceHistoryListQueryParamsPeriodEnum, V1WalletWealthListQueryParamsPeriodEnum } from "../../api/index";
+import type {
+    V1AccountsAssetsBalanceHistoryListQueryParamsPeriodEnum,
+    V1WalletWealthListQueryParamsPeriodEnum,
+} from '../../api/index'
 
 export type AssetPriceHistoryItem = {
-    datetime: string;
-    price: number;
-};
+    datetime: string
+    price: number
+}
 
-export type HistoryPeriod = ("one-year" | "one-month" | "one-week" | "one-day")
-    & V1AccountsAssetsBalanceHistoryListQueryParamsPeriodEnum
-    & V1WalletWealthListQueryParamsPeriodEnum
+export type HistoryPeriod = (
+    | 'one-year'
+    | 'one-month'
+    | 'one-week'
+    | 'one-day'
+) &
+    V1AccountsAssetsBalanceHistoryListQueryParamsPeriodEnum &
+    V1WalletWealthListQueryParamsPeriodEnum
 
 export type AssetPriceHistoryResponse = AssetPriceHistoryItem[]
 
 export type AssetPriceHistoryQueryParams = {
-    ordering?: string;
-    period: HistoryPeriod;
-    asset_id: number;
-};
+    ordering?: string
+    period: HistoryPeriod
+    asset_id: number
+}
 
-export type AssetPriceChartDataQueryResponse = AssetPriceHistoryResponse;
+export type AssetPriceChartDataQueryResponse = AssetPriceHistoryResponse
 
 export type AssetPriceHistoryQuery = {
-    Response: AssetPriceHistoryResponse;
-    QueryParams: AssetPriceHistoryQueryParams;
-    Errors: any;
-};
+    Response: AssetPriceHistoryResponse
+    QueryParams: AssetPriceHistoryQueryParams
+    Errors: any
+}

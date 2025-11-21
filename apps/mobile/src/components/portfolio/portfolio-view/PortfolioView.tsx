@@ -43,7 +43,8 @@ const PortfolioView = (props: PortfolioViewProps) => {
     const { preferredCurrency } = useCurrency()
 
     const accounts = useAllAccounts()
-    const { loading, totalAlgoBalance, totalFiatBalance } = useAccountBalances(accounts)
+    const { loading, totalAlgoBalance, totalFiatBalance } =
+        useAccountBalances(accounts)
     const [period, setPeriod] = useState<HistoryPeriod>('one-week')
     const [chartData, setChartData] = useState<AccountWealthHistoryItem | null>(
         null,
@@ -82,7 +83,9 @@ const PortfolioView = (props: PortfolioViewProps) => {
                 <CurrencyDisplay
                     h1
                     value={
-                        chartData ? Decimal(chartData.algo_value ?? 0) : totalAlgoBalance
+                        chartData
+                            ? Decimal(chartData.algo_value ?? 0)
+                            : totalAlgoBalance
                     }
                     currency='ALGO'
                     precision={2}
@@ -92,7 +95,7 @@ const PortfolioView = (props: PortfolioViewProps) => {
                 <PWButton
                     title={chartVisible ? 'Hide Chart' : 'Show Chart'}
                     variant='helper'
-                    paddingStyle="dense"
+                    paddingStyle='dense'
                     onPress={toggleChartVisible}
                 />
             </PWView>

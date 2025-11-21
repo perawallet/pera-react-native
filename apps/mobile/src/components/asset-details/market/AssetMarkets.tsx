@@ -37,26 +37,35 @@ type AssetMarketsProps = {
 
 const Loading = () => {
     const styles = useStyles()
-    return <PWView style={styles.loadingContainer}>
-        <Skeleton style={styles.skeleton} />
-        <Skeleton style={styles.skeleton} />
-        <Skeleton style={styles.skeleton} />
-    </PWView>
+    return (
+        <PWView style={styles.loadingContainer}>
+            <Skeleton style={styles.skeleton} />
+            <Skeleton style={styles.skeleton} />
+            <Skeleton style={styles.skeleton} />
+        </PWView>
+    )
 }
 
 const AssetMarkets = ({ asset }: AssetMarketsProps) => {
     const styles = useStyles()
     const { preferredCurrency } = useCurrency()
-    const [period, setPeriod] = useState<HistoryPeriod>("one-week")
+    const [period, setPeriod] = useState<HistoryPeriod>('one-week')
     const [selectedPoint, setSelectedPoint] = useState<AssetPriceHistoryItem>()
     const { showToast } = useToast()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
 
-    const { data: assetDetails, isError, isPending } = useSingleAssetDetails({
+    const {
+        data: assetDetails,
+        isError,
+        isPending,
+    } = useSingleAssetDetails({
         asset_id: asset.asset_id,
     })
     const { data: prices } = useAssetFiatPrices()
-    const fiatPrice = useMemo(() => prices.get(asset.asset_id) ?? null, [asset, prices])
+    const fiatPrice = useMemo(
+        () => prices.get(asset.asset_id) ?? null,
+        [asset, prices],
+    )
 
     const notImplemented = () => {
         showToast({
@@ -85,8 +94,12 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
     }
 
     if (isError) {
-        return <EmptyView title='Something went wrong'
-            body="We were unable to load this asset's details. Please check your connection and try again." />
+        return (
+            <EmptyView
+                title='Something went wrong'
+                body="We were unable to load this asset's details. Please check your connection and try again."
+            />
+        )
     }
 
     if (isPending) {
@@ -130,8 +143,15 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
                 />
 
                 <PWView style={styles.trendContainer}>
-                    <PriceTrend assetId={asset.asset_id} period={period} showAbsolute selectedDataPoint={selectedPoint} />
-                    {!!selectedPoint && <Text>{formatDatetime(selectedPoint.datetime)}</Text>}
+                    <PriceTrend
+                        assetId={asset.asset_id}
+                        period={period}
+                        showAbsolute
+                        selectedDataPoint={selectedPoint}
+                    />
+                    {!!selectedPoint && (
+                        <Text>{formatDatetime(selectedPoint.datetime)}</Text>
+                    )}
                 </PWView>
             </PWView>
 
@@ -141,7 +161,10 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
                     period={period}
                     onSelectionChanged={handleDataPointSelection}
                 />
-                <ChartPeriodSelection value={period} onChange={setPeriod} />
+                <ChartPeriodSelection
+                    value={period}
+                    onChange={setPeriod}
+                />
             </PWView>
 
             <PWTouchableOpacity
@@ -152,10 +175,15 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
                     See more details on Discover
                 </Text>
                 <PWView style={styles.discoverLink}>
-                    <Text style={styles.discoverLinkText} h4>Markets</Text>
+                    <Text
+                        style={styles.discoverLinkText}
+                        h4
+                    >
+                        Markets
+                    </Text>
                     <PWIcon
                         name='chevron-right'
-                        size="md"
+                        size='md'
                         variant='secondary'
                     />
                 </PWView>

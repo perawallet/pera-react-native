@@ -10,13 +10,11 @@
  limitations under the License
  */
 
-import { useV1CurrenciesList, v1CurrenciesListQueryKey } from "../../api/index"
+import { useV1CurrenciesList, v1CurrenciesListQueryKey } from '../../api/index'
 
 const EMPTY_ARGS = {}
 
-export const useCurrenciesQueryKeys = () => [
-    v1CurrenciesListQueryKey()
-]
+export const useCurrenciesQueryKeys = () => [v1CurrenciesListQueryKey()]
 
 //TODO include ALGO
 export const useCurrencies = () => useV1CurrenciesList(EMPTY_ARGS)

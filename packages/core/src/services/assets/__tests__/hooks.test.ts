@@ -12,7 +12,7 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { useCachedAssets } from '../hooks'
+import { useAssets } from '../hooks'
 
 // Mock the API
 vi.mock('../../../api/index', () => ({
@@ -47,7 +47,7 @@ describe('services/assets/hooks', () => {
     })
 
     test('returns ALGO asset and empty results when no data', () => {
-        const { result } = renderHook(() => useCachedAssets())
+        const { result } = renderHook(() => useAssets())
         expect(result.current.assets).toHaveLength(1)
         expect(result.current.assets[0].asset_id).toBe(0)
         expect(result.current.loading).toBe(false)
@@ -57,7 +57,7 @@ describe('services/assets/hooks', () => {
         const setAssetIDs = vi.fn()
         storeMock.create().useAppStore.setState({ assetIDs: [], setAssetIDs })
 
-        renderHook(() => useCachedAssets([1, 2]))
+        renderHook(() => useAssets([1, 2]))
         expect(setAssetIDs).toHaveBeenCalledWith([1, 2])
     })
 
@@ -67,7 +67,7 @@ describe('services/assets/hooks', () => {
             .create()
             .useAppStore.setState({ assetIDs: [1, 2], setAssetIDs })
 
-        renderHook(() => useCachedAssets([1, 2]))
+        renderHook(() => useAssets([1, 2]))
         expect(setAssetIDs).not.toHaveBeenCalled()
     })
 
@@ -75,7 +75,7 @@ describe('services/assets/hooks', () => {
         const setAssetIDs = vi.fn()
         storeMock.create().useAppStore.setState({ assetIDs: [1], setAssetIDs })
 
-        renderHook(() => useCachedAssets([1, 2]))
+        renderHook(() => useAssets([1, 2]))
         expect(setAssetIDs).toHaveBeenCalledWith([1, 2])
     })
 
@@ -83,7 +83,7 @@ describe('services/assets/hooks', () => {
         const setAssetIDs = vi.fn()
         storeMock.create().useAppStore.setState({ assetIDs: null, setAssetIDs })
 
-        renderHook(() => useCachedAssets([1, 2]))
+        renderHook(() => useAssets([1, 2]))
         expect(setAssetIDs).toHaveBeenCalledWith([1, 2])
     })
 })

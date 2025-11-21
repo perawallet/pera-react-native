@@ -44,8 +44,7 @@ type SendFundsInputViewProps = {
 const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
     const styles = useStyles()
     const selectedAccount = useSelectedAccount()
-    const { preferredCurrency, usdToPreferred } =
-        useCurrencyConverter()
+    const { preferredCurrency, usdToPreferred } = useCurrencyConverter()
     const { canSelectAsset, selectedAsset, note, setNote, setAmount } =
         useContext(SendFundsContext)
     const [value, setValue] = useState<string | null>()
@@ -57,7 +56,13 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
         selectedAccount ? [selectedAccount] : [],
     )
     const { data: fiatPrices } = useAssetFiatPrices()
-    const fiatPrice = useMemo(() => selectedAsset?.asset_id ? fiatPrices.get(selectedAsset.asset_id) : null, [selectedAsset, fiatPrices])
+    const fiatPrice = useMemo(
+        () =>
+            selectedAsset?.asset_id
+                ? fiatPrices.get(selectedAsset.asset_id)
+                : null,
+        [selectedAsset, fiatPrices],
+    )
 
     const tokenBalance = useMemo(() => {
         if (!selectedAccount) {
@@ -65,7 +70,9 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
         }
         const asset = (data as AccountBalances)
             .get(selectedAccount.address)
-            ?.assetBalances?.find(b => b.asset_id === selectedAsset?.asset_id) as AssetWithAccountBalance
+            ?.assetBalances?.find(
+                b => b.asset_id === selectedAsset?.asset_id,
+            ) as AssetWithAccountBalance
         const assetAmount = asset?.amount ? Decimal(asset.amount) : Decimal(0)
         return assetAmount
     }, [data, selectedAsset?.asset_id])
@@ -155,14 +162,18 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
                 showSymbol={false}
                 minPrecision={2}
             />
-            {fiatValue ? <CurrencyDisplay
-                currency={preferredCurrency}
-                precision={6}
-                value={fiatValue}
-                style={styles.amountPlaceholder}
-                showSymbol
-                minPrecision={2}
-            /> : <Text style={styles.amountPlaceholder}>--</Text>}
+            {fiatValue ? (
+                <CurrencyDisplay
+                    currency={preferredCurrency}
+                    precision={6}
+                    value={fiatValue}
+                    style={styles.amountPlaceholder}
+                    showSymbol
+                    minPrecision={2}
+                />
+            ) : (
+                <Text style={styles.amountPlaceholder}>--</Text>
+            )}
 
             <PWView style={styles.buttonContainer}>
                 <Button

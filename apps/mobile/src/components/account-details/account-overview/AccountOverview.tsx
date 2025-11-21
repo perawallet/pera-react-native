@@ -101,8 +101,8 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
                             value={
                                 chartData
                                     ? Decimal(
-                                        chartData.value_in_currency ?? '0',
-                                    )
+                                          chartData.value_in_currency ?? '0',
+                                      )
                                     : totalFiatBalance
                             }
                             currency={preferredCurrency}

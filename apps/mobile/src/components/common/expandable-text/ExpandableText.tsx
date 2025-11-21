@@ -24,9 +24,7 @@ const ExpandableText = ({
 
     const shouldTruncate = text.length > limit
     const displayText =
-        shouldTruncate && !isExpanded
-            ? `${text.slice(0, limit)}...`
-            : text
+        shouldTruncate && !isExpanded ? `${text.slice(0, limit)}...` : text
 
     return (
         <>

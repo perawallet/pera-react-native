@@ -10,10 +10,22 @@
  limitations under the License
  */
 
-import { useV1AccountsAssetsBalanceHistoryList, v1AccountsAssetsBalanceHistoryListQueryKey, type V1AccountsAssetsBalanceHistoryListQueryParams } from "../../api/index"
+import {
+    useV1AccountsAssetsBalanceHistoryList,
+    v1AccountsAssetsBalanceHistoryListQueryKey,
+    type V1AccountsAssetsBalanceHistoryListQueryParams,
+} from '../../api/index'
 
-export const useAccountsAssetBalanceHistoryQueryKeys = (account_address: string, asset_id: string, params: V1AccountsAssetsBalanceHistoryListQueryParams) => [
-  v1AccountsAssetsBalanceHistoryListQueryKey({ account_address, asset_id }, params)
+export const useAccountsAssetBalanceHistoryQueryKeys = (
+    account_address: string,
+    asset_id: string,
+    params: V1AccountsAssetsBalanceHistoryListQueryParams,
+) => [
+    v1AccountsAssetsBalanceHistoryListQueryKey(
+        { account_address, asset_id },
+        params,
+    ),
 ]
 
-export const useAccountsAssetsBalanceHistory = useV1AccountsAssetsBalanceHistoryList
+export const useAccountsAssetsBalanceHistory =
+    useV1AccountsAssetsBalanceHistoryList

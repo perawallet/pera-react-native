@@ -1,5 +1,10 @@
 import { useStyles } from './styles'
-import { formatNumber, formatWithUnits, PeraAsset, useCurrencyConverter } from '@perawallet/core'
+import {
+    formatNumber,
+    formatWithUnits,
+    PeraAsset,
+    useCurrencyConverter,
+} from '@perawallet/core'
 import CurrencyDisplay from '../../../currency/currency-display/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import { Text } from '@rneui/themed'
@@ -21,7 +26,9 @@ const AssetMarketStats = ({ assetDetails }: AssetMarketStatsProps) => {
         }
 
         const totalSupplyMicroUnits = new Decimal(assetDetails.total_supply)
-        const totalSupply = totalSupplyMicroUnits.div(Decimal.pow(10, assetDetails.fraction_decimals))
+        const totalSupply = totalSupplyMicroUnits.div(
+            Decimal.pow(10, assetDetails.fraction_decimals),
+        )
         const { amount, unit } = formatWithUnits(totalSupply)
         const { integer, fraction } = formatNumber(amount, 2)
         return `${integer}${fraction}${unit}`
@@ -47,11 +54,14 @@ const AssetMarketStats = ({ assetDetails }: AssetMarketStatsProps) => {
                         <Text style={styles.label}>Total Supply</Text>
                         <PWIcon
                             name='info'
-                            size="sm"
+                            size='sm'
                             variant='secondary'
                         />
                     </PWView>
-                    <Text style={styles.value} h2>
+                    <Text
+                        style={styles.value}
+                        h2
+                    >
                         {supply}
                     </Text>
                 </PWView>

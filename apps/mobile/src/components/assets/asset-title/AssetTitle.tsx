@@ -26,7 +26,10 @@ const AssetTitle = ({ asset }: AssetTitleProps) => {
     const styles = useStyles()
     const { theme } = useTheme()
 
-    const isAlgo = useMemo(() => asset.asset_id === ALGO_ASSET_ID, [asset.asset_id])
+    const isAlgo = useMemo(
+        () => asset.asset_id === ALGO_ASSET_ID,
+        [asset.asset_id],
+    )
 
     return (
         <PWView style={styles.container}>

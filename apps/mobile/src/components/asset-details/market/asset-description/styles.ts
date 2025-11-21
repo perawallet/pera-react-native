@@ -14,6 +14,5 @@ export const useStyles = () => {
             marginBottom: theme.spacing.md,
             textTransform: 'uppercase',
         },
-
     })
 }

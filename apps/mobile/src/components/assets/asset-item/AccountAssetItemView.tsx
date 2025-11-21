@@ -37,8 +37,7 @@ const AccountAssetItemView = ({
     const { theme } = useTheme()
     const styles = useStyles()
 
-    const { preferredCurrency, usdToPreferred } =
-        useCurrencyConverter()
+    const { preferredCurrency, usdToPreferred } = useCurrencyConverter()
 
     const verificationIcon = useMemo(() => {
         if (asset.asset_id === ALGO_ASSET_ID) {

@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export type { AssetPriceChartDataResponseSchema } from "./responseSchema.ts";
-export { assetPriceChartDataResponseSchema } from "./responseSchema.ts";
+export type { AssetPriceChartDataResponseSchema } from './responseSchema.ts'
+export { assetPriceChartDataResponseSchema } from './responseSchema.ts'

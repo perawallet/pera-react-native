@@ -39,7 +39,12 @@ const SendFundsSelectDestination = ({
     }
 
     if (!selectedAsset) {
-        return <EmptyView title="Something went wrong" body="An unexpected error has occurred. Please try again." />
+        return (
+            <EmptyView
+                title='Something went wrong'
+                body='An unexpected error has occurred. Please try again.'
+            />
+        )
     }
 
     return (

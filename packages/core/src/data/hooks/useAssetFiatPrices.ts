@@ -1,9 +1,9 @@
-import { config } from "@perawallet/config"
-import { useV1AssetsList, v1AssetsListQueryKey } from "../../api/index"
-import { useAppStore } from "../../store/app-store"
-import { useMemo } from "react"
-import { useCurrencyConverter } from "../../services/currencies"
-import Decimal from "decimal.js"
+import { config } from '@perawallet/config'
+import { useV1AssetsList, v1AssetsListQueryKey } from '../../api/index'
+import { useAppStore } from '../../store/app-store'
+import { useMemo } from 'react'
+import { useCurrencyConverter } from '../../services/currencies'
+import Decimal from 'decimal.js'
 
 /*
  Copyright 2022-2025 Pera Wallet, LDA
@@ -25,31 +25,43 @@ export const useAssetFiatPrices = () => {
     let assetIDs = useAppStore(state => state.assetIDs)
     let { usdToPreferred } = useCurrencyConverter()
 
-    const { data, isPending, isError, error, refetch, isLoading } = useV1AssetsList({
-        params: {
-            asset_ids: [...assetIDs.values()].join(','),
-        },
-    }, {
-        query: {
-            staleTime: config.reactQueryShortLivedStaleTime,
-            gcTime: config.reactQueryShortLivedGCTime,
-        }
-    })
+    const { data, isPending, isError, error, refetch, isLoading } =
+        useV1AssetsList(
+            {
+                params: {
+                    asset_ids: [...assetIDs.values()].join(','),
+                },
+            },
+            {
+                query: {
+                    staleTime: config.reactQueryShortLivedStaleTime,
+                    gcTime: config.reactQueryShortLivedGCTime,
+                },
+            },
+        )
 
     return useMemo<{
-        data: Map<number, Decimal>,
-        isPending: boolean,
-        isError: boolean,
-        error: unknown,
-        refetch: () => void,
+        data: Map<number, Decimal>
+        isPending: boolean
+        isError: boolean
+        error: unknown
+        refetch: () => void
         isLoading: boolean
     }>(() => {
         return {
-            data: new Map<number, Decimal>(data?.results?.filter(r => r.usd_value != null).map(r => [
-                r.asset_id, usdToPreferred(Decimal(r.usd_value!))
-            ])),
-            isPending, isError, error, refetch, isLoading
+            data: new Map<number, Decimal>(
+                data?.results
+                    ?.filter(r => r.usd_value != null)
+                    .map(r => [
+                        r.asset_id,
+                        usdToPreferred(Decimal(r.usd_value!)),
+                    ]),
+            ),
+            isPending,
+            isError,
+            error,
+            refetch,
+            isLoading,
         }
-
     }, [data, isPending, isError, error, refetch, isLoading, usdToPreferred])
 }

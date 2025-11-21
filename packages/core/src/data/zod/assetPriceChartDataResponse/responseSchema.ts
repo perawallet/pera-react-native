@@ -10,11 +10,15 @@
  limitations under the License
  */
 
-import { z } from "zod";
+import { z } from 'zod'
 
-export const assetPriceChartDataResponseSchema = z.array(z.object({
-    "datetime": z.string(),
-    "price": z.number()
-}))
+export const assetPriceChartDataResponseSchema = z.array(
+    z.object({
+        datetime: z.string(),
+        price: z.number(),
+    }),
+)
 
-export type AssetPriceChartDataResponseSchema = z.infer<typeof assetPriceChartDataResponseSchema>
+export type AssetPriceChartDataResponseSchema = z.infer<
+    typeof assetPriceChartDataResponseSchema
+>

@@ -1,13 +1,22 @@
-import type { AccountBalances, AssetWithAccountBalance } from "../../data/types/AccountBalances"
-import { v1AccountsAssetsList, v1AccountsAssetsListQueryKey, type AccountDetailAssetSerializerResponse } from "../../api/index"
-import type { WalletAccount } from "../../services/accounts"
-import { useCurrencyConverter } from "../../services/currencies"
-import { useQueries } from "@tanstack/react-query"
-import Decimal from "decimal.js"
-import { useMemo } from "react"
+import type {
+    AccountBalances,
+    AssetWithAccountBalance,
+} from '../../data/types/AccountBalances'
+import {
+    v1AccountsAssetsList,
+    v1AccountsAssetsListQueryKey,
+    type AccountDetailAssetSerializerResponse,
+} from '../../api/index'
+import type { WalletAccount } from '../../services/accounts'
+import { useCurrencyConverter } from '../../services/currencies'
+import { useQueries } from '@tanstack/react-query'
+import Decimal from 'decimal.js'
+import { useMemo } from 'react'
 
-
-export const useAccountBalances = (accounts: WalletAccount[], enabled?: boolean) => {
+export const useAccountBalances = (
+    accounts: WalletAccount[],
+    enabled?: boolean,
+) => {
     const { usdToPreferred } = useCurrencyConverter()
     if (!accounts?.length) {
         return {
@@ -35,51 +44,48 @@ export const useAccountBalances = (accounts: WalletAccount[], enabled?: boolean)
         }),
     })
 
-    const data = useMemo<AccountBalances>(
-        () => {
-            const accountBalanceList = results.map(r => {
-                let algoAmount = Decimal(0)
-                let fiatAmount = Decimal(0)
+    const data = useMemo<AccountBalances>(() => {
+        const accountBalanceList = results.map(r => {
+            let algoAmount = Decimal(0)
+            let fiatAmount = Decimal(0)
 
-                const assetBalances: AccountDetailAssetSerializerResponse[] = []
+            const assetBalances: AccountDetailAssetSerializerResponse[] = []
 
-                r.data?.results?.forEach(
-                    (asset: AccountDetailAssetSerializerResponse) => {
-                        algoAmount = algoAmount.plus(
-                            Decimal(asset.amount ?? '0').div(
-                                Decimal(10).pow(asset.fraction_decimals),
-                            ),
-                        )
-                        fiatAmount = fiatAmount.plus(
-                            Decimal(asset.balance_usd_value ?? '0'),
-                        )
-                        assetBalances.push(asset)
-                    },
-                )
+            r.data?.results?.forEach(
+                (asset: AccountDetailAssetSerializerResponse) => {
+                    algoAmount = algoAmount.plus(
+                        Decimal(asset.amount ?? '0').div(
+                            Decimal(10).pow(asset.fraction_decimals),
+                        ),
+                    )
+                    fiatAmount = fiatAmount.plus(
+                        Decimal(asset.balance_usd_value ?? '0'),
+                    )
+                    assetBalances.push(asset)
+                },
+            )
 
-                return {
-                    assetBalances,
-                    algoBalance: algoAmount,
-                    fiatBalance: usdToPreferred(fiatAmount),
-                    isPending: r.isPending,
-                    isFetched: r.isFetched,
-                    isRefetching: r.isRefetching,
-                    isError: r.isError,
-                }
-            })
+            return {
+                assetBalances,
+                algoBalance: algoAmount,
+                fiatBalance: usdToPreferred(fiatAmount),
+                isPending: r.isPending,
+                isFetched: r.isFetched,
+                isRefetching: r.isRefetching,
+                isError: r.isError,
+            }
+        })
 
-            const accountBalances: AccountBalances = new Map(
-                accounts.map((a, i) => [
-                    a.address,
-                    accountBalanceList[i]
-                ]))
-            return accountBalances
+        const accountBalances: AccountBalances = new Map(
+            accounts.map((a, i) => [a.address, accountBalanceList[i]]),
+        )
+        return accountBalances
+    }, [results, accounts])
 
-        },
-        [results, accounts],
+    const loading = useMemo(
+        () => [...data?.values()].some(d => !d.isFetched),
+        [data],
     )
-
-    const loading = useMemo(() => [...data?.values()].some(d => !d.isFetched), [data])
     const totalAlgoBalance = useMemo(
         () =>
             [...data?.values()].reduce(
@@ -105,15 +111,27 @@ export const useAccountBalances = (accounts: WalletAccount[], enabled?: boolean)
     }
 }
 
-export const useAccountAssetBalance = (account?: WalletAccount, assetId?: number) => {
-    const { data, loading } = useAccountBalances(account ? [account] : [], !!account && assetId != null)
+export const useAccountAssetBalance = (
+    account?: WalletAccount,
+    assetId?: number,
+) => {
+    const { data, loading } = useAccountBalances(
+        account ? [account] : [],
+        !!account && assetId != null,
+    )
 
     const assetBalance = useMemo<AssetWithAccountBalance | null>(() => {
-        return data?.get(account?.address)?.assetBalances?.find((b: AssetWithAccountBalance) => b.asset_id === assetId) ?? null
+        return (
+            data
+                ?.get(account?.address)
+                ?.assetBalances?.find(
+                    (b: AssetWithAccountBalance) => b.asset_id === assetId,
+                ) ?? null
+        )
     }, [data, account?.address, assetId])
 
     return {
         data: assetBalance,
-        isPending: loading
+        isPending: loading,
     }
 }

@@ -31,9 +31,7 @@ const FOCUS_DEBOUNCE_TIME = 200
 type AssetPriceChartProps = {
     asset: PeraAsset
     period: HistoryPeriod
-    onSelectionChanged: (
-        item: AssetPriceHistoryItem | null,
-    ) => void
+    onSelectionChanged: (item: AssetPriceHistoryItem | null) => void
 }
 
 const AssetPriceChart = ({
@@ -58,9 +56,7 @@ const AssetPriceChart = ({
         () =>
             data?.map(p => {
                 return {
-                    value: usdToPreferred(
-                        Decimal(p.price),
-                    ).toNumber(),
+                    value: usdToPreferred(Decimal(p.price)).toNumber(),
                     timestamp: p.datetime,
                 }
             }) ?? [],
@@ -113,7 +109,14 @@ const AssetPriceChart = ({
     )
 
     return (
-        <Suspense fallback={<LoadingView variant="circle" size="lg" />}>
+        <Suspense
+            fallback={
+                <LoadingView
+                    variant='circle'
+                    size='lg'
+                />
+            }
+        >
             <PWView style={themeStyle.container}>
                 <LineChart
                     data={dataPoints}

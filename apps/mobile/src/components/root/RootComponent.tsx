@@ -28,98 +28,101 @@ import { SigningProvider } from '../../providers/SigningProvider'
 import PWTouchableOpacity from '../../components/common/touchable-opacity/PWTouchableOpacity'
 
 const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
-  const insets = useSafeAreaInsets()
-  const styles = useStyles(insets)
-  const { network, setNetwork } = useNetwork()
-  const navTheme = getNavigationTheme(isDarkMode ? 'dark' : 'light')
-  const { showToast } = useToast()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
+    const { network, setNetwork } = useNetwork()
+    const navTheme = getNavigationTheme(isDarkMode ? 'dark' : 'light')
+    const { showToast } = useToast()
 
-  const networkBarStyle = useMemo(() => {
-    if (network === 'testnet') {
-      return styles.testnetBar
+    const networkBarStyle = useMemo(() => {
+        if (network === 'testnet') {
+            return styles.testnetBar
+        }
+        return styles.mainnetBar
+    }, [network, styles.testnetBar, styles.mainnetBar])
+
+    const showError = (error: any) => {
+        showToast({
+            title: 'Error',
+            body: config.debugEnabled
+                ? `Details: ${error}`
+                : 'An error has occured, please try again.',
+            type: 'error',
+        })
     }
-    return styles.mainnetBar
-  }, [network, styles.testnetBar, styles.mainnetBar])
 
-  const showError = (error: any) => {
-    showToast({
-      title: 'Error',
-      body: config.debugEnabled
-        ? `Details: ${error}`
-        : 'An error has occured, please try again.',
-      type: 'error',
-    })
-  }
-
-  //TODO remove this later
-  const toggleNetwork = () => {
-    if (network === Networks.mainnet) {
-      setNetwork(Networks.testnet)
-    } else {
-      setNetwork(Networks.mainnet)
+    //TODO remove this later
+    const toggleNetwork = () => {
+        if (network === Networks.mainnet) {
+            setNetwork(Networks.testnet)
+        } else {
+            setNetwork(Networks.mainnet)
+        }
     }
-  }
 
-  return (
-    <ErrorBoundary onError={showError}>
-      <PWView style={styles.container}>
-        <StatusBar
-          barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        />
-        <PWTouchableOpacity style={networkBarStyle} onLongPress={toggleNetwork} />
-        <GestureHandlerRootView>
-          <MainRoutes theme={navTheme} />
-        </GestureHandlerRootView>
-      </PWView>
-    </ErrorBoundary>
-  )
+    return (
+        <ErrorBoundary onError={showError}>
+            <PWView style={styles.container}>
+                <StatusBar
+                    barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+                />
+                <PWTouchableOpacity
+                    style={networkBarStyle}
+                    onLongPress={toggleNetwork}
+                />
+                <GestureHandlerRootView>
+                    <MainRoutes theme={navTheme} />
+                </GestureHandlerRootView>
+            </PWView>
+        </ErrorBoundary>
+    )
 }
 
 export const RootComponent = () => {
-  const isDarkMode = useIsDarkMode()
+    const isDarkMode = useIsDarkMode()
 
-  const theme = getTheme(isDarkMode ? 'dark' : 'light')
-  const { registerDevice } = useDevice()
-  const { startPolling, stopPolling } = usePolling()
+    const theme = getTheme(isDarkMode ? 'dark' : 'light')
+    const { registerDevice } = useDevice()
+    const { startPolling, stopPolling } = usePolling()
 
-  const appState = useRef(AppState.currentState)
+    const appState = useRef(AppState.currentState)
 
-  useEffect(() => {
-    registerDevice()
+    useEffect(() => {
+        registerDevice()
 
-    if (config.pollingEnabled) {
-      const subscription = AppState.addEventListener(
-        'change',
-        nextAppState => {
-          if (
-            appState.current.match(/inactive|background/) &&
-            nextAppState === 'active'
-          ) {
-            startPolling()
-          } else if (
-            appState.current === 'active' &&
-            nextAppState.match(/inactive|background/)
-          ) {
-            stopPolling()
-          }
+        if (config.pollingEnabled) {
+            const subscription = AppState.addEventListener(
+                'change',
+                nextAppState => {
+                    if (
+                        appState.current.match(/inactive|background/) &&
+                        nextAppState === 'active'
+                    ) {
+                        startPolling()
+                    } else if (
+                        appState.current === 'active' &&
+                        nextAppState.match(/inactive|background/)
+                    ) {
+                        stopPolling()
+                    }
 
-          appState.current = nextAppState
-        },
-      )
+                    appState.current = nextAppState
+                },
+            )
 
-      return () => {
-        stopPolling()
-        subscription.remove()
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+            return () => {
+                stopPolling()
+                subscription.remove()
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
 
-  return (
-    <ThemeProvider theme={theme}>
-      <SigningProvider>
-        <RootContentContainer isDarkMode={isDarkMode} />
-      </SigningProvider>
-    </ThemeProvider>
-  )
+    return (
+        <ThemeProvider theme={theme}>
+            <SigningProvider>
+                <RootContentContainer isDarkMode={isDarkMode} />
+            </SigningProvider>
+        </ThemeProvider>
+    )
 }

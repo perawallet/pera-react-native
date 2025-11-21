@@ -89,6 +89,6 @@ export const useStyles = () => {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
-        }
+        },
     })
 }

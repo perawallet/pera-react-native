@@ -39,9 +39,7 @@ export const formatNumber = (
     locale: string = 'en-US',
     minPrecision?: number,
 ) => {
-    const decimal = amount.toFixed(
-        Math.max(precision ?? 0, minPrecision ?? 0),
-    )
+    const decimal = amount.toFixed(Math.max(precision ?? 0, minPrecision ?? 0))
 
     const parts = decimal.split('.')
     const integer = parts[0]
@@ -115,9 +113,16 @@ export const formatCurrency = (
     truncateToUnits: boolean = false,
     minPrecision?: number,
 ) => {
-    const { amount, unit } = truncateToUnits ? formatWithUnits(new Decimal(value)) : { amount: new Decimal(value), unit: '' }
+    const { amount, unit } = truncateToUnits
+        ? formatWithUnits(new Decimal(value))
+        : { amount: new Decimal(value), unit: '' }
 
-    const { sign, integer, fraction } = formatNumber(amount, precision, locale, minPrecision)
+    const { sign, integer, fraction } = formatNumber(
+        amount,
+        precision,
+        locale,
+        minPrecision,
+    )
     const currencySymbol =
         !showSymbol || currency === 'ALGO'
             ? ''

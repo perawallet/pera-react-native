@@ -15,7 +15,7 @@ import { useStyles } from './styles'
 import { Text } from '@rneui/themed'
 
 export type RowTitledItemProps = {
-    title: string,
+    title: string
     verticalAlignment?: 'center' | 'top'
 } & PWViewProps
 

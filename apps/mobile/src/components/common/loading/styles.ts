@@ -20,6 +20,6 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'center',
     },
     skeleton: {
-        width: '100%'
-    }
+        width: '100%',
+    },
 }))

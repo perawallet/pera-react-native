@@ -17,9 +17,7 @@ import { BIP32DerivationTypes } from '@perawallet/xhdwallet'
 import { v7 as uuidv7 } from 'uuid'
 import { useHDWallet } from './hooks.hdwallet'
 import { encodeAlgorandAddress } from '../blockchain'
-import {
-    useV1DevicesPartialUpdate,
-} from '../../api/generated/backend'
+import { useV1DevicesPartialUpdate } from '../../api/generated/backend'
 import { useDeviceID, useDeviceInfoService } from '../device'
 import { withKey } from './utils'
 

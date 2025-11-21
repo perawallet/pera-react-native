@@ -10,40 +10,48 @@
  limitations under the License
  */
 
-import { useCurrency } from "../../services/currencies"
-import { useV1CurrenciesRead, v1CurrenciesReadQueryKey, type CurrencyDetailSerializerResponse } from "../../api/index"
-import { useMemo } from "react"
+import { useCurrency } from '../../services/currencies'
+import {
+    useV1CurrenciesRead,
+    v1CurrenciesReadQueryKey,
+    type CurrencyDetailSerializerResponse,
+} from '../../api/index'
+import { useMemo } from 'react'
 
 export const usePreferredCurrencyPriceQueryKeys = () => {
     const { preferredCurrency } = useCurrency()
 
     return [
         v1CurrenciesReadQueryKey({
-            currency_id: preferredCurrency
-        })
+            currency_id: preferredCurrency,
+        }),
     ]
 }
 
 export const usePreferredCurrencyPrice = () => {
     const { preferredCurrency } = useCurrency()
 
-    const { data, isPending, isLoading, error, isError, refetch } = useV1CurrenciesRead({
-        currency_id: preferredCurrency
-    })
+    const { data, isPending, isLoading, error, isError, refetch } =
+        useV1CurrenciesRead({
+            currency_id: preferredCurrency,
+        })
 
     return useMemo<{
-        data?: CurrencyDetailSerializerResponse,
-        isPending: boolean,
-        isError: boolean,
-        error: unknown,
-        refetch: () => void,
+        data?: CurrencyDetailSerializerResponse
+        isPending: boolean
+        isError: boolean
+        error: unknown
+        refetch: () => void
         isLoading: boolean
-    }>(() => ({
-        data: data,
-        isPending,
-        isLoading,
-        error,
-        isError,
-        refetch
-    }), [data, isPending, isLoading, error, isError, refetch])
+    }>(
+        () => ({
+            data: data,
+            isPending,
+            isLoading,
+            error,
+            isError,
+            refetch,
+        }),
+        [data, isPending, isLoading, error, isError, refetch],
+    )
 }

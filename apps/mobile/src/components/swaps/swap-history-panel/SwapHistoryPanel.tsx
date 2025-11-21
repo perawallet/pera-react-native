@@ -17,13 +17,13 @@ import { Text } from '@rneui/themed'
 import { useCallback } from 'react'
 
 import SwapPair from '../swap-pair/SwapPair'
-import { PeraAsset, useCachedAssets } from '@perawallet/core'
+import { PeraAsset, useAssets } from '@perawallet/core'
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity'
 
 const SwapHistoryPanel = () => {
     const themeStyle = useStyles()
 
-    const { assets } = useCachedAssets([11711, 10458941, 700965019])
+    const { data: assets } = useAssets([11711, 10458941, 700965019])
 
     const algoAsset = assets?.length
         ? assets.find((a: PeraAsset) => a.unit_name === 'ALGO')

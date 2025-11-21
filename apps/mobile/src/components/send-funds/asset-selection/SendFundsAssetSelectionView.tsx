@@ -63,7 +63,11 @@ const SendFundsAssetSelectionView = ({
         [onSelected, setSelectedAsset],
     )
 
-    const balanceData = useMemo(() => data.get(selectedAccount?.address)?.assetBalances as AssetBalances, [data])
+    const balanceData = useMemo(
+        () =>
+            data.get(selectedAccount?.address)?.assetBalances as AssetBalances,
+        [data],
+    )
     const renderItem = useCallback(
         (item: AssetWithAccountBalance) => {
             return (
@@ -72,9 +76,7 @@ const SendFundsAssetSelectionView = ({
                     key={`asset-${item.asset_id}`}
                     style={styles.item}
                 >
-                    <AccountAssetItemView
-                        asset={item}
-                    />
+                    <AccountAssetItemView asset={item} />
                 </PWTouchableOpacity>
             )
         },

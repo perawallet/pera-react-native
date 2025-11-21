@@ -13,7 +13,11 @@
 import { Tab, TabView } from '@rneui/themed'
 import MainScreenLayout from '../../layouts/MainScreenLayout'
 import { StaticScreenProps, useNavigation } from '@react-navigation/native'
-import { getAccountDisplayName, PeraAsset, WalletAccount } from '@perawallet/core'
+import {
+    getAccountDisplayName,
+    PeraAsset,
+    WalletAccount,
+} from '@perawallet/core'
 import { useLayoutEffect, useState } from 'react'
 import { useStyles } from './styles'
 import AssetMarkets from '../../components/asset-details/market/AssetMarkets'
@@ -22,77 +26,80 @@ import AccountIcon from '../../components/accounts/account-icon/AccountIcon'
 import useToast from '../../hooks/toast'
 
 type AssetDetailsScreenProps = {
-  account: WalletAccount
-  asset: PeraAsset
+    account: WalletAccount
+    asset: PeraAsset
 }
 
 //TODO implement me
 const AssetDetailsScreen = ({
-  route,
+    route,
 }: StaticScreenProps<AssetDetailsScreenProps>) => {
-  const asset = route.params?.asset
-  const account = route.params?.account
-  const { showToast } = useToast()
+    const asset = route.params?.asset
+    const account = route.params?.account
+    const { showToast } = useToast()
 
-  const styles = useStyles()
-  const [tabIndex, setTabIndex] = useState(0)
+    const styles = useStyles()
+    const [tabIndex, setTabIndex] = useState(0)
 
-  const navigation = useNavigation();
+    const navigation = useNavigation()
 
-  const notImplemented = () => {
-    showToast({
-      title: 'Not implemented',
-      body: 'This feature is not implemented yet',
-      type: 'error',
-    })
-  }
+    const notImplemented = () => {
+        showToast({
+            title: 'Not implemented',
+            body: 'This feature is not implemented yet',
+            type: 'error',
+        })
+    }
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      title: getAccountDisplayName(account),
-      headerRight: () => <AccountIcon account={account} onPress={notImplemented} />,
-    });
-  }, [navigation, account]);
-  return (
-    <MainScreenLayout
-      fullScreen
-      header
-    >
-      <Tab
-        value={tabIndex}
-        onChange={e => setTabIndex(e)}
-        containerStyle={styles.tabs}
-        indicatorStyle={styles.indicator}
-        titleStyle={styles.tabItem}
-        dense
-      >
-        <Tab.Item title='Holdings' />
-        <Tab.Item title='Markets' />
-      </Tab>
-      <TabView
-        value={tabIndex}
-        onChange={setTabIndex}
-        animationType='spring'
-        animationConfig={{
-          duration: 150,
-          bounciness: 1,
-          useNativeDriver: true,
-        }}
-      >
-        <TabView.Item style={styles.fullWidth}>
-          <AssetHoldings
-            account={account}
-            asset={asset}
-          />
-        </TabView.Item>
-        <TabView.Item style={styles.fullWidth}>
-          <AssetMarkets
-            asset={asset}
-          />
-        </TabView.Item>
-      </TabView>
-    </MainScreenLayout>
-  )
+    useLayoutEffect(() => {
+        navigation.setOptions({
+            title: getAccountDisplayName(account),
+            headerRight: () => (
+                <AccountIcon
+                    account={account}
+                    onPress={notImplemented}
+                />
+            ),
+        })
+    }, [navigation, account])
+    return (
+        <MainScreenLayout
+            fullScreen
+            header
+        >
+            <Tab
+                value={tabIndex}
+                onChange={e => setTabIndex(e)}
+                containerStyle={styles.tabs}
+                indicatorStyle={styles.indicator}
+                titleStyle={styles.tabItem}
+                dense
+            >
+                <Tab.Item title='Holdings' />
+                <Tab.Item title='Markets' />
+            </Tab>
+            <TabView
+                value={tabIndex}
+                onChange={setTabIndex}
+                animationType='spring'
+                animationConfig={{
+                    duration: 150,
+                    bounciness: 1,
+                    useNativeDriver: true,
+                }}
+            >
+                <TabView.Item style={styles.fullWidth}>
+                    <AssetHoldings
+                        account={account}
+                        asset={asset}
+                    />
+                </TabView.Item>
+                <TabView.Item style={styles.fullWidth}>
+                    <AssetMarkets asset={asset} />
+                </TabView.Item>
+            </TabView>
+        </MainScreenLayout>
+    )
 }
 
 export default AssetDetailsScreen

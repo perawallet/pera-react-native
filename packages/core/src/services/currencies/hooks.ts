@@ -34,7 +34,7 @@ export const useCurrencyConverter = () => {
                 return Decimal(0)
             }
 
-            if (preferredCurrency === "USD") {
+            if (preferredCurrency === 'USD') {
                 return usdAmount
             }
 

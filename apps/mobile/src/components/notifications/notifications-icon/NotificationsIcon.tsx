@@ -10,9 +10,7 @@
  limitations under the License
  */
 
-import {
-    useNotificationStatus,
-} from '@perawallet/core'
+import { useNotificationStatus } from '@perawallet/core'
 import { SvgProps } from 'react-native-svg'
 import PWIcon from '../../common/icons/PWIcon'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
@@ -28,7 +26,6 @@ const NotificationsIcon = (props: NotificationsIconProps) => {
     const goToNotifications = () => {
         navigation.navigate('Notifications')
     }
-
 
     return (
         <PWTouchableOpacity onPress={goToNotifications}>

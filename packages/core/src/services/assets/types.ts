@@ -20,50 +20,51 @@ import type {
 export const PeraAssetVerificationTier = {
     verified: 'verified',
     suspicious: 'suspicious',
-    unverified: 'unverified'
+    unverified: 'unverified',
 } as const
 
-export type PeraAssetVerificationTier = typeof PeraAssetVerificationTier[keyof typeof PeraAssetVerificationTier]
+export type PeraAssetVerificationTier =
+    (typeof PeraAssetVerificationTier)[keyof typeof PeraAssetVerificationTier]
 
 export const PeraAssetType = {
-    algo: "algo",
-    standard_asset: "standard_asset",
-    dapp_asset: "dapp_asset",
-    collectible: "collectible"
+    algo: 'algo',
+    standard_asset: 'standard_asset',
+    dapp_asset: 'dapp_asset',
+    collectible: 'collectible',
 } as const
 
-export type PeraAssetType = typeof PeraAssetType[keyof typeof PeraAssetType]
+export type PeraAssetType = (typeof PeraAssetType)[keyof typeof PeraAssetType]
 
 export type PeraCollectible = Collectible | SimpleCollectible
 
 export type PeraAsset = {
-    asset_id: number;
-    fraction_decimals: number;
-    total: string;
-    is_deleted: boolean;
-    verification_tier: PeraAssetVerificationTier;
-    creator: Account;
-    category: number | null;
-    name?: string;
-    readonly logo?: string | null;
-    unit_name?: string;
-    usd_value?: string | null;
-    readonly is_verified?: boolean;
-    readonly explorer_url?: string;
-    collectible?: PeraCollectible;
-    type?: PeraAssetType;
-    readonly labels?: AssetLabel[];
-    project_url?: string;
-    project_name?: string;
-    readonly logo_svg?: string | null;
-    discord_url?: string;
-    telegram_url?: string;
-    twitter_username?: string;
-    description?: string;
-    url?: string;
-    readonly total_supply?: string;
-    last_24_hours_algo_price_change_percentage?: number | null;
-    readonly available_on_discover_mobile?: string;
+    asset_id: number
+    fraction_decimals: number
+    total: string
+    is_deleted: boolean
+    verification_tier: PeraAssetVerificationTier
+    creator: Account
+    category: number | null
+    name?: string
+    readonly logo?: string | null
+    unit_name?: string
+    usd_value?: string | null
+    readonly is_verified?: boolean
+    readonly explorer_url?: string
+    collectible?: PeraCollectible
+    type?: PeraAssetType
+    readonly labels?: AssetLabel[]
+    project_url?: string
+    project_name?: string
+    readonly logo_svg?: string | null
+    discord_url?: string
+    telegram_url?: string
+    twitter_username?: string
+    description?: string
+    url?: string
+    readonly total_supply?: string
+    last_24_hours_algo_price_change_percentage?: number | null
+    readonly available_on_discover_mobile?: string
 }
 
 export const ALGO_ASSET: PeraAsset = {

@@ -15,8 +15,12 @@ import { RoundButtonProps } from './RoundButton'
 
 export const useStyles = makeStyles((theme, props: RoundButtonProps) => {
     const { size = 'lg', variant = 'secondary' } = props
-    const buttonSize = size === 'lg' ? theme.spacing.xl * 3 : theme.spacing.xl * 1.2
-    const backgroundColor = variant === 'primary' ? theme.colors.buttonPrimaryBg : theme.colors.layerGrayLighter
+    const buttonSize =
+        size === 'lg' ? theme.spacing.xl * 3 : theme.spacing.xl * 1.2
+    const backgroundColor =
+        variant === 'primary'
+            ? theme.colors.buttonPrimaryBg
+            : theme.colors.layerGrayLighter
 
     return {
         buttonStyle: {
