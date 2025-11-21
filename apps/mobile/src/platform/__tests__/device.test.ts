@@ -17,6 +17,7 @@ import * as RN from 'react-native'
 // Mock @perawallet/core
 vi.mock('@perawallet/core', () => ({
     updateBackendHeaders: vi.fn(),
+    updateManualBackendHeaders: vi.fn(),
 }))
 
 // Mock react-native-device-info

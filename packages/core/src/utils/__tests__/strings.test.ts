@@ -84,26 +84,26 @@ describe('utils/strings - formatCurrency', () => {
     })
 
     test('formats with K units', () => {
-        expect(formatCurrency('1000', 2, 'USD', 'en-US', true, 'K')).toBe(
-            '$1.00',
+        expect(formatCurrency('1000', 2, 'USD', 'en-US', true, true)).toBe(
+            '$1.00K',
         )
-        expect(formatCurrency('5000', 2, 'USD', 'en-US', true, 'K')).toBe(
-            '$5.00',
+        expect(formatCurrency('5000', 2, 'USD', 'en-US', true, true)).toBe(
+            '$5.00K',
         )
-        expect(formatCurrency('12345', 2, 'USD', 'en-US', true, 'K')).toBe(
-            '$12.35',
+        expect(formatCurrency('12345', 2, 'USD', 'en-US', true, true)).toBe(
+            '$12.35K',
         )
     })
 
     test('formats with M units', () => {
-        expect(formatCurrency('1000000', 2, 'USD', 'en-US', true, 'M')).toBe(
-            '$1.00',
+        expect(formatCurrency('1000000', 2, 'USD', 'en-US', true, true)).toBe(
+            '$1.00M',
         )
-        expect(formatCurrency('5000000', 2, 'USD', 'en-US', true, 'M')).toBe(
-            '$5.00',
+        expect(formatCurrency('5000000', 2, 'USD', 'en-US', true, true)).toBe(
+            '$5.00M',
         )
-        expect(formatCurrency('12345678', 2, 'USD', 'en-US', true, 'M')).toBe(
-            '$12.35',
+        expect(formatCurrency('12345678', 2, 'USD', 'en-US', true, true)).toBe(
+            '$12.35M',
         )
     })
 

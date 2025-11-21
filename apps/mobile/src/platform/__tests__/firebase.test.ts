@@ -27,6 +27,7 @@ vi.mock('@react-native-firebase/crashlytics', () => ({
         setCrashlyticsCollectionEnabled: vi.fn().mockResolvedValue(null),
         recordError: vi.fn(),
     }),
+    setCrashlyticsCollectionEnabled: vi.fn(),
 }))
 
 const mockRemoteConfig = vi.hoisted(() => ({
@@ -38,6 +39,9 @@ const mockRemoteConfig = vi.hoisted(() => ({
 
 vi.mock('@react-native-firebase/remote-config', () => ({
     getRemoteConfig: () => mockRemoteConfig,
+    setConfigSettings: mockRemoteConfig.setConfigSettings,
+    setDefaults: mockRemoteConfig.setDefaults,
+    fetchAndActivate: mockRemoteConfig.fetchAndActivate,
 }))
 
 const mockAnalytics = vi.hoisted(() => ({
@@ -46,6 +50,7 @@ const mockAnalytics = vi.hoisted(() => ({
 
 vi.mock('@react-native-firebase/analytics', () => ({
     getAnalytics: () => mockAnalytics,
+    logEvent: mockAnalytics.logEvent,
 }))
 
 const mockMessaging = vi.hoisted(() => ({
@@ -56,6 +61,9 @@ const mockMessaging = vi.hoisted(() => ({
 
 vi.mock('@react-native-firebase/messaging', () => ({
     getMessaging: () => mockMessaging,
+    getToken: mockMessaging.getToken,
+    onMessage: mockMessaging.onMessage,
+    registerDeviceForRemoteMessages: mockMessaging.registerDeviceForRemoteMessages,
 }))
 
 const mockNotifee = vi.hoisted(() => ({
@@ -109,6 +117,10 @@ describe('RNFirebaseService', () => {
         })
 
         describe('getStringValue', () => {
+            beforeEach(() => {
+                service.remoteConfig = mockRemoteConfig as any
+            })
+
             it('should return string value from remote config', () => {
                 mockRemoteConfig.getValue.mockReturnValueOnce({
                     asString: () => 'mock-string-value',
@@ -153,6 +165,10 @@ describe('RNFirebaseService', () => {
         })
 
         describe('getBooleanValue', () => {
+            beforeEach(() => {
+                service.remoteConfig = mockRemoteConfig as any
+            })
+
             it('should return boolean value from remote config', () => {
                 mockRemoteConfig.getValue.mockReturnValueOnce({
                     asString: () => 'mock-string-value',
@@ -191,6 +207,10 @@ describe('RNFirebaseService', () => {
         })
 
         describe('getNumberValue', () => {
+            beforeEach(() => {
+                service.remoteConfig = mockRemoteConfig as any
+            })
+
             it('should return number value from remote config', () => {
                 mockRemoteConfig.getValue.mockReturnValueOnce({
                     asString: () => 'mock-string-value',
@@ -309,7 +329,7 @@ describe('RNFirebaseService', () => {
 
                 // Get the callback that was passed to onMessage
                 const onMessageCallback = (mockMessaging.onMessage as any).mock
-                    .calls[0][0] as (message: any) => Promise<void>
+                    .calls[0][1] as (message: any) => Promise<void>
                 expect(onMessageCallback).toBeDefined()
 
                 const mockRemoteMessage = {
@@ -338,7 +358,7 @@ describe('RNFirebaseService', () => {
 
                 // Get the callback that was passed to onMessage
                 const onMessageCallback = (mockMessaging.onMessage as any).mock
-                    .calls[0][0] as (message: any) => Promise<void>
+                    .calls[0][1] as (message: any) => Promise<void>
                 expect(onMessageCallback).toBeDefined()
 
                 const mockRemoteMessage = {
@@ -447,15 +467,24 @@ describe('RNFirebaseService', () => {
     })
 
     describe('Analytics', () => {
+        beforeEach(() => {
+            service.initializeAnalytics()
+        })
+
         it('logEvent forwards payload to Firebase analytics', () => {
             service.logEvent('test_event', { foo: 'bar' })
-            expect(mockAnalytics.logEvent).toHaveBeenCalledWith('test_event', {
-                foo: 'bar',
-            })
+            expect(mockAnalytics.logEvent).toHaveBeenCalledWith(
+                expect.anything(),
+                'test_event',
+                {
+                    foo: 'bar',
+                },
+            )
         })
         it('logEvent forwards event without payload to Firebase analytics', () => {
             service.logEvent('test_event')
             expect(mockAnalytics.logEvent).toHaveBeenCalledWith(
+                expect.anything(),
                 'test_event',
                 undefined,
             )

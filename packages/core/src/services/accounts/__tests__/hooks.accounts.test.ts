@@ -20,7 +20,9 @@ import React from 'react'
 import { Networks } from '@services/blockchain'
 
 // Hoisted mocks for createAccount path dependencies
-const uuidSpies = vi.hoisted(() => ({ v7: vi.fn() }))
+const uuidSpies = vi.hoisted(() => ({
+    v7: vi.fn(),
+}))
 vi.mock('uuid', () => ({ v7: uuidSpies.v7 }))
 
 const apiSpies = vi.hoisted(() => ({
@@ -31,6 +33,14 @@ const apiSpies = vi.hoisted(() => ({
 
 const currencySpies = vi.hoisted(() => ({
     useV1CurrenciesRead: vi.fn(),
+    useV1WalletWealthList: vi.fn(() => ({
+        data: { results: [] },
+        isPending: false,
+    })),
+    useV1AccountsAssetsBalanceHistoryList: vi.fn(() => ({
+        data: { results: [] },
+        isPending: false,
+    })),
 }))
 const xhdSpies = vi.hoisted(() => ({
     fromSeed: vi.fn(() => 'ROOT_KEY'),
@@ -97,6 +107,9 @@ vi.mock('../../../api/generated/backend', () => ({
 }))
 vi.mock('../../../api/index', () => ({
     useV1CurrenciesRead: currencySpies.useV1CurrenciesRead,
+    useV1WalletWealthList: currencySpies.useV1WalletWealthList,
+    useV1AccountsAssetsBalanceHistoryList:
+        currencySpies.useV1AccountsAssetsBalanceHistoryList,
 }))
 
 describe('services/accounts/hooks', () => {
@@ -104,9 +117,9 @@ describe('services/accounts/hooks', () => {
         vi.resetModules()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -146,9 +159,9 @@ describe('services/accounts/hooks', () => {
         vi.resetModules()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -188,9 +201,9 @@ describe('services/accounts/hooks', () => {
         vi.resetModules()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -223,9 +236,9 @@ describe('services/accounts/hooks', () => {
         vi.resetModules()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -269,9 +282,9 @@ describe('services/accounts/hooks', () => {
         vi.resetModules()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -313,9 +326,9 @@ describe('services/accounts/hooks', () => {
         vi.resetModules()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -358,9 +371,9 @@ describe('services/accounts/hooks', () => {
         vi.resetModules()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -392,9 +405,9 @@ describe('services/accounts/hooks', () => {
         vi.resetModules()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -429,9 +442,9 @@ describe('services/accounts/hooks - createAccount', () => {
         apiSpies.keyGenSpy.mockReset()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -505,7 +518,7 @@ describe('services/accounts/hooks - createAccount', () => {
         apiSpies.keyGenSpy.mockReset()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) =>
                 Buffer.from(
                     JSON.stringify({
@@ -514,7 +527,7 @@ describe('services/accounts/hooks - createAccount', () => {
                     }),
                 ),
             ),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -595,9 +608,9 @@ describe('services/accounts/hooks - createAccount', () => {
         })
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -654,11 +667,11 @@ describe('services/accounts/hooks - createAccount', () => {
         apiSpies.keyGenSpy.mockReset()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) =>
                 Buffer.from(JSON.stringify({})),
             ), // Empty object, no seed
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -690,9 +703,9 @@ describe('services/accounts/hooks - useImportWallet', () => {
         apiSpies.keyGenSpy.mockReset()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -771,9 +784,9 @@ describe('services/accounts/hooks - useImportWallet', () => {
         apiSpies.keyGenSpy.mockReset()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -850,9 +863,9 @@ describe('services/accounts/hooks - useImportWallet', () => {
         apiSpies.keyGenSpy.mockReset()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -897,9 +910,9 @@ describe('services/accounts/hooks - useImportWallet', () => {
         apiSpies.keyGenSpy.mockReset()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -972,9 +985,9 @@ describe('services/accounts/hooks - useImportWallet', () => {
         })
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -1034,9 +1047,9 @@ describe('services/accounts/hooks - useAddAccount', () => {
         })
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -1089,7 +1102,7 @@ describe('services/accounts/hooks - useAddAccount', () => {
         apiSpies.keyGenSpy.mockReset()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) =>
                 Buffer.from(
                     JSON.stringify({
@@ -1098,7 +1111,7 @@ describe('services/accounts/hooks - useAddAccount', () => {
                     }),
                 ),
             ),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -1166,9 +1179,9 @@ describe('services/accounts/hooks - updateAccount', () => {
         vi.resetModules()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -1217,9 +1230,9 @@ describe('services/accounts/hooks - updateAccount', () => {
         vi.resetModules()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -1276,9 +1289,9 @@ describe('services/accounts/hooks - updateAccount', () => {
         })
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -1342,7 +1355,7 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
         vi.clearAllMocks()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) =>
                 Buffer.from(
                     JSON.stringify({
@@ -1351,7 +1364,7 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
                     }),
                 ),
             ),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -1405,7 +1418,7 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
         vi.clearAllMocks()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) =>
                 Buffer.from(
                     JSON.stringify({
@@ -1416,7 +1429,7 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
                     }),
                 ),
             ),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -1472,7 +1485,7 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
         vi.clearAllMocks()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) =>
                 Buffer.from(
                     JSON.stringify({
@@ -1483,7 +1496,7 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
                     }),
                 ),
             ),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -1539,9 +1552,9 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
         vi.clearAllMocks()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -1572,9 +1585,9 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
         vi.clearAllMocks()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -1609,9 +1622,9 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
         vi.clearAllMocks()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null), // No mnemonic
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -1653,9 +1666,9 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
         vi.clearAllMocks()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => Buffer.from('raw-seed-data')), // Raw seed data (old format)
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -1702,337 +1715,5 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
             transaction,
             9,
         )
-    })
-})
-
-describe('services/accounts/hooks - useAccountBalances', () => {
-    const createWrapper = () => {
-        const queryClient = new QueryClient({
-            defaultOptions: {
-                queries: {
-                    retry: false,
-                },
-            },
-        })
-        return ({ children }: { children: React.ReactNode }) =>
-            React.createElement(
-                QueryClientProvider,
-                { client: queryClient },
-                children,
-            )
-    }
-
-    test('aggregates USD and ALGO using backend/indexer data', async () => {
-        vi.resetModules()
-        vi.clearAllMocks()
-
-        currencySpies.useV1CurrenciesRead.mockReturnValue({
-            data: { usd_value: '1.0' },
-            isPending: false,
-        })
-
-        querySpies.v1AccountsAssetsList.mockResolvedValue({
-            results: [
-                {
-                    asset_id: 0,
-                    amount: '1000',
-                    fraction_decimals: 6,
-                    balance_usd_value: '0.0005',
-                },
-                {
-                    asset_id: 123,
-                    amount: '50',
-                    fraction_decimals: 2,
-                    balance_usd_value: '2.5',
-                },
-            ],
-        })
-
-        const { useAccountBalances } = await import('../hooks.accounts')
-        const acct: WalletAccount = {
-            id: 'ANY',
-            type: 'standard',
-            address: 'ADDR',
-            canSign: true,
-        }
-
-        const { result } = renderHook(() => useAccountBalances([acct]), {
-            wrapper: createWrapper(),
-        })
-
-        await act(async () => {
-            await vi.waitFor(() => {
-                expect(result.current.data[0].isFetched).toBe(true)
-            })
-        })
-
-        expect(result.current.data[0].algoAmount).toEqual(Decimal(0.501))
-        expect(result.current.data[0].localAmount).toEqual(Decimal(2.5005))
-        expect(result.current.totalAlgo).toEqual(Decimal(0.501))
-        expect(result.current.totalLocal).toEqual(Decimal(2.5005))
-        expect(result.current.loading).toBe(false)
-    })
-
-    test('returns fallback algos() when computed USD is zero', async () => {
-        vi.resetModules()
-        vi.clearAllMocks()
-
-        currencySpies.useV1CurrenciesRead.mockReturnValue({
-            data: { usd_value: '1.0' },
-            isPending: false,
-        })
-
-        querySpies.v1AccountsAssetsList.mockResolvedValue({
-            results: [
-                {
-                    asset_id: 0,
-                    amount: '1000',
-                    fraction_decimals: 6,
-                    balance_usd_value: '0',
-                },
-            ],
-        })
-
-        const { useAccountBalances } = await import('../hooks.accounts')
-        const acct: WalletAccount = {
-            id: 'ANY2',
-            type: 'standard',
-            address: 'ADDR2',
-            canSign: true,
-        }
-
-        const { result } = renderHook(() => useAccountBalances([acct]), {
-            wrapper: createWrapper(),
-        })
-
-        await act(async () => {
-            await vi.waitFor(() => {
-                expect(result.current.data[0].isFetched).toBe(true)
-            })
-        })
-
-        expect(result.current.data[0].localAmount).toEqual(Decimal(0))
-        expect(result.current.data[0].algoAmount).toEqual(Decimal(0.001))
-    })
-
-    test('returns fallback when account.id is null', async () => {
-        vi.resetModules()
-        vi.clearAllMocks()
-
-        currencySpies.useV1CurrenciesRead.mockReturnValue({
-            data: { usd_value: '1.0' },
-            isPending: false,
-        })
-
-        querySpies.v1AccountsAssetsList.mockResolvedValue({
-            results: [
-                {
-                    asset_id: 0,
-                    amount: '1000',
-                    fraction_decimals: 6,
-                    balance_usd_value: '0',
-                },
-            ],
-        })
-
-        const { useAccountBalances } = await import('../hooks.accounts')
-        const acct: WalletAccount = {
-            id: undefined, // No ID
-            type: 'standard',
-            address: 'ADDR3',
-            canSign: true,
-        }
-
-        const { result } = renderHook(() => useAccountBalances([acct]), {
-            wrapper: createWrapper(),
-        })
-
-        await act(async () => {
-            await vi.waitFor(() => {
-                expect(result.current.data[0].isFetched).toBe(true)
-            })
-        })
-
-        expect(result.current.data[0].localAmount).toEqual(Decimal(0))
-        expect(result.current.data[0].algoAmount).toEqual(Decimal(0.001))
-    })
-
-    test('handles algoAsset without returning early', async () => {
-        vi.resetModules()
-        vi.clearAllMocks()
-
-        currencySpies.useV1CurrenciesRead.mockReturnValue({
-            data: { usd_value: '1.0' },
-            isPending: false,
-        })
-
-        querySpies.v1AccountsAssetsList.mockResolvedValue({
-            results: [
-                {
-                    asset_id: 0,
-                    amount: '1000000',
-                    fraction_decimals: 6,
-                    balance_usd_value: '2',
-                },
-                {
-                    asset_id: 123,
-                    amount: '100',
-                    fraction_decimals: 2,
-                    balance_usd_value: '10',
-                },
-            ],
-        })
-
-        const { useAccountBalances } = await import('../hooks.accounts')
-        const acct: WalletAccount = {
-            id: 'ANY5',
-            type: 'standard',
-            address: 'ADDR5',
-            canSign: true,
-        }
-
-        const { result } = renderHook(() => useAccountBalances([acct]), {
-            wrapper: createWrapper(),
-        })
-
-        await act(async () => {
-            await vi.waitFor(() => {
-                expect(result.current.data[0].isFetched).toBe(true)
-            })
-        })
-
-        expect(result.current.data[0].localAmount).toEqual(Decimal(12))
-        expect(result.current.data[0].algoAmount).toEqual(Decimal(2))
-    })
-
-    test('handles ASA with null usd_value', async () => {
-        vi.resetModules()
-        vi.clearAllMocks()
-
-        currencySpies.useV1CurrenciesRead.mockReturnValue({
-            data: { usd_value: '1.0' },
-            isPending: false,
-        })
-
-        querySpies.v1AccountsAssetsList.mockResolvedValue({
-            results: [
-                {
-                    asset_id: 0,
-                    amount: '1000',
-                    fraction_decimals: 6,
-                    balance_usd_value: '0.001',
-                },
-                {
-                    asset_id: 456,
-                    amount: '100',
-                    fraction_decimals: 2,
-                    balance_usd_value: null,
-                },
-            ],
-        })
-
-        const { useAccountBalances } = await import('../hooks.accounts')
-        const acct: WalletAccount = {
-            id: 'ANY6',
-            type: 'standard',
-            address: 'ADDR6',
-            canSign: true,
-        }
-
-        const { result } = renderHook(() => useAccountBalances([acct]), {
-            wrapper: createWrapper(),
-        })
-
-        await act(async () => {
-            await vi.waitFor(() => {
-                expect(result.current.data[0].isFetched).toBe(true)
-            })
-        })
-
-        expect(result.current.data[0].localAmount).toEqual(Decimal(0.001))
-        expect(result.current.data[0].algoAmount).toEqual(Decimal(1.001))
-    })
-
-    test('handles missing account amount data', async () => {
-        vi.resetModules()
-        vi.clearAllMocks()
-
-        currencySpies.useV1CurrenciesRead.mockReturnValue({
-            data: { usd_value: '1.0' },
-            isPending: false,
-        })
-
-        querySpies.v1AccountsAssetsList.mockResolvedValue({
-            results: [],
-        })
-
-        const { useAccountBalances } = await import('../hooks.accounts')
-        const acct: WalletAccount = {
-            id: 'ANY7',
-            type: 'standard',
-            address: 'ADDR7',
-            canSign: true,
-        }
-
-        const { result } = renderHook(() => useAccountBalances([acct]), {
-            wrapper: createWrapper(),
-        })
-
-        await act(async () => {
-            await vi.waitFor(() => {
-                expect(result.current.data[0].isFetched).toBe(true)
-            })
-        })
-
-        expect(result.current.data[0].localAmount).toEqual(Decimal(0))
-        expect(result.current.data[0].algoAmount).toEqual(Decimal(0))
-    })
-
-    test('handles algoAsset with null usd_value in non-zero usdAmount path', async () => {
-        vi.resetModules()
-        vi.clearAllMocks()
-
-        currencySpies.useV1CurrenciesRead.mockReturnValue({
-            data: { usd_value: '1.0' },
-            isPending: false,
-        })
-
-        querySpies.v1AccountsAssetsList.mockResolvedValue({
-            results: [
-                {
-                    asset_id: 0,
-                    amount: '2000000',
-                    fraction_decimals: 6,
-                    balance_usd_value: null,
-                },
-                {
-                    asset_id: 789,
-                    amount: '200',
-                    fraction_decimals: 2,
-                    balance_usd_value: '6',
-                },
-            ],
-        })
-
-        const { useAccountBalances } = await import('../hooks.accounts')
-        const acct: WalletAccount = {
-            id: 'ANY9',
-            type: 'standard',
-            address: 'ADDR9',
-            canSign: true,
-        }
-
-        const { result } = renderHook(() => useAccountBalances([acct]), {
-            wrapper: createWrapper(),
-        })
-
-        await act(async () => {
-            await vi.waitFor(() => {
-                expect(result.current.data[0].isFetched).toBe(true)
-            })
-        })
-
-        expect(result.current.data[0].localAmount).toEqual(Decimal(6))
-        expect(result.current.data[0].algoAmount).toEqual(Decimal(4))
     })
 })

@@ -12,13 +12,14 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { useAssets } from '../hooks'
+import { useAssets } from '../../../data/hooks/useAssets'
 
 // Mock the API
 vi.mock('../../../api/index', () => ({
     useV1AssetsList: vi.fn(() => ({
         data: { results: [] },
         isPending: false,
+        isLoading: false,
     })),
 }))
 
@@ -28,10 +29,10 @@ const storeMock = vi.hoisted(() => {
     return {
         create() {
             const useAppStore: any = (selector: any) => selector(state)
-            ;(useAppStore as any).getState = () => state
-            ;(useAppStore as any).setState = (partial: any) => {
-                state = { ...state, ...partial }
-            }
+                ; (useAppStore as any).getState = () => state
+                ; (useAppStore as any).setState = (partial: any) => {
+                    state = { ...state, ...partial }
+                }
             return { useAppStore }
         },
     }
@@ -48,9 +49,9 @@ describe('services/assets/hooks', () => {
 
     test('returns ALGO asset and empty results when no data', () => {
         const { result } = renderHook(() => useAssets())
-        expect(result.current.assets).toHaveLength(1)
-        expect(result.current.assets[0].asset_id).toBe(0)
-        expect(result.current.loading).toBe(false)
+        expect(result.current.data).toHaveLength(1)
+        expect(result.current.data[0].asset_id).toBe(0)
+        expect(result.current.isLoading).toBe(false)
     })
 
     test('sets assetIDs when ids are provided and not cached', () => {

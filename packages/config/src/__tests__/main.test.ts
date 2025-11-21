@@ -13,9 +13,13 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
 import { snapshotEnv, restoreEnv } from '../test-utils'
 import { getConfigForEnv, configSchema } from '../main'
-import { config as devConfig } from '../development'
-import { config as stagingConfig } from '../staging'
-import { config as prodConfig } from '../production'
+import { developmentOverrides } from '../development'
+import { stagingOverrides } from '../staging'
+import { productionConfig } from '../production'
+
+const devConfig = { ...productionConfig, ...developmentOverrides }
+const stagingConfig = { ...productionConfig, ...stagingOverrides }
+const prodConfig = productionConfig
 
 let envSnap: NodeJS.ProcessEnv
 
@@ -54,9 +58,9 @@ describe('config/main', () => {
             configSchema.parse(prodConfig),
         )
 
-        // Unknown falls back to development
+        // Unknown falls back to production
         expect(getConfigForEnv('unknown-env')).toStrictEqual(
-            configSchema.parse(devConfig),
+            configSchema.parse(prodConfig),
         )
 
         // Vitest default maps test -> development
