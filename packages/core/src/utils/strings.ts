@@ -24,6 +24,7 @@ export const decodeFromBase64 = (base64: string) => {
 }
 
 //TODO: we should fetch this from the server or a file or something
+//(the useCurrencies hook has this but can't use a hook from here...)
 const currencySymbols: Record<string, string> = {
     ETH: 'Ξ',
     BTC: '₿',

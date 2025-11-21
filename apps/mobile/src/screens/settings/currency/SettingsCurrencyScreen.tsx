@@ -17,8 +17,8 @@ import { useStyles } from './styles'
 import PWView from '../../../components/common/view/PWView'
 import {
     CurrencySerializerResponse,
+    useCurrencies,
     useCurrency,
-    useV1CurrenciesList,
 } from '@perawallet/core'
 import { useEffect, useState } from 'react'
 import { FlatList } from 'react-native'
@@ -34,7 +34,7 @@ const SettingsCurrencyScreen = () => {
         CurrencySerializerResponse[]
     >([])
 
-    const { data } = useV1CurrenciesList({})
+    const { data } = useCurrencies()
 
     useEffect(() => {
         if (!search?.length) {

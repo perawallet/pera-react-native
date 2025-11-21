@@ -15,7 +15,7 @@ import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
 import PWView, { PWViewProps } from '../../common/view/PWView'
 import {
     ALGO_ASSET_ID,
-    PeraAsset,
+    AssetWithAccountBalance,
     useCurrencyConverter,
 } from '@perawallet/core'
 import { Text, useTheme } from '@rneui/themed'
@@ -25,23 +25,19 @@ import { useMemo } from 'react'
 import PWIcon from '../../common/icons/PWIcon'
 
 type AccountAssetItemViewProps = {
-    asset: PeraAsset
-    amount?: Decimal
-    usdAmount?: Decimal
+    asset: AssetWithAccountBalance
     iconSize?: number
 } & PWViewProps
 
 const AccountAssetItemView = ({
     asset,
-    amount,
-    usdAmount,
     iconSize,
     ...rest
 }: AccountAssetItemViewProps) => {
     const { theme } = useTheme()
     const styles = useStyles()
 
-    const { preferredCurrency, convertUSDToPreferredCurrency } =
+    const { preferredCurrency, usdToPreferred } =
         useCurrencyConverter()
 
     const verificationIcon = useMemo(() => {
@@ -72,6 +68,10 @@ const AccountAssetItemView = ({
         return undefined
     }, [asset])
 
+    if (!asset?.unit_name) {
+        return <Text>Couldn't load asset data</Text>
+    }
+
     return (
         <PWView
             {...rest}
@@ -96,15 +96,15 @@ const AccountAssetItemView = ({
                 <PWView style={styles.amountContainer}>
                     <CurrencyDisplay
                         currency={asset.unit_name}
-                        value={amount ?? Decimal(0)}
+                        value={Decimal(asset.amount ?? 0)}
                         precision={6}
                         showSymbol
                         style={styles.primaryAmount}
                     />
                     <CurrencyDisplay
                         currency={preferredCurrency}
-                        value={convertUSDToPreferredCurrency(
-                            usdAmount ?? Decimal(0),
+                        value={usdToPreferred(
+                            Decimal(asset.balance_usd_value ?? 0),
                         )}
                         precision={6}
                         showSymbol

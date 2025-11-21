@@ -13,17 +13,15 @@
 import {
     PeraAsset,
     WalletAccount,
-    useAccountBalances,
     useCurrencyConverter,
     AccountWealthHistoryItem,
     formatDatetime,
+    useAccountAssetBalance,
+    HistoryPeriod,
 } from '@perawallet/core'
 import PWView from '../../common/view/PWView'
 import AssetWealthChart from './asset-wealth-chart/AssetWealthChart'
-import ChartPeriodSelection, {
-    ChartPeriod,
-    ChartPeriods,
-} from '../../common/chart-period-selection/ChartPeriodSelection'
+import ChartPeriodSelection from '../../common/chart-period-selection/ChartPeriodSelection'
 import { useState, useMemo } from 'react'
 import AssetActionButtons from './asset-action-buttons/AssetActionButtons'
 import AssetTransactionList from './asset-transaction-list/AssetTransactionList'
@@ -42,20 +40,13 @@ type AssetHoldingsProps = {
 
 const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
     const styles = useStyles()
-    const { preferredCurrency, convertUSDToPreferredCurrency } =
+    const { preferredCurrency, usdToPreferred } =
         useCurrencyConverter()
-    const [period, setPeriod] = useState<ChartPeriod>(ChartPeriods.OneWeek)
+    const [period, setPeriod] = useState<HistoryPeriod>('one-week')
     const [selectedPoint, setSelectedPoint] =
         useState<AccountWealthHistoryItem | null>(null)
 
-    const { data } = useAccountBalances([account])
-    const accountData = data[0]
-
-    const assetHolding = useMemo(() => {
-        return accountData?.accountInfo?.results?.find(
-            (a: any) => a.asset_id === asset.assetId,
-        )
-    }, [accountData, asset.assetId])
+    const { data: assetHolding } = useAccountAssetBalance(account, asset.asset_id)
 
     const cryptoAmount = useMemo(() => {
         const currentCrypto = selectedPoint
@@ -67,13 +58,13 @@ const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
     const fiatAmount = useMemo(() => {
         const currentUSD = selectedPoint
             ? Decimal(selectedPoint.value_in_currency ?? 0)
-            : convertUSDToPreferredCurrency(
+            : usdToPreferred(
                 Decimal(assetHolding?.balance_usd_value ?? 0),
             )
         return currentUSD
-    }, [assetHolding, selectedPoint, convertUSDToPreferredCurrency])
+    }, [assetHolding, selectedPoint, usdToPreferred])
 
-    if (!asset) {
+    if (!asset?.unit_name) {
         return <></>
     }
 

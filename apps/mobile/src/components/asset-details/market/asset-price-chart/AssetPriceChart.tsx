@@ -17,13 +17,12 @@ import PWView from '../../../common/view/PWView'
 import {
     PeraAsset,
     useCurrencyConverter,
-    useAssetPriceChartData,
-    AssetPriceChartPeriod,
-    AssetPriceChartDataItem,
+    useAssetPriceHistory,
+    HistoryPeriod,
+    AssetPriceHistoryItem,
 } from '@perawallet/core'
 import { Suspense, useCallback, useMemo, useState } from 'react'
 import { useTheme } from '@rneui/themed'
-import { ChartPeriod } from '../../../common/chart-period-selection/ChartPeriodSelection'
 import Decimal from 'decimal.js'
 import LoadingView from '../../../common/loading/LoadingView'
 
@@ -31,9 +30,9 @@ const FOCUS_DEBOUNCE_TIME = 200
 
 type AssetPriceChartProps = {
     asset: PeraAsset
-    period: ChartPeriod
+    period: HistoryPeriod
     onSelectionChanged: (
-        item: AssetPriceChartDataItem | null,
+        item: AssetPriceHistoryItem | null,
     ) => void
 }
 
@@ -43,15 +42,15 @@ const AssetPriceChart = ({
     period,
 }: AssetPriceChartProps) => {
     const { theme } = useTheme()
-    const { convertUSDToPreferredCurrency } = useCurrencyConverter()
+    const { usdToPreferred } = useCurrencyConverter()
     const themeStyle = useStyles()
     const [lastSentIndex, setLastSentIndex] = useState<number>()
     const [lastSentTime, setLastSentTime] = useState<number>(Date.now())
 
-    const { data } = useAssetPriceChartData({
+    const { data } = useAssetPriceHistory({
         params: {
             asset_id: asset.asset_id,
-            period: period as AssetPriceChartPeriod,
+            period: period,
         },
     })
 
@@ -59,13 +58,13 @@ const AssetPriceChart = ({
         () =>
             data?.map(p => {
                 return {
-                    value: convertUSDToPreferredCurrency(
+                    value: usdToPreferred(
                         Decimal(p.price),
                     ).toNumber(),
                     timestamp: p.datetime,
                 }
             }) ?? [],
-        [data, convertUSDToPreferredCurrency],
+        [data, usdToPreferred],
     )
 
     const yAxisOffsets = useMemo(() => {

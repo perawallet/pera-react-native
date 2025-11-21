@@ -15,19 +15,11 @@ import PWView from '../view/PWView'
 import { useStyles } from './styles'
 import { useCallback, useState } from 'react'
 import PWTouchableOpacity from '../touchable-opacity/PWTouchableOpacity'
-
-export const ChartPeriods = {
-    OneDay: 'one-day',
-    OneWeek: 'one-week',
-    OneMonth: 'one-month',
-    OneYear: 'one-year',
-}
-
-export type ChartPeriod = (typeof ChartPeriods)[keyof typeof ChartPeriods]
+import { HistoryPeriod } from '@perawallet/core'
 
 type ChartPeriodSelectionProps = {
-    value: ChartPeriod
-    onChange: (val: ChartPeriod) => void
+    value: HistoryPeriod
+    onChange: (val: HistoryPeriod) => void
 }
 
 const ChartPeriodSelection = ({
@@ -35,10 +27,10 @@ const ChartPeriodSelection = ({
     onChange,
 }: ChartPeriodSelectionProps) => {
     const styles = useStyles()
-    const [activeValue, setActiveValue] = useState<ChartPeriod>(value)
+    const [activeValue, setActiveValue] = useState<HistoryPeriod>(value)
 
     const handlePressed = useCallback(
-        (newValue: ChartPeriod) => {
+        (newValue: HistoryPeriod) => {
             if (activeValue !== newValue) {
                 setActiveValue(newValue)
                 onChange(newValue)
@@ -50,9 +42,9 @@ const ChartPeriodSelection = ({
     return (
         <PWView style={styles.container}>
             <PWTouchableOpacity
-                onPress={() => handlePressed(ChartPeriods.OneWeek)}
+                onPress={() => handlePressed('one-week')}
                 style={
-                    activeValue === ChartPeriods.OneWeek
+                    activeValue === 'one-week'
                         ? styles.selectedButtonContainer
                         : styles.unselectedButtonContainer
                 }
@@ -60,9 +52,9 @@ const ChartPeriodSelection = ({
                 <Text>1W</Text>
             </PWTouchableOpacity>
             <PWTouchableOpacity
-                onPress={() => handlePressed(ChartPeriods.OneMonth)}
+                onPress={() => handlePressed('one-month')}
                 style={
-                    activeValue === ChartPeriods.OneMonth
+                    activeValue === 'one-month'
                         ? styles.selectedButtonContainer
                         : styles.unselectedButtonContainer
                 }
@@ -70,9 +62,9 @@ const ChartPeriodSelection = ({
                 <Text>1M</Text>
             </PWTouchableOpacity>
             <PWTouchableOpacity
-                onPress={() => handlePressed(ChartPeriods.OneYear)}
+                onPress={() => handlePressed('one-year')}
                 style={
-                    activeValue === ChartPeriods.OneYear
+                    activeValue === 'one-year'
                         ? styles.selectedButtonContainer
                         : styles.unselectedButtonContainer
                 }

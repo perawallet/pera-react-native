@@ -1,6 +1,6 @@
 import { View, Linking } from 'react-native'
 import { useStyles } from './styles'
-import { ALGO_ASSET_ID, AssetDetailSerializerResponse, truncateAlgorandAddress } from '@perawallet/core'
+import { ALGO_ASSET_ID, PeraAsset, truncateAlgorandAddress } from '@perawallet/core'
 import Clipboard from '@react-native-clipboard/clipboard'
 import { Text, useTheme } from '@rneui/themed'
 import PWButton from '../../../common/button/PWButton'
@@ -8,7 +8,7 @@ import RowTitledItem from '../../../common/row-titled-item/RowTitledItem'
 import useToast from '../../../../hooks/toast'
 
 type AssetAboutProps = {
-    assetDetails: AssetDetailSerializerResponse
+    assetDetails: PeraAsset
 }
 
 const AssetAbout = ({ assetDetails }: AssetAboutProps) => {

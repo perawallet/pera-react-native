@@ -22,6 +22,7 @@ import Decimal from 'decimal.js'
 import {
     AccountWealthHistoryItem,
     formatDatetime,
+    HistoryPeriod,
     useAccountBalances,
     useAllAccounts,
     useCurrency,
@@ -29,9 +30,7 @@ import {
 import { useCallback, useState } from 'react'
 import PWIcon from '../../common/icons/PWIcon'
 import WealthTrend from '../../common/wealth-trend/WealthTrend'
-import ChartPeriodSelection, {
-    ChartPeriod,
-} from '../../common/chart-period-selection/ChartPeriodSelection'
+import ChartPeriodSelection from '../../common/chart-period-selection/ChartPeriodSelection'
 import PWButton from '../../common/button/PWButton'
 
 type PortfolioViewProps = {
@@ -44,8 +43,8 @@ const PortfolioView = (props: PortfolioViewProps) => {
     const { preferredCurrency } = useCurrency()
 
     const accounts = useAllAccounts()
-    const { loading, totalAlgo, totalLocal } = useAccountBalances(accounts)
-    const [period, setPeriod] = useState<ChartPeriod>('one-week')
+    const { loading, totalAlgoBalance, totalFiatBalance } = useAccountBalances(accounts)
+    const [period, setPeriod] = useState<HistoryPeriod>('one-week')
     const [chartData, setChartData] = useState<AccountWealthHistoryItem | null>(
         null,
     )
@@ -83,7 +82,7 @@ const PortfolioView = (props: PortfolioViewProps) => {
                 <CurrencyDisplay
                     h1
                     value={
-                        chartData ? Decimal(chartData.algo_value) : totalAlgo
+                        chartData ? Decimal(chartData.algo_value ?? 0) : totalAlgoBalance
                     }
                     currency='ALGO'
                     precision={2}
@@ -104,7 +103,7 @@ const PortfolioView = (props: PortfolioViewProps) => {
                     value={
                         chartData
                             ? Decimal(chartData.value_in_currency ?? '0')
-                            : totalLocal
+                            : totalFiatBalance
                     }
                     currency={preferredCurrency}
                     prefix='≈ '

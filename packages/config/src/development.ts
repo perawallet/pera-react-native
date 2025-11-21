@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import type { Config } from './main'
+import { type Config } from './main'
 
-export const config: Config = {
+export const developmentOverrides: Partial<Config> = {
     mainnetBackendUrl: 'https://mainnet.staging.api.perawallet.app',
     testnetBackendUrl: 'https://testnet.staging.api.perawallet.app',
     mainnetAlgodUrl: 'https://mainnet-api.algonode.cloud',
@@ -26,13 +26,6 @@ export const config: Config = {
 
     discoverBaseUrl: 'https://discover-mobile-staging.perawallet.app/',
     stakingBaseUrl: 'https://staking-mobile-staging.perawallet.app/',
-
-    notificationRefreshTime: 30 * 1000,
-    remoteConfigRefreshTime: 60 * 60 * 1000,
-
-    reactQueryDefaultGCTime: 60 * 60 * 1000,
-    reactQueryDefaultStaleTime: 30 * 1000,
-    reactQueryPersistenceAge: 1000 * 60 * 60 * 24,
 
     debugEnabled: true,
     profilingEnabled: false,

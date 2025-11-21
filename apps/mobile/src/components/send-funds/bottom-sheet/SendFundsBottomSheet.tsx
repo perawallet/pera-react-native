@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PeraAsset, useSelectedAccount } from '@perawallet/core'
+import { PeraAsset, useAccountAssetBalance, useAccountBalances, useSelectedAccount } from '@perawallet/core'
 import PWBottomSheet from '../../common/bottom-sheet/PWBottomSheet'
 import EmptyView from '../../common/empty-view/EmptyView'
 import SendFundsAssetSelectionView from '../asset-selection/SendFundsAssetSelectionView'
@@ -27,7 +27,7 @@ import SendFundsProvider, {
 } from '../../../providers/SendFundsProvider'
 
 type SendFundsBottomSheetProps = {
-    asset?: PeraAsset
+    assetId?: number
     isVisible: boolean
     onClose: () => void
 }
@@ -46,10 +46,9 @@ const getScreenCount = (canSelectAsset: boolean) => {
 }
 
 //TODO: add support for ASA Inbox sends (check whether destination account is opted into asset)
-//TODO: we need to useCachedAssets so that we get the USD price and can show that
 //TODO: something isn't working with canSelectAsset
 const SendFundsBottomSheet = ({
-    asset,
+    assetId,
     onClose,
     isVisible,
 }: SendFundsBottomSheetProps) => {
@@ -65,13 +64,14 @@ const SendFundsBottomSheet = ({
         setAmount,
         setDestination,
     } = useContext(SendFundsContext)
+    const { data: assetBalance } = useAccountAssetBalance(selectedAccount ?? undefined, assetId)
 
     useLayoutEffect(() => {
-        if (asset) {
-            setSelectedAsset(asset)
+        if (assetId != null) {
+            setSelectedAsset(assetBalance ?? undefined)
             setCanSelectAsset(false)
         }
-    }, [asset, setCanSelectAsset, setSelectedAsset])
+    }, [assetId, assetBalance, setCanSelectAsset, setSelectedAsset])
 
     const handleNext = () => {
         if (screenIndex >= getScreenCount(!!canSelectAsset) - 1) {

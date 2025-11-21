@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/core'
+import { ALGO_ASSET_ID, AssetWithAccountBalance, PeraAsset } from '@perawallet/core'
 import AlgoAssetIcon from '../../../../assets/icons/assets/algo.svg'
 import { useMemo } from 'react'
 import { SvgProps } from 'react-native-svg'
@@ -19,7 +19,7 @@ import PWView from '../../common/view/PWView'
 import { useStyles } from './styles'
 
 export type AssetIconProps = {
-    asset: PeraAsset
+    asset: PeraAsset | AssetWithAccountBalance
     size?: number
 } & SvgProps
 
@@ -30,7 +30,7 @@ const AssetIcon = (props: AssetIconProps) => {
 
     const icon = useMemo(() => {
         if (!asset) return <></>
-        if (asset.id === ALGO_ASSET_ID || asset.asset_id === ALGO_ASSET_ID)
+        if (asset.asset_id === ALGO_ASSET_ID)
             return (
                 <AlgoAssetIcon
                     {...rest}

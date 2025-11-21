@@ -1,22 +1,21 @@
 import { View } from 'react-native'
-import { Text, useTheme } from '@rneui/themed'
+import { Text } from '@rneui/themed'
 import { useStyles } from './styles'
 import {
-    AssetPriceChartDataItem,
-    AssetPriceChartPeriod,
+    AssetPriceHistoryItem,
     formatCurrency,
-    useAssetPriceChartData,
+    HistoryPeriod,
+    useAssetPriceHistory,
     useCurrency,
 } from '@perawallet/core'
 import PWIcon from '../../../common/icons/PWIcon'
 import Decimal from 'decimal.js'
 import { useMemo } from 'react'
-import { ChartPeriod } from '../../../common/chart-period-selection/ChartPeriodSelection'
 
 type PriceTrendProps = {
     assetId?: number
-    period?: ChartPeriod
-    selectedDataPoint?: AssetPriceChartDataItem
+    period?: HistoryPeriod
+    selectedDataPoint?: AssetPriceHistoryItem
     showAbsolute?: boolean
 }
 
@@ -29,10 +28,10 @@ const PriceTrend = ({
     const styles = useStyles()
     const { preferredCurrency } = useCurrency()
 
-    const { data: chartData } = useAssetPriceChartData({
+    const { data: chartData } = useAssetPriceHistory({
         params: {
             asset_id: assetId ?? 0,
-            period: period as AssetPriceChartPeriod,
+            period: period ?? 'one-week',
         }
     })
 

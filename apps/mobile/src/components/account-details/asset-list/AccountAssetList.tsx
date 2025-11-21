@@ -13,8 +13,7 @@
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity'
 import AccountAssetItemView from '../../assets/asset-item/AccountAssetItemView'
 import PWView from '../../common/view/PWView'
-import { PeraAsset, useAccountBalances, WalletAccount } from '@perawallet/core'
-import Decimal from 'decimal.js'
+import { AssetBalances, AssetWithAccountBalance, useAccountBalances, WalletAccount } from '@perawallet/core'
 import { useMemo } from 'react'
 import { useStyles } from './styles'
 import { Skeleton, Text } from '@rneui/themed'
@@ -40,21 +39,22 @@ const LoadingView = () => {
 }
 
 //TODO implement links and buttons
+//TODO Convert to flatlist/flashlist which wraps teh other content as a header
 const AccountAssetList = ({ account }: AccountAssetListProps) => {
   const styles = useStyles()
   const { data, loading } = useAccountBalances([account])
-  const balanceData = useMemo(() => data.at(0)?.accountInfo?.results, [data])
-
+  //TODO not sure why this cast is needed - TS seems to think it's an any type otherwise
+  const balanceData = useMemo(() => data.get(account.address)?.assetBalances as AssetBalances, [data])
   const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
 
-  const goToAssetScreen = (asset: PeraAsset) => {
+  const goToAssetScreen = (asset: AssetWithAccountBalance) => {
     navigation.navigate('AssetDetails', {
       asset,
       account,
     })
   }
 
-  const renderItem = (item: PeraAsset) => {
+  const renderItem = (item: AssetWithAccountBalance) => {
     return (
       <PWTouchableOpacity
         onPress={() => goToAssetScreen(item)}
@@ -62,12 +62,6 @@ const AccountAssetList = ({ account }: AccountAssetListProps) => {
       >
         <AccountAssetItemView
           asset={item}
-          amount={item.amount ? Decimal(item.amount) : undefined}
-          usdAmount={
-            item.balance_usd_value
-              ? Decimal(item.balance_usd_value)
-              : undefined
-          }
         />
       </PWTouchableOpacity>
     )

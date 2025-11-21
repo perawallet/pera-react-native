@@ -32,8 +32,7 @@ const AssetTransactionList = ({
 }: AssetTransactionListProps) => {
     const styles = useStyles()
 
-    // TODO: Replace with actual infinite query hook when identified.
-    // Example: const { data, fetchNextPage, hasNextPage } = useV1AccountsAssetsTransactionsListInfinite(...)
+    // TODO: Replace with actual infinite query hook when added.
     const transactions: any[] = []
     const handleEndReached = () => {
         // fetchNextPage();

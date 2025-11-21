@@ -1,22 +1,18 @@
 import { ScrollView } from 'react-native'
 import {
     PeraAsset,
-    useAssetDetails,
-    useCurrencyConverter,
-    ALGO_ASSET_ID,
-    ALGO_ASSET,
-    AssetPriceChartDataItem,
+    useSingleAssetDetails,
+    AssetPriceHistoryItem,
     formatDatetime,
+    HistoryPeriod,
+    useAssetFiatPrices,
+    useCurrency,
 } from '@perawallet/core'
 import { useStyles } from './styles'
 import AssetTitle from '../../assets/asset-title/AssetTitle'
 import RoundButton from '../../common/round-button/RoundButton'
 import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
-import AssetPriceChart from '../holdings/asset-price-chart/AssetPriceChart'
-import ChartPeriodSelection, {
-    ChartPeriod,
-    ChartPeriods,
-} from '../../common/chart-period-selection/ChartPeriodSelection'
+import AssetPriceChart from './asset-price-chart/AssetPriceChart'
 import { useState, useMemo } from 'react'
 import Decimal from 'decimal.js'
 import { Skeleton, Text } from '@rneui/themed'
@@ -33,6 +29,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import useToast from '../../../hooks/toast'
 import PWView from '../../common/view/PWView'
 import EmptyView from '../../common/empty-view/EmptyView'
+import ChartPeriodSelection from '../../common/chart-period-selection/ChartPeriodSelection'
 
 type AssetMarketsProps = {
     asset: PeraAsset
@@ -49,16 +46,17 @@ const Loading = () => {
 
 const AssetMarkets = ({ asset }: AssetMarketsProps) => {
     const styles = useStyles()
-    const { preferredCurrency, convertUSDToPreferredCurrency } =
-        useCurrencyConverter()
-    const [period, setPeriod] = useState<ChartPeriod>(ChartPeriods.OneWeek)
-    const [selectedPoint, setSelectedPoint] = useState<AssetPriceChartDataItem>()
+    const { preferredCurrency } = useCurrency()
+    const [period, setPeriod] = useState<HistoryPeriod>("one-week")
+    const [selectedPoint, setSelectedPoint] = useState<AssetPriceHistoryItem>()
     const { showToast } = useToast()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
 
-    const { data: assetDetails, isError, isPending } = useAssetDetails({
+    const { data: assetDetails, isError, isPending } = useSingleAssetDetails({
         asset_id: asset.asset_id,
     })
+    const { data: prices } = useAssetFiatPrices()
+    const fiatPrice = useMemo(() => prices.get(asset.asset_id) ?? null, [asset, prices])
 
     const notImplemented = () => {
         showToast({
@@ -72,10 +70,8 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
         if (selectedPoint) {
             return new Decimal(selectedPoint.price)
         }
-        return convertUSDToPreferredCurrency(
-            new Decimal(assetDetails?.usd_value ?? 0),
-        )
-    }, [selectedPoint, assetDetails, convertUSDToPreferredCurrency])
+        return fiatPrice
+    }, [selectedPoint, fiatPrice])
 
     const openDiscover = () => {
         //TODO: pass relative URL to go straight to the asset
@@ -84,7 +80,7 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
         })
     }
 
-    const handleDataPointSelection = (item: AssetPriceChartDataItem | null) => {
+    const handleDataPointSelection = (item: AssetPriceHistoryItem | null) => {
         setSelectedPoint(item ?? undefined)
     }
 
@@ -175,8 +171,8 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
 
             <AssetSocialMedia assetDetails={assetDetails} />
 
-            <PWView style={styles.tagsContainer}>
-                {assetDetails.is_frozen && <PWView style={styles.tag}>
+            {/* <PWView style={styles.tagsContainer}>
+                {!assetDetails.is_frozen && <PWView style={styles.tag}>
                     <PWIcon
                         name='snowflake'
                         size="sm"
@@ -184,7 +180,7 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
                     />
                     <Text style={styles.tagText}>No Freeze</Text>
                 </PWView>}
-                {assetDetails.is_clawback && <PWView style={styles.tag}>
+                {!assetDetails.is_clawback && <PWView style={styles.tag}>
                     <PWIcon
                         name='undo'
                         size="sm"
@@ -192,7 +188,7 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
                     />
                     <Text style={styles.tagText}>No Clawback</Text>
                 </PWView>}
-            </PWView>
+            </PWView> */}
         </ScrollView>
     )
 }

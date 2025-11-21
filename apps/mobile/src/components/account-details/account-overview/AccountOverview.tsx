@@ -14,6 +14,7 @@ import PWView from '../../common/view/PWView'
 import {
     AccountWealthHistoryItem,
     formatDatetime,
+    HistoryPeriod,
     useAccountBalances,
     useCurrency,
     useSettings,
@@ -30,9 +31,7 @@ import { useCallback, useState } from 'react'
 import { useStyles } from './styles'
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity'
 import WealthTrend from '../../common/wealth-trend/WealthTrend'
-import ChartPeriodSelection, {
-    ChartPeriod,
-} from '../../common/chart-period-selection/ChartPeriodSelection'
+import ChartPeriodSelection from '../../common/chart-period-selection/ChartPeriodSelection'
 
 type AccountOverviewProps = {
     account: WalletAccount
@@ -44,11 +43,11 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
     const { preferredCurrency } = useCurrency()
     const styles = useStyles()
 
-    const { totalAlgo, totalLocal, loading } = useAccountBalances(
+    const { totalAlgoBalance, totalFiatBalance, loading } = useAccountBalances(
         account ? [account] : [],
     )
 
-    const [period, setPeriod] = useState<ChartPeriod>('one-week')
+    const [period, setPeriod] = useState<HistoryPeriod>('one-week')
     const [chartData, setChartData] = useState<AccountWealthHistoryItem | null>(
         null,
     )
@@ -88,7 +87,7 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
                         value={
                             chartData
                                 ? Decimal(chartData.algo_value)
-                                : totalAlgo
+                                : totalAlgoBalance
                         }
                         currency='ALGO'
                         precision={2}
@@ -104,7 +103,7 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
                                     ? Decimal(
                                         chartData.value_in_currency ?? '0',
                                     )
-                                    : totalLocal
+                                    : totalFiatBalance
                             }
                             currency={preferredCurrency}
                             prefix='≈ '

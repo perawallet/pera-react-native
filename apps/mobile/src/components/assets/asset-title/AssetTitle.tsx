@@ -10,12 +10,13 @@
  limitations under the License
  */
 
-import { PeraAsset } from '@perawallet/core'
+import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/core'
 import PWView from '../../common/view/PWView'
+import PWIcon from '../../common/icons/PWIcon'
 import { useStyles } from './styles'
 import AssetIcon from '../asset-icon/AssetIcon'
 import { Text, useTheme } from '@rneui/themed'
-import { Icon } from '@rneui/base'
+import { useMemo } from 'react'
 
 export type AssetTitleProps = {
     asset: PeraAsset
@@ -25,6 +26,8 @@ const AssetTitle = ({ asset }: AssetTitleProps) => {
     const styles = useStyles()
     const { theme } = useTheme()
 
+    const isAlgo = useMemo(() => asset.asset_id === ALGO_ASSET_ID, [asset.asset_id])
+
     return (
         <PWView style={styles.container}>
             <AssetIcon
@@ -32,12 +35,22 @@ const AssetTitle = ({ asset }: AssetTitleProps) => {
                 size={theme.spacing.xl * 1.5}
             />
             <Text style={styles.name}>{asset.name}</Text>
-            {asset.verificationTier === 'verified' && (
-                <Icon
-                    name='check-decagram'
-                    type='material-community'
-                    color={theme.colors.primary}
-                    size={16}
+            {isAlgo && (
+                <PWIcon
+                    name='assets/trusted'
+                    size={'sm'}
+                />
+            )}
+            {!isAlgo && asset.verification_tier === 'verified' && (
+                <PWIcon
+                    name='assets/verified'
+                    size={'sm'}
+                />
+            )}
+            {!isAlgo && asset.verification_tier === 'suspicious' && (
+                <PWIcon
+                    name='assets/suspicious'
+                    size={'sm'}
                 />
             )}
         </PWView>

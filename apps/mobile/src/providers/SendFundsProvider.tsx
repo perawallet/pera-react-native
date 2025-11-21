@@ -10,18 +10,18 @@
  limitations under the License
  */
 
-import { PeraAsset } from '@perawallet/core'
+import { AssetWithAccountBalance } from '@perawallet/core'
 import Decimal from 'decimal.js'
 import { createContext, PropsWithChildren, useState } from 'react'
 
 type SendFundsState = {
-    selectedAsset?: PeraAsset
+    selectedAsset?: AssetWithAccountBalance
     canSelectAsset?: boolean
     amount?: Decimal
     note?: string
     destination?: string
     setCanSelectAsset: (canSelect: boolean) => void
-    setSelectedAsset: (asset?: PeraAsset) => void
+    setSelectedAsset: (asset?: AssetWithAccountBalance) => void
     setAmount: (amount?: Decimal) => void
     setNote: (note?: string) => void
     setDestination: (address?: string) => void
@@ -29,16 +29,16 @@ type SendFundsState = {
 
 export const SendFundsContext = createContext<SendFundsState>({
     canSelectAsset: true,
-    setCanSelectAsset: (_: boolean) => {},
-    setSelectedAsset: (_?: PeraAsset) => {},
-    setAmount: (_?: Decimal) => {},
-    setNote: (_?: string) => {},
-    setDestination: (_?: string) => {},
+    setCanSelectAsset: (_: boolean) => { },
+    setSelectedAsset: (_?: AssetWithAccountBalance) => { },
+    setAmount: (_?: Decimal) => { },
+    setNote: (_?: string) => { },
+    setDestination: (_?: string) => { },
 })
 
 const SendFundsProvider = ({ children }: PropsWithChildren) => {
     const [canSelectAsset, setCanSelectAsset] = useState(false)
-    const [selectedAsset, setSelectedAsset] = useState<PeraAsset>()
+    const [selectedAsset, setSelectedAsset] = useState<AssetWithAccountBalance>()
     const [amount, setAmount] = useState<Decimal>()
     const [note, setNote] = useState<string>()
     const [destination, setDestination] = useState<string>()

@@ -15,26 +15,25 @@ import PWView from '../view/PWView'
 import { useStyles } from './styles'
 import {
     formatCurrency,
+    HistoryPeriod,
+    useAccountsBalanceHistory,
     useAllAccounts,
-    useCurrency,
+    useCurrencyConverter,
     useSettings,
-    useV2WalletWealthList,
-    V1WalletWealthListQueryParamsPeriodEnum,
     WalletAccount,
 } from '@perawallet/core'
 import { useMemo } from 'react'
 import PWIcon from '../icons/PWIcon'
-import { ChartPeriod } from '../chart-period-selection/ChartPeriodSelection'
 import Decimal from 'decimal.js'
 
 type WealthTrendProps = {
     account?: WalletAccount
-    period: ChartPeriod
+    period: HistoryPeriod
 }
 
 const WealthTrend = ({ account, period }: WealthTrendProps) => {
     const styles = useStyles()
-    const { preferredCurrency } = useCurrency()
+    const { preferredCurrency, usdToPreferred } = useCurrencyConverter()
     const { privacyMode } = useSettings()
 
     const accounts = useAllAccounts()
@@ -46,18 +45,17 @@ const WealthTrend = ({ account, period }: WealthTrendProps) => {
         [account, accounts],
     )
 
-    const { data, isPending } = useV2WalletWealthList({
+    const { data, isPending } = useAccountsBalanceHistory({
         params: {
             account_addresses: addresses,
-            period: period as V1WalletWealthListQueryParamsPeriodEnum,
-            currency: preferredCurrency,
+            period: period as HistoryPeriod,
         },
     })
 
     const dataPoints = useMemo(
         () =>
             data?.results?.map(p => {
-                return Number(p.value_in_currency)
+                return usdToPreferred(Decimal(p.usd_value)).toNumber()
             }) ?? [],
         [data],
     )

@@ -11,9 +11,9 @@
  */
 
 import { z } from 'zod'
-import { config as developmentConfig } from './development'
-import { config as stagingConfig } from './staging'
-import { config as productionConfig } from './production'
+import { developmentOverrides } from './development'
+import { stagingOverrides } from './staging'
+import { productionConfig } from './production'
 
 export const configSchema = z.object({
     mainnetBackendUrl: z.url(),
@@ -31,6 +31,8 @@ export const configSchema = z.object({
 
     reactQueryDefaultGCTime: z.int(),
     reactQueryDefaultStaleTime: z.int(),
+    reactQueryShortLivedGCTime: z.int(),
+    reactQueryShortLivedStaleTime: z.int(),
     reactQueryPersistenceAge: z.int(),
 
     discoverBaseUrl: z.url(),
@@ -52,28 +54,27 @@ export type Config = z.infer<typeof configSchema>
 export function getConfigForEnv(env?: string): Config {
     const key = (env ?? 'development')?.toLowerCase() || 'development'
 
-    let selected: Config
+    let overrides: Partial<Config> = {}
     switch (key) {
-        case 'production':
-        case 'prod':
-            console.log('Configured for production')
-            selected = productionConfig
-            break
         case 'staging':
         case 'stage':
             console.log('Configured for staging')
-            selected = stagingConfig
+            overrides = stagingOverrides
             break
         case 'development':
         case 'dev':
         case 'test': // vitest default
-        default:
             console.log('Configured for development')
-            selected = developmentConfig
+            overrides = developmentOverrides
+            break
+        default:
+            console.log('Configured for production')
+            overrides = {}
+            break
     }
 
     // Validate the selected config against the schema
-    return configSchema.parse(selected)
+    return configSchema.parse({ ...productionConfig, ...overrides })
 }
 
 export const config = getConfigForEnv()

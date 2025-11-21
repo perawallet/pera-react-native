@@ -1,5 +1,5 @@
 import { useStyles } from './styles'
-import { ALGO_ASSET_ID, AssetDetailSerializerResponse } from '@perawallet/core'
+import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/core'
 import { Text, useTheme } from '@rneui/themed'
 import PWView from '../../../common/view/PWView'
 import PWIcon, { IconName } from '../../../common/icons/PWIcon'
@@ -7,7 +7,7 @@ import PWButton from '../../../common/button/PWButton'
 import { useMemo } from 'react'
 
 type AssetVerificationCardProps = {
-    assetDetails: AssetDetailSerializerResponse
+    assetDetails: PeraAsset
 }
 
 const CARD_CONFIGS = {

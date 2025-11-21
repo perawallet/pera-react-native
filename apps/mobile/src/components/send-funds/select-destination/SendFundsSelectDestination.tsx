@@ -18,6 +18,7 @@ import { useStyles } from './styles'
 import PWHeader from '../../common/header/PWHeader'
 import AssetIcon from '../../assets/asset-icon/AssetIcon'
 import { Text, useTheme } from '@rneui/themed'
+import EmptyView from '../../common/empty-view/EmptyView'
 
 type SendFundsSelectDestinationProps = {
     onNext: () => void
@@ -35,6 +36,10 @@ const SendFundsSelectDestination = ({
     const handleSelected = (address: string) => {
         setDestination(address)
         onNext()
+    }
+
+    if (!selectedAsset) {
+        return <EmptyView title="Something went wrong" body="An unexpected error has occurred. Please try again." />
     }
 
     return (

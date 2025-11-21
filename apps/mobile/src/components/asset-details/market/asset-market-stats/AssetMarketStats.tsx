@@ -1,5 +1,5 @@
 import { useStyles } from './styles'
-import { AssetDetailSerializerResponse, formatNumber, formatWithUnits, useCurrencyConverter } from '@perawallet/core'
+import { formatNumber, formatWithUnits, PeraAsset, useCurrencyConverter } from '@perawallet/core'
 import CurrencyDisplay from '../../../currency/currency-display/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import { Text } from '@rneui/themed'
@@ -8,7 +8,7 @@ import PWView from '../../../common/view/PWView'
 import { useMemo } from 'react'
 
 type AssetMarketStatsProps = {
-    assetDetails: AssetDetailSerializerResponse
+    assetDetails: PeraAsset
 }
 
 const AssetMarketStats = ({ assetDetails }: AssetMarketStatsProps) => {

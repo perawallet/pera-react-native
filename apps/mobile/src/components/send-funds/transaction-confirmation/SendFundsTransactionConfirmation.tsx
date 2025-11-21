@@ -16,7 +16,8 @@ import { SendFundsContext } from '../../../providers/SendFundsProvider'
 import {
     ALGO_ASSET_ID,
     formatCurrency,
-    useAccountBalances,
+    useAccountAssetBalance,
+    useAssetFiatPrices,
     useCurrencyConverter,
     useSelectedAccount,
 } from '@perawallet/core'
@@ -39,6 +40,11 @@ type SendFundsTransactionConfirmationProps = {
     onBack: () => void
 }
 
+type Balance = {
+    cryptoAmount: Decimal | null
+    fiatAmount: Decimal | null
+}
+
 //TODO figure out fee calculation
 const SendFundsTransactionConfirmation = ({
     onNext,
@@ -51,14 +57,18 @@ const SendFundsTransactionConfirmation = ({
     const selectedAccount = useSelectedAccount()
     const { showToast } = useToast()
     const [noteOpen, setNoteOpen] = useState(false)
-    const { preferredCurrency, convertAssetValueToPreferredCurrency } =
+    const { preferredCurrency, usdToPreferred } =
         useCurrencyConverter()
-    const usdAssetPrice = useMemo(
-        () =>
-            selectedAsset?.usd_price
-                ? Decimal(selectedAsset?.usd_price)
-                : Decimal(0),
-        [selectedAsset?.usd_price],
+    const { data: fiatPrices } = useAssetFiatPrices()
+    const fiatPrice = useMemo<Decimal | null>(
+        () => {
+            const price = selectedAsset ? fiatPrices.get(selectedAsset?.asset_id) : null
+            if (price) {
+                return amount?.mul(price) ?? null
+            }
+            return null
+        },
+        [selectedAsset, fiatPrices],
     )
 
     const openNote = () => {
@@ -69,19 +79,17 @@ const SendFundsTransactionConfirmation = ({
         setNoteOpen(false)
     }
 
-    const { data } = useAccountBalances(
-        selectedAccount ? [selectedAccount] : [],
-    )
-    const currentBalance = useMemo(() => {
-        const assetBalance = data
-            .at(0)
-            ?.accountInfo?.results?.find(i => i.asset_id === selectedAsset?.id)
-        return (
-            assetBalance ?? {
-                amount: Decimal(0),
-                balance_usd_value: Decimal(0),
-            }
-        )
+    const { data } = useAccountAssetBalance(selectedAccount ?? undefined, selectedAsset?.asset_id)
+    const currentBalance = useMemo<Balance>(() => {
+        const { amount, balance_usd_value } = data ?? {}
+        return data ?
+            {
+                cryptoAmount: amount ? Decimal(amount) : null,
+                fiatAmount: balance_usd_value ? usdToPreferred(Decimal(balance_usd_value)) : null,
+            } : {
+                cryptoAmount: Decimal(0),
+                fiatAmount: Decimal(0),
+            } as Balance
     }, [data, selectedAsset])
 
     const onSuccess = () => {
@@ -89,8 +97,8 @@ const SendFundsTransactionConfirmation = ({
             title: 'Transfer Successful',
             body: `You successfully sent ${formatCurrency(
                 amount!,
-                selectedAsset!.fractional_decimals,
-                selectedAsset!.name,
+                selectedAsset!.fraction_decimals,
+                selectedAsset!.unit_name ?? '',
                 'en-US',
                 false,
                 undefined,
@@ -108,9 +116,10 @@ const SendFundsTransactionConfirmation = ({
                 body: 'Something appears to have gone wrong with this transaction.',
                 type: 'error',
             })
+            return
         }
 
-        if (selectedAsset.id === ALGO_ASSET_ID) {
+        if (selectedAsset.asset_id === ALGO_ASSET_ID) {
             //TODO types aren't right - we're using Decimal.toString and pasting into a BigInt...
             // const tx = await client.createTransaction.payment({
             //     sender: selectedAccount!.address,
@@ -153,7 +162,7 @@ const SendFundsTransactionConfirmation = ({
             <RowTitledItem title='Amount'>
                 <CurrencyDisplay
                     h3
-                    currency={selectedAsset.name}
+                    currency={selectedAsset.unit_name ?? ''}
                     precision={selectedAsset.fraction_decimals}
                     minPrecision={2}
                     showSymbol
@@ -165,10 +174,7 @@ const SendFundsTransactionConfirmation = ({
                     precision={selectedAsset.fraction_decimals}
                     minPrecision={2}
                     showSymbol
-                    value={convertAssetValueToPreferredCurrency(
-                        amount ?? Decimal(0),
-                        usdAssetPrice,
-                    )}
+                    value={fiatPrice ? amount.mul(fiatPrice) : null}
                 />
             </RowTitledItem>
             <Divider style={styles.divider} />
@@ -199,27 +205,18 @@ const SendFundsTransactionConfirmation = ({
             {currentBalance && (
                 <RowTitledItem title='Current Balance'>
                     <CurrencyDisplay
-                        currency={selectedAsset.name}
-                        precision={selectedAsset.precision}
+                        currency={selectedAsset.unit_name ?? ''}
+                        precision={selectedAsset.fraction_decimals}
                         minPrecision={2}
                         showSymbol
-                        value={
-                            currentBalance.amount
-                                ? Decimal(currentBalance.amount)
-                                : Decimal(0)
-                        }
+                        value={currentBalance.cryptoAmount}
                     />
                     <CurrencyDisplay
                         currency={preferredCurrency}
-                        precision={selectedAsset.precision}
+                        precision={selectedAsset.fraction_decimals}
                         minPrecision={2}
                         showSymbol
-                        value={convertAssetValueToPreferredCurrency(
-                            currentBalance.balance_usd_value
-                                ? Decimal(currentBalance.balance_usd_value)
-                                : Decimal(0),
-                            usdAssetPrice,
-                        )}
+                        value={currentBalance.fiatAmount}
                     />
                 </RowTitledItem>
             )}

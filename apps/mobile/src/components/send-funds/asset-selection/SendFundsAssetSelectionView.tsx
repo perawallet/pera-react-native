@@ -13,8 +13,11 @@
 import { Skeleton } from '@rneui/themed'
 import PWView from '../../common/view/PWView'
 import {
+    AssetBalances,
+    AssetWithAccountBalance,
     PeraAsset,
     useAccountBalances,
+    useAssets,
     useSelectedAccount,
 } from '@perawallet/core'
 import { useCallback, useContext, useMemo } from 'react'
@@ -53,16 +56,16 @@ const SendFundsAssetSelectionView = ({
     )
 
     const handleSelected = useCallback(
-        (item: PeraAsset) => {
+        (item: AssetWithAccountBalance) => {
             setSelectedAsset(item)
             onSelected()
         },
         [onSelected, setSelectedAsset],
     )
 
-    const balanceData = useMemo(() => data.at(0)?.accountInfo?.results, [data])
+    const balanceData = useMemo(() => data.get(selectedAccount?.address)?.assetBalances as AssetBalances, [data])
     const renderItem = useCallback(
-        (item: PeraAsset) => {
+        (item: AssetWithAccountBalance) => {
             return (
                 <PWTouchableOpacity
                     onPress={() => handleSelected(item)}
@@ -71,12 +74,6 @@ const SendFundsAssetSelectionView = ({
                 >
                     <AccountAssetItemView
                         asset={item}
-                        amount={item.amount ? Decimal(item.amount) : undefined}
-                        usdAmount={
-                            item.balance_usd_value
-                                ? Decimal(item.balance_usd_value)
-                                : undefined
-                        }
                     />
                 </PWTouchableOpacity>
             )

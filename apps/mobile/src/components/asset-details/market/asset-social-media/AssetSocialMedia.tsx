@@ -1,13 +1,13 @@
 import { Linking } from 'react-native'
 import { useStyles } from './styles'
-import { AssetDetailSerializerResponse } from '@perawallet/core'
+import { PeraAsset } from '@perawallet/core'
 import { Text } from '@rneui/themed'
 import PWIcon, { IconName } from '../../../common/icons/PWIcon'
 import PWView from '../../../common/view/PWView'
 import PWTouchableOpacity from '../../../common/touchable-opacity/PWTouchableOpacity'
 
 type AssetSocialMediaProps = {
-    assetDetails: AssetDetailSerializerResponse
+    assetDetails: PeraAsset
 }
 
 const AssetSocialMedia = ({ assetDetails }: AssetSocialMediaProps) => {
@@ -44,6 +44,7 @@ const AssetSocialMedia = ({ assetDetails }: AssetSocialMediaProps) => {
 
     return (
         <PWView style={styles.container}>
+            <Text style={styles.sectionTitle}>Social Media</Text>
             {socialLinks.map((link, index) => (
                 <PWTouchableOpacity
                     key={index}

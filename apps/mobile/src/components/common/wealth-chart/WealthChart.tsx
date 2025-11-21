@@ -16,21 +16,21 @@ import { LineChart } from 'react-native-gifted-charts'
 import PWView from '../view/PWView'
 import {
     AccountWealthHistoryItem,
+    HistoryPeriod,
+    useAccountsBalanceHistory,
     useAllAccounts,
-    useCurrency,
-    useV2WalletWealthList,
-    V1WalletWealthListQueryParamsPeriodEnum,
+    useCurrencyConverter,
     WalletAccount,
 } from '@perawallet/core'
 import { useCallback, useMemo, useState } from 'react'
 import { useTheme } from '@rneui/themed'
-import { ChartPeriod } from '../chart-period-selection/ChartPeriodSelection'
+import Decimal from 'decimal.js'
 
 const FOCUS_DEBOUNCE_TIME = 200
 
 type WealthChartProps = {
     account?: WalletAccount
-    period: ChartPeriod
+    period: HistoryPeriod
     onSelectionChanged: (item: AccountWealthHistoryItem | null) => void
 }
 
@@ -40,7 +40,7 @@ const WealthChart = ({
     period,
 }: WealthChartProps) => {
     const { theme } = useTheme()
-    const { preferredCurrency } = useCurrency()
+    const { usdToPreferred } = useCurrencyConverter()
     const themeStyle = useStyles()
     const [lastSentIndex, setLastSentIndex] = useState<number>()
     const [lastSentTime, setLastSentTime] = useState<number>(Date.now())
@@ -54,19 +54,19 @@ const WealthChart = ({
         [account, accounts],
     )
 
-    const { data, isPending } = useV2WalletWealthList({
+    const { data, isPending } = useAccountsBalanceHistory({
         params: {
             account_addresses: addresses,
-            period: period as V1WalletWealthListQueryParamsPeriodEnum,
-            currency: preferredCurrency,
+            period: period as HistoryPeriod,
         },
     })
 
+    //TODO move the currency conversion into the useAccountsBalanceHistory hook
     const dataPoints = useMemo(
         () =>
             data?.results?.map(p => {
                 return {
-                    value: Number(p.value_in_currency),
+                    value: usdToPreferred(Decimal(p.usd_value)).toNumber(),
                 }
             }) ?? [],
         [data],

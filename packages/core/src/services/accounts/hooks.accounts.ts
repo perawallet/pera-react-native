@@ -19,16 +19,9 @@ import { useHDWallet } from './hooks.hdwallet'
 import { encodeAlgorandAddress } from '../blockchain'
 import {
     useV1DevicesPartialUpdate,
-    v1AccountsAssetsList,
-    v1AccountsAssetsListQueryKey,
-    type AccountDetailAssetSerializerResponse,
 } from '../../api/generated/backend'
-import Decimal from 'decimal.js'
 import { useDeviceID, useDeviceInfoService } from '../device'
-import { useQueries } from '@tanstack/react-query'
 import { withKey } from './utils'
-import { useMemo } from 'react'
-import { useCurrencyConverter } from '../../services/currencies'
 
 // Services relating to locally stored accounts
 export const useAllAccounts = () => {
@@ -371,93 +364,5 @@ export const useRemoveAccountById = () => {
         }
         const remaining = accounts.filter(a => a.id !== id)
         setAccounts([...remaining])
-    }
-}
-
-export const useAccountBalances = (accounts: WalletAccount[]) => {
-    const { convertUSDToPreferredCurrency } = useCurrencyConverter()
-    if (!accounts?.length) {
-        return {
-            data: [],
-            loading: false,
-            totalAlgo: Decimal(0),
-            totalLocal: Decimal(0),
-        }
-    }
-    const results = useQueries({
-        queries: accounts.map(acc => {
-            const address = acc.address
-            return {
-                queryKey: v1AccountsAssetsListQueryKey(
-                    { account_address: address },
-                    { include_algo: true },
-                ),
-                queryFn: () =>
-                    v1AccountsAssetsList({
-                        account_address: address,
-                        params: { include_algo: true },
-                    }),
-            }
-        }),
-    })
-
-    const data = useMemo(
-        () =>
-            results.map(r => {
-                const accountInfo = r.data
-                let algoAmount = Decimal(0)
-                let localAmount = Decimal(0)
-
-                if (accountInfo) {
-                    accountInfo.results?.forEach(
-                        (data: AccountDetailAssetSerializerResponse) => {
-                            algoAmount = algoAmount.plus(
-                                Decimal(data.amount ?? '0').div(
-                                    Decimal(10).pow(data.fraction_decimals),
-                                ),
-                            )
-                            localAmount = localAmount.plus(
-                                Decimal(data.balance_usd_value ?? '0'),
-                            )
-                        },
-                    )
-                }
-
-                return {
-                    accountInfo,
-                    algoAmount: algoAmount,
-                    localAmount: convertUSDToPreferredCurrency(localAmount),
-                    isPending: r.isPending,
-                    isFetched: r.isFetched,
-                    isRefetching: r.isRefetching,
-                    isError: r.isError,
-                }
-            }),
-        [results],
-    )
-
-    const loading = useMemo(() => data?.some(d => !d.isFetched), [data])
-    const totalAlgo = useMemo(
-        () =>
-            (data ?? []).reduce(
-                (acc, cur) => acc.plus(cur.algoAmount),
-                Decimal(0),
-            ),
-        [data],
-    )
-    const totalLocal = useMemo(
-        () =>
-            (data ?? []).reduce(
-                (acc, cur) => acc.plus(cur.localAmount),
-                Decimal(0),
-            ),
-        [data],
-    )
-
-    return {
-        data,
-        loading,
-        totalAlgo,
-        totalLocal,
     }
 }

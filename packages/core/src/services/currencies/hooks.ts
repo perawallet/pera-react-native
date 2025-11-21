@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useV1CurrenciesRead } from '../../api/index'
+import { usePreferredCurrencyPrice } from '../../data'
 import { useAppStore } from '../../store'
 import Decimal from 'decimal.js'
 import { useCallback } from 'react'
@@ -26,39 +26,27 @@ export const useCurrency = () => {
 
 export const useCurrencyConverter = () => {
     const preferredCurrency = useAppStore(state => state.preferredCurrency)
-    const { data, isPending } = useV1CurrenciesRead({
-        currency_id: preferredCurrency,
-    })
+    const { data, isPending } = usePreferredCurrencyPrice()
 
-    const convertUSDToPreferredCurrency = useCallback(
+    const usdToPreferred = useCallback(
         (usdAmount: Decimal) => {
             if (isPending) {
                 return Decimal(0)
+            }
+
+            if (preferredCurrency === "USD") {
+                return usdAmount
             }
 
             const usdValue = data?.usd_value ?? '0'
             const safeUsdValue = usdValue || '0'
             return usdAmount.mul(Decimal(safeUsdValue))
         },
-        [data, isPending],
-    )
-
-    const convertAssetValueToPreferredCurrency = useCallback(
-        (amount: Decimal, usdPrice: Decimal) => {
-            if (isPending) {
-                return Decimal(0)
-            }
-
-            const usdValue = data?.usd_value ?? '0'
-            const safeUsdValue = usdValue || '0'
-            return amount.mul(usdPrice).mul(Decimal(safeUsdValue))
-        },
-        [data, isPending],
+        [isPending, isPending],
     )
 
     return {
         preferredCurrency,
-        convertAssetValueToPreferredCurrency,
-        convertUSDToPreferredCurrency,
+        usdToPreferred,
     }
 }

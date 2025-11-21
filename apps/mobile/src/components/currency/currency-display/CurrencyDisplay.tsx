@@ -24,7 +24,7 @@ import AlgoIcon from '../../../../assets/icons/algo.svg'
 
 export type CurrencyDisplayProps = {
     currency: string
-    value: Decimal
+    value: Decimal | null | undefined
     precision: number
     minPrecision?: number
     prefix?: string
@@ -53,6 +53,10 @@ const CurrencyDisplay = (props: CurrencyDisplayProps) => {
     const { privacyMode } = useSettings()
 
     const displayValue = useMemo(() => {
+        if (value == null) {
+            return "---"
+        }
+
         return privacyMode
             ? '****'
             : formatCurrency(

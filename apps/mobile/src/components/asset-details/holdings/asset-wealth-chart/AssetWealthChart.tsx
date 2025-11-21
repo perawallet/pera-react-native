@@ -17,15 +17,13 @@ import PWView from '../../../common/view/PWView'
 import {
     PeraAsset,
     WalletAccount,
-    useV1AccountsAssetsBalanceHistoryList,
-    V1AccountsAssetsBalanceHistoryListQueryParamsPeriodEnum,
     useCurrencyConverter,
     AccountWealthHistoryItem,
-    AccountWealthHistorySerializerResponse,
+    useAccountsAssetsBalanceHistory,
+    HistoryPeriod,
 } from '@perawallet/core'
 import { useCallback, useMemo, useState } from 'react'
 import { useTheme } from '@rneui/themed'
-import { ChartPeriod } from '../../../common/chart-period-selection/ChartPeriodSelection'
 import Decimal from 'decimal.js'
 
 const FOCUS_DEBOUNCE_TIME = 200
@@ -38,7 +36,7 @@ type DataPoint = {
 type AssetWealthChartProps = {
     account: WalletAccount
     asset: PeraAsset
-    period: ChartPeriod
+    period: HistoryPeriod
     onSelectionChanged: (item: AccountWealthHistoryItem | null) => void
 }
 
@@ -50,33 +48,34 @@ const AssetWealthChart = ({
     period,
 }: AssetWealthChartProps) => {
     const { theme } = useTheme()
-    const { preferredCurrency, convertUSDToPreferredCurrency } =
+    const { preferredCurrency, usdToPreferred } =
         useCurrencyConverter()
     const themeStyle = useStyles()
     const [lastSentIndex, setLastSentIndex] = useState<number>()
     const [lastSentTime, setLastSentTime] = useState<number>(Date.now())
 
-    const { data, isPending } = useV1AccountsAssetsBalanceHistoryList({
+    const { data, isPending } = useAccountsAssetsBalanceHistory({
         account_address: account.address,
         asset_id: `${asset.asset_id}`,
         params: {
-            period: period as V1AccountsAssetsBalanceHistoryListQueryParamsPeriodEnum,
+            period: period as HistoryPeriod,
             currency: preferredCurrency,
         },
     })
 
+    //TODO: move the currency conversion processing into the useAccountsAsseetsBalanceHistory hook
     const dataPoints = useMemo(
         () => {
             // @ts-ignore: The generated type is unknown
             return (data?.results?.map((p: any) => {
                 return {
-                    value: convertUSDToPreferredCurrency(
+                    value: usdToPreferred(
                         new Decimal(p.usd_value ?? 0),
                     ).toNumber(),
                     timestamp: p.datetime,
                 }
             }) ?? []) as DataPoint[]
-        }, [data, convertUSDToPreferredCurrency],
+        }, [data, usdToPreferred],
     )
 
     const yAxisOffsets = useMemo(() => {

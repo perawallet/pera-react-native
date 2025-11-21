@@ -23,7 +23,10 @@ import { SendFundsContext } from '../../../providers/SendFundsProvider'
 import AddNotePanel from '../add-note-panel/AddNotePanel'
 import useToast from '../../../hooks/toast'
 import {
+    AccountBalances,
+    AssetWithAccountBalance,
     useAccountBalances,
+    useAssetFiatPrices,
     useCurrencyConverter,
     useSelectedAccount,
 } from '@perawallet/core'
@@ -41,7 +44,7 @@ type SendFundsInputViewProps = {
 const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
     const styles = useStyles()
     const selectedAccount = useSelectedAccount()
-    const { preferredCurrency, convertUSDToPreferredCurrency } =
+    const { preferredCurrency, usdToPreferred } =
         useCurrencyConverter()
     const { canSelectAsset, selectedAsset, note, setNote, setAmount } =
         useContext(SendFundsContext)
@@ -53,18 +56,18 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
     const { data } = useAccountBalances(
         selectedAccount ? [selectedAccount] : [],
     )
-    const { tokenAmount, usdAmount } = useMemo(() => {
-        const asset = data
-            .at(0)
-            ?.accountInfo?.results?.find(
-                info => info.asset_id === selectedAsset?.asset_id,
-            )
-        return {
-            tokenAmount: asset?.amount ? Decimal(asset?.amount) : Decimal(0),
-            usdAmount: asset?.balance_usd_value
-                ? Decimal(asset?.balance_usd_value)
-                : Decimal(0),
+    const { data: fiatPrices } = useAssetFiatPrices()
+    const fiatPrice = useMemo(() => selectedAsset?.asset_id ? fiatPrices.get(selectedAsset.asset_id) : null, [selectedAsset, fiatPrices])
+
+    const tokenBalance = useMemo(() => {
+        if (!selectedAccount) {
+            return null
         }
+        const asset = (data as AccountBalances)
+            .get(selectedAccount.address)
+            ?.assetBalances?.find(b => b.asset_id === selectedAsset?.asset_id) as AssetWithAccountBalance
+        const assetAmount = asset?.amount ? Decimal(asset.amount) : Decimal(0)
+        return assetAmount
     }, [data, selectedAsset?.asset_id])
 
     const openNote = () => {
@@ -83,7 +86,7 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
     }
 
     const setMax = () => {
-        setAmount(tokenAmount)
+        setAmount(tokenBalance ?? Decimal(0))
     }
 
     const handleNext = () => {
@@ -114,15 +117,15 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
         }
     }
 
-    const usdValue = useMemo(() => {
-        if (!value || !selectedAsset?.usd_price) {
+    const fiatValue = useMemo(() => {
+        if (!value || !fiatPrice) {
             return null
         }
 
-        return Decimal(value).mul(Decimal(selectedAsset.usd_price))
-    }, [value, selectedAsset?.usd_price])
+        return Decimal(value).mul(fiatPrice)
+    }, [value, fiatPrice])
 
-    if (!selectedAsset) return <></>
+    if (!selectedAsset?.unit_name) return <></>
 
     return (
         <PWView style={styles.container}>
@@ -152,18 +155,14 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
                 showSymbol={false}
                 minPrecision={2}
             />
-            <CurrencyDisplay
+            {fiatValue ? <CurrencyDisplay
                 currency={preferredCurrency}
                 precision={6}
-                value={
-                    usdValue
-                        ? convertUSDToPreferredCurrency(usdValue)
-                        : Decimal(0)
-                }
+                value={fiatValue}
                 style={styles.amountPlaceholder}
                 showSymbol
                 minPrecision={2}
-            />
+            /> : <Text style={styles.amountPlaceholder}>--</Text>}
 
             <PWView style={styles.buttonContainer}>
                 <Button
@@ -186,8 +185,6 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
 
             <AccountAssetItemView
                 asset={selectedAsset}
-                amount={tokenAmount}
-                usdAmount={usdAmount}
                 style={styles.assetDisplay}
             />
 
