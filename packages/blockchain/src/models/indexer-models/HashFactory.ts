@@ -10,11 +10,10 @@
  limitations under the License
  */
 
-
 export type HashFactory = {
     /**
      * @description \\[t\\]
      * @type integer | undefined
-    */
-    "hash-type"?: number;
-};
+     */
+    'hash-type'?: number
+}

@@ -10,33 +10,32 @@
  limitations under the License
  */
 
-
 export type IndexerStateProofMessage = {
     /**
      * @description \\[b\\]
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string | undefined, byte
-    */
-    "block-headers-commitment"?: string;
+     */
+    'block-headers-commitment'?: string
     /**
      * @description \\[f\\]
      * @type integer | undefined
-    */
-    "first-attested-round"?: number;
+     */
+    'first-attested-round'?: number
     /**
      * @description \\[l\\]
      * @type integer | undefined
-    */
-    "latest-attested-round"?: number;
+     */
+    'latest-attested-round'?: number
     /**
      * @description \\[P\\]
      * @type integer | undefined
-    */
-    "ln-proven-weight"?: number;
+     */
+    'ln-proven-weight'?: number
     /**
      * @description \\[v\\]
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string | undefined, byte
-    */
-    "voters-commitment"?: string;
-};
+     */
+    'voters-commitment'?: string
+}

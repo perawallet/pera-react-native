@@ -10,90 +10,89 @@
  limitations under the License
  */
 
-
 /**
  * @description AssetParams specifies the parameters for an asset.\n\n\\[apar\\] when part of an AssetConfig transaction.\n\nDefinition:\ndata/transactions/asset.go : AssetParams
-*/
+ */
 export type AssetParams = {
     /**
      * @description Address of account used to clawback holdings of this asset.  If empty, clawback is not permitted.
      * @type string | undefined
-    */
-    clawback?: string;
+     */
+    clawback?: string
     /**
      * @description The address that created this asset. This is the address where the parameters for this asset can be found, and also the address where unwanted asset units can be sent in the worst case.
      * @type string
-    */
-    creator: string;
+     */
+    creator: string
     /**
      * @description The number of digits to use after the decimal point when displaying this asset. If 0, the asset is not divisible. If 1, the base unit of the asset is in tenths. If 2, the base unit of the asset is in hundredths, and so on. This value must be between 0 and 19 (inclusive).
      * @minLength 0
      * @maxLength 19
      * @type integer
-    */
-    decimals: number;
+     */
+    decimals: number
     /**
      * @description Whether holdings of this asset are frozen by default.
      * @type boolean | undefined
-    */
-    "default-frozen"?: boolean;
+     */
+    'default-frozen'?: boolean
     /**
      * @description Address of account used to freeze holdings of this asset.  If empty, freezing is not permitted.
      * @type string | undefined
-    */
-    freeze?: string;
+     */
+    freeze?: string
     /**
      * @description Address of account used to manage the keys of this asset and to destroy it.
      * @type string | undefined
-    */
-    manager?: string;
+     */
+    manager?: string
     /**
      * @description A commitment to some unspecified asset metadata. The format of this metadata is up to the application.
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string | undefined, byte
-    */
-    "metadata-hash"?: string;
+     */
+    'metadata-hash'?: string
     /**
      * @description Name of this asset, as supplied by the creator. Included only when the asset name is composed of printable utf-8 characters.
      * @type string | undefined
-    */
-    name?: string;
+     */
+    name?: string
     /**
      * @description Base64 encoded name of this asset, as supplied by the creator.
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string | undefined, byte
-    */
-    "name-b64"?: string;
+     */
+    'name-b64'?: string
     /**
      * @description Address of account holding reserve (non-minted) units of this asset.
      * @type string | undefined
-    */
-    reserve?: string;
+     */
+    reserve?: string
     /**
      * @description The total number of units of this asset.
      * @type integer
-    */
-    total: number;
+     */
+    total: number
     /**
      * @description Name of a unit of this asset, as supplied by the creator. Included only when the name of a unit of this asset is composed of printable utf-8 characters.
      * @type string | undefined
-    */
-    "unit-name"?: string;
+     */
+    'unit-name'?: string
     /**
      * @description Base64 encoded name of a unit of this asset, as supplied by the creator.
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string | undefined, byte
-    */
-    "unit-name-b64"?: string;
+     */
+    'unit-name-b64'?: string
     /**
      * @description URL where more information about the asset can be retrieved. Included only when the URL is composed of printable utf-8 characters.
      * @type string | undefined
-    */
-    url?: string;
+     */
+    url?: string
     /**
      * @description Base64 encoded URL where more information about the asset can be retrieved.
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string | undefined, byte
-    */
-    "url-b64"?: string;
-};
+     */
+    'url-b64'?: string
+}

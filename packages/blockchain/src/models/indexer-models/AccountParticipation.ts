@@ -12,39 +12,39 @@
 
 /**
  * @description AccountParticipation describes the parameters used by this account in consensus protocol.
-*/
+ */
 export type AccountParticipation = {
     /**
      * @description Selection public key (if any) currently registered for this round.
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string, byte
-    */
-    "selection-participation-key": string;
+     */
+    'selection-participation-key': string
     /**
      * @description Root of the state proof key (if any)
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string | undefined, byte
-    */
-    "state-proof-key"?: string;
+     */
+    'state-proof-key'?: string
     /**
      * @description First round for which this participation is valid.
      * @type integer
-    */
-    "vote-first-valid": number;
+     */
+    'vote-first-valid': number
     /**
      * @description Number of subkeys in each batch of participation keys.
      * @type integer
-    */
-    "vote-key-dilution": number;
+     */
+    'vote-key-dilution': number
     /**
      * @description Last round for which this participation is valid.
      * @type integer
-    */
-    "vote-last-valid": number;
+     */
+    'vote-last-valid': number
     /**
      * @description root participation public key (if any) currently registered for this round.
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string, byte
-    */
-    "vote-participation-key": string;
-};
+     */
+    'vote-participation-key': string
+}

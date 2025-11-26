@@ -10,25 +10,25 @@
  limitations under the License
  */
 
-import type { TransactionSignatureMultisigSubsignature } from "./TransactionSignatureMultisigSubsignature.ts";
+import type { TransactionSignatureMultisigSubsignature } from './TransactionSignatureMultisigSubsignature.ts'
 
 /**
  * @description structure holding multiple subsignatures.\n\nDefinition:\ncrypto/multisig.go : MultisigSig
-*/
+ */
 export type TransactionSignatureMultisig = {
     /**
      * @description \\[subsig\\] holds pairs of public key and signatures.
      * @type array | undefined
-    */
-    subsignature?: TransactionSignatureMultisigSubsignature[];
+     */
+    subsignature?: TransactionSignatureMultisigSubsignature[]
     /**
      * @description \\[thr\\]
      * @type integer | undefined
-    */
-    threshold?: number;
+     */
+    threshold?: number
     /**
      * @description \\[v\\]
      * @type integer | undefined
-    */
-    version?: number;
-};
+     */
+    version?: number
+}

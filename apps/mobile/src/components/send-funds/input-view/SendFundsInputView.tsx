@@ -25,9 +25,15 @@ import useToast from '../../../hooks/toast'
 import PWHeader from '../../common/header/PWHeader'
 import AccountDisplay from '../../accounts/account-display/AccountDisplay'
 import SendFundsInfoPanel from '../info-panel/SendFundsInfoPanel'
-import { useAccountBalancesQuery, useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountBalancesQuery,
+    useSelectedAccount,
+} from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { useAssetFiatPricesQuery, useAssetsQuery } from '@perawallet/wallet-core-assets'
+import {
+    useAssetFiatPricesQuery,
+    useAssetsQuery,
+} from '@perawallet/wallet-core-assets'
 
 type SendFundsInputViewProps = {
     onNext: () => void
@@ -60,7 +66,7 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
     const fiatPrice = useMemo(
         () =>
             selectedAsset?.assetId
-                ? fiatPrices.get(selectedAsset?.assetId)?.fiatPrice ?? null
+                ? (fiatPrices.get(selectedAsset?.assetId)?.fiatPrice ?? null)
                 : null,
         [selectedAsset, fiatPrices],
     )
@@ -69,10 +75,9 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
         if (!selectedAccount) {
             return null
         }
-        const assetToUse = accountBalances?.get(selectedAccount.address)
-            ?.assetBalances?.find(
-                b => b.assetId === selectedAsset?.assetId,
-            )
+        const assetToUse = accountBalances
+            ?.get(selectedAccount.address)
+            ?.assetBalances?.find(b => b.assetId === selectedAsset?.assetId)
         const assetAmount = assetToUse?.cryptoAmount ?? Decimal(0)
         return assetAmount
     }, [accountBalances, selectedAsset?.assetId, selectedAccount])

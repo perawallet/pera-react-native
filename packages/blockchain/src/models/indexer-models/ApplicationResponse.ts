@@ -10,17 +10,17 @@
  limitations under the License
  */
 
-import type { Application } from "./Application.ts";
+import type { Application } from './Application.ts'
 
 export type ApplicationResponse = {
     /**
      * @description Application index and its parameters
      * @type object | undefined
-    */
-    application?: Application;
+     */
+    application?: Application
     /**
      * @description Round at which the results were computed.
      * @type integer
-    */
-    "current-round": number;
-};
+     */
+    'current-round': number
+}

@@ -10,21 +10,21 @@
  limitations under the License
  */
 
-import type { StateProofParticipant } from "./StateProofParticipant.ts";
-import type { StateProofSigSlot } from "./StateProofSigSlot.ts";
+import type { StateProofParticipant } from './StateProofParticipant.ts'
+import type { StateProofSigSlot } from './StateProofSigSlot.ts'
 
 export type StateProofReveal = {
     /**
      * @type object | undefined
-    */
-    participant?: StateProofParticipant;
+     */
+    participant?: StateProofParticipant
     /**
      * @description The position in the signature and participants arrays corresponding to this entry.
      * @type integer | undefined
-    */
-    position?: number;
+     */
+    position?: number
     /**
      * @type object | undefined
-    */
-    "sig-slot"?: StateProofSigSlot;
-};
+     */
+    'sig-slot'?: StateProofSigSlot
+}

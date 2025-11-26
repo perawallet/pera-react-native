@@ -29,11 +29,11 @@ type SendFundsState = {
 
 export const SendFundsContext = createContext<SendFundsState>({
     canSelectAsset: true,
-    setCanSelectAsset: (_: boolean) => { },
-    setSelectedAsset: (_?: AssetWithAccountBalance) => { },
-    setAmount: (_?: Decimal) => { },
-    setNote: (_?: string) => { },
-    setDestination: (_?: string) => { },
+    setCanSelectAsset: (_: boolean) => {},
+    setSelectedAsset: (_?: AssetWithAccountBalance) => {},
+    setAmount: (_?: Decimal) => {},
+    setNote: (_?: string) => {},
+    setDestination: (_?: string) => {},
 })
 
 const SendFundsProvider = ({ children }: PropsWithChildren) => {

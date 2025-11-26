@@ -10,10 +10,9 @@
  limitations under the License
  */
 
-
-export type HashtypeEnum = "sha512_256" | "sha256";
+export type HashtypeEnum = 'sha512_256' | 'sha256'
 
 /**
  * @description The type of hash function used to create the proof, must be one of: \n* sha512_256 \n* sha256
-*/
-export type Hashtype = HashtypeEnum;
+ */
+export type Hashtype = HashtypeEnum

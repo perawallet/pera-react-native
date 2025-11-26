@@ -11,10 +11,7 @@
  */
 
 import PWView from '../../common/view/PWView'
-import {
-    formatDatetime,
-    HistoryPeriod,
-} from '@perawallet/wallet-core-shared'
+import { formatDatetime, HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { ScrollView } from 'react-native'
 import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
 import Decimal from 'decimal.js'

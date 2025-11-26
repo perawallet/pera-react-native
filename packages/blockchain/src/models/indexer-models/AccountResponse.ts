@@ -10,17 +10,17 @@
  limitations under the License
  */
 
-import type { Account } from "./Account.ts";
+import type { Account } from './Account.ts'
 
 export type AccountResponse = {
     /**
      * @description Account information at a given round.\n\nDefinition:\ndata/basics/userBalance.go : AccountData\n
      * @type object
-    */
-    account: Account;
+     */
+    account: Account
     /**
      * @description Round at which the results were computed.
      * @type integer
-    */
-    "current-round": number;
-};
+     */
+    'current-round': number
+}

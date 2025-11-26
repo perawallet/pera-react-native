@@ -11,9 +11,7 @@
  */
 
 import PWView from '../../common/view/PWView'
-import {
-    formatRelativeTime,
-} from '@perawallet/wallet-core-shared'
+import { formatRelativeTime } from '@perawallet/wallet-core-shared'
 import { Image, Text } from '@rneui/themed'
 import { useStyles } from './styles'
 import { useCallback, useMemo } from 'react'

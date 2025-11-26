@@ -28,12 +28,12 @@ export type RequestConfiguration<TData = unknown> = {
     params?: object
     data?: TData | FormData
     responseType?:
-    | 'arraybuffer'
-    | 'blob'
-    | 'document'
-    | 'json'
-    | 'text'
-    | 'stream'
+        | 'arraybuffer'
+        | 'blob'
+        | 'document'
+        | 'json'
+        | 'text'
+        | 'stream'
     signal?: AbortSignal
     headers?: HeadersInit
 }

@@ -10,24 +10,23 @@
  limitations under the License
  */
 
-
 /**
  * @description Fields for an asset freeze transaction.\n\nDefinition:\ndata/transactions/asset.go : AssetFreezeTxnFields
-*/
+ */
 export type TransactionAssetFreeze = {
     /**
      * @description \\[fadd\\] Address of the account whose asset is being frozen or thawed.
      * @type string
-    */
-    address: string;
+     */
+    address: string
     /**
      * @description \\[faid\\] ID of the asset being frozen or thawed.
      * @type integer
-    */
-    "asset-id": number;
+     */
+    'asset-id': number
     /**
      * @description \\[afrz\\] The new freeze status.
      * @type boolean
-    */
-    "new-freeze-status": boolean;
-};
+     */
+    'new-freeze-status': boolean
+}

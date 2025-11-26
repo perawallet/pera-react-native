@@ -10,10 +10,7 @@
  limitations under the License
  */
 
-import {
-    formatDatetime,
-    HistoryPeriod,
-} from '@perawallet/wallet-core-shared'
+import { formatDatetime, HistoryPeriod } from '@perawallet/wallet-core-shared'
 import PWView from '../../common/view/PWView'
 import AssetWealthChart from './asset-wealth-chart/AssetWealthChart'
 import ChartPeriodSelection from '../../common/chart-period-selection/ChartPeriodSelection'
@@ -27,7 +24,11 @@ import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import RoundButton from '../../common/round-button/RoundButton'
 import { Text } from '@rneui/themed'
-import { AccountBalanceHistoryItem, useAccountAssetBalanceQuery, WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    AccountBalanceHistoryItem,
+    useAccountAssetBalanceQuery,
+    WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 

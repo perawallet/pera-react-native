@@ -10,19 +10,19 @@
  limitations under the License
  */
 
-import type { EvalDelta } from "./EvalDelta.ts";
+import type { EvalDelta } from './EvalDelta.ts'
 
 /**
  * @description Key-value pairs for StateDelta.
-*/
+ */
 export type EvalDeltaKeyValue = {
     /**
      * @type string
-    */
-    key: string;
+     */
+    key: string
     /**
      * @description Represents a TEAL value delta.
      * @type object
-    */
-    value: EvalDelta;
-};
+     */
+    value: EvalDelta
+}

@@ -10,16 +10,16 @@
  limitations under the License
  */
 
-import type { StateProofSignature } from "./StateProofSignature.ts";
+import type { StateProofSignature } from './StateProofSignature.ts'
 
 export type StateProofSigSlot = {
     /**
      * @description \\[l\\] The total weight of signatures in the lower-numbered slots.
      * @type integer | undefined
-    */
-    "lower-sig-weight"?: number;
+     */
+    'lower-sig-weight'?: number
     /**
      * @type object | undefined
-    */
-    signature?: StateProofSignature;
-};
+     */
+    signature?: StateProofSignature
+}

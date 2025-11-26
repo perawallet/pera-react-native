@@ -12,9 +12,7 @@
 
 import { View, Linking } from 'react-native'
 import { useStyles } from './styles'
-import {
-    truncateAlgorandAddress,
-} from '@perawallet/wallet-core-shared'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import Clipboard from '@react-native-clipboard/clipboard'
 import { Text } from '@rneui/themed'
 import PWButton from '../../../common/button/PWButton'

@@ -10,42 +10,42 @@
  limitations under the License
  */
 
-import type { BoxReference } from "./BoxReference.ts";
-import type { HoldingRef } from "./HoldingRef.ts";
-import type { LocalsRef } from "./LocalsRef.ts";
+import type { BoxReference } from './BoxReference.ts'
+import type { HoldingRef } from './HoldingRef.ts'
+import type { LocalsRef } from './LocalsRef.ts'
 
 /**
  * @description ResourceRef names a single resource. Only one of the fields should be set.
-*/
+ */
 export type ResourceRef = {
     /**
      * @description \\[d\\] Account whose balance record is accessible by the executing ApprovalProgram or ClearStateProgram.
      * @type string | undefined
-    */
-    address?: string;
+     */
+    address?: string
     /**
      * @description \\[p\\] Application id whose GlobalState may be read by the executing\n ApprovalProgram or ClearStateProgram.
      * @type integer | undefined
-    */
-    "application-id"?: number;
+     */
+    'application-id'?: number
     /**
      * @description \\[s\\] Asset whose AssetParams may be read by the executing\n ApprovalProgram or ClearStateProgram.
      * @type integer | undefined
-    */
-    "asset-id"?: number;
+     */
+    'asset-id'?: number
     /**
      * @description BoxReference names a box by its name and the application ID it belongs to.
      * @type object | undefined
-    */
-    box?: BoxReference;
+     */
+    box?: BoxReference
     /**
      * @description HoldingRef names a holding by referring to an Address and Asset it belongs to.
      * @type object | undefined
-    */
-    holding?: HoldingRef;
+     */
+    holding?: HoldingRef
     /**
      * @description LocalsRef names a local state by referring to an Address and App it belongs to.
      * @type object | undefined
-    */
-    local?: LocalsRef;
-};
+     */
+    local?: LocalsRef
+}

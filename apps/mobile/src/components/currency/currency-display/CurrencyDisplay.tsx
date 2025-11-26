@@ -14,9 +14,7 @@ import { useStyles } from './styles'
 import { Skeleton, Text, TextProps } from '@rneui/themed'
 import PWView from '../../common/view/PWView'
 import { useMemo } from 'react'
-import {
-    formatCurrency,
-} from '@perawallet/wallet-core-shared'
+import { formatCurrency } from '@perawallet/wallet-core-shared'
 import { Decimal } from 'decimal.js'
 import AlgoIcon from '../../../../assets/icons/algo.svg'
 import { useDeviceInfoService } from '@perawallet/wallet-core-platform-integration'
@@ -60,14 +58,14 @@ const CurrencyDisplay = (props: CurrencyDisplayProps) => {
         return privacyMode
             ? '****'
             : formatCurrency(
-                value,
-                precision,
-                currency,
-                deviceInfo.getDeviceLocale(),
-                showSymbol,
-                truncateToUnits,
-                minPrecision,
-            )
+                  value,
+                  precision,
+                  currency,
+                  deviceInfo.getDeviceLocale(),
+                  showSymbol,
+                  truncateToUnits,
+                  minPrecision,
+              )
     }, [
         value,
         precision,

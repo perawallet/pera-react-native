@@ -10,19 +10,18 @@
  limitations under the License
  */
 
-
 /**
  * @description Specifies maximums on the number of each type that may be stored.
-*/
+ */
 export type ApplicationStateSchema = {
     /**
      * @description number of byte slices.
      * @type integer
-    */
-    "num-byte-slice": number;
+     */
+    'num-byte-slice': number
     /**
      * @description number of uints.
      * @type integer
-    */
-    "num-uint": number;
-};
+     */
+    'num-uint': number
+}

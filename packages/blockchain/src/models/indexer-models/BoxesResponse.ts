@@ -10,21 +10,21 @@
  limitations under the License
  */
 
-import type { BoxDescriptor } from "./BoxDescriptor.ts";
+import type { BoxDescriptor } from './BoxDescriptor.ts'
 
 export type BoxesResponse = {
     /**
      * @description \\[appidx\\] application index.
      * @type integer
-    */
-    "application-id": number;
+     */
+    'application-id': number
     /**
      * @type array
-    */
-    boxes: BoxDescriptor[];
+     */
+    boxes: BoxDescriptor[]
     /**
      * @description Used for pagination, when making another request provide this token with the next parameter.
      * @type string | undefined
-    */
-    "next-token"?: string;
-};
+     */
+    'next-token'?: string
+}

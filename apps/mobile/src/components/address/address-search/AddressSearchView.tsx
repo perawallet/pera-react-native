@@ -16,9 +16,7 @@ import { useStyles } from './styles'
 import { useMemo, useState } from 'react'
 import { Text } from '@rneui/themed'
 import AddressEntryField from '../address-entry/AddressEntryField'
-import {
-    truncateAlgorandAddress,
-} from '@perawallet/wallet-core-shared'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
@@ -39,10 +37,7 @@ const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
     const { findContacts } = useContacts()
     const accounts = useAllAccounts()
 
-    const addressIsValid = useMemo(
-        () => isValidAlgorandAddress(value),
-        [value],
-    )
+    const addressIsValid = useMemo(() => isValidAlgorandAddress(value), [value])
     const matchingAccounts = useMemo(
         () => accounts.filter(a => a.address.includes(value)),
         [value, accounts],
@@ -67,8 +62,8 @@ const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
                 }
             />
             {!addressIsValid &&
-                !matchingAccounts.length &&
-                !matchingContacts.length ? (
+            !matchingAccounts.length &&
+            !matchingContacts.length ? (
                 <EmptyView
                     title='No Accounts Found'
                     body='There are no matching accounts'

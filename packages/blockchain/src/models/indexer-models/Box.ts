@@ -10,26 +10,25 @@
  limitations under the License
  */
 
-
 /**
  * @description Box name and its content.
-*/
+ */
 export type Box = {
     /**
      * @description \\[name\\] box name, base64 encoded
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string, byte
-    */
-    name: string;
+     */
+    name: string
     /**
      * @description The round for which this information is relevant
      * @type integer
-    */
-    round: number;
+     */
+    round: number
     /**
      * @description \\[value\\] box value, base64 encoded.
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string, byte
-    */
-    value: string;
-};
+     */
+    value: string
+}

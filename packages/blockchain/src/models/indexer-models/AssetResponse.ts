@@ -10,17 +10,17 @@
  limitations under the License
  */
 
-import type { Asset } from "./Asset.ts";
+import type { Asset } from './Asset.ts'
 
 export type AssetResponse = {
     /**
      * @description Specifies both the unique identifier and the parameters for an asset
      * @type object
-    */
-    asset: Asset;
+     */
+    asset: Asset
     /**
      * @description Round at which the results were computed.
      * @type integer
-    */
-    "current-round": number;
-};
+     */
+    'current-round': number
+}

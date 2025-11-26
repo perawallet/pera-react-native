@@ -10,14 +10,13 @@
  limitations under the License
  */
 
-import { useCurrency } from "@perawallet/wallet-core-currencies"
-import { useNetwork } from "@perawallet/wallet-core-platform-integration"
-import type { HistoryPeriod, Network } from "@perawallet/wallet-core-shared"
-import type { WalletAccount } from "../models"
-import { useQuery } from "@tanstack/react-query"
-import { fetchAccountAssetBalanceHistory } from "./endpoints"
-import Decimal from "decimal.js"
-
+import { useCurrency } from '@perawallet/wallet-core-currencies'
+import { useNetwork } from '@perawallet/wallet-core-platform-integration'
+import type { HistoryPeriod, Network } from '@perawallet/wallet-core-shared'
+import type { WalletAccount } from '../models'
+import { useQuery } from '@tanstack/react-query'
+import { fetchAccountAssetBalanceHistory } from './endpoints'
+import Decimal from 'decimal.js'
 
 export const getAccountAssetBalanceHistoryQueryKey = (
     network: Network,
@@ -26,23 +25,46 @@ export const getAccountAssetBalanceHistoryQueryKey = (
     period: HistoryPeriod,
     currency: string,
 ) => [
-        'v1', 'accounts', account_address, 'assets', asset_id, 'balance-history', { period, currency, network }
-    ]
+    'v1',
+    'accounts',
+    account_address,
+    'assets',
+    asset_id,
+    'balance-history',
+    { period, currency, network },
+]
 
-export const useAccountsAssetsBalanceHistoryQuery = (account: WalletAccount, assetId: string, period: HistoryPeriod) => {
+export const useAccountsAssetsBalanceHistoryQuery = (
+    account: WalletAccount,
+    assetId: string,
+    period: HistoryPeriod,
+) => {
     const { network } = useNetwork()
     const { preferredCurrency, usdToPreferred } = useCurrency()
 
     return useQuery({
-        queryKey: getAccountAssetBalanceHistoryQueryKey(network, account.address, assetId, period, preferredCurrency),
-        queryFn: () => fetchAccountAssetBalanceHistory(account.address, assetId, period, preferredCurrency, network),
-        select: (data) => {
-            return data.results.map((item) => ({
+        queryKey: getAccountAssetBalanceHistoryQueryKey(
+            network,
+            account.address,
+            assetId,
+            period,
+            preferredCurrency,
+        ),
+        queryFn: () =>
+            fetchAccountAssetBalanceHistory(
+                account.address,
+                assetId,
+                period,
+                preferredCurrency,
+                network,
+            ),
+        select: data => {
+            return data.results.map(item => ({
                 datetime: new Date(item.datetime),
                 algoValue: Decimal(item.algo_value ?? '0'),
                 fiatValue: usdToPreferred(Decimal(item.usd_value ?? '0')),
                 round: item.round,
             }))
-        }
+        },
     })
 }

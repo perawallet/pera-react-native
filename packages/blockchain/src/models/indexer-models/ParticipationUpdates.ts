@@ -10,19 +10,18 @@
  limitations under the License
  */
 
-
 /**
  * @description Participation account data that needs to be checked/acted on by the network.
-*/
+ */
 export type ParticipationUpdates = {
     /**
      * @description \\[partupabs\\] a list of online accounts that need to be suspended.
      * @type array | undefined
-    */
-    "absent-participation-accounts"?: string[];
+     */
+    'absent-participation-accounts'?: string[]
     /**
      * @description \\[partupdrmv\\] a list of online accounts that needs to be converted to offline since their participation key expired.
      * @type array | undefined
-    */
-    "expired-participation-accounts"?: string[];
-};
+     */
+    'expired-participation-accounts'?: string[]
+}

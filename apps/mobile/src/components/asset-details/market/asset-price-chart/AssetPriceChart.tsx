@@ -14,13 +14,15 @@ import { useStyles } from './styles'
 import { LineChart } from 'react-native-gifted-charts'
 
 import PWView from '../../../common/view/PWView'
-import {
-    HistoryPeriod,
-} from '@perawallet/wallet-core-shared'
+import { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { Suspense, useCallback, useMemo, useState } from 'react'
 import { useTheme } from '@rneui/themed'
 import LoadingView from '../../../common/loading/LoadingView'
-import { AssetPriceHistoryItem, PeraAsset, useAssetPriceHistoryQuery } from '@perawallet/wallet-core-assets'
+import {
+    AssetPriceHistoryItem,
+    PeraAsset,
+    useAssetPriceHistoryQuery,
+} from '@perawallet/wallet-core-assets'
 
 const FOCUS_DEBOUNCE_TIME = 200
 
@@ -40,9 +42,7 @@ const AssetPriceChart = ({
     const [lastSentIndex, setLastSentIndex] = useState<number>()
     const [lastSentTime, setLastSentTime] = useState<number>(Date.now())
 
-    const { data } = useAssetPriceHistoryQuery(
-        asset.assetId, period
-    )
+    const { data } = useAssetPriceHistoryQuery(asset.assetId, period)
 
     const dataPoints = useMemo(
         () =>

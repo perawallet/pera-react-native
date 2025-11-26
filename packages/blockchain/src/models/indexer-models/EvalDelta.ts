@@ -10,24 +10,23 @@
  limitations under the License
  */
 
-
 /**
  * @description Represents a TEAL value delta.
-*/
+ */
 export type EvalDelta = {
     /**
      * @description \\[at\\] delta action.
      * @type integer
-    */
-    action: number;
+     */
+    action: number
     /**
      * @description \\[bs\\] bytes value.
      * @type string | undefined
-    */
-    bytes?: string;
+     */
+    bytes?: string
     /**
      * @description \\[ui\\] uint value.
      * @type integer | undefined
-    */
-    uint?: number;
-};
+     */
+    uint?: number
+}

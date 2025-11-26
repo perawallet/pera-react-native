@@ -13,14 +13,14 @@
 import { View } from 'react-native'
 import { Text } from '@rneui/themed'
 import { useStyles } from './styles'
-import {
-    formatCurrency,
-    HistoryPeriod,
-} from '@perawallet/wallet-core-shared'
+import { formatCurrency, HistoryPeriod } from '@perawallet/wallet-core-shared'
 import PWIcon from '../../../common/icons/PWIcon'
 import Decimal from 'decimal.js'
 import { useMemo } from 'react'
-import { AssetPriceHistoryItem, useAssetPriceHistoryQuery } from '@perawallet/wallet-core-assets'
+import {
+    AssetPriceHistoryItem,
+    useAssetPriceHistoryQuery,
+} from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 
 type PriceTrendProps = {
@@ -41,19 +41,20 @@ const PriceTrend = ({
 
     const { data: chartData } = useAssetPriceHistoryQuery(
         assetId,
-        period ?? 'one-week'
+        period ?? 'one-week',
     )
 
     const [calculatedPercentage, calculatedValue] = useMemo(() => {
         const dataPoints = chartData?.map(p => p.fiatPrice) ?? []
 
         const firstDp = dataPoints.at(0) ?? Decimal(0)
-        const lastDp = selectedDataPoint?.fiatPrice ?? dataPoints.at(-1) ?? Decimal(0)
+        const lastDp =
+            selectedDataPoint?.fiatPrice ?? dataPoints.at(-1) ?? Decimal(0)
 
         if (lastDp.isZero()) return [Decimal(0), Decimal(0)]
 
         return [
-            ((lastDp.minus(firstDp)).div(lastDp)).mul(100),
+            lastDp.minus(firstDp).div(lastDp).mul(100),
             lastDp.minus(firstDp),
         ]
     }, [chartData, selectedDataPoint])

@@ -31,9 +31,16 @@ import useToast from '../../../hooks/toast'
 import AddNotePanel from '../add-note-panel/AddNotePanel'
 import PWIcon from '../../common/icons/PWIcon'
 import PWHeader from '../../common/header/PWHeader'
-import { useAccountAssetBalanceQuery, useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountAssetBalanceQuery,
+    useSelectedAccount,
+} from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { ALGO_ASSET_ID, useAssetFiatPricesQuery, useAssetsQuery } from '@perawallet/wallet-core-assets'
+import {
+    ALGO_ASSET_ID,
+    useAssetFiatPricesQuery,
+    useAssetsQuery,
+} from '@perawallet/wallet-core-assets'
 
 type SendFundsTransactionConfirmationProps = {
     onNext: () => void

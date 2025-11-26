@@ -10,6 +10,6 @@
  limitations under the License
  */
 
-import type { Block } from "./Block.ts";
+import type { Block } from './Block.ts'
 
-export type BlockResponse = Block;
+export type BlockResponse = Block

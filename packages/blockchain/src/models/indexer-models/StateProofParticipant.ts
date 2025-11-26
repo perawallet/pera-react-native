@@ -10,16 +10,16 @@
  limitations under the License
  */
 
-import type { StateProofVerifier } from "./StateProofVerifier.ts";
+import type { StateProofVerifier } from './StateProofVerifier.ts'
 
 export type StateProofParticipant = {
     /**
      * @type object | undefined
-    */
-    verifier?: StateProofVerifier;
+     */
+    verifier?: StateProofVerifier
     /**
      * @description \\[w\\]
      * @type integer | undefined
-    */
-    weight?: number;
-};
+     */
+    weight?: number
+}

@@ -10,26 +10,26 @@
  limitations under the License
  */
 
-import type { MerkleArrayProof } from "./MerkleArrayProof.ts";
+import type { MerkleArrayProof } from './MerkleArrayProof.ts'
 
 export type StateProofSignature = {
     /**
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string | undefined, byte
-    */
-    "falcon-signature"?: string;
+     */
+    'falcon-signature'?: string
     /**
      * @type integer | undefined
-    */
-    "merkle-array-index"?: number;
+     */
+    'merkle-array-index'?: number
     /**
      * @type object | undefined
-    */
-    proof?: MerkleArrayProof;
+     */
+    proof?: MerkleArrayProof
     /**
      * @description \\[vkey\\]
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string | undefined, byte
-    */
-    "verifying-key"?: string;
-};
+     */
+    'verifying-key'?: string
+}

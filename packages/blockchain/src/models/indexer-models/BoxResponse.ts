@@ -10,6 +10,6 @@
  limitations under the License
  */
 
-import type { Box } from "./Box.ts";
+import type { Box } from './Box.ts'
 
-export type BoxResponse = Box;
+export type BoxResponse = Box

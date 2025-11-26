@@ -10,21 +10,21 @@
  limitations under the License
  */
 
-import type { Block } from "./Block.ts";
+import type { Block } from './Block.ts'
 
 export type BlockHeadersResponse = {
     /**
      * @type array
-    */
-    blocks: Block[];
+     */
+    blocks: Block[]
     /**
      * @description Round at which the results were computed.
      * @type integer
-    */
-    "current-round": number;
+     */
+    'current-round': number
     /**
      * @description Used for pagination, when making another request provide this token with the next parameter.
      * @type string | undefined
-    */
-    "next-token"?: string;
-};
+     */
+    'next-token'?: string
+}

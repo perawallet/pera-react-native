@@ -10,24 +10,23 @@
  limitations under the License
  */
 
-
 /**
  * @description Fields relating to voting for a protocol upgrade.
-*/
+ */
 export type BlockUpgradeVote = {
     /**
      * @description \\[upgradeyes\\] Indicates a yes vote for the current proposal.
      * @type boolean | undefined
-    */
-    "upgrade-approve"?: boolean;
+     */
+    'upgrade-approve'?: boolean
     /**
      * @description \\[upgradedelay\\] Indicates the time between acceptance and execution.
      * @type integer | undefined
-    */
-    "upgrade-delay"?: number;
+     */
+    'upgrade-delay'?: number
     /**
      * @description \\[upgradeprop\\] Indicates a proposed upgrade.
      * @type string | undefined
-    */
-    "upgrade-propose"?: string;
-};
+     */
+    'upgrade-propose'?: string
+}

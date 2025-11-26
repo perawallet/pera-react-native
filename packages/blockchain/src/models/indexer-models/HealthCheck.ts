@@ -10,38 +10,37 @@
  limitations under the License
  */
 
-
 /**
  * @description A health check response.
-*/
+ */
 export type HealthCheck = {
     /**
      * @type object | undefined
-    */
-    data?: object;
+     */
+    data?: object
     /**
      * @type boolean
-    */
-    "db-available": boolean;
+     */
+    'db-available': boolean
     /**
      * @type array | undefined
-    */
-    errors?: string[];
+     */
+    errors?: string[]
     /**
      * @type boolean
-    */
-    "is-migrating": boolean;
+     */
+    'is-migrating': boolean
     /**
      * @type string
-    */
-    message: string;
+     */
+    message: string
     /**
      * @type integer
-    */
-    round: number;
+     */
+    round: number
     /**
      * @description Current version.
      * @type string
-    */
-    version: string;
-};
+     */
+    version: string
+}

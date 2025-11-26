@@ -11,17 +11,17 @@
  */
 
 import { useStyles } from './styles'
-import {
-    formatNumber,
-    formatWithUnits,
-} from '@perawallet/wallet-core-shared'
+import { formatNumber, formatWithUnits } from '@perawallet/wallet-core-shared'
 import CurrencyDisplay from '../../../currency/currency-display/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import { Text } from '@rneui/themed'
 import PWIcon from '../../../common/icons/PWIcon'
 import PWView from '../../../common/view/PWView'
 import { useMemo } from 'react'
-import { PeraAsset, useAssetFiatPricesQuery } from '@perawallet/wallet-core-assets'
+import {
+    PeraAsset,
+    useAssetFiatPricesQuery,
+} from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 
 type AssetMarketStatsProps = {

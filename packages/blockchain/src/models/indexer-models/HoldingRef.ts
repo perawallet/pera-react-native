@@ -10,19 +10,18 @@
  limitations under the License
  */
 
-
 /**
  * @description HoldingRef names a holding by referring to an Address and Asset it belongs to.
-*/
+ */
 export type HoldingRef = {
     /**
      * @description \\[d\\] Address in access list, or the sender of the transaction.
      * @type string
-    */
-    address: string;
+     */
+    address: string
     /**
      * @description \\[s\\] Asset ID for asset in access list.
      * @type integer
-    */
-    asset: number;
-};
+     */
+    asset: number
+}

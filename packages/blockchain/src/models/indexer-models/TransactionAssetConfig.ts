@@ -10,20 +10,20 @@
  limitations under the License
  */
 
-import type { AssetParams } from "./AssetParams.ts";
+import type { AssetParams } from './AssetParams.ts'
 
 /**
  * @description Fields for asset allocation, re-configuration, and destruction.\n\n\nA zero value for asset-id indicates asset creation.\nA zero value for the params indicates asset destruction.\n\nDefinition:\ndata/transactions/asset.go : AssetConfigTxnFields
-*/
+ */
 export type TransactionAssetConfig = {
     /**
      * @description \\[xaid\\] ID of the asset being configured or empty if creating.
      * @type integer | undefined
-    */
-    "asset-id"?: number;
+     */
+    'asset-id'?: number
     /**
      * @description AssetParams specifies the parameters for an asset.\n\n\\[apar\\] when part of an AssetConfig transaction.\n\nDefinition:\ndata/transactions/asset.go : AssetParams
      * @type object | undefined
-    */
-    params?: AssetParams;
-};
+     */
+    params?: AssetParams
+}

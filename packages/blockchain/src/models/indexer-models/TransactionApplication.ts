@@ -10,85 +10,85 @@
  limitations under the License
  */
 
-import type { BoxReference } from "./BoxReference.ts";
-import type { OnCompletion } from "./OnCompletion.ts";
-import type { ResourceRef } from "./ResourceRef.ts";
-import type { StateSchema } from "./StateSchema.ts";
+import type { BoxReference } from './BoxReference.ts'
+import type { OnCompletion } from './OnCompletion.ts'
+import type { ResourceRef } from './ResourceRef.ts'
+import type { StateSchema } from './StateSchema.ts'
 
 /**
  * @description Fields for application transactions.\n\nDefinition:\ndata/transactions/application.go : ApplicationCallTxnFields
-*/
+ */
 export type TransactionApplication = {
     /**
      * @description \\[al\\] Access unifies `accounts`, `foreign-apps`, `foreign-assets`, and `box-references` under a single list. If access is non-empty, these lists must be empty. If access is empty, those lists may be non-empty.
      * @type array | undefined
-    */
-    access?: ResourceRef[];
+     */
+    access?: ResourceRef[]
     /**
      * @description \\[apat\\] List of accounts in addition to the sender that may be accessed from the application\'s approval-program and clear-state-program.
      * @type array | undefined
-    */
-    accounts?: string[];
+     */
+    accounts?: string[]
     /**
      * @description \\[apaa\\] transaction specific arguments accessed from the application\'s approval-program and clear-state-program.
      * @type array | undefined
-    */
-    "application-args"?: string[];
+     */
+    'application-args'?: string[]
     /**
      * @description \\[apid\\] ID of the application being configured or empty if creating.
      * @type integer
-    */
-    "application-id": number;
+     */
+    'application-id': number
     /**
      * @description \\[apap\\] Logic executed for every application transaction, except when on-completion is set to \"clear\". It can read and write global state for the application, as well as account-specific local state. Approval programs may reject the transaction.
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string | undefined, byte
-    */
-    "approval-program"?: string;
+     */
+    'approval-program'?: string
     /**
      * @description \\[apbx\\] the boxes that can be accessed by this transaction (and others in the same group).
      * @type array | undefined
-    */
-    "box-references"?: BoxReference[];
+     */
+    'box-references'?: BoxReference[]
     /**
      * @description \\[apsu\\] Logic executed for application transactions with on-completion set to \"clear\". It can read and write global state for the application, as well as account-specific local state. Clear state programs cannot reject the transaction.
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string | undefined, byte
-    */
-    "clear-state-program"?: string;
+     */
+    'clear-state-program'?: string
     /**
      * @description \\[epp\\] specifies the additional app program len requested in pages.
      * @type integer | undefined
-    */
-    "extra-program-pages"?: number;
+     */
+    'extra-program-pages'?: number
     /**
      * @description \\[apfa\\] Lists the applications in addition to the application-id whose global states may be accessed by this application\'s approval-program and clear-state-program. The access is read-only.
      * @type array | undefined
-    */
-    "foreign-apps"?: number[];
+     */
+    'foreign-apps'?: number[]
     /**
      * @description \\[apas\\] lists the assets whose parameters may be accessed by this application\'s ApprovalProgram and ClearStateProgram. The access is read-only.
      * @type array | undefined
-    */
-    "foreign-assets"?: number[];
+     */
+    'foreign-assets'?: number[]
     /**
      * @description Represents a \\[apls\\] local-state or \\[apgs\\] global-state schema. These schemas determine how much storage may be used in a local-state or global-state for an application. The more space used, the larger minimum balance must be maintained in the account holding the data.
      * @type object | undefined
-    */
-    "global-state-schema"?: StateSchema;
+     */
+    'global-state-schema'?: StateSchema
     /**
      * @description Represents a \\[apls\\] local-state or \\[apgs\\] global-state schema. These schemas determine how much storage may be used in a local-state or global-state for an application. The more space used, the larger minimum balance must be maintained in the account holding the data.
      * @type object | undefined
-    */
-    "local-state-schema"?: StateSchema;
+     */
+    'local-state-schema'?: StateSchema
     /**
      * @description \\[apan\\] defines the what additional actions occur with the transaction.\n\nValid types:\n* noop\n* optin\n* closeout\n* clear\n* update\n* update\n* delete
      * @type string
-    */
-    "on-completion": OnCompletion;
+     */
+    'on-completion': OnCompletion
     /**
      * @description \\[aprv\\] the lowest application version for which this transaction should immediately fail. 0 indicates that no version check should be performed.
      * @type integer | undefined
-    */
-    "reject-version"?: number;
-};
+     */
+    'reject-version'?: number
+}

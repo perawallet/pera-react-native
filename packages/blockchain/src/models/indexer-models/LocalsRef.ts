@@ -10,19 +10,18 @@
  limitations under the License
  */
 
-
 /**
  * @description LocalsRef names a local state by referring to an Address and App it belongs to.
-*/
+ */
 export type LocalsRef = {
     /**
      * @description \\[d\\] Address in access list, or the sender of the transaction.
      * @type string
-    */
-    address: string;
+     */
+    address: string
     /**
      * @description \\[p\\] Application ID for app in access list, or zero if referring to the called application.
      * @type integer
-    */
-    app: number;
-};
+     */
+    app: number
+}

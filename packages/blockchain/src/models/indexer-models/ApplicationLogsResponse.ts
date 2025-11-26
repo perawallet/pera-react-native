@@ -10,26 +10,26 @@
  limitations under the License
  */
 
-import type { ApplicationLogData } from "./ApplicationLogData.ts";
+import type { ApplicationLogData } from './ApplicationLogData.ts'
 
 export type ApplicationLogsResponse = {
     /**
      * @description \\[appidx\\] application index.
      * @type integer
-    */
-    "application-id": number;
+     */
+    'application-id': number
     /**
      * @description Round at which the results were computed.
      * @type integer
-    */
-    "current-round": number;
+     */
+    'current-round': number
     /**
      * @type array | undefined
-    */
-    "log-data"?: ApplicationLogData[];
+     */
+    'log-data'?: ApplicationLogData[]
     /**
      * @description Used for pagination, when making another request provide this token with the next parameter.
      * @type string | undefined
-    */
-    "next-token"?: string;
-};
+     */
+    'next-token'?: string
+}

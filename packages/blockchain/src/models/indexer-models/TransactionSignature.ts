@@ -10,27 +10,27 @@
  limitations under the License
  */
 
-import type { TransactionSignatureLogicsig } from "./TransactionSignatureLogicsig.ts";
-import type { TransactionSignatureMultisig } from "./TransactionSignatureMultisig.ts";
+import type { TransactionSignatureLogicsig } from './TransactionSignatureLogicsig.ts'
+import type { TransactionSignatureMultisig } from './TransactionSignatureMultisig.ts'
 
 /**
  * @description Validation signature associated with some data. Only one of the signatures should be provided.
-*/
+ */
 export type TransactionSignature = {
     /**
      * @description \\[lsig\\] Programatic transaction signature.\n\nDefinition:\ndata/transactions/logicsig.go
      * @type object | undefined
-    */
-    logicsig?: TransactionSignatureLogicsig;
+     */
+    logicsig?: TransactionSignatureLogicsig
     /**
      * @description structure holding multiple subsignatures.\n\nDefinition:\ncrypto/multisig.go : MultisigSig
      * @type object | undefined
-    */
-    multisig?: TransactionSignatureMultisig;
+     */
+    multisig?: TransactionSignatureMultisig
     /**
      * @description \\[sig\\] Standard ed25519 signature.
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string | undefined, byte
-    */
-    sig?: string;
-};
+     */
+    sig?: string
+}

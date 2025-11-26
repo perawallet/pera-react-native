@@ -10,10 +10,15 @@
  limitations under the License
  */
 
-
-export type OnCompletionEnum = "noop" | "optin" | "closeout" | "clear" | "update" | "delete";
+export type OnCompletionEnum =
+    | 'noop'
+    | 'optin'
+    | 'closeout'
+    | 'clear'
+    | 'update'
+    | 'delete'
 
 /**
  * @description \\[apan\\] defines the what additional actions occur with the transaction.\n\nValid types:\n* noop\n* optin\n* closeout\n* clear\n* update\n* update\n* delete
-*/
-export type OnCompletion = OnCompletionEnum;
+ */
+export type OnCompletion = OnCompletionEnum

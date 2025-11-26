@@ -10,9 +10,7 @@
  limitations under the License
  */
 
-import {
-    Networks,
-} from '@perawallet/wallet-core-shared'
+import { Networks } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
 import { useEffect, useMemo, useRef } from 'react'
 import { AppState, StatusBar } from 'react-native'
@@ -28,7 +26,10 @@ import useToast from '../../hooks/toast'
 import { useIsDarkMode } from '../../hooks/theme'
 import { SigningProvider } from '../../providers/SigningProvider'
 import PWTouchableOpacity from '../../components/common/touchable-opacity/PWTouchableOpacity'
-import { useDevice, useNetwork } from '@perawallet/wallet-core-platform-integration'
+import {
+    useDevice,
+    useNetwork,
+} from '@perawallet/wallet-core-platform-integration'
 import { usePolling } from '@perawallet/wallet-core-polling'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 

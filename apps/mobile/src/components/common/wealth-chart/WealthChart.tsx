@@ -14,12 +14,15 @@ import { useStyles } from './styles'
 import { LineChart } from 'react-native-gifted-charts'
 
 import PWView from '../view/PWView'
-import {
-    HistoryPeriod,
-} from '@perawallet/wallet-core-shared'
+import { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { useCallback, useMemo, useState } from 'react'
 import { useTheme } from '@rneui/themed'
-import { AccountBalanceHistoryItem, useAccountBalancesHistoryQuery, useAllAccounts, WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    AccountBalanceHistoryItem,
+    useAccountBalancesHistoryQuery,
+    useAllAccounts,
+    WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 
 const FOCUS_DEBOUNCE_TIME = 200
 
@@ -48,7 +51,10 @@ const WealthChart = ({
         [account, accounts],
     )
 
-    const { data, isPending } = useAccountBalancesHistoryQuery(addresses, period)
+    const { data, isPending } = useAccountBalancesHistoryQuery(
+        addresses,
+        period,
+    )
 
     //TODO move the currency conversion into the useAccountsBalanceHistory hook
     const dataPoints = useMemo(

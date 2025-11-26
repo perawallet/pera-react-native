@@ -11,10 +11,7 @@
  */
 
 import { ScrollView } from 'react-native'
-import {
-    formatDatetime,
-    HistoryPeriod,
-} from '@perawallet/wallet-core-shared'
+import { formatDatetime, HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import AssetTitle from '../../assets/asset-title/AssetTitle'
 import RoundButton from '../../common/round-button/RoundButton'
@@ -37,7 +34,12 @@ import useToast from '../../../hooks/toast'
 import PWView from '../../common/view/PWView'
 import EmptyView from '../../common/empty-view/EmptyView'
 import ChartPeriodSelection from '../../common/chart-period-selection/ChartPeriodSelection'
-import { AssetPriceHistoryItem, PeraAsset, useAssetFiatPricesQuery, useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
+import {
+    AssetPriceHistoryItem,
+    PeraAsset,
+    useAssetFiatPricesQuery,
+    useSingleAssetDetailsQuery,
+} from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 
 type AssetMarketsProps = {
@@ -205,7 +207,6 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
             <AssetDescription description={assetDetails.description} />
 
             <AssetSocialMedia assetDetails={assetDetails} />
-
 
             {/* TODO: Add this in when we have the metadata on the asset */}
             {/* <PWView style={styles.tagsContainer}>

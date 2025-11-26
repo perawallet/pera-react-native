@@ -14,17 +14,20 @@ import { Text } from '@rneui/themed'
 import MainScreenLayout from '../../layouts/MainScreenLayout'
 
 import { StaticScreenProps } from '@react-navigation/native'
-import {
-    Network,
-    Networks,
-} from '@perawallet/wallet-core-shared'
+import { Network, Networks } from '@perawallet/wallet-core-shared'
 import { useQueryClient } from '@tanstack/react-query'
 import { useStyles } from './styles'
 import PWView from '../../components/common/view/PWView'
 import PWButton from '../../components/common/button/PWButton'
 import { useSettings } from '@perawallet/wallet-core-settings'
-import { useDevice, useNetwork } from '@perawallet/wallet-core-platform-integration'
-import { Transaction, useSigningRequest } from '@perawallet/wallet-core-blockchain'
+import {
+    useDevice,
+    useNetwork,
+} from '@perawallet/wallet-core-platform-integration'
+import {
+    Transaction,
+    useSigningRequest,
+} from '@perawallet/wallet-core-blockchain'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 
 type SettingsSubPageScreenProps = StaticScreenProps<{

@@ -70,7 +70,6 @@ export const useDevice = (network: Network) => {
         [deviceId, deviceInfoService, fcmToken, network, setDeviceID],
     )
 
-
     return {
         deviceIDs,
         setDeviceID,

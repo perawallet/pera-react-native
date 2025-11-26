@@ -10,36 +10,35 @@
  limitations under the License
  */
 
-
 /**
  * @description A simplified version of AssetHolding
-*/
+ */
 export type MiniAssetHolding = {
     /**
      * @type string
-    */
-    address: string;
+     */
+    address: string
     /**
      * @type integer
-    */
-    amount: number;
+     */
+    amount: number
     /**
      * @description Whether or not this asset holding is currently deleted from its account.
      * @type boolean | undefined
-    */
-    deleted?: boolean;
+     */
+    deleted?: boolean
     /**
      * @type boolean
-    */
-    "is-frozen": boolean;
+     */
+    'is-frozen': boolean
     /**
      * @description Round during which the account opted into the asset.
      * @type integer | undefined
-    */
-    "opted-in-at-round"?: number;
+     */
+    'opted-in-at-round'?: number
     /**
      * @description Round during which the account opted out of the asset.
      * @type integer | undefined
-    */
-    "opted-out-at-round"?: number;
-};
+     */
+    'opted-out-at-round'?: number
+}

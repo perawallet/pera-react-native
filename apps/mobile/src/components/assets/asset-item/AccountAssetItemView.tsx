@@ -13,10 +13,7 @@
 import AssetIcon from '../asset-icon/AssetIcon'
 import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
 import PWView, { PWViewProps } from '../../common/view/PWView'
-import {
-    ALGO_ASSET_ID,
-    useAssetsQuery,
-} from '@perawallet/wallet-core-assets'
+import { ALGO_ASSET_ID, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { Text, useTheme } from '@rneui/themed'
 import { useStyles } from './styles'

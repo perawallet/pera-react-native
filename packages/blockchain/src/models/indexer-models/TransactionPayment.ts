@@ -10,29 +10,28 @@
  limitations under the License
  */
 
-
 /**
  * @description Fields for a payment transaction.\n\nDefinition:\ndata/transactions/payment.go : PaymentTxnFields
-*/
+ */
 export type TransactionPayment = {
     /**
      * @description \\[amt\\] number of MicroAlgos intended to be transferred.
      * @type integer
-    */
-    amount: number;
+     */
+    amount: number
     /**
      * @description Number of MicroAlgos that were sent to the close-remainder-to address when closing the sender account.
      * @type integer | undefined
-    */
-    "close-amount"?: number;
+     */
+    'close-amount'?: number
     /**
      * @description \\[close\\] when set, indicates that the sending account should be closed and all remaining funds be transferred to this address.
      * @type string | undefined
-    */
-    "close-remainder-to"?: string;
+     */
+    'close-remainder-to'?: string
     /**
      * @description \\[rcv\\] receiver\'s address.
      * @type string
-    */
-    receiver: string;
-};
+     */
+    receiver: string
+}

@@ -10,19 +10,18 @@
  limitations under the License
  */
 
-
 /**
  * @description Stores the global information associated with an application.
-*/
+ */
 export type ApplicationLogData = {
     /**
      * @description Logs for the application being executed by the transaction.
      * @type array
-    */
-    logs: string[];
+     */
+    logs: string[]
     /**
      * @description Transaction ID
      * @type string
-    */
-    txid: string;
-};
+     */
+    txid: string
+}

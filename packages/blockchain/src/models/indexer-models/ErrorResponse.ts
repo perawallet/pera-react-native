@@ -10,14 +10,13 @@
  limitations under the License
  */
 
-
 export type ErrorResponse = {
     /**
      * @type object | undefined
-    */
-    data?: object;
+     */
+    data?: object
     /**
      * @type string
-    */
-    message: string;
-};
+     */
+    message: string
+}

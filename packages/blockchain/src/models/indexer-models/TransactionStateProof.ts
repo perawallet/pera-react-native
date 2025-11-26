@@ -10,25 +10,25 @@
  limitations under the License
  */
 
-import type { IndexerStateProofMessage } from "./IndexerStateProofMessage.ts";
-import type { StateProofFields } from "./StateProofFields.ts";
+import type { IndexerStateProofMessage } from './IndexerStateProofMessage.ts'
+import type { StateProofFields } from './StateProofFields.ts'
 
 /**
  * @description Fields for a state proof transaction. \n\nDefinition:\ndata/transactions/stateproof.go : StateProofTxnFields
-*/
+ */
 export type TransactionStateProof = {
     /**
      * @type object | undefined
-    */
-    message?: IndexerStateProofMessage;
+     */
+    message?: IndexerStateProofMessage
     /**
      * @description \\[sp\\] represents a state proof.\n\nDefinition:\ncrypto/stateproof/structs.go : StateProof
      * @type object | undefined
-    */
-    "state-proof"?: StateProofFields;
+     */
+    'state-proof'?: StateProofFields
     /**
      * @description \\[sptype\\] Type of the state proof. Integer representing an entry defined in protocol/stateproof.go
      * @type integer | undefined
-    */
-    "state-proof-type"?: number;
-};
+     */
+    'state-proof-type'?: number
+}

@@ -10,18 +10,17 @@
  limitations under the License
  */
 
-
 export type TransactionSignatureMultisigSubsignature = {
     /**
      * @description \\[pk\\]
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string | undefined, byte
-    */
-    "public-key"?: string;
+     */
+    'public-key'?: string
     /**
      * @description \\[s\\]
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string | undefined, byte
-    */
-    signature?: string;
-};
+     */
+    signature?: string
+}

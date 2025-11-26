@@ -10,19 +10,19 @@
  limitations under the License
  */
 
-import type { TealValue } from "./TealValue.ts";
+import type { TealValue } from './TealValue.ts'
 
 /**
  * @description Represents a key-value pair in an application store.
-*/
+ */
 export type TealKeyValue = {
     /**
      * @type string
-    */
-    key: string;
+     */
+    key: string
     /**
      * @description Represents a TEAL value.
      * @type object
-    */
-    value: TealValue;
-};
+     */
+    value: TealValue
+}

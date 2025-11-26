@@ -14,13 +14,15 @@ import { useStyles } from './styles'
 import { LineChart } from 'react-native-gifted-charts'
 
 import PWView from '../../../common/view/PWView'
-import {
-    HistoryPeriod,
-} from '@perawallet/wallet-core-shared'
+import { HistoryPeriod } from '@perawallet/wallet-core-shared'
 
 import { useCallback, useMemo, useState } from 'react'
 import { useTheme } from '@rneui/themed'
-import { AccountBalanceHistoryItem, useAccountsAssetsBalanceHistoryQuery, WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    AccountBalanceHistoryItem,
+    useAccountsAssetsBalanceHistoryQuery,
+    WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 
 const FOCUS_DEBOUNCE_TIME = 200

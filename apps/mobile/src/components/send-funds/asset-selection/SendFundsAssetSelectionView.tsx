@@ -61,7 +61,9 @@ const SendFundsAssetSelectionView = ({
 
     const balanceData = useMemo(
         () =>
-            selectedAccount?.address ? accountBalances.get(selectedAccount.address)?.assetBalances : [],
+            selectedAccount?.address
+                ? accountBalances.get(selectedAccount.address)?.assetBalances
+                : [],
         [accountBalances, selectedAccount?.address],
     )
     const renderItem = useCallback(

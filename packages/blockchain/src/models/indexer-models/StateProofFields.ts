@@ -10,45 +10,45 @@
  limitations under the License
  */
 
-import type { MerkleArrayProof } from "./MerkleArrayProof.ts";
-import type { StateProofReveal } from "./StateProofReveal.ts";
+import type { MerkleArrayProof } from './MerkleArrayProof.ts'
+import type { StateProofReveal } from './StateProofReveal.ts'
 
 /**
  * @description \\[sp\\] represents a state proof.\n\nDefinition:\ncrypto/stateproof/structs.go : StateProof
-*/
+ */
 export type StateProofFields = {
     /**
      * @type object | undefined
-    */
-    "part-proofs"?: MerkleArrayProof;
+     */
+    'part-proofs'?: MerkleArrayProof
     /**
      * @description \\[pr\\] Sequence of reveal positions.
      * @type array | undefined
-    */
-    "positions-to-reveal"?: number[];
+     */
+    'positions-to-reveal'?: number[]
     /**
      * @description \\[r\\] Note that this is actually stored as a map[uint64] - Reveal in the actual msgp
      * @type array | undefined
-    */
-    reveals?: StateProofReveal[];
+     */
+    reveals?: StateProofReveal[]
     /**
      * @description \\[v\\] Salt version of the merkle signature.
      * @type integer | undefined
-    */
-    "salt-version"?: number;
+     */
+    'salt-version'?: number
     /**
      * @description \\[c\\]
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string | undefined, byte
-    */
-    "sig-commit"?: string;
+     */
+    'sig-commit'?: string
     /**
      * @type object | undefined
-    */
-    "sig-proofs"?: MerkleArrayProof;
+     */
+    'sig-proofs'?: MerkleArrayProof
     /**
      * @description \\[w\\]
      * @type integer | undefined
-    */
-    "signed-weight"?: number;
-};
+     */
+    'signed-weight'?: number
+}

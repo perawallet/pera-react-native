@@ -10,47 +10,46 @@
  limitations under the License
  */
 
-
 /**
  * @description Fields for a keyreg transaction.\n\nDefinition:\ndata/transactions/keyreg.go : KeyregTxnFields
-*/
+ */
 export type TransactionKeyreg = {
     /**
      * @description \\[nonpart\\] Mark the account as participating or non-participating.
      * @type boolean | undefined
-    */
-    "non-participation"?: boolean;
+     */
+    'non-participation'?: boolean
     /**
      * @description \\[selkey\\] Public key used with the Verified Random Function (VRF) result during committee selection.
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string | undefined, byte
-    */
-    "selection-participation-key"?: string;
+     */
+    'selection-participation-key'?: string
     /**
      * @description \\[sprfkey\\] State proof key used in key registration transactions.
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string | undefined, byte
-    */
-    "state-proof-key"?: string;
+     */
+    'state-proof-key'?: string
     /**
      * @description \\[votefst\\] First round this participation key is valid.
      * @type integer | undefined
-    */
-    "vote-first-valid"?: number;
+     */
+    'vote-first-valid'?: number
     /**
      * @description \\[votekd\\] Number of subkeys in each batch of participation keys.
      * @type integer | undefined
-    */
-    "vote-key-dilution"?: number;
+     */
+    'vote-key-dilution'?: number
     /**
      * @description \\[votelst\\] Last round this participation key is valid.
      * @type integer | undefined
-    */
-    "vote-last-valid"?: number;
+     */
+    'vote-last-valid'?: number
     /**
      * @description \\[votekey\\] Participation public key used in key registration transactions.
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string | undefined, byte
-    */
-    "vote-participation-key"?: string;
-};
+     */
+    'vote-participation-key'?: string
+}

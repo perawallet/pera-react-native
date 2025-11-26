@@ -20,7 +20,10 @@ import {
 } from '@perawallet/wallet-core-platform-integration'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { getAccountDisplayName, useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    getAccountDisplayName,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 

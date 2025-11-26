@@ -10,35 +10,35 @@
  limitations under the License
  */
 
-import type { AssetParams } from "./AssetParams.ts";
+import type { AssetParams } from './AssetParams.ts'
 
 /**
  * @description Specifies both the unique identifier and the parameters for an asset
-*/
+ */
 export type Asset = {
     /**
      * @description Round during which this asset was created.
      * @type integer | undefined
-    */
-    "created-at-round"?: number;
+     */
+    'created-at-round'?: number
     /**
      * @description Whether or not this asset is currently deleted.
      * @type boolean | undefined
-    */
-    deleted?: boolean;
+     */
+    deleted?: boolean
     /**
      * @description Round during which this asset was destroyed.
      * @type integer | undefined
-    */
-    "destroyed-at-round"?: number;
+     */
+    'destroyed-at-round'?: number
     /**
      * @description unique asset identifier
      * @type integer
-    */
-    index: number;
+     */
+    index: number
     /**
      * @description AssetParams specifies the parameters for an asset.\n\n\\[apar\\] when part of an AssetConfig transaction.\n\nDefinition:\ndata/transactions/asset.go : AssetParams
      * @type object
-    */
-    params: AssetParams;
-};
+     */
+    params: AssetParams
+}

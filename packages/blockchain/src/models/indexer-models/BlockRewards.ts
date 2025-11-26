@@ -10,39 +10,38 @@
  limitations under the License
  */
 
-
 /**
  * @description Fields relating to rewards,
-*/
+ */
 export type BlockRewards = {
     /**
      * @description \\[fees\\] accepts transaction fees, it can only spend to the incentive pool.
      * @type string
-    */
-    "fee-sink": string;
+     */
+    'fee-sink': string
     /**
      * @description \\[rwcalr\\] number of leftover MicroAlgos after the distribution of rewards-rate MicroAlgos for every reward unit in the next round.
      * @type integer
-    */
-    "rewards-calculation-round": number;
+     */
+    'rewards-calculation-round': number
     /**
      * @description \\[earn\\] How many rewards, in MicroAlgos, have been distributed to each RewardUnit of MicroAlgos since genesis.
      * @type integer
-    */
-    "rewards-level": number;
+     */
+    'rewards-level': number
     /**
      * @description \\[rwd\\] accepts periodic injections from the fee-sink and continually redistributes them as rewards.
      * @type string
-    */
-    "rewards-pool": string;
+     */
+    'rewards-pool': string
     /**
      * @description \\[rate\\] Number of new MicroAlgos added to the participation stake from rewards at the next round.
      * @type integer
-    */
-    "rewards-rate": number;
+     */
+    'rewards-rate': number
     /**
      * @description \\[frac\\] Number of leftover MicroAlgos after the distribution of RewardsRate/rewardUnits MicroAlgos for every reward unit in the next round.
      * @type integer
-    */
-    "rewards-residue": number;
-};
+     */
+    'rewards-residue': number
+}

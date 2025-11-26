@@ -10,21 +10,21 @@
  limitations under the License
  */
 
-import type { HashFactory } from "./HashFactory.ts";
+import type { HashFactory } from './HashFactory.ts'
 
 export type MerkleArrayProof = {
     /**
      * @type object | undefined
-    */
-    "hash-factory"?: HashFactory;
+     */
+    'hash-factory'?: HashFactory
     /**
      * @description \\[pth\\]
      * @type array | undefined
-    */
-    path?: string[];
+     */
+    path?: string[]
     /**
      * @description \\[td\\]
      * @type integer | undefined
-    */
-    "tree-depth"?: number;
-};
+     */
+    'tree-depth'?: number
+}

@@ -10,37 +10,37 @@
  limitations under the License
  */
 
-import type { TransactionSignatureMultisig } from "./TransactionSignatureMultisig.ts";
+import type { TransactionSignatureMultisig } from './TransactionSignatureMultisig.ts'
 
 /**
  * @description \\[lsig\\] Programatic transaction signature.\n\nDefinition:\ndata/transactions/logicsig.go
-*/
+ */
 export type TransactionSignatureLogicsig = {
     /**
      * @description \\[arg\\] Logic arguments, base64 encoded.
      * @type array | undefined
-    */
-    args?: string[];
+     */
+    args?: string[]
     /**
      * @description \\[l\\] Program signed by a signature or multi signature, or hashed to be the address of ana ccount. Base64 encoded TEAL program.
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string, byte
-    */
-    logic: string;
+     */
+    logic: string
     /**
      * @description structure holding multiple subsignatures.\n\nDefinition:\ncrypto/multisig.go : MultisigSig
      * @type object | undefined
-    */
-    "logic-multisig-signature"?: TransactionSignatureMultisig;
+     */
+    'logic-multisig-signature'?: TransactionSignatureMultisig
     /**
      * @description structure holding multiple subsignatures.\n\nDefinition:\ncrypto/multisig.go : MultisigSig
      * @type object | undefined
-    */
-    "multisig-signature"?: TransactionSignatureMultisig;
+     */
+    'multisig-signature'?: TransactionSignatureMultisig
     /**
      * @description \\[sig\\] ed25519 signature.
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string | undefined, byte
-    */
-    signature?: string;
-};
+     */
+    signature?: string
+}

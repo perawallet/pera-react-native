@@ -10,39 +10,38 @@
  limitations under the License
  */
 
-
 /**
  * @description \\[hbprf\\] HbProof is a signature using HeartbeatAddress\'s partkey, thereby showing it is online.
-*/
+ */
 export type HbProofFields = {
     /**
      * @description \\[p\\] Public key of the heartbeat message.
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string | undefined, byte
-    */
-    "hb-pk"?: string;
+     */
+    'hb-pk'?: string
     /**
      * @description \\[p1s\\] Signature of OneTimeSignatureSubkeyOffsetID(PK, Batch, Offset) under the key PK2.
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string | undefined, byte
-    */
-    "hb-pk1sig"?: string;
+     */
+    'hb-pk1sig'?: string
     /**
      * @description \\[p2\\] Key for new-style two-level ephemeral signature.
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string | undefined, byte
-    */
-    "hb-pk2"?: string;
+     */
+    'hb-pk2'?: string
     /**
      * @description \\[p2s\\] Signature of OneTimeSignatureSubkeyBatchID(PK2, Batch) under the master key (OneTimeSignatureVerifier).
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string | undefined, byte
-    */
-    "hb-pk2sig"?: string;
+     */
+    'hb-pk2sig'?: string
     /**
      * @description \\[s\\] Signature of the heartbeat message.
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string | undefined, byte
-    */
-    "hb-sig"?: string;
-};
+     */
+    'hb-sig'?: string
+}

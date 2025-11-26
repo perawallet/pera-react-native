@@ -10,24 +10,23 @@
  limitations under the License
  */
 
-
 /**
  * @description Represents a TEAL value.
-*/
+ */
 export type TealValue = {
     /**
      * @description bytes value.
      * @type string
-    */
-    bytes: string;
+     */
+    bytes: string
     /**
      * @description type of the value. Value `1` refers to **bytes**, value `2` refers to **uint**
      * @type integer
-    */
-    type: number;
+     */
+    type: number
     /**
      * @description uint value.
      * @type integer
-    */
-    uint: number;
-};
+     */
+    uint: number
+}

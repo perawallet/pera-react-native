@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import type { EvalDeltaKeyValue } from "./EvalDeltaKeyValue.ts";
+import type { EvalDeltaKeyValue } from './EvalDeltaKeyValue.ts'
 
 /**
  * @description Application state delta.
-*/
-export type StateDelta = EvalDeltaKeyValue[];
+ */
+export type StateDelta = EvalDeltaKeyValue[]

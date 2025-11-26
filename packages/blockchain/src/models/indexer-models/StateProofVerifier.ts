@@ -10,17 +10,16 @@
  limitations under the License
  */
 
-
 export type StateProofVerifier = {
     /**
      * @description \\[cmt\\] Represents the root of the vector commitment tree.
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string | undefined, byte
-    */
-    commitment?: string;
+     */
+    commitment?: string
     /**
      * @description \\[lf\\] Key lifetime.
      * @type integer | undefined
-    */
-    "key-lifetime"?: number;
-};
+     */
+    'key-lifetime'?: number
+}

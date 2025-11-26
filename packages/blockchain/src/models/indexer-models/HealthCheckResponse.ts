@@ -10,6 +10,6 @@
  limitations under the License
  */
 
-import type { HealthCheck } from "./HealthCheck.ts";
+import type { HealthCheck } from './HealthCheck.ts'
 
-export type HealthCheckResponse = HealthCheck;
+export type HealthCheckResponse = HealthCheck

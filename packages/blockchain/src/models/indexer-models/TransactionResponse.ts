@@ -10,17 +10,17 @@
  limitations under the License
  */
 
-import type { Transaction } from "./Transaction.ts";
+import type { Transaction } from './Transaction.ts'
 
 export type TransactionResponse = {
     /**
      * @description Round at which the results were computed.
      * @type integer
-    */
-    "current-round": number;
+     */
+    'current-round': number
     /**
      * @description Contains all fields common to all transactions and serves as an envelope to all transactions type. Represents both regular and inner transactions.\n\nDefinition:\ndata/transactions/signedtxn.go : SignedTxn\ndata/transactions/transaction.go : Transaction\n
      * @type object
-    */
-    transaction: Transaction;
-};
+     */
+    transaction: Transaction
+}

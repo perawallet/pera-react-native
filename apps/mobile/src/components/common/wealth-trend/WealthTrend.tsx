@@ -13,16 +13,17 @@
 import { Text } from '@rneui/themed'
 import PWView from '../view/PWView'
 import { useStyles } from './styles'
-import {
-    formatCurrency,
-    HistoryPeriod,
-} from '@perawallet/wallet-core-shared'
+import { formatCurrency, HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { useMemo } from 'react'
 import PWIcon from '../icons/PWIcon'
 import Decimal from 'decimal.js'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { useAccountBalancesHistoryQuery, useAllAccounts, WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountBalancesHistoryQuery,
+    useAllAccounts,
+    WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 
 type WealthTrendProps = {
     account?: WalletAccount
@@ -43,7 +44,10 @@ const WealthTrend = ({ account, period }: WealthTrendProps) => {
         [account, accounts],
     )
 
-    const { data, isPending } = useAccountBalancesHistoryQuery(addresses, period)
+    const { data, isPending } = useAccountBalancesHistoryQuery(
+        addresses,
+        period,
+    )
 
     const dataPoints = useMemo(
         () =>
@@ -59,7 +63,7 @@ const WealthTrend = ({ account, period }: WealthTrendProps) => {
 
         return [
             lastDp.minus(firstDp),
-            lastDp ? (lastDp.minus(firstDp).div(lastDp)).mul(100) : Decimal(0),
+            lastDp ? lastDp.minus(firstDp).div(lastDp).mul(100) : Decimal(0),
             lastDp.greaterThanOrEqualTo(firstDp),
         ]
     }, [dataPoints])
