@@ -14,53 +14,58 @@ import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { SettingsState, ThemeMode } from '../models'
 import type { WithPersist } from '@perawallet/wallet-core-shared'
-import { KeyValueStorageService, useKeyValueStorageService } from '@perawallet/wallet-core-platform-integration'
+import {
+    KeyValueStorageService,
+    useKeyValueStorageService,
+} from '@perawallet/wallet-core-platform-integration'
 import { createLazyStore, debugLog } from '@perawallet/wallet-core-shared'
 
-const lazy = createLazyStore<
-    WithPersist<StoreApi<SettingsState>, unknown>
->()
+const lazy = createLazyStore<WithPersist<StoreApi<SettingsState>, unknown>>()
 
 export const useSettingsStore: UseBoundStore<
     WithPersist<StoreApi<SettingsState>, unknown>
 > = lazy.useStore
 
-const createSettingsStore = (storage: KeyValueStorageService) => create<SettingsState>()(
-    persist(
-        (set, get) => ({
-            theme: 'system',
-            privacyMode: false,
-            preferences: {},
-            setTheme: (theme: ThemeMode) => set({ theme }),
-            setPrivacyMode: (privacyMode: boolean) => set({ privacyMode }),
-            setPreference: (key: string, value: string | boolean | number) => {
-                set({ preferences: { ...get().preferences, [key]: value } })
-            },
-            getPreference: (key: string) => {
-                return get().preferences[key] ?? null
-            },
-            deletePreference: (key: string) => {
-                const existing = get().preferences
-                delete existing[key]
-                set({
-                    preferences: {
-                        ...existing,
-                    },
-                })
-            },
-        }),
-        {
-            name: 'settings-store',
-            storage: createJSONStorage(() => storage),
-            version: 1,
-            partialize: state => ({
-                theme: state.theme,
-                privacyMode: state.privacyMode,
-                preferences: state.preferences,
+const createSettingsStore = (storage: KeyValueStorageService) =>
+    create<SettingsState>()(
+        persist(
+            (set, get) => ({
+                theme: 'system',
+                privacyMode: false,
+                preferences: {},
+                setTheme: (theme: ThemeMode) => set({ theme }),
+                setPrivacyMode: (privacyMode: boolean) => set({ privacyMode }),
+                setPreference: (
+                    key: string,
+                    value: string | boolean | number,
+                ) => {
+                    set({ preferences: { ...get().preferences, [key]: value } })
+                },
+                getPreference: (key: string) => {
+                    return get().preferences[key] ?? null
+                },
+                deletePreference: (key: string) => {
+                    const existing = get().preferences
+                    delete existing[key]
+                    set({
+                        preferences: {
+                            ...existing,
+                        },
+                    })
+                },
             }),
-        },
-    ),
-)
+            {
+                name: 'settings-store',
+                storage: createJSONStorage(() => storage),
+                version: 1,
+                partialize: state => ({
+                    theme: state.theme,
+                    privacyMode: state.privacyMode,
+                    preferences: state.preferences,
+                }),
+            },
+        ),
+    )
 
 export const initSettingsStore = () => {
     debugLog('Initializing settings store')

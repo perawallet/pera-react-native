@@ -78,21 +78,21 @@ const MenuScreen = () => {
                     titleWeight='h3'
                     leftIcon={<PWIcon name='card-stack' />}
                     rightIcon={<PWIcon name='chevron-right' />}
-                    onPress={() => { }}
+                    onPress={() => {}}
                 />
                 <PanelButton
                     title='Buy ALGO'
                     titleWeight='h3'
                     leftIcon={<PWIcon name='algo' />}
                     rightIcon={<PWIcon name='chevron-right' />}
-                    onPress={() => { }}
+                    onPress={() => {}}
                 />
                 <PanelButton
                     title='Receive'
                     titleWeight='h3'
                     leftIcon={<PWIcon name='inflow' />}
                     rightIcon={<PWIcon name='chevron-right' />}
-                    onPress={() => { }}
+                    onPress={() => {}}
                 />
                 <PanelButton
                     title='Contacts'

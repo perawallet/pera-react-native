@@ -139,9 +139,9 @@ const SettingsScreen = () => {
                                     onPress={() => {
                                         page.route
                                             ? goToSettingsPage(
-                                                page.route,
-                                                page.title,
-                                            )
+                                                  page.route,
+                                                  page.title,
+                                              )
                                             : openRating()
                                     }}
                                 >

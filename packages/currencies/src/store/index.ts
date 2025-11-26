@@ -9,37 +9,44 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
+
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import { KeyValueStorageService, useKeyValueStorageService } from '@perawallet/wallet-core-platform-integration'
-import { createLazyStore, debugLog, type WithPersist } from '@perawallet/wallet-core-shared'
+import {
+    KeyValueStorageService,
+    useKeyValueStorageService,
+} from '@perawallet/wallet-core-platform-integration'
+import {
+    createLazyStore,
+    debugLog,
+    type WithPersist,
+} from '@perawallet/wallet-core-shared'
 import { CurrenciesStore } from '../models'
 
-const lazy = createLazyStore<
-    WithPersist<StoreApi<CurrenciesStore>, unknown>
->()
+const lazy = createLazyStore<WithPersist<StoreApi<CurrenciesStore>, unknown>>()
 
 export const useCurrenciesStore: UseBoundStore<
     WithPersist<StoreApi<CurrenciesStore>, unknown>
 > = lazy.useStore
 
-const createCurrenciesStore = (storage: KeyValueStorageService) => create<CurrenciesStore>()(
-    persist(
-        set => ({
-            preferredCurrency: 'USD',
-            setPreferredCurrency: (currency: string) =>
-                set({ preferredCurrency: currency }),
-        }),
-        {
-            name: 'currencies-store',
-            storage: createJSONStorage(() => storage),
-            version: 1,
-            partialize: state => ({
-                preferredCurrency: state.preferredCurrency,
+const createCurrenciesStore = (storage: KeyValueStorageService) =>
+    create<CurrenciesStore>()(
+        persist(
+            set => ({
+                preferredCurrency: 'USD',
+                setPreferredCurrency: (currency: string) =>
+                    set({ preferredCurrency: currency }),
             }),
-        },
-    ),
-)
+            {
+                name: 'currencies-store',
+                storage: createJSONStorage(() => storage),
+                version: 1,
+                partialize: state => ({
+                    preferredCurrency: state.preferredCurrency,
+                }),
+            },
+        ),
+    )
 
 export const initCurrenciesStore = () => {
     debugLog('Initializing currencies store')

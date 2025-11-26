@@ -61,7 +61,15 @@ export const useAccountBalancesQuery = (
         }),
     })
 
-    const { accountBalances, portfolioAlgoBalance, portfolioFiatBalance, isPending, isFetched, isRefetching, isError } = useMemo(() => {
+    const {
+        accountBalances,
+        portfolioAlgoBalance,
+        portfolioFiatBalance,
+        isPending,
+        isFetched,
+        isRefetching,
+        isError,
+    } = useMemo(() => {
         const accountBalanceList = results.map(r => {
             let algoAmount = new Decimal(0)
             let fiatAmount = new Decimal(0)
@@ -101,8 +109,14 @@ export const useAccountBalancesQuery = (
             accounts.map((a, i) => [a.address, accountBalanceList[i]]),
         )
 
-        const portfolioAlgoBalance = accountBalanceList.reduce((acc, cur) => acc.plus(cur.algoBalance), Decimal(0))
-        const portfolioFiatBalance = accountBalanceList.reduce((acc, cur) => acc.plus(cur.fiatBalance), Decimal(0))
+        const portfolioAlgoBalance = accountBalanceList.reduce(
+            (acc, cur) => acc.plus(cur.algoBalance),
+            Decimal(0),
+        )
+        const portfolioFiatBalance = accountBalanceList.reduce(
+            (acc, cur) => acc.plus(cur.fiatBalance),
+            Decimal(0),
+        )
 
         return {
             accountBalances,

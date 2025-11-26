@@ -14,36 +14,38 @@ import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { SwapsState } from '../models'
 import type { WithPersist } from '@perawallet/wallet-core-shared'
-import { KeyValueStorageService, useKeyValueStorageService } from '@perawallet/wallet-core-platform-integration'
+import {
+    KeyValueStorageService,
+    useKeyValueStorageService,
+} from '@perawallet/wallet-core-platform-integration'
 import { createLazyStore, debugLog } from '@perawallet/wallet-core-shared'
 
-const lazy = createLazyStore<
-    WithPersist<StoreApi<SwapsState>, unknown>
->()
+const lazy = createLazyStore<WithPersist<StoreApi<SwapsState>, unknown>>()
 
 export const useSwapsStore: UseBoundStore<
     WithPersist<StoreApi<SwapsState>, unknown>
 > = lazy.useStore
 
-const createSwapsStore = (storage: KeyValueStorageService) => create<SwapsState>()(
-    persist(
-        set => ({
-            fromAsset: '0',
-            toAsset: '1001',
-            setFromAsset: (fromAsset: string) => set({ fromAsset }),
-            setToAsset: (toAsset: string) => set({ toAsset }),
-        }),
-        {
-            name: 'swaps-store',
-            storage: createJSONStorage(() => storage),
-            version: 1,
-            partialize: state => ({
-                fromAsset: state.fromAsset,
-                toAsset: state.toAsset,
+const createSwapsStore = (storage: KeyValueStorageService) =>
+    create<SwapsState>()(
+        persist(
+            set => ({
+                fromAsset: '0',
+                toAsset: '1001',
+                setFromAsset: (fromAsset: string) => set({ fromAsset }),
+                setToAsset: (toAsset: string) => set({ toAsset }),
             }),
-        },
-    ),
-)
+            {
+                name: 'swaps-store',
+                storage: createJSONStorage(() => storage),
+                version: 1,
+                partialize: state => ({
+                    fromAsset: state.fromAsset,
+                    toAsset: state.toAsset,
+                }),
+            },
+        ),
+    )
 
 export const initSwapsStore = () => {
     debugLog('Initializing swaps store')

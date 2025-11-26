@@ -12,9 +12,17 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import { KeyValueStorageService, useKeyValueStorageService } from '../../storage'
+import {
+    KeyValueStorageService,
+    useKeyValueStorageService,
+} from '../../storage'
 import type { DeviceState } from '../models'
-import { createLazyStore, debugLog, type Network, type WithPersist } from '@perawallet/wallet-core-shared'
+import {
+    createLazyStore,
+    debugLog,
+    type Network,
+    type WithPersist,
+} from '@perawallet/wallet-core-shared'
 
 const objectToDeviceIDs = (
     object: Record<string, string | null>,
@@ -40,51 +48,50 @@ const rehydrateDeviceSlice = (
     return persistedState
 }
 
-const lazy = createLazyStore<
-    WithPersist<StoreApi<DeviceState>, unknown>
->()
+const lazy = createLazyStore<WithPersist<StoreApi<DeviceState>, unknown>>()
 
 export const useDeviceStore: UseBoundStore<
     WithPersist<StoreApi<DeviceState>, unknown>
 > = lazy.useStore
 
-export const createDeviceStore = (storage: KeyValueStorageService) => create<DeviceState>()(
-    persist(
-        (set, get) => ({
-            deviceIDs: new Map(),
-            fcmToken: null,
-            network: 'mainnet',
-            setFcmToken: (token: string | null) => {
-                set({ fcmToken: token })
-            },
-            setDeviceID: (network: Network, id: string | null) => {
-                const deviceIDs = get().deviceIDs
-                deviceIDs.set(network, id)
-                set({ deviceIDs })
-            },
-            setNetwork: (network: Network) => {
-                set({ network })
-            },
-        }),
-        {
-            name: 'device-store',
-            storage: createJSONStorage(() => storage),
-            version: 1,
-            partialize: state => ({
-                deviceIDs: state.deviceIDs,
-                fcmToken: state.fcmToken,
-                network: state.network,
+export const createDeviceStore = (storage: KeyValueStorageService) =>
+    create<DeviceState>()(
+        persist(
+            (set, get) => ({
+                deviceIDs: new Map(),
+                fcmToken: null,
+                network: 'mainnet',
+                setFcmToken: (token: string | null) => {
+                    set({ fcmToken: token })
+                },
+                setDeviceID: (network: Network, id: string | null) => {
+                    const deviceIDs = get().deviceIDs
+                    deviceIDs.set(network, id)
+                    set({ deviceIDs })
+                },
+                setNetwork: (network: Network) => {
+                    set({ network })
+                },
             }),
-            onRehydrateStorage: () => (state) => {
-                if (state) {
-                    // Rehydrate device slice to convert deviceIDs back to Map
-                    const deviceState = rehydrateDeviceSlice(state)
-                    Object.assign(state, deviceState)
-                }
+            {
+                name: 'device-store',
+                storage: createJSONStorage(() => storage),
+                version: 1,
+                partialize: state => ({
+                    deviceIDs: state.deviceIDs,
+                    fcmToken: state.fcmToken,
+                    network: state.network,
+                }),
+                onRehydrateStorage: () => state => {
+                    if (state) {
+                        // Rehydrate device slice to convert deviceIDs back to Map
+                        const deviceState = rehydrateDeviceSlice(state)
+                        Object.assign(state, deviceState)
+                    }
+                },
             },
-        },
-    ),
-)
+        ),
+    )
 
 export const initDeviceStore = () => {
     debugLog('Initializing device store')

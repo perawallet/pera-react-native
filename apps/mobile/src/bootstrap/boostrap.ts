@@ -16,12 +16,7 @@ import { RNFirebaseService } from '../platform/firebase'
 import { RNKeyValueStorageService } from '../platform/key-value-storage'
 import { RNSecureStorageService } from '../platform/secure-storage'
 import {
-    useCrashReportingService,
-    useRemoteConfigService,
-    useNotificationService,
     registerPlatformServices,
-    useFcmToken,
-    useAnalyticsService,
     initDeviceStore,
 } from '@perawallet/wallet-core-platform-integration'
 import { debugLog } from '@perawallet/wallet-core-shared'
@@ -50,6 +45,7 @@ export const useBootstrapper = () => {
         //Important - this has to happen first so all subsequent services can use the platform services
         await registerPlatformServices(platformServices)
 
+        // TODO: This is a mess - we should find a more elegant solution here...
         await initDeviceStore()
         await initAccountsStore()
         await initAssetsStore()
@@ -60,9 +56,11 @@ export const useBootstrapper = () => {
         await initSettingsStore()
         await initSwapsStore()
 
-        const crashlyticsInit = useCrashReportingService().initializeCrashReporting()
-        const remoteConfigInit = useRemoteConfigService().initializeRemoteConfig()
-        const analyticsInit = useAnalyticsService().initializeAnalytics()
+        const crashlyticsInit =
+            platformServices.crashReporting.initializeCrashReporting()
+        const remoteConfigInit =
+            platformServices.remoteConfig.initializeRemoteConfig()
+        const analyticsInit = platformServices.analytics.initializeAnalytics()
 
         await Promise.allSettled([
             crashlyticsInit,
@@ -71,7 +69,7 @@ export const useBootstrapper = () => {
         ])
 
         const notificationResults =
-            await useNotificationService().initializeNotifications()
+            await platformServices.notification.initializeNotifications()
 
         debugLog('Bootstrapped')
 

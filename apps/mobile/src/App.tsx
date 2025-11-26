@@ -14,7 +14,6 @@ import React, { useEffect, useState } from 'react'
 import { Text } from 'react-native'
 import { QueryProvider } from './providers/QueryProvider'
 import { useBootstrapper } from './bootstrap/boostrap'
-import { useKeyValueStorageService } from '@perawallet/wallet-core-platform-integration'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
 import { Persister } from '@tanstack/react-query-persist-client'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
@@ -33,9 +32,9 @@ function App() {
 
     useEffect(() => {
         if (!bootstrapped) {
-            bootstrap().then(({ token }) => {
+            bootstrap().then(({ platformServices, token }) => {
                 setFcmToken(token ?? null)
-                const kvService = useKeyValueStorageService()
+                const kvService = platformServices.keyValueStorage
                 const reactQueryPersistor = createAsyncStoragePersister({
                     storage: kvService,
                 })
