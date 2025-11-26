@@ -20,7 +20,7 @@ import PWView from '../../common/view/PWView'
 import { View } from 'react-native'
 
 import CurrencyInput from '../../currency/currency-input/CurrencyInput'
-import { ALGO_ASSET_ID, PeraAsset, useAssetsQuery } from '@perawallet/wallet-core-assets'
+import { ALGO_ASSET_ID, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity'
 import PWIcon from '../../common/icons/PWIcon'
 

@@ -42,6 +42,7 @@ export * from './push-notifications'
 export * from './remote-config'
 export * from './reporting'
 export * from './storage'
+export * from './models'
 
 export const registerPlatformServices = (platform: PlatformServices) => {
     container.register<KeyValueStorageService>(

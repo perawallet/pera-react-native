@@ -26,6 +26,7 @@
     "vitest": "catalog:",
     "@types/react": "catalog:",
     "@testing-library/react": "catalog:",
-    "@perawallet/wallet-core-eslint-config": "workspace:*"
+    "@perawallet/wallet-core-eslint-config": "workspace:*",
+    "@perawallet/wallet-core-typescript-config": "workspace:*"
   }
 }

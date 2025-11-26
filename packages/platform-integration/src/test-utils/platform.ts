@@ -12,19 +12,20 @@
 
 import {
     registerPlatformServices,
+    MemoryKeyValueStorage,
     type PlatformServices,
-} from '@platform/index'
-import { MemoryKeyValueStorage } from './storage'
-import type {
     KeyValueStorageService,
     SecureStorageService,
-} from '../services/storage'
-import type { RemoteConfigService } from '../services/remote-config'
-import type { NotificationService } from '../services/notifications'
-import type { CrashReportingService } from '../services/reporting'
-import { DevicePlatforms, type DeviceInfoService } from '@services/device'
+    RemoteConfigService,
+    NotificationService,
+    CrashReportingService,
+    DeviceInfoService,
+    DevicePlatforms,
+    AnalyticsService,
+} from '../index'
 
 type Overrides = Partial<{
+    analytics: AnalyticsService
     keyValueStorage: KeyValueStorageService
     secureStorage: SecureStorageService
     remoteConfig: RemoteConfigService
@@ -40,19 +41,24 @@ type Overrides = Partial<{
 export const buildTestPlatform = (
     overrides: Overrides = {},
 ): PlatformServices => {
+    const defaultAnalytics: AnalyticsService = {
+        initializeAnalytics() { },
+        logEvent(_event: string, _properties?: Record<string, unknown>) { },
+    }
+
     const defaultSecure: SecureStorageService = {
-        async setItem(_k: string, _v: Buffer) {},
+        async setItem(_k: string, _v: Buffer) { },
         async getItem(_k: string) {
             return null
         },
-        async removeItem(_k: string) {},
+        async removeItem(_k: string) { },
         async authenticate() {
             return true
         },
     }
 
     const defaultRemote: RemoteConfigService = {
-        initializeRemoteConfig() {},
+        initializeRemoteConfig() { },
         getStringValue(_k, f) {
             return f ?? ''
         },
@@ -66,17 +72,17 @@ export const buildTestPlatform = (
 
     const defaultNotification: NotificationService = {
         async initializeNotifications() {
-            return { unsubscribe: () => {} }
+            return { unsubscribe: () => { } }
         },
     }
 
     const defaultCrash: CrashReportingService = {
-        initializeCrashReporting() {},
-        recordNonFatalError(_e: unknown) {},
+        initializeCrashReporting() { },
+        recordNonFatalError(_e: unknown) { },
     }
 
     const deviceInfo: DeviceInfoService = {
-        initializeDeviceInfo() {},
+        initializeDeviceInfo() { },
         getDeviceID() {
             return Promise.resolve('testID')
         },
@@ -98,6 +104,7 @@ export const buildTestPlatform = (
     }
 
     return {
+        analytics: overrides.analytics ?? defaultAnalytics,
         keyValueStorage:
             overrides.keyValueStorage ?? new MemoryKeyValueStorage(),
         secureStorage: overrides.secureStorage ?? defaultSecure,

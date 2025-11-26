@@ -1,7 +1,7 @@
 /** @type {import("eslint").Linter.Config} */
 module.exports = {
   root: true,
-  extends: ["@perawallet/wallet-core-eslint-config"],
+  extends: [require.resolve("@perawallet/wallet-core-eslint-config")],
   parserOptions: {
     project: "./tsconfig.json",
     tsconfigRootDir: __dirname,

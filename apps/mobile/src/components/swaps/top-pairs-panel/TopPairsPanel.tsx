@@ -18,7 +18,7 @@ import { useCallback } from 'react'
 
 import SwapPair from '../swap-pair/SwapPair'
 import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
-import { ALGO_ASSET_ID, PeraAsset, useAssetsQuery } from '@perawallet/wallet-core-assets'
+import { ALGO_ASSET_ID, useAssetsQuery } from '@perawallet/wallet-core-assets'
 
 //TODO this iz a mock implementation - implement properly
 const TopPairsPanel = () => {

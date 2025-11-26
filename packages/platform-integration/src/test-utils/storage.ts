@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { KeyValueStorageService } from '@services/storage'
+import type { KeyValueStorageService } from '../storage'
 
 export class MemoryKeyValueStorage implements KeyValueStorageService {
     private store = new Map<string, string>()

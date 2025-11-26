@@ -16,10 +16,10 @@ import react from '@vitejs/plugin-react'
 import dts from 'vite-plugin-dts'
 
 export default defineConfig({
-    plugins: [react(), dts({ include: ['lib'] })],
+    plugins: [react(), dts({ include: ['src'] })],
     build: {
         lib: {
-            entry: resolve(__dirname, 'lib/main.ts'),
+            entry: resolve(__dirname, 'src/index.ts'),
             formats: ['es'],
         },
         rollupOptions: {

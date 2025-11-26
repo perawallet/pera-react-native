@@ -70,7 +70,7 @@ const AccountAssetItemView = ({
             )
         }
         return undefined
-    }, [asset])
+    }, [asset, accountBalance.assetId])
 
     if (!asset?.unitName) {
         return <></>

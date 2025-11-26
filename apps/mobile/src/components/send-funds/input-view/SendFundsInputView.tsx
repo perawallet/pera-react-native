@@ -69,11 +69,11 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
         if (!selectedAccount) {
             return null
         }
-        const asset = accountBalances?.get(selectedAccount.address)
+        const assetToUse = accountBalances?.get(selectedAccount.address)
             ?.assetBalances?.find(
                 b => b.assetId === selectedAsset?.assetId,
             )
-        const assetAmount = asset?.cryptoAmount ?? Decimal(0)
+        const assetAmount = assetToUse?.cryptoAmount ?? Decimal(0)
         return assetAmount
     }, [accountBalances, selectedAsset?.assetId, selectedAccount])
 

@@ -18,7 +18,6 @@ import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
 import WealthChart from '../../common/wealth-chart/WealthChart'
 import { PWViewProps } from '../../common/view/PWView'
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity'
-import Decimal from 'decimal.js'
 import {
     formatDatetime,
     HistoryPeriod,

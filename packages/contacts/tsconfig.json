@@ -1,5 +1,5 @@
 {
-  "extends": "../../packages/core/tsconfig.json",
+  "extends": "@perawallet/wallet-core-typescript-config/vite.json",
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src"

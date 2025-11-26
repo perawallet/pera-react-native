@@ -53,8 +53,8 @@ const AssetMarketStats = ({ assetDetails }: AssetMarketStatsProps) => {
             return '---'
         }
 
-        const price = data.get(assetDetails.assetId)
-        return price?.fiatPrice ?? '---'
+        const fiatPriceAsset = data.get(assetDetails.assetId)
+        return fiatPriceAsset?.fiatPrice ?? '---'
     }, [data, assetDetails.assetId])
 
     return (

@@ -17,7 +17,7 @@ import { Text } from '@rneui/themed'
 import { useCallback } from 'react'
 
 import SwapPair from '../swap-pair/SwapPair'
-import { ALGO_ASSET_ID, PeraAsset, useAssetsQuery } from '@perawallet/wallet-core-assets'
+import { ALGO_ASSET_ID, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity'
 
 const SwapHistoryPanel = () => {

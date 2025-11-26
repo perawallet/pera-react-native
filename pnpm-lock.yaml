@@ -490,6 +490,9 @@ importers:
       '@perawallet/wallet-core-eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
+      '@perawallet/wallet-core-typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
       '@testing-library/react':
         specifier: 16.3.0
         version: 16.3.0(@testing-library/dom@10.4.1)(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -536,6 +539,9 @@ importers:
       '@perawallet/wallet-core-eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
+      '@perawallet/wallet-core-typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.2
@@ -585,6 +591,9 @@ importers:
       '@perawallet/wallet-core-eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
+      '@perawallet/wallet-core-typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
       '@testing-library/react':
         specifier: 'catalog:'
         version: 16.3.0(@testing-library/dom@10.4.1)(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -619,6 +628,9 @@ importers:
       '@perawallet/wallet-core-eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
+      '@perawallet/wallet-core-typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
       '@testing-library/react':
         specifier: ^16.3.0
         version: 16.3.0(@testing-library/dom@10.4.1)(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.2.0))(react@19.2.0)
@@ -680,6 +692,9 @@ importers:
       '@perawallet/wallet-core-eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
+      '@perawallet/wallet-core-typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
       '@testing-library/react':
         specifier: 'catalog:'
         version: 16.3.0(@testing-library/dom@10.4.1)(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -720,6 +735,9 @@ importers:
       '@perawallet/wallet-core-eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
+      '@perawallet/wallet-core-typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.2
@@ -784,6 +802,9 @@ importers:
       '@perawallet/wallet-core-eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
+      '@perawallet/wallet-core-typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
       '@testing-library/react':
         specifier: 'catalog:'
         version: 16.3.0(@testing-library/dom@10.4.1)(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -824,6 +845,9 @@ importers:
       '@perawallet/wallet-core-eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
+      '@perawallet/wallet-core-typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.2
@@ -858,6 +882,9 @@ importers:
       '@perawallet/wallet-core-eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
+      '@perawallet/wallet-core-typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.2
@@ -1010,6 +1037,9 @@ importers:
       '@perawallet/wallet-core-eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
+      '@perawallet/wallet-core-typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.2
@@ -1025,6 +1055,12 @@ importers:
 
   packages/test-utils:
     dependencies:
+      '@perawallet/wallet-core-config':
+        specifier: workspace:*
+        version: link:../config
+      '@perawallet/wallet-core-platform-integration':
+        specifier: workspace:*
+        version: link:../platform-integration
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
@@ -1041,6 +1077,9 @@ importers:
       '@perawallet/wallet-core-eslint-config':
         specifier: workspace:*
         version: link:../eslint-config
+      '@perawallet/wallet-core-typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.2

@@ -20,10 +20,8 @@ import {
 
 import { useCallback, useMemo, useState } from 'react'
 import { useTheme } from '@rneui/themed'
-import Decimal from 'decimal.js'
 import { AccountBalanceHistoryItem, useAccountsAssetsBalanceHistoryQuery, WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
-import { useCurrency } from '@perawallet/wallet-core-currencies'
 
 const FOCUS_DEBOUNCE_TIME = 200
 
@@ -47,7 +45,6 @@ const AssetWealthChart = ({
     period,
 }: AssetWealthChartProps) => {
     const { theme } = useTheme()
-    const { preferredCurrency } = useCurrency()
     const themeStyle = useStyles()
     const [lastSentIndex, setLastSentIndex] = useState<number>()
     const [lastSentTime, setLastSentTime] = useState<number>(Date.now())

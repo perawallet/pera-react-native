@@ -19,9 +19,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { useCallback, useMemo, useState } from 'react'
 import { useTheme } from '@rneui/themed'
-import Decimal from 'decimal.js'
 import { AccountBalanceHistoryItem, useAccountBalancesHistoryQuery, useAllAccounts, WalletAccount } from '@perawallet/wallet-core-accounts'
-import { useCurrenciesQuery } from '@perawallet/wallet-core-currencies'
 
 const FOCUS_DEBOUNCE_TIME = 200
 

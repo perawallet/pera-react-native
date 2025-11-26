@@ -40,11 +40,6 @@ type SendFundsTransactionConfirmationProps = {
     onBack: () => void
 }
 
-type Balance = {
-    cryptoAmount: Decimal | null
-    fiatAmount: Decimal | null
-}
-
 //TODO figure out fee calculation
 const SendFundsTransactionConfirmation = ({
     onNext,

@@ -24,7 +24,7 @@ import BalanceImpactView from '../balance-impact/BalanceImpactView'
 import useToast from '../../../hooks/toast'
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity'
 import PWIcon from '../../common/icons/PWIcon'
-import { encodeAlgorandAddress, SignRequest, useSigningRequest } from '@perawallet/wallet-core-blockchain'
+import { SignRequest, useSigningRequest } from '@perawallet/wallet-core-blockchain'
 
 type SigningViewProps = {
     request: SignRequest

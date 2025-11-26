@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect } from 'react'
+import { useCallback } from 'react'
 import { useCreateDeviceMutation } from './useCreateDeviceMutation'
 import { useUpdateDeviceMutation } from './useUpdateDeviceMutation'
 import { useDeviceStore } from '../store'
