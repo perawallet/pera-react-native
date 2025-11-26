@@ -20,7 +20,7 @@ import {
     XHDWalletAPI,
 } from '@perawallet/wallet-core-xhdwallet'
 import * as bip39 from 'bip39'
-import messageSchema from './schema/message-schema.json'
+import messageSchema from '../schema/message-schema.json'
 
 const api = new XHDWalletAPI()
 

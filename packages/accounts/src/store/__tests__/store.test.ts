@@ -11,8 +11,8 @@
  */
 
 import { describe, test, expect, beforeEach } from 'vitest'
-import { useAccountsStore } from '../store'
-import type { WalletAccount } from '../models'
+import { useAccountsStore } from '../index'
+import type { WalletAccount } from '../../models'
 
 describe('services/accounts/store', () => {
     beforeEach(() => {

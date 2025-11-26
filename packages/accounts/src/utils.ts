@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import type { SecureStorageService } from '../../services/storage/platform-service'
-import { truncateAlgorandAddress } from '../../utils/addresses'
+import type { SecureStorageService } from '@perawallet/wallet-core-platform-integration'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import type { WalletAccount } from './models'
 
 export const getAccountDisplayName = (account: WalletAccount | null) => {

@@ -9,24 +9,26 @@
     "lint": "eslint src"
   },
   "dependencies": {
-    "@perawallet/wallet-core-shared": "workspace:*",
-    "@perawallet/wallet-core-platform-integration": "workspace:*",
-    "@perawallet/wallet-core-xhdwallet": "workspace:*",
+    "@babel/runtime": "catalog:",
     "@perawallet/wallet-core-currencies": "workspace:*",
-    "uuid": "^13.0.0",
-    "bip39": "catalog:",
-    "react": "catalog:",
-    "zustand": "catalog:",
+    "@perawallet/wallet-core-platform-integration": "workspace:*",
+    "@perawallet/wallet-core-shared": "workspace:*",
+    "@perawallet/wallet-core-xhdwallet": "workspace:*",
     "@tanstack/react-query": "catalog:",
-    "decimal.js": "catalog:"
+    "bip39": "catalog:",
+    "decimal.js": "catalog:",
+    "react": "catalog:",
+    "uuid": "^13.0.0",
+    "zustand": "catalog:"
   },
   "devDependencies": {
+    "@perawallet/wallet-core-eslint-config": "workspace:*",
+    "@perawallet/wallet-core-typescript-config": "workspace:*",
+    "@testing-library/react": "16.3.0",
+    "@types/react": "catalog:",
+    "reflect-metadata": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:",
-    "@types/react": "catalog:",
-    "@testing-library/react": "16.3.0",
-    "@perawallet/wallet-core-eslint-config": "workspace:*",
-    "@perawallet/wallet-core-typescript-config": "workspace:*"
+    "vitest": "catalog:"
   }
 }

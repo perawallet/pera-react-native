@@ -12,39 +12,14 @@
 
 import { describe, test, expect } from 'vitest'
 import { container } from 'tsyringe'
-import { type KeyValueStorageService } from '../../models'
 import {
     useKeyValueStorageService,
     KeyValueStorageServiceContainerKey,
 } from '../index'
+import { MemoryKeyValueStorage } from '../../../test-utils'
 
 describe('useKeyValueStorageService tests', () => {
     test('useKeyValueStorageService resolves the registered KeyValueStorageService from the container', () => {
-        class MemoryKeyValueStorage implements KeyValueStorageService {
-            private store = new Map<string, string>()
-
-            getItem(key: string): string | null {
-                return this.store.get(key) ?? null
-            }
-
-            setItem(key: string, value: string): void {
-                this.store.set(key, value)
-            }
-
-            removeItem(key: string): void {
-                this.store.delete(key)
-            }
-
-            setJSON<T>(key: string, value: T): void {
-                this.setItem(key, JSON.stringify(value))
-            }
-
-            getJSON<T>(key: string): T | null {
-                const v = this.getItem(key)
-                return v ? (JSON.parse(v) as T) : null
-            }
-        }
-
         const kv = new MemoryKeyValueStorage()
         container.register(KeyValueStorageServiceContainerKey, { useValue: kv })
 

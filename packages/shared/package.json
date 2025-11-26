@@ -14,6 +14,7 @@
     "lint:fix": "eslint src --fix"
   },
   "dependencies": {
+    "@babel/runtime": "catalog:",
     "@algorandfoundation/algokit-utils": "catalog:",
     "@kubb/core": "catalog:",
     "@kubb/plugin-client": "catalog:",
@@ -37,7 +38,6 @@
     "zustand": "catalog:"
   },
   "devDependencies": {
-    "@babel/runtime": "catalog:",
     "@perawallet/wallet-core-eslint-config": "workspace:*",
     "@perawallet/wallet-core-typescript-config": "workspace:*",
     "@testing-library/react": "^16.3.0",

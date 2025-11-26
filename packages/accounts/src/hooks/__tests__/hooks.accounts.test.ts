@@ -17,7 +17,27 @@ import {
     MemoryKeyValueStorage,
     registerTestPlatform,
 } from '@perawallet/wallet-core-platform-integration'
-import {} from ''
+import { } from ''
+
+// Mock useUpdateDevice from platform-integration
+vi.mock('@perawallet/wallet-core-platform-integration', async () => {
+    const actual = await vi.importActual<typeof import('@perawallet/wallet-core-platform-integration')>('@perawallet/wallet-core-platform-integration')
+    return {
+        ...actual,
+        useUpdateDevice: vi.fn(() => ({
+            mutateAsync: vi.fn(async () => ({})),
+        })),
+    }
+})
+
+// Mock encodeAlgorandAddress from shared package
+vi.mock('@perawallet/wallet-core-shared', async () => {
+    const actual = await vi.importActual<typeof import('@perawallet/wallet-core-shared')>('@perawallet/wallet-core-shared')
+    return {
+        ...actual,
+        encodeAlgorandAddress: vi.fn((address: Uint8Array) => Buffer.from(address).toString('base64')),
+    }
+})
 
 // Hoisted mocks for createAccount path dependencies
 const uuidSpies = vi.hoisted(() => ({
@@ -117,9 +137,9 @@ describe('services/accounts/hooks', () => {
         vi.resetModules()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -159,9 +179,9 @@ describe('services/accounts/hooks', () => {
         vi.resetModules()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -201,9 +221,9 @@ describe('services/accounts/hooks', () => {
         vi.resetModules()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -236,9 +256,9 @@ describe('services/accounts/hooks', () => {
         vi.resetModules()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -282,9 +302,9 @@ describe('services/accounts/hooks', () => {
         vi.resetModules()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -326,9 +346,9 @@ describe('services/accounts/hooks', () => {
         vi.resetModules()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -371,9 +391,9 @@ describe('services/accounts/hooks', () => {
         vi.resetModules()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -407,9 +427,9 @@ describe('services/accounts/hooks', () => {
         vi.resetModules()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -444,9 +464,9 @@ describe('services/accounts/hooks - createAccount', () => {
         apiSpies.keyGenSpy.mockReset()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -520,7 +540,7 @@ describe('services/accounts/hooks - createAccount', () => {
         apiSpies.keyGenSpy.mockReset()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) =>
                 Buffer.from(
                     JSON.stringify({
@@ -529,7 +549,7 @@ describe('services/accounts/hooks - createAccount', () => {
                     }),
                 ),
             ),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -612,9 +632,9 @@ describe('services/accounts/hooks - createAccount', () => {
         })
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -645,7 +665,7 @@ describe('services/accounts/hooks - createAccount', () => {
 
         // Verify updateDeviceOnBackend was called
         expect(updateDeviceSpy).toHaveBeenCalledWith({
-            device_id: 'TEST_DEVICE_123',
+            deviceId: 'TEST_DEVICE_123',
             data: {
                 platform: 'web',
                 accounts: expect.any(Array),
@@ -661,11 +681,11 @@ describe('services/accounts/hooks - createAccount', () => {
         apiSpies.keyGenSpy.mockReset()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) =>
                 Buffer.from(JSON.stringify({})),
             ), // Empty object, no seed
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -697,9 +717,9 @@ describe('services/accounts/hooks - useImportWallet', () => {
         apiSpies.keyGenSpy.mockReset()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -778,9 +798,9 @@ describe('services/accounts/hooks - useImportWallet', () => {
         apiSpies.keyGenSpy.mockReset()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -857,9 +877,9 @@ describe('services/accounts/hooks - useImportWallet', () => {
         apiSpies.keyGenSpy.mockReset()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -904,9 +924,9 @@ describe('services/accounts/hooks - useImportWallet', () => {
         apiSpies.keyGenSpy.mockReset()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -979,9 +999,9 @@ describe('services/accounts/hooks - useImportWallet', () => {
         })
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -1011,7 +1031,7 @@ describe('services/accounts/hooks - useImportWallet', () => {
 
         // Verify updateDeviceOnBackend was called
         expect(updateDeviceSpy).toHaveBeenCalledWith({
-            device_id: 'TEST_DEVICE_456',
+            deviceId: 'TEST_DEVICE_456',
             data: {
                 platform: 'web',
                 accounts: expect.any(Array),
@@ -1031,9 +1051,9 @@ describe('services/accounts/hooks - useAddAccount', () => {
         })
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -1060,7 +1080,7 @@ describe('services/accounts/hooks - useAddAccount', () => {
 
         // Verify updateDeviceOnBackend was called
         expect(updateDeviceSpy).toHaveBeenCalledWith({
-            device_id: 'TEST_DEVICE_789',
+            deviceId: 'TEST_DEVICE_789',
             data: {
                 platform: 'web',
                 accounts: expect.arrayContaining(['TEST_ADDRESS']),
@@ -1076,7 +1096,7 @@ describe('services/accounts/hooks - useAddAccount', () => {
         apiSpies.keyGenSpy.mockReset()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) =>
                 Buffer.from(
                     JSON.stringify({
@@ -1085,7 +1105,7 @@ describe('services/accounts/hooks - useAddAccount', () => {
                     }),
                 ),
             ),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -1153,9 +1173,9 @@ describe('services/accounts/hooks - updateAccount', () => {
         vi.resetModules()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -1204,9 +1224,9 @@ describe('services/accounts/hooks - updateAccount', () => {
         vi.resetModules()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -1263,9 +1283,9 @@ describe('services/accounts/hooks - updateAccount', () => {
         })
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -1304,7 +1324,7 @@ describe('services/accounts/hooks - updateAccount', () => {
 
         // Verify updateDeviceOnBackend was called
         expect(updateDeviceSpy).toHaveBeenCalledWith({
-            device_id: 'TEST_DEVICE_UPDATE',
+            deviceId: 'TEST_DEVICE_UPDATE',
             data: {
                 platform: 'web',
                 accounts: ['UPDATE_ADDR'],
@@ -1319,7 +1339,7 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
         vi.clearAllMocks()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) =>
                 Buffer.from(
                     JSON.stringify({
@@ -1328,7 +1348,7 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
                     }),
                 ),
             ),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -1382,7 +1402,7 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
         vi.clearAllMocks()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) =>
                 Buffer.from(
                     JSON.stringify({
@@ -1393,7 +1413,7 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
                     }),
                 ),
             ),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -1449,7 +1469,7 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
         vi.clearAllMocks()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) =>
                 Buffer.from(
                     JSON.stringify({
@@ -1460,7 +1480,7 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
                     }),
                 ),
             ),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -1516,9 +1536,9 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
         vi.clearAllMocks()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -1549,9 +1569,9 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
         vi.clearAllMocks()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null),
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -1586,9 +1606,9 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
         vi.clearAllMocks()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => null), // No mnemonic
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -1630,9 +1650,9 @@ describe('services/accounts/hooks - useTransactionSigner', () => {
         vi.clearAllMocks()
 
         const dummySecure = {
-            setItem: vi.fn(async (_k: string, _v: string) => {}),
+            setItem: vi.fn(async (_k: string, _v: string) => { }),
             getItem: vi.fn(async (_k: string) => Buffer.from('raw-seed-data')), // Raw seed data (old format)
-            removeItem: vi.fn(async (_k: string) => {}),
+            removeItem: vi.fn(async (_k: string) => { }),
             authenticate: vi.fn(async () => true),
         }
 

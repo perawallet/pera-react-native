@@ -9,6 +9,7 @@
     "lint": "eslint src"
   },
   "dependencies": {
+    "@babel/runtime": "catalog:",
     "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-core-platform-integration": "workspace:*",
     "decimal.js": "catalog:",

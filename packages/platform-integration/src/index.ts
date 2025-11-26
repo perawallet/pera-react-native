@@ -43,6 +43,7 @@ export * from './remote-config'
 export * from './reporting'
 export * from './storage'
 export * from './models'
+export * from './test-utils'
 
 export const registerPlatformServices = (platform: PlatformServices) => {
     container.register<KeyValueStorageService>(
