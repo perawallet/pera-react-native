@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { HDWalletDetails } from './types'
+import type { HDWalletDetails } from '../models'
 import {
     BIP32DerivationTypes,
     type BIP32DerivationType,

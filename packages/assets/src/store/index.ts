@@ -10,15 +10,22 @@
  limitations under the License
  */
 
+
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import { useKeyValueStorageService } from '@perawallet/wallet-core-platform-integration'
+import { KeyValueStorageService, useKeyValueStorageService } from '@perawallet/wallet-core-platform-integration'
 import type { AssetsState } from '../models'
-import type { WithPersist } from '@perawallet/wallet-core-shared'
+import { createLazyStore, debugLog, type WithPersist } from '@perawallet/wallet-core-shared'
+
+const lazy = createLazyStore<
+    WithPersist<StoreApi<AssetsState>, unknown>
+>()
 
 export const useAssetsStore: UseBoundStore<
     WithPersist<StoreApi<AssetsState>, unknown>
-> = create<AssetsState>()(
+> = lazy.useStore
+
+const createAssetsStore = (storage: KeyValueStorageService) => create<AssetsState>()(
     persist(
         set => ({
             assetIDs: [],
@@ -28,7 +35,7 @@ export const useAssetsStore: UseBoundStore<
         }),
         {
             name: 'assets-store',
-            storage: createJSONStorage(useKeyValueStorageService),
+            storage: createJSONStorage(() => storage),
             version: 1,
             partialize: state => ({
                 assetIDs: state.assetIDs,
@@ -36,3 +43,11 @@ export const useAssetsStore: UseBoundStore<
         },
     ),
 )
+
+export const initAssetsStore = () => {
+    debugLog('Initializing assets store')
+    const storage = useKeyValueStorageService()
+    const realStore = createAssetsStore(storage)
+    lazy.init(realStore)
+    debugLog('Assets store initialized')
+}

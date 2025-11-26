@@ -12,13 +12,19 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import { useKeyValueStorageService } from '@perawallet/wallet-core-platform-integration'
+import { KeyValueStorageService, useKeyValueStorageService } from '@perawallet/wallet-core-platform-integration'
 import type { AccountsState, WalletAccount } from '../models'
-import type { WithPersist } from '@perawallet/wallet-core-shared'
+import { createLazyStore, debugLog, type WithPersist } from '@perawallet/wallet-core-shared'
+
+const lazy = createLazyStore<
+    WithPersist<StoreApi<AccountsState>, unknown>
+>()
 
 export const useAccountsStore: UseBoundStore<
     WithPersist<StoreApi<AccountsState>, unknown>
-> = create<AccountsState>()(
+> = lazy.useStore
+
+const createAccountsStore = (storage: KeyValueStorageService) => create<AccountsState>()(
     persist(
         (set, get) => ({
             accounts: [],
@@ -38,11 +44,9 @@ export const useAccountsStore: UseBoundStore<
                 const currentSelected = get().selectedAccountAddress
                 set({ accounts })
 
-                if (currentSelected === null && accounts.length) {
+                if (currentSelected == null && accounts.length) {
                     set({ selectedAccountAddress: accounts.at(0)?.address })
-                }
-
-                if (!accounts.find(a => a.address === currentSelected)) {
+                } else if (!accounts.find(a => a.address === currentSelected)) {
                     set({ selectedAccountAddress: null })
                 }
             },
@@ -52,7 +56,7 @@ export const useAccountsStore: UseBoundStore<
         }),
         {
             name: 'accounts-store',
-            storage: createJSONStorage(useKeyValueStorageService),
+            storage: createJSONStorage(() => storage),
             version: 1,
             partialize: state => ({
                 accounts: state.accounts,
@@ -61,3 +65,11 @@ export const useAccountsStore: UseBoundStore<
         },
     ),
 )
+
+export const initAccountsStore = () => {
+    debugLog('Initializing accounts store')
+    const storage = useKeyValueStorageService()
+    const realStore = createAccountsStore(storage)
+    lazy.init(realStore)
+    debugLog('Accounts store initialized')
+}

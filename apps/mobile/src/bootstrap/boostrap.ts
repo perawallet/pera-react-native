@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { initAccountsStore } from '@perawallet/wallet-core-accounts'
 import { RNDeviceInfoStorageService } from '../platform/device'
 import { RNFirebaseService } from '../platform/firebase'
 import { RNKeyValueStorageService } from '../platform/key-value-storage'
@@ -21,7 +22,16 @@ import {
     registerPlatformServices,
     useFcmToken,
     useAnalyticsService,
+    initDeviceStore,
 } from '@perawallet/wallet-core-platform-integration'
+import { debugLog } from '@perawallet/wallet-core-shared'
+import { initAssetsStore } from '@perawallet/wallet-core-assets'
+import { initBlockchainStore } from '@perawallet/wallet-core-blockchain'
+import { initContactsStore } from '@perawallet/wallet-core-contacts'
+import { initCurrenciesStore } from '@perawallet/wallet-core-currencies'
+import { initPollingStore } from '@perawallet/wallet-core-polling'
+import { initSettingsStore } from '@perawallet/wallet-core-settings'
+import { initSwapsStore } from '@perawallet/wallet-core-swaps'
 
 const firebaseService = new RNFirebaseService()
 const platformServices = {
@@ -34,19 +44,25 @@ const platformServices = {
     deviceInfo: new RNDeviceInfoStorageService(),
 }
 
-registerPlatformServices(platformServices)
-
 export const useBootstrapper = () => {
-    const crashlyticsService = useCrashReportingService()
-    const remoteConfigService = useRemoteConfigService()
-    const notificationService = useNotificationService()
-    const analyticsService = useAnalyticsService()
-    const { setFcmToken } = useFcmToken()
-
     return async () => {
-        const crashlyticsInit = crashlyticsService.initializeCrashReporting()
-        const remoteConfigInit = remoteConfigService.initializeRemoteConfig()
-        const analyticsInit = analyticsService.initializeAnalytics()
+        debugLog('Bootstrapping')
+        //Important - this has to happen first so all subsequent services can use the platform services
+        await registerPlatformServices(platformServices)
+
+        await initDeviceStore()
+        await initAccountsStore()
+        await initAssetsStore()
+        await initBlockchainStore()
+        await initContactsStore()
+        await initCurrenciesStore()
+        await initPollingStore()
+        await initSettingsStore()
+        await initSwapsStore()
+
+        const crashlyticsInit = useCrashReportingService().initializeCrashReporting()
+        const remoteConfigInit = useRemoteConfigService().initializeRemoteConfig()
+        const analyticsInit = useAnalyticsService().initializeAnalytics()
 
         await Promise.allSettled([
             crashlyticsInit,
@@ -55,10 +71,13 @@ export const useBootstrapper = () => {
         ])
 
         const notificationResults =
-            await notificationService.initializeNotifications()
+            await useNotificationService().initializeNotifications()
 
-        setFcmToken(notificationResults.token || null)
+        debugLog('Bootstrapped')
 
-        return platformServices
+        return {
+            platformServices,
+            token: notificationResults.token,
+        }
     }
 }

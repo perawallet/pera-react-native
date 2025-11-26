@@ -1,0 +1,70 @@
+import { useDeviceID, useDeviceInfoService, useNetwork, useUpdateDeviceMutation } from "@perawallet/wallet-core-platform-integration"
+import { useAccountsStore } from "../store"
+import { useHDWallet } from "./useHDWallet"
+import { encodeAlgorandAddress } from "@perawallet/wallet-core-blockchain"
+import { v7 as uuidv7 } from "uuid"
+import { withKey } from "../utils"
+import { BIP32DerivationTypes } from "@perawallet/wallet-core-xhdwallet"
+import { useSecureStorageService } from "@perawallet/wallet-core-platform-integration"
+import { WalletAccount } from "../models"
+
+export const useAddAccount = () => {
+    const accounts = useAccountsStore(state => state.accounts)
+    const secureStorage = useSecureStorageService()
+    const setAccounts = useAccountsStore(state => state.setAccounts)
+    const { network } = useNetwork()
+    const deviceID = useDeviceID(network)
+    const deviceInfo = useDeviceInfoService()
+    const { mutateAsync: updateDeviceOnBackend } = useUpdateDeviceMutation()
+    const { deriveKey } = useHDWallet()
+
+    return async (account: WalletAccount) => {
+        if (account.type === 'standard' && account.hdWalletDetails) {
+            const rootWalletId = account.hdWalletDetails.walletId
+            const rootKeyLocation = `rootkey-${rootWalletId}`
+            const masterKey = await withKey(
+                rootKeyLocation,
+                secureStorage,
+                async key => {
+                    if (!key) {
+                        throw Error(`No key found for ${rootWalletId}`)
+                    }
+
+                    return JSON.parse(key.toString())
+                },
+            )
+
+            if (!masterKey?.seed) {
+                throw Error(`No key found for ${rootWalletId}`)
+            }
+            const { address, privateKey } = await deriveKey({
+                seed: Buffer.from(masterKey.seed, 'base64'),
+                account: account.hdWalletDetails!.account,
+                keyIndex: account.hdWalletDetails!.keyIndex,
+                derivationType: BIP32DerivationTypes.Peikert,
+            })
+            const id = uuidv7()
+            account.address = encodeAlgorandAddress(address)
+            account.id = id
+
+            const keyStoreLocation = `pk-${id}`
+            const keyBuffer = Buffer.from(privateKey)
+            await secureStorage.setItem(keyStoreLocation, keyBuffer)
+            keyBuffer.fill(0)
+            privateKey.fill(0)
+        }
+
+        accounts.push(account)
+        setAccounts([...accounts])
+
+        if (deviceID) {
+            updateDeviceOnBackend({
+                deviceId: deviceID,
+                data: {
+                    platform: deviceInfo.getDevicePlatform(),
+                    accounts: accounts.map(a => a.address),
+                },
+            })
+        }
+    }
+}

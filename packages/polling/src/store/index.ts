@@ -14,11 +14,18 @@ import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { PollingState } from '../models'
 import type { WithPersist } from '@perawallet/wallet-core-shared'
-import { useKeyValueStorageService } from '@perawallet/wallet-core-platform-integration'
+import { KeyValueStorageService, useKeyValueStorageService } from '@perawallet/wallet-core-platform-integration'
+import { createLazyStore, debugLog } from '@perawallet/wallet-core-shared'
+
+const lazy = createLazyStore<
+    WithPersist<StoreApi<PollingState>, unknown>
+>()
 
 export const usePollingStore: UseBoundStore<
     WithPersist<StoreApi<PollingState>, unknown>
-> = create<PollingState>()(
+> = lazy.useStore
+
+const createPollingStore = (storage: KeyValueStorageService) => create<PollingState>()(
     persist(
         set => ({
             lastRefreshedRound: null,
@@ -28,7 +35,7 @@ export const usePollingStore: UseBoundStore<
         }),
         {
             name: 'polling-store',
-            storage: createJSONStorage(useKeyValueStorageService),
+            storage: createJSONStorage(() => storage),
             version: 1,
             partialize: state => ({
                 lastRefreshedRound: state.lastRefreshedRound,
@@ -36,3 +43,11 @@ export const usePollingStore: UseBoundStore<
         },
     ),
 )
+
+export const initPollingStore = () => {
+    debugLog('Initializing polling store')
+    const storage = useKeyValueStorageService()
+    const realStore = createPollingStore(storage)
+    lazy.init(realStore)
+    debugLog('Polling store initialized')
+}

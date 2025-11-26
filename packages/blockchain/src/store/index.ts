@@ -12,14 +12,20 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import { useKeyValueStorageService } from '@perawallet/wallet-core-platform-integration'
+import { KeyValueStorageService, useKeyValueStorageService } from '@perawallet/wallet-core-platform-integration'
 import type { BlockchainStore, SignRequest } from '../models'
-import type { WithPersist } from '@perawallet/wallet-core-shared'
+import { createLazyStore, debugLog, type WithPersist } from '@perawallet/wallet-core-shared'
 import { v7 as uuidv7 } from 'uuid'
+
+const lazy = createLazyStore<
+    WithPersist<StoreApi<BlockchainStore>, unknown>
+>()
 
 export const useBlockchainStore: UseBoundStore<
     WithPersist<StoreApi<BlockchainStore>, unknown>
-> = create<BlockchainStore>()(
+> = lazy.useStore
+
+const createBlockchainStore = (storage: KeyValueStorageService) => create<BlockchainStore>()(
     persist(
         (set, get) => ({
             pendingSignRequests: [],
@@ -48,7 +54,7 @@ export const useBlockchainStore: UseBoundStore<
         }),
         {
             name: 'blockchain-store',
-            storage: createJSONStorage(useKeyValueStorageService),
+            storage: createJSONStorage(() => storage),
             version: 1,
             partialize: state => ({
                 pendingSignRequests: state.pendingSignRequests,
@@ -56,3 +62,11 @@ export const useBlockchainStore: UseBoundStore<
         },
     ),
 )
+
+export const initBlockchainStore = () => {
+    debugLog('Initializing blockchain store')
+    const storage = useKeyValueStorageService()
+    const realStore = createBlockchainStore(storage)
+    lazy.init(realStore)
+    debugLog('Blockchain store initialized')
+}

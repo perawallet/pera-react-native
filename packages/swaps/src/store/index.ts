@@ -14,11 +14,18 @@ import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { SwapsState } from '../models'
 import type { WithPersist } from '@perawallet/wallet-core-shared'
-import { useKeyValueStorageService } from '@perawallet/wallet-core-platform-integration'
+import { KeyValueStorageService, useKeyValueStorageService } from '@perawallet/wallet-core-platform-integration'
+import { createLazyStore, debugLog } from '@perawallet/wallet-core-shared'
+
+const lazy = createLazyStore<
+    WithPersist<StoreApi<SwapsState>, unknown>
+>()
 
 export const useSwapsStore: UseBoundStore<
     WithPersist<StoreApi<SwapsState>, unknown>
-> = create<SwapsState>()(
+> = lazy.useStore
+
+const createSwapsStore = (storage: KeyValueStorageService) => create<SwapsState>()(
     persist(
         set => ({
             fromAsset: '0',
@@ -28,7 +35,7 @@ export const useSwapsStore: UseBoundStore<
         }),
         {
             name: 'swaps-store',
-            storage: createJSONStorage(useKeyValueStorageService),
+            storage: createJSONStorage(() => storage),
             version: 1,
             partialize: state => ({
                 fromAsset: state.fromAsset,
@@ -37,3 +44,11 @@ export const useSwapsStore: UseBoundStore<
         },
     ),
 )
+
+export const initSwapsStore = () => {
+    debugLog('Initializing swaps store')
+    const storage = useKeyValueStorageService()
+    const realStore = createSwapsStore(storage)
+    lazy.init(realStore)
+    debugLog('Swaps store initialized')
+}

@@ -10,10 +10,9 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-contacts'
+import { useAccountsStore } from '../store'
 
-export * from './models'
-export * from './schema'
-export * from './hooks'
-
-export { initContactsStore } from './store'
+export const useFindAccountByAddress = (address: string) => {
+    const accounts = useAccountsStore(state => state.accounts)
+    return accounts.find(a => a.address === address) ?? null
+}

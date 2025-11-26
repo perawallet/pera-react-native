@@ -5,7 +5,8 @@
     "rootDir": "./src",
     "noEmit": false,
     "declaration": true,
-    "emitDeclarationOnly": true
+    "emitDeclarationOnly": true,
+    "resolveJsonModule": true,
   },
   "include": [
     "src"

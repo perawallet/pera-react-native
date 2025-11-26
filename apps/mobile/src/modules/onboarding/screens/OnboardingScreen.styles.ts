@@ -29,6 +29,7 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
         headerContainer: {
             flexDirection: 'row',
             marginBottom: theme.spacing.lg * 3,
+            justifyContent: 'space-between',
             borderWidth: 0,
         },
         headerImage: {

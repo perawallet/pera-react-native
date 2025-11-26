@@ -22,17 +22,20 @@ import { RootComponent } from './components/root/RootComponent'
 import BootSplash from 'react-native-bootsplash'
 import { NotifierWrapper } from 'react-native-notifier'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { TokenProvider } from './providers/TokenProvider'
 
 function App() {
     const [persister, setPersister] = useState<Persister>()
 
     const [bootstrapped, setBootstrapped] = useState(false)
+    const [fcmToken, setFcmToken] = useState<string | null>(null)
     const bootstrap = useBootstrapper()
-    const kvService = useKeyValueStorageService()
 
     useEffect(() => {
         if (!bootstrapped) {
-            bootstrap().then(() => {
+            bootstrap().then(({ token }) => {
+                setFcmToken(token ?? null)
+                const kvService = useKeyValueStorageService()
                 const reactQueryPersistor = createAsyncStoragePersister({
                     storage: kvService,
                 })
@@ -46,7 +49,7 @@ function App() {
                 }, 200)
             })
         }
-    }, [bootstrapped, bootstrap, kvService])
+    }, [bootstrapped, bootstrap])
 
     return (
         <SafeAreaProvider>
@@ -54,9 +57,11 @@ function App() {
             {bootstrapped && persister && (
                 <GestureHandlerRootView>
                     <NotifierWrapper>
-                        <QueryProvider persister={persister}>
-                            <RootComponent />
-                        </QueryProvider>
+                        <TokenProvider token={fcmToken}>
+                            <QueryProvider persister={persister}>
+                                <RootComponent />
+                            </QueryProvider>
+                        </TokenProvider>
                     </NotifierWrapper>
                 </GestureHandlerRootView>
             )}

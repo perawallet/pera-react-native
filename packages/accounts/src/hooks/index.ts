@@ -10,8 +10,19 @@
  limitations under the License
  */
 
-export * from './hooks.accounts'
-export * from './hooks.hdwallet'
+export * from './useHDWallet'
 export * from './useAccountBalancesQuery'
 export * from './useAccountBalancesHistoryQuery'
 export * from './useAccountsAssetBalanceHistoryQuery'
+export * from './useAddAccount'
+export * from './useAllAccounts'
+export * from './useCreateAccount'
+export * from './useFindAccountByAddress'
+export * from './useHasAccounts'
+export * from './useHasNoAccounts'
+export * from './useImportAccount'
+export * from './useRemoveAccountById'
+export * from './useSelectedAccount'
+export * from './useSelectedAccountAddress'
+export * from './useTransactionSigner'
+export * from './useUpdateAccount'

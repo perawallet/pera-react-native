@@ -12,9 +12,9 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import { useKeyValueStorageService } from '../../storage'
+import { KeyValueStorageService, useKeyValueStorageService } from '../../storage'
 import type { DeviceState } from '../models'
-import type { Network, WithPersist } from '@perawallet/wallet-core-shared'
+import { createLazyStore, debugLog, type Network, type WithPersist } from '@perawallet/wallet-core-shared'
 
 const objectToDeviceIDs = (
     object: Record<string, string | null>,
@@ -40,9 +40,15 @@ const rehydrateDeviceSlice = (
     return persistedState
 }
 
+const lazy = createLazyStore<
+    WithPersist<StoreApi<DeviceState>, unknown>
+>()
+
 export const useDeviceStore: UseBoundStore<
     WithPersist<StoreApi<DeviceState>, unknown>
-> = create<DeviceState>()(
+> = lazy.useStore
+
+export const createDeviceStore = (storage: KeyValueStorageService) => create<DeviceState>()(
     persist(
         (set, get) => ({
             deviceIDs: new Map(),
@@ -62,14 +68,14 @@ export const useDeviceStore: UseBoundStore<
         }),
         {
             name: 'device-store',
-            storage: createJSONStorage(useKeyValueStorageService),
+            storage: createJSONStorage(() => storage),
             version: 1,
             partialize: state => ({
                 deviceIDs: state.deviceIDs,
                 fcmToken: state.fcmToken,
                 network: state.network,
             }),
-            onRehydrateStorage: state => {
+            onRehydrateStorage: () => (state) => {
                 if (state) {
                     // Rehydrate device slice to convert deviceIDs back to Map
                     const deviceState = rehydrateDeviceSlice(state)
@@ -79,3 +85,11 @@ export const useDeviceStore: UseBoundStore<
         },
     ),
 )
+
+export const initDeviceStore = () => {
+    debugLog('Initializing device store')
+    const storage = useKeyValueStorageService()
+    const realStore = createDeviceStore(storage)
+    lazy.init(realStore)
+    debugLog('Device store initialized')
+}

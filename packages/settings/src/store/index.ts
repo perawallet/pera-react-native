@@ -14,11 +14,18 @@ import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { SettingsState, ThemeMode } from '../models'
 import type { WithPersist } from '@perawallet/wallet-core-shared'
-import { useKeyValueStorageService } from '@perawallet/wallet-core-platform-integration'
+import { KeyValueStorageService, useKeyValueStorageService } from '@perawallet/wallet-core-platform-integration'
+import { createLazyStore, debugLog } from '@perawallet/wallet-core-shared'
+
+const lazy = createLazyStore<
+    WithPersist<StoreApi<SettingsState>, unknown>
+>()
 
 export const useSettingsStore: UseBoundStore<
     WithPersist<StoreApi<SettingsState>, unknown>
-> = create<SettingsState>()(
+> = lazy.useStore
+
+const createSettingsStore = (storage: KeyValueStorageService) => create<SettingsState>()(
     persist(
         (set, get) => ({
             theme: 'system',
@@ -44,7 +51,7 @@ export const useSettingsStore: UseBoundStore<
         }),
         {
             name: 'settings-store',
-            storage: createJSONStorage(useKeyValueStorageService),
+            storage: createJSONStorage(() => storage),
             version: 1,
             partialize: state => ({
                 theme: state.theme,
@@ -54,3 +61,11 @@ export const useSettingsStore: UseBoundStore<
         },
     ),
 )
+
+export const initSettingsStore = () => {
+    debugLog('Initializing settings store')
+    const storage = useKeyValueStorageService()
+    const realStore = createSettingsStore(storage)
+    lazy.init(realStore)
+    debugLog('Settings store initialized')
+}

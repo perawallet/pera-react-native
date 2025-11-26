@@ -12,14 +12,20 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import { useKeyValueStorageService } from '@perawallet/wallet-core-platform-integration'
+import { KeyValueStorageService, useKeyValueStorageService } from '@perawallet/wallet-core-platform-integration'
 import type { Contact, ContactsState } from '../models'
-import type { WithPersist } from '@perawallet/wallet-core-shared'
+import { createLazyStore, debugLog, type WithPersist } from '@perawallet/wallet-core-shared'
 import { v7 as uuidv7 } from 'uuid'
+
+const lazy = createLazyStore<
+    WithPersist<StoreApi<ContactsState>, unknown>
+>()
 
 export const useContactsStore: UseBoundStore<
     WithPersist<StoreApi<ContactsState>, unknown>
-> = create<ContactsState>()(
+> = lazy.useStore
+
+const createContactsStore = (storage: KeyValueStorageService) => create<ContactsState>()(
     persist(
         (set, get) => ({
             contacts: [],
@@ -53,7 +59,7 @@ export const useContactsStore: UseBoundStore<
         }),
         {
             name: 'contacts-store',
-            storage: createJSONStorage(useKeyValueStorageService),
+            storage: createJSONStorage(() => storage),
             version: 1,
             partialize: state => ({
                 contacts: state.contacts,
@@ -61,3 +67,11 @@ export const useContactsStore: UseBoundStore<
         },
     ),
 )
+
+export const initContactsStore = () => {
+    debugLog('Initializing contacts store')
+    const storage = useKeyValueStorageService()
+    const realStore = createContactsStore(storage)
+    lazy.init(realStore)
+    debugLog('Contacts store initialized')
+}

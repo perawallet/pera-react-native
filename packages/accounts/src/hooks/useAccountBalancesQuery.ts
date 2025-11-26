@@ -61,7 +61,7 @@ export const useAccountBalancesQuery = (
         }),
     })
 
-    const data = useMemo<AccountBalances>(() => {
+    const { accountBalances, portfolioAlgoBalance, portfolioFiatBalance, isPending, isFetched, isRefetching, isError } = useMemo(() => {
         const accountBalanceList = results.map(r => {
             let algoAmount = new Decimal(0)
             let fiatAmount = new Decimal(0)
@@ -100,45 +100,23 @@ export const useAccountBalancesQuery = (
         const accountBalances: AccountBalances = new Map(
             accounts.map((a, i) => [a.address, accountBalanceList[i]]),
         )
-        return accountBalances
+
+        const portfolioAlgoBalance = accountBalanceList.reduce((acc, cur) => acc.plus(cur.algoBalance), Decimal(0))
+        const portfolioFiatBalance = accountBalanceList.reduce((acc, cur) => acc.plus(cur.fiatBalance), Decimal(0))
+
+        return {
+            accountBalances,
+            portfolioAlgoBalance,
+            portfolioFiatBalance,
+            isPending: results.some(r => r.isPending),
+            isFetched: results.every(r => r.isFetched),
+            isRefetching: results.some(r => r.isRefetching),
+            isError: results.some(r => r.isError),
+        }
     }, [results, accounts, usdToPreferred])
 
-    const portfolioAlgoBalance = useMemo(
-        () =>
-            [...(data ? data.values() : [])].reduce(
-                (acc, cur) => acc.plus(cur.algoBalance),
-                new Decimal(0),
-            ),
-        [data],
-    )
-    const portfolioFiatBalance = useMemo(
-        () =>
-            [...(data ? data.values() : [])].reduce(
-                (acc, cur) => acc.plus(cur.fiatBalance),
-                new Decimal(0),
-            ),
-        [data],
-    )
-
-    const isPending = useMemo(
-        () => [...(data ? data.values() : [])].some(d => d.isPending),
-        [data],
-    )
-    const isFetched = useMemo(
-        () => [...(data ? data.values() : [])].some(d => d.isFetched),
-        [data],
-    )
-    const isRefetching = useMemo(
-        () => [...(data ? data.values() : [])].some(d => d.isRefetching),
-        [data],
-    )
-    const isError = useMemo(
-        () => [...(data ? data.values() : [])].some(d => d.isError),
-        [data],
-    )
-
     return {
-        accountBalances: data,
+        accountBalances,
         portfolioAlgoBalance,
         portfolioFiatBalance,
         isPending,
