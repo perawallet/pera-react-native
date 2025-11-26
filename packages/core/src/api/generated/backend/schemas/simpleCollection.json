@@ -1,1 +1,0 @@
-{"required":["name"],"type":"object","properties":{"id":{"title":"Id","type":"integer","readOnly":true},"name":{"title":"Name","maxLength":255,"minLength":1,"type":"string"},"description":{"title":"Description","type":"string"}},"x-readme-ref-name":"SimpleCollection"}

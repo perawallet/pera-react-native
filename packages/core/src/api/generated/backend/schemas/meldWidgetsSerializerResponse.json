@@ -1,1 +1,0 @@
-{"type":"object","properties":{"external_session_id":{"title":"External session id","minLength":1,"type":"string","readOnly":true},"widget_url":{"title":"Widget url","minLength":1,"type":"string","format":"uri","readOnly":true}},"x-readme-ref-name":"MeldWidgetsSerializer.Response"}

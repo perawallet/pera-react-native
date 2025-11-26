@@ -1,0 +1,95 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import type { Asset } from "./Asset.ts";
+
+export type LookupAssetByIDPathParams = {
+    /**
+     * @type integer
+    */
+    "asset-id": number;
+};
+
+export type LookupAssetByIDQueryParams = {
+    /**
+     * @description Include all items including closed accounts, deleted applications, destroyed assets, opted-out asset holdings, and closed-out application localstates.
+     * @type boolean | undefined
+    */
+    "include-all"?: boolean;
+};
+
+/**
+ * @description (empty)
+*/
+export type LookupAssetByID200 = {
+    /**
+     * @description Specifies both the unique identifier and the parameters for an asset
+     * @type object
+    */
+    asset: Asset;
+    /**
+     * @description Round at which the results were computed.
+     * @type integer
+    */
+    "current-round": number;
+};
+
+/**
+ * @description Response for errors
+*/
+export type LookupAssetByID400 = {
+    /**
+     * @type object | undefined
+    */
+    data?: object;
+    /**
+     * @type string
+    */
+    message: string;
+};
+
+/**
+ * @description Response for errors
+*/
+export type LookupAssetByID404 = {
+    /**
+     * @type object | undefined
+    */
+    data?: object;
+    /**
+     * @type string
+    */
+    message: string;
+};
+
+/**
+ * @description Response for errors
+*/
+export type LookupAssetByID500 = {
+    /**
+     * @type object | undefined
+    */
+    data?: object;
+    /**
+     * @type string
+    */
+    message: string;
+};
+
+export type LookupAssetByIDQueryResponse = LookupAssetByID200;
+
+export type LookupAssetByIDQuery = {
+    Response: LookupAssetByID200;
+    PathParams: LookupAssetByIDPathParams;
+    QueryParams: LookupAssetByIDQueryParams;
+    Errors: LookupAssetByID400 | LookupAssetByID404 | LookupAssetByID500;
+};

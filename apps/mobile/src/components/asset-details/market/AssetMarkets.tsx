@@ -1,13 +1,20 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
 import { ScrollView } from 'react-native'
 import {
-    PeraAsset,
-    useSingleAssetDetails,
-    AssetPriceHistoryItem,
     formatDatetime,
     HistoryPeriod,
-    useAssetFiatPrices,
-    useCurrency,
-} from '@perawallet/core'
+} from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import AssetTitle from '../../assets/asset-title/AssetTitle'
 import RoundButton from '../../common/round-button/RoundButton'
@@ -30,6 +37,8 @@ import useToast from '../../../hooks/toast'
 import PWView from '../../common/view/PWView'
 import EmptyView from '../../common/empty-view/EmptyView'
 import ChartPeriodSelection from '../../common/chart-period-selection/ChartPeriodSelection'
+import { AssetPriceHistoryItem, PeraAsset, useAssetFiatPricesQuery, useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
+import { useCurrency } from '@perawallet/wallet-core-currencies'
 
 type AssetMarketsProps = {
     asset: PeraAsset
@@ -58,12 +67,10 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
         data: assetDetails,
         isError,
         isPending,
-    } = useSingleAssetDetails({
-        asset_id: asset.asset_id,
-    })
-    const { data: prices } = useAssetFiatPrices()
+    } = useSingleAssetDetailsQuery(asset.assetId)
+    const { data: prices } = useAssetFiatPricesQuery()
     const fiatPrice = useMemo(
-        () => prices.get(asset.asset_id) ?? null,
+        () => prices.get(asset.assetId) ?? null,
         [asset, prices],
     )
 
@@ -77,9 +84,9 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
 
     const currentPrice = useMemo(() => {
         if (selectedPoint) {
-            return new Decimal(selectedPoint.price)
+            return new Decimal(selectedPoint.fiatPrice)
         }
-        return fiatPrice
+        return fiatPrice?.fiatPrice ?? null
     }, [selectedPoint, fiatPrice])
 
     const openDiscover = () => {
@@ -144,7 +151,7 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
 
                 <PWView style={styles.trendContainer}>
                     <PriceTrend
-                        assetId={asset.asset_id}
+                        assetId={asset.assetId}
                         period={period}
                         showAbsolute
                         selectedDataPoint={selectedPoint}
@@ -199,6 +206,8 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
 
             <AssetSocialMedia assetDetails={assetDetails} />
 
+
+            {/* TODO: Add this in when we have the metadata on the asset */}
             {/* <PWView style={styles.tagsContainer}>
                 {!assetDetails.is_frozen && <PWView style={styles.tag}>
                     <PWIcon

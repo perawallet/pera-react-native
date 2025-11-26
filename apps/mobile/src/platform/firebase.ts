@@ -47,16 +47,15 @@ import {
     RemoteConfigKey,
     RemoteConfigService,
     AnalyticsService,
-} from '@perawallet/core'
-import { config } from '@perawallet/config'
+} from '@perawallet/wallet-core-platform-integration'
+import { config } from '@perawallet/wallet-core-config'
 
 export class RNFirebaseService
     implements
-        CrashReportingService,
-        RemoteConfigService,
-        CrashReportingService,
-        AnalyticsService
-{
+    CrashReportingService,
+    RemoteConfigService,
+    CrashReportingService,
+    AnalyticsService {
     remoteConfig: FirebaseRemoteConfigTypes.Module | null = null
     messaging: FirebaseMessagingTypes.Module | null = null
     analytics: FirebaseAnalyticsTypes.Module | null = null
@@ -115,7 +114,7 @@ export class RNFirebaseService
         if (settings.authorizationStatus !== AuthorizationStatus.AUTHORIZED) {
             return {
                 token: undefined,
-                unsubscribe: () => {},
+                unsubscribe: () => { },
             }
         }
 
@@ -142,21 +141,21 @@ export class RNFirebaseService
         // Foreground message handler (show a local notification)
         const unsubscribeOnMessage = this.messaging
             ? onMessage(this.messaging, async remoteMessage => {
-                  const title =
-                      remoteMessage.notification?.title ?? 'Notification'
-                  const body = remoteMessage.notification?.body ?? undefined
+                const title =
+                    remoteMessage.notification?.title ?? 'Notification'
+                const body = remoteMessage.notification?.body ?? undefined
 
-                  await notifee.displayNotification({
-                      title,
-                      body,
-                      data: remoteMessage.data,
-                      android: Platform.select({
-                          android: { channelId: 'default' },
-                          ios: undefined,
-                      }) as any,
-                  })
-              })
-            : () => {}
+                await notifee.displayNotification({
+                    title,
+                    body,
+                    data: remoteMessage.data,
+                    android: Platform.select({
+                        android: { channelId: 'default' },
+                        ios: undefined,
+                    }) as any,
+                })
+            })
+            : () => { }
 
         // Foreground notification events
         const unsubscribeNotifeeForeground = notifee.onForegroundEvent(

@@ -13,9 +13,8 @@
 import {
     type DeviceInfoService,
     type DevicePlatform,
-    updateBackendHeaders,
-    updateManualBackendHeaders,
-} from '@perawallet/core'
+} from '@perawallet/wallet-core-platform-integration'
+import { updateBackendHeaders } from '@perawallet/wallet-core-shared'
 import DeviceInfo from 'react-native-device-info'
 import { Platform, NativeModules } from 'react-native'
 
@@ -23,9 +22,9 @@ const findDeviceLocale = () => {
     const deviceLanguage =
         Platform.OS === 'ios'
             ? NativeModules.SettingsManager.getConstants().settings
-                  .AppleLocale ||
-              NativeModules.SettingsManager.getConstants().settings
-                  .AppleLanguages[0]
+                .AppleLocale ||
+            NativeModules.SettingsManager.getConstants().settings
+                .AppleLanguages[0]
             : NativeModules.I18nManager.getConstants().localeIdentifier
 
     return deviceLanguage.replaceAll('_', '-')
@@ -50,7 +49,6 @@ export class RNDeviceInfoStorageService implements DeviceInfoService {
         headers.set('User-Agent', buildUserAgent())
 
         updateBackendHeaders(headers)
-        updateManualBackendHeaders(headers)
     }
     getDeviceID(): Promise<string> {
         return DeviceInfo.getUniqueId()

@@ -15,16 +15,14 @@ import { LineChart } from 'react-native-gifted-charts'
 
 import PWView from '../../../common/view/PWView'
 import {
-    PeraAsset,
-    useCurrencyConverter,
-    useAssetPriceHistory,
     HistoryPeriod,
-    AssetPriceHistoryItem,
-} from '@perawallet/core'
+} from '@perawallet/wallet-core-shared'
 import { Suspense, useCallback, useMemo, useState } from 'react'
 import { useTheme } from '@rneui/themed'
 import Decimal from 'decimal.js'
 import LoadingView from '../../../common/loading/LoadingView'
+import { AssetPriceHistoryItem, PeraAsset, useAssetPriceHistoryQuery } from '@perawallet/wallet-core-assets'
+import { useCurrency } from '@perawallet/wallet-core-currencies'
 
 const FOCUS_DEBOUNCE_TIME = 200
 
@@ -40,27 +38,23 @@ const AssetPriceChart = ({
     period,
 }: AssetPriceChartProps) => {
     const { theme } = useTheme()
-    const { usdToPreferred } = useCurrencyConverter()
     const themeStyle = useStyles()
     const [lastSentIndex, setLastSentIndex] = useState<number>()
     const [lastSentTime, setLastSentTime] = useState<number>(Date.now())
 
-    const { data } = useAssetPriceHistory({
-        params: {
-            asset_id: asset.asset_id,
-            period: period,
-        },
-    })
+    const { data } = useAssetPriceHistoryQuery(
+        asset.assetId, period
+    )
 
     const dataPoints = useMemo(
         () =>
             data?.map(p => {
                 return {
-                    value: usdToPreferred(Decimal(p.price)).toNumber(),
+                    value: p.fiatPrice.toNumber(),
                     timestamp: p.datetime,
                 }
             }) ?? [],
-        [data, usdToPreferred],
+        [data],
     )
 
     const yAxisOffsets = useMemo(() => {
@@ -84,12 +78,9 @@ const AssetPriceChart = ({
         }) => {
             if (Date.now() - lastSentTime > FOCUS_DEBOUNCE_TIME) {
                 if (pointerX > 0 && index >= 0 && index !== lastSentIndex) {
-                    const dataItem = dataPoints?.[index] ?? null
+                    const dataItem = data?.[index] ?? null
                     if (dataItem) {
-                        onSelectionChanged({
-                            datetime: dataItem.timestamp,
-                            price: Number(dataItem.value),
-                        })
+                        onSelectionChanged(dataItem)
                     }
                     setLastSentIndex(index)
                 } else if (pointerX === 0) {
@@ -100,7 +91,7 @@ const AssetPriceChart = ({
             }
         },
         [
-            dataPoints,
+            data,
             onSelectionChanged,
             lastSentIndex,
             lastSentTime,

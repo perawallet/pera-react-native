@@ -1,1 +1,0 @@
-{"description":"A transaction group to simulate.","properties":{"txns":{"description":"An atomic transaction group.","items":{"description":"SignedTxn object. Must be canonically encoded.","format":"json","type":"string","x-algorand-format":"SignedTransaction"},"type":"array"}},"required":["txns"],"type":"object","x-readme-ref-name":"SimulateRequestTransactionGroup"}

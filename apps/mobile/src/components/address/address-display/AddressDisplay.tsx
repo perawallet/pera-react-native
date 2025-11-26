@@ -15,9 +15,13 @@ import PWView, { PWViewProps } from '../../common/view/PWView'
 import { useStyles } from './styles'
 import {
     truncateAlgorandAddress,
+} from '@perawallet/wallet-core-shared'
+import {
     useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
+import {
     useContacts,
-} from '@perawallet/core'
+} from '@perawallet/wallet-core-contacts'
 import useToast from '../../../hooks/toast'
 import Clipboard from '@react-native-clipboard/clipboard'
 
@@ -88,8 +92,8 @@ const AddressDisplay = ({
         addressFormat === 'full'
             ? address
             : addressFormat === 'long'
-              ? truncateAlgorandAddress(address, LONG_ADDRESS_FORMAT)
-              : truncateAlgorandAddress(address)
+                ? truncateAlgorandAddress(address, LONG_ADDRESS_FORMAT)
+                : truncateAlgorandAddress(address)
 
     return (
         <PWView

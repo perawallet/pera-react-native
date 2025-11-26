@@ -1,1 +1,0 @@
-{"required":["algo_value","usd_value"],"type":"object","properties":{"algo_value":{"title":"Algo value","type":"string","format":"decimal"},"usd_value":{"title":"Usd value","type":"string","format":"decimal"}},"nullable":true,"x-nullable":true,"x-readme-ref-name":"NFTSaleData"}

@@ -1,1 +1,0 @@
-{"properties":{"hash":{"description":"base32 SHA512_256 of program bytes (Address style)","type":"string"},"result":{"description":"base64 encoded program bytes","type":"string"},"sourcemap":{"description":"JSON of the source map","properties":{},"type":"object"}},"required":["hash","result"],"type":"object"}

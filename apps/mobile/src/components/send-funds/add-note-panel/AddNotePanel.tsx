@@ -21,21 +21,11 @@ import { useStyles } from './styles'
 import PWView from '../../common/view/PWView'
 import { SendFundsContext } from '../../../providers/SendFundsProvider'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { MAX_TX_NOTE_BYTES } from '@perawallet/core'
+import { noteSchema } from '@perawallet/wallet-core-blockchain'
 
 type AddNotePanelProps = {
     onClose: () => void
 } & PWBottomSheetProps
-
-const NOTE_SCHEMA = z.object({
-    note: z
-        .string()
-        .refine(data => Buffer.from(data).byteLength <= MAX_TX_NOTE_BYTES, {
-            error: 'Notes may not exceed 1kb in length',
-        })
-        .optional(),
-})
 
 const AddNotePanel = ({ isVisible, onClose, ...rest }: AddNotePanelProps) => {
     const styles = useStyles()
@@ -48,7 +38,7 @@ const AddNotePanel = ({ isVisible, onClose, ...rest }: AddNotePanelProps) => {
         reset,
         formState: { errors },
     } = useForm({
-        resolver: zodResolver(NOTE_SCHEMA),
+        resolver: zodResolver(noteSchema),
         defaultValues: { note },
     })
 

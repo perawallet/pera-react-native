@@ -14,7 +14,11 @@ import { Dialog, Input, Text, useTheme } from '@rneui/themed'
 import ContactAvatar from '../../components/common/contact-avatar/ContactAvatar'
 import PWView from '../../components/common/view/PWView'
 import AddressEntryField from '../../components/address/address-entry/AddressEntryField'
-import { Contact, useContacts, contactSchema } from '@perawallet/core'
+import {
+    Contact,
+    useContacts,
+    contactSchema,
+} from '@perawallet/wallet-core-contacts'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { KeyboardAvoidingView } from 'react-native'
 import { useStyles } from './EditContactScreen.styles'

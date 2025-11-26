@@ -16,15 +16,13 @@ import { useStyles } from './styles'
 import {
     formatCurrency,
     HistoryPeriod,
-    useAccountsBalanceHistory,
-    useAllAccounts,
-    useCurrencyConverter,
-    useSettings,
-    WalletAccount,
-} from '@perawallet/core'
+} from '@perawallet/wallet-core-shared'
 import { useMemo } from 'react'
 import PWIcon from '../icons/PWIcon'
 import Decimal from 'decimal.js'
+import { useSettings } from '@perawallet/wallet-core-settings'
+import { useCurrency } from '@perawallet/wallet-core-currencies'
+import { useAccountBalancesHistoryQuery, useAllAccounts, WalletAccount } from '@perawallet/wallet-core-accounts'
 
 type WealthTrendProps = {
     account?: WalletAccount
@@ -33,7 +31,7 @@ type WealthTrendProps = {
 
 const WealthTrend = ({ account, period }: WealthTrendProps) => {
     const styles = useStyles()
-    const { preferredCurrency, usdToPreferred } = useCurrencyConverter()
+    const { preferredCurrency } = useCurrency()
     const { privacyMode } = useSettings()
 
     const accounts = useAllAccounts()
@@ -45,29 +43,24 @@ const WealthTrend = ({ account, period }: WealthTrendProps) => {
         [account, accounts],
     )
 
-    const { data, isPending } = useAccountsBalanceHistory({
-        params: {
-            account_addresses: addresses,
-            period: period as HistoryPeriod,
-        },
-    })
+    const { data, isPending } = useAccountBalancesHistoryQuery(addresses, period)
 
     const dataPoints = useMemo(
         () =>
-            data?.results?.map(p => {
-                return usdToPreferred(Decimal(p.usd_value)).toNumber()
+            data?.map(p => {
+                return p.fiatValue
             }) ?? [],
-        [data, usdToPreferred],
+        [data],
     )
 
     const [absolute, percentage, isPositive] = useMemo(() => {
-        const firstDp = dataPoints.at(0) ?? 0
-        const lastDp = dataPoints.at(-1) ?? 0
+        const firstDp = dataPoints.at(0) ?? Decimal(0)
+        const lastDp = dataPoints.at(-1) ?? Decimal(0)
 
         return [
-            Decimal(lastDp - firstDp),
-            lastDp ? (lastDp - firstDp) / lastDp : 0,
-            lastDp >= firstDp,
+            lastDp.minus(firstDp),
+            lastDp ? (lastDp.minus(firstDp).div(lastDp)).mul(100) : Decimal(0),
+            lastDp.greaterThanOrEqualTo(firstDp),
         ]
     }, [dataPoints])
 

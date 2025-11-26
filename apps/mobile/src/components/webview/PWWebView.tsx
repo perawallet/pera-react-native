@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { useDeviceInfoService } from '@perawallet/core'
-import { config } from '@perawallet/config'
+import { useDeviceInfoService } from '@perawallet/wallet-core-platform-integration'
+import { config } from '@perawallet/wallet-core-config'
 import { useTheme } from '@rneui/themed'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {

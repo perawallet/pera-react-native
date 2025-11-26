@@ -1,1 +1,0 @@
-{"type":"object","properties":{"id":{"title":"Id","minLength":1,"type":"string","readOnly":true},"creation_datetime":{"title":"Creation datetime","type":"string","format":"date-time","readOnly":true}},"x-readme-ref-name":"FavoriteAssetSerializer.Response"}

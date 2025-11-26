@@ -11,7 +11,10 @@
  */
 
 import { Text, TextProps, useTheme } from '@rneui/themed'
-import { getAccountDisplayName, WalletAccount } from '@perawallet/core'
+import {
+    getAccountDisplayName,
+    WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import PWView, { PWViewProps } from '../../common/view/PWView'
 import { useStyles } from './styles'
 

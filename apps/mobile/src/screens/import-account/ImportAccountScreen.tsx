@@ -18,7 +18,7 @@ import PWView from '../../components/common/view/PWView'
 import PWButton from '../../components/common/button/PWButton'
 import MainScreenLayout from '../../layouts/MainScreenLayout'
 
-import { useImportWallet } from '@perawallet/core'
+import { useImportWallet } from '@perawallet/wallet-core-accounts'
 import { useState } from 'react'
 import {
     ActivityIndicator,
@@ -115,7 +115,7 @@ const ImportAccountScreen = () => {
                                                         h4
                                                         h4Style={
                                                             focused ===
-                                                            offsetIndex
+                                                                offsetIndex
                                                                 ? styles.focusedLabel
                                                                 : styles.label
                                                         }
@@ -128,7 +128,7 @@ const ImportAccountScreen = () => {
                                                         }
                                                         inputContainerStyle={
                                                             focused ===
-                                                            offsetIndex
+                                                                offsetIndex
                                                                 ? styles.focusedInputContainer
                                                                 : styles.inputContainer
                                                         }

@@ -16,7 +16,7 @@ import {
     PersistQueryClientRootOptions,
 } from '@tanstack/react-query-persist-client'
 import { OmitKeyof, QueryCache, QueryClient } from '@tanstack/react-query'
-import { config } from '@perawallet/config'
+import { config } from '@perawallet/wallet-core-config'
 
 const cache = new QueryCache({
     onError: error => {

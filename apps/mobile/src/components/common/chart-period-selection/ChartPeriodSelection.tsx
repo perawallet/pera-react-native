@@ -15,7 +15,7 @@ import PWView from '../view/PWView'
 import { useStyles } from './styles'
 import { useCallback, useState } from 'react'
 import PWTouchableOpacity from '../touchable-opacity/PWTouchableOpacity'
-import { HistoryPeriod } from '@perawallet/core'
+import { HistoryPeriod } from '@perawallet/wallet-core-shared'
 
 type ChartPeriodSelectionProps = {
     value: HistoryPeriod

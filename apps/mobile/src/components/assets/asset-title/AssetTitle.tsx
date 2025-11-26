@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/core'
+import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
 import PWView from '../../common/view/PWView'
 import PWIcon from '../../common/icons/PWIcon'
 import { useStyles } from './styles'
@@ -27,8 +27,8 @@ const AssetTitle = ({ asset }: AssetTitleProps) => {
     const { theme } = useTheme()
 
     const isAlgo = useMemo(
-        () => asset.asset_id === ALGO_ASSET_ID,
-        [asset.asset_id],
+        () => asset.assetId === ALGO_ASSET_ID,
+        [asset.assetId],
     )
 
     return (
@@ -44,13 +44,13 @@ const AssetTitle = ({ asset }: AssetTitleProps) => {
                     size={'sm'}
                 />
             )}
-            {!isAlgo && asset.verification_tier === 'verified' && (
+            {!isAlgo && asset.verificationTier === 'verified' && (
                 <PWIcon
                     name='assets/verified'
                     size={'sm'}
                 />
             )}
-            {!isAlgo && asset.verification_tier === 'suspicious' && (
+            {!isAlgo && asset.verificationTier === 'suspicious' && (
                 <PWIcon
                     name='assets/suspicious'
                     size={'sm'}

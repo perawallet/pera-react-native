@@ -1,1 +1,0 @@
-{"properties":{"hash-type":{"description":"\\[t\\]","type":"integer","x-algorand-format":"uint16"}},"type":"object","x-readme-ref-name":"HashFactory"}

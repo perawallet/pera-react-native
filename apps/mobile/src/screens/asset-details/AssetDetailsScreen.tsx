@@ -15,15 +15,15 @@ import MainScreenLayout from '../../layouts/MainScreenLayout'
 import { StaticScreenProps, useNavigation } from '@react-navigation/native'
 import {
     getAccountDisplayName,
-    PeraAsset,
     WalletAccount,
-} from '@perawallet/core'
+} from '@perawallet/wallet-core-accounts'
 import { useCallback, useLayoutEffect, useMemo, useState } from 'react'
 import { useStyles } from './styles'
 import AssetMarkets from '../../components/asset-details/market/AssetMarkets'
 import AssetHoldings from '../../components/asset-details/holdings/AssetHoldings'
 import AccountIcon from '../../components/accounts/account-icon/AccountIcon'
 import useToast from '../../hooks/toast'
+import { PeraAsset } from '@perawallet/wallet-core-assets'
 
 type AssetDetailsScreenProps = {
     account: WalletAccount

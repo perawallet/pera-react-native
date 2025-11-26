@@ -22,17 +22,12 @@ import NumberPad from '../../common/number-pad/NumberPad'
 import { SendFundsContext } from '../../../providers/SendFundsProvider'
 import AddNotePanel from '../add-note-panel/AddNotePanel'
 import useToast from '../../../hooks/toast'
-import {
-    AccountBalances,
-    AssetWithAccountBalance,
-    useAccountBalances,
-    useAssetFiatPrices,
-    useCurrencyConverter,
-    useSelectedAccount,
-} from '@perawallet/core'
 import PWHeader from '../../common/header/PWHeader'
 import AccountDisplay from '../../accounts/account-display/AccountDisplay'
 import SendFundsInfoPanel from '../info-panel/SendFundsInfoPanel'
+import { useAccountBalancesQuery, useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import { useCurrency } from '@perawallet/wallet-core-currencies'
+import { useAssetFiatPricesQuery, useAssetsQuery } from '@perawallet/wallet-core-assets'
 
 type SendFundsInputViewProps = {
     onNext: () => void
@@ -44,7 +39,7 @@ type SendFundsInputViewProps = {
 const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
     const styles = useStyles()
     const selectedAccount = useSelectedAccount()
-    const { preferredCurrency } = useCurrencyConverter()
+    const { preferredCurrency } = useCurrency()
     const { canSelectAsset, selectedAsset, note, setNote, setAmount } =
         useContext(SendFundsContext)
     const [value, setValue] = useState<string | null>()
@@ -52,14 +47,20 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
     const [infoOpen, setInfoOpen] = useState(false)
     const { showToast } = useToast()
 
-    const { data } = useAccountBalances(
+    const { accountBalances } = useAccountBalancesQuery(
         selectedAccount ? [selectedAccount] : [],
     )
-    const { data: fiatPrices } = useAssetFiatPrices()
+    const { assets } = useAssetsQuery()
+
+    const asset = useMemo(() => {
+        if (!selectedAsset?.assetId) return null
+        return assets.get(selectedAsset?.assetId)
+    }, [selectedAsset, assets])
+    const { data: fiatPrices } = useAssetFiatPricesQuery()
     const fiatPrice = useMemo(
         () =>
-            selectedAsset?.asset_id
-                ? fiatPrices.get(selectedAsset.asset_id)
+            selectedAsset?.assetId
+                ? fiatPrices.get(selectedAsset?.assetId)?.fiatPrice ?? null
                 : null,
         [selectedAsset, fiatPrices],
     )
@@ -68,14 +69,13 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
         if (!selectedAccount) {
             return null
         }
-        const asset = (data as AccountBalances)
-            .get(selectedAccount.address)
+        const asset = accountBalances?.get(selectedAccount.address)
             ?.assetBalances?.find(
-                b => b.asset_id === selectedAsset?.asset_id,
-            ) as AssetWithAccountBalance
-        const assetAmount = asset?.amount ? Decimal(asset.amount) : Decimal(0)
+                b => b.assetId === selectedAsset?.assetId,
+            )
+        const assetAmount = asset?.cryptoAmount ?? Decimal(0)
         return assetAmount
-    }, [data, selectedAsset?.asset_id, selectedAccount])
+    }, [accountBalances, selectedAsset?.assetId, selectedAccount])
 
     const openNote = () => {
         setNoteOpen(true)
@@ -132,7 +132,7 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
         return Decimal(value).mul(fiatPrice)
     }, [value, fiatPrice])
 
-    if (!selectedAsset?.unit_name) return <></>
+    if (!asset || !selectedAsset) return <></>
 
     return (
         <PWView style={styles.container}>
@@ -142,7 +142,7 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
                 rightIcon='info'
                 onRightPress={openInfo}
             >
-                <Text>Send {selectedAsset?.name}</Text>
+                <Text>Send {asset?.name}</Text>
                 <AccountDisplay
                     account={selectedAccount ?? undefined}
                     style={styles.accountDisplay}
@@ -152,8 +152,8 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
                 />
             </PWHeader>
             <CurrencyDisplay
-                currency={selectedAsset.unit_name}
-                precision={selectedAsset.fraction_decimals}
+                currency={asset.unitName ?? ''}
+                precision={asset.decimals}
                 value={value ? Decimal(value) : Decimal(0)}
                 style={[
                     value ? styles.amount : styles.amountPlaceholder,
@@ -195,7 +195,7 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
             </PWView>
 
             <AccountAssetItemView
-                asset={selectedAsset}
+                accountBalance={selectedAsset}
                 style={styles.assetDisplay}
             />
 

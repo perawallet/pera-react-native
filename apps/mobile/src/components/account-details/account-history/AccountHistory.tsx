@@ -11,7 +11,7 @@
  */
 
 import EmptyView from '../../common/empty-view/EmptyView'
-import { WalletAccount } from '@perawallet/core'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 type AccountHistoryProps = {
     account: WalletAccount

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Contact } from '@perawallet/core'
+import { Contact } from '@perawallet/wallet-core-contacts'
 import { Image, useTheme } from '@rneui/themed'
 import { SvgProps } from 'react-native-svg'
 import { useStyles } from './styles'

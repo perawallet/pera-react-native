@@ -21,7 +21,7 @@ import PWIcon from '../../components/common/icons/PWIcon'
 
 import WelcomeImage from '../../../assets/images/welcome-background.svg'
 import { ActivityIndicator } from 'react-native'
-import { useCreateAccount } from '@perawallet/core'
+import { useCreateAccount } from '@perawallet/wallet-core-accounts'
 import { Overlay } from '@rneui/themed'
 import { useState } from 'react'
 

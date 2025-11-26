@@ -13,7 +13,7 @@
 import PWBottomSheet, {
     PWBottomSheetProps,
 } from '../../common/bottom-sheet/PWBottomSheet'
-import { usePreferences } from '@perawallet/core'
+import { usePreferences } from '@perawallet/wallet-core-settings'
 import { Text } from '@rneui/themed'
 import { useEffect, useState } from 'react'
 import PWIcon from '../../common/icons/PWIcon'

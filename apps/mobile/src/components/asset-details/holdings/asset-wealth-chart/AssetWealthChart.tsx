@@ -15,16 +15,15 @@ import { LineChart } from 'react-native-gifted-charts'
 
 import PWView from '../../../common/view/PWView'
 import {
-    PeraAsset,
-    WalletAccount,
-    useCurrencyConverter,
-    AccountWealthHistoryItem,
-    useAccountsAssetsBalanceHistory,
     HistoryPeriod,
-} from '@perawallet/core'
+} from '@perawallet/wallet-core-shared'
+
 import { useCallback, useMemo, useState } from 'react'
 import { useTheme } from '@rneui/themed'
 import Decimal from 'decimal.js'
+import { AccountBalanceHistoryItem, useAccountsAssetsBalanceHistoryQuery, WalletAccount } from '@perawallet/wallet-core-accounts'
+import { PeraAsset } from '@perawallet/wallet-core-assets'
+import { useCurrency } from '@perawallet/wallet-core-currencies'
 
 const FOCUS_DEBOUNCE_TIME = 200
 
@@ -37,7 +36,7 @@ type AssetWealthChartProps = {
     account: WalletAccount
     asset: PeraAsset
     period: HistoryPeriod
-    onSelectionChanged: (item: AccountWealthHistoryItem | null) => void
+    onSelectionChanged: (item: AccountBalanceHistoryItem | null) => void
 }
 
 //TODO debug why this isn't showing data
@@ -48,30 +47,26 @@ const AssetWealthChart = ({
     period,
 }: AssetWealthChartProps) => {
     const { theme } = useTheme()
-    const { preferredCurrency, usdToPreferred } = useCurrencyConverter()
+    const { preferredCurrency } = useCurrency()
     const themeStyle = useStyles()
     const [lastSentIndex, setLastSentIndex] = useState<number>()
     const [lastSentTime, setLastSentTime] = useState<number>(Date.now())
 
-    const { data, isPending } = useAccountsAssetsBalanceHistory({
-        account_address: account.address,
-        asset_id: `${asset.asset_id}`,
-        params: {
-            period: period as HistoryPeriod,
-            currency: preferredCurrency,
-        },
-    })
+    const { data, isPending } = useAccountsAssetsBalanceHistoryQuery(
+        account,
+        asset.assetId,
+        period,
+    )
 
-    //TODO: move the currency conversion processing into the useAccountsAsseetsBalanceHistory hook
     const dataPoints = useMemo(() => {
         // @ts-ignore: The generated type is unknown
         return (data?.results?.map((p: any) => {
             return {
-                value: usdToPreferred(new Decimal(p.usd_value ?? 0)).toNumber(),
+                value: p.fiatValue,
                 timestamp: p.datetime,
             }
         }) ?? []) as DataPoint[]
-    }, [data, usdToPreferred])
+    }, [data])
 
     const yAxisOffsets = useMemo(() => {
         if (dataPoints.length === 0) return [-1, 1]
@@ -94,18 +89,10 @@ const AssetWealthChart = ({
         }) => {
             if (Date.now() - lastSentTime > FOCUS_DEBOUNCE_TIME) {
                 if (pointerX > 0 && index >= 0 && index !== lastSentIndex) {
-                    const dataItem =
-                        // @ts-ignore: The generated type is unknown
-                        (data as any)?.results?.[index] ?? null
+                    const dataItem = data?.[index]
                     setLastSentIndex(index)
                     if (dataItem) {
-                        onSelectionChanged({
-                            algo_value: dataItem.amount,
-                            datetime: dataItem.datetime,
-                            usd_value: dataItem.usd_value,
-                            value_in_currency: dataItem.value_in_currency,
-                            round: 0,
-                        })
+                        onSelectionChanged(dataItem)
                     }
                 } else if (pointerX === 0) {
                     onSelectionChanged(null)

@@ -23,7 +23,7 @@
     "@kubb/plugin-react-query": "catalog:",
     "@kubb/plugin-ts": "catalog:",
     "@kubb/plugin-zod": "catalog:",
-    "@perawallet/eslint-config": "workspace:*",
+    "@perawallet/wallet-core-eslint-config": "workspace:*",
     "@quintype/copyright-header": "^1.3.4",
     "@vitest/coverage-v8": "catalog:",
     "eslint": "catalog:",

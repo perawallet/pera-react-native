@@ -1,1 +1,0 @@
-{"required":["alpha_2","name"],"type":"object","properties":{"alpha_2":{"title":"Alpha 2","minLength":1,"type":"string"},"name":{"title":"Name","minLength":1,"type":"string"}},"x-readme-ref-name":"CountryDetailItem"}

@@ -11,9 +11,9 @@
  */
 
 import {
-    useAccountAssetBalance,
+    useAccountAssetBalanceQuery,
     useSelectedAccount,
-} from '@perawallet/core'
+} from '@perawallet/wallet-core-accounts'
 import PWBottomSheet from '../../common/bottom-sheet/PWBottomSheet'
 import EmptyView from '../../common/empty-view/EmptyView'
 import SendFundsAssetSelectionView from '../asset-selection/SendFundsAssetSelectionView'
@@ -30,7 +30,7 @@ import SendFundsProvider, {
 } from '../../../providers/SendFundsProvider'
 
 type SendFundsBottomSheetProps = {
-    assetId?: number
+    assetId?: string
     isVisible: boolean
     onClose: () => void
 }
@@ -67,7 +67,7 @@ const SendFundsBottomSheet = ({
         setAmount,
         setDestination,
     } = useContext(SendFundsContext)
-    const { data: assetBalance } = useAccountAssetBalance(
+    const { data: assetBalance } = useAccountAssetBalanceQuery(
         selectedAccount ?? undefined,
         assetId,
     )

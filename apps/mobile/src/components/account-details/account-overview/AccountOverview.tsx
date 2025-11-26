@@ -12,14 +12,9 @@
 
 import PWView from '../../common/view/PWView'
 import {
-    AccountWealthHistoryItem,
     formatDatetime,
     HistoryPeriod,
-    useAccountBalances,
-    useCurrency,
-    useSettings,
-    WalletAccount,
-} from '@perawallet/core'
+} from '@perawallet/wallet-core-shared'
 import { ScrollView } from 'react-native'
 import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
 import Decimal from 'decimal.js'
@@ -32,6 +27,13 @@ import { useStyles } from './styles'
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity'
 import WealthTrend from '../../common/wealth-trend/WealthTrend'
 import ChartPeriodSelection from '../../common/chart-period-selection/ChartPeriodSelection'
+import {
+    AccountBalanceHistoryItem,
+    useAccountBalancesQuery,
+    WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { useCurrency } from '@perawallet/wallet-core-currencies'
+import { useSettings } from '@perawallet/wallet-core-settings'
 
 type AccountOverviewProps = {
     account: WalletAccount
@@ -43,14 +45,12 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
     const { preferredCurrency } = useCurrency()
     const styles = useStyles()
 
-    const { totalAlgoBalance, totalFiatBalance, loading } = useAccountBalances(
-        account ? [account] : [],
-    )
+    const { portfolioAlgoBalance, portfolioFiatBalance, isPending } =
+        useAccountBalancesQuery(account ? [account] : [])
 
     const [period, setPeriod] = useState<HistoryPeriod>('one-week')
-    const [chartData, setChartData] = useState<AccountWealthHistoryItem | null>(
-        null,
-    )
+    const [chartData, setChartData] =
+        useState<AccountBalanceHistoryItem | null>(null)
     const [scrollingEnabled, setScrollingEnabled] = useState<boolean>(true)
     const { privacyMode, setPrivacyMode } = useSettings()
 
@@ -59,7 +59,7 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
     }
 
     const chartSelectionChanged = useCallback(
-        (selected: AccountWealthHistoryItem | null) => {
+        (selected: AccountBalanceHistoryItem | null) => {
             setChartData(selected)
 
             if (selected) {
@@ -86,13 +86,13 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
                         h1
                         value={
                             chartData
-                                ? Decimal(chartData.algo_value)
-                                : totalAlgoBalance
+                                ? Decimal(chartData.algoValue)
+                                : portfolioAlgoBalance
                         }
                         currency='ALGO'
                         precision={2}
                         h1Style={styles.primaryCurrency}
-                        skeleton={loading}
+                        skeleton={isPending}
                     />
                     <PWView style={styles.secondaryValueBar}>
                         <CurrencyDisplay
@@ -100,15 +100,13 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
                             h4Style={styles.valueTitle}
                             value={
                                 chartData
-                                    ? Decimal(
-                                          chartData.value_in_currency ?? '0',
-                                      )
-                                    : totalFiatBalance
+                                    ? Decimal(chartData.fiatValue)
+                                    : portfolioFiatBalance
                             }
                             currency={preferredCurrency}
                             prefix='≈ '
                             precision={2}
-                            skeleton={loading}
+                            skeleton={isPending}
                         />
                         {!chartData && (
                             <WealthTrend

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useSelectedAccount } from '@perawallet/core'
+import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useStyles } from './styles'
 
 import { TouchableOpacity, TouchableOpacityProps } from 'react-native'

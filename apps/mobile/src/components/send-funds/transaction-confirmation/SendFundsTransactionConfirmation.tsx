@@ -14,13 +14,10 @@ import { useContext, useMemo, useState } from 'react'
 import PWView from '../../common/view/PWView'
 import { SendFundsContext } from '../../../providers/SendFundsProvider'
 import {
-    ALGO_ASSET_ID,
+    DEFAULT_PRECISION,
     formatCurrency,
-    useAccountAssetBalance,
-    useAssetFiatPrices,
-    useCurrencyConverter,
-    useSelectedAccount,
-} from '@perawallet/core'
+} from '@perawallet/wallet-core-shared'
+
 import RowTitledItem from '../../common/row-titled-item/RowTitledItem'
 import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
 import Decimal from 'decimal.js'
@@ -34,6 +31,9 @@ import useToast from '../../../hooks/toast'
 import AddNotePanel from '../add-note-panel/AddNotePanel'
 import PWIcon from '../../common/icons/PWIcon'
 import PWHeader from '../../common/header/PWHeader'
+import { useAccountAssetBalanceQuery, useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import { useCurrency } from '@perawallet/wallet-core-currencies'
+import { ALGO_ASSET_ID, useAssetFiatPricesQuery, useAssetsQuery } from '@perawallet/wallet-core-assets'
 
 type SendFundsTransactionConfirmationProps = {
     onNext: () => void
@@ -54,14 +54,21 @@ const SendFundsTransactionConfirmation = ({
     const styles = useStyles()
     const { selectedAsset, amount, destination, note } =
         useContext(SendFundsContext)
+
+    const { assets } = useAssetsQuery()
+    const asset = useMemo(() => {
+        if (!selectedAsset?.assetId) return null
+        return assets.get(selectedAsset?.assetId)
+    }, [selectedAsset, assets])
+
     const selectedAccount = useSelectedAccount()
     const { showToast } = useToast()
     const [noteOpen, setNoteOpen] = useState(false)
-    const { preferredCurrency, usdToPreferred } = useCurrencyConverter()
-    const { data: fiatPrices } = useAssetFiatPrices()
+    const { preferredCurrency } = useCurrency()
+    const { data: fiatPrices } = useAssetFiatPricesQuery()
     const fiatPrice = useMemo<Decimal | null>(() => {
         const price = selectedAsset
-            ? fiatPrices.get(selectedAsset?.asset_id)
+            ? fiatPrices.get(selectedAsset?.assetId)?.fiatPrice
             : null
         if (price) {
             return amount?.mul(price) ?? null
@@ -77,37 +84,23 @@ const SendFundsTransactionConfirmation = ({
         setNoteOpen(false)
     }
 
-    const { data } = useAccountAssetBalance(
+    const { data: currentBalance } = useAccountAssetBalanceQuery(
         selectedAccount ?? undefined,
-        selectedAsset?.asset_id,
+        selectedAsset?.assetId,
     )
-    const currentBalance = useMemo<Balance>(() => {
-        const { amount: dataAmount, balance_usd_value } = data ?? {}
-        return data
-            ? {
-                cryptoAmount: dataAmount ? Decimal(dataAmount) : null,
-                fiatAmount: balance_usd_value
-                    ? usdToPreferred(Decimal(balance_usd_value))
-                    : null,
-            }
-            : ({
-                cryptoAmount: Decimal(0),
-                fiatAmount: Decimal(0),
-            } as Balance)
-    }, [data, usdToPreferred])
 
     const onSuccess = () => {
         showToast({
             title: 'Transfer Successful',
             body: `You successfully sent ${formatCurrency(
                 amount!,
-                selectedAsset!.fraction_decimals,
-                selectedAsset!.unit_name ?? '',
+                asset?.decimals ?? DEFAULT_PRECISION,
+                asset?.unitName ?? '',
                 'en-US',
                 false,
                 undefined,
                 2,
-            )} ${selectedAsset!.unit_name}.`,
+            )} ${asset?.unitName ?? ''}.`,
             type: 'success',
         })
         onNext()
@@ -123,7 +116,7 @@ const SendFundsTransactionConfirmation = ({
             return
         }
 
-        if (selectedAsset.asset_id === ALGO_ASSET_ID) {
+        if (selectedAsset.assetId === ALGO_ASSET_ID) {
             //TODO types aren't right - we're using Decimal.toString and pasting into a BigInt...
             // const tx = await client.createTransaction.payment({
             //     sender: selectedAccount!.address,
@@ -166,17 +159,17 @@ const SendFundsTransactionConfirmation = ({
             <RowTitledItem title='Amount'>
                 <CurrencyDisplay
                     h3
-                    currency={selectedAsset.unit_name ?? ''}
-                    precision={selectedAsset.fraction_decimals}
-                    minPrecision={2}
+                    currency={asset?.unitName ?? ''}
+                    precision={asset?.decimals ?? DEFAULT_PRECISION}
+                    minPrecision={DEFAULT_PRECISION}
                     showSymbol
                     value={amount ?? Decimal(0)}
                 />
                 <CurrencyDisplay
                     style={styles.secondaryAmount}
                     currency={preferredCurrency}
-                    precision={selectedAsset.fraction_decimals}
-                    minPrecision={2}
+                    precision={asset?.decimals ?? DEFAULT_PRECISION}
+                    minPrecision={DEFAULT_PRECISION}
                     showSymbol
                     value={fiatPrice ? amount.mul(fiatPrice) : null}
                 />
@@ -209,16 +202,16 @@ const SendFundsTransactionConfirmation = ({
             {currentBalance && (
                 <RowTitledItem title='Current Balance'>
                     <CurrencyDisplay
-                        currency={selectedAsset.unit_name ?? ''}
-                        precision={selectedAsset.fraction_decimals}
-                        minPrecision={2}
+                        currency={asset?.unitName ?? ''}
+                        precision={asset?.decimals ?? DEFAULT_PRECISION}
+                        minPrecision={DEFAULT_PRECISION}
                         showSymbol
                         value={currentBalance.cryptoAmount}
                     />
                     <CurrencyDisplay
                         currency={preferredCurrency}
-                        precision={selectedAsset.fraction_decimals}
-                        minPrecision={2}
+                        precision={asset?.decimals ?? DEFAULT_PRECISION}
+                        minPrecision={DEFAULT_PRECISION}
                         showSymbol
                         value={currentBalance.fiatAmount}
                     />

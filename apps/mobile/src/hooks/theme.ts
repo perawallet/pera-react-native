@@ -12,7 +12,7 @@
 
 import { useMemo } from 'react'
 import { useColorScheme } from 'react-native'
-import { useSettings } from '@perawallet/core'
+import { useSettings } from '@perawallet/wallet-core-settings'
 
 export const useIsDarkMode = () => {
     const { theme: themeMode } = useSettings()

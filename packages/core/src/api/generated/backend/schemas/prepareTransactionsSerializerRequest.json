@@ -1,1 +1,0 @@
-{"required":["quote"],"type":"object","properties":{"quote":{"title":"Quote","type":"integer"},"deposit_address":{"title":"Deposit address","minLength":1,"type":"string","nullable":true}},"x-readme-ref-name":"PrepareTransactionsSerializer.Request"}

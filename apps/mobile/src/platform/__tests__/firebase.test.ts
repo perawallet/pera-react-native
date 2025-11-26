@@ -63,7 +63,8 @@ vi.mock('@react-native-firebase/messaging', () => ({
     getMessaging: () => mockMessaging,
     getToken: mockMessaging.getToken,
     onMessage: mockMessaging.onMessage,
-    registerDeviceForRemoteMessages: mockMessaging.registerDeviceForRemoteMessages,
+    registerDeviceForRemoteMessages:
+        mockMessaging.registerDeviceForRemoteMessages,
 }))
 
 const mockNotifee = vi.hoisted(() => ({

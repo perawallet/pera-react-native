@@ -1,7 +1,7 @@
 /** @type {import("eslint").Linter.Config} */
 module.exports = {
   root: true,
-  extends: ["@perawallet/eslint-config/index.js"],
+  extends: ["@perawallet/wallet-core-eslint-config/index.js"],
   parserOptions: {
     project: "./tsconfig.json",
     tsconfigRootDir: __dirname,
@@ -11,10 +11,10 @@ module.exports = {
     browser: true,
   },
   ignorePatterns: [
-    "lib/*", 
-    "dist/*", 
-    "coverage/*", 
-    "src/api/generated/*", 
+    "lib/*",
+    "dist/*",
+    "coverage/*",
+    "src/api/generated/*",
     "src/test-utils/*",
     "src/**/__tests__/**"
   ],

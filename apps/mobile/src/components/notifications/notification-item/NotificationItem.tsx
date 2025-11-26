@@ -13,24 +13,24 @@
 import PWView from '../../common/view/PWView'
 import {
     formatRelativeTime,
-    NotificationV2SerializerResponse,
-} from '@perawallet/core'
+} from '@perawallet/wallet-core-shared'
 import { Image, Text } from '@rneui/themed'
 import { useStyles } from './styles'
 import { useCallback, useMemo } from 'react'
 import PWIcon from '../../common/icons/PWIcon'
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity'
+import { PeraNotification } from '@perawallet/wallet-core-platform-integration'
 
 type NotificationItemProps = {
-    item: NotificationV2SerializerResponse
+    item: PeraNotification
 }
 
 const NotificationItem = ({ item }: NotificationItemProps) => {
     const styles = useStyles()
 
     const getImage = useCallback(
-        (notification: NotificationV2SerializerResponse) => {
-            const metadata = notification.metadata as any
+        (notification: PeraNotification) => {
+            const metadata = notification.metadata
             const imageUrl =
                 metadata?.image_url ??
                 metadata?.asset?.logo ??
@@ -95,7 +95,7 @@ const NotificationItem = ({ item }: NotificationItemProps) => {
             <PWView style={styles.messageBox}>
                 <Text>{item.message}</Text>
                 <Text style={styles.timeText}>
-                    {formatRelativeTime(item.creation_datetime ?? new Date())}
+                    {formatRelativeTime(item.createdAt)}
                 </Text>
             </PWView>
         </PWTouchableOpacity>

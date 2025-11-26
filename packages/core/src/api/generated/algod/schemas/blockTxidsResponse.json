@@ -1,1 +1,0 @@
-{"properties":{"blockTxids":{"description":"Block transaction IDs.","items":{"type":"string"},"type":"array"}},"required":["blockTxids"],"type":"object"}

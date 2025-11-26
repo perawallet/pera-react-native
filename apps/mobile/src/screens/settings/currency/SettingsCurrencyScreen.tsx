@@ -16,10 +16,10 @@ import MainScreenLayout from '../../../layouts/MainScreenLayout'
 import { useStyles } from './styles'
 import PWView from '../../../components/common/view/PWView'
 import {
-    CurrencySerializerResponse,
-    useCurrencies,
+    Currency,
+    useCurrenciesQuery,
     useCurrency,
-} from '@perawallet/core'
+} from '@perawallet/wallet-core-currencies'
 import { useEffect, useState } from 'react'
 import { FlatList } from 'react-native'
 
@@ -30,11 +30,9 @@ const SettingsCurrencyScreen = () => {
     const styles = useStyles()
     const { preferredCurrency, setPreferredCurrency } = useCurrency()
     const [search, setSearch] = useState<string>()
-    const [filteredData, setFilteredData] = useState<
-        CurrencySerializerResponse[]
-    >([])
+    const [filteredData, setFilteredData] = useState<Currency[]>([])
 
-    const { data } = useCurrencies()
+    const { data } = useCurrenciesQuery()
 
     useEffect(() => {
         if (!search?.length) {
@@ -45,18 +43,18 @@ const SettingsCurrencyScreen = () => {
                 (data ?? []).filter(
                     d =>
                         d.name.toLowerCase().includes(lowercaseSearch) ||
-                        d.currency_id.toLowerCase().includes(lowercaseSearch),
+                        d.id.toLowerCase().includes(lowercaseSearch),
                 ),
             )
         }
     }, [data, search])
 
-    const renderItem = ({ item }: { item: CurrencySerializerResponse }) => {
+    const renderItem = ({ item }: { item: Currency }) => {
         return (
             <RadioButton
-                title={`${item.name} (${item.currency_id})`}
-                onPress={() => setPreferredCurrency(item.currency_id)}
-                selected={preferredCurrency === item.currency_id}
+                title={`${item.name} (${item.id})`}
+                onPress={() => setPreferredCurrency(item.id)}
+                selected={preferredCurrency === item.id}
             />
         )
     }

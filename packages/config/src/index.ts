@@ -10,4 +10,6 @@
  limitations under the License
  */
 
+export const name = '@perawallet/wallet-core-config'
+
 export * from './main'

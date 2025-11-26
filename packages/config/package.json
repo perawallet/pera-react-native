@@ -1,5 +1,5 @@
 {
-  "name": "@perawallet/config",
+  "name": "@perawallet/wallet-core-config",
   "private": true,
   "version": "0.0.0",
   "main": "src/index.ts",
@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "@babel/runtime": "catalog:",
-    "@perawallet/eslint-config": "workspace:*",
+    "@perawallet/wallet-core-eslint-config": "workspace:*",
     "@testing-library/react": "^16.3.0",
     "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-v8": "catalog:",

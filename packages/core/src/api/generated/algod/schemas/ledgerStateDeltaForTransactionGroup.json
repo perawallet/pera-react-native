@@ -1,1 +1,0 @@
-{"description":"Contains a ledger delta for a single transaction group","properties":{"Delta":{"description":"Ledger StateDelta object","type":"object","x-algorand-format":"StateDelta","x-readme-ref-name":"LedgerStateDelta"},"Ids":{"items":{"type":"string"},"type":"array"}},"required":["Delta","Ids"],"type":"object","x-readme-ref-name":"LedgerStateDeltaForTransactionGroup"}

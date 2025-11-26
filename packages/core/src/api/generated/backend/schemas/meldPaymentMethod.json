@@ -1,1 +1,0 @@
-{"required":["category","display_name","type"],"type":"object","properties":{"category":{"title":"Category","minLength":1,"type":"string"},"type":{"title":"Type","minLength":1,"type":"string"},"display_name":{"title":"Display name","minLength":1,"type":"string"}},"x-readme-ref-name":"MeldPaymentMethod"}

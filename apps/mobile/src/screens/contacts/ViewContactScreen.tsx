@@ -16,7 +16,7 @@ import { Text } from '@rneui/themed'
 import { useStyles } from './ViewContactScreen.styles'
 import ContactAvatar from '../../components/common/contact-avatar/ContactAvatar'
 import AddressDisplay from '../../components/address/address-display/AddressDisplay'
-import { useContacts } from '@perawallet/core'
+import { useContacts } from '@perawallet/wallet-core-contacts'
 
 const ViewContactScreen = () => {
     const { selectedContact } = useContacts()

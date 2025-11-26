@@ -14,7 +14,7 @@ import PWIcon from '../../common/icons/PWIcon'
 
 import { useMemo } from 'react'
 import { SvgProps } from 'react-native-svg'
-import { WalletAccount } from '@perawallet/core'
+import { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 //TODO support all account types
 export type AccountIconProps = {

@@ -17,16 +17,15 @@ import { StaticScreenProps } from '@react-navigation/native'
 import {
     Network,
     Networks,
-    useDevice,
-    useNetwork,
-    useSettings,
-    useSigningRequest,
-} from '@perawallet/core'
+} from '@perawallet/wallet-core-shared'
 import { useQueryClient } from '@tanstack/react-query'
 import { useStyles } from './styles'
 import PWView from '../../components/common/view/PWView'
-import { Transaction } from '@perawallet/core/src/api/generated/indexer'
 import PWButton from '../../components/common/button/PWButton'
+import { useSettings } from '@perawallet/wallet-core-settings'
+import { useDevice, useNetwork } from '@perawallet/wallet-core-platform-integration'
+import { Transaction, useSigningRequest } from '@perawallet/wallet-core-blockchain'
+import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 
 type SettingsSubPageScreenProps = StaticScreenProps<{
     title: string
@@ -36,9 +35,9 @@ const SettingsSubPageScreen = ({ route }: SettingsSubPageScreenProps) => {
     const styles = useStyles()
     const { theme, setTheme } = useSettings()
     const { network, setNetwork } = useNetwork()
-    const { deviceIDs } = useDevice()
     const { addSignRequest } = useSigningRequest()
-    const { registerDevice } = useDevice()
+    const { registerDevice } = useDevice(network)
+    const accounts = useAllAccounts()
     const queryClient = useQueryClient()
 
     const toggleTheme = () => {
@@ -55,9 +54,7 @@ const SettingsSubPageScreen = ({ route }: SettingsSubPageScreenProps) => {
             newNetwork = Networks.testnet
         }
         setNetwork(newNetwork)
-        if (!deviceIDs.get(newNetwork)) {
-            await registerDevice()
-        }
+        await registerDevice(accounts.map(account => account.address))
 
         queryClient.invalidateQueries()
     }

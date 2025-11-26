@@ -12,13 +12,14 @@
 
 import PWView from '../../common/view/PWView'
 import AddressSearchView from '../../address/address-search/AddressSearchView'
-import { useContext } from 'react'
+import { useContext, useMemo } from 'react'
 import { SendFundsContext } from '../../../providers/SendFundsProvider'
 import { useStyles } from './styles'
 import PWHeader from '../../common/header/PWHeader'
 import AssetIcon from '../../assets/asset-icon/AssetIcon'
 import { Text, useTheme } from '@rneui/themed'
 import EmptyView from '../../common/empty-view/EmptyView'
+import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 
 type SendFundsSelectDestinationProps = {
     onNext: () => void
@@ -31,6 +32,11 @@ const SendFundsSelectDestination = ({
 }: SendFundsSelectDestinationProps) => {
     const { selectedAsset, setDestination } = useContext(SendFundsContext)
     const styles = useStyles()
+    const { assets } = useAssetsQuery()
+    const asset = useMemo(() => {
+        if (!selectedAsset?.assetId) return null
+        return assets.get(selectedAsset?.assetId)
+    }, [selectedAsset, assets])
     const { theme } = useTheme()
 
     const handleSelected = (address: string) => {
@@ -38,7 +44,7 @@ const SendFundsSelectDestination = ({
         onNext()
     }
 
-    if (!selectedAsset) {
+    if (!selectedAsset || !asset) {
         return (
             <EmptyView
                 title='Something went wrong'
@@ -55,10 +61,10 @@ const SendFundsSelectDestination = ({
             >
                 <PWView style={styles.assetTitleContainer}>
                     <AssetIcon
-                        asset={selectedAsset}
+                        asset={asset}
                         size={theme.spacing.xl}
                     />
-                    <Text>{selectedAsset?.name}</Text>
+                    <Text>{asset.name}</Text>
                 </PWView>
             </PWHeader>
             <AddressSearchView onSelected={handleSelected} />

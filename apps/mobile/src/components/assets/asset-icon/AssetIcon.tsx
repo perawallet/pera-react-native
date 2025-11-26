@@ -12,9 +12,8 @@
 
 import {
     ALGO_ASSET_ID,
-    AssetWithAccountBalance,
     PeraAsset,
-} from '@perawallet/core'
+} from '@perawallet/wallet-core-assets'
 import AlgoAssetIcon from '../../../../assets/icons/assets/algo.svg'
 import { useMemo } from 'react'
 import { SvgProps } from 'react-native-svg'
@@ -23,7 +22,7 @@ import PWView from '../../common/view/PWView'
 import { useStyles } from './styles'
 
 export type AssetIconProps = {
-    asset: PeraAsset | AssetWithAccountBalance
+    asset: PeraAsset
     size?: number
 } & SvgProps
 
@@ -34,7 +33,7 @@ const AssetIcon = (props: AssetIconProps) => {
 
     const icon = useMemo(() => {
         if (!asset) return <></>
-        if (asset.asset_id === ALGO_ASSET_ID)
+        if (asset.assetId === ALGO_ASSET_ID)
             return (
                 <AlgoAssetIcon
                     {...rest}
@@ -56,7 +55,7 @@ const AssetIcon = (props: AssetIconProps) => {
         }
         return (
             <PWView style={styles.defaultAsset}>
-                <Text>{asset?.unit_name?.slice(0, 1)}</Text>
+                <Text>{asset?.unitName?.slice(0, 1)}</Text>
             </PWView>
         )
     }, [asset, rest, size, styles.icon, styles.defaultAsset])

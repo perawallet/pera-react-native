@@ -1,1 +1,0 @@
-{"properties":{"txId":{"description":"encoding of the transaction hash.","type":"string"}},"required":["txId"],"type":"object"}

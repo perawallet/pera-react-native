@@ -20,21 +20,19 @@ import { PWViewProps } from '../../common/view/PWView'
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity'
 import Decimal from 'decimal.js'
 import {
-    AccountWealthHistoryItem,
     formatDatetime,
     HistoryPeriod,
-    useAccountBalances,
-    useAllAccounts,
-    useCurrency,
-} from '@perawallet/core'
+} from '@perawallet/wallet-core-shared'
 import { useCallback, useState } from 'react'
 import PWIcon from '../../common/icons/PWIcon'
 import WealthTrend from '../../common/wealth-trend/WealthTrend'
 import ChartPeriodSelection from '../../common/chart-period-selection/ChartPeriodSelection'
 import PWButton from '../../common/button/PWButton'
+import { useCurrency } from '@perawallet/wallet-core-currencies'
+import { AccountBalanceHistoryItem, useAccountBalancesQuery, useAllAccounts } from '@perawallet/wallet-core-accounts'
 
 type PortfolioViewProps = {
-    onDataSelected?: (selected: AccountWealthHistoryItem | null) => void
+    onDataSelected?: (selected: AccountBalanceHistoryItem | null) => void
 } & PWViewProps
 
 //TODO layout and spacing needs a bit of clean up
@@ -43,10 +41,10 @@ const PortfolioView = (props: PortfolioViewProps) => {
     const { preferredCurrency } = useCurrency()
 
     const accounts = useAllAccounts()
-    const { loading, totalAlgoBalance, totalFiatBalance } =
-        useAccountBalances(accounts)
+    const { portfolioAlgoBalance, portfolioFiatBalance, isPending } =
+        useAccountBalancesQuery(accounts)
     const [period, setPeriod] = useState<HistoryPeriod>('one-week')
-    const [chartData, setChartData] = useState<AccountWealthHistoryItem | null>(
+    const [chartData, setChartData] = useState<AccountBalanceHistoryItem | null>(
         null,
     )
     const [chartVisible, setChartVisible] = useState<boolean>(false)
@@ -56,7 +54,7 @@ const PortfolioView = (props: PortfolioViewProps) => {
     }
 
     const chartSelectionChanged = useCallback(
-        (selected: AccountWealthHistoryItem | null) => {
+        (selected: AccountBalanceHistoryItem | null) => {
             setChartData(selected)
             props.onDataSelected?.(selected)
         },
@@ -84,13 +82,13 @@ const PortfolioView = (props: PortfolioViewProps) => {
                     h1
                     value={
                         chartData
-                            ? Decimal(chartData.algo_value ?? 0)
-                            : totalAlgoBalance
+                            ? chartData.algoValue
+                            : portfolioAlgoBalance
                     }
                     currency='ALGO'
                     precision={2}
                     h1Style={styles.primaryCurrency}
-                    skeleton={loading}
+                    skeleton={isPending}
                 />
                 <PWButton
                     title={chartVisible ? 'Hide Chart' : 'Show Chart'}
@@ -105,13 +103,13 @@ const PortfolioView = (props: PortfolioViewProps) => {
                     h4Style={styles.valueTitle}
                     value={
                         chartData
-                            ? Decimal(chartData.value_in_currency ?? '0')
-                            : totalFiatBalance
+                            ? chartData.fiatValue
+                            : portfolioFiatBalance
                     }
                     currency={preferredCurrency}
                     prefix='≈ '
                     precision={2}
-                    skeleton={loading}
+                    skeleton={isPending}
                 />
                 {!chartData && <WealthTrend period={period} />}
                 {chartData && (

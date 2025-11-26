@@ -14,8 +14,8 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { RNDeviceInfoStorageService } from '../device'
 import * as RN from 'react-native'
 
-// Mock @perawallet/core
-vi.mock('@perawallet/core', () => ({
+// Mock @perawallet/wallet-core-shared
+vi.mock('@perawallet/wallet-core-shared', () => ({
     updateBackendHeaders: vi.fn(),
     updateManualBackendHeaders: vi.fn(),
 }))
@@ -64,7 +64,9 @@ describe('RNDeviceInfoStorageService', () => {
 
     describe('initializeDeviceInfo', () => {
         it('sets up headers and calls updateBackendHeaders', async () => {
-            const { updateBackendHeaders } = await import('@perawallet/core')
+            const { updateBackendHeaders } = await import(
+                '@perawallet/wallet-core-shared'
+            )
             const mockUpdateBackendHeaders = vi.mocked(updateBackendHeaders)
             const mockNativeModules = vi.mocked(RN)
             mockNativeModules.NativeModules.SettingsManager.getConstants =

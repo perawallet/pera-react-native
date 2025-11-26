@@ -19,7 +19,7 @@ import { useStyles } from './styles'
 import { ScrollView } from 'react-native'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { useDeviceInfoService } from '@perawallet/core'
+import { useDeviceInfoService } from '@perawallet/wallet-core-platform-integration'
 import { useMemo, useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import PWTouchableOpacity from '../../components/common/touchable-opacity/PWTouchableOpacity'
@@ -139,9 +139,9 @@ const SettingsScreen = () => {
                                     onPress={() => {
                                         page.route
                                             ? goToSettingsPage(
-                                                  page.route,
-                                                  page.title,
-                                              )
+                                                page.route,
+                                                page.title,
+                                            )
                                             : openRating()
                                     }}
                                 >

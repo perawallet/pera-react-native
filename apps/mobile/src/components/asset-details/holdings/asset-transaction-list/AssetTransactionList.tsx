@@ -12,7 +12,8 @@
 
 import { useStyles } from './styles'
 import PWView from '../../../common/view/PWView'
-import { PeraAsset, WalletAccount } from '@perawallet/core'
+import { PeraAsset } from '@perawallet/wallet-core-assets'
+import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { FlatList } from 'react-native'
 import PWButton from '../../../common/button/PWButton'
 import { Text } from '@rneui/themed'
@@ -25,9 +26,7 @@ type AssetTransactionListProps = {
 }
 
 //TODO implement fully
-const AssetTransactionList = ({
-    children,
-}: AssetTransactionListProps) => {
+const AssetTransactionList = ({ children }: AssetTransactionListProps) => {
     const styles = useStyles()
 
     // TODO: Replace with actual infinite query hook when added.

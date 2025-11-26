@@ -11,11 +11,7 @@
  */
 
 import PWView from '../../common/view/PWView'
-import {
-    SignRequest,
-    truncateAlgorandAddress,
-    useSigningRequest,
-} from '@perawallet/core'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { Text } from '@rneui/themed'
 import PWButton from '../../common/button/PWButton'
@@ -28,6 +24,7 @@ import BalanceImpactView from '../balance-impact/BalanceImpactView'
 import useToast from '../../../hooks/toast'
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity'
 import PWIcon from '../../common/icons/PWIcon'
+import { encodeAlgorandAddress, SignRequest, useSigningRequest } from '@perawallet/wallet-core-blockchain'
 
 type SigningViewProps = {
     request: SignRequest
@@ -39,6 +36,9 @@ type SigningViewProps = {
 const SingleTransactionView = ({ request }: SigningViewProps) => {
     const styles = useStyles()
     const tx = request.txs?.at(0)?.at(0)!
+    const receiver = tx['asset-transfer-transaction']?.receiver ??
+        tx['payment-transaction']?.receiver ??
+        ''
 
     return (
         <PWView style={styles.body}>
@@ -46,7 +46,7 @@ const SingleTransactionView = ({ request }: SigningViewProps) => {
                 type='pay'
                 size='large'
             />
-            <Text h4>Transfer to {truncateAlgorandAddress(tx.receiver)}</Text>
+            <Text h4>Transfer to {truncateAlgorandAddress(receiver)}</Text>
             <CurrencyDisplay
                 currency='ALGO'
                 precision={3}

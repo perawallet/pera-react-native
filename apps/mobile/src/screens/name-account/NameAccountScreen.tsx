@@ -24,7 +24,7 @@ import {
     getAccountDisplayName,
     WalletAccount,
     useUpdateAccount,
-} from '@perawallet/core'
+} from '@perawallet/wallet-core-accounts'
 import { useState } from 'react'
 import type { StaticScreenProps } from '@react-navigation/native'
 import { KeyboardAvoidingView, Platform } from 'react-native'

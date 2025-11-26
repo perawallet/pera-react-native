@@ -1,1 +1,0 @@
-{"properties":{"blocks":{"items":{"$ref":"#/components/schemas/Block"},"type":"array"},"current-round":{"description":"Round at which the results were computed.","type":"integer"},"next-token":{"description":"Used for pagination, when making another request provide this token with the next parameter.","type":"string"}},"required":["blocks","current-round"],"type":"object"}

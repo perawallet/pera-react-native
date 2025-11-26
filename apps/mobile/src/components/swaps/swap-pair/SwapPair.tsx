@@ -15,7 +15,7 @@ import PWView from '../../common/view/PWView'
 import { ViewStyle } from 'react-native'
 import { Text } from '@rneui/themed'
 import AssetIcon from '../../assets/asset-icon/AssetIcon'
-import { PeraAsset } from '@perawallet/core'
+import { PeraAsset } from '@perawallet/wallet-core-assets'
 
 type SwapPairItemProps = {
     fromAsset: PeraAsset
@@ -39,7 +39,7 @@ const SwapPair = (props: SwapPairItemProps) => {
                 />
             </PWView>
             <Text h4>
-                {props.fromAsset?.unit_name} to {props.toAsset?.unit_name}
+                {props.fromAsset?.unitName} to {props.toAsset?.unitName}
             </Text>
         </PWView>
     )

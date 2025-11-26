@@ -1,5 +1,5 @@
 {
-  "name": "@perawallet/xhdwallet",
+  "name": "@perawallet/wallet-core-xhdwallet",
   "private": true,
   "version": "1.0.0",
   "main": "src/index.ts",

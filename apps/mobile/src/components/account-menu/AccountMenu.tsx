@@ -11,7 +11,6 @@
  */
 
 import { Tab, TabView } from '@rneui/themed'
-import { WalletAccount } from '@perawallet/core'
 
 import { useStyles } from './styles'
 import PortfolioView from '../portfolio/portfolio-view/PortfolioView'
@@ -19,6 +18,7 @@ import PWView from '../common/view/PWView'
 import { useEffect, useState } from 'react'
 import InboxTab from './InboxTab'
 import AccountsTab from './AccountsTab'
+import { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 type AccountMenuProps = {
     onSelected: (account: WalletAccount) => void

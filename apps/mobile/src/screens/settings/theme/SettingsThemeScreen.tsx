@@ -14,7 +14,7 @@ import MainScreenLayout from '../../../layouts/MainScreenLayout'
 
 import { useStyles } from './styles'
 import PWView from '../../../components/common/view/PWView'
-import { useSettings } from '@perawallet/core'
+import { useSettings } from '@perawallet/wallet-core-settings'
 import RadioButton from '../../../components/common/radio-button/RadioButton'
 
 const SettingsThemeScreen = () => {

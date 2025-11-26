@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useNotificationStatus } from '@perawallet/core'
+import { useNotificationStatus } from '@perawallet/wallet-core-platform-integration'
 import { SvgProps } from 'react-native-svg'
 import PWIcon from '../../common/icons/PWIcon'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
@@ -21,7 +21,7 @@ export type NotificationsIconProps = {} & SvgProps
 
 const NotificationsIcon = (props: NotificationsIconProps) => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-    const { hasNotifications } = useNotificationStatus()
+    const { data } = useNotificationStatus()
 
     const goToNotifications = () => {
         navigation.navigate('Notifications')
@@ -31,7 +31,7 @@ const NotificationsIcon = (props: NotificationsIconProps) => {
         <PWTouchableOpacity onPress={goToNotifications}>
             <PWIcon
                 {...props}
-                name={hasNotifications ? 'bell-with-badge' : 'bell'}
+                name={data?.hasNewNotification ? 'bell-with-badge' : 'bell'}
             />
         </PWTouchableOpacity>
     )

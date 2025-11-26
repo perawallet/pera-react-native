@@ -1,1 +1,0 @@
-{"required":["account_addresses"],"type":"object","properties":{"account_addresses":{"minItems":1,"type":"array","items":{"minLength":1,"type":"string"}},"last_known_round":{"title":"Last known round","type":"integer"}},"x-readme-ref-name":"ShouldRefreshViewRequestBodySerializer.Request"}

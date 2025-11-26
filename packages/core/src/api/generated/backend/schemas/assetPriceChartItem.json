@@ -1,1 +1,0 @@
-{"required":["datetime","price"],"type":"object","properties":{"datetime":{"title":"Datetime","type":"string","format":"date-time"},"price":{"title":"Price","type":"string","format":"decimal"}},"x-readme-ref-name":"AssetPriceChartItem"}

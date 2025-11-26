@@ -1,20 +1,31 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
 import { View } from 'react-native'
 import { Text } from '@rneui/themed'
 import { useStyles } from './styles'
 import {
-    AssetPriceHistoryItem,
     formatCurrency,
     HistoryPeriod,
-    useAssetPriceHistory,
-    useCurrency,
-} from '@perawallet/core'
+} from '@perawallet/wallet-core-shared'
 import PWIcon from '../../../common/icons/PWIcon'
 import Decimal from 'decimal.js'
 import { useMemo } from 'react'
+import { AssetPriceHistoryItem, useAssetPriceHistoryQuery } from '@perawallet/wallet-core-assets'
+import { useCurrency } from '@perawallet/wallet-core-currencies'
 
 type PriceTrendProps = {
-    assetId?: number
-    period?: HistoryPeriod
+    assetId: string
+    period: HistoryPeriod
     selectedDataPoint?: AssetPriceHistoryItem
     showAbsolute?: boolean
 }
@@ -28,31 +39,29 @@ const PriceTrend = ({
     const styles = useStyles()
     const { preferredCurrency } = useCurrency()
 
-    const { data: chartData } = useAssetPriceHistory({
-        params: {
-            asset_id: assetId ?? 0,
-            period: period ?? 'one-week',
-        },
-    })
+    const { data: chartData } = useAssetPriceHistoryQuery(
+        assetId,
+        period ?? 'one-week'
+    )
 
     const [calculatedPercentage, calculatedValue] = useMemo(() => {
-        const dataPoints = chartData?.map(p => Number(p.price)) ?? []
+        const dataPoints = chartData?.map(p => p.fiatPrice) ?? []
 
-        const firstDp = dataPoints.at(0) ?? 0
-        const lastDp = selectedDataPoint?.price ?? dataPoints.at(-1) ?? 0
+        const firstDp = dataPoints.at(0) ?? Decimal(0)
+        const lastDp = selectedDataPoint?.fiatPrice ?? dataPoints.at(-1) ?? Decimal(0)
 
-        if (lastDp === 0) return [0, new Decimal(0)]
+        if (lastDp.isZero()) return [Decimal(0), Decimal(0)]
 
         return [
-            ((lastDp - firstDp) / lastDp) * 100,
-            new Decimal(lastDp - firstDp),
+            ((lastDp.minus(firstDp)).div(lastDp)).mul(100),
+            lastDp.minus(firstDp),
         ]
     }, [chartData, selectedDataPoint])
 
-    const changePercentage = calculatedPercentage ?? 0
+    const changePercentage = calculatedPercentage ?? Decimal(0)
     const changeValue = calculatedValue
 
-    const isPositive = changePercentage >= 0
+    const isPositive = changePercentage.greaterThanOrEqualTo(Decimal(0))
 
     return (
         <View style={styles.container}>
@@ -84,7 +93,7 @@ const PriceTrend = ({
                     style={isPositive ? styles.itemUp : styles.itemDown}
                     h4
                 >
-                    {Math.abs(changePercentage).toFixed(2)}%
+                    {Decimal.abs(changePercentage).toFixed(2)}%
                 </Text>
             </View>
         </View>

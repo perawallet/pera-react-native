@@ -1,0 +1,36 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+
+export type StateProofTracking = {
+    /**
+     * @description \\[n\\] Next round for which we will accept a state proof transaction.
+     * @type integer | undefined
+    */
+    "next-round"?: number;
+    /**
+     * @description \\[t\\] The total number of microalgos held by the online accounts during the StateProof round.
+     * @type integer | undefined
+    */
+    "online-total-weight"?: number;
+    /**
+     * @description State Proof Type. Note the raw object uses map with this as key.
+     * @type integer | undefined
+    */
+    type?: number;
+    /**
+     * @description \\[v\\] Root of a vector commitment containing online accounts that will help sign the proof.
+     * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
+     * @type string | undefined, byte
+    */
+    "voters-commitment"?: string;
+};

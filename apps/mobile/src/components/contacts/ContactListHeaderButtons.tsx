@@ -12,7 +12,7 @@
 
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { useContacts } from '@perawallet/core'
+import { useContacts } from '@perawallet/wallet-core-contacts'
 import PWIcon from '../common/icons/PWIcon'
 
 const ContactListHeaderButtons = () => {

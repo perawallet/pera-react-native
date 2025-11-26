@@ -1,1 +1,0 @@
-{"description":"An error response with optional data field.","properties":{"data":{"properties":{},"type":"object"},"message":{"type":"string"}},"required":["message"],"type":"object","x-readme-ref-name":"ErrorResponse"}

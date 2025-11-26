@@ -1,1 +1,0 @@
-{"required":["device_id","enabled"],"type":"object","properties":{"device_id":{"title":"Device id","type":"integer","description":"Device ID for the toggle operation"},"enabled":{"title":"Enabled","type":"boolean","description":"Whether to enable or disable the favorite/price alert status"}},"x-readme-ref-name":"ToggleAssetRequestSerializerV2.Request"}

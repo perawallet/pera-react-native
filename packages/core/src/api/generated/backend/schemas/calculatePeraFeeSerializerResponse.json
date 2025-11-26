@@ -1,1 +1,0 @@
-{"type":"object","properties":{"pera_fee_amount":{"title":"Pera fee amount","type":"string","format":"decimal","readOnly":true}},"x-readme-ref-name":"CalculatePeraFeeSerializer.Response"}

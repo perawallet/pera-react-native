@@ -15,32 +15,37 @@ import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
 import PWView, { PWViewProps } from '../../common/view/PWView'
 import {
     ALGO_ASSET_ID,
-    AssetWithAccountBalance,
-    useCurrencyConverter,
-} from '@perawallet/core'
+    useAssetsQuery,
+} from '@perawallet/wallet-core-assets'
+import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { Text, useTheme } from '@rneui/themed'
-import Decimal from 'decimal.js'
 import { useStyles } from './styles'
 import { useMemo } from 'react'
 import PWIcon from '../../common/icons/PWIcon'
+import { useCurrency } from '@perawallet/wallet-core-currencies'
 
 type AccountAssetItemViewProps = {
-    asset: AssetWithAccountBalance
+    accountBalance: AssetWithAccountBalance
     iconSize?: number
 } & PWViewProps
 
 const AccountAssetItemView = ({
-    asset,
+    accountBalance,
     iconSize,
     ...rest
 }: AccountAssetItemViewProps) => {
     const { theme } = useTheme()
     const styles = useStyles()
 
-    const { preferredCurrency, usdToPreferred } = useCurrencyConverter()
+    const { preferredCurrency } = useCurrency()
+    const { assets } = useAssetsQuery([accountBalance.assetId])
+
+    const asset = useMemo(() => {
+        return assets?.get(accountBalance.assetId)
+    }, [assets, accountBalance.assetId])
 
     const verificationIcon = useMemo(() => {
-        if (asset.asset_id === ALGO_ASSET_ID) {
+        if (accountBalance.assetId === ALGO_ASSET_ID) {
             return (
                 <PWIcon
                     name='assets/trusted'
@@ -48,7 +53,7 @@ const AccountAssetItemView = ({
                 />
             )
         }
-        if (asset.verification_tier === 'verified') {
+        if (asset?.verificationTier === 'verified') {
             return (
                 <PWIcon
                     name='assets/verified'
@@ -56,7 +61,7 @@ const AccountAssetItemView = ({
                 />
             )
         }
-        if (asset.verification_tier === 'suspicious') {
+        if (asset?.verificationTier === 'suspicious') {
             return (
                 <PWIcon
                     name='assets/suspicious'
@@ -67,8 +72,8 @@ const AccountAssetItemView = ({
         return undefined
     }, [asset])
 
-    if (!asset?.unit_name) {
-        return <Text>Couldn't load asset data</Text>
+    if (!asset?.unitName) {
+        return <></>
     }
 
     return (
@@ -87,24 +92,22 @@ const AccountAssetItemView = ({
                         {verificationIcon}
                     </PWView>
                     <Text style={styles.secondaryUnit}>
-                        {asset.unit_name}
-                        {asset.asset_id !== ALGO_ASSET_ID &&
-                            ` - ${asset.asset_id}`}
+                        {asset.unitName}
+                        {asset.assetId !== ALGO_ASSET_ID &&
+                            ` - ${asset.assetId}`}
                     </Text>
                 </PWView>
                 <PWView style={styles.amountContainer}>
                     <CurrencyDisplay
-                        currency={asset.unit_name}
-                        value={Decimal(asset.amount ?? 0)}
+                        currency={asset.unitName}
+                        value={accountBalance.cryptoAmount}
                         precision={6}
                         showSymbol
                         style={styles.primaryAmount}
                     />
                     <CurrencyDisplay
                         currency={preferredCurrency}
-                        value={usdToPreferred(
-                            Decimal(asset.balance_usd_value ?? 0),
-                        )}
+                        value={accountBalance.fiatAmount}
                         precision={6}
                         showSymbol
                         style={styles.secondaryAmount}

@@ -11,14 +11,9 @@
  */
 
 import {
-    PeraAsset,
-    WalletAccount,
-    useCurrencyConverter,
-    AccountWealthHistoryItem,
     formatDatetime,
-    useAccountAssetBalance,
     HistoryPeriod,
-} from '@perawallet/core'
+} from '@perawallet/wallet-core-shared'
 import PWView from '../../common/view/PWView'
 import AssetWealthChart from './asset-wealth-chart/AssetWealthChart'
 import ChartPeriodSelection from '../../common/chart-period-selection/ChartPeriodSelection'
@@ -32,6 +27,9 @@ import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import RoundButton from '../../common/round-button/RoundButton'
 import { Text } from '@rneui/themed'
+import { AccountBalanceHistoryItem, useAccountAssetBalanceQuery, WalletAccount } from '@perawallet/wallet-core-accounts'
+import { useCurrency } from '@perawallet/wallet-core-currencies'
+import { PeraAsset } from '@perawallet/wallet-core-assets'
 
 type AssetHoldingsProps = {
     account: WalletAccount
@@ -40,31 +38,31 @@ type AssetHoldingsProps = {
 
 const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
     const styles = useStyles()
-    const { preferredCurrency, usdToPreferred } = useCurrencyConverter()
+    const { preferredCurrency } = useCurrency()
     const [period, setPeriod] = useState<HistoryPeriod>('one-week')
     const [selectedPoint, setSelectedPoint] =
-        useState<AccountWealthHistoryItem | null>(null)
+        useState<AccountBalanceHistoryItem | null>(null)
 
-    const { data: assetHolding } = useAccountAssetBalance(
+    const { data: assetHolding } = useAccountAssetBalanceQuery(
         account,
-        asset.asset_id,
+        asset.assetId,
     )
 
     const cryptoAmount = useMemo(() => {
         const currentCrypto = selectedPoint
-            ? selectedPoint.algo_value
-            : (assetHolding?.amount ?? 0)
+            ? selectedPoint.algoValue
+            : (assetHolding?.cryptoAmount ?? 0)
         return Decimal(currentCrypto)
     }, [assetHolding, selectedPoint])
 
     const fiatAmount = useMemo(() => {
         const currentUSD = selectedPoint
-            ? Decimal(selectedPoint.value_in_currency ?? 0)
-            : usdToPreferred(Decimal(assetHolding?.balance_usd_value ?? 0))
+            ? Decimal(selectedPoint.fiatValue ?? 0)
+            : Decimal(assetHolding?.fiatAmount ?? 0)
         return currentUSD
-    }, [assetHolding, selectedPoint, usdToPreferred])
+    }, [assetHolding, selectedPoint])
 
-    if (!asset?.unit_name) {
+    if (!asset?.unitName) {
         return <></>
     }
 
@@ -94,8 +92,8 @@ const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
                     <CurrencyDisplay
                         h1
                         value={cryptoAmount}
-                        currency={asset.unit_name}
-                        precision={asset.fraction_decimals}
+                        currency={asset.unitName}
+                        precision={asset.decimals}
                         minPrecision={2}
                     />
 

@@ -1,1 +1,0 @@
-{"required":["address","is_watch_account","receive_notifications"],"type":"object","properties":{"address":{"title":"Address","minLength":1,"type":"string"},"receive_notifications":{"title":"Receive Notifications","type":"boolean"},"is_watch_account":{"title":"Is watch account","type":"boolean","nullable":true}},"x-readme-ref-name":"DeviceAccountV2"}

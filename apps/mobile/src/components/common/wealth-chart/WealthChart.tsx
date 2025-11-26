@@ -15,23 +15,20 @@ import { LineChart } from 'react-native-gifted-charts'
 
 import PWView from '../view/PWView'
 import {
-    AccountWealthHistoryItem,
     HistoryPeriod,
-    useAccountsBalanceHistory,
-    useAllAccounts,
-    useCurrencyConverter,
-    WalletAccount,
-} from '@perawallet/core'
+} from '@perawallet/wallet-core-shared'
 import { useCallback, useMemo, useState } from 'react'
 import { useTheme } from '@rneui/themed'
 import Decimal from 'decimal.js'
+import { AccountBalanceHistoryItem, useAccountBalancesHistoryQuery, useAllAccounts, WalletAccount } from '@perawallet/wallet-core-accounts'
+import { useCurrenciesQuery } from '@perawallet/wallet-core-currencies'
 
 const FOCUS_DEBOUNCE_TIME = 200
 
 type WealthChartProps = {
     account?: WalletAccount
     period: HistoryPeriod
-    onSelectionChanged: (item: AccountWealthHistoryItem | null) => void
+    onSelectionChanged: (item: AccountBalanceHistoryItem | null) => void
 }
 
 const WealthChart = ({
@@ -40,7 +37,6 @@ const WealthChart = ({
     period,
 }: WealthChartProps) => {
     const { theme } = useTheme()
-    const { usdToPreferred } = useCurrencyConverter()
     const themeStyle = useStyles()
     const [lastSentIndex, setLastSentIndex] = useState<number>()
     const [lastSentTime, setLastSentTime] = useState<number>(Date.now())
@@ -54,22 +50,18 @@ const WealthChart = ({
         [account, accounts],
     )
 
-    const { data, isPending } = useAccountsBalanceHistory({
-        params: {
-            account_addresses: addresses,
-            period: period as HistoryPeriod,
-        },
-    })
+    const { data, isPending } = useAccountBalancesHistoryQuery(addresses, period)
 
     //TODO move the currency conversion into the useAccountsBalanceHistory hook
     const dataPoints = useMemo(
         () =>
-            data?.results?.map(p => {
+            data?.map(p => {
                 return {
-                    value: usdToPreferred(Decimal(p.usd_value)).toNumber(),
+                    datetime: p.datetime,
+                    value: p.fiatValue.toNumber(),
                 }
             }) ?? [],
-        [data, usdToPreferred],
+        [data],
     )
 
     const yAxisOffsets = useMemo(() => {
@@ -92,7 +84,7 @@ const WealthChart = ({
         }) => {
             if (Date.now() - lastSentTime > FOCUS_DEBOUNCE_TIME) {
                 if (pointerX > 0 && index >= 0 && index !== lastSentIndex) {
-                    const dataItem = data?.results?.[index] ?? null
+                    const dataItem = data?.[index] ?? null
                     onSelectionChanged(dataItem)
                     setLastSentIndex(index)
                 } else if (pointerX === 0) {

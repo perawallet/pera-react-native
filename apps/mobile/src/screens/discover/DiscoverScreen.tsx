@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { config } from '@perawallet/config'
+import { config } from '@perawallet/wallet-core-config'
 import PWWebView from '../../components/webview/PWWebView'
 import { useStyles } from './styles'
 import PWView from '../../components/common/view/PWView'

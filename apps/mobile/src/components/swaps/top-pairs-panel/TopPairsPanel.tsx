@@ -18,26 +18,20 @@ import { useCallback } from 'react'
 
 import SwapPair from '../swap-pair/SwapPair'
 import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
-import { PeraAsset, useAssets } from '@perawallet/core'
+import { ALGO_ASSET_ID, PeraAsset, useAssetsQuery } from '@perawallet/wallet-core-assets'
 
 //TODO this iz a mock implementation - implement properly
 const TopPairsPanel = () => {
     const themeStyle = useStyles()
 
-    const { data: assets } = useAssets([11711, 10458941, 700965019])
+    const { assets } = useAssetsQuery([ALGO_ASSET_ID, '10458941', '700965019'])
 
-    const algoAsset = assets?.length
-        ? assets.find((a: PeraAsset) => a.unit_name === 'ALGO')
-        : null
-    const usdcAsset = assets?.length
-        ? assets.find((a: PeraAsset) => a.unit_name === 'USDC')
-        : null
-    const vestAsset = assets?.length
-        ? assets.find((a: PeraAsset) => a.unit_name === 'HIPO')
-        : null
+    const algoAsset = assets?.get(ALGO_ASSET_ID)
+    const usdcAsset = assets?.get('10458941')
+    const vestAsset = assets?.get('700965019')
 
     const renderSwapPair = useCallback(
-        ({ item }: { item: any }) => {
+        (item: any) => {
             return (
                 <PWView style={themeStyle.itemRow}>
                     <SwapPair

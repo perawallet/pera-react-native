@@ -1,5 +1,5 @@
 {
-  "name": "@perawallet/eslint-config",
+  "name": "@perawallet/wallet-core-eslint-config",
   "version": "0.0.0",
   "main": "index.js",
   "license": "MIT",

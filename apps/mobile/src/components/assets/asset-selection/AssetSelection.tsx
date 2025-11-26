@@ -16,7 +16,7 @@ import { useStyles } from './styles'
 import PWIcon from '../../common/icons/PWIcon'
 
 import AssetIcon from '../asset-icon/AssetIcon'
-import { PeraAsset } from '@perawallet/core'
+import { PeraAsset } from '@perawallet/wallet-core-assets'
 
 export type AssetSelectionProps = {
     asset: PeraAsset
@@ -31,7 +31,7 @@ const AssetSelection = ({ asset }: AssetSelectionProps) => {
                 asset={asset}
                 style={styles.icon}
             />
-            <Text h4>{asset.unit_name}</Text>
+            <Text h4>{asset.unitName}</Text>
             <PWIcon name='chevron-right' />
         </PWView>
     )

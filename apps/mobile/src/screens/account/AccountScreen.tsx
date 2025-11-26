@@ -12,7 +12,7 @@
 
 import { Tab, TabView } from '@rneui/themed'
 import MainScreenLayout from '../../layouts/MainScreenLayout'
-import { useSelectedAccount } from '@perawallet/core'
+import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import PWIcon from '../../components/common/icons/PWIcon'
 
 import { useStyles } from './styles'

@@ -10,8 +10,10 @@
  limitations under the License
  */
 
-import { Networks, useDevice, useNetwork, usePolling } from '@perawallet/core'
-import { config } from '@perawallet/config'
+import {
+    Networks,
+} from '@perawallet/wallet-core-shared'
+import { config } from '@perawallet/wallet-core-config'
 import { useEffect, useMemo, useRef } from 'react'
 import { AppState, StatusBar } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
@@ -26,6 +28,9 @@ import useToast from '../../hooks/toast'
 import { useIsDarkMode } from '../../hooks/theme'
 import { SigningProvider } from '../../providers/SigningProvider'
 import PWTouchableOpacity from '../../components/common/touchable-opacity/PWTouchableOpacity'
+import { useDevice, useNetwork } from '@perawallet/wallet-core-platform-integration'
+import { usePolling } from '@perawallet/wallet-core-polling'
+import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 
 const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
     const insets = useSafeAreaInsets()
@@ -82,13 +87,16 @@ export const RootComponent = () => {
     const isDarkMode = useIsDarkMode()
 
     const theme = getTheme(isDarkMode ? 'dark' : 'light')
-    const { registerDevice } = useDevice()
+    const { network } = useNetwork()
+    const { registerDevice } = useDevice(network)
     const { startPolling, stopPolling } = usePolling()
+    const accounts = useAllAccounts()
 
     const appState = useRef(AppState.currentState)
 
     useEffect(() => {
-        registerDevice()
+        //TODO we should move the registerDevice stuff into the wallet-core somewhere somehow - maybe in setAccounts or something
+        registerDevice(accounts?.map(account => account.address) ?? [])
 
         if (config.pollingEnabled) {
             const subscription = AppState.addEventListener(
@@ -116,7 +124,7 @@ export const RootComponent = () => {
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+    }, [accounts])
 
     return (
         <ThemeProvider theme={theme}>

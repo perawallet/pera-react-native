@@ -18,7 +18,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useState } from 'react'
 import SendFundsBottomSheet from '../../../send-funds/bottom-sheet/SendFundsBottomSheet'
 import useToast from '../../../../hooks/toast'
-import { PeraAsset } from '@perawallet/core'
+import { PeraAsset } from '@perawallet/wallet-core-assets'
 
 type AssetActionButtonsProps = {
     asset: PeraAsset
@@ -78,7 +78,7 @@ const AssetActionButtons = ({ asset }: AssetActionButtonsProps) => {
                 onPress={notImplemented}
             />
             <SendFundsBottomSheet
-                asset={asset}
+                assetId={asset.assetId}
                 onClose={closeSendFunds}
                 isVisible={sendFundsOpen}
             />

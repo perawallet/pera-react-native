@@ -18,7 +18,7 @@ import {
     useAllAccounts,
     useSelectedAccountAddress,
     WalletAccount,
-} from '@perawallet/core'
+} from '@perawallet/wallet-core-accounts'
 import { useStyles } from './styles'
 import { Text, useTheme } from '@rneui/themed'
 import PWButton from '../common/button/PWButton'

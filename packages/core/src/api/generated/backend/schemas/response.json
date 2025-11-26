@@ -1,1 +1,0 @@
-{"required":["refresh"],"type":"object","properties":{"refresh":{"title":"Refresh","type":"boolean"}},"x-readme-ref-name":"Response"}

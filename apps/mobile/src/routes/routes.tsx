@@ -38,8 +38,7 @@ import EditContactScreen from '../screens/contacts/EditContactScreen'
 import {
     AnalyticsService,
     AnalyticsServiceContainerKey,
-    useHasNoAccounts,
-} from '@perawallet/core'
+} from '@perawallet/wallet-core-platform-integration'
 
 import { container } from 'tsyringe'
 
@@ -58,6 +57,7 @@ import SettingsGetHelpScreen from '../screens/settings/get-help/SettingsGetHelpS
 import SettingsTermsAndServicsScreen from '../screens/settings/terms-and-services/SettingsTermsAndServicesScreen'
 import SettingsPrivacyPolicyScreen from '../screens/settings/privacy-policy/SettingsPrivacyPolicyScreen'
 import AssetDetailsScreen from '../screens/asset-details/AssetDetailsScreen'
+import { useHasNoAccounts } from '@perawallet/wallet-core-accounts'
 
 const NAVIGATION_STACK_NAMES = new Set([
     'tabbar',

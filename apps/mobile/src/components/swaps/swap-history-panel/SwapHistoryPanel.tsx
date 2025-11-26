@@ -17,23 +17,17 @@ import { Text } from '@rneui/themed'
 import { useCallback } from 'react'
 
 import SwapPair from '../swap-pair/SwapPair'
-import { PeraAsset, useAssets } from '@perawallet/core'
+import { ALGO_ASSET_ID, PeraAsset, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity'
 
 const SwapHistoryPanel = () => {
     const themeStyle = useStyles()
 
-    const { data: assets } = useAssets([11711, 10458941, 700965019])
+    const { assets } = useAssetsQuery(['11711', '10458941', '700965019'])
 
-    const algoAsset = assets?.length
-        ? assets.find((a: PeraAsset) => a.unit_name === 'ALGO')
-        : null
-    const usdcAsset = assets?.length
-        ? assets.find((a: PeraAsset) => a.unit_name === 'USDC')
-        : null
-    const vestAsset = assets?.length
-        ? assets.find((a: PeraAsset) => a.unit_name === 'HIPO')
-        : null
+    const algoAsset = assets?.get(ALGO_ASSET_ID)
+    const usdcAsset = assets?.get('700965019')
+    const vestAsset = assets?.get('11711')
 
     const renderSwapPair = useCallback(
         (item: any, index: number) => {

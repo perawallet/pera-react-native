@@ -21,7 +21,7 @@ import {
     registerPlatformServices,
     useFcmToken,
     useAnalyticsService,
-} from '@perawallet/core'
+} from '@perawallet/wallet-core-platform-integration'
 
 const firebaseService = new RNFirebaseService()
 const platformServices = {
@@ -48,7 +48,11 @@ export const useBootstrapper = () => {
         const remoteConfigInit = remoteConfigService.initializeRemoteConfig()
         const analyticsInit = analyticsService.initializeAnalytics()
 
-        await Promise.allSettled([crashlyticsInit, remoteConfigInit, analyticsInit])
+        await Promise.allSettled([
+            crashlyticsInit,
+            remoteConfigInit,
+            analyticsInit,
+        ])
 
         const notificationResults =
             await notificationService.initializeNotifications()

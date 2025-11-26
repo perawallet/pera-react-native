@@ -13,11 +13,10 @@
 import { Skeleton } from '@rneui/themed'
 import PWView from '../../common/view/PWView'
 import {
-    AssetBalances,
     AssetWithAccountBalance,
-    useAccountBalances,
+    useAccountBalancesQuery,
     useSelectedAccount,
-} from '@perawallet/core'
+} from '@perawallet/wallet-core-accounts'
 import { useCallback, useContext, useMemo } from 'react'
 import AccountAssetItemView from '../../assets/asset-item/AccountAssetItemView'
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity'
@@ -48,7 +47,7 @@ const SendFundsAssetSelectionView = ({
     const styles = useStyles()
     const selectedAccount = useSelectedAccount()
     const { setSelectedAsset } = useContext(SendFundsContext)
-    const { data, loading } = useAccountBalances(
+    const { accountBalances, isPending } = useAccountBalancesQuery(
         selectedAccount ? [selectedAccount] : [],
     )
 
@@ -62,24 +61,25 @@ const SendFundsAssetSelectionView = ({
 
     const balanceData = useMemo(
         () =>
-            data.get(selectedAccount?.address)?.assetBalances as AssetBalances,
-        [data, selectedAccount?.address],
+            selectedAccount?.address ? accountBalances.get(selectedAccount.address)?.assetBalances : [],
+        [accountBalances, selectedAccount?.address],
     )
     const renderItem = useCallback(
         (item: AssetWithAccountBalance) => {
             return (
                 <PWTouchableOpacity
                     onPress={() => handleSelected(item)}
-                    key={`asset-${item.asset_id}`}
+                    key={`asset-${item.assetId}`}
                     style={styles.item}
                 >
-                    <AccountAssetItemView asset={item} />
+                    <AccountAssetItemView accountBalance={item} />
                 </PWTouchableOpacity>
             )
         },
         [handleSelected, styles],
     )
 
+    //TODO use flatlist/flashlist for performance here
     return (
         <PWView style={styles.container}>
             <PWHeader
@@ -87,8 +87,8 @@ const SendFundsAssetSelectionView = ({
                 onLeftPress={onBack}
                 title='Select Asset'
             />
-            {loading && <LoadingView />}
-            {!loading && balanceData?.map(b => renderItem(b))}
+            {isPending && <LoadingView />}
+            {!isPending && balanceData?.map(b => renderItem(b))}
         </PWView>
     )
 }

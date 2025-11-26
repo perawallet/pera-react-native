@@ -1,15 +1,26 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
 import { View, Linking } from 'react-native'
 import { useStyles } from './styles'
 import {
-    ALGO_ASSET_ID,
-    PeraAsset,
     truncateAlgorandAddress,
-} from '@perawallet/core'
+} from '@perawallet/wallet-core-shared'
 import Clipboard from '@react-native-clipboard/clipboard'
 import { Text } from '@rneui/themed'
 import PWButton from '../../../common/button/PWButton'
 import RowTitledItem from '../../../common/row-titled-item/RowTitledItem'
 import useToast from '../../../../hooks/toast'
+import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
 
 type AssetAboutProps = {
     assetDetails: PeraAsset
@@ -42,20 +53,20 @@ const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
 
     return (
         <View style={styles.container}>
-            {!!assetDetails.asset_id && (
+            {!!assetDetails.assetId && (
                 <Text style={styles.sectionTitle}>
                     About {assetDetails.name}
                 </Text>
             )}
-            {!!assetDetails.asset_id && (
+            {!!assetDetails.assetId && (
                 <RowTitledItem
                     title='ASA ID'
                     verticalAlignment='center'
                 >
                     <PWButton
-                        title={assetDetails.asset_id.toString()}
+                        title={assetDetails.assetId.toString()}
                         onPress={() =>
-                            copyToClipboard(assetDetails.asset_id.toString())
+                            copyToClipboard(assetDetails.assetId.toString())
                         }
                         variant='link'
                         paddingStyle='none'
@@ -84,7 +95,7 @@ const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
             {!!assetDetails.url?.length && (
                 <RowTitledItem
                     title={
-                        assetDetails.asset_id === ALGO_ASSET_ID
+                        assetDetails.assetId === ALGO_ASSET_ID
                             ? 'URL'
                             : 'ASA URL'
                     }
@@ -99,15 +110,15 @@ const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                 </RowTitledItem>
             )}
 
-            {!!assetDetails.explorer_url?.length && (
+            {!!assetDetails.explorerUrl?.length && (
                 <RowTitledItem
                     title='Show on'
                     verticalAlignment='center'
                 >
                     <PWButton
                         onPress={() =>
-                            assetDetails.explorer_url &&
-                            openLink(assetDetails.explorer_url)
+                            assetDetails.explorerUrl &&
+                            openLink(assetDetails.explorerUrl)
                         }
                         variant='link'
                         paddingStyle='none'
@@ -115,14 +126,14 @@ const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                 </RowTitledItem>
             )}
 
-            {!!assetDetails.project_url?.length && (
+            {!!assetDetails.projectUrl?.length && (
                 <RowTitledItem
                     title='Project website'
                     verticalAlignment='center'
                 >
                     <PWButton
                         title='Open with Browser'
-                        onPress={() => openLink(assetDetails.project_url!)}
+                        onPress={() => openLink(assetDetails.projectUrl!)}
                         variant='link'
                     />
                 </RowTitledItem>

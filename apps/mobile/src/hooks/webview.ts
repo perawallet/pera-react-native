@@ -14,16 +14,15 @@ import WebView from 'react-native-webview'
 import useToast from './toast'
 import { Linking } from 'react-native'
 import {
-    getAccountDisplayName,
-    useAllAccounts,
-    useCurrency,
     useDeviceID,
     useDeviceInfoService,
     useNetwork,
-    useSettings,
-} from '@perawallet/core'
+} from '@perawallet/wallet-core-platform-integration'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { getAccountDisplayName, useAllAccounts } from '@perawallet/wallet-core-accounts'
+import { useSettings } from '@perawallet/wallet-core-settings'
+import { useCurrency } from '@perawallet/wallet-core-currencies'
 
 type PushNewScreenParams = {
     url: string
@@ -59,9 +58,9 @@ type WebviewMessage = {
 export const usePeraWebviewInterface = (webview: WebView | null) => {
     const { showToast } = useToast()
     const accounts = useAllAccounts()
-    const deviceID = useDeviceID()
-    const { theme } = useSettings()
     const { network } = useNetwork()
+    const deviceID = useDeviceID(network)
+    const { theme } = useSettings()
     const deviceInfo = useDeviceInfoService()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { preferredCurrency } = useCurrency()
