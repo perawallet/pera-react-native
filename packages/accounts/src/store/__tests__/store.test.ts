@@ -10,16 +10,22 @@
  limitations under the License
  */
 
-import { describe, test, expect, beforeEach } from 'vitest'
-import { useAccountsStore } from '../index'
+import { describe, test, expect, beforeEach, vi } from 'vitest'
+import { createAccountsStore } from '../index'
 import type { WalletAccount } from '../../models'
+import type { KeyValueStorageService } from '@perawallet/wallet-core-platform-integration'
 
 describe('services/accounts/store', () => {
+    let useAccountsStore: ReturnType<typeof createAccountsStore>
+
     beforeEach(() => {
-        useAccountsStore.setState({
-            accounts: [],
-            selectedAccountAddress: null,
-        })
+        const mockStorage = {
+            getItem: vi.fn(),
+            setItem: vi.fn(),
+            removeItem: vi.fn(),
+        } as unknown as KeyValueStorageService
+
+        useAccountsStore = createAccountsStore(mockStorage)
     })
 
     test('defaults to empty list and setAccounts updates state', () => {
@@ -73,10 +79,7 @@ describe('services/accounts/store', () => {
 
         useAccountsStore.getState().setAccounts([a1, a2])
 
-        // Test default selection (index 0) - logic changed in store implementation?
-        // In the new store implementation:
-        // if (currentSelected === null && accounts.length) { set({ selectedAccountAddress: accounts.at(0)?.address }) }
-        // So it should auto-select the first one.
+        // Test default selection (index 0)
         expect(useAccountsStore.getState().getSelectedAccount()).toEqual(a1)
 
         // Test selecting index 1

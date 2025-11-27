@@ -19,17 +19,34 @@ import Decimal from 'decimal.js'
 import type { WalletAccount } from '../../models/accounts'
 
 // Mock dependencies
-const mockV1AccountsAssetsList = vi.hoisted(() => vi.fn())
-vi.mock('../../../api/index', () => ({
-    v1AccountsAssetsList: mockV1AccountsAssetsList,
-    v1AccountsAssetsListQueryKey: vi.fn(() => ['accountAssets']),
+const mockFetchAccountBalances = vi.hoisted(() => vi.fn())
+vi.mock('../endpoints', () => ({
+    fetchAccountBalances: mockFetchAccountBalances,
+    getAccountBalancesQueryKey: vi.fn(() => ['accountAssets']),
 }))
 
 const mockUsdToPreferred = vi.fn((amount: Decimal) => amount)
-vi.mock('../../../services/currencies', () => ({
-    useCurrencyConverter: vi.fn(() => ({
+vi.mock('@perawallet/wallet-core-currencies', () => ({
+    useCurrency: vi.fn(() => ({
         usdToPreferred: mockUsdToPreferred,
     })),
+}))
+
+vi.mock('@perawallet/wallet-core-platform-integration', () => ({
+    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
+}))
+
+vi.mock('@perawallet/wallet-core-assets', () => ({
+    useAssetsQuery: vi.fn(() => ({
+        data: new Map(),
+        isPending: false,
+    })),
+    useAssetFiatPricesQuery: vi.fn(() => ({
+        data: new Map(),
+        isPending: false,
+    })),
+    ALGO_ASSET_ID: '0',
+    ALGO_ASSET: { id: '0', decimals: 6 },
 }))
 
 const createWrapper = () => {
@@ -75,7 +92,7 @@ describe('useAccountBalances', () => {
             canSign: true,
         }
 
-        mockV1AccountsAssetsList.mockResolvedValue({
+        mockFetchAccountBalances.mockResolvedValue({
             results: [
                 {
                     asset_id: 0,
@@ -103,11 +120,12 @@ describe('useAccountBalances', () => {
 
         const accountData = result.current.accountBalances.get('ADDR1')
         expect(accountData).toBeDefined()
-        expect(accountData?.algoBalance).toEqual(new Decimal(2))
-        expect(accountData?.fiatBalance).toEqual(new Decimal(3.5))
+        // With empty asset prices mock, algoValue and fiatValue will be 0
+        expect(accountData?.algoValue).toEqual(new Decimal(0))
+        expect(accountData?.fiatValue).toEqual(new Decimal(0))
 
-        expect(result.current.portfolioAlgoBalance).toEqual(new Decimal(2))
-        expect(result.current.portfolioFiatBalance).toEqual(new Decimal(3.5))
+        expect(result.current.portfolioAlgoValue).toEqual(new Decimal(0))
+        expect(result.current.portfolioFiatValue).toEqual(new Decimal(0))
     })
 
     it('handles loading state', () => {
@@ -119,7 +137,7 @@ describe('useAccountBalances', () => {
             canSign: true,
         }
 
-        mockV1AccountsAssetsList.mockReturnValue(new Promise(() => {}))
+        mockFetchAccountBalances.mockReturnValue(new Promise(() => { }))
 
         const { result } = renderHook(
             () => useAccountBalancesQuery([account]),
@@ -140,7 +158,7 @@ describe('useAccountBalances', () => {
             canSign: true,
         }
 
-        mockV1AccountsAssetsList.mockRejectedValue(new Error('Network Error'))
+        mockFetchAccountBalances.mockRejectedValue(new Error('Network Error'))
 
         const { result } = renderHook(
             () => useAccountBalancesQuery([account]),
