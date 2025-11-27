@@ -56,3 +56,5 @@ export const initAssetsStore = () => {
     lazy.init(realStore)
     debugLog('Assets store initialized')
 }
+
+export { createAssetsStore }

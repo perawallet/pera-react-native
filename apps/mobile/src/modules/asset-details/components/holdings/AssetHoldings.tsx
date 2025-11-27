@@ -52,14 +52,14 @@ const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
     const cryptoAmount = useMemo(() => {
         const currentCrypto = selectedPoint
             ? selectedPoint.algoValue
-            : (assetHolding?.cryptoAmount ?? 0)
-        return Decimal(currentCrypto)
+            : (assetHolding?.amount ?? Decimal(0))
+        return currentCrypto
     }, [assetHolding, selectedPoint])
 
     const fiatAmount = useMemo(() => {
         const currentUSD = selectedPoint
-            ? Decimal(selectedPoint.fiatValue ?? 0)
-            : Decimal(assetHolding?.fiatAmount ?? 0)
+            ? selectedPoint.fiatValue ?? Decimal(0)
+            : assetHolding?.fiatValue ?? Decimal(0)
         return currentUSD
     }, [assetHolding, selectedPoint])
 

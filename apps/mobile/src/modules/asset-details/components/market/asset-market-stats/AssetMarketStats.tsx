@@ -37,9 +37,9 @@ const AssetMarketStats = ({ assetDetails }: AssetMarketStatsProps) => {
             return '-'
         }
 
-        const totalSupplyMicroUnits = new Decimal(assetDetails.totalSupply)
+        const totalSupplyMicroUnits = new Decimal(assetDetails.totalSupply ?? 0)
         const totalSupply = totalSupplyMicroUnits.div(
-            Decimal.pow(10, assetDetails.decimals),
+            Decimal.pow(10, assetDetails.decimals ?? 0),
         )
         const { amount, unit } = formatWithUnits(totalSupply)
         const { integer, fraction } = formatNumber(amount, 2)
@@ -50,11 +50,11 @@ const AssetMarketStats = ({ assetDetails }: AssetMarketStatsProps) => {
 
     const price = useMemo(() => {
         if (!data) {
-            return '---'
+            return null
         }
 
         const fiatPriceAsset = data.get(assetDetails.assetId)
-        return fiatPriceAsset?.fiatPrice ?? '---'
+        return fiatPriceAsset?.fiatPrice ?? null
     }, [data, assetDetails.assetId])
 
     return (
@@ -65,7 +65,7 @@ const AssetMarketStats = ({ assetDetails }: AssetMarketStatsProps) => {
                     <Text style={styles.label}>Price</Text>
                     <CurrencyDisplay
                         h2
-                        value={new Decimal(price)}
+                        value={price}
                         currency={preferredCurrency}
                         precision={6}
                         minPrecision={2}

@@ -557,6 +557,9 @@ importers:
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.2
+      reflect-metadata:
+        specifier: 'catalog:'
+        version: 0.2.2
       typescript:
         specifier: 'catalog:'
         version: 5.9.3

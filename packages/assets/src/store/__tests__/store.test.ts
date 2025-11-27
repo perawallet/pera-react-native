@@ -10,15 +10,20 @@
  limitations under the License
  */
 
-import { describe, test, expect, beforeEach } from 'vitest'
-import { create } from 'zustand'
-import { createAssetsSlice, type AssetsSlice } from '../store'
+import { describe, test, expect, beforeEach, vi } from 'vitest'
+import { createAssetsStore } from '../index'
 
 describe('services/assets/store', () => {
     let store: any
+    const mockStorage = {
+        getItem: vi.fn(),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+    }
 
     beforeEach(() => {
-        store = create<AssetsSlice>()(createAssetsSlice)
+        store = createAssetsStore(mockStorage as any)
+        vi.clearAllMocks()
     })
 
     test('initializes with empty assetIDs', () => {

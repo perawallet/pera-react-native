@@ -11,20 +11,21 @@
   "dependencies": {
     "@babel/runtime": "catalog:",
     "@perawallet/wallet-core-config": "workspace:*",
-    "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-core-currencies": "workspace:*",
     "@perawallet/wallet-core-platform-integration": "workspace:*",
+    "@perawallet/wallet-core-shared": "workspace:*",
+    "@tanstack/react-query": "catalog:",
     "decimal.js": "catalog:",
     "react": "catalog:",
-    "zustand": "catalog:",
-    "@tanstack/react-query": "catalog:"
+    "zustand": "catalog:"
   },
   "devDependencies": {
+    "@perawallet/wallet-core-eslint-config": "workspace:*",
+    "@perawallet/wallet-core-typescript-config": "workspace:*",
+    "@types/react": "catalog:",
+    "reflect-metadata": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vitest": "catalog:",
-    "@types/react": "catalog:",
-    "@perawallet/wallet-core-eslint-config": "workspace:*",
-    "@perawallet/wallet-core-typescript-config": "workspace:*"
+    "vitest": "catalog:"
   }
 }
