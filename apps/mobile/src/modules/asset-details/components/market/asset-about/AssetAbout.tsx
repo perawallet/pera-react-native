@@ -56,7 +56,7 @@ const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                     About {assetDetails.name}
                 </Text>
             )}
-            {!!assetDetails.assetId && (
+            {!!assetDetails.assetId && assetDetails.assetId !== ALGO_ASSET_ID && (
                 <RowTitledItem
                     title='ASA ID'
                     verticalAlignment='center'
@@ -108,15 +108,15 @@ const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                 </RowTitledItem>
             )}
 
-            {!!assetDetails.explorerUrl?.length && (
+            {!!assetDetails.peraMetadata?.explorerUrl?.length && (
                 <RowTitledItem
                     title='Show on'
                     verticalAlignment='center'
                 >
                     <PWButton
                         onPress={() =>
-                            assetDetails.explorerUrl &&
-                            openLink(assetDetails.explorerUrl)
+                            assetDetails.peraMetadata?.explorerUrl &&
+                            openLink(assetDetails.peraMetadata?.explorerUrl)
                         }
                         variant='link'
                         paddingStyle='none'
@@ -124,14 +124,14 @@ const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                 </RowTitledItem>
             )}
 
-            {!!assetDetails.projectUrl?.length && (
+            {!!assetDetails.peraMetadata?.projectUrl?.length && (
                 <RowTitledItem
                     title='Project website'
                     verticalAlignment='center'
                 >
                     <PWButton
                         title='Open with Browser'
-                        onPress={() => openLink(assetDetails.projectUrl!)}
+                        onPress={() => openLink(assetDetails.peraMetadata?.projectUrl ?? '')}
                         variant='link'
                     />
                 </RowTitledItem>

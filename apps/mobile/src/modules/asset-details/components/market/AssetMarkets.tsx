@@ -204,7 +204,7 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
 
             <AssetVerificationCard assetDetails={assetDetails} />
 
-            <AssetDescription description={assetDetails.description} />
+            <AssetDescription description={assetDetails.peraMetadata?.description ?? ''} />
 
             <AssetSocialMedia assetDetails={assetDetails} />
 

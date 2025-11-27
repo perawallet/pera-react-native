@@ -34,15 +34,17 @@ const SendFundsInfoPanel = ({
     const styles = useStyles()
     const { getPreference, setPreference } = usePreferences()
     const [forceOpen, setForceOpen] = useState(false)
+    const hasAgreed = getPreference(UserPreferences.spendAgreed)
 
     useEffect(() => {
-        const hasAgreed = getPreference(UserPreferences.spendAgreed)
         if (!hasAgreed) {
             setTimeout(() => {
                 setForceOpen(true)
             }, 300)
+        } else {
+            setForceOpen(false)
         }
-    }, [getPreference])
+    }, [hasAgreed])
 
     const handleClose = () => {
         setPreference(UserPreferences.spendAgreed, true)

@@ -39,11 +39,11 @@ const AssetIcon = (props: AssetIconProps) => {
                     height={size}
                 />
             )
-        if (asset.logo) {
+        if (asset.peraMetadata?.logo) {
             return (
                 <Image
                     resizeMode='contain'
-                    source={{ uri: asset.logo }}
+                    source={{ uri: asset.peraMetadata?.logo }}
                     style={styles.icon}
                     width={size}
                     height={size}

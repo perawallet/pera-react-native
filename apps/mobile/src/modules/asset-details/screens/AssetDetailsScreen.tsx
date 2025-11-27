@@ -15,6 +15,7 @@ import MainScreenLayout from '../../../layouts/MainScreenLayout'
 import { StaticScreenProps, useNavigation } from '@react-navigation/native'
 import {
     getAccountDisplayName,
+    useSelectedAccount,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useCallback, useLayoutEffect, useMemo, useState } from 'react'
@@ -23,25 +24,26 @@ import AssetMarkets from '../components/market/AssetMarkets'
 import AssetHoldings from '../components/holdings/AssetHoldings'
 import AccountIcon from '../../../components/accounts/account-icon/AccountIcon'
 import useToast from '../../../hooks/toast'
-import { PeraAsset } from '@perawallet/wallet-core-assets'
+import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
+import LoadingView from '../../../components/common/loading/LoadingView'
 
 type AssetDetailsScreenProps = {
-    account: WalletAccount
-    asset: PeraAsset
+    assetId: string
 }
 
 //TODO implement me
 const AssetDetailsScreen = ({
     route,
 }: StaticScreenProps<AssetDetailsScreenProps>) => {
-    const asset = route.params?.asset
-    const account = route.params?.account
+    const assetId = route.params?.assetId
     const { showToast } = useToast()
 
     const styles = useStyles()
     const [tabIndex, setTabIndex] = useState(0)
 
     const navigation = useNavigation()
+    const account = useSelectedAccount()
+    const { data: asset, isPending } = useSingleAssetDetailsQuery(assetId)
 
     const notImplemented = useCallback(() => {
         showToast({
@@ -52,6 +54,9 @@ const AssetDetailsScreen = ({
     }, [showToast])
 
     const headerIcon = useMemo(() => {
+        if (!account) {
+            return null
+        }
         return (
             <AccountIcon
                 account={account}
@@ -66,6 +71,11 @@ const AssetDetailsScreen = ({
             headerRight: () => headerIcon,
         })
     }, [navigation, account, headerIcon])
+
+    if (!asset || !account || isPending) {
+        return <LoadingView variant='skeleton' count={3} size='lg' />
+    }
+
     return (
         <MainScreenLayout
             fullScreen

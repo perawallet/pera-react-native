@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useAssetsStore } from '../store'
 import { useQueries } from '@tanstack/react-query'
 import { fetchAssets, fetchPublicAssetDetails } from './endpoints'
@@ -19,7 +19,7 @@ import { ALGO_ASSET_ID, AssetsResponse, PublicAssetResponse, type PeraAsset } fr
 import { DEFAULT_PAGE_SIZE } from '@perawallet/wallet-core-shared'
 
 export const getAssetsQueryKeys = (assetIDs: string[]) => {
-    return ['v1', 'assets', { asset_ids: assetIDs.join(',') }]
+    return ['v1', 'assets', { assetIDs }]
 }
 
 export const getAlgoQueryKeys = () => {
@@ -28,59 +28,58 @@ export const getAlgoQueryKeys = () => {
 
 export const useAssetsQuery = (ids?: string[]) => {
     let assetIDs = useAssetsStore(state => state.assetIDs)
-    let updated = false
     const setAssetIDs = useAssetsStore(state => state.setAssetIDs)
 
-    if (ids && (!assetIDs || !ids.every(id => assetIDs?.find(a => a === id)))) {
-        const set = new Set([...(assetIDs ?? []), ...ids])
-        assetIDs = [...set]
-        updated = true
-    }
-
     useEffect(() => {
+        let updated = false
+        if (ids && (!assetIDs || !ids.every(id => assetIDs?.find(a => a === id)))) {
+            const set = new Set([...(assetIDs ?? []), ...ids])
+            assetIDs = [...set]
+            updated = true
+        }
         if (updated) {
             setAssetIDs(assetIDs)
         }
-    }, [assetIDs, setAssetIDs, updated])
+    }, [assetIDs, ids, setAssetIDs])
 
-    const chunks = useMemo(() => {
+    const queryDefinitions = useMemo(() => {
         const chunks: string[][] = []
         for (let i = 0; i < assetIDs.length; i += DEFAULT_PAGE_SIZE) {
             chunks.push(
                 assetIDs.slice(i, i + DEFAULT_PAGE_SIZE).map(id => `${id}`),
             )
         }
-        return chunks
-    }, [assetIDs])
-
-    const queries = useQueries({
-        queries: [...chunks.map(chunk => {
+        return [...chunks.map(chunk => {
             return {
                 queryKey: getAssetsQueryKeys(chunk),
                 queryFn: async () => fetchAssets(chunk),
-                select: useCallback((data: AssetsResponse) => {
+                select: (data: AssetsResponse) => {
                     const peraAssets = data.results.map(mapAssetResponseToPeraAsset)
                     return {
                         results: peraAssets,
                         next: data.next,
                         previous: data.previous,
                     }
-                }, [mapAssetResponseToPeraAsset]),
+                },
             }
         }),
         {
             queryKey: getAlgoQueryKeys(),
             queryFn: async () => fetchPublicAssetDetails(ALGO_ASSET_ID),
-            select: useCallback((data: PublicAssetResponse) => {
+            select: (data: PublicAssetResponse) => {
                 const peraAsset = mapPublicAssetResponseToPeraAsset(data)
                 return {
                     results: [peraAsset],
                     next: null,
                     previous: null,
                 }
-            }, [mapPublicAssetResponseToPeraAsset]),
+            },
         },
-        ],
+        ]
+    }, [assetIDs])
+
+    const queries = useQueries({
+        queries: queryDefinitions,
     })
 
     return useMemo(() => {

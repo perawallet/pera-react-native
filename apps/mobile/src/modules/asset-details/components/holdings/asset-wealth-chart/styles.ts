@@ -17,5 +17,6 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         justifyContent: 'center',
         paddingVertical: theme.spacing.md,
+        height: 140,
     },
 }))

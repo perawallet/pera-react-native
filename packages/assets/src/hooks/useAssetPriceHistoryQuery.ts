@@ -18,11 +18,15 @@ import type { AssetPriceHistoryResponse } from '../models'
 import { useCallback } from 'react'
 import { mapAssetPriceHistoryResponseToAssetPriceHistoryItem } from './mappers'
 
+export const getBaseAssetPriceHistoryQueryKey = () => {
+    return ['v1', 'assets', 'price_history']
+}
+
 const getAssetPriceHistoryQueryKey = (
     assetID: string,
     period: HistoryPeriod,
 ) => {
-    return ['v1', 'assets', 'price-history', assetID, period]
+    return [...getBaseAssetPriceHistoryQueryKey(), assetID, period]
 }
 
 export const useAssetPriceHistoryQuery = (

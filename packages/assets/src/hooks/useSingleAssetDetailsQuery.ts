@@ -53,6 +53,7 @@ export const useSingleAssetDetailsQuery = (assetId: string) => {
         queryKey: getAssetDetailsQueryKey(assetId),
         queryFn: () => fetchAssetDetails(assetId),
         select: data => mapAssetResponseToPeraAsset(data),
+        enabled: assetId !== ALGO_ASSET_ID,
     })
 
     const {
@@ -66,6 +67,7 @@ export const useSingleAssetDetailsQuery = (assetId: string) => {
         queryKey: getIndexerAssetDetailsQueryKey(assetId),
         queryFn: () => fetchIndexerAssetDetails(assetId),
         select: data => mapIndexerAssetToPeraAsset(data),
+        enabled: assetId !== ALGO_ASSET_ID,
     })
 
     const { data: algoData, refetch: algoRefetch } = useQuery({
@@ -82,30 +84,19 @@ export const useSingleAssetDetailsQuery = (assetId: string) => {
         refetch: () => void
         isLoading: boolean
     }>(() => {
-        if (assetId === ALGO_ASSET_ID) {
-            return {
-                data: algoData ?? ALGO_ASSET,
-                isLoading: false,
-                isError: false,
-                error: null,
-                isPending: false,
-                refetch: () => {
-                    algoRefetch()
-                },
-            }
+        let algoAsset = algoData ? algoData : ALGO_ASSET
+
+        const data = {
+            ...indexerData,
+            ...peraData,
+            ...algoAsset,
         }
         return {
-            data:
-                indexerData && peraData
-                    ? ({
-                          ...indexerData,
-                          ...peraData,
-                      } as PeraAsset)
-                    : ((peraData as PeraAsset) ?? indexerData),
-            isLoading: peraLoading || indexerLoading,
-            isError: peraIsError && indexerIsError,
-            error: indexerError ?? peraError,
-            isPending: peraIsPending || indexerIsPending,
+            data,
+            isLoading: assetId !== ALGO_ASSET_ID ? peraLoading || indexerLoading : false,
+            isError: assetId !== ALGO_ASSET_ID ? peraIsError && indexerIsError : false,
+            error: assetId !== ALGO_ASSET_ID ? indexerError ?? peraError : undefined,
+            isPending: assetId !== ALGO_ASSET_ID ? peraIsPending && indexerIsPending : false,
             refetch: () => {
                 if (assetId === ALGO_ASSET_ID) {
                     algoRefetch()

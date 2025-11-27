@@ -26,7 +26,7 @@ export const getPreferredCurrencyPriceQueryKeys = (
 const mapCurrencyToPrice = (data: CurrencyResponse): CurrencyPrice => {
     return {
         id: data.currency_id,
-        usdPrice: new Decimal(data.usd_value ?? '0'),
+        usdPrice: Decimal(data.usd_value ?? '0'),
     }
 }
 

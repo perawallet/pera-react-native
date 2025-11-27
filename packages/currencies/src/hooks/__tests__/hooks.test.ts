@@ -113,10 +113,10 @@ describe('services/currencies/hooks', () => {
 
             const { result } = renderHook(() => useCurrencyConverter())
 
-            const usdAmount = new Decimal(100)
+            const usdAmount = Decimal(100)
             const converted = result.current.usdToPreferred(usdAmount)
 
-            expect(converted).toEqual(new Decimal(85))
+            expect(converted).toEqual(Decimal(85))
         })
 
         it('returns 0 when data is pending', () => {
@@ -131,10 +131,10 @@ describe('services/currencies/hooks', () => {
 
             const { result } = renderHook(() => useCurrencyConverter())
 
-            const usdAmount = new Decimal(100)
+            const usdAmount = Decimal(100)
             const converted = result.current.usdToPreferred(usdAmount)
 
-            expect(converted).toEqual(new Decimal(0))
+            expect(converted).toEqual(Decimal(0))
         })
 
         it('handles undefined usd_value gracefully', () => {
@@ -149,10 +149,10 @@ describe('services/currencies/hooks', () => {
 
             const { result } = renderHook(() => useCurrencyConverter())
 
-            const usdAmount = new Decimal(100)
+            const usdAmount = Decimal(100)
             const converted = result.current.usdToPreferred(usdAmount)
 
-            expect(converted).toEqual(new Decimal(0))
+            expect(converted).toEqual(Decimal(0))
         })
 
         it('handles empty usd_value string gracefully', () => {
@@ -167,10 +167,10 @@ describe('services/currencies/hooks', () => {
 
             const { result } = renderHook(() => useCurrencyConverter())
 
-            const usdAmount = new Decimal(100)
+            const usdAmount = Decimal(100)
             const converted = result.current.usdToPreferred(usdAmount)
 
-            expect(converted).toEqual(new Decimal(0))
+            expect(converted).toEqual(Decimal(0))
         })
 
         it('converts with decimal precision', () => {
@@ -185,10 +185,10 @@ describe('services/currencies/hooks', () => {
 
             const { result } = renderHook(() => useCurrencyConverter())
 
-            const usdAmount = new Decimal(2.5)
+            const usdAmount = Decimal(2.5)
             const converted = result.current.usdToPreferred(usdAmount)
 
-            expect(converted).toEqual(new Decimal(376.25))
+            expect(converted).toEqual(Decimal(376.25))
         })
 
         it('returns USD amount unchanged when preferred currency is USD', () => {
@@ -200,10 +200,10 @@ describe('services/currencies/hooks', () => {
 
             const { result } = renderHook(() => useCurrencyConverter())
 
-            const usdAmount = new Decimal(100)
+            const usdAmount = Decimal(100)
             const converted = result.current.usdToPreferred(usdAmount)
 
-            expect(converted).toEqual(new Decimal(100))
+            expect(converted).toEqual(Decimal(100))
         })
     })
 })

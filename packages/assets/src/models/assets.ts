@@ -45,14 +45,25 @@ export type CreatorAccount = {
 export type PeraAsset = {
     assetId: string
     decimals: number
+    creator: CreatorAccount
     totalSupply: Decimal
+    metadata?: string
+    name?: string
+    unitName?: string
+    url?: string
+    peraMetadata?: PeraAssetMetadata
+}
+
+export const DEFAULT_ASSET_METADATA: PeraAssetMetadata = {
+    isDeleted: false,
+    verificationTier: PeraAssetVerificationTier.unverified,
+}
+
+export type PeraAssetMetadata = {
     isDeleted: boolean
     verificationTier: PeraAssetVerificationTier
-    creator: CreatorAccount
     category?: number //TODO: Add category type
-    name?: string
     logo?: string | null
-    unitName?: string
     readonly isVerified?: boolean
     readonly explorerUrl?: string
     collectible?: PeraCollectible
@@ -65,23 +76,23 @@ export type PeraAsset = {
     telegramUrl?: string
     twitterUsername?: string
     description?: string
-    url?: string
     readonly availableOnDiscoverMobile?: string
+    isFrozen?: boolean
+    canClawback?: boolean
 }
 
 export const ALGO_ASSET_ID = '0'
 
 export const ALGO_ASSET: PeraAsset = {
     assetId: ALGO_ASSET_ID,
+    name: 'Algo',
+    unitName: 'ALGO',
     decimals: 6,
     totalSupply: Decimal('10000000000000000000'), //10,000 T microalgos
-    isDeleted: false,
-    verificationTier: 'verified',
     creator: {
         address: '',
     },
-    isVerified: true,
-    category: 0,
+    peraMetadata: DEFAULT_ASSET_METADATA,
 }
 
 export type IndexerAssetResponse = {

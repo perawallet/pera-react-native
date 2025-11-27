@@ -20,6 +20,11 @@ export const useStyles = makeStyles(theme => ({
     },
     name: {
         color: theme.colors.textMain,
-        marginHorizontal: theme.spacing.sm,
+    },
+    nameContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+        paddingLeft: theme.spacing.xs,
     },
 }))

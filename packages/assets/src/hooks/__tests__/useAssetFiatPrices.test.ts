@@ -63,8 +63,8 @@ describe('useAssetFiatPrices', () => {
         const { result } = renderHook(() => useAssetFiatPrices())
 
         expect(result.current.data.size).toBe(2)
-        expect(result.current.data.get(0)).toEqual(new Decimal(3.0)) // 1.5 * 2
-        expect(result.current.data.get(123)).toEqual(new Decimal(4.0)) // 2.0 * 2
+        expect(result.current.data.get(0)).toEqual(Decimal(3.0)) // 1.5 * 2
+        expect(result.current.data.get(123)).toEqual(Decimal(4.0)) // 2.0 * 2
         expect(result.current.isLoading).toBe(false)
     })
 
@@ -83,7 +83,7 @@ describe('useAssetFiatPrices', () => {
         const { result } = renderHook(() => useAssetFiatPrices())
 
         expect(result.current.data.size).toBe(1)
-        expect(result.current.data.get(0)).toEqual(new Decimal(3.0))
+        expect(result.current.data.get(0)).toEqual(Decimal(3.0))
         expect(result.current.data.has(456)).toBe(false)
     })
 

@@ -14,10 +14,10 @@ import { useStyles } from './styles'
 import PWView from '../../../../../components/common/view/PWView'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { FlatList } from 'react-native'
 import PWButton from '../../../../../components/common/button/PWButton'
 import { Text } from '@rneui/themed'
 import EmptyView from '../../../../../components/common/empty-view/EmptyView'
+import { FlashList } from "@shopify/flash-list";
 
 type AssetTransactionListProps = {
     account: WalletAccount
@@ -41,14 +41,14 @@ const AssetTransactionList = ({ children }: AssetTransactionListProps) => {
 
     return (
         <PWView style={styles.container}>
-            <FlatList
+            <FlashList
                 contentContainerStyle={styles.list}
                 data={transactions}
                 renderItem={renderItem}
                 onEndReached={handleEndReached}
                 onEndReachedThreshold={0.5}
                 ListHeaderComponent={
-                    <>
+                    <PWView style={styles.headerContainer}>
                         {children}
                         <PWView style={styles.header}>
                             <Text h4>Transactions</Text>
@@ -67,14 +67,12 @@ const AssetTransactionList = ({ children }: AssetTransactionListProps) => {
                                 />
                             </PWView>
                         </PWView>
-                    </>
+                    </PWView>
                 }
-                ListEmptyComponent={
-                    <EmptyView
-                        title='No Transactions'
-                        body='There are no transactions to be displayed'
-                    />
-                }
+                ListEmptyComponent={<EmptyView
+                    title='No Transactions'
+                    body='There are no transactions to be displayed'
+                />}
             />
         </PWView>
     )

@@ -43,23 +43,28 @@ export const useAccountBalancesQuery = (
     if (!accounts?.length) {
         return {
             accountBalances: new Map(),
-            portfolioAlgoValue: new Decimal(0),
-            portfolioFiatValue: new Decimal(0),
+            portfolioAlgoValue: Decimal(0),
+            portfolioFiatValue: Decimal(0),
             isPending: false,
             isFetched: false,
             isRefetching: false,
             isError: false,
         }
     }
-    const results = useQueries({
-        queries: accounts.map(acc => {
+
+    const queries = useMemo(() => {
+        return accounts.map(acc => {
             const address = acc.address
             return {
                 queryKey: getAccountBalancesQueryKey(address, network),
                 enabled: enabled,
                 queryFn: () => fetchAccountBalances(address, network),
             }
-        }),
+        })
+    }, [accounts, enabled, network])
+
+    const results = useQueries({
+        queries: queries,
     })
 
     const { assets } = useAssetsQuery(results.flatMap(r => r.data?.assets?.map(a => `${a['asset-id']}`) ?? []))
@@ -76,16 +81,16 @@ export const useAccountBalancesQuery = (
         isError,
     } = useMemo(() => {
         const accountBalanceList = results.map(r => {
-            let algoValue = new Decimal(0)
-            let fiatValue = new Decimal(0)
+            let algoValue = Decimal(0)
+            let fiatValue = Decimal(0)
 
             const assetBalances: AssetWithAccountBalance[] = []
 
             r.data?.assets?.forEach((assetHolding: AssetHolding) => {
                 const usdAssetPrice = assetPrices?.get(`${assetHolding['asset-id']}`)?.fiatPrice ?? Decimal(0)
                 const asset = assets.get(`${assetHolding['asset-id']}`)
-                const assetAmount = new Decimal(assetHolding.amount ?? '0').div(
-                    new Decimal(10).pow(asset?.decimals ?? 0),
+                const assetAmount = Decimal(assetHolding.amount ?? '0').div(
+                    Decimal(10).pow(asset?.decimals ?? 0),
                 )
                 const usdAssetValue = assetAmount.times(usdAssetPrice)
                 const algoAssetValue = usdAssetPrice.isZero() ? Decimal(0) : usdAssetValue.div(usdAlgoPrice)
@@ -105,8 +110,8 @@ export const useAccountBalancesQuery = (
             })
 
             //Now add algo into the mix
-            const algoAmount = new Decimal(r.data?.amount ?? '0').div(
-                new Decimal(10).pow(ALGO_ASSET.decimals),
+            const algoAmount = Decimal(r.data?.amount ?? '0').div(
+                Decimal(10).pow(ALGO_ASSET.decimals),
             )
             const usdAlgoValue = algoAmount.times(usdAlgoPrice)
             const fiatAlgoValue = usdToPreferred(usdAlgoValue)

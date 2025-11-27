@@ -24,6 +24,8 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
+import LoadingView from '../../../../../components/common/loading/LoadingView'
+import EmptyView from '../../../../../components/common/empty-view/EmptyView'
 
 const FOCUS_DEBOUNCE_TIME = 200
 
@@ -109,45 +111,53 @@ const AssetWealthChart = ({
         ],
     )
 
-    if (!isPending && !dataPoints?.length) {
-        return <></>
+    if (isPending) {
+        return <LoadingView variant='circle' size='lg' />
     }
 
     return (
         <PWView style={themeStyle.container}>
-            <LineChart
-                data={dataPoints}
-                hideAxesAndRules
-                height={140}
-                color={theme.colors.helperPositive}
-                startFillColor='#28A79B'
-                endFillColor='#28A79B'
-                startOpacity={0.3}
-                endOpacity={0.0}
-                areaChart
-                yAxisLabelWidth={1}
-                hideYAxisText
-                yAxisOffset={yAxisOffsets[0]}
-                maxValue={yAxisOffsets[1]}
-                initialSpacing={0}
-                endSpacing={0}
-                showStripOnFocus
-                showDataPointOnFocus
-                animateOnDataChange
-                animationDuration={200}
-                onDataChangeAnimationDuration={200}
-                pointerConfig={{
-                    showPointerStrip: true,
-                    pointerStripColor: theme.colors.textGrayLighter,
-                    pointerStripWidth: 1,
-                    pointerStripHeight: 140,
-                    pointerColor: theme.colors.helperPositive,
-                    strokeDashArray: [6, 2],
-                }}
-                getPointerProps={onFocus}
-                disableScroll
-                adjustToWidth
-            />
+            {!dataPoints?.length ?
+                <EmptyView
+                    title=''
+                    body='You will see a chart here once you have some balance history for this asset on this account'
+                />
+                : (
+                    <LineChart
+                        data={dataPoints}
+                        hideAxesAndRules
+                        height={140}
+                        color={theme.colors.helperPositive}
+                        startFillColor='#28A79B'
+                        endFillColor='#28A79B'
+                        startOpacity={0.3}
+                        endOpacity={0.0}
+                        areaChart
+                        yAxisLabelWidth={1}
+                        hideYAxisText
+                        yAxisOffset={yAxisOffsets[0]}
+                        maxValue={yAxisOffsets[1]}
+                        initialSpacing={0}
+                        endSpacing={0}
+                        showStripOnFocus
+                        showDataPointOnFocus
+                        animateOnDataChange
+                        animationDuration={200}
+                        onDataChangeAnimationDuration={200}
+                        pointerConfig={{
+                            showPointerStrip: true,
+                            pointerStripColor: theme.colors.textGrayLighter,
+                            pointerStripWidth: 1,
+                            pointerStripHeight: 140,
+                            pointerColor: theme.colors.helperPositive,
+                            strokeDashArray: [6, 2],
+                        }}
+                        getPointerProps={onFocus}
+                        disableScroll
+                        adjustToWidth
+                    />
+                )
+            }
         </PWView>
     )
 }

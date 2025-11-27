@@ -56,8 +56,7 @@ const AccountAssetList = ({ account }: AccountAssetListProps) => {
 
     const goToAssetScreen = (asset: AssetWithAccountBalance) => {
         navigation.navigate('AssetDetails', {
-            asset,
-            account,
+            assetId: asset.assetId
         })
     }
 

@@ -25,6 +25,7 @@ import { FlatList } from 'react-native'
 
 import RadioButton from '../../../../components/common/radio-button/RadioButton'
 import SearchInput from '../../../../components/common/search-input/SearchInput'
+import { useInvalidateAssetPrices } from '@perawallet/wallet-core-assets'
 
 const SettingsCurrencyScreen = () => {
     const styles = useStyles()
@@ -33,6 +34,7 @@ const SettingsCurrencyScreen = () => {
     const [filteredData, setFilteredData] = useState<Currency[]>([])
 
     const { data } = useCurrenciesQuery()
+    const { invalidateAssetPrices } = useInvalidateAssetPrices()
 
     useEffect(() => {
         if (!search?.length) {
@@ -49,11 +51,16 @@ const SettingsCurrencyScreen = () => {
         }
     }, [data, search])
 
+    const setCurrency = (currency: Currency) => {
+        setPreferredCurrency(currency.id)
+        invalidateAssetPrices()
+    }
+
     const renderItem = ({ item }: { item: Currency }) => {
         return (
             <RadioButton
                 title={`${item.name} (${item.id})`}
-                onPress={() => setPreferredCurrency(item.id)}
+                onPress={() => setCurrency(item)}
                 selected={preferredCurrency === item.id}
             />
         )

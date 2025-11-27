@@ -11,13 +11,14 @@
  */
 
 import Decimal from 'decimal.js'
-import type {
-    AssetPriceHistoryResponseItem,
-    AssetPriceResponse,
-    AssetResponse,
-    IndexerAssetResponse,
-    PeraAsset,
-    PublicAssetResponse,
+import {
+    ALGO_ASSET_ID,
+    type AssetPriceHistoryResponseItem,
+    type AssetPriceResponse,
+    type AssetResponse,
+    type IndexerAssetResponse,
+    type PeraAsset,
+    type PublicAssetResponse,
 } from '../models'
 
 export const mapAssetPriceResponseToAssetPrice = (
@@ -44,19 +45,21 @@ export const mapAssetResponseToPeraAsset = (data: AssetResponse): PeraAsset => {
     return {
         assetId: `${data.asset_id}`,
         name: data.name,
-        logo: data.logo,
+        peraMetadata: {
+            isDeleted: data.is_deleted,
+            verificationTier: data.verification_tier,
+            category: data.category ?? undefined,
+            isVerified: data.is_verified,
+            explorerUrl: data.explorer_url,
+            collectible: data.collectible,
+            type: data.type,
+            labels: data.labels,
+            logo: data.logo,
+        },
         unitName: data.unit_name,
         decimals: data.fraction_decimals,
         totalSupply: Decimal(data.total ?? '0'),
-        isDeleted: data.is_deleted,
-        verificationTier: data.verification_tier,
         creator: data.creator,
-        category: data.category ?? undefined,
-        isVerified: data.is_verified,
-        explorerUrl: data.explorer_url,
-        collectible: data.collectible,
-        type: data.type,
-        labels: data.labels,
     }
 }
 
@@ -70,13 +73,9 @@ export const mapIndexerAssetToPeraAsset = (
         unitName: asset.params['unit-name'],
         name: asset.params.name,
         totalSupply: Decimal(`${asset.params.total}`),
-        isDeleted: asset.deleted ?? false,
-        verificationTier: 'unverified',
         creator: {
             address: asset.params.creator,
         },
-        category: 0, //TODO check this is right
-        isVerified: true,
         url: asset.params.url,
     }
 }
@@ -87,18 +86,18 @@ export const mapPublicAssetResponseToPeraAsset = (
     return {
         assetId: `${asset.asset_id}`,
         name: asset.name,
-        logo: asset.logo,
+        peraMetadata: {
+            isDeleted: asset.is_deleted === 'true',
+            verificationTier: asset.verification_tier,
+            isVerified: asset.verification_tier === 'verified' || `${asset.asset_id}` === ALGO_ASSET_ID,
+            logo: asset.logo,
+        },
         unitName: asset.unit_name,
         decimals: asset.fraction_decimals,
         totalSupply: Decimal(asset.total_supply_as_str),
-        isDeleted: asset.is_deleted === 'true',
-        verificationTier: asset.verification_tier,
         creator: {
             address: asset.creator_address,
         },
-        category: 0,
-        isVerified:
-            asset.verification_tier === 'verified' || asset.asset_id === 0,
         url: asset.url,
     }
 }

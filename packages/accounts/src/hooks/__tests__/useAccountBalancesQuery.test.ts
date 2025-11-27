@@ -121,11 +121,11 @@ describe('useAccountBalances', () => {
         const accountData = result.current.accountBalances.get('ADDR1')
         expect(accountData).toBeDefined()
         // With empty asset prices mock, algoValue and fiatValue will be 0
-        expect(accountData?.algoValue).toEqual(new Decimal(0))
-        expect(accountData?.fiatValue).toEqual(new Decimal(0))
+        expect(accountData?.algoValue).toEqual(Decimal(0))
+        expect(accountData?.fiatValue).toEqual(Decimal(0))
 
-        expect(result.current.portfolioAlgoValue).toEqual(new Decimal(0))
-        expect(result.current.portfolioFiatValue).toEqual(new Decimal(0))
+        expect(result.current.portfolioAlgoValue).toEqual(Decimal(0))
+        expect(result.current.portfolioFiatValue).toEqual(Decimal(0))
     })
 
     it('handles loading state', () => {

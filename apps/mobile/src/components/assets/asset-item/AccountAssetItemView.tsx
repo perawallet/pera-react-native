@@ -42,8 +42,13 @@ const AccountAssetItemView = ({
         return assets?.get(accountBalance.assetId)
     }, [assets, accountBalance.assetId])
 
+    const isAlgo = useMemo(
+        () => asset?.assetId === ALGO_ASSET_ID,
+        [asset?.assetId],
+    )
+
     const verificationIcon = useMemo(() => {
-        if (accountBalance.assetId === ALGO_ASSET_ID) {
+        if (isAlgo) {
             return (
                 <PWIcon
                     name='assets/trusted'
@@ -51,7 +56,7 @@ const AccountAssetItemView = ({
                 />
             )
         }
-        if (asset?.verificationTier === 'verified') {
+        if (asset?.peraMetadata?.verificationTier === 'verified') {
             return (
                 <PWIcon
                     name='assets/verified'
@@ -59,7 +64,7 @@ const AccountAssetItemView = ({
                 />
             )
         }
-        if (asset?.verificationTier === 'suspicious') {
+        if (asset?.peraMetadata?.verificationTier === 'suspicious') {
             return (
                 <PWIcon
                     name='assets/suspicious'
@@ -86,7 +91,7 @@ const AccountAssetItemView = ({
             <PWView style={styles.dataContainer}>
                 <PWView style={styles.unitContainer}>
                     <PWView style={styles.row}>
-                        <Text style={styles.primaryUnit}>{asset.name}</Text>
+                        <Text style={styles.primaryUnit}>{isAlgo ? 'Algo' : asset.name}</Text>
                         {verificationIcon}
                     </PWView>
                     <Text style={styles.secondaryUnit}>

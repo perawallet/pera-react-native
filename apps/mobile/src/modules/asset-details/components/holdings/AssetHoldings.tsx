@@ -63,10 +63,6 @@ const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
         return currentUSD
     }, [assetHolding, selectedPoint])
 
-    if (!asset?.unitName) {
-        return <></>
-    }
-
     return (
         <AssetTransactionList
             account={account}
@@ -93,7 +89,7 @@ const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
                     <CurrencyDisplay
                         h1
                         value={cryptoAmount}
-                        currency={asset.unitName}
+                        currency={asset.unitName ?? ''}
                         precision={asset.decimals}
                         minPrecision={2}
                     />
