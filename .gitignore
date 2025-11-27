@@ -9,5 +9,4 @@ dist-ssr
 .cache
 server/dist
 public/dist
-/packages/core/src/api-to-be-deleted
-/packages/shared/src/api-to-be-deleted
+/generated

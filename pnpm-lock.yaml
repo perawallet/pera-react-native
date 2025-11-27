@@ -456,6 +456,9 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.28.4
+      '@perawallet/wallet-core-assets':
+        specifier: workspace:*
+        version: link:../assets
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain

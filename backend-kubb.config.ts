@@ -13,7 +13,7 @@ export default defineConfig(() => {
         output: {
             barrelType: 'named',
             clean: true,
-            path: './packages/core/src/api/generated/backend',
+            path: './generated/backend',
         },
         plugins: [
             pluginOas({

@@ -22,6 +22,7 @@ import type {
     WalletAccount,
 } from '../models'
 import { fetchAccountBalances } from './endpoints'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 
@@ -93,6 +94,15 @@ export const useAccountBalancesQuery = (
                     ),
                 })
             })
+
+            // Handle the case where the backend/blockchain doesn't know this account yet
+            if (!assetBalances.length) {
+                assetBalances.push({
+                    assetId: ALGO_ASSET_ID,
+                    cryptoAmount: algoAmount,
+                    fiatAmount: usdToPreferred(fiatAmount),
+                })
+            }
 
             return {
                 assetBalances,

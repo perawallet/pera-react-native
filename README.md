@@ -48,12 +48,7 @@ pnpm -C apps/mobile start|ios|android
 ## Workspace layout
 
 - apps/mobile — React Native app scaffold and screens
-- packages/core — shared domain/services and generated API clients
-    - src/api/generated/(backend|algod|indexer) — outputs from Kubb
-    - src/services — slices of functionality (aka features)
-    - src/config — per-environment config
-    - src/store — shared state (uses zustand)
-    - src/platform - a set of interfaces each platform will need to implement to provide platform specific implementations
+- packages/* - headless libraries containing all the business logic & state management for a wallet app
 - packages/eslint-config — shared ESLint rules
 - packages/typescript-config — shared tsconfig bases
 - packages/xhdwallet — HD wallet crypto helpers (this is a modified version of @algorandfoundation/xhd-wallet-api which isn't babel friendly)
@@ -67,9 +62,9 @@ See workspace definition in [`pnpm-workspace.yaml`](pnpm-workspace.yaml).
 - Formatting: Prettier
 - Linting: ESLint with shared config from [`packages/eslint-config`](packages/eslint-config/index.js)
 - TypeScript project references via [`packages/typescript-config`](packages/typescript-config/package.json)
-- API codegen: Kubb with configs [`backend-kubb.config.ts`](backend-kubb.config.ts), [`algod-kubb.config.ts`](algod-kubb.config.ts), [`indexer-kubb.config.ts`](indexer-kubb.config.ts); specs live in [`specs/`](specs/backend-openapi.json)
+- API codegen: Kubb with configs [`backend-kubb.config.ts`](backend-kubb.config.ts), [`algod-kubb.config.ts`](algod-kubb.config.ts), [`indexer-kubb.config.ts`](indexer-kubb.config.ts); specs live in [`specs/`](specs/backend-openapi.json) (note that the openapi specs are not up to scratch and so generated code is used for reference/inspiration only)
 
-Generate or refresh all API clients:
+Generate all API clients:
 
 ```sh
 pnpm run generate:all-apis
@@ -77,27 +72,28 @@ pnpm run generate:all-apis
 
 This writes typed clients, zod schemas, msw mocks, and React Query hooks under:
 
-- packages/core/src/api/generated/backend
-- packages/core/src/api/generated/algod
-- packages/core/src/api/generated/indexer
+- generated/backend
+- generated/algod
+- generated/indexer
 
-Clients are wired to thin query clients in core, e.g. [`packages/core/src/api/backend-query-client.ts`](packages/core/src/api/backend-query-client.ts), [`packages/core/src/api/algod-query-client.ts`](packages/core/src/api/algod-query-client.ts), [`packages/core/src/api/indexer-query-client.ts`](packages/core/src/api/indexer-query-client.ts).
+Note that our code does not directly use this generated code as the openapi specs are not up to scratch but the generated code can be used for reference or inspiration.
 
 ## Common commands (root)
 
 ```sh
-pnpm build          # turbo run build across packages
-pnpm test           # turbo run test -- --coverage
-pnpm lint           # turbo run lint
-pnpm lint:fix       # turbo run lint -- --fix
-pnpm format         # prettier --write
+pnpm build          # build across packages
+pnpm test           # run tests with coverage
+pnpm lint           # report linting errors
+pnpm lint:fix       # fix linting errors
+pnpm lint:copyright # add/update necessary copyright headers to any files that are missing them
+pnpm format         # format files
 ```
 
 ## Development patterns
 
-- Do not call backends directly in the app; use generated React Query hooks from core.
-- Keep cross-platform logic in core; keep native/platform glue and UI in the app.
+- Do not call backends directly in the app; use generated React Query hooks from one of the wallet-core packages.  Ideally even wrap these in further hooks that perform as services doing state updates, etc.
+- Do not expose the zustand store directly to the app.  Use hooks/services to update/expose state.
+- Keep cross-platform logic in wallet-core; keep native/platform glue and UI in the app.
 - Follow shared lint/format; run CI-equivalent locally via the commands above.
-- Regenerate API clients whenever a spec in [`specs/`](specs/backend-openapi.json) changes.
 
-For app-specific notes, see [`apps/mobile/README.md`](apps/mobile/README.md) and for library details see [`packages/core`](packages/core/src/index.ts).
+For app-specific notes, see [`apps/mobile/README.md`](apps/mobile/README.md) and for library details see [`packages/**`](packages/).
