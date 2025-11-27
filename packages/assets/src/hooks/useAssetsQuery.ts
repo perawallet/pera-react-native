@@ -10,16 +10,20 @@
  limitations under the License
  */
 
-import { useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { useAssetsStore } from '../store'
 import { useQueries } from '@tanstack/react-query'
-import { fetchAssets } from './endpoints'
-import { mapAssetResponseToPeraAsset } from './mappers'
-import type { PeraAsset } from '../models'
+import { fetchAssets, fetchPublicAssetDetails } from './endpoints'
+import { mapAssetResponseToPeraAsset, mapPublicAssetResponseToPeraAsset } from './mappers'
+import { ALGO_ASSET_ID, AssetsResponse, PublicAssetResponse, type PeraAsset } from '../models'
 import { DEFAULT_PAGE_SIZE } from '@perawallet/wallet-core-shared'
 
 export const getAssetsQueryKeys = (assetIDs: string[]) => {
     return ['v1', 'assets', { asset_ids: assetIDs.join(',') }]
+}
+
+export const getAlgoQueryKeys = () => {
+    return ['v1', 'assets', 'algo']
 }
 
 export const useAssetsQuery = (ids?: string[]) => {
@@ -50,20 +54,40 @@ export const useAssetsQuery = (ids?: string[]) => {
     }, [assetIDs])
 
     const queries = useQueries({
-        queries: chunks.map(chunk => {
+        queries: [...chunks.map(chunk => {
             return {
                 queryKey: getAssetsQueryKeys(chunk),
                 queryFn: async () => fetchAssets(chunk),
+                select: useCallback((data: AssetsResponse) => {
+                    const peraAssets = data.results.map(mapAssetResponseToPeraAsset)
+                    return {
+                        results: peraAssets,
+                        next: data.next,
+                        previous: data.previous,
+                    }
+                }, [mapAssetResponseToPeraAsset]),
             }
         }),
+        {
+            queryKey: getAlgoQueryKeys(),
+            queryFn: async () => fetchPublicAssetDetails(ALGO_ASSET_ID),
+            select: useCallback((data: PublicAssetResponse) => {
+                const peraAsset = mapPublicAssetResponseToPeraAsset(data)
+                return {
+                    results: [peraAsset],
+                    next: null,
+                    previous: null,
+                }
+            }, [mapPublicAssetResponseToPeraAsset]),
+        },
+        ],
     })
 
     return useMemo(() => {
         const assets: Map<string, PeraAsset> = new Map()
         queries.forEach(query => {
             query.data?.results?.forEach(asset => {
-                const peraAsset = mapAssetResponseToPeraAsset(asset)
-                assets.set(peraAsset.assetId, peraAsset)
+                assets.set(asset.assetId, asset)
             })
         })
         return {

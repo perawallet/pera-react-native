@@ -20,6 +20,7 @@ import { useStyles } from './styles'
 import { useMemo } from 'react'
 import PWIcon from '../../common/icons/PWIcon'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
+import { debugLog } from '@perawallet/wallet-core-shared'
 
 type AccountAssetItemViewProps = {
     accountBalance: AssetWithAccountBalance
@@ -97,14 +98,14 @@ const AccountAssetItemView = ({
                 <PWView style={styles.amountContainer}>
                     <CurrencyDisplay
                         currency={asset.unitName}
-                        value={accountBalance.cryptoAmount}
+                        value={accountBalance.amount}
                         precision={6}
                         showSymbol
                         style={styles.primaryAmount}
                     />
                     <CurrencyDisplay
                         currency={preferredCurrency}
-                        value={accountBalance.fiatAmount}
+                        value={accountBalance.fiatValue}
                         precision={6}
                         showSymbol
                         style={styles.secondaryAmount}

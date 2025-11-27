@@ -18,7 +18,7 @@ import PWView from '../../../components/common/view/PWView'
 import PWButton from '../../../components/common/button/PWButton'
 import MainScreenLayout from '../../../layouts/MainScreenLayout'
 
-import { useImportWallet } from '@perawallet/wallet-core-accounts'
+import { useImportAccount } from '@perawallet/wallet-core-accounts'
 import { useState } from 'react'
 import {
     ActivityIndicator,
@@ -34,7 +34,7 @@ const ImportAccountScreen = () => {
     const { theme } = useTheme()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const styles = useStyles()
-    const importWallet = useImportWallet()
+    const importAccount = useImportAccount()
     const { showToast } = useToast()
 
     const [words, setWords] = useState<string[]>(new Array(NUM_WORDS).fill(''))
@@ -61,9 +61,9 @@ const ImportAccountScreen = () => {
 
     const handleImportAccount = () => {
         setProcessing(true)
-        setTimeout(() => {
+        setTimeout(async () => {
             try {
-                importWallet({ mnemonic: words.join(' ') })
+                await importAccount({ mnemonic: words.join(' ') })
                 goToHome()
             } catch {
                 showToast({
@@ -115,7 +115,7 @@ const ImportAccountScreen = () => {
                                                         h4
                                                         h4Style={
                                                             focused ===
-                                                            offsetIndex
+                                                                offsetIndex
                                                                 ? styles.focusedLabel
                                                                 : styles.label
                                                         }
@@ -128,7 +128,7 @@ const ImportAccountScreen = () => {
                                                         }
                                                         inputContainerStyle={
                                                             focused ===
-                                                            offsetIndex
+                                                                offsetIndex
                                                                 ? styles.focusedInputContainer
                                                                 : styles.inputContainer
                                                         }

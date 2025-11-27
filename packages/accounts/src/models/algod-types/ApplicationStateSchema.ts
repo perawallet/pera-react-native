@@ -1,0 +1,18 @@
+
+
+
+/**
+ * @description Specifies maximums on the number of each type that may be stored.
+*/
+export type ApplicationStateSchema = {
+    /**
+     * @description \\[nbs\\] num of byte slices.
+     * @type integer, uint64
+    */
+    "num-byte-slice": number;
+    /**
+     * @description \\[nui\\] num of uints.
+     * @type integer, uint64
+    */
+    "num-uint": number;
+};

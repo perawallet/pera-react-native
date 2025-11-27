@@ -1,0 +1,23 @@
+
+
+
+/**
+ * @description Describes an asset held by an account.\n\nDefinition:\ndata/basics/userBalance.go : AssetHolding
+*/
+export type AssetHolding = {
+    /**
+     * @description \\[a\\] number of units held.
+     * @type integer, uint64
+    */
+    amount: number;
+    /**
+     * @description Asset ID of the holding.
+     * @type integer
+    */
+    "asset-id": number;
+    /**
+     * @description \\[f\\] whether or not the holding is frozen.
+     * @type boolean
+    */
+    "is-frozen": boolean;
+};

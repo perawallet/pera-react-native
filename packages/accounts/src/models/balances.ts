@@ -14,14 +14,15 @@ import Decimal from 'decimal.js'
 
 export type AssetWithAccountBalance = {
     assetId: string
-    cryptoAmount: Decimal
-    fiatAmount: Decimal
+    amount: Decimal
+    algoValue: Decimal
+    fiatValue: Decimal
 }
 
 export type AccountBalancesWithTotals = {
     accountBalances: AccountBalances
-    portfolioAlgoBalance: Decimal
-    portfolioFiatBalance: Decimal
+    portfolioAlgoValue: Decimal
+    portfolioFiatValue: Decimal
     isPending: boolean
     isFetched: boolean
     isRefetching: boolean
@@ -32,8 +33,8 @@ export type AccountBalances = Map<
     string,
     {
         assetBalances: AssetWithAccountBalance[]
-        algoBalance: Decimal
-        fiatBalance: Decimal
+        algoValue: Decimal
+        fiatValue: Decimal
         isPending: boolean
         isFetched: boolean
         isRefetching: boolean

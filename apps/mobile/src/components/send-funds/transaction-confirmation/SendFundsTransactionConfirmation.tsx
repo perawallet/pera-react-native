@@ -208,14 +208,14 @@ const SendFundsTransactionConfirmation = ({
                         precision={asset?.decimals ?? DEFAULT_PRECISION}
                         minPrecision={DEFAULT_PRECISION}
                         showSymbol
-                        value={currentBalance.cryptoAmount}
+                        value={currentBalance.amount}
                     />
                     <CurrencyDisplay
                         currency={preferredCurrency}
                         precision={asset?.decimals ?? DEFAULT_PRECISION}
                         minPrecision={DEFAULT_PRECISION}
                         showSymbol
-                        value={currentBalance.fiatAmount}
+                        value={currentBalance.fiatValue}
                     />
                 </RowTitledItem>
             )}

@@ -15,29 +15,25 @@ import {
     type HistoryPeriod,
     type Network,
 } from '@perawallet/wallet-core-shared'
-import type {
-    AccountBalanceHistoryResponse,
-    AccountBalanceResponse,
-} from '../models'
+
+import { AccountBalanceHistoryResponse } from '../models'
+import { Account } from '../models/algod-types/Account'
 
 const getAccountBalancesEndpointPath = (address: string) =>
-    `/v1/accounts/${address}/assets/`
+    `/v2/accounts/${address}`
 
 export const fetchAccountBalances = async (
     address: string,
     network: Network,
-): Promise<AccountBalanceResponse> => {
+): Promise<Account> => {
     const endpointPath = getAccountBalancesEndpointPath(address)
-    const response = await queryClient({
-        backend: 'pera',
+    const response = await queryClient<Account>({
+        backend: 'algod',
         network,
         method: 'GET',
         url: endpointPath,
-        params: {
-            include_algo: true,
-        },
     })
-    return response.data as AccountBalanceResponse
+    return response.data
 }
 
 export const getAccountsBalanceHistoryEndpointPath = () => `/v1/wallet/wealth/`
@@ -48,7 +44,7 @@ export const fetchAccountsBalanceHistory = async (
     network: Network,
 ): Promise<AccountBalanceHistoryResponse> => {
     const endpointPath = getAccountsBalanceHistoryEndpointPath()
-    const response = await queryClient({
+    const response = await queryClient<AccountBalanceHistoryResponse>({
         backend: 'pera',
         network,
         method: 'GET',
@@ -58,7 +54,7 @@ export const fetchAccountsBalanceHistory = async (
             period,
         },
     })
-    return response.data as AccountBalanceHistoryResponse
+    return response.data
 }
 
 export const getAccountAssetBalanceHistoryEndpointPath = (
@@ -77,7 +73,7 @@ export const fetchAccountAssetBalanceHistory = async (
         address,
         assetId,
     )
-    const response = await queryClient({
+    const response = await queryClient<AccountBalanceHistoryResponse>({
         backend: 'pera',
         network,
         method: 'GET',
@@ -87,5 +83,5 @@ export const fetchAccountAssetBalanceHistory = async (
             currency,
         },
     })
-    return response.data as AccountBalanceHistoryResponse
+    return response.data
 }

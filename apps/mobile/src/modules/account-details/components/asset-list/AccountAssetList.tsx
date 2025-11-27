@@ -26,6 +26,7 @@ import {
     WalletAccount,
     AssetWithAccountBalance,
 } from '@perawallet/wallet-core-accounts'
+import { debugLog } from '@perawallet/wallet-core-shared'
 
 type AccountAssetListProps = {
     account: WalletAccount

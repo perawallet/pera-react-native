@@ -42,7 +42,7 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
     const { preferredCurrency } = useCurrency()
     const styles = useStyles()
 
-    const { portfolioAlgoBalance, portfolioFiatBalance, isPending } =
+    const { portfolioAlgoValue, portfolioFiatValue, isPending } =
         useAccountBalancesQuery(account ? [account] : [])
 
     const [period, setPeriod] = useState<HistoryPeriod>('one-week')
@@ -84,7 +84,7 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
                         value={
                             chartData
                                 ? Decimal(chartData.algoValue)
-                                : portfolioAlgoBalance
+                                : portfolioAlgoValue
                         }
                         currency='ALGO'
                         precision={2}
@@ -98,7 +98,7 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
                             value={
                                 chartData
                                     ? Decimal(chartData.fiatValue)
-                                    : portfolioFiatBalance
+                                    : portfolioFiatValue
                             }
                             currency={preferredCurrency}
                             prefix='≈ '

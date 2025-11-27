@@ -41,7 +41,7 @@ const PortfolioView = (props: PortfolioViewProps) => {
     const { preferredCurrency } = useCurrency()
 
     const accounts = useAllAccounts()
-    const { portfolioAlgoBalance, portfolioFiatBalance, isPending } =
+    const { portfolioAlgoValue, portfolioFiatValue, isPending } =
         useAccountBalancesQuery(accounts)
     const [period, setPeriod] = useState<HistoryPeriod>('one-week')
     const [chartData, setChartData] =
@@ -80,7 +80,7 @@ const PortfolioView = (props: PortfolioViewProps) => {
                 <CurrencyDisplay
                     h1
                     value={
-                        chartData ? chartData.algoValue : portfolioAlgoBalance
+                        chartData ? chartData.algoValue : portfolioAlgoValue
                     }
                     currency='ALGO'
                     precision={2}
@@ -99,7 +99,7 @@ const PortfolioView = (props: PortfolioViewProps) => {
                     h4
                     h4Style={styles.valueTitle}
                     value={
-                        chartData ? chartData.fiatValue : portfolioFiatBalance
+                        chartData ? chartData.fiatValue : portfolioFiatValue
                     }
                     currency={preferredCurrency}
                     prefix='≈ '

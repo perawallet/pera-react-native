@@ -24,7 +24,7 @@ import {
 } from '@perawallet/wallet-core-platform-integration'
 import { v7 as uuidv7 } from 'uuid'
 
-export const useImportWallet = () => {
+export const useImportAccount = () => {
     const accounts = useAccountsStore(state => state.accounts)
     const { generateMasterKey, deriveKey } = useHDWallet()
     const secureStorage = useSecureStorageService()

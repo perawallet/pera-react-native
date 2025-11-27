@@ -16,9 +16,12 @@ import ky, {
     type KyRequest,
     type KyResponse,
     type Options,
+    BeforeRetryState,
+    HTTPError,
 } from 'ky'
 import { config } from '@perawallet/wallet-core-config'
-import type { Network } from 'models'
+import { Networks, type Network } from '../models'
+import { debugLog } from '../utils'
 
 export type RequestConfiguration<TData = unknown> = {
     backend: 'algod' | 'indexer' | 'pera'
@@ -28,12 +31,12 @@ export type RequestConfiguration<TData = unknown> = {
     params?: object
     data?: TData | FormData
     responseType?:
-        | 'arraybuffer'
-        | 'blob'
-        | 'document'
-        | 'json'
-        | 'text'
-        | 'stream'
+    | 'arraybuffer'
+    | 'blob'
+    | 'document'
+    | 'json'
+    | 'text'
+    | 'stream'
     signal?: AbortSignal
     headers?: HeadersInit
 }
@@ -53,19 +56,23 @@ type BackendInstances = {
 }
 
 const logRequest = (request: KyRequest) => {
-    if (config.debugEnabled) {
-        console.log('Sending request', request)
-    }
+    debugLog('Sending request', request)
 }
 
 const logResponse = (_: KyRequest, __: Options, response: KyResponse) => {
-    if (config.debugEnabled) {
-        console.log('Received response', response)
-    }
+    debugLog('Received response', response)
+}
+
+const logError = (error: HTTPError) => {
+    debugLog('Request error encountered', error)
+    return error
+}
+
+const logRetry = ({ request, error, retryCount }: BeforeRetryState) => {
+    debugLog('Retrying request:', request.url, 'Retry count:', retryCount, 'Error:', error)
 }
 
 const createFetchClient = (clients: Map<string, BackendInstances>) => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     return async <TData, _TError = unknown, TVariables = unknown>(
         requestConfig: RequestConfiguration<TVariables>,
     ): Promise<ResponseConfiguration<TData>> => {
@@ -118,7 +125,7 @@ const createFetchClient = (clients: Map<string, BackendInstances>) => {
     }
 }
 
-const clients = new Map<'testnet' | 'mainnet', BackendInstances>()
+const clients = new Map<Network, BackendInstances>()
 
 const setStandardHeaders = (request: KyRequest) => {
     request.headers.set('Content-Type', 'application/json')
@@ -128,23 +135,31 @@ const setStandardHeaders = (request: KyRequest) => {
     }
 }
 
+const standardHooks = {
+    beforeRequest: [logRequest],
+    afterResponse: [logResponse],
+    beforeError: [logError],
+    beforeRetry: [logRetry],
+}
+
 const mainnetPeraClient = ky.create({
     hooks: {
-        beforeRequest: [setStandardHeaders, logRequest],
-        afterResponse: [logResponse],
+        ...standardHooks,
+        beforeRequest: [setStandardHeaders, ...standardHooks.beforeRequest],
     },
     prefixUrl: config.mainnetBackendUrl,
 })
 
 const testnetPeraClient = ky.create({
     hooks: {
-        beforeRequest: [setStandardHeaders, logRequest],
-        afterResponse: [logResponse],
+        ...standardHooks,
+        beforeRequest: [setStandardHeaders, ...standardHooks.beforeRequest],
     },
     prefixUrl: config.testnetBackendUrl,
 })
 const mainnetAlgodClient = ky.create({
     hooks: {
+        ...standardHooks,
         beforeRequest: [
             request => {
                 request.headers.set('Content-Type', 'application/json')
@@ -153,14 +168,14 @@ const mainnetAlgodClient = ky.create({
                     request.headers.set('X-Algo-API-Token', config.algodApiKey)
                 }
             },
-            logRequest,
+            ...standardHooks.beforeRequest,
         ],
-        afterResponse: [logResponse],
     },
     prefixUrl: config.mainnetAlgodUrl,
 })
 const testnetAlgodClient = ky.create({
     hooks: {
+        ...standardHooks,
         beforeRequest: [
             request => {
                 request.headers.set('Content-Type', 'application/json')
@@ -169,15 +184,15 @@ const testnetAlgodClient = ky.create({
                     request.headers.set('X-Algo-API-Token', config.algodApiKey)
                 }
             },
-            logRequest,
+            ...standardHooks.beforeRequest,
         ],
-        afterResponse: [logResponse],
     },
     prefixUrl: config.testnetAlgodUrl,
 })
 
 const mainnetIndexerClient = ky.create({
     hooks: {
+        ...standardHooks,
         beforeRequest: [
             request => {
                 request.headers.set('Content-Type', 'application/json')
@@ -189,12 +204,14 @@ const mainnetIndexerClient = ky.create({
                     )
                 }
             },
+            ...standardHooks.beforeRequest,
         ],
     },
     prefixUrl: config.mainnetIndexerUrl,
 })
 const testnetIndexerClient = ky.create({
     hooks: {
+        ...standardHooks,
         beforeRequest: [
             request => {
                 request.headers.set('Content-Type', 'application/json')
@@ -206,19 +223,18 @@ const testnetIndexerClient = ky.create({
                     )
                 }
             },
-            logRequest,
+            ...standardHooks.beforeRequest,
         ],
-        afterResponse: [logResponse],
     },
     prefixUrl: config.testnetIndexerUrl,
 })
 
-clients.set('mainnet', {
+clients.set(Networks.mainnet, {
     algod: mainnetAlgodClient,
     indexer: mainnetIndexerClient,
     pera: mainnetPeraClient,
 })
-clients.set('testnet', {
+clients.set(Networks.testnet, {
     algod: testnetAlgodClient,
     indexer: testnetIndexerClient,
     pera: testnetPeraClient,

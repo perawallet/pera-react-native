@@ -29,7 +29,7 @@ export const useAccountsStore: UseBoundStore<
     WithPersist<StoreApi<AccountsState>, unknown>
 > = lazy.useStore
 
-const createAccountsStore = (storage: KeyValueStorageService) =>
+export const createAccountsStore = (storage: KeyValueStorageService) =>
     create<AccountsState>()(
         persist(
             (set, get) => ({
