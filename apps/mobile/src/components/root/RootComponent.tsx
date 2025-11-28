@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { debugLog, Networks } from '@perawallet/wallet-core-shared'
+import { Networks } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
 import { useContext, useEffect, useMemo, useRef } from 'react'
 import { AppState, StatusBar } from 'react-native'
@@ -33,6 +33,7 @@ import {
 import { usePolling } from '@perawallet/wallet-core-polling'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { NetworkStatusContext, NetworkStatusProvider } from '../../providers/NetworkStatusProvider'
+import WebViewProvider from '../../providers/WebViewProvider'
 
 const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
     const insets = useSafeAreaInsets()
@@ -135,9 +136,11 @@ export const RootComponent = () => {
     return (
         <ThemeProvider theme={theme}>
             <NetworkStatusProvider>
-                <SigningProvider>
-                    <RootContentContainer isDarkMode={isDarkMode} />
-                </SigningProvider>
+                <WebViewProvider>
+                    <SigningProvider>
+                        <RootContentContainer isDarkMode={isDarkMode} />
+                    </SigningProvider>
+                </WebViewProvider>
             </NetworkStatusProvider>
         </ThemeProvider>
     )

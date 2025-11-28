@@ -18,17 +18,19 @@ import { StyleProp, ViewStyle } from 'react-native'
 
 export type PWBottomSheetProps = {
     innerContainerStyle?: StyleProp<ViewStyle>
+    scrollEnabled?: boolean
 } & BottomSheetProps &
     PropsWithChildren
 
 const PWBottomSheet = ({
     innerContainerStyle,
+    scrollEnabled,
     children,
     ...rest
 }: PWBottomSheetProps) => {
     const style = useStyles()
     return (
-        <BottomSheet {...rest}>
+        <BottomSheet {...rest} scrollViewProps={{ scrollEnabled: scrollEnabled ?? true }}>
             <PWView style={[style.defaultStyle, innerContainerStyle]}>
                 {children}
             </PWView>

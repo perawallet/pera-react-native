@@ -38,6 +38,9 @@ export const configSchema = z.object({
     discoverBaseUrl: z.url(),
     stakingBaseUrl: z.url(),
     onrampBaseUrl: z.url(),
+    supportBaseUrl: z.url(),
+    termsOfServiceUrl: z.url(),
+    privacyPolicyUrl: z.url(),
 
     debugEnabled: z.boolean(),
     profilingEnabled: z.boolean(),

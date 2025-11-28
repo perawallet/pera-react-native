@@ -14,6 +14,7 @@ import WebView from 'react-native-webview'
 import useToast from './toast'
 import { Linking } from 'react-native'
 import {
+    useAnalyticsService,
     useDeviceID,
     useDeviceInfoService,
     useNetwork,
@@ -26,6 +27,8 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
+import { useCallback, useContext } from 'react'
+import { WebViewContext } from '../providers/WebViewProvider'
 
 type PushNewScreenParams = {
     url: string
@@ -40,6 +43,10 @@ type PushInternalBrowserParams = {
 
 type OpenSystemBrowserParams = {
     url: string
+}
+
+type CanOpenURIParams = {
+    uri: string
 }
 
 type NotifyUserParams = {
@@ -58,23 +65,30 @@ type WebviewMessage = {
     params: Record<string, any>
 }
 
-export const usePeraWebviewInterface = (webview: WebView | null) => {
+export const usePeraWebviewInterface = (webview: WebView | null, securedConnection: boolean, onCloseRequested?: () => void) => {
     const { showToast } = useToast()
     const accounts = useAllAccounts()
     const { network } = useNetwork()
     const deviceID = useDeviceID(network)
     const { theme } = useSettings()
     const deviceInfo = useDeviceInfoService()
-    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { preferredCurrency } = useCurrency()
+    const analytics = useAnalyticsService()
+    const { pushWebView: pushWebViewContext } = useContext(WebViewContext)
 
-    const pushNewScreen = (_: PushNewScreenParams) => {
-        //TODO navigate to deeplink
-    }
-    const pushInternalBrowser = (_: PushInternalBrowserParams) => {
-        //TODO add a new webview
-    }
-    const openSystemBrowser = (params: OpenSystemBrowserParams) => {
+    const sendMessageToWebview = useCallback((payload: unknown) => {
+        const message = `handleMessage(${JSON.stringify(payload)});`;
+        webview?.injectJavaScript(message)
+    }, [webview])
+
+    const pushWebView = useCallback((params: PushInternalBrowserParams) => {
+        pushWebViewContext({
+            url: params.url,
+            id: ''
+        })
+    }, [pushWebViewContext])
+
+    const openSystemBrowser = useCallback((params: OpenSystemBrowserParams) => {
         Linking.canOpenURL(params.url).then(supported => {
             if (supported) {
                 Linking.openURL(params.url)
@@ -86,9 +100,29 @@ export const usePeraWebviewInterface = (webview: WebView | null) => {
                 })
             }
         })
-    }
+    }, [showToast])
 
-    const notifyUser = (params: NotifyUserParams) => {
+    const canOpenURI = useCallback((params: CanOpenURIParams) => {
+        Linking.canOpenURL(params.uri).then(supported => {
+            sendMessageToWebview(supported)
+        })
+    }, [])
+
+    const openNativeURI = useCallback((params: CanOpenURIParams) => {
+        Linking.canOpenURL(params.uri).then(supported => {
+            if (supported) {
+                Linking.openURL(params.uri)
+            } else {
+                showToast({
+                    title: "Can't open URI",
+                    body: "The page you're viewing has sent an invalid message format.",
+                    type: 'error',
+                })
+            }
+        })
+    }, [showToast])
+
+    const notifyUser = useCallback((params: NotifyUserParams) => {
         if (params.type === 'message') {
             showToast({
                 title: '',
@@ -97,18 +131,18 @@ export const usePeraWebviewInterface = (webview: WebView | null) => {
             })
         }
         //TODO add haptic (and maybe message.banner) support and maybe sound
-    }
+    }, [showToast])
 
-    const getAddresses = () => {
+    const getAddresses = useCallback(() => {
         const payload = accounts.map(a => ({
             name: getAccountDisplayName(a),
             address: a.address,
             type: 'HdKey', //TODO support other types also
         }))
-        webview?.postMessage(JSON.stringify(payload))
-    }
+        sendMessageToWebview(payload)
+    }, [accounts, webview])
 
-    const getSettings = () => {
+    const getSettings = useCallback(() => {
         const payload = {
             //TODO make some more of this configurable and/or add to deviceInfo
             appName: 'Pera Wallet',
@@ -125,60 +159,86 @@ export const usePeraWebviewInterface = (webview: WebView | null) => {
             region: 'en-US', //TODO pull from state eventually (or device location or something)
             language: 'en-US', //TODO pull from app locale
         }
-        webview?.postMessage(JSON.stringify(payload))
-    }
-    const getPublicSettings = () => {
+        sendMessageToWebview(payload)
+    }, [webview])
+
+    const getPublicSettings = useCallback(() => {
         const payload = {
             theme,
             network,
             currency: preferredCurrency,
             language: 'en-US', //TODO pull from app locale
         }
-        webview?.postMessage(JSON.stringify(payload))
-    }
-    const onBackPressed = () => {
-        if (navigation.canGoBack()) {
-            navigation.goBack()
-        }
-    }
-    const logAnalyticsEvent = (_: LogAnalyticsParams) => {
-        //TODO implement when we have analytics hooked up
-    }
-    const closeWebView = () => {
-        //TODO implement once we figure out how based on how we implement the push functions above
-    }
+        sendMessageToWebview(payload)
+    }, [webview])
 
-    const handleMessage = ({ action, params }: WebviewMessage) => {
+    //TODO not sure what the correct behavior here is?
+    const onBackPressed = useCallback(() => {
+    }, [])
+
+    const logAnalyticsEvent = useCallback((params: LogAnalyticsParams) => {
+        analytics.logEvent(params.name, params.payload)
+    }, [analytics])
+
+    const closeWebView = useCallback(() => {
+        onCloseRequested?.()
+    }, [onCloseRequested])
+
+
+    const handleMessage = useCallback(({ action, params }: WebviewMessage) => {
         switch (action) {
-            case 'pushNewScreen':
-                pushNewScreen(params as PushNewScreenParams)
-                break
-            case 'pushInternalBrowser':
-                pushInternalBrowser(params as PushInternalBrowserParams)
+            case 'pushWebView':
+                if (securedConnection) {
+                    pushWebView(params as PushNewScreenParams)
+                }
                 break
             case 'openSystemBrowser':
-                openSystemBrowser(params as OpenSystemBrowserParams)
+                if (securedConnection) {
+                    openSystemBrowser(params as OpenSystemBrowserParams)
+                }
+                break
+            case 'canOpenURI':
+                if (securedConnection) {
+                    canOpenURI(params as CanOpenURIParams)
+                }
+                break
+            case 'openNativeURI':
+                if (securedConnection) {
+                    openNativeURI(params as CanOpenURIParams)
+                }
                 break
             case 'notifyUser':
-                notifyUser(params as NotifyUserParams)
+                if (securedConnection) {
+                    notifyUser(params as NotifyUserParams)
+                }
                 break
             case 'getAddresses':
-                getAddresses()
+                if (securedConnection) {
+                    getAddresses()
+                }
                 break
             case 'getSettings':
-                getSettings()
+                if (securedConnection) {
+                    getSettings()
+                }
                 break
             case 'getPublicSettings':
                 getPublicSettings()
                 break
             case 'onBackPressed':
-                onBackPressed()
+                if (securedConnection) {
+                    onBackPressed()
+                }
                 break
             case 'logAnalyticsEvent':
-                logAnalyticsEvent(params as LogAnalyticsParams)
+                if (securedConnection) {
+                    logAnalyticsEvent(params as LogAnalyticsParams)
+                }
                 break
             case 'closeWebView':
-                closeWebView()
+                if (securedConnection) {
+                    closeWebView()
+                }
                 break
             default:
                 showToast({
@@ -188,7 +248,7 @@ export const usePeraWebviewInterface = (webview: WebView | null) => {
                 })
                 break
         }
-    }
+    }, [pushWebView, openSystemBrowser, canOpenURI, openNativeURI, notifyUser, getAddresses, getSettings, getPublicSettings, onBackPressed, logAnalyticsEvent, closeWebView])
 
     return {
         handleMessage,

@@ -9,11 +9,10 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
-
 import { useDeviceInfoService } from '@perawallet/wallet-core-platform-integration'
 import { config } from '@perawallet/wallet-core-config'
 import { useTheme } from '@rneui/themed'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useContext, useMemo, useRef, useState } from 'react'
 import {
     WebView,
     WebViewMessageEvent,
@@ -22,6 +21,8 @@ import {
 import {
     WebViewErrorEvent,
     WebViewHttpErrorEvent,
+    WebViewNativeEvent,
+    WebViewNavigation,
     WebViewNavigationEvent,
 } from 'react-native-webview/lib/WebViewTypes'
 import {
@@ -37,10 +38,16 @@ import { usePeraWebviewInterface } from '../../hooks/webview'
 import EmptyView from '../common/empty-view/EmptyView'
 import PWButton from '../common/button/PWButton'
 import LoadingView from '../common/loading/LoadingView'
+import { debugLog } from '@perawallet/wallet-core-shared'
+import WebViewTitleBar from './WebViewTitleBar'
+import WebViewFooterBar from './WebViewFooterBar'
+import { WebViewContext } from '../../providers/WebViewProvider'
 
 export type PWWebViewProps = {
     url: string
     enablePeraConnect: boolean
+    requestId?: string
+    showControls?: boolean
 } & WebViewProps
 
 const updateTheme = (mode: 'light' | 'dark') => {
@@ -49,13 +56,21 @@ const updateTheme = (mode: 'light' | 'dark') => {
 }
 
 const PWWebView = (props: PWWebViewProps) => {
-    const styles = useStyles()
-    const { url, enablePeraConnect, ...rest } = props
+    const styles = useStyles(props)
+    const { url, enablePeraConnect, requestId, showControls = false, ...rest } = props
+    const { removeWebView } = useContext(WebViewContext)
     const { theme } = useTheme()
-    const [loaded, setLoaded] = useState(false)
     const webview = useRef<WebView>(null)
     const { showToast } = useToast()
-    const mobileInterface = usePeraWebviewInterface(webview.current)
+    const [title, setTitle] = useState('')
+    const [navigationState, setNavigationState] = useState<WebViewNativeEvent>()
+
+    const isSecure = useMemo(() => {
+        // TODO: We ultimately want to replace this with a more SRI style method
+        return url.startsWith(config.onrampBaseUrl)
+            || url.startsWith(config.discoverBaseUrl)
+            || url.startsWith(config.stakingBaseUrl)
+    }, [url])
 
     const deviceInfo = useDeviceInfoService()
 
@@ -63,15 +78,18 @@ const PWWebView = (props: PWWebViewProps) => {
         return `${deviceInfo.getUserAgent()}`
     }, [deviceInfo])
 
-    const reload = () => {
-        webview.current?.reload()
-    }
+    const onCloseRequested = useCallback(() => {
+        if (!requestId) {
+            return
+        }
+        removeWebView(requestId)
+    }, [removeWebView, requestId])
+
+    const mobileInterface = usePeraWebviewInterface(webview.current, isSecure, onCloseRequested)
 
     const handleEvent = useCallback(
         (event: WebViewMessageEvent) => {
-            if (config.debugEnabled) {
-                console.log('Received onMessage event', event.nativeEvent.data)
-            }
+            debugLog('WebView: Received onMessage event', event.nativeEvent.data)
 
             const dataString = event.nativeEvent.data
             if (!dataString) {
@@ -88,8 +106,22 @@ const PWWebView = (props: PWWebViewProps) => {
         [showToast, mobileInterface],
     )
 
+    const navigationStateChange = useCallback((navState: WebViewNativeEvent) => {
+        debugLog('WebView: Navigation state change', navState)
+        setNavigationState(navState)
+    }, [])
+
     const verifyLoad = useCallback((event: WebViewNavigationEvent) => {
-        console.log('Loading', event.nativeEvent.url)
+        debugLog('WebView: Loading', event.nativeEvent.url, "secure:", isSecure)
+    }, [])
+
+    const loadCompleted = useCallback((event: WebViewNavigationEvent) => {
+        debugLog('WebView: Title', event.nativeEvent.title)
+        setTitle(event.nativeEvent.title)
+    }, [])
+
+    const reload = useCallback(() => {
+        webview.current?.reload()
     }, [])
 
     const showLoadError = useCallback(
@@ -118,23 +150,18 @@ const PWWebView = (props: PWWebViewProps) => {
         let js = baseJS
 
         if (enablePeraConnect) {
-            js += peraConnectJS
+            js += ';' + peraConnectJS
+            js += ';' + peraMobileInterfaceJS
         }
+
+        js += updateTheme(theme.mode)
 
         return js
-    }, [enablePeraConnect])
-
-    useEffect(() => {
-        if (loaded) {
-            webview.current?.injectJavaScript(updateTheme(theme.mode))
-            if (enablePeraConnect) {
-                webview.current?.injectJavaScript(peraMobileInterfaceJS)
-            }
-        }
-    }, [theme, loaded, enablePeraConnect])
+    }, [enablePeraConnect, theme.mode])
 
     return (
         <PWView style={styles.flex}>
+            {showControls && <WebViewTitleBar onCloseRequested={onCloseRequested} onReload={reload} title={title} url={url} />}
             <WebView
                 ref={webview}
                 {...rest}
@@ -174,13 +201,15 @@ const PWWebView = (props: PWWebViewProps) => {
                 setSupportMultipleWindows={false}
                 userAgent={userAgent}
                 onLoadStart={verifyLoad}
+                onLoad={loadCompleted}
                 onLoadSubResourceError={showLoadError}
                 onError={showLoadError}
                 onHttpError={showError}
-                onLoadEnd={() => setLoaded(true)}
                 dataDetectorTypes={[]}
                 textInteractionEnabled={false}
+                onNavigationStateChange={navigationStateChange}
             />
+            {showControls && <WebViewFooterBar webview={webview} homeUrl={url} navigationState={navigationState} />}
         </PWView>
     )
 }

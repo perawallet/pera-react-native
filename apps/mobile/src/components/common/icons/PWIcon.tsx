@@ -58,6 +58,7 @@ import PersonMenuIcon from '../../../../assets/icons/person-menu.svg'
 import PersonIcon from '../../../../assets/icons/person.svg'
 import PlusWithBorderIcon from '../../../../assets/icons/plus-with-border.svg'
 import PlusIcon from '../../../../assets/icons/plus.svg'
+import ReloadIcon from '../../../../assets/icons/reload.svg'
 import ShieldCheckIcon from '../../../../assets/icons/shield-check.svg'
 import SlidersIcon from '../../../../assets/icons/sliders.svg'
 import SnowflakeIcon from '../../../../assets/icons/snowflake.svg'
@@ -81,6 +82,7 @@ import PaymentIcon from '../../../../assets/icons/transactions/payment.svg'
 import DiscordIcon from '../../../../assets/icons/socials/discord.svg'
 import TelegramIcon from '../../../../assets/icons/socials/telegram.svg'
 import TwitterIcon from '../../../../assets/icons/socials/twitter.svg'
+import { useMemo } from 'react'
 
 const ICON_LIBRARY = {
     algo: AlgoIcon,
@@ -128,6 +130,7 @@ const ICON_LIBRARY = {
     'person-key': PersonKeyIcon,
     'plus-with-border': PlusWithBorderIcon,
     plus: PlusIcon,
+    reload: ReloadIcon,
     'shield-check': ShieldCheckIcon,
     sliders: SlidersIcon,
     snowflake: SnowflakeIcon,
@@ -180,15 +183,15 @@ const PWIcon = ({
     const { theme } = useTheme()
     const IconComponent = ICON_LIBRARY[name]
 
-    const sizeMap: Record<PWIconSize, number> = {
+    const sizeMap: Record<PWIconSize, number> = useMemo(() => ({
         xs: theme.spacing.md,
         sm: theme.spacing.lg,
         md: theme.spacing.xl,
         lg: theme.spacing.xl * 2,
         xl: theme.spacing.xl * 3,
-    }
+    }), [theme])
 
-    const variantColors: Record<PWIconVariant, string> = {
+    const variantColors: Record<PWIconVariant, string> = useMemo(() => ({
         primary: theme.colors.textMain,
         buttonPrimary: theme.colors.buttonPrimaryText,
         secondary: theme.colors.textGray,
@@ -196,12 +199,22 @@ const PWIcon = ({
         white: theme.colors.textWhite,
         link: theme.colors.linkPrimary,
         error: theme.colors.error,
-    }
+    }), [theme])
+
+    const disabledColors: Record<PWIconVariant, string> = useMemo(() => ({
+        primary: theme.colors.textGray,
+        buttonPrimary: theme.colors.textGray,
+        secondary: theme.colors.textGray,
+        helper: theme.colors.textGray,
+        white: theme.colors.textGray,
+        link: theme.colors.textGray,
+        error: theme.colors.error,
+    }), [theme])
 
     if (!IconComponent) return null
 
     const resolvedSize = sizeMap[size] ?? theme.spacing.xl
-    const resolvedColor = variantColors[variant]
+    const resolvedColor = rest.disabled ? disabledColors[variant] : variantColors[variant]
 
     return (
         <IconComponent

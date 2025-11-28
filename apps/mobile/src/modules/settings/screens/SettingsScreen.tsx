@@ -20,10 +20,12 @@ import { ScrollView } from 'react-native'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useDeviceInfoService } from '@perawallet/wallet-core-platform-integration'
-import { useMemo, useState } from 'react'
+import { useContext, useMemo, useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import PWTouchableOpacity from '../../../components/common/touchable-opacity/PWTouchableOpacity'
 import PWIcon, { IconName } from '../../../components/common/icons/PWIcon'
+import { config } from '@perawallet/wallet-core-config'
+import { WebViewContext } from '../../../providers/WebViewProvider'
 
 //TODO: add ratings view handling
 const settingsOptions = [
@@ -71,23 +73,23 @@ const settingsOptions = [
         title: 'Support',
         items: [
             {
-                route: 'GetHelpSettings',
                 icon: 'feedback',
                 title: 'Get Help',
+                url: config.supportBaseUrl,
             },
             {
                 icon: 'star',
                 title: 'Rate Pera Wallet',
             },
             {
-                route: 'TermsAndServicesSettings',
                 icon: 'text-document',
                 title: 'Terms and Services',
+                url: config.termsOfServiceUrl,
             },
             {
-                route: 'PrivacyPolicySettings',
                 icon: 'text-document',
                 title: 'Privacy Policy',
+                url: config.privacyPolicyUrl,
             },
             {
                 route: 'DeveloperSettings',
@@ -104,6 +106,7 @@ const SettingsScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { getAppVersion } = useDeviceInfoService()
     const [_, setRatingOpen] = useState(false)
+    const { pushWebView } = useContext(WebViewContext)
 
     const appVersion = useMemo(() => {
         return getAppVersion()
@@ -115,6 +118,13 @@ const SettingsScreen = () => {
 
     const openRating = () => {
         setRatingOpen(true)
+    }
+
+    const openWebView = (url: string) => {
+        pushWebView({
+            url,
+            id: '',
+        })
     }
 
     return (
@@ -139,10 +149,12 @@ const SettingsScreen = () => {
                                     onPress={() => {
                                         page.route
                                             ? goToSettingsPage(
-                                                  page.route,
-                                                  page.title,
-                                              )
-                                            : openRating()
+                                                page.route,
+                                                page.title,
+                                            )
+                                            : page.url
+                                                ? openWebView(page.url)
+                                                : openRating()
                                     }}
                                 >
                                     <PWIcon name={page.icon as IconName} />

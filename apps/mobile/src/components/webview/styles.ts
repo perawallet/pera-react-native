@@ -11,19 +11,20 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { PWWebViewProps } from './PWWebView'
 
-export const useStyles = makeStyles(theme => ({
+export const useStyles = makeStyles((theme, props: PWWebViewProps) => ({
     flex: {
         flex: 1,
+        marginBottom: props.showControls ? theme.spacing.xl * 2 : 0,
     },
     webview: {
         alignItems: 'flex-start',
         justifyContent: 'flex-start',
-        flex: 1,
+        flexGrow: 1,
         backgroundColor: theme.colors.background,
     },
     loading: {
-        flex: 1,
         flexGrow: 1,
         alignItems: 'center',
         justifyContent: 'center',
@@ -31,6 +32,50 @@ export const useStyles = makeStyles(theme => ({
     },
     container: {
         backgroundColor: theme.colors.background,
-        flex: 1,
+        flexGrow: 1,
     },
+    titleBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: theme.spacing.md,
+        paddingHorizontal: theme.spacing.lg,
+        backgroundColor: theme.colors.background,
+    },
+    titleBarTextContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+        flexShrink: 1,
+    },
+    titleIconContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: theme.spacing.md,
+        backgroundColor: theme.colors.background,
+    },
+    title: {
+        color: theme.colors.textMain,
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        flexWrap: 'nowrap',
+        flexShrink: 1,
+        textAlign: 'center',
+    },
+    url: {
+        color: theme.colors.textGray,
+        fontSize: theme.spacing.md,
+        textOverflow: 'ellipsis',
+        overflow: 'hidden',
+        flexWrap: 'nowrap',
+        flexShrink: 1,
+    },
+    footerBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: theme.spacing.md,
+        paddingHorizontal: theme.spacing.lg,
+        backgroundColor: theme.colors.background,
+    }
 }))

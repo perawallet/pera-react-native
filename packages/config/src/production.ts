@@ -34,6 +34,9 @@ export const productionConfig: Config = {
     discoverBaseUrl: 'https://discover-mobile.perawallet.app/',
     stakingBaseUrl: 'https://staking-mobile.perawallet.app/',
     onrampBaseUrl: 'https://onramp-mobile.perawallet.app/',
+    supportBaseUrl: 'https://perawallet.app/', //TODO: add support url
+    termsOfServiceUrl: 'https://perawallet.app/', //TODO: add terms of service url
+    privacyPolicyUrl: 'https://perawallet.app/', //TODO: add privacy policy url
 
     notificationRefreshTime: THIRTY_SECONDS,
     remoteConfigRefreshTime: ONE_HOUR,
