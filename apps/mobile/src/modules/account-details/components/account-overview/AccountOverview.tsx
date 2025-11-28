@@ -69,78 +69,70 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
     )
 
     return (
-        <>
-            <ScrollView
-                scrollEnabled={scrollingEnabled}
-                style={styles.scrollView}
-                contentContainerStyle={styles.scrollViewContent}
+        <AccountAssetList account={account} scrollEnabled={scrollingEnabled}>
+            <PWTouchableOpacity
+                onPress={togglePrivacyMode}
+                style={styles.valueBar}
             >
-                <PWTouchableOpacity
-                    onPress={togglePrivacyMode}
-                    style={styles.valueBar}
-                >
+                <CurrencyDisplay
+                    h1
+                    value={
+                        chartData
+                            ? Decimal(chartData.algoValue)
+                            : portfolioAlgoValue
+                    }
+                    currency='ALGO'
+                    precision={2}
+                    h1Style={styles.primaryCurrency}
+                    skeleton={isPending}
+                />
+                <PWView style={styles.secondaryValueBar}>
                     <CurrencyDisplay
-                        h1
+                        h4
+                        h4Style={styles.valueTitle}
                         value={
                             chartData
-                                ? Decimal(chartData.algoValue)
-                                : portfolioAlgoValue
+                                ? Decimal(chartData.fiatValue)
+                                : portfolioFiatValue
                         }
-                        currency='ALGO'
+                        currency={preferredCurrency}
+                        prefix='≈ '
                         precision={2}
-                        h1Style={styles.primaryCurrency}
                         skeleton={isPending}
                     />
-                    <PWView style={styles.secondaryValueBar}>
-                        <CurrencyDisplay
-                            h4
-                            h4Style={styles.valueTitle}
-                            value={
-                                chartData
-                                    ? Decimal(chartData.fiatValue)
-                                    : portfolioFiatValue
-                            }
-                            currency={preferredCurrency}
-                            prefix='≈ '
-                            precision={2}
-                            skeleton={isPending}
-                        />
-                        {!chartData && (
-                            <WealthTrend
-                                account={account}
-                                period={period}
-                            />
-                        )}
-                        {chartData && (
-                            <Text
-                                h4
-                                h4Style={styles.dateDisplay}
-                            >
-                                {formatDatetime(chartData.datetime)}
-                            </Text>
-                        )}
-                    </PWView>
-                </PWTouchableOpacity>
-
-                {!!account && (
-                    <PWView style={styles.chartContainer}>
-                        <WealthChart
+                    {!chartData && (
+                        <WealthTrend
                             account={account}
                             period={period}
-                            onSelectionChanged={chartSelectionChanged}
                         />
-                        <ChartPeriodSelection
-                            value={period}
-                            onChange={setPeriod}
-                        />
-                    </PWView>
-                )}
+                    )}
+                    {chartData && (
+                        <Text
+                            h4
+                            h4Style={styles.dateDisplay}
+                        >
+                            {formatDatetime(chartData.datetime)}
+                        </Text>
+                    )}
+                </PWView>
+            </PWTouchableOpacity>
 
-                <ButtonPanel />
+            {!!account && (
+                <PWView style={styles.chartContainer}>
+                    <WealthChart
+                        account={account}
+                        period={period}
+                        onSelectionChanged={chartSelectionChanged}
+                    />
+                    <ChartPeriodSelection
+                        value={period}
+                        onChange={setPeriod}
+                    />
+                </PWView>
+            )}
 
-                {!!account && <AccountAssetList account={account} />}
-            </ScrollView>
-        </>
+            <ButtonPanel />
+        </AccountAssetList>
     )
 }
 

@@ -30,6 +30,7 @@ export const useStyles = makeStyles(theme => {
         },
         amountContainer: {
             gap: theme.spacing.xs / 2,
+            alignItems: 'flex-end',
         },
         primaryUnit: {},
         secondaryUnit: {

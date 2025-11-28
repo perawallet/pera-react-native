@@ -42,7 +42,6 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
         passiveItem: {
             flexDirection: 'row',
             gap: theme.spacing.md,
-            backgroundColor: theme.colors.background,
             borderRadius: theme.spacing.xs,
             paddingVertical: theme.spacing.md,
             paddingHorizontal: theme.spacing.sm,
@@ -73,7 +72,6 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
             flexDirection: 'row',
             gap: theme.spacing.sm,
             alignItems: 'center',
-            backgroundColor: theme.colors.background,
         },
         sortButtonTitle: {
             color: theme.colors.helperPositive,
@@ -92,11 +90,12 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
             width: '100%',
         },
         tabs: {
+            marginTop: theme.spacing.md,
             paddingHorizontal: 0,
             paddingBottom: theme.spacing.sm,
             margin: 0,
             borderWidth: 1,
-            borderColor: theme.colors.background,
+            borderColor: 'transparent',
         },
         activeTab: {
             padding: 0,

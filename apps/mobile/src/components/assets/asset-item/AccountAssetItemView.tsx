@@ -104,14 +104,16 @@ const AccountAssetItemView = ({
                     <CurrencyDisplay
                         currency={asset.unitName}
                         value={accountBalance.amount}
-                        precision={6}
+                        precision={asset.decimals}
+                        minPrecision={2}
                         showSymbol
                         style={styles.primaryAmount}
                     />
                     <CurrencyDisplay
                         currency={preferredCurrency}
                         value={accountBalance.fiatValue}
-                        precision={6}
+                        precision={2}
+                        minPrecision={2}
                         showSymbol
                         style={styles.secondaryAmount}
                     />

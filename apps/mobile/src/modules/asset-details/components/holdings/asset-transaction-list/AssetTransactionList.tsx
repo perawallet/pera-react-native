@@ -40,41 +40,40 @@ const AssetTransactionList = ({ children }: AssetTransactionListProps) => {
     }
 
     return (
-        <PWView style={styles.container}>
-            <FlashList
-                contentContainerStyle={styles.list}
-                data={transactions}
-                renderItem={renderItem}
-                onEndReached={handleEndReached}
-                onEndReachedThreshold={0.5}
-                ListHeaderComponent={
-                    <PWView style={styles.headerContainer}>
-                        {children}
-                        <PWView style={styles.header}>
-                            <Text h4>Transactions</Text>
-                            <PWView style={styles.actions}>
-                                <PWButton
-                                    title='Filter'
-                                    variant='link'
-                                    icon='sliders'
-                                    paddingStyle='dense'
-                                />
-                                <PWButton
-                                    title='CSV'
-                                    variant='helper'
-                                    icon='text-document'
-                                    paddingStyle='dense'
-                                />
-                            </PWView>
+        <FlashList
+            contentContainerStyle={styles.container}
+            data={transactions}
+            renderItem={renderItem}
+            onEndReached={handleEndReached}
+            onEndReachedThreshold={0.5}
+            ListHeaderComponent={
+                <PWView>
+                    {children}
+                    <PWView style={styles.header}>
+                        <Text h4>Transactions</Text>
+                        <PWView style={styles.actions}>
+                            <PWButton
+                                title='Filter'
+                                variant='link'
+                                icon='sliders'
+                                paddingStyle='dense'
+                            />
+                            <PWButton
+                                title='CSV'
+                                variant='helper'
+                                icon='text-document'
+                                paddingStyle='dense'
+                            />
                         </PWView>
                     </PWView>
-                }
-                ListEmptyComponent={<EmptyView
-                    title='No Transactions'
-                    body='There are no transactions to be displayed'
-                />}
-            />
-        </PWView>
+                </PWView>
+            }
+            ListEmptyComponent={<EmptyView
+                style={styles.emptyView}
+                title='No Transactions'
+                body='There are no transactions to be displayed'
+            />}
+        />
     )
 }
 

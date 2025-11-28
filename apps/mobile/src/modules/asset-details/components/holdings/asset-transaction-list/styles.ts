@@ -13,14 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-        paddingHorizontal: theme.spacing.xl,
-        marginTop: theme.spacing.lg,
-    },
-    headerContainer: {
-        minHeight: 1,
-    },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -31,7 +23,10 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
     },
-    list: {
-        flex: 1,
+    container: {
+        paddingHorizontal: theme.spacing.xl,
     },
+    emptyView: {
+        minHeight: theme.spacing.xl * 6,
+    }
 }))
