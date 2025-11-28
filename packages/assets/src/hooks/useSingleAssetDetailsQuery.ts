@@ -84,19 +84,19 @@ export const useSingleAssetDetailsQuery = (assetId: string) => {
         refetch: () => void
         isLoading: boolean
     }>(() => {
-        let algoAsset = algoData ? algoData : ALGO_ASSET
+        let algoAsset = algoData ? algoData : (assetId === ALGO_ASSET_ID ? ALGO_ASSET : undefined)
 
         const data = {
             ...indexerData,
-            ...peraData,
+            ...Object.fromEntries(Object.entries(peraData ?? {}).filter(([_, v]) => v !== undefined)),
             ...algoAsset,
-        }
+        } as PeraAsset
         return {
             data,
             isLoading: assetId !== ALGO_ASSET_ID ? peraLoading || indexerLoading : false,
             isError: assetId !== ALGO_ASSET_ID ? peraIsError && indexerIsError : false,
             error: assetId !== ALGO_ASSET_ID ? indexerError ?? peraError : undefined,
-            isPending: assetId !== ALGO_ASSET_ID ? peraIsPending && indexerIsPending : false,
+            isPending: assetId !== ALGO_ASSET_ID ? peraIsPending && indexerIsPending : !algoData,
             refetch: () => {
                 if (assetId === ALGO_ASSET_ID) {
                     algoRefetch()
