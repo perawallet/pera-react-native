@@ -17,17 +17,7 @@ import { useCurrency } from '@perawallet/wallet-core-currencies'
 import type { AssetPriceHistoryResponse } from '../models'
 import { useCallback } from 'react'
 import { mapAssetPriceHistoryResponseToAssetPriceHistoryItem } from './mappers'
-
-export const getBaseAssetPriceHistoryQueryKey = () => {
-    return ['v1', 'assets', 'price_history']
-}
-
-const getAssetPriceHistoryQueryKey = (
-    assetID: string,
-    period: HistoryPeriod,
-) => {
-    return [...getBaseAssetPriceHistoryQueryKey(), assetID, period]
-}
+import { getAssetPriceHistoryQueryKey } from './querykeys'
 
 export const useAssetPriceHistoryQuery = (
     assetID: string,

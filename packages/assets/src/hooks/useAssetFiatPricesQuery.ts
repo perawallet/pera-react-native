@@ -17,38 +17,26 @@ import { useQueries } from '@tanstack/react-query'
 import { ALGO_ASSET_ID, PublicAssetResponse, type AssetPrices } from '../models'
 import { fetchAssetFiatPrices, fetchPublicAssetDetails } from './endpoints'
 import { mapAssetPriceResponseToAssetPrice } from './mappers'
-import { DEFAULT_PAGE_SIZE } from '@perawallet/wallet-core-shared'
-
-export const getBaseAssetFiatPricesQueryKey = () => {
-    return ['v1', 'assets', 'fiat_prices']
-}
-
-const getAssetFiatPricesQueryKeys = (assetIDs: string[]) => {
-    return [...getBaseAssetFiatPricesQueryKey(), { assetIDs }]
-}
+import { DEFAULT_PAGE_SIZE, partition } from '@perawallet/wallet-core-shared'
+import { getAssetFiatPricesQueryKey } from './querykeys'
 
 export const useAssetFiatPricesQuery = (enabled?: boolean) => {
     const assetIDs = useAssetsStore(state => state.assetIDs)
     const { usdToPreferred } = useCurrency()
 
     const queriesDefinitions = useMemo(() => {
-        const chunks: string[][] = []
-        for (let i = 0; i < assetIDs.length; i += DEFAULT_PAGE_SIZE) {
-            chunks.push(
-                assetIDs.slice(i, i + DEFAULT_PAGE_SIZE).map(id => `${id}`),
-            )
-        }
+        const chunks = partition(assetIDs.filter(id => id !== ALGO_ASSET_ID), DEFAULT_PAGE_SIZE)
 
         return [...chunks.map(chunk => {
             return {
-                queryKey: getAssetFiatPricesQueryKeys(chunk),
+                queryKey: getAssetFiatPricesQueryKey(chunk),
                 enabled: enabled ?? true,
                 queryFn: async () => fetchAssetFiatPrices(chunk),
             }
         }),
         {
-            queryKey: getAssetFiatPricesQueryKeys([ALGO_ASSET_ID]),
-            enabled: true,
+            queryKey: getAssetFiatPricesQueryKey([ALGO_ASSET_ID]),
+            enabled: enabled ?? true,
             queryFn: async () => fetchPublicAssetDetails(ALGO_ASSET_ID),
             select: (data: PublicAssetResponse) => {
                 return {
@@ -60,7 +48,7 @@ export const useAssetFiatPricesQuery = (enabled?: boolean) => {
             }
         }
         ]
-    }, [assetIDs])
+    }, [assetIDs, enabled])
 
     const queries = useQueries({
         queries: queriesDefinitions,

@@ -16,15 +16,8 @@ import { useQueries } from '@tanstack/react-query'
 import { fetchAssets, fetchPublicAssetDetails } from './endpoints'
 import { mapAssetResponseToPeraAsset, mapPublicAssetResponseToPeraAsset } from './mappers'
 import { ALGO_ASSET_ID, AssetsResponse, PublicAssetResponse, type PeraAsset } from '../models'
-import { DEFAULT_PAGE_SIZE } from '@perawallet/wallet-core-shared'
-
-export const getAssetsQueryKeys = (assetIDs: string[]) => {
-    return ['v1', 'assets', { assetIDs }]
-}
-
-export const getAlgoQueryKeys = () => {
-    return ['v1', 'assets', 'algo']
-}
+import { DEFAULT_PAGE_SIZE, partition } from '@perawallet/wallet-core-shared'
+import { getAlgoQueryKey, getAssetsQueryKey } from './querykeys'
 
 export const useAssetsQuery = (ids?: string[]) => {
     let assetIDs = useAssetsStore(state => state.assetIDs)
@@ -43,15 +36,10 @@ export const useAssetsQuery = (ids?: string[]) => {
     }, [assetIDs, ids, setAssetIDs])
 
     const queryDefinitions = useMemo(() => {
-        const chunks: string[][] = []
-        for (let i = 0; i < assetIDs.length; i += DEFAULT_PAGE_SIZE) {
-            chunks.push(
-                assetIDs.slice(i, i + DEFAULT_PAGE_SIZE).map(id => `${id}`),
-            )
-        }
+        const chunks = partition(assetIDs, DEFAULT_PAGE_SIZE)
         return [...chunks.map(chunk => {
             return {
-                queryKey: getAssetsQueryKeys(chunk),
+                queryKey: getAssetsQueryKey(chunk),
                 queryFn: async () => fetchAssets(chunk),
                 select: (data: AssetsResponse) => {
                     const peraAssets = data.results.map(mapAssetResponseToPeraAsset)
@@ -64,7 +52,7 @@ export const useAssetsQuery = (ids?: string[]) => {
             }
         }),
         {
-            queryKey: getAlgoQueryKeys(),
+            queryKey: getAlgoQueryKey(),
             queryFn: async () => fetchPublicAssetDetails(ALGO_ASSET_ID),
             select: (data: PublicAssetResponse) => {
                 const peraAsset = mapPublicAssetResponseToPeraAsset(data)

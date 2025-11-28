@@ -44,7 +44,7 @@ describe('useAllAccounts', () => {
         expect(result2.current).toEqual(accounts)
     })
 
-    test('returns all accounts from when store is empty', () => {
+    test('returns all accounts from store when store is empty', () => {
         const { result } = renderHook(() => useAllAccounts())
         expect(result.current).toEqual([])
     })

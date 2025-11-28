@@ -11,6 +11,7 @@
  */
 
 export * from './addresses'
+export * from './arrays'
 export * from './store'
 export * from './strings'
 export * from './logging'

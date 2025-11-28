@@ -13,7 +13,6 @@
 import { useQueries } from '@tanstack/react-query'
 import Decimal from 'decimal.js'
 import { useMemo } from 'react'
-import { type Network } from '@perawallet/wallet-core-shared'
 import type {
     AccountBalances,
     AccountBalancesWithTotals,
@@ -25,13 +24,7 @@ import { ALGO_ASSET, ALGO_ASSET_ID, useAssetFiatPricesQuery, useAssetsQuery } fr
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import { AssetHolding } from '../models/algod-types/AssetHolding'
-
-export const getAccountBalancesQueryKey = (
-    address: string,
-    network: Network,
-) => {
-    return ['v1', 'accounts', 'assets', address, network]
-}
+import { getAccountBalancesQueryKey } from './querykeys'
 
 //TODO optimize this to use the combine option
 export const useAccountBalancesQuery = (

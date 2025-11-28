@@ -36,13 +36,16 @@ vi.mock('@perawallet/wallet-core-platform-integration', () => ({
     useNetwork: vi.fn(() => ({ network: 'mainnet' })),
 }))
 
+const mockAssets = new Map()
+const mockAssetPrices = new Map()
+
 vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetsQuery: vi.fn(() => ({
-        data: new Map(),
+        data: mockAssets,
         isPending: false,
     })),
     useAssetFiatPricesQuery: vi.fn(() => ({
-        data: new Map(),
+        data: mockAssetPrices,
         isPending: false,
     })),
     ALGO_ASSET_ID: '0',
@@ -69,6 +72,8 @@ describe('useAccountBalances', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockUsdToPreferred.mockImplementation((amount: Decimal) => amount)
+        mockAssets.clear()
+        mockAssetPrices.clear()
     })
 
     it('returns empty data when no accounts provided', () => {
@@ -173,3 +178,4 @@ describe('useAccountBalances', () => {
         expect(accountData?.isError).toBe(true)
     })
 })
+

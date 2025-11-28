@@ -12,16 +12,11 @@
 
 import { useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import type { Network } from '@perawallet/wallet-core-shared'
 import { Decimal } from 'decimal.js'
 import type { CurrencyPrice, CurrencyResponse } from '../models'
 import { fetchCurrency } from './endpoints'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
-
-export const getPreferredCurrencyPriceQueryKeys = (
-    network: Network,
-    preferredCurrency: string,
-) => ['v1', 'currencies', network, preferredCurrency]
+import { getPreferredCurrencyPriceQueryKey } from './querykeys'
 
 const mapCurrencyToPrice = (data: CurrencyResponse): CurrencyPrice => {
     return {
@@ -34,7 +29,7 @@ const mapCurrencyToPrice = (data: CurrencyResponse): CurrencyPrice => {
 export const usePreferredCurrencyPriceQuery = (preferredCurrency: string) => {
     const { network } = useNetwork()
     return useQuery({
-        queryKey: getPreferredCurrencyPriceQueryKeys(
+        queryKey: getPreferredCurrencyPriceQueryKey(
             network,
             preferredCurrency,
         ),

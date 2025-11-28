@@ -43,4 +43,9 @@ describe('useFindAccountByAddress', () => {
         const { result: result2 } = renderHook(() => useFindAccountByAddress('C'))
         expect(result2.current).toBeNull()
     })
+
+    test('handles empty store', () => {
+        const { result } = renderHook(() => useFindAccountByAddress('A'))
+        expect(result.current).toBeNull()
+    })
 })

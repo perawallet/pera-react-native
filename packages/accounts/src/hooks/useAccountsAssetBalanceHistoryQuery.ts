@@ -12,27 +12,12 @@
 
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
-import type { HistoryPeriod, Network } from '@perawallet/wallet-core-shared'
+import type { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import type { WalletAccount } from '../models'
 import { useQuery } from '@tanstack/react-query'
 import { fetchAccountAssetBalanceHistory } from './endpoints'
 import Decimal from 'decimal.js'
-
-export const getAccountAssetBalanceHistoryQueryKey = (
-    network: Network,
-    account_address: string,
-    asset_id: string,
-    period: HistoryPeriod,
-    currency: string,
-) => [
-    'v1',
-    'accounts',
-    account_address,
-    'assets',
-    asset_id,
-    'balance-history',
-    { period, currency, network },
-]
+import { getAccountAssetBalanceHistoryQueryKey } from './querykeys'
 
 export const useAccountsAssetsBalanceHistoryQuery = (
     account: WalletAccount,

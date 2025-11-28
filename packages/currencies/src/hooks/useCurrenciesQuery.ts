@@ -14,20 +14,14 @@ import { useQuery } from '@tanstack/react-query'
 import { fetchCurrenciesList } from './endpoints'
 import { useCallback } from 'react'
 import type { CurrenciesListResponse } from '../models'
-import type { Network } from '@perawallet/wallet-core-shared'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
-
-export const getCurrenciesQueryKeys = (network: Network) => [
-    'v1',
-    'currencies',
-    network,
-]
+import { getCurrenciesQueryKey } from './querykeys'
 
 //TODO include ALGO?
 export const useCurrenciesQuery = () => {
     const { network } = useNetwork()
     return useQuery({
-        queryKey: getCurrenciesQueryKeys(network),
+        queryKey: getCurrenciesQueryKey(network),
         queryFn: () => fetchCurrenciesList(network),
         select: useCallback(
             (data: CurrenciesListResponse) =>

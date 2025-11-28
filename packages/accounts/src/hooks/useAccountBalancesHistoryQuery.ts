@@ -26,6 +26,7 @@ import { useCallback } from 'react'
 import Decimal from 'decimal.js'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
+import { getAccountBalancesHistoryQueryKey } from './querykeys'
 
 const mapAccountBalanceHistoryItem = (
   item: AccountBalanceHistoryResponseItem,
@@ -38,12 +39,6 @@ const mapAccountBalanceHistoryItem = (
     round: item.round,
   }
 }
-
-export const getAccountBalancesHistoryQueryKey = (
-  addresses: AccountAddress[],
-  period: HistoryPeriod,
-  network: Network,
-) => ['v1', 'wallet', 'wealth', { period, addresses }, network]
 
 //TODO do we need to support pagination?
 export const useAccountBalancesHistoryQuery = (

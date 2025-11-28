@@ -18,6 +18,8 @@ vi.mock('../../store', async () => {
     }
 })
 
+const mockMutateAsync = vi.fn(async () => ({}))
+
 vi.mock('@perawallet/wallet-core-platform-integration', async () => {
     const actual = await vi.importActual<
         typeof import('@perawallet/wallet-core-platform-integration')
@@ -31,16 +33,17 @@ vi.mock('@perawallet/wallet-core-platform-integration', async () => {
         }),
         useNetwork: vi.fn(() => ({ network: 'mainnet' })),
         useDeviceID: vi.fn(() => 'device-id'),
-        useUpdateDeviceMutation: vi.fn(() => ({ mutateAsync: vi.fn(async () => ({})) })),
+        useUpdateDeviceMutation: vi.fn(() => ({ mutateAsync: mockMutateAsync })),
     }
 })
 
 describe('useAddAccount', () => {
     beforeEach(() => {
         useAccountsStore.setState({ accounts: [] })
+        vi.clearAllMocks()
     })
 
-    test('addAccount adds account to store', () => {
+    test('adds standard account to store and syncs with backend', () => {
         const dummySecure = {
             setItem: vi.fn(async () => { }),
             getItem: vi.fn(async () => null),
@@ -55,19 +58,73 @@ describe('useAddAccount', () => {
 
         const { result } = renderHook(() => useAddAccount())
 
-        const a: WalletAccount = {
+        const account: WalletAccount = {
             id: '1',
             name: 'Alice',
             type: 'standard',
-            address: 'ALICE',
+            address: 'ALICE_ADDRESS',
             canSign: true,
         }
 
         act(() => {
-            result.current(a)
+            result.current(account)
         })
 
-        expect(useAccountsStore.getState().accounts).toEqual([a])
+        const accounts = useAccountsStore.getState().accounts
+        expect(accounts).toEqual([account])
         expect(dummySecure.setItem).not.toHaveBeenCalled()
+
+        // Verify backend sync was called
+        expect(mockMutateAsync).toHaveBeenCalledWith({
+            deviceId: 'device-id',
+            data: {
+                platform: expect.any(String),
+                accounts: ['ALICE_ADDRESS'],
+            },
+        })
+    })
+
+    test('adds multiple accounts to store', () => {
+        const dummySecure = {
+            setItem: vi.fn(async () => { }),
+            getItem: vi.fn(async () => null),
+            removeItem: vi.fn(async () => { }),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const { result } = renderHook(() => useAddAccount())
+
+        const account1: WalletAccount = {
+            id: '1',
+            name: 'Alice',
+            type: 'standard',
+            address: 'ADDR1',
+            canSign: true,
+        }
+
+        const account2: WalletAccount = {
+            id: '2',
+            name: 'Bob',
+            type: 'watch',
+            address: 'ADDR2',
+            canSign: false,
+        }
+
+        act(() => {
+            result.current(account1)
+        })
+
+        act(() => {
+            result.current(account2)
+        })
+
+        const accounts = useAccountsStore.getState().accounts
+        expect(accounts).toHaveLength(2)
+        expect(accounts).toEqual([account1, account2])
     })
 })

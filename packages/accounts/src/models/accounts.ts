@@ -13,7 +13,7 @@
 export const DerivationTypes = {
     Khovratovich: 32,
     Peikert: 9,
-}
+} as const
 
 export type DerivationType =
     (typeof DerivationTypes)[keyof typeof DerivationTypes]

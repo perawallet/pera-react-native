@@ -23,22 +23,7 @@ import {
     fetchIndexerAssetDetails,
     fetchPublicAssetDetails,
 } from './endpoints'
-
-export const getSingleAssetDetailsQueryKeys = (assetId: string) => [
-    getAssetDetailsQueryKey(assetId),
-    getIndexerAssetDetailsQueryKey(assetId),
-    getPublicAssetDetailsQueryKey(assetId),
-]
-
-const getAssetDetailsQueryKey = (assetId: string) => [['v1', 'assets', assetId]]
-
-const getPublicAssetDetailsQueryKey = (assetId: string) => [
-    ['v1', 'public', 'assets', assetId],
-]
-
-const getIndexerAssetDetailsQueryKey = (assetId: string) => [
-    ['lookup', 'asset', assetId],
-]
+import { getAssetDetailsQueryKey, getIndexerAssetDetailsQueryKey, getPublicAssetDetailsQueryKey } from './querykeys'
 
 //Fetches data from the indexer and Pera backend and returns the combined data
 export const useSingleAssetDetailsQuery = (assetId: string) => {
@@ -84,19 +69,19 @@ export const useSingleAssetDetailsQuery = (assetId: string) => {
         refetch: () => void
         isLoading: boolean
     }>(() => {
-        let algoAsset = algoData ? algoData : (assetId === ALGO_ASSET_ID ? ALGO_ASSET : undefined)
+        let algoAsset = algoData ? algoData : ALGO_ASSET
 
         const data = {
             ...indexerData,
-            ...Object.fromEntries(Object.entries(peraData ?? {}).filter(([_, v]) => v !== undefined)),
+            ...peraData,
             ...algoAsset,
-        } as PeraAsset
+        }
         return {
             data,
             isLoading: assetId !== ALGO_ASSET_ID ? peraLoading || indexerLoading : false,
             isError: assetId !== ALGO_ASSET_ID ? peraIsError && indexerIsError : false,
             error: assetId !== ALGO_ASSET_ID ? indexerError ?? peraError : undefined,
-            isPending: assetId !== ALGO_ASSET_ID ? peraIsPending && indexerIsPending : !algoData,
+            isPending: assetId !== ALGO_ASSET_ID ? peraIsPending && indexerIsPending : false,
             refetch: () => {
                 if (assetId === ALGO_ASSET_ID) {
                     algoRefetch()
