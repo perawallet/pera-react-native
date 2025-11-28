@@ -22,6 +22,7 @@ import {
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import AccountScreen from '../modules/account-details/screens/AccountScreen'
 import DiscoverScreen from '../modules/discover/screens/DiscoverScreen'
+import FundScreen from '../modules/fund/screens/FundScreen'
 import MenuScreen from '../modules/menu/screens/MenuScreen'
 import StakingScreen from '../modules/staking/screens/StakingScreen'
 import SwapScreen from '../modules/swap/screens/SwapScreen'
@@ -253,7 +254,7 @@ const TabBarStack = createBottomTabNavigator({
                 Home: 'house',
                 Discover: 'globe',
                 Swap: 'swap',
-                Staking: 'dot-stack',
+                Fund: 'fund',
                 Menu: 'horizontal-line-stack',
             }
 
@@ -272,8 +273,8 @@ const TabBarStack = createBottomTabNavigator({
     screens: {
         Home: AccountStack,
         Discover: DiscoverScreen,
+        Fund: FundScreen,
         Swap: SwapScreen,
-        Staking: StakingScreen,
         Menu: MenuScreen,
     },
 })
@@ -331,6 +332,7 @@ const RootStack = createNativeStackNavigator({
         },
         Settings: SettingsStack,
         Contacts: ContactsStack,
+        Staking: StakingScreen,
     },
 })
 

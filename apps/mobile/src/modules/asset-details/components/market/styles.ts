@@ -52,7 +52,8 @@ export const useStyles = () => {
             flexDirection: 'row',
             justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: theme.spacing.xl,
+            marginBottom: theme.spacing.md,
+            marginTop: theme.spacing.md,
         },
         discoverText: {
             color: theme.colors.textGray,
@@ -99,6 +100,11 @@ export const useStyles = () => {
             width: '100%',
         },
         trendContainer: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+        },
+        priceContainer: {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',

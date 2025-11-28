@@ -46,4 +46,9 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         justifyContent: 'space-between',
     },
+    primaryValueContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
 }))

@@ -16,10 +16,11 @@ import PWView from '../view/PWView'
 import PWTouchableOpacity, {
     type PWTouchableOpacityProps,
 } from '../touchable-opacity/PWTouchableOpacity'
+import PWIcon, { IconName } from '../icons/PWIcon'
 
 export type PanelButtonProps = {
-    leftIcon: React.ReactElement<{}>
-    rightIcon: React.ReactElement<{}>
+    leftIcon?: IconName
+    rightIcon?: IconName
     title: string
     titleWeight: 'h3' | 'h4'
     onPress: () => void
@@ -36,7 +37,7 @@ const PanelButton = (props: PanelButtonProps) => {
                 style={[style, themeStyle.buttonStyle]}
                 {...rest}
             >
-                {leftIcon}
+                {leftIcon && <PWIcon name={leftIcon} />}
                 <Text
                     style={themeStyle.textStyle}
                     h4={titleWeight === 'h4'}
@@ -44,7 +45,7 @@ const PanelButton = (props: PanelButtonProps) => {
                 >
                     {title}
                 </Text>
-                {rightIcon}
+                {rightIcon && <PWIcon name={rightIcon} />}
             </PWView>
         </PWTouchableOpacity>
     )

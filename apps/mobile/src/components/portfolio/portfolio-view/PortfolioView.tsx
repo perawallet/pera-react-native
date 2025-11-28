@@ -30,6 +30,8 @@ import {
     useAccountBalancesQuery,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
+import { usePreferences } from '@perawallet/wallet-core-settings'
+import { UserPreferences } from '../../../constants/user-preferences'
 
 type PortfolioViewProps = {
     onDataSelected?: (selected: AccountBalanceHistoryItem | null) => void
@@ -46,10 +48,11 @@ const PortfolioView = (props: PortfolioViewProps) => {
     const [period, setPeriod] = useState<HistoryPeriod>('one-week')
     const [chartData, setChartData] =
         useState<AccountBalanceHistoryItem | null>(null)
-    const [chartVisible, setChartVisible] = useState<boolean>(false)
+    const { getPreference, setPreference } = usePreferences()
 
+    const chartVisible = !!getPreference(UserPreferences.chartVisible)
     const toggleChartVisible = () => {
-        setChartVisible(!chartVisible)
+        setPreference(UserPreferences.chartVisible, !chartVisible)
     }
 
     const chartSelectionChanged = useCallback(
@@ -88,8 +91,8 @@ const PortfolioView = (props: PortfolioViewProps) => {
                     skeleton={isPending}
                 />
                 <PWButton
-                    title={chartVisible ? 'Hide Chart' : 'Show Chart'}
-                    variant='helper'
+                    icon='chart'
+                    variant={chartVisible ? 'secondary' : 'helper'}
                     paddingStyle='dense'
                     onPress={toggleChartVisible}
                 />

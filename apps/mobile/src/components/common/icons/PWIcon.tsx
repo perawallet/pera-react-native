@@ -39,7 +39,9 @@ import EllipsisIcon from '../../../../assets/icons/ellipsis.svg'
 import EnvelopeLetterIcon from '../../../../assets/icons/envelope-letter.svg'
 import EyeInCircleIcon from '../../../../assets/icons/eye-in-circle.svg'
 import FeedbackIcon from '../../../../assets/icons/feedback.svg'
+import FundIcon from '../../../../assets/icons/fund.svg'
 import GearIcon from '../../../../assets/icons/gear.svg'
+import GiftIcon from '../../../../assets/icons/gift.svg'
 import GlobeIcon from '../../../../assets/icons/globe.svg'
 import HorizontalLineStackIcon from '../../../../assets/icons/horizontal-line-stack.svg'
 import HouseIcon from '../../../../assets/icons/house.svg'
@@ -107,7 +109,9 @@ const ICON_LIBRARY = {
     'envelope-letter': EnvelopeLetterIcon,
     'eye-in-circle': EyeInCircleIcon,
     feedback: FeedbackIcon,
+    fund: FundIcon,
     gear: GearIcon,
+    gift: GiftIcon,
     globe: GlobeIcon,
     'horizontal-line-stack': HorizontalLineStackIcon,
     house: HouseIcon,

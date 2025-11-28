@@ -26,6 +26,7 @@ export const developmentOverrides: Partial<Config> = {
 
     discoverBaseUrl: 'https://discover-mobile-staging.perawallet.app/',
     stakingBaseUrl: 'https://staking-mobile-staging.perawallet.app/',
+    onrampBaseUrl: 'https://onramp-mobile-staging.perawallet.app/',
 
     debugEnabled: true,
     profilingEnabled: false,

@@ -31,8 +31,9 @@ export const productionConfig: Config = {
     algodApiKey: '',
     indexerApiKey: '',
 
-    discoverBaseUrl: 'https://discover-mobile-staging.perawallet.app/',
-    stakingBaseUrl: 'https://staking-mobile-staging.perawallet.app/',
+    discoverBaseUrl: 'https://discover-mobile.perawallet.app/',
+    stakingBaseUrl: 'https://staking-mobile.perawallet.app/',
+    onrampBaseUrl: 'https://onramp-mobile.perawallet.app/',
 
     notificationRefreshTime: THIRTY_SECONDS,
     remoteConfigRefreshTime: ONE_HOUR,

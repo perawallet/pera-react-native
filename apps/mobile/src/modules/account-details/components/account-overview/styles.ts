@@ -49,9 +49,14 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
             height: 24,
             backgroundColor: theme.colors.layerGray,
         },
+        valueBarContainer: {
+            paddingVertical: theme.spacing.md,
+        },
         valueBar: {
-            paddingTop: theme.spacing.md,
-            paddingBottom: theme.spacing.xl * 1.5,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingRight: theme.spacing.md,
         },
         secondaryValueBar: {
             flexDirection: 'row',

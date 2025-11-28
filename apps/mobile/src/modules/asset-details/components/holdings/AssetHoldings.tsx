@@ -31,6 +31,9 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
+import { usePreferences } from '@perawallet/wallet-core-settings'
+import { UserPreferences } from '../../../../constants/user-preferences'
+import PWButton from '../../../../components/common/button/PWButton'
 
 type AssetHoldingsProps = {
     account: WalletAccount
@@ -43,6 +46,12 @@ const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
     const [period, setPeriod] = useState<HistoryPeriod>('one-week')
     const [selectedPoint, setSelectedPoint] =
         useState<AccountBalanceHistoryItem | null>(null)
+
+    const { getPreference, setPreference } = usePreferences()
+    const chartVisible = !!getPreference(UserPreferences.chartVisible)
+    const toggleChartVisible = () => {
+        setPreference(UserPreferences.chartVisible, !chartVisible)
+    }
 
     const { data: assetHolding } = useAccountAssetBalanceQuery(
         account,
@@ -86,13 +95,21 @@ const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
                         </PWView>
                     </PWView>
 
-                    <CurrencyDisplay
-                        h1
-                        value={cryptoAmount}
-                        currency={asset.unitName ?? ''}
-                        precision={asset.decimals}
-                        minPrecision={2}
-                    />
+                    <PWView style={styles.primaryValueContainer}>
+                        <CurrencyDisplay
+                            h1
+                            value={cryptoAmount}
+                            currency={asset.unitName ?? ''}
+                            precision={asset.decimals}
+                            minPrecision={2}
+                        />
+                        <PWButton
+                            icon='chart'
+                            variant={chartVisible ? 'secondary' : 'helper'}
+                            paddingStyle='dense'
+                            onPress={toggleChartVisible}
+                        />
+                    </PWView>
 
                     <PWView style={styles.secondaryValueContainer}>
                         <CurrencyDisplay
@@ -109,7 +126,7 @@ const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
                     </PWView>
                 </PWView>
 
-                <PWView style={styles.chartContainer}>
+                {chartVisible && <PWView style={styles.chartContainer}>
                     <AssetWealthChart
                         account={account}
                         asset={asset}
@@ -120,7 +137,7 @@ const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
                         value={period}
                         onChange={setPeriod}
                     />
-                </PWView>
+                </PWView>}
 
                 <AssetActionButtons asset={asset} />
             </PWView>

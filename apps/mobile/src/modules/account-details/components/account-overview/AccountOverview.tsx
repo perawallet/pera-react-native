@@ -12,7 +12,6 @@
 
 import PWView from '../../../../components/common/view/PWView'
 import { formatDatetime, HistoryPeriod } from '@perawallet/wallet-core-shared'
-import { ScrollView } from 'react-native'
 import CurrencyDisplay from '../../../../components/currency/currency-display/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import WealthChart from '../../../../components/common/wealth-chart/WealthChart'
@@ -30,7 +29,9 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { useSettings } from '@perawallet/wallet-core-settings'
+import { usePreferences, useSettings } from '@perawallet/wallet-core-settings'
+import PWButton from '../../../../components/common/button/PWButton'
+import { UserPreferences } from '../../../../constants/user-preferences'
 
 type AccountOverviewProps = {
     account: WalletAccount
@@ -44,6 +45,7 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
 
     const { portfolioAlgoValue, portfolioFiatValue, isPending } =
         useAccountBalancesQuery(account ? [account] : [])
+    const { getPreference, setPreference } = usePreferences()
 
     const [period, setPeriod] = useState<HistoryPeriod>('one-week')
     const [chartData, setChartData] =
@@ -53,6 +55,11 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
 
     const togglePrivacyMode = () => {
         setPrivacyMode(!privacyMode)
+    }
+
+    const chartVisible = !!getPreference(UserPreferences.chartVisible)
+    const toggleChartVisible = () => {
+        setPreference(UserPreferences.chartVisible, !chartVisible)
     }
 
     const chartSelectionChanged = useCallback(
@@ -72,20 +79,28 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
         <AccountAssetList account={account} scrollEnabled={scrollingEnabled}>
             <PWTouchableOpacity
                 onPress={togglePrivacyMode}
-                style={styles.valueBar}
+                style={styles.valueBarContainer}
             >
-                <CurrencyDisplay
-                    h1
-                    value={
-                        chartData
-                            ? Decimal(chartData.algoValue)
-                            : portfolioAlgoValue
-                    }
-                    currency='ALGO'
-                    precision={2}
-                    h1Style={styles.primaryCurrency}
-                    skeleton={isPending}
-                />
+                <PWView style={styles.valueBar}>
+                    <CurrencyDisplay
+                        h1
+                        value={
+                            chartData
+                                ? Decimal(chartData.algoValue)
+                                : portfolioAlgoValue
+                        }
+                        currency='ALGO'
+                        precision={2}
+                        h1Style={styles.primaryCurrency}
+                        skeleton={isPending}
+                    />
+                    <PWButton
+                        icon='chart'
+                        variant={chartVisible ? 'secondary' : 'helper'}
+                        paddingStyle='dense'
+                        onPress={toggleChartVisible}
+                    />
+                </PWView>
                 <PWView style={styles.secondaryValueBar}>
                     <CurrencyDisplay
                         h4
@@ -117,7 +132,7 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
                 </PWView>
             </PWTouchableOpacity>
 
-            {!!account && (
+            {!!account && chartVisible && (
                 <PWView style={styles.chartContainer}>
                     <WealthChart
                         account={account}

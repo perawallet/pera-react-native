@@ -37,6 +37,10 @@ const MenuScreen = () => {
         navigation.push('Contacts')
     }
 
+    const goToStaking = () => {
+        navigation.push('Staking')
+    }
+
     const closeQRScanner = () => {
         setScannerVisible(false)
     }
@@ -74,31 +78,38 @@ const MenuScreen = () => {
             <PWView style={styles.menuContainer}>
                 <CardPanel />
                 <PanelButton
-                    title='NFTs'
+                    title='Staking'
                     titleWeight='h3'
-                    leftIcon={<PWIcon name='card-stack' />}
-                    rightIcon={<PWIcon name='chevron-right' />}
-                    onPress={() => {}}
+                    leftIcon='dot-stack'
+                    rightIcon='chevron-right'
+                    onPress={goToStaking}
                 />
                 <PanelButton
-                    title='Buy ALGO'
+                    title='NFTs'
                     titleWeight='h3'
-                    leftIcon={<PWIcon name='algo' />}
-                    rightIcon={<PWIcon name='chevron-right' />}
-                    onPress={() => {}}
+                    leftIcon='card-stack'
+                    rightIcon='chevron-right'
+                    onPress={() => { }}
+                />
+                <PanelButton
+                    title='Buy Gift Card'
+                    titleWeight='h3'
+                    leftIcon='gift'
+                    rightIcon='chevron-right'
+                    onPress={() => { }}
                 />
                 <PanelButton
                     title='Receive'
                     titleWeight='h3'
-                    leftIcon={<PWIcon name='inflow' />}
-                    rightIcon={<PWIcon name='chevron-right' />}
-                    onPress={() => {}}
+                    leftIcon='inflow'
+                    rightIcon='chevron-right'
+                    onPress={() => { }}
                 />
                 <PanelButton
                     title='Contacts'
                     titleWeight='h3'
-                    leftIcon={<PWIcon name='person-menu' />}
-                    rightIcon={<PWIcon name='chevron-right' />}
+                    leftIcon='person-menu'
+                    rightIcon='chevron-right'
                     onPress={goToContacts}
                 />
             </PWView>

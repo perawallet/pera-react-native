@@ -10,7 +10,17 @@
  limitations under the License
  */
 
-export const UserPreferences = {
-    spendAgreed: 'send-fund-agreed',
-    chartVisible: 'chart-visible',
-} as const
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => {
+    return {
+        container: {
+            flex: 1,
+            backgroundColor: theme.colors.background,
+        },
+        webview: {
+            flexGrow: 1,
+            backgroundColor: theme.colors.background,
+        },
+    }
+})

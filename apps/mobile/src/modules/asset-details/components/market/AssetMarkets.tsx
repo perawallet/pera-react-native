@@ -41,6 +41,9 @@ import {
     useSingleAssetDetailsQuery,
 } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
+import { usePreferences } from '@perawallet/wallet-core-settings'
+import { UserPreferences } from '../../../../constants/user-preferences'
+import PWButton from '../../../../components/common/button/PWButton'
 
 type AssetMarketsProps = {
     asset: PeraAsset
@@ -64,6 +67,12 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
     const [selectedPoint, setSelectedPoint] = useState<AssetPriceHistoryItem>()
     const { showToast } = useToast()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
+    const { getPreference, setPreference } = usePreferences()
+
+    const chartVisible = !!getPreference(UserPreferences.chartVisible)
+    const toggleChartVisible = () => {
+        setPreference(UserPreferences.chartVisible, !chartVisible)
+    }
 
     const {
         data: assetDetails,
@@ -142,29 +151,38 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
                         />
                     </PWView>
                 </PWView>
+                <PWView style={styles.priceContainer}>
+                    <PWView>
+                        <CurrencyDisplay
+                            h1
+                            value={currentPrice}
+                            currency={preferredCurrency}
+                            precision={6}
+                            minPrecision={2}
+                        />
 
-                <CurrencyDisplay
-                    h1
-                    value={currentPrice}
-                    currency={preferredCurrency}
-                    precision={6}
-                    minPrecision={2}
-                />
-
-                <PWView style={styles.trendContainer}>
-                    <PriceTrend
-                        assetId={asset.assetId}
-                        period={period}
-                        showAbsolute
-                        selectedDataPoint={selectedPoint}
+                        <PWView style={styles.trendContainer}>
+                            <PriceTrend
+                                assetId={asset.assetId}
+                                period={period}
+                                showAbsolute
+                                selectedDataPoint={selectedPoint}
+                            />
+                            {!!selectedPoint && (
+                                <Text>{formatDatetime(selectedPoint.datetime)}</Text>
+                            )}
+                        </PWView>
+                    </PWView>
+                    <PWButton
+                        icon='chart'
+                        variant={chartVisible ? 'secondary' : 'helper'}
+                        paddingStyle='dense'
+                        onPress={toggleChartVisible}
                     />
-                    {!!selectedPoint && (
-                        <Text>{formatDatetime(selectedPoint.datetime)}</Text>
-                    )}
                 </PWView>
             </PWView>
 
-            <PWView style={styles.chartContainer}>
+            {chartVisible && <PWView style={styles.chartContainer}>
                 <AssetPriceChart
                     asset={asset}
                     period={period}
@@ -174,7 +192,7 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
                     value={period}
                     onChange={setPeriod}
                 />
-            </PWView>
+            </PWView>}
 
             <PWTouchableOpacity
                 style={styles.discoverButton}
