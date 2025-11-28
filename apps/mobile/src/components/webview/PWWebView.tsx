@@ -42,6 +42,7 @@ import { debugLog } from '@perawallet/wallet-core-shared'
 import WebViewTitleBar from './WebViewTitleBar'
 import WebViewFooterBar from './WebViewFooterBar'
 import { WebViewContext } from '../../providers/WebViewProvider'
+import { useIsDarkMode } from '../../hooks/theme'
 
 export type PWWebViewProps = {
     url: string
@@ -64,6 +65,7 @@ const PWWebView = (props: PWWebViewProps) => {
     const { showToast } = useToast()
     const [title, setTitle] = useState('')
     const [navigationState, setNavigationState] = useState<WebViewNativeEvent>()
+    const isDarkMode = useIsDarkMode()
 
     const isSecure = useMemo(() => {
         // TODO: We ultimately want to replace this with a more SRI style method
@@ -77,6 +79,7 @@ const PWWebView = (props: PWWebViewProps) => {
     const userAgent = useMemo(() => {
         return `${deviceInfo.getUserAgent()}`
     }, [deviceInfo])
+
 
     const onCloseRequested = useCallback(() => {
         if (!requestId) {
@@ -200,6 +203,7 @@ const PWWebView = (props: PWWebViewProps) => {
                 injectedJavaScript={jsToLoad}
                 setSupportMultipleWindows={false}
                 userAgent={userAgent}
+                forceDarkOn={isDarkMode}
                 onLoadStart={verifyLoad}
                 onLoad={loadCompleted}
                 onLoadSubResourceError={showLoadError}

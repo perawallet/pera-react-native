@@ -42,7 +42,6 @@ type WebViewProviderProps = {} & PropsWithChildren
 
 const WebViewProvider = ({ children }: WebViewProviderProps) => {
     const [openWebViews, setOpenWebViews] = useState<WebViewRequest[]>([])
-    const [pendingClose, setPendingClose] = useState<string[]>([])
     const { height } = useWindowDimensions()
 
     const pushWebView = (view: WebViewRequest) => {
@@ -54,12 +53,7 @@ const WebViewProvider = ({ children }: WebViewProviderProps) => {
     }
 
     const removeWebView = (id: string) => {
-        setPendingClose((prev) => [...prev, id])
-    }
-
-    const removedWebView = (id: string) => {
         setOpenWebViews((prev) => prev.filter((view) => view.id !== id))
-        setPendingClose((prev) => prev.filter((id) => id !== id))
     }
 
     const clearWebViews = () => {
@@ -73,13 +67,8 @@ const WebViewProvider = ({ children }: WebViewProviderProps) => {
                 <PWBottomSheet
                     key={view.id}
                     innerContainerStyle={{ height: height - (StatusBar.currentHeight ?? 20) }}
-                    isVisible={!pendingClose.includes(view.id)}
+                    isVisible={true}
                     scrollEnabled={false}
-                    modalProps={
-                        {
-                            onDismiss: () => removedWebView(view.id)
-                        }
-                    }
                 >
                     <PWView style={{ flex: 1 }}>
                         <PWWebView

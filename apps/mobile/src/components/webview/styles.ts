@@ -13,69 +13,71 @@
 import { makeStyles } from '@rneui/themed'
 import { PWWebViewProps } from './PWWebView'
 
-export const useStyles = makeStyles((theme, props: PWWebViewProps) => ({
-    flex: {
-        flex: 1,
-        marginBottom: props.showControls ? theme.spacing.xl * 2 : 0,
-    },
-    webview: {
-        alignItems: 'flex-start',
-        justifyContent: 'flex-start',
-        flexGrow: 1,
-        backgroundColor: theme.colors.background,
-    },
-    loading: {
-        flexGrow: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: theme.colors.background,
-    },
-    container: {
-        backgroundColor: theme.colors.background,
-        flexGrow: 1,
-    },
-    titleBar: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingVertical: theme.spacing.md,
-        paddingHorizontal: theme.spacing.lg,
-        backgroundColor: theme.colors.background,
-    },
-    titleBarTextContainer: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
-        flexShrink: 1,
-    },
-    titleIconContainer: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: theme.spacing.md,
-        backgroundColor: theme.colors.background,
-    },
-    title: {
-        color: theme.colors.textMain,
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        flexWrap: 'nowrap',
-        flexShrink: 1,
-        textAlign: 'center',
-    },
-    url: {
-        color: theme.colors.textGray,
-        fontSize: theme.spacing.md,
-        textOverflow: 'ellipsis',
-        overflow: 'hidden',
-        flexWrap: 'nowrap',
-        flexShrink: 1,
-    },
-    footerBar: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingVertical: theme.spacing.md,
-        paddingHorizontal: theme.spacing.lg,
-        backgroundColor: theme.colors.background,
+export const useStyles = makeStyles((theme, props: PWWebViewProps) => {
+    return {
+        flex: {
+            flex: 1,
+            marginBottom: theme.spacing.xl * 2,
+        },
+        webview: {
+            alignItems: 'flex-start',
+            justifyContent: 'flex-start',
+            flexGrow: 1,
+            backgroundColor: theme.colors.background,
+        },
+        loading: {
+            flexGrow: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: theme.colors.background,
+        },
+        container: {
+            backgroundColor: theme.colors.background,
+            flexGrow: 1,
+        },
+        titleBar: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingVertical: theme.spacing.md,
+            paddingHorizontal: theme.spacing.lg,
+            backgroundColor: theme.colors.background,
+        },
+        titleBarTextContainer: {
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+            flexShrink: 1,
+        },
+        titleIconContainer: {
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: theme.spacing.md,
+            backgroundColor: theme.colors.background,
+        },
+        title: {
+            color: theme.colors.textMain,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            flexWrap: 'nowrap',
+            flexShrink: 1,
+            textAlign: 'center',
+        },
+        url: {
+            color: theme.colors.textGray,
+            fontSize: theme.spacing.md,
+            textOverflow: 'ellipsis',
+            overflow: 'hidden',
+            flexWrap: 'nowrap',
+            flexShrink: 1,
+        },
+        footerBar: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingVertical: theme.spacing.md,
+            paddingHorizontal: theme.spacing.lg,
+            backgroundColor: theme.colors.background,
+        }
     }
-}))
+})

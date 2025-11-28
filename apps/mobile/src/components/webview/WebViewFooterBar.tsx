@@ -1,4 +1,4 @@
-import { RefObject, useCallback, useMemo } from "react"
+import { RefObject, useCallback, useLayoutEffect, useMemo, useState } from "react"
 import PWView from "../common/view/PWView"
 import { useStyles } from "./styles"
 import PWIcon from "../common/icons/PWIcon"
@@ -14,10 +14,23 @@ type WebViewFooterBarProps = {
 
 const WebViewFooterBar = ({ webview, homeUrl, navigationState }: WebViewFooterBarProps) => {
     const styles = useStyles()
+    const [returningHome, setReturningHome] = useState(false)
 
     const isHome = useMemo(() => {
         return !navigationState || navigationState.url === homeUrl
     }, [navigationState, homeUrl])
+
+    //HACK: this is a little messy - there's no way seemingly to navigate directly to a URL, so we just 
+    //go back all the way through the history
+    useLayoutEffect(() => {
+        if (returningHome) {
+            if (navigationState?.canGoBack) {
+                webview.current?.goBack()
+            } else {
+                setReturningHome(false)
+            }
+        }
+    }, [returningHome, webview, navigationState])
 
     const onBackRequested = useCallback(() => {
         if (navigationState?.canGoBack) {
@@ -33,7 +46,7 @@ const WebViewFooterBar = ({ webview, homeUrl, navigationState }: WebViewFooterBa
 
     const onHomeRequested = useCallback(() => {
         if (navigationState && !isHome) {
-            webview.current?.reload()
+            setReturningHome(true)
         }
     }, [webview, navigationState, isHome])
 
