@@ -101,7 +101,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
 
             // States
             success: '#2CB7BC', // Alert/positive
-            warning: '#FFEE55', // Link/primary (dark variant) used as generic warning
+            warning: '#b66129', // Link/primary (dark variant) used as generic warning
             error: '#DB4645', // Alert/negative (light)
             // Misc
             divider: 'rgba(0,0,0,0.05)', // Border/default (light)
@@ -170,7 +170,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
 
             // States
             success: '#2CB7BC', // Alert/positive
-            warning: '#FFEE55', // Link/primary (dark)
+            warning: '#b66129', // Link/primary (dark)
             error: '#FF6D5F', // Alert/negative (dark)
             // Misc
             divider: 'rgba(255,255,255,0.05)', // Border/default (dark)

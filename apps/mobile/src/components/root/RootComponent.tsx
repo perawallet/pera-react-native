@@ -10,14 +10,14 @@
  limitations under the License
  */
 
-import { Networks } from '@perawallet/wallet-core-shared'
+import { debugLog, Networks } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
-import { useEffect, useMemo, useRef } from 'react'
+import { useContext, useEffect, useMemo, useRef } from 'react'
 import { AppState, StatusBar } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { MainRoutes } from '../../routes/routes'
 import { getNavigationTheme, getTheme } from '../../theme/theme'
-import { ThemeProvider } from '@rneui/themed'
+import { Text, ThemeProvider } from '@rneui/themed'
 import { useStyles } from './styles'
 import PWView from '../../components/common/view/PWView'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -32,10 +32,12 @@ import {
 } from '@perawallet/wallet-core-platform-integration'
 import { usePolling } from '@perawallet/wallet-core-polling'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import { NetworkStatusContext, NetworkStatusProvider } from '../../providers/NetworkStatusProvider'
 
 const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
+    const { hasInternet } = useContext(NetworkStatusContext)
     const { network, setNetwork } = useNetwork()
     const navTheme = getNavigationTheme(isDarkMode ? 'dark' : 'light')
     const { showToast } = useToast()
@@ -76,6 +78,9 @@ const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
                     style={networkBarStyle}
                     onLongPress={toggleNetwork}
                 />
+
+                {!hasInternet && <PWView style={styles.offlineTextContainer}><Text style={styles.offlineText}>Offline Mode</Text></PWView>}
+
                 <GestureHandlerRootView>
                     <MainRoutes theme={navTheme} />
                 </GestureHandlerRootView>
@@ -129,9 +134,11 @@ export const RootComponent = () => {
 
     return (
         <ThemeProvider theme={theme}>
-            <SigningProvider>
-                <RootContentContainer isDarkMode={isDarkMode} />
-            </SigningProvider>
+            <NetworkStatusProvider>
+                <SigningProvider>
+                    <RootContentContainer isDarkMode={isDarkMode} />
+                </SigningProvider>
+            </NetworkStatusProvider>
         </ThemeProvider>
     )
 }

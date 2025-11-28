@@ -12,7 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 import { useCallback } from 'react'
-import { Notifier } from 'react-native-notifier'
+import { Notifier, ShowNotificationParams } from 'react-native-notifier'
 
 export interface ToastMessage {
     title: string
@@ -46,10 +46,10 @@ const useStyles = makeStyles(theme => {
             color: theme.colors.textMain,
         },
         warningStyle: {
-            backgroundColor: theme.colors.error,
+            backgroundColor: theme.colors.warning,
         },
         warningStyleText: {
-            color: theme.colors.white,
+            color: theme.colors.textMain,
         },
     }
 })
@@ -58,7 +58,7 @@ const useToast = () => {
     const styles = useStyles()
 
     const showToast = useCallback(
-        (message: ToastMessage) => {
+        (message: ToastMessage, options?: ShowNotificationParams) => {
             let containerStyle = styles.infoStyle
             let textStyle = styles.infoStyleText
             if (message.type === 'error') {
@@ -80,6 +80,7 @@ const useToast = () => {
                     titleStyle: textStyle,
                     descriptionStyle: textStyle,
                 },
+                ...options,
             })
         },
         [styles],

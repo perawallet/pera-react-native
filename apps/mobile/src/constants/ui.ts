@@ -17,3 +17,5 @@ export const SCREEN_ANIMATION_CONFIG: NativeStackNavigationOptions = {
     animationDuration: SCREEN_ANIMATION_DURATION,
     statusBarAnimation: 'slide',
 }
+
+export const LONG_NOTIFICATION_DURATION = 5000
