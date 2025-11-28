@@ -28,6 +28,7 @@ import SendFundsTransactionConfirmation from '../transaction-confirmation/SendFu
 import SendFundsProvider, {
     SendFundsContext,
 } from '../../../providers/SendFundsProvider'
+import { TAB_ANIMATION_CONFIG } from '../../../constants/ui'
 
 type SendFundsBottomSheetProps = {
     assetId?: string
@@ -113,10 +114,7 @@ const SendFundsBottomSheet = ({
                     <TabView
                         value={screenIndex}
                         animationType='timing'
-                        animationConfig={{
-                            duration: 200,
-                            useNativeDriver: true,
-                        }}
+                        animationConfig={TAB_ANIMATION_CONFIG}
                         disableSwipe
                     >
                         {!!canSelectAsset && (

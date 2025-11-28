@@ -11,7 +11,7 @@
  */
 
 import { useStyles } from './styles'
-import { Skeleton, Text, TextProps } from '@rneui/themed'
+import { Skeleton, Text, TextProps, useTheme } from '@rneui/themed'
 import PWView from '../../common/view/PWView'
 import { useMemo } from 'react'
 import { formatCurrency } from '@perawallet/wallet-core-shared'
@@ -34,6 +34,7 @@ export type CurrencyDisplayProps = {
 
 const CurrencyDisplay = (props: CurrencyDisplayProps) => {
     const themeStyle = useStyles(props)
+    const { theme } = useTheme()
     const deviceInfo = useDeviceInfoService()
     const {
         currency,
@@ -58,14 +59,14 @@ const CurrencyDisplay = (props: CurrencyDisplayProps) => {
         return privacyMode
             ? '****'
             : formatCurrency(
-                  value,
-                  precision,
-                  currency,
-                  deviceInfo.getDeviceLocale(),
-                  showSymbol,
-                  truncateToUnits,
-                  minPrecision,
-              )
+                value,
+                precision,
+                currency,
+                deviceInfo.getDeviceLocale(),
+                showSymbol,
+                truncateToUnits,
+                minPrecision,
+            )
     }, [
         value,
         precision,
@@ -88,6 +89,7 @@ const CurrencyDisplay = (props: CurrencyDisplayProps) => {
         <PWView style={themeStyle.container}>
             {isAlgo && showSymbol && (
                 <AlgoIcon
+                    color={theme.colors.textMain}
                     style={[
                         themeStyle.algoIcon,
                         props.style,

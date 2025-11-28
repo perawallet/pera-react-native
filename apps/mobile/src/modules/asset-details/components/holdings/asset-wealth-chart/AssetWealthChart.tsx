@@ -26,8 +26,7 @@ import {
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 import LoadingView from '../../../../../components/common/loading/LoadingView'
 import EmptyView from '../../../../../components/common/empty-view/EmptyView'
-
-const FOCUS_DEBOUNCE_TIME = 200
+import { CHART_ANIMATION_DURATION, CHART_FOCUS_DEBOUNCE_TIME, CHART_HEIGHT } from '../../../../../constants/ui'
 
 type DataPoint = {
     timestamp: string
@@ -88,7 +87,7 @@ const AssetWealthChart = ({
             pointerIndex: number
             pointerX: number
         }) => {
-            if (Date.now() - lastSentTime > FOCUS_DEBOUNCE_TIME) {
+            if (Date.now() - lastSentTime > CHART_FOCUS_DEBOUNCE_TIME) {
                 if (pointerX > 0 && index >= 0 && index !== lastSentIndex) {
                     const dataItem = data?.[index]
                     setLastSentIndex(index)
@@ -126,7 +125,7 @@ const AssetWealthChart = ({
                     <LineChart
                         data={dataPoints}
                         hideAxesAndRules
-                        height={140}
+                        height={CHART_HEIGHT}
                         color={theme.colors.helperPositive}
                         startFillColor='#28A79B'
                         endFillColor='#28A79B'
@@ -142,13 +141,13 @@ const AssetWealthChart = ({
                         showStripOnFocus
                         showDataPointOnFocus
                         animateOnDataChange
-                        animationDuration={200}
-                        onDataChangeAnimationDuration={200}
+                        animationDuration={CHART_ANIMATION_DURATION}
+                        onDataChangeAnimationDuration={CHART_ANIMATION_DURATION}
                         pointerConfig={{
                             showPointerStrip: true,
                             pointerStripColor: theme.colors.textGrayLighter,
                             pointerStripWidth: 1,
-                            pointerStripHeight: 140,
+                            pointerStripHeight: CHART_HEIGHT,
                             pointerColor: theme.colors.helperPositive,
                             strokeDashArray: [6, 2],
                         }}

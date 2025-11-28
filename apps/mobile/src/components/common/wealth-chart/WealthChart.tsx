@@ -23,8 +23,9 @@ import {
     useAllAccounts,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-
-const FOCUS_DEBOUNCE_TIME = 200
+import LoadingView from '../loading/LoadingView'
+import EmptyView from '../empty-view/EmptyView'
+import { CHART_ANIMATION_DURATION, CHART_FOCUS_DEBOUNCE_TIME, CHART_HEIGHT } from '../../../constants/ui'
 
 type WealthChartProps = {
     account?: WalletAccount
@@ -86,7 +87,7 @@ const WealthChart = ({
             pointerIndex: number
             pointerX: number
         }) => {
-            if (Date.now() - lastSentTime > FOCUS_DEBOUNCE_TIME) {
+            if (Date.now() - lastSentTime > CHART_FOCUS_DEBOUNCE_TIME) {
                 if (pointerX > 0 && index >= 0 && index !== lastSentIndex) {
                     const dataItem = data?.[index] ?? null
                     onSelectionChanged(dataItem)
@@ -107,45 +108,51 @@ const WealthChart = ({
         ],
     )
 
-    if (!isPending && !dataPoints?.length) {
-        return <></>
+    if (isPending) {
+        return <LoadingView variant='circle' size='lg' />
     }
 
     return (
         <PWView style={themeStyle.container}>
-            <LineChart
-                data={dataPoints}
-                hideAxesAndRules
-                height={140}
-                color={theme.colors.helperPositive}
-                startFillColor='#28A79B'
-                endFillColor='#28A79B'
-                startOpacity={0.3}
-                endOpacity={0.0}
-                areaChart
-                yAxisLabelWidth={1}
-                hideYAxisText
-                yAxisOffset={yAxisOffsets[0]}
-                maxValue={yAxisOffsets[1]}
-                initialSpacing={0}
-                endSpacing={0}
-                showStripOnFocus
-                showDataPointOnFocus
-                animateOnDataChange
-                animationDuration={200}
-                onDataChangeAnimationDuration={200}
-                pointerConfig={{
-                    showPointerStrip: true,
-                    pointerStripColor: theme.colors.textGrayLighter,
-                    pointerStripWidth: 1,
-                    pointerStripHeight: 140,
-                    pointerColor: theme.colors.helperPositive,
-                    strokeDashArray: [6, 2],
-                }}
-                getPointerProps={onFocus}
-                disableScroll
-                adjustToWidth
-            />
+            {!dataPoints?.length ?
+                <EmptyView
+                    title=''
+                    body='You will see a chart here once you have some balance history'
+                />
+                : (<LineChart
+                    data={dataPoints}
+                    hideAxesAndRules
+                    height={CHART_HEIGHT}
+                    color={theme.colors.helperPositive}
+                    startFillColor='#28A79B'
+                    endFillColor='#28A79B'
+                    startOpacity={0.3}
+                    endOpacity={0.0}
+                    areaChart
+                    yAxisLabelWidth={1}
+                    hideYAxisText
+                    yAxisOffset={yAxisOffsets[0]}
+                    maxValue={yAxisOffsets[1]}
+                    initialSpacing={0}
+                    endSpacing={0}
+                    showStripOnFocus
+                    showDataPointOnFocus
+                    animateOnDataChange
+                    animationDuration={CHART_ANIMATION_DURATION}
+                    onDataChangeAnimationDuration={CHART_ANIMATION_DURATION}
+                    pointerConfig={{
+                        showPointerStrip: true,
+                        pointerStripColor: theme.colors.textGrayLighter,
+                        pointerStripWidth: 1,
+                        pointerStripHeight: CHART_HEIGHT,
+                        pointerColor: theme.colors.helperPositive,
+                        strokeDashArray: [6, 2],
+                    }}
+                    getPointerProps={onFocus}
+                    disableScroll
+                    adjustToWidth
+                />
+                )}
         </PWView>
     )
 }

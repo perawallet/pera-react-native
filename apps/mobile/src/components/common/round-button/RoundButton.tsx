@@ -37,7 +37,7 @@ const RoundButton = (props: RoundButtonProps) => {
     } = props
 
     const iconSize = size === 'lg' ? 'md' : 'sm'
-    const iconVariant = variant === 'primary' ? 'white' : 'primary'
+    const iconVariant = variant === 'primary' ? 'buttonPrimary' : 'primary'
 
     return (
         <PWView style={propStyle}>

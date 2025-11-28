@@ -58,6 +58,7 @@ import SettingsTermsAndServicsScreen from '../modules/settings/screens/terms-and
 import SettingsPrivacyPolicyScreen from '../modules/settings/screens/privacy-policy/SettingsPrivacyPolicyScreen'
 import AssetDetailsScreen from '../modules/asset-details/screens/AssetDetailsScreen'
 import { useHasNoAccounts } from '@perawallet/wallet-core-accounts'
+import { SCREEN_ANIMATION_CONFIG } from '../constants/ui'
 
 const NAVIGATION_STACK_NAMES = new Set([
     'tabbar',
@@ -98,6 +99,7 @@ const SettingsStack = createNativeStackNavigator({
         header: (props: NativeStackHeaderProps) => (
             <NavigationHeader {...props} />
         ),
+        ...SCREEN_ANIMATION_CONFIG,
     },
     screenListeners,
     screens: {
@@ -183,6 +185,7 @@ const ContactsStack = createNativeStackNavigator({
         header: (props: NativeStackHeaderProps) => (
             <NavigationHeader {...props} />
         ),
+        ...SCREEN_ANIMATION_CONFIG,
     },
     screenListeners,
     screens: {
@@ -219,6 +222,7 @@ const AccountStack = createNativeStackNavigator({
     initialRouteName: 'AccountDetails',
     screenOptions: {
         headerShown: false,
+        ...SCREEN_ANIMATION_CONFIG,
     },
     screenListeners,
     screens: {
@@ -281,6 +285,7 @@ const OnboardingStack = createNativeStackNavigator({
         header: (props: NativeStackHeaderProps) => (
             <NavigationHeader {...props} />
         ),
+        ...SCREEN_ANIMATION_CONFIG,
     },
     screens: {
         OnboardingHome: OnboardingScreen,
@@ -304,8 +309,7 @@ const OnboardingStack = createNativeStackNavigator({
 const RootStack = createNativeStackNavigator({
     screenOptions: {
         headerShown: false,
-        animation: 'default',
-        animationDuration: 50,
+        ...SCREEN_ANIMATION_CONFIG,
     },
     screenListeners,
     screens: {

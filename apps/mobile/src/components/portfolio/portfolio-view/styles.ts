@@ -31,7 +31,7 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
         secondaryValueBar: {
             flexDirection: 'row',
             alignItems: 'center',
-            gap: theme.spacing.sm,
+            gap: theme.spacing.md,
         },
         valueTitleBar: {
             flexDirection: 'row',
@@ -67,6 +67,11 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
             borderRadius: theme.spacing.md,
             borderWidth: 1,
             borderColor: theme.colors.layerGrayLight,
+        },
+        chartContainer: {
+            gap: theme.spacing.md,
+            marginTop: theme.spacing.md,
+            marginBottom: theme.spacing.md,
         },
     }
 })

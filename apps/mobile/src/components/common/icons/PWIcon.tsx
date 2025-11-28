@@ -154,6 +154,7 @@ export type IconName = keyof typeof ICON_LIBRARY
 export type PWIconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 export type PWIconVariant =
     | 'primary'
+    | 'buttonPrimary'
     | 'secondary'
     | 'helper'
     | 'white'
@@ -185,6 +186,7 @@ const PWIcon = ({
 
     const variantColors: Record<PWIconVariant, string> = {
         primary: theme.colors.textMain,
+        buttonPrimary: theme.colors.buttonPrimaryText,
         secondary: theme.colors.textGray,
         helper: theme.colors.buttonSquareText,
         white: theme.colors.textWhite,

@@ -118,7 +118,7 @@ const PortfolioView = (props: PortfolioViewProps) => {
             </PWView>
 
             {chartVisible && (
-                <>
+                <PWView style={styles.chartContainer}>
                     <WealthChart
                         period={period}
                         onSelectionChanged={chartSelectionChanged}
@@ -127,7 +127,7 @@ const PortfolioView = (props: PortfolioViewProps) => {
                         value={period}
                         onChange={setPeriod}
                     />
-                </>
+                </PWView>
             )}
         </PWView>
     )

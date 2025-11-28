@@ -39,6 +39,7 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGray,
     },
     chartContainer: {
+        gap: theme.spacing.md,
         marginBottom: theme.spacing.lg,
     },
     secondaryValueContainer: {

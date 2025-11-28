@@ -10,13 +10,13 @@
  limitations under the License
  */
 
+import { CHART_HEIGHT } from '../../../../../constants/ui'
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: theme.spacing.md,
-        height: 140,
+        height: CHART_HEIGHT,
     },
 }))

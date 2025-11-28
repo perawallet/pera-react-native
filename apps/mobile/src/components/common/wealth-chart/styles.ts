@@ -11,12 +11,11 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { CHART_HEIGHT } from '../../../constants/ui'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        gap: theme.spacing.md,
-        alignItems: 'center',
-        marginBottom: theme.spacing.xl,
+        height: CHART_HEIGHT,
     },
     activity: {
         color: theme.colors.primary,

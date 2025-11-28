@@ -30,12 +30,13 @@ import {
     peraMobileInterfaceJS,
 } from './injected-scripts'
 import useToast from '../../hooks/toast'
-import { ActivityIndicator, StyleSheet } from 'react-native'
+import { StyleSheet } from 'react-native'
 import { useStyles } from './styles'
 import PWView from '../common/view/PWView'
 import { usePeraWebviewInterface } from '../../hooks/webview'
 import EmptyView from '../common/empty-view/EmptyView'
 import PWButton from '../common/button/PWButton'
+import LoadingView from '../common/loading/LoadingView'
 
 export type PWWebViewProps = {
     url: string
@@ -143,12 +144,7 @@ const PWWebView = (props: PWWebViewProps) => {
                 style={styles.webview}
                 renderLoading={() => (
                     <PWView style={StyleSheet.absoluteFillObject}>
-                        <ActivityIndicator
-                            style={styles.loading}
-                            color={theme.colors.secondary}
-                            size='large'
-                            hidesWhenStopped
-                        />
+                        <LoadingView variant='circle' size='lg' />
                     </PWView>
                 )}
                 renderError={() => {

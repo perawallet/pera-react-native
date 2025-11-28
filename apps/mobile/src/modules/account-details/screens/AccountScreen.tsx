@@ -28,6 +28,7 @@ import EmptyView from '../../../components/common/empty-view/EmptyView'
 import AccountOverview from '../components/account-overview/AccountOverview'
 import AccountNfts from '../components/account-nfts/AccountNfts'
 import AccountHistory from '../components/account-history/AccountHistory'
+import { TAB_ANIMATION_CONFIG } from '../../../constants/ui'
 
 //TODO hook up all the button panel buttons correctly
 //TODO implement more menu
@@ -111,11 +112,7 @@ const AccountScreen = () => {
                     value={tabIndex}
                     onChange={setTabIndex}
                     animationType='spring'
-                    animationConfig={{
-                        duration: 150,
-                        bounciness: 1,
-                        useNativeDriver: true,
-                    }}
+                    animationConfig={TAB_ANIMATION_CONFIG}
                 >
                     <TabView.Item style={styles.fullWidth}>
                         <AccountOverview account={account} />

@@ -28,7 +28,7 @@ export type PWButtonProps = {
 }
 
 const ICON_VARIANT_MAP: Record<string, PWIconVariant> = {
-    primary: 'white',
+    primary: 'buttonPrimary',
     secondary: 'primary',
     helper: 'helper',
     link: 'link',
@@ -52,7 +52,7 @@ const PWButton = (props: PWButtonProps) => {
                     variant={iconVariant}
                     size={
                         props.paddingStyle === 'dense' ||
-                        props.paddingStyle === 'none'
+                            props.paddingStyle === 'none'
                             ? 'sm'
                             : 'md'
                     }

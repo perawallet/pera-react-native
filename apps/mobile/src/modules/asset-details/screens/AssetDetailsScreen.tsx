@@ -26,6 +26,7 @@ import AccountIcon from '../../../components/accounts/account-icon/AccountIcon'
 import useToast from '../../../hooks/toast'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import LoadingView from '../../../components/common/loading/LoadingView'
+import { TAB_ANIMATION_CONFIG } from '../../../constants/ui'
 
 type AssetDetailsScreenProps = {
     assetId: string
@@ -96,11 +97,7 @@ const AssetDetailsScreen = ({
                 value={tabIndex}
                 onChange={setTabIndex}
                 animationType='spring'
-                animationConfig={{
-                    duration: 150,
-                    bounciness: 1,
-                    useNativeDriver: true,
-                }}
+                animationConfig={TAB_ANIMATION_CONFIG}
             >
                 <TabView.Item style={styles.fullWidth}>
                     <AssetHoldings

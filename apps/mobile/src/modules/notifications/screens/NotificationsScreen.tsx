@@ -13,12 +13,13 @@
 import { useTheme } from '@rneui/themed'
 import MainScreenLayout from '../../../layouts/MainScreenLayout'
 import { useNotificationsList } from '@perawallet/wallet-core-platform-integration'
-import { FlatList } from 'react-native-gesture-handler'
-import PWView from '../../../components/common/view/PWView'
 import { ActivityIndicator } from 'react-native'
 import EmptyView from '../../../components/common/empty-view/EmptyView'
 import { useStyles } from './styles'
 import NotificationItem from '../components/notification-item/NotificationItem'
+import LoadingView from '../../../components/common/loading/LoadingView'
+import { FlashList } from '@shopify/flash-list'
+import { RefreshControl } from 'react-native-gesture-handler'
 
 const NotificationsScreen = () => {
     const styles = useStyles()
@@ -28,7 +29,7 @@ const NotificationsScreen = () => {
         return <NotificationItem item={info.item} />
     }
 
-    const { data, isPending, fetchNextPage, isFetchingNextPage } =
+    const { data, isPending, fetchNextPage, isFetchingNextPage, isRefetching, refetch } =
         useNotificationsList()
 
     const loadMoreItems = async () => {
@@ -37,34 +38,36 @@ const NotificationsScreen = () => {
 
     return (
         <MainScreenLayout>
-            {isPending && (
-                <PWView>
-                    <ActivityIndicator
-                        size='large'
-                        color={theme.colors.secondary}
-                    />
-                </PWView>
-            )}
-            {!isPending && !data?.length && (
-                <EmptyView
-                    icon='bell'
-                    title='No current notifications'
-                    body='Your recent transactions, asset requests and other transactions will appear here'
-                />
-            )}
-            {!isPending && !!data?.length && (
-                <FlatList
+            {isPending ? (
+                <LoadingView variant='skeleton' size='sm' count={5} />
+            ) : (
+                <FlashList
                     data={data}
                     renderItem={renderItem}
                     contentContainerStyle={styles.messageContainer}
                     onEndReached={loadMoreItems}
                     onEndReachedThreshold={0.1}
+                    ListEmptyComponent={
+                        <EmptyView
+                            icon='bell'
+                            title='No current notifications'
+                            body='Your recent transactions, asset requests and other transactions will appear here'
+                        />
+                    }
                     ListFooterComponent={
                         isFetchingNextPage ? (
                             <ActivityIndicator color={theme.colors.layerGray} />
                         ) : (
                             <></>
                         )
+                    }
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={isRefetching}
+                            onRefresh={refetch}
+                            colors={[theme.colors.layerGray]}
+                            progressBackgroundColor={theme.colors.background}
+                        />
                     }
                 />
             )}

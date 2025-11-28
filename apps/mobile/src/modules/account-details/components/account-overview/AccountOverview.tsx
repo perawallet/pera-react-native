@@ -123,7 +123,7 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
                 </PWTouchableOpacity>
 
                 {!!account && (
-                    <>
+                    <PWView style={styles.chartContainer}>
                         <WealthChart
                             account={account}
                             period={period}
@@ -133,7 +133,7 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
                             value={period}
                             onChange={setPeriod}
                         />
-                    </>
+                    </PWView>
                 )}
 
                 <ButtonPanel />

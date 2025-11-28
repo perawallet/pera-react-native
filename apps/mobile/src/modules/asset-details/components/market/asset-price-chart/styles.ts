@@ -11,9 +11,10 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { CHART_HEIGHT } from '../../../../../constants/ui'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        marginBottom: theme.spacing.lg,
+        height: CHART_HEIGHT,
     },
 }))

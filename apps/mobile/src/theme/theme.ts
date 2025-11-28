@@ -199,25 +199,19 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
                 inputStyle: {
                     fontFamily: getFontFamily(false, 400),
                     fontSize: 13,
-                    color:
-                        theme.mode === 'dark'
-                            ? theme.colors.textGrayLighter
-                            : theme.colors.textMain,
+                    color: theme.colors.textMain,
                     borderRadius: theme.spacing.xs,
                 },
                 labelStyle: {
                     fontFamily: getFontFamily(false, 400),
                     fontSize: 13,
-                    color:
-                        theme.mode === 'dark'
-                            ? theme.colors.textGrayLighter
-                            : theme.colors.textGray,
+                    color: theme.colors.textGray,
                     marginBottom: theme.spacing.xs,
                 },
                 inputContainerStyle: {
                     backgroundColor:
                         theme.mode === 'dark'
-                            ? theme.colors.textMain
+                            ? theme.colors.layerGrayLightest
                             : theme.colors.layerGrayLighter,
                     borderBottomWidth: 0,
                 },

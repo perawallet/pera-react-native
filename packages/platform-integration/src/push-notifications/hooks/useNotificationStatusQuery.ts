@@ -32,7 +32,7 @@ export const useNotificationStatus = () => {
         queryKey: getNotificationStatusQueryKey(network, deviceID ?? ''),
         queryFn: () => fetchNotificationStatus(network, deviceID ?? ''),
         enabled: !!deviceID,
-        staleTime: config.notificationRefreshTime,
+        refetchInterval: config.notificationRefreshTime,
         select: useCallback((data: NotificationStatusResponse) => {
             return {
                 hasNewNotification: data.has_new_notification,

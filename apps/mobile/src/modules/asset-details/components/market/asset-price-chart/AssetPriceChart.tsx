@@ -15,7 +15,7 @@ import { LineChart } from 'react-native-gifted-charts'
 
 import PWView from '../../../../../components/common/view/PWView'
 import { HistoryPeriod } from '@perawallet/wallet-core-shared'
-import { Suspense, useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useTheme } from '@rneui/themed'
 import LoadingView from '../../../../../components/common/loading/LoadingView'
 import {
@@ -23,8 +23,8 @@ import {
     PeraAsset,
     useAssetPriceHistoryQuery,
 } from '@perawallet/wallet-core-assets'
-
-const FOCUS_DEBOUNCE_TIME = 200
+import EmptyView from '../../../../../components/common/empty-view/EmptyView'
+import { CHART_ANIMATION_DURATION, CHART_FOCUS_DEBOUNCE_TIME, CHART_HEIGHT } from '../../../../../constants/ui'
 
 type AssetPriceChartProps = {
     asset: PeraAsset
@@ -42,7 +42,7 @@ const AssetPriceChart = ({
     const [lastSentIndex, setLastSentIndex] = useState<number>()
     const [lastSentTime, setLastSentTime] = useState<number>(Date.now())
 
-    const { data } = useAssetPriceHistoryQuery(asset.assetId, period)
+    const { data, isPending } = useAssetPriceHistoryQuery(asset.assetId, period)
 
     const dataPoints = useMemo(
         () =>
@@ -74,7 +74,7 @@ const AssetPriceChart = ({
             pointerIndex: number
             pointerX: number
         }) => {
-            if (Date.now() - lastSentTime > FOCUS_DEBOUNCE_TIME) {
+            if (Date.now() - lastSentTime > CHART_FOCUS_DEBOUNCE_TIME) {
                 if (pointerX > 0 && index >= 0 && index !== lastSentIndex) {
                     const dataItem = data?.[index] ?? null
                     if (dataItem) {
@@ -97,20 +97,22 @@ const AssetPriceChart = ({
         ],
     )
 
+    if (isPending) {
+        return <LoadingView variant='circle' size='lg' />
+    }
+
+
     return (
-        <Suspense
-            fallback={
-                <LoadingView
-                    variant='circle'
-                    size='lg'
+        <PWView style={themeStyle.container}>
+            {!dataPoints?.length ?
+                <EmptyView
+                    title=''
+                    body='You will see a chart here once you have some balance history'
                 />
-            }
-        >
-            <PWView style={themeStyle.container}>
-                <LineChart
+                : (<LineChart
                     data={dataPoints}
                     hideAxesAndRules
-                    height={140}
+                    height={CHART_HEIGHT}
                     color={theme.colors.helperPositive}
                     startFillColor='#28A79B'
                     endFillColor='#28A79B'
@@ -126,13 +128,13 @@ const AssetPriceChart = ({
                     showStripOnFocus
                     showDataPointOnFocus
                     animateOnDataChange
-                    animationDuration={200}
-                    onDataChangeAnimationDuration={200}
+                    animationDuration={CHART_ANIMATION_DURATION}
+                    onDataChangeAnimationDuration={CHART_ANIMATION_DURATION}
                     pointerConfig={{
                         showPointerStrip: true,
                         pointerStripColor: theme.colors.textGrayLighter,
                         pointerStripWidth: 1,
-                        pointerStripHeight: 140,
+                        pointerStripHeight: CHART_HEIGHT,
                         pointerColor: theme.colors.helperPositive,
                         strokeDashArray: [6, 2],
                     }}
@@ -140,8 +142,8 @@ const AssetPriceChart = ({
                     disableScroll
                     adjustToWidth
                 />
-            </PWView>
-        </Suspense>
+                )}
+        </PWView>
     )
 }
 

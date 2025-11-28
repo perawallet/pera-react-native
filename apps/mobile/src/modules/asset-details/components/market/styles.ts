@@ -42,6 +42,7 @@ export const useStyles = () => {
 
         chartContainer: {
             marginTop: theme.spacing.xl,
+            gap: theme.spacing.md,
             marginBottom: theme.spacing.xl,
         },
         discoverButton: {
