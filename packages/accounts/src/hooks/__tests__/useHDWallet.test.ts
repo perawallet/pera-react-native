@@ -218,23 +218,31 @@ describe('services/accounts/useHDWallet', () => {
 
     test('generateMasterKey throws when bip39.mnemonicToSeed fails', async () => {
         vi.resetModules()
-        bip39Spies.mnemonicToSeed.mockRejectedValueOnce(new Error('Mnemonic to seed failed'))
+        bip39Spies.mnemonicToSeed.mockRejectedValueOnce(
+            new Error('Mnemonic to seed failed'),
+        )
 
         const { useHDWallet } = await import('../useHDWallet')
         const { result } = renderHook(() => useHDWallet())
 
-        await expect(result.current.generateMasterKey()).rejects.toThrow('Mnemonic to seed failed')
+        await expect(result.current.generateMasterKey()).rejects.toThrow(
+            'Mnemonic to seed failed',
+        )
     })
 
     test('generateMasterKey throws when bip39.mnemonicToEntropy fails', async () => {
         vi.resetModules()
         bip39Spies.mnemonicToSeed.mockResolvedValueOnce(Buffer.from('seed'))
-        bip39Spies.mnemonicToEntropy.mockRejectedValueOnce(new Error('Entropy conversion failed'))
+        bip39Spies.mnemonicToEntropy.mockRejectedValueOnce(
+            new Error('Entropy conversion failed'),
+        )
 
         const { useHDWallet } = await import('../useHDWallet')
         const { result } = renderHook(() => useHDWallet())
 
-        await expect(result.current.generateMasterKey()).rejects.toThrow('Entropy conversion failed')
+        await expect(result.current.generateMasterKey()).rejects.toThrow(
+            'Entropy conversion failed',
+        )
     })
 
     test('generateMasterKey accepts custom mnemonic', async () => {
@@ -247,36 +255,48 @@ describe('services/accounts/useHDWallet', () => {
 
         expect(bip39Spies.generateMnemonic).not.toHaveBeenCalled()
         expect(bip39Spies.mnemonicToSeed).toHaveBeenCalledWith(customMnemonic)
-        expect(bip39Spies.mnemonicToEntropy).toHaveBeenCalledWith(customMnemonic)
+        expect(bip39Spies.mnemonicToEntropy).toHaveBeenCalledWith(
+            customMnemonic,
+        )
     })
 
     test('deriveKey throws when api.deriveKey fails', async () => {
         vi.resetModules()
         const seed = Buffer.from('sync_seed')
-        apiSpies.deriveSpy.mockRejectedValueOnce(new Error('Key derivation failed'))
+        apiSpies.deriveSpy.mockRejectedValueOnce(
+            new Error('Key derivation failed'),
+        )
 
         const { useHDWallet } = await import('../useHDWallet')
         const { result } = renderHook(() => useHDWallet())
 
-        await expect(result.current.deriveKey({ seed })).rejects.toThrow('Key derivation failed')
+        await expect(result.current.deriveKey({ seed })).rejects.toThrow(
+            'Key derivation failed',
+        )
     })
 
     test('deriveKey throws when api.keyGen fails', async () => {
         vi.resetModules()
         const seed = Buffer.from('sync_seed')
         apiSpies.deriveSpy.mockResolvedValueOnce(new Uint8Array([1, 2, 3]))
-        apiSpies.keyGenSpy.mockRejectedValueOnce(new Error('Address generation failed'))
+        apiSpies.keyGenSpy.mockRejectedValueOnce(
+            new Error('Address generation failed'),
+        )
 
         const { useHDWallet } = await import('../useHDWallet')
         const { result } = renderHook(() => useHDWallet())
 
-        await expect(result.current.deriveKey({ seed })).rejects.toThrow('Address generation failed')
+        await expect(result.current.deriveKey({ seed })).rejects.toThrow(
+            'Address generation failed',
+        )
     })
 
     test('signTransaction throws when api.signAlgoTransaction fails', async () => {
         vi.resetModules()
         const seed = Buffer.from('sync_seed')
-        apiSpies.signTxnSpy.mockRejectedValueOnce(new Error('Transaction signing failed'))
+        apiSpies.signTxnSpy.mockRejectedValueOnce(
+            new Error('Transaction signing failed'),
+        )
 
         const { useHDWallet } = await import('../useHDWallet')
         const { result } = renderHook(() => useHDWallet())
@@ -289,13 +309,17 @@ describe('services/accounts/useHDWallet', () => {
         }
         const txn = Buffer.from('txn')
 
-        await expect(result.current.signTransaction(seed, hd, txn)).rejects.toThrow('Transaction signing failed')
+        await expect(
+            result.current.signTransaction(seed, hd, txn),
+        ).rejects.toThrow('Transaction signing failed')
     })
 
     test('signData throws when api.signData fails', async () => {
         vi.resetModules()
         const seed = Buffer.from('sync_seed')
-        apiSpies.signDataSpy.mockRejectedValueOnce(new Error('Data signing failed'))
+        apiSpies.signDataSpy.mockRejectedValueOnce(
+            new Error('Data signing failed'),
+        )
 
         const { useHDWallet } = await import('../useHDWallet')
         const { result } = renderHook(() => useHDWallet())
@@ -308,7 +332,9 @@ describe('services/accounts/useHDWallet', () => {
         }
         const payload = Buffer.from('data')
 
-        await expect(result.current.signData(seed, hd, payload)).rejects.toThrow('Data signing failed')
+        await expect(
+            result.current.signData(seed, hd, payload),
+        ).rejects.toThrow('Data signing failed')
     })
 
     test('entropyToMnemonic throws when bip39.entropyToMnemonic fails', async () => {
@@ -320,6 +346,8 @@ describe('services/accounts/useHDWallet', () => {
         const { useHDWallet } = await import('../useHDWallet')
         const { result } = renderHook(() => useHDWallet())
 
-        expect(() => result.current.entropyToMnemonic(Buffer.from('bad_entropy'))).toThrow('Invalid entropy')
+        expect(() =>
+            result.current.entropyToMnemonic(Buffer.from('bad_entropy')),
+        ).toThrow('Invalid entropy')
     })
 })

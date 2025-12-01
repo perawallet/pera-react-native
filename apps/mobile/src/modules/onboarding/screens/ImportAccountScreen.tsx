@@ -115,7 +115,7 @@ const ImportAccountScreen = () => {
                                                         h4
                                                         h4Style={
                                                             focused ===
-                                                                offsetIndex
+                                                            offsetIndex
                                                                 ? styles.focusedLabel
                                                                 : styles.label
                                                         }
@@ -128,7 +128,7 @@ const ImportAccountScreen = () => {
                                                         }
                                                         inputContainerStyle={
                                                             focused ===
-                                                                offsetIndex
+                                                            offsetIndex
                                                                 ? styles.focusedInputContainer
                                                                 : styles.inputContainer
                                                         }

@@ -63,7 +63,9 @@ const WealthTrend = ({ account, period }: WealthTrendProps) => {
 
         return [
             lastDp.minus(firstDp),
-            lastDp.isZero() ? Decimal(0) : lastDp.minus(firstDp).div(lastDp).mul(100),
+            lastDp.isZero()
+                ? Decimal(0)
+                : lastDp.minus(firstDp).div(lastDp).mul(100),
             lastDp.greaterThanOrEqualTo(firstDp),
         ]
     }, [dataPoints])

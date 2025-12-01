@@ -28,5 +28,5 @@ export const useStyles = makeStyles(theme => ({
     },
     emptyView: {
         minHeight: theme.spacing.xl * 6,
-    }
+    },
 }))

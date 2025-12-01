@@ -10,15 +10,4 @@
  limitations under the License
  */
 
-module.exports = {
-  root: true,
-  extends: '@react-native',
-  overrides: [
-    {
-      // Test files only
-      files: ['**/__tests__/**/*.[jt]s?(x)', '**/?(*.)+(spec|test).[jt]s?(x)'],
-      extends: ['plugin:testing-library/react'],
-    }
-  ],
-  ignorePatterns: ['coverage/*']
-};
+export * from '../src/index'

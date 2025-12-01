@@ -25,13 +25,16 @@ catalog:
   algosdk: ^3.5.2
   bip39: ^3.1.0
   decimal.js: ^10.6.0
-  eslint: ^8.57.1
+  eslint: 9.39.1
+  eslint-plugin-unused-imports: 4.3.0
+  globals: 15.15.0
   prettier: 3.6.2
   react: 19.1.0
   react-dom: 19.1.0
   reflect-metadata: 0.2.2
   tsyringe: 4.10.0
   typescript: ^5.9.3
+  typescript-eslint: 8.48.0
   util: ^0.12.5
   uuid: 13.0.0
   vite: ^7.2.2

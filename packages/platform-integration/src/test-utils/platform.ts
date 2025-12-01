@@ -47,11 +47,11 @@ export const buildTestPlatform = (
     }
 
     const defaultSecure: SecureStorageService = {
-        async setItem(_k: string, _v: Buffer) {},
-        async getItem(_k: string) {
+        async setItem(_: string, __: Buffer) {},
+        async getItem(_: string) {
             return null
         },
-        async removeItem(_k: string) {},
+        async removeItem(_: string) {},
         async authenticate() {
             return true
         },
@@ -59,13 +59,13 @@ export const buildTestPlatform = (
 
     const defaultRemote: RemoteConfigService = {
         initializeRemoteConfig() {},
-        getStringValue(_k, f) {
+        getStringValue(_, f) {
             return f ?? ''
         },
-        getBooleanValue(_k, f) {
+        getBooleanValue(_, f) {
             return f ?? false
         },
-        getNumberValue(_k, f) {
+        getNumberValue(_, f) {
             return f ?? 0
         },
     }
@@ -78,7 +78,7 @@ export const buildTestPlatform = (
 
     const defaultCrash: CrashReportingService = {
         initializeCrashReporting() {},
-        recordNonFatalError(_e: unknown) {},
+        recordNonFatalError(_: unknown) {},
     }
 
     const deviceInfo: DeviceInfoService = {

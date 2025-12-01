@@ -17,7 +17,9 @@ export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
     const darkMode = theme.mode === 'dark'
     return {
         drawer: {
-            backgroundColor: darkMode ? theme.colors.layerGrayLightest : theme.colors.background,
+            backgroundColor: darkMode
+                ? theme.colors.layerGrayLightest
+                : theme.colors.background,
             width: '90%',
         },
         iconBar: {

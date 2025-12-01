@@ -38,8 +38,7 @@
     "zustand": "catalog:"
   },
   "devDependencies": {
-    "@perawallet/wallet-core-eslint-config": "workspace:*",
-    "@perawallet/wallet-core-typescript-config": "workspace:*",
+    "@perawallet/wallet-core-devtools": "workspace:*",
     "@testing-library/react": "^16.3.0",
     "@types/react": "catalog:",
     "@vitejs/plugin-react": "catalog:",
@@ -53,7 +52,9 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "^4.5.4",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "globals": "catalog:",
+    "typescript-eslint": "catalog:"
   },
   "packageManager": "pnpm@10.15.1"
 }

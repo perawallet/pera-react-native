@@ -52,7 +52,7 @@ const PWButton = (props: PWButtonProps) => {
                     variant={iconVariant}
                     size={
                         props.paddingStyle === 'dense' ||
-                            props.paddingStyle === 'none'
+                        props.paddingStyle === 'none'
                             ? 'sm'
                             : 'md'
                     }

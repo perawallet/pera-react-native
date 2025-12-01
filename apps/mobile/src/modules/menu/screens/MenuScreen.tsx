@@ -89,21 +89,21 @@ const MenuScreen = () => {
                     titleWeight='h3'
                     leftIcon='card-stack'
                     rightIcon='chevron-right'
-                    onPress={() => { }}
+                    onPress={() => {}}
                 />
                 <PanelButton
                     title='Buy Gift Card'
                     titleWeight='h3'
                     leftIcon='gift'
                     rightIcon='chevron-right'
-                    onPress={() => { }}
+                    onPress={() => {}}
                 />
                 <PanelButton
                     title='Receive'
                     titleWeight='h3'
                     leftIcon='inflow'
                     rightIcon='chevron-right'
-                    onPress={() => { }}
+                    onPress={() => {}}
                 />
                 <PanelButton
                     title='Contacts'

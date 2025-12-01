@@ -48,7 +48,7 @@ pnpm -C apps/mobile start|ios|android
 ## Workspace layout
 
 - apps/mobile — React Native app scaffold and screens
-- packages/* - headless libraries containing all the business logic & state management for a wallet app
+- packages/\* - headless libraries containing all the business logic & state management for a wallet app
 - packages/eslint-config — shared ESLint rules
 - packages/typescript-config — shared tsconfig bases
 - packages/xhdwallet — HD wallet crypto helpers (this is a modified version of @algorandfoundation/xhd-wallet-api which isn't babel friendly)
@@ -91,8 +91,8 @@ pnpm format         # format files
 
 ## Development patterns
 
-- Do not call backends directly in the app; use generated React Query hooks from one of the wallet-core packages.  Ideally even wrap these in further hooks that perform as services doing state updates, etc.
-- Do not expose the zustand store directly to the app.  Use hooks/services to update/expose state.
+- Do not call backends directly in the app; use generated React Query hooks from one of the wallet-core packages. Ideally even wrap these in further hooks that perform as services doing state updates, etc.
+- Do not expose the zustand store directly to the app. Use hooks/services to update/expose state.
 - Keep cross-platform logic in wallet-core; keep native/platform glue and UI in the app.
 - Follow shared lint/format; run CI-equivalent locally via the commands above.
 

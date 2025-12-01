@@ -1,10 +1,28 @@
-import { RefObject, useCallback, useLayoutEffect, useMemo, useState } from "react"
-import PWView from "../common/view/PWView"
-import { useStyles } from "./styles"
-import PWIcon from "../common/icons/PWIcon"
-import WebView from "react-native-webview"
-import { WebViewNativeEvent } from "react-native-webview/lib/RNCWebViewNativeComponent"
-import { debugLog } from "@perawallet/wallet-core-shared"
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import {
+    RefObject,
+    useCallback,
+    useLayoutEffect,
+    useMemo,
+    useState,
+} from 'react'
+import PWView from '../common/view/PWView'
+import { useStyles } from './styles'
+import PWIcon from '../common/icons/PWIcon'
+import WebView from 'react-native-webview'
+import { WebViewNativeEvent } from 'react-native-webview/lib/RNCWebViewNativeComponent'
+import { debugLog } from '@perawallet/wallet-core-shared'
 
 type WebViewFooterBarProps = {
     webview: RefObject<WebView<{}> | null>
@@ -12,7 +30,11 @@ type WebViewFooterBarProps = {
     navigationState?: WebViewNativeEvent
 }
 
-const WebViewFooterBar = ({ webview, homeUrl, navigationState }: WebViewFooterBarProps) => {
+const WebViewFooterBar = ({
+    webview,
+    homeUrl,
+    navigationState,
+}: WebViewFooterBarProps) => {
     const styles = useStyles()
     const [returningHome, setReturningHome] = useState(false)
 
@@ -20,7 +42,7 @@ const WebViewFooterBar = ({ webview, homeUrl, navigationState }: WebViewFooterBa
         return !navigationState || navigationState.url === homeUrl
     }, [navigationState, homeUrl])
 
-    //HACK: this is a little messy - there's no way seemingly to navigate directly to a URL, so we just 
+    //HACK: this is a little messy - there's no way seemingly to navigate directly to a URL, so we just
     //go back all the way through the history
     useLayoutEffect(() => {
         if (returningHome) {

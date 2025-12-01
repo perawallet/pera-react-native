@@ -36,7 +36,11 @@ type AccountAssetListProps = {
 } & PropsWithChildren
 
 //TODO implement links and buttons
-const AccountAssetList = ({ account, children, scrollEnabled }: AccountAssetListProps) => {
+const AccountAssetList = ({
+    account,
+    children,
+    scrollEnabled,
+}: AccountAssetListProps) => {
     const styles = useStyles()
     const { accountBalances, isPending } = useAccountBalancesQuery([account])
     const balanceData = useMemo(
@@ -47,7 +51,7 @@ const AccountAssetList = ({ account, children, scrollEnabled }: AccountAssetList
 
     const goToAssetScreen = (asset: AssetWithAccountBalance) => {
         navigation.navigate('AssetDetails', {
-            assetId: asset.assetId
+            assetId: asset.assetId,
         })
     }
 
@@ -97,8 +101,25 @@ const AccountAssetList = ({ account, children, scrollEnabled }: AccountAssetList
                     <SearchInput placeholder='Search assets' />
                 </PWView>
             }
-            ListEmptyComponent={<EmptyView title='No Assets' body='You have no assets linked to this account' />}
-            ListFooterComponent={isPending ? <PWView style={styles.footer}><LoadingView variant='skeleton' size='sm' count={3} /></PWView> : <PWView style={styles.footer} />}
+            ListEmptyComponent={
+                <EmptyView
+                    title='No Assets'
+                    body='You have no assets linked to this account'
+                />
+            }
+            ListFooterComponent={
+                isPending ? (
+                    <PWView style={styles.footer}>
+                        <LoadingView
+                            variant='skeleton'
+                            size='sm'
+                            count={3}
+                        />
+                    </PWView>
+                ) : (
+                    <PWView style={styles.footer} />
+                )
+            }
         />
     )
 }

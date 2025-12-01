@@ -1,8 +1,23 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useCreateAccount } from '../useCreateAccount'
 import { useAccountsStore } from '../../store'
-import { registerTestPlatform, MemoryKeyValueStorage } from '@perawallet/wallet-core-platform-integration'
+import {
+    registerTestPlatform,
+    MemoryKeyValueStorage,
+} from '@perawallet/wallet-core-platform-integration'
 
 // Mocks
 const uuidSpies = vi.hoisted(() => ({ v7: vi.fn() }))
@@ -38,15 +53,21 @@ const bip39Spies = vi.hoisted(() => ({
 vi.mock('bip39', () => bip39Spies)
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
-    const actual = await vi.importActual<typeof import('@perawallet/wallet-core-shared')>('@perawallet/wallet-core-shared')
+    const actual = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared')
+    >('@perawallet/wallet-core-shared')
     return {
         ...actual,
-        encodeAlgorandAddress: vi.fn((address: Uint8Array) => Buffer.from(address).toString('base64')),
+        encodeAlgorandAddress: vi.fn((address: Uint8Array) =>
+            Buffer.from(address).toString('base64'),
+        ),
     }
 })
 
 vi.mock('@perawallet/wallet-core-platform-integration', async () => {
-    const actual = await vi.importActual<typeof import('@perawallet/wallet-core-platform-integration')>('@perawallet/wallet-core-platform-integration')
+    const actual = await vi.importActual<
+        typeof import('@perawallet/wallet-core-platform-integration')
+    >('@perawallet/wallet-core-platform-integration')
     return {
         ...actual,
         useKeyValueStorageService: vi.fn().mockReturnValue({
@@ -54,7 +75,9 @@ vi.mock('@perawallet/wallet-core-platform-integration', async () => {
             setItem: vi.fn(),
             removeItem: vi.fn(),
         }),
-        useUpdateDeviceMutation: vi.fn(() => ({ mutateAsync: vi.fn(async () => ({})) })),
+        useUpdateDeviceMutation: vi.fn(() => ({
+            mutateAsync: vi.fn(async () => ({})),
+        })),
         useNetwork: vi.fn(() => ({ network: 'mainnet' })),
         useDeviceID: vi.fn(() => 'device-id'),
     }
@@ -67,7 +90,8 @@ vi.mock('../../../api/generated/backend', () => ({
 }))
 
 vi.mock('../../store', async () => {
-    const actual = await vi.importActual<typeof import('../../store')>('../../store')
+    const actual =
+        await vi.importActual<typeof import('../../store')>('../../store')
     const mockStorage = {
         getItem: vi.fn(),
         setItem: vi.fn(),
@@ -87,9 +111,9 @@ describe('useCreateAccount', () => {
 
     test('creates account and persists keys', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -121,16 +145,22 @@ describe('useCreateAccount', () => {
         })
         expect(created.address).toBeTruthy()
 
-        expect(dummySecure.setItem).toHaveBeenCalledWith('rootkey-WALLET1', expect.any(Buffer))
-        expect(dummySecure.setItem).toHaveBeenCalledWith('pk-KEY1', expect.any(Buffer))
+        expect(dummySecure.setItem).toHaveBeenCalledWith(
+            'rootkey-WALLET1',
+            expect.any(Buffer),
+        )
+        expect(dummySecure.setItem).toHaveBeenCalledWith(
+            'pk-KEY1',
+            expect.any(Buffer),
+        )
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
     })
 
     test('throws error when deriveKey fails', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -147,15 +177,19 @@ describe('useCreateAccount', () => {
         const { result } = renderHook(() => useCreateAccount())
 
         await act(async () => {
-            await expect(result.current({ account: 0, keyIndex: 0 })).rejects.toThrow('Derivation failed')
+            await expect(
+                result.current({ account: 0, keyIndex: 0 }),
+            ).rejects.toThrow('Derivation failed')
         })
     })
 
     test('throws error when master key has no seed', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
-            getItem: vi.fn(async () => Buffer.from(JSON.stringify({ entropy: 'test' }))), // No seed property
-            removeItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
+            getItem: vi.fn(async () =>
+                Buffer.from(JSON.stringify({ entropy: 'test' })),
+            ), // No seed property
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -169,17 +203,20 @@ describe('useCreateAccount', () => {
         const { result } = renderHook(() => useCreateAccount())
 
         await act(async () => {
-            await expect(result.current({ account: 0, keyIndex: 0 })).rejects.toThrow('No key found for WALLET1')
+            await expect(
+                result.current({ account: 0, keyIndex: 0 }),
+            ).rejects.toThrow('No key found for WALLET1')
         })
     })
 
     test('throws error when secure storage setItem fails for private key', async () => {
         const dummySecure = {
-            setItem: vi.fn()
+            setItem: vi
+                .fn()
                 .mockResolvedValueOnce(undefined) // First call for root key succeeds
                 .mockRejectedValueOnce(new Error('Storage full')), // Second call for private key fails
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -200,15 +237,17 @@ describe('useCreateAccount', () => {
         const { result } = renderHook(() => useCreateAccount())
 
         await act(async () => {
-            await expect(result.current({ account: 0, keyIndex: 0 })).rejects.toThrow('Storage full')
+            await expect(
+                result.current({ account: 0, keyIndex: 0 }),
+            ).rejects.toThrow('Storage full')
         })
     })
 
     test('throws error when generateMasterKey fails', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -218,26 +257,34 @@ describe('useCreateAccount', () => {
         })
 
         // Make generateMasterKey throw
-        bip39Spies.mnemonicToSeed.mockRejectedValueOnce(new Error('Failed to generate master key'))
+        bip39Spies.mnemonicToSeed.mockRejectedValueOnce(
+            new Error('Failed to generate master key'),
+        )
 
         uuidSpies.v7.mockImplementationOnce(() => 'WALLET1')
 
         const { result } = renderHook(() => useCreateAccount())
 
         await act(async () => {
-            await expect(result.current({ account: 0, keyIndex: 0 })).rejects.toThrow('Failed to generate master key')
+            await expect(
+                result.current({ account: 0, keyIndex: 0 }),
+            ).rejects.toThrow('Failed to generate master key')
         })
     })
 
     test('creates account with existing master key', async () => {
         const existingSeed = Buffer.from('existing_seed').toString('base64')
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
-            getItem: vi.fn(async () => Buffer.from(JSON.stringify({
-                seed: existingSeed,
-                entropy: 'existing_entropy'
-            }))),
-            removeItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
+            getItem: vi.fn(async () =>
+                Buffer.from(
+                    JSON.stringify({
+                        seed: existingSeed,
+                        entropy: 'existing_entropy',
+                    }),
+                ),
+            ),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -259,13 +306,20 @@ describe('useCreateAccount', () => {
 
         let created: any
         await act(async () => {
-            created = await result.current({ walletId: 'EXISTING_WALLET', account: 0, keyIndex: 0 })
+            created = await result.current({
+                walletId: 'EXISTING_WALLET',
+                account: 0,
+                keyIndex: 0,
+            })
         })
 
         expect(created).toBeTruthy()
         expect(created.hdWalletDetails?.walletId).toBe('EXISTING_WALLET')
         // Should not call setItem for root key since it already exists
         expect(dummySecure.setItem).toHaveBeenCalledTimes(1) // Only for private key
-        expect(dummySecure.setItem).toHaveBeenCalledWith('pk-KEY1', expect.any(Buffer))
+        expect(dummySecure.setItem).toHaveBeenCalledWith(
+            'pk-KEY1',
+            expect.any(Buffer),
+        )
     })
 })

@@ -12,9 +12,7 @@
 
 import { renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
-import {
-    useAccountsAssetsBalanceHistoryQuery,
-} from '../useAccountsAssetBalanceHistoryQuery'
+import { useAccountsAssetsBalanceHistoryQuery } from '../useAccountsAssetBalanceHistoryQuery'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import Decimal from 'decimal.js'
@@ -54,7 +52,11 @@ const createWrapper = () => {
         },
     })
     return ({ children }: { children: React.ReactNode }) =>
-        React.createElement(QueryClientProvider, { client: queryClient }, children)
+        React.createElement(
+            QueryClientProvider,
+            { client: queryClient },
+            children,
+        )
 }
 
 describe('useAccountsAssetsBalanceHistoryQuery', () => {
@@ -68,7 +70,9 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        mockUsdToPreferred.mockImplementation((amount: Decimal) => amount.mul(2))
+        mockUsdToPreferred.mockImplementation((amount: Decimal) =>
+            amount.mul(2),
+        )
     })
 
     describe('hook behavior', () => {
@@ -92,8 +96,13 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
             mocks.fetchAccountAssetBalanceHistory.mockResolvedValue(mockData)
 
             const { result } = renderHook(
-                () => useAccountsAssetsBalanceHistoryQuery(mockAccount, '456', 'one-week'),
-                { wrapper: createWrapper() }
+                () =>
+                    useAccountsAssetsBalanceHistoryQuery(
+                        mockAccount,
+                        '456',
+                        'one-week',
+                    ),
+                { wrapper: createWrapper() },
             )
 
             await waitFor(() => expect(result.current.isSuccess).toBe(true))
@@ -127,8 +136,13 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
             mocks.fetchAccountAssetBalanceHistory.mockResolvedValue(mockData)
 
             const { result } = renderHook(
-                () => useAccountsAssetsBalanceHistoryQuery(mockAccount, '789', 'one-month'),
-                { wrapper: createWrapper() }
+                () =>
+                    useAccountsAssetsBalanceHistoryQuery(
+                        mockAccount,
+                        '789',
+                        'one-month',
+                    ),
+                { wrapper: createWrapper() },
             )
 
             await waitFor(() => expect(result.current.isSuccess).toBe(true))
@@ -142,22 +156,36 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
         })
 
         it('handles loading state', () => {
-            mocks.fetchAccountAssetBalanceHistory.mockReturnValue(new Promise(() => { }))
+            mocks.fetchAccountAssetBalanceHistory.mockReturnValue(
+                new Promise(() => {}),
+            )
 
             const { result } = renderHook(
-                () => useAccountsAssetsBalanceHistoryQuery(mockAccount, '123', 'one-year'),
-                { wrapper: createWrapper() }
+                () =>
+                    useAccountsAssetsBalanceHistoryQuery(
+                        mockAccount,
+                        '123',
+                        'one-year',
+                    ),
+                { wrapper: createWrapper() },
             )
 
             expect(result.current.isPending).toBe(true)
         })
 
         it('handles error state', async () => {
-            mocks.fetchAccountAssetBalanceHistory.mockRejectedValue(new Error('API Error'))
+            mocks.fetchAccountAssetBalanceHistory.mockRejectedValue(
+                new Error('API Error'),
+            )
 
             const { result } = renderHook(
-                () => useAccountsAssetsBalanceHistoryQuery(mockAccount, '123', 'one-year'),
-                { wrapper: createWrapper() }
+                () =>
+                    useAccountsAssetsBalanceHistoryQuery(
+                        mockAccount,
+                        '123',
+                        'one-year',
+                    ),
+                { wrapper: createWrapper() },
             )
 
             await waitFor(() => expect(result.current.isError).toBe(true))
@@ -165,21 +193,32 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
         })
 
         it('calls endpoint with correct parameters', async () => {
-            mocks.fetchAccountAssetBalanceHistory.mockResolvedValue({ results: [] })
+            mocks.fetchAccountAssetBalanceHistory.mockResolvedValue({
+                results: [],
+            })
 
             renderHook(
-                () => useAccountsAssetsBalanceHistoryQuery(mockAccount, '999', 'one-day'),
-                { wrapper: createWrapper() }
+                () =>
+                    useAccountsAssetsBalanceHistoryQuery(
+                        mockAccount,
+                        '999',
+                        'one-day',
+                    ),
+                { wrapper: createWrapper() },
             )
 
-            await waitFor(() => expect(mocks.fetchAccountAssetBalanceHistory).toHaveBeenCalled())
+            await waitFor(() =>
+                expect(
+                    mocks.fetchAccountAssetBalanceHistory,
+                ).toHaveBeenCalled(),
+            )
 
             expect(mocks.fetchAccountAssetBalanceHistory).toHaveBeenCalledWith(
                 'TEST_ADDRESS_123',
                 '999',
                 'one-day',
                 'USD',
-                'mainnet'
+                'mainnet',
             )
         })
     })

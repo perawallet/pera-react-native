@@ -9,10 +9,17 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
+
 import { useDeviceInfoService } from '@perawallet/wallet-core-platform-integration'
 import { config } from '@perawallet/wallet-core-config'
 import { useTheme } from '@rneui/themed'
-import React, { useCallback, useContext, useMemo, useRef, useState } from 'react'
+import React, {
+    useCallback,
+    useContext,
+    useMemo,
+    useRef,
+    useState,
+} from 'react'
 import {
     WebView,
     WebViewMessageEvent,
@@ -58,7 +65,13 @@ const updateTheme = (mode: 'light' | 'dark') => {
 
 const PWWebView = (props: PWWebViewProps) => {
     const styles = useStyles(props)
-    const { url, enablePeraConnect, requestId, showControls = false, ...rest } = props
+    const {
+        url,
+        enablePeraConnect,
+        requestId,
+        showControls = false,
+        ...rest
+    } = props
     const { removeWebView } = useContext(WebViewContext)
     const { theme } = useTheme()
     const webview = useRef<WebView>(null)
@@ -69,9 +82,11 @@ const PWWebView = (props: PWWebViewProps) => {
 
     const isSecure = useMemo(() => {
         // TODO: We ultimately want to replace this with a more SRI style method
-        return url.startsWith(config.onrampBaseUrl)
-            || url.startsWith(config.discoverBaseUrl)
-            || url.startsWith(config.stakingBaseUrl)
+        return (
+            url.startsWith(config.onrampBaseUrl) ||
+            url.startsWith(config.discoverBaseUrl) ||
+            url.startsWith(config.stakingBaseUrl)
+        )
     }, [url])
 
     const deviceInfo = useDeviceInfoService()
@@ -80,7 +95,6 @@ const PWWebView = (props: PWWebViewProps) => {
         return `${deviceInfo.getUserAgent()}`
     }, [deviceInfo])
 
-
     const onCloseRequested = useCallback(() => {
         if (!requestId) {
             return
@@ -88,11 +102,18 @@ const PWWebView = (props: PWWebViewProps) => {
         removeWebView(requestId)
     }, [removeWebView, requestId])
 
-    const mobileInterface = usePeraWebviewInterface(webview.current, isSecure, onCloseRequested)
+    const mobileInterface = usePeraWebviewInterface(
+        webview.current,
+        isSecure,
+        onCloseRequested,
+    )
 
     const handleEvent = useCallback(
         (event: WebViewMessageEvent) => {
-            debugLog('WebView: Received onMessage event', event.nativeEvent.data)
+            debugLog(
+                'WebView: Received onMessage event',
+                event.nativeEvent.data,
+            )
 
             const dataString = event.nativeEvent.data
             if (!dataString) {
@@ -109,13 +130,16 @@ const PWWebView = (props: PWWebViewProps) => {
         [showToast, mobileInterface],
     )
 
-    const navigationStateChange = useCallback((navState: WebViewNativeEvent) => {
-        debugLog('WebView: Navigation state change', navState)
-        setNavigationState(navState)
-    }, [])
+    const navigationStateChange = useCallback(
+        (navState: WebViewNativeEvent) => {
+            debugLog('WebView: Navigation state change', navState)
+            setNavigationState(navState)
+        },
+        [],
+    )
 
     const verifyLoad = useCallback((event: WebViewNavigationEvent) => {
-        debugLog('WebView: Loading', event.nativeEvent.url, "secure:", isSecure)
+        debugLog('WebView: Loading', event.nativeEvent.url, 'secure:', isSecure)
     }, [])
 
     const loadCompleted = useCallback((event: WebViewNavigationEvent) => {
@@ -164,7 +188,14 @@ const PWWebView = (props: PWWebViewProps) => {
 
     return (
         <PWView style={styles.flex}>
-            {showControls && <WebViewTitleBar onCloseRequested={onCloseRequested} onReload={reload} title={title} url={url} />}
+            {showControls && (
+                <WebViewTitleBar
+                    onCloseRequested={onCloseRequested}
+                    onReload={reload}
+                    title={title}
+                    url={url}
+                />
+            )}
             <WebView
                 ref={webview}
                 {...rest}
@@ -174,7 +205,10 @@ const PWWebView = (props: PWWebViewProps) => {
                 style={styles.webview}
                 renderLoading={() => (
                     <PWView style={StyleSheet.absoluteFillObject}>
-                        <LoadingView variant='circle' size='lg' />
+                        <LoadingView
+                            variant='circle'
+                            size='lg'
+                        />
                     </PWView>
                 )}
                 renderError={() => {
@@ -213,7 +247,13 @@ const PWWebView = (props: PWWebViewProps) => {
                 textInteractionEnabled={false}
                 onNavigationStateChange={navigationStateChange}
             />
-            {showControls && <WebViewFooterBar webview={webview} homeUrl={url} navigationState={navigationState} />}
+            {showControls && (
+                <WebViewFooterBar
+                    webview={webview}
+                    homeUrl={url}
+                    navigationState={navigationState}
+                />
+            )}
         </PWView>
     )
 }

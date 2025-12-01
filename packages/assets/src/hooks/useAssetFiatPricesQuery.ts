@@ -25,28 +25,34 @@ export const useAssetFiatPricesQuery = (enabled?: boolean) => {
     const { usdToPreferred } = useCurrency()
 
     const queriesDefinitions = useMemo(() => {
-        const chunks = partition(assetIDs.filter(id => id !== ALGO_ASSET_ID), DEFAULT_PAGE_SIZE)
+        const chunks = partition(
+            assetIDs.filter(id => id !== ALGO_ASSET_ID),
+            DEFAULT_PAGE_SIZE,
+        )
 
-        return [...chunks.map(chunk => {
-            return {
-                queryKey: getAssetFiatPricesQueryKey(chunk),
-                enabled: enabled ?? true,
-                queryFn: async () => fetchAssetFiatPrices(chunk),
-            }
-        }),
-        {
-            queryKey: getAssetFiatPricesQueryKey([ALGO_ASSET_ID]),
-            enabled: enabled ?? true,
-            queryFn: async () => fetchPublicAssetDetails(ALGO_ASSET_ID),
-            select: (data: PublicAssetResponse) => {
+        return [
+            ...chunks.map(chunk => {
                 return {
-                    results: [{
-                        asset_id: ALGO_ASSET_ID,
-                        usd_value: data.usd_value ?? '0',
-                    }],
+                    queryKey: getAssetFiatPricesQueryKey(chunk),
+                    enabled: enabled ?? true,
+                    queryFn: async () => fetchAssetFiatPrices(chunk),
                 }
-            }
-        }
+            }),
+            {
+                queryKey: getAssetFiatPricesQueryKey([ALGO_ASSET_ID]),
+                enabled: enabled ?? true,
+                queryFn: async () => fetchPublicAssetDetails(ALGO_ASSET_ID),
+                select: (data: PublicAssetResponse) => {
+                    return {
+                        results: [
+                            {
+                                asset_id: ALGO_ASSET_ID,
+                                usd_value: data.usd_value ?? '0',
+                            },
+                        ],
+                    }
+                },
+            },
         ]
     }, [assetIDs, enabled])
 

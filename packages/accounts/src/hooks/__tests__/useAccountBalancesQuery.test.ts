@@ -12,7 +12,10 @@
 
 import { renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
-import { useAccountBalancesQuery, useAccountAssetBalanceQuery } from '../useAccountBalancesQuery'
+import {
+    useAccountBalancesQuery,
+    useAccountAssetBalanceQuery,
+} from '../useAccountBalancesQuery'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import Decimal from 'decimal.js'
@@ -142,7 +145,7 @@ describe('useAccountBalances', () => {
             canSign: true,
         }
 
-        mockFetchAccountBalances.mockReturnValue(new Promise(() => { }))
+        mockFetchAccountBalances.mockReturnValue(new Promise(() => {}))
 
         const { result } = renderHook(
             () => useAccountBalancesQuery([account]),
@@ -194,26 +197,24 @@ describe('useAccountBalances', () => {
         mockAssetPrices.set('456', { fiatPrice: Decimal(10) }) // Token at $10
         mockAssetPrices.set('789', { fiatPrice: Decimal(0.5) }) // Token at $0.50
 
-        mockFetchAccountBalances.mockResolvedValue(
-            {
-                address: 'ADDR1',
-                amount: 5000000, // 5 ALGO (decimals: 6)
-                assets: [
-                    {
-                        'asset-id': 456,
-                        amount: 1000, // 10.00 tokens (decimals: 2)
-                    },
-                    {
-                        'asset-id': 789,
-                        amount: 2000000, // 2.0 tokens (decimals: 6)
-                    },
-                ],
-            }
-        )
+        mockFetchAccountBalances.mockResolvedValue({
+            address: 'ADDR1',
+            amount: 5000000, // 5 ALGO (decimals: 6)
+            assets: [
+                {
+                    'asset-id': 456,
+                    amount: 1000, // 10.00 tokens (decimals: 2)
+                },
+                {
+                    'asset-id': 789,
+                    amount: 2000000, // 2.0 tokens (decimals: 6)
+                },
+            ],
+        })
 
         const { result } = renderHook(
             () => useAccountBalancesQuery([account]),
-            { wrapper: createWrapper() }
+            { wrapper: createWrapper() },
         )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
@@ -222,17 +223,23 @@ describe('useAccountBalances', () => {
         expect(accountData).toBeDefined()
 
         // Check that both asset balances were calculated
-        const asset456 = accountData?.assetBalances.find(b => b.assetId === '456')
+        const asset456 = accountData?.assetBalances.find(
+            b => b.assetId === '456',
+        )
         console.log('asset456', accountData)
         expect(asset456).toBeDefined()
         expect(asset456?.amount).toEqual(Decimal(10)) // 1000 / 10^2
 
-        const asset789 = accountData?.assetBalances.find(b => b.assetId === '789')
+        const asset789 = accountData?.assetBalances.find(
+            b => b.assetId === '789',
+        )
         expect(asset789).toBeDefined()
         expect(asset789?.amount).toEqual(Decimal(2)) // 2000000 / 10^6
 
         // Check ALGO balance was added
-        const algoBalance = accountData?.assetBalances.find(b => b.assetId === '0')
+        const algoBalance = accountData?.assetBalances.find(
+            b => b.assetId === '0',
+        )
         expect(algoBalance).toBeDefined()
         expect(algoBalance?.amount).toEqual(Decimal(5)) // 5000000 / 10^6
     })
@@ -246,7 +253,11 @@ describe('useAccountBalances', () => {
             canSign: true,
         }
 
-        mockAssets.set('999', { id: '999', decimals: 0, name: 'No Price Token' })
+        mockAssets.set('999', {
+            id: '999',
+            decimals: 0,
+            name: 'No Price Token',
+        })
         mockAssetPrices.set('0', { fiatPrice: Decimal(1) })
         // No price for asset 999, should default to 0
 
@@ -263,13 +274,15 @@ describe('useAccountBalances', () => {
 
         const { result } = renderHook(
             () => useAccountBalancesQuery([account]),
-            { wrapper: createWrapper() }
+            { wrapper: createWrapper() },
         )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
         const accountData = result.current.accountBalances.get('ADDR1')
-        const asset999 = accountData?.assetBalances.find(b => b.assetId === '999')
+        const asset999 = accountData?.assetBalances.find(
+            b => b.assetId === '999',
+        )
 
         expect(asset999).toBeDefined()
         expect(asset999?.amount).toEqual(Decimal(100)) // decimals: 0
@@ -299,28 +312,30 @@ describe('useAccountAssetBalanceQuery', () => {
         mockAssetPrices.set('123', { fiatPrice: Decimal(5) })
 
         mockFetchAccountBalances.mockResolvedValue({
-            results: [{
-                address: 'ADDR1',
-                data: {
+            results: [
+                {
                     address: 'ADDR1',
-                    amount: 1000000,
-                    assets: [
-                        {
-                            'asset-id': 123,
-                            amount: 50000, // 5.0000 tokens
-                        },
-                        {
-                            'asset-id': 456,
-                            amount: 10000, // Different asset
-                        },
-                    ],
+                    data: {
+                        address: 'ADDR1',
+                        amount: 1000000,
+                        assets: [
+                            {
+                                'asset-id': 123,
+                                amount: 50000, // 5.0000 tokens
+                            },
+                            {
+                                'asset-id': 456,
+                                amount: 10000, // Different asset
+                            },
+                        ],
+                    },
                 },
-            }],
+            ],
         })
 
         const { result } = renderHook(
             () => useAccountAssetBalanceQuery(account, '123'),
-            { wrapper: createWrapper() }
+            { wrapper: createWrapper() },
         )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
@@ -345,19 +360,21 @@ describe('useAccountAssetBalanceQuery', () => {
         mockAssetPrices.set('0', { fiatPrice: Decimal(1) })
 
         mockFetchAccountBalances.mockResolvedValue({
-            results: [{
-                address: 'ADDR1',
-                data: {
+            results: [
+                {
                     address: 'ADDR1',
-                    amount: 1000000,
-                    assets: [],
+                    data: {
+                        address: 'ADDR1',
+                        amount: 1000000,
+                        assets: [],
+                    },
                 },
-            }],
+            ],
         })
 
         const { result } = renderHook(
             () => useAccountAssetBalanceQuery(account, '123'), // Looking for non-existent asset
-            { wrapper: createWrapper() }
+            { wrapper: createWrapper() },
         )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
@@ -368,7 +385,7 @@ describe('useAccountAssetBalanceQuery', () => {
     it('does not query when account is undefined', () => {
         const { result } = renderHook(
             () => useAccountAssetBalanceQuery(undefined, '123'),
-            { wrapper: createWrapper() }
+            { wrapper: createWrapper() },
         )
 
         expect(result.current.isPending).toBe(false)

@@ -30,10 +30,12 @@ export const PeraAssetType = {
 
 export type PeraAssetType = (typeof PeraAssetType)[keyof typeof PeraAssetType]
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export type PeraCollectible = {
     //TODO: Add collectible type
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export type PeraAssetLabel = {
     //TODO: Add asset label type
 }

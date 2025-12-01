@@ -29,8 +29,14 @@ const NotificationsScreen = () => {
         return <NotificationItem item={info.item} />
     }
 
-    const { data, isPending, fetchNextPage, isFetchingNextPage, isRefetching, refetch } =
-        useNotificationsList()
+    const {
+        data,
+        isPending,
+        fetchNextPage,
+        isFetchingNextPage,
+        isRefetching,
+        refetch,
+    } = useNotificationsList()
 
     const loadMoreItems = async () => {
         await fetchNextPage()
@@ -39,7 +45,11 @@ const NotificationsScreen = () => {
     return (
         <MainScreenLayout>
             {isPending ? (
-                <LoadingView variant='skeleton' size='sm' count={5} />
+                <LoadingView
+                    variant='skeleton'
+                    size='sm'
+                    count={5}
+                />
             ) : (
                 <FlashList
                     data={data}

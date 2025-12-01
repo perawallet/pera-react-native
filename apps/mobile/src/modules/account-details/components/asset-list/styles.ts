@@ -66,5 +66,5 @@ export const useStyles = makeStyles(theme => ({
     },
     footer: {
         marginVertical: theme.spacing.md,
-    }
+    },
 }))

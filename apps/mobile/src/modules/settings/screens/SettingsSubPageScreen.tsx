@@ -52,7 +52,7 @@ const SettingsSubPageScreen = ({ route }: SettingsSubPageScreenProps) => {
     }
 
     const toggleNetwork = async () => {
-        var newNetwork: Network = Networks.mainnet
+        let newNetwork: Network = Networks.mainnet
         if (network === Networks.mainnet) {
             newNetwork = Networks.testnet
         }

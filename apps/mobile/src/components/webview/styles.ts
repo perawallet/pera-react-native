@@ -78,6 +78,6 @@ export const useStyles = makeStyles((theme, props: PWWebViewProps) => {
             paddingVertical: theme.spacing.md,
             paddingHorizontal: theme.spacing.lg,
             backgroundColor: theme.colors.background,
-        }
+        },
     }
 })

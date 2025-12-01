@@ -24,7 +24,11 @@ import {
     useAssetPriceHistoryQuery,
 } from '@perawallet/wallet-core-assets'
 import EmptyView from '../../../../../components/common/empty-view/EmptyView'
-import { CHART_ANIMATION_DURATION, CHART_FOCUS_DEBOUNCE_TIME, CHART_HEIGHT } from '../../../../../constants/ui'
+import {
+    CHART_ANIMATION_DURATION,
+    CHART_FOCUS_DEBOUNCE_TIME,
+    CHART_HEIGHT,
+} from '../../../../../constants/ui'
 
 type AssetPriceChartProps = {
     asset: PeraAsset
@@ -98,18 +102,23 @@ const AssetPriceChart = ({
     )
 
     if (isPending) {
-        return <LoadingView variant='circle' size='lg' />
+        return (
+            <LoadingView
+                variant='circle'
+                size='lg'
+            />
+        )
     }
-
 
     return (
         <PWView style={themeStyle.container}>
-            {!dataPoints?.length ?
+            {!dataPoints?.length ? (
                 <EmptyView
                     title=''
                     body='You will see a chart here once you have some balance history'
                 />
-                : (<LineChart
+            ) : (
+                <LineChart
                     data={dataPoints}
                     hideAxesAndRules
                     height={CHART_HEIGHT}
@@ -142,7 +151,7 @@ const AssetPriceChart = ({
                     disableScroll
                     adjustToWidth
                 />
-                )}
+            )}
         </PWView>
     )
 }

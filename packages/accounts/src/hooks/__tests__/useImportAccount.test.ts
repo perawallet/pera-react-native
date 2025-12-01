@@ -1,8 +1,23 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useImportAccount } from '../useImportAccount'
 import { useAccountsStore } from '../../store'
-import { registerTestPlatform, MemoryKeyValueStorage } from '@perawallet/wallet-core-platform-integration'
+import {
+    registerTestPlatform,
+    MemoryKeyValueStorage,
+} from '@perawallet/wallet-core-platform-integration'
 
 // Mocks (similar to useCreateAccount)
 const uuidSpies = vi.hoisted(() => ({ v7: vi.fn() }))
@@ -38,15 +53,21 @@ const bip39Spies = vi.hoisted(() => ({
 vi.mock('bip39', () => bip39Spies)
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
-    const actual = await vi.importActual<typeof import('@perawallet/wallet-core-shared')>('@perawallet/wallet-core-shared')
+    const actual = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared')
+    >('@perawallet/wallet-core-shared')
     return {
         ...actual,
-        encodeAlgorandAddress: vi.fn((address: Uint8Array) => Buffer.from(address).toString('base64')),
+        encodeAlgorandAddress: vi.fn((address: Uint8Array) =>
+            Buffer.from(address).toString('base64'),
+        ),
     }
 })
 
 vi.mock('@perawallet/wallet-core-platform-integration', async () => {
-    const actual = await vi.importActual<typeof import('@perawallet/wallet-core-platform-integration')>('@perawallet/wallet-core-platform-integration')
+    const actual = await vi.importActual<
+        typeof import('@perawallet/wallet-core-platform-integration')
+    >('@perawallet/wallet-core-platform-integration')
     return {
         ...actual,
         useKeyValueStorageService: vi.fn().mockReturnValue({
@@ -54,7 +75,9 @@ vi.mock('@perawallet/wallet-core-platform-integration', async () => {
             setItem: vi.fn(),
             removeItem: vi.fn(),
         }),
-        useUpdateDeviceMutation: vi.fn(() => ({ mutateAsync: vi.fn(async () => ({})) })),
+        useUpdateDeviceMutation: vi.fn(() => ({
+            mutateAsync: vi.fn(async () => ({})),
+        })),
         useNetwork: vi.fn(() => ({ network: 'mainnet' })),
         useDeviceID: vi.fn(() => 'device-id'),
     }
@@ -66,7 +89,8 @@ vi.mock('../../../api/generated/backend', () => ({
 }))
 
 vi.mock('../../store', async () => {
-    const actual = await vi.importActual<typeof import('../../store')>('../../store')
+    const actual =
+        await vi.importActual<typeof import('../../store')>('../../store')
     const mockStorage = {
         getItem: vi.fn(),
         setItem: vi.fn(),
@@ -86,9 +110,9 @@ describe('useImportAccount', () => {
 
     test('imports account and persists keys', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -120,16 +144,22 @@ describe('useImportAccount', () => {
         expect(imported.address).toBeTruthy()
         expect(imported.id).toBeTruthy()
 
-        expect(dummySecure.setItem).toHaveBeenCalledWith('rootkey-WALLET1', expect.any(Buffer))
-        expect(dummySecure.setItem).toHaveBeenCalledWith('pk-KEY1', expect.any(Buffer))
+        expect(dummySecure.setItem).toHaveBeenCalledWith(
+            'rootkey-WALLET1',
+            expect.any(Buffer),
+        )
+        expect(dummySecure.setItem).toHaveBeenCalledWith(
+            'pk-KEY1',
+            expect.any(Buffer),
+        )
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
     })
 
     test('throws error when generateMasterKey fails with invalid mnemonic', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -139,20 +169,24 @@ describe('useImportAccount', () => {
         })
 
         // Make bip39 throw on invalid mnemonic
-        bip39Spies.mnemonicToSeed.mockRejectedValueOnce(new Error('Invalid mnemonic'))
+        bip39Spies.mnemonicToSeed.mockRejectedValueOnce(
+            new Error('Invalid mnemonic'),
+        )
 
         const { result } = renderHook(() => useImportAccount())
 
         await act(async () => {
-            await expect(result.current({ mnemonic: 'invalid mnemonic' })).rejects.toThrow('Invalid mnemonic')
+            await expect(
+                result.current({ mnemonic: 'invalid mnemonic' }),
+            ).rejects.toThrow('Invalid mnemonic')
         })
     })
 
     test('throws error when deriveKey fails', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -162,23 +196,26 @@ describe('useImportAccount', () => {
         })
 
         // Make deriveKey throw an error
-        apiSpies.deriveSpy.mockRejectedValueOnce(new Error('Key derivation failed'))
+        apiSpies.deriveSpy.mockRejectedValueOnce(
+            new Error('Key derivation failed'),
+        )
 
         uuidSpies.v7.mockImplementationOnce(() => 'WALLET1')
 
         const { result } = renderHook(() => useImportAccount())
 
         await act(async () => {
-            await expect(result.current({ mnemonic: 'test mnemonic' })).rejects.toThrow('Key derivation failed')
+            await expect(
+                result.current({ mnemonic: 'test mnemonic' }),
+            ).rejects.toThrow('Key derivation failed')
         })
     })
 
     test('throws error when secure storage setItem fails for root key', async () => {
         const dummySecure = {
-            setItem: vi.fn()
-                .mockRejectedValueOnce(new Error('Storage full')), // First call for root key fails
+            setItem: vi.fn().mockRejectedValueOnce(new Error('Storage full')), // First call for root key fails
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -192,17 +229,20 @@ describe('useImportAccount', () => {
         const { result } = renderHook(() => useImportAccount())
 
         await act(async () => {
-            await expect(result.current({ mnemonic: 'test mnemonic' })).rejects.toThrow('Storage full')
+            await expect(
+                result.current({ mnemonic: 'test mnemonic' }),
+            ).rejects.toThrow('Storage full')
         })
     })
 
     test('throws error when secure storage setItem fails for private key', async () => {
         const dummySecure = {
-            setItem: vi.fn()
+            setItem: vi
+                .fn()
                 .mockResolvedValueOnce(undefined) // First call for root key succeeds
                 .mockRejectedValueOnce(new Error('Cannot store private key')), // Second call for private key fails
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -223,15 +263,17 @@ describe('useImportAccount', () => {
         const { result } = renderHook(() => useImportAccount())
 
         await act(async () => {
-            await expect(result.current({ mnemonic: 'test mnemonic' })).rejects.toThrow('Cannot store private key')
+            await expect(
+                result.current({ mnemonic: 'test mnemonic' }),
+            ).rejects.toThrow('Cannot store private key')
         })
     })
 
     test('throws error when mnemonicToEntropy fails', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -241,20 +283,24 @@ describe('useImportAccount', () => {
         })
 
         bip39Spies.mnemonicToSeed.mockResolvedValueOnce(Buffer.from('seed'))
-        bip39Spies.mnemonicToEntropy.mockRejectedValueOnce(new Error('Invalid entropy'))
+        bip39Spies.mnemonicToEntropy.mockRejectedValueOnce(
+            new Error('Invalid entropy'),
+        )
 
         const { result } = renderHook(() => useImportAccount())
 
         await act(async () => {
-            await expect(result.current({ mnemonic: 'test mnemonic' })).rejects.toThrow('Invalid entropy')
+            await expect(
+                result.current({ mnemonic: 'test mnemonic' }),
+            ).rejects.toThrow('Invalid entropy')
         })
     })
 
     test('imports account with custom walletId', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -278,21 +324,27 @@ describe('useImportAccount', () => {
         await act(async () => {
             imported = await result.current({
                 walletId: 'CUSTOM_WALLET',
-                mnemonic: 'test mnemonic'
+                mnemonic: 'test mnemonic',
             })
         })
 
         expect(imported).toBeTruthy()
         expect(imported.hdWalletDetails?.walletId).toBe('CUSTOM_WALLET')
-        expect(dummySecure.setItem).toHaveBeenCalledWith('rootkey-CUSTOM_WALLET', expect.any(Buffer))
-        expect(dummySecure.setItem).toHaveBeenCalledWith('pk-KEY1', expect.any(Buffer))
+        expect(dummySecure.setItem).toHaveBeenCalledWith(
+            'rootkey-CUSTOM_WALLET',
+            expect.any(Buffer),
+        )
+        expect(dummySecure.setItem).toHaveBeenCalledWith(
+            'pk-KEY1',
+            expect.any(Buffer),
+        )
     })
 
     test('throws error when address generation fails', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -303,14 +355,18 @@ describe('useImportAccount', () => {
 
         const priv = new Uint8Array(32).fill(1)
         apiSpies.deriveSpy.mockResolvedValueOnce(priv)
-        apiSpies.keyGenSpy.mockRejectedValueOnce(new Error('Address generation failed'))
+        apiSpies.keyGenSpy.mockRejectedValueOnce(
+            new Error('Address generation failed'),
+        )
 
         uuidSpies.v7.mockImplementationOnce(() => 'WALLET1')
 
         const { result } = renderHook(() => useImportAccount())
 
         await act(async () => {
-            await expect(result.current({ mnemonic: 'test mnemonic' })).rejects.toThrow('Address generation failed')
+            await expect(
+                result.current({ mnemonic: 'test mnemonic' }),
+            ).rejects.toThrow('Address generation failed')
         })
     })
 })

@@ -14,8 +14,16 @@ import { useEffect, useMemo } from 'react'
 import { useAssetsStore } from '../store'
 import { useQueries } from '@tanstack/react-query'
 import { fetchAssets, fetchPublicAssetDetails } from './endpoints'
-import { mapAssetResponseToPeraAsset, mapPublicAssetResponseToPeraAsset } from './mappers'
-import { ALGO_ASSET_ID, AssetsResponse, PublicAssetResponse, type PeraAsset } from '../models'
+import {
+    mapAssetResponseToPeraAsset,
+    mapPublicAssetResponseToPeraAsset,
+} from './mappers'
+import {
+    ALGO_ASSET_ID,
+    AssetsResponse,
+    PublicAssetResponse,
+    type PeraAsset,
+} from '../models'
 import { DEFAULT_PAGE_SIZE, partition } from '@perawallet/wallet-core-shared'
 import { getAlgoQueryKey, getAssetsQueryKey } from './querykeys'
 
@@ -25,7 +33,10 @@ export const useAssetsQuery = (ids?: string[]) => {
 
     useEffect(() => {
         let updated = false
-        if (ids && (!assetIDs || !ids.every(id => assetIDs?.find(a => a === id)))) {
+        if (
+            ids &&
+            (!assetIDs || !ids.every(id => assetIDs?.find(a => a === id)))
+        ) {
             const set = new Set([...(assetIDs ?? []), ...ids])
             assetIDs = [...set]
             updated = true
@@ -37,32 +48,35 @@ export const useAssetsQuery = (ids?: string[]) => {
 
     const queryDefinitions = useMemo(() => {
         const chunks = partition(assetIDs, DEFAULT_PAGE_SIZE)
-        return [...chunks.map(chunk => {
-            return {
-                queryKey: getAssetsQueryKey(chunk),
-                queryFn: async () => fetchAssets(chunk),
-                select: (data: AssetsResponse) => {
-                    const peraAssets = data.results.map(mapAssetResponseToPeraAsset)
+        return [
+            ...chunks.map(chunk => {
+                return {
+                    queryKey: getAssetsQueryKey(chunk),
+                    queryFn: async () => fetchAssets(chunk),
+                    select: (data: AssetsResponse) => {
+                        const peraAssets = data.results.map(
+                            mapAssetResponseToPeraAsset,
+                        )
+                        return {
+                            results: peraAssets,
+                            next: data.next,
+                            previous: data.previous,
+                        }
+                    },
+                }
+            }),
+            {
+                queryKey: getAlgoQueryKey(),
+                queryFn: async () => fetchPublicAssetDetails(ALGO_ASSET_ID),
+                select: (data: PublicAssetResponse) => {
+                    const peraAsset = mapPublicAssetResponseToPeraAsset(data)
                     return {
-                        results: peraAssets,
-                        next: data.next,
-                        previous: data.previous,
+                        results: [peraAsset],
+                        next: null,
+                        previous: null,
                     }
                 },
-            }
-        }),
-        {
-            queryKey: getAlgoQueryKey(),
-            queryFn: async () => fetchPublicAssetDetails(ALGO_ASSET_ID),
-            select: (data: PublicAssetResponse) => {
-                const peraAsset = mapPublicAssetResponseToPeraAsset(data)
-                return {
-                    results: [peraAsset],
-                    next: null,
-                    previous: null,
-                }
             },
-        },
         ]
     }, [assetIDs])
 

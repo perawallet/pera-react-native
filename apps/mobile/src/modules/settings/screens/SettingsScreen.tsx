@@ -149,12 +149,12 @@ const SettingsScreen = () => {
                                     onPress={() => {
                                         page.route
                                             ? goToSettingsPage(
-                                                page.route,
-                                                page.title,
-                                            )
+                                                  page.route,
+                                                  page.title,
+                                              )
                                             : page.url
-                                                ? openWebView(page.url)
-                                                : openRating()
+                                              ? openWebView(page.url)
+                                              : openRating()
                                     }}
                                 >
                                     <PWIcon name={page.icon as IconName} />

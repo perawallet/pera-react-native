@@ -20,7 +20,8 @@ import ky, {
     HTTPError,
 } from 'ky'
 import { config } from '@perawallet/wallet-core-config'
-import { Networks, RequestConfiguration, ResponseConfiguration, type Network } from '../models'
+import { RequestConfiguration, ResponseConfiguration } from '../models/queries'
+import { Network, Networks } from '../models/base-types'
 import { debugLog } from '../utils'
 
 type BackendInstances = {
@@ -43,11 +44,18 @@ const logError = (error: HTTPError) => {
 }
 
 const logRetry = ({ request, error, retryCount }: BeforeRetryState) => {
-    debugLog('Retrying request:', request.url, 'Retry count:', retryCount, 'Error:', error)
+    debugLog(
+        'Retrying request:',
+        request.url,
+        'Retry count:',
+        retryCount,
+        'Error:',
+        error,
+    )
 }
 
 const createFetchClient = (clients: Map<string, BackendInstances>) => {
-    return async <TData, _TError = unknown, TVariables = unknown>(
+    return async <TData, TVariables = unknown>(
         requestConfig: RequestConfiguration<TVariables>,
     ): Promise<ResponseConfiguration<TData>> => {
         if (!requestConfig.url) {

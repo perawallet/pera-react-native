@@ -89,7 +89,9 @@ export const mapPublicAssetResponseToPeraAsset = (
         peraMetadata: {
             isDeleted: asset.is_deleted === 'true',
             verificationTier: asset.verification_tier,
-            isVerified: asset.verification_tier === 'verified' || `${asset.asset_id}` === ALGO_ASSET_ID,
+            isVerified:
+                asset.verification_tier === 'verified' ||
+                `${asset.asset_id}` === ALGO_ASSET_ID,
             logo: asset.logo,
         },
         unitName: asset.unit_name,

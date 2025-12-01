@@ -26,7 +26,11 @@ import {
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 import LoadingView from '../../../../../components/common/loading/LoadingView'
 import EmptyView from '../../../../../components/common/empty-view/EmptyView'
-import { CHART_ANIMATION_DURATION, CHART_FOCUS_DEBOUNCE_TIME, CHART_HEIGHT } from '../../../../../constants/ui'
+import {
+    CHART_ANIMATION_DURATION,
+    CHART_FOCUS_DEBOUNCE_TIME,
+    CHART_HEIGHT,
+} from '../../../../../constants/ui'
 
 type DataPoint = {
     timestamp: string
@@ -111,52 +115,56 @@ const AssetWealthChart = ({
     )
 
     if (isPending) {
-        return <LoadingView variant='circle' size='lg' />
+        return (
+            <LoadingView
+                variant='circle'
+                size='lg'
+            />
+        )
     }
 
     return (
         <PWView style={themeStyle.container}>
-            {!dataPoints?.length ?
+            {!dataPoints?.length ? (
                 <EmptyView
                     title=''
                     body='You will see a chart here once you have some balance history for this asset on this account'
                 />
-                : (
-                    <LineChart
-                        data={dataPoints}
-                        hideAxesAndRules
-                        height={CHART_HEIGHT}
-                        color={theme.colors.helperPositive}
-                        startFillColor='#28A79B'
-                        endFillColor='#28A79B'
-                        startOpacity={0.3}
-                        endOpacity={0.0}
-                        areaChart
-                        yAxisLabelWidth={1}
-                        hideYAxisText
-                        yAxisOffset={yAxisOffsets[0]}
-                        maxValue={yAxisOffsets[1]}
-                        initialSpacing={0}
-                        endSpacing={0}
-                        showStripOnFocus
-                        showDataPointOnFocus
-                        animateOnDataChange
-                        animationDuration={CHART_ANIMATION_DURATION}
-                        onDataChangeAnimationDuration={CHART_ANIMATION_DURATION}
-                        pointerConfig={{
-                            showPointerStrip: true,
-                            pointerStripColor: theme.colors.textGrayLighter,
-                            pointerStripWidth: 1,
-                            pointerStripHeight: CHART_HEIGHT,
-                            pointerColor: theme.colors.helperPositive,
-                            strokeDashArray: [6, 2],
-                        }}
-                        getPointerProps={onFocus}
-                        disableScroll
-                        adjustToWidth
-                    />
-                )
-            }
+            ) : (
+                <LineChart
+                    data={dataPoints}
+                    hideAxesAndRules
+                    height={CHART_HEIGHT}
+                    color={theme.colors.helperPositive}
+                    startFillColor='#28A79B'
+                    endFillColor='#28A79B'
+                    startOpacity={0.3}
+                    endOpacity={0.0}
+                    areaChart
+                    yAxisLabelWidth={1}
+                    hideYAxisText
+                    yAxisOffset={yAxisOffsets[0]}
+                    maxValue={yAxisOffsets[1]}
+                    initialSpacing={0}
+                    endSpacing={0}
+                    showStripOnFocus
+                    showDataPointOnFocus
+                    animateOnDataChange
+                    animationDuration={CHART_ANIMATION_DURATION}
+                    onDataChangeAnimationDuration={CHART_ANIMATION_DURATION}
+                    pointerConfig={{
+                        showPointerStrip: true,
+                        pointerStripColor: theme.colors.textGrayLighter,
+                        pointerStripWidth: 1,
+                        pointerStripHeight: CHART_HEIGHT,
+                        pointerColor: theme.colors.helperPositive,
+                        strokeDashArray: [6, 2],
+                    }}
+                    getPointerProps={onFocus}
+                    disableScroll
+                    adjustToWidth
+                />
+            )}
         </PWView>
     )
 }

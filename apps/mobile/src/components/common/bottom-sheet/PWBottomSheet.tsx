@@ -30,7 +30,10 @@ const PWBottomSheet = ({
 }: PWBottomSheetProps) => {
     const style = useStyles()
     return (
-        <BottomSheet {...rest} scrollViewProps={{ scrollEnabled: scrollEnabled ?? true }}>
+        <BottomSheet
+            {...rest}
+            scrollViewProps={{ scrollEnabled: scrollEnabled ?? true }}
+        >
             <PWView style={[style.defaultStyle, innerContainerStyle]}>
                 {children}
             </PWView>

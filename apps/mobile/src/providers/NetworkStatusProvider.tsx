@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import { createContext, PropsWithChildren, useContext, useEffect, useState } from 'react'
-import NetInfo, { NetInfoState } from "@react-native-community/netinfo";
+import { createContext, PropsWithChildren, useEffect, useState } from 'react'
+import NetInfo, { NetInfoState } from '@react-native-community/netinfo'
 import useToast from '../hooks/toast'
-import { LONG_NOTIFICATION_DURATION } from '../constants/ui';
+import { LONG_NOTIFICATION_DURATION } from '../constants/ui'
 
 export const NetworkStatusContext = createContext({
     hasInternet: true,
@@ -23,23 +23,32 @@ export const NetworkStatusProvider = ({ children }: PropsWithChildren) => {
     const { showToast } = useToast()
     const [hasInternet, setHasInternet] = useState(true)
     useEffect(() => {
-        const netInfoSubscription = NetInfo.addEventListener((state: NetInfoState) => {
-            setHasInternet(state.isConnected !== false);
-        });
+        const netInfoSubscription = NetInfo.addEventListener(
+            (state: NetInfoState) => {
+                setHasInternet(state.isConnected !== false)
+            },
+        )
         return () => {
-            netInfoSubscription();
-        };
+            netInfoSubscription()
+        }
     }, [])
 
     useEffect(() => {
         if (!hasInternet) {
-            showToast({
-                title: 'No Internet Connection',
-                body: 'Some data may not be up to date.',
-                type: 'warning',
-            }, { duration: LONG_NOTIFICATION_DURATION })
+            showToast(
+                {
+                    title: 'No Internet Connection',
+                    body: 'Some data may not be up to date.',
+                    type: 'warning',
+                },
+                { duration: LONG_NOTIFICATION_DURATION },
+            )
         }
     }, [hasInternet, showToast])
 
-    return <NetworkStatusContext.Provider value={{ hasInternet }}>{children}</NetworkStatusContext.Provider>
+    return (
+        <NetworkStatusContext.Provider value={{ hasInternet }}>
+            {children}
+        </NetworkStatusContext.Provider>
+    )
 }

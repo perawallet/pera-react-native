@@ -67,8 +67,8 @@ const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
 
     const fiatAmount = useMemo(() => {
         const currentUSD = selectedPoint
-            ? selectedPoint.fiatValue ?? Decimal(0)
-            : assetHolding?.fiatValue ?? Decimal(0)
+            ? (selectedPoint.fiatValue ?? Decimal(0))
+            : (assetHolding?.fiatValue ?? Decimal(0))
         return currentUSD
     }, [assetHolding, selectedPoint])
 
@@ -126,18 +126,20 @@ const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
                     </PWView>
                 </PWView>
 
-                {chartVisible && <PWView style={styles.chartContainer}>
-                    <AssetWealthChart
-                        account={account}
-                        asset={asset}
-                        period={period}
-                        onSelectionChanged={setSelectedPoint}
-                    />
-                    <ChartPeriodSelection
-                        value={period}
-                        onChange={setPeriod}
-                    />
-                </PWView>}
+                {chartVisible && (
+                    <PWView style={styles.chartContainer}>
+                        <AssetWealthChart
+                            account={account}
+                            asset={asset}
+                            period={period}
+                            onSelectionChanged={setSelectedPoint}
+                        />
+                        <ChartPeriodSelection
+                            value={period}
+                            onChange={setPeriod}
+                        />
+                    </PWView>
+                )}
 
                 <AssetActionButtons asset={asset} />
             </PWView>

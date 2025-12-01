@@ -32,7 +32,10 @@ import {
 } from '@perawallet/wallet-core-platform-integration'
 import { usePolling } from '@perawallet/wallet-core-polling'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { NetworkStatusContext, NetworkStatusProvider } from '../../providers/NetworkStatusProvider'
+import {
+    NetworkStatusContext,
+    NetworkStatusProvider,
+} from '../../providers/NetworkStatusProvider'
 import WebViewProvider from '../../providers/WebViewProvider'
 
 const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
@@ -80,7 +83,11 @@ const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
                     onLongPress={toggleNetwork}
                 />
 
-                {!hasInternet && <PWView style={styles.offlineTextContainer}><Text style={styles.offlineText}>Offline Mode</Text></PWView>}
+                {!hasInternet && (
+                    <PWView style={styles.offlineTextContainer}>
+                        <Text style={styles.offlineText}>Offline Mode</Text>
+                    </PWView>
+                )}
 
                 <GestureHandlerRootView>
                     <MainRoutes theme={navTheme} />
@@ -130,7 +137,6 @@ export const RootComponent = () => {
                 subscription.remove()
             }
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [accounts])
 
     return (

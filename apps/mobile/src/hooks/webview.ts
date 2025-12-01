@@ -65,7 +65,11 @@ type WebviewMessage = {
     params: Record<string, any>
 }
 
-export const usePeraWebviewInterface = (webview: WebView | null, securedConnection: boolean, onCloseRequested?: () => void) => {
+export const usePeraWebviewInterface = (
+    webview: WebView | null,
+    securedConnection: boolean,
+    onCloseRequested?: () => void,
+) => {
     const { showToast } = useToast()
     const accounts = useAllAccounts()
     const { network } = useNetwork()
@@ -76,31 +80,40 @@ export const usePeraWebviewInterface = (webview: WebView | null, securedConnecti
     const analytics = useAnalyticsService()
     const { pushWebView: pushWebViewContext } = useContext(WebViewContext)
 
-    const sendMessageToWebview = useCallback((payload: unknown) => {
-        const message = `handleMessage(${JSON.stringify(payload)});`;
-        webview?.injectJavaScript(message)
-    }, [webview])
+    const sendMessageToWebview = useCallback(
+        (payload: unknown) => {
+            const message = `handleMessage(${JSON.stringify(payload)});`
+            webview?.injectJavaScript(message)
+        },
+        [webview],
+    )
 
-    const pushWebView = useCallback((params: PushInternalBrowserParams) => {
-        pushWebViewContext({
-            url: params.url,
-            id: ''
-        })
-    }, [pushWebViewContext])
+    const pushWebView = useCallback(
+        (params: PushInternalBrowserParams) => {
+            pushWebViewContext({
+                url: params.url,
+                id: '',
+            })
+        },
+        [pushWebViewContext],
+    )
 
-    const openSystemBrowser = useCallback((params: OpenSystemBrowserParams) => {
-        Linking.canOpenURL(params.url).then(supported => {
-            if (supported) {
-                Linking.openURL(params.url)
-            } else {
-                showToast({
-                    title: "Can't open webpage",
-                    body: "The page you're viewing has sent an invalid message format.",
-                    type: 'error',
-                })
-            }
-        })
-    }, [showToast])
+    const openSystemBrowser = useCallback(
+        (params: OpenSystemBrowserParams) => {
+            Linking.canOpenURL(params.url).then(supported => {
+                if (supported) {
+                    Linking.openURL(params.url)
+                } else {
+                    showToast({
+                        title: "Can't open webpage",
+                        body: "The page you're viewing has sent an invalid message format.",
+                        type: 'error',
+                    })
+                }
+            })
+        },
+        [showToast],
+    )
 
     const canOpenURI = useCallback((params: CanOpenURIParams) => {
         Linking.canOpenURL(params.uri).then(supported => {
@@ -108,30 +121,36 @@ export const usePeraWebviewInterface = (webview: WebView | null, securedConnecti
         })
     }, [])
 
-    const openNativeURI = useCallback((params: CanOpenURIParams) => {
-        Linking.canOpenURL(params.uri).then(supported => {
-            if (supported) {
-                Linking.openURL(params.uri)
-            } else {
+    const openNativeURI = useCallback(
+        (params: CanOpenURIParams) => {
+            Linking.canOpenURL(params.uri).then(supported => {
+                if (supported) {
+                    Linking.openURL(params.uri)
+                } else {
+                    showToast({
+                        title: "Can't open URI",
+                        body: "The page you're viewing has sent an invalid message format.",
+                        type: 'error',
+                    })
+                }
+            })
+        },
+        [showToast],
+    )
+
+    const notifyUser = useCallback(
+        (params: NotifyUserParams) => {
+            if (params.type === 'message') {
                 showToast({
-                    title: "Can't open URI",
-                    body: "The page you're viewing has sent an invalid message format.",
-                    type: 'error',
+                    title: '',
+                    body: params.message ?? '',
+                    type: 'info',
                 })
             }
-        })
-    }, [showToast])
-
-    const notifyUser = useCallback((params: NotifyUserParams) => {
-        if (params.type === 'message') {
-            showToast({
-                title: '',
-                body: params.message ?? '',
-                type: 'info',
-            })
-        }
-        //TODO add haptic (and maybe message.banner) support and maybe sound
-    }, [showToast])
+            //TODO add haptic (and maybe message.banner) support and maybe sound
+        },
+        [showToast],
+    )
 
     const getAddresses = useCallback(() => {
         const payload = accounts.map(a => ({
@@ -173,82 +192,98 @@ export const usePeraWebviewInterface = (webview: WebView | null, securedConnecti
     }, [webview])
 
     //TODO not sure what the correct behavior here is?
-    const onBackPressed = useCallback(() => {
-    }, [])
+    const onBackPressed = useCallback(() => {}, [])
 
-    const logAnalyticsEvent = useCallback((params: LogAnalyticsParams) => {
-        analytics.logEvent(params.name, params.payload)
-    }, [analytics])
+    const logAnalyticsEvent = useCallback(
+        (params: LogAnalyticsParams) => {
+            analytics.logEvent(params.name, params.payload)
+        },
+        [analytics],
+    )
 
     const closeWebView = useCallback(() => {
         onCloseRequested?.()
     }, [onCloseRequested])
 
-
-    const handleMessage = useCallback(({ action, params }: WebviewMessage) => {
-        switch (action) {
-            case 'pushWebView':
-                if (securedConnection) {
-                    pushWebView(params as PushNewScreenParams)
-                }
-                break
-            case 'openSystemBrowser':
-                if (securedConnection) {
-                    openSystemBrowser(params as OpenSystemBrowserParams)
-                }
-                break
-            case 'canOpenURI':
-                if (securedConnection) {
-                    canOpenURI(params as CanOpenURIParams)
-                }
-                break
-            case 'openNativeURI':
-                if (securedConnection) {
-                    openNativeURI(params as CanOpenURIParams)
-                }
-                break
-            case 'notifyUser':
-                if (securedConnection) {
-                    notifyUser(params as NotifyUserParams)
-                }
-                break
-            case 'getAddresses':
-                if (securedConnection) {
-                    getAddresses()
-                }
-                break
-            case 'getSettings':
-                if (securedConnection) {
-                    getSettings()
-                }
-                break
-            case 'getPublicSettings':
-                getPublicSettings()
-                break
-            case 'onBackPressed':
-                if (securedConnection) {
-                    onBackPressed()
-                }
-                break
-            case 'logAnalyticsEvent':
-                if (securedConnection) {
-                    logAnalyticsEvent(params as LogAnalyticsParams)
-                }
-                break
-            case 'closeWebView':
-                if (securedConnection) {
-                    closeWebView()
-                }
-                break
-            default:
-                showToast({
-                    title: 'Invalid message received.',
-                    body: "The page you're viewing has sent an invalid message format.",
-                    type: 'error',
-                })
-                break
-        }
-    }, [pushWebView, openSystemBrowser, canOpenURI, openNativeURI, notifyUser, getAddresses, getSettings, getPublicSettings, onBackPressed, logAnalyticsEvent, closeWebView])
+    const handleMessage = useCallback(
+        ({ action, params }: WebviewMessage) => {
+            switch (action) {
+                case 'pushWebView':
+                    if (securedConnection) {
+                        pushWebView(params as PushNewScreenParams)
+                    }
+                    break
+                case 'openSystemBrowser':
+                    if (securedConnection) {
+                        openSystemBrowser(params as OpenSystemBrowserParams)
+                    }
+                    break
+                case 'canOpenURI':
+                    if (securedConnection) {
+                        canOpenURI(params as CanOpenURIParams)
+                    }
+                    break
+                case 'openNativeURI':
+                    if (securedConnection) {
+                        openNativeURI(params as CanOpenURIParams)
+                    }
+                    break
+                case 'notifyUser':
+                    if (securedConnection) {
+                        notifyUser(params as NotifyUserParams)
+                    }
+                    break
+                case 'getAddresses':
+                    if (securedConnection) {
+                        getAddresses()
+                    }
+                    break
+                case 'getSettings':
+                    if (securedConnection) {
+                        getSettings()
+                    }
+                    break
+                case 'getPublicSettings':
+                    getPublicSettings()
+                    break
+                case 'onBackPressed':
+                    if (securedConnection) {
+                        onBackPressed()
+                    }
+                    break
+                case 'logAnalyticsEvent':
+                    if (securedConnection) {
+                        logAnalyticsEvent(params as LogAnalyticsParams)
+                    }
+                    break
+                case 'closeWebView':
+                    if (securedConnection) {
+                        closeWebView()
+                    }
+                    break
+                default:
+                    showToast({
+                        title: 'Invalid message received.',
+                        body: "The page you're viewing has sent an invalid message format.",
+                        type: 'error',
+                    })
+                    break
+            }
+        },
+        [
+            pushWebView,
+            openSystemBrowser,
+            canOpenURI,
+            openNativeURI,
+            notifyUser,
+            getAddresses,
+            getSettings,
+            getPublicSettings,
+            onBackPressed,
+            logAnalyticsEvent,
+            closeWebView,
+        ],
+    )
 
     return {
         handleMessage,

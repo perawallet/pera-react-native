@@ -76,7 +76,10 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
     )
 
     return (
-        <AccountAssetList account={account} scrollEnabled={scrollingEnabled}>
+        <AccountAssetList
+            account={account}
+            scrollEnabled={scrollingEnabled}
+        >
             <PWTouchableOpacity
                 onPress={togglePrivacyMode}
                 style={styles.valueBarContainer}

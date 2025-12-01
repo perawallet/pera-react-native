@@ -24,7 +24,6 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
             backgroundColor: theme.colors.testnetBackground,
             height: insets.top + theme.spacing.sm,
             zIndex: 1,
-
         },
         mainnetBar: {
             backgroundColor: theme.colors.background,
@@ -42,6 +41,6 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
         },
         offlineText: {
             color: theme.colors.textGray,
-        }
+        },
     }
 })

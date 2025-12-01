@@ -91,7 +91,9 @@ const AccountAssetItemView = ({
             <PWView style={styles.dataContainer}>
                 <PWView style={styles.unitContainer}>
                     <PWView style={styles.row}>
-                        <Text style={styles.primaryUnit}>{isAlgo ? 'Algo' : asset.name}</Text>
+                        <Text style={styles.primaryUnit}>
+                            {isAlgo ? 'Algo' : asset.name}
+                        </Text>
                         {verificationIcon}
                     </PWView>
                     <Text style={styles.secondaryUnit}>

@@ -169,7 +169,9 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
                                 selectedDataPoint={selectedPoint}
                             />
                             {!!selectedPoint && (
-                                <Text>{formatDatetime(selectedPoint.datetime)}</Text>
+                                <Text>
+                                    {formatDatetime(selectedPoint.datetime)}
+                                </Text>
                             )}
                         </PWView>
                     </PWView>
@@ -182,17 +184,19 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
                 </PWView>
             </PWView>
 
-            {chartVisible && <PWView style={styles.chartContainer}>
-                <AssetPriceChart
-                    asset={asset}
-                    period={period}
-                    onSelectionChanged={handleDataPointSelection}
-                />
-                <ChartPeriodSelection
-                    value={period}
-                    onChange={setPeriod}
-                />
-            </PWView>}
+            {chartVisible && (
+                <PWView style={styles.chartContainer}>
+                    <AssetPriceChart
+                        asset={asset}
+                        period={period}
+                        onSelectionChanged={handleDataPointSelection}
+                    />
+                    <ChartPeriodSelection
+                        value={period}
+                        onChange={setPeriod}
+                    />
+                </PWView>
+            )}
 
             <PWTouchableOpacity
                 style={styles.discoverButton}
@@ -222,7 +226,9 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
 
             <AssetVerificationCard assetDetails={assetDetails} />
 
-            <AssetDescription description={assetDetails.peraMetadata?.description ?? ''} />
+            <AssetDescription
+                description={assetDetails.peraMetadata?.description ?? ''}
+            />
 
             <AssetSocialMedia assetDetails={assetDetails} />
 

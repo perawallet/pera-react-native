@@ -56,21 +56,22 @@ const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                     About {assetDetails.name}
                 </Text>
             )}
-            {!!assetDetails.assetId && assetDetails.assetId !== ALGO_ASSET_ID && (
-                <RowTitledItem
-                    title='ASA ID'
-                    verticalAlignment='center'
-                >
-                    <PWButton
-                        title={assetDetails.assetId.toString()}
-                        onPress={() =>
-                            copyToClipboard(assetDetails.assetId.toString())
-                        }
-                        variant='link'
-                        paddingStyle='none'
-                    />
-                </RowTitledItem>
-            )}
+            {!!assetDetails.assetId &&
+                assetDetails.assetId !== ALGO_ASSET_ID && (
+                    <RowTitledItem
+                        title='ASA ID'
+                        verticalAlignment='center'
+                    >
+                        <PWButton
+                            title={assetDetails.assetId.toString()}
+                            onPress={() =>
+                                copyToClipboard(assetDetails.assetId.toString())
+                            }
+                            variant='link'
+                            paddingStyle='none'
+                        />
+                    </RowTitledItem>
+                )}
 
             {!!assetDetails.creator?.address && (
                 <RowTitledItem
@@ -131,7 +132,11 @@ const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                 >
                     <PWButton
                         title='Open with Browser'
-                        onPress={() => openLink(assetDetails.peraMetadata?.projectUrl ?? '')}
+                        onPress={() =>
+                            openLink(
+                                assetDetails.peraMetadata?.projectUrl ?? '',
+                            )
+                        }
                         variant='link'
                     />
                 </RowTitledItem>

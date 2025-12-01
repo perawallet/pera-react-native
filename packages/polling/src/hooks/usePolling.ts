@@ -30,7 +30,7 @@ export const usePolling = () => {
             if (response.refresh) {
                 //TODO: can we be a bit more selective of which queries we reset?
                 //queryClient.resetQueries()
-                //setLastRefreshedRound(response.round ?? null)
+                setLastRefreshedRound(response.round ?? null)
             }
         } catch (error) {
             console.log('Polling failed:')

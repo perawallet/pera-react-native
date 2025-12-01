@@ -18,24 +18,24 @@ import { v7 as uuidv7 } from 'uuid'
 import PWView from '../components/common/view/PWView'
 
 type WebViewRequest = {
-    id: string,
-    url: string,
+    id: string
+    url: string
 }
 
 type WebViewStack = {
-    openWebViews: WebViewRequest[],
-    pushWebView: (view: WebViewRequest) => void,
-    popWebView: () => void,
-    removeWebView: (id: string) => void,
-    clearWebViews: () => void,
+    openWebViews: WebViewRequest[]
+    pushWebView: (view: WebViewRequest) => void
+    popWebView: () => void
+    removeWebView: (id: string) => void
+    clearWebViews: () => void
 }
 
 export const WebViewContext = createContext<WebViewStack>({
     openWebViews: [],
-    pushWebView: () => { },
-    popWebView: () => { },
-    removeWebView: () => { },
-    clearWebViews: () => { },
+    pushWebView: () => {},
+    popWebView: () => {},
+    removeWebView: () => {},
+    clearWebViews: () => {},
 })
 
 type WebViewProviderProps = {} & PropsWithChildren
@@ -45,15 +45,15 @@ const WebViewProvider = ({ children }: WebViewProviderProps) => {
     const { height } = useWindowDimensions()
 
     const pushWebView = (view: WebViewRequest) => {
-        setOpenWebViews((prev) => [...prev, { ...view, id: uuidv7() }])
+        setOpenWebViews(prev => [...prev, { ...view, id: uuidv7() }])
     }
 
     const popWebView = () => {
-        setOpenWebViews((prev) => prev.slice(0, prev.length - 1))
+        setOpenWebViews(prev => prev.slice(0, prev.length - 1))
     }
 
     const removeWebView = (id: string) => {
-        setOpenWebViews((prev) => prev.filter((view) => view.id !== id))
+        setOpenWebViews(prev => prev.filter(view => view.id !== id))
     }
 
     const clearWebViews = () => {
@@ -61,12 +61,22 @@ const WebViewProvider = ({ children }: WebViewProviderProps) => {
     }
 
     return (
-        <WebViewContext.Provider value={{ openWebViews, pushWebView, popWebView, removeWebView, clearWebViews }}>
+        <WebViewContext.Provider
+            value={{
+                openWebViews,
+                pushWebView,
+                popWebView,
+                removeWebView,
+                clearWebViews,
+            }}
+        >
             {children}
-            {openWebViews.map((view) => (
+            {openWebViews.map(view => (
                 <PWBottomSheet
                     key={view.id}
-                    innerContainerStyle={{ height: height - (StatusBar.currentHeight ?? 20) }}
+                    innerContainerStyle={{
+                        height: height - (StatusBar.currentHeight ?? 20),
+                    }}
                     isVisible={true}
                     scrollEnabled={false}
                 >

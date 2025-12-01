@@ -12,9 +12,7 @@
 
 import { renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
-import {
-    useAccountBalancesHistoryQuery,
-} from '../useAccountBalancesHistoryQuery'
+import { useAccountBalancesHistoryQuery } from '../useAccountBalancesHistoryQuery'
 import { getAccountBalancesHistoryQueryKey } from '../querykeys'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
@@ -52,13 +50,19 @@ const createWrapper = () => {
         },
     })
     return ({ children }: { children: React.ReactNode }) =>
-        React.createElement(QueryClientProvider, { client: queryClient }, children)
+        React.createElement(
+            QueryClientProvider,
+            { client: queryClient },
+            children,
+        )
 }
 
 describe('useAccountBalancesHistoryQuery', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockUsdToPreferred.mockImplementation((amount: Decimal) => amount.mul(1.5))
+        mockUsdToPreferred.mockImplementation((amount: Decimal) =>
+            amount.mul(1.5),
+        )
     })
 
     describe('getAccountBalancesHistoryQueryKey', () => {
@@ -66,8 +70,16 @@ describe('useAccountBalancesHistoryQuery', () => {
             const addresses = ['ADDR1', 'ADDR2']
             const period = 'one-day'
             const network = 'mainnet'
-            const key = getAccountBalancesHistoryQueryKey(addresses, period, network)
-            expect(key).toEqual(['accounts', 'balance-history', { period, addresses, network }])
+            const key = getAccountBalancesHistoryQueryKey(
+                addresses,
+                period,
+                network,
+            )
+            expect(key).toEqual([
+                'accounts',
+                'balance-history',
+                { period, addresses, network },
+            ])
         })
     })
 
@@ -93,7 +105,7 @@ describe('useAccountBalancesHistoryQuery', () => {
 
             const { result } = renderHook(
                 () => useAccountBalancesHistoryQuery(['ADDR1'], 'one-day'),
-                { wrapper: createWrapper() }
+                { wrapper: createWrapper() },
             )
 
             await waitFor(() => expect(result.current.isSuccess).toBe(true))
@@ -114,11 +126,13 @@ describe('useAccountBalancesHistoryQuery', () => {
         })
 
         it('handles empty results', async () => {
-            mocks.fetchAccountsBalanceHistory.mockResolvedValue({ results: null })
+            mocks.fetchAccountsBalanceHistory.mockResolvedValue({
+                results: null,
+            })
 
             const { result } = renderHook(
                 () => useAccountBalancesHistoryQuery(['ADDR1'], 'one-week'),
-                { wrapper: createWrapper() }
+                { wrapper: createWrapper() },
             )
 
             await waitFor(() => expect(result.current.isSuccess).toBe(true))
@@ -127,22 +141,26 @@ describe('useAccountBalancesHistoryQuery', () => {
         })
 
         it('handles loading state', () => {
-            mocks.fetchAccountsBalanceHistory.mockReturnValue(new Promise(() => { }))
+            mocks.fetchAccountsBalanceHistory.mockReturnValue(
+                new Promise(() => {}),
+            )
 
             const { result } = renderHook(
                 () => useAccountBalancesHistoryQuery(['ADDR1'], 'one-month'),
-                { wrapper: createWrapper() }
+                { wrapper: createWrapper() },
             )
 
             expect(result.current.isPending).toBe(true)
         })
 
         it('handles error state', async () => {
-            mocks.fetchAccountsBalanceHistory.mockRejectedValue(new Error('Network error'))
+            mocks.fetchAccountsBalanceHistory.mockRejectedValue(
+                new Error('Network error'),
+            )
 
             const { result } = renderHook(
                 () => useAccountBalancesHistoryQuery(['ADDR1'], 'one-year'),
-                { wrapper: createWrapper() }
+                { wrapper: createWrapper() },
             )
 
             await waitFor(() => expect(result.current.isError).toBe(true))
@@ -155,7 +173,7 @@ describe('useAccountBalancesHistoryQuery', () => {
 
             const { result } = renderHook(
                 () => useAccountBalancesHistoryQuery(['ADDR1'], 'one-day'),
-                { wrapper: createWrapper() }
+                { wrapper: createWrapper() },
             )
 
             await waitFor(() => expect(result.current.isSuccess).toBe(true))
@@ -163,7 +181,7 @@ describe('useAccountBalancesHistoryQuery', () => {
             expect(mocks.fetchAccountsBalanceHistory).toHaveBeenCalledWith(
                 ['ADDR1'],
                 'one-day',
-                'testnet'
+                'testnet',
             )
         })
     })

@@ -25,7 +25,11 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import LoadingView from '../loading/LoadingView'
 import EmptyView from '../empty-view/EmptyView'
-import { CHART_ANIMATION_DURATION, CHART_FOCUS_DEBOUNCE_TIME, CHART_HEIGHT } from '../../../constants/ui'
+import {
+    CHART_ANIMATION_DURATION,
+    CHART_FOCUS_DEBOUNCE_TIME,
+    CHART_HEIGHT,
+} from '../../../constants/ui'
 
 type WealthChartProps = {
     account?: WalletAccount
@@ -109,17 +113,23 @@ const WealthChart = ({
     )
 
     if (isPending) {
-        return <LoadingView variant='circle' size='lg' />
+        return (
+            <LoadingView
+                variant='circle'
+                size='lg'
+            />
+        )
     }
 
     return (
         <PWView style={themeStyle.container}>
-            {!dataPoints?.length ?
+            {!dataPoints?.length ? (
                 <EmptyView
                     title=''
                     body='You will see a chart here once you have some balance history'
                 />
-                : (<LineChart
+            ) : (
+                <LineChart
                     data={dataPoints}
                     hideAxesAndRules
                     height={CHART_HEIGHT}
@@ -152,7 +162,7 @@ const WealthChart = ({
                     disableScroll
                     adjustToWidth
                 />
-                )}
+            )}
         </PWView>
     )
 }

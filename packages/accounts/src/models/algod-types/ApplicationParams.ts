@@ -1,52 +1,62 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
 
-
-import type { ApplicationStateSchema } from "./ApplicationStateSchema";
-import type { TealKeyValueStore } from "./TealKeyValueStore";
+import type { ApplicationStateSchema } from './ApplicationStateSchema'
+import type { TealKeyValueStore } from './TealKeyValueStore'
 
 /**
  * @description Stores the global information associated with an application.
-*/
+ */
 export type ApplicationParams = {
     /**
      * @description \\[approv\\] approval program.
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string, byte
-    */
-    "approval-program": string;
+     */
+    'approval-program': string
     /**
      * @description \\[clearp\\] approval program.
      * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
      * @type string, byte
-    */
-    "clear-state-program": string;
+     */
+    'clear-state-program': string
     /**
      * @description The address that created this application. This is the address where the parameters and global state for this application can be found.
      * @type string
-    */
-    creator: string;
+     */
+    creator: string
     /**
      * @description \\[epp\\] the amount of extra program pages available to this app.
      * @type integer | undefined, uint64
-    */
-    "extra-program-pages"?: number;
+     */
+    'extra-program-pages'?: number
     /**
      * @description Represents a key-value store for use in an application.
      * @type array | undefined
-    */
-    "global-state"?: TealKeyValueStore;
+     */
+    'global-state'?: TealKeyValueStore
     /**
      * @description Specifies maximums on the number of each type that may be stored.
      * @type object | undefined
-    */
-    "global-state-schema"?: ApplicationStateSchema;
+     */
+    'global-state-schema'?: ApplicationStateSchema
     /**
      * @description Specifies maximums on the number of each type that may be stored.
      * @type object | undefined
-    */
-    "local-state-schema"?: ApplicationStateSchema;
+     */
+    'local-state-schema'?: ApplicationStateSchema
     /**
      * @description \\[v\\] the number of updates to the application programs
      * @type integer | undefined
-    */
-    version?: number;
-};
+     */
+    version?: number
+}

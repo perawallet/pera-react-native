@@ -38,25 +38,32 @@ const AssetTitle = ({ asset }: AssetTitleProps) => {
                 size={theme.spacing.xl * 1.5}
             />
             <PWView style={styles.nameContainer}>
-                <Text h4 style={styles.name}>{isAlgo ? 'Algo' : asset.name}</Text>
+                <Text
+                    h4
+                    style={styles.name}
+                >
+                    {isAlgo ? 'Algo' : asset.name}
+                </Text>
                 {isAlgo && (
                     <PWIcon
                         name='assets/trusted'
                         size={'sm'}
                     />
                 )}
-                {!isAlgo && asset.peraMetadata?.verificationTier === 'verified' && (
-                    <PWIcon
-                        name='assets/verified'
-                        size={'sm'}
-                    />
-                )}
-                {!isAlgo && asset.peraMetadata?.verificationTier === 'suspicious' && (
-                    <PWIcon
-                        name='assets/suspicious'
-                        size={'sm'}
-                    />
-                )}
+                {!isAlgo &&
+                    asset.peraMetadata?.verificationTier === 'verified' && (
+                        <PWIcon
+                            name='assets/verified'
+                            size={'sm'}
+                        />
+                    )}
+                {!isAlgo &&
+                    asset.peraMetadata?.verificationTier === 'suspicious' && (
+                        <PWIcon
+                            name='assets/suspicious'
+                            size={'sm'}
+                        />
+                    )}
             </PWView>
         </PWView>
     )

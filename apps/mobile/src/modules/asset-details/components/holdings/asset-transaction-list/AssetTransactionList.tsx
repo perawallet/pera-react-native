@@ -17,7 +17,7 @@ import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import PWButton from '../../../../../components/common/button/PWButton'
 import { Text } from '@rneui/themed'
 import EmptyView from '../../../../../components/common/empty-view/EmptyView'
-import { FlashList } from "@shopify/flash-list";
+import { FlashList } from '@shopify/flash-list'
 
 type AssetTransactionListProps = {
     account: WalletAccount
@@ -68,11 +68,13 @@ const AssetTransactionList = ({ children }: AssetTransactionListProps) => {
                     </PWView>
                 </PWView>
             }
-            ListEmptyComponent={<EmptyView
-                style={styles.emptyView}
-                title='No Transactions'
-                body='There are no transactions to be displayed'
-            />}
+            ListEmptyComponent={
+                <EmptyView
+                    style={styles.emptyView}
+                    title='No Transactions'
+                    body='There are no transactions to be displayed'
+                />
+            }
         />
     )
 }

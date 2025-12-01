@@ -17,8 +17,20 @@ import { WalletAccount } from '../../models'
 
 // Mock store
 const mockAccounts: WalletAccount[] = [
-    { address: 'ADDR1', id: 'id1', name: 'Account 1', type: 'standard', canSign: true },
-    { address: 'ADDR2', id: 'id2', name: 'Account 2', type: 'standard', canSign: true },
+    {
+        address: 'ADDR1',
+        id: 'id1',
+        name: 'Account 1',
+        type: 'standard',
+        canSign: true,
+    },
+    {
+        address: 'ADDR2',
+        id: 'id2',
+        name: 'Account 2',
+        type: 'standard',
+        canSign: true,
+    },
 ]
 const mockSetAccounts = vi.fn()
 
@@ -55,8 +67,20 @@ describe('useUpdateAccount', () => {
         // Reset mock accounts
         mockAccounts.length = 0
         mockAccounts.push(
-            { address: 'ADDR1', id: 'id1', name: 'Account 1', type: 'standard', canSign: true },
-            { address: 'ADDR2', id: 'id2', name: 'Account 2', type: 'standard', canSign: true }
+            {
+                address: 'ADDR1',
+                id: 'id1',
+                name: 'Account 1',
+                type: 'standard',
+                canSign: true,
+            },
+            {
+                address: 'ADDR2',
+                id: 'id2',
+                name: 'Account 2',
+                type: 'standard',
+                canSign: true,
+            },
         )
     })
 
@@ -74,8 +98,20 @@ describe('useUpdateAccount', () => {
         result.current(updatedAccount)
 
         expect(mockSetAccounts).toHaveBeenCalledWith([
-            { address: 'ADDR1', id: 'id1', name: 'Updated Account 1', type: 'standard', canSign: true },
-            { address: 'ADDR2', id: 'id2', name: 'Account 2', type: 'standard', canSign: true },
+            {
+                address: 'ADDR1',
+                id: 'id1',
+                name: 'Updated Account 1',
+                type: 'standard',
+                canSign: true,
+            },
+            {
+                address: 'ADDR2',
+                id: 'id2',
+                name: 'Account 2',
+                type: 'standard',
+                canSign: true,
+            },
         ])
     })
 
@@ -93,8 +129,20 @@ describe('useUpdateAccount', () => {
         result.current(updatedAccount)
 
         expect(mockSetAccounts).toHaveBeenCalledWith([
-            { address: 'ADDR1', id: 'id1', name: 'Account 1', type: 'standard', canSign: true },
-            { address: 'ADDR2', id: 'id2', name: 'Updated Account 2', type: 'standard', canSign: true },
+            {
+                address: 'ADDR1',
+                id: 'id1',
+                name: 'Account 1',
+                type: 'standard',
+                canSign: true,
+            },
+            {
+                address: 'ADDR2',
+                id: 'id2',
+                name: 'Updated Account 2',
+                type: 'standard',
+                canSign: true,
+            },
         ])
     })
 

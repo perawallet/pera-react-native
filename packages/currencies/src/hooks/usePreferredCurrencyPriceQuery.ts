@@ -29,10 +29,7 @@ const mapCurrencyToPrice = (data: CurrencyResponse): CurrencyPrice => {
 export const usePreferredCurrencyPriceQuery = (preferredCurrency: string) => {
     const { network } = useNetwork()
     return useQuery({
-        queryKey: getPreferredCurrencyPriceQueryKey(
-            network,
-            preferredCurrency,
-        ),
+        queryKey: getPreferredCurrencyPriceQueryKey(network, preferredCurrency),
         queryFn: () => fetchCurrency(network, preferredCurrency),
         select: useCallback(
             (data: CurrencyResponse) => mapCurrencyToPrice(data),

@@ -39,7 +39,7 @@ const ExpandableText = ({
 
     return (
         <>
-            <Text style={[textStyle]}>{displayText}</Text>
+            <Text style={textStyle}>{displayText}</Text>
             {shouldTruncate && (
                 <PWButton
                     title={isExpanded ? 'Show less' : 'Show more'}

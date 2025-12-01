@@ -74,7 +74,13 @@ const AssetDetailsScreen = ({
     }, [navigation, account, headerIcon])
 
     if (!asset || !account || isPending) {
-        return <LoadingView variant='skeleton' count={3} size='lg' />
+        return (
+            <LoadingView
+                variant='skeleton'
+                count={3}
+                size='lg'
+            />
+        )
     }
 
     return (

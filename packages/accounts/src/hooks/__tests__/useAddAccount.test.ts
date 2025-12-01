@@ -1,13 +1,29 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useAddAccount } from '../useAddAccount'
 import { useAccountsStore } from '../../store'
-import { registerTestPlatform, MemoryKeyValueStorage } from '@perawallet/wallet-core-platform-integration'
+import {
+    registerTestPlatform,
+    MemoryKeyValueStorage,
+} from '@perawallet/wallet-core-platform-integration'
 import type { WalletAccount } from '../../models'
 import { BIP32DerivationTypes } from '@perawallet/wallet-core-xhdwallet'
 
 vi.mock('../../store', async () => {
-    const actual = await vi.importActual<typeof import('../../store')>('../../store')
+    const actual =
+        await vi.importActual<typeof import('../../store')>('../../store')
     const mockStorage = {
         getItem: vi.fn(),
         setItem: vi.fn(),
@@ -35,7 +51,9 @@ vi.mock('@perawallet/wallet-core-platform-integration', async () => {
         }),
         useNetwork: vi.fn(() => ({ network: 'mainnet' })),
         useDeviceID: vi.fn(() => 'device-id'),
-        useUpdateDeviceMutation: vi.fn(() => ({ mutateAsync: mockMutateAsync })),
+        useUpdateDeviceMutation: vi.fn(() => ({
+            mutateAsync: mockMutateAsync,
+        })),
     }
 })
 
@@ -53,9 +71,9 @@ describe('useAddAccount', () => {
 
     test('adds standard account to store and syncs with backend', () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -94,9 +112,9 @@ describe('useAddAccount', () => {
 
     test('adds multiple accounts to store', () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -137,19 +155,21 @@ describe('useAddAccount', () => {
     })
 
     test('derives keys and stores private key for HD wallet accounts', async () => {
-        const mockSeed = Buffer.from('test-seed-data-0123456789abcdef').toString('base64')
+        const mockSeed = Buffer.from(
+            'test-seed-data-0123456789abcdef',
+        ).toString('base64')
         const mockPrivateKey = new Uint8Array(64).fill(42)
         const mockPublicKey = new Uint8Array(32).fill(84)
 
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async (key: string) => {
                 if (key === 'rootkey-hd-wallet-123') {
                     return Buffer.from(JSON.stringify({ seed: mockSeed }))
                 }
                 return null
             }),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -206,9 +226,9 @@ describe('useAddAccount', () => {
 
     test('throws error when root key not found for HD wallet', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => null), // No key found
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -242,14 +262,16 @@ describe('useAddAccount', () => {
 
     test('throws error when master key has no seed property', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async (key: string) => {
                 if (key === 'rootkey-bad-wallet') {
-                    return Buffer.from(JSON.stringify({ invalidProperty: true }))
+                    return Buffer.from(
+                        JSON.stringify({ invalidProperty: true }),
+                    )
                 }
                 return null
             }),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 

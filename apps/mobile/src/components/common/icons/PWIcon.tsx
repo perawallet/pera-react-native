@@ -183,38 +183,49 @@ const PWIcon = ({
     const { theme } = useTheme()
     const IconComponent = ICON_LIBRARY[name]
 
-    const sizeMap: Record<PWIconSize, number> = useMemo(() => ({
-        xs: theme.spacing.md,
-        sm: theme.spacing.lg,
-        md: theme.spacing.xl,
-        lg: theme.spacing.xl * 2,
-        xl: theme.spacing.xl * 3,
-    }), [theme])
+    const sizeMap: Record<PWIconSize, number> = useMemo(
+        () => ({
+            xs: theme.spacing.md,
+            sm: theme.spacing.lg,
+            md: theme.spacing.xl,
+            lg: theme.spacing.xl * 2,
+            xl: theme.spacing.xl * 3,
+        }),
+        [theme],
+    )
 
-    const variantColors: Record<PWIconVariant, string> = useMemo(() => ({
-        primary: theme.colors.textMain,
-        buttonPrimary: theme.colors.buttonPrimaryText,
-        secondary: theme.colors.textGray,
-        helper: theme.colors.buttonSquareText,
-        white: theme.colors.textWhite,
-        link: theme.colors.linkPrimary,
-        error: theme.colors.error,
-    }), [theme])
+    const variantColors: Record<PWIconVariant, string> = useMemo(
+        () => ({
+            primary: theme.colors.textMain,
+            buttonPrimary: theme.colors.buttonPrimaryText,
+            secondary: theme.colors.textGray,
+            helper: theme.colors.buttonSquareText,
+            white: theme.colors.textWhite,
+            link: theme.colors.linkPrimary,
+            error: theme.colors.error,
+        }),
+        [theme],
+    )
 
-    const disabledColors: Record<PWIconVariant, string> = useMemo(() => ({
-        primary: theme.colors.textGray,
-        buttonPrimary: theme.colors.textGray,
-        secondary: theme.colors.textGray,
-        helper: theme.colors.textGray,
-        white: theme.colors.textGray,
-        link: theme.colors.textGray,
-        error: theme.colors.error,
-    }), [theme])
+    const disabledColors: Record<PWIconVariant, string> = useMemo(
+        () => ({
+            primary: theme.colors.textGray,
+            buttonPrimary: theme.colors.textGray,
+            secondary: theme.colors.textGray,
+            helper: theme.colors.textGray,
+            white: theme.colors.textGray,
+            link: theme.colors.textGray,
+            error: theme.colors.error,
+        }),
+        [theme],
+    )
 
     if (!IconComponent) return null
 
     const resolvedSize = sizeMap[size] ?? theme.spacing.xl
-    const resolvedColor = rest.disabled ? disabledColors[variant] : variantColors[variant]
+    const resolvedColor = rest.disabled
+        ? disabledColors[variant]
+        : variantColors[variant]
 
     return (
         <IconComponent
