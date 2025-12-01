@@ -111,7 +111,7 @@ describe('RNSecureStorageService', () => {
                 service: 'com.algorand.android.my-key',
                 username: 'user',
                 password: 'stored-value',
-                storage: 'KC' as any,
+                storage: 'KC',
             })
 
             const result = await service.getItem('my-key')
@@ -158,7 +158,7 @@ describe('RNSecureStorageService', () => {
                 service: 'com.algorand.android.auth_probe',
                 username: 'user',
                 password: '1',
-                storage: 'KC' as any,
+                storage: 'KC',
             })
 
             const result = await service.authenticate()

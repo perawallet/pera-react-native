@@ -1,14 +1,14 @@
 /*
- Copyright 2022-2025 Pera Wallet, LDA
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License
- */
+Copyright 2022-2025 Pera Wallet, LDA
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License
+*/
 
 import {
     FirebaseCrashlyticsTypes,
@@ -32,13 +32,14 @@ import {
 import {
     FirebaseAnalyticsTypes,
     getAnalytics,
-    logEvent,
+    logEvent as logEventGA,
 } from '@react-native-firebase/analytics'
 import { Platform } from 'react-native'
 import notifee, {
     AndroidImportance,
     AuthorizationStatus,
     EventType,
+    NotificationAndroid,
 } from '@notifee/react-native'
 import {
     CrashReportingService,
@@ -52,11 +53,10 @@ import { config } from '@perawallet/wallet-core-config'
 
 export class RNFirebaseService
     implements
-        CrashReportingService,
-        RemoteConfigService,
-        CrashReportingService,
-        AnalyticsService
-{
+    CrashReportingService,
+    RemoteConfigService,
+    CrashReportingService,
+    AnalyticsService {
     remoteConfig: FirebaseRemoteConfigTypes.Module | null = null
     messaging: FirebaseMessagingTypes.Module | null = null
     analytics: FirebaseAnalyticsTypes.Module | null = null
@@ -115,7 +115,7 @@ export class RNFirebaseService
         if (settings.authorizationStatus !== AuthorizationStatus.AUTHORIZED) {
             return {
                 token: undefined,
-                unsubscribe: () => {},
+                unsubscribe: () => { },
             }
         }
 
@@ -142,21 +142,21 @@ export class RNFirebaseService
         // Foreground message handler (show a local notification)
         const unsubscribeOnMessage = this.messaging
             ? onMessage(this.messaging, async remoteMessage => {
-                  const title =
-                      remoteMessage.notification?.title ?? 'Notification'
-                  const body = remoteMessage.notification?.body ?? undefined
+                const title =
+                    remoteMessage.notification?.title ?? 'Notification'
+                const body = remoteMessage.notification?.body ?? undefined
 
-                  await notifee.displayNotification({
-                      title,
-                      body,
-                      data: remoteMessage.data,
-                      android: Platform.select({
-                          android: { channelId: 'default' },
-                          ios: undefined,
-                      }) as any,
-                  })
-              })
-            : () => {}
+                await notifee.displayNotification({
+                    title,
+                    body,
+                    data: remoteMessage.data,
+                    android: Platform.select({
+                        android: { channelId: 'default' },
+                        ios: undefined,
+                    }) as NotificationAndroid,
+                })
+            })
+            : () => { }
 
         // Foreground notification events
         const unsubscribeNotifeeForeground = notifee.onForegroundEvent(
@@ -198,9 +198,9 @@ export class RNFirebaseService
         this.analytics = getAnalytics()
     }
 
-    logEvent(key: string, payload?: any): void {
+    logEvent(key: string, payload?: Record<string, unknown>): void {
         if (this.analytics) {
-            logEvent(this.analytics, key, payload)
+            logEventGA<string>(this.analytics, key, payload)
         }
     }
 }

@@ -13,6 +13,7 @@
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import useToast from './toast'
+import { debugLog } from '@perawallet/wallet-core-shared'
 
 type LinkSource = 'qr' | 'deeplink'
 
@@ -20,7 +21,8 @@ export const useDeepLink = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { showToast } = useToast()
 
-    const isValidDeepLink = (_: string, __: LinkSource) => {
+    const isValidDeepLink = (url: string, source: LinkSource) => {
+        debugLog("Handling deeplink", url, source)
         //TODO implement fully
         return true
     }

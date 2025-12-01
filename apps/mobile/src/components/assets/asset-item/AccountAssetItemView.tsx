@@ -20,7 +20,6 @@ import { useStyles } from './styles'
 import { useMemo } from 'react'
 import PWIcon from '../../common/icons/PWIcon'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { debugLog } from '@perawallet/wallet-core-shared'
 
 type AccountAssetItemViewProps = {
     accountBalance: AssetWithAccountBalance

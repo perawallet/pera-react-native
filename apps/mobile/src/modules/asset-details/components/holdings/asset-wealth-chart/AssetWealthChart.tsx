@@ -33,7 +33,7 @@ import {
 } from '../../../../../constants/ui'
 
 type DataPoint = {
-    timestamp: string
+    timestamp: Date
     value: number
 }
 
@@ -63,10 +63,9 @@ const AssetWealthChart = ({
     )
 
     const dataPoints = useMemo(() => {
-        // @ts-ignore: The generated type is unknown
-        return (data?.results?.map((p: any) => {
+        return (data?.map((p) => {
             return {
-                value: p.fiatValue,
+                value: p.fiatValue.toNumber(),
                 timestamp: p.datetime,
             }
         }) ?? []) as DataPoint[]

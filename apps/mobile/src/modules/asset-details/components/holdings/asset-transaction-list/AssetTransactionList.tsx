@@ -30,7 +30,7 @@ const AssetTransactionList = ({ children }: AssetTransactionListProps) => {
     const styles = useStyles()
 
     // TODO: Replace with actual infinite query hook when added.
-    const transactions: any[] = []
+    const transactions: [] = []
     const handleEndReached = () => {
         // fetchNextPage();
     }

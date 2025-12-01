@@ -11,9 +11,8 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { PanelButtonProps } from './PanelButton'
 
-export const useStyles = makeStyles((theme, _: PanelButtonProps) => ({
+export const useStyles = makeStyles((theme) => ({
     buttonStyle: {
         height: 60,
         gap: theme.spacing.md,

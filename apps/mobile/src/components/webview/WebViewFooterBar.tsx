@@ -22,10 +22,9 @@ import { useStyles } from './styles'
 import PWIcon from '../common/icons/PWIcon'
 import WebView from 'react-native-webview'
 import { WebViewNativeEvent } from 'react-native-webview/lib/RNCWebViewNativeComponent'
-import { debugLog } from '@perawallet/wallet-core-shared'
 
 type WebViewFooterBarProps = {
-    webview: RefObject<WebView<{}> | null>
+    webview: RefObject<WebView<unknown> | null>
     homeUrl?: string
     navigationState?: WebViewNativeEvent
 }

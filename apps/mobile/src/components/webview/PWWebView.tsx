@@ -29,7 +29,6 @@ import {
     WebViewErrorEvent,
     WebViewHttpErrorEvent,
     WebViewNativeEvent,
-    WebViewNavigation,
     WebViewNavigationEvent,
 } from 'react-native-webview/lib/WebViewTypes'
 import {

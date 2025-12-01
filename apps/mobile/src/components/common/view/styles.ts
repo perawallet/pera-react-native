@@ -11,9 +11,8 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { PWViewProps } from './PWView'
 
-export const useStyles = makeStyles((theme, _: PWViewProps) => ({
+export const useStyles = makeStyles((theme) => ({
     defaultStyle: {
         backgroundColor: theme.colors.background,
     },

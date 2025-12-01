@@ -11,7 +11,6 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { StatusBar } from 'react-native'
 import { EdgeInsets } from 'react-native-safe-area-context'
 
 export const useStyles = makeStyles((theme, insets: EdgeInsets) => {

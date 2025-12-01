@@ -19,7 +19,7 @@ export type EmptyViewProps = {
     title?: string
     body: string
     icon?: IconName
-    button?: React.ReactElement<{}>
+    button?: React.ReactElement<unknown>
 } & PWViewProps
 
 const EmptyView = (props: EmptyViewProps) => {

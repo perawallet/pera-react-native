@@ -35,10 +35,10 @@ const PairSelectionPanel = () => {
     const usdcAsset = assets?.get('700965019')
 
     const [sendAmount, setSendAmount] = useState('0.00')
-    const [receiveAmount, _] = useState(Decimal(0))
-    const [receiveAmountUSD, __] = useState(Decimal(0))
-    const [fromBalance, ___] = useState(Decimal(0))
-    const [toBalance, ____] = useState(Decimal(0))
+    const [receiveAmount] = useState(Decimal(0))
+    const [receiveAmountUSD] = useState(Decimal(0))
+    const [fromBalance] = useState(Decimal(0))
+    const [toBalance] = useState(Decimal(0))
 
     const handleAmountChange = useCallback(
         (formatted: string) => {

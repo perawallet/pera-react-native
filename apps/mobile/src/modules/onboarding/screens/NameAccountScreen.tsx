@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { ParamListBase, useNavigation } from '@react-navigation/native'
+import { ParamListBase, useNavigation, StaticScreenProps } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useStyles } from './NameAccountScreen.styles'
 import { Input, Text } from '@rneui/themed'
@@ -26,7 +26,6 @@ import {
     useUpdateAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useState } from 'react'
-import type { StaticScreenProps } from '@react-navigation/native'
 import { KeyboardAvoidingView, Platform } from 'react-native'
 
 type NameAccountScreenProps = StaticScreenProps<{

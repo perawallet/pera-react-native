@@ -17,8 +17,13 @@ import { Text } from '@rneui/themed'
 import { useCallback } from 'react'
 
 import SwapPair from '../swap-pair/SwapPair'
-import { ALGO_ASSET_ID, useAssetsQuery } from '@perawallet/wallet-core-assets'
+import { ALGO_ASSET_ID, PeraAsset, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity'
+
+type SwapAssets = {
+    fromAsset?: PeraAsset,
+    toAsset?: PeraAsset
+}
 
 const SwapHistoryPanel = () => {
     const themeStyle = useStyles()
@@ -30,7 +35,10 @@ const SwapHistoryPanel = () => {
     const vestAsset = assets?.get('11711')
 
     const renderSwapPair = useCallback(
-        (item: any, index: number) => {
+        (item: SwapAssets, index: number) => {
+            if (!item.fromAsset || !item.toAsset) {
+                return null
+            }
             return (
                 <SwapPair
                     key={'swappair' + index}
@@ -43,7 +51,7 @@ const SwapHistoryPanel = () => {
         [themeStyle.itemContainer],
     )
 
-    const pairs = [
+    const pairs: SwapAssets[] = [
         {
             fromAsset: vestAsset,
             toAsset: algoAsset,

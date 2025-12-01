@@ -153,7 +153,7 @@ describe('RNDeviceInfoStorageService', () => {
             // Import and mock Platform directly
             const { Platform } = await import('react-native')
             const mockPlatform = vi.mocked(Platform)
-            mockPlatform.OS = 'android' as any
+            mockPlatform.OS = 'android'
 
             // Create new service instance to pick up the new mock
             const androidService = new RNDeviceInfoStorageService()
@@ -162,7 +162,7 @@ describe('RNDeviceInfoStorageService', () => {
             expect(platform).toBe('android')
 
             // Reset back to iOS for other tests
-            mockPlatform.OS = 'ios' as any
+            mockPlatform.OS = 'ios'
         })
     })
 

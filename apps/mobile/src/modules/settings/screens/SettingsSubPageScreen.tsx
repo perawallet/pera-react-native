@@ -29,8 +29,9 @@ import {
     useSigningRequest,
 } from '@perawallet/wallet-core-blockchain'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import useToast from '../../../hooks/toast'
 
-type SettingsSubPageScreenProps = StaticScreenProps<{
+export type SettingsSubPageScreenProps = StaticScreenProps<{
     title: string
 }>
 
@@ -42,6 +43,7 @@ const SettingsSubPageScreen = ({ route }: SettingsSubPageScreenProps) => {
     const { registerDevice } = useDevice(network)
     const accounts = useAllAccounts()
     const queryClient = useQueryClient()
+    const { showToast } = useToast()
 
     const toggleTheme = () => {
         if (theme === 'dark' || theme === 'system') {
@@ -75,7 +77,11 @@ const SettingsSubPageScreen = ({ route }: SettingsSubPageScreenProps) => {
                 txs: [[tx]],
             })
         } catch (error) {
-            console.log('Error', error)
+            showToast({
+                title: 'An unexpected error occurred',
+                body: `Details: ${error}`,
+                type: 'error'
+            })
         }
     }
 

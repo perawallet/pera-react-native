@@ -30,9 +30,9 @@ export default [
       },
     },
     plugins: {
+      'unused-imports': unusedImports,
       'react-hooks': pluginReactHooks,
       'react-native': pluginReactNative,
-      'unused-imports': unusedImports,
     },
     rules: {
       // React Native

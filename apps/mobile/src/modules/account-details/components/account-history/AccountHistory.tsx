@@ -11,14 +11,9 @@
  */
 
 import EmptyView from '../../../../components/common/empty-view/EmptyView'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-
-type AccountHistoryProps = {
-    account: WalletAccount
-}
 
 //TODO implement
-const AccountHistory = (_: AccountHistoryProps) => {
+const AccountHistory = () => {
     return (
         <EmptyView
             title='Not Implemented'

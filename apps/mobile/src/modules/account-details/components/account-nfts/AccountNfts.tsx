@@ -11,14 +11,9 @@
  */
 
 import EmptyView from '../../../../components/common/empty-view/EmptyView'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-
-type AccountNftsProps = {
-    account: WalletAccount
-}
 
 //TODO implement
-const AccountNfts = (_: AccountNftsProps) => {
+const AccountNfts = () => {
     return (
         <EmptyView
             title='Not Implemented'

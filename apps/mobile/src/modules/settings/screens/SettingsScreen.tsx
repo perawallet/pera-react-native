@@ -20,7 +20,7 @@ import { ScrollView } from 'react-native'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useDeviceInfoService } from '@perawallet/wallet-core-platform-integration'
-import { useContext, useMemo, useState } from 'react'
+import { useContext, useMemo } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import PWTouchableOpacity from '../../../components/common/touchable-opacity/PWTouchableOpacity'
 import PWIcon, { IconName } from '../../../components/common/icons/PWIcon'
@@ -105,7 +105,6 @@ const SettingsScreen = () => {
     const styles = useStyles(insets)
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { getAppVersion } = useDeviceInfoService()
-    const [_, setRatingOpen] = useState(false)
     const { pushWebView } = useContext(WebViewContext)
 
     const appVersion = useMemo(() => {
@@ -117,7 +116,7 @@ const SettingsScreen = () => {
     }
 
     const openRating = () => {
-        setRatingOpen(true)
+        //TODO open ratings view here somehow
     }
 
     const openWebView = (url: string) => {
@@ -125,6 +124,24 @@ const SettingsScreen = () => {
             url,
             id: '',
         })
+    }
+
+    const handleTapEvent = (page: {
+        title: string,
+        icon: string,
+        url?: string,
+        route?: string
+    }) => {
+        if (page.route) {
+            goToSettingsPage(
+                page.route,
+                page.title,
+            )
+        } else if (page.url) {
+            openWebView(page.url)
+        } else {
+            openRating()
+        }
     }
 
     return (
@@ -146,16 +163,7 @@ const SettingsScreen = () => {
                                 <PWTouchableOpacity
                                     style={styles.sectionRow}
                                     key={`settings-sectionrow-${page.title}`}
-                                    onPress={() => {
-                                        page.route
-                                            ? goToSettingsPage(
-                                                  page.route,
-                                                  page.title,
-                                              )
-                                            : page.url
-                                              ? openWebView(page.url)
-                                              : openRating()
-                                    }}
+                                    onPress={() => handleTapEvent(page)}
                                 >
                                     <PWIcon name={page.icon as IconName} />
                                     <Text style={styles.sectionRowTitle}>

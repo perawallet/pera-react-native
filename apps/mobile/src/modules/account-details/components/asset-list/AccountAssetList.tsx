@@ -15,7 +15,7 @@ import AccountAssetItemView from '../../../../components/assets/asset-item/Accou
 import PWView from '../../../../components/common/view/PWView'
 import { PropsWithChildren, useMemo } from 'react'
 import { useStyles } from './styles'
-import { Skeleton, Text } from '@rneui/themed'
+import { Text } from '@rneui/themed'
 
 import SearchInput from '../../../../components/common/search-input/SearchInput'
 import PWButton from '../../../../components/common/button/PWButton'

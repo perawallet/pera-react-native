@@ -30,7 +30,7 @@ const AddressEntryField = ({
     const styles = useStyles()
     const [scannerVisible, setScannerVisible] = useState(false)
 
-    const addressScanned = (_: string) => {
+    const addressScanned = () => {
         //TODO parse URL and extract address
         setScannerVisible(false)
     }

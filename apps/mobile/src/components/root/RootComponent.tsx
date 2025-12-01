@@ -53,7 +53,8 @@ const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
         return styles.mainnetBar
     }, [network, styles.testnetBar, styles.mainnetBar])
 
-    const showError = (error: any) => {
+    const showError = (error: string | Error
+    ) => {
         showToast({
             title: 'Error',
             body: config.debugEnabled

@@ -28,6 +28,7 @@ import {
     SignRequest,
     useSigningRequest,
 } from '@perawallet/wallet-core-blockchain'
+import EmptyView from '@components/common/empty-view/EmptyView'
 
 type SigningViewProps = {
     request: SignRequest
@@ -38,11 +39,18 @@ type SigningViewProps = {
 //TODO: convert usd amounts to preferred currency
 const SingleTransactionView = ({ request }: SigningViewProps) => {
     const styles = useStyles()
-    const tx = request.txs?.at(0)?.at(0)!
+    const tx = request.txs?.at(0)?.at(0)
     const receiver =
-        tx['asset-transfer-transaction']?.receiver ??
-        tx['payment-transaction']?.receiver ??
-        ''
+        tx?.['asset-transfer-transaction']?.receiver ??
+        tx?.['payment-transaction']?.receiver
+
+    //TODO this isn't really a valid error since it might be an app call or something but that
+    //will get fixed when we implement all tx types
+    if (!receiver) {
+        return <EmptyView
+            title='Invalid Transaction'
+            body="There does not appear to be a receiver for this transaction" />
+    }
 
     return (
         <PWView style={styles.body}>
@@ -87,7 +95,7 @@ const GroupTransactionView = ({ request }: SigningViewProps) => {
             </Text>
             {isMultipleGroups ? (
                 <PWView>
-                    <Text>This is where we'll show the groups</Text>
+                    <Text>This is where we{"'"}ll show the groups</Text>
                 </PWView>
             ) : (
                 <BalanceImpactView />

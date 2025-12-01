@@ -12,13 +12,20 @@
 
 import { useStyles } from './styles'
 import PWView from '../../common/view/PWView'
-import { FlatList } from 'react-native'
 import { Text } from '@rneui/themed'
 import { useCallback } from 'react'
 
 import SwapPair from '../swap-pair/SwapPair'
 import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
-import { ALGO_ASSET_ID, useAssetsQuery } from '@perawallet/wallet-core-assets'
+import { ALGO_ASSET_ID, PeraAsset, useAssetsQuery } from '@perawallet/wallet-core-assets'
+import Decimal from 'decimal.js'
+import { FlashList } from '@shopify/flash-list'
+
+type SwapRecord = {
+    fromAsset?: PeraAsset,
+    toAsset?: PeraAsset,
+    volume: Decimal
+}
 
 //TODO this iz a mock implementation - implement properly
 const TopPairsPanel = () => {
@@ -35,7 +42,10 @@ const TopPairsPanel = () => {
     const vestAsset = assets?.get('700965019')
 
     const renderSwapPair = useCallback(
-        (item: any) => {
+        ({ item }: { item: SwapRecord }) => {
+            if (!item.fromAsset || !item.toAsset) {
+                return null
+            }
             return (
                 <PWView style={themeStyle.itemRow}>
                     <SwapPair
@@ -57,21 +67,21 @@ const TopPairsPanel = () => {
         [themeStyle],
     )
 
-    const pairs = [
+    const pairs: SwapRecord[] = [
         {
             fromAsset: vestAsset,
             toAsset: algoAsset,
-            volume: 20000,
+            volume: Decimal(20000),
         },
         {
             fromAsset: algoAsset,
             toAsset: usdcAsset,
-            volume: 234240,
+            volume: Decimal(234240),
         },
         {
             fromAsset: algoAsset,
             toAsset: vestAsset,
-            volume: 422210,
+            volume: Decimal(422210),
         },
     ]
 
@@ -86,7 +96,7 @@ const TopPairsPanel = () => {
                     Volume (24H)
                 </Text>
             </PWView>
-            <FlatList
+            <FlashList
                 style={themeStyle.scrollContainer}
                 contentContainerStyle={themeStyle.itemScrollContainer}
                 data={pairs}

@@ -17,26 +17,26 @@ const prettier = require("eslint-config-prettier");
 const globals = require("globals");
 
 module.exports = tseslint.config(
-  {
-    ignores: ["lib/*", "dist/*", "coverage/*", "src/**/__tests__/**"],
-  },
-  js.configs.recommended,
-  ...tseslint.configs.recommended,
-  prettier,
-  {
-    languageOptions: {
-      ecmaVersion: 2020,
-      sourceType: "module",
-      globals: {
-        ...globals.node,
-      },
+    {
+        ignores: ["lib/*", "dist/*", "coverage/*", "src/**/__tests__/**", 'src/test-utils/**'],
     },
-    plugins: {
-      "unused-imports": unusedImports,
-    },
-    rules: {
-      "@typescript-eslint/no-non-null-assertion": "off",
-      "unused-imports/no-unused-imports": "error",
-    },
-  }
+    js.configs.recommended,
+    ...tseslint.configs.recommended,
+    prettier,
+    {
+        languageOptions: {
+            ecmaVersion: 2020,
+            sourceType: "module",
+            globals: {
+                ...globals.node,
+            },
+        },
+        plugins: {
+            "unused-imports": unusedImports,
+        },
+        rules: {
+            "@typescript-eslint/no-non-null-assertion": "off",
+            "unused-imports/no-unused-imports": "error",
+        },
+    }
 );

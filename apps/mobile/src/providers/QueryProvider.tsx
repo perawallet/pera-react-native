@@ -17,10 +17,11 @@ import {
 } from '@tanstack/react-query-persist-client'
 import { OmitKeyof, QueryCache, QueryClient } from '@tanstack/react-query'
 import { config } from '@perawallet/wallet-core-config'
+import { errorLog } from '@perawallet/wallet-core-shared'
 
 const cache = new QueryCache({
     onError: error => {
-        console.log('An error has occurred:', error)
+        errorLog('An error has occurred:', error)
         //TODO should we use a toast here?
     },
 })

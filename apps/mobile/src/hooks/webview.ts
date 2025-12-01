@@ -19,8 +19,6 @@ import {
     useDeviceInfoService,
     useNetwork,
 } from '@perawallet/wallet-core-platform-integration'
-import { ParamListBase, useNavigation } from '@react-navigation/native'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
     getAccountDisplayName,
     useAllAccounts,
@@ -62,7 +60,7 @@ type LogAnalyticsParams = {
 
 type WebviewMessage = {
     action: string
-    params: Record<string, any>
+    params: Record<string, unknown>
 }
 
 export const usePeraWebviewInterface = (
@@ -192,7 +190,7 @@ export const usePeraWebviewInterface = (
     }, [webview])
 
     //TODO not sure what the correct behavior here is?
-    const onBackPressed = useCallback(() => {}, [])
+    const onBackPressed = useCallback(() => { }, [])
 
     const logAnalyticsEvent = useCallback(
         (params: LogAnalyticsParams) => {

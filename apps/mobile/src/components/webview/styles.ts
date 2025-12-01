@@ -11,9 +11,8 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { PWWebViewProps } from './PWWebView'
 
-export const useStyles = makeStyles((theme, props: PWWebViewProps) => {
+export const useStyles = makeStyles((theme) => {
     return {
         flex: {
             flex: 1,

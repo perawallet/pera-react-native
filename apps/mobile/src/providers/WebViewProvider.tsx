@@ -32,13 +32,15 @@ type WebViewStack = {
 
 export const WebViewContext = createContext<WebViewStack>({
     openWebViews: [],
-    pushWebView: () => {},
-    popWebView: () => {},
-    removeWebView: () => {},
-    clearWebViews: () => {},
+    pushWebView: () => { },
+    popWebView: () => { },
+    removeWebView: () => { },
+    clearWebViews: () => { },
 })
 
 type WebViewProviderProps = {} & PropsWithChildren
+
+const flexStyle = { flex: 1, }
 
 const WebViewProvider = ({ children }: WebViewProviderProps) => {
     const [openWebViews, setOpenWebViews] = useState<WebViewRequest[]>([])
@@ -80,7 +82,7 @@ const WebViewProvider = ({ children }: WebViewProviderProps) => {
                     isVisible={true}
                     scrollEnabled={false}
                 >
-                    <PWView style={{ flex: 1 }}>
+                    <PWView style={flexStyle}>
                         <PWWebView
                             requestId={view.id}
                             url={view.url}

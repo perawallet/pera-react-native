@@ -13,7 +13,7 @@
 import { makeStyles } from '@rneui/themed'
 import { CHART_HEIGHT } from '../../../../../constants/ui'
 
-export const useStyles = makeStyles(theme => ({
+export const useStyles = makeStyles(() => ({
     container: {
         height: CHART_HEIGHT,
     },

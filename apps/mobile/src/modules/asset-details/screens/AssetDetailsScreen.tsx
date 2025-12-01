@@ -16,7 +16,6 @@ import { StaticScreenProps, useNavigation } from '@react-navigation/native'
 import {
     getAccountDisplayName,
     useSelectedAccount,
-    WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useCallback, useLayoutEffect, useMemo, useState } from 'react'
 import { useStyles } from './styles'

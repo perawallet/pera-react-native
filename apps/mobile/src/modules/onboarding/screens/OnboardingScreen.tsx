@@ -13,7 +13,7 @@
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useStyles } from './OnboardingScreen.styles'
-import { Text, useTheme } from '@rneui/themed'
+import { Text, useTheme, Overlay } from '@rneui/themed'
 import PWView from '../../../components/common/view/PWView'
 import MainScreenLayout from '../../../layouts/MainScreenLayout'
 import PanelButton from '../../../components/common/panel-button/PanelButton'
@@ -22,7 +22,6 @@ import PWIcon from '../../../components/common/icons/PWIcon'
 import WelcomeImage from '../../../../assets/images/welcome-background.svg'
 import { ActivityIndicator } from 'react-native'
 import { useCreateAccount } from '@perawallet/wallet-core-accounts'
-import { Overlay } from '@rneui/themed'
 import { useState } from 'react'
 
 const OnboardingScreen = () => {
@@ -76,8 +75,8 @@ const OnboardingScreen = () => {
                         title='Create a new wallet'
                         titleWeight='h4'
                         onPress={createAccountHandler}
-                        leftIcon={<PWIcon name='wallet-with-algo' />}
-                        rightIcon={<PWIcon name='chevron-right' />}
+                        leftIcon={'wallet-with-algo'}
+                        rightIcon={'chevron-right'}
                     />
 
                     <Text
@@ -90,8 +89,8 @@ const OnboardingScreen = () => {
                         title='Import an account'
                         titleWeight='h4'
                         onPress={importAccount}
-                        leftIcon={<PWIcon name='key' />}
-                        rightIcon={<PWIcon name='chevron-right' />}
+                        leftIcon={'key'}
+                        rightIcon={'chevron-right'}
                     />
                 </PWView>
             </PWView>

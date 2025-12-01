@@ -56,7 +56,7 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
     const { accountBalances } = useAccountBalancesQuery(
         selectedAccount ? [selectedAccount] : [],
     )
-    const { assets } = useAssetsQuery()
+    const { data: assets } = useAssetsQuery()
 
     const asset = useMemo(() => {
         if (!selectedAsset?.assetId) return null

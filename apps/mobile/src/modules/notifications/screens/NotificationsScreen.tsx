@@ -12,7 +12,7 @@
 
 import { useTheme } from '@rneui/themed'
 import MainScreenLayout from '../../../layouts/MainScreenLayout'
-import { useNotificationsList } from '@perawallet/wallet-core-platform-integration'
+import { PeraNotification, useNotificationsList } from '@perawallet/wallet-core-platform-integration'
 import { ActivityIndicator } from 'react-native'
 import EmptyView from '../../../components/common/empty-view/EmptyView'
 import { useStyles } from './styles'
@@ -25,8 +25,8 @@ const NotificationsScreen = () => {
     const styles = useStyles()
     const { theme } = useTheme()
 
-    const renderItem = (info: any) => {
-        return <NotificationItem item={info.item} />
+    const renderItem = ({ item }: { item: PeraNotification }) => {
+        return <NotificationItem item={item} />
     }
 
     const {

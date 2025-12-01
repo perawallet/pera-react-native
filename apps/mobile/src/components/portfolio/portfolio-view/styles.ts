@@ -11,9 +11,8 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { PropsWithChildren } from 'react'
 
-export const useStyles = makeStyles((theme, _: PropsWithChildren) => {
+export const useStyles = makeStyles((theme) => {
     return {
         iconBar: {
             paddingVertical: 0,

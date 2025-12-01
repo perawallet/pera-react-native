@@ -79,7 +79,7 @@ const SendFundsInfoPanel = ({
                             <Text style={styles.tipNumber}>1</Text>
                         </PWView>
                         <Text style={styles.tipText}>
-                            When sending to an address for the first time, it's
+                            When sending to an address for the first time, it is
                             useful to send a small test transaction before
                             sending a large amount.
                         </Text>
@@ -93,7 +93,7 @@ const SendFundsInfoPanel = ({
                             and saved exchange addresses may no longer be in
                             use.{' '}
                             <Text style={styles.redText}>
-                                Ensure you're sending to the correct address.
+                                Ensure you are sending to the correct address.
                             </Text>
                         </Text>
                     </PWView>

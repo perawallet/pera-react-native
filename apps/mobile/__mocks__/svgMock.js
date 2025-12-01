@@ -12,6 +12,6 @@
 
 import React from 'react';
 
-const SvgMock = React.forwardRef((props, ref) => 'SvgMock');
+const SvgMock = React.forwardRef(() => 'SvgMock');
 
 export default SvgMock;

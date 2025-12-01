@@ -33,7 +33,7 @@ const CardPanel = () => {
                         <Text h3>Cards</Text>
                     </PWView>
                     <Text style={styles.cardSecondaryText}>
-                        Get the world's first web3{'\n'}Mastercard.
+                        Get the world{`'`}s first web3{'\n'}Mastercard.
                     </Text>
                 </PWView>
                 <PWView style={styles.cardImageContainer}>
