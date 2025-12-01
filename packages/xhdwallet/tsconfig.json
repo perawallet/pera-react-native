@@ -2,30 +2,6 @@
   "extends": "@perawallet/wallet-core-devtools/tsconfig/vite.json",
   "compilerOptions": {
     "baseUrl": "src",
-    "paths": {
-      "@services/*": [
-        "services/*"
-      ],
-      "@store/*": [
-        "store/*"
-      ],
-      "@api/*": [
-        "api/*",
-        "api/generated/*"
-      ],
-      "@platform/*": [
-        "platform/*"
-      ],
-      "@test-utils/*": [
-        "test-utils/*"
-      ],
-      "@test-utils": [
-        "test-utils/index.ts"
-      ]
-    },
-    "types": [
-      "vitest/globals"
-    ]
   },
   "include": [
     "src",
