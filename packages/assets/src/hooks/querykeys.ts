@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { HistoryPeriod } from 'packages/shared/src'
+import { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { ALGO_ASSET_ID } from '../models'
 
 export const MODULE_PREFIX = 'assets'

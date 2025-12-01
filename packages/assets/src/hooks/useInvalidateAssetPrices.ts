@@ -16,10 +16,32 @@ export const useInvalidateAssetPrices = () => {
     const queryClient = useQueryClient()
 
     const invalidateAssetPrices = () => {
-        queryClient.invalidateQueries({
-            predicate: query =>
-                query.queryKey.join('/').startsWith('assets/prices'),
-        })
+        try {
+            queryClient.invalidateQueries({
+                predicate: query => {
+                    try {
+                        // Handle edge cases: null, undefined, or non-array queryKey
+                        if (!query.queryKey || !Array.isArray(query.queryKey)) {
+                            return false
+                        }
+                        
+                        // Handle empty array
+                        if (query.queryKey.length === 0) {
+                            return false
+                        }
+                        
+                        // Check if the query key starts with 'assets/prices'
+                        return query.queryKey.join('/').startsWith('assets/prices')
+                    } catch (error) {
+                        // If any error occurs during predicate evaluation, don't invalidate the query
+                        return false
+                    }
+                },
+            })
+        } catch (error) {
+            // Silently handle any errors during invalidation
+            console.error('Error invalidating asset prices:', error)
+        }
     }
 
     return {

@@ -15,7 +15,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { useAssetsQuery } from '../useAssetsQuery'
 import { getAssetsQueryKey, getAlgoQueryKey } from '../querykeys'
 import { ALGO_ASSET_ID } from '../../models'
-import { createWrapper } from '../../test-utils'
+import { createWrapper } from './test-utils'
 import { QueryClient } from '@tanstack/react-query'
 import { useAssetsStore } from '../../store'
 
@@ -124,18 +124,18 @@ describe('useAssetsQuery', () => {
             await waitFor(() => expect(result.current.isPending).toBe(false))
 
             expect(result.current.isError).toBe(false)
-            expect(result.current.assets.size).toBe(2)
+            expect(result.current.data.size).toBe(2)
 
             expect(mocks.fetchAssets).toHaveBeenCalled()
             expect(useAssetsStore.getState().assetIDs).toContain('123')
 
-            expect(result.current.assets.get('123')).toEqual(
+            expect(result.current.data.get('123')).toEqual(
                 expect.objectContaining({
                     assetId: '123',
                     name: 'Test Asset',
                 }),
             )
-            expect(result.current.assets.get(ALGO_ASSET_ID)).toEqual(
+            expect(result.current.data.get(ALGO_ASSET_ID)).toEqual(
                 expect.objectContaining({
                     assetId: ALGO_ASSET_ID,
                     name: 'Algorand',

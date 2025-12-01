@@ -26,7 +26,7 @@ export default defineConfig({
                 '**/index.ts', // Re-export files
                 '**/endpoints.ts', // Raw API functions (tested via hooks)
                 '**/*.config.ts', // Configuration files (vite, vitest)
-                '**/.eslintrc.cjs', // ESLint config
+                '**/eslint.config.js', // ESLint config
             ],
         },
         environment: 'jsdom',

@@ -12,7 +12,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
-import { ALGO_ASSET, ALGO_ASSET_ID, type PeraAsset } from '../models'
+import { ALGO_ASSET, ALGO_ASSET_ID, DEFAULT_ASSET_VALUES, type PeraAsset } from '../models'
 import {
     mapAssetResponseToPeraAsset,
     mapIndexerAssetToPeraAsset,
@@ -28,6 +28,7 @@ import {
     getIndexerAssetDetailsQueryKey,
     getPublicAssetDetailsQueryKey,
 } from './querykeys'
+import { stripNulls } from '@perawallet/wallet-core-shared'
 
 //Fetches data from the indexer and Pera backend and returns the combined data
 export const useSingleAssetDetailsQuery = (assetId: string) => {
@@ -73,12 +74,17 @@ export const useSingleAssetDetailsQuery = (assetId: string) => {
         refetch: () => void
         isLoading: boolean
     }>(() => {
-        const algoAsset = algoData ? algoData : ALGO_ASSET
+        let algoAsset = algoData
+        if (!algoAsset && assetId === ALGO_ASSET_ID) {
+            algoAsset = ALGO_ASSET
+        }
 
         const data = {
+            ...DEFAULT_ASSET_VALUES,
+            assetId,
             ...indexerData,
-            ...peraData,
-            ...algoAsset,
+            ...(peraData ? stripNulls(peraData) : {}),
+            ...(algoAsset ? stripNulls(algoAsset) : {}),
         }
         return {
             data,

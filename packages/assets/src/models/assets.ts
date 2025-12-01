@@ -61,6 +61,16 @@ export const DEFAULT_ASSET_METADATA: PeraAssetMetadata = {
     verificationTier: PeraAssetVerificationTier.unverified,
 }
 
+export const DEFAULT_ASSET_VALUES: PeraAsset = {
+    assetId: '',
+    decimals: 0,
+    creator: {
+        address: '',
+    },
+    totalSupply: Decimal(0),
+    peraMetadata: DEFAULT_ASSET_METADATA,
+}
+
 export type PeraAssetMetadata = {
     isDeleted: boolean
     verificationTier: PeraAssetVerificationTier

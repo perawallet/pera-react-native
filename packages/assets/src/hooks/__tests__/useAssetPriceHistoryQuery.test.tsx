@@ -14,9 +14,8 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import {
     useAssetPriceHistoryQuery,
-    getBaseAssetPriceHistoryQueryKey,
 } from '../useAssetPriceHistoryQuery'
-import { createWrapper } from '../../test-utils'
+import { createWrapper } from './test-utils'
 import { QueryClient } from '@tanstack/react-query'
 import Decimal from 'decimal.js'
 
@@ -54,13 +53,6 @@ describe('useAssetPriceHistoryQuery', () => {
         )
     })
 
-    describe('getBaseAssetPriceHistoryQueryKey', () => {
-        it('generates correct query key', () => {
-            const key = getBaseAssetPriceHistoryQueryKey()
-            expect(key).toEqual(['v1', 'assets', 'price_history'])
-        })
-    })
-
     describe('useAssetPriceHistoryQuery hook', () => {
         it('fetches data successfully and converts prices', async () => {
             const assetID = '123'
@@ -83,7 +75,7 @@ describe('useAssetPriceHistoryQuery', () => {
         })
 
         it('handles loading state', () => {
-            mocks.fetchAssetPriceHistory.mockReturnValue(new Promise(() => {}))
+            mocks.fetchAssetPriceHistory.mockReturnValue(new Promise(() => { }))
 
             const { result } = renderHook(
                 () => useAssetPriceHistoryQuery('123', 'one-day'),

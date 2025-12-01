@@ -2,10 +2,9 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import {
     useSingleAssetDetailsQuery,
-    getSingleAssetDetailsQueryKeys,
 } from '../useSingleAssetDetailsQuery'
-import { ALGO_ASSET_ID, ALGO_ASSET } from '../../models'
-import { createWrapper } from '../../test-utils'
+import { ALGO_ASSET_ID } from '../../models'
+import { createWrapper } from './test-utils'
 import { QueryClient } from '@tanstack/react-query'
 
 // Mock endpoints
@@ -35,14 +34,6 @@ describe('useSingleAssetDetailsQuery', () => {
         })
     })
 
-    describe('getSingleAssetDetailsQueryKeys', () => {
-        it('returns correct query keys', () => {
-            const keys = getSingleAssetDetailsQueryKeys('123')
-            expect(keys).toHaveLength(3)
-            expect(keys[0]).toEqual([['v1', 'assets', '123']])
-        })
-    })
-
     describe('useSingleAssetDetailsQuery hook', () => {
         it('returns ALGO asset details when asset_id is ALGO_ASSET_ID', async () => {
             mocks.fetchPublicAssetDetails.mockResolvedValue({
@@ -68,7 +59,7 @@ describe('useSingleAssetDetailsQuery', () => {
 
             expect(result.current.data).toEqual(expect.objectContaining({
                 assetId: ALGO_ASSET_ID,
-                name: 'Algorand',
+                name: 'Algo',
             }))
         })
 

@@ -14,7 +14,7 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { useAssetFiatPricesQuery } from '../useAssetFiatPricesQuery'
 import Decimal from 'decimal.js'
-import { createWrapper } from '../../test-utils'
+import { createWrapper } from './test-utils'
 import { QueryClient } from '@tanstack/react-query'
 import { useAssetsStore } from '../../store'
 import { ALGO_ASSET_ID } from '../../models'
@@ -128,8 +128,8 @@ describe('useAssetFiatPricesQuery', () => {
     })
 
     it('handles loading state', () => {
-        mocks.fetchAssetFiatPrices.mockReturnValue(new Promise(() => {}))
-        mocks.fetchPublicAssetDetails.mockReturnValue(new Promise(() => {}))
+        mocks.fetchAssetFiatPrices.mockReturnValue(new Promise(() => { }))
+        mocks.fetchPublicAssetDetails.mockReturnValue(new Promise(() => { }))
 
         const { result } = renderHook(() => useAssetFiatPricesQuery(), {
             wrapper: createWrapper(queryClient),
