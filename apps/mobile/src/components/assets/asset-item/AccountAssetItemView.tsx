@@ -36,7 +36,7 @@ const AccountAssetItemView = ({
     const styles = useStyles()
 
     const { preferredCurrency } = useCurrency()
-    const { assets } = useAssetsQuery([accountBalance.assetId])
+    const { data: assets } = useAssetsQuery([accountBalance.assetId])
 
     const asset = useMemo(() => {
         return assets?.get(accountBalance.assetId)

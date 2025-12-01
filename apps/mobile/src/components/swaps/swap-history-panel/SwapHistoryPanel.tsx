@@ -23,7 +23,7 @@ import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacit
 const SwapHistoryPanel = () => {
     const themeStyle = useStyles()
 
-    const { assets } = useAssetsQuery(['11711', '10458941', '700965019'])
+    const { data: assets } = useAssetsQuery(['11711', '10458941', '700965019'])
 
     const algoAsset = assets?.get(ALGO_ASSET_ID)
     const usdcAsset = assets?.get('700965019')

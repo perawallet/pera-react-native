@@ -15,6 +15,20 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
     test: {
         globals: true,
+        coverage: {
+            provider: 'v8',
+            exclude: [
+                '**/node_modules/**',
+                '**/dist/**',
+                '**/*.test.ts',
+                '**/*.test.tsx',
+                '**/models/**', // Type definitions and interfaces
+                '**/index.ts', // Re-export files
+                '**/endpoints.ts', // Raw API functions (tested via hooks)
+                '**/*.config.ts', // Configuration files (vite, vitest)
+                '**/.eslintrc.cjs', // ESLint config
+            ],
+        },
         environment: 'jsdom',
         setupFiles: ['./vitest.setup.ts'],
     },

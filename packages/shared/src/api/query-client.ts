@@ -20,34 +20,8 @@ import ky, {
     HTTPError,
 } from 'ky'
 import { config } from '@perawallet/wallet-core-config'
-import { Networks, type Network } from '../models'
+import { Networks, RequestConfiguration, ResponseConfiguration, type Network } from '../models'
 import { debugLog } from '../utils'
-
-export type RequestConfiguration<TData = unknown> = {
-    backend: 'algod' | 'indexer' | 'pera'
-    network: Network
-    url?: string
-    method: 'GET' | 'PUT' | 'PATCH' | 'POST' | 'DELETE'
-    params?: object
-    data?: TData | FormData
-    responseType?:
-    | 'arraybuffer'
-    | 'blob'
-    | 'document'
-    | 'json'
-    | 'text'
-    | 'stream'
-    signal?: AbortSignal
-    headers?: HeadersInit
-}
-
-export type ResponseConfiguration<TData = unknown> = {
-    data: TData
-    status: number
-    statusText: string
-}
-
-export type ResponseErrorConfiguration<TError = unknown> = TError
 
 type BackendInstances = {
     algod: KyInstance

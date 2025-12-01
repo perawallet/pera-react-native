@@ -57,7 +57,7 @@ const SendFundsTransactionConfirmation = ({
     const { selectedAsset, amount, destination, note } =
         useContext(SendFundsContext)
 
-    const { assets } = useAssetsQuery()
+    const { data: assets } = useAssetsQuery()
     const asset = useMemo(() => {
         if (!selectedAsset?.assetId) return null
         return assets.get(selectedAsset?.assetId)

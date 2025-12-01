@@ -4,6 +4,7 @@ import { useAddAccount } from '../useAddAccount'
 import { useAccountsStore } from '../../store'
 import { registerTestPlatform, MemoryKeyValueStorage } from '@perawallet/wallet-core-platform-integration'
 import type { WalletAccount } from '../../models'
+import { BIP32DerivationTypes } from '@perawallet/wallet-core-xhdwallet'
 
 vi.mock('../../store', async () => {
     const actual = await vi.importActual<typeof import('../../store')>('../../store')
@@ -19,6 +20,7 @@ vi.mock('../../store', async () => {
 })
 
 const mockMutateAsync = vi.fn(async () => ({}))
+const mockDeriveKey = vi.fn()
 
 vi.mock('@perawallet/wallet-core-platform-integration', async () => {
     const actual = await vi.importActual<
@@ -36,6 +38,12 @@ vi.mock('@perawallet/wallet-core-platform-integration', async () => {
         useUpdateDeviceMutation: vi.fn(() => ({ mutateAsync: mockMutateAsync })),
     }
 })
+
+vi.mock('../useHDWallet', () => ({
+    useHDWallet: () => ({
+        deriveKey: mockDeriveKey,
+    }),
+}))
 
 describe('useAddAccount', () => {
     beforeEach(() => {
@@ -126,5 +134,150 @@ describe('useAddAccount', () => {
         const accounts = useAccountsStore.getState().accounts
         expect(accounts).toHaveLength(2)
         expect(accounts).toEqual([account1, account2])
+    })
+
+    test('derives keys and stores private key for HD wallet accounts', async () => {
+        const mockSeed = Buffer.from('test-seed-data-0123456789abcdef').toString('base64')
+        const mockPrivateKey = new Uint8Array(64).fill(42)
+        const mockPublicKey = new Uint8Array(32).fill(84)
+
+        const dummySecure = {
+            setItem: vi.fn(async () => { }),
+            getItem: vi.fn(async (key: string) => {
+                if (key === 'rootkey-hd-wallet-123') {
+                    return Buffer.from(JSON.stringify({ seed: mockSeed }))
+                }
+                return null
+            }),
+            removeItem: vi.fn(async () => { }),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        mockDeriveKey.mockResolvedValue({
+            address: mockPublicKey,
+            privateKey: mockPrivateKey,
+        })
+
+        const { result } = renderHook(() => useAddAccount())
+
+        const hdAccount: WalletAccount = {
+            name: 'HD Account 1',
+            type: 'standard',
+            address: '', // Will be set by the hook
+            canSign: true,
+            hdWalletDetails: {
+                walletId: 'hd-wallet-123',
+                account: 0,
+                change: 0,
+                keyIndex: 5,
+                derivationType: BIP32DerivationTypes.Peikert,
+            },
+        }
+
+        await act(async () => {
+            await result.current(hdAccount)
+        })
+
+        // Verify deriveKey was called with correct parameters
+        expect(mockDeriveKey).toHaveBeenCalledWith({
+            seed: Buffer.from(mockSeed, 'base64'),
+            account: 0,
+            keyIndex: 5,
+            derivationType: BIP32DerivationTypes.Peikert,
+        })
+
+        // Verify account was added to store with generated address and id
+        const accounts = useAccountsStore.getState().accounts
+        expect(accounts).toHaveLength(1)
+        expect(accounts[0].address).toBeTruthy()
+        expect(accounts[0].id).toBeTruthy()
+        expect(accounts[0].name).toBe('HD Account 1')
+
+        // Verify private key was stored in secure storage
+        expect(dummySecure.setItem).toHaveBeenCalled()
+        const setItemCall = dummySecure.setItem.mock.calls[0]
+        expect(setItemCall.at(0)).toContain('pk-')
+    })
+
+    test('throws error when root key not found for HD wallet', async () => {
+        const dummySecure = {
+            setItem: vi.fn(async () => { }),
+            getItem: vi.fn(async () => null), // No key found
+            removeItem: vi.fn(async () => { }),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const { result } = renderHook(() => useAddAccount())
+
+        const hdAccount: WalletAccount = {
+            name: 'HD Account',
+            type: 'standard',
+            address: '',
+            canSign: true,
+            hdWalletDetails: {
+                walletId: 'missing-wallet',
+                account: 0,
+                change: 0,
+                keyIndex: 0,
+                derivationType: BIP32DerivationTypes.Peikert,
+            },
+        }
+
+        await expect(async () => {
+            await act(async () => {
+                await result.current(hdAccount)
+            })
+        }).rejects.toThrow('No key found for missing-wallet')
+    })
+
+    test('throws error when master key has no seed property', async () => {
+        const dummySecure = {
+            setItem: vi.fn(async () => { }),
+            getItem: vi.fn(async (key: string) => {
+                if (key === 'rootkey-bad-wallet') {
+                    return Buffer.from(JSON.stringify({ invalidProperty: true }))
+                }
+                return null
+            }),
+            removeItem: vi.fn(async () => { }),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const { result } = renderHook(() => useAddAccount())
+
+        const hdAccount: WalletAccount = {
+            name: 'HD Account',
+            type: 'standard',
+            address: '',
+            canSign: true,
+            hdWalletDetails: {
+                walletId: 'bad-wallet',
+                account: 0,
+                change: 0,
+                keyIndex: 0,
+                derivationType: BIP32DerivationTypes.Peikert,
+            },
+        }
+
+        await expect(async () => {
+            await act(async () => {
+                await result.current(hdAccount)
+            })
+        }).rejects.toThrow('No key found for bad-wallet')
     })
 })

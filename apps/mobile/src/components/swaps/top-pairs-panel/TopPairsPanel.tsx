@@ -24,7 +24,7 @@ import { ALGO_ASSET_ID, useAssetsQuery } from '@perawallet/wallet-core-assets'
 const TopPairsPanel = () => {
     const themeStyle = useStyles()
 
-    const { assets } = useAssetsQuery([ALGO_ASSET_ID, '10458941', '700965019'])
+    const { data: assets } = useAssetsQuery([ALGO_ASSET_ID, '10458941', '700965019'])
 
     const algoAsset = assets?.get(ALGO_ASSET_ID)
     const usdcAsset = assets?.get('10458941')

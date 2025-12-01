@@ -60,7 +60,7 @@ export const useAccountBalancesQuery = (
         queries: queries,
     })
 
-    const { assets } = useAssetsQuery(results.flatMap(r => r.data?.assets?.map(a => `${a['asset-id']}`) ?? []))
+    const { data: assets } = useAssetsQuery(results.flatMap(r => r.data?.assets?.map(a => `${a['asset-id']}`) ?? []))
     const { data: assetPrices } = useAssetFiatPricesQuery()
     const usdAlgoPrice = useMemo(() => assetPrices?.get(ALGO_ASSET_ID)?.fiatPrice ?? Decimal(0), [assetPrices])
 
@@ -78,7 +78,6 @@ export const useAccountBalancesQuery = (
             let fiatValue = Decimal(0)
 
             const assetBalances: AssetWithAccountBalance[] = []
-
             r.data?.assets?.forEach((assetHolding: AssetHolding) => {
                 const usdAssetPrice = assetPrices?.get(`${assetHolding['asset-id']}`)?.fiatPrice ?? Decimal(0)
                 const asset = assets.get(`${assetHolding['asset-id']}`)

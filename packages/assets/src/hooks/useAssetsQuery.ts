@@ -78,7 +78,7 @@ export const useAssetsQuery = (ids?: string[]) => {
             })
         })
         return {
-            assets,
+            data: assets,
             isPending: queries.some(query => query.isPending),
             isFetched: queries.some(query => query.isFetched),
             isRefetching: queries.some(query => query.isRefetching),

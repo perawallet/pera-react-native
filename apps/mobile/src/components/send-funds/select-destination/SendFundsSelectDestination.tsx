@@ -32,7 +32,7 @@ const SendFundsSelectDestination = ({
 }: SendFundsSelectDestinationProps) => {
     const { selectedAsset, setDestination } = useContext(SendFundsContext)
     const styles = useStyles()
-    const { assets } = useAssetsQuery()
+    const { data: assets } = useAssetsQuery()
     const asset = useMemo(() => {
         if (!selectedAsset?.assetId) return null
         return assets.get(selectedAsset?.assetId)

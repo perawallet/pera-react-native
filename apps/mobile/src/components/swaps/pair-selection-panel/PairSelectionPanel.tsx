@@ -29,7 +29,7 @@ const PairSelectionPanel = () => {
     const styles = useStyles()
     const { theme } = useTheme()
 
-    const { assets } = useAssetsQuery(['10458941', '700965019'])
+    const { data: assets } = useAssetsQuery(['10458941', '700965019'])
 
     const algoAsset = assets?.get(ALGO_ASSET_ID)
     const usdcAsset = assets?.get('700965019')
