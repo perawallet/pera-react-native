@@ -12,7 +12,7 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { registerTestPlatform } from '@perawallet/test-utils'
+import { registerTestPlatform } from '../../../test '
 
 vi.mock('../../../api/query-client', () => ({
     createFetchClient: vi.fn(() => vi.fn()),
@@ -61,8 +61,8 @@ const storeMock = vi.hoisted(() => {
             }
             const useAppStore: any = (selector?: any) =>
                 selector ? selector(state) : state
-            ;(useAppStore as any).getState = () => state
-            ;(useAppStore as any).setState = setState
+                ; (useAppStore as any).getState = () => state
+                ; (useAppStore as any).setState = setState
             // slice updaters that our hook selects
             state = {
                 ...state,
@@ -89,7 +89,7 @@ describe('services/device/hooks', () => {
         const { useDeviceStore } = await import('../../store')
         const { useFcmToken } = await import('../../hooks')
 
-        ;(useDeviceStore as any).setState({ fcmToken: 'OLD_TOKEN' })
+            ; (useDeviceStore as any).setState({ fcmToken: 'OLD_TOKEN' })
 
         const { result } = renderHook(() => useFcmToken())
 
@@ -113,10 +113,10 @@ describe('services/device/hooks', () => {
         const { useDeviceStore } = await import('../../store')
         const { useDevice } = await import('../../hooks')
 
-        ;(useDeviceStore as any).setState({
-            fcmToken: 'FCM123',
-            deviceIDs: new Map(),
-        })
+            ; (useDeviceStore as any).setState({
+                fcmToken: 'FCM123',
+                deviceIDs: new Map(),
+            })
 
         const { result } = renderHook(() => useDevice('testnet'))
         await act(async () => {
@@ -149,10 +149,10 @@ describe('services/device/hooks', () => {
         const { useDeviceStore } = await import('../../store')
         const { useDevice } = await import('../../hooks')
 
-        ;(useDeviceStore as any).setState({
-            fcmToken: 'TOKEN',
-            deviceIDs: new Map([['testnet', 'DEV1']]),
-        })
+            ; (useDeviceStore as any).setState({
+                fcmToken: 'TOKEN',
+                deviceIDs: new Map([['testnet', 'DEV1']]),
+            })
 
         const { result } = renderHook(() => useDevice('testnet'))
         await act(async () => {
@@ -185,10 +185,10 @@ describe('services/device/hooks', () => {
         const { useDeviceStore } = await import('../../store')
         const { useDeviceID } = await import('../../hooks')
 
-        ;(useDeviceStore as any).setState({
-            fcmToken: 'TOKEN',
-            deviceIDs: new Map([['testnet', 'DEV1']]),
-        })
+            ; (useDeviceStore as any).setState({
+                fcmToken: 'TOKEN',
+                deviceIDs: new Map([['testnet', 'DEV1']]),
+            })
 
         const { result } = renderHook(() => useDeviceID('testnet'))
         await act(async () => {
@@ -206,10 +206,10 @@ describe('services/device/hooks', () => {
         const { useDeviceStore } = await import('../../store')
         const { useDeviceID } = await import('../../hooks')
 
-        ;(useDeviceStore as any).setState({
-            fcmToken: 'TOKEN',
-            deviceIDs: new Map([['testnet', 'DEV1']]),
-        })
+            ; (useDeviceStore as any).setState({
+                fcmToken: 'TOKEN',
+                deviceIDs: new Map([['testnet', 'DEV1']]),
+            })
 
         const { result } = renderHook(() => useDeviceID('mainnet'))
         await act(async () => {
@@ -227,10 +227,10 @@ describe('services/device/hooks', () => {
         const { useDeviceStore } = await import('../../store')
         const { useDevice } = await import('../../hooks')
 
-        ;(useDeviceStore as any).setState({
-            fcmToken: null,
-            deviceIDs: new Map(),
-        })
+            ; (useDeviceStore as any).setState({
+                fcmToken: null,
+                deviceIDs: new Map(),
+            })
 
         const { result } = renderHook(() => useDevice('testnet'))
         await act(async () => {
@@ -258,10 +258,10 @@ describe('services/device/hooks', () => {
         const { useDeviceStore } = await import('../../store')
         const { useDevice } = await import('../../hooks')
 
-        ;(useDeviceStore as any).setState({
-            fcmToken: 'FCM123',
-            deviceIDs: new Map(),
-        })
+            ; (useDeviceStore as any).setState({
+                fcmToken: 'FCM123',
+                deviceIDs: new Map(),
+            })
 
         const { result } = renderHook(() => useDevice('testnet'))
         await act(async () => {
@@ -289,10 +289,10 @@ describe('services/device/hooks', () => {
         const { useDeviceStore } = await import('../../store')
         const { useDevice } = await import('../../hooks')
 
-        ;(useDeviceStore as any).setState({
-            fcmToken: null,
-            deviceIDs: new Map(),
-        })
+            ; (useDeviceStore as any).setState({
+                fcmToken: null,
+                deviceIDs: new Map(),
+            })
 
         const { result } = renderHook(() => useDevice('testnet'))
         await act(async () => {
@@ -314,10 +314,10 @@ describe('services/device/hooks', () => {
         const { useDeviceStore } = await import('../../store')
         const { useDevice } = await import('../../hooks')
 
-        ;(useDeviceStore as any).setState({
-            fcmToken: null,
-            deviceIDs: new Map([['testnet', 'DEV1']]),
-        })
+            ; (useDeviceStore as any).setState({
+                fcmToken: null,
+                deviceIDs: new Map([['testnet', 'DEV1']]),
+            })
 
         const { result } = renderHook(() => useDevice('testnet'))
         await act(async () => {

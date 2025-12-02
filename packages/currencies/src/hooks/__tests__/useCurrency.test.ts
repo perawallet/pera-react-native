@@ -12,33 +12,19 @@
 
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useCurrency, useCurrencyConverter } from '../hooks'
-import { useAppStore } from '../../../store'
+import { useCurrency } from '../index'
 import Decimal from 'decimal.js'
+import { useCurrenciesStore } from '../../store'
 
 // Mock the store
-vi.mock('../../../store', () => ({
-    useAppStore: vi.fn(),
+vi.mock('../../store', () => ({
+    useCurrenciesStore: vi.fn(),
 }))
 
 // Mock the data hook
-const mockUsePreferredCurrencyPrice = vi.hoisted(() => vi.fn())
-vi.mock('../../../data', () => ({
-    usePreferredCurrencyPrice: mockUsePreferredCurrencyPrice,
-}))
-
-// Mock the API hook
-const mockUseV1CurrenciesRead = vi.hoisted(() => vi.fn())
-vi.mock('@api/index', () => ({
-    useV1CurrenciesRead: mockUseV1CurrenciesRead,
-    useV1WalletWealthList: vi.fn(() => ({
-        data: { results: [] },
-        isPending: false,
-    })),
-    useV1AccountsAssetsBalanceHistoryList: vi.fn(() => ({
-        data: { results: [] },
-        isPending: false,
-    })),
+const mockUsePreferredCurrencyPriceQuery = vi.hoisted(() => vi.fn())
+vi.mock('../usePreferredCurrencyPriceQuery', () => ({
+    usePreferredCurrencyPriceQuery: mockUsePreferredCurrencyPriceQuery,
 }))
 
 describe('services/currencies/hooks', () => {
@@ -46,7 +32,7 @@ describe('services/currencies/hooks', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        mockUseAppStore = vi.mocked(useAppStore)
+        mockUseAppStore = vi.mocked(useCurrenciesStore)
     })
 
     describe('useCurrency', () => {
@@ -57,6 +43,11 @@ describe('services/currencies/hooks', () => {
             mockUseAppStore.mockReturnValue({
                 preferredCurrency: mockPreferredCurrency,
                 setPreferredCurrency: mockSetPreferredCurrency,
+            })
+
+            mockUsePreferredCurrencyPriceQuery.mockReturnValue({
+                data: { usdPrice: Decimal('1.0') },
+                isPending: false,
             })
 
             const { result } = renderHook(() => useCurrency())
@@ -75,6 +66,11 @@ describe('services/currencies/hooks', () => {
                 setPreferredCurrency: mockSetPreferredCurrency,
             })
 
+            mockUsePreferredCurrencyPriceQuery.mockReturnValue({
+                data: { usdPrice: Decimal('1.0') },
+                isPending: false,
+            })
+
             const { result } = renderHook(() => useCurrency())
 
             act(() => {
@@ -83,20 +79,18 @@ describe('services/currencies/hooks', () => {
 
             expect(mockSetPreferredCurrency).toHaveBeenCalledWith('GBP')
         })
-    })
 
-    describe('useCurrencyConverter', () => {
         it('returns usdToPreferred function', () => {
             mockUseAppStore.mockReturnValue({
                 preferredCurrency: 'USD',
             })
 
-            mockUsePreferredCurrencyPrice.mockReturnValue({
-                data: { usd_value: '1.0' },
+            mockUsePreferredCurrencyPriceQuery.mockReturnValue({
+                data: { usdPrice: Decimal('1.0') },
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCurrencyConverter())
+            const { result } = renderHook(() => useCurrency())
 
             expect(typeof result.current.usdToPreferred).toBe('function')
         })
@@ -106,12 +100,12 @@ describe('services/currencies/hooks', () => {
                 preferredCurrency: 'EUR',
             })
 
-            mockUsePreferredCurrencyPrice.mockReturnValue({
-                data: { usd_value: '0.85' },
+            mockUsePreferredCurrencyPriceQuery.mockReturnValue({
+                data: { usdPrice: Decimal('0.85') },
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCurrencyConverter())
+            const { result } = renderHook(() => useCurrency())
 
             const usdAmount = Decimal(100)
             const converted = result.current.usdToPreferred(usdAmount)
@@ -124,12 +118,12 @@ describe('services/currencies/hooks', () => {
                 preferredCurrency: 'EUR',
             })
 
-            mockUsePreferredCurrencyPrice.mockReturnValue({
+            mockUsePreferredCurrencyPriceQuery.mockReturnValue({
                 data: undefined,
                 isPending: true,
             })
 
-            const { result } = renderHook(() => useCurrencyConverter())
+            const { result } = renderHook(() => useCurrency())
 
             const usdAmount = Decimal(100)
             const converted = result.current.usdToPreferred(usdAmount)
@@ -137,17 +131,17 @@ describe('services/currencies/hooks', () => {
             expect(converted).toEqual(Decimal(0))
         })
 
-        it('handles undefined usd_value gracefully', () => {
+        it('handles undefined usdPrice gracefully', () => {
             mockUseAppStore.mockReturnValue({
                 preferredCurrency: 'EUR',
             })
 
-            mockUsePreferredCurrencyPrice.mockReturnValue({
-                data: { usd_value: undefined },
+            mockUsePreferredCurrencyPriceQuery.mockReturnValue({
+                data: { usdPrice: undefined },
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCurrencyConverter())
+            const { result } = renderHook(() => useCurrency())
 
             const usdAmount = Decimal(100)
             const converted = result.current.usdToPreferred(usdAmount)
@@ -155,17 +149,17 @@ describe('services/currencies/hooks', () => {
             expect(converted).toEqual(Decimal(0))
         })
 
-        it('handles empty usd_value string gracefully', () => {
+        it('handles empty usdPrice string gracefully', () => {
             mockUseAppStore.mockReturnValue({
                 preferredCurrency: 'EUR',
             })
 
-            mockUsePreferredCurrencyPrice.mockReturnValue({
-                data: { usd_value: '' },
+            mockUsePreferredCurrencyPriceQuery.mockReturnValue({
+                data: { usdPrice: Decimal('0') },
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCurrencyConverter())
+            const { result } = renderHook(() => useCurrency())
 
             const usdAmount = Decimal(100)
             const converted = result.current.usdToPreferred(usdAmount)
@@ -178,12 +172,12 @@ describe('services/currencies/hooks', () => {
                 preferredCurrency: 'JPY',
             })
 
-            mockUsePreferredCurrencyPrice.mockReturnValue({
-                data: { usd_value: '150.5' },
+            mockUsePreferredCurrencyPriceQuery.mockReturnValue({
+                data: { usdPrice: Decimal('150.5') },
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCurrencyConverter())
+            const { result } = renderHook(() => useCurrency())
 
             const usdAmount = Decimal(2.5)
             const converted = result.current.usdToPreferred(usdAmount)
@@ -193,12 +187,12 @@ describe('services/currencies/hooks', () => {
 
         it('returns USD amount unchanged when preferred currency is USD', () => {
             mockUseAppStore.mockReturnValue({ preferredCurrency: 'USD' })
-            mockUsePreferredCurrencyPrice.mockReturnValue({
-                data: { usd_value: '1.0' },
+            mockUsePreferredCurrencyPriceQuery.mockReturnValue({
+                data: { usdPrice: Decimal('1.0') },
                 isPending: false,
             })
 
-            const { result } = renderHook(() => useCurrencyConverter())
+            const { result } = renderHook(() => useCurrency())
 
             const usdAmount = Decimal(100)
             const converted = result.current.usdToPreferred(usdAmount)

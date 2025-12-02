@@ -24,6 +24,7 @@
     "vitest": "catalog:",
     "@types/react": "catalog:",
     "@testing-library/react": "catalog:",
+    "reflect-metadata": "catalog:",
     "@perawallet/wallet-core-devtools": "workspace:*",
     "globals": "catalog:",
     "typescript-eslint": "catalog:"

@@ -10,12 +10,12 @@
  limitations under the License
  */
 
-import { describe, test, expect, beforeEach, vi } from 'vitest'
+import { describe, test, expect, beforeEach, vi, Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 
-import { useAlgorandClient, useSigningRequest } from '../../hooks'
+import { useAlgorandClient } from '../../hooks'
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
-import { useBlockchainStore } from '../../store'
+import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 
 // Mock AlgorandClient factory methods so we can assert which one is chosen
 vi.mock('@algorandfoundation/algokit-utils', () => {
@@ -29,31 +29,19 @@ vi.mock('@algorandfoundation/algokit-utils', () => {
     }
 })
 
-// Mock the zustand-bound store to avoid persistence/container setup for these unit tests
-const storeMock = vi.hoisted(() => {
-    let state: any = { network: 'mainnet' }
-    return {
-        create() {
-            const useAppStore: any = (selector?: any) =>
-                selector ? selector(state) : state
-            ;(useAppStore as any).getState = () => state
-            ;(useAppStore as any).setState = (partial: any) => {
-                state = { ...state, ...partial }
-            }
-            return { useAppStore }
-        },
-    }
-})
-vi.mock('../../store', () => storeMock.create())
+// Mock useNetwork from platform-integration
+vi.mock('@perawallet/wallet-core-platform-integration', () => ({
+    useNetwork: vi.fn(),
+}))
 
 describe('services/blockchain/hooks', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        ;(useBlockchainStore as any).setState({ network: 'mainnet' })
+            ; (useNetwork as Mock).mockReturnValue({ network: 'mainnet' })
     })
 
     test('returns fromConfig client for mainnet', () => {
-        ;(useBlockchainStore as any).setState({ network: 'mainnet' })
+        ; (useNetwork as Mock).mockReturnValue({ network: 'mainnet' })
         const { result } = renderHook(() => useAlgorandClient())
 
         expect(AlgorandClient.fromConfig).toHaveBeenCalledTimes(1)
@@ -64,7 +52,7 @@ describe('services/blockchain/hooks', () => {
     })
 
     test('returns fromConfig client for testnet', () => {
-        ;(useBlockchainStore as any).setState({ network: 'testnet' })
+        ; (useNetwork as Mock).mockReturnValue({ network: 'testnet' })
         const { result } = renderHook(() => useAlgorandClient())
 
         expect(AlgorandClient.fromConfig).toHaveBeenCalledTimes(1)
@@ -75,7 +63,7 @@ describe('services/blockchain/hooks', () => {
     })
 
     test('returns fromConfig client for unknown network', () => {
-        ;(useBlockchainStore as any).setState({ network: 'devnet' as any })
+        ; (useNetwork as Mock).mockReturnValue({ network: 'devnet' })
         const { result } = renderHook(() => useAlgorandClient())
 
         expect(AlgorandClient.fromConfig).toHaveBeenCalledTimes(1)
@@ -83,23 +71,5 @@ describe('services/blockchain/hooks', () => {
         expect(AlgorandClient.mainNet).not.toHaveBeenCalled()
         expect(AlgorandClient.fromEnvironment).not.toHaveBeenCalled()
         expect(result.current).toBe('FROM_CONFIG_CLIENT')
-    })
-
-    test('useSigningRequest returns signing request state and methods', () => {
-        const mockRequests = [{ id: '1' }]
-        const mockAdd = vi.fn()
-        const mockRemove = vi.fn()
-
-        ;(useBlockchainStore as any).setState({
-            pendingSignRequests: mockRequests,
-            addSignRequest: mockAdd,
-            removeSignRequest: mockRemove,
-        })
-
-        const { result } = renderHook(() => useSigningRequest())
-
-        expect(result.current.pendingSignRequests).toBe(mockRequests)
-        expect(result.current.addSignRequest).toBe(mockAdd)
-        expect(result.current.removeSignRequest).toBe(mockRemove)
     })
 })

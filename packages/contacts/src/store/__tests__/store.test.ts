@@ -10,3 +10,80 @@
  limitations under the License
  */
 
+
+import { describe, test, expect, beforeEach, vi } from 'vitest'
+import { renderHook, act } from '@testing-library/react'
+import { useContactsStore, initContactsStore } from '../index'
+import { Contact } from '../../models'
+
+// Mock the storage service
+vi.mock('@perawallet/wallet-core-platform-integration', () => ({
+    useKeyValueStorageService: vi.fn(() => ({
+        getItem: vi.fn(),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+    })),
+}))
+
+describe('ContactsStore', () => {
+    beforeEach(() => {
+        initContactsStore()
+    })
+
+    test('should add a contact', () => {
+        const { result } = renderHook(() => useContactsStore())
+        const contact: Contact = {
+            id: 'test-id',
+            name: 'Alice',
+            address: 'ALICE123',
+        }
+
+        act(() => {
+            result.current.saveContact(contact)
+        })
+
+        expect(result.current.contacts).toHaveLength(1)
+        expect(result.current.contacts[0]).toEqual(contact)
+    })
+
+    test('should not add duplicate contact', () => {
+        const { result } = renderHook(() => useContactsStore())
+        const contact: Contact = {
+            id: 'test-id',
+            name: 'Alice',
+            address: 'ALICE123',
+        }
+
+        act(() => {
+            result.current.saveContact(contact)
+        })
+
+        act(() => {
+            const added = result.current.saveContact(contact)
+            expect(added).toBe(false)
+        })
+
+        expect(result.current.contacts).toHaveLength(1)
+    })
+
+    test('should remove a contact', () => {
+        const { result } = renderHook(() => useContactsStore())
+        const contact: Contact = {
+            id: 'test-id',
+            name: 'Alice',
+            address: 'ALICE123',
+        }
+
+        act(() => {
+            result.current.saveContact(contact)
+        })
+
+        expect(result.current.contacts).toHaveLength(1)
+
+        act(() => {
+            result.current.deleteContact(contact)
+        })
+
+        expect(result.current.contacts).toHaveLength(0)
+    })
+})

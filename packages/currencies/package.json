@@ -22,7 +22,9 @@
     "vite": "catalog:",
     "vitest": "catalog:",
     "@types/react": "catalog:",
+    "@testing-library/react": "catalog:",
     "@perawallet/wallet-core-devtools": "workspace:*",
+    "reflect-metadata": "catalog:",
     "globals": "catalog:",
     "typescript-eslint": "catalog:"
   }

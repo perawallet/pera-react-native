@@ -10,12 +10,4 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
-import { getCurrenciesQueryKey } from '../querykeys'
-
-describe('getCurrenciesQueryKey', () => {
-    it('returns correct query keys', () => {
-        const keys = getCurrenciesQueryKey('mainnet')
-        expect(keys).toEqual(['currencies', { network: 'mainnet' }])
-    })
-})
+import 'reflect-metadata'

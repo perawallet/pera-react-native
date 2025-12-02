@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
 import { useCallback } from 'react'
 import { useDeviceID, useNetwork } from '../../device'
 import { useInfiniteQuery, type InfiniteData } from '@tanstack/react-query'
@@ -20,13 +19,7 @@ import type {
     NotificationsListResponse,
     PeraNotification,
 } from '../models'
-
-export const getNotificationsListQueryKey = (
-    network: Network,
-    deviceID: string,
-) => {
-    return ['v1', 'devices', deviceID, 'notifications', network]
-}
+import { getNotificationsListQueryKey } from './querykeys'
 
 const mapNotificationResponseToNotification = (
     response: NotificationResponse,
@@ -42,7 +35,7 @@ const mapNotificationResponseToNotification = (
     }
 }
 
-export const useNotificationsList = () => {
+export const useNotificationsListQuery = () => {
     const { network } = useNetwork()
     const deviceID = useDeviceID(network)
 

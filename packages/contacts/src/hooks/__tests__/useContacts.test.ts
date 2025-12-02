@@ -17,7 +17,7 @@ import type { Contact } from '../../models'
 
 // Mock the useAppStore hook
 const mockUseAppStore = vi.fn()
-vi.mock('../../../store', () => ({
+vi.mock('../../store', () => ({
     useContactsStore: () => mockUseAppStore(),
 }))
 

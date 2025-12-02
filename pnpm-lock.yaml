@@ -669,6 +669,9 @@ importers:
       globals:
         specifier: 'catalog:'
         version: 15.15.0
+      reflect-metadata:
+        specifier: 'catalog:'
+        version: 0.2.2
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -779,6 +782,9 @@ importers:
       globals:
         specifier: 'catalog:'
         version: 15.15.0
+      reflect-metadata:
+        specifier: 'catalog:'
+        version: 0.2.2
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -819,12 +825,18 @@ importers:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.2
       globals:
         specifier: 'catalog:'
         version: 15.15.0
+      reflect-metadata:
+        specifier: 'catalog:'
+        version: 0.2.2
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
