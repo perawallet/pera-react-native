@@ -25,6 +25,7 @@ import PWTouchableOpacity from '../../../components/common/touchable-opacity/PWT
 import PWIcon, { IconName } from '../../../components/common/icons/PWIcon'
 import { config } from '@perawallet/wallet-core-config'
 import { WebViewContext } from '../../../providers/WebViewProvider'
+import PWListItem from '../../../components/common/list-item/PWListItem'
 
 //TODO: add ratings view handling
 const settingsOptions = [
@@ -158,20 +159,11 @@ const SettingsScreen = () => {
                             {item.title}
                         </Text>
                         {item.items.map(page => (
-                            <PWTouchableOpacity
-                                style={styles.sectionRow}
-                                key={`settings-sectionrow-${page.title}`}
+                            <PWListItem key={`settings-sectionrow-${page.title}`}
                                 onPress={() => handleTapEvent(page)}
-                            >
-                                <PWIcon name={page.icon as IconName} />
-                                <Text style={styles.sectionRowTitle}>
-                                    {page.title}
-                                </Text>
-                                <PWIcon
-                                    name='chevron-right'
-                                    variant='secondary'
-                                />
-                            </PWTouchableOpacity>
+                                icon={page.icon as IconName}
+                                title={page.title}
+                            />
                         ))}
                     </PWView>
                 ))}

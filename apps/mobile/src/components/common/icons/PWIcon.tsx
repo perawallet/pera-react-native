@@ -66,6 +66,7 @@ import StarIcon from '../../../../assets/icons/star.svg'
 import SwapIcon from '../../../../assets/icons/swap.svg'
 import SwitchIcon from '../../../../assets/icons/switch.svg'
 import TextDocumentIcon from '../../../../assets/icons/text-document.svg'
+import TreeIcon from '../../../../assets/icons/tree.svg'
 import WalletConnectIcon from '../../../../assets/icons/wallet-connect.svg'
 import WalletInCircleIcon from '../../../../assets/icons/wallet-in-circle.svg'
 import WalletWithAlgoIcon from '../../../../assets/icons/wallet-with-algo.svg'
@@ -138,6 +139,7 @@ const ICON_LIBRARY = {
     swap: SwapIcon,
     switch: SwitchIcon,
     'text-document': TextDocumentIcon,
+    tree: TreeIcon,
     undo: UndoIcon,
     'wallet-connect': WalletConnectIcon,
     'wallet-in-circle': WalletInCircleIcon,

@@ -12,6 +12,41 @@ import SettingsThemeScreen from "../modules/settings/screens/theme/SettingsTheme
 import SettingsDeveloperScreen from "../modules/settings/screens/developer/SettingsDeveloperScreen";
 import SettingsSubPageScreen from "../modules/settings/screens/SettingsSubPageScreen";
 import { headeredLayout } from "./layouts";
+import SettingsDeveloperNodeSettingsScreen from "../modules/settings/screens/developer/node-settings/SettingsDeveloperNodeSettingsScreen";
+import SettingsDeveloperDispenserScreen from "../modules/settings/screens/developer/dispenser/SettingsDeveloperDispenserScreen";
+
+export const DeveloperSettingsStack = createNativeStackNavigator({
+    initialRouteName: 'DeveloperSettingsHome',
+    screenOptions: {
+        headerShown: true,
+        header: (props: NativeStackHeaderProps) => (
+            <NavigationHeader {...props} />
+        ),
+        ...SCREEN_ANIMATION_CONFIG,
+    },
+    screenListeners,
+    layout: headeredLayout,
+    screens: {
+        DeveloperSettingsHome: {
+            screen: SettingsDeveloperScreen,
+            options: {
+                title: 'Developer Settings',
+            },
+        },
+        NodeSettings: {
+            screen: SettingsDeveloperNodeSettingsScreen,
+            options: {
+                title: 'Node Settings',
+            },
+        },
+        DispenserSettings: {
+            screen: SettingsDeveloperDispenserScreen,
+            options: {
+                title: 'Dispenser',
+            },
+        },
+    },
+})
 
 export const SettingsStack = createNativeStackNavigator({
     initialRouteName: 'SettingsHome',
@@ -68,9 +103,9 @@ export const SettingsStack = createNativeStackNavigator({
             },
         },
         DeveloperSettings: {
-            screen: SettingsDeveloperScreen,
+            screen: DeveloperSettingsStack,
             options: {
-                title: 'Developer',
+                headerShown: false,
             },
         },
         SettingsSubPage: {

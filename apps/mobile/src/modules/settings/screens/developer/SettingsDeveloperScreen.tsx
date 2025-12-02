@@ -10,15 +10,35 @@
  limitations under the License
  */
 
-import EmptyView from '../../../../components/common/empty-view/EmptyView'
+import { ParamListBase, useNavigation } from '@react-navigation/native'
+import PWListItem from '../../../../components/common/list-item/PWListItem'
+import PWView from '../../../../components/common/view/PWView'
+import { useStyles } from './styles'
+import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { useNetwork } from '@perawallet/wallet-core-platform-integration'
+import { Networks } from '@perawallet/wallet-core-shared'
 
 const SettingsDeveloperScreen = () => {
+    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
+    const { network } = useNetwork()
+    const styles = useStyles()
+
+    const handleTapEvent = (page: string) => {
+        navigation.push(page)
+    }
     return (
-        <EmptyView
-            icon='code'
-            title='Not Implemented'
-            body='This screen has not yet been implemented'
-        />
+        <PWView style={styles.container}>
+            <PWListItem key={`settings-developer-node-settings`}
+                onPress={() => handleTapEvent("NodeSettings")}
+                icon="tree"
+                title="Node Settings"
+            />
+            {network === Networks.testnet && <PWListItem key={`settings-developer-algorand-dispenser`}
+                onPress={() => handleTapEvent("DispenserSettings")}
+                icon="algo"
+                title="Algorand Dispenser"
+            />}
+        </PWView>
     )
 }
 
