@@ -11,7 +11,6 @@
  */
 
 import { Text } from '@rneui/themed'
-import MainScreenLayout from '../../../layouts/MainScreenLayout'
 
 import PWView from '../../../components/common/view/PWView'
 import PWButton from '../../../components/common/button/PWButton'
@@ -145,48 +144,46 @@ const SettingsScreen = () => {
     }
 
     return (
-        <MainScreenLayout fullScreen>
-            <ScrollView
-                style={styles.scrollView}
-                contentContainerStyle={styles.scrollViewContainer}
-            >
-                <PWView style={styles.sectionContainer}>
-                    {settingsOptions.map(item => (
-                        <PWView
-                            style={styles.section}
-                            key={`settings-section-${item.title}`}
-                        >
-                            <Text style={styles.sectionTitle}>
-                                {item.title}
-                            </Text>
-                            {item.items.map(page => (
-                                <PWTouchableOpacity
-                                    style={styles.sectionRow}
-                                    key={`settings-sectionrow-${page.title}`}
-                                    onPress={() => handleTapEvent(page)}
-                                >
-                                    <PWIcon name={page.icon as IconName} />
-                                    <Text style={styles.sectionRowTitle}>
-                                        {page.title}
-                                    </Text>
-                                    <PWIcon
-                                        name='chevron-right'
-                                        variant='secondary'
-                                    />
-                                </PWTouchableOpacity>
-                            ))}
-                        </PWView>
-                    ))}
-                </PWView>
-                <PWButton
-                    variant='secondary'
-                    title='Remove All Accounts and Logout'
-                />
-                <Text style={styles.versionText}>
-                    Pera Wallet Version {appVersion}
-                </Text>
-            </ScrollView>
-        </MainScreenLayout>
+        <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollViewContainer}
+        >
+            <PWView style={styles.sectionContainer}>
+                {settingsOptions.map(item => (
+                    <PWView
+                        style={styles.section}
+                        key={`settings-section-${item.title}`}
+                    >
+                        <Text style={styles.sectionTitle}>
+                            {item.title}
+                        </Text>
+                        {item.items.map(page => (
+                            <PWTouchableOpacity
+                                style={styles.sectionRow}
+                                key={`settings-sectionrow-${page.title}`}
+                                onPress={() => handleTapEvent(page)}
+                            >
+                                <PWIcon name={page.icon as IconName} />
+                                <Text style={styles.sectionRowTitle}>
+                                    {page.title}
+                                </Text>
+                                <PWIcon
+                                    name='chevron-right'
+                                    variant='secondary'
+                                />
+                            </PWTouchableOpacity>
+                        ))}
+                    </PWView>
+                ))}
+            </PWView>
+            <PWButton
+                variant='secondary'
+                title='Remove All Accounts and Logout'
+            />
+            <Text style={styles.versionText}>
+                Pera Wallet Version {appVersion}
+            </Text>
+        </ScrollView>
     )
 }
 

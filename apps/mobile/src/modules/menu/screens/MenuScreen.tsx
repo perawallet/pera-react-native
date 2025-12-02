@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import MainScreenLayout from '../../../layouts/MainScreenLayout'
 import PWView from '../../../components/common/view/PWView'
 import { Text } from '@rneui/themed'
 import { useStyles } from './styles'
@@ -50,7 +49,7 @@ const MenuScreen = () => {
     }
 
     return (
-        <MainScreenLayout>
+        <>
             <PWView style={styles.iconBar}>
                 <PWView style={styles.iconBarColumn} />
                 <Text
@@ -89,21 +88,21 @@ const MenuScreen = () => {
                     titleWeight='h3'
                     leftIcon='card-stack'
                     rightIcon='chevron-right'
-                    onPress={() => {}}
+                    onPress={() => { }}
                 />
                 <PanelButton
                     title='Buy Gift Card'
                     titleWeight='h3'
                     leftIcon='gift'
                     rightIcon='chevron-right'
-                    onPress={() => {}}
+                    onPress={() => { }}
                 />
                 <PanelButton
                     title='Receive'
                     titleWeight='h3'
                     leftIcon='inflow'
                     rightIcon='chevron-right'
-                    onPress={() => {}}
+                    onPress={() => { }}
                 />
                 <PanelButton
                     title='Contacts'
@@ -128,7 +127,7 @@ const MenuScreen = () => {
                     />
                 </PWTouchableOpacity>
             </QRScannerView>
-        </MainScreenLayout>
+        </>
     )
 }
 

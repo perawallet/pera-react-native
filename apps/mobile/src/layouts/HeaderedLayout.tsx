@@ -10,20 +10,25 @@
  limitations under the License
  */
 
-import MainScreenLayout from '../../../../layouts/MainScreenLayout'
-import PWWebView from '../../../../components/webview/PWWebView'
+import { ViewProps } from 'react-native'
+import { useStyles } from './SafeAreaLayout.style'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import PWView from '../components/common/view/PWView'
 
-//TODO implement UI controls in webview component
-//TODO set correct URL
-const SettingsTermsAndServicsScreen = () => {
+export type HeaderedLayoutProps = ViewProps
+
+const HeaderedLayout = (props: HeaderedLayoutProps) => {
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
+
     return (
-        <MainScreenLayout>
-            <PWWebView
-                url={'https://perawallet.app'}
-                enablePeraConnect={false}
-            />
-        </MainScreenLayout>
+        <PWView
+            style={styles.contentContainer}
+            {...props}
+        >
+            {props.children}
+        </PWView>
     )
 }
 
-export default SettingsTermsAndServicsScreen
+export default HeaderedLayout

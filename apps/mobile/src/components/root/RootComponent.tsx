@@ -17,7 +17,7 @@ import { AppState, StatusBar } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { MainRoutes } from '../../routes/routes'
 import { getNavigationTheme, getTheme } from '../../theme/theme'
-import { Text, ThemeProvider } from '@rneui/themed'
+import { Text, ThemeProvider, useTheme } from '@rneui/themed'
 import { useStyles } from './styles'
 import PWView from '../../components/common/view/PWView'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -44,6 +44,7 @@ const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
     const { hasInternet } = useContext(NetworkStatusContext)
     const { network, setNetwork } = useNetwork()
     const navTheme = getNavigationTheme(isDarkMode ? 'dark' : 'light')
+    const { theme } = useTheme()
     const { showToast } = useToast()
 
     const networkBarStyle = useMemo(() => {
@@ -64,24 +65,12 @@ const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
         })
     }
 
-    //TODO remove this later
-    const toggleNetwork = () => {
-        if (network === Networks.mainnet) {
-            setNetwork(Networks.testnet)
-        } else {
-            setNetwork(Networks.mainnet)
-        }
-    }
-
     return (
         <ErrorBoundary onError={showError}>
             <PWView style={styles.container}>
                 <StatusBar
                     barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-                />
-                <PWTouchableOpacity
-                    style={networkBarStyle}
-                    onLongPress={toggleNetwork}
+                    backgroundColor={network === Networks.testnet ? theme.colors.testnetBackground : theme.colors.background}
                 />
 
                 {!hasInternet && (

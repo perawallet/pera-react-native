@@ -12,7 +12,6 @@
 
 import { Text } from '@rneui/themed'
 import PWView from '../../../components/common/view/PWView'
-import MainScreenLayout from '../../../layouts/MainScreenLayout'
 import { useStyles } from './styles'
 import PWIcon from '../../../components/common/icons/PWIcon'
 import PairSelectionPanel from '../../../components/swaps/pair-selection-panel/PairSelectionPanel'
@@ -30,41 +29,36 @@ const SwapScreen = () => {
     const [drawerOpen, setDrawerOpen] = useState<boolean>(false)
 
     return (
-        <MainScreenLayout
-            fullScreen
-            style={styles.container}
+        <Drawer
+            open={drawerOpen}
+            onOpen={() => setDrawerOpen(true)}
+            onClose={() => setDrawerOpen(false)}
+            drawerType='front'
+            swipeEnabled
+            drawerStyle={styles.drawer}
+            renderDrawerContent={() => (
+                <AccountMenu onSelected={() => setDrawerOpen(false)} />
+            )}
         >
-            <Drawer
-                open={drawerOpen}
-                onOpen={() => setDrawerOpen(true)}
-                onClose={() => setDrawerOpen(false)}
-                drawerType='front'
-                swipeEnabled
-                drawerStyle={styles.drawer}
-                renderDrawerContent={() => (
-                    <AccountMenu onSelected={() => setDrawerOpen(false)} />
-                )}
-            >
-                <PWView style={styles.headerContainer}>
-                    <PWView style={styles.titleContainer}>
-                        <Text
-                            h3
-                            h3Style={styles.titleText}
-                        >
-                            Swap
-                        </Text>
-                        <PWIcon
-                            name='info'
-                            style={styles.titleIcon}
-                        />
-                    </PWView>
-                    <AccountSelection onPress={() => setDrawerOpen(true)} />
+            <PWView style={styles.headerContainer}>
+                <PWView style={styles.titleContainer}>
+                    <Text
+                        h3
+                        h3Style={styles.titleText}
+                    >
+                        Swap
+                    </Text>
+                    <PWIcon
+                        name='info'
+                        style={styles.titleIcon}
+                    />
                 </PWView>
-                <PairSelectionPanel />
-                <SwapHistoryPanel />
-                <TopPairsPanel />
-            </Drawer>
-        </MainScreenLayout>
+                <AccountSelection onPress={() => setDrawerOpen(true)} />
+            </PWView>
+            <PairSelectionPanel />
+            <SwapHistoryPanel />
+            <TopPairsPanel />
+        </Drawer>
     )
 }
 

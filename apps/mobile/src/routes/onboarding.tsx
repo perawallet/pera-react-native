@@ -5,6 +5,7 @@ import OnboardingScreen from "../modules/onboarding/screens/OnboardingScreen";
 import NameAccountScreen from "../modules/onboarding/screens/NameAccountScreen";
 import ImportAccountScreen from "../modules/onboarding/screens/ImportAccountScreen";
 import { screenListeners } from './listeners'
+import { safeAreaLayout } from "./layouts";
 
 export const OnboardingStack = createNativeStackNavigator({
     initialRouteName: 'OnboardingHome',
@@ -15,6 +16,7 @@ export const OnboardingStack = createNativeStackNavigator({
         ),
         ...SCREEN_ANIMATION_CONFIG,
     },
+    layout: safeAreaLayout,
     screenListeners,
     screens: {
         OnboardingHome: OnboardingScreen,

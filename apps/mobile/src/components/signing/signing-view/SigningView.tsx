@@ -28,7 +28,7 @@ import {
     SignRequest,
     useSigningRequest,
 } from '@perawallet/wallet-core-blockchain'
-import EmptyView from '@components/common/empty-view/EmptyView'
+import EmptyView from '../../common/empty-view/EmptyView'
 
 type SigningViewProps = {
     request: SignRequest

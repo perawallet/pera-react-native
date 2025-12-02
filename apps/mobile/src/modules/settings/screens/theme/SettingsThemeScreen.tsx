@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import MainScreenLayout from '../../../../layouts/MainScreenLayout'
 
 import { useStyles } from './styles'
 import PWView from '../../../../components/common/view/PWView'
@@ -22,25 +21,23 @@ const SettingsThemeScreen = () => {
     const { theme, setTheme } = useSettings()
 
     return (
-        <MainScreenLayout>
-            <PWView style={styles.container}>
-                <RadioButton
-                    title='System'
-                    onPress={() => setTheme('system')}
-                    selected={!theme || theme === 'system'}
-                />
-                <RadioButton
-                    title='Light'
-                    onPress={() => setTheme('light')}
-                    selected={theme === 'light'}
-                />
-                <RadioButton
-                    title='Dark'
-                    onPress={() => setTheme('dark')}
-                    selected={theme === 'dark'}
-                />
-            </PWView>
-        </MainScreenLayout>
+        <PWView style={styles.container}>
+            <RadioButton
+                title='System'
+                onPress={() => setTheme('system')}
+                selected={!theme || theme === 'system'}
+            />
+            <RadioButton
+                title='Light'
+                onPress={() => setTheme('light')}
+                selected={theme === 'light'}
+            />
+            <RadioButton
+                title='Dark'
+                onPress={() => setTheme('dark')}
+                selected={theme === 'dark'}
+            />
+        </PWView>
     )
 }
 

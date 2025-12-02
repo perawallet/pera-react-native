@@ -21,7 +21,7 @@ vi.mock('../../store', () => ({
     useContactsStore: () => mockUseAppStore(),
 }))
 
-describe('services/contacts/hooks', () => {
+describe('useContacts', () => {
     test('returns contacts and functions from store', () => {
         const mockContacts: Contact[] = [
             { name: 'Alice', address: 'ALICE123' },

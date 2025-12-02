@@ -11,8 +11,7 @@
  */
 
 import { useTheme } from '@rneui/themed'
-import MainScreenLayout from '../../../layouts/MainScreenLayout'
-import { PeraNotification, useNotificationsList } from '@perawallet/wallet-core-platform-integration'
+import { PeraNotification, useNotificationsListQuery } from '@perawallet/wallet-core-platform-integration'
 import { ActivityIndicator } from 'react-native'
 import EmptyView from '../../../components/common/empty-view/EmptyView'
 import { useStyles } from './styles'
@@ -36,52 +35,52 @@ const NotificationsScreen = () => {
         isFetchingNextPage,
         isRefetching,
         refetch,
-    } = useNotificationsList()
+    } = useNotificationsListQuery()
 
     const loadMoreItems = async () => {
         await fetchNextPage()
     }
 
+    if (isPending) {
+        return (
+            <LoadingView
+                variant='skeleton'
+                size='sm'
+                count={5}
+            />
+        )
+    }
+
     return (
-        <MainScreenLayout>
-            {isPending ? (
-                <LoadingView
-                    variant='skeleton'
-                    size='sm'
-                    count={5}
+        <FlashList
+            data={data}
+            renderItem={renderItem}
+            contentContainerStyle={styles.messageContainer}
+            onEndReached={loadMoreItems}
+            onEndReachedThreshold={0.1}
+            ListEmptyComponent={
+                <EmptyView
+                    icon='bell'
+                    title='No current notifications'
+                    body='Your recent transactions, asset requests and other transactions will appear here'
                 />
-            ) : (
-                <FlashList
-                    data={data}
-                    renderItem={renderItem}
-                    contentContainerStyle={styles.messageContainer}
-                    onEndReached={loadMoreItems}
-                    onEndReachedThreshold={0.1}
-                    ListEmptyComponent={
-                        <EmptyView
-                            icon='bell'
-                            title='No current notifications'
-                            body='Your recent transactions, asset requests and other transactions will appear here'
-                        />
-                    }
-                    ListFooterComponent={
-                        isFetchingNextPage ? (
-                            <ActivityIndicator color={theme.colors.layerGray} />
-                        ) : (
-                            <></>
-                        )
-                    }
-                    refreshControl={
-                        <RefreshControl
-                            refreshing={isRefetching}
-                            onRefresh={refetch}
-                            colors={[theme.colors.layerGray]}
-                            progressBackgroundColor={theme.colors.background}
-                        />
-                    }
+            }
+            ListFooterComponent={
+                isFetchingNextPage ? (
+                    <ActivityIndicator color={theme.colors.layerGray} />
+                ) : (
+                    <></>
+                )
+            }
+            refreshControl={
+                <RefreshControl
+                    refreshing={isRefetching}
+                    onRefresh={refetch}
+                    colors={[theme.colors.layerGray]}
+                    progressBackgroundColor={theme.colors.background}
                 />
-            )}
-        </MainScreenLayout>
+            }
+        />
     )
 }
 

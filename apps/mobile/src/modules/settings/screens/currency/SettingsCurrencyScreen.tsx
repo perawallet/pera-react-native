@@ -11,7 +11,6 @@
  */
 
 import { Text } from '@rneui/themed'
-import MainScreenLayout from '../../../../layouts/MainScreenLayout'
 
 import { useStyles } from './styles'
 import PWView from '../../../../components/common/view/PWView'
@@ -67,24 +66,22 @@ const SettingsCurrencyScreen = () => {
     }
 
     return (
-        <MainScreenLayout>
-            <PWView style={styles.container}>
-                <Text h3>Main Currency</Text>
-                <Text>
-                    Select a currency as your main local currency for displaying
-                    asset values.
-                </Text>
-                <SearchInput
-                    placeholder='Search'
-                    value={search}
-                    onChangeText={setSearch}
-                />
-                <FlatList
-                    data={filteredData}
-                    renderItem={renderItem}
-                />
-            </PWView>
-        </MainScreenLayout>
+        <PWView style={styles.container}>
+            <Text h3>Main Currency</Text>
+            <Text>
+                Select a currency as your main local currency for displaying
+                asset values.
+            </Text>
+            <SearchInput
+                placeholder='Search'
+                value={search}
+                onChangeText={setSearch}
+            />
+            <FlatList
+                data={filteredData}
+                renderItem={renderItem}
+            />
+        </PWView>
     )
 }
 

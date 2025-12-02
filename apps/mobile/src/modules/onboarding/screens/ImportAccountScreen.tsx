@@ -16,7 +16,6 @@ import { useStyles } from './ImportAccountScreen.styles'
 import { Input, Overlay, Text, useTheme } from '@rneui/themed'
 import PWView from '../../../components/common/view/PWView'
 import PWButton from '../../../components/common/button/PWButton'
-import MainScreenLayout from '../../../layouts/MainScreenLayout'
 
 import { useImportAccount } from '@perawallet/wallet-core-accounts'
 import { useState } from 'react'
@@ -84,7 +83,7 @@ const ImportAccountScreen = () => {
     }
 
     return (
-        <MainScreenLayout>
+        <>
             <KeyboardAvoidingView
                 style={styles.mainContainer}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -115,7 +114,7 @@ const ImportAccountScreen = () => {
                                                         h4
                                                         h4Style={
                                                             focused ===
-                                                            offsetIndex
+                                                                offsetIndex
                                                                 ? styles.focusedLabel
                                                                 : styles.label
                                                         }
@@ -128,7 +127,7 @@ const ImportAccountScreen = () => {
                                                         }
                                                         inputContainerStyle={
                                                             focused ===
-                                                            offsetIndex
+                                                                offsetIndex
                                                                 ? styles.focusedInputContainer
                                                                 : styles.inputContainer
                                                         }
@@ -188,7 +187,7 @@ const ImportAccountScreen = () => {
                     color={theme.colors.primary}
                 />
             </Overlay>
-        </MainScreenLayout>
+        </>
     )
 }
 

@@ -15,9 +15,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useStyles } from './OnboardingScreen.styles'
 import { Text, useTheme, Overlay } from '@rneui/themed'
 import PWView from '../../../components/common/view/PWView'
-import MainScreenLayout from '../../../layouts/MainScreenLayout'
 import PanelButton from '../../../components/common/panel-button/PanelButton'
-import PWIcon from '../../../components/common/icons/PWIcon'
 
 import WelcomeImage from '../../../../assets/images/welcome-background.svg'
 import { ActivityIndicator } from 'react-native'
@@ -50,10 +48,7 @@ const OnboardingScreen = () => {
     }
 
     return (
-        <MainScreenLayout
-            style={styles.layout}
-            fullScreen
-        >
+        <>
             <PWView>
                 <PWView style={styles.headerContainer}>
                     <Text
@@ -105,7 +100,7 @@ const OnboardingScreen = () => {
                     color={theme.colors.primary}
                 />
             </Overlay>
-        </MainScreenLayout>
+        </>
     )
 }
 

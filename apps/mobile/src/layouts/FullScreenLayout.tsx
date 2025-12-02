@@ -10,16 +10,22 @@
  limitations under the License
  */
 
-import EmptyView from '../../../../components/common/empty-view/EmptyView'
+import { ViewProps } from 'react-native'
+import PWView from '../components/common/view/PWView'
+import { useStyles } from './FullScreenLayout.style'
 
-const SettingsWalletConnectScreen = () => {
+export type FullScreenLayoutProps = ViewProps
+
+const FullScreenLayout = (props: FullScreenLayoutProps) => {
+    const styles = useStyles()
     return (
-        <EmptyView
-            icon='wallet-connect'
-            title='Not Implemented'
-            body='This screen has not yet been implemented'
-        />
+        <PWView
+            style={styles.contentContainer}
+            {...props}
+        >
+            {props.children}
+        </PWView>
     )
 }
 
-export default SettingsWalletConnectScreen
+export default FullScreenLayout

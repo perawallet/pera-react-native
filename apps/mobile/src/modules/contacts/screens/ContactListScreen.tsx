@@ -11,7 +11,6 @@
  */
 
 import { useStyles } from './ContactListScreen.styles'
-import MainScreenLayout from '../../../layouts/MainScreenLayout'
 import { Contact, useContacts } from '@perawallet/wallet-core-contacts'
 import { useMemo, useState } from 'react'
 import EmptyView from '../../../components/common/empty-view/EmptyView'
@@ -106,7 +105,7 @@ const ContactListScreen = () => {
     }
 
     return (
-        <MainScreenLayout>
+        <>
             {!groupedContacts.length && !search.length && (
                 <EmptyView
                     title='No Contacts'
@@ -148,7 +147,7 @@ const ContactListScreen = () => {
                     />
                 </PWView>
             )}
-        </MainScreenLayout>
+        </>
     )
 }
 

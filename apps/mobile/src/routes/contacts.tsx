@@ -7,6 +7,7 @@ import ContactListHeaderButtons from "../modules/contacts/components/ContactList
 import ViewContactHeaderButtons from "../modules/contacts/components/ViewContactHeaderButtons";
 import ViewContactScreen from "../modules/contacts/screens/ViewContactScreen";
 import EditContactScreen from "../modules/contacts/screens/EditContactScreen";
+import { headeredLayout } from "./layouts";
 
 export const ContactsStack = createNativeStackNavigator({
     initialRouteName: 'ContactsList',
@@ -17,6 +18,7 @@ export const ContactsStack = createNativeStackNavigator({
         ),
         ...SCREEN_ANIMATION_CONFIG,
     },
+    layout: headeredLayout,
     screenListeners,
     screens: {
         ContactsList: {

@@ -11,23 +11,15 @@
  */
 
 import { ViewProps } from 'react-native'
-import { useStyles } from './MainScreenLayout.style'
-import { EdgeInsets, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useStyles } from './SafeAreaLayout.style'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import PWView from '../components/common/view/PWView'
 
-export type MainScreenLayoutProps = {
-    fullScreen?: boolean
-    header?: boolean
-} & ViewProps
+export type SafeAreaLayoutProps = ViewProps
 
-export type MainScreenLayoutPropsWithInsets = {
-    insets: EdgeInsets
-} & MainScreenLayoutProps
-
-//TODO: Make this a proper layout system with slots as needed
-const MainScreenLayout = (props: MainScreenLayoutProps) => {
+const SafeAreaLayout = (props: SafeAreaLayoutProps) => {
     const insets = useSafeAreaInsets()
-    const styles = useStyles({ ...props, insets })
+    const styles = useStyles(insets)
 
     return (
         <PWView
@@ -39,4 +31,4 @@ const MainScreenLayout = (props: MainScreenLayoutProps) => {
     )
 }
 
-export default MainScreenLayout
+export default SafeAreaLayout

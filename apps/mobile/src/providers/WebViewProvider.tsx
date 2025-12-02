@@ -12,10 +12,11 @@
 
 import React, { createContext, PropsWithChildren, useState } from 'react'
 import PWBottomSheet from '../components/common/bottom-sheet/PWBottomSheet'
-import { StatusBar, useWindowDimensions } from 'react-native'
+import { useWindowDimensions } from 'react-native'
 import PWWebView from '../components/webview/PWWebView'
 import { v7 as uuidv7 } from 'uuid'
 import PWView from '../components/common/view/PWView'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 type WebViewRequest = {
     id: string
@@ -45,6 +46,7 @@ const flexStyle = { flex: 1, }
 const WebViewProvider = ({ children }: WebViewProviderProps) => {
     const [openWebViews, setOpenWebViews] = useState<WebViewRequest[]>([])
     const { height } = useWindowDimensions()
+    const insets = useSafeAreaInsets()
 
     const pushWebView = (view: WebViewRequest) => {
         setOpenWebViews(prev => [...prev, { ...view, id: uuidv7() }])
@@ -77,7 +79,7 @@ const WebViewProvider = ({ children }: WebViewProviderProps) => {
                 <PWBottomSheet
                     key={view.id}
                     innerContainerStyle={{
-                        height: height - (StatusBar.currentHeight ?? 20),
+                        height: height - insets.top,
                     }}
                     isVisible={true}
                     scrollEnabled={false}

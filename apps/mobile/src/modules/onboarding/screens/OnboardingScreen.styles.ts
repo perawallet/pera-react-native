@@ -14,11 +14,6 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles((theme) => {
     return {
-        layout: {
-            flex: 1,
-            padding: 0,
-            margin: 0,
-        },
         mainContainer: {
             backgroundColor: theme.colors.background,
             color: theme.colors.white,

@@ -12,7 +12,6 @@
 
 import {
     registerPlatformServices,
-    MemoryKeyValueStorage,
     type PlatformServices,
     KeyValueStorageService,
     SecureStorageService,
@@ -23,6 +22,7 @@ import {
     DevicePlatforms,
     AnalyticsService,
 } from '../index'
+import { MemoryKeyValueStorage } from './storage'
 
 type Overrides = Partial<{
     analytics: AnalyticsService
@@ -42,23 +42,23 @@ export const buildTestPlatform = (
     overrides: Overrides = {},
 ): PlatformServices => {
     const defaultAnalytics: AnalyticsService = {
-        initializeAnalytics() {},
-        logEvent(_event: string, _properties?: Record<string, unknown>) {},
+        initializeAnalytics() { },
+        logEvent(_event: string, _properties?: Record<string, unknown>) { },
     }
 
     const defaultSecure: SecureStorageService = {
-        async setItem(_: string, __: Buffer) {},
+        async setItem(_: string, __: Buffer) { },
         async getItem(_: string) {
             return null
         },
-        async removeItem(_: string) {},
+        async removeItem(_: string) { },
         async authenticate() {
             return true
         },
     }
 
     const defaultRemote: RemoteConfigService = {
-        initializeRemoteConfig() {},
+        initializeRemoteConfig() { },
         getStringValue(_, f) {
             return f ?? ''
         },
@@ -72,17 +72,17 @@ export const buildTestPlatform = (
 
     const defaultNotification: NotificationService = {
         async initializeNotifications() {
-            return { unsubscribe: () => {} }
+            return { unsubscribe: () => { } }
         },
     }
 
     const defaultCrash: CrashReportingService = {
-        initializeCrashReporting() {},
-        recordNonFatalError(_: unknown) {},
+        initializeCrashReporting() { },
+        recordNonFatalError(_: unknown) { },
     }
 
     const deviceInfo: DeviceInfoService = {
-        initializeDeviceInfo() {},
+        initializeDeviceInfo() { },
         getDeviceID() {
             return Promise.resolve('testID')
         },

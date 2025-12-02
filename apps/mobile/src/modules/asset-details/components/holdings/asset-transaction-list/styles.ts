@@ -24,7 +24,6 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
     },
     container: {
-        paddingHorizontal: theme.spacing.xl,
     },
     emptyView: {
         minHeight: theme.spacing.xl * 6,

@@ -9,11 +9,9 @@ import SettingsWalletConnectScreen from "../modules/settings/screens/wallet-conn
 import SettingsPasskeyScreen from "../modules/settings/screens/passkeys/SettingsPasskeysScreen";
 import SettingsCurrencyScreen from "../modules/settings/screens/currency/SettingsCurrencyScreen";
 import SettingsThemeScreen from "../modules/settings/screens/theme/SettingsThemeScreen";
-import SettingsGetHelpScreen from "../modules/settings/screens/get-help/SettingsGetHelpScreen";
-import SettingsTermsAndServicsScreen from "../modules/settings/screens/terms-and-services/SettingsTermsAndServicesScreen";
-import SettingsPrivacyPolicyScreen from "../modules/settings/screens/privacy-policy/SettingsPrivacyPolicyScreen";
 import SettingsDeveloperScreen from "../modules/settings/screens/developer/SettingsDeveloperScreen";
 import SettingsSubPageScreen from "../modules/settings/screens/SettingsSubPageScreen";
+import { headeredLayout } from "./layouts";
 
 export const SettingsStack = createNativeStackNavigator({
     initialRouteName: 'SettingsHome',
@@ -25,6 +23,7 @@ export const SettingsStack = createNativeStackNavigator({
         ...SCREEN_ANIMATION_CONFIG,
     },
     screenListeners,
+    layout: headeredLayout,
     screens: {
         SettingsHome: {
             screen: SettingsScreen,
@@ -66,24 +65,6 @@ export const SettingsStack = createNativeStackNavigator({
             screen: SettingsThemeScreen,
             options: {
                 title: 'Theme',
-            },
-        },
-        GetHelpSettings: {
-            screen: SettingsGetHelpScreen,
-            options: {
-                title: 'Get Help',
-            },
-        },
-        TermsAndServicesSettings: {
-            screen: SettingsTermsAndServicsScreen,
-            options: {
-                title: 'Terms and Services',
-            },
-        },
-        PrivacyPolicySettings: {
-            screen: SettingsPrivacyPolicyScreen,
-            options: {
-                title: 'Privacy Policy',
             },
         },
         DeveloperSettings: {

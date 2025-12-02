@@ -12,7 +12,7 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { registerTestPlatform } from '../../../test '
+import { registerTestPlatform } from '../../../test-utils'
 
 vi.mock('../../../api/query-client', () => ({
     createFetchClient: vi.fn(() => vi.fn()),

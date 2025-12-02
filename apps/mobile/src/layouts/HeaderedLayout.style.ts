@@ -10,16 +10,19 @@
  limitations under the License
  */
 
-import EmptyView from '../../../../components/common/empty-view/EmptyView'
+import { makeStyles } from '@rneui/themed'
+import { EdgeInsets } from 'react-native-safe-area-context'
 
-const SettingsWalletConnectScreen = () => {
-    return (
-        <EmptyView
-            icon='wallet-connect'
-            title='Not Implemented'
-            body='This screen has not yet been implemented'
-        />
-    )
-}
-
-export default SettingsWalletConnectScreen
+export const useStyles = makeStyles(
+    (_, insets: EdgeInsets) => {
+        return {
+            contentContainer: {
+                flex: 1,
+                marginLeft: insets.left,
+                marginRight: insets.right,
+                marginTop: insets.top,
+                marginBottom: insets.bottom,
+            },
+        }
+    },
+)

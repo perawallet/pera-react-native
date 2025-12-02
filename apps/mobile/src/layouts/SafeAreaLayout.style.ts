@@ -10,20 +10,20 @@
  limitations under the License
  */
 
-import MainScreenLayout from '../../../../layouts/MainScreenLayout'
-import PWWebView from '../../../../components/webview/PWWebView'
+import { makeStyles } from '@rneui/themed'
+import { EdgeInsets } from 'react-native-safe-area-context'
 
-//TODO implement UI controls in webview component
-//TODO set correct URL
-const SettingsPrivacyPolicyScreen = () => {
-    return (
-        <MainScreenLayout>
-            <PWWebView
-                url={'https://perawallet.app'}
-                enablePeraConnect={false}
-            />
-        </MainScreenLayout>
-    )
-}
-
-export default SettingsPrivacyPolicyScreen
+export const useStyles = makeStyles(
+    (theme, insets: EdgeInsets) => {
+        return {
+            contentContainer: {
+                flex: 1,
+                marginLeft: insets.left,
+                marginRight: insets.right,
+                marginTop: insets.top,
+                paddingTop: theme.spacing.sm,
+                marginBottom: insets.bottom,
+            },
+        }
+    },
+)

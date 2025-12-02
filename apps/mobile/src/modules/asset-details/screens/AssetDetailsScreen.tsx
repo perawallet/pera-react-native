@@ -11,7 +11,6 @@
  */
 
 import { Tab, TabView } from '@rneui/themed'
-import MainScreenLayout from '../../../layouts/MainScreenLayout'
 import { StaticScreenProps, useNavigation } from '@react-navigation/native'
 import {
     getAccountDisplayName,
@@ -26,6 +25,7 @@ import useToast from '../../../hooks/toast'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import LoadingView from '../../../components/common/loading/LoadingView'
 import { TAB_ANIMATION_CONFIG } from '../../../constants/ui'
+import PWView from '../../../components/common/view/PWView'
 
 type AssetDetailsScreenProps = {
     assetId: string
@@ -83,10 +83,7 @@ const AssetDetailsScreen = ({
     }
 
     return (
-        <MainScreenLayout
-            fullScreen
-            header
-        >
+        <PWView style={styles.contentContainer}>
             <Tab
                 value={tabIndex}
                 onChange={e => setTabIndex(e)}
@@ -114,7 +111,7 @@ const AssetDetailsScreen = ({
                     <AssetMarkets asset={asset} />
                 </TabView.Item>
             </TabView>
-        </MainScreenLayout>
+        </PWView>
     )
 }
 

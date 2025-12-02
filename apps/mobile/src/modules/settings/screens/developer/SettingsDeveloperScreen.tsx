@@ -10,18 +10,15 @@
  limitations under the License
  */
 
-import MainScreenLayout from '../../../../layouts/MainScreenLayout'
 import EmptyView from '../../../../components/common/empty-view/EmptyView'
 
 const SettingsDeveloperScreen = () => {
     return (
-        <MainScreenLayout>
-            <EmptyView
-                icon='code'
-                title='Not Implemented'
-                body='This screen has not yet been implemented'
-            />
-        </MainScreenLayout>
+        <EmptyView
+            icon='code'
+            title='Not Implemented'
+            body='This screen has not yet been implemented'
+        />
     )
 }
 

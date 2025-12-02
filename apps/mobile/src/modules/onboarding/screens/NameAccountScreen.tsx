@@ -16,7 +16,6 @@ import { useStyles } from './NameAccountScreen.styles'
 import { Input, Text } from '@rneui/themed'
 import PWView from '../../../components/common/view/PWView'
 import PWButton from '../../../components/common/button/PWButton'
-import MainScreenLayout from '../../../layouts/MainScreenLayout'
 import PWIcon from '../../../components/common/icons/PWIcon'
 
 import {
@@ -60,45 +59,43 @@ const NameAccountScreen = ({ route }: NameAccountScreenProps) => {
     }
 
     return (
-        <MainScreenLayout>
-            <KeyboardAvoidingView
-                style={styles.mainContainer}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        <KeyboardAvoidingView
+            style={styles.mainContainer}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+            <Text
+                h4
+                style={styles.helperText}
             >
+                Name your account to easily identify it while using the Pera
+                Wallet. These names are stored locally, and can only be seen
+                by you.
+            </Text>
+            <PWView style={styles.walletNameContainer}>
+                <PWIcon
+                    name='wallet'
+                    variant='secondary'
+                />
                 <Text
                     h4
-                    style={styles.helperText}
-                >
-                    Name your account to easily identify it while using the Pera
-                    Wallet. These names are stored locally, and can only be seen
-                    by you.
-                </Text>
-                <PWView style={styles.walletNameContainer}>
-                    <PWIcon
-                        name='wallet'
-                        variant='secondary'
-                    />
-                    <Text
-                        h4
-                        style={styles.nameText}
-                    >{`Wallet #${numWallets + 1}`}</Text>
-                </PWView>
-                <Input
-                    label='Account name'
-                    containerStyle={styles.input}
-                    value={walletDisplay}
-                    onChangeText={saveName}
-                    autoFocus
-                />
-                <PWView style={styles.spacer} />
-                <PWButton
-                    style={styles.finishButton}
-                    variant='primary'
-                    title='Finish Account Creation'
-                    onPress={goToHome}
-                />
-            </KeyboardAvoidingView>
-        </MainScreenLayout>
+                    style={styles.nameText}
+                >{`Wallet #${numWallets + 1}`}</Text>
+            </PWView>
+            <Input
+                label='Account name'
+                containerStyle={styles.input}
+                value={walletDisplay}
+                onChangeText={saveName}
+                autoFocus
+            />
+            <PWView style={styles.spacer} />
+            <PWButton
+                style={styles.finishButton}
+                variant='primary'
+                title='Finish Account Creation'
+                onPress={goToHome}
+            />
+        </KeyboardAvoidingView>
     )
 }
 

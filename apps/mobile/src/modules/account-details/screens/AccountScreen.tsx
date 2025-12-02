@@ -11,7 +11,6 @@
  */
 
 import { Tab, TabView } from '@rneui/themed'
-import MainScreenLayout from '../../../layouts/MainScreenLayout'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import PWIcon from '../../../components/common/icons/PWIcon'
 
@@ -80,51 +79,49 @@ const AccountScreen = () => {
                 />
             )}
         >
-            <MainScreenLayout fullScreen>
-                <PWView style={styles.iconBar}>
-                    <PWView style={styles.iconBarSection}>
-                        {/* TODO we may want to add support for pending inbox items here too
+            <PWView style={styles.iconBar}>
+                <PWView style={styles.iconBarSection}>
+                    {/* TODO we may want to add support for pending inbox items here too
             (like the current inbox since we're using the same screen real estate) */}
-                        <AccountSelection
-                            onPress={toggleAccountSelectorVisible}
-                        />
-                    </PWView>
-                    <PWView style={styles.iconBarSection}>
-                        <PWTouchableOpacity onPress={openQRScanner}>
-                            <PWIcon name='camera' />
-                        </PWTouchableOpacity>
-                        <NotificationsIcon />
-                    </PWView>
+                    <AccountSelection
+                        onPress={toggleAccountSelectorVisible}
+                    />
                 </PWView>
-                <Tab
-                    value={tabIndex}
-                    onChange={e => setTabIndex(e)}
-                    containerStyle={styles.tabs}
-                    indicatorStyle={styles.indicator}
-                    titleStyle={styles.tabItem}
-                    dense
-                >
-                    <Tab.Item title='Overview' />
-                    <Tab.Item title='NFTs' />
-                    <Tab.Item title='History' />
-                </Tab>
-                <TabView
-                    value={tabIndex}
-                    onChange={setTabIndex}
-                    animationType='spring'
-                    animationConfig={TAB_ANIMATION_CONFIG}
-                >
-                    <TabView.Item style={styles.fullWidth}>
-                        <AccountOverview account={account} />
-                    </TabView.Item>
-                    <TabView.Item style={styles.fullWidth}>
-                        <AccountNfts account={account} />
-                    </TabView.Item>
-                    <TabView.Item style={styles.fullWidth}>
-                        <AccountHistory account={account} />
-                    </TabView.Item>
-                </TabView>
-            </MainScreenLayout>
+                <PWView style={styles.iconBarSection}>
+                    <PWTouchableOpacity onPress={openQRScanner}>
+                        <PWIcon name='camera' />
+                    </PWTouchableOpacity>
+                    <NotificationsIcon />
+                </PWView>
+            </PWView>
+            <Tab
+                value={tabIndex}
+                onChange={e => setTabIndex(e)}
+                containerStyle={styles.tabs}
+                indicatorStyle={styles.indicator}
+                titleStyle={styles.tabItem}
+                dense
+            >
+                <Tab.Item title='Overview' />
+                <Tab.Item title='NFTs' />
+                <Tab.Item title='History' />
+            </Tab>
+            <TabView
+                value={tabIndex}
+                onChange={setTabIndex}
+                animationType='spring'
+                animationConfig={TAB_ANIMATION_CONFIG}
+            >
+                <TabView.Item style={styles.fullWidth}>
+                    <AccountOverview account={account} />
+                </TabView.Item>
+                <TabView.Item style={styles.fullWidth}>
+                    <AccountNfts />
+                </TabView.Item>
+                <TabView.Item style={styles.fullWidth}>
+                    <AccountHistory />
+                </TabView.Item>
+            </TabView>
             <QRScannerView
                 visible={scannerVisible}
                 onSuccess={closeQRScanner}

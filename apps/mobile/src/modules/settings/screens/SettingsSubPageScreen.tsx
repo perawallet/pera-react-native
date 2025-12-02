@@ -11,7 +11,6 @@
  */
 
 import { Text } from '@rneui/themed'
-import MainScreenLayout from '../../../layouts/MainScreenLayout'
 
 import { StaticScreenProps } from '@react-navigation/native'
 import { Network, Networks } from '@perawallet/wallet-core-shared'
@@ -86,33 +85,31 @@ const SettingsSubPageScreen = ({ route }: SettingsSubPageScreenProps) => {
     }
 
     return (
-        <MainScreenLayout>
-            <PWView style={styles.container}>
-                <Text>
-                    This page would hold the settings for {route.params.title}.
-                    For now we are going to just put some random stuff here for
-                    ease of use
-                </Text>
+        <PWView style={styles.container}>
+            <Text>
+                This page would hold the settings for {route.params.title}.
+                For now we are going to just put some random stuff here for
+                ease of use
+            </Text>
 
-                <PWButton
-                    onPress={toggleTheme}
-                    title='Toggle Theme'
-                    variant='primary'
-                />
+            <PWButton
+                onPress={toggleTheme}
+                title='Toggle Theme'
+                variant='primary'
+            />
 
-                <PWButton
-                    onPress={toggleNetwork}
-                    title='Toggle Network'
-                    variant='primary'
-                />
+            <PWButton
+                onPress={toggleNetwork}
+                title='Toggle Network'
+                variant='primary'
+            />
 
-                <PWButton
-                    onPress={createSignRequest}
-                    title='Simulate Signing Request'
-                    variant='primary'
-                />
-            </PWView>
-        </MainScreenLayout>
+            <PWButton
+                onPress={createSignRequest}
+                title='Simulate Signing Request'
+                variant='primary'
+            />
+        </PWView>
     )
 }
 

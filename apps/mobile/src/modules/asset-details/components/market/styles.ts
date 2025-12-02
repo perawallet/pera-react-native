@@ -22,7 +22,6 @@ export const useStyles = () => {
         },
         contentContainer: {
             paddingTop: theme.spacing.md,
-            paddingHorizontal: theme.spacing.xl,
             paddingBottom: theme.spacing.xl,
         },
         header: {
