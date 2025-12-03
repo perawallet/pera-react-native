@@ -107,6 +107,30 @@ describe('utils/strings - formatCurrency', () => {
         )
     })
 
+    test('formats with B units', () => {
+        expect(
+            formatCurrency('1000000000', 2, 'USD', 'en-US', true, true),
+        ).toBe('$1.00B')
+        expect(
+            formatCurrency('5000000000', 2, 'USD', 'en-US', true, true),
+        ).toBe('$5.00B')
+        expect(
+            formatCurrency('12345678900', 2, 'USD', 'en-US', true, true),
+        ).toBe('$12.35B')
+    })
+
+    test('formats with T units', () => {
+        expect(
+            formatCurrency('1000000000000', 2, 'USD', 'en-US', true, true),
+        ).toBe('$1.00T')
+        expect(
+            formatCurrency('5000000000000', 2, 'USD', 'en-US', true, true),
+        ).toBe('$5.00T')
+        expect(
+            formatCurrency('12345678900000', 2, 'USD', 'en-US', true, true),
+        ).toBe('$12.35T')
+    })
+
     test('formats without symbol when showSymbol is false', () => {
         expect(formatCurrency('1234', 2, 'USD', 'en-US', false)).toBe(
             '1,234.00',
@@ -114,6 +138,21 @@ describe('utils/strings - formatCurrency', () => {
         expect(formatCurrency('5678', 2, 'GBP', 'en-GB', false)).toBe(
             '5,678.00',
         )
+    })
+
+    test('uses minPrecision to preserve trailing zeros', () => {
+        expect(formatCurrency('1.5', 6, 'USD', 'en-US', true, false, 2)).toBe(
+            '$1.50',
+        )
+        expect(formatCurrency('1.1', 6, 'USD', 'en-US', true, false, 4)).toBe(
+            '$1.1000',
+        )
+    })
+
+    test('truncates trailing zeros when minPrecision is set', () => {
+        // When minPrecision is set, trailing zeros are truncated down to minPrecision
+        expect(formatCurrency('1.50000', 6, 'USD', 'en-US', true, false, 0)).toBe('$1.5')
+        expect(formatCurrency('1.10000', 6, 'USD', 'en-US', true, false, 0)).toBe('$1.1')
     })
 })
 

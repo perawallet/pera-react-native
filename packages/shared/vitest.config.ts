@@ -46,6 +46,7 @@ export default defineConfig({
                 'src/**/*.spec.{ts,tsx}',
                 'src/**/index.ts',
                 'src/test-utils/**',
+                'src/models/**',
             ],
             reporter: ['text', 'html', 'lcov'],
             reportsDirectory: './coverage',

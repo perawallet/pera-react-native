@@ -11,6 +11,10 @@
  */
 
 import { defineConfig } from 'vitest/config'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
     test: {
@@ -33,5 +37,12 @@ export default defineConfig({
     },
     resolve: {
         conditions: ['default'],
+        alias: {
+            '@test-utils': path.resolve(
+                __dirname,
+                '../platform-integration/src/test-utils',
+            ),
+            '@store': path.resolve(__dirname, '../shared/src/store'),
+        },
     },
 })

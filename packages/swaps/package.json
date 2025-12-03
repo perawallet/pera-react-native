@@ -14,7 +14,8 @@
     "@perawallet/wallet-core-shared": "workspace:*",
     "react": "catalog:",
     "zustand": "catalog:",
-    "@tanstack/react-query": "catalog:"
+    "@tanstack/react-query": "catalog:",
+    "reflect-metadata": "catalog:"
   },
   "devDependencies": {
     "typescript": "catalog:",
@@ -23,6 +24,7 @@
     "@types/react": "catalog:",
     "@perawallet/wallet-core-devtools": "workspace:*",
     "globals": "catalog:",
-    "typescript-eslint": "catalog:"
+    "typescript-eslint": "catalog:",
+    "@testing-library/react": "catalog:"
   }
 }
