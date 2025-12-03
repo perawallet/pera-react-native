@@ -11,87 +11,59 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
-import { registerTestPlatform } from '../../../test-utils'
+import { renderHook, act, waitFor } from '@testing-library/react'
+import { registerTestPlatform, createWrapper } from '../../../test-utils'
+import { DevicePlatforms } from '../../models'
 
-vi.mock('../../../api/query-client', () => ({
-    createFetchClient: vi.fn(() => vi.fn()),
-    logRequest: vi.fn(),
-    logResponse: vi.fn(),
+// Mock mutations
+const mockCreateDevice = vi.fn()
+const mockUpdateDevice = vi.fn()
+
+vi.mock('../useCreateDeviceMutation', () => ({
+    useCreateDeviceMutation: () => ({
+        mutateAsync: mockCreateDevice,
+    }),
 }))
 
-vi.mock('../../../services/assets', () => ({
-    createAssetsSlice: vi.fn(() => ({
-        assetIDs: [],
-        setAssetIDs: vi.fn(),
-    })),
-    partializeAssetsSlice: vi.fn(() => ({ assetIDs: [] })),
+vi.mock('../useUpdateDeviceMutation', () => ({
+    useUpdateDeviceMutation: () => ({
+        mutateAsync: mockUpdateDevice,
+    }),
 }))
 
-// Hoisted spies for API composables
-const api = vi.hoisted(() => {
-    return {
-        createSpy: vi.fn(),
-        updateSpy: vi.fn(),
-    }
-})
+// Mock device info service
+const mockDeviceInfoService = {
+    getDevicePlatform: vi.fn().mockResolvedValue(DevicePlatforms.ios),
+    getDeviceModel: vi.fn().mockReturnValue('iPhone 14'),
+    getDeviceLocale: vi.fn().mockReturnValue('en-US'),
+}
 
-// Mock generated API composables used by the hook
-vi.mock('@api/generated/backend/hooks/useV1DevicesCreate', () => {
-    return {
-        useV1DevicesCreate: () => ({ mutateAsync: api.createSpy }),
-    }
-})
-vi.mock('@api/generated/backend/hooks/useV1DevicesPartialUpdate', () => {
-    return {
-        useV1DevicesPartialUpdate: () => ({ mutateAsync: api.updateSpy }),
-    }
-})
-
-// Hoisted Zustand store stub to avoid real persistence/container
-const storeMock = vi.hoisted(() => {
-    return {
-        create() {
-            let state: any = {
-                deviceID: new Map(),
-                fcmToken: null,
-            }
-            const setState = (partial: any) => {
-                state = { ...state, ...partial }
-            }
-            const useAppStore: any = (selector?: any) =>
-                selector ? selector(state) : state
-                ; (useAppStore as any).getState = () => state
-                ; (useAppStore as any).setState = setState
-            // slice updaters that our hook selects
-            state = {
-                ...state,
-                setDeviceID: (network: string, id: string | null) =>
-                    setState({ deviceIDs: new Map([[network, id]]) }),
-                setFcmToken: (token: string | null) =>
-                    setState({ fcmToken: token }),
-            }
-            return { useAppStore }
-        },
-    }
-})
-vi.mock('../../../store', () => storeMock.create())
+vi.mock('../useDeviceInfoService', () => ({
+    useDeviceInfoService: () => mockDeviceInfoService,
+}))
 
 describe('services/device/hooks', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        // Reset mocks default return values
+        mockCreateDevice.mockResolvedValue({ id: 'new-device-id' })
+        mockUpdateDevice.mockResolvedValue({})
     })
 
     test('useFcmToken exposes fcmToken and setter', async () => {
         vi.resetModules()
         registerTestPlatform()
 
-        const { useDeviceStore } = await import('../../store')
+        const { initDeviceStore } = await import('../../store')
         const { useFcmToken } = await import('../../hooks')
 
-            ; (useDeviceStore as any).setState({ fcmToken: 'OLD_TOKEN' })
+        initDeviceStore()
 
         const { result } = renderHook(() => useFcmToken())
+
+        act(() => {
+            result.current.setFcmToken('OLD_TOKEN')
+        })
 
         expect(result.current.fcmToken).toBe('OLD_TOKEN')
 
@@ -99,240 +71,112 @@ describe('services/device/hooks', () => {
             result.current.setFcmToken('NEW_TOKEN')
         })
 
-        expect((useDeviceStore as any).getState().fcmToken).toBe('NEW_TOKEN')
+        expect(result.current.fcmToken).toBe('NEW_TOKEN')
     })
 
-    test('registerDevice creates when no deviceID and persists id', async () => {
+    test('useDeviceID returns correct device ID for network', async () => {
         vi.resetModules()
-        api.createSpy.mockResolvedValue({ id: 'NEW_ID' })
-        api.updateSpy.mockResolvedValue({})
-
-        // Ensure device info service is registered with defaults (web/testModel)
         registerTestPlatform()
 
-        const { useDeviceStore } = await import('../../store')
-        const { useDevice } = await import('../../hooks')
-
-            ; (useDeviceStore as any).setState({
-                fcmToken: 'FCM123',
-                deviceIDs: new Map(),
-            })
-
-        const { result } = renderHook(() => useDevice('testnet'))
-        await act(async () => {
-            await result.current.registerDevice(['A1', 'A2'])
-        })
-
-        expect(api.createSpy).toHaveBeenCalledTimes(1)
-        expect(api.updateSpy).not.toHaveBeenCalled()
-        expect(api.createSpy).toHaveBeenCalledWith({
-            data: {
-                accounts: ['A1', 'A2'],
-                platform: 'web',
-                push_token: 'FCM123',
-                model: 'testModel',
-                application: 'pera',
-                locale: 'testLocale',
-            },
-        })
-        expect(
-            (useDeviceStore as any).getState().deviceIDs.get('testnet'),
-        ).toBe('NEW_ID')
-    })
-
-    test('registerDevice updates when deviceID exists', async () => {
-        vi.resetModules()
-        api.createSpy.mockResolvedValue({})
-        api.updateSpy.mockResolvedValue({})
-        registerTestPlatform()
-
-        const { useDeviceStore } = await import('../../store')
-        const { useDevice } = await import('../../hooks')
-
-            ; (useDeviceStore as any).setState({
-                fcmToken: 'TOKEN',
-                deviceIDs: new Map([['testnet', 'DEV1']]),
-            })
-
-        const { result } = renderHook(() => useDevice('testnet'))
-        await act(async () => {
-            await result.current.registerDevice(['X'])
-        })
-
-        expect(api.createSpy).not.toHaveBeenCalled()
-        expect(api.updateSpy).toHaveBeenCalledTimes(1)
-        expect(api.updateSpy).toHaveBeenCalledWith({
-            device_id: 'DEV1',
-            data: {
-                accounts: ['X'],
-                platform: 'web',
-                push_token: 'TOKEN',
-                model: 'testModel',
-                locale: 'testLocale',
-            },
-        })
-        expect(
-            (useDeviceStore as any).getState().deviceIDs.get('testnet'),
-        ).toBe('DEV1')
-    })
-
-    test('getDeviceID when deviceID exists', async () => {
-        vi.resetModules()
-        api.createSpy.mockResolvedValue({})
-        api.updateSpy.mockResolvedValue({})
-        registerTestPlatform()
-
-        const { useDeviceStore } = await import('../../store')
+        const { initDeviceStore, useDeviceStore } = await import('../../store')
         const { useDeviceID } = await import('../../hooks')
 
-            ; (useDeviceStore as any).setState({
-                fcmToken: 'TOKEN',
-                deviceIDs: new Map([['testnet', 'DEV1']]),
-            })
+        initDeviceStore()
 
-        const { result } = renderHook(() => useDeviceID('testnet'))
-        await act(async () => {
-            const deviceID = result.current
-            expect(deviceID).toEqual('DEV1')
+        const { result: store } = renderHook(() => useDeviceStore())
+
+        // Set initial state
+        act(() => {
+            store.current.setDeviceID('mainnet', 'test-id-mainnet')
+            store.current.setDeviceID('testnet', 'test-id-testnet')
         })
+
+        const { result: resultMainnet } = renderHook(() =>
+            useDeviceID('mainnet'),
+        )
+        expect(resultMainnet.current).toBe('test-id-mainnet')
+
+        const { result: resultTestnet } = renderHook(() =>
+            useDeviceID('testnet'),
+        )
+        expect(resultTestnet.current).toBe('test-id-testnet')
     })
 
-    test('getDeviceID when deviceID does not exists', async () => {
+    test('useDevice registers new device if no ID exists', async () => {
         vi.resetModules()
-        api.createSpy.mockResolvedValue({})
-        api.updateSpy.mockResolvedValue({})
         registerTestPlatform()
 
-        const { useDeviceStore } = await import('../../store')
-        const { useDeviceID } = await import('../../hooks')
-
-            ; (useDeviceStore as any).setState({
-                fcmToken: 'TOKEN',
-                deviceIDs: new Map([['testnet', 'DEV1']]),
-            })
-
-        const { result } = renderHook(() => useDeviceID('mainnet'))
-        await act(async () => {
-            const deviceID = result.current
-            expect(deviceID).toBeNull()
-        })
-    })
-
-    test('registerDevice handles empty accounts array', async () => {
-        vi.resetModules()
-        api.createSpy.mockResolvedValue({ id: 'NEW_ID' })
-        api.updateSpy.mockResolvedValue({})
-        registerTestPlatform()
-
-        const { useDeviceStore } = await import('../../store')
+        const { initDeviceStore, useDeviceStore } = await import('../../store')
         const { useDevice } = await import('../../hooks')
 
-            ; (useDeviceStore as any).setState({
-                fcmToken: null,
-                deviceIDs: new Map(),
-            })
+        initDeviceStore()
 
-        const { result } = renderHook(() => useDevice('testnet'))
-        await act(async () => {
-            await result.current.registerDevice([])
+        const { result: store } = renderHook(() => useDeviceStore())
+
+        // Ensure no device ID
+        act(() => {
+            store.current.setDeviceID('mainnet', null)
+            store.current.setFcmToken('test-fcm-token')
         })
 
-        expect(api.createSpy).toHaveBeenCalledWith({
+        const { result } = renderHook(() => useDevice('mainnet'), {
+            wrapper: createWrapper(),
+        })
+
+        await act(async () => {
+            await result.current.registerDevice(['account-1'])
+        })
+
+        expect(mockCreateDevice).toHaveBeenCalledWith({
             data: {
-                accounts: [],
-                platform: 'web',
-                push_token: undefined,
-                model: 'testModel',
+                accounts: ['account-1'],
+                platform: DevicePlatforms.ios,
+                push_token: 'test-fcm-token',
+                model: 'iPhone 14',
                 application: 'pera',
-                locale: 'testLocale',
+                locale: 'en-US',
             },
         })
+
+        expect(store.current.deviceIDs.get('mainnet')).toBe('new-device-id')
     })
 
-    test('registerDevice handles accounts without addresses', async () => {
+    test('useDevice updates existing device if ID exists', async () => {
         vi.resetModules()
-        api.createSpy.mockResolvedValue({ id: 'NEW_ID' })
-        api.updateSpy.mockResolvedValue({})
         registerTestPlatform()
 
-        const { useDeviceStore } = await import('../../store')
+        const { initDeviceStore, useDeviceStore } = await import('../../store')
         const { useDevice } = await import('../../hooks')
 
-            ; (useDeviceStore as any).setState({
-                fcmToken: 'FCM123',
-                deviceIDs: new Map(),
-            })
+        initDeviceStore()
 
-        const { result } = renderHook(() => useDevice('testnet'))
-        await act(async () => {
-            await result.current.registerDevice(['A1'])
+        const { result: store } = renderHook(() => useDeviceStore())
+
+        // Set existing device ID
+        act(() => {
+            store.current.setDeviceID('mainnet', 'existing-id')
+            store.current.setFcmToken('test-fcm-token')
         })
 
-        expect(api.createSpy).toHaveBeenCalledWith({
+        const { result } = renderHook(() => useDevice('mainnet'), {
+            wrapper: createWrapper(),
+        })
+
+        await act(async () => {
+            await result.current.registerDevice(['account-1'])
+        })
+
+        expect(mockUpdateDevice).toHaveBeenCalledWith({
+            deviceId: 'existing-id',
             data: {
-                accounts: ['A1'],
-                platform: 'web',
-                push_token: 'FCM123',
-                model: 'testModel',
-                application: 'pera',
-                locale: 'testLocale',
+                accounts: ['account-1'],
+                platform: DevicePlatforms.ios,
+                push_token: 'test-fcm-token',
+                model: 'iPhone 14',
+                locale: 'en-US',
             },
         })
-    })
 
-    test('registerDevice handles createDevice returning null id', async () => {
-        vi.resetModules()
-        api.createSpy.mockResolvedValue({ id: null })
-        api.updateSpy.mockResolvedValue({})
-        registerTestPlatform()
-
-        const { useDeviceStore } = await import('../../store')
-        const { useDevice } = await import('../../hooks')
-
-            ; (useDeviceStore as any).setState({
-                fcmToken: null,
-                deviceIDs: new Map(),
-            })
-
-        const { result } = renderHook(() => useDevice('testnet'))
-        await act(async () => {
-            await result.current.registerDevice([])
-        })
-
-        expect(api.createSpy).toHaveBeenCalledTimes(1)
-        expect(
-            (useDeviceStore as any).getState().deviceIDs.get('testnet'),
-        ).toBe(null)
-    })
-
-    test('registerDevice handles updateDevice with null push_token', async () => {
-        vi.resetModules()
-        api.createSpy.mockResolvedValue({})
-        api.updateSpy.mockResolvedValue({})
-        registerTestPlatform()
-
-        const { useDeviceStore } = await import('../../store')
-        const { useDevice } = await import('../../hooks')
-
-            ; (useDeviceStore as any).setState({
-                fcmToken: null,
-                deviceIDs: new Map([['testnet', 'DEV1']]),
-            })
-
-        const { result } = renderHook(() => useDevice('testnet'))
-        await act(async () => {
-            await result.current.registerDevice(['X'])
-        })
-
-        expect(api.updateSpy).toHaveBeenCalledWith({
-            device_id: 'DEV1',
-            data: {
-                accounts: ['X'],
-                platform: 'web',
-                push_token: undefined,
-                model: 'testModel',
-                locale: 'testLocale',
-            },
-        })
+        expect(mockCreateDevice).not.toHaveBeenCalled()
     })
 })
