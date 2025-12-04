@@ -14,7 +14,6 @@ import {
     Networks,
     queryClient,
     type HistoryPeriod,
-    type ResponseErrorConfiguration,
 } from '@perawallet/wallet-core-shared'
 import type {
     AssetPriceHistoryResponse,
@@ -51,11 +50,7 @@ const getIndexerAssetDetailsEndpoint = (assetID: string) => {
  */
 
 export const fetchAssetFiatPrices = async (assetIDs: string[]) => {
-    const response = await queryClient<
-        AssetPricesResponse,
-        ResponseErrorConfiguration<Error>,
-        string[]
-    >({
+    const response = await queryClient<AssetPricesResponse, string[]>({
         backend: 'pera',
         network: Networks.mainnet,
         method: 'GET',
@@ -69,11 +64,7 @@ export const fetchAssetFiatPrices = async (assetIDs: string[]) => {
 }
 
 export const fetchAssets = async (assetIDs: string[]) => {
-    const response = await queryClient<
-        AssetsResponse,
-        ResponseErrorConfiguration<Error>,
-        string[]
-    >({
+    const response = await queryClient<AssetsResponse, string[]>({
         backend: 'pera',
         network: Networks.mainnet,
         method: 'GET',
@@ -90,11 +81,7 @@ export async function fetchAssetPriceHistory(
     assetID: string,
     period: HistoryPeriod,
 ) {
-    const res = await queryClient<
-        AssetPriceHistoryResponse,
-        ResponseErrorConfiguration<Error>,
-        unknown
-    >({
+    const res = await queryClient<AssetPriceHistoryResponse, unknown>({
         backend: 'pera',
         network: Networks.mainnet,
         method: 'GET',
@@ -109,11 +96,7 @@ export async function fetchAssetPriceHistory(
 }
 
 export const fetchAssetDetails = async (assetID: string) => {
-    const response = await queryClient<
-        AssetResponse,
-        ResponseErrorConfiguration<Error>,
-        string
-    >({
+    const response = await queryClient<AssetResponse, string>({
         backend: 'pera',
         network: Networks.mainnet,
         method: 'GET',
@@ -124,11 +107,7 @@ export const fetchAssetDetails = async (assetID: string) => {
 }
 
 export const fetchPublicAssetDetails = async (assetID: string) => {
-    const response = await queryClient<
-        PublicAssetResponse,
-        ResponseErrorConfiguration<Error>,
-        string
-    >({
+    const response = await queryClient<PublicAssetResponse, string>({
         backend: 'pera',
         network: Networks.mainnet,
         method: 'GET',
@@ -139,11 +118,7 @@ export const fetchPublicAssetDetails = async (assetID: string) => {
 }
 
 export const fetchIndexerAssetDetails = async (assetID: string) => {
-    const response = await queryClient<
-        IndexerAssetResponse,
-        ResponseErrorConfiguration<Error>,
-        string
-    >({
+    const response = await queryClient<IndexerAssetResponse, string>({
         backend: 'indexer',
         network: Networks.mainnet,
         method: 'GET',
