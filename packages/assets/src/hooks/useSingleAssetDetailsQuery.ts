@@ -12,7 +12,12 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
-import { ALGO_ASSET, ALGO_ASSET_ID, DEFAULT_ASSET_VALUES, type PeraAsset } from '../models'
+import {
+    ALGO_ASSET,
+    ALGO_ASSET_ID,
+    DEFAULT_ASSET_VALUES,
+    type PeraAsset,
+} from '../models'
 import {
     mapAssetResponseToPeraAsset,
     mapIndexerAssetToPeraAsset,

@@ -11,16 +11,13 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { EdgeInsets } from 'react-native-safe-area-context'
 
-export const useStyles = makeStyles(
-    () => {
-        return {
-            contentContainer: {
-                flex: 1,
-                margin: 0,
-                padding: 0,
-            },
-        }
-    },
-)
+export const useStyles = makeStyles(() => {
+    return {
+        contentContainer: {
+            flex: 1,
+            margin: 0,
+            padding: 0,
+        },
+    }
+})

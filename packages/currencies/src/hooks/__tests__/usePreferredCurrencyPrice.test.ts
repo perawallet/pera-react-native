@@ -16,11 +16,17 @@ import { getPreferredCurrencyPriceQueryKey } from '../querykeys'
 describe('getPreferredCurrencyPriceQueryKey', () => {
     it('returns correct query keys for mainnet and USD', () => {
         const keys = getPreferredCurrencyPriceQueryKey('mainnet', 'USD')
-        expect(keys).toEqual(['currencies', { network: 'mainnet', preferredCurrency: 'USD' }])
+        expect(keys).toEqual([
+            'currencies',
+            { network: 'mainnet', preferredCurrency: 'USD' },
+        ])
     })
 
     it('returns correct query keys for testnet and EUR', () => {
         const keys = getPreferredCurrencyPriceQueryKey('testnet', 'EUR')
-        expect(keys).toEqual(['currencies', { network: 'testnet', preferredCurrency: 'EUR' }])
+        expect(keys).toEqual([
+            'currencies',
+            { network: 'testnet', preferredCurrency: 'EUR' },
+        ])
     })
 })

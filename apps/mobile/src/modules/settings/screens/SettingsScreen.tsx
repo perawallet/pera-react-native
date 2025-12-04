@@ -21,8 +21,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useDeviceInfoService } from '@perawallet/wallet-core-platform-integration'
 import { useContext, useMemo } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import PWTouchableOpacity from '../../../components/common/touchable-opacity/PWTouchableOpacity'
-import PWIcon, { IconName } from '../../../components/common/icons/PWIcon'
+import { IconName } from '../../../components/common/icons/PWIcon'
 import { config } from '@perawallet/wallet-core-config'
 import { WebViewContext } from '../../../providers/WebViewProvider'
 import PWListItem from '../../../components/common/list-item/PWListItem'
@@ -127,16 +126,13 @@ const SettingsScreen = () => {
     }
 
     const handleTapEvent = (page: {
-        title: string,
-        icon: string,
-        url?: string,
+        title: string
+        icon: string
+        url?: string
         route?: string
     }) => {
         if (page.route) {
-            goToSettingsPage(
-                page.route,
-                page.title,
-            )
+            goToSettingsPage(page.route, page.title)
         } else if (page.url) {
             openWebView(page.url)
         } else {
@@ -155,11 +151,10 @@ const SettingsScreen = () => {
                         style={styles.section}
                         key={`settings-section-${item.title}`}
                     >
-                        <Text style={styles.sectionTitle}>
-                            {item.title}
-                        </Text>
+                        <Text style={styles.sectionTitle}>{item.title}</Text>
                         {item.items.map(page => (
-                            <PWListItem key={`settings-sectionrow-${page.title}`}
+                            <PWListItem
+                                key={`settings-sectionrow-${page.title}`}
                                 onPress={() => handleTapEvent(page)}
                                 icon={page.icon as IconName}
                                 title={page.title}

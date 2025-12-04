@@ -34,7 +34,10 @@ import {
     NotificationServiceContainerKey,
     type NotificationService,
 } from '../push-notifications'
-import { DeviceInfoServiceContainerKey, type DeviceInfoService } from '../device'
+import {
+    DeviceInfoServiceContainerKey,
+    type DeviceInfoService,
+} from '../device'
 import type { PlatformServices } from '../models'
 
 vi.mock('tsyringe', () => ({

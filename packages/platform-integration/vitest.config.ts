@@ -28,7 +28,7 @@ export default defineConfig({
                 '**/endpoints.ts', // Raw API functions (tested via hooks)
                 '**/*.config.ts', // Configuration files (vite, vitest)
                 '**/eslint.config.js', // ESLint config
-                "**/src/test-utils/**"
+                '**/src/test-utils/**',
             ],
         },
     },

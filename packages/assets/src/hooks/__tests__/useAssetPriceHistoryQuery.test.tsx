@@ -12,9 +12,7 @@
 
 import { renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
-import {
-    useAssetPriceHistoryQuery,
-} from '../useAssetPriceHistoryQuery'
+import { useAssetPriceHistoryQuery } from '../useAssetPriceHistoryQuery'
 import { createWrapper } from './test-utils'
 import { QueryClient } from '@tanstack/react-query'
 import Decimal from 'decimal.js'
@@ -75,7 +73,7 @@ describe('useAssetPriceHistoryQuery', () => {
         })
 
         it('handles loading state', () => {
-            mocks.fetchAssetPriceHistory.mockReturnValue(new Promise(() => { }))
+            mocks.fetchAssetPriceHistory.mockReturnValue(new Promise(() => {}))
 
             const { result } = renderHook(
                 () => useAssetPriceHistoryQuery('123', 'one-day'),

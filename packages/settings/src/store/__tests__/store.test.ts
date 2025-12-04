@@ -21,9 +21,7 @@ describe('services/settings/store', () => {
     })
 
     test('initSettingsStore initializes the store with defaults', async () => {
-        const { initSettingsStore, useSettingsStore } = await import(
-            '../store'
-        )
+        const { initSettingsStore, useSettingsStore } = await import('../store')
 
         initSettingsStore()
 
@@ -35,9 +33,7 @@ describe('services/settings/store', () => {
     })
 
     test('setTheme updates theme state', async () => {
-        const { initSettingsStore, useSettingsStore } = await import(
-            '../store'
-        )
+        const { initSettingsStore, useSettingsStore } = await import('../store')
 
         initSettingsStore()
 
@@ -57,9 +53,7 @@ describe('services/settings/store', () => {
     })
 
     test('setPrivacyMode updates privacy mode state', async () => {
-        const { initSettingsStore, useSettingsStore } = await import(
-            '../store'
-        )
+        const { initSettingsStore, useSettingsStore } = await import('../store')
 
         initSettingsStore()
 
@@ -79,9 +73,7 @@ describe('services/settings/store', () => {
     })
 
     test('setPreference adds a preference', async () => {
-        const { initSettingsStore, useSettingsStore } = await import(
-            '../store'
-        )
+        const { initSettingsStore, useSettingsStore } = await import('../store')
 
         initSettingsStore()
 
@@ -95,9 +87,7 @@ describe('services/settings/store', () => {
     })
 
     test('getPreference retrieves a preference', async () => {
-        const { initSettingsStore, useSettingsStore } = await import(
-            '../store'
-        )
+        const { initSettingsStore, useSettingsStore } = await import('../store')
 
         initSettingsStore()
 
@@ -112,9 +102,7 @@ describe('services/settings/store', () => {
     })
 
     test('deletePreference removes a preference', async () => {
-        const { initSettingsStore, useSettingsStore } = await import(
-            '../store'
-        )
+        const { initSettingsStore, useSettingsStore } = await import('../store')
 
         initSettingsStore()
 

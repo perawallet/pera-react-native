@@ -22,7 +22,7 @@ export const useDeepLink = () => {
     const { showToast } = useToast()
 
     const isValidDeepLink = (url: string, source: LinkSource) => {
-        debugLog("Handling deeplink", url, source)
+        debugLog('Handling deeplink', url, source)
         //TODO implement fully
         return true
     }

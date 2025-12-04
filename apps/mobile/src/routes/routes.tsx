@@ -10,9 +10,7 @@
  limitations under the License
  */
 
-import {
-    createStaticNavigation,
-} from '@react-navigation/native'
+import { createStaticNavigation } from '@react-navigation/native'
 import {
     createNativeStackNavigator,
     NativeStackHeaderProps,

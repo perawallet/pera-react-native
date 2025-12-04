@@ -18,7 +18,7 @@ import { QueryClient } from '@tanstack/react-query'
 
 // Type for our simplified query object in tests
 type QueryLike = {
-  queryKey: unknown[]
+    queryKey: unknown[]
 }
 
 describe('useInvalidateAssetPrices', () => {
@@ -58,17 +58,25 @@ describe('useInvalidateAssetPrices', () => {
         })
 
         // Test the predicate function
-        const predicate = invalidateQueriesSpy.mock.calls[0][0]?.predicate as ((query: QueryLike) => boolean) | undefined
+        const predicate = invalidateQueriesSpy.mock.calls[0][0]?.predicate as
+            | ((query: QueryLike) => boolean)
+            | undefined
         expect(predicate).toBeDefined()
-        
+
         if (predicate) {
             // Test various query key patterns
-            expect(predicate({ queryKey: ['assets/prices', 'some', 'key'] })).toBe(true)
+            expect(
+                predicate({ queryKey: ['assets/prices', 'some', 'key'] }),
+            ).toBe(true)
             expect(predicate({ queryKey: ['assets', 'other'] })).toBe(false)
             expect(predicate({ queryKey: ['assets/prices'] })).toBe(true)
             expect(predicate({ queryKey: ['assets/prices/fiat'] })).toBe(true)
-            expect(predicate({ queryKey: ['assets/prices/history'] })).toBe(true)
-            expect(predicate({ queryKey: ['other', 'assets/prices'] })).toBe(false)
+            expect(predicate({ queryKey: ['assets/prices/history'] })).toBe(
+                true,
+            )
+            expect(predicate({ queryKey: ['other', 'assets/prices'] })).toBe(
+                false,
+            )
             expect(predicate({ queryKey: ['assets/other'] })).toBe(false)
             expect(predicate({ queryKey: ['other/assets/prices'] })).toBe(false)
         }
@@ -83,21 +91,29 @@ describe('useInvalidateAssetPrices', () => {
 
         result.current.invalidateAssetPrices()
 
-        const predicate = invalidateQueriesSpy.mock.calls[0][0]?.predicate as ((query: QueryLike) => boolean) | undefined
+        const predicate = invalidateQueriesSpy.mock.calls[0][0]?.predicate as
+            | ((query: QueryLike) => boolean)
+            | undefined
         expect(predicate).toBeDefined()
-        
+
         if (predicate) {
             // Empty query key
             expect(predicate({ queryKey: [] })).toBe(false)
-            
+
             // Non-array query key (should not throw error)
             expect(() => predicate({ queryKey: null as any })).not.toThrow()
-            expect(() => predicate({ queryKey: undefined as any })).not.toThrow()
+            expect(() =>
+                predicate({ queryKey: undefined as any }),
+            ).not.toThrow()
             expect(() => predicate({ queryKey: 'string' as any })).not.toThrow()
             expect(() => predicate({ queryKey: 123 as any })).not.toThrow()
-            
+
             // Query with non-string elements
-            expect(predicate({ queryKey: ['assets/prices', 123, null, undefined] })).toBe(true)
+            expect(
+                predicate({
+                    queryKey: ['assets/prices', 123, null, undefined],
+                }),
+            ).toBe(true)
         }
     })
 
@@ -107,34 +123,40 @@ describe('useInvalidateAssetPrices', () => {
         queryClient.setQueryData(['assets/prices', 'BTC'], { price: 50000 })
         queryClient.setQueryData(['assets/prices/fiat', 'USD'], { rate: 1.0 })
         queryClient.setQueryData(['assets/other'], { data: 'something' })
-        
+
         const { result } = renderHook(() => useInvalidateAssetPrices(), {
             wrapper: createWrapper(queryClient),
         })
-        
+
         // Spy after setting up the cache
         const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries')
-        
+
         result.current.invalidateAssetPrices()
-        
+
         expect(invalidateQueriesSpy).toHaveBeenCalledWith({
             predicate: expect.any(Function),
         })
-        
+
         // Check if the non-price query is still in the cache and not invalidated
         const otherQueryData = queryClient.getQueryData(['assets/other'])
         expect(otherQueryData).toEqual({ data: 'something' })
-        
+
         // For the price queries, we can't reliably test isInvalidated directly
         // since the test environment might handle invalidation differently
         // Instead, we'll verify the predicate function behavior
-        const predicate = invalidateQueriesSpy.mock.calls[0][0]?.predicate as ((query: QueryLike) => boolean) | undefined
+        const predicate = invalidateQueriesSpy.mock.calls[0][0]?.predicate as
+            | ((query: QueryLike) => boolean)
+            | undefined
         expect(predicate).toBeDefined()
-        
+
         if (predicate) {
-            expect(predicate({ queryKey: ['assets/prices', 'ALGO'] })).toBe(true)
+            expect(predicate({ queryKey: ['assets/prices', 'ALGO'] })).toBe(
+                true,
+            )
             expect(predicate({ queryKey: ['assets/prices', 'BTC'] })).toBe(true)
-            expect(predicate({ queryKey: ['assets/prices/fiat', 'USD'] })).toBe(true)
+            expect(predicate({ queryKey: ['assets/prices/fiat', 'USD'] })).toBe(
+                true,
+            )
             expect(predicate({ queryKey: ['assets/other'] })).toBe(false)
         }
     })
@@ -153,13 +175,16 @@ describe('useInvalidateAssetPrices', () => {
 
         // Should be called exactly 3 times
         expect(invalidateQueriesSpy).toHaveBeenCalledTimes(3)
-        
+
         // Each call should use the same predicate logic
         for (let i = 0; i < 3; i++) {
-            expect(invalidateQueriesSpy.mock.calls[i][0]).toHaveProperty('predicate')
-            const predicate = invalidateQueriesSpy.mock.calls[i][0]?.predicate as ((query: QueryLike) => boolean) | undefined
+            expect(invalidateQueriesSpy.mock.calls[i][0]).toHaveProperty(
+                'predicate',
+            )
+            const predicate = invalidateQueriesSpy.mock.calls[i][0]
+                ?.predicate as ((query: QueryLike) => boolean) | undefined
             expect(predicate).toBeDefined()
-            
+
             if (predicate) {
                 expect(predicate({ queryKey: ['assets/prices'] })).toBe(true)
             }
@@ -168,8 +193,10 @@ describe('useInvalidateAssetPrices', () => {
 
     it('handles errors gracefully', () => {
         // Create a spy to track console.error calls
-        const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-        
+        const consoleErrorSpy = vi
+            .spyOn(console, 'error')
+            .mockImplementation(() => {})
+
         // Mock invalidateQueries to throw an error
         queryClient.invalidateQueries = vi.fn().mockImplementation(() => {
             throw new Error('Test error')
@@ -181,13 +208,13 @@ describe('useInvalidateAssetPrices', () => {
 
         // Call the function - it should not throw
         result.current.invalidateAssetPrices()
-        
+
         // Verify that console.error was called with the error
         expect(consoleErrorSpy).toHaveBeenCalledWith(
             'Error invalidating asset prices:',
-            expect.any(Error)
+            expect.any(Error),
         )
-        
+
         // Clean up
         consoleErrorSpy.mockRestore()
     })

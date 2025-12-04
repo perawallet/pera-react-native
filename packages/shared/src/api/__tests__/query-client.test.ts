@@ -228,7 +228,9 @@ describe('queryClient', () => {
 
     it('should handle errors and log them when debugEnabled is true', async () => {
         const { queryClient } = await import('../query-client')
-        const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => { })
+        const consoleLogSpy = vi
+            .spyOn(console, 'log')
+            .mockImplementation(() => {})
 
         const testError = new Error('Test error')
         mockJson.mockRejectedValue(testError)
@@ -260,10 +262,7 @@ describe('queryClient', () => {
         })
 
         // Should call with URL as-is
-        expect(mockKy).toHaveBeenCalledWith(
-            'test-no-slash',
-            expect.any(Object),
-        )
+        expect(mockKy).toHaveBeenCalledWith('test-no-slash', expect.any(Object))
     })
 
     it('should handle request with data', async () => {

@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { ParamListBase, useNavigation, StaticScreenProps } from '@react-navigation/native'
+import {
+    ParamListBase,
+    useNavigation,
+    StaticScreenProps,
+} from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useStyles } from './NameAccountScreen.styles'
 import { Input, Text } from '@rneui/themed'
@@ -68,8 +72,8 @@ const NameAccountScreen = ({ route }: NameAccountScreenProps) => {
                 style={styles.helperText}
             >
                 Name your account to easily identify it while using the Pera
-                Wallet. These names are stored locally, and can only be seen
-                by you.
+                Wallet. These names are stored locally, and can only be seen by
+                you.
             </Text>
             <PWView style={styles.walletNameContainer}>
                 <PWIcon

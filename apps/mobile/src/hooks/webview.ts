@@ -190,7 +190,7 @@ export const usePeraWebviewInterface = (
     }, [webview])
 
     //TODO not sure what the correct behavior here is?
-    const onBackPressed = useCallback(() => { }, [])
+    const onBackPressed = useCallback(() => {}, [])
 
     const logAnalyticsEvent = useCallback(
         (params: LogAnalyticsParams) => {

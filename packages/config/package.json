@@ -14,14 +14,14 @@
     "lint:fix": "eslint src --fix"
   },
   "dependencies": {
+    "@babel/runtime": "catalog:",
     "reflect-metadata": "catalog:",
     "tsyringe": "catalog:",
-    "zod": "^4.1.12"
+    "zod": "catalog:"
   },
   "devDependencies": {
-    "@babel/runtime": "catalog:",
     "@perawallet/wallet-core-devtools": "workspace:*",
-    "@testing-library/react": "^16.3.0",
+    "@testing-library/react": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "eslint": "catalog:",

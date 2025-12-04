@@ -28,16 +28,20 @@ const SettingsDeveloperScreen = () => {
     }
     return (
         <PWView style={styles.container}>
-            <PWListItem key={`settings-developer-node-settings`}
-                onPress={() => handleTapEvent("NodeSettings")}
-                icon="tree"
-                title="Node Settings"
+            <PWListItem
+                key={`settings-developer-node-settings`}
+                onPress={() => handleTapEvent('NodeSettings')}
+                icon='tree'
+                title='Node Settings'
             />
-            {network === Networks.testnet && <PWListItem key={`settings-developer-algorand-dispenser`}
-                onPress={() => handleTapEvent("DispenserSettings")}
-                icon="algo"
-                title="Algorand Dispenser"
-            />}
+            {network === Networks.testnet && (
+                <PWListItem
+                    key={`settings-developer-algorand-dispenser`}
+                    onPress={() => handleTapEvent('DispenserSettings')}
+                    icon='algo'
+                    title='Algorand Dispenser'
+                />
+            )}
         </PWView>
     )
 }

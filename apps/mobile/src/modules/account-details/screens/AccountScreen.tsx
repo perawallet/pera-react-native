@@ -83,9 +83,7 @@ const AccountScreen = () => {
                 <PWView style={styles.iconBarSection}>
                     {/* TODO we may want to add support for pending inbox items here too
             (like the current inbox since we're using the same screen real estate) */}
-                    <AccountSelection
-                        onPress={toggleAccountSelectorVisible}
-                    />
+                    <AccountSelection onPress={toggleAccountSelectorVisible} />
                 </PWView>
                 <PWView style={styles.iconBarSection}>
                     <PWTouchableOpacity onPress={openQRScanner}>

@@ -15,8 +15,8 @@ import { infoLog, errorLog, debugLog } from '../logging'
 
 describe('utils/logging', () => {
     beforeEach(() => {
-        vi.spyOn(console, 'log').mockImplementation(() => { })
-        vi.spyOn(console, 'error').mockImplementation(() => { })
+        vi.spyOn(console, 'log').mockImplementation(() => {})
+        vi.spyOn(console, 'error').mockImplementation(() => {})
     })
 
     afterEach(() => {
@@ -31,7 +31,11 @@ describe('utils/logging', () => {
 
         test('calls console.log with message and args', () => {
             infoLog('test message', 'arg1', 'arg2')
-            expect(console.log).toHaveBeenCalledWith('test message', 'arg1', 'arg2')
+            expect(console.log).toHaveBeenCalledWith(
+                'test message',
+                'arg1',
+                'arg2',
+            )
         })
     })
 
@@ -43,7 +47,11 @@ describe('utils/logging', () => {
 
         test('calls console.error with message and args', () => {
             errorLog('error message', 'arg1', 'arg2')
-            expect(console.error).toHaveBeenCalledWith('error message', 'arg1', 'arg2')
+            expect(console.error).toHaveBeenCalledWith(
+                'error message',
+                'arg1',
+                'arg2',
+            )
         })
     })
 

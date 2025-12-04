@@ -44,7 +44,10 @@ describe('useCreateDeviceMutation', () => {
         result.current.mutate({ data: mockData })
 
         await waitFor(() => {
-            expect(createDevice).toHaveBeenCalledWith(expect.anything(), mockData)
+            expect(createDevice).toHaveBeenCalledWith(
+                expect.anything(),
+                mockData,
+            )
         })
     })
 })

@@ -44,9 +44,12 @@ describe('usePreferredCurrencyPriceQuery', () => {
         mockUseNetwork.mockReturnValue({ network: 'mainnet' })
     })
 
-    const wrapper = ({ children }: { children: React.ReactNode }) => (
-        React.createElement(QueryClientProvider, { client: queryClient }, children)
-    )
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+        React.createElement(
+            QueryClientProvider,
+            { client: queryClient },
+            children,
+        )
 
     it('fetches and transforms currency price', async () => {
         const mockData = {
@@ -56,7 +59,10 @@ describe('usePreferredCurrencyPriceQuery', () => {
 
         mockFetchCurrency.mockResolvedValue(mockData)
 
-        const { result } = renderHook(() => usePreferredCurrencyPriceQuery('EUR'), { wrapper })
+        const { result } = renderHook(
+            () => usePreferredCurrencyPriceQuery('EUR'),
+            { wrapper },
+        )
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
@@ -68,11 +74,16 @@ describe('usePreferredCurrencyPriceQuery', () => {
 
     it('uses correct network and currency', async () => {
         mockUseNetwork.mockReturnValue({ network: 'testnet' })
-        mockFetchCurrency.mockResolvedValue({ currency_id: 'GBP', usd_value: '1.25' })
+        mockFetchCurrency.mockResolvedValue({
+            currency_id: 'GBP',
+            usd_value: '1.25',
+        })
 
         renderHook(() => usePreferredCurrencyPriceQuery('GBP'), { wrapper })
 
-        await waitFor(() => expect(mockFetchCurrency).toHaveBeenCalledWith('testnet', 'GBP'))
+        await waitFor(() =>
+            expect(mockFetchCurrency).toHaveBeenCalledWith('testnet', 'GBP'),
+        )
     })
 
     it('handles null usd_value', async () => {
@@ -83,7 +94,10 @@ describe('usePreferredCurrencyPriceQuery', () => {
 
         mockFetchCurrency.mockResolvedValue(mockData)
 
-        const { result } = renderHook(() => usePreferredCurrencyPriceQuery('JPY'), { wrapper })
+        const { result } = renderHook(
+            () => usePreferredCurrencyPriceQuery('JPY'),
+            { wrapper },
+        )
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
@@ -91,9 +105,12 @@ describe('usePreferredCurrencyPriceQuery', () => {
     })
 
     it('handles loading state', () => {
-        mockFetchCurrency.mockImplementation(() => new Promise(() => { }))
+        mockFetchCurrency.mockImplementation(() => new Promise(() => {}))
 
-        const { result } = renderHook(() => usePreferredCurrencyPriceQuery('USD'), { wrapper })
+        const { result } = renderHook(
+            () => usePreferredCurrencyPriceQuery('USD'),
+            { wrapper },
+        )
 
         expect(result.current.isPending).toBe(true)
     })
@@ -106,7 +123,10 @@ describe('usePreferredCurrencyPriceQuery', () => {
 
         mockFetchCurrency.mockResolvedValue(mockData)
 
-        const { result } = renderHook(() => usePreferredCurrencyPriceQuery('CAD'), { wrapper })
+        const { result } = renderHook(
+            () => usePreferredCurrencyPriceQuery('CAD'),
+            { wrapper },
+        )
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
 

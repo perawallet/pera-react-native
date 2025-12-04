@@ -37,11 +37,11 @@ vi.mock('@perawallet/wallet-core-platform-integration', () => ({
 describe('services/blockchain/hooks', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-            ; (useNetwork as Mock).mockReturnValue({ network: 'mainnet' })
+        ;(useNetwork as Mock).mockReturnValue({ network: 'mainnet' })
     })
 
     test('returns fromConfig client for mainnet', () => {
-        ; (useNetwork as Mock).mockReturnValue({ network: 'mainnet' })
+        ;(useNetwork as Mock).mockReturnValue({ network: 'mainnet' })
         const { result } = renderHook(() => useAlgorandClient())
 
         expect(AlgorandClient.fromConfig).toHaveBeenCalledTimes(1)
@@ -52,7 +52,7 @@ describe('services/blockchain/hooks', () => {
     })
 
     test('returns fromConfig client for testnet', () => {
-        ; (useNetwork as Mock).mockReturnValue({ network: 'testnet' })
+        ;(useNetwork as Mock).mockReturnValue({ network: 'testnet' })
         const { result } = renderHook(() => useAlgorandClient())
 
         expect(AlgorandClient.fromConfig).toHaveBeenCalledTimes(1)
@@ -63,7 +63,7 @@ describe('services/blockchain/hooks', () => {
     })
 
     test('returns fromConfig client for unknown network', () => {
-        ; (useNetwork as Mock).mockReturnValue({ network: 'devnet' })
+        ;(useNetwork as Mock).mockReturnValue({ network: 'devnet' })
         const { result } = renderHook(() => useAlgorandClient())
 
         expect(AlgorandClient.fromConfig).toHaveBeenCalledTimes(1)

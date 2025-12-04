@@ -13,8 +13,7 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 
-import { useAlgorandClient, useSigningRequest } from '../../hooks'
-import { AlgorandClient } from '@algorandfoundation/algokit-utils'
+import { useSigningRequest } from '../../hooks'
 import { useBlockchainStore } from '../../store'
 
 // Mock AlgorandClient factory methods so we can assert which one is chosen

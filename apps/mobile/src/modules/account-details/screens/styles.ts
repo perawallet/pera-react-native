@@ -12,7 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles((theme) => {
+export const useStyles = makeStyles(theme => {
     const darkMode = theme.mode === 'dark'
     return {
         drawer: {

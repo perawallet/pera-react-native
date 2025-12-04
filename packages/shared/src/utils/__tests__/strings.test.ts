@@ -151,8 +151,12 @@ describe('utils/strings - formatCurrency', () => {
 
     test('truncates trailing zeros when minPrecision is set', () => {
         // When minPrecision is set, trailing zeros are truncated down to minPrecision
-        expect(formatCurrency('1.50000', 6, 'USD', 'en-US', true, false, 0)).toBe('$1.5')
-        expect(formatCurrency('1.10000', 6, 'USD', 'en-US', true, false, 0)).toBe('$1.1')
+        expect(
+            formatCurrency('1.50000', 6, 'USD', 'en-US', true, false, 0),
+        ).toBe('$1.5')
+        expect(
+            formatCurrency('1.10000', 6, 'USD', 'en-US', true, false, 0),
+        ).toBe('$1.1')
     })
 })
 

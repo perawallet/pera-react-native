@@ -12,7 +12,7 @@
 
 import { Networks } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
-import { useContext, useEffect, useMemo, useRef } from 'react'
+import { useContext, useEffect, useRef } from 'react'
 import { AppState, StatusBar } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { MainRoutes } from '../../routes/routes'
@@ -25,7 +25,6 @@ import ErrorBoundary from 'react-native-error-boundary'
 import useToast from '../../hooks/toast'
 import { useIsDarkMode } from '../../hooks/theme'
 import { SigningProvider } from '../../providers/SigningProvider'
-import PWTouchableOpacity from '../../components/common/touchable-opacity/PWTouchableOpacity'
 import {
     useDevice,
     useNetwork,
@@ -42,20 +41,12 @@ const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const { hasInternet } = useContext(NetworkStatusContext)
-    const { network, setNetwork } = useNetwork()
+    const { network } = useNetwork()
     const navTheme = getNavigationTheme(isDarkMode ? 'dark' : 'light')
     const { theme } = useTheme()
     const { showToast } = useToast()
 
-    const networkBarStyle = useMemo(() => {
-        if (network === 'testnet') {
-            return styles.testnetBar
-        }
-        return styles.mainnetBar
-    }, [network, styles.testnetBar, styles.mainnetBar])
-
-    const showError = (error: string | Error
-    ) => {
+    const showError = (error: string | Error) => {
         showToast({
             title: 'Error',
             body: config.debugEnabled
@@ -70,7 +61,11 @@ const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
             <PWView style={styles.container}>
                 <StatusBar
                     barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-                    backgroundColor={network === Networks.testnet ? theme.colors.testnetBackground : theme.colors.background}
+                    backgroundColor={
+                        network === Networks.testnet
+                            ? theme.colors.testnetBackground
+                            : theme.colors.background
+                    }
                 />
 
                 {!hasInternet && (

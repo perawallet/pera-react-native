@@ -17,7 +17,11 @@ describe('push-notifications/hooks/querykeys', () => {
     test('should generate correct query key for notifications list', () => {
         const key = getNotificationsListQueryKey('mainnet', 'device-123')
 
-        expect(key).toEqual(['notifications', 'list', { deviceID: 'device-123', network: 'mainnet' }])
+        expect(key).toEqual([
+            'notifications',
+            'list',
+            { deviceID: 'device-123', network: 'mainnet' },
+        ])
     })
 
     test('should generate different keys for different networks', () => {

@@ -17,13 +17,17 @@ import { useCallback } from 'react'
 
 import SwapPair from '../swap-pair/SwapPair'
 import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
-import { ALGO_ASSET_ID, PeraAsset, useAssetsQuery } from '@perawallet/wallet-core-assets'
+import {
+    ALGO_ASSET_ID,
+    PeraAsset,
+    useAssetsQuery,
+} from '@perawallet/wallet-core-assets'
 import Decimal from 'decimal.js'
 import { FlashList } from '@shopify/flash-list'
 
 type SwapRecord = {
-    fromAsset?: PeraAsset,
-    toAsset?: PeraAsset,
+    fromAsset?: PeraAsset
+    toAsset?: PeraAsset
     volume: Decimal
 }
 

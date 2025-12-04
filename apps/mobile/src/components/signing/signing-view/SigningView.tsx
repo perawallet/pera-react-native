@@ -47,9 +47,12 @@ const SingleTransactionView = ({ request }: SigningViewProps) => {
     //TODO this isn't really a valid error since it might be an app call or something but that
     //will get fixed when we implement all tx types
     if (!receiver) {
-        return <EmptyView
-            title='Invalid Transaction'
-            body="There does not appear to be a receiver for this transaction" />
+        return (
+            <EmptyView
+                title='Invalid Transaction'
+                body='There does not appear to be a receiver for this transaction'
+            />
+        )
     }
 
     return (

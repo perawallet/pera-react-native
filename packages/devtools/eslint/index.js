@@ -36,6 +36,15 @@ module.exports = tseslint.config(
         },
         rules: {
             "@typescript-eslint/no-non-null-assertion": "off",
+            "@typescript-eslint/no-unused-vars": [
+                "error",
+                {
+                    "argsIgnorePattern": "^_",
+                    "varsIgnorePattern": "^_",
+                    "caughtErrorsIgnorePattern": "^_",
+                    "destructuredArrayIgnorePattern": "^_"
+                }
+            ],
             "unused-imports/no-unused-imports": "error",
         },
     }

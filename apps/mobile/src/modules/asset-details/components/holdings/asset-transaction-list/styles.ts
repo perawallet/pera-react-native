@@ -23,8 +23,7 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
     },
-    container: {
-    },
+    container: {},
     emptyView: {
         minHeight: theme.spacing.xl * 6,
     },

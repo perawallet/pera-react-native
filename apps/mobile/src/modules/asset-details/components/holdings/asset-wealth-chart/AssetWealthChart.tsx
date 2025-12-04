@@ -63,7 +63,7 @@ const AssetWealthChart = ({
     )
 
     const dataPoints = useMemo(() => {
-        return (data?.map((p) => {
+        return (data?.map(p => {
             return {
                 value: p.fiatValue.toNumber(),
                 timestamp: p.datetime,

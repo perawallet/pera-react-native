@@ -3,12 +3,16 @@
     "version": "0.0.0",
     "license": "MIT",
     "exports": {
-        "./eslint/*": "./eslint/*",
-        "./tsconfig/*": "./tsconfig/*"
+        "./eslint": {
+            "import": "./eslint/index.js",
+            "require": "./eslint/index.js"
+        },
+        "./tsconfig": "./tsconfig/vite.json",
+        "./tsconfig/vite.json": "./tsconfig/vite.json"
     },
     "files": [
-        "eslint/*",
-        "tsconfig/*"
+        "eslint",
+        "tsconfig"
     ],
     "dependencies": {
         "@eslint/js": "^9.17.0",

@@ -128,8 +128,8 @@ describe('useAssetFiatPricesQuery', () => {
     })
 
     it('handles loading state', () => {
-        mocks.fetchAssetFiatPrices.mockReturnValue(new Promise(() => { }))
-        mocks.fetchPublicAssetDetails.mockReturnValue(new Promise(() => { }))
+        mocks.fetchAssetFiatPrices.mockReturnValue(new Promise(() => {}))
+        mocks.fetchPublicAssetDetails.mockReturnValue(new Promise(() => {}))
 
         const { result } = renderHook(() => useAssetFiatPricesQuery(), {
             wrapper: createWrapper(queryClient),

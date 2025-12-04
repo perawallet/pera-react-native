@@ -24,15 +24,17 @@ export const useInvalidateAssetPrices = () => {
                         if (!query.queryKey || !Array.isArray(query.queryKey)) {
                             return false
                         }
-                        
+
                         // Handle empty array
                         if (query.queryKey.length === 0) {
                             return false
                         }
-                        
+
                         // Check if the query key starts with 'assets/prices'
-                        return query.queryKey.join('/').startsWith('assets/prices')
-                    } catch (error) {
+                        return query.queryKey
+                            .join('/')
+                            .startsWith('assets/prices')
+                    } catch (_error) {
                         // If any error occurs during predicate evaluation, don't invalidate the query
                         return false
                     }

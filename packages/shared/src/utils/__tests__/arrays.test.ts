@@ -18,7 +18,11 @@ describe('utils/arrays', () => {
         test('partitions array into chunks of specified size', () => {
             const array = [1, 2, 3, 4, 5, 6, 7, 8, 9]
             const result = partition(array, 3)
-            expect(result).toEqual([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+            expect(result).toEqual([
+                [1, 2, 3],
+                [4, 5, 6],
+                [7, 8, 9],
+            ])
         })
 
         test('handles array not evenly divisible by chunk size', () => {

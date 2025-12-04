@@ -43,9 +43,12 @@ describe('useCurrenciesQuery', () => {
         mockUseNetwork.mockReturnValue({ network: 'mainnet' })
     })
 
-    const wrapper = ({ children }: { children: React.ReactNode }) => (
-        React.createElement(QueryClientProvider, { client: queryClient }, children)
-    )
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+        React.createElement(
+            QueryClientProvider,
+            { client: queryClient },
+            children,
+        )
 
     it('fetches and transforms currencies list', async () => {
         const mockData = [
@@ -71,7 +74,9 @@ describe('useCurrenciesQuery', () => {
 
         renderHook(() => useCurrenciesQuery(), { wrapper })
 
-        await waitFor(() => expect(mockFetchCurrenciesList).toHaveBeenCalledWith('testnet'))
+        await waitFor(() =>
+            expect(mockFetchCurrenciesList).toHaveBeenCalledWith('testnet'),
+        )
     })
 
     it('handles empty response', async () => {
@@ -85,7 +90,7 @@ describe('useCurrenciesQuery', () => {
     })
 
     it('handles loading state', () => {
-        mockFetchCurrenciesList.mockImplementation(() => new Promise(() => { }))
+        mockFetchCurrenciesList.mockImplementation(() => new Promise(() => {}))
 
         const { result } = renderHook(() => useCurrenciesQuery(), { wrapper })
 

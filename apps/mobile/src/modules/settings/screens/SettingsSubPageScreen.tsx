@@ -79,7 +79,7 @@ const SettingsSubPageScreen = ({ route }: SettingsSubPageScreenProps) => {
             showToast({
                 title: 'An unexpected error occurred',
                 body: `Details: ${error}`,
-                type: 'error'
+                type: 'error',
             })
         }
     }
@@ -87,9 +87,9 @@ const SettingsSubPageScreen = ({ route }: SettingsSubPageScreenProps) => {
     return (
         <PWView style={styles.container}>
             <Text>
-                This page would hold the settings for {route.params.title}.
-                For now we are going to just put some random stuff here for
-                ease of use
+                This page would hold the settings for {route.params.title}. For
+                now we are going to just put some random stuff here for ease of
+                use
             </Text>
 
             <PWButton

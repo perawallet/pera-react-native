@@ -33,15 +33,15 @@ type WebViewStack = {
 
 export const WebViewContext = createContext<WebViewStack>({
     openWebViews: [],
-    pushWebView: () => { },
-    popWebView: () => { },
-    removeWebView: () => { },
-    clearWebViews: () => { },
+    pushWebView: () => {},
+    popWebView: () => {},
+    removeWebView: () => {},
+    clearWebViews: () => {},
 })
 
 type WebViewProviderProps = {} & PropsWithChildren
 
-const flexStyle = { flex: 1, }
+const flexStyle = { flex: 1 }
 
 const WebViewProvider = ({ children }: WebViewProviderProps) => {
     const [openWebViews, setOpenWebViews] = useState<WebViewRequest[]>([])
