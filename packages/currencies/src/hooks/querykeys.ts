@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Network } from 'packages/shared/src'
+import { Network } from '@perawallet/wallet-core-shared'
 
 export const MODULE_PREFIX = 'currencies'
 
