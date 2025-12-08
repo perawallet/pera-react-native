@@ -34,6 +34,7 @@ import {
     useAssetFiatPricesQuery,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
+import { useLanguage } from '../../../hooks/useLanguage'
 
 type SendFundsInputViewProps = {
     onNext: () => void
@@ -52,6 +53,7 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
     const [noteOpen, setNoteOpen] = useState(false)
     const [infoOpen, setInfoOpen] = useState(false)
     const { showToast } = useToast()
+    const { t } = useLanguage()
 
     const { accountBalances } = useAccountBalancesQuery(
         selectedAccount ? [selectedAccount] : [],
@@ -147,7 +149,7 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
                 rightIcon='info'
                 onRightPress={openInfo}
             >
-                <Text>Send {asset?.name}</Text>
+                <Text>{t('send_funds.input_view.title', { asset: asset?.name })}</Text>
                 <AccountDisplay
                     account={selectedAccount ?? undefined}
                     style={styles.accountDisplay}

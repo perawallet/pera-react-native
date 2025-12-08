@@ -29,9 +29,11 @@ import { useForm, Controller } from 'react-hook-form'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useState } from 'react'
 import AddressDisplay from '../../../components/address/address-display/AddressDisplay'
+import { useLanguage } from '../../../hooks/useLanguage'
 
 const EditContactScreen = () => {
     const styles = useStyles()
+    const { t } = useLanguage()
     const {
         saveContact,
         findContacts,
@@ -170,15 +172,15 @@ const EditContactScreen = () => {
                 onBackdropPress={closeDeleteModal}
             >
                 <Dialog.Title title='Are you sure?' />
-                <Text>Are you sure you want to delete this contact?</Text>
+                <Text>{t('contacts.edit_contact.delete_confirm')}</Text>
                 <Dialog.Actions>
                     <Dialog.Button
-                        title='Delete'
+                        title={t('common.delete.label')}
                         titleStyle={{ color: theme.colors.error }}
                         onPress={removeContact}
                     />
                     <Dialog.Button
-                        title='Cancel'
+                        title={t('common.cancel.label')}
                         onPress={closeDeleteModal}
                     />
                 </Dialog.Actions>

@@ -1,0 +1,63 @@
+{
+    "asset_details": {
+        "transaction_list": {
+            "title": "Transactions",
+            "label": "Transaction Item",
+            "empty_title": "No Transactions",
+            "empty_body": "There are no transactions to be displayed"
+        }
+    },
+    "camera": {
+        "no_camera_device_found": {
+            "label": "No camera device found."
+        }
+    },
+    "chart": {
+        "one_week": {
+            "label": "1W"
+        },
+        "one_month": {
+            "label": "1M"
+        },
+        "one_year": {
+            "label": "1Y"
+        }
+    },
+    "common": {
+        "loading": {
+            "label": "Loading..."
+        },
+        "delete": {
+            "label": "Delete"
+        },
+        "cancel": {
+            "label": "Cancel"
+        }
+    },
+    "contacts": {
+        "edit_contact": {
+            "title": "Edit Contact",
+            "delete_confirm": "Are you sure you want to delete this contact?"
+        }
+    },
+    "onboarding": {
+        "import_account": {
+            "importing": "Importing wallet..."
+        },
+        "create_account": {
+            "processing": "Setting up your wallet..."
+        }
+    },
+    "send_funds": {
+        "input_view": {
+            "title": "Send {{asset}}"
+        }
+    },
+    "settings": {
+        "currency": {
+            "title": "Main Currency",
+            "description": "Select a currency as your main local currency for displaying asset values.",
+            "search_placeholder": "Search"
+        }
+    }
+}

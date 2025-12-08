@@ -22,6 +22,7 @@ import {
 import { Text } from '@rneui/themed'
 import { PropsWithChildren, useState } from 'react'
 import { Modal } from 'react-native'
+import { useLanguage } from '../../../hooks/useLanguage'
 
 type QRScannerViewProps = {
     title?: string
@@ -35,6 +36,7 @@ const QRScannerView = (props: QRScannerViewProps) => {
     const device = useCameraDevice('back')
     const { hasPermission, requestPermission } = useCameraPermission()
     const [scanningEnabled, setScanningEnabled] = useState(true)
+    const { t } = useLanguage()
     const codeScanner = useCodeScanner({
         codeTypes: ['qr', 'ean-13'],
         onCodeScanned: codes => {
@@ -52,7 +54,7 @@ const QRScannerView = (props: QRScannerViewProps) => {
     if (device == null) {
         return (
             <PWView>
-                <Text>No camera device found.</Text>
+                <Text>{t('camera.no_camera_device_found.label')}</Text>
             </PWView>
         )
     }

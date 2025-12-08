@@ -11,6 +11,7 @@
  */
 
 import React, { useEffect, useState } from 'react'
+import './i18n'
 import { Text } from 'react-native'
 import { QueryProvider } from './providers/QueryProvider'
 import { useBootstrapper } from './bootstrap/boostrap'
@@ -22,6 +23,7 @@ import BootSplash from 'react-native-bootsplash'
 import { NotifierWrapper } from 'react-native-notifier'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { TokenProvider } from './providers/TokenProvider'
+import { useLanguage } from './hooks/useLanguage'
 
 function App() {
     const [persister, setPersister] = useState<Persister>()
@@ -29,6 +31,7 @@ function App() {
     const [bootstrapped, setBootstrapped] = useState(false)
     const [fcmToken, setFcmToken] = useState<string | null>(null)
     const bootstrap = useBootstrapper()
+    const { t } = useLanguage()
 
     useEffect(() => {
         if (!bootstrapped) {
@@ -52,7 +55,7 @@ function App() {
 
     return (
         <SafeAreaProvider>
-            {!bootstrapped && <Text>Loading...</Text>}
+            {!bootstrapped && <Text>{t('common.loading.label')}</Text>}
             {bootstrapped && persister && (
                 <GestureHandlerRootView>
                     <NotifierWrapper>

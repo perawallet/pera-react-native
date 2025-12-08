@@ -26,6 +26,7 @@ import {
     ScrollView,
 } from 'react-native'
 import useToast from '../../../hooks/toast'
+import { useLanguage } from '../../../hooks/useLanguage'
 
 const NUM_WORDS = 24 //TODO: we'll add legacy 25 word accounts later
 
@@ -40,6 +41,7 @@ const ImportAccountScreen = () => {
     const [focused, setFocused] = useState(0)
     const [canImport, setCanImport] = useState(false)
     const [processing, setProcessing] = useState(false)
+    const { t } = useLanguage()
 
     const updateWord = (word: string, index: number) => {
         const splitWords = word.split('\n')
@@ -114,7 +116,7 @@ const ImportAccountScreen = () => {
                                                         h4
                                                         h4Style={
                                                             focused ===
-                                                            offsetIndex
+                                                                offsetIndex
                                                                 ? styles.focusedLabel
                                                                 : styles.label
                                                         }
@@ -127,7 +129,7 @@ const ImportAccountScreen = () => {
                                                         }
                                                         inputContainerStyle={
                                                             focused ===
-                                                            offsetIndex
+                                                                offsetIndex
                                                                 ? styles.focusedInputContainer
                                                                 : styles.inputContainer
                                                         }
@@ -181,7 +183,7 @@ const ImportAccountScreen = () => {
                 overlayStyle={styles.overlay}
                 backdropStyle={styles.overlayBackdrop}
             >
-                <Text>Importing wallet...</Text>
+                <Text>{t('onboarding.import_account.importing')}</Text>
                 <ActivityIndicator
                     size='large'
                     color={theme.colors.primary}

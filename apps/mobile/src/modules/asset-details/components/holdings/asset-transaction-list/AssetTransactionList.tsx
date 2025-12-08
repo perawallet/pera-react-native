@@ -18,6 +18,7 @@ import PWButton from '../../../../../components/common/button/PWButton'
 import { Text } from '@rneui/themed'
 import EmptyView from '../../../../../components/common/empty-view/EmptyView'
 import { FlashList } from '@shopify/flash-list'
+import { useLanguage } from '../../../../../hooks/useLanguage'
 
 type AssetTransactionListProps = {
     account: WalletAccount
@@ -28,6 +29,7 @@ type AssetTransactionListProps = {
 //TODO implement fully
 const AssetTransactionList = ({ children }: AssetTransactionListProps) => {
     const styles = useStyles()
+    const { t } = useLanguage()
 
     // TODO: Replace with actual infinite query hook when added.
     const transactions: [] = []
@@ -36,7 +38,7 @@ const AssetTransactionList = ({ children }: AssetTransactionListProps) => {
     }
 
     const renderItem = () => {
-        return <Text>Transaction Item</Text>
+        return <Text>{t('asset_details.transaction_list.label')}</Text>
     }
 
     return (
@@ -50,7 +52,7 @@ const AssetTransactionList = ({ children }: AssetTransactionListProps) => {
                 <PWView>
                     {children}
                     <PWView style={styles.header}>
-                        <Text h4>Transactions</Text>
+                        <Text h4>{t('asset_details.transaction_list.title')}</Text>
                         <PWView style={styles.actions}>
                             <PWButton
                                 title='Filter'
@@ -71,8 +73,8 @@ const AssetTransactionList = ({ children }: AssetTransactionListProps) => {
             ListEmptyComponent={
                 <EmptyView
                     style={styles.emptyView}
-                    title='No Transactions'
-                    body='There are no transactions to be displayed'
+                    title={t('asset_details.transaction_list.empty_title')}
+                    body={t('asset_details.transaction_list.empty_body')}
                 />
             }
         />

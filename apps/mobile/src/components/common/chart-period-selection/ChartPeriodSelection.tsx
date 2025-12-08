@@ -16,6 +16,7 @@ import { useStyles } from './styles'
 import { useCallback, useState } from 'react'
 import PWTouchableOpacity from '../touchable-opacity/PWTouchableOpacity'
 import { HistoryPeriod } from '@perawallet/wallet-core-shared'
+import { useLanguage } from '../../../hooks/useLanguage'
 
 type ChartPeriodSelectionProps = {
     value: HistoryPeriod
@@ -28,6 +29,7 @@ const ChartPeriodSelection = ({
 }: ChartPeriodSelectionProps) => {
     const styles = useStyles()
     const [activeValue, setActiveValue] = useState<HistoryPeriod>(value)
+    const { t } = useLanguage()
 
     const handlePressed = useCallback(
         (newValue: HistoryPeriod) => {
@@ -49,7 +51,7 @@ const ChartPeriodSelection = ({
                         : styles.unselectedButtonContainer
                 }
             >
-                <Text>1W</Text>
+                <Text>{t('chart.one_week.label')}</Text>
             </PWTouchableOpacity>
             <PWTouchableOpacity
                 onPress={() => handlePressed('one-month')}
@@ -59,7 +61,7 @@ const ChartPeriodSelection = ({
                         : styles.unselectedButtonContainer
                 }
             >
-                <Text>1M</Text>
+                <Text>{t('chart.one_month.label')}</Text>
             </PWTouchableOpacity>
             <PWTouchableOpacity
                 onPress={() => handlePressed('one-year')}
@@ -69,7 +71,7 @@ const ChartPeriodSelection = ({
                         : styles.unselectedButtonContainer
                 }
             >
-                <Text>1Y</Text>
+                <Text>{t('chart.one_year.label')}</Text>
             </PWTouchableOpacity>
         </PWView>
     )

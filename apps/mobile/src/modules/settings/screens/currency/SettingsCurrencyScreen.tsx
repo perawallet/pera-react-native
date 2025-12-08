@@ -25,9 +25,11 @@ import { FlatList } from 'react-native'
 import RadioButton from '../../../../components/common/radio-button/RadioButton'
 import SearchInput from '../../../../components/common/search-input/SearchInput'
 import { useInvalidateAssetPrices } from '@perawallet/wallet-core-assets'
+import { useLanguage } from '../../../../hooks/useLanguage'
 
 const SettingsCurrencyScreen = () => {
     const styles = useStyles()
+    const { t } = useLanguage()
     const { preferredCurrency, setPreferredCurrency } = useCurrency()
     const [search, setSearch] = useState<string>()
     const [filteredData, setFilteredData] = useState<Currency[]>([])
@@ -67,13 +69,12 @@ const SettingsCurrencyScreen = () => {
 
     return (
         <PWView style={styles.container}>
-            <Text h3>Main Currency</Text>
+            <Text h3>{t('settings.currency.title')}</Text>
             <Text>
-                Select a currency as your main local currency for displaying
-                asset values.
+                {t('settings.currency.description')}
             </Text>
             <SearchInput
-                placeholder='Search'
+                placeholder={t('settings.currency.search_placeholder')}
                 value={search}
                 onChangeText={setSearch}
             />

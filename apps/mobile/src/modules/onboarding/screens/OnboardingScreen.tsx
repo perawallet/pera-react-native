@@ -21,6 +21,7 @@ import WelcomeImage from '../../../../assets/images/welcome-background.svg'
 import { ActivityIndicator } from 'react-native'
 import { useCreateAccount } from '@perawallet/wallet-core-accounts'
 import { useState } from 'react'
+import { useLanguage } from '../../../hooks/useLanguage'
 
 const OnboardingScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
@@ -28,6 +29,7 @@ const OnboardingScreen = () => {
     const createAccount = useCreateAccount()
     const { theme } = useTheme()
     const [processing, setProcessing] = useState(false)
+    const { t } = useLanguage()
 
     const doCreate = async () => {
         try {
@@ -94,7 +96,7 @@ const OnboardingScreen = () => {
                 overlayStyle={styles.overlay}
                 backdropStyle={styles.overlayBackdrop}
             >
-                <Text>Setting up your wallet...</Text>
+                <Text>{t('onboarding.create_account.processing')}</Text>
                 <ActivityIndicator
                     size='large'
                     color={theme.colors.primary}
