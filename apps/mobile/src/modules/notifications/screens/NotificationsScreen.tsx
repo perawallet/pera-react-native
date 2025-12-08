@@ -22,10 +22,12 @@ import NotificationItem from '../components/notification-item/NotificationItem'
 import LoadingView from '../../../components/common/loading/LoadingView'
 import { FlashList } from '@shopify/flash-list'
 import { RefreshControl } from 'react-native-gesture-handler'
+import { useLanguage } from '../../../hooks/useLanguage'
 
 const NotificationsScreen = () => {
     const styles = useStyles()
     const { theme } = useTheme()
+    const { t } = useLanguage()
 
     const renderItem = ({ item }: { item: PeraNotification }) => {
         return <NotificationItem item={item} />
@@ -64,8 +66,8 @@ const NotificationsScreen = () => {
             ListEmptyComponent={
                 <EmptyView
                     icon='bell'
-                    title='No current notifications'
-                    body='Your recent transactions, asset requests and other transactions will appear here'
+                    title={t('notifications.empty_title')}
+                    body={t('notifications.empty_body')}
                 />
             }
             ListFooterComponent={

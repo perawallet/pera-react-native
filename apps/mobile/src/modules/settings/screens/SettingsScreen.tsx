@@ -25,79 +25,9 @@ import { IconName } from '../../../components/common/icons/PWIcon'
 import { config } from '@perawallet/wallet-core-config'
 import { WebViewContext } from '../../../providers/WebViewProvider'
 import PWListItem from '../../../components/common/list-item/PWListItem'
+import { useLanguage } from '../../../hooks/useLanguage'
 
 //TODO: add ratings view handling
-const settingsOptions = [
-    {
-        title: 'Account',
-        items: [
-            {
-                route: 'SecuritySettings',
-                icon: 'shield-check',
-                title: 'Security',
-            },
-            {
-                route: 'NotificationsSettings',
-                icon: 'bell',
-                title: 'Notifications',
-            },
-            {
-                route: 'WalletConnectSettings',
-                icon: 'wallet-connect',
-                title: 'WalletConnect Sessions',
-            },
-            {
-                route: 'PasskeysSettings',
-                icon: 'person-key',
-                title: 'Passkeys',
-            },
-        ],
-    },
-    {
-        title: 'App Preferences',
-        items: [
-            {
-                route: 'CurrencySettings',
-                icon: 'dollar',
-                title: 'Currency',
-            },
-            {
-                route: 'ThemeSettings',
-                icon: 'moon',
-                title: 'Theme',
-            },
-        ],
-    },
-    {
-        title: 'Support',
-        items: [
-            {
-                icon: 'feedback',
-                title: 'Get Help',
-                url: config.supportBaseUrl,
-            },
-            {
-                icon: 'star',
-                title: 'Rate Pera Wallet',
-            },
-            {
-                icon: 'text-document',
-                title: 'Terms and Services',
-                url: config.termsOfServiceUrl,
-            },
-            {
-                icon: 'text-document',
-                title: 'Privacy Policy',
-                url: config.privacyPolicyUrl,
-            },
-            {
-                route: 'DeveloperSettings',
-                icon: 'code',
-                title: 'Developer Settings',
-            },
-        ],
-    },
-]
 
 const SettingsScreen = () => {
     const insets = useSafeAreaInsets()
@@ -105,6 +35,82 @@ const SettingsScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { getAppVersion } = useDeviceInfoService()
     const { pushWebView } = useContext(WebViewContext)
+    const { t } = useLanguage()
+
+    const settingsOptions = useMemo(
+        () => [
+            {
+                title: t('settings.main.account_section'),
+                items: [
+                    {
+                        route: 'SecuritySettings',
+                        icon: 'shield-check',
+                        title: t('settings.main.security_title'),
+                    },
+                    {
+                        route: 'NotificationsSettings',
+                        icon: 'bell',
+                        title: t('settings.main.notifications_title'),
+                    },
+                    {
+                        route: 'WalletConnectSettings',
+                        icon: 'wallet-connect',
+                        title: t('settings.main.wallet_connect_title'),
+                    },
+                    {
+                        route: 'PasskeysSettings',
+                        icon: 'person-key',
+                        title: t('settings.main.passkeys_title'),
+                    },
+                ],
+            },
+            {
+                title: t('settings.main.app_preferences_section'),
+                items: [
+                    {
+                        route: 'CurrencySettings',
+                        icon: 'dollar',
+                        title: t('settings.main.currency_title'),
+                    },
+                    {
+                        route: 'ThemeSettings',
+                        icon: 'moon',
+                        title: t('settings.main.theme_title'),
+                    },
+                ],
+            },
+            {
+                title: t('settings.main.support_section'),
+                items: [
+                    {
+                        icon: 'feedback',
+                        title: t('settings.main.get_help_title'),
+                        url: config.supportBaseUrl,
+                    },
+                    {
+                        icon: 'star',
+                        title: t('settings.main.rate_title'),
+                    },
+                    {
+                        icon: 'text-document',
+                        title: t('settings.main.terms_title'),
+                        url: config.termsOfServiceUrl,
+                    },
+                    {
+                        icon: 'text-document',
+                        title: t('settings.main.privacy_title'),
+                        url: config.privacyPolicyUrl,
+                    },
+                    {
+                        route: 'DeveloperSettings',
+                        icon: 'code',
+                        title: t('settings.main.developer_title'),
+                    },
+                ],
+            },
+        ],
+        [t]
+    )
 
     const appVersion = useMemo(() => {
         return getAppVersion()
@@ -165,10 +171,10 @@ const SettingsScreen = () => {
             </PWView>
             <PWButton
                 variant='secondary'
-                title='Remove All Accounts and Logout'
+                title={t('settings.main.remove_all_accounts')}
             />
             <Text style={styles.versionText}>
-                Pera Wallet Version {appVersion}
+                {t('settings.main.version_footer', { version: appVersion })}
             </Text>
         </ScrollView>
     )

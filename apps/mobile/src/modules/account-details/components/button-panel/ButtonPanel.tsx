@@ -19,18 +19,26 @@ import RoundButton from '../../../../components/common/round-button/RoundButton'
 import { Alert } from 'react-native'
 import { useState } from 'react'
 import SendFundsBottomSheet from '../../../../components/send-funds/bottom-sheet/SendFundsBottomSheet'
+import { useLanguage } from '../../../../hooks/useLanguage'
+import useToast from '../../../../hooks/toast'
 
 const ButtonPanel = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const themeStyle = useStyles()
     const [sendFundsOpen, setSendFundsOpen] = useState<boolean>(false)
+    const { t } = useLanguage()
+    const { showToast } = useToast()
 
     const goToRootPage = (name: string) => {
         navigation.replace('TabBar', { screen: name })
     }
 
     const notImplemented = () => {
-        Alert.alert('Not Implemented')
+        showToast({
+            title: t('common.not_implemented.title'),
+            body: t('common.not_implemented.body'),
+            type: 'error'
+        })
     }
 
     const closeSendFunds = () => {
@@ -44,25 +52,25 @@ const ButtonPanel = () => {
     return (
         <PWView style={themeStyle.container}>
             <RoundButton
-                title='Swap'
+                title={t('account_details.button_panel.swap')}
                 icon='swap'
                 variant='primary'
                 onPress={() => goToRootPage('Swap')}
             />
             <RoundButton
-                title='Stake'
+                title={t('account_details.button_panel.stake')}
                 icon='dot-stack'
                 variant='secondary'
                 onPress={() => goToRootPage('Staking')}
             />
             <RoundButton
-                title='Send'
+                title={t('account_details.button_panel.send')}
                 icon='outflow'
                 variant='secondary'
                 onPress={openSendFunds}
             />
             <RoundButton
-                title='More'
+                title={t('account_details.button_panel.more')}
                 icon='ellipsis'
                 variant='secondary'
                 onPress={notImplemented}

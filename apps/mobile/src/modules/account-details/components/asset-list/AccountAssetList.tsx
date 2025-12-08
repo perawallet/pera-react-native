@@ -29,6 +29,7 @@ import {
 import { FlashList } from '@shopify/flash-list'
 import EmptyView from '../../../../components/common/empty-view/EmptyView'
 import LoadingView from '../../../../components/common/loading/LoadingView'
+import { useLanguage } from '../../../../hooks/useLanguage'
 
 type AccountAssetListProps = {
     account: WalletAccount
@@ -42,6 +43,7 @@ const AccountAssetList = ({
     scrollEnabled,
 }: AccountAssetListProps) => {
     const styles = useStyles()
+    const { t } = useLanguage()
     const { accountBalances, isPending } = useAccountBalancesQuery([account])
     const balanceData = useMemo(
         () => accountBalances.get(account.address),
@@ -82,7 +84,7 @@ const AccountAssetList = ({
                             style={styles.title}
                             h4
                         >
-                            Assets
+                            {t('account_details.assets.title')}
                         </Text>
                         <PWView style={styles.titleBarButtonContainer}>
                             <PWButton
@@ -92,19 +94,19 @@ const AccountAssetList = ({
                             />
                             <PWButton
                                 icon='plus'
-                                title='Add Asset'
+                                title={t('account_details.assets.add_asset')}
                                 variant='helper'
                                 paddingStyle='dense'
                             />
                         </PWView>
                     </PWView>
-                    <SearchInput placeholder='Search assets' />
+                    <SearchInput placeholder={t('account_details.assets.search_placeholder')} />
                 </PWView>
             }
             ListEmptyComponent={
                 <EmptyView
-                    title='No Assets'
-                    body='You have no assets linked to this account'
+                    title={t('account_details.assets.empty_title')}
+                    body={t('account_details.assets.empty_body')}
                 />
             }
             ListFooterComponent={

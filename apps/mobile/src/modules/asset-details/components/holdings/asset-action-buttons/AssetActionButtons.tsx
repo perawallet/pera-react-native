@@ -15,10 +15,11 @@ import PWView from '../../../../../components/common/view/PWView'
 import RoundButton from '../../../../../components/common/round-button/RoundButton'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import SendFundsBottomSheet from '../../../../../components/send-funds/bottom-sheet/SendFundsBottomSheet'
 import useToast from '../../../../../hooks/toast'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
+import { useLanguage } from '../../../../../hooks/useLanguage'
 
 type AssetActionButtonsProps = {
     asset: PeraAsset
@@ -28,6 +29,7 @@ const AssetActionButtons = ({ asset }: AssetActionButtonsProps) => {
     const styles = useStyles()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { showToast } = useToast()
+    const { t } = useLanguage()
 
     const [sendFundsOpen, setSendFundsOpen] = useState<boolean>(false)
 
@@ -35,20 +37,20 @@ const AssetActionButtons = ({ asset }: AssetActionButtonsProps) => {
         navigation.replace('TabBar', { screen: name })
     }
 
-    const notImplemented = () => {
+    const notImplemented = useCallback(() => {
         showToast({
-            title: 'Not implemented',
-            body: 'This feature is not implemented yet',
+            title: t('common.not_implemented.title'),
+            body: t('common.not_implemented.body'),
             type: 'error',
         })
+    }, [showToast, t])
+
+    const openSendFunds = () => {
+        setSendFundsOpen(true)
     }
 
     const closeSendFunds = () => {
         setSendFundsOpen(false)
-    }
-
-    const openSendFunds = () => {
-        setSendFundsOpen(true)
     }
 
     return (

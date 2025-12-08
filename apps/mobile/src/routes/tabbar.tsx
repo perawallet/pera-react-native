@@ -19,6 +19,7 @@ import SwapScreen from '../modules/swap/screens/SwapScreen'
 import MenuScreen from '../modules/menu/screens/MenuScreen'
 import { AccountStack } from './account'
 import { fullScreenLayout, headeredLayout, safeAreaLayout } from './layouts'
+import TabLabel from '../components/tabbar/TabLabel'
 
 export const TabBarStack = createBottomTabNavigator({
     initialRouteName: 'Home',
@@ -45,6 +46,23 @@ export const TabBarStack = createBottomTabNavigator({
                 <PWIcon
                     name={iconName}
                     variant={style}
+                />
+            )
+        },
+        tabBarLabel: ({ color }) => {
+            const labelMap: Record<string, string> = {
+                Home: 'tabbar.home',
+                Discover: 'tabbar.discover',
+                Swap: 'tabbar.swap',
+                Fund: 'tabbar.fund',
+                Menu: 'tabbar.menu',
+            }
+            const i18nKey = labelMap[route.name]
+            if (!i18nKey) return null
+            return (
+                <TabLabel
+                    i18nKey={i18nKey}
+                    color={color}
                 />
             )
         },

@@ -30,6 +30,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useState } from 'react'
 import { KeyboardAvoidingView, Platform } from 'react-native'
+import { useLanguage } from '../../../hooks/useLanguage'
 
 type NameAccountScreenProps = StaticScreenProps<{
     account: WalletAccount
@@ -40,6 +41,7 @@ const NameAccountScreen = ({ route }: NameAccountScreenProps) => {
     const styles = useStyles()
     const accounts = useAllAccounts()
     const updateAccount = useUpdateAccount()
+    const { t } = useLanguage()
 
     const routeAccount = route.params?.account
 
@@ -71,9 +73,7 @@ const NameAccountScreen = ({ route }: NameAccountScreenProps) => {
                 h4
                 style={styles.helperText}
             >
-                Name your account to easily identify it while using the Pera
-                Wallet. These names are stored locally, and can only be seen by
-                you.
+                {t('onboarding.name_account.description')}
             </Text>
             <PWView style={styles.walletNameContainer}>
                 <PWIcon
@@ -83,10 +83,10 @@ const NameAccountScreen = ({ route }: NameAccountScreenProps) => {
                 <Text
                     h4
                     style={styles.nameText}
-                >{`Wallet #${numWallets + 1}`}</Text>
+                >{t('onboarding.name_account.wallet_label', { count: numWallets + 1 })}</Text>
             </PWView>
             <Input
-                label='Account name'
+                label={t('onboarding.name_account.input_label')}
                 containerStyle={styles.input}
                 value={walletDisplay}
                 onChangeText={saveName}
@@ -96,7 +96,7 @@ const NameAccountScreen = ({ route }: NameAccountScreenProps) => {
             <PWButton
                 style={styles.finishButton}
                 variant='primary'
-                title='Finish Account Creation'
+                title={t('onboarding.name_account.finish_button')}
                 onPress={goToHome}
             />
         </KeyboardAvoidingView>

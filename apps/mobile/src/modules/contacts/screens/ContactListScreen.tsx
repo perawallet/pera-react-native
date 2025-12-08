@@ -10,19 +10,21 @@
  limitations under the License
  */
 
-import { useStyles } from './ContactListScreen.styles'
-import { Contact, useContacts } from '@perawallet/wallet-core-contacts'
 import { useMemo, useState } from 'react'
+import { SectionList } from 'react-native'
+import { useNavigation, ParamListBase } from '@react-navigation/native'
+import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { Text } from '@rneui/themed'
+
 import EmptyView from '../../../components/common/empty-view/EmptyView'
 import PWButton from '../../../components/common/button/PWButton'
-import { ParamListBase, useNavigation } from '@react-navigation/native'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { SectionList } from 'react-native'
-import { Text } from '@rneui/themed'
+import { useStyles } from './ContactListScreen.styles'
+import { Contact, useContacts } from '@perawallet/wallet-core-contacts'
 import ContactAvatar from '../../../components/common/contact-avatar/ContactAvatar'
 import PWView from '../../../components/common/view/PWView'
 import PWTouchableOpacity from '../../../components/common/touchable-opacity/PWTouchableOpacity'
 import SearchInput from '../../../components/common/search-input/SearchInput'
+import { useLanguage } from '../../../hooks/useLanguage'
 
 const contactSorter = (a: Contact, b: Contact) => a.name.localeCompare(b.name)
 
@@ -71,6 +73,7 @@ const ContactListScreen = () => {
     const styles = useStyles()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const [search, setSearch] = useState('')
+    const { t } = useLanguage()
 
     const groupedContacts = useMemo(() => {
         const groups: Record<string, Contact[]> = {}
@@ -108,12 +111,12 @@ const ContactListScreen = () => {
         <>
             {!groupedContacts.length && !search.length && (
                 <EmptyView
-                    title='No Contacts'
-                    body="You haven't added any contacts yet"
+                    title={t('contacts.list.no_contacts_title')}
+                    body={t('contacts.list.no_contacts_body')}
                     icon='person'
                     button={
                         <PWButton
-                            title='Add Contact'
+                            title={t('contacts.list.add_contact')}
                             onPress={goToAddContact}
                             variant='primary'
                         />
@@ -123,7 +126,7 @@ const ContactListScreen = () => {
             {(!!groupedContacts.length || search.length) && (
                 <PWView style={styles.flex}>
                     <SearchInput
-                        placeholder='Search for name or address'
+                        placeholder={t('contacts.list.search_placeholder')}
                         onChangeText={setSearch}
                     />
                     <SectionList
@@ -139,8 +142,8 @@ const ContactListScreen = () => {
                         renderItem={item => <ContactItem contact={item.item} />}
                         ListEmptyComponent={
                             <EmptyView
-                                title='No Matching Contacts'
-                                body="There aren't any matching contacts."
+                                title={t('contacts.list.no_matching_title')}
+                                body={t('contacts.list.no_matching_body')}
                                 icon='person'
                             />
                         }

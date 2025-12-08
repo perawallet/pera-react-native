@@ -11,13 +11,15 @@
  */
 
 import EmptyView from '../../../../components/common/empty-view/EmptyView'
+import { useLanguage } from '../../../../hooks/useLanguage'
 
 const SettingsSecurityScreen = () => {
+    const { t } = useLanguage()
     return (
         <EmptyView
             icon='shield-check'
-            title='Not Implemented'
-            body='This screen has not yet been implemented'
+            title={t('common.not_implemented.title')}
+            body={t('common.not_implemented.body')}
         />
     )
 }

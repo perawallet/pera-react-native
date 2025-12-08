@@ -19,6 +19,7 @@ import PWButton from '../../../../../components/common/button/PWButton'
 import RowTitledItem from '../../../../../components/common/row-titled-item/RowTitledItem'
 import useToast from '../../../../../hooks/toast'
 import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
+import { useLanguage } from '../../../../../hooks/useLanguage'
 
 type AssetAboutProps = {
     assetDetails: PeraAsset
@@ -27,12 +28,13 @@ type AssetAboutProps = {
 const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
     const styles = useStyles()
     const { showToast } = useToast()
+    const { t } = useLanguage()
 
     const copyToClipboard = (text: string) => {
         Clipboard.setString(text)
         showToast({
-            title: 'Copied to clipboard',
-            body: '',
+            title: t('common.copied_to_clipboard.title'),
+            body: t('common.copied_to_clipboard.body'),
             type: 'success',
         })
     }
@@ -53,13 +55,15 @@ const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
         <View style={styles.container}>
             {!!assetDetails.assetId && (
                 <Text style={styles.sectionTitle}>
-                    About {assetDetails.name}
+                    {t('asset_details.about.title', {
+                        name: assetDetails.name,
+                    })}
                 </Text>
             )}
             {!!assetDetails.assetId &&
                 assetDetails.assetId !== ALGO_ASSET_ID && (
                     <RowTitledItem
-                        title='ASA ID'
+                        title={t('asset_details.about.asa_id')}
                         verticalAlignment='center'
                     >
                         <PWButton
@@ -75,7 +79,7 @@ const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
 
             {!!assetDetails.creator?.address && (
                 <RowTitledItem
-                    title='Creator'
+                    title={t('asset_details.about.creator')}
                     verticalAlignment='center'
                 >
                     <PWButton
@@ -95,8 +99,8 @@ const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                 <RowTitledItem
                     title={
                         assetDetails.assetId === ALGO_ASSET_ID
-                            ? 'URL'
-                            : 'ASA URL'
+                            ? t('asset_details.about.url')
+                            : t('asset_details.about.asa_url')
                     }
                     verticalAlignment='center'
                 >
@@ -111,7 +115,7 @@ const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
 
             {!!assetDetails.peraMetadata?.explorerUrl?.length && (
                 <RowTitledItem
-                    title='Show on'
+                    title={t('asset_details.about.show_on')}
                     verticalAlignment='center'
                 >
                     <PWButton
@@ -127,11 +131,11 @@ const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
 
             {!!assetDetails.peraMetadata?.projectUrl?.length && (
                 <RowTitledItem
-                    title='Project website'
+                    title={t('asset_details.about.project_website')}
                     verticalAlignment='center'
                 >
                     <PWButton
-                        title='Open with Browser'
+                        title={t('asset_details.about.open_browser')}
                         onPress={() =>
                             openLink(
                                 assetDetails.peraMetadata?.projectUrl ?? '',

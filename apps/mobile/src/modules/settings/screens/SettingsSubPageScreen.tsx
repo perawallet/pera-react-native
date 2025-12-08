@@ -29,6 +29,7 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import useToast from '../../../hooks/toast'
+import { useLanguage } from '../../../hooks/useLanguage'
 
 export type SettingsSubPageScreenProps = StaticScreenProps<{
     title: string
@@ -43,6 +44,7 @@ const SettingsSubPageScreen = ({ route }: SettingsSubPageScreenProps) => {
     const accounts = useAllAccounts()
     const queryClient = useQueryClient()
     const { showToast } = useToast()
+    const { t } = useLanguage()
 
     const toggleTheme = () => {
         if (theme === 'dark' || theme === 'system') {
@@ -77,8 +79,10 @@ const SettingsSubPageScreen = ({ route }: SettingsSubPageScreenProps) => {
             })
         } catch (error) {
             showToast({
-                title: 'An unexpected error occurred',
-                body: `Details: ${error}`,
+                title: t('settings.sub_page.unexpected_error_title'),
+                body: t('settings.sub_page.unexpected_error_body', {
+                    error: `${error}`,
+                }),
                 type: 'error',
             })
         }
@@ -87,26 +91,26 @@ const SettingsSubPageScreen = ({ route }: SettingsSubPageScreenProps) => {
     return (
         <PWView style={styles.container}>
             <Text>
-                This page would hold the settings for {route.params.title}. For
-                now we are going to just put some random stuff here for ease of
-                use
+                {t('settings.sub_page.description', {
+                    title: route.params.title,
+                })}
             </Text>
 
             <PWButton
                 onPress={toggleTheme}
-                title='Toggle Theme'
+                title={t('settings.sub_page.toggle_theme')}
                 variant='primary'
             />
 
             <PWButton
                 onPress={toggleNetwork}
-                title='Toggle Network'
+                title={t('settings.sub_page.toggle_network')}
                 variant='primary'
             />
 
             <PWButton
                 onPress={createSignRequest}
-                title='Simulate Signing Request'
+                title={t('settings.sub_page.simulate_signing_request')}
                 variant='primary'
             />
         </PWView>

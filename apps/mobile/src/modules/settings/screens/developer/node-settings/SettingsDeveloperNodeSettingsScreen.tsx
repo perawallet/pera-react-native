@@ -15,20 +15,22 @@ import PWView from '../../../../../components/common/view/PWView'
 import RadioButton from '../../../../../components/common/radio-button/RadioButton'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import { Networks } from '@perawallet/wallet-core-shared'
+import { useLanguage } from '../../../../../hooks/useLanguage'
 
 const SettingsDeveloperNodeSettingsScreen = () => {
     const styles = useStyles()
     const { network, setNetwork } = useNetwork()
+    const { t } = useLanguage()
 
     return (
         <PWView style={styles.container}>
             <RadioButton
-                title='Algorand MainNet'
+                title={t('settings.developer.node_settings.mainnet_label')}
                 onPress={() => setNetwork(Networks.mainnet)}
                 selected={network === Networks.mainnet}
             />
             <RadioButton
-                title='Algorand TestNet'
+                title={t('settings.developer.node_settings.testnet_label')}
                 onPress={() => setNetwork(Networks.testnet)}
                 selected={network === Networks.testnet}
             />

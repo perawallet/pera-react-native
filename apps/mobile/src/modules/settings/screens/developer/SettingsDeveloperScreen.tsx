@@ -17,11 +17,13 @@ import { useStyles } from './styles'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import { Networks } from '@perawallet/wallet-core-shared'
+import { useLanguage } from '../../../../hooks/useLanguage'
 
 const SettingsDeveloperScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { network } = useNetwork()
     const styles = useStyles()
+    const { t } = useLanguage()
 
     const handleTapEvent = (page: string) => {
         navigation.push(page)
@@ -32,14 +34,14 @@ const SettingsDeveloperScreen = () => {
                 key={`settings-developer-node-settings`}
                 onPress={() => handleTapEvent('NodeSettings')}
                 icon='tree'
-                title='Node Settings'
+                title={t('settings.developer.node_settings_title')}
             />
             {network === Networks.testnet && (
                 <PWListItem
                     key={`settings-developer-algorand-dispenser`}
                     onPress={() => handleTapEvent('DispenserSettings')}
                     icon='algo'
-                    title='Algorand Dispenser'
+                    title={t('settings.developer.dispenser_title')}
                 />
             )}
         </PWView>

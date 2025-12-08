@@ -26,6 +26,7 @@ import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import LoadingView from '../../../components/common/loading/LoadingView'
 import { TAB_ANIMATION_CONFIG } from '../../../constants/ui'
 import PWView from '../../../components/common/view/PWView'
+import { useLanguage } from '../../../hooks/useLanguage'
 
 type AssetDetailsScreenProps = {
     assetId: string
@@ -37,6 +38,7 @@ const AssetDetailsScreen = ({
 }: StaticScreenProps<AssetDetailsScreenProps>) => {
     const assetId = route.params?.assetId
     const { showToast } = useToast()
+    const { t } = useLanguage()
 
     const styles = useStyles()
     const [tabIndex, setTabIndex] = useState(0)
@@ -47,11 +49,11 @@ const AssetDetailsScreen = ({
 
     const notImplemented = useCallback(() => {
         showToast({
-            title: 'Not implemented',
-            body: 'This feature is not implemented yet',
+            title: t('common.not_implemented.title'),
+            body: t('common.not_implemented.body'),
             type: 'error',
         })
-    }, [showToast])
+    }, [showToast, t])
 
     const headerIcon = useMemo(() => {
         if (!account) {
@@ -92,8 +94,8 @@ const AssetDetailsScreen = ({
                 titleStyle={styles.tabItem}
                 dense
             >
-                <Tab.Item title='Holdings' />
-                <Tab.Item title='Markets' />
+                <Tab.Item title={t('asset_details.main_screen.holdings_tab')} />
+                <Tab.Item title={t('asset_details.main_screen.markets_tab')} />
             </Tab>
             <TabView
                 value={tabIndex}

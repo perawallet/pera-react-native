@@ -16,7 +16,7 @@ import { useStyles } from './styles'
 import PWView from '../../../components/common/view/PWView'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-const DiscoverScreen = () => {
+const FundScreen = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const url = config.onrampBaseUrl
@@ -32,4 +32,4 @@ const DiscoverScreen = () => {
     )
 }
 
-export default DiscoverScreen
+export default FundScreen

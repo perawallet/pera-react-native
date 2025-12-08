@@ -11,13 +11,15 @@
  */
 
 import EmptyView from '../../../../components/common/empty-view/EmptyView'
+import { useLanguage } from '../../../../hooks/useLanguage'
 
 //TODO implement
 const AccountNfts = () => {
+    const { t } = useLanguage()
     return (
         <EmptyView
-            title='Not Implemented'
-            body="This part of the app hasn't been implemented yet"
+            title={t('common.not_implemented.title')}
+            body={t('common.not_implemented.body')}
         />
     )
 }

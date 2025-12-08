@@ -22,11 +22,13 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import PWTouchableOpacity from '../../../components/common/touchable-opacity/PWTouchableOpacity'
 import QRScannerView from '../../../components/common/qr-scanner/QRScannerView'
 import { useState } from 'react'
+import { useLanguage } from '../../../hooks/useLanguage'
 
 const MenuScreen = () => {
     const styles = useStyles()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const [scannerVisible, setScannerVisible] = useState<boolean>(false)
+    const { t } = useLanguage()
 
     const goToSettings = () => {
         navigation.push('Settings')
@@ -56,7 +58,7 @@ const MenuScreen = () => {
                     h4
                     style={styles.iconBarColumn}
                 >
-                    Menu
+                    {t('menu.title')}
                 </Text>
                 <PWView style={styles.iconBarColumn}>
                     <PWTouchableOpacity onPress={openQRScanner}>
@@ -77,35 +79,35 @@ const MenuScreen = () => {
             <PWView style={styles.menuContainer}>
                 <CardPanel />
                 <PanelButton
-                    title='Staking'
+                    title={t('menu.staking')}
                     titleWeight='h3'
                     leftIcon='dot-stack'
                     rightIcon='chevron-right'
                     onPress={goToStaking}
                 />
                 <PanelButton
-                    title='NFTs'
+                    title={t('menu.nfts')}
                     titleWeight='h3'
                     leftIcon='card-stack'
                     rightIcon='chevron-right'
-                    onPress={() => {}}
+                    onPress={() => { }}
                 />
                 <PanelButton
-                    title='Buy Gift Card'
+                    title={t('menu.buy_gift_card')}
                     titleWeight='h3'
                     leftIcon='gift'
                     rightIcon='chevron-right'
-                    onPress={() => {}}
+                    onPress={() => { }}
                 />
                 <PanelButton
-                    title='Receive'
+                    title={t('menu.receive')}
                     titleWeight='h3'
                     leftIcon='inflow'
                     rightIcon='chevron-right'
-                    onPress={() => {}}
+                    onPress={() => { }}
                 />
                 <PanelButton
-                    title='Contacts'
+                    title={t('menu.contacts')}
                     titleWeight='h3'
                     leftIcon='person-menu'
                     rightIcon='chevron-right'

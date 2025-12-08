@@ -17,30 +17,10 @@ import PWView from '../../../../../components/common/view/PWView'
 import PWIcon, { IconName } from '../../../../../components/common/icons/PWIcon'
 import PWButton from '../../../../../components/common/button/PWButton'
 import { useMemo } from 'react'
+import { useLanguage } from '../../../../../hooks/useLanguage'
 
 type AssetVerificationCardProps = {
     assetDetails: PeraAsset
-}
-
-const CARD_CONFIGS = {
-    trusted: {
-        title: 'Trusted Asset',
-        description:
-            'The ALGO asset is a core part of the Algorand blockchain.',
-        icon: 'assets/trusted' as IconName,
-    },
-    verified: {
-        title: 'Verified ASA',
-        description:
-            'This ASA was automatically verified through the Pera ASA Verification program.',
-        icon: 'assets/verified' as IconName,
-    },
-    suspicious: {
-        title: 'Suspicious ASA',
-        description:
-            'This ASA has been flagged as suspicious by the Pera ASA Verification program.',
-        icon: 'assets/suspicious' as IconName,
-    },
 }
 
 const AssetVerificationCard = ({
@@ -48,10 +28,38 @@ const AssetVerificationCard = ({
 }: AssetVerificationCardProps) => {
     const styles = useStyles()
     const { theme } = useTheme()
+    const { t } = useLanguage()
     const isTrusted = assetDetails.assetId === ALGO_ASSET_ID
     const isVerified =
         !isTrusted && assetDetails.verificationTier === 'verified'
     const isSuspicious = assetDetails.verificationTier === 'suspicious'
+
+    const CARD_CONFIGS = useMemo(
+        () => ({
+            trusted: {
+                title: t('asset_details.verification_card.trusted_title'),
+                description: t(
+                    'asset_details.verification_card.trusted_description',
+                ),
+                icon: 'assets/trusted' as IconName,
+            },
+            verified: {
+                title: t('asset_details.verification_card.verified_title'),
+                description: t(
+                    'asset_details.verification_card.verified_description',
+                ),
+                icon: 'assets/verified' as IconName,
+            },
+            suspicious: {
+                title: t('asset_details.verification_card.suspicious_title'),
+                description: t(
+                    'asset_details.verification_card.suspicious_description',
+                ),
+                icon: 'assets/suspicious' as IconName,
+            },
+        }),
+        [t],
+    )
 
     const [cardConfig, containerStyle, textStyle] = useMemo(() => {
         if (isTrusted) {
@@ -80,7 +88,7 @@ const AssetVerificationCard = ({
             { backgroundColor: theme.colors.asaSuspiciousBg },
             { color: theme.colors.asaSuspiciousText },
         ]
-    }, [isTrusted, isVerified, isSuspicious, theme])
+    }, [isTrusted, isVerified, isSuspicious, theme, CARD_CONFIGS])
 
     if (!isVerified && !isTrusted && !isSuspicious) {
         return null
@@ -107,7 +115,7 @@ const AssetVerificationCard = ({
             <PWButton
                 variant='link'
                 icon='info'
-                title='Learn more about ASA verification'
+                title={t('asset_details.verification_card.learn_more')}
             />
         </PWView>
     )

@@ -68,8 +68,8 @@ const ImportAccountScreen = () => {
                 goToHome()
             } catch {
                 showToast({
-                    title: 'Import failed',
-                    body: 'There was an error trying to import your wallet',
+                    title: t('onboarding.import_account.failed_title'),
+                    body: t('onboarding.import_account.failed_body'),
                     type: 'error',
                 })
             } finally {
@@ -172,7 +172,7 @@ const ImportAccountScreen = () => {
                     <PWButton
                         style={styles.finishButton}
                         variant='primary'
-                        title='Import Wallet'
+                        title={t('onboarding.import_account.button')}
                         onPress={handleImportAccount}
                         disabled={!canImport}
                     />

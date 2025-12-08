@@ -22,11 +22,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Drawer } from 'react-native-drawer-layout'
 import { useState } from 'react'
 import AccountMenu from '../../../components/account-menu/AccountMenu'
+import { useLanguage } from '../../../hooks/useLanguage'
 
 const SwapScreen = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const [drawerOpen, setDrawerOpen] = useState<boolean>(false)
+    const { t } = useLanguage()
 
     return (
         <Drawer
@@ -46,7 +48,7 @@ const SwapScreen = () => {
                         h3
                         h3Style={styles.titleText}
                     >
-                        Swap
+                        {t('tabbar.swap')}
                     </Text>
                     <PWIcon
                         name='info'

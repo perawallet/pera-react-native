@@ -17,12 +17,13 @@ import AssetTitle from '../../../../components/assets/asset-title/AssetTitle'
 import RoundButton from '../../../../components/common/round-button/RoundButton'
 import CurrencyDisplay from '../../../../components/currency/currency-display/CurrencyDisplay'
 import AssetPriceChart from './asset-price-chart/AssetPriceChart'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import Decimal from 'decimal.js'
 import { Skeleton, Text } from '@rneui/themed'
 import AssetMarketStats from './asset-market-stats/AssetMarketStats'
 import AssetAbout from './asset-about/AssetAbout'
 import AssetVerificationCard from './asset-verification-card/AssetVerificationCard'
+import { useLanguage } from '../../../../hooks/useLanguage'
 import AssetDescription from './asset-description/AssetDescription'
 import AssetSocialMedia from './asset-social-media/AssetSocialMedia'
 import PriceTrend from './price-trend/PriceTrend'
@@ -44,6 +45,7 @@ import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '../../../../constants/user-preferences'
 import PWButton from '../../../../components/common/button/PWButton'
+import LoadingView from '../../../../components/common/loading/LoadingView'
 
 type AssetMarketsProps = {
     asset: PeraAsset
@@ -64,10 +66,10 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
     const styles = useStyles()
     const { preferredCurrency } = useCurrency()
     const [period, setPeriod] = useState<HistoryPeriod>('one-week')
-    const [selectedPoint, setSelectedPoint] = useState<AssetPriceHistoryItem>()
     const { showToast } = useToast()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { getPreference, setPreference } = usePreferences()
+    const { t } = useLanguage()
 
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
     const toggleChartVisible = () => {
@@ -85,13 +87,17 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
         [asset, prices],
     )
 
-    const notImplemented = () => {
+    const notImplemented = useCallback(() => {
         showToast({
-            title: 'Not implemented',
-            body: 'This feature is not implemented yet',
+            title: t('common.not_implemented.title'),
+            body: t('common.not_implemented.body'),
             type: 'error',
         })
-    }
+    }, [showToast, t])
+
+    const [selectedPoint, setSelectedPoint] = useState<
+        AssetPriceHistoryItem | undefined
+    >(undefined)
 
     const currentPrice = useMemo(() => {
         if (selectedPoint) {
@@ -114,8 +120,8 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
     if (isError) {
         return (
             <EmptyView
-                title='Something went wrong'
-                body="We were unable to load this asset's details. Please check your connection and try again."
+                title={t('asset_details.markets.something_went_wrong_title')}
+                body={t('asset_details.markets.something_went_wrong_body')}
             />
         )
     }
@@ -132,6 +138,7 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
         <ScrollView
             style={styles.container}
             contentContainerStyle={styles.contentContainer}
+            showsVerticalScrollIndicator={false}
         >
             <PWView style={styles.header}>
                 <PWView style={styles.assetRow}>

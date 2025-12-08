@@ -28,6 +28,7 @@ import AccountOverview from '../components/account-overview/AccountOverview'
 import AccountNfts from '../components/account-nfts/AccountNfts'
 import AccountHistory from '../components/account-history/AccountHistory'
 import { TAB_ANIMATION_CONFIG } from '../../../constants/ui'
+import { useLanguage } from '../../../hooks/useLanguage'
 
 //TODO hook up all the button panel buttons correctly
 //TODO implement more menu
@@ -42,6 +43,7 @@ const AccountScreen = () => {
     const [scannerVisible, setScannerVisible] = useState<boolean>(false)
     const [drawerOpen, setDrawerOpen] = useState<boolean>(false)
     const [tabIndex, setTabIndex] = useState(0)
+    const { t } = useLanguage()
 
     const closeQRScanner = () => {
         setScannerVisible(false)
@@ -58,8 +60,8 @@ const AccountScreen = () => {
     if (!account) {
         return (
             <EmptyView
-                title='No Account Selected'
-                body='There is currently no account selected'
+                title={t('account_details.main_screen.no_account_title')}
+                body={t('account_details.main_screen.no_account_body')}
             />
         )
     }
@@ -100,9 +102,9 @@ const AccountScreen = () => {
                 titleStyle={styles.tabItem}
                 dense
             >
-                <Tab.Item title='Overview' />
-                <Tab.Item title='NFTs' />
-                <Tab.Item title='History' />
+                <Tab.Item title={t('account_details.main_screen.overview_tab')} />
+                <Tab.Item title={t('account_details.main_screen.nfts_tab')} />
+                <Tab.Item title={t('account_details.main_screen.history_tab')} />
             </Tab>
             <TabView
                 value={tabIndex}

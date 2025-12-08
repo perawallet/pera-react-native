@@ -17,16 +17,19 @@ import { useStyles } from './ViewContactScreen.styles'
 import ContactAvatar from '../../../components/common/contact-avatar/ContactAvatar'
 import AddressDisplay from '../../../components/address/address-display/AddressDisplay'
 import { useContacts } from '@perawallet/wallet-core-contacts'
+import { useLanguage } from '../../../hooks/useLanguage'
 
 const ViewContactScreen = () => {
     const { selectedContact } = useContacts()
     const styles = useStyles()
+    const { t } = useLanguage()
 
     if (!selectedContact) {
         return (
             <EmptyView
-                title='No contact found'
-                body="Something appears to have gone wrong.  Couldn't find the contact specified"
+                title={t('contacts.view_contact.no_contact_title')}
+                body={t('contacts.view_contact.no_contact_body')}
+                icon='person'
             />
         )
     }
@@ -40,11 +43,11 @@ const ViewContactScreen = () => {
                 />
             </PWView>
             <PWView>
-                <Text style={styles.label}>Name</Text>
+                <Text style={styles.label}>{t('contacts.view_contact.name_label')}</Text>
                 <Text style={styles.value}>{selectedContact.name}</Text>
             </PWView>
             <PWView>
-                <Text style={styles.label}>Address</Text>
+                <Text style={styles.label}>{t('contacts.view_contact.address_label')}</Text>
                 <AddressDisplay
                     address={selectedContact.address}
                     showCopy

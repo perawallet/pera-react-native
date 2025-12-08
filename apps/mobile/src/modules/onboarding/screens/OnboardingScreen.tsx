@@ -57,7 +57,7 @@ const OnboardingScreen = () => {
                         style={styles.headerTitle}
                         h1
                     >
-                        Welcome to {'\n'} Pera Wallet
+                        {t('onboarding.main_screen.welcome')}
                     </Text>
                     <WelcomeImage style={styles.headerImage} />
                 </PWView>
@@ -66,10 +66,10 @@ const OnboardingScreen = () => {
                         style={styles.buttonTitle}
                         h4
                     >
-                        New to Algorand?
+                        {t('onboarding.main_screen.new_to_algo')}
                     </Text>
                     <PanelButton
-                        title='Create a new wallet'
+                        title={t('onboarding.main_screen.create_wallet')}
                         titleWeight='h4'
                         onPress={createAccountHandler}
                         leftIcon={'wallet-with-algo'}
@@ -80,10 +80,10 @@ const OnboardingScreen = () => {
                         style={styles.buttonTitle}
                         h4
                     >
-                        Already have an account?
+                        {t('onboarding.main_screen.already_have_account')}
                     </Text>
                     <PanelButton
-                        title='Import an account'
+                        title={t('onboarding.main_screen.import_account')}
                         titleWeight='h4'
                         onPress={importAccount}
                         leftIcon={'key'}
