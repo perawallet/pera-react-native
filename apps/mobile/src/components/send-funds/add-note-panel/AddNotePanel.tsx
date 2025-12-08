@@ -20,6 +20,7 @@ import { useForm, Controller } from 'react-hook-form'
 import { useStyles } from './styles'
 import PWView from '../../common/view/PWView'
 import { SendFundsContext } from '../../../providers/SendFundsProvider'
+import { useLanguage } from '../../../hooks/useLanguage'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { noteSchema } from '@perawallet/wallet-core-blockchain'
 
@@ -31,6 +32,7 @@ const AddNotePanel = ({ isVisible, onClose, ...rest }: AddNotePanelProps) => {
     const styles = useStyles()
     const { note, setNote } = useContext(SendFundsContext)
     const [isEdit, setIsEdit] = useState(!!note)
+    const { t } = useLanguage()
 
     const {
         control,
@@ -68,8 +70,8 @@ const AddNotePanel = ({ isVisible, onClose, ...rest }: AddNotePanelProps) => {
                         variant='secondary'
                         onPress={handleClose}
                     />
-                    <Text h4>{isEdit ? 'Edit' : 'Add'} Note</Text>
-                    <Text onPress={handleSubmit(done)}>Done</Text>
+                    <Text h4>{isEdit ? t('send_funds.confirmation.edit') : t('send_funds.add_note.button').replace('+ ', '')} Note</Text>
+                    <Text onPress={handleSubmit(done)}>{t('send_funds.add_note.done')}</Text>
                 </PWView>
                 <PWView style={styles.container}>
                     <Controller
@@ -80,7 +82,7 @@ const AddNotePanel = ({ isVisible, onClose, ...rest }: AddNotePanelProps) => {
                                 onBlur={onBlur}
                                 onChangeText={onChange}
                                 value={value}
-                                label='Enter your note'
+                                label={t('send_funds.add_note.placeholder')}
                                 errorMessage={errors.note?.message}
                             />
                         )}

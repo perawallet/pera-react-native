@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { useLanguage } from '../../hooks/useLanguage'
+import { Text } from '@rneui/themed'
 import { Tab, TabView } from '@rneui/themed'
 
 import { useStyles } from './styles'
@@ -27,6 +29,7 @@ type AccountMenuProps = {
 const AccountMenu = (props: AccountMenuProps) => {
     const [index, setIndex] = useState(0)
     const styles = useStyles()
+    const { t } = useLanguage()
 
     useEffect(() => {
         if (!props.showInbox) {
@@ -39,28 +42,24 @@ const AccountMenu = (props: AccountMenuProps) => {
             <PortfolioView style={styles.portfolioContainer} />
             <Tab
                 value={index}
-                onChange={e => setIndex(e)}
-                disableIndicator
+                onChange={setIndex}
                 containerStyle={styles.tabs}
                 dense
+                disableIndicator
             >
                 {!!props.showInbox && (
                     <Tab.Item
-                        title='Accounts'
-                        titleStyle={() =>
-                            index === 0
-                                ? styles.activeTitle
-                                : styles.inactiveTitle
+                        title={t('account_menu.title')}
+                        titleStyle={
+                            index === 0 ? styles.activeTitle : styles.inactiveTitle
                         }
                     />
                 )}
                 {!!props.showInbox && (
                     <Tab.Item
-                        title='Inbox'
-                        titleStyle={() =>
-                            index === 1
-                                ? styles.activeTitle
-                                : styles.inactiveTitle
+                        title={t('account_menu.inbox')}
+                        titleStyle={
+                            index === 1 ? styles.activeTitle : styles.inactiveTitle
                         }
                     />
                 )}
@@ -77,7 +76,7 @@ const AccountMenu = (props: AccountMenuProps) => {
                     <InboxTab />
                 </TabView.Item>
             </TabView>
-        </PWView>
+        </PWView >
     )
 }
 

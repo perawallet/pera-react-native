@@ -11,14 +11,16 @@
  */
 
 import EmptyView from '../common/empty-view/EmptyView'
+import { useLanguage } from '../../hooks/useLanguage'
 
 const InboxTab = () => {
     //TODO implement me
+    const { t } = useLanguage()
 
     return (
         <EmptyView
-            title='No Inbox Items'
-            body='There are currently no pending inbox items'
+            title={t('account_menu.no_inbox_items')}
+            body={t('account_menu.no_inbox_body')}
         />
     )
 }

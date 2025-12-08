@@ -21,6 +21,7 @@ import PWButton from '../../common/button/PWButton'
 import { UserPreferences } from '../../../constants/user-preferences'
 import { useStyles } from './styles'
 import PWView from '../../common/view/PWView'
+import { useLanguage } from '../../../hooks/useLanguage'
 
 type SendFundsInfoPanelProps = {
     onClose: () => void
@@ -35,6 +36,7 @@ const SendFundsInfoPanel = ({
     const { getPreference, setPreference } = usePreferences()
     const [forceOpen, setForceOpen] = useState(false)
     const hasAgreed = getPreference(UserPreferences.spendAgreed)
+    const { t } = useLanguage()
 
     useEffect(() => {
         if (!hasAgreed) {
@@ -67,11 +69,10 @@ const SendFundsInfoPanel = ({
                     h3
                     h3Style={styles.title}
                 >
-                    Transacting Tips
+                    {t('send_funds.info.title')}
                 </Text>
                 <Text style={styles.preamble}>
-                    Before you finalize your transaction keep in mind a couple
-                    of tips
+                    {t('send_funds.info.tip_1')}
                 </Text>
                 <PWView style={styles.tipsContainer}>
                     <PWView style={styles.tip}>
@@ -79,9 +80,7 @@ const SendFundsInfoPanel = ({
                             <Text style={styles.tipNumber}>1</Text>
                         </PWView>
                         <Text style={styles.tipText}>
-                            When sending to an address for the first time, it is
-                            useful to send a small test transaction before
-                            sending a large amount.
+                            {t('send_funds.info.tip_2')}
                         </Text>
                     </PWView>
                     <PWView style={styles.tip}>
@@ -89,24 +88,19 @@ const SendFundsInfoPanel = ({
                             <Text style={styles.tipNumber}>2</Text>
                         </PWView>
                         <Text style={styles.tipText}>
-                            Exchanges chnge their deposit addresses frequently
-                            and saved exchange addresses may no longer be in
-                            use.{' '}
-                            <Text style={styles.redText}>
-                                Ensure you are sending to the correct address.
-                            </Text>
+                            {t('send_funds.info.tip_3')}
                         </Text>
                     </PWView>
                 </PWView>
                 {/* TODO implement link */}
                 <Text style={styles.postamble}>
                     For more information on transacting{' '}
-                    <Text style={styles.link}>tap here</Text>
+                    <Text style={styles.link}>{t('send_funds.info.tap_here')}</Text>
                 </Text>
                 <PWButton
                     variant='secondary'
                     onPress={handleClose}
-                    title='I Understand'
+                    title={t('send_funds.info.i_understand')}
                 />
             </PWView>
         </PWBottomSheet>

@@ -12,6 +12,7 @@
 
 import { Text } from '@rneui/themed'
 import { useStyles } from './styles'
+import { useLanguage } from '../../../hooks/useLanguage'
 
 import PWView, { PWViewProps } from '../../common/view/PWView'
 import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
@@ -40,6 +41,7 @@ type PortfolioViewProps = {
 const PortfolioView = (props: PortfolioViewProps) => {
     const styles = useStyles()
     const { preferredCurrency } = useCurrency()
+    const { t } = useLanguage()
 
     const accounts = useAllAccounts()
     const { portfolioAlgoValue, portfolioFiatValue, isPending } =
@@ -69,7 +71,7 @@ const PortfolioView = (props: PortfolioViewProps) => {
                     h4Style={styles.valueTitle}
                     h4
                 >
-                    Portfolio Value
+                    {t('portfolio.title')}
                 </Text>
                 <PWTouchableOpacity>
                     <PWIcon

@@ -29,6 +29,7 @@ import {
     useSigningRequest,
 } from '@perawallet/wallet-core-blockchain'
 import EmptyView from '../../common/empty-view/EmptyView'
+import { useLanguage } from '../../../hooks/useLanguage'
 
 type SigningViewProps = {
     request: SignRequest
@@ -39,6 +40,7 @@ type SigningViewProps = {
 //TODO: convert usd amounts to preferred currency
 const SingleTransactionView = ({ request }: SigningViewProps) => {
     const styles = useStyles()
+    const { t } = useLanguage()
     const tx = request.txs?.at(0)?.at(0)
     const receiver =
         tx?.['asset-transfer-transaction']?.receiver ??
@@ -49,8 +51,8 @@ const SingleTransactionView = ({ request }: SigningViewProps) => {
     if (!receiver) {
         return (
             <EmptyView
-                title='Invalid Transaction'
-                body='There does not appear to be a receiver for this transaction'
+                title={t('signing.view.invalid_title')}
+                body={t('signing.view.invalid_body')}
             />
         )
     }
@@ -112,6 +114,7 @@ const SigningView = ({ request }: SigningViewProps) => {
     const { removeSignRequest } = useSigningRequest()
     //const { signTransactionForAddress } = useTransactionSigner()
     const { showToast } = useToast()
+    const { t } = useLanguage()
 
     const isMultipleTransactions =
         request.txs?.length > 1 || (request.txs?.at(0)?.length ?? 0) > 1
@@ -177,7 +180,7 @@ const SigningView = ({ request }: SigningViewProps) => {
                         h4
                         h4Style={styles.feeLabel}
                     >
-                        Transaction Fee
+                        {t('signing.view.fee')}
                     </Text>
                     <CurrencyDisplay
                         currency='ALGO'
@@ -193,7 +196,7 @@ const SigningView = ({ request }: SigningViewProps) => {
                         h4
                         h4Style={styles.detailsLabel}
                     >
-                        Show Transaction Details
+                        {t('signing.view.show_details')}
                     </Text>
                     <PWIcon
                         variant='link'
@@ -202,7 +205,7 @@ const SigningView = ({ request }: SigningViewProps) => {
                 </PWTouchableOpacity>
                 <PWView style={styles.buttonContainer}>
                     <PWButton
-                        title='Cancel'
+                        title={t('signing.view.cancel')}
                         variant='secondary'
                         onPress={rejectRequest}
                         style={styles.button}

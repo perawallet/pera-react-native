@@ -20,6 +20,7 @@ import AssetIcon from '../../assets/asset-icon/AssetIcon'
 import { Text, useTheme } from '@rneui/themed'
 import EmptyView from '../../common/empty-view/EmptyView'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
+import { useLanguage } from '../../../hooks/useLanguage'
 
 type SendFundsSelectDestinationProps = {
     onNext: () => void
@@ -38,6 +39,7 @@ const SendFundsSelectDestination = ({
         return assets.get(selectedAsset?.assetId)
     }, [selectedAsset, assets])
     const { theme } = useTheme()
+    const { t } = useLanguage()
 
     const handleSelected = (address: string) => {
         setDestination(address)
@@ -47,8 +49,8 @@ const SendFundsSelectDestination = ({
     if (!selectedAsset || !asset) {
         return (
             <EmptyView
-                title='Something went wrong'
-                body='An unexpected error has occurred. Please try again.'
+                title={t('send_funds.destination.error_title')}
+                body={t('send_funds.destination.error_body')}
             />
         )
     }

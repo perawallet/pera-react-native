@@ -11,6 +11,7 @@
  */
 
 import { useStyles } from './styles'
+import { useLanguage } from '../../../../../hooks/useLanguage'
 import { LineChart } from 'react-native-gifted-charts'
 
 import PWView from '../../../../../components/common/view/PWView'
@@ -53,6 +54,7 @@ const AssetWealthChart = ({
 }: AssetWealthChartProps) => {
     const { theme } = useTheme()
     const themeStyle = useStyles()
+    const { t } = useLanguage()
     const [lastSentIndex, setLastSentIndex] = useState<number>()
     const [lastSentTime, setLastSentTime] = useState<number>(Date.now())
 
@@ -127,7 +129,7 @@ const AssetWealthChart = ({
             {!dataPoints?.length ? (
                 <EmptyView
                     title=''
-                    body='You will see a chart here once you have some balance history for this asset on this account'
+                    body={t('common.wealth_chart.asset_empty_body')}
                 />
             ) : (
                 <LineChart

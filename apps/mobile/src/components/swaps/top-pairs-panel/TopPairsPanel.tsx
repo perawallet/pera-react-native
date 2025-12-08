@@ -24,6 +24,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import Decimal from 'decimal.js'
 import { FlashList } from '@shopify/flash-list'
+import { useLanguage } from '../../../hooks/useLanguage'
 
 type SwapRecord = {
     fromAsset?: PeraAsset
@@ -34,6 +35,7 @@ type SwapRecord = {
 //TODO this iz a mock implementation - implement properly
 const TopPairsPanel = () => {
     const themeStyle = useStyles()
+    const { t } = useLanguage()
 
     const { data: assets } = useAssetsQuery([
         ALGO_ASSET_ID,
@@ -92,12 +94,12 @@ const TopPairsPanel = () => {
     return (
         <PWView style={themeStyle.container}>
             <PWView style={themeStyle.headerContainer}>
-                <Text h4>Top 5 Swaps</Text>
+                <Text h4>{t('swaps.top_pairs.title')}</Text>
                 <Text
                     h4
                     h4Style={themeStyle.headerText}
                 >
-                    Volume (24H)
+                    {t('swaps.top_pairs.volume')}
                 </Text>
             </PWView>
             <FlashList

@@ -1,4 +1,21 @@
 {
+    "account_menu": {
+        "title": "Accounts",
+        "inbox": "Inbox",
+        "add_account": "Add Account",
+        "sort": "Sort",
+        "no_inbox_items": "No Inbox Items",
+        "no_inbox_body": "There are currently no pending inbox items"
+    },
+    "address_entry": {
+        "scan_qr": "Scan QR Code",
+        "address": "Address",
+        "contacts": "Contacts",
+        "my_accounts": "My Accounts",
+        "no_accounts_found": "No Accounts Found",
+        "no_accounts_body": "There are no matching accounts",
+        "search_placeholder": "Account address or short name"
+    },
     "asset_details": {
         "about": {
             "title": "About {{name}}",
@@ -16,13 +33,31 @@
         },
         "markets": {
             "something_went_wrong_title": "Something went wrong",
-            "something_went_wrong_body": "We were unable to load this asset's details. Please check your connection and try again."
+            "something_went_wrong_body": "We were unable to load this asset's details. Please check your connection and try again.",
+            "discover_more": "See more details on Discover",
+            "title": "Markets",
+            "stats": "Statistics",
+            "price": "Price",
+            "total_supply": "Total Supply",
+            "no_freeze": "No Freeze",
+            "no_clawback": "No Clawback",
+            "description": "Description",
+            "social_media": "Social Media",
+            "chart_empty_body": "You will see a chart here once you have some balance history"
+        },
+        "action_buttons": {
+            "swap": "Swap",
+            "buy_sell": "Buy / Sell",
+            "send": "Send",
+            "receive": "Receive"
         },
         "transaction_list": {
             "title": "Transactions",
             "label": "Transactions",
             "empty_title": "No transactions",
-            "empty_body": "No transactions found"
+            "empty_body": "No transactions found",
+            "filter": "Filter",
+            "csv": "CSV"
         },
         "verification_card": {
             "trusted_title": "Trusted Asset",
@@ -73,6 +108,7 @@
         }
     },
     "common": {
+        "offline_mode": "Offline Mode",
         "loading": {
             "label": "Loading..."
         },
@@ -89,11 +125,25 @@
         "not_implemented": {
             "title": "Not Implemented",
             "body": "This screen has not yet been implemented"
+        },
+        "wealth_chart": {
+            "empty_body": "You will see a chart here once you have some balance history",
+            "asset_empty_body": "You will see a chart here once you have some balance history for this asset on this account"
+        },
+        "webview": {
+            "failed_title": "Failed to load page",
+            "reload": "Reload",
+            "failed_body": "An error occurred loading this page. Please check your internet connection and try again."
         }
     },
     "contacts": {
         "edit_contact": {
-            "delete_confirm": "Are you sure you want to delete this contact?"
+            "delete_confirm": "Are you sure you want to delete this contact?",
+            "delete": "Delete",
+            "save": "Save",
+            "are_you_sure": "Are you sure?",
+            "name_label": "Name",
+            "address_label": "Address"
         },
         "view_contact": {
             "no_contact_title": "No contact found",
@@ -111,6 +161,7 @@
         }
     },
     "menu": {
+        "cards": "Cards",
         "title": "Menu",
         "staking": "Staking",
         "nfts": "NFTs",
@@ -146,9 +197,83 @@
             "finish_button": "Finish Account Creation"
         }
     },
+    "portfolio": {
+        "title": "Portfolio Value"
+    },
     "send_funds": {
         "input_view": {
             "title": "Send {{asset}}"
+        },
+        "add_note": {
+            "done": "Done",
+            "placeholder": "Enter your note",
+            "button": "+ Add Note"
+        },
+        "asset_selection": {
+            "title": "Select Asset"
+        },
+        "bottom_sheet": {
+            "no_account_title": "No Account Selected",
+            "no_account_body": "No account has been selected, please select an account first"
+        },
+        "info": {
+            "title": "Transacting Tips",
+            "tip_1": "Before you finalize your transaction keep in mind a couple of tips",
+            "tip_2": "When sending to an address for the first time, it is useful to send a small test transaction before sending a large amount.",
+            "tip_3": "Ensure you are sending to the correct address.",
+            "tap_here": "tap here",
+            "i_understand": "I Understand"
+        },
+        "input": {
+            "max": "MAX",
+            "next": "Next",
+            "error_title": "Invalid Amount",
+            "error_body": "Please enter a valid amount."
+        },
+        "destination": {
+            "error_title": "Something went wrong",
+            "error_body": "An unexpected error has occurred. Please try again."
+        },
+        "confirmation": {
+            "tbd": "TBD",
+            "edit": "Edit",
+            "title": "Confirm Transaction",
+            "amount": "Amount",
+            "account": "Account",
+            "to": "To",
+            "fee": "Fee",
+            "current_balance": "Current Balance",
+            "note": "Note",
+            "confirm_button": "Confirm transfer"
+        }
+    },
+    "signing": {
+        "impact": {
+            "you_receive": "YOU WILL RECEIVE",
+            "you_spend": "YOU WILL SPEND"
+        },
+        "view": {
+            "fee": "Transaction Fee",
+            "show_details": "Show Transaction Details",
+            "invalid_title": "Invalid Transaction",
+            "cancel": "Cancel",
+            "invalid_body": "There does not appear to be a receiver for this transaction"
+        }
+    },
+    "swaps": {
+        "pair_selection": {
+            "you_pay": "You pay",
+            "balance": "Balance:",
+            "max": "MAX",
+            "you_receive": "You receive"
+        },
+        "history": {
+            "title": "Swap History",
+            "see_all": "See all"
+        },
+        "top_pairs": {
+            "title": "Top 5 Swaps",
+            "volume": "Volume (24H)"
         }
     },
     "settings": {

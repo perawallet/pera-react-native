@@ -116,7 +116,7 @@ const EditContactScreen = () => {
                                 onBlur={onBlur}
                                 onChangeText={onChange}
                                 value={value}
-                                label='Name'
+                                label={t('contacts.edit_contact.name_label')}
                                 errorMessage={errors.name?.message}
                             />
                         )}
@@ -130,7 +130,7 @@ const EditContactScreen = () => {
                             }) => (
                                 <AddressEntryField
                                     allowQRCode
-                                    label='Address'
+                                    label={t('contacts.edit_contact.address_label')}
                                     onBlur={onBlur}
                                     onChangeText={onChange}
                                     value={value}
@@ -141,7 +141,7 @@ const EditContactScreen = () => {
                     )}
                     {isEditMode && (
                         <PWView>
-                            <Text style={styles.label}>Address</Text>
+                            <Text style={styles.label}>{t('contacts.edit_contact.address_label')}</Text>
                             <AddressDisplay
                                 address={selectedContact.address}
                                 showCopy
@@ -153,14 +153,14 @@ const EditContactScreen = () => {
                         {isEditMode && (
                             <PWButton
                                 onPress={openDeleteModal}
-                                title='Delete'
+                                title={t('contacts.edit_contact.delete')}
                                 variant='destructive'
                                 minWidth={100}
                             />
                         )}
                         <PWButton
                             onPress={handleSubmit(save)}
-                            title='Save'
+                            title={t('contacts.edit_contact.save')}
                             variant='primary'
                             minWidth={100}
                         />
@@ -171,7 +171,7 @@ const EditContactScreen = () => {
                 isVisible={deleteModalOpen}
                 onBackdropPress={closeDeleteModal}
             >
-                <Dialog.Title title='Are you sure?' />
+                <Dialog.Title title={t('contacts.edit_contact.are_you_sure')} />
                 <Text>{t('contacts.edit_contact.delete_confirm')}</Text>
                 <Dialog.Actions>
                     <Dialog.Button

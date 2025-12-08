@@ -23,6 +23,7 @@ import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacit
 import { useStyles } from './styles'
 import { SendFundsContext } from '../../../providers/SendFundsProvider'
 import PWHeader from '../../common/header/PWHeader'
+import { useLanguage } from '../../../hooks/useLanguage'
 
 type SendFundsAssetSelectionViewProps = {
     onSelected: () => void
@@ -47,6 +48,7 @@ const SendFundsAssetSelectionView = ({
     const styles = useStyles()
     const selectedAccount = useSelectedAccount()
     const { setSelectedAsset } = useContext(SendFundsContext)
+    const { t } = useLanguage()
     const { accountBalances, isPending } = useAccountBalancesQuery(
         selectedAccount ? [selectedAccount] : [],
     )
@@ -87,7 +89,7 @@ const SendFundsAssetSelectionView = ({
             <PWHeader
                 leftIcon='cross'
                 onLeftPress={onBack}
-                title='Select Asset'
+                title={t('send_funds.asset_selection.title')}
             />
             {isPending && <LoadingView />}
             {!isPending && balanceData?.map(b => renderItem(b))}

@@ -106,8 +106,8 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
     const handleNext = () => {
         if (!value || Decimal(value) <= Decimal(0)) {
             showToast({
-                title: 'Invalid Amount',
-                body: 'Please enter a valid amount.',
+                title: t('send_funds.input.error_title'),
+                body: t('send_funds.input.error_body'),
                 type: 'error',
             })
         }
@@ -184,13 +184,13 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
 
             <PWView style={styles.buttonContainer}>
                 <Button
-                    title={note ? 'Edit Note' : `+ Add Note`}
+                    title={note ? t('send_funds.confirmation.edit') : t('send_funds.add_note.button')}
                     buttonStyle={styles.secondaryButton}
                     titleStyle={styles.secondaryButtonTitle}
                     onPress={openNote}
                 />
                 <Button
-                    title='MAX'
+                    title={t('send_funds.input.max')}
                     buttonStyle={styles.secondaryButton}
                     titleStyle={styles.secondaryButtonTitle}
                     onPress={setMax}
@@ -208,7 +208,7 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
 
             <PWButton
                 variant='primary'
-                title='Next'
+                title={t('send_funds.input.next')}
                 style={styles.nextButton}
                 onPress={handleNext}
                 disabled={!value}

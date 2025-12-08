@@ -29,6 +29,7 @@ import {
     CHART_FOCUS_DEBOUNCE_TIME,
     CHART_HEIGHT,
 } from '../../../../../constants/ui'
+import { useLanguage } from '../../../../../hooks/useLanguage'
 
 type AssetPriceChartProps = {
     asset: PeraAsset
@@ -43,6 +44,7 @@ const AssetPriceChart = ({
 }: AssetPriceChartProps) => {
     const { theme } = useTheme()
     const themeStyle = useStyles()
+    const { t } = useLanguage()
     const [lastSentIndex, setLastSentIndex] = useState<number>()
     const [lastSentTime, setLastSentTime] = useState<number>(Date.now())
 
@@ -115,7 +117,7 @@ const AssetPriceChart = ({
             {!dataPoints?.length ? (
                 <EmptyView
                     title=''
-                    body='You will see a chart here once you have some balance history'
+                    body={t('asset_details.markets.chart_empty_body')}
                 />
             ) : (
                 <LineChart

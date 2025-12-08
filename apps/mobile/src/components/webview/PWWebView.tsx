@@ -49,6 +49,7 @@ import WebViewTitleBar from './WebViewTitleBar'
 import WebViewFooterBar from './WebViewFooterBar'
 import { WebViewContext } from '../../providers/WebViewProvider'
 import { useIsDarkMode } from '../../hooks/theme'
+import { useLanguage } from '../../hooks/useLanguage'
 
 export type PWWebViewProps = {
     url: string
@@ -78,6 +79,7 @@ const PWWebView = (props: PWWebViewProps) => {
     const [title, setTitle] = useState('')
     const [navigationState, setNavigationState] = useState<WebViewNativeEvent>()
     const isDarkMode = useIsDarkMode()
+    const { t } = useLanguage()
 
     const isSecure = useMemo(() => {
         // TODO: We ultimately want to replace this with a more SRI style method
@@ -214,12 +216,11 @@ const PWWebView = (props: PWWebViewProps) => {
                     return (
                         <PWView style={StyleSheet.absoluteFillObject}>
                             <EmptyView
-                                title='Failed to load page'
-                                body='An error occurred loading this page.  Please 
-                                  check your internet connection and try again.'
+                                title={t('common.webview.failed_title')}
+                                body={t('common.webview.failed_body')}
                                 button={
                                     <PWButton
-                                        title='Reload'
+                                        title={t('common.webview.reload')}
                                         onPress={reload}
                                         variant='primary'
                                     />

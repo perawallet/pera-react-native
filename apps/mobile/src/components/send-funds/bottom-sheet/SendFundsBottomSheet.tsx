@@ -29,6 +29,7 @@ import SendFundsProvider, {
     SendFundsContext,
 } from '../../../providers/SendFundsProvider'
 import { TAB_ANIMATION_CONFIG } from '../../../constants/ui'
+import { useLanguage } from '../../../hooks/useLanguage'
 
 type SendFundsBottomSheetProps = {
     assetId?: string
@@ -60,6 +61,7 @@ const SendFundsBottomSheet = ({
     const [screenIndex, setScreenIndex] = useState(0)
     const dimensions = useWindowDimensions()
     const styles = useStyles(dimensions)
+    const { t } = useLanguage()
     const {
         canSelectAsset,
         setSelectedAsset,
@@ -146,8 +148,8 @@ const SendFundsBottomSheet = ({
                     </TabView>
                 ) : (
                     <EmptyView
-                        title='No Account Selected'
-                        body='No account has been selected, please select an account first'
+                        title={t('send_funds.bottom_sheet.no_account_title')}
+                        body={t('send_funds.bottom_sheet.no_account_body')}
                     />
                 )}
             </SendFundsProvider>

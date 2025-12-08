@@ -16,6 +16,7 @@ import { Text } from '@rneui/themed'
 import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import PWIcon from '../../common/icons/PWIcon'
+import { useLanguage } from '../../../hooks/useLanguage'
 
 const AssetImpact = () => {
     const styles = useStyles()
@@ -48,6 +49,7 @@ const AssetImpact = () => {
 
 const BalanceImpactView = () => {
     const styles = useStyles()
+    const { t } = useLanguage()
 
     return (
         <PWView style={styles.impactContainer}>
@@ -55,7 +57,7 @@ const BalanceImpactView = () => {
                 h4
                 h4Style={styles.impactHeading}
             >
-                YOU WILL RECEIVE
+                {t('signing.impact.you_receive')}
             </Text>
             <AssetImpact />
             <AssetImpact />
@@ -63,7 +65,7 @@ const BalanceImpactView = () => {
                 h4
                 h4Style={styles.impactHeading}
             >
-                YOU WILL SPEND
+                {t('signing.impact.you_spend')}
             </Text>
             <AssetImpact />
             <AssetImpact />

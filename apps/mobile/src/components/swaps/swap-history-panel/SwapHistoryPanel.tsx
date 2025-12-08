@@ -23,6 +23,7 @@ import {
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity'
+import { useLanguage } from '../../../hooks/useLanguage'
 
 type SwapAssets = {
     fromAsset?: PeraAsset
@@ -31,6 +32,7 @@ type SwapAssets = {
 
 const SwapHistoryPanel = () => {
     const themeStyle = useStyles()
+    const { t } = useLanguage()
 
     const { data: assets } = useAssetsQuery(['11711', '10458941', '700965019'])
 
@@ -73,13 +75,13 @@ const SwapHistoryPanel = () => {
     return (
         <PWView style={themeStyle.container}>
             <PWView style={themeStyle.headerContainer}>
-                <Text h4>Swap History</Text>
+                <Text h4>{t('swaps.history.title')}</Text>
                 <PWTouchableOpacity>
                     <Text
                         h4
                         h4Style={themeStyle.headerText}
                     >
-                        See all
+                        {t('swaps.history.see_all')}
                     </Text>
                 </PWTouchableOpacity>
             </PWView>

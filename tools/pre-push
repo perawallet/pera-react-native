@@ -44,6 +44,19 @@ fi
 
 echo "${GREEN}✓ Copyright headers valid${NC}"
 
+# Run i18n check
+echo "\n${YELLOW}Checking i18n...${NC}"
+pnpm run lint:i18n
+
+if [ $? -ne 0 ]; then
+  echo "${RED}i18n check failed.${NC}"
+  echo "${YELLOW}Please ensure all files have the proper i18n.${NC}"
+  exit 1
+fi
+
+echo "${GREEN}✓ i18n valid${NC}"
+
+
 # Run tests
 echo "\n${YELLOW}Running tests...${NC}"
 pnpm run test

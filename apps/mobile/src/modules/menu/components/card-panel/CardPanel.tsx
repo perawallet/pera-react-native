@@ -15,12 +15,14 @@ import PWView from '../../../../components/common/view/PWView'
 import { Image, Text } from '@rneui/themed'
 import { useStyles } from './styles'
 import PWIcon from '../../../../components/common/icons/PWIcon'
+import { useLanguage } from '../../../../hooks/useLanguage'
 
 import CardBackground from '../../../../../assets/images/card-background.png'
 const BACKGROUND_URI = Image.resolveAssetSource(CardBackground).uri
 
 const CardPanel = () => {
     const styles = useStyles()
+    const { t } = useLanguage()
     return (
         <PWView style={styles.cardContainer}>
             <PWView style={styles.cardHeaderContainer}>
@@ -30,7 +32,7 @@ const CardPanel = () => {
                             name='card'
                             style={styles.icon}
                         />
-                        <Text h3>Cards</Text>
+                        <Text h3>{t('menu.cards')}</Text>
                     </PWView>
                     <Text style={styles.cardSecondaryText}>
                         Get the world{`'`}s first web3{'\n'}Mastercard.

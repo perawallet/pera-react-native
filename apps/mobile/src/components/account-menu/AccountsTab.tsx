@@ -19,9 +19,12 @@ import {
     useSelectedAccountAddress,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import PWButton from '../common/button/PWButton'
+import { ParamListBase, useNavigation } from '@react-navigation/native'
+import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { useLanguage } from '../../hooks/useLanguage'
 import { useStyles } from './styles'
 import { Text, useTheme } from '@rneui/themed'
-import PWButton from '../common/button/PWButton'
 
 type AccountsTabProps = {
     onSelected: (account: WalletAccount) => void
@@ -32,6 +35,7 @@ const AccountsTab = (props: AccountsTabProps) => {
     const accounts = useAllAccounts()
     const { selectedAccountAddress, setSelectedAccountAddress } =
         useSelectedAccountAddress()
+    const { t } = useLanguage()
 
     const getRouteName = (account?: WalletAccount): string => {
         return account ? getAccountDisplayName(account) : 'Account'
@@ -61,13 +65,13 @@ const AccountsTab = (props: AccountsTabProps) => {
                     <PWButton
                         variant='helper'
                         icon='plus'
-                        title='Add Account'
+                        title={t('account_menu.add_account')}
                         paddingStyle='dense'
                     />
                     <PWButton
                         variant='link'
                         icon='list-arrow-down'
-                        title='Sort'
+                        title={t('account_menu.sort')}
                         paddingStyle='dense'
                     />
                 </PWView>

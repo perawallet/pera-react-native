@@ -18,6 +18,7 @@ import QRScannerView from '../../common/qr-scanner/QRScannerView'
 import { useState } from 'react'
 import { Input, InputProps } from '@rneui/themed'
 import PWIcon from '../../common/icons/PWIcon'
+import { useLanguage } from '../../../hooks/useLanguage'
 
 export type AddressEntryFieldProps = {
     allowQRCode?: boolean
@@ -29,6 +30,7 @@ const AddressEntryField = ({
 }: AddressEntryFieldProps) => {
     const styles = useStyles()
     const [scannerVisible, setScannerVisible] = useState(false)
+    const { t } = useLanguage()
 
     const addressScanned = () => {
         //TODO parse URL and extract address
@@ -60,7 +62,7 @@ const AddressEntryField = ({
                 <QRScannerView
                     onSuccess={addressScanned}
                     animationType='slide'
-                    title='Scan QR Code'
+                    title={t('address_entry.scan_qr')}
                     visible={scannerVisible}
                 >
                     <TouchableOpacity

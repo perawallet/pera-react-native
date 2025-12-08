@@ -210,14 +210,14 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
                 onPress={openDiscover}
             >
                 <Text style={styles.discoverText}>
-                    See more details on Discover
+                    {t('asset_details.markets.discover_more')}
                 </Text>
                 <PWView style={styles.discoverLink}>
                     <Text
                         style={styles.discoverLinkText}
                         h4
                     >
-                        Markets
+                        {t('asset_details.markets.title')}
                     </Text>
                     <PWIcon
                         name='chevron-right'
@@ -247,7 +247,7 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
                         size="sm"
                         variant='secondary'
                     />
-                    <Text style={styles.tagText}>No Freeze</Text>
+                    <Text style={styles.tagText}>{t('asset_details.markets.no_freeze')}</Text>
                 </PWView>}
                 {!assetDetails.is_clawback && <PWView style={styles.tag}>
                     <PWIcon
@@ -255,7 +255,7 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
                         size="sm"
                         variant='secondary'
                     />
-                    <Text style={styles.tagText}>No Clawback</Text>
+                    <Text style={styles.tagText}>{t('asset_details.markets.no_clawback')}</Text>
                 </PWView>}
             </PWView> */}
         </ScrollView>

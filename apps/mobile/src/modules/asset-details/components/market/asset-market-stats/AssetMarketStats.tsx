@@ -23,6 +23,7 @@ import {
     useAssetFiatPricesQuery,
 } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
+import { useLanguage } from '../../../../../hooks/useLanguage'
 
 type AssetMarketStatsProps = {
     assetDetails: PeraAsset
@@ -31,6 +32,7 @@ type AssetMarketStatsProps = {
 const AssetMarketStats = ({ assetDetails }: AssetMarketStatsProps) => {
     const styles = useStyles()
     const { preferredCurrency } = useCurrency()
+    const { t } = useLanguage()
 
     const supply = useMemo(() => {
         if (!assetDetails.totalSupply) {
@@ -59,10 +61,10 @@ const AssetMarketStats = ({ assetDetails }: AssetMarketStatsProps) => {
 
     return (
         <PWView style={styles.container}>
-            <Text style={styles.sectionTitle}>Statistics</Text>
+            <Text style={styles.sectionTitle}>{t('asset_details.markets.stats')}</Text>
             <PWView style={styles.statsContainer}>
                 <PWView style={styles.itemContainer}>
-                    <Text style={styles.label}>Price</Text>
+                    <Text style={styles.label}>{t('asset_details.markets.price')}</Text>
                     <CurrencyDisplay
                         h2
                         value={price}
@@ -74,7 +76,7 @@ const AssetMarketStats = ({ assetDetails }: AssetMarketStatsProps) => {
 
                 <PWView style={styles.itemContainer}>
                     <PWView style={styles.labelContainer}>
-                        <Text style={styles.label}>Total Supply</Text>
+                        <Text style={styles.label}>{t('asset_details.markets.total_supply')}</Text>
                         <PWIcon
                             name='info'
                             size='sm'

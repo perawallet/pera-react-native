@@ -56,25 +56,25 @@ const AssetActionButtons = ({ asset }: AssetActionButtonsProps) => {
     return (
         <PWView style={styles.container}>
             <RoundButton
-                title='Swap'
+                title={t('asset_details.action_buttons.swap')}
                 icon='swap'
                 variant='primary'
                 onPress={() => goToRootPage('Swap')}
             />
             <RoundButton
-                title='Buy / Sell'
+                title={t('asset_details.action_buttons.buy_sell')}
                 icon='dollar'
                 variant='secondary'
                 onPress={notImplemented}
             />
             <RoundButton
-                title='Send'
+                title={t('asset_details.action_buttons.send')}
                 icon='outflow'
                 variant='secondary'
                 onPress={openSendFunds}
             />
             <RoundButton
-                title='Receive'
+                title={t('asset_details.action_buttons.receive')}
                 icon='inflow'
                 variant='secondary'
                 onPress={notImplemented}

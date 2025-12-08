@@ -26,6 +26,7 @@ import AccountDisplay from '../../accounts/account-display/AccountDisplay'
 import EmptyView from '../../common/empty-view/EmptyView'
 import AddressDisplay from '../address-display/AddressDisplay'
 import PWIcon from '../../common/icons/PWIcon'
+import { useLanguage } from '../../../hooks/useLanguage'
 
 type AddressSearchViewProps = {
     onSelected: (address: string) => void
@@ -36,6 +37,7 @@ const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
     const [value, setValue] = useState('')
     const { findContacts } = useContacts()
     const accounts = useAllAccounts()
+    const { t } = useLanguage()
 
     const addressIsValid = useMemo(() => isValidAlgorandAddress(value), [value])
     const matchingAccounts = useMemo(
@@ -52,7 +54,7 @@ const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
                 onChangeText={setValue}
                 value={value}
                 allowQRCode
-                placeholder='Account address or short name'
+                placeholder={t('address_entry.search_placeholder')}
                 inputContainerStyle={styles.searchField}
                 leftIcon={
                     <PWIcon
@@ -62,11 +64,11 @@ const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
                 }
             />
             {!addressIsValid &&
-            !matchingAccounts.length &&
-            !matchingContacts.length ? (
+                !matchingAccounts.length &&
+                !matchingContacts.length ? (
                 <EmptyView
-                    title='No Accounts Found'
-                    body='There are no matching accounts'
+                    title={t('address_entry.no_accounts_found')}
+                    body={t('address_entry.no_accounts_body')}
                 />
             ) : (
                 <ScrollView>
@@ -76,7 +78,7 @@ const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
                                 h4
                                 h4Style={styles.title}
                             >
-                                Address
+                                {t('address_entry.address')}
                             </Text>
                             <Text>{truncateAlgorandAddress(value)}</Text>
                         </PWTouchableOpacity>
@@ -87,7 +89,7 @@ const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
                                 h4
                                 h4Style={styles.title}
                             >
-                                Contacts
+                                {t('address_entry.contacts')}
                             </Text>
                             {matchingContacts.map(c => (
                                 <PWTouchableOpacity
@@ -109,7 +111,7 @@ const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
                                 h4
                                 h4Style={styles.title}
                             >
-                                My Accounts
+                                {t('address_entry.my_accounts')}
                             </Text>
                             {matchingAccounts.map(acct => (
                                 <PWTouchableOpacity

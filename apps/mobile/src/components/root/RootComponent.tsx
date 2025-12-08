@@ -36,6 +36,7 @@ import {
     NetworkStatusProvider,
 } from '../../providers/NetworkStatusProvider'
 import WebViewProvider from '../../providers/WebViewProvider'
+import { useLanguage } from '../../hooks/useLanguage'
 
 const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
     const insets = useSafeAreaInsets()
@@ -45,6 +46,7 @@ const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
     const navTheme = getNavigationTheme(isDarkMode ? 'dark' : 'light')
     const { theme } = useTheme()
     const { showToast } = useToast()
+    const { t } = useLanguage()
 
     const showError = (error: string | Error) => {
         showToast({
@@ -70,7 +72,7 @@ const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
 
                 {!hasInternet && (
                     <PWView style={styles.offlineTextContainer}>
-                        <Text style={styles.offlineText}>Offline Mode</Text>
+                        <Text style={styles.offlineText}>{t('common.offline_mode')}</Text>
                     </PWView>
                 )}
 

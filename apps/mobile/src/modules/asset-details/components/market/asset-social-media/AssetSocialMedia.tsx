@@ -17,6 +17,7 @@ import { Text } from '@rneui/themed'
 import PWIcon, { IconName } from '../../../../../components/common/icons/PWIcon'
 import PWView from '../../../../../components/common/view/PWView'
 import PWTouchableOpacity from '../../../../../components/common/touchable-opacity/PWTouchableOpacity'
+import { useLanguage } from '../../../../../hooks/useLanguage'
 
 type AssetSocialMediaProps = {
     assetDetails: PeraAsset
@@ -24,22 +25,23 @@ type AssetSocialMediaProps = {
 
 const AssetSocialMedia = ({ assetDetails }: AssetSocialMediaProps) => {
     const styles = useStyles()
+    const { t } = useLanguage()
 
     const socialLinks = [
         {
             label: 'Discord',
-            url: assetDetails.discordUrl,
+            url: assetDetails.peraMetadata?.discordUrl,
             icon: 'socials/discord' as IconName,
         },
         {
             label: 'Telegram',
-            url: assetDetails.telegramUrl,
+            url: assetDetails.peraMetadata?.telegramUrl,
             icon: 'socials/telegram' as IconName,
         },
         {
             label: 'Twitter',
-            url: assetDetails.twitterUsername
-                ? `https://twitter.com/${assetDetails.twitterUsername}`
+            url: assetDetails.peraMetadata?.twitterUsername
+                ? `https://twitter.com/${assetDetails.peraMetadata?.twitterUsername}`
                 : null,
             icon: 'socials/twitter' as IconName,
         },
@@ -56,7 +58,7 @@ const AssetSocialMedia = ({ assetDetails }: AssetSocialMediaProps) => {
 
     return (
         <PWView style={styles.container}>
-            <Text style={styles.sectionTitle}>Social Media</Text>
+            <Text style={styles.sectionTitle}>{t('asset_details.markets.social_media')}</Text>
             {socialLinks.map((link, index) => (
                 <PWTouchableOpacity
                     key={index}

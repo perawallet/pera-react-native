@@ -41,6 +41,7 @@ import {
     useAssetFiatPricesQuery,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
+import { useLanguage } from '../../../hooks/useLanguage'
 
 type SendFundsTransactionConfirmationProps = {
     onNext: () => void
@@ -67,6 +68,7 @@ const SendFundsTransactionConfirmation = ({
     const { showToast } = useToast()
     const [noteOpen, setNoteOpen] = useState(false)
     const { preferredCurrency } = useCurrency()
+    const { t } = useLanguage()
     const { data: fiatPrices } = useAssetFiatPricesQuery()
     const fiatPrice = useMemo<Decimal | null>(() => {
         const price = selectedAsset
@@ -155,10 +157,10 @@ const SendFundsTransactionConfirmation = ({
         <PWView style={styles.container}>
             <PWHeader
                 leftIcon='chevron-left'
-                title='Confirm Transaction'
+                title={t('send_funds.confirmation.title')}
                 onLeftPress={onBack}
             />
-            <RowTitledItem title='Amount'>
+            <RowTitledItem title={t('send_funds.confirmation.amount')}>
                 <CurrencyDisplay
                     h3
                     currency={asset?.unitName ?? ''}
@@ -178,7 +180,7 @@ const SendFundsTransactionConfirmation = ({
             </RowTitledItem>
             <Divider style={styles.divider} />
             {!!selectedAccount && (
-                <RowTitledItem title='Account'>
+                <RowTitledItem title={t('send_funds.confirmation.account')}>
                     <AccountDisplay
                         account={selectedAccount}
                         showChevron={false}
@@ -190,19 +192,19 @@ const SendFundsTransactionConfirmation = ({
                 </RowTitledItem>
             )}
             {!!destination && (
-                <RowTitledItem title='To'>
+                <RowTitledItem title={t('send_funds.confirmation.to')}>
                     <AddressDisplay
                         address={destination}
                         showCopy={false}
                     />
                 </RowTitledItem>
             )}
-            <RowTitledItem title='Fee'>
-                <Text>TBD</Text>
+            <RowTitledItem title={t('send_funds.confirmation.fee')}>
+                <Text>{t('send_funds.confirmation.tbd')}</Text>
             </RowTitledItem>
             <Divider style={styles.divider} />
             {currentBalance && (
-                <RowTitledItem title='Current Balance'>
+                <RowTitledItem title={t('send_funds.confirmation.current_balance')}>
                     <CurrencyDisplay
                         currency={asset?.unitName ?? ''}
                         precision={asset?.decimals ?? DEFAULT_PRECISION}
@@ -220,7 +222,7 @@ const SendFundsTransactionConfirmation = ({
                 </RowTitledItem>
             )}
             <Divider style={styles.divider} />
-            <RowTitledItem title='Note'>
+            <RowTitledItem title={t('send_funds.confirmation.note')}>
                 {!!note && <Text>{note}</Text>}
                 {!!note && (
                     <PWTouchableOpacity
@@ -232,7 +234,7 @@ const SendFundsTransactionConfirmation = ({
                             variant='link'
                             size='sm'
                         />
-                        <Text style={styles.link}>Edit</Text>
+                        <Text style={styles.link}>{t('send_funds.confirmation.edit')}</Text>
                     </PWTouchableOpacity>
                 )}
                 {!note && (
@@ -241,14 +243,14 @@ const SendFundsTransactionConfirmation = ({
                             style={styles.link}
                             onPress={openNote}
                         >
-                            + Add Note
+                            {t('send_funds.add_note.button')}
                         </Text>
                     </PWTouchableOpacity>
                 )}
             </RowTitledItem>
             <PWView style={styles.buttonContainer}>
                 <PWButton
-                    title='Confirm transfer'
+                    title={t('send_funds.confirmation.confirm_button')}
                     variant='primary'
                     onPress={handleConfirm}
                 />
