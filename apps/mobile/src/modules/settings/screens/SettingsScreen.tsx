@@ -150,6 +150,7 @@ const SettingsScreen = () => {
         <ScrollView
             style={styles.scrollView}
             contentContainerStyle={styles.scrollViewContainer}
+            showsVerticalScrollIndicator={false}
         >
             <PWView style={styles.sectionContainer}>
                 {settingsOptions.map(item => (

@@ -11,7 +11,7 @@
  */
 
 import { ViewProps } from 'react-native'
-import { useStyles } from './SafeAreaLayout.style'
+import { useStyles } from './HeaderedLayout.style'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import PWView from '../components/common/view/PWView'
 

@@ -26,7 +26,7 @@ import SettingsCurrencyScreen from '../modules/settings/screens/currency/Setting
 import SettingsThemeScreen from '../modules/settings/screens/theme/SettingsThemeScreen'
 import SettingsDeveloperScreen from '../modules/settings/screens/developer/SettingsDeveloperScreen'
 import SettingsSubPageScreen from '../modules/settings/screens/SettingsSubPageScreen'
-import { headeredLayout } from './layouts'
+import { fullScreenLayout, headeredLayout } from './layouts'
 import SettingsDeveloperNodeSettingsScreen from '../modules/settings/screens/developer/node-settings/SettingsDeveloperNodeSettingsScreen'
 import SettingsDeveloperDispenserScreen from '../modules/settings/screens/developer/dispenser/SettingsDeveloperDispenserScreen'
 
@@ -45,19 +45,19 @@ export const DeveloperSettingsStack = createNativeStackNavigator({
         DeveloperSettingsHome: {
             screen: SettingsDeveloperScreen,
             options: {
-                title: 'Developer Settings',
+                title: 'screens.developer_settings',
             },
         },
         NodeSettings: {
             screen: SettingsDeveloperNodeSettingsScreen,
             options: {
-                title: 'Node Settings',
+                title: 'screens.node_settings',
             },
         },
         DispenserSettings: {
             screen: SettingsDeveloperDispenserScreen,
             options: {
-                title: 'Dispenser',
+                title: 'screens.dispenser',
             },
         },
     },
@@ -73,48 +73,48 @@ export const SettingsStack = createNativeStackNavigator({
         ...SCREEN_ANIMATION_CONFIG,
     },
     screenListeners,
-    layout: headeredLayout,
+    layout: fullScreenLayout,
     screens: {
         SettingsHome: {
             screen: SettingsScreen,
             options: {
-                title: 'Settings',
+                title: 'screens.settings',
             },
         },
         SecuritySettings: {
             screen: SettingsSecurityScreen,
             options: {
-                title: 'Security',
+                title: 'screens.security',
             },
         },
         NotificationsSettings: {
             screen: SettingsNotificationsScreen,
             options: {
-                title: 'Notifications',
+                title: 'screens.notifications',
             },
         },
         WalletConnectSettings: {
             screen: SettingsWalletConnectScreen,
             options: {
-                title: 'Wallet Connect',
+                title: 'screens.wallet_connect',
             },
         },
         PasskeysSettings: {
             screen: SettingsPasskeyScreen,
             options: {
-                title: 'Passkeys',
+                title: 'screens.passkeys',
             },
         },
         CurrencySettings: {
             screen: SettingsCurrencyScreen,
             options: {
-                title: 'Currency',
+                title: 'screens.currency',
             },
         },
         ThemeSettings: {
             screen: SettingsThemeScreen,
             options: {
-                title: 'Theme',
+                title: 'screens.theme',
             },
         },
         DeveloperSettings: {

@@ -1,13 +1,17 @@
 import { Text } from "@rneui/themed"
+import { useLanguage } from "../../hooks/useLanguage"
+import { useStyles } from "./styles"
 
 type TabLabelProps = {
     i18nKey: string
-    color: string
+    active: boolean
 }
 
-const TabLabel = ({ i18nKey, color }: TabLabelProps) => {
+const TabLabel = ({ i18nKey, active }: TabLabelProps) => {
+    const { t } = useLanguage()
+    const styles = useStyles()
     return (
-        <Text style={{ color }}>{i18nKey}</Text>
+        <Text style={active ? styles.active : styles.inactive}>{t(i18nKey)}</Text>
     )
 }
 

@@ -51,7 +51,7 @@ const MenuScreen = () => {
     }
 
     return (
-        <>
+        <PWView style={styles.container}>
             <PWView style={styles.iconBar}>
                 <PWView style={styles.iconBarColumn} />
                 <Text
@@ -129,7 +129,7 @@ const MenuScreen = () => {
                     />
                 </PWTouchableOpacity>
             </QRScannerView>
-        </>
+        </PWView>
     )
 }
 

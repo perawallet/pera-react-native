@@ -328,5 +328,21 @@
         "swap": "Swap",
         "fund": "Fund",
         "menu": "Menu"
+    },
+    "screens": {
+        "contacts": "Contacts",
+        "view_contact": "View Contact",
+        "edit_contact": "Edit Contact",
+        "add_contact": "Add New Contact",
+        "settings": "Settings",
+        "security": "Security",
+        "notifications": "Notifications",
+        "wallet_connect": "Wallet Connect",
+        "passkeys": "Passkeys",
+        "currency": "Currency",
+        "theme": "Theme",
+        "developer_settings": "Developer Settings",
+        "node_settings": "Node Settings",
+        "dispenser": "Dispenser"
     }
 }

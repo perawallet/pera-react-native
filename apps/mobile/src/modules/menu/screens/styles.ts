@@ -14,6 +14,11 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
     return {
+        container: {
+            flex: 1,
+            backgroundColor: theme.colors.background,
+            paddingHorizontal: theme.spacing.lg,
+        },
         iconBar: {
             padding: 0,
             flexDirection: 'row',

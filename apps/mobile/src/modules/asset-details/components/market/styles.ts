@@ -21,8 +21,9 @@ export const useStyles = () => {
             backgroundColor: theme.colors.background,
         },
         contentContainer: {
-            paddingTop: theme.spacing.md,
+            paddingTop: theme.spacing.lg,
             paddingBottom: theme.spacing.xl,
+            paddingHorizontal: theme.spacing.xs,
         },
         header: {
             paddingVertical: theme.spacing.md,

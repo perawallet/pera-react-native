@@ -15,9 +15,22 @@ import PWView from '../view/PWView'
 import { Text } from '@rneui/themed'
 import { useStyles } from './styles'
 import PWIcon from '../icons/PWIcon'
+import { useLanguage } from '../../../hooks/useLanguage'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useMemo } from 'react'
 
 const NavigationHeader = (props: NativeStackHeaderProps) => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
+    const { t } = useLanguage()
+
+    const title = useMemo(() => {
+        const title = props.options.title || props.route.name
+        if (title.includes('.') && !title.includes(' ')) {
+            return t(title)
+        }
+        return title
+    }, [props.options.title, props.route.name])
 
     return (
         <PWView style={styles.container}>
@@ -31,9 +44,9 @@ const NavigationHeader = (props: NativeStackHeaderProps) => {
             </PWView>
             <Text
                 h4
-                style={styles.title}
+                h4Style={styles.title}
             >
-                {props.options.title || props.route.name}
+                {title}
             </Text>
             <PWView style={styles.backIconContainer}>
                 {props.options?.headerRight?.({})}

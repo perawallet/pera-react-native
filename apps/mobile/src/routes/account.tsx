@@ -19,7 +19,7 @@ import { screenListeners } from './listeners'
 import AccountScreen from '../modules/account-details/screens/AccountScreen'
 import AssetDetailsScreen from '../modules/asset-details/screens/AssetDetailsScreen'
 import NavigationHeader from '../components/common/navigation-header/NavigationHeader'
-import { headeredLayout, safeAreaLayout } from './layouts'
+import { fullScreenLayout, safeAreaLayout } from './layouts'
 
 export const AccountStack = createNativeStackNavigator({
     initialRouteName: 'AccountDetails',
@@ -35,7 +35,7 @@ export const AccountStack = createNativeStackNavigator({
         },
         AssetDetails: {
             screen: AssetDetailsScreen,
-            layout: headeredLayout,
+            layout: fullScreenLayout,
             options: {
                 headerShown: true,
                 header: (props: NativeStackHeaderProps) => (

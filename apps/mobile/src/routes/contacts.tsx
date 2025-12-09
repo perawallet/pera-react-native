@@ -39,27 +39,27 @@ export const ContactsStack = createNativeStackNavigator({
         ContactsList: {
             screen: ContactListScreen,
             options: {
-                title: 'Contacts',
+                title: 'screens.contacts',
                 headerRight: () => <ContactListHeaderButtons />,
             },
         },
         ViewContact: {
             screen: ViewContactScreen,
             options: () => ({
-                title: 'View Contact',
+                title: 'screens.view_contact',
                 headerRight: () => <ViewContactHeaderButtons />,
             }),
         },
         EditContact: {
             screen: EditContactScreen,
             options: () => ({
-                title: 'Edit Contact',
+                title: 'screens.edit_contact',
             }),
         },
         AddContact: {
             screen: EditContactScreen,
             options: () => ({
-                title: 'Add New Contact',
+                title: 'screens.add_contact',
             }),
         },
     },

@@ -49,7 +49,7 @@ export const TabBarStack = createBottomTabNavigator({
                 />
             )
         },
-        tabBarLabel: ({ color }) => {
+        tabBarLabel: ({ color, focused }) => {
             const labelMap: Record<string, string> = {
                 Home: 'tabbar.home',
                 Discover: 'tabbar.discover',
@@ -62,7 +62,7 @@ export const TabBarStack = createBottomTabNavigator({
             return (
                 <TabLabel
                     i18nKey={i18nKey}
-                    color={color}
+                    active={focused}
                 />
             )
         },
@@ -72,11 +72,11 @@ export const TabBarStack = createBottomTabNavigator({
         Home: AccountStack,
         Discover: {
             screen: DiscoverScreen,
-            layout: fullScreenLayout,
+            layout: headeredLayout,
         },
         Fund: {
             screen: FundScreen,
-            layout: fullScreenLayout,
+            layout: headeredLayout,
         },
         Swap: {
             screen: SwapScreen,
@@ -84,7 +84,7 @@ export const TabBarStack = createBottomTabNavigator({
         },
         Menu: {
             screen: MenuScreen,
-            layout: headeredLayout,
+            layout: safeAreaLayout,
         },
     },
 })
