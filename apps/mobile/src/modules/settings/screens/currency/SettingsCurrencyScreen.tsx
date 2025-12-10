@@ -70,9 +70,7 @@ const SettingsCurrencyScreen = () => {
     return (
         <PWView style={styles.container}>
             <Text h3>{t('settings.currency.title')}</Text>
-            <Text>
-                {t('settings.currency.description')}
-            </Text>
+            <Text>{t('settings.currency.description')}</Text>
             <SearchInput
                 placeholder={t('settings.currency.search_placeholder')}
                 value={search}

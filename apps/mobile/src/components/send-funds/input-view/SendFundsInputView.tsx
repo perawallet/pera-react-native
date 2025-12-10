@@ -149,7 +149,9 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
                 rightIcon='info'
                 onRightPress={openInfo}
             >
-                <Text>{t('send_funds.input_view.title', { asset: asset?.name })}</Text>
+                <Text>
+                    {t('send_funds.input_view.title', { asset: asset?.name })}
+                </Text>
                 <AccountDisplay
                     account={selectedAccount ?? undefined}
                     style={styles.accountDisplay}
@@ -184,7 +186,11 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
 
             <PWView style={styles.buttonContainer}>
                 <Button
-                    title={note ? t('send_funds.confirmation.edit') : t('send_funds.add_note.button')}
+                    title={
+                        note
+                            ? t('send_funds.confirmation.edit')
+                            : t('send_funds.add_note.button')
+                    }
                     buttonStyle={styles.secondaryButton}
                     titleStyle={styles.secondaryButtonTitle}
                     onPress={openNote}

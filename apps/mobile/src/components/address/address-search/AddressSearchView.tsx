@@ -64,8 +64,8 @@ const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
                 }
             />
             {!addressIsValid &&
-                !matchingAccounts.length &&
-                !matchingContacts.length ? (
+            !matchingAccounts.length &&
+            !matchingContacts.length ? (
                 <EmptyView
                     title={t('address_entry.no_accounts_found')}
                     body={t('address_entry.no_accounts_body')}

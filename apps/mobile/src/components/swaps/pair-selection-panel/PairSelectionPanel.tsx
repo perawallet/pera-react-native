@@ -53,9 +53,13 @@ const PairSelectionPanel = () => {
         <PWView style={styles.container}>
             <PWView style={styles.fromContainer}>
                 <PWView style={styles.titleRow}>
-                    <Text style={styles.titleText}>{t('swaps.pair_selection.you_pay')}</Text>
+                    <Text style={styles.titleText}>
+                        {t('swaps.pair_selection.you_pay')}
+                    </Text>
                     <PWView style={styles.titleBalanceContainer}>
-                        <Text style={styles.titleText}>{t('swaps.pair_selection.balance')}</Text>
+                        <Text style={styles.titleText}>
+                            {t('swaps.pair_selection.balance')}
+                        </Text>
                         <CurrencyDisplay
                             style={styles.titleCurrency}
                             precision={2}
@@ -105,15 +109,21 @@ const PairSelectionPanel = () => {
                         orientation='vertical'
                     />
                     <PWTouchableOpacity style={styles.floatSplitButtonItem}>
-                        <Text style={styles.floatButtonText}>{t('swaps.pair_selection.max')}</Text>
+                        <Text style={styles.floatButtonText}>
+                            {t('swaps.pair_selection.max')}
+                        </Text>
                     </PWTouchableOpacity>
                 </View>
             </View>
             <PWView style={styles.toContainer}>
                 <PWView style={styles.titleRow}>
-                    <Text style={styles.titleText}>{t('swaps.pair_selection.you_receive')}</Text>
+                    <Text style={styles.titleText}>
+                        {t('swaps.pair_selection.you_receive')}
+                    </Text>
                     <PWView style={styles.titleBalanceContainer}>
-                        <Text style={styles.titleText}>{t('swaps.pair_selection.balance')}</Text>
+                        <Text style={styles.titleText}>
+                            {t('swaps.pair_selection.balance')}
+                        </Text>
                         <CurrencyDisplay
                             style={styles.titleCurrency}
                             precision={2}

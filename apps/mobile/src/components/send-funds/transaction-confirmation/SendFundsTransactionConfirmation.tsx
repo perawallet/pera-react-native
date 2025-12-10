@@ -204,7 +204,9 @@ const SendFundsTransactionConfirmation = ({
             </RowTitledItem>
             <Divider style={styles.divider} />
             {currentBalance && (
-                <RowTitledItem title={t('send_funds.confirmation.current_balance')}>
+                <RowTitledItem
+                    title={t('send_funds.confirmation.current_balance')}
+                >
                     <CurrencyDisplay
                         currency={asset?.unitName ?? ''}
                         precision={asset?.decimals ?? DEFAULT_PRECISION}
@@ -234,7 +236,9 @@ const SendFundsTransactionConfirmation = ({
                             variant='link'
                             size='sm'
                         />
-                        <Text style={styles.link}>{t('send_funds.confirmation.edit')}</Text>
+                        <Text style={styles.link}>
+                            {t('send_funds.confirmation.edit')}
+                        </Text>
                     </PWTouchableOpacity>
                 )}
                 {!note && (

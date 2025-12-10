@@ -58,7 +58,9 @@ const AssetSocialMedia = ({ assetDetails }: AssetSocialMediaProps) => {
 
     return (
         <PWView style={styles.container}>
-            <Text style={styles.sectionTitle}>{t('asset_details.markets.social_media')}</Text>
+            <Text style={styles.sectionTitle}>
+                {t('asset_details.markets.social_media')}
+            </Text>
             {socialLinks.map((link, index) => (
                 <PWTouchableOpacity
                     key={index}

@@ -35,10 +35,10 @@ const storeMock = vi.hoisted(() => {
         create() {
             const useBlockchainStore: any = (selector?: any) =>
                 selector ? selector(state) : state
-                ; (useBlockchainStore as any).getState = () => state
-                ; (useBlockchainStore as any).setState = (partial: any) => {
-                    state = { ...state, ...partial }
-                }
+            ;(useBlockchainStore as any).getState = () => state
+            ;(useBlockchainStore as any).setState = (partial: any) => {
+                state = { ...state, ...partial }
+            }
             return { useBlockchainStore }
         },
     }
@@ -48,7 +48,7 @@ vi.mock('../../store', () => storeMock.create())
 describe('services/blockchain/useSigningRequest', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-            ; (useBlockchainStore as any).setState({ network: 'mainnet' })
+        ;(useBlockchainStore as any).setState({ network: 'mainnet' })
     })
 
     test('useSigningRequest returns signing request state and methods', () => {
@@ -56,11 +56,11 @@ describe('services/blockchain/useSigningRequest', () => {
         const mockAdd = vi.fn()
         const mockRemove = vi.fn()
 
-            ; (useBlockchainStore as any).setState({
-                pendingSignRequests: mockRequests,
-                addSignRequest: mockAdd,
-                removeSignRequest: mockRemove,
-            })
+        ;(useBlockchainStore as any).setState({
+            pendingSignRequests: mockRequests,
+            addSignRequest: mockAdd,
+            removeSignRequest: mockRemove,
+        })
 
         const { result } = renderHook(() => useSigningRequest())
 

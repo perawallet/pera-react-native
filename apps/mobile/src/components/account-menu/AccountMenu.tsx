@@ -50,7 +50,9 @@ const AccountMenu = (props: AccountMenuProps) => {
                     <Tab.Item
                         title={t('account_menu.title')}
                         titleStyle={
-                            index === 0 ? styles.activeTitle : styles.inactiveTitle
+                            index === 0
+                                ? styles.activeTitle
+                                : styles.inactiveTitle
                         }
                     />
                 )}
@@ -58,7 +60,9 @@ const AccountMenu = (props: AccountMenuProps) => {
                     <Tab.Item
                         title={t('account_menu.inbox')}
                         titleStyle={
-                            index === 1 ? styles.activeTitle : styles.inactiveTitle
+                            index === 1
+                                ? styles.activeTitle
+                                : styles.inactiveTitle
                         }
                     />
                 )}
@@ -75,7 +79,7 @@ const AccountMenu = (props: AccountMenuProps) => {
                     <InboxTab />
                 </TabView.Item>
             </TabView>
-        </PWView >
+        </PWView>
     )
 }
 

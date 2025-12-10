@@ -102,9 +102,13 @@ const AccountScreen = () => {
                 titleStyle={styles.tabItem}
                 dense
             >
-                <Tab.Item title={t('account_details.main_screen.overview_tab')} />
+                <Tab.Item
+                    title={t('account_details.main_screen.overview_tab')}
+                />
                 <Tab.Item title={t('account_details.main_screen.nfts_tab')} />
-                <Tab.Item title={t('account_details.main_screen.history_tab')} />
+                <Tab.Item
+                    title={t('account_details.main_screen.history_tab')}
+                />
             </Tab>
             <TabView
                 value={tabIndex}

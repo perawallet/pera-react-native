@@ -70,8 +70,18 @@ const AddNotePanel = ({ isVisible, onClose, ...rest }: AddNotePanelProps) => {
                         variant='secondary'
                         onPress={handleClose}
                     />
-                    <Text h4>{isEdit ? t('send_funds.confirmation.edit') : t('send_funds.add_note.button').replace('+ ', '')} Note</Text>
-                    <Text onPress={handleSubmit(done)}>{t('send_funds.add_note.done')}</Text>
+                    <Text h4>
+                        {isEdit
+                            ? t('send_funds.confirmation.edit')
+                            : t('send_funds.add_note.button').replace(
+                                  '+ ',
+                                  '',
+                              )}{' '}
+                        Note
+                    </Text>
+                    <Text onPress={handleSubmit(done)}>
+                        {t('send_funds.add_note.done')}
+                    </Text>
                 </PWView>
                 <PWView style={styles.container}>
                     <Controller

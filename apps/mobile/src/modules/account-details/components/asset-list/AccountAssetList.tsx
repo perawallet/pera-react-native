@@ -100,7 +100,11 @@ const AccountAssetList = ({
                             />
                         </PWView>
                     </PWView>
-                    <SearchInput placeholder={t('account_details.assets.search_placeholder')} />
+                    <SearchInput
+                        placeholder={t(
+                            'account_details.assets.search_placeholder',
+                        )}
+                    />
                 </PWView>
             }
             ListEmptyComponent={

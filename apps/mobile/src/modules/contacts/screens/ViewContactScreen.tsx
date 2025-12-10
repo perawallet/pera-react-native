@@ -43,11 +43,15 @@ const ViewContactScreen = () => {
                 />
             </PWView>
             <PWView>
-                <Text style={styles.label}>{t('contacts.view_contact.name_label')}</Text>
+                <Text style={styles.label}>
+                    {t('contacts.view_contact.name_label')}
+                </Text>
                 <Text style={styles.value}>{selectedContact.name}</Text>
             </PWView>
             <PWView>
-                <Text style={styles.label}>{t('contacts.view_contact.address_label')}</Text>
+                <Text style={styles.label}>
+                    {t('contacts.view_contact.address_label')}
+                </Text>
                 <AddressDisplay
                     address={selectedContact.address}
                     showCopy

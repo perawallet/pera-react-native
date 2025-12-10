@@ -95,7 +95,9 @@ const SendFundsInfoPanel = ({
                 {/* TODO implement link */}
                 <Text style={styles.postamble}>
                     For more information on transacting{' '}
-                    <Text style={styles.link}>{t('send_funds.info.tap_here')}</Text>
+                    <Text style={styles.link}>
+                        {t('send_funds.info.tap_here')}
+                    </Text>
                 </Text>
                 <PWButton
                     variant='secondary'

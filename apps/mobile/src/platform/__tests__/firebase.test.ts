@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable max-lines */
 /*
  Copyright 2022-2025 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");

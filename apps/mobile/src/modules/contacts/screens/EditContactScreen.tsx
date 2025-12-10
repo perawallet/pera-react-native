@@ -130,7 +130,9 @@ const EditContactScreen = () => {
                             }) => (
                                 <AddressEntryField
                                     allowQRCode
-                                    label={t('contacts.edit_contact.address_label')}
+                                    label={t(
+                                        'contacts.edit_contact.address_label',
+                                    )}
                                     onBlur={onBlur}
                                     onChangeText={onChange}
                                     value={value}
@@ -141,7 +143,9 @@ const EditContactScreen = () => {
                     )}
                     {isEditMode && (
                         <PWView>
-                            <Text style={styles.label}>{t('contacts.edit_contact.address_label')}</Text>
+                            <Text style={styles.label}>
+                                {t('contacts.edit_contact.address_label')}
+                            </Text>
                             <AddressDisplay
                                 address={selectedContact.address}
                                 showCopy

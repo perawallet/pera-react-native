@@ -72,7 +72,9 @@ const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
 
                 {!hasInternet && (
                     <PWView style={styles.offlineTextContainer}>
-                        <Text style={styles.offlineText}>{t('common.offline_mode')}</Text>
+                        <Text style={styles.offlineText}>
+                            {t('common.offline_mode')}
+                        </Text>
                     </PWView>
                 )}
 

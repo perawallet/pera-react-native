@@ -83,7 +83,11 @@ const NameAccountScreen = ({ route }: NameAccountScreenProps) => {
                 <Text
                     h4
                     style={styles.nameText}
-                >{t('onboarding.name_account.wallet_label', { count: numWallets + 1 })}</Text>
+                >
+                    {t('onboarding.name_account.wallet_label', {
+                        count: numWallets + 1,
+                    })}
+                </Text>
             </PWView>
             <Input
                 label={t('onboarding.name_account.input_label')}

@@ -109,7 +109,7 @@ const SettingsScreen = () => {
                 ],
             },
         ],
-        [t]
+        [t],
     )
 
     const appVersion = useMemo(() => {

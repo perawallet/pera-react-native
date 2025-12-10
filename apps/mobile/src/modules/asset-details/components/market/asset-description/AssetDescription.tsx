@@ -30,7 +30,9 @@ const AssetDescription = ({ description }: AssetDescriptionProps) => {
 
     return (
         <PWView style={styles.container}>
-            <Text style={styles.title}>{t('asset_details.markets.description')}</Text>
+            <Text style={styles.title}>
+                {t('asset_details.markets.description')}
+            </Text>
             <ExpandableText text={description} />
         </PWView>
     )

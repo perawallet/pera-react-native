@@ -36,7 +36,7 @@ const ButtonPanel = () => {
         showToast({
             title: t('common.not_implemented.title'),
             body: t('common.not_implemented.body'),
-            type: 'error'
+            type: 'error',
         })
     }
 

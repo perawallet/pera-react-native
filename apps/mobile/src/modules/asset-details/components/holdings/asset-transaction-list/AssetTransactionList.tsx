@@ -52,10 +52,14 @@ const AssetTransactionList = ({ children }: AssetTransactionListProps) => {
                 <PWView>
                     {children}
                     <PWView style={styles.header}>
-                        <Text h4>{t('asset_details.transaction_list.title')}</Text>
+                        <Text h4>
+                            {t('asset_details.transaction_list.title')}
+                        </Text>
                         <PWView style={styles.actions}>
                             <PWButton
-                                title={t('asset_details.transaction_list.filter')}
+                                title={t(
+                                    'asset_details.transaction_list.filter',
+                                )}
                                 variant='link'
                                 icon='sliders'
                                 paddingStyle='dense'
