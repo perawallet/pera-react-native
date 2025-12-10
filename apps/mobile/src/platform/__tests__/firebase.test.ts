@@ -10,6 +10,9 @@
  limitations under the License
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable max-lines */
+
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { RNFirebaseService } from '../firebase'
 

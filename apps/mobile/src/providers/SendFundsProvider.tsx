@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import Decimal from 'decimal.js'
 import { createContext, PropsWithChildren, useState } from 'react'
@@ -29,11 +31,11 @@ type SendFundsState = {
 
 export const SendFundsContext = createContext<SendFundsState>({
     canSelectAsset: true,
-    setCanSelectAsset: (_: boolean) => {},
-    setSelectedAsset: (_?: AssetWithAccountBalance) => {},
-    setAmount: (_?: Decimal) => {},
-    setNote: (_?: string) => {},
-    setDestination: (_?: string) => {},
+    setCanSelectAsset: (_: boolean) => { },
+    setSelectedAsset: (_?: AssetWithAccountBalance) => { },
+    setAmount: (_?: Decimal) => { },
+    setNote: (_?: string) => { },
+    setDestination: (_?: string) => { },
 })
 
 const SendFundsProvider = ({ children }: PropsWithChildren) => {
