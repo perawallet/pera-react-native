@@ -30,6 +30,13 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# Check for modified files
+if ! git diff --quiet; then
+  echo "${RED}Formatting detected changes.${NC}"
+  echo "${YELLOW}Please commit these changes before pushing.${NC}"
+  exit 1
+fi
+
 echo "${GREEN}✓ Formatting complete${NC}"
 
 # Run copyright header check
