@@ -20,8 +20,6 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import PWButton from '../common/button/PWButton'
-import { ParamListBase, useNavigation } from '@react-navigation/native'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useLanguage } from '../../hooks/useLanguage'
 import { useStyles } from './styles'
 import { Text, useTheme } from '@rneui/themed'

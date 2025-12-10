@@ -45,7 +45,6 @@ import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '../../../../constants/user-preferences'
 import PWButton from '../../../../components/common/button/PWButton'
-import LoadingView from '../../../../components/common/loading/LoadingView'
 
 type AssetMarketsProps = {
     asset: PeraAsset

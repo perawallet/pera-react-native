@@ -16,7 +16,6 @@ import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import RoundButton from '../../../../components/common/round-button/RoundButton'
 
-import { Alert } from 'react-native'
 import { useState } from 'react'
 import SendFundsBottomSheet from '../../../../components/send-funds/bottom-sheet/SendFundsBottomSheet'
 import { useLanguage } from '../../../../hooks/useLanguage'

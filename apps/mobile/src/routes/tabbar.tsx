@@ -18,7 +18,7 @@ import FundScreen from '../modules/fund/screens/FundScreen'
 import SwapScreen from '../modules/swap/screens/SwapScreen'
 import MenuScreen from '../modules/menu/screens/MenuScreen'
 import { AccountStack } from './account'
-import { fullScreenLayout, headeredLayout, safeAreaLayout } from './layouts'
+import { headeredLayout, safeAreaLayout } from './layouts'
 import TabLabel from '../components/tabbar/TabLabel'
 
 export const TabBarStack = createBottomTabNavigator({
@@ -49,7 +49,7 @@ export const TabBarStack = createBottomTabNavigator({
                 />
             )
         },
-        tabBarLabel: ({ color, focused }) => {
+        tabBarLabel: ({ focused }) => {
             const labelMap: Record<string, string> = {
                 Home: 'tabbar.home',
                 Discover: 'tabbar.discover',

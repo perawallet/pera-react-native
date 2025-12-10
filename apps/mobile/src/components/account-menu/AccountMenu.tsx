@@ -11,7 +11,6 @@
  */
 
 import { useLanguage } from '../../hooks/useLanguage'
-import { Text } from '@rneui/themed'
 import { Tab, TabView } from '@rneui/themed'
 
 import { useStyles } from './styles'
