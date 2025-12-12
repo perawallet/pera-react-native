@@ -41,7 +41,9 @@ import {
     useAssetFiatPricesQuery,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '../../../hooks/useLanguage'
+import { useAlgorandClient } from '@perawallet/wallet-core-blockchain'
+import { useTransactionSigner } from '@perawallet/wallet-core-accounts'
 
 type SendFundsTransactionConfirmationProps = {
     onNext: () => void
@@ -57,6 +59,8 @@ const SendFundsTransactionConfirmation = ({
     const styles = useStyles()
     const { selectedAsset, amount, destination, note } =
         useContext(SendFundsContext)
+    const { signTransactions } = useTransactionSigner()
+    const algokit = useAlgorandClient(signTransactions)
 
     const { data: assets } = useAssetsQuery()
     const asset = useMemo(() => {
@@ -120,31 +124,35 @@ const SendFundsTransactionConfirmation = ({
             return
         }
 
-        if (selectedAsset.assetId === ALGO_ASSET_ID) {
-            //TODO types aren't right - we're using Decimal.toString and pasting into a BigInt...
-            // const tx = await client.createTransaction.payment({
-            //     sender: selectedAccount!.address,
-            //     receiver: destination!,
-            //     amount: microAlgos(0),
-            //     note
-            // })
+        try {
+            if (selectedAsset.assetId === ALGO_ASSET_ID) {
+                //TODO types aren't right - we're using Decimal.toString and pasting into a BigInt...
+                await algokit.send.payment({
+                    sender: selectedAccount!.address,
+                    receiver: destination!,
+                    amount: (amount.toNumber()).algo(),
+                    note
+                })
 
-            //TODO sign and send txs here once signing infra is in place
-            // console.log("Signing not implemented yet", tx)
-            onSuccess()
-        } else {
-            //TODO types aren't right - we're using Decimal.toString and pasting into a BigInt...
-            // const tx = await client.createTransaction.assetTransfer({
-            //     sender: selectedAccount!.address,
-            //     receiver: destination!,
-            //     assetId: selectedAsset.id,
-            //     amount: BigInt(0),
-            //     note
-            // })
+                onSuccess()
+            } else {
+                //TODO types aren't right - we're using Decimal.toString and pasting into a BigInt...
+                await algokit.send.assetTransfer({
+                    sender: selectedAccount!.address,
+                    receiver: destination!,
+                    amount: BigInt(amount.toNumber()),
+                    assetId: BigInt(selectedAsset.assetId),
+                    note
+                })
 
-            //TODO sign and send txs here once signing infra is in place
-            // console.log("Signing not implemented yet", tx)
-            onSuccess()
+                onSuccess()
+            }
+        } catch (error) {
+            showToast({
+                title: 'Error sending transaction',
+                body: `${error}`,
+                type: 'error',
+            })
         }
     }
 

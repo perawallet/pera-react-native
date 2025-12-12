@@ -12,45 +12,55 @@
 
 import { useAccountsStore } from '../store'
 import { useHDWallet } from './useHDWallet'
-import { NoHDWalletError } from '../errors'
-import { useWithKey } from '@perawallet/wallet-core-kmd'
+import { withKey } from '../utils'
+import { encodeTransaction, Transaction } from '@algorandfoundation/algokit-utils/transact'
+import { useCallback } from 'react'
 
 export const useTransactionSigner = () => {
     const accounts = useAccountsStore(state => state.accounts)
     const { signTransaction } = useHDWallet()
     const { executeWithKey } = useWithKey()
 
-    const signTransactionForAddress = async (
-        address: string,
-        transaction: Buffer,
-    ): Promise<Uint8Array> => {
-        const account = accounts.find(a => a.address === address) ?? null
-        const hdWalletDetails = account?.hdWalletDetails
+    //TODO: this is really inefficient because we refetch the key for each account on each tx
+    //we should batch these up and sign all txs for the same account at the same time, then 
+    //recompose the array of signed txs
+    const signTransactions = useCallback(async (
+        txnGroup: Transaction[],
+        indexesToSign: number[]): Promise<Uint8Array[]> => {
+        const signedTransactions = await Promise.all(txnGroup.map(async (txn, index) => {
+            const account = accounts.find(a => a.address === txn.sender.toString()) ?? null
+            const hdWalletDetails = account?.hdWalletDetails
 
-        if (!hdWalletDetails || !account?.keyPairId) {
-            return Promise.reject(new NoHDWalletError(address))
-        }
+            if (!hdWalletDetails) {
+                return Promise.reject(`No HD wallet found for ${txn.sender.toString()}`)
+            }
 
-        const signedTxn = await executeWithKey(
-            account.keyPairId,
-            'accounts',
-            async privateKey => {
+            const storageKey = `rootkey-${hdWalletDetails.walletId}`
+            return await withKey(storageKey, secureStorage, async keyData => {
+                if (!keyData) {
+                    return Promise.reject(`No signing keys found for ${txn.sender.toString()}`)
+                }
+
                 let seed: Buffer
                 try {
                     // Try to parse as JSON first (new format)
-                    const masterKey = JSON.parse(privateKey.toString())
+                    const masterKey = JSON.parse(keyData.toString())
                     seed = Buffer.from(masterKey.seed, 'base64')
                 } catch {
                     // Fall back to treating it as raw seed data (old format or tests)
-                    seed = Buffer.from(privateKey)
+                    seed = keyData
                 }
-                return signTransaction(seed, hdWalletDetails, transaction)
-            },
-        )
-        return signedTxn
-    }
+                if (indexesToSign.includes(index)) {
+                    const encodedTransaction = encodeTransaction(txn)
+                    return await signTransaction(seed, hdWalletDetails, encodedTransaction)
+                }
+                return null
+            })
+        }))
+        return signedTransactions.filter((txn) => txn !== null)
+    }, [accounts, signTransaction, secureStorage])
 
     return {
-        signTransactionForAddress,
+        signTransactions,
     }
 }

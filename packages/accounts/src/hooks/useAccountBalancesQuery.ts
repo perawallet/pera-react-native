@@ -19,7 +19,6 @@ import type {
     AssetWithAccountBalance,
     WalletAccount,
 } from '../models'
-import { fetchAccountBalances } from './endpoints'
 import {
     ALGO_ASSET,
     ALGO_ASSET_ID,
@@ -28,8 +27,8 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
-import { AssetHolding } from '../models/algod-types/AssetHolding'
 import { getAccountBalancesQueryKey } from './querykeys'
+import { useAlgorandClient } from '@perawallet/wallet-core-blockchain'
 
 //TODO we may not need this query - maybe we should just fetch each account separately
 export const useAccountBalancesQuery = (
@@ -38,6 +37,7 @@ export const useAccountBalancesQuery = (
 ): AccountBalancesWithTotals => {
     const { usdToPreferred } = useCurrency()
     const { network } = useNetwork()
+    const algokit = useAlgorandClient()
     if (!accounts?.length) {
         return {
             accountBalances: new Map(),
@@ -55,8 +55,8 @@ export const useAccountBalancesQuery = (
             const address = acc.address
             return {
                 queryKey: getAccountBalancesQueryKey(address, network),
-                enabled: enabled,
-                queryFn: () => fetchAccountBalances(address, network),
+                enabled: !!address && enabled,
+                queryFn: () => algokit.account.getInformation(address),
             }
         })
     }, [accounts, enabled, network])
@@ -67,7 +67,7 @@ export const useAccountBalancesQuery = (
 
     const { data: assets } = useAssetsQuery(
         results.flatMap(
-            r => r.data?.assets?.map(a => `${a['asset-id']}`) ?? [],
+            r => r.data?.assets?.map(a => `${a.assetId}`) ?? [],
         ),
     )
     const { data: assetPrices } = useAssetFiatPricesQuery()
