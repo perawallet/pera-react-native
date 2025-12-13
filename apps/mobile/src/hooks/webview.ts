@@ -63,6 +63,13 @@ type WebviewMessage = {
     params: Record<string, unknown>
 }
 
+export const useWebView = () => {
+    const { pushWebView } = useContext(WebViewContext)
+    return {
+        pushWebView
+    }
+}
+
 export const usePeraWebviewInterface = (
     webview: WebView | null,
     securedConnection: boolean,
@@ -190,7 +197,7 @@ export const usePeraWebviewInterface = (
     }, [webview])
 
     //TODO not sure what the correct behavior here is?
-    const onBackPressed = useCallback(() => {}, [])
+    const onBackPressed = useCallback(() => { }, [])
 
     const logAnalyticsEvent = useCallback(
         (params: LogAnalyticsParams) => {
