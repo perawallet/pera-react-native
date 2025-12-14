@@ -23,7 +23,7 @@ import BootSplash from 'react-native-bootsplash'
 import { NotifierWrapper } from 'react-native-notifier'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { TokenProvider } from './providers/TokenProvider'
-import { useLanguage } from './hooks/useLanguage'
+import { useLanguage } from './hooks/language'
 
 function App() {
     const [persister, setPersister] = useState<Persister>()

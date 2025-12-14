@@ -26,6 +26,9 @@ export const configSchema = z.object({
     algodApiKey: z.string(),
     indexerApiKey: z.string(),
 
+    mainnetExplorerUrl: z.url(),
+    testnetExplorerUrl: z.url(),
+
     notificationRefreshTime: z.int(),
     remoteConfigRefreshTime: z.int(),
 

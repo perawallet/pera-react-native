@@ -19,7 +19,7 @@ import PWButton from '../../../../../components/common/button/PWButton'
 import RowTitledItem from '../../../../../components/common/row-titled-item/RowTitledItem'
 import useToast from '../../../../../hooks/toast'
 import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
-import { useLanguage } from '../../../../../hooks/useLanguage'
+import { useLanguage } from '../../../../../hooks/language'
 
 type AssetAboutProps = {
     assetDetails: PeraAsset

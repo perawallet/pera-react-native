@@ -24,7 +24,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import Decimal from 'decimal.js'
 import { FlashList } from '@shopify/flash-list'
-import { useLanguage } from '../../../hooks/useLanguage'
+import { useLanguage } from '../../../hooks/language'
 
 type SwapRecord = {
     fromAsset?: PeraAsset

@@ -21,7 +21,7 @@ import PWButton from '../../common/button/PWButton'
 import { UserPreferences } from '../../../constants/user-preferences'
 import { useStyles } from './styles'
 import PWView from '../../common/view/PWView'
-import { useLanguage } from '../../../hooks/useLanguage'
+import { useLanguage } from '../../../hooks/language'
 
 type SendFundsInfoPanelProps = {
     onClose: () => void

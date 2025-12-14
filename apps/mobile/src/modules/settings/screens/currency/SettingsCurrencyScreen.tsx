@@ -25,7 +25,7 @@ import { FlatList } from 'react-native'
 import RadioButton from '../../../../components/common/radio-button/RadioButton'
 import SearchInput from '../../../../components/common/search-input/SearchInput'
 import { useInvalidateAssetPrices } from '@perawallet/wallet-core-assets'
-import { useLanguage } from '../../../../hooks/useLanguage'
+import { useLanguage } from '../../../../hooks/language'
 
 const SettingsCurrencyScreen = () => {
     const styles = useStyles()

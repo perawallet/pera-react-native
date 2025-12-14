@@ -32,6 +32,10 @@ export const parseQueryParams = (url: string): Record<string, string> => {
  */
 export const decodeBase64Param = (param: string): string => {
     try {
+        // Simple check for base64 characters (standard and URL-safe)
+        if (!/^[A-Za-z0-9+/=_-]+$/.test(param)) {
+            return param
+        }
         return Buffer.from(param, 'base64').toString('utf-8')
     } catch {
         return param

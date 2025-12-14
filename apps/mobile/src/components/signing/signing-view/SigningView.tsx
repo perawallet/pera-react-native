@@ -29,7 +29,7 @@ import {
     useSigningRequest,
 } from '@perawallet/wallet-core-blockchain'
 import EmptyView from '../../common/empty-view/EmptyView'
-import { useLanguage } from '../../../hooks/useLanguage'
+import { useLanguage } from '../../../hooks/language'
 
 type SigningViewProps = {
     request: SignRequest

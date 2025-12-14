@@ -15,30 +15,6 @@ catalogs:
     '@babel/runtime':
       specifier: ^7.28.4
       version: 7.28.4
-    '@kubb/cli':
-      specifier: ^4.5.8
-      version: 4.5.8
-    '@kubb/core':
-      specifier: ^4.5.8
-      version: 4.5.8
-    '@kubb/plugin-client':
-      specifier: ^4.5.8
-      version: 4.5.8
-    '@kubb/plugin-msw':
-      specifier: ^4.5.8
-      version: 4.5.8
-    '@kubb/plugin-oas':
-      specifier: ^4.5.8
-      version: 4.5.8
-    '@kubb/plugin-react-query':
-      specifier: ^4.5.8
-      version: 4.5.8
-    '@kubb/plugin-ts':
-      specifier: ^4.5.8
-      version: 4.5.8
-    '@kubb/plugin-zod':
-      specifier: ^4.5.8
-      version: 4.5.8
     '@tanstack/query-async-storage-persister':
       specifier: ^5.90.9
       version: 5.90.9
@@ -48,15 +24,9 @@ catalogs:
     '@tanstack/react-query-persist-client':
       specifier: ^5.90.9
       version: 5.90.9
-    '@testing-library/react':
-      specifier: 16.3.0
-      version: 16.3.0
     '@types/react':
       specifier: ^19.2.2
       version: 19.2.2
-    '@vitejs/plugin-react':
-      specifier: ^5.1.0
-      version: 5.1.0
     '@vitest/coverage-v8':
       specifier: ^2.1.9
       version: 2.1.9
@@ -66,9 +36,6 @@ catalogs:
     bip39:
       specifier: ^3.1.0
       version: 3.1.0
-    decimal.js:
-      specifier: ^10.6.0
-      version: 10.6.0
     eslint:
       specifier: 9.39.1
       version: 9.39.1
@@ -82,9 +49,6 @@ catalogs:
       specifier: 3.6.2
       version: 3.6.2
     react:
-      specifier: 19.1.0
-      version: 19.1.0
-    react-dom:
       specifier: 19.1.0
       version: 19.1.0
     reflect-metadata:
@@ -105,15 +69,9 @@ catalogs:
     uuid:
       specifier: 13.0.0
       version: 13.0.0
-    vite:
-      specifier: ^7.2.2
-      version: 7.2.2
     vitest:
       specifier: ^2.1.9
       version: 2.1.9
-    zod:
-      specifier: ^4.1.12
-      version: 4.1.12
     zustand:
       specifier: ^5.0.8
       version: 5.0.8
@@ -11526,7 +11484,7 @@ snapshots:
       '@babel/core': 7.28.5
       '@babel/eslint-parser': 7.28.5(@babel/core@7.28.5)(eslint@9.39.1(jiti@2.6.1))
       '@react-native/eslint-plugin': 0.81.1
-      '@typescript-eslint/eslint-plugin': 7.18.0(@typescript-eslint/parser@7.18.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
+      '@typescript-eslint/eslint-plugin': 7.18.0(@typescript-eslint/parser@8.48.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
       '@typescript-eslint/parser': 7.18.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
       eslint: 9.39.1(jiti@2.6.1)
       eslint-config-prettier: 8.10.2(eslint@9.39.1(jiti@2.6.1))
@@ -11567,7 +11525,9 @@ snapshots:
       metro-runtime: 0.83.3
     transitivePeerDependencies:
       - '@babel/core'
+      - bufferutil
       - supports-color
+      - utf-8-validate
 
   '@react-native/new-app-screen@0.81.1(@types/react@19.2.2)(react-native@0.81.1(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.81.1(@babel/core@7.28.5))(@types/react@19.2.2)(react@19.1.0))(react@19.1.0)':
     dependencies:
@@ -12168,24 +12128,6 @@ snapshots:
     dependencies:
       '@types/yargs-parser': 21.0.3
 
-  '@typescript-eslint/eslint-plugin@7.18.0(@typescript-eslint/parser@7.18.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)':
-    dependencies:
-      '@eslint-community/regexpp': 4.12.2
-      '@typescript-eslint/parser': 7.18.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      '@typescript-eslint/scope-manager': 7.18.0
-      '@typescript-eslint/type-utils': 7.18.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      '@typescript-eslint/utils': 7.18.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      '@typescript-eslint/visitor-keys': 7.18.0
-      eslint: 9.39.1(jiti@2.6.1)
-      graphemer: 1.4.0
-      ignore: 5.3.2
-      natural-compare: 1.4.0
-      ts-api-utils: 1.4.3(typescript@5.9.3)
-    optionalDependencies:
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - supports-color
-
   '@typescript-eslint/eslint-plugin@7.18.0(@typescript-eslint/parser@8.48.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)':
     dependencies:
       '@eslint-community/regexpp': 4.12.2
@@ -12203,7 +12145,6 @@ snapshots:
       typescript: 5.9.3
     transitivePeerDependencies:
       - supports-color
-    optional: true
 
   '@typescript-eslint/eslint-plugin@8.48.0(@typescript-eslint/parser@8.48.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)':
     dependencies:
@@ -13859,7 +13800,7 @@ snapshots:
       '@typescript-eslint/utils': 5.62.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
       eslint: 9.39.1(jiti@2.6.1)
     optionalDependencies:
-      '@typescript-eslint/eslint-plugin': 7.18.0(@typescript-eslint/parser@7.18.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
+      '@typescript-eslint/eslint-plugin': 7.18.0(@typescript-eslint/parser@8.48.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
       jest: 29.7.0(@types/node@24.10.0)
     transitivePeerDependencies:
       - supports-color
@@ -13951,7 +13892,7 @@ snapshots:
     dependencies:
       eslint: 9.39.1(jiti@2.6.1)
     optionalDependencies:
-      '@typescript-eslint/eslint-plugin': 7.18.0(@typescript-eslint/parser@7.18.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
+      '@typescript-eslint/eslint-plugin': 7.18.0(@typescript-eslint/parser@8.48.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
 
   eslint-plugin-unused-imports@4.3.0(@typescript-eslint/eslint-plugin@8.48.0(@typescript-eslint/parser@8.48.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.1(jiti@2.6.1)):
     dependencies:

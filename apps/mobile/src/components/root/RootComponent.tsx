@@ -36,7 +36,7 @@ import {
     NetworkStatusProvider,
 } from '../../providers/NetworkStatusProvider'
 import WebViewProvider from '../../providers/WebViewProvider'
-import { useLanguage } from '../../hooks/useLanguage'
+import { useLanguage } from '../../hooks/language'
 
 const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
     const insets = useSafeAreaInsets()

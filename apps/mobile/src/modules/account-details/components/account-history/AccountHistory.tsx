@@ -11,7 +11,7 @@
  */
 
 import EmptyView from '../../../../components/common/empty-view/EmptyView'
-import { useLanguage } from '../../../../hooks/useLanguage'
+import { useLanguage } from '../../../../hooks/language'
 
 //TODO implement
 const AccountHistory = () => {

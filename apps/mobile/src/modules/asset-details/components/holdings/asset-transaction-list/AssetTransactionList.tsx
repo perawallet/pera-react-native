@@ -18,7 +18,7 @@ import PWButton from '../../../../../components/common/button/PWButton'
 import { Text } from '@rneui/themed'
 import EmptyView from '../../../../../components/common/empty-view/EmptyView'
 import { FlashList } from '@shopify/flash-list'
-import { useLanguage } from '../../../../../hooks/useLanguage'
+import { useLanguage } from '../../../../../hooks/language'
 
 type AssetTransactionListProps = {
     account: WalletAccount

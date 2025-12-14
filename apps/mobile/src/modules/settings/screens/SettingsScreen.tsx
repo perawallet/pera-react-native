@@ -25,7 +25,7 @@ import { IconName } from '../../../components/common/icons/PWIcon'
 import { config } from '@perawallet/wallet-core-config'
 import { WebViewContext } from '../../../providers/WebViewProvider'
 import PWListItem from '../../../components/common/list-item/PWListItem'
-import { useLanguage } from '../../../hooks/useLanguage'
+import { useLanguage } from '../../../hooks/language'
 
 //TODO: add ratings view handling
 

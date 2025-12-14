@@ -17,189 +17,137 @@ import {
     AddressActionsDeeplink,
     AlgoTransferDeeplink,
     AssetTransferDeeplink,
-    KeyregDeeplink,
     AssetOptInDeeplink,
-    AssetTransactionsDeeplink,
-    AssetInboxDeeplink,
+    KeyregDeeplink,
     DiscoverBrowserDeeplink,
-    DiscoverPathDeeplink,
-    CardsDeeplink,
-    StakingDeeplink,
-    HomeDeeplink,
 } from './types'
-import { decodeBase64Param, normalizeUrl, parseQueryParams } from './utils'
-
+import { parseAlgorandURI } from './arc90-parser'
+import { config } from '@perawallet/wallet-core-config'
+import { Networks } from '@perawallet/wallet-core-shared'
 
 /**
  * Parse Algorand URIs (algorand://) according to ARC-90
- * Implements basic ARC-90 transaction URI format
+ * Reference: https://github.com/algorandfoundation/ARCs/blob/main/ARCs/arc-0090.md
+ * 
+ * Uses the custom ARC-90 parser implementation in arc90-parser.ts
  */
 export const parseAlgorandUri = (url: string): AnyParsedDeeplink | null => {
-    const normalizedUrl = normalizeUrl(url)
+    const parsed = parseAlgorandURI(url)
 
-    if (!normalizedUrl.startsWith('algorand://')) {
+    if (!parsed) {
         return null
     }
 
-    const params = parseQueryParams(normalizedUrl)
+    if (parsed.type === 'payment' || parsed.type === 'noop') {
+        const { address, params = {} } = parsed
 
-    // Extract address from path (between :// and ?)
-    const schemeEnd = normalizedUrl.indexOf('://') + 3
-    const queryStart = normalizedUrl.indexOf('?')
-    const pathPart = queryStart !== -1
-        ? normalizedUrl.slice(schemeEnd, queryStart)
-        : normalizedUrl.slice(schemeEnd)
+        if (!address || !isValidAlgorandAddress(address)) {
+            return null
+        }
 
-    // Special path handling for notification types (paths that aren't addresses)
-    if (pathPart === 'asset/opt-in' || pathPart.includes('asset/opt-in')) {
+        const amount = params.amount
+        const assetId = params.asset
+        const note = params.note
+        const xnote = params.xnote
+        const label = params.label
+
+        // Asset Opt-in: Amount is 0 and Asset ID is present
+        if (amount === '0' && assetId) {
+            return {
+                type: DeeplinkType.ASSET_OPT_IN,
+                sourceUrl: url,
+                assetId: assetId,
+                address,
+            } as AssetOptInDeeplink
+        }
+
+        // Asset Transfer: Asset ID is present
+        if (assetId) {
+            return {
+                type: DeeplinkType.ASSET_TRANSFER,
+                sourceUrl: url,
+                assetId: assetId,
+                receiverAddress: address,
+                amount: amount,
+                note: note,
+                xnote: xnote,
+                label: label
+            } as AssetTransferDeeplink
+        }
+
+        // ALGO Transfer: Amount is present
+        if (amount) {
+            return {
+                type: DeeplinkType.ALGO_TRANSFER,
+                sourceUrl: url,
+                receiverAddress: address,
+                amount: amount,
+                note: note,
+                xnote: xnote,
+                label: label
+            } as AlgoTransferDeeplink
+        }
+
+        // Default: Address Actions
         return {
-            type: DeeplinkType.ASSET_OPT_IN,
+            type: DeeplinkType.ADDRESS_ACTIONS,
             sourceUrl: url,
-            assetId: params.asset,
-            address: params.account,
-        } as AssetOptInDeeplink
+            address,
+            label: label
+        } as AddressActionsDeeplink
     }
 
-    // Check for special paths BEFORE address validation
-    // Discover path: algorand://discover?path=...
-    if (pathPart === 'discover' || normalizedUrl.includes('discover')) {
-        return {
-            type: DeeplinkType.DISCOVER_PATH,
-            sourceUrl: url,
-            path: params.path,
-        } as DiscoverPathDeeplink
-    }
+    if (parsed.type === 'keyreg') {
+        const { address, params = {} } = parsed
 
-    // Cards: algorand://cards?path=...
-    if (pathPart === 'cards' || normalizedUrl.includes('cards')) {
-        return {
-            type: DeeplinkType.CARDS,
-            sourceUrl: url,
-            path: params.path || '',
-        } as CardsDeeplink
-    }
+        if (!address || !isValidAlgorandAddress(address)) {
+            return null
+        }
 
-    // Staking: algorand://staking?path=...
-    if (pathPart === 'staking' || normalizedUrl.includes('staking')) {
-        return {
-            type: DeeplinkType.STAKING,
-            sourceUrl: url,
-            path: params.path,
-        } as StakingDeeplink
-    }
-
-    // Notification types (check before address validation since they may have non-address paths)
-    if (params.type === 'asset/opt-in' && params.asset) {
-        return {
-            type: DeeplinkType.ASSET_OPT_IN,
-            sourceUrl: url,
-            assetId: params.asset,
-            address: params.account,
-        } as AssetOptInDeeplink
-    }
-
-    if (params.type === 'asset/transactions' && params.asset) {
-        return {
-            type: DeeplinkType.ASSET_TRANSACTIONS,
-            sourceUrl: url,
-            address: params.account || pathPart,
-            assetId: params.asset,
-        } as AssetTransactionsDeeplink
-    }
-
-    if (params.type === 'asset-inbox') {
-        return {
-            type: DeeplinkType.ASSET_INBOX,
-            sourceUrl: url,
-            address: params.account || pathPart,
-        } as AssetInboxDeeplink
-    }
-
-    // Asset opt-in with empty path (algorand://?amount=0&asset=...)
-    if (!pathPart && params.amount === '0' && params.asset) {
-        return {
-            type: DeeplinkType.ASSET_OPT_IN,
-            sourceUrl: url,
-            assetId: params.asset,
-        } as AssetOptInDeeplink
-    }
-
-    // Discover browser with base64 URL (no valid address, just ?url=...)
-    if (params.url && !isValidAlgorandAddress(pathPart)) {
-        const decodedUrl = decodeBase64Param(params.url)
-        return {
-            type: DeeplinkType.DISCOVER_BROWSER,
-            sourceUrl: url,
-            url: decodedUrl,
-        } as DiscoverBrowserDeeplink
-    }
-
-    // Home/fallback (no address, just params or empty)
-    if (!pathPart || !isValidAlgorandAddress(pathPart)) {
-        return {
-            type: DeeplinkType.HOME,
-            sourceUrl: url,
-        } as HomeDeeplink
-    }
-
-    const address = pathPart
-
-    // Keyreg transaction
-    if (params.type === 'keyreg') {
         return {
             type: DeeplinkType.KEYREG,
             sourceUrl: url,
             senderAddress: address,
-            keyregType: params.type,
+            keyregType: 'keyreg',
             voteKey: params.votekey,
             selkey: params.selkey,
             sprfkey: params.sprfkey,
             votefst: params.votefst,
             votelst: params.votelst,
-            votekd: params.votekd,
+            votekd: params.votekdkey,
             fee: params.fee,
             note: params.note,
+            xnote: params.xnote
         } as KeyregDeeplink
     }
 
-    // Asset opt-in (amount=0 & asset exists)
-    if (params.amount === '0' && params.asset) {
+    if (parsed.type === 'assetquery') {
+        const { assetId, network } = parsed
+        // Redirect to Pera Explorer
+        const baseUrl = network === Networks.testnet
+            ? config.testnetExplorerUrl
+            : config.mainnetExplorerUrl
+
         return {
-            type: DeeplinkType.ASSET_OPT_IN,
+            type: DeeplinkType.DISCOVER_BROWSER,
             sourceUrl: url,
-            assetId: params.asset,
-            address,
-        } as AssetOptInDeeplink
+            url: `${baseUrl}/asset/${assetId}/`
+        } as DiscoverBrowserDeeplink
     }
 
-    // Asset transfer (has asset param and amount > 0)
-    if (params.asset && params.amount && params.amount !== '0') {
+    if (parsed.type === 'appquery') {
+        const { appId, network } = parsed
+        // Redirect to Pera Explorer
+        const baseUrl = network === Networks.testnet
+            ? config.testnetExplorerUrl
+            : config.mainnetExplorerUrl
+
         return {
-            type: DeeplinkType.ASSET_TRANSFER,
+            type: DeeplinkType.DISCOVER_BROWSER,
             sourceUrl: url,
-            assetId: params.asset,
-            receiverAddress: address,
-            amount: params.amount,
-            note: params.note,
-            xnote: params.xnote,
-        } as AssetTransferDeeplink
+            url: `${baseUrl}/application/${appId}/`
+        } as DiscoverBrowserDeeplink
     }
 
-    // ALGO transfer (has amount, no asset)
-    if (params.amount && !params.asset) {
-        return {
-            type: DeeplinkType.ALGO_TRANSFER,
-            sourceUrl: url,
-            receiverAddress: address,
-            amount: params.amount,
-            note: params.note,
-        } as AlgoTransferDeeplink
-    }
-
-    // Default: address actions (basic address scan)
-    return {
-        type: DeeplinkType.ADDRESS_ACTIONS,
-        sourceUrl: url,
-        address,
-    } as AddressActionsDeeplink
+    return null
 }

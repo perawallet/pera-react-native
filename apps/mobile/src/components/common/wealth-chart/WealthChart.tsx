@@ -11,7 +11,7 @@
  */
 
 import { useStyles } from './styles'
-import { useLanguage } from '../../../hooks/useLanguage'
+import { useLanguage } from '../../../hooks/language'
 import { LineChart } from 'react-native-gifted-charts'
 
 import PWView from '../view/PWView'

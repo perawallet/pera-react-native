@@ -17,7 +17,7 @@ import PWView from '../../../../../components/common/view/PWView'
 import PWIcon, { IconName } from '../../../../../components/common/icons/PWIcon'
 import PWButton from '../../../../../components/common/button/PWButton'
 import { useMemo } from 'react'
-import { useLanguage } from '../../../../../hooks/useLanguage'
+import { useLanguage } from '../../../../../hooks/language'
 
 type AssetVerificationCardProps = {
     assetDetails: PeraAsset

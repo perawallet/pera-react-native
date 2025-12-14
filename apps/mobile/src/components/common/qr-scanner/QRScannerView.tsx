@@ -22,7 +22,7 @@ import {
 import { Text } from '@rneui/themed'
 import { PropsWithChildren, useState } from 'react'
 import { Modal } from 'react-native'
-import { useLanguage } from '../../../hooks/useLanguage'
+import { useLanguage } from '../../../hooks/language'
 import { useDeepLink } from '../../../hooks/deeplink'
 
 type QRScannerViewProps = {

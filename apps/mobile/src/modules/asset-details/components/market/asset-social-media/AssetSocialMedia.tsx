@@ -17,7 +17,7 @@ import { Text } from '@rneui/themed'
 import PWIcon, { IconName } from '../../../../../components/common/icons/PWIcon'
 import PWView from '../../../../../components/common/view/PWView'
 import PWTouchableOpacity from '../../../../../components/common/touchable-opacity/PWTouchableOpacity'
-import { useLanguage } from '../../../../../hooks/useLanguage'
+import { useLanguage } from '../../../../../hooks/language'
 
 type AssetSocialMediaProps = {
     assetDetails: PeraAsset

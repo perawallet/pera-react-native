@@ -15,7 +15,7 @@ import PWView from '../view/PWView'
 import { Text } from '@rneui/themed'
 import { useStyles } from './styles'
 import PWIcon from '../icons/PWIcon'
-import { useLanguage } from '../../../hooks/useLanguage'
+import { useLanguage } from '../../../hooks/language'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMemo } from 'react'
 

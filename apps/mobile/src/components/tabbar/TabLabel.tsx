@@ -11,7 +11,7 @@
  */
 
 import { Text } from '@rneui/themed'
-import { useLanguage } from '../../hooks/useLanguage'
+import { useLanguage } from '../../hooks/language'
 import { useStyles } from './styles'
 
 type TabLabelProps = {

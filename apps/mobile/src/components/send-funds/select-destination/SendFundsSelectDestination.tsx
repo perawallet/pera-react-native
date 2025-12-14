@@ -20,7 +20,7 @@ import AssetIcon from '../../assets/asset-icon/AssetIcon'
 import { Text, useTheme } from '@rneui/themed'
 import EmptyView from '../../common/empty-view/EmptyView'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
-import { useLanguage } from '../../../hooks/useLanguage'
+import { useLanguage } from '../../../hooks/language'
 
 type SendFundsSelectDestinationProps = {
     onNext: () => void

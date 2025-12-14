@@ -29,7 +29,7 @@ import {
     CHART_FOCUS_DEBOUNCE_TIME,
     CHART_HEIGHT,
 } from '../../../../../constants/ui'
-import { useLanguage } from '../../../../../hooks/useLanguage'
+import { useLanguage } from '../../../../../hooks/language'
 
 type AssetPriceChartProps = {
     asset: PeraAsset

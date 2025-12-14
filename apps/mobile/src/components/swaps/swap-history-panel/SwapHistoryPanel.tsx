@@ -23,7 +23,7 @@ import {
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity'
-import { useLanguage } from '../../../hooks/useLanguage'
+import { useLanguage } from '../../../hooks/language'
 
 type SwapAssets = {
     fromAsset?: PeraAsset

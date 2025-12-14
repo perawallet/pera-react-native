@@ -29,7 +29,7 @@ import {
 import { FlashList } from '@shopify/flash-list'
 import EmptyView from '../../../../components/common/empty-view/EmptyView'
 import LoadingView from '../../../../components/common/loading/LoadingView'
-import { useLanguage } from '../../../../hooks/useLanguage'
+import { useLanguage } from '../../../../hooks/language'
 
 type AccountAssetListProps = {
     account: WalletAccount

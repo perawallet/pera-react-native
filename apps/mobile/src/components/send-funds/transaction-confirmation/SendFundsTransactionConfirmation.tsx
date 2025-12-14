@@ -41,7 +41,7 @@ import {
     useAssetFiatPricesQuery,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
-import { useLanguage } from '../../../hooks/useLanguage'
+import { useLanguage } from '../../../hooks/language'
 
 type SendFundsTransactionConfirmationProps = {
     onNext: () => void

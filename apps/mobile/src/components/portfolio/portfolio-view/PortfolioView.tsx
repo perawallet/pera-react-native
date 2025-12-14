@@ -12,7 +12,7 @@
 
 import { Text } from '@rneui/themed'
 import { useStyles } from './styles'
-import { useLanguage } from '../../../hooks/useLanguage'
+import { useLanguage } from '../../../hooks/language'
 
 import PWView, { PWViewProps } from '../../common/view/PWView'
 import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'

@@ -30,7 +30,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useState } from 'react'
 import { KeyboardAvoidingView, Platform } from 'react-native'
-import { useLanguage } from '../../../hooks/useLanguage'
+import { useLanguage } from '../../../hooks/language'
 
 type NameAccountScreenProps = StaticScreenProps<{
     account: WalletAccount

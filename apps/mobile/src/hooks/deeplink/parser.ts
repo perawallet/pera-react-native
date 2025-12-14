@@ -18,7 +18,7 @@ import { parsePerawalletUri } from './old-parser'
 import { normalizeUrl } from './utils'
 import { parseAlgorandUri } from './algorand-parser'
 import { parseWalletConnectUri } from './walletconnect-parser'
-
+import { parseCoinbaseFormat } from './coinbase-parser'
 
 /**
  * Parse Universal Links: https://perawallet.app/...
@@ -55,6 +55,10 @@ export const parseDeeplink = (url: string): AnyParsedDeeplink | null => {
 
     if (normalizedUrl.startsWith('algorand://')) {
         return parseAlgorandUri(url)
+    }
+
+    if (normalizedUrl.startsWith('algo:')) {
+        return parseCoinbaseFormat(url)
     }
 
     if (normalizedUrl.startsWith('https://perawallet.app/')) {
