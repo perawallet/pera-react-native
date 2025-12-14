@@ -15,9 +15,11 @@ import {
     parseQueryParams,
     decodeBase64Param,
     normalizeUrl,
+} from '../utils'
+import {
     parseDeeplink,
-} from '../deeplink-parser'
-import { DeeplinkType } from '../deeplink-types'
+} from '../parser'
+import { DeeplinkType } from '../types'
 
 // Test addresses from CSV
 const TEST_ADDRESS = '5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA'

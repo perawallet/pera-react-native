@@ -24,6 +24,26 @@
         <action android:name="android.intent.action.MAIN" />
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
+      <!-- Deep link URL schemes: perawallet://, algorand://, wc://, perawallet-wc:// -->
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:scheme="perawallet" />
+        <data android:scheme="algorand" />
+        <data android:scheme="wc" />
+        <data android:scheme="perawallet-wc" />
+      </intent-filter>
+      <!-- App Links for https://perawallet.app/ universal links -->
+      <intent-filter android:autoVerify="true">
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data
+          android:scheme="https"
+          android:host="perawallet.app"
+          android:pathPrefix="/qr" />
+      </intent-filter>
     </activity>
   </application>
 </manifest>

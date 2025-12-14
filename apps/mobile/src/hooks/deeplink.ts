@@ -14,18 +14,24 @@ import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import useToast from './toast'
 import { debugLog } from '@perawallet/wallet-core-shared'
-import { parseDeeplink } from './deeplink-parser'
-import { AnyParsedDeeplink, DeeplinkType } from './deeplink-types'
+import { parseDeeplink } from './deeplink/parser'
+import { AnyParsedDeeplink, DeeplinkType } from './deeplink/types'
 import { useSigningRequest } from '@perawallet/wallet-core-blockchain'
 import { useSelectedAccount, useSelectedAccountAddress } from '@perawallet/wallet-core-accounts'
 import { useWebView } from './webview'
 import { v7 as uuidv7 } from 'uuid'
+import { useEffect, useRef } from 'react'
+import { Linking } from 'react-native'
 
 type LinkSource = 'qr' | 'deeplink'
 
 export const useDeepLink = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { showToast } = useToast()
+    const { addSignRequest } = useSigningRequest()
+    const selectedAccount = useSelectedAccount()
+    const { setSelectedAccountAddress } = useSelectedAccountAddress()
+    const { pushWebView } = useWebView()
 
     /**
      * Parse deeplink data without handling/navigating
@@ -62,14 +68,9 @@ export const useDeepLink = () => {
         onError?: () => void,
         onSuccess?: () => void,
     ) => {
-        debugLog('Handling deeplink', url, source)
-
         const parsedData = parseDeeplink(url)
-        const { addSignRequest } = useSigningRequest()
-        const selectedAccount = useSelectedAccount()
-        const { setSelectedAccountAddress } = useSelectedAccountAddress()
-        const { pushWebView } = useWebView()
 
+        debugLog('Parsed deeplink data:', parsedData)
         if (!parsedData) {
             showToast({
                 title: 'Invalid Link',
@@ -326,4 +327,46 @@ export const useDeepLink = () => {
         handleDeepLink,
         parseDeeplinkData,
     }
+}
+
+
+export const useDeeplinkListener = () => {
+    const { handleDeepLink, isValidDeepLink } = useDeepLink()
+    const hasHandledInitialUrl = useRef(false)
+
+    useEffect(() => {
+        const handleInitialUrl = async () => {
+            try {
+                const initialUrl = await Linking.getInitialURL()
+
+                if (initialUrl && !hasHandledInitialUrl.current) {
+                    hasHandledInitialUrl.current = true
+                    debugLog('Deeplink: Initial URL (cold start)', initialUrl)
+
+                    if (isValidDeepLink(initialUrl, 'deeplink')) {
+                        // Small delay to ensure navigation is ready
+                        setTimeout(() => {
+                            handleDeepLink(initialUrl, false, 'deeplink')
+                        }, 500)
+                    }
+                }
+            } catch (error) {
+                debugLog('Deeplink: Error getting initial URL', error)
+            }
+        }
+
+        handleInitialUrl()
+
+        const subscription = Linking.addEventListener('url', (event) => {
+            debugLog('Deeplink: URL event (warm start)', event.url)
+
+            if (isValidDeepLink(event.url, 'deeplink')) {
+                handleDeepLink(event.url, false, 'deeplink')
+            }
+        })
+
+        return () => {
+            subscription.remove()
+        }
+    }, [handleDeepLink, isValidDeepLink])
 }
