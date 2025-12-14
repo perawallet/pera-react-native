@@ -22,7 +22,6 @@ import {
     AssetTransferDeeplink,
     KeyregDeeplink,
     RecoverAddressDeeplink,
-    WebImportDeeplink,
     WalletConnectDeeplink,
     AssetOptInDeeplink,
     AssetDetailDeeplink,
@@ -82,7 +81,7 @@ export function parsePerawalletAppUri(url: string): AnyParsedDeeplink | null {
         } as EditContactDeeplink
     }
 
-    if (cleanPath === 'register-watch-account' || cleanPath === 'add-watch-account') {
+    if (cleanPath === 'register-watch-account') {
         if (!params.address) return null
         return {
             type: DeeplinkType.ADD_WATCH_ACCOUNT,
@@ -166,20 +165,6 @@ export function parsePerawalletAppUri(url: string): AnyParsedDeeplink | null {
             sourceUrl: url,
             mnemonic: params.mnemonic,
         } as RecoverAddressDeeplink
-    }
-
-    if (cleanPath === 'web-import') {
-        if (!params.backupId || !params.encryptionKey || !params.action) return null
-        return {
-            type: DeeplinkType.WEB_IMPORT,
-            sourceUrl: url,
-            backupId: params.backupId,
-            encryptionKey: params.encryptionKey,
-            action: params.action,
-            version: params.version,
-            platform: params.platform,
-            modificationKey: params.modificationKey,
-        } as WebImportDeeplink
     }
 
     if (cleanPath === 'wallet-connect') {

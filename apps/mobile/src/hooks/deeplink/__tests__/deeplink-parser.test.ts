@@ -389,31 +389,6 @@ describe('Deeplink Parser - New Format', () => {
         })
     })
 
-    describe('Web import', () => {
-        it('parses web import with all parameters', () => {
-            const result = parseDeeplink(
-                'perawallet://app/web-import/?backupId=c96f4523-cd44-4fb8-9418-52efc33191ac&encryptionKey=140,20,240,110&action=import',
-            )
-            expect(result).toBeDefined()
-            expect(result?.type).toBe(DeeplinkType.WEB_IMPORT)
-            if (result?.type === DeeplinkType.WEB_IMPORT) {
-                expect(result.backupId).toBe(
-                    'c96f4523-cd44-4fb8-9418-52efc33191ac',
-                )
-                expect(result.encryptionKey).toBe('140,20,240,110')
-                expect(result.action).toBe('import')
-            }
-        })
-
-        it('requires backupId, encryptionKey, and action', () => {
-            const result = parseDeeplink(
-                'perawallet://app/web-import/?backupId=test',
-            )
-            expect(result).toBeDefined()
-            expect(result?.type).toBe(DeeplinkType.HOME)
-        })
-    })
-
     describe('WalletConnect', () => {
         it('parses wallet-connect with base64 URI', () => {
             const uri = 'wc:test@1?bridge=test&key=test'

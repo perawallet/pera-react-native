@@ -24,7 +24,6 @@ export const DeeplinkType = {
     ASSET_TRANSFER: 'ASSET_TRANSFER',
     KEYREG: 'KEYREG',
     RECOVER_ADDRESS: 'RECOVER_ADDRESS',
-    WEB_IMPORT: 'WEB_IMPORT',
     WALLET_CONNECT: 'WALLET_CONNECT',
     ASSET_OPT_IN: 'ASSET_OPT_IN',
     ASSET_DETAIL: 'ASSET_DETAIL',
@@ -155,20 +154,6 @@ export interface KeyregDeeplink extends ParsedDeeplink {
 export interface RecoverAddressDeeplink extends ParsedDeeplink {
     type: typeof DeeplinkType.RECOVER_ADDRESS
     mnemonic: string
-}
-
-/**
- * Web Import deeplink
- * Format: web-import/?backupId=$BACKUP_ID&encryptionKey=$ENCRYPTION_KEY&action=$ACTION&version=$VERSION&platform=$PLATFORM&modificationKey=$MODIFICATION_KEY
- */
-export interface WebImportDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.WEB_IMPORT
-    backupId: string
-    encryptionKey: string
-    action: string
-    version?: string
-    platform?: string
-    modificationKey?: string
 }
 
 /**
@@ -333,7 +318,6 @@ export type AnyParsedDeeplink =
     | AssetTransferDeeplink
     | KeyregDeeplink
     | RecoverAddressDeeplink
-    | WebImportDeeplink
     | WalletConnectDeeplink
     | AssetOptInDeeplink
     | AssetDetailDeeplink

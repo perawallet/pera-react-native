@@ -176,21 +176,15 @@ export const useDeepLink = () => {
                     break
 
                 case DeeplinkType.RECOVER_ADDRESS:
+                    // Only handle recovery from QR deeplinks
+                    if (source !== 'qr') {
+                        return;
+                    }
                     // TODO: Navigate to account recovery screen
                     // navigation.navigate('RecoverAccount', { mnemonic: parsedData.mnemonic })
                     showToast({
                         title: 'Recover Address',
                         body: 'Account recovery not implemented yet',
-                        type: 'info',
-                    })
-                    break
-
-                case DeeplinkType.WEB_IMPORT:
-                    // TODO: Navigate to web import screen
-                    // navigation.navigate('WebImport', { ...parsedData })
-                    showToast({
-                        title: 'Web Import',
-                        body: 'Web import screen not implemented yet',
                         type: 'info',
                     })
                     break

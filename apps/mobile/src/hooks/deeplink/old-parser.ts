@@ -47,15 +47,6 @@ export const parsePerawalletUri = (url: string): AnyParsedDeeplink | null => {
         ? normalizedUrl.slice(schemeEnd, queryStart)
         : normalizedUrl.slice(schemeEnd)
 
-    if (pathPart === 'asset/opt-in' || pathPart.includes('asset/opt-in')) {
-        return {
-            type: DeeplinkType.ASSET_OPT_IN,
-            sourceUrl: url,
-            assetId: params.asset,
-            address: params.account,
-        } as AssetOptInDeeplink
-    }
-
     if (pathPart === 'discover' || normalizedUrl.includes('discover')) {
         return {
             type: DeeplinkType.DISCOVER_PATH,
@@ -78,32 +69,6 @@ export const parsePerawalletUri = (url: string): AnyParsedDeeplink | null => {
             sourceUrl: url,
             path: params.path,
         } as StakingDeeplink
-    }
-
-    if (params.type === 'asset/opt-in' && params.asset) {
-        return {
-            type: DeeplinkType.ASSET_OPT_IN,
-            sourceUrl: url,
-            assetId: params.asset,
-            address: params.account,
-        } as AssetOptInDeeplink
-    }
-
-    if (params.type === 'asset/transactions' && params.asset) {
-        return {
-            type: DeeplinkType.ASSET_TRANSACTIONS,
-            sourceUrl: url,
-            address: params.account || pathPart,
-            assetId: params.asset,
-        } as AssetTransactionsDeeplink
-    }
-
-    if (params.type === 'asset-inbox') {
-        return {
-            type: DeeplinkType.ASSET_INBOX,
-            sourceUrl: url,
-            address: params.account || pathPart,
-        } as AssetInboxDeeplink
     }
 
     if (!pathPart && params.amount === '0' && params.asset) {
@@ -131,6 +96,32 @@ export const parsePerawalletUri = (url: string): AnyParsedDeeplink | null => {
     }
 
     const address = pathPart
+
+    if (params.type === 'asset/opt-in' && params.asset) {
+        return {
+            type: DeeplinkType.ASSET_OPT_IN,
+            sourceUrl: url,
+            assetId: params.asset,
+            address,
+        } as AssetOptInDeeplink
+    }
+
+    if (params.type === 'asset/transactions' && params.asset) {
+        return {
+            type: DeeplinkType.ASSET_TRANSACTIONS,
+            sourceUrl: url,
+            address,
+            assetId: params.asset,
+        } as AssetTransactionsDeeplink
+    }
+
+    if (params.type === 'asset-inbox') {
+        return {
+            type: DeeplinkType.ASSET_INBOX,
+            sourceUrl: url,
+            address,
+        } as AssetInboxDeeplink
+    }
 
     if (params.type === 'keyreg') {
         return {

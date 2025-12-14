@@ -28,16 +28,12 @@ export const parseCoinbaseFormat = (url: string): CoinbaseAssetTransferDeeplink 
 
     const params = parseQueryParams(normalizedUrl)
 
-    // Extract asset ID from path: algo:123/transfer
-    // normalizedUrl is like "algo:123/transfer?address=..."
     const parts = normalizedUrl.split('/')
-    // parts[0] = "algo:123"
-    // parts[1] = "transfer?address=..." (or just "transfer" if query params parsed separately)
 
     if (parts.length < 2) return null
 
     const assetPart = parts[0].replace('algo:', '')
-    const actionPart = parts[1].split('?')[0] // "transfer"
+    const actionPart = parts[1].split('?')[0]
 
     if (actionPart === 'transfer' && params.address) {
         return {
