@@ -26,13 +26,16 @@ const NAVIGATION_STACK_NAMES = new Set([
 ])
 
 let previousRouteName: string | null = null
+export const resetPreviousRouteNameForTesting = () => {
+    previousRouteName = null
+}
 export const screenListeners = ({
     route,
 }: {
     route: RouteProp<ParamListBase>
 }) => ({
     focus: () => {
-        const currentRouteName = route.name.toLowerCase() ?? null
+        const currentRouteName = route.name.toLowerCase()
 
         if (
             !NAVIGATION_STACK_NAMES.has(currentRouteName) &&

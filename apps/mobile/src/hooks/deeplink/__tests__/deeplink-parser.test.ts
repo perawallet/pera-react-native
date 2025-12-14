@@ -188,7 +188,6 @@ describe('Deeplink Parser - Old Format', () => {
         })
 
         it('parses type=asset/opt-in param', () => {
-            // Coverage for old-parser.ts lines 83-90
             const result = parseDeeplink(
                 `perawallet://?type=asset/opt-in&asset=31566704&account=${TEST_ADDRESS}`,
             )
