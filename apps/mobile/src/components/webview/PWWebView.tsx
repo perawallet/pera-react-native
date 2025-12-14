@@ -49,7 +49,7 @@ import WebViewTitleBar from './WebViewTitleBar'
 import WebViewFooterBar from './WebViewFooterBar'
 import { WebViewContext } from '../../providers/WebViewProvider'
 import { useIsDarkMode } from '../../hooks/theme'
-import { useLanguage } from '../../hooks/useLanguage'
+import { useLanguage } from '../../hooks/language'
 
 export type PWWebViewProps = {
     url: string

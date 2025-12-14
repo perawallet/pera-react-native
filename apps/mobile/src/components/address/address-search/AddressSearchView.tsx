@@ -26,7 +26,7 @@ import AccountDisplay from '../../accounts/account-display/AccountDisplay'
 import EmptyView from '../../common/empty-view/EmptyView'
 import AddressDisplay from '../address-display/AddressDisplay'
 import PWIcon from '../../common/icons/PWIcon'
-import { useLanguage } from '../../../hooks/useLanguage'
+import { useLanguage } from '../../../hooks/language'
 
 type AddressSearchViewProps = {
     onSelected: (address: string) => void

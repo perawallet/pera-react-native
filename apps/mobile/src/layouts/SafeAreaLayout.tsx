@@ -14,12 +14,16 @@ import { ViewProps } from 'react-native'
 import { useStyles } from './SafeAreaLayout.style'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import PWView from '../components/common/view/PWView'
+import { useDeeplinkListener } from '../hooks/deeplink'
 
 export type SafeAreaLayoutProps = ViewProps
 
 const SafeAreaLayout = (props: SafeAreaLayoutProps) => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
+
+    // this hook sets up the deeplink listener
+    useDeeplinkListener()
 
     return (
         <PWView

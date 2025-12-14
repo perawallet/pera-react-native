@@ -19,7 +19,7 @@ import { useCallback, useState } from 'react'
 import SendFundsBottomSheet from '../../../../../components/send-funds/bottom-sheet/SendFundsBottomSheet'
 import useToast from '../../../../../hooks/toast'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
-import { useLanguage } from '../../../../../hooks/useLanguage'
+import { useLanguage } from '../../../../../hooks/language'
 
 type AssetActionButtonsProps = {
     asset: PeraAsset

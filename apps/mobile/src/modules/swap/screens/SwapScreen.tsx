@@ -22,7 +22,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Drawer } from 'react-native-drawer-layout'
 import { useState } from 'react'
 import AccountMenu from '../../../components/account-menu/AccountMenu'
-import { useLanguage } from '../../../hooks/useLanguage'
+import { useLanguage } from '../../../hooks/language'
 
 const SwapScreen = () => {
     const insets = useSafeAreaInsets()

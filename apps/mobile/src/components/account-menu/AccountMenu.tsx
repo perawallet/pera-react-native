@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useLanguage } from '../../hooks/useLanguage'
+import { useLanguage } from '../../hooks/language'
 import { Tab, TabView } from '@rneui/themed'
 
 import { useStyles } from './styles'

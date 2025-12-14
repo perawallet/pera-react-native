@@ -15,7 +15,7 @@ import PWView from '../../../../components/common/view/PWView'
 import { Image, Text } from '@rneui/themed'
 import { useStyles } from './styles'
 import PWIcon from '../../../../components/common/icons/PWIcon'
-import { useLanguage } from '../../../../hooks/useLanguage'
+import { useLanguage } from '../../../../hooks/language'
 
 import CardBackground from '../../../../../assets/images/card-background.png'
 const BACKGROUND_URI = Image.resolveAssetSource(CardBackground).uri

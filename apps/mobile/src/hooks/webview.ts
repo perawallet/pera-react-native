@@ -63,6 +63,13 @@ type WebviewMessage = {
     params: Record<string, unknown>
 }
 
+export const useWebView = () => {
+    const { pushWebView } = useContext(WebViewContext)
+    return {
+        pushWebView,
+    }
+}
+
 export const usePeraWebviewInterface = (
     webview: WebView | null,
     securedConnection: boolean,

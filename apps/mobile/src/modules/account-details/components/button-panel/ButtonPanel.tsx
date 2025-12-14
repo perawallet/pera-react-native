@@ -18,7 +18,7 @@ import RoundButton from '../../../../components/common/round-button/RoundButton'
 
 import { useState } from 'react'
 import SendFundsBottomSheet from '../../../../components/send-funds/bottom-sheet/SendFundsBottomSheet'
-import { useLanguage } from '../../../../hooks/useLanguage'
+import { useLanguage } from '../../../../hooks/language'
 import useToast from '../../../../hooks/toast'
 
 const ButtonPanel = () => {

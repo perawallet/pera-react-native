@@ -20,7 +20,7 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import PWButton from '../common/button/PWButton'
-import { useLanguage } from '../../hooks/useLanguage'
+import { useLanguage } from '../../hooks/language'
 import { useStyles } from './styles'
 import { Text, useTheme } from '@rneui/themed'
 

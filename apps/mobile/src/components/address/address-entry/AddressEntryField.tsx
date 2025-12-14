@@ -18,7 +18,7 @@ import QRScannerView from '../../common/qr-scanner/QRScannerView'
 import { useState } from 'react'
 import { Input, InputProps } from '@rneui/themed'
 import PWIcon from '../../common/icons/PWIcon'
-import { useLanguage } from '../../../hooks/useLanguage'
+import { useLanguage } from '../../../hooks/language'
 
 export type AddressEntryFieldProps = {
     allowQRCode?: boolean

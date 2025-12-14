@@ -31,6 +31,9 @@ export const productionConfig: Config = {
     algodApiKey: '',
     indexerApiKey: '',
 
+    mainnetExplorerUrl: 'https://explorer.perawallet.app',
+    testnetExplorerUrl: 'https://testnet.explorer.perawallet.app',
+
     discoverBaseUrl: 'https://discover-mobile.perawallet.app/',
     stakingBaseUrl: 'https://staking-mobile.perawallet.app/',
     onrampBaseUrl: 'https://onramp-mobile.perawallet.app/',

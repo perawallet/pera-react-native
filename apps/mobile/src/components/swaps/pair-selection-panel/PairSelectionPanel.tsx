@@ -23,7 +23,7 @@ import CurrencyInput from '../../currency/currency-input/CurrencyInput'
 import { ALGO_ASSET_ID, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity'
 import PWIcon from '../../common/icons/PWIcon'
-import { useLanguage } from '../../../hooks/useLanguage'
+import { useLanguage } from '../../../hooks/language'
 
 //TODO this iz a mock implementation - implement properly
 const PairSelectionPanel = () => {

@@ -29,7 +29,7 @@ import SendFundsProvider, {
     SendFundsContext,
 } from '../../../providers/SendFundsProvider'
 import { TAB_ANIMATION_CONFIG } from '../../../constants/ui'
-import { useLanguage } from '../../../hooks/useLanguage'
+import { useLanguage } from '../../../hooks/language'
 
 type SendFundsBottomSheetProps = {
     assetId?: string

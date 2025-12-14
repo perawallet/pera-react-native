@@ -10,21 +10,63 @@
  limitations under the License
  */
 
+/* eslint-disable max-lines */
+
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import useToast from './toast'
 import { debugLog } from '@perawallet/wallet-core-shared'
+import { parseDeeplink } from './deeplink/parser'
+import { AnyParsedDeeplink, DeeplinkType } from './deeplink/types'
+import { useSigningRequest } from '@perawallet/wallet-core-blockchain'
+import {
+    useSelectedAccount,
+    useSelectedAccountAddress,
+} from '@perawallet/wallet-core-accounts'
+import { useWebView } from './webview'
+import { v7 as uuidv7 } from 'uuid'
+import { useEffect, useRef } from 'react'
+import { Linking } from 'react-native'
 
 type LinkSource = 'qr' | 'deeplink'
 
 export const useDeepLink = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { showToast } = useToast()
+    const { addSignRequest } = useSigningRequest()
+    const selectedAccount = useSelectedAccount()
+    const { setSelectedAccountAddress } = useSelectedAccountAddress()
+    const { pushWebView } = useWebView()
 
-    const isValidDeepLink = (url: string, source: LinkSource) => {
-        debugLog('Handling deeplink', url, source)
-        //TODO implement fully
-        return true
+    const parseDeeplinkData = (url: string): AnyParsedDeeplink | null => {
+        return parseDeeplink(url)
+    }
+
+    const isValidDeepLink = (url: string, source: LinkSource): boolean => {
+        debugLog('Validating deeplink', url, source)
+        const parsed = parseDeeplink(url)
+        return parsed !== null
+    }
+
+    const infoPost = (title: string, body: string) => {
+        showToast({
+            title,
+            body,
+            type: 'info',
+        })
+    }
+
+    const navigateToScreen = (
+        replaceCurrentScreen: boolean,
+        screenName: string,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        params?: any,
+    ) => {
+        if (replaceCurrentScreen) {
+            navigation.replace(screenName, params)
+        } else {
+            navigation.navigate(screenName, params)
+        }
     }
 
     const handleDeepLink = async (
@@ -34,29 +76,255 @@ export const useDeepLink = () => {
         onError?: () => void,
         onSuccess?: () => void,
     ) => {
-        if (isValidDeepLink(url, source)) {
-            //TODO implement fully
-            const destination = 'TabBar'
-            const params = {
-                screen: 'Home',
-            }
+        const parsedData = parseDeeplink(url)
 
-            if (replaceCurrentScreen) {
-                navigation.replace(destination, params)
-            } else {
-                navigation.navigate(destination, params)
-            }
-
-            showToast({
-                title: 'Not Implemented Yet',
-                body: "Deeplinking hasn't been implemented fully yet",
-                type: 'info',
-            })
-            onSuccess?.()
-        } else {
+        debugLog('Parsed deeplink data:', parsedData)
+        if (!parsedData) {
             showToast({
                 title: 'Invalid Link',
                 body: 'The detected link does not appear to be valid',
+                type: 'error',
+            })
+            onError?.()
+            return
+        }
+
+        debugLog('Parsed deeplink data:', parsedData)
+
+        try {
+            // Navigate based on deeplink type
+            switch (parsedData.type) {
+                case DeeplinkType.ADD_CONTACT:
+                    navigateToScreen(replaceCurrentScreen, 'AddContact', {
+                        address: parsedData.address,
+                        label: parsedData.label,
+                    })
+                    break
+
+                case DeeplinkType.EDIT_CONTACT:
+                    navigateToScreen(replaceCurrentScreen, 'EditContact', {
+                        address: parsedData.address,
+                        label: parsedData.label,
+                    })
+                    break
+
+                case DeeplinkType.ADD_WATCH_ACCOUNT:
+                    // TODO: Navigate to watch account addition screen
+                    infoPost(
+                        'Add Watch Account',
+                        'Watch account screen not implemented yet',
+                    )
+                    break
+
+                case DeeplinkType.RECEIVER_ACCOUNT_SELECTION:
+                    // TODO: Navigate to receiver account selection
+                    infoPost(
+                        'Receiver Selection',
+                        'Receiver account selection not implemented yet',
+                    )
+                    break
+
+                case DeeplinkType.ADDRESS_ACTIONS:
+                    // TODO: Show address actions modal/screen
+                    infoPost(
+                        'Address Actions',
+                        'Address actions screen not implemented yet',
+                    )
+                    break
+
+                case DeeplinkType.ALGO_TRANSFER:
+                    // TODO: We need to use a proper transaction construction method here and
+                    //navigate somewhere other than the qr code scanner.
+                    addSignRequest({
+                        txs: [
+                            [
+                                {
+                                    'tx-type': 'pay',
+                                    sender: selectedAccount?.address ?? '',
+                                    'payment-transaction': {
+                                        receiver: parsedData.receiverAddress,
+                                        amount: Number(parsedData.amount ?? 0),
+                                    },
+                                    note: parsedData.note,
+                                    fee: 1000,
+                                    'first-valid': 0,
+                                    'last-valid': 1000,
+                                },
+                            ],
+                        ],
+                    })
+                    break
+
+                case DeeplinkType.ASSET_TRANSFER:
+                    // TODO: We need to use a proper transaction construction method here and
+                    //navigate somewhere other than the qr code scanner.
+                    addSignRequest({
+                        txs: [
+                            [
+                                {
+                                    'tx-type': 'axfer',
+                                    sender: selectedAccount?.address ?? '',
+                                    'asset-transfer-transaction': {
+                                        'asset-id': Number(
+                                            parsedData.assetId ?? 0,
+                                        ),
+                                        receiver: parsedData.receiverAddress,
+                                        amount: Number(parsedData.amount ?? 0),
+                                    },
+                                    note: parsedData.note,
+                                    fee: 1000,
+                                    'first-valid': 0,
+                                    'last-valid': 1000,
+                                },
+                            ],
+                        ],
+                    })
+                    break
+
+                case DeeplinkType.KEYREG:
+                    // TODO: Handle the keyreg transaction construction and do something useful with it
+                    infoPost(
+                        'Key Registration',
+                        'Keyreg screen not implemented yet',
+                    )
+                    break
+
+                case DeeplinkType.RECOVER_ADDRESS:
+                    // Only handle recovery from QR deeplinks
+                    if (source !== 'qr') {
+                        return
+                    }
+                    // TODO: Navigate to account recovery screen
+                    // navigation.navigate('RecoverAccount', { mnemonic: parsedData.mnemonic })
+                    infoPost(
+                        'Recover Address',
+                        'Account recovery not implemented yet',
+                    )
+                    break
+
+                case DeeplinkType.WALLET_CONNECT:
+                    // TODO: Handle WalletConnect session
+                    // handleWalletConnectUri(parsedData.uri)
+                    infoPost(
+                        'WalletConnect',
+                        'WalletConnect handling not implemented yet',
+                    )
+                    break
+
+                case DeeplinkType.ASSET_OPT_IN:
+                    // TODO: We need to use a proper transaction construction method here and
+                    //navigate somewhere other than the qr code scanner.
+                    addSignRequest({
+                        txs: [
+                            [
+                                {
+                                    'tx-type': 'axfer',
+                                    sender: selectedAccount?.address ?? '',
+                                    'asset-transfer-transaction': {
+                                        'asset-id': Number(
+                                            parsedData.assetId ?? 0,
+                                        ),
+                                        receiver:
+                                            selectedAccount?.address ?? '',
+                                        amount: 0,
+                                    },
+                                    fee: 1000,
+                                    'first-valid': 0,
+                                    'last-valid': 1000,
+                                },
+                            ],
+                        ],
+                    })
+                    break
+
+                case DeeplinkType.ASSET_DETAIL:
+                case DeeplinkType.ASSET_TRANSACTIONS:
+                    setSelectedAccountAddress(parsedData.address)
+                    navigateToScreen(replaceCurrentScreen, 'AssetDetail', {
+                        assetId: parsedData.assetId,
+                    })
+                    break
+
+                case DeeplinkType.ASSET_INBOX:
+                    // TODO: Navigate to asset inbox screen
+                    infoPost(
+                        'Asset Inbox',
+                        'Asset inbox screen not implemented yet',
+                    )
+                    break
+
+                case DeeplinkType.INTERNAL_BROWSER:
+                case DeeplinkType.DISCOVER_BROWSER:
+                    pushWebView({ id: uuidv7(), url: parsedData.url })
+                    break
+
+                case DeeplinkType.DISCOVER_PATH:
+                    navigateToScreen(replaceCurrentScreen, 'TabBar', {
+                        screen: 'Discover',
+                        params: { path: parsedData.path },
+                    })
+                    break
+
+                case DeeplinkType.CARDS:
+                    // TODO: Navigate to cards screen
+                    // navigation.navigate('Cards', { path: parsedData.path })
+                    infoPost('Cards', 'Cards screen not implemented yet')
+                    break
+
+                case DeeplinkType.STAKING:
+                    navigateToScreen(replaceCurrentScreen, 'Staking', {
+                        path: parsedData.path,
+                    })
+                    break
+
+                case DeeplinkType.SWAP:
+                    if (parsedData.address) {
+                        setSelectedAccountAddress(parsedData.address)
+                    }
+                    navigateToScreen(replaceCurrentScreen, 'TabBar', {
+                        screen: 'Swap',
+                        params: {
+                            assetInId: parsedData.assetInId,
+                            assetOutId: parsedData.assetOutId,
+                        },
+                    })
+                    break
+
+                case DeeplinkType.BUY:
+                    if (parsedData.address) {
+                        setSelectedAccountAddress(parsedData.address)
+                    }
+                    navigateToScreen(replaceCurrentScreen, 'TabBar', {
+                        screen: 'Fund',
+                    })
+                    break
+
+                case DeeplinkType.SELL:
+                    //TODO implement sell
+                    infoPost('Sell', 'Sell screen not implemented yet')
+                    break
+
+                case DeeplinkType.ACCOUNT_DETAIL:
+                    setSelectedAccountAddress(parsedData.address)
+                    navigateToScreen(replaceCurrentScreen, 'TabBar', {
+                        screen: 'AccountDetail',
+                    })
+                    break
+
+                case DeeplinkType.HOME:
+                default:
+                    navigateToScreen(replaceCurrentScreen, 'TabBar', {
+                        screen: 'Home',
+                    })
+                    break
+            }
+
+            onSuccess?.()
+        } catch (error) {
+            debugLog('Error handling deeplink:', error)
+            showToast({
+                title: 'Navigation Error',
+                body: 'Could not navigate to the requested screen',
                 type: 'error',
             })
             onError?.()
@@ -66,5 +334,47 @@ export const useDeepLink = () => {
     return {
         isValidDeepLink,
         handleDeepLink,
+        parseDeeplinkData,
     }
+}
+
+export const useDeeplinkListener = () => {
+    const { handleDeepLink, isValidDeepLink } = useDeepLink()
+    const hasHandledInitialUrl = useRef(false)
+
+    useEffect(() => {
+        const handleInitialUrl = async () => {
+            try {
+                const initialUrl = await Linking.getInitialURL()
+
+                if (initialUrl && !hasHandledInitialUrl.current) {
+                    hasHandledInitialUrl.current = true
+                    debugLog('Deeplink: Initial URL (cold start)', initialUrl)
+
+                    if (isValidDeepLink(initialUrl, 'deeplink')) {
+                        // Small delay to ensure navigation is ready
+                        setTimeout(() => {
+                            handleDeepLink(initialUrl, false, 'deeplink')
+                        }, 500)
+                    }
+                }
+            } catch (error) {
+                debugLog('Deeplink: Error getting initial URL', error)
+            }
+        }
+
+        handleInitialUrl()
+
+        const subscription = Linking.addEventListener('url', event => {
+            debugLog('Deeplink: URL event (warm start)', event.url)
+
+            if (isValidDeepLink(event.url, 'deeplink')) {
+                handleDeepLink(event.url, false, 'deeplink')
+            }
+        })
+
+        return () => {
+            subscription.remove()
+        }
+    }, [handleDeepLink, isValidDeepLink])
 }

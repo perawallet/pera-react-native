@@ -20,7 +20,7 @@ import { useForm, Controller } from 'react-hook-form'
 import { useStyles } from './styles'
 import PWView from '../../common/view/PWView'
 import { SendFundsContext } from '../../../providers/SendFundsProvider'
-import { useLanguage } from '../../../hooks/useLanguage'
+import { useLanguage } from '../../../hooks/language'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { noteSchema } from '@perawallet/wallet-core-blockchain'
 

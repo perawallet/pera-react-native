@@ -29,7 +29,7 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import useToast from '../../../hooks/toast'
-import { useLanguage } from '../../../hooks/useLanguage'
+import { useLanguage } from '../../../hooks/language'
 
 export type SettingsSubPageScreenProps = StaticScreenProps<{
     title: string

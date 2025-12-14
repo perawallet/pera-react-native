@@ -22,7 +22,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import PWTouchableOpacity from '../../../components/common/touchable-opacity/PWTouchableOpacity'
 import QRScannerView from '../../../components/common/qr-scanner/QRScannerView'
 import { useState } from 'react'
-import { useLanguage } from '../../../hooks/useLanguage'
+import { useLanguage } from '../../../hooks/language'
 
 const MenuScreen = () => {
     const styles = useStyles()

@@ -22,7 +22,8 @@ import {
 import { Text } from '@rneui/themed'
 import { PropsWithChildren, useState } from 'react'
 import { Modal } from 'react-native'
-import { useLanguage } from '../../../hooks/useLanguage'
+import { useLanguage } from '../../../hooks/language'
+import { useDeepLink } from '../../../hooks/deeplink'
 
 type QRScannerViewProps = {
     title?: string
@@ -37,13 +38,20 @@ const QRScannerView = (props: QRScannerViewProps) => {
     const { hasPermission, requestPermission } = useCameraPermission()
     const [scanningEnabled, setScanningEnabled] = useState(true)
     const { t } = useLanguage()
+
+    const { handleDeepLink, isValidDeepLink } = useDeepLink()
+
     const codeScanner = useCodeScanner({
         codeTypes: ['qr', 'ean-13'],
         onCodeScanned: codes => {
             const url = codes.at(0)?.value
             setScanningEnabled(false)
             if (url) {
-                props.onSuccess(url, () => setScanningEnabled(true))
+                if (isValidDeepLink(url, 'qr')) {
+                    handleDeepLink(url, true, 'qr', () =>
+                        setScanningEnabled(true),
+                    )
+                }
             }
         },
     })

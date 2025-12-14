@@ -23,7 +23,7 @@ import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacit
 import { useStyles } from './styles'
 import { SendFundsContext } from '../../../providers/SendFundsProvider'
 import PWHeader from '../../common/header/PWHeader'
-import { useLanguage } from '../../../hooks/useLanguage'
+import { useLanguage } from '../../../hooks/language'
 
 type SendFundsAssetSelectionViewProps = {
     onSelected: () => void

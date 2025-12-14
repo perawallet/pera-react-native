@@ -23,7 +23,7 @@ import {
     useAssetFiatPricesQuery,
 } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { useLanguage } from '../../../../../hooks/useLanguage'
+import { useLanguage } from '../../../../../hooks/language'
 
 type AssetMarketStatsProps = {
     assetDetails: PeraAsset

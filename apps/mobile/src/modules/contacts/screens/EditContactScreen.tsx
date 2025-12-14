@@ -29,7 +29,7 @@ import { useForm, Controller } from 'react-hook-form'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useState } from 'react'
 import AddressDisplay from '../../../components/address/address-display/AddressDisplay'
-import { useLanguage } from '../../../hooks/useLanguage'
+import { useLanguage } from '../../../hooks/language'
 
 const EditContactScreen = () => {
     const styles = useStyles()

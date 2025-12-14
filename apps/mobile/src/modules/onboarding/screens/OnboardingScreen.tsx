@@ -21,7 +21,7 @@ import WelcomeImage from '../../../../assets/images/welcome-background.svg'
 import { ActivityIndicator } from 'react-native'
 import { useCreateAccount } from '@perawallet/wallet-core-accounts'
 import { useState } from 'react'
-import { useLanguage } from '../../../hooks/useLanguage'
+import { useLanguage } from '../../../hooks/language'
 
 const OnboardingScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()

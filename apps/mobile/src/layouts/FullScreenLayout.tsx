@@ -13,11 +13,16 @@
 import { ViewProps } from 'react-native'
 import PWView from '../components/common/view/PWView'
 import { useStyles } from './FullScreenLayout.style'
+import { useDeeplinkListener } from '../hooks/deeplink'
 
 export type FullScreenLayoutProps = ViewProps
 
 const FullScreenLayout = (props: FullScreenLayoutProps) => {
     const styles = useStyles()
+
+    // this hook sets up the deeplink listener
+    useDeeplinkListener()
+
     return (
         <PWView
             style={styles.contentContainer}

@@ -26,7 +26,7 @@ import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import LoadingView from '../../../components/common/loading/LoadingView'
 import { TAB_ANIMATION_CONFIG } from '../../../constants/ui'
 import PWView from '../../../components/common/view/PWView'
-import { useLanguage } from '../../../hooks/useLanguage'
+import { useLanguage } from '../../../hooks/language'
 
 type AssetDetailsScreenProps = {
     assetId: string
