@@ -10,16 +10,15 @@
  limitations under the License
  */
 
-import {
-    CoinbaseAssetTransferDeeplink,
-    DeeplinkType,
-} from './types'
+import { CoinbaseAssetTransferDeeplink, DeeplinkType } from './types'
 import { normalizeUrl, parseQueryParams } from './utils'
 
 /**
  * Parse Coinbase format: algo:ASSET_ID/transfer?address=ADDRESS
  */
-export const parseCoinbaseFormat = (url: string): CoinbaseAssetTransferDeeplink | null => {
+export const parseCoinbaseFormat = (
+    url: string,
+): CoinbaseAssetTransferDeeplink | null => {
     const normalizedUrl = normalizeUrl(url)
 
     if (!normalizedUrl.startsWith('algo:')) {

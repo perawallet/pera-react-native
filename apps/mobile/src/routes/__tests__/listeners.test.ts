@@ -1,3 +1,16 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { screenListeners, resetPreviousRouteNameForTesting } from '../listeners'
 import { container } from 'tsyringe'
 import { AnalyticsServiceContainerKey } from '@perawallet/wallet-core-platform-integration'
@@ -22,9 +35,9 @@ describe('screenListeners', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         resetPreviousRouteNameForTesting()
-            ; (container.resolve as any).mockReturnValue({
-                logEvent: logEventMock,
-            })
+        ;(container.resolve as any).mockReturnValue({
+            logEvent: logEventMock,
+        })
     })
 
     it('logs event on focus for tracked screens (not in ignored list)', () => {
@@ -33,7 +46,9 @@ describe('screenListeners', () => {
         const listeners = screenListeners({ route: route as any })
         listeners.focus()
 
-        expect(container.resolve).toHaveBeenCalledWith(AnalyticsServiceContainerKey)
+        expect(container.resolve).toHaveBeenCalledWith(
+            AnalyticsServiceContainerKey,
+        )
         expect(logEventMock).toHaveBeenCalledWith('scr_assetdetail_view', {
             previous: null, // Initial previous is null
             path: undefined,
@@ -53,7 +68,10 @@ describe('screenListeners', () => {
         const route1 = createRoute('AssetDetail')
         screenListeners({ route: route1 as any }).focus()
 
-        expect(logEventMock).toHaveBeenLastCalledWith('scr_assetdetail_view', expect.anything())
+        expect(logEventMock).toHaveBeenLastCalledWith(
+            'scr_assetdetail_view',
+            expect.anything(),
+        )
 
         // 2. Visit SendAlgo (logs, should have previous = assetdetail)
         const route2 = createRoute('SendAlgo')

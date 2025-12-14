@@ -28,7 +28,7 @@ import { Networks } from '@perawallet/wallet-core-shared'
 /**
  * Parse Algorand URIs (algorand://) according to ARC-90
  * Reference: https://github.com/algorandfoundation/ARCs/blob/main/ARCs/arc-0090.md
- * 
+ *
  * Uses the custom ARC-90 parser implementation in arc90-parser.ts
  */
 export const parseAlgorandUri = (url: string): AnyParsedDeeplink | null => {
@@ -71,7 +71,7 @@ export const parseAlgorandUri = (url: string): AnyParsedDeeplink | null => {
                 amount: amount,
                 note: note,
                 xnote: xnote,
-                label: label
+                label: label,
             } as AssetTransferDeeplink
         }
 
@@ -84,7 +84,7 @@ export const parseAlgorandUri = (url: string): AnyParsedDeeplink | null => {
                 amount: amount,
                 note: note,
                 xnote: xnote,
-                label: label
+                label: label,
             } as AlgoTransferDeeplink
         }
 
@@ -93,7 +93,7 @@ export const parseAlgorandUri = (url: string): AnyParsedDeeplink | null => {
             type: DeeplinkType.ADDRESS_ACTIONS,
             sourceUrl: url,
             address,
-            label: label
+            label: label,
         } as AddressActionsDeeplink
     }
 
@@ -117,35 +117,37 @@ export const parseAlgorandUri = (url: string): AnyParsedDeeplink | null => {
             votekd: params.votekdkey,
             fee: params.fee,
             note: params.note,
-            xnote: params.xnote
+            xnote: params.xnote,
         } as KeyregDeeplink
     }
 
     if (parsed.type === 'assetquery') {
         const { assetId, network } = parsed
         // Redirect to Pera Explorer
-        const baseUrl = network === Networks.testnet
-            ? config.testnetExplorerUrl
-            : config.mainnetExplorerUrl
+        const baseUrl =
+            network === Networks.testnet
+                ? config.testnetExplorerUrl
+                : config.mainnetExplorerUrl
 
         return {
             type: DeeplinkType.DISCOVER_BROWSER,
             sourceUrl: url,
-            url: `${baseUrl}/asset/${assetId}/`
+            url: `${baseUrl}/asset/${assetId}/`,
         } as DiscoverBrowserDeeplink
     }
 
     if (parsed.type === 'appquery') {
         const { appId, network } = parsed
         // Redirect to Pera Explorer
-        const baseUrl = network === Networks.testnet
-            ? config.testnetExplorerUrl
-            : config.mainnetExplorerUrl
+        const baseUrl =
+            network === Networks.testnet
+                ? config.testnetExplorerUrl
+                : config.mainnetExplorerUrl
 
         return {
             type: DeeplinkType.DISCOVER_BROWSER,
             sourceUrl: url,
-            url: `${baseUrl}/application/${appId}/`
+            url: `${baseUrl}/application/${appId}/`,
         } as DiscoverBrowserDeeplink
     }
 

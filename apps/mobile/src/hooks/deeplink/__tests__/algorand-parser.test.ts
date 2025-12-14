@@ -14,7 +14,8 @@ import { describe, it, expect } from 'vitest'
 import { parseAlgorandUri } from '../algorand-parser'
 import { DeeplinkType } from '../types'
 
-const TEST_ADDRESS = '5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA'
+const TEST_ADDRESS =
+    '5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA'
 
 describe('ARC-90 Algorand Parser', () => {
     describe('Address Actions (Basic Scan)', () => {
@@ -28,7 +29,9 @@ describe('ARC-90 Algorand Parser', () => {
         })
 
         it('parses address with label', () => {
-            const result = parseAlgorandUri(`algorand://${TEST_ADDRESS}?label=My%20Address`)
+            const result = parseAlgorandUri(
+                `algorand://${TEST_ADDRESS}?label=My%20Address`,
+            )
             expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.ADDRESS_ACTIONS)
             if (result?.type === DeeplinkType.ADDRESS_ACTIONS) {
@@ -40,7 +43,9 @@ describe('ARC-90 Algorand Parser', () => {
 
     describe('ALGO Transfer', () => {
         it('parses ALGO transfer with amount', () => {
-            const result = parseAlgorandUri(`algorand://${TEST_ADDRESS}?amount=1000000`)
+            const result = parseAlgorandUri(
+                `algorand://${TEST_ADDRESS}?amount=1000000`,
+            )
             expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.ALGO_TRANSFER)
             if (result?.type === DeeplinkType.ALGO_TRANSFER) {
@@ -51,7 +56,7 @@ describe('ARC-90 Algorand Parser', () => {
 
         it('parses ALGO transfer with note and xnote', () => {
             const result = parseAlgorandUri(
-                `algorand://${TEST_ADDRESS}?amount=100&note=hello&xnote=secret`
+                `algorand://${TEST_ADDRESS}?amount=100&note=hello&xnote=secret`,
             )
             expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.ALGO_TRANSFER)
@@ -65,7 +70,7 @@ describe('ARC-90 Algorand Parser', () => {
     describe('Asset Transfer', () => {
         it('parses asset transfer with amount', () => {
             const result = parseAlgorandUri(
-                `algorand://${TEST_ADDRESS}?amount=100&asset=123456`
+                `algorand://${TEST_ADDRESS}?amount=100&asset=123456`,
             )
             expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.ASSET_TRANSFER)
@@ -78,7 +83,7 @@ describe('ARC-90 Algorand Parser', () => {
 
         it('parses asset transfer without amount (optional in ARC-90)', () => {
             const result = parseAlgorandUri(
-                `algorand://${TEST_ADDRESS}?asset=123456`
+                `algorand://${TEST_ADDRESS}?asset=123456`,
             )
             expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.ASSET_TRANSFER)
@@ -95,7 +100,7 @@ describe('ARC-90 Algorand Parser', () => {
             // as a 0 amount transfer of the asset.
             // Our parser explicitly detects this combination.
             const result = parseAlgorandUri(
-                `algorand://${TEST_ADDRESS}?amount=0&asset=123456`
+                `algorand://${TEST_ADDRESS}?amount=0&asset=123456`,
             )
             expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.ASSET_OPT_IN)
@@ -109,7 +114,7 @@ describe('ARC-90 Algorand Parser', () => {
     describe('Keyreg', () => {
         it('parses keyreg transaction', () => {
             const result = parseAlgorandUri(
-                `algorand://${TEST_ADDRESS}?type=keyreg&votekey=voteKey123&selkey=selKey123&votefst=1000&votelst=2000&votekdkey=100&fee=1000`
+                `algorand://${TEST_ADDRESS}?type=keyreg&votekey=voteKey123&selkey=selKey123&votefst=1000&votelst=2000&votekdkey=100&fee=1000`,
             )
             expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.KEYREG)
@@ -131,16 +136,22 @@ describe('ARC-90 Algorand Parser', () => {
             expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.DISCOVER_BROWSER)
             if (result?.type === DeeplinkType.DISCOVER_BROWSER) {
-                expect(result.url).toBe('https://explorer.perawallet.app/asset/123456/')
+                expect(result.url).toBe(
+                    'https://explorer.perawallet.app/asset/123456/',
+                )
             }
         })
 
         it('parses asset query with testnet to Discover Browser (Testnet Explorer)', () => {
-            const result = parseAlgorandUri('algorand://net:testnet/asset/123456')
+            const result = parseAlgorandUri(
+                'algorand://net:testnet/asset/123456',
+            )
             expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.DISCOVER_BROWSER)
             if (result?.type === DeeplinkType.DISCOVER_BROWSER) {
-                expect(result.url).toBe('https://testnet.explorer.perawallet.app/asset/123456/')
+                expect(result.url).toBe(
+                    'https://testnet.explorer.perawallet.app/asset/123456/',
+                )
             }
         })
     })
@@ -151,7 +162,9 @@ describe('ARC-90 Algorand Parser', () => {
             expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.DISCOVER_BROWSER)
             if (result?.type === DeeplinkType.DISCOVER_BROWSER) {
-                expect(result.url).toBe('https://explorer.perawallet.app/application/7890/')
+                expect(result.url).toBe(
+                    'https://explorer.perawallet.app/application/7890/',
+                )
             }
         })
 
@@ -160,7 +173,9 @@ describe('ARC-90 Algorand Parser', () => {
             expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.DISCOVER_BROWSER)
             if (result?.type === DeeplinkType.DISCOVER_BROWSER) {
-                expect(result.url).toBe('https://testnet.explorer.perawallet.app/application/7890/')
+                expect(result.url).toBe(
+                    'https://testnet.explorer.perawallet.app/application/7890/',
+                )
             }
         })
 
@@ -185,7 +200,9 @@ describe('ARC-90 Algorand Parser', () => {
 
         it('returns null for invalid keyreg address', () => {
             // Coverage for algorand-parser.ts lines 104-105
-            expect(parseAlgorandUri('algorand://INVALID_ADDRESS?type=keyreg')).toBeNull()
+            expect(
+                parseAlgorandUri('algorand://INVALID_ADDRESS?type=keyreg'),
+            ).toBeNull()
         })
 
         it('returns null for unknown type', () => {
@@ -212,7 +229,9 @@ describe('ARC-90 Algorand Parser', () => {
             expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.DISCOVER_BROWSER)
             if (result?.type === DeeplinkType.DISCOVER_BROWSER) {
-                expect(result.url).toBe('https://explorer.perawallet.app/asset/123/')
+                expect(result.url).toBe(
+                    'https://explorer.perawallet.app/asset/123/',
+                )
             }
         })
 
@@ -237,7 +256,7 @@ describe('ARC-90 Algorand Parser', () => {
 
         it('ignores unknown parameters', () => {
             const result = parseAlgorandUri(
-                `algorand://${TEST_ADDRESS}?unknown=param&amount=100`
+                `algorand://${TEST_ADDRESS}?unknown=param&amount=100`,
             )
             expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.ALGO_TRANSFER)

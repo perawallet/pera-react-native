@@ -10,9 +10,7 @@
  limitations under the License
  */
 
-import {
-    AnyParsedDeeplink,
-} from './types'
+import { AnyParsedDeeplink } from './types'
 import { parsePerawalletAppUri } from './new-parser'
 import { parsePerawalletUri } from './old-parser'
 import { normalizeUrl } from './utils'
@@ -26,15 +24,17 @@ import { parseCoinbaseFormat } from './coinbase-parser'
 const parseUniversalLink = (url: string): AnyParsedDeeplink | null => {
     const normalizedUrl = normalizeUrl(url)
 
-    if (!normalizedUrl.startsWith('https://perawallet.app/')) {
-        return null
-    }
-
     if (normalizedUrl.includes('/qr/perawallet/app/')) {
-        const convertedUrl = url.replace('https://perawallet.app/qr/perawallet/app/', 'perawallet://app/')
+        const convertedUrl = url.replace(
+            'https://perawallet.app/qr/perawallet/app/',
+            'perawallet://app/',
+        )
         return parsePerawalletAppUri(convertedUrl)
     } else if (normalizedUrl.includes('/qr/perawallet/')) {
-        const convertedUrl = url.replace('https://perawallet.app/qr/perawallet/', 'perawallet://')
+        const convertedUrl = url.replace(
+            'https://perawallet.app/qr/perawallet/',
+            'perawallet://',
+        )
         return parsePerawalletUri(convertedUrl)
     }
 
@@ -49,7 +49,10 @@ export const parseDeeplink = (url: string): AnyParsedDeeplink | null => {
 
     const normalizedUrl = normalizeUrl(url)
 
-    if (normalizedUrl.startsWith('wc:') || normalizedUrl.startsWith('perawallet-wc:')) {
+    if (
+        normalizedUrl.startsWith('wc:') ||
+        normalizedUrl.startsWith('perawallet-wc:')
+    ) {
         return parseWalletConnectUri(url)
     }
 

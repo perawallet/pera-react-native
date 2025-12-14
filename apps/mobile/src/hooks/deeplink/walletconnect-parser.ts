@@ -10,21 +10,22 @@
  limitations under the License
  */
 
-import {
-    DeeplinkType,
-    WalletConnectDeeplink,
-} from './types'
+import { DeeplinkType, WalletConnectDeeplink } from './types'
 import { normalizeUrl } from './utils'
-
 
 /**
  * Parse WalletConnect URIs: wc:// or perawallet-wc://
  * These are NOT parsed, just wrapped and normalized for the WalletConnect library to handle
  */
-export const parseWalletConnectUri = (url: string): WalletConnectDeeplink | null => {
+export const parseWalletConnectUri = (
+    url: string,
+): WalletConnectDeeplink | null => {
     const normalizedUrl = normalizeUrl(url)
 
-    if (!normalizedUrl.startsWith('wc:') && !normalizedUrl.startsWith('perawallet-wc:')) {
+    if (
+        !normalizedUrl.startsWith('wc:') &&
+        !normalizedUrl.startsWith('perawallet-wc:')
+    ) {
         return null
     }
 

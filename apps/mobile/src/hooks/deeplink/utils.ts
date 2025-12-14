@@ -1,3 +1,14 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
 
 /**
  * Parse query parameters from a URL
@@ -6,7 +17,9 @@ export const parseQueryParams = (url: string): Record<string, string> => {
     const params: Record<string, string> = {}
 
     try {
-        const urlObj = new URL(url.replace(/^([a-z-]+):\/\/(?!\/)/, '$1://placeholder/'))
+        const urlObj = new URL(
+            url.replace(/^([a-z-]+):\/\/(?!\/)/, '$1://placeholder/'),
+        )
         urlObj.searchParams.forEach((value, key) => {
             params[key] = decodeURIComponent(value)
         })
@@ -16,7 +29,7 @@ export const parseQueryParams = (url: string): Record<string, string> => {
         if (queryStart === -1) return params
 
         const queryString = url.slice(queryStart + 1)
-        queryString.split('&').forEach((pair) => {
+        queryString.split('&').forEach(pair => {
             const [key, value] = pair.split('=')
             if (key) {
                 params[key] = value ? decodeURIComponent(value) : ''
@@ -61,7 +74,9 @@ export const extractPath = (url: string): string => {
         if (appIndex !== -1) {
             const pathStart = appIndex + 5 // length of '/app/'
             const queryIndex = url.indexOf('?', pathStart)
-            return queryIndex !== -1 ? url.slice(pathStart, queryIndex) : url.slice(pathStart)
+            return queryIndex !== -1
+                ? url.slice(pathStart, queryIndex)
+                : url.slice(pathStart)
         }
         return ''
     } catch {

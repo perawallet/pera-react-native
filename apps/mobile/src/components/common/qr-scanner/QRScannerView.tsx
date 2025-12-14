@@ -48,7 +48,9 @@ const QRScannerView = (props: QRScannerViewProps) => {
             setScanningEnabled(false)
             if (url) {
                 if (isValidDeepLink(url, 'qr')) {
-                    handleDeepLink(url, true, 'qr', () => setScanningEnabled(true))
+                    handleDeepLink(url, true, 'qr', () =>
+                        setScanningEnabled(true),
+                    )
                 }
             }
         },

@@ -37,7 +37,12 @@ import {
     InternalBrowserDeeplink,
     HomeDeeplink,
 } from './types'
-import { decodeBase64Param, extractPath, normalizeUrl, parseQueryParams } from './utils'
+import {
+    decodeBase64Param,
+    extractPath,
+    normalizeUrl,
+    parseQueryParams,
+} from './utils'
 
 /**
  * Parse Perawallet new-style URIs: perawallet://app/path?params
@@ -45,7 +50,10 @@ import { decodeBase64Param, extractPath, normalizeUrl, parseQueryParams } from '
 export function parsePerawalletAppUri(url: string): AnyParsedDeeplink | null {
     const normalizedUrl = normalizeUrl(url)
 
-    if (!normalizedUrl.includes('/app/') && !normalizedUrl.startsWith('perawallet://app')) {
+    if (
+        !normalizedUrl.includes('/app/') &&
+        !normalizedUrl.startsWith('perawallet://app')
+    ) {
         return null
     }
 

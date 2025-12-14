@@ -43,9 +43,19 @@ export const parsePerawalletUri = (url: string): AnyParsedDeeplink | null => {
 
     const schemeEnd = normalizedUrl.indexOf('://') + 3
     const queryStart = normalizedUrl.indexOf('?')
-    const pathPart = queryStart !== -1
-        ? normalizedUrl.slice(schemeEnd, queryStart)
-        : normalizedUrl.slice(schemeEnd)
+    const pathPart =
+        queryStart !== -1
+            ? normalizedUrl.slice(schemeEnd, queryStart)
+            : normalizedUrl.slice(schemeEnd)
+
+    if (pathPart === 'asset/opt-in' || pathPart.includes('asset/opt-in')) {
+        return {
+            type: DeeplinkType.ASSET_OPT_IN,
+            sourceUrl: url,
+            assetId: params.asset,
+            address: params.account,
+        } as AssetOptInDeeplink
+    }
 
     if (pathPart === 'discover' || normalizedUrl.includes('discover')) {
         return {
@@ -88,13 +98,6 @@ export const parsePerawalletUri = (url: string): AnyParsedDeeplink | null => {
         } as DiscoverBrowserDeeplink
     }
 
-    if (!pathPart || !isValidAlgorandAddress(pathPart)) {
-        return {
-            type: DeeplinkType.HOME,
-            sourceUrl: url,
-        } as HomeDeeplink
-    }
-
     const address = pathPart
 
     if (params.type === 'asset/opt-in' && params.asset) {
@@ -102,7 +105,7 @@ export const parsePerawalletUri = (url: string): AnyParsedDeeplink | null => {
             type: DeeplinkType.ASSET_OPT_IN,
             sourceUrl: url,
             assetId: params.asset,
-            address,
+            address: params.account || address,
         } as AssetOptInDeeplink
     }
 
@@ -110,7 +113,7 @@ export const parsePerawalletUri = (url: string): AnyParsedDeeplink | null => {
         return {
             type: DeeplinkType.ASSET_TRANSACTIONS,
             sourceUrl: url,
-            address,
+            address: params.account || address,
             assetId: params.asset,
         } as AssetTransactionsDeeplink
     }
@@ -119,8 +122,15 @@ export const parsePerawalletUri = (url: string): AnyParsedDeeplink | null => {
         return {
             type: DeeplinkType.ASSET_INBOX,
             sourceUrl: url,
-            address,
+            address: params.account || address,
         } as AssetInboxDeeplink
+    }
+
+    if (!pathPart || !isValidAlgorandAddress(pathPart)) {
+        return {
+            type: DeeplinkType.HOME,
+            sourceUrl: url,
+        } as HomeDeeplink
     }
 
     if (params.type === 'keyreg') {
