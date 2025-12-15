@@ -6,25 +6,6 @@ This review analyzes the Pera React Native monorepo architecture, codebase struc
 
 ---
 
-## 1. Project Structure & Organization
-
-### ✅ Strengths
-- **Modern monorepo setup** using pnpm workspaces and Turborepo for efficient dependency management and build orchestration
-- **Clear separation of concerns** with 13 dedicated workspace packages in `packages/` for business logic (`accounts`, `assets`, `blockchain`, `config`, `contacts`, `currencies`, `platform-integration`, `polling`, `settings`, `shared`, `swaps`, `xhdwallet`, `devtools`)
-- **Headless architecture** keeping cross-platform logic in workspace packages separate from React Native UI
-
-### ⚠️ Areas for Improvement
-
-#### 1.3 Inconsistent Component Organization
-- **Issue**: Mix of feature-based (`components/send-funds/`, `components/swaps/`) and type-based organization (`components/common/`, `components/accounts/`)
-- **Impact**: Unclear where new components should live
-- **Recommendation**: 
-  - Keep `common/` for truly shared UI primitives
-  - Move feature-specific components to corresponding modules
-  - Document component placement guidelines
-
----
-
 ## 2. Code Quality & Development Patterns
 
 ### ✅ Strengths
@@ -44,14 +25,6 @@ This review analyzes the Pera React Native monorepo architecture, codebase struc
   - Create GitHub issues for all TODOs with context
   - Prioritize critical TODOs (bootstrap initialization, test setup)
   - Remove or complete low-priority TODOs
-
-#### 2.2 Large File Sizes
-- **Issue**: ESLint rule `max-lines: 300` exists but many files exceed this
-- **Example**: `hooks/deeplink.ts` is 381 lines with complex nested logic
-- **Recommendation**: 
-  - Extract the already-separated parser modules from `deeplink.ts` into their own hook files
-  - Break down large screen components into smaller sub-components
-  - Consider raising limit to 400 or enforce more strictly
 
 #### 2.3 Inconsistent State Management Patterns
 - **Issue**: Mix of `useState` in components, Zustand stores in packages, and React Query caching

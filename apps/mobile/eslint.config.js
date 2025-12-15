@@ -76,4 +76,11 @@ export default [
       react: { version: 'detect' },
     },
   },
+  // Override for test files - allow unlimited lines
+  {
+    files: ['**/*.test.{ts,tsx,js,jsx}', '**/*.spec.{ts,tsx,js,jsx}', '**/__tests__/**/*.{ts,tsx,js,jsx}'],
+    rules: {
+      'max-lines': 'off',
+    },
+  },
 ];

@@ -17,7 +17,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import useToast from './toast'
 import { debugLog } from '@perawallet/wallet-core-shared'
 import { parseDeeplink } from './deeplink/parser'
-import { AnyParsedDeeplink, DeeplinkType } from './deeplink/types'
+import { DeeplinkType } from './deeplink/types'
 import { useSigningRequest } from '@perawallet/wallet-core-blockchain'
 import {
     useSelectedAccount,
@@ -37,10 +37,6 @@ export const useDeepLink = () => {
     const selectedAccount = useSelectedAccount()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { pushWebView } = useWebView()
-
-    const parseDeeplinkData = (url: string): AnyParsedDeeplink | null => {
-        return parseDeeplink(url)
-    }
 
     const isValidDeepLink = (url: string, source: LinkSource): boolean => {
         debugLog('Validating deeplink', url, source)
@@ -334,7 +330,7 @@ export const useDeepLink = () => {
     return {
         isValidDeepLink,
         handleDeepLink,
-        parseDeeplinkData,
+        parseDeeplink,
     }
 }
 

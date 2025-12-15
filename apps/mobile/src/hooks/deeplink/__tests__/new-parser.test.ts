@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-/* eslint-disable max-lines */
-
 import { describe, it, expect } from 'vitest'
 import { parseDeeplink } from '../parser'
 import { parsePerawalletAppUri } from '../new-parser'
