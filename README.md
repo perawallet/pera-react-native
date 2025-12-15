@@ -89,11 +89,18 @@ pnpm lint:copyright # add/update necessary copyright headers to any files that a
 pnpm format         # format files
 ```
 
+## Documentation
+
+- [Architecture & State Management](docs/ARCHITECTURE.md)
+- [Testing Guide](docs/TESTING.md)
+- [Style Guide](docs/STYLE_GUIDE.md)
+- [Security Best Practices](docs/SECURITY.md)
+
 ## Development patterns
 
-- Do not call backends directly in the app; use generated React Query hooks from one of the wallet-core packages. Ideally even wrap these in further hooks that perform as services doing state updates, etc.
-- Do not expose the zustand store directly to the app. Use hooks/services to update/expose state.
-- Keep cross-platform logic in wallet-core; keep native/platform glue and UI in the app.
-- Follow shared lint/format; run CI-equivalent locally via the commands above.
+- **Logic vs UI**: Keep business logic in `packages/*` and UI in `apps/mobile`.
+- **State**: Use hooks/services to expose state; do not access stores directly in UI.
+- **Backend**: Use generated React Query hooks; avoid direct API calls.
+- **Platform**: Keep cross-platform logic in `wallet-core`; native glue in app.
 
-For app-specific notes, see [`apps/mobile/README.md`](apps/mobile/README.md) and for library details see [`packages/**`](packages/).
+For app-specific notes, see [`apps/mobile/README.md`](apps/mobile/README.md).

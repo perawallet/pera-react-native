@@ -1,90 +1,79 @@
-# Pera Mobile
+# Pera Mobile App
 
-Minimal RN quickstart for this monorepo.
+This is the React Native application for Pera Wallet. It serves as the UI layer, consuming business logic from the workspace `packages/`.
 
 ## Prerequisites
 
-- Node.js >= 20 and pnpm 10+
-- iOS: Xcode 15+, Ruby bundler + CocoaPods (for mobile app)
-- Android: Android Studio + SDKs, JDK 17 (for mobile app)
+- **Node.js**: >= 20
+- **Package Manager**: pnpm 10+
+- **iOS**: Mac with Xcode 15+, Ruby (Bundler), and CocoaPods.
+- **Android**: Android Studio, Android SDKs, JDK 17.
 
-Note: at time of writing there is a build issue with React Native Firebase on iOS causing errors. Remains unresolved, but removing and disabling RNFirebase on the mobile app will fix the build
+## Setup
 
-## Install
+1.  **Install Dependencies** (Root):
+
+    ```sh
+    pnpm install
+    ```
+
+2.  **Install iOS Pods**:
+    ```sh
+    cd ios && bundle install && bundle exec pod install
+    ```
+
+## Running the App
+
+Start the Metro Bundler:
 
 ```sh
-pnpm install
-# iOS first time / after native deps change
-(cd apps/mobile/ios && bundle install && bundle exec pod install)
+pnpm start
 ```
 
-## Run
+Run on Device/Simulator:
 
 ```sh
 # iOS
-pnpm --filter mobile ios
+pnpm ios
+
 # Android
-pnpm --filter mobile android
+pnpm android
 ```
 
-From the app folder:
+## Project Structure
 
-```sh
-pnpm -C apps/mobile start|ios|android
-```
+- `src/App.tsx`: Application entry point.
+- `src/components`: Reusable UI components (Buttons, Inputs, Cards).
+- `src/modules`: Domain specific modules (e.g., `account`, `assets`, `contacts`, `settings`).  Each modules can contain screens, components, hooks and more.  A `Screen` is considered to be a navigable component.
+- `src/routes`: React Navigation configuration.
+- `src/hooks`: Custom React hooks (e.g., for navigation, animations).
+    - _Note: Business logic hooks are imported from `packages/_`.\*
+- `src/theme`: Theme definitions (Colors, Typography).
+- `src/providers`: Global React Context providers (QueryClient, Theme, etc.).
 
-## Code structure
+## Configuration
 
-- App entry: [apps/mobile/src/App.tsx](apps/mobile/src/App.tsx)
-- Shared logic via Core package: [packages/core/src/index.ts](packages/core/src/index.ts)
-- src/screens - top level navigation destinations
-- src/components - any UI elements/widgets/shared components. Note the RootComponent here which does some heavy lifting.
-- src/layouts - top level layout components
-- src/routes - the react navigation route structure
-- src/platform - the react native implementation of the core package platform interfaces
-- src/theme - the react native elements theme structure (and theme.d.ts for quality of life extensions)
+### Firebase
 
-Note that various core modules are resolved to react query specific implementations in babel/metro config
+This app uses React Native Firebase. You must provide your own configuration files for the app to build/run correctly if you are not using the repository defaults:
 
-React Query is provided by [QueryProvider()](apps/mobile/src/providers/QueryProvider.tsx:25) using a shared [queryClient](apps/mobile/src/providers/QueryProvider.tsx:9).
+- iOS: `ios/GoogleService-Info.plist`
+- Android: `android/app/google-services.json`
 
-## Path aliases
+> **Note**: If you encounter build issues with Firebase on iOS, ensure your CocoaPods repo is up to date and you have a valid `GoogleService-Info.plist`.
 
-Path aliases are configured and working across TypeScript, Babel, Metro, and Vitest. Keep configs in sync:
+## Development Notes
 
-- [babel.config.js](apps/mobile/babel.config.js)
-- [metro.config.js](apps/mobile/metro.config.js)
-- [tsconfig.json](apps/mobile/tsconfig.json)
-- [vitest.config.ts](apps/mobile/vitest.config.ts)
+- **Path Aliases**: We use aliases like `@components/`, `@theme/`, etc. These are configured in `babel.config.js` and `tsconfig.json`.
+- **State**: The app uses `TanStack Query` for server state and `Zustand` for client state (imported from packages).
+- **Styling**: We use `react-native-elements` and `StyleSheet.create`.
 
-Available aliases:
+## Troubleshooting
 
-- `@components/*` → `src/components/*`
-- `@providers/*` → `src/providers/*`
-- `@routes/*` → `src/routes/*`
-- `@hooks/*` → `src/hooks/*`
-- `@constants/*` → `src/constants/*`
-- `@modules/*` → `src/modules/*`
-- `@assets/*` → `assets/*`
-- `@theme/*` → `src/theme/*`
+### "Phase Script Execution Failed" (iOS)
 
-## Styling
+This often happens if Node is not found in the Xcode build phase. Ensure you opened Xcode via terminal or that your nvm/node setup is correct.
 
-We use the React Native Elements package for basic widgets and rely on the themed version for theming. Use makeStyles to generate stylesheets for fast access.
+### Metro Connection Issues
 
-## Firebase
-
-The project includes:
-
-- [ios/GoogleService-Info.plist](apps/mobile/ios/GoogleService-Info.plist)
-- [android/app/google-services.json](apps/mobile/android/app/google-services.json)
-
-Replace these for your environment if needed.
-
-## Scripts
-
-```sh
-pnpm --filter mobile lint
-pnpm --filter mobile test
-pnpm --filter mobile test:watch
-```
+Run `adb reverse tcp:8081 tcp:8081` for Android if the emulator cannot connect to the bundler.
