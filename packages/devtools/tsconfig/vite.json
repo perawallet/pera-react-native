@@ -3,11 +3,12 @@
     "compilerOptions": {
         "target": "ESNext",
         "useDefineForClassFields": true,
-        "module": "ESNext",
         "lib": [
             "ESNext",
             "DOM"
         ],
+        "jsx": "react-jsx",
+        "module": "ESNext",
         "sourceMap": true,
         "resolveJsonModule": true,
         "noEmit": true,

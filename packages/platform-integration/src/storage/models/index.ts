@@ -16,6 +16,7 @@ export interface KeyValueStorageService {
     removeItem(key: string): void
     setJSON<T>(key: string, value: T): void
     getJSON<T>(key: string): T | null
+    getAllKeys(): string[]
 }
 
 export interface SecureStorageService {

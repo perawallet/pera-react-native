@@ -35,6 +35,10 @@ export class MemoryKeyValueStorage implements KeyValueStorageService {
         const v = this.getItem(key)
         return v ? (JSON.parse(v) as T) : null
     }
+
+    getAllKeys(): string[] {
+        return Array.from(this.store.keys())
+    }
 }
 
 export const createMemoryKV = () => new MemoryKeyValueStorage()
