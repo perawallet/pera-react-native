@@ -456,6 +456,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 2.1.9(vitest@2.1.9(@types/node@24.10.0)(happy-dom@19.0.2)(jsdom@27.1.0)(lightningcss@1.30.1)(msw@2.12.1(@types/node@24.10.0)(typescript@5.9.3))(terser@5.44.1))
+      '@welldone-software/why-did-you-render':
+        specifier: ^10.0.1
+        version: 10.0.1(react@19.1.0)
       babel-plugin-module-resolver:
         specifier: ^5.0.2
         version: 5.0.2
@@ -4129,6 +4132,11 @@ packages:
 
   '@vue/shared@3.5.24':
     resolution: {integrity: sha512-9cwHL2EsJBdi8NY22pngYYWzkTDhld6fAD6jlaeloNGciNSJL6bLpbxVgXl96X00Jtc6YWQv96YA/0sxex/k1A==}
+
+  '@welldone-software/why-did-you-render@10.0.1':
+    resolution: {integrity: sha512-tMgGkt30iVYeLMUKExNmtm019QgyjLtA7lwB0QAizYNEuihlCG2eoAWBBaz/bDeI7LeqAJ9msC6hY3vX+JB97g==}
+    peerDependencies:
+      react: ^19
 
   '@xmldom/xmldom@0.8.11':
     resolution: {integrity: sha512-cQzWCtO6C8TQiYl1ruKNn2U6Ao4o4WBBcbL61yJl84x+j5sOWWFU9X7DpND8XZG3daDppSsigMdfAIl2upQBRw==}
@@ -12563,6 +12571,11 @@ snapshots:
       typescript: 5.9.3
 
   '@vue/shared@3.5.24': {}
+
+  '@welldone-software/why-did-you-render@10.0.1(react@19.1.0)':
+    dependencies:
+      lodash: 4.17.21
+      react: 19.1.0
 
   '@xmldom/xmldom@0.8.11': {}
 

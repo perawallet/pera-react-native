@@ -58,9 +58,9 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
     }
 
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
-    const toggleChartVisible = () => {
+    const toggleChartVisible = useCallback(() => {
         setPreference(UserPreferences.chartVisible, !chartVisible)
-    }
+    }, [chartVisible, setPreference])
 
     const chartSelectionChanged = useCallback(
         (selected: AccountBalanceHistoryItem | null) => {

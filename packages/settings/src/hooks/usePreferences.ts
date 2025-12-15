@@ -14,7 +14,8 @@ import { useCallback } from 'react'
 import { useSettingsStore } from '../store'
 
 export const usePreferences = () => {
-    const getPreference = useSettingsStore(state => state.getPreference)
+    const preferences = useSettingsStore(state => state.preferences)
+    const getPreference = useCallback(useSettingsStore(state => state.getPreference), [preferences])
     const setPreference = useSettingsStore(state => state.setPreference)
     const deletePreference = useSettingsStore(state => state.deletePreference)
 
