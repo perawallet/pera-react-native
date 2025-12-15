@@ -73,7 +73,7 @@ export const useBootstrapper = () => {
         const notificationResults =
             await platformServices.notification.initializeNotifications()
 
-        debugLog('Bootstrapped')
+        logger.debug('Bootstrapped')
 
         return {
             platformServices,
