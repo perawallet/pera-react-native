@@ -16,6 +16,7 @@ import PWIcon from '@components/icons/PWIcon'
 
 import { useStyles } from './styles'
 import { useState } from 'react'
+import { useModalState } from '@hooks/modal-state'
 import PWView from '@components/view/PWView'
 import NotificationsIcon from '@modules/notifications/components/notifications-icon/NotificationsIcon'
 import AccountSelection from '../components/account-selection/AccountSelection'
@@ -40,21 +41,13 @@ import { useLanguage } from '@hooks/language'
 const AccountScreen = () => {
     const styles = useStyles()
     const account = useSelectedAccount()
-    const [scannerVisible, setScannerVisible] = useState<boolean>(false)
-    const [drawerOpen, setDrawerOpen] = useState<boolean>(false)
+    const scanner = useModalState()
+    const drawer = useModalState()
     const [tabIndex, setTabIndex] = useState(0)
     const { t } = useLanguage()
 
-    const closeQRScanner = () => {
-        setScannerVisible(false)
-    }
-
-    const openQRScanner = () => {
-        setScannerVisible(true)
-    }
-
     const toggleAccountSelectorVisible = () => {
-        setDrawerOpen(true)
+        drawer.open()
     }
 
     if (!account) {
@@ -68,15 +61,15 @@ const AccountScreen = () => {
 
     return (
         <Drawer
-            open={drawerOpen}
-            onOpen={() => setDrawerOpen(true)}
-            onClose={() => setDrawerOpen(false)}
+            open={drawer.isOpen}
+            onOpen={() => drawer.open()}
+            onClose={() => drawer.close()}
             drawerType='front'
             swipeEnabled
             drawerStyle={styles.drawer}
             renderDrawerContent={() => (
                 <AccountMenu
-                    onSelected={() => setDrawerOpen(false)}
+                    onSelected={() => drawer.close()}
                     showInbox
                 />
             )}
@@ -88,7 +81,7 @@ const AccountScreen = () => {
                     <AccountSelection onPress={toggleAccountSelectorVisible} />
                 </PWView>
                 <PWView style={styles.iconBarSection}>
-                    <PWTouchableOpacity onPress={openQRScanner}>
+                    <PWTouchableOpacity onPress={scanner.open}>
                         <PWIcon name='camera' />
                     </PWTouchableOpacity>
                     <NotificationsIcon />
@@ -127,12 +120,12 @@ const AccountScreen = () => {
                 </TabView.Item>
             </TabView>
             <QRScannerView
-                visible={scannerVisible}
-                onSuccess={closeQRScanner}
+                visible={scanner.isOpen}
+                onSuccess={scanner.close}
                 animationType='slide'
             >
                 <PWTouchableOpacity
-                    onPress={closeQRScanner}
+                    onPress={scanner.close}
                     style={styles.scannerClose}
                 >
                     <PWIcon

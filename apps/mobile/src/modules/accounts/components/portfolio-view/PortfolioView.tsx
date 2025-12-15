@@ -18,8 +18,9 @@ import PWView, { PWViewProps } from '@components/view/PWView'
 import CurrencyDisplay from '@components/currency-display/CurrencyDisplay'
 import WealthChart from '@components/wealth-chart/WealthChart'
 import PWTouchableOpacity from '@components/touchable-opacity/PWTouchableOpacity'
-import { formatDatetime, HistoryPeriod } from '@perawallet/wallet-core-shared'
-import { useCallback, useState } from 'react'
+import { formatDatetime } from '@perawallet/wallet-core-shared'
+import { useCallback } from 'react'
+import { useChartInteraction } from '@hooks/chart-interaction'
 import PWIcon from '@components/icons/PWIcon'
 import WealthTrend from '@components/wealth-trend/WealthTrend'
 import ChartPeriodSelection from '@components/chart-period-selection/ChartPeriodSelection'
@@ -46,9 +47,8 @@ const PortfolioView = (props: PortfolioViewProps) => {
     const accounts = useAllAccounts()
     const { portfolioAlgoValue, portfolioFiatValue, isPending } =
         useAccountBalancesQuery(accounts)
-    const [period, setPeriod] = useState<HistoryPeriod>('one-week')
-    const [chartData, setChartData] =
-        useState<AccountBalanceHistoryItem | null>(null)
+    const { period, setPeriod, selectedPoint, setSelectedPoint } =
+        useChartInteraction<AccountBalanceHistoryItem>()
     const { getPreference, setPreference } = usePreferences()
 
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
@@ -58,10 +58,10 @@ const PortfolioView = (props: PortfolioViewProps) => {
 
     const chartSelectionChanged = useCallback(
         (selected: AccountBalanceHistoryItem | null) => {
-            setChartData(selected)
+            setSelectedPoint(selected)
             props.onDataSelected?.(selected)
         },
-        [setChartData, props],
+        [setSelectedPoint, props],
     )
 
     return (
@@ -83,7 +83,7 @@ const PortfolioView = (props: PortfolioViewProps) => {
             <PWView style={styles.valueBar}>
                 <CurrencyDisplay
                     h1
-                    value={chartData ? chartData.algoValue : portfolioAlgoValue}
+                    value={selectedPoint ? selectedPoint.algoValue : portfolioAlgoValue}
                     currency='ALGO'
                     precision={2}
                     h1Style={styles.primaryCurrency}
@@ -100,19 +100,19 @@ const PortfolioView = (props: PortfolioViewProps) => {
                 <CurrencyDisplay
                     h4
                     h4Style={styles.valueTitle}
-                    value={chartData ? chartData.fiatValue : portfolioFiatValue}
+                    value={selectedPoint ? selectedPoint.fiatValue : portfolioFiatValue}
                     currency={preferredCurrency}
                     prefix='≈ '
                     precision={2}
                     skeleton={isPending}
                 />
-                {!chartData && <WealthTrend period={period} />}
-                {chartData && (
+                {!selectedPoint && <WealthTrend period={period} />}
+                {selectedPoint && (
                     <Text
                         h4
                         h4Style={styles.dateDisplay}
                     >
-                        {formatDatetime(chartData.datetime)}
+                        {formatDatetime(selectedPoint.datetime)}
                     </Text>
                 )}
             </PWView>

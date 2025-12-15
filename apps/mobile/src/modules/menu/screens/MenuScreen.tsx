@@ -21,13 +21,13 @@ import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import PWTouchableOpacity from '@components/touchable-opacity/PWTouchableOpacity'
 import QRScannerView from '@components/qr-scanner/QRScannerView'
-import { useState } from 'react'
+import { useModalState } from '@hooks/modal-state'
 import { useLanguage } from '@hooks/language'
 
 const MenuScreen = () => {
     const styles = useStyles()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-    const [scannerVisible, setScannerVisible] = useState<boolean>(false)
+    const scanner = useModalState()
     const { t } = useLanguage()
 
     const goToSettings = () => {
@@ -42,14 +42,6 @@ const MenuScreen = () => {
         navigation.push('Staking')
     }
 
-    const closeQRScanner = () => {
-        setScannerVisible(false)
-    }
-
-    const openQRScanner = () => {
-        setScannerVisible(true)
-    }
-
     return (
         <PWView style={styles.container}>
             <PWView style={styles.iconBar}>
@@ -61,7 +53,7 @@ const MenuScreen = () => {
                     {t('menu.title')}
                 </Text>
                 <PWView style={styles.iconBarColumn}>
-                    <PWTouchableOpacity onPress={openQRScanner}>
+                    <PWTouchableOpacity onPress={scanner.open}>
                         <PWIcon
                             name='camera'
                             variant='primary'
@@ -115,15 +107,14 @@ const MenuScreen = () => {
                 />
             </PWView>
             <QRScannerView
-                visible={scannerVisible}
-                onSuccess={closeQRScanner}
+                visible={scanner.isOpen}
+                onSuccess={scanner.close}
                 animationType='slide'
             >
                 <PWTouchableOpacity
-                    onPress={closeQRScanner}
+                    onPress={scanner.close}
                     style={styles.scannerClose}
-                >
-                    <PWIcon
+                >\n                    <PWIcon
                         name='cross'
                         variant='white'
                     />

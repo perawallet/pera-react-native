@@ -10,11 +10,12 @@
  limitations under the License
  */
 
-import { formatDatetime, HistoryPeriod } from '@perawallet/wallet-core-shared'
+import { formatDatetime } from '@perawallet/wallet-core-shared'
 import PWView from '@components/view/PWView'
 import AssetWealthChart from './asset-wealth-chart/AssetWealthChart'
 import ChartPeriodSelection from '@components/chart-period-selection/ChartPeriodSelection'
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
+import { useChartInteraction } from '@hooks/chart-interaction'
 import AssetActionButtons from './asset-action-buttons/AssetActionButtons'
 import AssetTransactionList from './asset-transaction-list/AssetTransactionList'
 
@@ -43,9 +44,8 @@ type AssetHoldingsProps = {
 const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
     const styles = useStyles()
     const { preferredCurrency } = useCurrency()
-    const [period, setPeriod] = useState<HistoryPeriod>('one-week')
-    const [selectedPoint, setSelectedPoint] =
-        useState<AccountBalanceHistoryItem | null>(null)
+    const { period, setPeriod, selectedPoint, setSelectedPoint } =
+        useChartInteraction<AccountBalanceHistoryItem>()
 
     const { getPreference, setPreference } = usePreferences()
     const chartVisible = !!getPreference(UserPreferences.chartVisible)

@@ -11,13 +11,14 @@
  */
 
 import { ScrollView } from 'react-native'
-import { formatDatetime, HistoryPeriod } from '@perawallet/wallet-core-shared'
+import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import AssetTitle from '../asset-title/AssetTitle'
 import RoundButton from '@components/round-button/RoundButton'
 import CurrencyDisplay from '@components/currency-display/CurrencyDisplay'
 import AssetPriceChart from './asset-price-chart/AssetPriceChart'
-import { useState, useMemo, useCallback } from 'react'
+import { useMemo, useCallback } from 'react'
+import { useChartInteraction } from '@hooks/chart-interaction'
 import Decimal from 'decimal.js'
 import { Skeleton, Text } from '@rneui/themed'
 import AssetMarketStats from './asset-market-stats/AssetMarketStats'
@@ -64,7 +65,8 @@ const Loading = () => {
 const AssetMarkets = ({ asset }: AssetMarketsProps) => {
     const styles = useStyles()
     const { preferredCurrency } = useCurrency()
-    const [period, setPeriod] = useState<HistoryPeriod>('one-week')
+    const { period, setPeriod, selectedPoint, setSelectedPoint } =
+        useChartInteraction<AssetPriceHistoryItem>()
     const { showToast } = useToast()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { getPreference, setPreference } = usePreferences()
@@ -94,10 +96,6 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
         })
     }, [showToast, t])
 
-    const [selectedPoint, setSelectedPoint] = useState<
-        AssetPriceHistoryItem | undefined
-    >(undefined)
-
     const currentPrice = useMemo(() => {
         if (selectedPoint) {
             return new Decimal(selectedPoint.fiatPrice)
@@ -113,7 +111,7 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
     }
 
     const handleDataPointSelection = (item: AssetPriceHistoryItem | null) => {
-        setSelectedPoint(item ?? undefined)
+        setSelectedPoint(item)
     }
 
     if (isError) {

@@ -11,7 +11,7 @@
  */
 
 import PWView from '@components/view/PWView'
-import { formatDatetime, HistoryPeriod } from '@perawallet/wallet-core-shared'
+import { formatDatetime } from '@perawallet/wallet-core-shared'
 import CurrencyDisplay from '@components/currency-display/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import WealthChart from '@components/wealth-chart/WealthChart'
@@ -19,6 +19,7 @@ import ButtonPanel from '../button-panel/ButtonPanel'
 import AccountAssetList from '../asset-list/AccountAssetList'
 import { Text } from '@rneui/themed'
 import { useCallback, useState } from 'react'
+import { useChartInteraction } from '@hooks/chart-interaction'
 import { useStyles } from './styles'
 import PWTouchableOpacity from '@components/touchable-opacity/PWTouchableOpacity'
 import WealthTrend from '@components/wealth-trend/WealthTrend'
@@ -47,9 +48,8 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
         useAccountBalancesQuery(account ? [account] : [])
     const { getPreference, setPreference } = usePreferences()
 
-    const [period, setPeriod] = useState<HistoryPeriod>('one-week')
-    const [chartData, setChartData] =
-        useState<AccountBalanceHistoryItem | null>(null)
+    const { period, setPeriod, selectedPoint, setSelectedPoint } =
+        useChartInteraction<AccountBalanceHistoryItem>()
     const [scrollingEnabled, setScrollingEnabled] = useState<boolean>(true)
     const { privacyMode, setPrivacyMode } = useSettings()
 
@@ -64,7 +64,7 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
 
     const chartSelectionChanged = useCallback(
         (selected: AccountBalanceHistoryItem | null) => {
-            setChartData(selected)
+            setSelectedPoint(selected)
 
             if (selected) {
                 setScrollingEnabled(false)
@@ -72,7 +72,7 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
                 setScrollingEnabled(true)
             }
         },
-        [setChartData],
+        [setSelectedPoint],
     )
 
     return (
@@ -88,8 +88,8 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
                     <CurrencyDisplay
                         h1
                         value={
-                            chartData
-                                ? Decimal(chartData.algoValue)
+                            selectedPoint
+                                ? Decimal(selectedPoint.algoValue)
                                 : portfolioAlgoValue
                         }
                         currency='ALGO'
@@ -109,8 +109,8 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
                         h4
                         h4Style={styles.valueTitle}
                         value={
-                            chartData
-                                ? Decimal(chartData.fiatValue)
+                            selectedPoint
+                                ? Decimal(selectedPoint.fiatValue)
                                 : portfolioFiatValue
                         }
                         currency={preferredCurrency}
@@ -118,18 +118,18 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
                         precision={2}
                         skeleton={isPending}
                     />
-                    {!chartData && (
+                    {!selectedPoint && (
                         <WealthTrend
                             account={account}
                             period={period}
                         />
                     )}
-                    {chartData && (
+                    {selectedPoint && (
                         <Text
                             h4
                             h4Style={styles.dateDisplay}
                         >
-                            {formatDatetime(chartData.datetime)}
+                            {formatDatetime(selectedPoint.datetime)}
                         </Text>
                     )}
                 </PWView>
