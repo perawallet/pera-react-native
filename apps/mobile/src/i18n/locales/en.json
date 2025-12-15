@@ -160,6 +160,12 @@
             "no_matching_body": "There aren't any matching contacts."
         }
     },
+    "error": {
+        "general": {
+            "title": "An error occurred",
+            "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists."
+        }
+    },
     "menu": {
         "cards": "Cards",
         "title": "Menu",

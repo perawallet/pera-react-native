@@ -19,8 +19,29 @@ import {
 import OnboardingScreen from '@modules/onboarding/screens/OnboardingScreen'
 import NameAccountScreen from '@modules/onboarding/screens/NameAccountScreen'
 import ImportAccountScreen from '@modules/onboarding/screens/ImportAccountScreen'
+import { AccountErrorBoundary } from '@modules/accounts/components/error-boundaries/AccountErrorBoundary'
+import { useLanguage } from '@hooks/language'
 import { screenListeners } from './listeners'
 import { safeAreaLayout } from './layouts'
+import type React from 'react'
+
+// Wrap screens with AccountErrorBoundary to catch account-related errors
+const withAccountErrorBoundary = <P extends object>(
+    WrappedComponent: React.ComponentType<P>,
+): React.ComponentType<P> => {
+    return (props: P) => {
+        const { t } = useLanguage()
+        return (
+            <AccountErrorBoundary t={t}>
+                <WrappedComponent {...props} />
+            </AccountErrorBoundary>
+        )
+    }
+}
+
+const OnboardingScreenWithErrorBoundary = withAccountErrorBoundary(OnboardingScreen)
+const NameAccountScreenWithErrorBoundary = withAccountErrorBoundary(NameAccountScreen)
+const ImportAccountScreenWithErrorBoundary = withAccountErrorBoundary(ImportAccountScreen)
 
 export const OnboardingStack = createNativeStackNavigator({
     initialRouteName: 'OnboardingHome',
@@ -34,16 +55,16 @@ export const OnboardingStack = createNativeStackNavigator({
     layout: safeAreaLayout,
     screenListeners,
     screens: {
-        OnboardingHome: OnboardingScreen,
+        OnboardingHome: OnboardingScreenWithErrorBoundary,
         NameAccount: {
-            screen: NameAccountScreen,
+            screen: NameAccountScreenWithErrorBoundary,
             options: {
                 headerShown: true,
                 headerTitle: 'Name your account',
             },
         },
         ImportAccount: {
-            screen: ImportAccountScreen,
+            screen: ImportAccountScreenWithErrorBoundary,
             options: {
                 headerShown: true,
                 headerTitle: 'Enter your Recovery Passphrase',

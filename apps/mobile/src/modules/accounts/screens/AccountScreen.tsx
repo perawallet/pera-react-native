@@ -41,13 +41,13 @@ import { useLanguage } from '@hooks/language'
 const AccountScreen = () => {
     const styles = useStyles()
     const account = useSelectedAccount()
-    const scanner = useModalState()
-    const drawer = useModalState()
+    const scannerState = useModalState()
+    const drawerState = useModalState()
     const [tabIndex, setTabIndex] = useState(0)
     const { t } = useLanguage()
 
     const toggleAccountSelectorVisible = () => {
-        drawer.open()
+        drawerState.open()
     }
 
     if (!account) {
@@ -61,15 +61,15 @@ const AccountScreen = () => {
 
     return (
         <Drawer
-            open={drawer.isOpen}
-            onOpen={() => drawer.open()}
-            onClose={() => drawer.close()}
+            open={drawerState.isOpen}
+            onOpen={() => drawerState.open()}
+            onClose={() => drawerState.close()}
             drawerType='front'
             swipeEnabled
             drawerStyle={styles.drawer}
             renderDrawerContent={() => (
                 <AccountMenu
-                    onSelected={() => drawer.close()}
+                    onSelected={() => drawerState.close()}
                     showInbox
                 />
             )}
@@ -81,7 +81,7 @@ const AccountScreen = () => {
                     <AccountSelection onPress={toggleAccountSelectorVisible} />
                 </PWView>
                 <PWView style={styles.iconBarSection}>
-                    <PWTouchableOpacity onPress={scanner.open}>
+                    <PWTouchableOpacity onPress={scannerState.open}>
                         <PWIcon name='camera' />
                     </PWTouchableOpacity>
                     <NotificationsIcon />
@@ -120,12 +120,12 @@ const AccountScreen = () => {
                 </TabView.Item>
             </TabView>
             <QRScannerView
-                visible={scanner.isOpen}
-                onSuccess={scanner.close}
+                visible={scannerState.isOpen}
+                onSuccess={scannerState.close}
                 animationType='slide'
             >
                 <PWTouchableOpacity
-                    onPress={scanner.close}
+                    onPress={scannerState.close}
                     style={styles.scannerClose}
                 >
                     <PWIcon

@@ -12,9 +12,10 @@
 
 export const name = '@perawallet/wallet-core-blockchain'
 
-export * from './hooks'
-export * from './utils'
 export * from './models'
-export * from './schema'
+export * from './store/store'
+export * from './hooks/useAlgorandClient'
+export * from './hooks/useSigningRequest'
+export * from './errors'
+export * from './utils'
 
-export { initBlockchainStore } from './store'

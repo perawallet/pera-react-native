@@ -28,6 +28,7 @@ import SendFundsTransactionConfirmation from '../transaction-confirmation/SendFu
 import SendFundsProvider, {
     SendFundsContext,
 } from '@modules/transactions/providers/SendFundsProvider'
+import { TransactionErrorBoundary } from '@modules/transactions/components/error-boundaries/TransactionErrorBoundary'
 import { TAB_ANIMATION_CONFIG } from '@constants/ui'
 import { useLanguage } from '@hooks/language'
 
@@ -111,48 +112,50 @@ const SendFundsBottomSheet = ({
             isVisible={isVisible}
             innerContainerStyle={styles.container}
         >
-            <SendFundsProvider>
-                {selectedAccount ? (
-                    <TabView
-                        value={screenIndex}
-                        animationType='timing'
-                        animationConfig={TAB_ANIMATION_CONFIG}
-                        disableSwipe
-                    >
-                        {!!canSelectAsset && (
+            <TransactionErrorBoundary t={t}>
+                <SendFundsProvider>
+                    {selectedAccount ? (
+                        <TabView
+                            value={screenIndex}
+                            animationType='timing'
+                            animationConfig={TAB_ANIMATION_CONFIG}
+                            disableSwipe
+                        >
+                            {!!canSelectAsset && (
+                                <TabView.Item style={styles.tabItem}>
+                                    <SendFundsAssetSelectionView
+                                        onSelected={handleNext}
+                                        onBack={handleBack}
+                                    />
+                                </TabView.Item>
+                            )}
                             <TabView.Item style={styles.tabItem}>
-                                <SendFundsAssetSelectionView
-                                    onSelected={handleNext}
+                                <SendFundsInputView
+                                    onNext={handleNext}
                                     onBack={handleBack}
                                 />
                             </TabView.Item>
-                        )}
-                        <TabView.Item style={styles.tabItem}>
-                            <SendFundsInputView
-                                onNext={handleNext}
-                                onBack={handleBack}
-                            />
-                        </TabView.Item>
-                        <TabView.Item style={styles.tabItem}>
-                            <SendFundsSelectDestination
-                                onNext={handleNext}
-                                onBack={handleBack}
-                            />
-                        </TabView.Item>
-                        <TabView.Item style={styles.tabItem}>
-                            <SendFundsTransactionConfirmation
-                                onNext={handleNext}
-                                onBack={handleBack}
-                            />
-                        </TabView.Item>
-                    </TabView>
-                ) : (
-                    <EmptyView
-                        title={t('send_funds.bottom_sheet.no_account_title')}
-                        body={t('send_funds.bottom_sheet.no_account_body')}
-                    />
-                )}
-            </SendFundsProvider>
+                            <TabView.Item style={styles.tabItem}>
+                                <SendFundsSelectDestination
+                                    onNext={handleNext}
+                                    onBack={handleBack}
+                                />
+                            </TabView.Item>
+                            <TabView.Item style={styles.tabItem}>
+                                <SendFundsTransactionConfirmation
+                                    onNext={handleNext}
+                                    onBack={handleBack}
+                                />
+                            </TabView.Item>
+                        </TabView>
+                    ) : (
+                        <EmptyView
+                            title={t('send_funds.bottom_sheet.no_account_title')}
+                            body={t('send_funds.bottom_sheet.no_account_body')}
+                        />
+                    )}
+                </SendFundsProvider>
+            </TransactionErrorBoundary>
         </PWBottomSheet>
     )
 }

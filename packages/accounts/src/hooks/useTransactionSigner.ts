@@ -14,6 +14,7 @@ import { useSecureStorageService } from '@perawallet/wallet-core-platform-integr
 import { useAccountsStore } from '../store'
 import { useHDWallet } from './useHDWallet'
 import { withKey } from '../utils'
+import { AccountKeyNotFoundError, NoHDWalletError } from '../errors'
 
 export const useTransactionSigner = () => {
     const accounts = useAccountsStore(state => state.accounts)
@@ -28,13 +29,13 @@ export const useTransactionSigner = () => {
         const hdWalletDetails = account?.hdWalletDetails
 
         if (!hdWalletDetails) {
-            return Promise.reject(`No HD wallet found for ${address}`)
+            return Promise.reject(new NoHDWalletError(address))
         }
 
         const storageKey = `rootkey-${hdWalletDetails.walletId}`
         return withKey(storageKey, secureStorage, async keyData => {
             if (!keyData) {
-                return Promise.reject(`No signing keys found for ${address}`)
+                return Promise.reject(new AccountKeyNotFoundError(address))
             }
 
             let seed: Buffer

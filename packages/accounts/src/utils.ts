@@ -11,8 +11,9 @@
  */
 
 import type { SecureStorageService } from '@perawallet/wallet-core-platform-integration'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import { AppError, truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import type { WalletAccount } from './models'
+import { KeyAccessError } from './errors'
 
 export const getAccountDisplayName = (account: WalletAccount | null) => {
     if (!account) return 'No Account'
@@ -32,6 +33,11 @@ export const withKey = async <T>(
         const result = await handler(mnemonic)
 
         return result
+    } catch (error) {
+        if (error instanceof AppError) {
+            throw error
+        }
+        throw new KeyAccessError(error as Error)
     } finally {
         //blank out the memory again after using
         if (mnemonic && Buffer.isBuffer(mnemonic)) {

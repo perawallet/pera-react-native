@@ -24,6 +24,7 @@ import { withKey } from '../utils'
 import { BIP32DerivationTypes } from '@perawallet/wallet-core-xhdwallet'
 import { useSecureStorageService } from '@perawallet/wallet-core-platform-integration'
 import { WalletAccount } from '../models'
+import { AccountKeyNotFoundError, InvalidMasterKeyError } from '../errors'
 
 export const useAddAccount = () => {
     const accounts = useAccountsStore(state => state.accounts)
@@ -44,7 +45,7 @@ export const useAddAccount = () => {
                 secureStorage,
                 async key => {
                     if (!key) {
-                        throw Error(`No key found for ${rootWalletId}`)
+                        throw new AccountKeyNotFoundError(rootWalletId)
                     }
 
                     return JSON.parse(key.toString())
@@ -52,7 +53,7 @@ export const useAddAccount = () => {
             )
 
             if (!masterKey?.seed) {
-                throw Error(`No key found for ${rootWalletId}`)
+                throw new InvalidMasterKeyError(rootWalletId)
             }
             const { address, privateKey } = await deriveKey({
                 seed: Buffer.from(masterKey.seed, 'base64'),

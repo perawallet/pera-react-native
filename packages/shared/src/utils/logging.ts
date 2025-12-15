@@ -12,16 +12,88 @@
 
 import { config } from '@perawallet/wallet-core-config'
 
-export const infoLog = (message: string, ...args: unknown[]) => {
-    console.log(message, ...args)
+/**
+ * Log levels for controlling log output and error reporting
+ */
+export enum LogLevel {
+    DEBUG = 'debug',
+    INFO = 'info',
+    WARN = 'warn',
+    ERROR = 'error',
+    CRITICAL = 'critical',
 }
 
-export const errorLog = (message: string, ...args: unknown[]) => {
-    console.error(message, ...args)
+/**
+ * Interface for structured log context
+ */
+export interface LogContext {
+    [key: string]: unknown
 }
 
+/**
+ * Debug-level logging - only shows when debug is enabled
+ */
 export const debugLog = (message: string, ...args: unknown[]) => {
     if (config.debugEnabled) {
-        console.log(message, ...args)
+        console.log(`[DEBUG] ${message}`, ...args)
+    }
+}
+
+/**
+ * Info-level logging - general information
+ */
+export const infoLog = (message: string, ...args: unknown[]) => {
+    console.log(`[INFO] ${message}`, ...args)
+}
+
+/**
+ * Warning-level logging - potential issues
+ */
+export const warnLog = (message: string, ...args: unknown[]) => {
+    console.warn(`[WARN] ${message}`, ...args)
+}
+
+/**
+ * Error-level logging - errors that should be reported
+ * Note: Crashlytics reporting is handled at the error boundary level
+ */
+export const errorLog = (error: Error | string, context?: LogContext) => {
+    const errorMessage = error instanceof Error ? error.message : error
+    console.error(`[ERROR] ${errorMessage}`, context)
+}
+
+/**
+ * Critical-level logging - critical errors that should always be reported
+ * Note: Crashlytics reporting is handled at the error boundary level
+ */
+export const criticalLog = (error: Error | string, context?: LogContext) => {
+    const errorMessage = error instanceof Error ? error.message : error
+    console.error(`[CRITICAL] ${errorMessage}`, context)
+}
+
+/**
+ * Generic log function with level control
+ */
+export const log = (
+    level: LogLevel,
+    message: string,
+    context?: LogContext,
+) => {
+    switch (level) {
+        case LogLevel.DEBUG:
+            debugLog(message, context)
+            break
+        case LogLevel.INFO:
+            infoLog(message, context)
+            break
+        case LogLevel.WARN:
+            warnLog(message, context)
+            break
+        case LogLevel.ERROR:
+            errorLog(message, context)
+            break
+        case LogLevel.CRITICAL:
+            criticalLog(message, context)
+            break
     }
 }

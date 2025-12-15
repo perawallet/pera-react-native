@@ -1,0 +1,86 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import {
+    AppError,
+    ErrorCategory,
+    ErrorI18nKey,
+    ErrorMetadata,
+    ErrorSeverity,
+} from '@perawallet/wallet-core-shared'
+import { ERROR_I18N_KEYS } from '@perawallet/wallet-core-shared'
+
+/**
+ * Base account error
+ */
+export class AccountError extends AppError {
+    constructor(
+        message: ErrorI18nKey,
+        originalError?: Error,
+        metadata?: Partial<ErrorMetadata>,
+    ) {
+        super(
+            message,
+            {
+                severity: ErrorSeverity.HIGH,
+                category: ErrorCategory.ACCOUNTS,
+                retryable: false,
+                ...metadata,
+            },
+            originalError,
+        )
+    }
+}
+
+/**
+ * Some error occurred using a key
+ */
+export class KeyAccessError extends AccountError {
+    constructor(originalError?: Error) {
+        super(ERROR_I18N_KEYS.KEY_ACCESS_ERROR, originalError)
+    }
+}
+
+/**
+ * Account key not found in secure storage
+ */
+export class AccountKeyNotFoundError extends AccountError {
+    constructor(walletId: string) {
+        super(ERROR_I18N_KEYS.ACCOUNT_KEY_NOT_FOUND, undefined, {
+            severity: ErrorSeverity.CRITICAL,
+            params: { walletId },
+        })
+    }
+}
+
+/**
+ * Account has no HD wallet details
+ */
+export class NoHDWalletError extends AccountError {
+    constructor(address: string) {
+        super(ERROR_I18N_KEYS.ACCOUNT_NO_HD_WALLET, undefined, {
+            params: { address },
+        })
+    }
+}
+
+/**
+ * Master key invalid or missing seed
+ */
+export class InvalidMasterKeyError extends AccountError {
+    constructor(walletId: string) {
+        super(ERROR_I18N_KEYS.ACCOUNT_MASTER_KEY_INVALID, undefined, {
+            severity: ErrorSeverity.CRITICAL,
+            params: { walletId },
+        })
+    }
+}
