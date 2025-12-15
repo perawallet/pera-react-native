@@ -23,7 +23,8 @@ export const useDeviceID = (network: Network) => {
 }
 
 export const useFcmToken = () => {
-    const { fcmToken, setFcmToken } = useDeviceStore()
+    const fcmToken = useDeviceStore(state => state.fcmToken)
+    const setFcmToken = useDeviceStore(state => state.setFcmToken)
     return {
         fcmToken,
         setFcmToken,
@@ -33,7 +34,7 @@ export const useFcmToken = () => {
 export const useDevice = (network: Network) => {
     const deviceIDs = useDeviceStore(state => state.deviceIDs)
     const deviceId = useDeviceID(network)
-    const { fcmToken } = useDeviceStore()
+    const fcmToken = useDeviceStore(state => state.fcmToken)
     const setDeviceID = useDeviceStore(state => state.setDeviceID)
     const deviceInfoService = useDeviceInfoService()
 

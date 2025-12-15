@@ -13,7 +13,10 @@
 import { useSwapsStore } from '../store'
 
 export const useSwaps = () => {
-    const { fromAsset, toAsset, setFromAsset, setToAsset } = useSwapsStore()
+    const fromAsset = useSwapsStore(state => state.fromAsset)
+    const toAsset = useSwapsStore(state => state.toAsset)
+    const setFromAsset = useSwapsStore(state => state.setFromAsset)
+    const setToAsset = useSwapsStore(state => state.setToAsset)
 
     return {
         fromAsset,

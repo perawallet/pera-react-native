@@ -16,7 +16,12 @@ import { usePreferredCurrencyPriceQuery } from './usePreferredCurrencyPriceQuery
 import Decimal from 'decimal.js'
 
 export const useCurrency = () => {
-    const { preferredCurrency, setPreferredCurrency } = useCurrenciesStore()
+    const preferredCurrency = useCurrenciesStore(
+        state => state.preferredCurrency,
+    )
+    const setPreferredCurrency = useCurrenciesStore(
+        state => state.setPreferredCurrency,
+    )
     const { data, isPending } =
         usePreferredCurrencyPriceQuery(preferredCurrency)
 
@@ -33,7 +38,7 @@ export const useCurrency = () => {
             const usdValue = data?.usdPrice ?? Decimal('0')
             return usdAmount.mul(usdValue)
         },
-        [isPending, data],
+        [isPending, data, preferredCurrency],
     )
 
     return {

@@ -13,8 +13,13 @@
 import { useAccountsStore } from '../store'
 
 export const useSelectedAccountAddress = () => {
-    const { selectedAccountAddress, setSelectedAccountAddress } =
-        useAccountsStore()
+    const selectedAccountAddress = useAccountsStore(
+        state => state.selectedAccountAddress,
+    )
+    const setSelectedAccountAddress = useAccountsStore(
+        state => state.setSelectedAccountAddress,
+    )
+
     return {
         selectedAccountAddress,
         setSelectedAccountAddress,

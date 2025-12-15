@@ -13,6 +13,7 @@
 import { useDeviceStore } from '../store'
 
 export const useNetwork = () => {
-    const { network, setNetwork } = useDeviceStore()
+    const network = useDeviceStore(state => state.network)
+    const setNetwork = useDeviceStore(state => state.setNetwork)
     return { network, setNetwork }
 }

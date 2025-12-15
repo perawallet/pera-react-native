@@ -13,8 +13,14 @@
 import { useBlockchainStore } from '../store'
 
 export const useSigningRequest = () => {
-    const { pendingSignRequests, addSignRequest, removeSignRequest } =
-        useBlockchainStore()
+    const pendingSignRequests = useBlockchainStore(
+        state => state.pendingSignRequests,
+    )
+    const addSignRequest = useBlockchainStore(state => state.addSignRequest)
+    const removeSignRequest = useBlockchainStore(
+        state => state.removeSignRequest,
+    )
+
     return {
         pendingSignRequests,
         addSignRequest,
