@@ -74,11 +74,7 @@ export const criticalLog = (error: Error | string, context?: LogContext) => {
 /**
  * Generic log function with level control
  */
-export const log = (
-    level: LogLevel,
-    message: string,
-    context?: LogContext,
-) => {
+export const log = (level: LogLevel, message: string, context?: LogContext) => {
     switch (level) {
         case LogLevel.DEBUG:
             debugLog(message, context)

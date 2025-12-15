@@ -83,7 +83,11 @@ const PortfolioView = (props: PortfolioViewProps) => {
             <PWView style={styles.valueBar}>
                 <CurrencyDisplay
                     h1
-                    value={selectedPoint ? selectedPoint.algoValue : portfolioAlgoValue}
+                    value={
+                        selectedPoint
+                            ? selectedPoint.algoValue
+                            : portfolioAlgoValue
+                    }
                     currency='ALGO'
                     precision={2}
                     h1Style={styles.primaryCurrency}
@@ -100,7 +104,11 @@ const PortfolioView = (props: PortfolioViewProps) => {
                 <CurrencyDisplay
                     h4
                     h4Style={styles.valueTitle}
-                    value={selectedPoint ? selectedPoint.fiatValue : portfolioFiatValue}
+                    value={
+                        selectedPoint
+                            ? selectedPoint.fiatValue
+                            : portfolioFiatValue
+                    }
                     currency={preferredCurrency}
                     prefix='≈ '
                     precision={2}

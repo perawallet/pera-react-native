@@ -27,7 +27,8 @@ export function useAsyncAction<TArgs extends unknown[], TReturn>(
                 setIsProcessing(false)
                 return result
             } catch (err) {
-                const error = err instanceof Error ? err : new Error(String(err))
+                const error =
+                    err instanceof Error ? err : new Error(String(err))
                 setError(error)
                 setIsProcessing(false)
                 throw error

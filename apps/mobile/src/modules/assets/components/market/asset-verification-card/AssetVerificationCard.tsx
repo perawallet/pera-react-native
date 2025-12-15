@@ -32,7 +32,8 @@ const AssetVerificationCard = ({
     const isTrusted = assetDetails.assetId === ALGO_ASSET_ID
     const isVerified =
         !isTrusted && assetDetails.peraMetadata?.verificationTier === 'verified'
-    const isSuspicious = assetDetails.peraMetadata?.verificationTier === 'suspicious'
+    const isSuspicious =
+        assetDetails.peraMetadata?.verificationTier === 'suspicious'
 
     const CARD_CONFIGS = useMemo(
         () => ({

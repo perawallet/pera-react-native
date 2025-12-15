@@ -23,14 +23,18 @@ import { ERROR_I18N_KEYS } from '@perawallet/wallet-core-shared'
  * Base blockchain error
  */
 export class BlockchainError extends AppError {
-    constructor(message: ErrorI18nKey, originalError?: Error, metadata?: Partial<ErrorMetadata>) {
+    constructor(
+        message: ErrorI18nKey,
+        originalError?: Error,
+        metadata?: Partial<ErrorMetadata>,
+    ) {
         super(
             message,
             {
                 severity: ErrorSeverity.HIGH,
                 category: ErrorCategory.BLOCKCHAIN,
                 retryable: false,
-                ...metadata
+                ...metadata,
             },
             originalError,
         )
@@ -57,7 +61,10 @@ export class TransactionError extends BlockchainError {
  */
 export class SigningError extends BlockchainError {
     constructor(originalError?: Error) {
-        super(ERROR_I18N_KEYS.BLOCKCHAIN_SIGNING, originalError, { severity: ErrorSeverity.CRITICAL, params: { cause: originalError?.message } })
+        super(ERROR_I18N_KEYS.BLOCKCHAIN_SIGNING, originalError, {
+            severity: ErrorSeverity.CRITICAL,
+            params: { cause: originalError?.message },
+        })
     }
 }
 
@@ -66,6 +73,9 @@ export class SigningError extends BlockchainError {
  */
 export class InvalidTransactionError extends BlockchainError {
     constructor(originalError?: Error) {
-        super(ERROR_I18N_KEYS.BLOCKCHAIN_INVALID_TRANSACTION, originalError, { severity: ErrorSeverity.CRITICAL, params: { cause: originalError?.message } })
+        super(ERROR_I18N_KEYS.BLOCKCHAIN_INVALID_TRANSACTION, originalError, {
+            severity: ErrorSeverity.CRITICAL,
+            params: { cause: originalError?.message },
+        })
     }
 }

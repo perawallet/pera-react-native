@@ -86,8 +86,8 @@ const AddressDisplay = ({
         addressFormat === 'full'
             ? address
             : addressFormat === 'long'
-                ? truncateAlgorandAddress(address, LONG_ADDRESS_FORMAT)
-                : truncateAlgorandAddress(address)
+              ? truncateAlgorandAddress(address, LONG_ADDRESS_FORMAT)
+              : truncateAlgorandAddress(address)
 
     return (
         <PWView

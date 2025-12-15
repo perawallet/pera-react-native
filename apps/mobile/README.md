@@ -58,6 +58,7 @@ Path aliases are configured and working across TypeScript, Babel, Metro, and Vit
 - [vitest.config.ts](apps/mobile/vitest.config.ts)
 
 Available aliases:
+
 - `@components/*` → `src/components/*`
 - `@providers/*` → `src/providers/*`
 - `@routes/*` → `src/routes/*`

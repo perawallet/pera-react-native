@@ -150,7 +150,9 @@ const SendFundsBottomSheet = ({
                         </TabView>
                     ) : (
                         <EmptyView
-                            title={t('send_funds.bottom_sheet.no_account_title')}
+                            title={t(
+                                'send_funds.bottom_sheet.no_account_title',
+                            )}
                             body={t('send_funds.bottom_sheet.no_account_body')}
                         />
                     )}

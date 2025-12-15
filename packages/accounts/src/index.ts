@@ -17,5 +17,4 @@ export * from './store'
 export * from './hooks'
 export * from './errors'
 
-
 export { initAccountsStore } from './store'

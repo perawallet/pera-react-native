@@ -29,11 +29,13 @@ const AccountErrorFallback = ({ reset }: { reset: () => void }) => {
         <EmptyView
             title={t('errors.account.title')}
             body={t('errors.account.body')}
-            button={<PWButton
-                title={t('common.go_back')}
-                variant='primary'
-                onPress={reset}
-            />}
+            button={
+                <PWButton
+                    title={t('common.go_back')}
+                    variant='primary'
+                    onPress={reset}
+                />
+            }
         />
     )
 }

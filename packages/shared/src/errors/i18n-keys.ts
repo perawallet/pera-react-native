@@ -64,7 +64,8 @@ export const ERROR_I18N_KEYS = {
 /**
  * Type representing all valid error i18n keys
  */
-export type ErrorI18nKey = (typeof ERROR_I18N_KEYS)[keyof typeof ERROR_I18N_KEYS]
+export type ErrorI18nKey =
+    (typeof ERROR_I18N_KEYS)[keyof typeof ERROR_I18N_KEYS]
 
 /**
  * Helper to get all error keys for linting/validation

@@ -35,14 +35,18 @@ const TransactionErrorFallback = ({
     return (
         <EmptyView
             title={t('errors.transaction.title')}
-            body={appError
-                ? t(appError.getI18nKey(), appError.metadata.params)
-                : t('errors.generic.message')}
-            button={<PWButton
-                title={t('common.go_back')}
-                variant='primary'
-                onPress={reset}
-            />}
+            body={
+                appError
+                    ? t(appError.getI18nKey(), appError.metadata.params)
+                    : t('errors.generic.message')
+            }
+            button={
+                <PWButton
+                    title={t('common.go_back')}
+                    variant='primary'
+                    onPress={reset}
+                />
+            }
         />
     )
 }
@@ -51,10 +55,9 @@ const TransactionErrorFallback = ({
  * Error boundary for transaction-related flows
  * Displays transaction-specific error messages and recovery options
  */
-export const TransactionErrorBoundary: React.FC<TransactionErrorBoundaryProps> = ({
-    children,
-    t
-}) => {
+export const TransactionErrorBoundary: React.FC<
+    TransactionErrorBoundaryProps
+> = ({ children, t }) => {
     return (
         <BaseErrorBoundary
             t={t}

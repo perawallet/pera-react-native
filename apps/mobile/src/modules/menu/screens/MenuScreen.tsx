@@ -82,21 +82,21 @@ const MenuScreen = () => {
                     titleWeight='h3'
                     leftIcon='card-stack'
                     rightIcon='chevron-right'
-                    onPress={() => { }}
+                    onPress={() => {}}
                 />
                 <PanelButton
                     title={t('menu.buy_gift_card')}
                     titleWeight='h3'
                     leftIcon='gift'
                     rightIcon='chevron-right'
-                    onPress={() => { }}
+                    onPress={() => {}}
                 />
                 <PanelButton
                     title={t('menu.receive')}
                     titleWeight='h3'
                     leftIcon='inflow'
                     rightIcon='chevron-right'
-                    onPress={() => { }}
+                    onPress={() => {}}
                 />
                 <PanelButton
                     title={t('menu.contacts')}
@@ -114,7 +114,9 @@ const MenuScreen = () => {
                 <PWTouchableOpacity
                     onPress={scanner.close}
                     style={styles.scannerClose}
-                >\n                    <PWIcon
+                >
+                    \n{' '}
+                    <PWIcon
                         name='cross'
                         variant='white'
                     />

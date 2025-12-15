@@ -39,9 +39,12 @@ const withAccountErrorBoundary = <P extends object>(
     }
 }
 
-const OnboardingScreenWithErrorBoundary = withAccountErrorBoundary(OnboardingScreen)
-const NameAccountScreenWithErrorBoundary = withAccountErrorBoundary(NameAccountScreen)
-const ImportAccountScreenWithErrorBoundary = withAccountErrorBoundary(ImportAccountScreen)
+const OnboardingScreenWithErrorBoundary =
+    withAccountErrorBoundary(OnboardingScreen)
+const NameAccountScreenWithErrorBoundary =
+    withAccountErrorBoundary(NameAccountScreen)
+const ImportAccountScreenWithErrorBoundary =
+    withAccountErrorBoundary(ImportAccountScreen)
 
 export const OnboardingStack = createNativeStackNavigator({
     initialRouteName: 'OnboardingHome',

@@ -11,7 +11,10 @@
  */
 
 import type { SecureStorageService } from '@perawallet/wallet-core-platform-integration'
-import { AppError, truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    truncateAlgorandAddress,
+} from '@perawallet/wallet-core-shared'
 import type { WalletAccount } from './models'
 import { KeyAccessError } from './errors'
 

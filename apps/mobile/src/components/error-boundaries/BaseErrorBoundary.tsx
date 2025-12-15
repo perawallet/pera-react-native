@@ -11,7 +11,12 @@
  */
 
 import { Component, ErrorInfo, ReactNode } from 'react'
-import { AppError, ErrorCategory, errorLog, criticalLog } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    ErrorCategory,
+    errorLog,
+    criticalLog,
+} from '@perawallet/wallet-core-shared'
 import crashlytics from '@react-native-firebase/crashlytics'
 import EmptyView from '@components/empty-view/EmptyView'
 
@@ -44,7 +49,9 @@ export class BaseErrorBoundary extends Component<
         }
     }
 
-    static getDerivedStateFromError(error: Error): Partial<BaseErrorBoundaryState> {
+    static getDerivedStateFromError(
+        error: Error,
+    ): Partial<BaseErrorBoundaryState> {
         return { error }
     }
 
@@ -93,10 +100,12 @@ export class BaseErrorBoundary extends Component<
                 return fallback(error, this.reset)
             }
 
-            return <EmptyView
-                title={this.props.t('error.general.title')}
-                body={this.props.t('error.general.body')}
-            />
+            return (
+                <EmptyView
+                    title={this.props.t('error.general.title')}
+                    body={this.props.t('error.general.body')}
+                />
+            )
         }
 
         return children

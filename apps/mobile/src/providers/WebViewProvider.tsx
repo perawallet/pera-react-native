@@ -33,10 +33,10 @@ type WebViewStack = {
 
 export const WebViewContext = createContext<WebViewStack>({
     openWebViews: [],
-    pushWebView: () => { },
-    popWebView: () => { },
-    removeWebView: () => { },
-    clearWebViews: () => { },
+    pushWebView: () => {},
+    popWebView: () => {},
+    removeWebView: () => {},
+    clearWebViews: () => {},
 })
 
 type WebViewProviderProps = {} & PropsWithChildren

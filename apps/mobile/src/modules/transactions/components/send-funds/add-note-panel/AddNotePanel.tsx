@@ -74,9 +74,9 @@ const AddNotePanel = ({ isVisible, onClose, ...rest }: AddNotePanelProps) => {
                         {isEdit
                             ? t('send_funds.confirmation.edit')
                             : t('send_funds.add_note.button').replace(
-                                '+ ',
-                                '',
-                            )}{' '}
+                                  '+ ',
+                                  '',
+                              )}{' '}
                         Note
                     </Text>
                     <Text onPress={handleSubmit(done)}>
