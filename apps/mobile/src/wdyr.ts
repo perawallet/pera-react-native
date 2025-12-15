@@ -5,6 +5,7 @@ import React from 'react'
 
 if (config.profilingEnabled) {
     logger.debug('Enabling Why Did You Render')
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const whyDidYouRender = require('@welldone-software/why-did-you-render')
     whyDidYouRender(React, {
         trackAllPureComponents: false,
