@@ -27,13 +27,13 @@ describe('useLanguage', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        ;(useTranslation as any).mockReturnValue({
-            t: tMock,
-            i18n: {
-                language: 'en',
-                changeLanguage: changeLanguageMock,
-            },
-        })
+            ; (useTranslation as any).mockReturnValue({
+                t: tMock,
+                i18n: {
+                    language: 'en',
+                    changeLanguage: changeLanguageMock,
+                },
+            })
     })
 
     it('returns current language and translation function', () => {

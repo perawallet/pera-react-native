@@ -89,16 +89,6 @@ This review analyzes the Pera React Native monorepo architecture, codebase struc
 
 ### ⚠️ Areas for Improvement
 
-#### 4.1 Inconsistent Type Definitions
-
-- **Issue**: Mix of inline types, `.d.ts` files, and exported types from packages
-- **Resolution**:
-    - moved `theme.d.ts` and `react-app-env.d.ts` to `apps/mobile/src/types/`
-    - Validated shared models in `wallet-core-*` packages are well structured
-- **Recommendation**:
-    - [x] Centralize shared types in `@perawallet/wallet-core-shared` (Verified existing models)
-    - [x] Use consistent type export patterns (Organized mobile types)
-
 #### 4.2 Missing Type Coverage for Navigation
 
 - **Observation**: React Navigation 7 with type-safe routing, but no central navigation types file
