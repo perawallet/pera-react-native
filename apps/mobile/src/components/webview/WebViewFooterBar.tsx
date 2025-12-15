@@ -17,9 +17,9 @@ import {
     useMemo,
     useState,
 } from 'react'
-import PWView from '../common/view/PWView'
+import PWView from '../view/PWView'
 import { useStyles } from './styles'
-import PWIcon from '../common/icons/PWIcon'
+import PWIcon from '../icons/PWIcon'
 import WebView from 'react-native-webview'
 import { WebViewNativeEvent } from 'react-native-webview/lib/RNCWebViewNativeComponent'
 

@@ -19,12 +19,12 @@ import { MainRoutes } from '@routes/routes'
 import { getNavigationTheme, getTheme } from '@theme/theme'
 import { Text, ThemeProvider, useTheme } from '@rneui/themed'
 import { useStyles } from './styles'
-import PWView from '@components/common/view/PWView'
+import PWView from '@components/view/PWView'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ErrorBoundary from 'react-native-error-boundary'
 import useToast from '@hooks/toast'
 import { useIsDarkMode } from '@hooks/theme'
-import { SigningProvider } from '@providers/SigningProvider'
+import { SigningProvider } from '@modules/transactions/providers/SigningProvider'
 import {
     useDevice,
     useNetwork,

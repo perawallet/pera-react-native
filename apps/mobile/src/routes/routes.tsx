@@ -17,7 +17,7 @@ import {
 } from '@react-navigation/native-stack'
 import StakingScreen from '@modules/staking/screens/StakingScreen'
 import NotificationsScreen from '@modules/notifications/screens/NotificationsScreen'
-import NavigationHeader from '@components/common/navigation-header/NavigationHeader'
+import NavigationHeader from '@components/navigation-header/NavigationHeader'
 import { useHasNoAccounts } from '@perawallet/wallet-core-accounts'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { OnboardingStack } from './onboarding'

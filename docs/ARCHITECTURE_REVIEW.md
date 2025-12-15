@@ -15,16 +15,6 @@ This review analyzes the Pera React Native monorepo architecture, codebase struc
 
 ### ⚠️ Areas for Improvement
 
-#### 1.1 Path Alias Configuration Issues
-- **Issue**: Path aliases (`@components/*`, `@screens/*`, etc.) are configured but noted as broken in deployment (README line 60)
-- **Impact**: Forces developers to use relative imports, reducing code readability and refactoring ease
-- **Recommendation**: Debug and fix Metro/Babel path resolution for deployed builds
-
-#### 1.2 Missing `src/screens` Directory
-- **Issue**: TypeScript and Babel configs reference `@screens/*` alias, but no `screens` directory exists in `src/`
-- **Impact**: Confusion and potential build errors; modules contain screens instead
-- **Recommendation**: Either remove unused alias or reorganize screen components into a dedicated `src/screens` directory
-
 #### 1.3 Inconsistent Component Organization
 - **Issue**: Mix of feature-based (`components/send-funds/`, `components/swaps/`) and type-based organization (`components/common/`, `components/accounts/`)
 - **Impact**: Unclear where new components should live

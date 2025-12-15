@@ -13,7 +13,7 @@
 import { ViewProps } from 'react-native'
 import { useStyles } from './SafeAreaLayout.style'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import PWView from '@components/common/view/PWView'
+import PWView from '@components/view/PWView'
 import { useDeeplinkListener } from '@hooks/deeplink'
 
 export type SafeAreaLayoutProps = ViewProps

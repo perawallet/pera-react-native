@@ -13,7 +13,7 @@
 import { config } from '@perawallet/wallet-core-config'
 import PWWebView from '@components/webview/PWWebView'
 import { useStyles } from './styles'
-import PWView from '@components/common/view/PWView'
+import PWView from '@components/view/PWView'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const DiscoverScreen = () => {

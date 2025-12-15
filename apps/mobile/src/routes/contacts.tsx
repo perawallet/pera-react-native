@@ -16,7 +16,7 @@ import {
 } from '@react-navigation/native-stack'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { screenListeners } from './listeners'
-import NavigationHeader from '@components/common/navigation-header/NavigationHeader'
+import NavigationHeader from '@components/navigation-header/NavigationHeader'
 import ContactListScreen from '@modules/contacts/screens/ContactListScreen'
 import ContactListHeaderButtons from '@modules/contacts/components/ContactListHeaderButtons'
 import ViewContactHeaderButtons from '@modules/contacts/components/ViewContactHeaderButtons'

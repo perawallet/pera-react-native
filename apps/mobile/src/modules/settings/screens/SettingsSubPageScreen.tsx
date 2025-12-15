@@ -16,8 +16,8 @@ import { StaticScreenProps } from '@react-navigation/native'
 import { Network, Networks } from '@perawallet/wallet-core-shared'
 import { useQueryClient } from '@tanstack/react-query'
 import { useStyles } from './SettingsSubPageScreen.styles'
-import PWView from '@components/common/view/PWView'
-import PWButton from '@components/common/button/PWButton'
+import PWView from '@components/view/PWView'
+import PWButton from '@components/button/PWButton'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import {
     useDevice,

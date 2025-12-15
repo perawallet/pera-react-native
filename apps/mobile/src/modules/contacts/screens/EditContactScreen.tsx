@@ -11,9 +11,9 @@
  */
 
 import { Dialog, Input, Text, useTheme } from '@rneui/themed'
-import ContactAvatar from '@components/common/contact-avatar/ContactAvatar'
-import PWView from '@components/common/view/PWView'
-import AddressEntryField from '@components/address/address-entry/AddressEntryField'
+import ContactAvatar from '@components/contact-avatar/ContactAvatar'
+import PWView from '@components/view/PWView'
+import AddressEntryField from '@components/address-entry/AddressEntryField'
 import {
     Contact,
     useContacts,
@@ -22,13 +22,13 @@ import {
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { KeyboardAvoidingView } from 'react-native'
 import { useStyles } from './EditContactScreen.styles'
-import PWButton from '@components/common/button/PWButton'
+import PWButton from '@components/button/PWButton'
 import { ScrollView } from 'react-native-gesture-handler'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, Controller } from 'react-hook-form'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useState } from 'react'
-import AddressDisplay from '@components/address/address-display/AddressDisplay'
+import AddressDisplay from '@components/address-display/AddressDisplay'
 import { useLanguage } from '@hooks/language'
 
 const EditContactScreen = () => {

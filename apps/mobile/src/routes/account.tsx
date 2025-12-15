@@ -16,9 +16,9 @@ import {
 } from '@react-navigation/native-stack'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { screenListeners } from './listeners'
-import AccountScreen from '@modules/account-details/screens/AccountScreen'
-import AssetDetailsScreen from '@modules/asset-details/screens/AssetDetailsScreen'
-import NavigationHeader from '@components/common/navigation-header/NavigationHeader'
+import AccountScreen from '@modules/accounts/screens/AccountScreen'
+import AssetDetailsScreen from '@modules/assets/screens/AssetDetailsScreen'
+import NavigationHeader from '@components/navigation-header/NavigationHeader'
 import { fullScreenLayout, safeAreaLayout } from './layouts'
 
 export const AccountStack = createNativeStackNavigator({

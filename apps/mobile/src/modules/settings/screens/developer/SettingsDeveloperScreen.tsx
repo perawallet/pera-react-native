@@ -11,13 +11,13 @@
  */
 
 import { ParamListBase, useNavigation } from '@react-navigation/native'
-import PWListItem from '../../../../components/common/list-item/PWListItem'
-import PWView from '../../../../components/common/view/PWView'
+import PWListItem from '@components/list-item/PWListItem'
+import PWView from '@components/view/PWView'
 import { useStyles } from './styles'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import { Networks } from '@perawallet/wallet-core-shared'
-import { useLanguage } from '../../../../hooks/language'
+import { useLanguage } from '@hooks/language'
 
 const SettingsDeveloperScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()

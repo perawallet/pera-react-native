@@ -11,10 +11,10 @@
  */
 
 import { useStyles } from './styles'
-import PWView from '@components/common/view/PWView'
+import PWView from '@components/view/PWView'
 import { ViewStyle } from 'react-native'
 import { Text } from '@rneui/themed'
-import AssetIcon from '@components/assets/asset-icon/AssetIcon'
+import AssetIcon from '@modules/assets/components/asset-icon/AssetIcon'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 
 type SwapPairItemProps = {

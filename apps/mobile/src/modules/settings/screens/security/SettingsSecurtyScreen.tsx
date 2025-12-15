@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import EmptyView from '../../../../components/common/empty-view/EmptyView'
-import { useLanguage } from '../../../../hooks/language'
+import EmptyView from '@components/empty-view/EmptyView'
+import { useLanguage } from '@hooks/language'
 
 const SettingsSecurityScreen = () => {
     const { t } = useLanguage()

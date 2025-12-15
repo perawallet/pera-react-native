@@ -12,8 +12,8 @@
 
 import { Text } from '@rneui/themed'
 
-import PWView from '@components/common/view/PWView'
-import PWButton from '@components/common/button/PWButton'
+import PWView from '@components/view/PWView'
+import PWButton from '@components/button/PWButton'
 import { useStyles } from './SettingsScreen.styles'
 import { ScrollView } from 'react-native'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
@@ -21,10 +21,10 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useDeviceInfoService } from '@perawallet/wallet-core-platform-integration'
 import { useContext, useMemo } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { IconName } from '@components/common/icons/PWIcon'
+import { IconName } from '@components/icons/PWIcon'
 import { config } from '@perawallet/wallet-core-config'
 import { WebViewContext } from '@providers/WebViewProvider'
-import PWListItem from '@components/common/list-item/PWListItem'
+import PWListItem from '@components/list-item/PWListItem'
 import { useLanguage } from '@hooks/language'
 
 //TODO: add ratings view handling

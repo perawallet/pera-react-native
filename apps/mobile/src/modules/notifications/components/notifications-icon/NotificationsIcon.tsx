@@ -12,10 +12,10 @@
 
 import { useNotificationStatus } from '@perawallet/wallet-core-platform-integration'
 import { SvgProps } from 'react-native-svg'
-import PWIcon from '../../../../components/common/icons/PWIcon'
+import PWIcon from '@components/icons/PWIcon'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import PWTouchableOpacity from '../../../../components/common/touchable-opacity/PWTouchableOpacity'
+import PWTouchableOpacity from '@components/touchable-opacity/PWTouchableOpacity'
 
 export type NotificationsIconProps = {} & SvgProps
 

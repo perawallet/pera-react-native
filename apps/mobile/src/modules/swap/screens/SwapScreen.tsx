@@ -11,17 +11,17 @@
  */
 
 import { Text } from '@rneui/themed'
-import PWView from '@components/common/view/PWView'
+import PWView from '@components/view/PWView'
 import { useStyles } from './styles'
-import PWIcon from '@components/common/icons/PWIcon'
+import PWIcon from '@components/icons/PWIcon'
 import PairSelectionPanel from '../components/pair-selection-panel/PairSelectionPanel'
 import SwapHistoryPanel from '../components/swap-history-panel/SwapHistoryPanel'
 import TopPairsPanel from '../components/top-pairs-panel/TopPairsPanel'
-import AccountSelection from '@components/accounts/account-selection/AccountSelection'
+import AccountSelection from '@modules/accounts/components/account-selection/AccountSelection'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Drawer } from 'react-native-drawer-layout'
 import { useState } from 'react'
-import AccountMenu from '@components/account-menu/AccountMenu'
+import AccountMenu from '@modules/accounts/components/account-menu/AccountMenu'
 import { useLanguage } from '@hooks/language'
 
 const SwapScreen = () => {
