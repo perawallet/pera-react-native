@@ -16,7 +16,7 @@ import { Text } from '@rneui/themed'
 import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import PWIcon from '../../common/icons/PWIcon'
-import { useLanguage } from '../../../hooks/language'
+import { useLanguage } from '@hooks/language'
 
 const AssetImpact = () => {
     const styles = useStyles()

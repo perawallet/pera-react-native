@@ -27,9 +27,9 @@ import SendFundsSelectDestination from '../select-destination/SendFundsSelectDes
 import SendFundsTransactionConfirmation from '../transaction-confirmation/SendFundsTransactionConfirmation'
 import SendFundsProvider, {
     SendFundsContext,
-} from '../../../providers/SendFundsProvider'
-import { TAB_ANIMATION_CONFIG } from '../../../constants/ui'
-import { useLanguage } from '../../../hooks/language'
+} from '@providers/SendFundsProvider'
+import { TAB_ANIMATION_CONFIG } from '@constants/ui'
+import { useLanguage } from '@hooks/language'
 
 type SendFundsBottomSheetProps = {
     assetId?: string

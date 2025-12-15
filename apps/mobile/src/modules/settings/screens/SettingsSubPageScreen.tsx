@@ -16,8 +16,8 @@ import { StaticScreenProps } from '@react-navigation/native'
 import { Network, Networks } from '@perawallet/wallet-core-shared'
 import { useQueryClient } from '@tanstack/react-query'
 import { useStyles } from './SettingsSubPageScreen.styles'
-import PWView from '../../../components/common/view/PWView'
-import PWButton from '../../../components/common/button/PWButton'
+import PWView from '@components/common/view/PWView'
+import PWButton from '@components/common/button/PWButton'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import {
     useDevice,
@@ -28,8 +28,8 @@ import {
     useSigningRequest,
 } from '@perawallet/wallet-core-blockchain'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import useToast from '../../../hooks/toast'
-import { useLanguage } from '../../../hooks/language'
+import useToast from '@hooks/toast'
+import { useLanguage } from '@hooks/language'
 
 export type SettingsSubPageScreenProps = StaticScreenProps<{
     title: string

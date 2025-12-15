@@ -10,20 +10,20 @@
  limitations under the License
  */
 
-import PWView from '../../common/view/PWView'
+import PWView from '@components/common/view/PWView'
 import Decimal from 'decimal.js'
 import { useContext, useMemo, useState } from 'react'
-import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
+import CurrencyDisplay from '@components/currency/currency-display/CurrencyDisplay'
 import { useStyles } from './styles'
-import PWButton from '../../common/button/PWButton'
-import AccountAssetItemView from '../../assets/asset-item/AccountAssetItemView'
+import PWButton from '@components/common/button/PWButton'
+import AccountAssetItemView from '@components/assets/asset-item/AccountAssetItemView'
 import { Button, Text } from '@rneui/themed'
-import NumberPad from '../../common/number-pad/NumberPad'
-import { SendFundsContext } from '../../../providers/SendFundsProvider'
+import NumberPad from '@components/common/number-pad/NumberPad'
+import { SendFundsContext } from '@providers/SendFundsProvider'
 import AddNotePanel from '../add-note-panel/AddNotePanel'
-import useToast from '../../../hooks/toast'
-import PWHeader from '../../common/header/PWHeader'
-import AccountDisplay from '../../accounts/account-display/AccountDisplay'
+import useToast from '@hooks/toast'
+import PWHeader from '@components/common/header/PWHeader'
+import AccountDisplay from '@components/accounts/account-display/AccountDisplay'
 import SendFundsInfoPanel from '../info-panel/SendFundsInfoPanel'
 import {
     useAccountBalancesQuery,
@@ -34,7 +34,7 @@ import {
     useAssetFiatPricesQuery,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
-import { useLanguage } from '../../../hooks/language'
+import { useLanguage } from '@hooks/language'
 
 type SendFundsInputViewProps = {
     onNext: () => void

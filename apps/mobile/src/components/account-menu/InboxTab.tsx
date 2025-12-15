@@ -11,7 +11,7 @@
  */
 
 import EmptyView from '../common/empty-view/EmptyView'
-import { useLanguage } from '../../hooks/language'
+import { useLanguage } from '@hooks/language'
 
 const InboxTab = () => {
     //TODO implement me

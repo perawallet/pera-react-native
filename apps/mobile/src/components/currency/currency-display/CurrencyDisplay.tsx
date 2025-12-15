@@ -16,7 +16,7 @@ import PWView from '../../common/view/PWView'
 import { useMemo } from 'react'
 import { formatCurrency } from '@perawallet/wallet-core-shared'
 import { Decimal } from 'decimal.js'
-import AlgoIcon from '../../../../assets/icons/algo.svg'
+import AlgoIcon from '@assets/icons/algo.svg'
 import { useDeviceInfoService } from '@perawallet/wallet-core-platform-integration'
 import { useSettings } from '@perawallet/wallet-core-settings'
 

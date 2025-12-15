@@ -14,14 +14,14 @@ import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useStyles } from './OnboardingScreen.styles'
 import { Text, useTheme, Overlay } from '@rneui/themed'
-import PWView from '../../../components/common/view/PWView'
-import PanelButton from '../../../components/common/panel-button/PanelButton'
+import PWView from '@components/common/view/PWView'
+import PanelButton from '@components/common/panel-button/PanelButton'
 
-import WelcomeImage from '../../../../assets/images/welcome-background.svg'
+import WelcomeImage from '@assets/images/welcome-background.svg'
 import { ActivityIndicator } from 'react-native'
 import { useCreateAccount } from '@perawallet/wallet-core-accounts'
 import { useState } from 'react'
-import { useLanguage } from '../../../hooks/language'
+import { useLanguage } from '@hooks/language'
 
 const OnboardingScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()

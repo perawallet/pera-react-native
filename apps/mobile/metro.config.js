@@ -35,14 +35,39 @@ const config = {
         unstable_enableSymlinks: true,
         unstable_enablePackageExports: true,
         resolveRequest: (context, moduleName, platform) => {
+            // Handle path aliases
+            const aliasMap = {
+                '@components': path.resolve(__dirname, 'src/components'),
+                '@providers': path.resolve(__dirname, 'src/providers'),
+                '@routes': path.resolve(__dirname, 'src/routes'),
+                '@hooks': path.resolve(__dirname, 'src/hooks'),
+                '@constants': path.resolve(__dirname, 'src/constants'),
+                '@modules': path.resolve(__dirname, 'src/modules'),
+                '@assets': path.resolve(__dirname, 'assets'),
+                '@theme': path.resolve(__dirname, 'src/theme'),
+                '@layouts': path.resolve(__dirname, 'src/layouts'),
+            };
+
+            for (const [alias, aliasPath] of Object.entries(aliasMap)) {
+                if (moduleName.startsWith(alias + '/')) {
+                    const modulePath = moduleName.substring(alias.length + 1);
+                    const fullPath = path.join(aliasPath, modulePath);
+
+                    return context.resolveRequest(
+                        context,
+                        fullPath,
+                        platform,
+                    );
+                }
+            }
+
+            // Handle crypto polyfills
             if (moduleName === 'crypto') {
-                const result = context.resolveRequest(
+                return context.resolveRequest(
                     context,
                     'react-native-quick-crypto',
                     platform,
                 )
-
-                return result
             }
             if (moduleName === 'buffer') {
                 return context.resolveRequest(
@@ -65,14 +90,8 @@ const config = {
                     platform,
                 )
             }
-            // else if (moduleName === 'stream') {
-            //     return context.resolveRequest(
-            //         context,
-            //         'readable-stream',
-            //         platform,
-            //     )
-            // }
-            // Optionally, chain to the standard Metro resolver.
+
+            // Chain to the standard Metro resolver
             return context.resolveRequest(context, moduleName, platform);
         },
     },

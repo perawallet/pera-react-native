@@ -15,16 +15,16 @@ import { config } from '@perawallet/wallet-core-config'
 import { useContext, useEffect, useRef } from 'react'
 import { AppState, StatusBar } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
-import { MainRoutes } from '../../routes/routes'
-import { getNavigationTheme, getTheme } from '../../theme/theme'
+import { MainRoutes } from '@routes/routes'
+import { getNavigationTheme, getTheme } from '@theme/theme'
 import { Text, ThemeProvider, useTheme } from '@rneui/themed'
 import { useStyles } from './styles'
-import PWView from '../../components/common/view/PWView'
+import PWView from '@components/common/view/PWView'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ErrorBoundary from 'react-native-error-boundary'
-import useToast from '../../hooks/toast'
-import { useIsDarkMode } from '../../hooks/theme'
-import { SigningProvider } from '../../providers/SigningProvider'
+import useToast from '@hooks/toast'
+import { useIsDarkMode } from '@hooks/theme'
+import { SigningProvider } from '@providers/SigningProvider'
 import {
     useDevice,
     useNetwork,
@@ -34,9 +34,9 @@ import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import {
     NetworkStatusContext,
     NetworkStatusProvider,
-} from '../../providers/NetworkStatusProvider'
-import WebViewProvider from '../../providers/WebViewProvider'
-import { useLanguage } from '../../hooks/language'
+} from '@providers/NetworkStatusProvider'
+import WebViewProvider from '@providers/WebViewProvider'
+import { useLanguage } from '@hooks/language'
 
 const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
     const insets = useSafeAreaInsets()

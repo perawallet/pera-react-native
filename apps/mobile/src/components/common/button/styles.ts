@@ -12,7 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 import { PWButtonProps } from './PWButton'
-import { getFontFamily } from '../../../theme/theme'
+import { getFontFamily } from '@theme/theme'
 
 export const useStyles = makeStyles((theme, props: PWButtonProps) => {
     let backgroundColor = theme.colors.buttonPrimaryBg

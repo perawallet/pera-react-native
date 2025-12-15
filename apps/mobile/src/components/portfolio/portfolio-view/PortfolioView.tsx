@@ -12,7 +12,7 @@
 
 import { Text } from '@rneui/themed'
 import { useStyles } from './styles'
-import { useLanguage } from '../../../hooks/language'
+import { useLanguage } from '@hooks/language'
 
 import PWView, { PWViewProps } from '../../common/view/PWView'
 import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
@@ -31,7 +31,7 @@ import {
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
 import { usePreferences } from '@perawallet/wallet-core-settings'
-import { UserPreferences } from '../../../constants/user-preferences'
+import { UserPreferences } from '@constants/user-preferences'
 
 type PortfolioViewProps = {
     onDataSelected?: (selected: AccountBalanceHistoryItem | null) => void

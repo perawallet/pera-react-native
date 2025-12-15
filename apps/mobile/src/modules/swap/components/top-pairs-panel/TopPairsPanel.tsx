@@ -11,12 +11,12 @@
  */
 
 import { useStyles } from './styles'
-import PWView from '../../common/view/PWView'
+import PWView from '../../../../components/common/view/PWView'
 import { Text } from '@rneui/themed'
 import { useCallback } from 'react'
 
 import SwapPair from '../swap-pair/SwapPair'
-import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
+import CurrencyDisplay from '../../../../components/currency/currency-display/CurrencyDisplay'
 import {
     ALGO_ASSET_ID,
     PeraAsset,
@@ -24,7 +24,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import Decimal from 'decimal.js'
 import { FlashList } from '@shopify/flash-list'
-import { useLanguage } from '../../../hooks/language'
+import { useLanguage } from '@hooks/language'
 
 type SwapRecord = {
     fromAsset?: PeraAsset

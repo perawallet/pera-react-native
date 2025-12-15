@@ -10,19 +10,19 @@
  limitations under the License
  */
 
-import PWView from '../../../components/common/view/PWView'
+import PWView from '@components/common/view/PWView'
 import { Text } from '@rneui/themed'
 import { useStyles } from './styles'
-import PWIcon from '../../../components/common/icons/PWIcon'
+import PWIcon from '@components/common/icons/PWIcon'
 
-import PanelButton from '../../../components/common/panel-button/PanelButton'
+import PanelButton from '@components/common/panel-button/PanelButton'
 import CardPanel from '../components/card-panel/CardPanel'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import PWTouchableOpacity from '../../../components/common/touchable-opacity/PWTouchableOpacity'
-import QRScannerView from '../../../components/common/qr-scanner/QRScannerView'
+import PWTouchableOpacity from '@components/common/touchable-opacity/PWTouchableOpacity'
+import QRScannerView from '@components/common/qr-scanner/QRScannerView'
 import { useState } from 'react'
-import { useLanguage } from '../../../hooks/language'
+import { useLanguage } from '@hooks/language'
 
 const MenuScreen = () => {
     const styles = useStyles()
@@ -90,21 +90,21 @@ const MenuScreen = () => {
                     titleWeight='h3'
                     leftIcon='card-stack'
                     rightIcon='chevron-right'
-                    onPress={() => {}}
+                    onPress={() => { }}
                 />
                 <PanelButton
                     title={t('menu.buy_gift_card')}
                     titleWeight='h3'
                     leftIcon='gift'
                     rightIcon='chevron-right'
-                    onPress={() => {}}
+                    onPress={() => { }}
                 />
                 <PanelButton
                     title={t('menu.receive')}
                     titleWeight='h3'
                     leftIcon='inflow'
                     rightIcon='chevron-right'
-                    onPress={() => {}}
+                    onPress={() => { }}
                 />
                 <PanelButton
                     title={t('menu.contacts')}

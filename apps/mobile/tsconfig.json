@@ -1,16 +1,49 @@
 {
   "extends": "@react-native/typescript-config",
   "compilerOptions": {
-    "types": ["vitest/globals"],
+    "types": [
+      "vitest/globals"
+    ],
     "baseUrl": "src",
     "paths": {
-      "@components/*": ["components/*"],
-      "@providers/*": ["providers/*"],
-      "@routes/*": ["routes/*"],
-      "@screens/*": ["screens/*"],
-      "@assets/*": ["../assets/*"],
+      "@components/*": [
+        "components/*"
+      ],
+      "@providers/*": [
+        "providers/*"
+      ],
+      "@routes/*": [
+        "routes/*"
+      ],
+      "@hooks/*": [
+        "hooks/*"
+      ],
+      "@constants/*": [
+        "constants/*"
+      ],
+      "@modules/*": [
+        "modules/*"
+      ],
+      "@assets/*": [
+        "../assets/*"
+      ],
+      "@theme/*": [
+        "theme/*"
+      ],
+      "@layouts/*": [
+        "layouts/*"
+      ]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", "**/*.svg", "**/*.png"],
-  "exclude": ["**/node_modules", "**/Pods", "**/coverage"]
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.svg",
+    "**/*.png"
+  ],
+  "exclude": [
+    "**/node_modules",
+    "**/Pods",
+    "**/coverage"
+  ]
 }

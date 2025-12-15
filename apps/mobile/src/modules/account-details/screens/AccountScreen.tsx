@@ -12,23 +12,23 @@
 
 import { Tab, TabView } from '@rneui/themed'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import PWIcon from '../../../components/common/icons/PWIcon'
+import PWIcon from '@components/common/icons/PWIcon'
 
 import { useStyles } from './styles'
 import { useState } from 'react'
-import PWView from '../../../components/common/view/PWView'
-import NotificationsIcon from '../../notifications/components/notifications-icon/NotificationsIcon'
-import AccountSelection from '../../../components/accounts/account-selection/AccountSelection'
-import AccountMenu from '../../../components/account-menu/AccountMenu'
+import PWView from '@components/common/view/PWView'
+import NotificationsIcon from '@modules/notifications/components/notifications-icon/NotificationsIcon'
+import AccountSelection from '@components/accounts/account-selection/AccountSelection'
+import AccountMenu from '@components/account-menu/AccountMenu'
 import { Drawer } from 'react-native-drawer-layout'
-import QRScannerView from '../../../components/common/qr-scanner/QRScannerView'
-import PWTouchableOpacity from '../../../components/common/touchable-opacity/PWTouchableOpacity'
-import EmptyView from '../../../components/common/empty-view/EmptyView'
+import QRScannerView from '@components/common/qr-scanner/QRScannerView'
+import PWTouchableOpacity from '@components/common/touchable-opacity/PWTouchableOpacity'
+import EmptyView from '@components/common/empty-view/EmptyView'
 import AccountOverview from '../components/account-overview/AccountOverview'
 import AccountNfts from '../components/account-nfts/AccountNfts'
 import AccountHistory from '../components/account-history/AccountHistory'
-import { TAB_ANIMATION_CONFIG } from '../../../constants/ui'
-import { useLanguage } from '../../../hooks/language'
+import { TAB_ANIMATION_CONFIG } from '@constants/ui'
+import { useLanguage } from '@hooks/language'
 
 //TODO hook up all the button panel buttons correctly
 //TODO implement more menu

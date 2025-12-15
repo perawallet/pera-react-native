@@ -14,8 +14,8 @@ import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useStyles } from './ImportAccountScreen.styles'
 import { Input, Overlay, Text, useTheme } from '@rneui/themed'
-import PWView from '../../../components/common/view/PWView'
-import PWButton from '../../../components/common/button/PWButton'
+import PWView from '@components/common/view/PWView'
+import PWButton from '@components/common/button/PWButton'
 
 import { useImportAccount } from '@perawallet/wallet-core-accounts'
 import { useState } from 'react'
@@ -25,8 +25,8 @@ import {
     Platform,
     ScrollView,
 } from 'react-native'
-import useToast from '../../../hooks/toast'
-import { useLanguage } from '../../../hooks/language'
+import useToast from '@hooks/toast'
+import { useLanguage } from '@hooks/language'
 
 const NUM_WORDS = 24 //TODO: we'll add legacy 25 word accounts later
 

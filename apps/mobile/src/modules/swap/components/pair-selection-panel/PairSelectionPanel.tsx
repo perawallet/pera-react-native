@@ -14,16 +14,16 @@ import { useStyles } from './styles'
 import { useCallback, useState } from 'react'
 import { Divider, Text, useTheme } from '@rneui/themed'
 import Decimal from 'decimal.js'
-import AssetSelection from '../../assets/asset-selection/AssetSelection'
-import CurrencyDisplay from '../../currency/currency-display/CurrencyDisplay'
-import PWView from '../../common/view/PWView'
+import AssetSelection from '@components/assets/asset-selection/AssetSelection'
+import CurrencyDisplay from '@components/currency/currency-display/CurrencyDisplay'
+import PWView from '@components/common/view/PWView'
 import { View } from 'react-native'
 
-import CurrencyInput from '../../currency/currency-input/CurrencyInput'
+import CurrencyInput from '@components/currency/currency-input/CurrencyInput'
 import { ALGO_ASSET_ID, useAssetsQuery } from '@perawallet/wallet-core-assets'
-import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity'
-import PWIcon from '../../common/icons/PWIcon'
-import { useLanguage } from '../../../hooks/language'
+import PWTouchableOpacity from '@components/common/touchable-opacity/PWTouchableOpacity'
+import PWIcon from '@components/common/icons/PWIcon'
+import { useLanguage } from '@hooks/language'
 
 //TODO this iz a mock implementation - implement properly
 const PairSelectionPanel = () => {

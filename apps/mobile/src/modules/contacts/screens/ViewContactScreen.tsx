@@ -10,14 +10,14 @@
  limitations under the License
  */
 
-import EmptyView from '../../../components/common/empty-view/EmptyView'
-import PWView from '../../../components/common/view/PWView'
+import EmptyView from '@components/common/empty-view/EmptyView'
+import PWView from '@components/common/view/PWView'
 import { Text } from '@rneui/themed'
 import { useStyles } from './ViewContactScreen.styles'
-import ContactAvatar from '../../../components/common/contact-avatar/ContactAvatar'
-import AddressDisplay from '../../../components/address/address-display/AddressDisplay'
+import ContactAvatar from '@components/common/contact-avatar/ContactAvatar'
+import AddressDisplay from '@components/address/address-display/AddressDisplay'
 import { useContacts } from '@perawallet/wallet-core-contacts'
-import { useLanguage } from '../../../hooks/language'
+import { useLanguage } from '@hooks/language'
 
 const ViewContactScreen = () => {
     const { selectedContact } = useContacts()

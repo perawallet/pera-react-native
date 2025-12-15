@@ -18,10 +18,10 @@ import { Text } from '@rneui/themed'
 import { useEffect, useState } from 'react'
 import PWIcon from '../../common/icons/PWIcon'
 import PWButton from '../../common/button/PWButton'
-import { UserPreferences } from '../../../constants/user-preferences'
+import { UserPreferences } from '@constants/user-preferences'
 import { useStyles } from './styles'
 import PWView from '../../common/view/PWView'
-import { useLanguage } from '../../../hooks/language'
+import { useLanguage } from '@hooks/language'
 
 type SendFundsInfoPanelProps = {
     onClose: () => void

@@ -21,7 +21,7 @@ import { ScrollView } from 'react-native'
 
 import TransactionIcon from '../../common/transaction-icon/TransactionIcon'
 import BalanceImpactView from '../balance-impact/BalanceImpactView'
-import useToast from '../../../hooks/toast'
+import useToast from '@hooks/toast'
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity'
 import PWIcon from '../../common/icons/PWIcon'
 import {
@@ -29,7 +29,7 @@ import {
     useSigningRequest,
 } from '@perawallet/wallet-core-blockchain'
 import EmptyView from '../../common/empty-view/EmptyView'
-import { useLanguage } from '../../../hooks/language'
+import { useLanguage } from '@hooks/language'
 
 type SigningViewProps = {
     request: SignRequest

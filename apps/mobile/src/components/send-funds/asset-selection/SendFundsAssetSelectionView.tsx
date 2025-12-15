@@ -11,19 +11,19 @@
  */
 
 import { Skeleton } from '@rneui/themed'
-import PWView from '../../common/view/PWView'
+import PWView from '@components/common/view/PWView'
 import {
     AssetWithAccountBalance,
     useAccountBalancesQuery,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useCallback, useContext, useMemo } from 'react'
-import AccountAssetItemView from '../../assets/asset-item/AccountAssetItemView'
-import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity'
+import AccountAssetItemView from '@components/assets/asset-item/AccountAssetItemView'
+import PWTouchableOpacity from '@components/common/touchable-opacity/PWTouchableOpacity'
 import { useStyles } from './styles'
-import { SendFundsContext } from '../../../providers/SendFundsProvider'
-import PWHeader from '../../common/header/PWHeader'
-import { useLanguage } from '../../../hooks/language'
+import { SendFundsContext } from '@providers/SendFundsProvider'
+import PWHeader from '@components/common/header/PWHeader'
+import { useLanguage } from '@hooks/language'
 
 type SendFundsAssetSelectionViewProps = {
     onSelected: () => void

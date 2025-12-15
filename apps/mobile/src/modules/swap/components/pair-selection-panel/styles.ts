@@ -11,7 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { getFontFamily } from '../../../theme/theme'
+import { getFontFamily } from '@theme/theme'
 
 export const useStyles = makeStyles(theme => ({
     container: {

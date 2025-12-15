@@ -10,25 +10,25 @@
  limitations under the License
  */
 
-import { SCREEN_ANIMATION_CONFIG } from '../constants/ui'
-import NavigationHeader from '../components/common/navigation-header/NavigationHeader'
+import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
+import NavigationHeader from '@components/common/navigation-header/NavigationHeader'
 import {
     createNativeStackNavigator,
     NativeStackHeaderProps,
 } from '@react-navigation/native-stack'
 import { screenListeners } from './listeners'
-import SettingsScreen from '../modules/settings/screens/SettingsScreen'
-import SettingsSecurityScreen from '../modules/settings/screens/security/SettingsSecurtyScreen'
-import SettingsNotificationsScreen from '../modules/settings/screens/notifications/SettingsNotificationsScreen'
-import SettingsWalletConnectScreen from '../modules/settings/screens/wallet-connect/SettingsWalletConnectScreen'
-import SettingsPasskeyScreen from '../modules/settings/screens/passkeys/SettingsPasskeysScreen'
-import SettingsCurrencyScreen from '../modules/settings/screens/currency/SettingsCurrencyScreen'
-import SettingsThemeScreen from '../modules/settings/screens/theme/SettingsThemeScreen'
-import SettingsDeveloperScreen from '../modules/settings/screens/developer/SettingsDeveloperScreen'
-import SettingsSubPageScreen from '../modules/settings/screens/SettingsSubPageScreen'
+import SettingsScreen from '@modules/settings/screens/SettingsScreen'
+import SettingsSecurityScreen from '@modules/settings/screens/security/SettingsSecurtyScreen'
+import SettingsNotificationsScreen from '@modules/settings/screens/notifications/SettingsNotificationsScreen'
+import SettingsWalletConnectScreen from '@modules/settings/screens/wallet-connect/SettingsWalletConnectScreen'
+import SettingsPasskeyScreen from '@modules/settings/screens/passkeys/SettingsPasskeysScreen'
+import SettingsCurrencyScreen from '@modules/settings/screens/currency/SettingsCurrencyScreen'
+import SettingsThemeScreen from '@modules/settings/screens/theme/SettingsThemeScreen'
+import SettingsDeveloperScreen from '@modules/settings/screens/developer/SettingsDeveloperScreen'
+import SettingsSubPageScreen from '@modules/settings/screens/SettingsSubPageScreen'
 import { fullScreenLayout, headeredLayout } from './layouts'
-import SettingsDeveloperNodeSettingsScreen from '../modules/settings/screens/developer/node-settings/SettingsDeveloperNodeSettingsScreen'
-import SettingsDeveloperDispenserScreen from '../modules/settings/screens/developer/dispenser/SettingsDeveloperDispenserScreen'
+import SettingsDeveloperNodeSettingsScreen from '@modules/settings/screens/developer/node-settings/SettingsDeveloperNodeSettingsScreen'
+import SettingsDeveloperDispenserScreen from '@modules/settings/screens/developer/dispenser/SettingsDeveloperDispenserScreen'
 
 export const DeveloperSettingsStack = createNativeStackNavigator({
     initialRouteName: 'DeveloperSettingsHome',

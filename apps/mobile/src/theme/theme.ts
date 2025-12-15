@@ -12,7 +12,7 @@
 
 import { DefaultTheme } from '@react-navigation/native'
 import { createTheme } from '@rneui/themed'
-import { fontFamilies } from '../constants/fonts'
+import { fontFamilies } from '@constants/fonts'
 
 export const getFontFamily = (
     isMonoSpace: boolean,

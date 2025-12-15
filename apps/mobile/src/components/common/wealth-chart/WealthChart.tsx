@@ -11,7 +11,7 @@
  */
 
 import { useStyles } from './styles'
-import { useLanguage } from '../../../hooks/language'
+import { useLanguage } from '@hooks/language'
 import { LineChart } from 'react-native-gifted-charts'
 
 import PWView from '../view/PWView'
@@ -30,7 +30,7 @@ import {
     CHART_ANIMATION_DURATION,
     CHART_FOCUS_DEBOUNCE_TIME,
     CHART_HEIGHT,
-} from '../../../constants/ui'
+} from '@constants/ui'
 
 type WealthChartProps = {
     account?: WalletAccount

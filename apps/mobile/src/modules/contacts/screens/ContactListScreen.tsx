@@ -16,15 +16,15 @@ import { useNavigation, ParamListBase } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Text } from '@rneui/themed'
 
-import EmptyView from '../../../components/common/empty-view/EmptyView'
-import PWButton from '../../../components/common/button/PWButton'
+import EmptyView from '@components/common/empty-view/EmptyView'
+import PWButton from '@components/common/button/PWButton'
 import { useStyles } from './ContactListScreen.styles'
 import { Contact, useContacts } from '@perawallet/wallet-core-contacts'
-import ContactAvatar from '../../../components/common/contact-avatar/ContactAvatar'
-import PWView from '../../../components/common/view/PWView'
-import PWTouchableOpacity from '../../../components/common/touchable-opacity/PWTouchableOpacity'
-import SearchInput from '../../../components/common/search-input/SearchInput'
-import { useLanguage } from '../../../hooks/language'
+import ContactAvatar from '@components/common/contact-avatar/ContactAvatar'
+import PWView from '@components/common/view/PWView'
+import PWTouchableOpacity from '@components/common/touchable-opacity/PWTouchableOpacity'
+import SearchInput from '@components/common/search-input/SearchInput'
+import { useLanguage } from '@hooks/language'
 
 const contactSorter = (a: Contact, b: Contact) => a.name.localeCompare(b.name)
 

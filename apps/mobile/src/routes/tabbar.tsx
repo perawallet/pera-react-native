@@ -10,16 +10,16 @@
  limitations under the License
  */
 
-import PWIcon, { IconName } from '../components/common/icons/PWIcon'
+import PWIcon, { IconName } from '@components/common/icons/PWIcon'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { screenListeners } from './listeners'
-import DiscoverScreen from '../modules/discover/screens/DiscoverScreen'
-import FundScreen from '../modules/fund/screens/FundScreen'
-import SwapScreen from '../modules/swap/screens/SwapScreen'
-import MenuScreen from '../modules/menu/screens/MenuScreen'
+import DiscoverScreen from '@modules/discover/screens/DiscoverScreen'
+import FundScreen from '@modules/fund/screens/FundScreen'
+import SwapScreen from '@modules/swap/screens/SwapScreen'
+import MenuScreen from '@modules/menu/screens/MenuScreen'
 import { AccountStack } from './account'
 import { headeredLayout, safeAreaLayout } from './layouts'
-import TabLabel from '../components/tabbar/TabLabel'
+import TabLabel from '@components/tabbar/TabLabel'
 
 export const TabBarStack = createBottomTabNavigator({
     initialRouteName: 'Home',

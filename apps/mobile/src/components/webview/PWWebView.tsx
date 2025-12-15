@@ -36,20 +36,20 @@ import {
     peraConnectJS,
     peraMobileInterfaceJS,
 } from './injected-scripts'
-import useToast from '../../hooks/toast'
+import useToast from '@hooks/toast'
 import { StyleSheet } from 'react-native'
 import { useStyles } from './styles'
 import PWView from '../common/view/PWView'
-import { usePeraWebviewInterface } from '../../hooks/webview'
+import { usePeraWebviewInterface } from '@hooks/webview'
 import EmptyView from '../common/empty-view/EmptyView'
 import PWButton from '../common/button/PWButton'
 import LoadingView from '../common/loading/LoadingView'
 import { debugLog } from '@perawallet/wallet-core-shared'
 import WebViewTitleBar from './WebViewTitleBar'
 import WebViewFooterBar from './WebViewFooterBar'
-import { WebViewContext } from '../../providers/WebViewProvider'
-import { useIsDarkMode } from '../../hooks/theme'
-import { useLanguage } from '../../hooks/language'
+import { WebViewContext } from '@providers/WebViewProvider'
+import { useIsDarkMode } from '@hooks/theme'
+import { useLanguage } from '@hooks/language'
 
 export type PWWebViewProps = {
     url: string

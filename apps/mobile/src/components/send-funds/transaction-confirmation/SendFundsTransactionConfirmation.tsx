@@ -12,7 +12,7 @@
 
 import { useContext, useMemo, useState } from 'react'
 import PWView from '../../common/view/PWView'
-import { SendFundsContext } from '../../../providers/SendFundsProvider'
+import { SendFundsContext } from '@providers/SendFundsProvider'
 import {
     DEFAULT_PRECISION,
     formatCurrency,
@@ -27,7 +27,7 @@ import { Divider, Text, useTheme } from '@rneui/themed'
 import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity'
 import { useStyles } from './styles'
 import PWButton from '../../common/button/PWButton'
-import useToast from '../../../hooks/toast'
+import useToast from '@hooks/toast'
 import AddNotePanel from '../add-note-panel/AddNotePanel'
 import PWIcon from '../../common/icons/PWIcon'
 import PWHeader from '../../common/header/PWHeader'
@@ -41,7 +41,7 @@ import {
     useAssetFiatPricesQuery,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
-import { useLanguage } from '../../../hooks/language'
+import { useLanguage } from '@hooks/language'
 
 type SendFundsTransactionConfirmationProps = {
     onNext: () => void

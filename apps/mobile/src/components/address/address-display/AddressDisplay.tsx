@@ -16,7 +16,7 @@ import { useStyles } from './styles'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useContacts } from '@perawallet/wallet-core-contacts'
-import useToast from '../../../hooks/toast'
+import useToast from '@hooks/toast'
 import Clipboard from '@react-native-clipboard/clipboard'
 
 import { SvgProps } from 'react-native-svg'

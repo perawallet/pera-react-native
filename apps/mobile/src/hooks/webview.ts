@@ -26,7 +26,7 @@ import {
 import { useSettings } from '@perawallet/wallet-core-settings'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useCallback, useContext } from 'react'
-import { WebViewContext } from '../providers/WebViewProvider'
+import { WebViewContext } from '@providers/WebViewProvider'
 
 type PushNewScreenParams = {
     url: string

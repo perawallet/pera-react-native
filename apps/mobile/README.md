@@ -50,14 +50,22 @@ React Query is provided by [QueryProvider()](apps/mobile/src/providers/QueryProv
 
 ## Path aliases
 
-Keep Babel and TS paths in sync:
+Path aliases are configured and working across TypeScript, Babel, Metro, and Vitest. Keep configs in sync:
 
 - [babel.config.js](apps/mobile/babel.config.js)
+- [metro.config.js](apps/mobile/metro.config.js)
 - [tsconfig.json](apps/mobile/tsconfig.json)
+- [vitest.config.ts](apps/mobile/vitest.config.ts)
 
-Aliases include @components/_, @providers/_, @routes/_, @screens/_, @assets/\*.
-
-NOTE at time of writing this works in VS Code, but when deployed on the device these break (more babel/metro debugging required)
+Available aliases:
+- `@components/*` → `src/components/*`
+- `@providers/*` → `src/providers/*`
+- `@routes/*` → `src/routes/*`
+- `@hooks/*` → `src/hooks/*`
+- `@constants/*` → `src/constants/*`
+- `@modules/*` → `src/modules/*`
+- `@assets/*` → `assets/*`
+- `@theme/*` → `src/theme/*`
 
 ## Styling
 

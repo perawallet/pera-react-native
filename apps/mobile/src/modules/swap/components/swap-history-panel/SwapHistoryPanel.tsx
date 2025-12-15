@@ -11,7 +11,7 @@
  */
 
 import { useStyles } from './styles'
-import PWView from '../../common/view/PWView'
+import PWView from '@components/common/view/PWView'
 import { ScrollView } from 'react-native'
 import { Text } from '@rneui/themed'
 import { useCallback } from 'react'
@@ -22,8 +22,8 @@ import {
     PeraAsset,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
-import PWTouchableOpacity from '../../common/touchable-opacity/PWTouchableOpacity'
-import { useLanguage } from '../../../hooks/language'
+import PWTouchableOpacity from '@components/common/touchable-opacity/PWTouchableOpacity'
+import { useLanguage } from '@hooks/language'
 
 type SwapAssets = {
     fromAsset?: PeraAsset

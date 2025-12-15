@@ -11,8 +11,8 @@
  */
 
 import { useStyles } from './styles'
-import PWView from '../../../components/common/view/PWView'
-import CameraOverlay from '../../../../assets/images/camera-overlay.svg'
+import PWView from '@components/common/view/PWView'
+import CameraOverlay from '@assets/images/camera-overlay.svg'
 import {
     useCameraPermission,
     useCameraDevice,
@@ -22,8 +22,8 @@ import {
 import { Text } from '@rneui/themed'
 import { PropsWithChildren, useState } from 'react'
 import { Modal } from 'react-native'
-import { useLanguage } from '../../../hooks/language'
-import { useDeepLink } from '../../../hooks/deeplink'
+import { useLanguage } from '@hooks/language'
+import { useDeepLink } from '@hooks/deeplink'
 
 type QRScannerViewProps = {
     title?: string
