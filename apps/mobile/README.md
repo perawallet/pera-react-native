@@ -44,7 +44,7 @@ pnpm android
 
 - `src/App.tsx`: Application entry point.
 - `src/components`: Reusable UI components (Buttons, Inputs, Cards).
-- `src/modules`: Domain specific modules (e.g., `account`, `assets`, `contacts`, `settings`).  Each modules can contain screens, components, hooks and more.  A `Screen` is considered to be a navigable component.
+- `src/modules`: Domain specific modules (e.g., `account`, `assets`, `contacts`, `settings`). Each modules can contain screens, components, hooks and more. A `Screen` is considered to be a navigable component.
 - `src/routes`: React Navigation configuration.
 - `src/hooks`: Custom React hooks (e.g., for navigation, animations).
     - _Note: Business logic hooks are imported from `packages/_`.\*
