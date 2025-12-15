@@ -22,7 +22,7 @@ import ky, {
 import { config } from '@perawallet/wallet-core-config'
 import { RequestConfiguration, ResponseConfiguration } from '../models/queries'
 import { Network, Networks } from '../models/base-types'
-import { debugLog } from '../utils'
+import { logger } from '../utils'
 
 type BackendInstances = {
     algod: KyInstance
@@ -31,27 +31,35 @@ type BackendInstances = {
 }
 
 const logRequest = (request: KyRequest) => {
-    debugLog('Sending request', request)
+    logger.debug('Sending request', {
+        url: request.url,
+        method: request.method,
+    })
 }
 
 const logResponse = (_: KyRequest, __: Options, response: KyResponse) => {
-    debugLog('Received response', response)
+    logger.debug('Received response', {
+        status: response.status,
+        url: response.url,
+    })
 }
 
 const logError = (error: HTTPError) => {
-    debugLog('Request error encountered', error)
+    logger.error('Request error encountered', {
+        message: error.message,
+        name: error.name,
+        // safely attempt to get response info if available
+        status: error.response?.status,
+    })
     return error
 }
 
 const logRetry = ({ request, error, retryCount }: BeforeRetryState) => {
-    debugLog(
-        'Retrying request:',
-        request.url,
-        'Retry count:',
+    logger.debug('Retrying request', {
+        url: request.url,
         retryCount,
-        'Error:',
-        error,
-    )
+        errorMessage: error.message,
+    })
 }
 
 const createFetchClient = (clients: Map<string, BackendInstances>) => {

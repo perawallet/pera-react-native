@@ -15,7 +15,7 @@
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import useToast from './toast'
-import { debugLog } from '@perawallet/wallet-core-shared'
+import { logger } from '@perawallet/wallet-core-shared'
 import { parseDeeplink } from './deeplink/parser'
 import { DeeplinkType } from './deeplink/types'
 import { useSigningRequest } from '@perawallet/wallet-core-blockchain'
@@ -39,7 +39,7 @@ export const useDeepLink = () => {
     const { pushWebView } = useWebView()
 
     const isValidDeepLink = (url: string, source: LinkSource): boolean => {
-        debugLog('Validating deeplink', url, source)
+        logger.debug('Validating deeplink', { url, source })
         const parsed = parseDeeplink(url)
         return parsed !== null
     }
@@ -74,7 +74,7 @@ export const useDeepLink = () => {
     ) => {
         const parsedData = parseDeeplink(url)
 
-        debugLog('Parsed deeplink data:', parsedData)
+        logger.debug('Parsed deeplink data:', { parsedData })
         if (!parsedData) {
             showToast({
                 title: 'Invalid Link',
@@ -85,7 +85,7 @@ export const useDeepLink = () => {
             return
         }
 
-        debugLog('Parsed deeplink data:', parsedData)
+        logger.debug('Parsed deeplink data:', { parsedData })
 
         try {
             // Navigate based on deeplink type
@@ -317,7 +317,7 @@ export const useDeepLink = () => {
 
             onSuccess?.()
         } catch (error) {
-            debugLog('Error handling deeplink:', error)
+            logger.error(error as Error)
             showToast({
                 title: 'Navigation Error',
                 body: 'Could not navigate to the requested screen',
@@ -345,7 +345,9 @@ export const useDeeplinkListener = () => {
 
                 if (initialUrl && !hasHandledInitialUrl.current) {
                     hasHandledInitialUrl.current = true
-                    debugLog('Deeplink: Initial URL (cold start)', initialUrl)
+                    logger.debug('Deeplink: Initial URL (cold start)', {
+                        initialUrl,
+                    })
 
                     if (isValidDeepLink(initialUrl, 'deeplink')) {
                         // Small delay to ensure navigation is ready
@@ -355,14 +357,14 @@ export const useDeeplinkListener = () => {
                     }
                 }
             } catch (error) {
-                debugLog('Deeplink: Error getting initial URL', error)
+                logger.debug('Deeplink: Error getting initial URL', { error })
             }
         }
 
         handleInitialUrl()
 
         const subscription = Linking.addEventListener('url', event => {
-            debugLog('Deeplink: URL event (warm start)', event.url)
+            logger.debug('Deeplink: URL event (warm start)', { url: event.url })
 
             if (isValidDeepLink(event.url, 'deeplink')) {
                 handleDeepLink(event.url, false, 'deeplink')

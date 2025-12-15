@@ -12,10 +12,16 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-// Mock debugLog
-const mockDebugLog = vi.fn()
+// Mock logger
+const mockLogger = {
+    debug: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    critical: vi.fn(),
+}
 vi.mock('../utils', () => ({
-    debugLog: mockDebugLog,
+    logger: mockLogger,
 }))
 
 // Mock config
@@ -100,7 +106,7 @@ vi.mock('ky', () => ({
 describe('queryClient', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockDebugLog.mockClear()
+        Object.values(mockLogger).forEach(mock => mock.mockClear())
     })
 
     it('should make a successful request to pera backend on mainnet', async () => {

@@ -19,7 +19,7 @@ import {
 import type { AssetsState } from '../models'
 import {
     createLazyStore,
-    debugLog,
+    logger,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
 
@@ -50,11 +50,11 @@ const createAssetsStore = (storage: KeyValueStorageService) =>
     )
 
 export const initAssetsStore = () => {
-    debugLog('Initializing assets store')
+    logger.debug('Initializing assets store')
     const storage = useKeyValueStorageService()
     const realStore = createAssetsStore(storage)
     lazy.init(realStore)
-    debugLog('Assets store initialized')
+    logger.debug('Assets store initialized')
 }
 
 export { createAssetsStore }

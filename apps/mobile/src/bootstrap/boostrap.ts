@@ -19,7 +19,7 @@ import {
     registerPlatformServices,
     initDeviceStore,
 } from '@perawallet/wallet-core-platform-integration'
-import { debugLog } from '@perawallet/wallet-core-shared'
+import { logger } from '@perawallet/wallet-core-shared'
 import { initAssetsStore } from '@perawallet/wallet-core-assets'
 import { initBlockchainStore } from '@perawallet/wallet-core-blockchain'
 import { initContactsStore } from '@perawallet/wallet-core-contacts'
@@ -41,11 +41,13 @@ const platformServices = {
 
 export const useBootstrapper = () => {
     return async () => {
-        debugLog('Bootstrapping')
+        logger.debug('Bootstrapping')
         //Important - this has to happen first so all subsequent services can use the platform services
         await registerPlatformServices(platformServices)
 
         // TODO: This is a mess - we should find a more elegant solution here...
+        // the issue is that we have to initialize the state stores after setting up the platform services
+        // which configure the persistence layer.
         await initDeviceStore()
         await initAccountsStore()
         await initAssetsStore()

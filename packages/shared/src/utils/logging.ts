@@ -14,13 +14,24 @@ import { config } from '@perawallet/wallet-core-config'
 
 /**
  * Log levels for controlling log output and error reporting
+ * Ordered by severity: DEBUG < INFO < WARN < ERROR < CRITICAL
  */
-export enum LogLevel {
-    DEBUG = 'debug',
-    INFO = 'info',
-    WARN = 'warn',
-    ERROR = 'error',
-    CRITICAL = 'critical',
+export const LogLevel = {
+    DEBUG: 0,
+    INFO: 1,
+    WARN: 2,
+    ERROR: 3,
+    CRITICAL: 4,
+} as const
+
+export type LogLevel = (typeof LogLevel)[keyof typeof LogLevel]
+
+const LOG_LEVEL_NAMES = {
+    [LogLevel.DEBUG]: 'DEBUG',
+    [LogLevel.INFO]: 'INFO',
+    [LogLevel.WARN]: 'WARN',
+    [LogLevel.ERROR]: 'ERROR',
+    [LogLevel.CRITICAL]: 'CRITICAL',
 }
 
 /**
@@ -30,66 +41,77 @@ export interface LogContext {
     [key: string]: unknown
 }
 
-/**
- * Debug-level logging - only shows when debug is enabled
- */
-export const debugLog = (message: string, ...args: unknown[]) => {
-    if (config.debugEnabled) {
-        console.log(`[DEBUG] ${message}`, ...args)
+class Logger {
+    private level: LogLevel = LogLevel.ERROR // Default safe level
+
+    constructor() {
+        // Initialize level based on config
+        // In a real app we might load this from a remote config or local storage
+        if (config.debugEnabled) {
+            this.level = LogLevel.DEBUG
+        }
+    }
+
+    /**
+     * Set the minimum log level for output
+     */
+    public setLevel(level: LogLevel) {
+        this.level = level
+    }
+
+    public debug(message: string, context?: LogContext) {
+        this.log(LogLevel.DEBUG, message, context)
+    }
+
+    public info(message: string, context?: LogContext) {
+        this.log(LogLevel.INFO, message, context)
+    }
+
+    public warn(message: string, context?: LogContext) {
+        this.log(LogLevel.WARN, message, context)
+    }
+
+    public error(error: Error | string, context?: LogContext) {
+        this.log(LogLevel.ERROR, error, context)
+    }
+
+    public critical(error: Error | string, context?: LogContext) {
+        this.log(LogLevel.CRITICAL, error, context)
+    }
+
+    private log(
+        level: LogLevel,
+        messageOrError: string | Error,
+        context?: LogContext,
+    ) {
+        // Filter out logs below current level
+        if (level < this.level) {
+            return
+        }
+
+        const prefix = `[${LOG_LEVEL_NAMES[level]}]`
+        const message =
+            messageOrError instanceof Error
+                ? messageOrError.message
+                : messageOrError
+
+        // Pass context as second argument if present, otherwise just the message
+        const args = context ? [context] : []
+
+        switch (level) {
+            case LogLevel.DEBUG:
+            case LogLevel.INFO:
+                console.log(`${prefix} ${message}`, ...args)
+                break
+            case LogLevel.WARN:
+                console.warn(`${prefix} ${message}`, ...args)
+                break
+            case LogLevel.ERROR:
+            case LogLevel.CRITICAL:
+                console.error(`${prefix} ${message}`, ...args)
+                break
+        }
     }
 }
 
-/**
- * Info-level logging - general information
- */
-export const infoLog = (message: string, ...args: unknown[]) => {
-    console.log(`[INFO] ${message}`, ...args)
-}
-
-/**
- * Warning-level logging - potential issues
- */
-export const warnLog = (message: string, ...args: unknown[]) => {
-    console.warn(`[WARN] ${message}`, ...args)
-}
-
-/**
- * Error-level logging - errors that should be reported
- * Note: Crashlytics reporting is handled at the error boundary level
- */
-export const errorLog = (error: Error | string, context?: LogContext) => {
-    const errorMessage = error instanceof Error ? error.message : error
-    console.error(`[ERROR] ${errorMessage}`, context)
-}
-
-/**
- * Critical-level logging - critical errors that should always be reported
- * Note: Crashlytics reporting is handled at the error boundary level
- */
-export const criticalLog = (error: Error | string, context?: LogContext) => {
-    const errorMessage = error instanceof Error ? error.message : error
-    console.error(`[CRITICAL] ${errorMessage}`, context)
-}
-
-/**
- * Generic log function with level control
- */
-export const log = (level: LogLevel, message: string, context?: LogContext) => {
-    switch (level) {
-        case LogLevel.DEBUG:
-            debugLog(message, context)
-            break
-        case LogLevel.INFO:
-            infoLog(message, context)
-            break
-        case LogLevel.WARN:
-            warnLog(message, context)
-            break
-        case LogLevel.ERROR:
-            errorLog(message, context)
-            break
-        case LogLevel.CRITICAL:
-            criticalLog(message, context)
-            break
-    }
-}
+export const logger = new Logger()

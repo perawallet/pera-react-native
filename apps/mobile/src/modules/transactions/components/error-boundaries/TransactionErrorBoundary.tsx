@@ -38,7 +38,7 @@ const TransactionErrorFallback = ({
             body={
                 appError
                     ? t(appError.getI18nKey(), appError.metadata.params)
-                    : t('errors.generic.message')
+                    : t('errors.transaction.body')
             }
             button={
                 <PWButton

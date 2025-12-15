@@ -18,6 +18,7 @@ import {
     registerTestPlatform,
     MemoryKeyValueStorage,
 } from '@perawallet/wallet-core-platform-integration'
+import { AccountKeyNotFoundError } from '../../errors'
 
 // Mocks
 const uuidSpies = vi.hoisted(() => ({ v7: vi.fn() }))
@@ -205,7 +206,7 @@ describe('useCreateAccount', () => {
         await act(async () => {
             await expect(
                 result.current({ account: 0, keyIndex: 0 }),
-            ).rejects.toThrow('No key found for WALLET1')
+            ).rejects.toThrow(new AccountKeyNotFoundError('WALLET1'))
         })
     })
 
@@ -268,7 +269,7 @@ describe('useCreateAccount', () => {
         await act(async () => {
             await expect(
                 result.current({ account: 0, keyIndex: 0 }),
-            ).rejects.toThrow('Failed to generate master key')
+            ).rejects.toThrow('errors.account.key_access_error')
         })
     })
 

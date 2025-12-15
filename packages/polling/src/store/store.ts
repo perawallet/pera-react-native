@@ -18,7 +18,7 @@ import {
 } from '@perawallet/wallet-core-platform-integration'
 import {
     createLazyStore,
-    debugLog,
+    logger,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
 
@@ -54,9 +54,9 @@ export const createPollingStore = (storage: KeyValueStorageService) =>
     )
 
 export const initPollingStore = () => {
-    debugLog('Initializing polling store')
+    logger.debug('Initializing polling store')
     const storage = useKeyValueStorageService()
     const realStore = createPollingStore(storage)
     lazy.init(realStore)
-    debugLog('Polling store initialized')
+    logger.debug('Polling store initialized')
 }

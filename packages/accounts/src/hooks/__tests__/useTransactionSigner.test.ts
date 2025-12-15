@@ -19,6 +19,7 @@ import {
     MemoryKeyValueStorage,
 } from '@perawallet/wallet-core-platform-integration'
 import type { WalletAccount } from '../../models'
+import { AccountKeyNotFoundError, NoHDWalletError } from '../../errors'
 
 // Mock store
 vi.mock('../../store', async () => {
@@ -124,7 +125,7 @@ describe('useTransactionSigner', () => {
                 'ADDR1',
                 Buffer.from('txn'),
             ),
-        ).rejects.toEqual('No HD wallet found for ADDR1')
+        ).rejects.toEqual(new NoHDWalletError('ADDR1'))
     })
 
     test('signTransactionForAddress throws if account has no HD wallet details', async () => {
@@ -145,7 +146,7 @@ describe('useTransactionSigner', () => {
                 'ADDR1',
                 Buffer.from('txn'),
             ),
-        ).rejects.toEqual('No HD wallet found for ADDR1')
+        ).rejects.toEqual(new NoHDWalletError('ADDR1'))
     })
 
     test('signTransactionForAddress throws if no signing keys found in storage', async () => {
@@ -184,7 +185,7 @@ describe('useTransactionSigner', () => {
                 'ADDR1',
                 Buffer.from('txn'),
             ),
-        ).rejects.toEqual('No signing keys found for ADDR1')
+        ).rejects.toEqual(new AccountKeyNotFoundError('W1'))
     })
 
     test('signTransactionForAddress handles JSON format master key', async () => {
@@ -275,7 +276,7 @@ describe('useTransactionSigner', () => {
                 'ADDR1',
                 Buffer.from('txn'),
             ),
-        ).rejects.toThrow('Signing failed')
+        ).rejects.toThrow('errors.account.key_access_error')
     })
 
     test('signTransactionForAddress handles storage retrieval error', async () => {

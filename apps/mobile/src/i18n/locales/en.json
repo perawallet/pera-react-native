@@ -109,6 +109,7 @@
     },
     "common": {
         "offline_mode": "Offline Mode",
+        "go_back": "Go Back",
         "loading": {
             "label": "Loading..."
         },
@@ -160,11 +161,58 @@
             "no_matching_body": "There aren't any matching contacts."
         }
     },
-    "error": {
+    "errors": {
+        "account": {
+            "title": "An error occurred processing this account",
+            "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists.",
+            "generic": "An error occurred processing this account.",
+            "key_not_found": "Could not find the key for wallet {{walletId}}.",
+            "no_hd_wallet": "Could not find the Universal Wallet for address {{address}}.",
+            "master_key_invalid": "The master key for wallet {{walletId}} is invalid.",
+            "key_access_error": "Failed to access the signing key."
+        },
+        "blockchain": {
+            "generic": "Something went wrong accessing the blockchain.",
+            "transaction": "Failed to process the transaction: {{cause}}",
+            "invalid_transaction": "Invalid transaction: {{cause}}"
+        },
         "general": {
             "title": "An error occurred",
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists."
-        }
+        },
+        "network": {
+            "generic": "Failed to connect to the network.",
+            "timeout": "Didn't receive a response from the network.",
+            "no_connection": "Failed to connect to the network."
+        },
+        "api": {
+            "generic": "An error occurred will fetching data.",
+            "not_found": "The requested resource could not be found.",
+            "unauthorized": "You are not authorized to access this resource.",
+            "server_error": "The server encountered an error while processing the request."
+        },
+        "validation": {
+            "generic": "The data appears to be invalid.",
+            "invalid_address": "The address appears to be invalid: {{address}}",
+            "invalid_amount": "The amount appears to be invalid: {{amount}}",
+            "invalid_mnemonic": "The mnemonic appears to be invalid: {{mnemonic}}",
+            "required_field": "A required field is missing: {{field}}"
+        },
+        "auth": {
+            "generic": "Something went wrong with the authentication.",
+            "biometric_failed": "Something went wrong with the authentication.",
+            "pin_incorrect": "Something went wrong with the authentication."
+        },
+        "storage": {
+            "generic": "Couldn't access stored data.",
+            "read_failed": "Something went wrong reading from storage.",
+            "write_failed": "Something went wrong writing to storage."
+        },
+        "transaction": {
+            "title": "An error occurred processing this transaction",
+            "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists."
+        },
+        "unknown": "An unknown error occurred."
     },
     "menu": {
         "cards": "Cards",

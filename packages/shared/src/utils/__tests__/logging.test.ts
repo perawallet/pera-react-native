@@ -11,56 +11,59 @@
  */
 
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
-import { infoLog, errorLog, debugLog } from '../logging'
+import { logger, LogLevel } from '../logging'
 
-describe('utils/logging', () => {
+describe('logging', () => {
     beforeEach(() => {
         vi.spyOn(console, 'log').mockImplementation(() => {})
         vi.spyOn(console, 'error').mockImplementation(() => {})
+        vi.spyOn(console, 'warn').mockImplementation(() => {})
     })
 
     afterEach(() => {
         vi.restoreAllMocks()
     })
 
-    describe('infoLog', () => {
-        test('calls console.log with message', () => {
-            infoLog('test message')
-            expect(console.log).toHaveBeenCalledWith('test message')
+    describe('logger', () => {
+        beforeEach(() => {
+            // Reset level to DEBUG for tests to ensure all logs are captured
+            logger.setLevel(LogLevel.DEBUG)
         })
 
-        test('calls console.log with message and args', () => {
-            infoLog('test message', 'arg1', 'arg2')
-            expect(console.log).toHaveBeenCalledWith(
-                'test message',
-                'arg1',
-                'arg2',
-            )
-        })
-    })
-
-    describe('errorLog', () => {
-        test('calls console.error with message', () => {
-            errorLog('error message')
-            expect(console.error).toHaveBeenCalledWith('error message')
+        test('debug logs when level is DEBUG', () => {
+            logger.debug('test message')
+            expect(console.log).toHaveBeenCalledWith('[DEBUG] test message')
         })
 
-        test('calls console.error with message and args', () => {
-            errorLog('error message', 'arg1', 'arg2')
+        test('info logs when level is DEBUG', () => {
+            logger.info('test message')
+            expect(console.log).toHaveBeenCalledWith('[INFO] test message')
+        })
+
+        test('warn logs when level is DEBUG', () => {
+            logger.warn('test message')
+            expect(console.warn).toHaveBeenCalledWith('[WARN] test message')
+        })
+
+        test('error logs with context', () => {
+            const context = { key: 'val' }
+            logger.error('test error', context)
             expect(console.error).toHaveBeenCalledWith(
-                'error message',
-                'arg1',
-                'arg2',
+                '[ERROR] test error',
+                context,
             )
         })
-    })
 
-    describe('debugLog', () => {
-        test('calls console.log with message and args', () => {
-            debugLog('debug message', 'arg1')
-            // We can't easily test the config.debugEnabled condition without complex mocking
-            // Just verify the function can be called without errors
-            expect(console.log).toHaveBeenCalled()
+        test('does not log debug when level is INFO', () => {
+            logger.setLevel(LogLevel.INFO)
+            logger.debug('should not show')
+            expect(console.log).not.toHaveBeenCalled()
+        })
+
+        test('logs error even when level is ERROR', () => {
+            logger.setLevel(LogLevel.ERROR)
+            logger.error('critical')
+            expect(console.error).toHaveBeenCalledWith('[ERROR] critical')
         })
     })
 })

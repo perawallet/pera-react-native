@@ -19,7 +19,7 @@ import {
 import type { BlockchainStore, SignRequest } from '../models'
 import {
     createLazyStore,
-    debugLog,
+    logger,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
 import { v7 as uuidv7 } from 'uuid'
@@ -70,9 +70,9 @@ const createBlockchainStore = (storage: KeyValueStorageService) =>
     )
 
 export const initBlockchainStore = () => {
-    debugLog('Initializing blockchain store')
+    logger.debug('Initializing blockchain store')
     const storage = useKeyValueStorageService()
     const realStore = createBlockchainStore(storage)
     lazy.init(realStore)
-    debugLog('Blockchain store initialized')
+    logger.debug('Blockchain store initialized')
 }

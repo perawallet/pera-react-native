@@ -112,6 +112,34 @@ function main() {
         log('All locales are consistent.', colors.green);
     }
 
+    // 5. Error Keys Check (Verify keys in i18n-keys.ts exist in en.json)
+    log('\n--- Checking for Error Keys Coverage ---', colors.blue);
+    const ERROR_KEYS_PATH = path.join(__dirname, '../packages/shared/src/errors/i18n-keys.ts');
+    let errorKeysCount = 0;
+    const errorKeys = new Set();
+
+    if (fs.existsSync(ERROR_KEYS_PATH)) {
+        const content = fs.readFileSync(ERROR_KEYS_PATH, 'utf8');
+        // Simple regex to find values in the object: KEY: 'value'
+        const keyRegex = /[A-Z0-9_]+\s*:\s*['"]([^'"]+)['"]/g;
+        let match;
+
+        while ((match = keyRegex.exec(content)) !== null) {
+            const key = match[1];
+            errorKeys.add(key);
+            if (!baseKeys.has(key)) {
+                warn(`Error key defined in i18n-keys.ts but missing in en.json: ${key}`);
+                errorKeysCount++;
+            }
+        }
+    } else {
+        warn(`Could not find i18n-keys.ts at ${ERROR_KEYS_PATH}`);
+    }
+
+    if (errorKeysCount === 0) {
+        log('All defined error keys are present in en.json.', colors.green);
+    }
+
 
     // 2. Unused Keys Check
     log('\n--- Checking for Unused Keys ---', colors.blue);
@@ -124,7 +152,7 @@ function main() {
         // This isn't perfect (e.g. dynamic keys) but good for a "lint"
         // We try to match "key" or 'key' or `key`
         const regex = new RegExp(`['"\`]${key}['"\`]`, 'g');
-        if (!regex.test(allCode)) {
+        if (!regex.test(allCode) && !errorKeys.has(key)) {
             // Also check if it's used as a translation call like t('key') or t("key") just in case
             // Actually the above quote check covers most simple usages.
             // Let's being conservative and just warn.

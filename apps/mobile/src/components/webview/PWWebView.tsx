@@ -44,7 +44,7 @@ import { usePeraWebviewInterface } from '@hooks/webview'
 import EmptyView from '../empty-view/EmptyView'
 import PWButton from '../button/PWButton'
 import LoadingView from '../loading/LoadingView'
-import { debugLog } from '@perawallet/wallet-core-shared'
+import { logger } from '@perawallet/wallet-core-shared'
 import WebViewTitleBar from './WebViewTitleBar'
 import WebViewFooterBar from './WebViewFooterBar'
 import { WebViewContext } from '@providers/WebViewProvider'
@@ -111,10 +111,9 @@ const PWWebView = (props: PWWebViewProps) => {
 
     const handleEvent = useCallback(
         (event: WebViewMessageEvent) => {
-            debugLog(
-                'WebView: Received onMessage event',
-                event.nativeEvent.data,
-            )
+            logger.debug('WebView: Received onMessage event', {
+                data: event.nativeEvent.data,
+            })
 
             const dataString = event.nativeEvent.data
             if (!dataString) {
@@ -133,18 +132,21 @@ const PWWebView = (props: PWWebViewProps) => {
 
     const navigationStateChange = useCallback(
         (navState: WebViewNativeEvent) => {
-            debugLog('WebView: Navigation state change', navState)
+            logger.debug('WebView: Navigation state change', { navState })
             setNavigationState(navState)
         },
         [],
     )
 
     const verifyLoad = useCallback((event: WebViewNavigationEvent) => {
-        debugLog('WebView: Loading', event.nativeEvent.url, 'secure:', isSecure)
+        logger.debug('WebView: Loading', {
+            url: event.nativeEvent.url,
+            isSecure,
+        })
     }, [])
 
     const loadCompleted = useCallback((event: WebViewNavigationEvent) => {
-        debugLog('WebView: Title', event.nativeEvent.title)
+        logger.debug('WebView: Title', { title: event.nativeEvent.title })
         setTitle(event.nativeEvent.title)
     }, [])
 

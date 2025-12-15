@@ -24,6 +24,7 @@ import { withKey } from '../utils'
 import { WalletAccount } from '../models'
 import { BIP32DerivationTypes } from '@perawallet/wallet-core-xhdwallet'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { AccountKeyNotFoundError } from '../errors'
 
 export const useCreateAccount = () => {
     const { network } = useNetwork()
@@ -70,7 +71,7 @@ export const useCreateAccount = () => {
         )
 
         if (!masterKey?.seed) {
-            throw Error(`No key found for ${rootWalletId}`)
+            throw new AccountKeyNotFoundError(rootWalletId)
         }
 
         const { address, privateKey } = await deriveKey({

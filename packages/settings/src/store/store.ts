@@ -18,7 +18,7 @@ import {
     KeyValueStorageService,
     useKeyValueStorageService,
 } from '@perawallet/wallet-core-platform-integration'
-import { createLazyStore, debugLog } from '@perawallet/wallet-core-shared'
+import { createLazyStore, logger } from '@perawallet/wallet-core-shared'
 
 const lazy = createLazyStore<WithPersist<StoreApi<SettingsState>, unknown>>()
 
@@ -68,9 +68,9 @@ const createSettingsStore = (storage: KeyValueStorageService) =>
     )
 
 export const initSettingsStore = () => {
-    debugLog('Initializing settings store')
+    logger.debug('Initializing settings store')
     const storage = useKeyValueStorageService()
     const realStore = createSettingsStore(storage)
     lazy.init(realStore)
-    debugLog('Settings store initialized')
+    logger.debug('Settings store initialized')
 }

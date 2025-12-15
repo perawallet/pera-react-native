@@ -19,7 +19,7 @@ import {
 import type { DeviceState } from '../models'
 import {
     createLazyStore,
-    debugLog,
+    logger,
     type Network,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
@@ -94,9 +94,9 @@ export const createDeviceStore = (storage: KeyValueStorageService) =>
     )
 
 export const initDeviceStore = () => {
-    debugLog('Initializing device store')
+    logger.debug('Initializing device store')
     const storage = useKeyValueStorageService()
     const realStore = createDeviceStore(storage)
     lazy.init(realStore)
-    debugLog('Device store initialized')
+    logger.debug('Device store initialized')
 }

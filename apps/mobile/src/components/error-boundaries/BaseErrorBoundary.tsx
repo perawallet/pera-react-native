@@ -11,12 +11,7 @@
  */
 
 import { Component, ErrorInfo, ReactNode } from 'react'
-import {
-    AppError,
-    ErrorCategory,
-    errorLog,
-    criticalLog,
-} from '@perawallet/wallet-core-shared'
+import { AppError, ErrorCategory, logger } from '@perawallet/wallet-core-shared'
 import crashlytics from '@react-native-firebase/crashlytics'
 import EmptyView from '@components/empty-view/EmptyView'
 
@@ -63,12 +58,12 @@ export class BaseErrorBoundary extends Component<
 
         // Log error
         if (appError?.shouldReport()) {
-            criticalLog(error, {
+            logger.critical(error, {
                 category: this.props.category,
                 componentStack: errorInfo.componentStack,
             })
         } else {
-            errorLog(error, {
+            logger.error(error, {
                 category: this.props.category,
                 componentStack: errorInfo.componentStack,
             })
@@ -102,8 +97,8 @@ export class BaseErrorBoundary extends Component<
 
             return (
                 <EmptyView
-                    title={this.props.t('error.general.title')}
-                    body={this.props.t('error.general.body')}
+                    title={this.props.t('errors.general.title')}
+                    body={this.props.t('errors.general.body')}
                 />
             )
         }

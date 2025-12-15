@@ -20,6 +20,7 @@ import {
 } from '@perawallet/wallet-core-platform-integration'
 import type { WalletAccount } from '../../models'
 import { BIP32DerivationTypes } from '@perawallet/wallet-core-xhdwallet'
+import { AccountKeyNotFoundError, InvalidMasterKeyError } from '../../errors'
 
 vi.mock('../../store', async () => {
     const actual =
@@ -257,7 +258,7 @@ describe('useAddAccount', () => {
             await act(async () => {
                 await result.current(hdAccount)
             })
-        }).rejects.toThrow('No key found for missing-wallet')
+        }).rejects.toThrow(new AccountKeyNotFoundError('missing-wallet'))
     })
 
     test('throws error when master key has no seed property', async () => {
@@ -300,6 +301,6 @@ describe('useAddAccount', () => {
             await act(async () => {
                 await result.current(hdAccount)
             })
-        }).rejects.toThrow('No key found for bad-wallet')
+        }).rejects.toThrow(new InvalidMasterKeyError('bad-wallet'))
     })
 })
