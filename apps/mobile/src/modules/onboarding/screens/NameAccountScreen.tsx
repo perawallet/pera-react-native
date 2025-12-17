@@ -68,7 +68,10 @@ const NameAccountScreen = ({ route }: NameAccountScreenProps) => {
         deletePreference(UserPreferences.isCreatingAccount)
         navigation.replace('TabBar', {
             screen: 'Home',
-            params: {},
+            params: {
+                screen: 'AccountDetails',
+                params: { playConfetti: true },
+            },
         })
     }
 

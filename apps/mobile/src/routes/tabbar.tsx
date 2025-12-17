@@ -20,9 +20,10 @@ import MenuScreen from '@modules/menu/screens/MenuScreen'
 import { headeredLayout, safeAreaLayout } from './layouts'
 import TabLabel from '@components/tabbar/TabLabel'
 import { AccountStackNavigator, AccountStackParamsList } from './account'
+import { NavigatorScreenParams } from '@react-navigation/native'
 
 export type TabBarStackParamList = {
-    Home: AccountStackParamsList
+    Home: NavigatorScreenParams<AccountStackParamsList>
     Discover: undefined
     Swap: undefined
     Fund: undefined

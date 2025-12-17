@@ -30,6 +30,9 @@ import AccountNfts from '../components/account-nfts/AccountNfts'
 import AccountHistory from '../components/account-history/AccountHistory'
 import { TAB_ANIMATION_CONFIG } from '@constants/ui'
 import { useLanguage } from '@hooks/language'
+import { AccountStackParamsList } from '@routes/account'
+import { NativeStackScreenProps } from '@react-navigation/native-stack'
+import ConfettiAnimation from '../components/confetti-animation/ConfettiAnimation'
 
 //TODO hook up all the button panel buttons correctly
 //TODO implement more menu
@@ -38,13 +41,19 @@ import { useLanguage } from '@hooks/language'
 //TODO implement account info screen somewhere (see old app top right corner)
 //TODO add navigation to asset details screen
 //TODO implement rekey information && multisig information
-const AccountScreen = () => {
+type AccountScreenProps = NativeStackScreenProps<
+    AccountStackParamsList,
+    'AccountDetails'
+>
+
+const AccountScreen = ({ route }: AccountScreenProps) => {
     const styles = useStyles()
     const account = useSelectedAccount()
     const scannerState = useModalState()
     const drawerState = useModalState()
     const [tabIndex, setTabIndex] = useState(0)
     const { t } = useLanguage()
+    const playConfetti = route.params?.playConfetti ?? false
 
     const toggleAccountSelectorVisible = () => {
         drawerState.open()
@@ -74,6 +83,7 @@ const AccountScreen = () => {
                 />
             )}
         >
+            <ConfettiAnimation play={playConfetti} />
             <PWView style={styles.iconBar}>
                 <PWView style={styles.iconBarSection}>
                     {/* TODO we may want to add support for pending inbox items here too
