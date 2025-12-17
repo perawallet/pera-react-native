@@ -21,27 +21,39 @@ import AssetDetailsScreen from '@modules/assets/screens/AssetDetailsScreen'
 import NavigationHeader from '@components/navigation-header/NavigationHeader'
 import { fullScreenLayout, safeAreaLayout } from './layouts'
 
-export const AccountStack = createNativeStackNavigator({
-    initialRouteName: 'AccountDetails',
-    screenOptions: {
-        headerShown: false,
-        ...SCREEN_ANIMATION_CONFIG,
-    },
-    screenListeners,
-    screens: {
-        AccountDetails: {
-            screen: AccountScreen,
-            layout: safeAreaLayout,
-        },
-        AssetDetails: {
-            screen: AssetDetailsScreen,
-            layout: fullScreenLayout,
-            options: {
-                headerShown: true,
-                header: (props: NativeStackHeaderProps) => (
-                    <NavigationHeader {...props} />
-                ),
-            },
-        },
-    },
-})
+export type AccountStackParamsList = {
+    AccountDetails?: undefined
+    AssetDetails?: { assetId: string }
+}
+
+const AccountStack = createNativeStackNavigator<AccountStackParamsList>()
+
+export const AccountStackNavigator = () => {
+    return (
+        <AccountStack.Navigator
+            initialRouteName='AccountDetails'
+            screenOptions={{
+                headerShown: false,
+                ...SCREEN_ANIMATION_CONFIG,
+            }}
+            screenListeners={screenListeners}
+        >
+            <AccountStack.Screen
+                name='AccountDetails'
+                layout={safeAreaLayout}
+                component={AccountScreen}
+            />
+            <AccountStack.Screen
+                name='AssetDetails'
+                layout={fullScreenLayout}
+                component={AssetDetailsScreen}
+                options={{
+                    headerShown: true,
+                    header: (props: NativeStackHeaderProps) => (
+                        <NavigationHeader {...props} />
+                    ),
+                }}
+            />
+        </AccountStack.Navigator>
+    )
+}

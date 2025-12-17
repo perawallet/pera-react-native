@@ -373,14 +373,6 @@
                 "mainnet_label": "Algorand MainNet",
                 "testnet_label": "Algorand TestNet"
             }
-        },
-        "sub_page": {
-            "description": "This page would hold the settings for {{title}}. For now we are going to just put some random stuff here for ease of use",
-            "toggle_theme": "Toggle Theme",
-            "toggle_network": "Toggle Network",
-            "simulate_signing_request": "Simulate Signing Request",
-            "unexpected_error_title": "An unexpected error occurred",
-            "unexpected_error_body": "Details: {{error}}"
         }
     },
     "tabbar": {

@@ -10,12 +10,11 @@
  limitations under the License
  */
 
+import { useNavigation } from '@react-navigation/native'
 import {
-    ParamListBase,
-    useNavigation,
-    StaticScreenProps,
-} from '@react-navigation/native'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+    NativeStackNavigationProp,
+    NativeStackScreenProps,
+} from '@react-navigation/native-stack'
 import { useStyles } from './NameAccountScreen.styles'
 import { Input, Text } from '@rneui/themed'
 import PWView from '@components/view/PWView'
@@ -32,18 +31,23 @@ import { useState } from 'react'
 import { KeyboardAvoidingView, Platform } from 'react-native'
 import { useLanguage } from '@hooks/language'
 import { usePreferences } from '@perawallet/wallet-core-settings'
+import { UserPreferences } from '@constants/user-preferences'
+import { OnboardingStackParamList } from '@routes/onboarding'
+import { RootStackParamList } from '@routes/index'
 
-type NameAccountScreenProps = StaticScreenProps<{
-    account: WalletAccount
-}>
+type NameAccountScreenProps = NativeStackScreenProps<
+    OnboardingStackParamList,
+    'NameAccount'
+>
 
 const NameAccountScreen = ({ route }: NameAccountScreenProps) => {
-    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
+    const navigation =
+        useNavigation<NativeStackNavigationProp<RootStackParamList>>()
     const styles = useStyles()
     const accounts = useAllAccounts()
     const updateAccount = useUpdateAccount()
     const { t } = useLanguage()
-    const { setPreference } = usePreferences()
+    const { deletePreference } = usePreferences()
 
     const routeAccount = route.params?.account
 
@@ -58,12 +62,13 @@ const NameAccountScreen = ({ route }: NameAccountScreenProps) => {
         setAccount(account)
         setWalletDisplay(value)
         updateAccount(account)
-        setPreference('isOnboarding', false)
     }
 
     const goToHome = () => {
+        deletePreference(UserPreferences.isCreatingAccount)
         navigation.replace('TabBar', {
             screen: 'Home',
+            params: {},
         })
     }
 

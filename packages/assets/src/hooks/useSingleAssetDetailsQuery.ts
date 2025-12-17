@@ -48,7 +48,7 @@ export const useSingleAssetDetailsQuery = (assetId: string) => {
         queryKey: getAssetDetailsQueryKey(assetId),
         queryFn: () => fetchAssetDetails(assetId),
         select: data => mapAssetResponseToPeraAsset(data),
-        enabled: assetId !== ALGO_ASSET_ID,
+        enabled: !!assetId.length && assetId !== ALGO_ASSET_ID,
     })
 
     const {
@@ -62,13 +62,14 @@ export const useSingleAssetDetailsQuery = (assetId: string) => {
         queryKey: getIndexerAssetDetailsQueryKey(assetId),
         queryFn: () => fetchIndexerAssetDetails(assetId),
         select: data => mapIndexerAssetToPeraAsset(data),
-        enabled: assetId !== ALGO_ASSET_ID,
+        enabled: !!assetId.length && assetId !== ALGO_ASSET_ID,
     })
 
     const { data: algoData, refetch: algoRefetch } = useQuery({
         queryKey: getPublicAssetDetailsQueryKey(assetId),
         queryFn: () => fetchPublicAssetDetails(assetId),
         select: data => mapPublicAssetResponseToPeraAsset(data),
+        enabled: !!assetId.length,
     })
 
     const results = useMemo<{

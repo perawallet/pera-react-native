@@ -58,13 +58,12 @@ export default defineConfig({
                 'src/**/styles.ts',
                 'src/**/theme.ts',
                 'src/components/webview/injected-scripts.ts',
-                //TODO: tests for hooks and boostrap were causing weird syntax error I couldn't figure out so disabling
-                //coverage for now
+                //TODO: react native hook tests are not working due to a general problem with vitest, babel and flow types
+                // we're disabling until we convert this project to jest or something
                 'src/bootstrap/*',
-                'src/hooks/toast.ts',
-                'src/hooks/webview.ts',
-                'src/hooks/deeplink.ts',
+                'src/hooks/*',
                 'src/constants/ui.ts',
+                'src/wdyr.ts',
             ],
             reporter: ['text', 'html', 'lcov'],
             reportsDirectory: './coverage',

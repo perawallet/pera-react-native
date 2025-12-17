@@ -17,74 +17,94 @@ import DiscoverScreen from '@modules/discover/screens/DiscoverScreen'
 import FundScreen from '@modules/fund/screens/FundScreen'
 import SwapScreen from '@modules/swap/screens/SwapScreen'
 import MenuScreen from '@modules/menu/screens/MenuScreen'
-import { AccountStack } from './account'
 import { headeredLayout, safeAreaLayout } from './layouts'
 import TabLabel from '@components/tabbar/TabLabel'
+import { AccountStackNavigator, AccountStackParamsList } from './account'
 
-export const TabBarStack = createBottomTabNavigator({
-    initialRouteName: 'Home',
-    screenOptions: ({ route, theme }) => ({
-        headerShown: false,
-        tabBarStyle: {
-            backgroundColor: theme.colors.background,
-            borderTopWidth: 0,
-        },
-        tabBarIcon: ({ focused }) => {
-            const style = focused ? 'primary' : 'secondary'
-            const iconNames: Record<string, IconName> = {
-                Home: 'house',
-                Discover: 'globe',
-                Swap: 'swap',
-                Fund: 'fund',
-                Menu: 'horizontal-line-stack',
-            }
+export type TabBarStackParamList = {
+    Home: AccountStackParamsList
+    Discover: undefined
+    Swap: undefined
+    Fund: undefined
+    Menu: undefined
+}
 
-            const iconName = iconNames[route.name]
-            if (!iconName) return null
+const TabBarStack = createBottomTabNavigator<TabBarStackParamList>()
 
-            return (
-                <PWIcon
-                    name={iconName}
-                    variant={style}
-                />
-            )
-        },
-        tabBarLabel: ({ focused }) => {
-            const labelMap: Record<string, string> = {
-                Home: 'tabbar.home',
-                Discover: 'tabbar.discover',
-                Swap: 'tabbar.swap',
-                Fund: 'tabbar.fund',
-                Menu: 'tabbar.menu',
-            }
-            const i18nKey = labelMap[route.name]
-            if (!i18nKey) return null
-            return (
-                <TabLabel
-                    i18nKey={i18nKey}
-                    active={focused}
-                />
-            )
-        },
-    }),
-    screenListeners,
-    screens: {
-        Home: AccountStack,
-        Discover: {
-            screen: DiscoverScreen,
-            layout: headeredLayout,
-        },
-        Fund: {
-            screen: FundScreen,
-            layout: headeredLayout,
-        },
-        Swap: {
-            screen: SwapScreen,
-            layout: safeAreaLayout,
-        },
-        Menu: {
-            screen: MenuScreen,
-            layout: safeAreaLayout,
-        },
-    },
-})
+export const TabBarStackNavigator = () => {
+    return (
+        <TabBarStack.Navigator
+            initialRouteName='Home'
+            screenOptions={({ route, theme }) => ({
+                headerShown: false,
+                tabBarStyle: {
+                    backgroundColor: theme.colors.background,
+                    borderTopWidth: 0,
+                },
+                tabBarIcon: ({ focused }) => {
+                    const style = focused ? 'primary' : 'secondary'
+                    const iconNames: Record<string, IconName> = {
+                        Home: 'house',
+                        Discover: 'globe',
+                        Swap: 'swap',
+                        Fund: 'fund',
+                        Menu: 'horizontal-line-stack',
+                    }
+
+                    const iconName = iconNames[route.name]
+                    if (!iconName) return null
+
+                    return (
+                        <PWIcon
+                            name={iconName}
+                            variant={style}
+                        />
+                    )
+                },
+                tabBarLabel: ({ focused }) => {
+                    const labelMap: Record<string, string> = {
+                        Home: 'tabbar.home',
+                        Discover: 'tabbar.discover',
+                        Swap: 'tabbar.swap',
+                        Fund: 'tabbar.fund',
+                        Menu: 'tabbar.menu',
+                    }
+                    const i18nKey = labelMap[route.name]
+                    if (!i18nKey) return null
+                    return (
+                        <TabLabel
+                            i18nKey={i18nKey}
+                            active={focused}
+                        />
+                    )
+                },
+            })}
+            screenListeners={screenListeners}
+        >
+            <TabBarStack.Screen
+                name='Home'
+                component={AccountStackNavigator}
+            />
+            <TabBarStack.Screen
+                name='Discover'
+                layout={headeredLayout}
+                component={DiscoverScreen}
+            />
+            <TabBarStack.Screen
+                name='Swap'
+                layout={safeAreaLayout}
+                component={SwapScreen}
+            />
+            <TabBarStack.Screen
+                name='Fund'
+                layout={headeredLayout}
+                component={FundScreen}
+            />
+            <TabBarStack.Screen
+                name='Menu'
+                layout={safeAreaLayout}
+                component={MenuScreen}
+            />
+        </TabBarStack.Navigator>
+    )
+}

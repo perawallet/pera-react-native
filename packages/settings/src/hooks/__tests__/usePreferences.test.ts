@@ -114,7 +114,7 @@ describe('services/settings/usePreferences', () => {
         expect(result.current.hasPreference('key2')).toBe(true)
 
         act(() => {
-            result.current.clearAll()
+            result.current.clearAllPreferences()
         })
 
         expect(result.current.hasPreference('key1')).toBe(false)

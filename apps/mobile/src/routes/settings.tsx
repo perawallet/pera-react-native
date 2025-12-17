@@ -25,111 +25,142 @@ import SettingsPasskeyScreen from '@modules/settings/screens/passkeys/SettingsPa
 import SettingsCurrencyScreen from '@modules/settings/screens/currency/SettingsCurrencyScreen'
 import SettingsThemeScreen from '@modules/settings/screens/theme/SettingsThemeScreen'
 import SettingsDeveloperScreen from '@modules/settings/screens/developer/SettingsDeveloperScreen'
-import SettingsSubPageScreen from '@modules/settings/screens/SettingsSubPageScreen'
 import { fullScreenLayout, headeredLayout } from './layouts'
 import SettingsDeveloperNodeSettingsScreen from '@modules/settings/screens/developer/node-settings/SettingsDeveloperNodeSettingsScreen'
 import SettingsDeveloperDispenserScreen from '@modules/settings/screens/developer/dispenser/SettingsDeveloperDispenserScreen'
+import { NavigatorScreenParams } from '@react-navigation/native'
 
-export const DeveloperSettingsStack = createNativeStackNavigator({
-    initialRouteName: 'DeveloperSettingsHome',
-    screenOptions: {
-        headerShown: true,
-        header: (props: NativeStackHeaderProps) => (
-            <NavigationHeader {...props} />
-        ),
-        ...SCREEN_ANIMATION_CONFIG,
-    },
-    screenListeners,
-    layout: headeredLayout,
-    screens: {
-        DeveloperSettingsHome: {
-            screen: SettingsDeveloperScreen,
-            options: {
-                title: 'screens.developer_settings',
-            },
-        },
-        NodeSettings: {
-            screen: SettingsDeveloperNodeSettingsScreen,
-            options: {
-                title: 'screens.node_settings',
-            },
-        },
-        DispenserSettings: {
-            screen: SettingsDeveloperDispenserScreen,
-            options: {
-                title: 'screens.dispenser',
-            },
-        },
-    },
-})
+export type DeveloperSettingsStackParamsList = {
+    DeveloperSettingsHome: undefined
+    NodeSettings: undefined
+    DispenserSettings: undefined
+}
 
-export const SettingsStack = createNativeStackNavigator({
-    initialRouteName: 'SettingsHome',
-    screenOptions: {
-        headerShown: true,
-        header: (props: NativeStackHeaderProps) => (
-            <NavigationHeader {...props} />
-        ),
-        ...SCREEN_ANIMATION_CONFIG,
-    },
-    screenListeners,
-    layout: fullScreenLayout,
-    screens: {
-        SettingsHome: {
-            screen: SettingsScreen,
-            options: {
-                title: 'screens.settings',
-            },
-        },
-        SecuritySettings: {
-            screen: SettingsSecurityScreen,
-            options: {
-                title: 'screens.security',
-            },
-        },
-        NotificationsSettings: {
-            screen: SettingsNotificationsScreen,
-            options: {
-                title: 'screens.notifications',
-            },
-        },
-        WalletConnectSettings: {
-            screen: SettingsWalletConnectScreen,
-            options: {
-                title: 'screens.wallet_connect',
-            },
-        },
-        PasskeysSettings: {
-            screen: SettingsPasskeyScreen,
-            options: {
-                title: 'screens.passkeys',
-            },
-        },
-        CurrencySettings: {
-            screen: SettingsCurrencyScreen,
-            options: {
-                title: 'screens.currency',
-            },
-        },
-        ThemeSettings: {
-            screen: SettingsThemeScreen,
-            options: {
-                title: 'screens.theme',
-            },
-        },
-        DeveloperSettings: {
-            screen: DeveloperSettingsStack,
-            options: {
-                headerShown: false,
-            },
-        },
-        SettingsSubPage: {
-            screen: SettingsSubPageScreen,
-            //TODO fix types here
-            //eslint-disable-next-line @typescript-eslint/no-explicit-any
-            options: ({ route }: any) => ({
-                title: route.params?.title,
-            }),
-        },
-    },
-})
+const DeveloperSettingsStack =
+    createNativeStackNavigator<DeveloperSettingsStackParamsList>()
+
+const DeveloperSettingsStackNavigator = () => {
+    return (
+        <DeveloperSettingsStack.Navigator
+            initialRouteName='DeveloperSettingsHome'
+            screenOptions={{
+                headerShown: true,
+                header: (props: NativeStackHeaderProps) => (
+                    <NavigationHeader {...props} />
+                ),
+                ...SCREEN_ANIMATION_CONFIG,
+            }}
+            screenListeners={screenListeners}
+            layout={headeredLayout}
+        >
+            <DeveloperSettingsStack.Screen
+                name='DeveloperSettingsHome'
+                options={{
+                    title: 'screens.developer_settings',
+                }}
+                component={SettingsDeveloperScreen}
+            />
+            <DeveloperSettingsStack.Screen
+                name='NodeSettings'
+                options={{
+                    title: 'screens.node_settings',
+                }}
+                component={SettingsDeveloperNodeSettingsScreen}
+            />
+            <DeveloperSettingsStack.Screen
+                name='DispenserSettings'
+                options={{
+                    title: 'screens.dispenser',
+                }}
+                component={SettingsDeveloperDispenserScreen}
+            />
+        </DeveloperSettingsStack.Navigator>
+    )
+}
+
+export type SettingsStackParamsList = {
+    SettingsHome: undefined
+    SecuritySettings: undefined
+    NotificationsSettings: undefined
+    WalletConnectSettings: undefined
+    PasskeysSettings: undefined
+    CurrencySettings: undefined
+    ThemeSettings: undefined
+    DeveloperSettings: NavigatorScreenParams<DeveloperSettingsStackParamsList>
+}
+
+export const SettingsStack = createNativeStackNavigator()
+
+export const SettingsStackNavigator = () => {
+    return (
+        <SettingsStack.Navigator
+            initialRouteName='SettingsHome'
+            screenOptions={{
+                headerShown: true,
+                header: (props: NativeStackHeaderProps) => (
+                    <NavigationHeader {...props} />
+                ),
+                ...SCREEN_ANIMATION_CONFIG,
+            }}
+            screenListeners={screenListeners}
+            layout={fullScreenLayout}
+        >
+            <SettingsStack.Screen
+                name='SettingsHome'
+                options={{
+                    title: 'screens.settings',
+                }}
+                component={SettingsScreen}
+            />
+            <SettingsStack.Screen
+                name='SecuritySettings'
+                options={{
+                    title: 'screens.security',
+                }}
+                component={SettingsSecurityScreen}
+            />
+            <SettingsStack.Screen
+                name='NotificationsSettings'
+                options={{
+                    title: 'screens.notifications',
+                }}
+                component={SettingsNotificationsScreen}
+            />
+            <SettingsStack.Screen
+                name='WalletConnectSettings'
+                options={{
+                    title: 'screens.wallet_connect',
+                }}
+                component={SettingsWalletConnectScreen}
+            />
+            <SettingsStack.Screen
+                name='PasskeysSettings'
+                options={{
+                    title: 'screens.passkeys',
+                }}
+                component={SettingsPasskeyScreen}
+            />
+            <SettingsStack.Screen
+                name='CurrencySettings'
+                options={{
+                    title: 'screens.currency',
+                }}
+                component={SettingsCurrencyScreen}
+            />
+            <SettingsStack.Screen
+                name='ThemeSettings'
+                options={{
+                    title: 'screens.theme',
+                }}
+                component={SettingsThemeScreen}
+            />
+            <SettingsStack.Screen
+                name='DeveloperSettings'
+                options={{
+                    title: 'screens.developer_settings',
+                }}
+                component={DeveloperSettingsStackNavigator}
+            />
+        </SettingsStack.Navigator>
+    )
+}

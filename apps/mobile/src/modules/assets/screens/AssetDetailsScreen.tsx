@@ -11,7 +11,7 @@
  */
 
 import { Tab, TabView } from '@rneui/themed'
-import { StaticScreenProps, useNavigation } from '@react-navigation/native'
+import { useNavigation } from '@react-navigation/native'
 import {
     getAccountDisplayName,
     useSelectedAccount,
@@ -27,15 +27,14 @@ import LoadingView from '@components/loading/LoadingView'
 import { TAB_ANIMATION_CONFIG } from '@constants/ui'
 import PWView from '@components/view/PWView'
 import { useLanguage } from '@hooks/language'
+import { NativeStackScreenProps } from '@react-navigation/native-stack'
+import { AccountStackParamsList } from '@routes/account'
 
-type AssetDetailsScreenProps = {
-    assetId: string
-}
-
-//TODO implement me
-const AssetDetailsScreen = ({
-    route,
-}: StaticScreenProps<AssetDetailsScreenProps>) => {
+type AssetDetailsScreenProps = NativeStackScreenProps<
+    AccountStackParamsList,
+    'AssetDetails'
+>
+const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
     const assetId = route.params?.assetId
     const { showToast } = useToast()
     const { t } = useLanguage()
@@ -45,7 +44,7 @@ const AssetDetailsScreen = ({
 
     const navigation = useNavigation()
     const account = useSelectedAccount()
-    const { data: asset, isPending } = useSingleAssetDetailsQuery(assetId)
+    const { data: asset, isPending } = useSingleAssetDetailsQuery(assetId ?? '')
 
     const notImplemented = useCallback(() => {
         showToast({
@@ -59,6 +58,7 @@ const AssetDetailsScreen = ({
         if (!account) {
             return null
         }
+        //TODO implement press event
         return (
             <AccountIcon
                 account={account}

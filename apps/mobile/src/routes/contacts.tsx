@@ -15,7 +15,6 @@ import {
     NativeStackHeaderProps,
 } from '@react-navigation/native-stack'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
-import { screenListeners } from './listeners'
 import NavigationHeader from '@components/navigation-header/NavigationHeader'
 import ContactListScreen from '@modules/contacts/screens/ContactListScreen'
 import ContactListHeaderButtons from '@modules/contacts/components/ContactListHeaderButtons'
@@ -24,43 +23,58 @@ import ViewContactScreen from '@modules/contacts/screens/ViewContactScreen'
 import EditContactScreen from '@modules/contacts/screens/EditContactScreen'
 import { headeredLayout } from './layouts'
 
-export const ContactsStack = createNativeStackNavigator({
-    initialRouteName: 'ContactsList',
-    screenOptions: {
-        headerShown: true,
-        header: (props: NativeStackHeaderProps) => (
-            <NavigationHeader {...props} />
-        ),
-        ...SCREEN_ANIMATION_CONFIG,
-    },
-    layout: headeredLayout,
-    screenListeners,
-    screens: {
-        ContactsList: {
-            screen: ContactListScreen,
-            options: {
-                title: 'screens.contacts',
-                headerRight: () => <ContactListHeaderButtons />,
-            },
-        },
-        ViewContact: {
-            screen: ViewContactScreen,
-            options: () => ({
-                title: 'screens.view_contact',
-                headerRight: () => <ViewContactHeaderButtons />,
-            }),
-        },
-        EditContact: {
-            screen: EditContactScreen,
-            options: () => ({
-                title: 'screens.edit_contact',
-            }),
-        },
-        AddContact: {
-            screen: EditContactScreen,
-            options: () => ({
-                title: 'screens.add_contact',
-            }),
-        },
-    },
-})
+export type ContactsStackParamsList = {
+    ContactsList: undefined
+    ViewContact: undefined
+    EditContact: undefined
+    AddContact: undefined
+}
+
+const ContactsStack = createNativeStackNavigator<ContactsStackParamsList>()
+
+export const ContactsStackNavigator = () => {
+    return (
+        <ContactsStack.Navigator
+            initialRouteName='ContactsList'
+            layout={headeredLayout}
+            screenOptions={{
+                headerShown: true,
+                header: (props: NativeStackHeaderProps) => (
+                    <NavigationHeader {...props} />
+                ),
+                ...SCREEN_ANIMATION_CONFIG,
+            }}
+        >
+            <ContactsStack.Screen
+                name='ContactsList'
+                options={{
+                    title: 'screens.contacts',
+                    headerRight: () => <ContactListHeaderButtons />,
+                }}
+                component={ContactListScreen}
+            />
+            <ContactsStack.Screen
+                name='ViewContact'
+                options={{
+                    title: 'screens.view_contact',
+                    headerRight: () => <ViewContactHeaderButtons />,
+                }}
+                component={ViewContactScreen}
+            />
+            <ContactsStack.Screen
+                name='EditContact'
+                options={{
+                    title: 'screens.edit_contact',
+                }}
+                component={EditContactScreen}
+            />
+            <ContactsStack.Screen
+                name='AddContact'
+                options={{
+                    title: 'screens.add_contact',
+                }}
+                component={EditContactScreen}
+            />
+        </ContactsStack.Navigator>
+    )
+}

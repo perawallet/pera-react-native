@@ -15,8 +15,8 @@ import { config } from '@perawallet/wallet-core-config'
 import { useContext, useEffect, useRef } from 'react'
 import { AppState, StatusBar } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
-import { MainRoutes } from '@routes/routes'
-import { getNavigationTheme, getTheme } from '@theme/theme'
+import { MainRoutes } from '@routes/index'
+import { getTheme } from '@theme/theme'
 import { Text, ThemeProvider, useTheme } from '@rneui/themed'
 import { useStyles } from './styles'
 import PWView from '@components/view/PWView'
@@ -43,7 +43,6 @@ const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
     const styles = useStyles(insets)
     const { hasInternet } = useContext(NetworkStatusContext)
     const { network } = useNetwork()
-    const navTheme = getNavigationTheme(isDarkMode ? 'dark' : 'light')
     const { theme } = useTheme()
     const { showToast } = useToast()
     const { t } = useLanguage()
@@ -79,7 +78,7 @@ const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
                 )}
 
                 <GestureHandlerRootView>
-                    <MainRoutes theme={navTheme} />
+                    <MainRoutes />
                 </GestureHandlerRootView>
             </PWView>
         </ErrorBoundary>
@@ -88,7 +87,6 @@ const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
 
 export const RootComponent = () => {
     const isDarkMode = useIsDarkMode()
-
     const theme = getTheme(isDarkMode ? 'dark' : 'light')
     const { network } = useNetwork()
     const { registerDevice } = useDevice(network)

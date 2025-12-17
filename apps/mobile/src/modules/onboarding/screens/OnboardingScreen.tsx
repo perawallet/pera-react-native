@@ -24,6 +24,7 @@ import { useState } from 'react'
 import { useLanguage } from '@hooks/language'
 import useToast from '@hooks/toast'
 import { usePreferences } from '@perawallet/wallet-core-settings'
+import { UserPreferences } from '@constants/user-preferences'
 
 const OnboardingScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
@@ -37,13 +38,18 @@ const OnboardingScreen = () => {
 
     const doCreate = async () => {
         try {
-            setPreference('isOnboarding', true)
+            setPreference(UserPreferences.isCreatingAccount, true)
             const account = await createAccount({ account: 0, keyIndex: 0 })
-            navigation.push('Onboarding', { screen: 'NameAccount', params: { account: account } })
+            navigation.push('Onboarding', {
+                screen: 'NameAccount',
+                params: { account: account },
+            })
         } catch (error) {
             showToast({
-                title: t('onboarding.create_account.error'),
-                body: t('onboarding.create_account.error_message', { error: `${error}` }),
+                title: t('onboarding.create_account.error_title'),
+                body: t('onboarding.create_account.error_message', {
+                    error: `${error}`,
+                }),
                 type: 'error',
             })
         } finally {

@@ -13,4 +13,5 @@
 export const UserPreferences = {
     spendAgreed: 'send-fund-agreed',
     chartVisible: 'chart-visible',
+    isCreatingAccount: 'is-creating-account',
 } as const

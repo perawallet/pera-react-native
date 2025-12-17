@@ -24,6 +24,7 @@ import { useLanguage } from '@hooks/language'
 import { screenListeners } from './listeners'
 import { safeAreaLayout } from './layouts'
 import type React from 'react'
+import { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 // Wrap screens with AccountErrorBoundary to catch account-related errors
 const withAccountErrorBoundary = <P extends object>(
@@ -46,32 +47,50 @@ const NameAccountScreenWithErrorBoundary =
 const ImportAccountScreenWithErrorBoundary =
     withAccountErrorBoundary(ImportAccountScreen)
 
-export const OnboardingStack = createNativeStackNavigator({
-    initialRouteName: 'OnboardingHome',
-    screenOptions: {
-        headerShown: false,
-        header: (props: NativeStackHeaderProps) => (
-            <NavigationHeader {...props} />
-        ),
-        ...SCREEN_ANIMATION_CONFIG,
-    },
-    layout: safeAreaLayout,
-    screenListeners,
-    screens: {
-        OnboardingHome: OnboardingScreenWithErrorBoundary,
-        NameAccount: {
-            screen: NameAccountScreenWithErrorBoundary,
-            options: {
-                headerShown: true,
-                headerTitle: 'Name your account',
-            },
-        },
-        ImportAccount: {
-            screen: ImportAccountScreenWithErrorBoundary,
-            options: {
-                headerShown: true,
-                headerTitle: 'Enter your Recovery Passphrase',
-            },
-        },
-    },
-})
+export type OnboardingStackParamList = {
+    OnboardingHome: undefined
+    NameAccount: {
+        account: WalletAccount
+    }
+    ImportAccount: undefined
+}
+
+const OnboardingStack = createNativeStackNavigator<OnboardingStackParamList>()
+
+export const OnboardingStackNavigator = () => {
+    return (
+        <OnboardingStack.Navigator
+            initialRouteName='OnboardingHome'
+            screenOptions={{
+                headerShown: false,
+                header: (props: NativeStackHeaderProps) => (
+                    <NavigationHeader {...props} />
+                ),
+                ...SCREEN_ANIMATION_CONFIG,
+            }}
+            layout={safeAreaLayout}
+            screenListeners={screenListeners}
+        >
+            <OnboardingStack.Screen
+                name='OnboardingHome'
+                component={OnboardingScreenWithErrorBoundary}
+            />
+            <OnboardingStack.Screen
+                name='NameAccount'
+                options={{
+                    headerShown: true,
+                    headerTitle: 'Name your account',
+                }}
+                component={NameAccountScreenWithErrorBoundary}
+            />
+            <OnboardingStack.Screen
+                name='ImportAccount'
+                options={{
+                    headerShown: true,
+                    headerTitle: 'Enter your Recovery Passphrase',
+                }}
+                component={ImportAccountScreenWithErrorBoundary}
+            />
+        </OnboardingStack.Navigator>
+    )
+}
