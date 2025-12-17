@@ -54,6 +54,7 @@ export const useKMD = () => {
             if (!key) {
                 return
             }
+
             if (key.privateDataStorageKey) {
                 await secureStorage.removeItem(key.privateDataStorageKey)
             }
