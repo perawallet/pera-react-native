@@ -16,11 +16,7 @@ import PWView from '@components/view/PWView'
 import PWButton from '@components/button/PWButton'
 import { useStyles } from './SettingsScreen.styles'
 import { ScrollView } from 'react-native'
-import {
-    ParamListBase,
-    StackActions,
-    useNavigation,
-} from '@react-navigation/native'
+import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useDeviceInfoService } from '@perawallet/wallet-core-platform-integration'
 import { useContext, useMemo } from 'react'
