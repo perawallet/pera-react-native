@@ -22,7 +22,7 @@ import NavigationHeader from '@components/navigation-header/NavigationHeader'
 import { fullScreenLayout, safeAreaLayout } from './layouts'
 
 export type AccountStackParamsList = {
-    AccountDetails?: undefined
+    AccountDetails?: { playConfetti?: boolean }
     AssetDetails?: { assetId: string }
 }
 

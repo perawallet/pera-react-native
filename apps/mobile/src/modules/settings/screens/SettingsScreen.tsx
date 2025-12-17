@@ -124,7 +124,6 @@ const SettingsScreen = () => {
     const handleDeleteAllAccounts = () => {
         clearAllData()
         close()
-        navigation.dispatch(StackActions.popToTop())
     }
 
     const appVersion = useMemo(() => {

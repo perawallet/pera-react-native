@@ -33,6 +33,7 @@ import { useShowOnboarding } from '@hooks/onboarding'
 import NavigationHeader from '@components/navigation-header/NavigationHeader'
 import { getNavigationTheme } from '@theme/theme'
 import { useIsDarkMode } from '@hooks/theme'
+import { useHasAccounts } from '@perawallet/wallet-core-accounts'
 
 export type RootStackParamList = {
     Onboarding: NavigatorScreenParams<OnboardingStackParamList>
@@ -49,6 +50,7 @@ export const MainRoutes = () => {
     const showOnboarding = useShowOnboarding()
     const isDarkMode = useIsDarkMode()
     const navTheme = getNavigationTheme(isDarkMode ? 'dark' : 'light')
+    const hasAccounts = useHasAccounts()
 
     return (
         <NavigationContainer theme={navTheme}>
@@ -66,32 +68,36 @@ export const MainRoutes = () => {
                             component={OnboardingStackNavigator}
                         />
                     )}
-                    <RootStack.Screen
-                        name='TabBar'
-                        component={TabBarStackNavigator}
-                    />
-                    <RootStack.Screen
-                        name='Notifications'
-                        options={{
-                            headerShown: true,
-                            header: (props: NativeStackHeaderProps) => (
-                                <NavigationHeader {...props} />
-                            ),
-                        }}
-                        component={NotificationsScreen}
-                    />
-                    <RootStack.Screen
-                        name='Settings'
-                        component={SettingsStackNavigator}
-                    />
-                    <RootStack.Screen
-                        name='Contacts'
-                        component={ContactsStackNavigator}
-                    />
-                    <RootStack.Screen
-                        name='Staking'
-                        component={StakingScreen}
-                    />
+                    {hasAccounts && (
+                        <>
+                            <RootStack.Screen
+                                name='TabBar'
+                                component={TabBarStackNavigator}
+                            />
+                            <RootStack.Screen
+                                name='Notifications'
+                                options={{
+                                    headerShown: true,
+                                    header: (props: NativeStackHeaderProps) => (
+                                        <NavigationHeader {...props} />
+                                    ),
+                                }}
+                                component={NotificationsScreen}
+                            />
+                            <RootStack.Screen
+                                name='Settings'
+                                component={SettingsStackNavigator}
+                            />
+                            <RootStack.Screen
+                                name='Contacts'
+                                component={ContactsStackNavigator}
+                            />
+                            <RootStack.Screen
+                                name='Staking'
+                                component={StakingScreen}
+                            />
+                        </>
+                    )}
                 </RootStack.Navigator>
             }
         </NavigationContainer>
