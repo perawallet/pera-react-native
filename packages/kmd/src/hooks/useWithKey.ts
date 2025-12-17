@@ -39,7 +39,9 @@ export const useWithKey = () => {
                 const hasAccess = key.acl.some(
                     acl =>
                         acl.domains.includes(domain) &&
-                        acl.permissions.includes(AccessControlPermission.ReadPrivate),
+                        acl.permissions.includes(
+                            AccessControlPermission.ReadPrivate,
+                        ),
                 )
 
                 if (!hasAccess) {
