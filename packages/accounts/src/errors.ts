@@ -42,45 +42,12 @@ export class AccountError extends AppError {
 }
 
 /**
- * Some error occurred using a key
- */
-export class KeyAccessError extends AccountError {
-    constructor(originalError?: Error) {
-        super(ERROR_I18N_KEYS.KEY_ACCESS_ERROR, originalError)
-    }
-}
-
-/**
- * Account key not found in secure storage
- */
-export class AccountKeyNotFoundError extends AccountError {
-    constructor(walletId: string) {
-        super(ERROR_I18N_KEYS.ACCOUNT_KEY_NOT_FOUND, undefined, {
-            severity: ErrorSeverity.CRITICAL,
-            params: { walletId },
-        })
-    }
-}
-
-/**
  * Account has no HD wallet details
  */
 export class NoHDWalletError extends AccountError {
     constructor(address: string) {
         super(ERROR_I18N_KEYS.ACCOUNT_NO_HD_WALLET, undefined, {
             params: { address },
-        })
-    }
-}
-
-/**
- * Master key invalid or missing seed
- */
-export class InvalidMasterKeyError extends AccountError {
-    constructor(walletId: string) {
-        super(ERROR_I18N_KEYS.ACCOUNT_MASTER_KEY_INVALID, undefined, {
-            severity: ErrorSeverity.CRITICAL,
-            params: { walletId },
         })
     }
 }

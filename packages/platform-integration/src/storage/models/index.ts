@@ -20,8 +20,8 @@ export interface KeyValueStorageService {
 }
 
 export interface SecureStorageService {
-    setItem(key: string, value: Buffer): Promise<void>
-    getItem(key: string): Promise<Buffer | null>
+    setItem(key: string, value: Uint8Array): Promise<void>
+    getItem(key: string): Promise<Uint8Array | null>
     removeItem(key: string): Promise<void>
     authenticate(): Promise<boolean>
 }

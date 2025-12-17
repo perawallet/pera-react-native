@@ -19,7 +19,8 @@ import {
     MemoryKeyValueStorage,
 } from '@perawallet/wallet-core-platform-integration'
 import type { WalletAccount } from '../../models'
-import { AccountKeyNotFoundError, NoHDWalletError } from '../../errors'
+import { NoHDWalletError } from '../../errors'
+import { KeyNotFoundError } from '@perawallet/wallet-core-kmd'
 
 // Mock store
 vi.mock('../../store', async () => {
@@ -93,6 +94,7 @@ describe('useTransactionSigner', () => {
                 derivationType: 9,
             },
             name: 'Acc1',
+            keyPairId: 'rootkey-W1',
         }
         useAccountsStore.setState({ accounts: [account] })
 
@@ -135,6 +137,7 @@ describe('useTransactionSigner', () => {
             type: 'standard',
             canSign: true,
             name: 'Acc1',
+            keyPairId: 'rootkey-W1',
             // No hdWalletDetails
         }
         useAccountsStore.setState({ accounts: [account] })
@@ -175,6 +178,7 @@ describe('useTransactionSigner', () => {
                 derivationType: 9,
             },
             name: 'Acc1',
+            keyPairId: 'rootkey-W1',
         }
         useAccountsStore.setState({ accounts: [account] })
 
@@ -185,7 +189,7 @@ describe('useTransactionSigner', () => {
                 'ADDR1',
                 Buffer.from('txn'),
             ),
-        ).rejects.toEqual(new AccountKeyNotFoundError('W1'))
+        ).rejects.toThrow(KeyNotFoundError) // KMD error
     })
 
     test('signTransactionForAddress handles JSON format master key', async () => {
@@ -221,6 +225,7 @@ describe('useTransactionSigner', () => {
                 derivationType: 9,
             },
             name: 'Acc1',
+            keyPairId: 'rootkey-W1',
         }
         useAccountsStore.setState({ accounts: [account] })
 
@@ -264,6 +269,7 @@ describe('useTransactionSigner', () => {
                 derivationType: 9,
             },
             name: 'Acc1',
+            keyPairId: 'rootkey-W1',
         }
         useAccountsStore.setState({ accounts: [account] })
 
@@ -276,7 +282,7 @@ describe('useTransactionSigner', () => {
                 'ADDR1',
                 Buffer.from('txn'),
             ),
-        ).rejects.toThrow('errors.account.key_access_error')
+        ).rejects.toThrow('Signing failed')
     })
 
     test('signTransactionForAddress handles storage retrieval error', async () => {
@@ -307,6 +313,7 @@ describe('useTransactionSigner', () => {
                 derivationType: 9,
             },
             name: 'Acc1',
+            keyPairId: 'rootkey-W1',
         }
         useAccountsStore.setState({ accounts: [account] })
 
@@ -346,6 +353,7 @@ describe('useTransactionSigner', () => {
                 derivationType: 9,
             },
             name: 'Acc1',
+            keyPairId: 'rootkey-W1',
         }
 
         const account2: WalletAccount = {
@@ -361,6 +369,7 @@ describe('useTransactionSigner', () => {
                 derivationType: 9,
             },
             name: 'Acc2',
+            keyPairId: 'rootkey-W2',
         }
 
         useAccountsStore.setState({ accounts: [account1, account2] })

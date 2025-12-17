@@ -96,4 +96,28 @@ describe('services/settings/usePreferences', () => {
 
         expect(result.current.hasPreference('testKey')).toBe(false)
     })
+
+    test('clearAll removes all preferences', async () => {
+        const { initSettingsStore } = await import('../../store')
+        const { usePreferences } = await import('../usePreferences')
+
+        initSettingsStore()
+
+        const { result } = renderHook(() => usePreferences())
+
+        act(() => {
+            result.current.setPreference('key1', 'value1')
+            result.current.setPreference('key2', 'value2')
+        })
+
+        expect(result.current.hasPreference('key1')).toBe(true)
+        expect(result.current.hasPreference('key2')).toBe(true)
+
+        act(() => {
+            result.current.clearAll()
+        })
+
+        expect(result.current.hasPreference('key1')).toBe(false)
+        expect(result.current.hasPreference('key2')).toBe(false)
+    })
 })

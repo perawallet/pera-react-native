@@ -20,7 +20,8 @@ import {
 } from '@perawallet/wallet-core-platform-integration'
 import type { WalletAccount } from '../../models'
 import { BIP32DerivationTypes } from '@perawallet/wallet-core-xhdwallet'
-import { AccountKeyNotFoundError, InvalidMasterKeyError } from '../../errors'
+import { KeyNotFoundError } from '@perawallet/wallet-core-kmd'
+import { NoHDWalletError } from '../../errors'
 
 vi.mock('../../store', async () => {
     const actual =
@@ -162,15 +163,23 @@ describe('useAddAccount', () => {
         const mockPrivateKey = new Uint8Array(64).fill(42)
         const mockPublicKey = new Uint8Array(32).fill(84)
 
+        const storage = new Map<string, any>()
+        // Pre-populate storage with the root key
+        storage.set(
+            'hd-wallet-123',
+            Buffer.from(JSON.stringify({ seed: mockSeed })),
+        )
+
         const dummySecure = {
-            setItem: vi.fn(async () => {}),
-            getItem: vi.fn(async (key: string) => {
-                if (key === 'rootkey-hd-wallet-123') {
-                    return Buffer.from(JSON.stringify({ seed: mockSeed }))
-                }
-                return null
+            setItem: vi.fn(async (key, value) => {
+                storage.set(key, value)
             }),
-            removeItem: vi.fn(async () => {}),
+            getItem: vi.fn(async (key: string) => {
+                return storage.get(key) ?? null
+            }),
+            removeItem: vi.fn(async key => {
+                storage.delete(key)
+            }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -221,8 +230,6 @@ describe('useAddAccount', () => {
 
         // Verify private key was stored in secure storage
         expect(dummySecure.setItem).toHaveBeenCalled()
-        const setItemCall = dummySecure.setItem.mock.calls[0]
-        expect(setItemCall.at(0)).toContain('pk-')
     })
 
     test('throws error when root key not found for HD wallet', async () => {
@@ -258,21 +265,26 @@ describe('useAddAccount', () => {
             await act(async () => {
                 await result.current(hdAccount)
             })
-        }).rejects.toThrow(new AccountKeyNotFoundError('missing-wallet'))
+        }).rejects.toThrow(KeyNotFoundError)
     })
 
     test('throws error when master key has no seed property', async () => {
+        const storage = new Map<string, any>()
         const dummySecure = {
-            setItem: vi.fn(async () => {}),
+            setItem: vi.fn(async (key, value) => {
+                storage.set(key, value)
+            }),
             getItem: vi.fn(async (key: string) => {
-                if (key === 'rootkey-bad-wallet') {
+                if (key === 'bad-wallet') {
                     return Buffer.from(
                         JSON.stringify({ invalidProperty: true }),
                     )
                 }
-                return null
+                return storage.get(key) ?? null
             }),
-            removeItem: vi.fn(async () => {}),
+            removeItem: vi.fn(async key => {
+                storage.delete(key)
+            }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -301,6 +313,6 @@ describe('useAddAccount', () => {
             await act(async () => {
                 await result.current(hdAccount)
             })
-        }).rejects.toThrow(new InvalidMasterKeyError('bad-wallet'))
+        }).rejects.toThrow(NoHDWalletError)
     })
 })

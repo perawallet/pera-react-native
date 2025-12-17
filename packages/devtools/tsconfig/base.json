@@ -23,7 +23,8 @@
             "@perawallet/test-utils/*": [
                 "packages/platform-integration/src/test-utils/*"
             ]
-        }
+        },
+        "outDir": "dist"
     },
     "exclude": [
         "node_modules"

@@ -51,7 +51,7 @@ export interface WalletAccount {
     type: AccountType
     address: string
     canSign: boolean
-    privateKeyLocation?: string
+    keyPairId?: string
     hdWalletDetails?: HDWalletDetails
     multisigDetails?: MultiSigDetails
     hardwareDetails?: HardwareWalletDetails

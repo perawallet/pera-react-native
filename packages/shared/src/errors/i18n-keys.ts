@@ -35,10 +35,13 @@ export const ERROR_I18N_KEYS = {
 
     // Account errors
     ACCOUNT_GENERIC: 'errors.account.generic',
-    ACCOUNT_KEY_NOT_FOUND: 'errors.account.key_not_found',
     ACCOUNT_NO_HD_WALLET: 'errors.account.no_hd_wallet',
-    ACCOUNT_MASTER_KEY_INVALID: 'errors.account.master_key_invalid',
     KEY_ACCESS_ERROR: 'errors.account.key_access_error',
+
+    // KMD errors
+    KEY_NOT_FOUND: 'errors.kmd.key_not_found',
+    KEY_ACCESS: 'errors.kmd.key_access_error',
+    INVALID_KEY: 'errors.kmd.invalid_key',
 
     // Validation errors
     VALIDATION_GENERIC: 'errors.validation.generic',

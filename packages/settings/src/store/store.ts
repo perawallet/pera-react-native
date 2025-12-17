@@ -53,6 +53,9 @@ const createSettingsStore = (storage: KeyValueStorageService) =>
                         },
                     })
                 },
+                clearAllPreferences: () => {
+                    set({ preferences: {} })
+                },
             }),
             {
                 name: 'settings-store',

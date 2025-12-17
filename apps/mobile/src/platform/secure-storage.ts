@@ -27,6 +27,8 @@ type Options = {
 //native storage so we don't have to move things?
 export class RNSecureStorageService implements SecureStorageService {
     private baseOpts: Keychain.SetOptions = {}
+    private utf8encoder = new TextEncoder()
+    private utf8decoder = new TextDecoder()
 
     async initialize(options: Options = {}) {
         const {
@@ -50,19 +52,23 @@ export class RNSecureStorageService implements SecureStorageService {
         }
     }
 
-    async setItem(key: string, value: Buffer): Promise<void> {
-        await Keychain.setGenericPassword('user', value.toString('utf-8'), {
-            ...this.baseOpts,
-            service: `${this.baseOpts.service}.${key}`,
-        })
+    async setItem(key: string, value: Uint8Array): Promise<void> {
+        await Keychain.setGenericPassword(
+            'user',
+            this.utf8decoder.decode(value),
+            {
+                ...this.baseOpts,
+                service: `${this.baseOpts.service}.${key}`,
+            },
+        )
     }
 
-    async getItem(key: string): Promise<Buffer | null> {
+    async getItem(key: string): Promise<Uint8Array | null> {
         const creds = await Keychain.getGenericPassword({
             ...this.baseOpts,
             service: `${this.baseOpts.service}.${key}`,
         })
-        return creds ? Buffer.from(creds.password, 'utf-8') : null
+        return creds ? this.utf8encoder.encode(creds.password) : null
     }
 
     async removeItem(key: string): Promise<void> {

@@ -11,18 +11,17 @@
  */
 
 import { useAccountsStore } from '../store'
-import { useSecureStorageService } from '@perawallet/wallet-core-platform-integration'
+import { useKMD } from '@perawallet/wallet-core-kmd'
 
 export const useRemoveAccountById = () => {
     const accounts = useAccountsStore(state => state.accounts)
-    const secureStorage = useSecureStorageService()
+    const { deleteKey } = useKMD()
     const setAccounts = useAccountsStore(state => state.setAccounts)
 
     return (id: string) => {
         const account = accounts.find(a => a.id === id)
-        if (account && account.privateKeyLocation) {
-            const storageKey = `pk-${account.address}`
-            secureStorage.removeItem(storageKey)
+        if (account && account.hdWalletDetails && account.id) {
+            deleteKey(account.id)
         }
         const remaining = accounts.filter(a => a.id !== id)
         setAccounts([...remaining])

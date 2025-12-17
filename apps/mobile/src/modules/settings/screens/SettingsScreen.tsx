@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Text } from '@rneui/themed'
+import { Dialog, Text, useTheme } from '@rneui/themed'
 
 import PWView from '@components/view/PWView'
 import PWButton from '@components/button/PWButton'
@@ -26,6 +26,8 @@ import { config } from '@perawallet/wallet-core-config'
 import { WebViewContext } from '@providers/WebViewProvider'
 import PWListItem from '@components/list-item/PWListItem'
 import { useLanguage } from '@hooks/language'
+import { useModalState } from '@hooks/modal-state'
+import { useDeleteAllData } from '../hooks/delete-all-data'
 
 //TODO: add ratings view handling
 
@@ -36,6 +38,9 @@ const SettingsScreen = () => {
     const { getAppVersion } = useDeviceInfoService()
     const { pushWebView } = useContext(WebViewContext)
     const { t } = useLanguage()
+    const { isOpen, open, close } = useModalState()
+    const { theme } = useTheme()
+    const clearAllData = useDeleteAllData()
 
     const settingsOptions = useMemo(
         () => [
@@ -112,6 +117,15 @@ const SettingsScreen = () => {
         [t],
     )
 
+    const handleDeleteAllAccounts = () => {
+        clearAllData()
+        close()
+        navigation.reset({
+            index: 0,
+            routes: [{ name: 'Onboarding' }],
+        })
+    }
+
     const appVersion = useMemo(() => {
         return getAppVersion()
     }, [getAppVersion])
@@ -173,10 +187,29 @@ const SettingsScreen = () => {
             <PWButton
                 variant='secondary'
                 title={t('settings.main.remove_all_accounts')}
+                onPress={open}
             />
             <Text style={styles.versionText}>
                 {t('settings.main.version_footer', { version: appVersion })}
             </Text>
+            <Dialog
+                isVisible={isOpen}
+                onBackdropPress={close}
+            >
+                <Dialog.Title title={t('settings.main.remove_title')} />
+                <Text>{t('settings.main.remove_message')}</Text>
+                <Dialog.Actions>
+                    <Dialog.Button
+                        title={t('common.delete.label')}
+                        titleStyle={{ color: theme.colors.error }}
+                        onPress={handleDeleteAllAccounts}
+                    />
+                    <Dialog.Button
+                        title={t('common.cancel.label')}
+                        onPress={close}
+                    />
+                </Dialog.Actions>
+            </Dialog>
         </ScrollView>
     )
 }

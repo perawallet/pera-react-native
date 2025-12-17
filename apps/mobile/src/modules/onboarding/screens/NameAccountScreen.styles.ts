@@ -16,6 +16,7 @@ export const useStyles = makeStyles(theme => {
     return {
         mainContainer: {
             flex: 1,
+            padding: theme.spacing.xl,
         },
         helperText: {
             color: theme.colors.textGray,

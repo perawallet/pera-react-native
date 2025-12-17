@@ -10,29 +10,15 @@
  limitations under the License
  */
 
-import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import { BIP32DerivationTypes } from '@perawallet/wallet-core-xhdwallet'
-import { WalletAccount } from '../models'
-import { useAccountsStore } from '../store'
 import { useHDWallet } from './useHDWallet'
-import {
-    useDeviceID,
-    useDeviceInfoService,
-    useNetwork,
-    useSecureStorageService,
-    useUpdateDeviceMutation,
-} from '@perawallet/wallet-core-platform-integration'
 import { v7 as uuidv7 } from 'uuid'
+import { KeyType, useKMD } from '@perawallet/wallet-core-kmd'
+import { useCreateAccount } from './useCreateAccount'
 
 export const useImportAccount = () => {
-    const accounts = useAccountsStore(state => state.accounts)
-    const { generateMasterKey, deriveKey } = useHDWallet()
-    const secureStorage = useSecureStorageService()
-    const setAccounts = useAccountsStore(state => state.setAccounts)
-    const { network } = useNetwork()
-    const deviceID = useDeviceID(network)
-    const deviceInfo = useDeviceInfoService()
-    const { mutateAsync: updateDeviceOnBackend } = useUpdateDeviceMutation()
+    const { generateMasterKey } = useHDWallet()
+    const { saveKey } = useKMD()
+    const createAccount = useCreateAccount()
 
     return async ({
         walletId,
@@ -42,61 +28,29 @@ export const useImportAccount = () => {
         mnemonic: string
     }) => {
         const rootWalletId = walletId ?? uuidv7()
-        const rootKeyLocation = `rootkey-${rootWalletId}`
         const masterKey = await generateMasterKey(mnemonic)
         const base64Seed = masterKey.seed.toString('base64')
         const stringifiedObj = JSON.stringify({
             seed: base64Seed,
             entropy: masterKey.entropy,
         })
-        await secureStorage.setItem(
-            rootKeyLocation,
-            Buffer.from(stringifiedObj),
-        )
+        const rootKeyPair = {
+            id: rootWalletId,
+            publicKey: '',
+            privateDataStorageKey: rootWalletId,
+            createdAt: new Date(),
+            type: KeyType.HDWalletRootKey,
+        }
+        await saveKey(rootKeyPair, Buffer.from(stringifiedObj))
 
         //TODO: we currently just create the 0/0 account but we really should scan the blockchain
         //and look for accounts that might match (see old app logic - we want to scan iteratively
         //until we find 5 empty keyindexes and 5 empty accounts (I think)
-        const { address, privateKey } = await deriveKey({
-            seed: masterKey.seed,
+        const newAccount = await createAccount({
+            walletId: rootWalletId,
             account: 0,
             keyIndex: 0,
-            derivationType: BIP32DerivationTypes.Peikert,
         })
-
-        const id = uuidv7()
-        const keyStoreLocation = `pk-${id}`
-        const keyBuffer = Buffer.from(privateKey)
-        await secureStorage.setItem(keyStoreLocation, keyBuffer)
-        keyBuffer.fill(0)
-        privateKey.fill(0)
-        const newAccount: WalletAccount = {
-            id,
-            address: encodeAlgorandAddress(address),
-            type: 'standard',
-            canSign: true,
-            hdWalletDetails: {
-                walletId: rootWalletId,
-                account: 0,
-                change: 0,
-                keyIndex: 0,
-                derivationType: BIP32DerivationTypes.Peikert,
-            },
-            privateKeyLocation: keyStoreLocation,
-        }
-
-        accounts.push(newAccount)
-        setAccounts([...accounts])
-
-        if (deviceID) {
-            updateDeviceOnBackend({
-                deviceId: deviceID,
-                data: {
-                    platform: deviceInfo.getDevicePlatform(),
-                    accounts: accounts.map(a => a.address),
-                },
-            })
-        }
         return newAccount
     }
 }

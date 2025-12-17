@@ -27,6 +27,7 @@ import { initCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import { initPollingStore } from '@perawallet/wallet-core-polling'
 import { initSettingsStore } from '@perawallet/wallet-core-settings'
 import { initSwapsStore } from '@perawallet/wallet-core-swaps'
+import { initKeyManagerStore } from '../../../../packages/kmd/src'
 
 const firebaseService = new RNFirebaseService()
 const platformServices = {
@@ -57,6 +58,7 @@ export const useBootstrapper = () => {
         await initPollingStore()
         await initSettingsStore()
         await initSwapsStore()
+        await initKeyManagerStore()
 
         const crashlyticsInit =
             platformServices.crashReporting.initializeCrashReporting()

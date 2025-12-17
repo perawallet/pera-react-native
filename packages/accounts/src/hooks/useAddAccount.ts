@@ -20,40 +20,35 @@ import { useAccountsStore } from '../store'
 import { useHDWallet } from './useHDWallet'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import { v7 as uuidv7 } from 'uuid'
-import { withKey } from '../utils'
 import { BIP32DerivationTypes } from '@perawallet/wallet-core-xhdwallet'
-import { useSecureStorageService } from '@perawallet/wallet-core-platform-integration'
 import { WalletAccount } from '../models'
-import { AccountKeyNotFoundError, InvalidMasterKeyError } from '../errors'
+import { KeyType, useKMD, useWithKey } from '@perawallet/wallet-core-kmd'
+import { NoHDWalletError } from '../errors'
 
 export const useAddAccount = () => {
     const accounts = useAccountsStore(state => state.accounts)
-    const secureStorage = useSecureStorageService()
     const setAccounts = useAccountsStore(state => state.setAccounts)
     const { network } = useNetwork()
     const deviceID = useDeviceID(network)
     const deviceInfo = useDeviceInfoService()
     const { mutateAsync: updateDeviceOnBackend } = useUpdateDeviceMutation()
     const { deriveKey } = useHDWallet()
+    const { saveKey } = useKMD()
+    const { executeWithKey } = useWithKey()
 
     return async (account: WalletAccount) => {
         if (account.type === 'standard' && account.hdWalletDetails) {
             const rootWalletId = account.hdWalletDetails.walletId
-            const rootKeyLocation = `rootkey-${rootWalletId}`
-            const masterKey = await withKey(
-                rootKeyLocation,
-                secureStorage,
-                async key => {
-                    if (!key) {
-                        throw new AccountKeyNotFoundError(rootWalletId)
-                    }
-
-                    return JSON.parse(key.toString())
+            const masterKey = await executeWithKey(
+                rootWalletId,
+                'accounts',
+                async data => {
+                    return JSON.parse(data.toString())
                 },
             )
 
             if (!masterKey?.seed) {
-                throw new InvalidMasterKeyError(rootWalletId)
+                throw new NoHDWalletError(rootWalletId)
             }
             const { address, privateKey } = await deriveKey({
                 seed: Buffer.from(masterKey.seed, 'base64'),
@@ -65,10 +60,15 @@ export const useAddAccount = () => {
             account.address = encodeAlgorandAddress(address)
             account.id = id
 
-            const keyStoreLocation = `pk-${id}`
-            const keyBuffer = Buffer.from(privateKey)
-            await secureStorage.setItem(keyStoreLocation, keyBuffer)
-            keyBuffer.fill(0)
+            const keyPair = {
+                id,
+                publicKey: encodeAlgorandAddress(address),
+                privateDataStorageKey: id,
+                createdAt: new Date(),
+                type: KeyType.HDWalletDerivedKey,
+            }
+
+            await saveKey(keyPair, privateKey)
             privateKey.fill(0)
         }
 

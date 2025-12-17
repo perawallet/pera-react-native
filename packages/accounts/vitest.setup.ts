@@ -11,3 +11,53 @@
  */
 
 import 'reflect-metadata'
+import { vi, beforeEach } from 'vitest'
+
+// Create a simple in-memory key store for mocking
+const mockKeyStore = new Map<string, any>()
+
+beforeEach(() => {
+    mockKeyStore.clear()
+})
+
+vi.mock('@perawallet/wallet-core-kmd', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-kmd')>()
+    const { useSecureStorageService } = await import(
+        '@perawallet/wallet-core-platform-integration'
+    )
+
+    return {
+        ...actual,
+        useKMD: vi.fn(() => ({
+            saveKey: vi.fn(async (keyPair, privateKey) => {
+                const storage = useSecureStorageService()
+                await storage.setItem(keyPair.id, privateKey)
+                mockKeyStore.set(keyPair.id, keyPair)
+            }),
+            deleteKey: vi.fn(async id => {
+                const storage = useSecureStorageService()
+                await storage.removeItem(id)
+                mockKeyStore.delete(id)
+            }),
+            getPrivateData: vi.fn(async id => {
+                const storage = useSecureStorageService()
+                return await storage.getItem(id)
+            }),
+            getKey: vi.fn(id => {
+                return mockKeyStore.get(id) ?? null
+            }),
+            keys: mockKeyStore,
+        })),
+        useWithKey: vi.fn(() => ({
+            executeWithKey: vi.fn(async (id, domain, handler) => {
+                const storage = useSecureStorageService()
+                const data = await storage.getItem(id)
+                if (!data) {
+                    throw new actual.KeyNotFoundError(id)
+                }
+                return handler(data)
+            }),
+        })),
+    }
+})

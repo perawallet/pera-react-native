@@ -116,7 +116,7 @@ describe('RNSecureStorageService', () => {
 
             const result = await service.getItem('my-key')
 
-            expect(result).toEqual(Buffer.from('stored-value'))
+            expect(result).toEqual(new TextEncoder().encode('stored-value'))
             expect(mockKeychain.getGenericPassword).toHaveBeenCalledWith(
                 expect.objectContaining({
                     service: 'com.algorand.android.my-key',

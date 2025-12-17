@@ -27,9 +27,9 @@ import { ScrollView } from 'react-native-gesture-handler'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, Controller } from 'react-hook-form'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { useState } from 'react'
 import AddressDisplay from '@components/address-display/AddressDisplay'
 import { useLanguage } from '@hooks/language'
+import { useModalState } from '@hooks/modal-state'
 
 const EditContactScreen = () => {
     const styles = useStyles()
@@ -43,7 +43,7 @@ const EditContactScreen = () => {
     } = useContacts()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { theme } = useTheme()
-    const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+    const { isOpen, open, close } = useModalState()
     const isEditMode = !!selectedContact
 
     const {
@@ -55,14 +55,6 @@ const EditContactScreen = () => {
         resolver: zodResolver(contactSchema),
         defaultValues: selectedContact ?? {},
     })
-
-    const openDeleteModal = () => {
-        setDeleteModalOpen(true)
-    }
-
-    const closeDeleteModal = () => {
-        setDeleteModalOpen(false)
-    }
 
     const save = (data: Contact) => {
         if (!isEditMode) {
@@ -156,7 +148,7 @@ const EditContactScreen = () => {
                     <PWView style={styles.buttonContainer}>
                         {isEditMode && (
                             <PWButton
-                                onPress={openDeleteModal}
+                                onPress={open}
                                 title={t('contacts.edit_contact.delete')}
                                 variant='destructive'
                                 minWidth={100}
@@ -172,8 +164,8 @@ const EditContactScreen = () => {
                 </PWView>
             </ScrollView>
             <Dialog
-                isVisible={deleteModalOpen}
-                onBackdropPress={closeDeleteModal}
+                isVisible={isOpen}
+                onBackdropPress={close}
             >
                 <Dialog.Title title={t('contacts.edit_contact.are_you_sure')} />
                 <Text>{t('contacts.edit_contact.delete_confirm')}</Text>
@@ -185,7 +177,7 @@ const EditContactScreen = () => {
                     />
                     <Dialog.Button
                         title={t('common.cancel.label')}
-                        onPress={closeDeleteModal}
+                        onPress={close}
                     />
                 </Dialog.Actions>
             </Dialog>

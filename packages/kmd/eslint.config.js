@@ -10,16 +10,23 @@
  limitations under the License
  */
 
-export type ThemeMode = 'light' | 'dark' | 'system'
+import devtools from "@perawallet/wallet-core-devtools/eslint";
+import tseslint from "typescript-eslint";
+import globals from "globals";
 
-export type SettingsState = {
-    preferences: Record<string, string | boolean | number>
-    theme: ThemeMode
-    privacyMode: boolean
-    setTheme: (theme: ThemeMode) => void
-    setPrivacyMode: (enabled: boolean) => void
-    getPreference: (key: string) => string | boolean | number | null
-    setPreference: (key: string, value: string | boolean | number) => void
-    deletePreference: (key: string) => void
-    clearAllPreferences: () => void
-}
+/** @type {import("eslint").Linter.Config} */
+export default tseslint.config(
+  ...devtools,
+  {
+    languageOptions: {
+      parserOptions: {
+        project: "./tsconfig.json",
+        tsconfigRootDir: import.meta.dirname,
+      },
+      globals: {
+        ...globals.node,
+        ...globals.browser,
+      },
+    },
+  }
+);

@@ -31,6 +31,7 @@ import {
 import { useState } from 'react'
 import { KeyboardAvoidingView, Platform } from 'react-native'
 import { useLanguage } from '@hooks/language'
+import { usePreferences } from '@perawallet/wallet-core-settings'
 
 type NameAccountScreenProps = StaticScreenProps<{
     account: WalletAccount
@@ -42,6 +43,7 @@ const NameAccountScreen = ({ route }: NameAccountScreenProps) => {
     const accounts = useAllAccounts()
     const updateAccount = useUpdateAccount()
     const { t } = useLanguage()
+    const { setPreference } = usePreferences()
 
     const routeAccount = route.params?.account
 
@@ -56,6 +58,7 @@ const NameAccountScreen = ({ route }: NameAccountScreenProps) => {
         setAccount(account)
         setWalletDisplay(value)
         updateAccount(account)
+        setPreference('isOnboarding', false)
     }
 
     const goToHome = () => {

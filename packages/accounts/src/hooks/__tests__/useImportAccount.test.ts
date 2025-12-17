@@ -109,10 +109,15 @@ describe('useImportAccount', () => {
     })
 
     test('imports account and persists keys', async () => {
+        const storage = new Map<string, any>()
         const dummySecure = {
-            setItem: vi.fn(async () => {}),
-            getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => {}),
+            setItem: vi.fn(async (key, value) => {
+                storage.set(key, value)
+            }),
+            getItem: vi.fn(async key => storage.get(key) ?? null),
+            removeItem: vi.fn(async key => {
+                storage.delete(key)
+            }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -138,19 +143,19 @@ describe('useImportAccount', () => {
             imported = await result.current({ mnemonic: 'test mnemonic' })
         })
 
-        expect(imported).toMatchObject({
-            privateKeyLocation: 'pk-KEY1',
-        })
         expect(imported.address).toBeTruthy()
         expect(imported.id).toBeTruthy()
 
-        expect(dummySecure.setItem).toHaveBeenCalledWith(
-            'rootkey-WALLET1',
-            expect.any(Buffer),
+        // Verify storage calls - root key saved first, then derived key
+        expect(dummySecure.setItem).toHaveBeenNthCalledWith(
+            1,
+            'WALLET1',
+            expect.anything(), // Root key data (JSON string as Uint8Array)
         )
-        expect(dummySecure.setItem).toHaveBeenCalledWith(
-            'pk-KEY1',
-            expect.any(Buffer),
+        expect(dummySecure.setItem).toHaveBeenNthCalledWith(
+            2,
+            'KEY1',
+            expect.anything(), // Private key data (Uint8Array)
         )
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
     })
@@ -183,10 +188,15 @@ describe('useImportAccount', () => {
     })
 
     test('throws error when deriveKey fails', async () => {
+        const storage = new Map<string, any>()
         const dummySecure = {
-            setItem: vi.fn(async () => {}),
-            getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => {}),
+            setItem: vi.fn(async (key, value) => {
+                storage.set(key, value)
+            }),
+            getItem: vi.fn(async key => storage.get(key) ?? null),
+            removeItem: vi.fn(async key => {
+                storage.delete(key)
+            }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -236,13 +246,18 @@ describe('useImportAccount', () => {
     })
 
     test('throws error when secure storage setItem fails for private key', async () => {
+        const storage = new Map<string, any>()
         const dummySecure = {
             setItem: vi
                 .fn()
-                .mockResolvedValueOnce(undefined) // First call for root key succeeds
+                .mockImplementationOnce(async (key, value) => {
+                    storage.set(key, value)
+                }) // First call for root key succeeds
                 .mockRejectedValueOnce(new Error('Cannot store private key')), // Second call for private key fails
-            getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => {}),
+            getItem: vi.fn(async key => storage.get(key) ?? null),
+            removeItem: vi.fn(async key => {
+                storage.delete(key)
+            }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -297,10 +312,15 @@ describe('useImportAccount', () => {
     })
 
     test('imports account with custom walletId', async () => {
+        const storage = new Map<string, any>()
         const dummySecure = {
-            setItem: vi.fn(async () => {}),
-            getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => {}),
+            setItem: vi.fn(async (key, value) => {
+                storage.set(key, value)
+            }),
+            getItem: vi.fn(async key => storage.get(key) ?? null),
+            removeItem: vi.fn(async key => {
+                storage.delete(key)
+            }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -330,21 +350,29 @@ describe('useImportAccount', () => {
 
         expect(imported).toBeTruthy()
         expect(imported.hdWalletDetails?.walletId).toBe('CUSTOM_WALLET')
-        expect(dummySecure.setItem).toHaveBeenCalledWith(
-            'rootkey-CUSTOM_WALLET',
-            expect.any(Buffer),
+        // Verify storage calls - root key saved first, then derived key
+        expect(dummySecure.setItem).toHaveBeenNthCalledWith(
+            1,
+            'CUSTOM_WALLET',
+            expect.anything(),
         )
-        expect(dummySecure.setItem).toHaveBeenCalledWith(
-            'pk-KEY1',
-            expect.any(Buffer),
+        expect(dummySecure.setItem).toHaveBeenNthCalledWith(
+            2,
+            'KEY1',
+            expect.anything(),
         )
     })
 
     test('throws error when address generation fails', async () => {
+        const storage = new Map<string, any>()
         const dummySecure = {
-            setItem: vi.fn(async () => {}),
-            getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => {}),
+            setItem: vi.fn(async (key, value) => {
+                storage.set(key, value)
+            }),
+            getItem: vi.fn(async key => storage.get(key) ?? null),
+            removeItem: vi.fn(async key => {
+                storage.delete(key)
+            }),
             authenticate: vi.fn(async () => true),
         }
 

@@ -17,8 +17,8 @@ export const usePreferences = () => {
     const preferences = useSettingsStore(state => state.preferences)
     const getPreference = useCallback(
         useSettingsStore(state => state.getPreference),
-        [preferences],
-    )
+        [preferences])
+    const clearAllPreferences = useSettingsStore(state => state.clearAllPreferences)
     const setPreference = useSettingsStore(state => state.setPreference)
     const deletePreference = useSettingsStore(state => state.deletePreference)
 
@@ -34,5 +34,6 @@ export const usePreferences = () => {
         getPreference,
         setPreference,
         deletePreference,
+        clearAllPreferences,
     }
 }

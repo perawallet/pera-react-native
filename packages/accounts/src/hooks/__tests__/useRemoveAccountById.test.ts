@@ -34,6 +34,13 @@ vi.mock('../../store', async () => {
     }
 })
 
+const deleteKeySpy = vi.fn()
+vi.mock('@perawallet/wallet-core-kmd', () => ({
+    useKMD: () => ({
+        deleteKey: deleteKeySpy,
+    }),
+}))
+
 vi.mock('@perawallet/wallet-core-platform-integration', async () => {
     const actual = await vi.importActual<
         typeof import('@perawallet/wallet-core-platform-integration')
@@ -72,7 +79,13 @@ describe('useRemoveAccountById', () => {
             type: 'standard',
             address: 'ALICE',
             canSign: true,
-            privateKeyLocation: 'device',
+            hdWalletDetails: {
+                walletId: '1',
+                account: 0,
+                change: 0,
+                keyIndex: 0,
+                derivationType: 9,
+            },
         }
         useAccountsStore.setState({ accounts: [a] })
 
@@ -83,6 +96,7 @@ describe('useRemoveAccountById', () => {
         })
 
         expect(useAccountsStore.getState().accounts).toEqual([])
-        expect(dummySecure.removeItem).toHaveBeenCalledWith('pk-ALICE')
+        expect(useAccountsStore.getState().accounts).toEqual([])
+        expect(deleteKeySpy).toHaveBeenCalledWith('1') // id of the account
     })
 })

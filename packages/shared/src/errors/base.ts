@@ -33,6 +33,7 @@ export enum ErrorCategory {
     BLOCKCHAIN = 'blockchain',
     STORAGE = 'storage',
     UNKNOWN = 'unknown',
+    KMD = 'kmd',
 }
 
 /**

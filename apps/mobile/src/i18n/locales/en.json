@@ -166,9 +166,7 @@
             "title": "An error occurred processing this account",
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists.",
             "generic": "An error occurred processing this account.",
-            "key_not_found": "Could not find the key for wallet {{walletId}}.",
             "no_hd_wallet": "Could not find the Universal Wallet for address {{address}}.",
-            "master_key_invalid": "The master key for wallet {{walletId}} is invalid.",
             "key_access_error": "Failed to access the signing key."
         },
         "blockchain": {
@@ -212,6 +210,11 @@
             "title": "An error occurred processing this transaction",
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists."
         },
+        "kmd": {
+            "key_not_found": "Could not find the key for wallet {{walletId}}.",
+            "key_access_error": "Failed to access the signing key.",
+            "invalid_key": "The key for wallet {{walletId}} is invalid."
+        },
         "unknown": "An unknown error occurred."
     },
     "menu": {
@@ -235,7 +238,9 @@
             "failed_body": "There was an error trying to import your wallet"
         },
         "create_account": {
-            "processing": "Setting up your wallet..."
+            "processing": "Setting up your wallet...",
+            "error_title": "Failed to create account",
+            "error_message": "Something went wrong. Details: {{error}}"
         },
         "main_screen": {
             "welcome": "Welcome to \n Pera Wallet",
@@ -351,7 +356,9 @@
             "terms_title": "Terms and Services",
             "privacy_title": "Privacy Policy",
             "developer_title": "Developer Settings",
-            "remove_all_accounts": "Remove All Accounts and Logout",
+            "remove_all_accounts": "Remove All Data and Logout",
+            "remove_title": "Are you sure you want to remove all data?",
+            "remove_message": "This will remove all your accounts, contacts, passkeys, and settings from your device. Make sure you have your seed phrases securely backed up before proceeding.",
             "version_footer": "Pera Wallet Version {{version}}"
         },
         "theme": {

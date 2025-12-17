@@ -22,6 +22,8 @@ import { ActivityIndicator } from 'react-native'
 import { useCreateAccount } from '@perawallet/wallet-core-accounts'
 import { useState } from 'react'
 import { useLanguage } from '@hooks/language'
+import useToast from '@hooks/toast'
+import { usePreferences } from '@perawallet/wallet-core-settings'
 
 const OnboardingScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
@@ -30,11 +32,20 @@ const OnboardingScreen = () => {
     const { theme } = useTheme()
     const [processing, setProcessing] = useState(false)
     const { t } = useLanguage()
+    const { showToast } = useToast()
+    const { setPreference } = usePreferences()
 
     const doCreate = async () => {
         try {
+            setPreference('isOnboarding', true)
             const account = await createAccount({ account: 0, keyIndex: 0 })
-            navigation.push('NameAccount', { account: account })
+            navigation.push('Onboarding', { screen: 'NameAccount', params: { account: account } })
+        } catch (error) {
+            showToast({
+                title: t('onboarding.create_account.error'),
+                body: t('onboarding.create_account.error_message', { error: `${error}` }),
+                type: 'error',
+            })
         } finally {
             setProcessing(false)
         }
@@ -42,7 +53,9 @@ const OnboardingScreen = () => {
 
     const createAccountHandler = async () => {
         setProcessing(true)
-        doCreate()
+        requestAnimationFrame(() => {
+            doCreate()
+        })
     }
 
     const importAccount = () => {

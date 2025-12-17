@@ -10,16 +10,13 @@
  limitations under the License
  */
 
-export type ThemeMode = 'light' | 'dark' | 'system'
+import { KeyPair } from './keys'
 
-export type SettingsState = {
-    preferences: Record<string, string | boolean | number>
-    theme: ThemeMode
-    privacyMode: boolean
-    setTheme: (theme: ThemeMode) => void
-    setPrivacyMode: (enabled: boolean) => void
-    getPreference: (key: string) => string | boolean | number | null
-    setPreference: (key: string, value: string | boolean | number) => void
-    deletePreference: (key: string) => void
-    clearAllPreferences: () => void
+export * from './keys'
+
+export type KeyManagerState = {
+    keys: Map<string, KeyPair>
+    getKey: (id: string) => KeyPair | null
+    addKey: (key: KeyPair) => void
+    removeKey: (id: string) => void
 }

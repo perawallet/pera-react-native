@@ -25,6 +25,13 @@ import { screenListeners } from './listeners'
 import { TabBarStack } from './tabbar'
 import { ContactsStack } from './contacts'
 import { SettingsStack } from './settings'
+import { usePreferences } from '@perawallet/wallet-core-settings'
+
+const showOnboarding = () => {
+    const { getPreference } = usePreferences()
+    const noAccounts = useHasNoAccounts()
+    return getPreference('isOnboarding') == true || noAccounts
+}
 
 const RootStack = createNativeStackNavigator({
     screenOptions: {
@@ -34,7 +41,7 @@ const RootStack = createNativeStackNavigator({
     screenListeners,
     screens: {
         Onboarding: {
-            if: useHasNoAccounts,
+            if: showOnboarding,
             screen: OnboardingStack,
         },
         TabBar: {

@@ -24,6 +24,8 @@ import { NotifierWrapper } from 'react-native-notifier'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { TokenProvider } from './providers/TokenProvider'
 import { useLanguage } from './hooks/language'
+import { useHasNoAccounts } from '@perawallet/wallet-core-accounts'
+import { useNavigation } from '@react-navigation/native'
 
 function App() {
     const [persister, setPersister] = useState<Persister>()
@@ -32,6 +34,7 @@ function App() {
     const [fcmToken, setFcmToken] = useState<string | null>(null)
     const bootstrap = useBootstrapper()
     const { t } = useLanguage()
+    const hasNoAccounts = useHasNoAccounts()
 
     useEffect(() => {
         if (!bootstrapped) {

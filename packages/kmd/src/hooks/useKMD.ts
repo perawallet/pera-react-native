@@ -1,0 +1,72 @@
+import { useSecureStorageService } from '@perawallet/wallet-core-platform-integration'
+import { useKeyManagerStore } from '../store'
+import { KeyPair } from '../models'
+import { v7 as uuidv7 } from 'uuid'
+import { useCallback } from 'react'
+import { logger } from '@perawallet/wallet-core-shared'
+
+export const useKMD = () => {
+    const keys = useKeyManagerStore(state => state.keys)
+    const addKey = useKeyManagerStore(state => state.addKey)
+    const removeKey = useKeyManagerStore(state => state.removeKey)
+    const getKey = useKeyManagerStore(state => state.getKey)
+    const secureStorage = useSecureStorageService()
+
+    /**
+     * Store a key in the key manager store.
+     *
+     * @param key the metadata about the key
+     * @param privateKeyData base64 encoded private key data
+     */
+    const saveKey = useCallback(
+        async (key: KeyPair, privateKeyData: Uint8Array) => {
+            const storageKey = key.id ?? uuidv7()
+            key.id = storageKey
+            key.privateDataStorageKey = key.publicKey.length
+                ? `${key.type}-${key.publicKey}`
+                : `${key.type}-${storageKey}`
+            key.createdAt = new Date()
+            logger.debug("Creating key", key)
+            await secureStorage.setItem(key.privateDataStorageKey, privateKeyData)
+            addKey(key)
+        },
+        [addKey, secureStorage],
+    )
+
+    const deleteKey = useCallback(
+        async (id: string) => {
+            const key = getKey(id)
+            if (!key) {
+                return
+            }
+            if (key.privateDataStorageKey) {
+                await secureStorage.removeItem(key.privateDataStorageKey)
+            }
+            logger.debug("Deleting key", key)
+            removeKey(id)
+        },
+        [getKey, removeKey, secureStorage],
+    )
+
+    const getPrivateData = useCallback(
+        async (id: string) => {
+            const key = getKey(id)
+            if (!key) {
+                return null
+            }
+            if (key.privateDataStorageKey) {
+                return await secureStorage.getItem(key.privateDataStorageKey)
+            }
+            return null
+        },
+        [getKey, secureStorage],
+    )
+
+    return {
+        keys,
+        deleteKey,
+        saveKey,
+        getKey,
+        getPrivateData,
+    }
+}
