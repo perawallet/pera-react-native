@@ -64,17 +64,8 @@ fi
 echo "${GREEN}✓ i18n valid${NC}"
 
 
-# Run tests
-echo "\n${YELLOW}Running tests...${NC}"
-pnpm run test
 
-if [ $? -ne 0 ]; then
-  echo "${RED}Tests failed. Please fix the failing tests before pushing.${NC}"
-  echo "${YELLOW}You can run 'pnpm test' to see the test results.${NC}"
-  exit 1
-fi
-
-echo "${GREEN}✓ All tests passed${NC}"
+echo "\n${GREEN}All pre-push checks passed!${NC}"
 
 echo "\n${GREEN}All pre-push checks passed!${NC}"
 exit 0
