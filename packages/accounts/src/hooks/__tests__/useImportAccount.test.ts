@@ -83,11 +83,6 @@ vi.mock('@perawallet/wallet-core-platform-integration', async () => {
     }
 })
 
-// Mock API hooks
-vi.mock('../../../api/generated/backend', () => ({
-    useV1DevicesPartialUpdate: vi.fn(() => ({ mutateAsync: vi.fn() })),
-}))
-
 vi.mock('../../store', async () => {
     const actual =
         await vi.importActual<typeof import('../../store')>('../../store')
@@ -162,9 +157,9 @@ describe('useImportAccount', () => {
 
     test('throws error when generateMasterKey fails with invalid mnemonic', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => {}),
+            setItem: vi.fn(async () => { }),
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => {}),
+            removeItem: vi.fn(async () => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -225,7 +220,7 @@ describe('useImportAccount', () => {
         const dummySecure = {
             setItem: vi.fn().mockRejectedValueOnce(new Error('Storage full')), // First call for root key fails
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => {}),
+            removeItem: vi.fn(async () => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -286,9 +281,9 @@ describe('useImportAccount', () => {
 
     test('throws error when mnemonicToEntropy fails', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => {}),
+            setItem: vi.fn(async () => { }),
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => {}),
+            removeItem: vi.fn(async () => { }),
             authenticate: vi.fn(async () => true),
         }
 
