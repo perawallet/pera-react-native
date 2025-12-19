@@ -27,7 +27,6 @@ import {
     getMessaging,
     getToken,
     onMessage,
-    registerDeviceForRemoteMessages,
 } from '@react-native-firebase/messaging'
 import {
     FirebaseAnalyticsTypes,
@@ -134,7 +133,6 @@ export class RNFirebaseService
         let token: string | undefined
         try {
             this.messaging = await getMessaging()
-            registerDeviceForRemoteMessages(this.messaging)
             token = await getToken(this.messaging)
         } catch {
             // noop

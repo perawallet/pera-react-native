@@ -5,7 +5,7 @@ require Pod::Executable.execute_command('node', ['-p',
     {paths: [process.argv[1]]},
   )', __dir__]).strip
 
-platform :ios, min_ios_version_supported
+platform :ios, '16.0'
 prepare_react_native_project!
 
 
@@ -19,28 +19,39 @@ end
 target 'mobile' do
   config = use_native_modules!
   
-  use_frameworks! :linkage => :static
   $RNFirebaseAsStaticFramework = true
+
+  pod 'FirebaseInstallations', :modular_headers => true # Add missing package
+  pod 'GoogleDataTransport', :modular_headers => true # Add missing package
+  pod 'nanopb', :modular_headers => true # Add missing package
+  pod 'GoogleUtilities', :modular_headers => true # Add missing package
+  pod 'FirebaseCore', :modular_headers => true    # Add missing package
+  pod 'FirebaseABTesting', :modular_headers => true # Add missing package
+  pod 'FirebaseCoreExtension', :modular_headers => true # Add missing package
+  pod 'FirebaseSessions', :modular_headers => true # Add missing package
+  pod 'FirebaseAnalytics', :modular_headers => true # Add missing package
+  pod 'FirebaseRemoteConfig', :modular_headers => true # Add missing package
+  pod 'FirebaseMessaging', :modular_headers => true # Add missing package
+  pod 'RNFBApp', :path => '../node_modules/@react-native-firebase/app' # Firebase manual setup
+
 
   use_react_native!(
     :path => config[:reactNativePath],
-    # An absolute path to your application root.
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
   post_install do |installer|
-    installer.pods_project.targets.each do |target|
-      target.build_configurations.each do |config|
-        config.build_settings["GCC_WARN_INHIBIT_ALL_WARNINGS"] = "YES"
-      end
-    end
-
-    # https://github.com/facebook/react-native/blob/main/packages/react-native/scripts/react_native_pods.rb#L197-L202
     react_native_post_install(
       installer,
       config[:reactNativePath],
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+    
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
+      end
+    end
   end
 end

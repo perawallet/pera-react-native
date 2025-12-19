@@ -13,6 +13,10 @@
 /**
  * @format
  */
+import * as WebAssembly from 'react-native-webassembly'
+
+global.WebAssembly = WebAssembly
+
 import './shim'
 import './src/wdyr'
 import 'reflect-metadata'

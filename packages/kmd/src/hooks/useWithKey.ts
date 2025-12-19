@@ -15,6 +15,7 @@ import { AppError, logger } from '@perawallet/wallet-core-shared'
 import { KeyAccessError, KeyNotFoundError } from '../errors'
 import { useKeyManagerStore } from '../store'
 import { useCallback } from 'react'
+import { AccessControlPermission } from '../models'
 
 export const useWithKey = () => {
     const secureStorage = useSecureStorageService()
@@ -38,7 +39,9 @@ export const useWithKey = () => {
                 const hasAccess = key.acl.some(
                     acl =>
                         acl.domains.includes(domain) &&
-                        acl.permissions.includes('read-private'),
+                        acl.permissions.includes(
+                            AccessControlPermission.ReadPrivate,
+                        ),
                 )
 
                 if (!hasAccess) {

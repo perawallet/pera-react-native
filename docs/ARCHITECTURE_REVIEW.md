@@ -20,11 +20,6 @@
     - Debug and resolve syntax errors (likely ESM/CJS or TypeScript compilation issues)
     - These are high-value test targets
 
-#### 4.2 Missing Type Coverage for Navigation
-
-- **Observation**: React Navigation 7 with type-safe routing, but no central navigation types file
-- **Recommendation**: Create typed navigation param lists for all routes
-
 #### 4.3 Any Types in Critical Paths
 
 - **Issue**: `deeplink.ts` line 66 has `// eslint-disable-next-line @typescript-eslint/no-explicit-any` for screen params

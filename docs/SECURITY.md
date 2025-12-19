@@ -10,13 +10,13 @@ Security is paramount in a non-custodial wallet application.
     - Keep them in memory for as short a time as possible.
 
 - **Logging**:
-    - **NEVER** log Private Keys, Mnemonics, or full payloads containing them.
+    - **NEVER** log Private Keys or Mnemonics
     - Use our custom `Logger` which supports `LogContext`.
-    - Ensure any object passed to the logger is sanitized (e.g., replace sensitive fields with `[REDACTED]`).
+    - Ensure any object passed to the logger is sanitized (e.g., replace sensitive fields with `[REDACTED]`). We store very little sensitive data so it mostly is signing keys and maybe in some cases tx data or addresses.
 
 ## Environment Variables
 
-- **Credentials**: Do not commit distinct API keys or secrets to the repo.
+- **Credentials**: Do not commit distinct API keys (beyond the defaults) or secrets to the repo.
 - **Config**: Use `.env` files for configuration.
 - **Exposure**: Be aware that anything in the mobile app bundle is public.
 

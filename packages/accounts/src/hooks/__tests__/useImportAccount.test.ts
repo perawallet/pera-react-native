@@ -83,11 +83,6 @@ vi.mock('@perawallet/wallet-core-platform-integration', async () => {
     }
 })
 
-// Mock API hooks
-vi.mock('../../../api/generated/backend', () => ({
-    useV1DevicesPartialUpdate: vi.fn(() => ({ mutateAsync: vi.fn() })),
-}))
-
 vi.mock('../../store', async () => {
     const actual =
         await vi.importActual<typeof import('../../store')>('../../store')

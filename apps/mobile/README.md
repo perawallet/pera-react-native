@@ -18,6 +18,8 @@ This is the React Native application for Pera Wallet. It serves as the UI layer,
     ```
 
 2.  **Install iOS Pods**:
+    Note this may not be necessary in all cases. If you encounter build issues, try running this command:
+
     ```sh
     cd ios && bundle install && bundle exec pod install
     ```
