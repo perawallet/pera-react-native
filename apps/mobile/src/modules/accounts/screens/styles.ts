@@ -76,11 +76,12 @@ export const useStyles = makeStyles(theme => {
             flex: 1,
         },
         scannerClose: {
-            marginTop: theme.spacing.xl,
+            marginTop: theme.spacing.xl * 1.5,
             marginLeft: theme.spacing.lg,
             width: theme.spacing.xl * 2,
             height: theme.spacing.xl * 2,
-            zIndex: 2,
+            alignItems: 'center',
+            justifyContent: 'center',
         },
         tabs: {
             paddingTop: theme.spacing.sm,

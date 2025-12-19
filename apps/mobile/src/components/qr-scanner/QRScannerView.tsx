@@ -24,6 +24,7 @@ import { PropsWithChildren, useState } from 'react'
 import { Modal } from 'react-native'
 import { useLanguage } from '@hooks/language'
 import { useDeepLink } from '@hooks/deeplink'
+import EmptyView from '@components/empty-view/EmptyView'
 
 type QRScannerViewProps = {
     title?: string
@@ -59,13 +60,6 @@ const QRScannerView = (props: QRScannerViewProps) => {
     if (!hasPermission) {
         requestPermission()
     }
-    if (device == null) {
-        return (
-            <PWView>
-                <Text>{t('camera.no_camera_device_found.label')}</Text>
-            </PWView>
-        )
-    }
 
     return (
         <Modal
@@ -73,20 +67,37 @@ const QRScannerView = (props: QRScannerViewProps) => {
             visible={props.visible}
             animationType={props.animationType}
         >
-            {props.children}
-            <Camera
-                style={styles.camera}
-                codeScanner={codeScanner}
-                device={device}
-                isActive={scanningEnabled}
-            />
-            <CameraOverlay style={styles.overlay} />
-            <Text
-                h2
-                h2Style={styles.title}
-            >
-                {props.title ?? 'Find a code to scan'}
-            </Text>
+            {device == null ? (
+                <>
+                    <EmptyView
+                        style={styles.emptyView}
+                        title={t('camera.no_camera_device_found.label')}
+                        body={''}
+                    />
+                    <>
+                        {props.children}
+                    </>
+                </>
+            ) : (
+                <>
+                    <>
+                        {props.children}
+                    </>
+                    < Camera
+                        style={styles.camera}
+                        codeScanner={codeScanner}
+                        device={device}
+                        isActive={scanningEnabled}
+                    />
+                    <CameraOverlay style={styles.overlay} />
+                    <Text
+                        h2
+                        h2Style={styles.title}
+                    >
+                        {props.title ?? 'Find a code to scan'}
+                    </Text>
+                </>
+            )}
         </Modal>
     )
 }
