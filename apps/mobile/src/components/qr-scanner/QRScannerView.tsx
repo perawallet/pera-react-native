@@ -11,7 +11,6 @@
  */
 
 import { useStyles } from './styles'
-import PWView from '@components/view/PWView'
 import CameraOverlay from '@assets/images/camera-overlay.svg'
 import {
     useCameraPermission,
@@ -74,16 +73,12 @@ const QRScannerView = (props: QRScannerViewProps) => {
                         title={t('camera.no_camera_device_found.label')}
                         body={''}
                     />
-                    <>
-                        {props.children}
-                    </>
+                    <>{props.children}</>
                 </>
             ) : (
                 <>
-                    <>
-                        {props.children}
-                    </>
-                    < Camera
+                    <>{props.children}</>
+                    <Camera
                         style={styles.camera}
                         codeScanner={codeScanner}
                         device={device}
