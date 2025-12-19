@@ -19,9 +19,9 @@ This project is a **monorepo** managed by [Turborepo](https://turbo.build/) and 
 Headless libraries that handle data, state, and complex logic.
 
 - **`shared`**: Common utilities, constants, types, and logging.
-- **`platform-integration`**: Interfaces for device features (Secure Storage, File System, Network).
+- **`platform-integration`**: Interfaces for platform specific features (Secure Storage, File System, Network).
 - **`account`, `assets`, `contacts`, `settings`**: Domain-specific logic and state stores.
-- **`blockchain`**: Crypto auditing, transaction signing, and network interaction.
+- **`blockchain`**: Algorand specific code, transaction signing, and node/indexer interaction.
 
 ## Separation of Concerns
 
