@@ -1,5 +1,3 @@
-
-
 export type WalletConnectPeerMeta = {
     id: string
     name: string
@@ -17,7 +15,7 @@ export type WalletConnectWalletMeta = {
 
 export type WalletConnectSession = {
     id: string
-    version: "1" | "2"
+    version: '1' | '2'
     bridgeUrl: string
     peerMeta: WalletConnectPeerMeta
     walletMeta: WalletConnectWalletMeta
@@ -31,5 +29,7 @@ export type WalletConnectSession = {
 
 export type WalletConnectStore = {
     walletConnectSessions: WalletConnectSession[]
-    setWalletConnectSessions: (walletConnectSessions: WalletConnectSession[]) => void
+    setWalletConnectSessions: (
+        walletConnectSessions: WalletConnectSession[],
+    ) => void
 }

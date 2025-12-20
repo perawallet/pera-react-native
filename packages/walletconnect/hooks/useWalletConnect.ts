@@ -3,7 +3,9 @@ import { useWalletConnectStore } from '../store'
 
 const useWalletConnect = () => {
     const sessions = useWalletConnectStore(state => state.walletConnectSessions)
-    const setSessions = useWalletConnectStore(state => state.setWalletConnectSessions)
+    const setSessions = useWalletConnectStore(
+        state => state.setWalletConnectSessions,
+    )
 
     const reconnectAllSessions = () => {
         sessions.forEach(session => {
@@ -12,11 +14,16 @@ const useWalletConnect = () => {
     }
 
     const connectSession = (session: WalletConnectSession) => {
-        const existingSession = sessions.find(session => session.id === session.id) ?? session
+        const existingSession =
+            sessions.find(session => session.id === session.id) ?? session
 
         //TODO connect here
 
-        setSessions(sessions.map(session => session.id === existingSession.id ? session : session))
+        setSessions(
+            sessions.map(session =>
+                session.id === existingSession.id ? session : session,
+            ),
+        )
     }
 
     const removeSession = (id: string) => {

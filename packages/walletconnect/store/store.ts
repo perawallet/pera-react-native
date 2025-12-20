@@ -20,7 +20,8 @@ import {
 } from '@perawallet/wallet-core-platform-integration'
 import { createLazyStore, logger } from '@perawallet/wallet-core-shared'
 
-const lazy = createLazyStore<WithPersist<StoreApi<WalletConnectStore>, unknown>>()
+const lazy =
+    createLazyStore<WithPersist<StoreApi<WalletConnectStore>, unknown>>()
 
 export const useWalletConnectStore: UseBoundStore<
     WithPersist<StoreApi<WalletConnectStore>, unknown>
@@ -31,7 +32,9 @@ const createWalletConnectStore = (storage: KeyValueStorageService) =>
         persist(
             set => ({
                 walletConnectSessions: [],
-                setWalletConnectSessions: (walletConnectSessions: WalletConnectSession[]) => set({ walletConnectSessions }),
+                setWalletConnectSessions: (
+                    walletConnectSessions: WalletConnectSession[],
+                ) => set({ walletConnectSessions }),
             }),
             {
                 name: 'wallet-connect-store',
