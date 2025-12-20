@@ -132,6 +132,7 @@ export const useDeepLink = () => {
                     // TODO: We need to use a proper transaction construction method here and
                     //navigate somewhere other than the qr code scanner.
                     addSignRequest({
+                        type: 'transactions',
                         txs: [
                             [
                                 {
@@ -155,6 +156,7 @@ export const useDeepLink = () => {
                     // TODO: We need to use a proper transaction construction method here and
                     //navigate somewhere other than the qr code scanner.
                     addSignRequest({
+                        type: 'transactions',
                         txs: [
                             [
                                 {
@@ -211,6 +213,7 @@ export const useDeepLink = () => {
                     // TODO: We need to use a proper transaction construction method here and
                     //navigate somewhere other than the qr code scanner.
                     addSignRequest({
+                        type: 'transactions',
                         txs: [
                             [
                                 {

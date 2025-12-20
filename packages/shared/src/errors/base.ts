@@ -34,6 +34,7 @@ export enum ErrorCategory {
     STORAGE = 'storage',
     UNKNOWN = 'unknown',
     KMD = 'kmd',
+    WALLETCONNECT = 'walletconnect',
 }
 
 /**

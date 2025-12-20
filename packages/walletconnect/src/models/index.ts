@@ -13,9 +13,9 @@
 export type WalletConnectPeerMeta = {
     id: string
     name: string
-    url: string
-    icons: string[]
-    description: string
+    url?: string
+    icons?: string[]
+    description?: string
 }
 
 export type WalletConnectWalletMeta = {
@@ -23,15 +23,16 @@ export type WalletConnectWalletMeta = {
     peerId: string
     chainId: number
     peerMeta: WalletConnectPeerMeta
+    permissions: string[]
 }
 
 export type WalletConnectSession = {
     id: string
     version: '1' | '2'
     bridgeUrl: string
+    peerId: string
     peerMeta: WalletConnectPeerMeta
     walletMeta: WalletConnectWalletMeta
-    peerId: string
     createdAt: Date
     lastActiveAt: Date
     expiresAt?: Date
@@ -39,9 +40,17 @@ export type WalletConnectSession = {
     subscribed: boolean
 }
 
+export type WalletConnectSessionRequest = {
+    permissions: string[]
+} & Omit<WalletConnectPeerMeta, 'id'>
+
 export type WalletConnectStore = {
     walletConnectSessions: WalletConnectSession[]
+    connectionRequests: WalletConnectSessionRequest[]
     setWalletConnectSessions: (
         walletConnectSessions: WalletConnectSession[],
+    ) => void
+    setConnectionRequests: (
+        connectionRequests: WalletConnectSessionRequest[],
     ) => void
 }

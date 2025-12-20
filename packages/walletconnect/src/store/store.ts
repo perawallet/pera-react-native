@@ -12,7 +12,11 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import type { WalletConnectSession, WalletConnectStore } from '../models'
+import type {
+    WalletConnectSession,
+    WalletConnectSessionRequest,
+    WalletConnectStore,
+} from '../models'
 import type { WithPersist } from '@perawallet/wallet-core-shared'
 import {
     KeyValueStorageService,
@@ -32,9 +36,13 @@ const createWalletConnectStore = (storage: KeyValueStorageService) =>
         persist(
             set => ({
                 walletConnectSessions: [],
+                connectionRequests: [],
                 setWalletConnectSessions: (
                     walletConnectSessions: WalletConnectSession[],
                 ) => set({ walletConnectSessions }),
+                setConnectionRequests: (
+                    connectionRequests: WalletConnectSessionRequest[],
+                ) => set({ connectionRequests }),
             }),
             {
                 name: 'wallet-connect-store',

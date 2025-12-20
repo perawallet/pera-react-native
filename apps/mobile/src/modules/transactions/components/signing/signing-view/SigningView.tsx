@@ -25,14 +25,14 @@ import useToast from '@hooks/toast'
 import PWTouchableOpacity from '@components/touchable-opacity/PWTouchableOpacity'
 import PWIcon from '@components/icons/PWIcon'
 import {
-    SignRequest,
+    TransactionSignRequest,
     useSigningRequest,
 } from '@perawallet/wallet-core-blockchain'
 import EmptyView from '@components/empty-view/EmptyView'
 import { useLanguage } from '@hooks/language'
 
 type SigningViewProps = {
-    request: SignRequest
+    request: TransactionSignRequest
 }
 
 //TODO: we need to support all tx types here
@@ -41,6 +41,7 @@ type SigningViewProps = {
 const SingleTransactionView = ({ request }: SigningViewProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
+
     const tx = request.txs?.at(0)?.at(0)
     const receiver =
         tx?.['asset-transfer-transaction']?.receiver ??

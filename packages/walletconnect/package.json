@@ -1,0 +1,30 @@
+{
+  "name": "@perawallet/wallet-core-walletconnect",
+  "version": "0.0.0",
+  "main": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc && vite build",
+    "test": "vitest run",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@babel/runtime": "catalog:",
+    "@perawallet/wallet-core-platform-integration": "workspace:*",
+    "@perawallet/wallet-core-shared": "workspace:*",
+    "uuid": "catalog:",
+    "zustand": "catalog:"
+  },
+  "devDependencies": {
+    "@perawallet/wallet-core-devtools": "workspace:*",
+    "@testing-library/react": "catalog:",
+    "reflect-metadata": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:",
+    "globals": "catalog:",
+    "typescript-eslint": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:"
+  }
+}

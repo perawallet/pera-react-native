@@ -18,11 +18,30 @@ export * from './indexer-models'
 
 export const MAX_TX_NOTE_BYTES = 1024
 
-export type SignRequest = {
+type BaseSignRequest = {
     id?: string
+    type: 'transactions' | 'arbitrary-data' | 'arc60'
+}
+
+export type TransactionSignRequest = {
     // A list of transaction groups (which in turn are a list of transactions)
     txs: Transaction[][]
-}
+} & BaseSignRequest
+
+export type ArbitraryDataSignRequest = {
+    // A raw data blob to sign
+    data: Uint8Array
+} & BaseSignRequest
+
+//ARC 60 arbitrary data signing request
+export type Arc60SignRequest = {
+    //TODO add data in here that matches the expected structure
+} & BaseSignRequest
+
+export type SignRequest =
+    | TransactionSignRequest
+    | ArbitraryDataSignRequest
+    | Arc60SignRequest
 
 export type BlockchainStore = {
     pendingSignRequests: SignRequest[]

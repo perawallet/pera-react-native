@@ -29,27 +29,59 @@ const useWalletConnect = () => {
         const existingSession =
             sessions.find(session => session.id === session.id) ?? session
 
-        //TODO connect here
-
+        //TODO connect websocket here
+        existingSession.connected = true
+        existingSession.lastActiveAt = new Date()
         setSessions(
             sessions.map(session =>
-                session.id === existingSession.id ? session : session,
+                session.id === existingSession.id ? existingSession : session,
             ),
         )
     }
 
+    const disconnectSession = (id: string) => {
+        const existingSession = sessions.find(session => session.id === id)
+        if (!existingSession) {
+            return
+        }
+
+        if (!existingSession.connected) {
+            return
+        }
+
+        //TODO disconnect websocket here
+        existingSession.connected = false
+        setSessions(
+            sessions.map(session =>
+                session.id === id ? existingSession : session,
+            ),
+        )
+    }
+
+    const approveSession = (_: string) => {
+        //TODO approve session here
+    }
+
     const removeSession = (id: string) => {
+        disconnectSession(id)
         setSessions(sessions.filter(session => session.id !== id))
     }
 
     const clearSessions = () => {
-        setSessions([])
+        sessions.forEach(session => {
+            removeSession(session.id)
+        })
     }
 
     return {
         sessions,
-        addSession,
+        reconnectAllSessions,
+        connectSession,
+        disconnectSession,
+        approveSession,
         removeSession,
         clearSessions,
     }
 }
+
+export default useWalletConnect
