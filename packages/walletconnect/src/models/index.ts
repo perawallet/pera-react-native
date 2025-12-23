@@ -46,11 +46,11 @@ export type WalletConnectSessionRequest = {
 
 export type WalletConnectStore = {
     walletConnectSessions: WalletConnectSession[]
-    connectionRequests: WalletConnectSessionRequest[]
+    sessionRequests: WalletConnectSessionRequest[]
     setWalletConnectSessions: (
         walletConnectSessions: WalletConnectSession[],
     ) => void
-    setConnectionRequests: (
-        connectionRequests: WalletConnectSessionRequest[],
+    setSessionRequests: (
+        sessionRequests: WalletConnectSessionRequest[],
     ) => void
 }

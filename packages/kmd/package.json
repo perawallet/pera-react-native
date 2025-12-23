@@ -13,6 +13,7 @@
     "@perawallet/wallet-core-platform-integration": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-core-xhdwallet": "workspace:*",
+    "react": "catalog:",
     "uuid": "catalog:",
     "zustand": "catalog:"
   },
@@ -25,7 +26,7 @@
     "vitest": "catalog:",
     "globals": "catalog:",
     "typescript-eslint": "catalog:",
-    "react": "catalog:",
-    "react-dom": "catalog:"
+    "react-dom": "catalog:",
+    "@types/react": "catalog:"
   }
 }

@@ -26,6 +26,7 @@ export type AddressEntryFieldProps = {
 
 const AddressEntryField = ({
     allowQRCode,
+    ref,
     ...rest
 }: AddressEntryFieldProps) => {
     const styles = useStyles()
@@ -50,12 +51,12 @@ const AddressEntryField = ({
             <Input
                 {...rest}
                 rightIcon={
-                    allowQRCode && (
+                    allowQRCode ? (
                         <PWIcon
                             name='camera'
                             onPress={showScanner}
                         />
-                    )
+                    ) : undefined
                 }
             />
             {scannerVisible && (

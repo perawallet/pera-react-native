@@ -11,3 +11,4 @@
  */
 
 export * from './useWalletConnect'
+export * from './useSessionRequests'

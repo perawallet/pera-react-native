@@ -36,13 +36,13 @@ const createWalletConnectStore = (storage: KeyValueStorageService) =>
         persist(
             set => ({
                 walletConnectSessions: [],
-                connectionRequests: [],
+                sessionRequests: [],
                 setWalletConnectSessions: (
                     walletConnectSessions: WalletConnectSession[],
                 ) => set({ walletConnectSessions }),
-                setConnectionRequests: (
-                    connectionRequests: WalletConnectSessionRequest[],
-                ) => set({ connectionRequests }),
+                setSessionRequests: (
+                    sessionRequests: WalletConnectSessionRequest[],
+                ) => set({ sessionRequests }),
             }),
             {
                 name: 'wallet-connect-store',
