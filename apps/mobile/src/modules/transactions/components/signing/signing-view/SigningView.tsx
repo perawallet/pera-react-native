@@ -9,6 +9,7 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
+
 import {
     ArbitraryDataSignRequest,
     Arc60SignRequest,
@@ -27,16 +28,26 @@ type SigningViewProps = {
 const SigningView = ({ request }: SigningViewProps) => {
     switch (request.type) {
         case 'transactions':
-            return <TransactionSigningView request={request as TransactionSignRequest} />
+            return (
+                <TransactionSigningView
+                    request={request as TransactionSignRequest}
+                />
+            )
         case 'arbitrary-data':
-            return <ArbitraryDataSigningView request={request as ArbitraryDataSignRequest} />
+            return (
+                <ArbitraryDataSigningView
+                    request={request as ArbitraryDataSignRequest}
+                />
+            )
         case 'arc60':
             return <Arc60SigningView request={request as Arc60SignRequest} />
         default:
-            return <EmptyView
-                title='Unknown Request Type'
-                body='The request type is unknown.'
-            />
+            return (
+                <EmptyView
+                    title='Unknown Request Type'
+                    body='The request type is unknown.'
+                />
+            )
     }
 }
 

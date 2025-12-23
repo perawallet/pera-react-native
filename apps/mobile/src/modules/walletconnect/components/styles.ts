@@ -68,9 +68,7 @@ export const useStyles = makeStyles(theme => {
             color: theme.colors.textGray,
             marginBottom: theme.spacing.md,
         },
-        accountsContainer: {
-
-        },
+        accountsContainer: {},
         buttonContainer: {
             flexDirection: 'row',
             alignItems: 'center',
@@ -82,6 +80,6 @@ export const useStyles = makeStyles(theme => {
         },
         connectButton: {
             flexGrow: 2,
-        }
+        },
     }
 })

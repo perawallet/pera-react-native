@@ -1,18 +1,32 @@
-import CurrencyDisplay from "@components/currency-display/CurrencyDisplay"
-import EmptyView from "@components/empty-view/EmptyView"
-import TransactionIcon from "@components/transaction-icon/TransactionIcon"
-import PWView from "@components/view/PWView"
-import { TransactionSignRequest, useSigningRequest } from "@perawallet/wallet-core-blockchain"
-import { truncateAlgorandAddress } from "@perawallet/wallet-core-shared"
-import { Text } from "@rneui/themed"
-import Decimal from "decimal.js"
-import { ScrollView } from "react-native-gesture-handler"
-import { useStyles } from "./styles"
-import BalanceImpactView from "../balance-impact/BalanceImpactView"
-import { useLanguage } from "@hooks/language"
-import useToast from "@hooks/toast"
-import PWButton from "@components/button/PWButton"
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
 
+import CurrencyDisplay from '@components/currency-display/CurrencyDisplay'
+import EmptyView from '@components/empty-view/EmptyView'
+import TransactionIcon from '@components/transaction-icon/TransactionIcon'
+import PWView from '@components/view/PWView'
+import {
+    TransactionSignRequest,
+    useSigningRequest,
+} from '@perawallet/wallet-core-blockchain'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import { Text } from '@rneui/themed'
+import Decimal from 'decimal.js'
+import { ScrollView } from 'react-native-gesture-handler'
+import { useStyles } from './styles'
+import BalanceImpactView from '../balance-impact/BalanceImpactView'
+import { useLanguage } from '@hooks/language'
+import useToast from '@hooks/toast'
+import PWButton from '@components/button/PWButton'
 
 type TransactionSigningViewProps = {
     request: TransactionSignRequest
@@ -140,29 +154,29 @@ const TransactionSigningView = ({ request }: TransactionSigningViewProps) => {
         removeSignRequest(request)
     }
 
-    return <PWView style={styles.container}>
-        <PWView style={styles.buttonContainer}>
-            {isMultipleTransactions ? (
-                <GroupTransactionView request={request} />
-            ) : (
-                <SingleTransactionView request={request} />
-            )}
-            <PWButton
-                title={t('signing.view.cancel')}
-                variant='secondary'
-                onPress={rejectRequest}
-                style={styles.button}
-            />
-            <PWButton
-                title={
-                    isMultipleTransactions ? 'Confirm All' : 'Confirm'
-                }
-                variant='primary'
-                onPress={signAndSend}
-                style={styles.button}
-            />
+    return (
+        <PWView style={styles.container}>
+            <PWView style={styles.buttonContainer}>
+                {isMultipleTransactions ? (
+                    <GroupTransactionView request={request} />
+                ) : (
+                    <SingleTransactionView request={request} />
+                )}
+                <PWButton
+                    title={t('signing.view.cancel')}
+                    variant='secondary'
+                    onPress={rejectRequest}
+                    style={styles.button}
+                />
+                <PWButton
+                    title={isMultipleTransactions ? 'Confirm All' : 'Confirm'}
+                    variant='primary'
+                    onPress={signAndSend}
+                    style={styles.button}
+                />
+            </PWView>
         </PWView>
-    </PWView>
+    )
 }
 
 export default TransactionSigningView

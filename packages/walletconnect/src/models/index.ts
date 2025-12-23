@@ -52,7 +52,5 @@ export type WalletConnectStore = {
     setWalletConnectSessions: (
         walletConnectSessions: WalletConnectSession[],
     ) => void
-    setSessionRequests: (
-        sessionRequests: WalletConnectSessionRequest[],
-    ) => void
+    setSessionRequests: (sessionRequests: WalletConnectSessionRequest[]) => void
 }

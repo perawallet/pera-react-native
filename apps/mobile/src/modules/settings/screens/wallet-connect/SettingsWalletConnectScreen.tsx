@@ -14,12 +14,20 @@ import PWButton from '@components/button/PWButton'
 import EmptyView from '@components/empty-view/EmptyView'
 import PWView from '@components/view/PWView'
 import { useLanguage } from '@hooks/language'
-import { useWalletConnect, useWalletConnectSessionRequests, WalletConnectSession } from '@perawallet/wallet-core-walletconnect'
+import {
+    useWalletConnect,
+    useWalletConnectSessionRequests,
+    WalletConnectSession,
+} from '@perawallet/wallet-core-walletconnect'
 import { Text } from '@rneui/themed'
 import { FlashList } from '@shopify/flash-list'
 
 //TODO implement session item
-const WalletConnectSessionItem = ({ session }: { session: WalletConnectSession }) => {
+const WalletConnectSessionItem = ({
+    session,
+}: {
+    session: WalletConnectSession
+}) => {
     return (
         <PWView>
             <Text>{session.peerMeta.name}</Text>
@@ -40,10 +48,7 @@ const SettingsWalletConnectScreen = () => {
             url: 'test',
             icons: [],
             chainIds: [0],
-            permissions: [
-                'algo_signTxn',
-                'algo_signData',
-            ]
+            permissions: ['algo_signTxn', 'algo_signData'],
         })
     }
 
@@ -53,7 +58,13 @@ const SettingsWalletConnectScreen = () => {
                 icon='wallet-connect'
                 title={t('walletconnect.settings.empty_title')}
                 body={t('walletconnect.settings.empty_body')}
-                button={<PWButton title={t('walletconnect.settings.empty_button')} variant='primary' onPress={handleScanQR} />}
+                button={
+                    <PWButton
+                        title={t('walletconnect.settings.empty_button')}
+                        variant='primary'
+                        onPress={handleScanQR}
+                    />
+                }
             />
         )
     }
@@ -62,7 +73,9 @@ const SettingsWalletConnectScreen = () => {
         <PWView>
             <FlashList
                 data={sessions}
-                renderItem={({ item }) => <WalletConnectSessionItem session={item} />}
+                renderItem={({ item }) => (
+                    <WalletConnectSessionItem session={item} />
+                )}
             />
         </PWView>
     )

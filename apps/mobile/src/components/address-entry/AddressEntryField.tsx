@@ -26,6 +26,7 @@ export type AddressEntryFieldProps = {
 
 const AddressEntryField = ({
     allowQRCode,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     ref,
     ...rest
 }: AddressEntryFieldProps) => {

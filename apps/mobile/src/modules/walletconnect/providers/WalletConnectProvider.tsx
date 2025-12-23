@@ -18,7 +18,9 @@ import { useWalletConnectSessionRequests } from '@perawallet/wallet-core-walletc
 
 type WalletConnectProviderProps = {} & PropsWithChildren
 
-export function WalletConnectProvider({ children }: WalletConnectProviderProps) {
+export function WalletConnectProvider({
+    children,
+}: WalletConnectProviderProps) {
     const { sessionRequests } = useWalletConnectSessionRequests()
     const nextRequest = sessionRequests.at(0)
     const { height } = useWindowDimensions()
