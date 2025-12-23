@@ -10,17 +10,61 @@
  limitations under the License
  */
 
+import PWButton from '@components/button/PWButton'
 import EmptyView from '@components/empty-view/EmptyView'
+import PWView from '@components/view/PWView'
 import { useLanguage } from '@hooks/language'
+import { useWalletConnect, useWalletConnectSessionRequests, WalletConnectSession } from '@perawallet/wallet-core-walletconnect'
+import { Text } from '@rneui/themed'
+import { FlashList } from '@shopify/flash-list'
+
+//TODO implement session item
+const WalletConnectSessionItem = ({ session }: { session: WalletConnectSession }) => {
+    return (
+        <PWView>
+            <Text>{session.peerMeta.name}</Text>
+        </PWView>
+    )
+}
 
 const SettingsWalletConnectScreen = () => {
     const { t } = useLanguage()
+    const { sessions } = useWalletConnect()
+
+    const { addSessionRequest } = useWalletConnectSessionRequests()
+
+    const handleScanQR = () => {
+        addSessionRequest({
+            connectionId: 'test',
+            name: 'test',
+            url: 'test',
+            icons: [],
+            chainIds: [0],
+            permissions: [
+                'algo_signTxn',
+                'algo_signData',
+            ]
+        })
+    }
+
+    if (!sessions?.length) {
+        return (
+            <EmptyView
+                icon='wallet-connect'
+                title={t('walletconnect.settings.empty_title')}
+                body={t('walletconnect.settings.empty_body')}
+                button={<PWButton title={t('walletconnect.settings.empty_button')} variant='primary' onPress={handleScanQR} />}
+            />
+        )
+    }
+
     return (
-        <EmptyView
-            icon='wallet-connect'
-            title={t('common.not_implemented.title')}
-            body={t('common.not_implemented.body')}
-        />
+        <PWView>
+            <FlashList
+                data={sessions}
+                renderItem={({ item }) => <WalletConnectSessionItem session={item} />}
+            />
+        </PWView>
     )
 }
 

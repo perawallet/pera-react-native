@@ -37,6 +37,7 @@ import {
 } from '@providers/NetworkStatusProvider'
 import WebViewProvider from '@providers/WebViewProvider'
 import { useLanguage } from '@hooks/language'
+import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
 
 const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
     const insets = useSafeAreaInsets()
@@ -131,7 +132,9 @@ export const RootComponent = () => {
             <NetworkStatusProvider>
                 <WebViewProvider>
                     <SigningProvider>
-                        <RootContentContainer isDarkMode={isDarkMode} />
+                        <WalletConnectProvider>
+                            <RootContentContainer isDarkMode={isDarkMode} />
+                        </WalletConnectProvider>
                     </SigningProvider>
                 </WebViewProvider>
             </NetworkStatusProvider>

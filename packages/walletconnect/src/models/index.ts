@@ -41,6 +41,8 @@ export type WalletConnectSession = {
 }
 
 export type WalletConnectSessionRequest = {
+    connectionId: string
+    chainIds: number[]
     permissions: string[]
 } & Omit<WalletConnectPeerMeta, 'id'>
 

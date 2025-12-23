@@ -14,12 +14,12 @@ import React, { PropsWithChildren } from 'react'
 import PWBottomSheet from '@components/bottom-sheet/PWBottomSheet'
 import { useWindowDimensions } from 'react-native'
 import ConnectionView from '../components/ConnectionView'
-import { useSessionRequests } from '@perawallet/wallet-core-walletconnect'
+import { useWalletConnectSessionRequests } from '@perawallet/wallet-core-walletconnect'
 
 type WalletConnectProviderProps = {} & PropsWithChildren
 
 export function WalletConnectProvider({ children }: WalletConnectProviderProps) {
-    const { sessionRequests } = useSessionRequests()
+    const { sessionRequests } = useWalletConnectSessionRequests()
     const nextRequest = sessionRequests.at(0)
     const { height } = useWindowDimensions()
 

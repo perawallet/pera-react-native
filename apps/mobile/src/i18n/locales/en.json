@@ -119,6 +119,9 @@
         "cancel": {
             "label": "Cancel"
         },
+        "connect": {
+            "label": "Connect"
+        },
         "copied_to_clipboard": {
             "title": "Copied to clipboard",
             "body": ""
@@ -397,5 +400,20 @@
         "developer_settings": "Developer Settings",
         "node_settings": "Node Settings",
         "dispenser": "Dispenser"
+    },
+    "walletconnect": {
+        "request": {
+            "title": "{{name}} wants to connect to your account",
+            "permissions_title": "REQUESTED PERMISSIONS",
+            "permissions_request_accounts": "View your wallet address & balances",
+            "permissions_sign_transaction": "Request transaction signing",
+            "permissions_sign_data": "Request arbitrary data signing",
+            "accounts_title": "SELECT ACCOUNTS"
+        },
+        "settings": {
+            "empty_title": "No WalletConnect Sessions",
+            "empty_body": "You don't have any active WalletConnect sessions.",
+            "empty_button": "Scan QR"
+        }
     }
 }

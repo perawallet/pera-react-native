@@ -13,7 +13,7 @@
 import { WalletConnectSession } from '../models'
 import { useWalletConnectStore } from '../store'
 
-const useWalletConnect = () => {
+export const useWalletConnect = () => {
     const sessions = useWalletConnectStore(state => state.walletConnectSessions)
     const setSessions = useWalletConnectStore(
         state => state.setWalletConnectSessions,
@@ -83,5 +83,3 @@ const useWalletConnect = () => {
         clearSessions,
     }
 }
-
-export default useWalletConnect

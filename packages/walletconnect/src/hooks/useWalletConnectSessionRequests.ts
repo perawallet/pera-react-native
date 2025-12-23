@@ -1,7 +1,7 @@
 import { WalletConnectSessionRequest } from '../models'
 import { useWalletConnectStore } from '../store'
 
-const useSessionRequests = () => {
+export const useWalletConnectSessionRequests = () => {
     const sessionRequests = useWalletConnectStore(
         state => state.sessionRequests,
     )
@@ -23,5 +23,3 @@ const useSessionRequests = () => {
         removeSessionRequest,
     }
 }
-
-export default useSessionRequests
