@@ -10,14 +10,14 @@
  limitations under the License
  */
 
-import { Badge, BadgeProps } from '@rneui/themed'
-import { useStyles } from './styles'
+import { makeStyles } from '@rneui/themed'
 
-type PWBadgeProps = BadgeProps
-
-const PWBadge = ({ ...rest }: PWBadgeProps) => {
-    const styles = useStyles()
-    return <Badge {...rest} badgeStyle={styles.container}></Badge>
-}
-
-export default PWBadge
+export const useStyles = makeStyles(theme => {
+    return {
+        container: {
+            paddingVertical: theme.spacing.xs,
+            paddingHorizontal: theme.spacing.sm,
+            height: theme.spacing.xl,
+        },
+    }
+})

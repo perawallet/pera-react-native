@@ -45,9 +45,9 @@ const SettingsWalletConnectScreen = () => {
         addSessionRequest({
             connectionId: 'test',
             name: 'test',
-            url: 'test',
+            url: 'https://walletconnect.org',
             icons: [],
-            chainIds: [0],
+            chainId: 416001,
             permissions: ['algo_signTxn', 'algo_signData'],
         })
     }

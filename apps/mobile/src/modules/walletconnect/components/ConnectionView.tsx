@@ -12,6 +12,7 @@
 
 import PWView from '@components/view/PWView'
 import {
+    AlgorandChain,
     useWalletConnect,
     useWalletConnectSessionRequests,
     WalletConnectSessionRequest,
@@ -28,7 +29,13 @@ import PWIcon from '@components/icons/PWIcon'
 import {
     getAccountDisplayName,
     useAllAccounts,
+    WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import AccountDisplay from '@modules/accounts/components/account-display/AccountDisplay'
+import PWCheckbox from '@components/checkbox/PWCheckbox'
+import PWTouchableOpacity from '@components/touchable-opacity/PWTouchableOpacity'
+import { ScrollView } from 'react-native-gesture-handler'
+import useToast from '@hooks/toast'
 
 const PermissionItem = ({ title }: { title: string }) => {
     const styles = useStyles()
@@ -57,6 +64,10 @@ const ConnectionView = ({
     const { removeSessionRequest } = useWalletConnectSessionRequests()
     const { approveSession, removeSession } = useWalletConnect()
     const accounts = useAllAccounts()
+    const [selectedAccounts, setSelectedAccounts] = React.useState<
+        string[]
+    >([])
+    const { showToast } = useToast()
 
     const handlePressUrl = () => {
         if (!request.url) return
@@ -69,8 +80,26 @@ const ConnectionView = ({
     }
 
     const handleConnect = () => {
-        approveSession(request.connectionId)
+        if (!selectedAccounts.length) {
+            showToast({
+                title: t('walletconnect.request.accounts_select_one_account_title'),
+                body: t('walletconnect.request.accounts_select_one_account_body'),
+                type: 'error',
+            })
+            return
+        }
+        approveSession(request.connectionId, request, selectedAccounts)
         removeSessionRequest(request)
+    }
+
+    const handleAccountPress = (account: WalletAccount) => {
+        setSelectedAccounts((prev) => {
+            if (prev.includes(account.address)) {
+                return prev.filter((address) => address !== account.address)
+            } else {
+                return [...prev, account.address]
+            }
+        })
     }
 
     const getPermissionTitle = (permission: string) => {
@@ -88,12 +117,19 @@ const ConnectionView = ({
         <PWView style={styles.container}>
             <PWView style={styles.headerContainer}>
                 <PWView style={styles.networksContainer}>
-                    {request.chainIds.map(chainId => (
+                    {request.chainId !== 4160 ? (
                         <PWBadge
-                            key={chainId}
-                            value={chainId.toString()}
-                        />
-                    ))}
+                            value={t(`walletconnect.request.networks_${AlgorandChain[request.chainId]}`)}
+                        />) :
+                        (<>
+                            <PWBadge
+                                value={t(`walletconnect.request.networks_testnet`)}
+                            />
+                            <PWBadge
+                                value={t(`walletconnect.request.networks_mainnet`)}
+                            />
+                        </>)
+                    }
                 </PWView>
                 {request.icons?.at(0) ? (
                     <Image
@@ -154,13 +190,17 @@ const ConnectionView = ({
                 >
                     {t('walletconnect.request.accounts_title')}
                 </Text>
-                <PWView style={styles.accountsContainer}>
-                    {accounts.map((account, index) => (
-                        <Text key={index}>
-                            {getAccountDisplayName(account)}
-                        </Text>
+                <ScrollView style={styles.accountsContainer}>
+                    {accounts.map((account) => (
+                        <PWTouchableOpacity key={account.address} style={styles.accountItem} onPress={() => handleAccountPress(account)}>
+                            <AccountDisplay account={account} showChevron={false} />
+                            <PWCheckbox
+                                onPress={() => handleAccountPress(account)}
+                                checked={selectedAccounts.includes(account.address)}
+                            />
+                        </PWTouchableOpacity>
                     ))}
-                </PWView>
+                </ScrollView>
             </PWView>
 
             <PWView style={styles.buttonContainer}>

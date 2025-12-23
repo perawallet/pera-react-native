@@ -11,14 +11,16 @@
  */
 
 import EmptyView from '@components/empty-view/EmptyView'
-// import { ArbitraryDataSignRequest } from "@perawallet/wallet-core-blockchain"
+import { ArbitraryDataSignRequest } from "@perawallet/wallet-core-blockchain"
+import { logger } from '@perawallet/wallet-core-shared'
 
-// type ArbitraryDataSigningViewProps = {
-//     request: ArbitraryDataSignRequest
-// }
+type ArbitraryDataSigningViewProps = {
+    request: ArbitraryDataSignRequest
+}
 
 //TODO implement me
-const ArbitraryDataSigningView = () => {
+const ArbitraryDataSigningView = ({ request }: ArbitraryDataSigningViewProps) => {
+    logger.warn('Arbitrary data signing not implemented yet', request)
     return (
         <EmptyView
             title='Arbitrary Data Not Implemented'

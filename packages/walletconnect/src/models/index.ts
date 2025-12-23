@@ -10,6 +10,15 @@
  limitations under the License
  */
 
+export type AlgorandChainId = 416001 | 416002 | 416003 | 4160;
+
+export const AlgorandChain = {
+    416001: 'mainnet',
+    416002: 'testnet',
+    416003: 'betanet',
+    4160: 'all'
+}
+
 export type WalletConnectPeerMeta = {
     id: string
     name: string
@@ -21,7 +30,7 @@ export type WalletConnectPeerMeta = {
 export type WalletConnectWalletMeta = {
     addresses: string[]
     peerId: string
-    chainId: number
+    chainId: AlgorandChainId
     peerMeta: WalletConnectPeerMeta
     permissions: string[]
 }
@@ -42,7 +51,7 @@ export type WalletConnectSession = {
 
 export type WalletConnectSessionRequest = {
     connectionId: string
-    chainIds: number[]
+    chainId: AlgorandChainId
     permissions: string[]
 } & Omit<WalletConnectPeerMeta, 'id'>
 

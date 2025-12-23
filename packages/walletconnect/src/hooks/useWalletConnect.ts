@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { WalletConnectSession } from '../models'
+import { WalletConnectSession, WalletConnectSessionRequest } from '../models'
 import { useWalletConnectStore } from '../store'
 
 export const useWalletConnect = () => {
@@ -37,6 +37,7 @@ export const useWalletConnect = () => {
                 session.id === existingSession.id ? existingSession : session,
             ),
         )
+        return existingSession
     }
 
     const disconnectSession = (id: string) => {
@@ -56,10 +57,33 @@ export const useWalletConnect = () => {
                 session.id === id ? existingSession : session,
             ),
         )
+        return existingSession
     }
 
-    const approveSession = (_: string) => {
-        //TODO approve session here
+    const approveSession = (id: string, request: WalletConnectSessionRequest, addresses: string[]) => {
+        let existingSession = sessions.find(session => session.id === id)
+        if (!existingSession) {
+            return
+        }
+
+        if (!existingSession.connected) {
+            existingSession = connectSession(existingSession)
+        }
+
+        //TODO send subscription request and do the topic ID dance
+        existingSession.subscribed = true
+        existingSession.lastActiveAt = new Date()
+        existingSession.walletMeta = {
+            ...existingSession.walletMeta,
+            permissions: request.permissions,
+            chainId: request.chainId,
+            addresses: addresses,
+        }
+        setSessions(
+            sessions.map(session =>
+                session.id === id ? existingSession : session,
+            ),
+        )
     }
 
     const removeSession = (id: string) => {

@@ -11,14 +11,16 @@
  */
 
 import EmptyView from '@components/empty-view/EmptyView'
-// import { Arc60SignRequest } from "@perawallet/wallet-core-blockchain"
+import { Arc60SignRequest } from "@perawallet/wallet-core-blockchain"
+import { logger } from '@perawallet/wallet-core-shared'
 
-// type Arc60SigningViewProps = {
-//     request: Arc60SignRequest
-// }
+type Arc60SigningViewProps = {
+    request: Arc60SignRequest
+}
 
 //TODO implement me
-const Arc60SigningView = () => {
+const Arc60SigningView = ({ request }: Arc60SigningViewProps) => {
+    logger.warn('Arc60 signing not implemented yet', request)
     return (
         <EmptyView
             title='Arc60 Not Implemented'

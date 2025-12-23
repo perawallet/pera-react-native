@@ -81,5 +81,11 @@ export const useStyles = makeStyles(theme => {
         connectButton: {
             flexGrow: 2,
         },
+        accountItem: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: theme.spacing.sm,
+        },
     }
 })

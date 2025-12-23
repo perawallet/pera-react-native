@@ -191,6 +191,20 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
                     color: theme.colors.textGrayLighter,
                 },
             }),
+            CheckBox: (props, theme) => ({
+                containerStyle: {
+                    backgroundColor: props?.checked ? theme.colors.buttonSquareBg : theme.colors.background,
+                    color: props?.checked ? theme.colors.buttonSquareText : theme.colors.textMain,
+                    paddingHorizontal: 0,
+                    borderColor: theme.colors.helperPositive,
+                    borderWidth: 2,
+                    borderRadius: theme.spacing.xs,
+                    height: theme.spacing.xl,
+                    width: theme.spacing.xl,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                },
+            }),
             Input: (_, theme) => ({
                 containerStyle: {
                     backgroundColor: theme.colors.background,
