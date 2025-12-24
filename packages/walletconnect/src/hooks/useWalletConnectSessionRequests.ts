@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { WalletConnectSessionRequest } from '../models'
 import { useWalletConnectStore } from '../store'
 
@@ -21,13 +22,13 @@ export const useWalletConnectSessionRequests = () => {
         state => state.setSessionRequests,
     )
 
-    const addSessionRequest = (request: WalletConnectSessionRequest) => {
+    const addSessionRequest = useCallback((request: WalletConnectSessionRequest) => {
         setSessionRequests([...sessionRequests, request])
-    }
+    }, [sessionRequests])
 
-    const removeSessionRequest = (request: WalletConnectSessionRequest) => {
+    const removeSessionRequest = useCallback((request: WalletConnectSessionRequest) => {
         setSessionRequests(sessionRequests.filter(r => r !== request))
-    }
+    }, [sessionRequests])
 
     return {
         sessionRequests,

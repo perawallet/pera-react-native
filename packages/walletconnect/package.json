@@ -12,19 +12,23 @@
     "@babel/runtime": "catalog:",
     "@perawallet/wallet-core-platform-integration": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
+    "@perawallet/wallet-core-blockchain": "workspace:*",
+    "@walletconnect/client": "1.8.0",
+    "@walletconnect/types": "1.8.0",
+    "react": "catalog:",
     "uuid": "catalog:",
     "zustand": "catalog:"
   },
   "devDependencies": {
     "@perawallet/wallet-core-devtools": "workspace:*",
     "@testing-library/react": "catalog:",
+    "@types/react": "catalog:",
     "reflect-metadata": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:",
     "globals": "catalog:",
     "typescript-eslint": "catalog:",
-    "react": "catalog:",
     "react-dom": "catalog:"
   }
 }

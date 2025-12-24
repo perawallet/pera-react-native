@@ -21,6 +21,8 @@ export const MAX_TX_NOTE_BYTES = 1024
 type BaseSignRequest = {
     id?: string
     type: 'transactions' | 'arbitrary-data' | 'arc60'
+    transport: 'walletconnect' | 'multisig' | 'algod'
+    transportId?: string
 }
 
 export type TransactionSignRequest = {

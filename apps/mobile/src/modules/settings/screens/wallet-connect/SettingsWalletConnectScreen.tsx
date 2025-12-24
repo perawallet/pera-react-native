@@ -21,6 +21,7 @@ import {
 } from '@perawallet/wallet-core-walletconnect'
 import { Text } from '@rneui/themed'
 import { FlashList } from '@shopify/flash-list'
+import { v7 as uuid } from 'uuid'
 
 //TODO implement session item
 const WalletConnectSessionItem = ({
@@ -30,7 +31,7 @@ const WalletConnectSessionItem = ({
 }) => {
     return (
         <PWView>
-            <Text>{session.peerMeta.name}</Text>
+            <Text>{session.session?.peerMeta?.name}</Text>
         </PWView>
     )
 }
@@ -43,10 +44,13 @@ const SettingsWalletConnectScreen = () => {
 
     const handleScanQR = () => {
         addSessionRequest({
-            connectionId: 'test',
-            name: 'test',
-            url: 'https://walletconnect.org',
-            icons: [],
+            peerMeta: {
+                name: 'test',
+                url: 'https://walletconnect.org',
+                icons: [],
+                description: 'test',
+            },
+            clientId: uuid(),
             chainId: 416001,
             permissions: ['algo_signTxn', 'algo_signData'],
         })

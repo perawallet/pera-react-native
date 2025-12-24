@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { IClientMeta, IWalletConnectSession } from '@walletconnect/types'
+
 export type AlgorandChainId = 416001 | 416002 | 416003 | 4160;
 
 export const AlgorandChain = {
@@ -19,41 +21,21 @@ export const AlgorandChain = {
     4160: 'all'
 }
 
-export type WalletConnectPeerMeta = {
-    id: string
-    name: string
-    url?: string
-    icons?: string[]
-    description?: string
-}
-
-export type WalletConnectWalletMeta = {
-    addresses: string[]
-    peerId: string
-    chainId: AlgorandChainId
-    peerMeta: WalletConnectPeerMeta
-    permissions: string[]
-}
-
 export type WalletConnectSession = {
-    id: string
-    version: '1' | '2'
-    bridgeUrl: string
-    peerId: string
-    peerMeta: WalletConnectPeerMeta
-    walletMeta: WalletConnectWalletMeta
-    createdAt: Date
-    lastActiveAt: Date
-    expiresAt?: Date
-    connected: boolean
-    subscribed: boolean
+    bridge?: string;
+    uri?: string;
+    signingMethods?: string[];
+    session?: IWalletConnectSession;
+    lastActiveAt?: Date;
+    createdAt?: Date;
 }
 
 export type WalletConnectSessionRequest = {
-    connectionId: string
-    chainId: AlgorandChainId
+    peerMeta: IClientMeta
+    chainId: AlgorandChainId,
     permissions: string[]
-} & Omit<WalletConnectPeerMeta, 'id'>
+    clientId: string
+}
 
 export type WalletConnectStore = {
     walletConnectSessions: WalletConnectSession[]

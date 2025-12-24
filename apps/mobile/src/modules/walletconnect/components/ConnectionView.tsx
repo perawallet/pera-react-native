@@ -50,9 +50,6 @@ const PermissionItem = ({ title }: { title: string }) => {
     )
 }
 
-//TODO implement account selection
-//TODO hook up wallet connect approvals correctly
-//TODO implement chain ID display correctly
 const ConnectionView = ({
     request,
 }: {
@@ -62,7 +59,7 @@ const ConnectionView = ({
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
     const { removeSessionRequest } = useWalletConnectSessionRequests()
-    const { approveSession, removeSession } = useWalletConnect()
+    const { approveSession, rejectSession } = useWalletConnect()
     const accounts = useAllAccounts()
     const [selectedAccounts, setSelectedAccounts] = React.useState<
         string[]
@@ -70,12 +67,12 @@ const ConnectionView = ({
     const { showToast } = useToast()
 
     const handlePressUrl = () => {
-        if (!request.url) return
-        pushWebView({ id: uuid(), url: request.url })
+        if (!request.peerMeta.url) return
+        pushWebView({ id: uuid(), url: request.peerMeta.url })
     }
 
     const handleCancel = () => {
-        removeSession(request.connectionId)
+        rejectSession(request.clientId)
         removeSessionRequest(request)
     }
 
@@ -88,7 +85,7 @@ const ConnectionView = ({
             })
             return
         }
-        approveSession(request.connectionId, request, selectedAccounts)
+        approveSession(request.clientId, request.chainId, selectedAccounts)
         removeSessionRequest(request)
     }
 
@@ -131,9 +128,9 @@ const ConnectionView = ({
                         </>)
                     }
                 </PWView>
-                {request.icons?.at(0) ? (
+                {request.peerMeta.icons?.at(0) ? (
                     <Image
-                        source={{ uri: request.icons?.at(0) }}
+                        source={{ uri: request.peerMeta.icons?.at(0) }}
                         style={styles.icon}
                     />
                 ) : (
@@ -151,14 +148,14 @@ const ConnectionView = ({
                         h3Style={styles.title}
                     >
                         {t('walletconnect.request.title', {
-                            name: request.name,
+                            name: request.peerMeta.name,
                         })}
                     </Text>
-                    {!!request.url && (
+                    {!!request.peerMeta.url && (
                         <PWButton
                             variant='link'
                             onPress={handlePressUrl}
-                            title={request.url}
+                            title={request.peerMeta.url}
                         />
                     )}
                 </PWView>

@@ -12,6 +12,7 @@
 
 import {
     AppError,
+    ERROR_I18N_KEYS,
     ErrorCategory,
     ErrorI18nKey,
     ErrorMetadata,
@@ -37,5 +38,11 @@ export class WalletConnectError extends AppError {
             },
             originalError,
         )
+    }
+}
+
+export class WalletConnectInvalidSessionError extends WalletConnectError {
+    constructor() {
+        super(ERROR_I18N_KEYS.WALLETCONNECT_INVALID_SESSION)
     }
 }

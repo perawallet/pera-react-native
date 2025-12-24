@@ -27,6 +27,7 @@ import { useWebView } from './webview'
 import { v7 as uuidv7 } from 'uuid'
 import { useEffect, useRef } from 'react'
 import { Linking } from 'react-native'
+import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
 
 type LinkSource = 'qr' | 'deeplink'
 
@@ -37,6 +38,7 @@ export const useDeepLink = () => {
     const selectedAccount = useSelectedAccount()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { pushWebView } = useWebView()
+    const { connectSession } = useWalletConnect()
 
     const isValidDeepLink = (url: string, source: LinkSource): boolean => {
         logger.debug('Validating deeplink', { url, source })
@@ -201,12 +203,11 @@ export const useDeepLink = () => {
                     break
 
                 case DeeplinkType.WALLET_CONNECT:
-                    // TODO: Handle WalletConnect session
-                    // handleWalletConnectUri(parsedData.uri)
-                    infoPost(
-                        'WalletConnect',
-                        'WalletConnect handling not implemented yet',
-                    )
+                    connectSession({
+                        session: {
+                            uri: parsedData.uri
+                        }
+                    })
                     break
 
                 case DeeplinkType.ASSET_OPT_IN:
