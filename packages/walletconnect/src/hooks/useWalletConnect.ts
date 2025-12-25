@@ -98,7 +98,7 @@ export const useWalletConnect = () => {
                 }),
             )
         })
-    }, [connectSession])
+    }, [connectSession, sessions])
 
     const disconnectSession = useCallback(
         async (clientId: string, triggerDisconnect: boolean) => {
