@@ -85,7 +85,8 @@ export type WalletConnectSettingsStackParamsList = {
     WalletConnectSettingsDetails: { session: WalletConnectSession }
 }
 
-const WalletConnectSettingsStack = createNativeStackNavigator<WalletConnectSettingsStackParamsList>()
+const WalletConnectSettingsStack =
+    createNativeStackNavigator<WalletConnectSettingsStackParamsList>()
 
 export const WalletConnectSettingsStackNavigator = () => {
     return (

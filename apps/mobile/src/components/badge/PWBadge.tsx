@@ -19,7 +19,13 @@ export type PWBadgeProps = {
 
 const PWBadge = ({ variant = 'primary', ...rest }: PWBadgeProps) => {
     const styles = useStyles({ variant })
-    return <Badge {...rest} badgeStyle={styles.container} textStyle={styles.text}></Badge>
+    return (
+        <Badge
+            {...rest}
+            badgeStyle={styles.container}
+            textStyle={styles.text}
+        ></Badge>
+    )
 }
 
 export default PWBadge

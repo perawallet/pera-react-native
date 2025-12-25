@@ -19,7 +19,7 @@ import {
     useCodeScanner,
 } from 'react-native-vision-camera'
 import { Text } from '@rneui/themed'
-import { PropsWithChildren, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Modal } from 'react-native'
 import { useLanguage } from '@hooks/language'
 import { useDeepLink } from '@hooks/deeplink'
@@ -62,12 +62,21 @@ const QRScannerView = (props: QRScannerViewProps) => {
                 setScanningEnabled(false)
                 if (url) {
                     if (isValidDeepLink(url, 'qr')) {
-                        handleDeepLink(url, true, 'qr',
+                        handleDeepLink(
+                            url,
+                            true,
+                            'qr',
                             () => setScanningEnabled(true),
                             () => {
-                                logger.debug('QRScannerView: Deep link handled successfully', { url })
-                                props.onSuccess(url, () => setScanningEnabled(true))
-                            })
+                                logger.debug(
+                                    'QRScannerView: Deep link handled successfully',
+                                    { url },
+                                )
+                                props.onSuccess(url, () =>
+                                    setScanningEnabled(true),
+                                )
+                            },
+                        )
                     }
                 }
             } catch (error) {
@@ -92,7 +101,13 @@ const QRScannerView = (props: QRScannerViewProps) => {
                         style={styles.emptyView}
                         title={t('camera.no_camera_device_found.label')}
                         body={''}
-                        button={<PWButton variant='primary' title={t('common.go_back.label')} onPress={props.onClose} />}
+                        button={
+                            <PWButton
+                                variant='primary'
+                                title={t('common.go_back.label')}
+                                onPress={props.onClose}
+                            />
+                        }
                     />
                 </>
             ) : (

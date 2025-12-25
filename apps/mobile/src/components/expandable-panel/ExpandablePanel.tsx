@@ -1,18 +1,32 @@
-import PWIcon from "@components/icons/PWIcon";
-import PWTouchableOpacity from "@components/touchable-opacity/PWTouchableOpacity";
-import React, { PropsWithChildren, useState } from "react";
-import { View, Text, StyleSheet, Pressable, StyleProp, ViewStyle, LayoutChangeEvent, GestureResponderEvent } from "react-native";
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import PWIcon from '@components/icons/PWIcon'
+import PWTouchableOpacity from '@components/touchable-opacity/PWTouchableOpacity'
+import React, { PropsWithChildren, useState } from 'react'
+import {
+    View,
+    StyleProp,
+    ViewStyle,
+    LayoutChangeEvent,
+    GestureResponderEvent,
+} from 'react-native'
 import Animated, {
-    Layout,
-    FadeIn,
-    FadeOut,
     useSharedValue,
-    useDerivedValue,
     withTiming,
     useAnimatedStyle,
-} from "react-native-reanimated";
-import { useStyles } from "./styles";
-import PWView from "@components/view/PWView";
+} from 'react-native-reanimated'
+import { useStyles } from './styles'
+import PWView from '@components/view/PWView'
 
 type ExpandablePanelProps = {
     title: React.ReactNode
@@ -24,36 +38,40 @@ export const CollapsableContainer = ({
     children,
     expanded,
 }: {
-    children: React.ReactNode;
-    expanded: boolean;
+    children: React.ReactNode
+    expanded: boolean
 }) => {
-    const [height, setHeight] = useState(0);
-    const animatedHeight = useSharedValue(0);
+    const [height, setHeight] = useState(0)
+    const animatedHeight = useSharedValue(0)
+    const styles = useStyles()
 
     const onLayout = (event: LayoutChangeEvent) => {
-        const onLayoutHeight = event.nativeEvent.layout.height;
+        const onLayoutHeight = event.nativeEvent.layout.height
 
         if (onLayoutHeight > 0 && height !== onLayoutHeight) {
-            setHeight(onLayoutHeight);
+            setHeight(onLayoutHeight)
         }
-    };
+    }
 
     const collapsableStyle = useAnimatedStyle(() => {
-        animatedHeight.value = expanded ? withTiming(height) : withTiming(0);
+        animatedHeight.value = expanded ? withTiming(height) : withTiming(0)
 
         return {
             height: animatedHeight.value,
-        };
-    }, [expanded, height]);
+        }
+    }, [expanded, height])
 
     return (
-        <Animated.View style={[collapsableStyle, { overflow: "hidden" }]}>
-            <View style={{ position: "absolute" }} onLayout={onLayout}>
+        <Animated.View style={[collapsableStyle, styles.collapsableContainer]}>
+            <View
+                style={styles.wrapper}
+                onLayout={onLayout}
+            >
                 {children}
             </View>
         </Animated.View>
-    );
-};
+    )
+}
 
 export const ExpandablePanel = ({
     title,
@@ -61,37 +79,43 @@ export const ExpandablePanel = ({
     children,
     iconPressed,
 }: ExpandablePanelProps) => {
-    const [expanded, setExpanded] = useState(false);
-    const styles = useStyles();
+    const [expanded, setExpanded] = useState(false)
+    const styles = useStyles()
     const onPress = () => {
-        setExpanded(!expanded);
-    };
+        setExpanded(!expanded)
+    }
 
     const iconStyle = useAnimatedStyle(() => {
         return {
             transform: [{ rotate: withTiming(expanded ? '90deg' : '0deg') }],
-        };
-    }, [expanded]);
+        }
+    }, [expanded])
 
     const handleIconPress = (event: GestureResponderEvent) => {
         if (iconPressed) {
-            iconPressed();
-            event.stopPropagation();
+            iconPressed()
+            event.stopPropagation()
         }
-    };
+    }
 
     return (
-        <PWView
-            style={containerStyle}>
-            <PWTouchableOpacity onPress={onPress} style={styles.header}>
+        <PWView style={containerStyle}>
+            <PWTouchableOpacity
+                onPress={onPress}
+                style={styles.header}
+            >
                 {title}
                 <Animated.View style={iconStyle}>
-                    <PWIcon name='chevron-right' size='sm' onPress={handleIconPress} />
+                    <PWIcon
+                        name='chevron-right'
+                        size='sm'
+                        onPress={handleIconPress}
+                    />
                 </Animated.View>
             </PWTouchableOpacity>
             <CollapsableContainer expanded={expanded}>
                 {children}
             </CollapsableContainer>
         </PWView>
-    );
-};
+    )
+}

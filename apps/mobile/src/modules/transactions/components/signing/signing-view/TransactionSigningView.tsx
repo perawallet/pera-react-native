@@ -169,7 +169,11 @@ const TransactionSigningView = ({ request }: TransactionSigningViewProps) => {
                     style={styles.button}
                 />
                 <PWButton
-                    title={isMultipleTransactions ? t('signing.view.confirm_all') : t('signing.view.confirm')}
+                    title={
+                        isMultipleTransactions
+                            ? t('signing.view.confirm_all')
+                            : t('signing.view.confirm')
+                    }
                     variant='primary'
                     onPress={signAndSend}
                     style={styles.button}

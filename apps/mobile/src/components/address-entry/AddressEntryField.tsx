@@ -10,9 +10,7 @@
  limitations under the License
  */
 
-import { TouchableOpacity } from 'react-native'
 import PWView from '@components/view/PWView'
-import { useStyles } from '@components/address-entry/styles'
 
 import QRScannerView from '@components/qr-scanner/QRScannerView'
 import { useState } from 'react'
@@ -30,7 +28,6 @@ const AddressEntryField = ({
     ref,
     ...rest
 }: AddressEntryFieldProps) => {
-    const styles = useStyles()
     const [scannerVisible, setScannerVisible] = useState(false)
     const { t } = useLanguage()
 

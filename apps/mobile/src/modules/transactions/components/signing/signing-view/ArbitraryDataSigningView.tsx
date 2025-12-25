@@ -13,7 +13,10 @@
 import PWButton from '@components/button/PWButton'
 import EmptyView from '@components/empty-view/EmptyView'
 import PWView from '@components/view/PWView'
-import { ArbitraryDataSignRequest, useSigningRequest } from "@perawallet/wallet-core-blockchain"
+import {
+    ArbitraryDataSignRequest,
+    useSigningRequest,
+} from '@perawallet/wallet-core-blockchain'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/language'
@@ -23,9 +26,11 @@ type ArbitraryDataSigningViewProps = {
 }
 
 //TODO implement me
-const ArbitraryDataSigningView = ({ request }: ArbitraryDataSigningViewProps) => {
-    const styles = useStyles();
-    const { t } = useLanguage();
+const ArbitraryDataSigningView = ({
+    request,
+}: ArbitraryDataSigningViewProps) => {
+    const styles = useStyles()
+    const { t } = useLanguage()
     const { removeSignRequest } = useSigningRequest()
 
     const signAndSend = () => {

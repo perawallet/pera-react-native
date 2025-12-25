@@ -17,20 +17,27 @@ import { useLanguage } from '@hooks/language'
 import EmptyView from '@components/empty-view/EmptyView'
 import PWButton from '@components/button/PWButton'
 import useToast from '@hooks/toast'
-import { WalletConnectError, WalletConnectInvalidNetworkError } from '@perawallet/wallet-core-walletconnect'
+import { WalletConnectError } from '@perawallet/wallet-core-walletconnect'
 
 interface WalletConnectErrorBoundaryProps {
     children: ReactNode
     t: (key: string, options?: Record<string, unknown>) => string
 }
 
-const WalletConnectErrorFallback = ({ error, reset, children }: { error: Error, reset: () => void, children: ReactNode }) => {
+const WalletConnectErrorFallback = ({
+    error,
+    reset,
+    children,
+}: {
+    error: Error
+    reset: () => void
+    children: ReactNode
+}) => {
     const { t } = useLanguage()
 
     if (error instanceof WalletConnectError) {
         return children
     }
-
 
     return (
         <EmptyView
@@ -51,17 +58,16 @@ const WalletConnectErrorFallback = ({ error, reset, children }: { error: Error, 
  * Error boundary for walletconnect-related flows
  * Displays walletconnect-specific error messages
  */
-export const WalletConnectErrorBoundary: React.FC<WalletConnectErrorBoundaryProps> = ({
-    children,
-    t,
-}) => {
+export const WalletConnectErrorBoundary: React.FC<
+    WalletConnectErrorBoundaryProps
+> = ({ children, t }) => {
     const { showToast } = useToast()
     const handleError = (error: Error) => {
         if (error instanceof WalletConnectError) {
             showToast({
                 title: t(error.getI18nKey()),
                 body: t(`${error.getI18nKey()}_body`),
-                type: 'error'
+                type: 'error',
             })
         }
     }
@@ -71,7 +77,14 @@ export const WalletConnectErrorBoundary: React.FC<WalletConnectErrorBoundaryProp
             category={ErrorCategory.WALLETCONNECT}
             t={t}
             onError={handleError}
-            fallback={(_error, reset) => <WalletConnectErrorFallback error={_error} reset={reset}>{children}</WalletConnectErrorFallback>}
+            fallback={(_error, reset) => (
+                <WalletConnectErrorFallback
+                    error={_error}
+                    reset={reset}
+                >
+                    {children}
+                </WalletConnectErrorFallback>
+            )}
         >
             {children}
         </BaseErrorBoundary>

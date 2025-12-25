@@ -27,10 +27,7 @@ import PWButton from '@components/button/PWButton'
 import { useWebView } from '@hooks/webview'
 import { v7 as uuid } from 'uuid'
 import PWIcon from '@components/icons/PWIcon'
-import {
-    useAllAccounts,
-    WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { useAllAccounts, WalletAccount } from '@perawallet/wallet-core-accounts'
 import AccountDisplay from '@modules/accounts/components/account-display/AccountDisplay'
 import PWCheckbox from '@components/checkbox/PWCheckbox'
 import PWTouchableOpacity from '@components/touchable-opacity/PWTouchableOpacity'
@@ -50,13 +47,16 @@ const ConnectionView = ({
     const { removeSessionRequest } = useWalletConnectSessionRequests()
     const { approveSession, rejectSession } = useWalletConnect()
     const accounts = useAllAccounts()
-    const [selectedAccounts, setSelectedAccounts] = React.useState<
-        string[]
-    >([])
+    const [selectedAccounts, setSelectedAccounts] = React.useState<string[]>([])
     const { showToast } = useToast()
 
-    const preferredIcon = request.peerMeta.icons?.find(icon => icon.endsWith('.png') || icon.endsWith('.jpg') || icon.endsWith('.jpeg'))
-        ?? request.peerMeta.icons?.at(0)
+    const preferredIcon =
+        request.peerMeta.icons?.find(
+            icon =>
+                icon.endsWith('.png') ||
+                icon.endsWith('.jpg') ||
+                icon.endsWith('.jpeg'),
+        ) ?? request.peerMeta.icons?.at(0)
 
     const handlePressUrl = () => {
         if (!request.peerMeta.url) return
@@ -71,8 +71,12 @@ const ConnectionView = ({
     const handleConnect = () => {
         if (!selectedAccounts.length) {
             showToast({
-                title: t('walletconnect.request.accounts_select_one_account_title'),
-                body: t('walletconnect.request.accounts_select_one_account_body'),
+                title: t(
+                    'walletconnect.request.accounts_select_one_account_title',
+                ),
+                body: t(
+                    'walletconnect.request.accounts_select_one_account_body',
+                ),
                 type: 'error',
             })
             return
@@ -82,9 +86,9 @@ const ConnectionView = ({
     }
 
     const handleAccountPress = (account: WalletAccount) => {
-        setSelectedAccounts((prev) => {
+        setSelectedAccounts(prev => {
             if (prev.includes(account.address)) {
-                return prev.filter((address) => address !== account.address)
+                return prev.filter(address => address !== account.address)
             } else {
                 return [...prev, account.address]
             }
@@ -97,20 +101,31 @@ const ConnectionView = ({
                 <PWView style={styles.networksContainer}>
                     {request.chainId !== 4160 ? (
                         <PWBadge
-                            value={t(`walletconnect.request.networks_${AlgorandChain[request.chainId]}`)}
-                            variant={request.chainId === 416002 ? 'testnet' : 'primary'}
-                        />) :
-                        (<>
+                            value={t(
+                                `walletconnect.request.networks_${AlgorandChain[request.chainId]}`,
+                            )}
+                            variant={
+                                request.chainId === 416002
+                                    ? 'testnet'
+                                    : 'primary'
+                            }
+                        />
+                    ) : (
+                        <>
                             <PWBadge
-                                value={t(`walletconnect.request.networks_mainnet`)}
+                                value={t(
+                                    `walletconnect.request.networks_mainnet`,
+                                )}
                                 variant='primary'
                             />
                             <PWBadge
-                                value={t(`walletconnect.request.networks_testnet`)}
+                                value={t(
+                                    `walletconnect.request.networks_testnet`,
+                                )}
                                 variant='testnet'
                             />
-                        </>)
-                    }
+                        </>
+                    )}
                 </PWView>
                 {preferredIcon ? (
                     <Image
@@ -170,12 +185,21 @@ const ConnectionView = ({
                     {t('walletconnect.request.accounts_title')}
                 </Text>
                 <ScrollView style={styles.accountsContainer}>
-                    {accounts.map((account) => (
-                        <PWTouchableOpacity key={account.address} style={styles.accountItem} onPress={() => handleAccountPress(account)}>
-                            <AccountDisplay account={account} showChevron={false} />
+                    {accounts.map(account => (
+                        <PWTouchableOpacity
+                            key={account.address}
+                            style={styles.accountItem}
+                            onPress={() => handleAccountPress(account)}
+                        >
+                            <AccountDisplay
+                                account={account}
+                                showChevron={false}
+                            />
                             <PWCheckbox
                                 onPress={() => handleAccountPress(account)}
-                                checked={selectedAccounts.includes(account.address)}
+                                checked={selectedAccounts.includes(
+                                    account.address,
+                                )}
                             />
                         </PWTouchableOpacity>
                     ))}

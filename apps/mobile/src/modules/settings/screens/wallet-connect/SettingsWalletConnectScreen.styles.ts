@@ -57,6 +57,6 @@ export const useStyles = makeStyles(theme => {
             flex: 1,
             justifyContent: 'flex-end',
             paddingBottom: theme.spacing.xl * 2,
-        }
+        },
     }
 })

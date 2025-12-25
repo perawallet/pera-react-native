@@ -22,13 +22,19 @@ export const useWalletConnectSessionRequests = () => {
         state => state.setSessionRequests,
     )
 
-    const addSessionRequest = useCallback((request: WalletConnectSessionRequest) => {
-        setSessionRequests([...sessionRequests, request])
-    }, [sessionRequests])
+    const addSessionRequest = useCallback(
+        (request: WalletConnectSessionRequest) => {
+            setSessionRequests([...sessionRequests, request])
+        },
+        [sessionRequests],
+    )
 
-    const removeSessionRequest = useCallback((request: WalletConnectSessionRequest) => {
-        setSessionRequests(sessionRequests.filter(r => r !== request))
-    }, [sessionRequests])
+    const removeSessionRequest = useCallback(
+        (request: WalletConnectSessionRequest) => {
+            setSessionRequests(sessionRequests.filter(r => r !== request))
+        },
+        [sessionRequests],
+    )
 
     return {
         sessionRequests,

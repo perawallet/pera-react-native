@@ -46,7 +46,6 @@ export const useStyles = makeStyles(theme => {
         },
         chevron: {
             alignSelf: 'center',
-        }
-
+        },
     }
 })

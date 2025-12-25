@@ -135,7 +135,7 @@ export const formatCurrency = (
 export const formatDatetime = (
     datetime: string | Date,
     locale: string = 'en-US',
-    style: 'short' | 'medium' | 'long' = 'long'
+    style: 'short' | 'medium' | 'long' = 'long',
 ) => {
     let date: number = Date.now()
     if (typeof datetime === 'string') {

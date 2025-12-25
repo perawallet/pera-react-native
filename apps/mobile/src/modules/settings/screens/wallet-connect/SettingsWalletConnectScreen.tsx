@@ -43,11 +43,13 @@ const SettingsWalletConnectScreen = () => {
 
     const handleDeleteAll = () => {
         setLoading(true)
-        deleteAllSessions().then(() => {
-            deleteState.close()
-        }).finally(() => {
-            setLoading(false)
-        })
+        deleteAllSessions()
+            .then(() => {
+                deleteState.close()
+            })
+            .finally(() => {
+                setLoading(false)
+            })
     }
 
     return (
@@ -56,27 +58,30 @@ const SettingsWalletConnectScreen = () => {
                 contentContainerStyle={styles.listContainer}
                 data={sessions}
                 renderItem={renderItem}
-                ListEmptyComponent={<EmptyView
-                    style={styles.emptyView}
-                    icon='wallet-connect'
-                    title={t('walletconnect.settings.empty_title')}
-                    body={t('walletconnect.settings.empty_body')}
-                    button={
-                        <PWButton
-                            title={t('walletconnect.settings.empty_button')}
-                            variant='primary'
-                            onPress={scannerState.open}
-                        />
-                    }
-                />}
+                ListEmptyComponent={
+                    <EmptyView
+                        style={styles.emptyView}
+                        icon='wallet-connect'
+                        title={t('walletconnect.settings.empty_title')}
+                        body={t('walletconnect.settings.empty_body')}
+                        button={
+                            <PWButton
+                                title={t('walletconnect.settings.empty_button')}
+                                variant='primary'
+                                onPress={scannerState.open}
+                            />
+                        }
+                    />
+                }
                 ListFooterComponentStyle={styles.listFooter}
                 ListFooterComponent={
-                    sessions.length > 0 ?
+                    sessions.length > 0 ? (
                         <PWButton
                             title={t('walletconnect.settings.clear_all')}
                             variant='secondary'
                             onPress={deleteState.open}
-                        /> : null
+                        />
+                    ) : null
                 }
             />
             <QRScannerView
@@ -89,7 +94,9 @@ const SettingsWalletConnectScreen = () => {
                 isVisible={deleteState.isOpen}
                 onBackdropPress={deleteState.close}
             >
-                <Dialog.Title title={t('walletconnect.settings.delete_all_title')} />
+                <Dialog.Title
+                    title={t('walletconnect.settings.delete_all_title')}
+                />
                 <Text>{t('walletconnect.settings.delete_all_body')}</Text>
                 <Dialog.Actions>
                     <Dialog.Button

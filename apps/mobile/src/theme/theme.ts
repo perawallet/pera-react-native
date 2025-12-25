@@ -193,8 +193,12 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             }),
             CheckBox: (props, theme) => ({
                 containerStyle: {
-                    backgroundColor: props?.checked ? theme.colors.buttonSquareBg : theme.colors.background,
-                    color: props?.checked ? theme.colors.buttonSquareText : theme.colors.textMain,
+                    backgroundColor: props?.checked
+                        ? theme.colors.buttonSquareBg
+                        : theme.colors.background,
+                    color: props?.checked
+                        ? theme.colors.buttonSquareText
+                        : theme.colors.textMain,
                     paddingHorizontal: 0,
                     borderColor: theme.colors.helperPositive,
                     borderWidth: 2,

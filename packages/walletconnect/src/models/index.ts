@@ -12,40 +12,41 @@
 
 import { IClientMeta, IWalletConnectSession } from '@walletconnect/types'
 
-export type AlgorandChainId = 416001 | 416002 | 416003 | 4160;
+export type AlgorandChainId = 416001 | 416002 | 416003 | 4160
 
 export const AlgorandChain = {
     416001: 'mainnet',
     416002: 'testnet',
     416003: 'betanet',
-    4160: 'all'
+    4160: 'all',
 }
 
 export const AlgorandPermission = {
-    ACCOUNT_PERMISSION: "algo_getAccounts",
-    TX_PERMISSION: "algo_signTxn",
-    DATA_PERMISSION: "algo_signData",
+    ACCOUNT_PERMISSION: 'algo_getAccounts',
+    TX_PERMISSION: 'algo_signTxn',
+    DATA_PERMISSION: 'algo_signData',
 } as const
 
-export type AlgorandPermission = typeof AlgorandPermission[keyof typeof AlgorandPermission]
+export type AlgorandPermission =
+    (typeof AlgorandPermission)[keyof typeof AlgorandPermission]
 
 export type WalletConnectSession = {
-    clientId?: string;
-    version?: number;
-    bridge?: string;
-    uri?: string;
-    signingMethods?: string[];
+    clientId?: string
+    version?: number
+    bridge?: string
+    uri?: string
+    signingMethods?: string[]
     session?: {
         permissions?: string[]
-    } & IWalletConnectSession;
-    connected?: boolean;
-    lastActiveAt?: Date;
-    createdAt?: Date;
+    } & IWalletConnectSession
+    connected?: boolean
+    lastActiveAt?: Date
+    createdAt?: Date
 }
 
 export type WalletConnectSessionRequest = {
     peerMeta: IClientMeta
-    chainId: AlgorandChainId,
+    chainId: AlgorandChainId
     permissions: string[]
     clientId: string
 }

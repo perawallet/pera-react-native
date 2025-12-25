@@ -206,8 +206,8 @@ export const useDeepLink = () => {
                 case DeeplinkType.WALLET_CONNECT:
                     connectSession({
                         session: {
-                            uri: parsedData.uri
-                        }
+                            uri: parsedData.uri,
+                        },
                     })
                     break
 

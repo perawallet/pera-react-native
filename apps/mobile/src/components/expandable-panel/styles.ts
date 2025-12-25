@@ -22,13 +22,9 @@ export const useStyles = makeStyles(theme => {
             width: '100%',
         },
         wrapper: {
-            width: '100%',
             position: 'absolute',
-            display: 'flex',
-            alignItems: 'center',
         },
-        animatedView: {
-            width: '100%',
+        collapsableContainer: {
             overflow: 'hidden',
         },
     }

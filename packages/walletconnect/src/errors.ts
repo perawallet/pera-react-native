@@ -64,4 +64,3 @@ export class WalletConnectInvalidNetworkError extends WalletConnectError {
         super(ERROR_I18N_KEYS.WALLETCONNECT_INVALID_NETWORK, originalError)
     }
 }
-
