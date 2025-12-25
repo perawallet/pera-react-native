@@ -13,11 +13,13 @@
 import { Badge, BadgeProps } from '@rneui/themed'
 import { useStyles } from './styles'
 
-type PWBadgeProps = BadgeProps
+export type PWBadgeProps = {
+    variant?: 'primary' | 'testnet' | 'secondary' | 'positive'
+} & BadgeProps
 
-const PWBadge = ({ ...rest }: PWBadgeProps) => {
-    const styles = useStyles()
-    return <Badge {...rest} badgeStyle={styles.container}></Badge>
+const PWBadge = ({ variant = 'primary', ...rest }: PWBadgeProps) => {
+    const styles = useStyles({ variant })
+    return <Badge {...rest} badgeStyle={styles.container} textStyle={styles.text}></Badge>
 }
 
 export default PWBadge

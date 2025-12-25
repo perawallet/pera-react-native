@@ -76,7 +76,6 @@ export const useDeepLink = () => {
     ) => {
         const parsedData = parseDeeplink(url)
 
-        logger.debug('Parsed deeplink data:', { parsedData })
         if (!parsedData) {
             showToast({
                 title: 'Invalid Link',
@@ -135,6 +134,7 @@ export const useDeepLink = () => {
                     //navigate somewhere other than the qr code scanner.
                     addSignRequest({
                         type: 'transactions',
+                        transport: 'algod',
                         txs: [
                             [
                                 {
@@ -159,6 +159,7 @@ export const useDeepLink = () => {
                     //navigate somewhere other than the qr code scanner.
                     addSignRequest({
                         type: 'transactions',
+                        transport: 'algod',
                         txs: [
                             [
                                 {
@@ -215,6 +216,7 @@ export const useDeepLink = () => {
                     //navigate somewhere other than the qr code scanner.
                     addSignRequest({
                         type: 'transactions',
+                        transport: 'algod',
                         txs: [
                             [
                                 {
@@ -319,9 +321,10 @@ export const useDeepLink = () => {
                     break
             }
 
+            logger.debug('Deeplink: Handled successfully', { url, parsedData })
             onSuccess?.()
         } catch (error) {
-            logger.error(error as Error)
+            logger.error(error as Error, { url })
             showToast({
                 title: 'Navigation Error',
                 body: 'Could not navigate to the requested screen',

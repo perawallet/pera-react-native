@@ -10,9 +10,13 @@
  limitations under the License
  */
 
+import PWButton from '@components/button/PWButton'
 import EmptyView from '@components/empty-view/EmptyView'
-import { ArbitraryDataSignRequest } from "@perawallet/wallet-core-blockchain"
+import PWView from '@components/view/PWView'
+import { ArbitraryDataSignRequest, useSigningRequest } from "@perawallet/wallet-core-blockchain"
 import { logger } from '@perawallet/wallet-core-shared'
+import { useStyles } from './styles'
+import { useLanguage } from '@hooks/language'
 
 type ArbitraryDataSigningViewProps = {
     request: ArbitraryDataSignRequest
@@ -20,12 +24,41 @@ type ArbitraryDataSigningViewProps = {
 
 //TODO implement me
 const ArbitraryDataSigningView = ({ request }: ArbitraryDataSigningViewProps) => {
-    logger.warn('Arbitrary data signing not implemented yet', request)
+    const styles = useStyles();
+    const { t } = useLanguage();
+    const { removeSignRequest } = useSigningRequest()
+
+    const signAndSend = () => {
+        logger.warn('Arbitrary data signing not implemented yet', request)
+        removeSignRequest(request)
+    }
+
+    const rejectRequest = () => {
+        logger.warn('Arbitrary data signing not implemented yet', request)
+        removeSignRequest(request)
+    }
+
     return (
-        <EmptyView
-            title='Arbitrary Data Not Implemented'
-            body='Arbitrary data signing has not been implemented yet.'
-        />
+        <PWView style={styles.container}>
+            <EmptyView
+                title='Arbitrary Data Not Implemented'
+                body='Arbitrary data signing has not been implemented yet.'
+            />
+            <PWView style={styles.buttonContainer}>
+                <PWButton
+                    title={t('signing.view.cancel')}
+                    variant='secondary'
+                    onPress={rejectRequest}
+                    style={styles.button}
+                />
+                <PWButton
+                    title={t('signing.view.confirm')}
+                    variant='primary'
+                    onPress={signAndSend}
+                    style={styles.button}
+                />
+            </PWView>
+        </PWView>
     )
 }
 

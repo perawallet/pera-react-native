@@ -205,6 +205,24 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
                     justifyContent: 'center',
                 },
             }),
+            Dialog: (_, theme) => ({
+                overlayStyle: {
+                    backgroundColor: theme.colors.layerGrayLightest,
+                },
+                backdropStyle: {
+                    backgroundColor: theme.colors.backdrop,
+                },
+            }),
+            DialogTitle: (_, theme) => ({
+                titleStyle: {
+                    color: theme.colors.textMain,
+                },
+            }),
+            DialogButton: (_, theme) => ({
+                titleStyle: {
+                    color: theme.colors.textMain,
+                },
+            }),
             Input: (_, theme) => ({
                 containerStyle: {
                     backgroundColor: theme.colors.background,

@@ -39,7 +39,6 @@ export const useStyles = makeStyles(theme => {
         },
         titleContainer: {
             alignItems: 'center',
-            marginHorizontal: theme.spacing.xl,
         },
         title: {
             textAlign: 'center',
@@ -58,11 +57,6 @@ export const useStyles = makeStyles(theme => {
         },
         accountSelectionContainer: {
             flexGrow: 1,
-        },
-        permissionItemContainer: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: theme.spacing.sm,
         },
         permissionsTitle: {
             color: theme.colors.textGray,

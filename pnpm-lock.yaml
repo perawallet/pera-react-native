@@ -1305,6 +1305,9 @@ importers:
       '@walletconnect/types':
         specifier: 1.8.0
         version: 1.8.0
+      '@walletconnect/utils':
+        specifier: 1.8.0
+        version: 1.8.0
       react:
         specifier: 'catalog:'
         version: 19.2.0

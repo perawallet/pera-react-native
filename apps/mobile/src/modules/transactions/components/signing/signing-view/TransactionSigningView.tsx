@@ -156,12 +156,12 @@ const TransactionSigningView = ({ request }: TransactionSigningViewProps) => {
 
     return (
         <PWView style={styles.container}>
+            {isMultipleTransactions ? (
+                <GroupTransactionView request={request} />
+            ) : (
+                <SingleTransactionView request={request} />
+            )}
             <PWView style={styles.buttonContainer}>
-                {isMultipleTransactions ? (
-                    <GroupTransactionView request={request} />
-                ) : (
-                    <SingleTransactionView request={request} />
-                )}
                 <PWButton
                     title={t('signing.view.cancel')}
                     variant='secondary'
@@ -169,7 +169,7 @@ const TransactionSigningView = ({ request }: TransactionSigningViewProps) => {
                     style={styles.button}
                 />
                 <PWButton
-                    title={isMultipleTransactions ? 'Confirm All' : 'Confirm'}
+                    title={isMultipleTransactions ? t('signing.view.confirm_all') : t('signing.view.confirm')}
                     variant='primary'
                     onPress={signAndSend}
                     style={styles.button}

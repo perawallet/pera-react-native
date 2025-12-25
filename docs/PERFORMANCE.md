@@ -82,10 +82,10 @@ We use `FlashList` instead of `FlatList` for critical lists.
 - **Selector Optimization**: When using Zustand, select _only_ the data you need:
 
     ```typescript
-    // ✅ GOOD
+    // GOOD
     const balance = useAccountStore(state => state.balance)
 
-    // ❌ BAD (Triggers re-render for ANY store change)
+    // BAD (Triggers re-render for ANY store change)
     const { balance } = useAccountStore()
     ```
 
@@ -100,7 +100,7 @@ We use `FlashList` instead of `FlatList` for critical lists.
 - Use webp/png formats optimized for mobile.
 - Use proper `resizeMode` and dimensions.
 
-## 🚨 Common Performance Pitfalls
+## Common Performance Pitfalls
 
 - **Console Logs**: Remove deep object logging in production paths. `console.log` is synchronous and slow.
 - **Anonymous Functions**: Avoid defining functions inside `render` or `return` if passing to memoized components.

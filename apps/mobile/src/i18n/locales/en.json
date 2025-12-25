@@ -119,6 +119,9 @@
         "cancel": {
             "label": "Cancel"
         },
+        "close": {
+            "label": "Close"
+        },
         "connect": {
             "label": "Connect"
         },
@@ -218,7 +221,19 @@
             "key_access_error": "Failed to access the signing key.",
             "invalid_key": "The key for wallet {{walletId}} is invalid."
         },
-        "unknown": "An unknown error occurred."
+        "unknown": "An unknown error occurred.",
+        "walletconnect": {
+            "title": "An error occurred processing an app request",
+            "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists.",
+            "invalid_network": "Invalid Network",
+            "invalid_network_body": "You have received a request from an invalid network. Please switch your wallet to the correct network and try again.",
+            "sign_request": "Sign Request",
+            "sign_request_body": "You have received an invalid request to sign a transaction. Please check the app and try again.",
+            "permission": "Permission",
+            "permission_body": "You have received an unauthorized request from an app. Please check the app and try again.",
+            "invalid_session": "Invalid Session",
+            "invalid_session_body": "You have received an invalid session request from an app. Please check the app and try again."
+        }
     },
     "menu": {
         "cards": "Cards",
@@ -319,6 +334,8 @@
             "show_details": "Show Transaction Details",
             "invalid_title": "Invalid Transaction",
             "cancel": "Cancel",
+            "confirm": "Confirm",
+            "confirm_all": "Confirm All",
             "invalid_body": "There does not appear to be a receiver for this transaction"
         }
     },
@@ -394,6 +411,7 @@
         "security": "Security",
         "notifications": "Notifications",
         "wallet_connect": "Wallet Connect",
+        "wallet_connect_details": "Connection Details",
         "passkeys": "Passkeys",
         "currency": "Currency",
         "theme": "Theme",
@@ -420,7 +438,21 @@
         "settings": {
             "empty_title": "No WalletConnect Sessions",
             "empty_body": "You don't have any active WalletConnect sessions.",
-            "empty_button": "Scan QR"
+            "empty_button": "Scan QR",
+            "last_active": "Last active on {{date}}",
+            "created_at": "Connected on {{date}}",
+            "connected": "Connected",
+            "disconnected": "Disconnected",
+            "clear_all": "Delete All Sessions",
+            "delete_title": "Delete Session",
+            "delete_body": "Are you sure you want to delete this session?  This will remove your active session and disconnect you from the connected app.",
+            "delete_all_title": "Delete All Sessions",
+            "delete_all_body": "Are you sure you want to delete all sessions?  This will remove all your active sessions and disconnect you from all connected apps.",
+            "version": "This session is using WalletConnect V{{version}}",
+            "connected_accounts": "Connected with",
+            "permissions": "Advanced Permissions",
+            "permissions_info_title": "Advanced Permissions",
+            "permissions_info_body": "WalletConnect is a communications protocol for web3, enabling wallets and dApps to securely connect and interact. With each new version, WalletConnect introduces new ways to handle, sign and/or display transaction requests coming from third party projects."
         }
     }
 }

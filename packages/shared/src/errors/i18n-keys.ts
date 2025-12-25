@@ -62,6 +62,12 @@ export const ERROR_I18N_KEYS = {
 
     // Unknown/Generic
     UNKNOWN: 'errors.unknown',
+
+    // WalletConnect errors
+    WALLETCONNECT_INVALID_SESSION: 'errors.walletconnect.invalid_session',
+    WALLETCONNECT_SIGN_REQUEST: 'errors.walletconnect.sign_request',
+    WALLETCONNECT_PERMISSION: 'errors.walletconnect.permission',
+    WALLETCONNECT_INVALID_NETWORK: 'errors.walletconnect.invalid_network',
 } as const
 
 /**

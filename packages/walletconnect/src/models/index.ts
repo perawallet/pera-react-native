@@ -21,11 +21,24 @@ export const AlgorandChain = {
     4160: 'all'
 }
 
+export const AlgorandPermission = {
+    ACCOUNT_PERMISSION: "algo_getAccounts",
+    TX_PERMISSION: "algo_signTxn",
+    DATA_PERMISSION: "algo_signData",
+} as const
+
+export type AlgorandPermission = typeof AlgorandPermission[keyof typeof AlgorandPermission]
+
 export type WalletConnectSession = {
+    clientId?: string;
+    version?: number;
     bridge?: string;
     uri?: string;
     signingMethods?: string[];
-    session?: IWalletConnectSession;
+    session?: {
+        permissions?: string[]
+    } & IWalletConnectSession;
+    connected?: boolean;
     lastActiveAt?: Date;
     createdAt?: Date;
 }

@@ -23,6 +23,8 @@ type BaseSignRequest = {
     type: 'transactions' | 'arbitrary-data' | 'arc60'
     transport: 'walletconnect' | 'multisig' | 'algod'
     transportId?: string
+    message?: string
+    addresses?: string[]
 }
 
 export type TransactionSignRequest = {

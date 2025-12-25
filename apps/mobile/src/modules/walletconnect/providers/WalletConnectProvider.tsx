@@ -10,11 +10,14 @@
  limitations under the License
  */
 
-import React, { PropsWithChildren } from 'react'
+import React, { PropsWithChildren, useEffect } from 'react'
 import PWBottomSheet from '@components/bottom-sheet/PWBottomSheet'
 import { useWindowDimensions } from 'react-native'
-import ConnectionView from '../components/ConnectionView'
-import { useWalletConnectSessionRequests } from '@perawallet/wallet-core-walletconnect'
+import ConnectionView from '../components/connection-view/ConnectionView'
+import { useWalletConnect, useWalletConnectSessionRequests } from '@perawallet/wallet-core-walletconnect'
+import { logger } from '@perawallet/wallet-core-shared'
+import { WalletConnectErrorBoundary } from '../components/error-boundaries/WalletConnectErrorBoundary'
+import { useLanguage } from '@hooks/language'
 
 type WalletConnectProviderProps = {} & PropsWithChildren
 
@@ -24,9 +27,16 @@ export function WalletConnectProvider({
     const { sessionRequests } = useWalletConnectSessionRequests()
     const nextRequest = sessionRequests.at(0)
     const { height } = useWindowDimensions()
+    const { reconnectAllSessions } = useWalletConnect()
+    const { t } = useLanguage()
+
+    useEffect(() => {
+        logger.debug('Reconnecting WalletConnect sessions')
+        reconnectAllSessions()
+    }, [reconnectAllSessions])
 
     return (
-        <>
+        <WalletConnectErrorBoundary t={t}>
             {children}
             <PWBottomSheet
                 innerContainerStyle={{ height: height - 100 }}
@@ -34,6 +44,6 @@ export function WalletConnectProvider({
             >
                 {!!nextRequest && <ConnectionView request={nextRequest} />}
             </PWBottomSheet>
-        </>
+        </WalletConnectErrorBoundary>
     )
 }

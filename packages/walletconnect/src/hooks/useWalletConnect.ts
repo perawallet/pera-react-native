@@ -10,14 +10,14 @@
  limitations under the License
  */
 
-import { PERA_CLIENT_META } from '../constants'
+import { ALL_PERMISSIONS, PERA_CLIENT_META } from '../constants'
 import { WalletConnectInvalidSessionError } from '../errors'
-import { WalletConnectSession } from '../models'
+import { WalletConnectSession, WalletConnectSessionRequest } from '../models'
 import { useWalletConnectStore } from '../store'
 import WalletConnect from '@walletconnect/client'
 import { useCallback } from 'react'
 import { useWalletConnectSessionRequests } from './useWalletConnectSessionRequests'
-import { useSigningRequest } from '@perawallet/wallet-core-blockchain'
+import useWalletConnectHandlers from './useWalletConnectHandlers'
 import { logger } from '@perawallet/wallet-core-shared'
 
 const connectors = new Map<string, WalletConnect>()
@@ -28,10 +28,9 @@ export const useWalletConnect = () => {
         state => state.setWalletConnectSessions,
     )
     const { addSessionRequest } = useWalletConnectSessionRequests()
-    const { addSignRequest } = useSigningRequest()
+    const { handleSignData, handleSignTransaction } = useWalletConnectHandlers()
 
     const connectSession = useCallback(async ({ session }: { session: WalletConnectSession }) => {
-
         const connector = new WalletConnect({
             ...session,
             clientMeta: PERA_CLIENT_META
@@ -39,79 +38,68 @@ export const useWalletConnect = () => {
 
         //TODO set this up properly, also we need to make sure it continues to work
         //if addSessionRequest changes...
-        connector.on("algo_signData", (error, payload) => {
-            if (error) {
-                logger.error(error)
-                return
-            }
-            addSignRequest({
-                type: "arbitrary-data",
-                transport: "walletconnect",
-                transportId: connector.clientId,
-                data: payload.params.data,
-            })
-        })
-        connector.on("algo_signTxn", (error, payload) => {
-            if (error) {
-                logger.error(error)
-                return
-            }
-            addSignRequest({
-                type: "transactions",
-                transport: "walletconnect",
-                transportId: connector.clientId,
-                txs: [payload.params.data],
-            })
-        })
+        connector.on("algo_signData", (error, payload) => handleSignData(connector, error, payload))
+        connector.on("algo_signTxn", (error, payload) => handleSignTransaction(connector, error, payload))
+
         connector.on("disconnect", () => {
-            disconnectSession(connector.clientId)
+            logger.debug("WC disconnect received")
+            disconnectSession(connector.clientId, false)
         })
-        connector.on("session_proposal", (error, payload) => {
+        connector.on("session_request", (error, payload) => {
             if (error) {
                 logger.error(error)
                 return
             }
+            const { peerMeta, chainId, permissions } = payload.params[0];
+
+            logger.debug("WC session_request received", { payload })
             addSessionRequest({
-                peerMeta: payload.params.peerMeta,
-                chainId: payload.params.chainId,
-                permissions: payload.params.permissions,
+                peerMeta,
+                chainId,
+                permissions: permissions ?? ALL_PERMISSIONS,
                 clientId: connector.clientId,
             })
         })
 
-        await connector.connect()
+        if (!connector.connected) {
+            logger.debug("WC connectSession connector not connected, connecting...")
+        }
+
+        connector.on("error", (error) => {
+            logger.error("WC error received", { error })
+        })
+
         connectors.set(connector.clientId, connector)
     }, [addSessionRequest])
 
     const reconnectAllSessions = useCallback(() => {
         sessions.forEach(session => {
             connectSession({ session })
+            setSessions(sessions.map(session => {
+                if (session.session?.clientId === session.session?.clientId) {
+                    return {
+                        ...session,
+                        connected: true,
+                    }
+                }
+                return session
+            }))
         })
     }, [connectSession])
 
-    const disconnectSession = useCallback((clientId: string) => {
-        const existingSession = sessions.find(session => session.session?.clientId === clientId)
-        if (!existingSession) {
-            return
-        }
-
+    const disconnectSession = useCallback(async (clientId: string, triggerDisconnect: boolean) => {
         const connector = connectors.get(clientId)
-        if (!connector) {
-            return
+        if (connector && connector.connected && triggerDisconnect) {
+            logger.debug("WC disconnectSession connector found, disconnecting...")
+            await connector.killSession({
+                message: "User disconnected",
+            })
         }
-
-        connector.transportClose()
         connectors.delete(clientId)
-
-        setSessions(
-            sessions.map(session =>
-                session.session?.clientId === clientId ? { ...existingSession, ...connector.session } : session,
-            ),
-        )
-        return existingSession
+        setSessions(sessions.filter(session => session.session?.clientId !== clientId))
     }, [sessions])
 
-    const approveSession = useCallback((clientId: string, chainId: number, addresses: string[]) => {
+    const approveSession = useCallback((clientId: string, request: WalletConnectSessionRequest, addresses: string[]) => {
         let existingSession = sessions.find(session => session.session?.clientId === clientId)
 
         const connector = connectors.get(clientId)
@@ -120,18 +108,25 @@ export const useWalletConnect = () => {
         }
 
         connector.approveSession({
-            chainId,
+            chainId: request.chainId,
             accounts: addresses,
         })
 
         setSessions(
-            sessions.map(session =>
-                session.session?.clientId === clientId ? {
+            [
+                ...sessions.filter(session => session.session?.clientId !== clientId),
+                {
                     ...existingSession,
+                    ...connector,
+                    clientId,
+                    createdAt: new Date(),
                     lastActiveAt: new Date(),
-                    ...connector.session
-                } : session,
-            ),
+                    session: {
+                        permissions: request.permissions,
+                        ...connector.session,
+                    },
+                }
+            ],
         )
     }, [sessions])
 
@@ -148,19 +143,15 @@ export const useWalletConnect = () => {
         )
     }, [sessions])
 
-    const removeSession = useCallback((clientId: string) => {
-        disconnectSession(clientId)
-        connectors.get(clientId)?.killSession()
-        connectors.delete(clientId)
-        setSessions(sessions.filter(session => session.session?.clientId !== clientId))
-    }, [sessions])
-
-    const clearSessions = useCallback(() => {
-        sessions.forEach(session => {
-            if (session.session?.clientId) {
-                removeSession(session.session.clientId)
+    const deleteAllSessions = useCallback(async () => {
+        const promises = sessions.map(session => {
+            if (session.clientId) {
+                return disconnectSession(session.clientId, true)
             }
+            return Promise.resolve()
         })
+        await Promise.all(promises)
+        setSessions([])
     }, [sessions])
 
     return {
@@ -170,7 +161,6 @@ export const useWalletConnect = () => {
         disconnectSession,
         approveSession,
         rejectSession,
-        removeSession,
-        clearSessions,
+        deleteAllSessions,
     }
 }

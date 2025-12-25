@@ -11,13 +11,34 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { PWBadgeProps } from './PWBadge'
 
-export const useStyles = makeStyles(theme => {
+export const useStyles = makeStyles((theme, props: PWBadgeProps) => {
+    const { variant } = props
+
+    let backgroundColor = theme.colors.buttonPrimaryBg
+    let textColor = theme.colors.buttonPrimaryText
+    if (variant === 'testnet') {
+        backgroundColor = theme.colors.testnetBackground
+    } else if (variant === 'secondary') {
+        textColor = theme.colors.textMain
+        backgroundColor = theme.colors.layerGrayLighter
+    } else if (variant === 'positive') {
+        textColor = theme.colors.helperPositive
+        backgroundColor = theme.colors.buttonSquareBg
+    }
+
     return {
         container: {
             paddingVertical: theme.spacing.xs,
             paddingHorizontal: theme.spacing.sm,
             height: theme.spacing.xl,
+            backgroundColor,
+            borderWidth: 0,
+            borderRadius: theme.spacing.xl * 2,
+        },
+        text: {
+            color: textColor,
         },
     }
 })

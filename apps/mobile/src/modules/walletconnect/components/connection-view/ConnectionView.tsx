@@ -13,6 +13,7 @@
 import PWView from '@components/view/PWView'
 import {
     AlgorandChain,
+    AlgorandPermission,
     useWalletConnect,
     useWalletConnectSessionRequests,
     WalletConnectSessionRequest,
@@ -27,7 +28,6 @@ import { useWebView } from '@hooks/webview'
 import { v7 as uuid } from 'uuid'
 import PWIcon from '@components/icons/PWIcon'
 import {
-    getAccountDisplayName,
     useAllAccounts,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -36,20 +36,9 @@ import PWCheckbox from '@components/checkbox/PWCheckbox'
 import PWTouchableOpacity from '@components/touchable-opacity/PWTouchableOpacity'
 import { ScrollView } from 'react-native-gesture-handler'
 import useToast from '@hooks/toast'
+import PermissionItem from '../permission-item/PermissionItem'
 
-const PermissionItem = ({ title }: { title: string }) => {
-    const styles = useStyles()
-    return (
-        <PWView style={styles.permissionItemContainer}>
-            <PWIcon
-                name='check'
-                variant='positive'
-            />
-            <Text>{title}</Text>
-        </PWView>
-    )
-}
-
+//TODO implement project validation using our backend to show a "verified" badge somewhere
 const ConnectionView = ({
     request,
 }: {
@@ -65,6 +54,9 @@ const ConnectionView = ({
         string[]
     >([])
     const { showToast } = useToast()
+
+    const preferredIcon = request.peerMeta.icons?.find(icon => icon.endsWith('.png') || icon.endsWith('.jpg') || icon.endsWith('.jpeg'))
+        ?? request.peerMeta.icons?.at(0)
 
     const handlePressUrl = () => {
         if (!request.peerMeta.url) return
@@ -85,7 +77,7 @@ const ConnectionView = ({
             })
             return
         }
-        approveSession(request.clientId, request.chainId, selectedAccounts)
+        approveSession(request.clientId, request, selectedAccounts)
         removeSessionRequest(request)
     }
 
@@ -99,17 +91,6 @@ const ConnectionView = ({
         })
     }
 
-    const getPermissionTitle = (permission: string) => {
-        switch (permission) {
-            case 'algo_signTxn':
-                return t('walletconnect.request.permissions_sign_transaction')
-            case 'algo_signData':
-                return t('walletconnect.request.permissions_sign_data')
-            default:
-                return permission
-        }
-    }
-
     return (
         <PWView style={styles.container}>
             <PWView style={styles.headerContainer}>
@@ -117,20 +98,23 @@ const ConnectionView = ({
                     {request.chainId !== 4160 ? (
                         <PWBadge
                             value={t(`walletconnect.request.networks_${AlgorandChain[request.chainId]}`)}
+                            variant={request.chainId === 416002 ? 'testnet' : 'primary'}
                         />) :
                         (<>
                             <PWBadge
-                                value={t(`walletconnect.request.networks_testnet`)}
+                                value={t(`walletconnect.request.networks_mainnet`)}
+                                variant='primary'
                             />
                             <PWBadge
-                                value={t(`walletconnect.request.networks_mainnet`)}
+                                value={t(`walletconnect.request.networks_testnet`)}
+                                variant='testnet'
                             />
                         </>)
                     }
                 </PWView>
-                {request.peerMeta.icons?.at(0) ? (
+                {preferredIcon ? (
                     <Image
-                        source={{ uri: request.peerMeta.icons?.at(0) }}
+                        source={{ uri: preferredIcon }}
                         style={styles.icon}
                     />
                 ) : (
@@ -168,14 +152,12 @@ const ConnectionView = ({
                     {t('walletconnect.request.permissions_title')}
                 </Text>
                 <PermissionItem
-                    title={t(
-                        'walletconnect.request.permissions_request_accounts',
-                    )}
+                    permission={AlgorandPermission.ACCOUNT_PERMISSION}
                 />
                 {request.permissions.map((permission, index) => (
                     <PermissionItem
                         key={index}
-                        title={getPermissionTitle(permission)}
+                        permission={permission as AlgorandPermission}
                     />
                 ))}
             </PWView>

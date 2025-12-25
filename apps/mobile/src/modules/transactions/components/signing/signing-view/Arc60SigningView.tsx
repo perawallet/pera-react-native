@@ -10,9 +10,13 @@
  limitations under the License
  */
 
+import PWButton from '@components/button/PWButton'
 import EmptyView from '@components/empty-view/EmptyView'
-import { Arc60SignRequest } from "@perawallet/wallet-core-blockchain"
+import PWView from '@components/view/PWView'
+import { Arc60SignRequest, useSigningRequest } from "@perawallet/wallet-core-blockchain"
 import { logger } from '@perawallet/wallet-core-shared'
+import { useStyles } from './styles'
+import { useLanguage } from '@hooks/language'
 
 type Arc60SigningViewProps = {
     request: Arc60SignRequest
@@ -20,12 +24,41 @@ type Arc60SigningViewProps = {
 
 //TODO implement me
 const Arc60SigningView = ({ request }: Arc60SigningViewProps) => {
-    logger.warn('Arc60 signing not implemented yet', request)
+    const styles = useStyles();
+    const { t } = useLanguage();
+    const { removeSignRequest } = useSigningRequest()
+
+    const signAndSend = () => {
+        logger.warn('Arc60 signing not implemented yet', request)
+        removeSignRequest(request)
+    }
+
+    const rejectRequest = () => {
+        logger.warn('Arc60 signing not implemented yet', request)
+        removeSignRequest(request)
+    }
+
     return (
-        <EmptyView
-            title='Arc60 Not Implemented'
-            body='Arc60 signing has not been implemented yet.'
-        />
+        <PWView style={styles.container}>
+            <EmptyView
+                title='Arc60 Not Implemented'
+                body='Arc60 signing has not been implemented yet.'
+            />
+            <PWView style={styles.buttonContainer}>
+                <PWButton
+                    title={t('signing.view.cancel')}
+                    variant='secondary'
+                    onPress={rejectRequest}
+                    style={styles.button}
+                />
+                <PWButton
+                    title={t('signing.view.confirm')}
+                    variant='primary'
+                    onPress={signAndSend}
+                    style={styles.button}
+                />
+            </PWView>
+        </PWView>
     )
 }
 

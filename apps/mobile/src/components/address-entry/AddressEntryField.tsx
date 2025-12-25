@@ -64,19 +64,10 @@ const AddressEntryField = ({
                 <QRScannerView
                     onSuccess={addressScanned}
                     animationType='slide'
+                    onClose={hideScanner}
                     title={t('address_entry.scan_qr')}
                     visible={scannerVisible}
-                >
-                    <TouchableOpacity
-                        onPress={hideScanner}
-                        style={styles.closeIconButton}
-                    >
-                        <PWIcon
-                            name='cross'
-                            variant='white'
-                        />
-                    </TouchableOpacity>
-                </QRScannerView>
+                />
             )}
         </PWView>
     )

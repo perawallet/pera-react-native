@@ -42,7 +42,26 @@ export class WalletConnectError extends AppError {
 }
 
 export class WalletConnectInvalidSessionError extends WalletConnectError {
-    constructor() {
-        super(ERROR_I18N_KEYS.WALLETCONNECT_INVALID_SESSION)
+    constructor(originalError?: Error) {
+        super(ERROR_I18N_KEYS.WALLETCONNECT_INVALID_SESSION, originalError)
     }
 }
+
+export class WalletConnectSignRequestError extends WalletConnectError {
+    constructor(originalError?: Error) {
+        super(ERROR_I18N_KEYS.WALLETCONNECT_SIGN_REQUEST, originalError)
+    }
+}
+
+export class WalletConnectPermissionError extends WalletConnectError {
+    constructor(originalError?: Error) {
+        super(ERROR_I18N_KEYS.WALLETCONNECT_PERMISSION, originalError)
+    }
+}
+
+export class WalletConnectInvalidNetworkError extends WalletConnectError {
+    constructor(originalError?: Error) {
+        super(ERROR_I18N_KEYS.WALLETCONNECT_INVALID_NETWORK, originalError)
+    }
+}
+
