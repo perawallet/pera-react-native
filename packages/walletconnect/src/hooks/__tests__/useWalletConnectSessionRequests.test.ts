@@ -27,13 +27,13 @@ describe('useWalletConnectSessionRequests', () => {
     beforeEach(() => {
         mockSessionRequests = []
         mockSetSessionRequests = vi.fn()
-            ; (useWalletConnectStore as any).mockImplementation((selector: any) => {
-                const state = {
-                    sessionRequests: mockSessionRequests,
-                    setSessionRequests: mockSetSessionRequests,
-                }
-                return selector(state)
-            })
+        ;(useWalletConnectStore as any).mockImplementation((selector: any) => {
+            const state = {
+                sessionRequests: mockSessionRequests,
+                setSessionRequests: mockSetSessionRequests,
+            }
+            return selector(state)
+        })
     })
 
     it('should add session request', () => {

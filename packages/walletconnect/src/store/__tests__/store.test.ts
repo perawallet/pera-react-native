@@ -48,7 +48,7 @@ vi.mock('zustand', async () => {
                 stateCreator = creatorFn
                 return () => mockStore
             }
-        }
+        },
     }
 })
 
@@ -57,12 +57,11 @@ vi.mock('zustand/middleware', () => ({
         // Return the config executor so create can use it?
         // Or just return the config which is the state creator.
         // We also want to check options (partialize)
-        (global as any).mockPersistOptions = options
+        ;(global as any).mockPersistOptions = options
         return config
     },
     createJSONStorage: vi.fn().mockReturnValue('mock-storage-impl'),
 }))
-
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
     createLazyStore: vi.fn().mockReturnValue({
@@ -76,14 +75,13 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 }))
 
 describe('WalletConnectStore', () => {
-
     beforeEach(() => {
         vi.clearAllMocks()
     })
 
     it('should initialize store with storage service', () => {
         const mockStorage = {}
-            ; (useKeyValueStorageService as any).mockReturnValue(mockStorage)
+        ;(useKeyValueStorageService as any).mockReturnValue(mockStorage)
 
         initWalletConnectStore()
 
@@ -96,7 +94,10 @@ describe('WalletConnectStore', () => {
 
         const set = vi.fn()
         const get = vi.fn()
-        const storeState = stateCreator(set, get, { getState: get, setState: set })
+        const storeState = stateCreator(set, get, {
+            getState: get,
+            setState: set,
+        })
 
         expect(storeState.walletConnectSessions).toEqual([])
         expect(storeState.sessionRequests).toEqual([])
@@ -122,7 +123,7 @@ describe('WalletConnectStore', () => {
         const fullState = {
             walletConnectSessions: ['s1'],
             sessionRequests: ['r1'],
-            setWalletConnectSessions: () => { },
+            setWalletConnectSessions: () => {},
         }
         const persisted = options.partialize(fullState)
         expect(persisted).toEqual({ walletConnectSessions: ['s1'] })

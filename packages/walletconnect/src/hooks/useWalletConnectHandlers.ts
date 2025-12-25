@@ -61,11 +61,11 @@ const useWalletConnectHandlers = () => {
     const { addSignRequest } = useSigningRequest()
     const { network } = useNetwork()
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleSignData = useCallback(
         (
             connector: WalletConnect,
             error: Error | null,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             payload: any | null,
         ) => {
             logger.debug('WC algo_signData received', { error, payload })
@@ -101,11 +101,11 @@ const useWalletConnectHandlers = () => {
         [sessions, addSignRequest, network],
     )
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleSignTransaction = useCallback(
         (
             connector: WalletConnect,
             error: Error | null,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             payload: any | null,
         ) => {
             logger.debug('WC algo_signTxn received', { error, payload })
