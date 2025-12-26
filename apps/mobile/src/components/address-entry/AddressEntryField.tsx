@@ -10,9 +10,7 @@
  limitations under the License
  */
 
-import { TouchableOpacity } from 'react-native'
 import PWView from '@components/view/PWView'
-import { useStyles } from '@components/address-entry/styles'
 
 import QRScannerView from '@components/qr-scanner/QRScannerView'
 import { useState } from 'react'
@@ -26,9 +24,10 @@ export type AddressEntryFieldProps = {
 
 const AddressEntryField = ({
     allowQRCode,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    ref,
     ...rest
 }: AddressEntryFieldProps) => {
-    const styles = useStyles()
     const [scannerVisible, setScannerVisible] = useState(false)
     const { t } = useLanguage()
 
@@ -50,31 +49,22 @@ const AddressEntryField = ({
             <Input
                 {...rest}
                 rightIcon={
-                    allowQRCode && (
+                    allowQRCode ? (
                         <PWIcon
                             name='camera'
                             onPress={showScanner}
                         />
-                    )
+                    ) : undefined
                 }
             />
             {scannerVisible && (
                 <QRScannerView
                     onSuccess={addressScanned}
                     animationType='slide'
+                    onClose={hideScanner}
                     title={t('address_entry.scan_qr')}
                     visible={scannerVisible}
-                >
-                    <TouchableOpacity
-                        onPress={hideScanner}
-                        style={styles.closeIconButton}
-                    >
-                        <PWIcon
-                            name='cross'
-                            variant='white'
-                        />
-                    </TouchableOpacity>
-                </QRScannerView>
+                />
             )}
         </PWView>
     )

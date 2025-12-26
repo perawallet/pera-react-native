@@ -27,6 +27,7 @@ import { useWebView } from './webview'
 import { v7 as uuidv7 } from 'uuid'
 import { useEffect, useRef } from 'react'
 import { Linking } from 'react-native'
+import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
 
 type LinkSource = 'qr' | 'deeplink'
 
@@ -37,6 +38,7 @@ export const useDeepLink = () => {
     const selectedAccount = useSelectedAccount()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { pushWebView } = useWebView()
+    const { connectSession } = useWalletConnect()
 
     const isValidDeepLink = (url: string, source: LinkSource): boolean => {
         logger.debug('Validating deeplink', { url, source })
@@ -74,7 +76,6 @@ export const useDeepLink = () => {
     ) => {
         const parsedData = parseDeeplink(url)
 
-        logger.debug('Parsed deeplink data:', { parsedData })
         if (!parsedData) {
             showToast({
                 title: 'Invalid Link',
@@ -132,6 +133,8 @@ export const useDeepLink = () => {
                     // TODO: We need to use a proper transaction construction method here and
                     //navigate somewhere other than the qr code scanner.
                     addSignRequest({
+                        type: 'transactions',
+                        transport: 'algod',
                         txs: [
                             [
                                 {
@@ -155,6 +158,8 @@ export const useDeepLink = () => {
                     // TODO: We need to use a proper transaction construction method here and
                     //navigate somewhere other than the qr code scanner.
                     addSignRequest({
+                        type: 'transactions',
+                        transport: 'algod',
                         txs: [
                             [
                                 {
@@ -199,18 +204,19 @@ export const useDeepLink = () => {
                     break
 
                 case DeeplinkType.WALLET_CONNECT:
-                    // TODO: Handle WalletConnect session
-                    // handleWalletConnectUri(parsedData.uri)
-                    infoPost(
-                        'WalletConnect',
-                        'WalletConnect handling not implemented yet',
-                    )
+                    connectSession({
+                        session: {
+                            uri: parsedData.uri,
+                        },
+                    })
                     break
 
                 case DeeplinkType.ASSET_OPT_IN:
                     // TODO: We need to use a proper transaction construction method here and
                     //navigate somewhere other than the qr code scanner.
                     addSignRequest({
+                        type: 'transactions',
+                        transport: 'algod',
                         txs: [
                             [
                                 {
@@ -315,9 +321,10 @@ export const useDeepLink = () => {
                     break
             }
 
+            logger.debug('Deeplink: Handled successfully', { url, parsedData })
             onSuccess?.()
         } catch (error) {
-            logger.error(error as Error)
+            logger.error(error as Error, { url })
             showToast({
                 title: 'Navigation Error',
                 body: 'Could not navigate to the requested screen',

@@ -19,18 +19,23 @@ import {
     useCodeScanner,
 } from 'react-native-vision-camera'
 import { Text } from '@rneui/themed'
-import { PropsWithChildren, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Modal } from 'react-native'
 import { useLanguage } from '@hooks/language'
 import { useDeepLink } from '@hooks/deeplink'
 import EmptyView from '@components/empty-view/EmptyView'
+import { logger } from '@perawallet/wallet-core-shared'
+import PWButton from '@components/button/PWButton'
+import PWTouchableOpacity from '@components/touchable-opacity/PWTouchableOpacity'
+import PWIcon from '@components/icons/PWIcon'
 
 type QRScannerViewProps = {
     title?: string
     visible: boolean
     animationType: 'slide' | 'fade' | 'none'
+    onClose: () => void
     onSuccess: (url: string, restartScanning: () => void) => void
-} & PropsWithChildren
+}
 
 const QRScannerView = (props: QRScannerViewProps) => {
     const styles = useStyles()
@@ -41,17 +46,41 @@ const QRScannerView = (props: QRScannerViewProps) => {
 
     const { handleDeepLink, isValidDeepLink } = useDeepLink()
 
+    useEffect(() => {
+        if (!props.visible) {
+            setScanningEnabled(false)
+        } else {
+            setScanningEnabled(true)
+        }
+    }, [props.visible])
+
     const codeScanner = useCodeScanner({
         codeTypes: ['qr', 'ean-13'],
         onCodeScanned: codes => {
-            const url = codes.at(0)?.value
-            setScanningEnabled(false)
-            if (url) {
-                if (isValidDeepLink(url, 'qr')) {
-                    handleDeepLink(url, true, 'qr', () =>
-                        setScanningEnabled(true),
-                    )
+            try {
+                const url = codes.at(0)?.value
+                setScanningEnabled(false)
+                if (url) {
+                    if (isValidDeepLink(url, 'qr')) {
+                        handleDeepLink(
+                            url,
+                            true,
+                            'qr',
+                            () => setScanningEnabled(true),
+                            () => {
+                                logger.debug(
+                                    'QRScannerView: Deep link handled successfully',
+                                    { url },
+                                )
+                                props.onSuccess(url, () =>
+                                    setScanningEnabled(true),
+                                )
+                            },
+                        )
+                    }
                 }
+            } catch (error) {
+                logger.error('QRScannerView: QR scanner error:', { error })
             }
         },
     })
@@ -72,12 +101,26 @@ const QRScannerView = (props: QRScannerViewProps) => {
                         style={styles.emptyView}
                         title={t('camera.no_camera_device_found.label')}
                         body={''}
+                        button={
+                            <PWButton
+                                variant='primary'
+                                title={t('common.go_back.label')}
+                                onPress={props.onClose}
+                            />
+                        }
                     />
-                    <>{props.children}</>
                 </>
             ) : (
                 <>
-                    <>{props.children}</>
+                    <PWTouchableOpacity
+                        onPress={props.onClose}
+                        style={styles.icon}
+                    >
+                        <PWIcon
+                            name='cross'
+                            variant='white'
+                        />
+                    </PWTouchableOpacity>
                     <Camera
                         style={styles.camera}
                         codeScanner={codeScanner}

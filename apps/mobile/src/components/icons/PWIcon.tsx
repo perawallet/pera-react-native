@@ -25,6 +25,7 @@ import CameraIcon from '@assets/icons/camera.svg'
 import CardIcon from '@assets/icons/card.svg'
 import CardStackIcon from '@assets/icons/card-stack.svg'
 import ChartIcon from '@assets/icons/chart.svg'
+import CheckIcon from '@assets/icons/check.svg'
 import ChevronDownIcon from '@assets/icons/chevron-down.svg'
 import ChevronLeftIcon from '@assets/icons/chevron-left.svg'
 import ChevronRightIcon from '@assets/icons/chevron-right.svg'
@@ -98,6 +99,7 @@ const ICON_LIBRARY = {
     card: CardIcon,
     'card-stack': CardStackIcon,
     chart: ChartIcon,
+    check: CheckIcon,
     'chevron-down': ChevronDownIcon,
     'chevron-left': ChevronLeftIcon,
     'chevron-right': ChevronRightIcon,
@@ -169,6 +171,7 @@ export type PWIconVariant =
     | 'white'
     | 'link'
     | 'error'
+    | 'positive'
 
 export type PWIconProps = {
     name: IconName
@@ -205,6 +208,7 @@ const PWIcon = ({
             white: theme.colors.textWhite,
             link: theme.colors.linkPrimary,
             error: theme.colors.error,
+            positive: theme.colors.helperPositive,
         }),
         [theme],
     )
@@ -218,6 +222,7 @@ const PWIcon = ({
             white: theme.colors.textGray,
             link: theme.colors.textGray,
             error: theme.colors.error,
+            positive: theme.colors.textGray,
         }),
         [theme],
     )

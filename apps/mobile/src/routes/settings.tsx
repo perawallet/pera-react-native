@@ -29,6 +29,8 @@ import { fullScreenLayout, headeredLayout } from './layouts'
 import SettingsDeveloperNodeSettingsScreen from '@modules/settings/screens/developer/node-settings/SettingsDeveloperNodeSettingsScreen'
 import SettingsDeveloperDispenserScreen from '@modules/settings/screens/developer/dispenser/SettingsDeveloperDispenserScreen'
 import { NavigatorScreenParams } from '@react-navigation/native'
+import { WalletConnectSession } from '@perawallet/wallet-core-walletconnect'
+import SettingsWalletConnectDetailsScreen from '@modules/settings/screens/wallet-connect/SettingsWalletConnectDetailsScreen'
 
 export type DeveloperSettingsStackParamsList = {
     DeveloperSettingsHome: undefined
@@ -75,6 +77,46 @@ const DeveloperSettingsStackNavigator = () => {
                 component={SettingsDeveloperDispenserScreen}
             />
         </DeveloperSettingsStack.Navigator>
+    )
+}
+
+export type WalletConnectSettingsStackParamsList = {
+    WalletConnectSettingsHome: undefined
+    WalletConnectSettingsDetails: { session: WalletConnectSession }
+}
+
+const WalletConnectSettingsStack =
+    createNativeStackNavigator<WalletConnectSettingsStackParamsList>()
+
+export const WalletConnectSettingsStackNavigator = () => {
+    return (
+        <WalletConnectSettingsStack.Navigator
+            initialRouteName='WalletConnectSettingsHome'
+            screenOptions={{
+                headerShown: true,
+                header: (props: NativeStackHeaderProps) => (
+                    <NavigationHeader {...props} />
+                ),
+                ...SCREEN_ANIMATION_CONFIG,
+            }}
+            screenListeners={screenListeners}
+            layout={headeredLayout}
+        >
+            <WalletConnectSettingsStack.Screen
+                name='WalletConnectSettingsHome'
+                options={{
+                    title: 'screens.wallet_connect',
+                }}
+                component={SettingsWalletConnectScreen}
+            />
+            <WalletConnectSettingsStack.Screen
+                name='WalletConnectSettingsDetails'
+                options={{
+                    title: 'screens.wallet_connect_details',
+                }}
+                component={SettingsWalletConnectDetailsScreen}
+            />
+        </WalletConnectSettingsStack.Navigator>
     )
 }
 
@@ -130,8 +172,9 @@ export const SettingsStackNavigator = () => {
                 name='WalletConnectSettings'
                 options={{
                     title: 'screens.wallet_connect',
+                    headerShown: false,
                 }}
-                component={SettingsWalletConnectScreen}
+                component={WalletConnectSettingsStackNavigator}
             />
             <SettingsStack.Screen
                 name='PasskeysSettings'

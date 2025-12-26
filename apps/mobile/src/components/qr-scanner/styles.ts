@@ -45,6 +45,8 @@ export const useStyles = makeStyles(theme => {
         },
         icon: {
             color: theme.colors.textWhite,
+            marginTop: theme.spacing.xl * 1.5,
+            marginLeft: theme.spacing.xl,
             zIndex: 2,
         },
         emptyView: {

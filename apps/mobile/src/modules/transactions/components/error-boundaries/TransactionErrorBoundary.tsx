@@ -42,7 +42,7 @@ const TransactionErrorFallback = ({
             }
             button={
                 <PWButton
-                    title={t('common.go_back')}
+                    title={t('common.go_back.label')}
                     variant='primary'
                     onPress={reset}
                 />

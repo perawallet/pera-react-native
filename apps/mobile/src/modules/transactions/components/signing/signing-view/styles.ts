@@ -17,6 +17,7 @@ export const useStyles = makeStyles(theme => {
         container: {
             flex: 1,
             minHeight: 500,
+            padding: theme.spacing.xl,
         },
         title: {
             padding: theme.spacing.lg,

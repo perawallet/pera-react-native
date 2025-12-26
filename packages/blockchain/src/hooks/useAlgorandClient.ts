@@ -12,7 +12,7 @@
 
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import { useMemo } from 'react'
-import { Networks } from '../../../shared/src'
+import { Networks } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
 

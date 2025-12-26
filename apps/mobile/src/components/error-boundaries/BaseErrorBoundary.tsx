@@ -15,7 +15,7 @@ import { AppError, ErrorCategory, logger } from '@perawallet/wallet-core-shared'
 import crashlytics from '@react-native-firebase/crashlytics'
 import EmptyView from '@components/empty-view/EmptyView'
 
-interface BaseErrorBoundaryProps {
+export interface BaseErrorBoundaryProps {
     children: ReactNode
     fallback?: (error: AppError | Error, reset: () => void) => ReactNode
     onError?: (error: AppError | Error, errorInfo: ErrorInfo) => void

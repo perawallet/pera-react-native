@@ -132,18 +132,9 @@ const AccountScreen = ({ route }: AccountScreenProps) => {
             <QRScannerView
                 visible={scannerState.isOpen}
                 onSuccess={scannerState.close}
+                onClose={scannerState.close}
                 animationType='slide'
-            >
-                <PWTouchableOpacity
-                    onPress={scannerState.close}
-                    style={styles.scannerClose}
-                >
-                    <PWIcon
-                        name='cross'
-                        variant='white'
-                    />
-                </PWTouchableOpacity>
-            </QRScannerView>
+            />
         </Drawer>
     )
 }

@@ -109,19 +109,9 @@ const MenuScreen = () => {
             <QRScannerView
                 visible={scanner.isOpen}
                 onSuccess={scanner.close}
+                onClose={scanner.close}
                 animationType='slide'
-            >
-                <PWTouchableOpacity
-                    onPress={scanner.close}
-                    style={styles.scannerClose}
-                >
-                    \n{' '}
-                    <PWIcon
-                        name='cross'
-                        variant='white'
-                    />
-                </PWTouchableOpacity>
-            </QRScannerView>
+            />
         </PWView>
     )
 }
