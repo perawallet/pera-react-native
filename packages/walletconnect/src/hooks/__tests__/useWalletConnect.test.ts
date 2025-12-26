@@ -34,15 +34,17 @@ vi.mock('../useWalletConnectHandlers', () => ({
 
 vi.mock('@walletconnect/client', () => {
     return {
-        default: vi.fn().mockImplementation(() => ({
-            on: vi.fn(),
-            killSession: vi.fn(),
-            approveSession: vi.fn(),
-            rejectSession: vi.fn(),
-            connected: false,
-            clientId: 'mock-client-id',
-            session: {},
-        })),
+        default: vi.fn().mockImplementation(function () {
+            return {
+                on: vi.fn(),
+                killSession: vi.fn(),
+                approveSession: vi.fn(),
+                rejectSession: vi.fn(),
+                connected: false,
+                clientId: 'mock-client-id',
+                session: {},
+            }
+        }),
     }
 })
 

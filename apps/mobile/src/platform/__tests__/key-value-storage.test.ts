@@ -11,7 +11,7 @@
  */
 
 import { RNKeyValueStorageService } from '../key-value-storage'
-vi.mock('react-native-mmkv', () => {
+jest.mock('react-native-mmkv', () => {
     class MMKV {
         private store = new Map<string, string>()
         getString(key: string) {

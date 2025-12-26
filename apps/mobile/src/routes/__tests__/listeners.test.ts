@@ -14,16 +14,15 @@
 import { screenListeners, resetPreviousRouteNameForTesting } from '../listeners'
 import { container } from 'tsyringe'
 import { AnalyticsServiceContainerKey } from '@perawallet/wallet-core-platform-integration'
-import { vi } from 'vitest'
 
-vi.mock('tsyringe', () => ({
+jest.mock('tsyringe', () => ({
     container: {
-        resolve: vi.fn(),
+        resolve: jest.fn(),
     },
 }))
 
 describe('screenListeners', () => {
-    const logEventMock = vi.fn()
+    const logEventMock = jest.fn()
 
     // Helper to create a route object
     const createRoute = (name: string, path?: string) => ({
@@ -33,7 +32,7 @@ describe('screenListeners', () => {
     })
 
     beforeEach(() => {
-        vi.clearAllMocks()
+        jest.clearAllMocks()
         resetPreviousRouteNameForTesting()
         ;(container.resolve as any).mockReturnValue({
             logEvent: logEventMock,
@@ -95,5 +94,17 @@ describe('screenListeners', () => {
         screenListeners({ route: route as any }).focus()
 
         expect(logEventMock).not.toHaveBeenCalled()
+    })
+
+    it('logs unknown if route name is missing', () => {
+        // Coverage for listeners.ts line 48
+        const route = { name: undefined as any, path: '/test' }
+        const listeners = screenListeners({ route: route as any })
+        listeners.focus()
+
+        expect(logEventMock).toHaveBeenCalledWith('scr_unknown_view', {
+            previous: null,
+            path: '/test',
+        })
     })
 })

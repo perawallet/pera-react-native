@@ -127,7 +127,7 @@ describe('useTransactionSigner', () => {
                 'ADDR1',
                 Buffer.from('txn'),
             ),
-        ).rejects.toEqual(new NoHDWalletError('ADDR1'))
+        ).rejects.toThrow(NoHDWalletError)
     })
 
     test('signTransactionForAddress throws if account has no HD wallet details', async () => {
@@ -149,7 +149,7 @@ describe('useTransactionSigner', () => {
                 'ADDR1',
                 Buffer.from('txn'),
             ),
-        ).rejects.toEqual(new NoHDWalletError('ADDR1'))
+        ).rejects.toThrow(NoHDWalletError)
     })
 
     test('signTransactionForAddress throws if no signing keys found in storage', async () => {

@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
 import { parseCoinbaseFormat } from '../coinbase-parser'
 
 describe('Coinbase Parser', () => {

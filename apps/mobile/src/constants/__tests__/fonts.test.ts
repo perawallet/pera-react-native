@@ -10,17 +10,17 @@
  limitations under the License
  */
 
-import { describe, expect, it, vi } from 'vitest'
-
-vi.mock('../../platform/utils', () => ({
-    isIOS: vi.fn(),
+jest.mock('../../platform/utils', () => ({
+    isIOS: jest.fn(),
 }))
 
 const loadFontFamilies = async (isOnIOS: boolean) => {
-    vi.resetModules()
-    const { isIOS } = await import('../../platform/utils')
-    vi.mocked(isIOS).mockReturnValue(isOnIOS)
-    const { fontFamilies } = await import('../fonts')
+    jest.resetModules()
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { isIOS } = require('../../platform/utils')
+    jest.mocked(isIOS).mockReturnValue(isOnIOS)
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { fontFamilies } = require('../fonts')
     return fontFamilies
 }
 

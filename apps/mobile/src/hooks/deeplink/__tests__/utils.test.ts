@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
 import {
     parseQueryParams,
     decodeBase64Param,
@@ -53,6 +52,12 @@ describe('Deeplink Parser - Helper Functions', () => {
             const params = parseQueryParams('invalid?foo=bar&baz=qux')
             expect(params.foo).toBe('bar')
             expect(params.baz).toBe('qux')
+        })
+
+        it('handles key without value in fallback parsing', () => {
+            // Coverage for utils.ts line 35 (the : '' part)
+            const params = parseQueryParams('invalid?foo')
+            expect(params.foo).toBe('')
         })
 
         it('handles malformed URL without query params', () => {
