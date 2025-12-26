@@ -20,12 +20,15 @@ import EmptyView from '@components/empty-view/EmptyView'
 import TransactionSigningView from './TransactionSigningView'
 import ArbitraryDataSigningView from './ArbitraryDataSigningView'
 import Arc60SigningView from './Arc60SigningView'
+import { useLanguage } from '@hooks/language'
 
 type SigningViewProps = {
     request: SignRequest
 }
 
 const SigningView = ({ request }: SigningViewProps) => {
+    const { t } = useLanguage()
+
     switch (request.type) {
         case 'transactions':
             return (
@@ -44,8 +47,8 @@ const SigningView = ({ request }: SigningViewProps) => {
         default:
             return (
                 <EmptyView
-                    title='Unknown Request Type'
-                    body='The request type is unknown.'
+                    title={t('signing.unknown_request_type.title')}
+                    body={t('signing.unknown_request_type.body')}
                 />
             )
     }

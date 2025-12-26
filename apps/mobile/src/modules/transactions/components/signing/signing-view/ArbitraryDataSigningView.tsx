@@ -46,8 +46,8 @@ const ArbitraryDataSigningView = ({
     return (
         <PWView style={styles.container}>
             <EmptyView
-                title='Arbitrary Data Not Implemented'
-                body='Arbitrary data signing has not been implemented yet.'
+                title={t('common.not_implemented.title')}
+                body={t('common.not_implemented.body')}
             />
             <PWView style={styles.buttonContainer}>
                 <PWButton

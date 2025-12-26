@@ -45,7 +45,7 @@ const WalletConnectErrorFallback = ({
             body={t('errors.walletconnect.body')}
             button={
                 <PWButton
-                    title={t('common.go_back')}
+                    title={t('common.go_back.label')}
                     variant='primary'
                     onPress={reset}
                 />
@@ -64,9 +64,10 @@ export const WalletConnectErrorBoundary: React.FC<
     const { showToast } = useToast()
     const handleError = (error: Error) => {
         if (error instanceof WalletConnectError) {
+            const bodyKey = `${error.getI18nKey()}_body`
             showToast({
                 title: t(error.getI18nKey()),
-                body: t(`${error.getI18nKey()}_body`),
+                body: t(bodyKey),
                 type: 'error',
             })
         }

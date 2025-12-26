@@ -31,7 +31,7 @@ const AccountErrorFallback = ({ reset }: { reset: () => void }) => {
             body={t('errors.account.body')}
             button={
                 <PWButton
-                    title={t('common.go_back')}
+                    title={t('common.go_back.label')}
                     variant='primary'
                     onPress={reset}
                 />

@@ -5,6 +5,13 @@ const path = require('path');
 const LOCALES_DIR = path.join(__dirname, '../apps/mobile/src/i18n/locales');
 const SRC_DIR = path.join(__dirname, '../apps/mobile/src');
 
+const EXCLUDED_KEYS = [
+    'errors.walletconnect.invalid_network_body',
+    'errors.walletconnect.sign_request_body',
+    'errors.walletconnect.permission_body',
+    'errors.walletconnect.invalid_session_body',
+];
+
 // Colors for console output
 const colors = {
     reset: '\x1b[0m',
@@ -152,7 +159,7 @@ function main() {
         // This isn't perfect (e.g. dynamic keys) but good for a "lint"
         // We try to match "key" or 'key' or `key`
         const regex = new RegExp(`['"\`]${key}['"\`]`, 'g');
-        if (!regex.test(allCode) && !errorKeys.has(key)) {
+        if (!regex.test(allCode) && !errorKeys.has(key) && !EXCLUDED_KEYS.includes(key)) {
             // Also check if it's used as a translation call like t('key') or t("key") just in case
             // Actually the above quote check covers most simple usages.
             // Let's being conservative and just warn.

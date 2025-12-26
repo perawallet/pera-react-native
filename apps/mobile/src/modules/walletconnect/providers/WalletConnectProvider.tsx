@@ -36,7 +36,7 @@ export function WalletConnectProvider({
     useEffect(() => {
         logger.debug('Reconnecting WalletConnect sessions')
         reconnectAllSessions()
-    }, [reconnectAllSessions])
+    }, [])
 
     return (
         <WalletConnectErrorBoundary t={t}>

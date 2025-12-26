@@ -44,8 +44,8 @@ const Arc60SigningView = ({ request }: Arc60SigningViewProps) => {
     return (
         <PWView style={styles.container}>
             <EmptyView
-                title='Arc60 Not Implemented'
-                body='Arc60 signing has not been implemented yet.'
+                title={t('common.not_implemented.title')}
+                body={t('common.not_implemented.body')}
             />
             <PWView style={styles.buttonContainer}>
                 <PWButton

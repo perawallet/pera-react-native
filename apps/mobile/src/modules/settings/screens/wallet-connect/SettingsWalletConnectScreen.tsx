@@ -25,7 +25,9 @@ import { useStyles } from './SettingsWalletConnectScreen.styles'
 import { logger } from '@perawallet/wallet-core-shared'
 import WalletConnectSessionItem from '../../components/wallet-connect/WalletConnectSessionItem'
 import { Dialog, Text, useTheme } from '@rneui/themed'
-import { useState } from 'react'
+import { useLayoutEffect, useState } from 'react'
+import { useNavigation } from '@react-navigation/native'
+import PWIcon from '@components/icons/PWIcon'
 
 const renderItem = ({ item }: { item: WalletConnectSession }) => {
     logger.debug('rendering session', { item })
@@ -40,6 +42,21 @@ const SettingsWalletConnectScreen = () => {
     const styles = useStyles()
     const { theme } = useTheme()
     const [loading, setLoading] = useState(false)
+    const navigation = useNavigation()
+
+    useLayoutEffect(() => {
+        if (sessions.length > 0) {
+            navigation.setOptions({
+                title: t('settings.main.wallet_connect_title'),
+                headerRight: () => (
+                    <PWIcon
+                        name='camera'
+                        onPress={scannerState.open}
+                    />
+                ),
+            })
+        }
+    }, [navigation, scannerState, sessions])
 
     const handleDeleteAll = () => {
         setLoading(true)

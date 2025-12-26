@@ -27,6 +27,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { useStyles } from './styles'
 import PWView from '@components/view/PWView'
+import { EXPANDABLE_PANEL_ANIMATION_DURATION } from '@constants/ui'
 
 type ExpandablePanelProps = {
     title: React.ReactNode
@@ -43,6 +44,7 @@ export const CollapsableContainer = ({
 }) => {
     const [height, setHeight] = useState(0)
     const animatedHeight = useSharedValue(0)
+    const animatedOpacity = useSharedValue(0)
     const styles = useStyles()
 
     const onLayout = (event: LayoutChangeEvent) => {
@@ -54,10 +56,18 @@ export const CollapsableContainer = ({
     }
 
     const collapsableStyle = useAnimatedStyle(() => {
-        animatedHeight.value = expanded ? withTiming(height) : withTiming(0)
+        animatedHeight.value = expanded
+            ? withTiming(height, {
+                  duration: EXPANDABLE_PANEL_ANIMATION_DURATION,
+              })
+            : withTiming(0, { duration: EXPANDABLE_PANEL_ANIMATION_DURATION })
+        animatedOpacity.value = expanded
+            ? withTiming(1, { duration: EXPANDABLE_PANEL_ANIMATION_DURATION })
+            : withTiming(0, { duration: EXPANDABLE_PANEL_ANIMATION_DURATION })
 
         return {
             height: animatedHeight.value,
+            opacity: animatedOpacity.value,
         }
     }, [expanded, height])
 
@@ -87,7 +97,13 @@ export const ExpandablePanel = ({
 
     const iconStyle = useAnimatedStyle(() => {
         return {
-            transform: [{ rotate: withTiming(expanded ? '90deg' : '0deg') }],
+            transform: [
+                {
+                    rotate: withTiming(expanded ? '90deg' : '0deg', {
+                        duration: EXPANDABLE_PANEL_ANIMATION_DURATION,
+                    }),
+                },
+            ],
         }
     }, [expanded])
 

@@ -109,7 +109,9 @@
     },
     "common": {
         "offline_mode": "Offline Mode",
-        "go_back": "Go Back",
+        "go_back": {
+            "label": "Go Back"
+        },
         "loading": {
             "label": "Loading..."
         },
@@ -330,13 +332,15 @@
             "you_spend": "YOU WILL SPEND"
         },
         "view": {
-            "fee": "Transaction Fee",
-            "show_details": "Show Transaction Details",
             "invalid_title": "Invalid Transaction",
             "cancel": "Cancel",
             "confirm": "Confirm",
             "confirm_all": "Confirm All",
             "invalid_body": "There does not appear to be a receiver for this transaction"
+        },
+        "unknown_request_type": {
+            "title": "Unknown Request Type",
+            "body": "The request type is unknown."
         }
     },
     "swaps": {
@@ -429,11 +433,8 @@
             "accounts_title": "SELECT ACCOUNTS",
             "accounts_select_one_account_title": "Select at least one account",
             "accounts_select_one_account_body": "Please select at least one account to connect with",
-            "networks_title": "SELECT NETWORK",
             "networks_mainnet": "Mainnet",
-            "networks_testnet": "Testnet",
-            "networks_betanet": "Betanet",
-            "networks_all": "All"
+            "networks_testnet": "Testnet"
         },
         "settings": {
             "empty_title": "No WalletConnect Sessions",

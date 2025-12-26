@@ -84,20 +84,22 @@ export const useWalletConnect = () => {
     const reconnectAllSessions = useCallback(() => {
         sessions.forEach(session => {
             connectSession({ session })
-            setSessions(
-                sessions.map(session => {
-                    if (
-                        session.session?.clientId === session.session?.clientId
-                    ) {
-                        return {
-                            ...session,
-                            connected: true,
-                        }
-                    }
-                    return session
-                }),
-            )
         })
+        setSessions(
+            sessions.map(session => {
+                if (!session.clientId) {
+                    return {
+                        ...session,
+                        connected: false,
+                    }
+                }
+                const connector = connectors.get(session.clientId)
+                return {
+                    ...session,
+                    connected: connector?.connected ?? false,
+                }
+            }),
+        )
     }, [connectSession, sessions])
 
     const disconnectSession = useCallback(
