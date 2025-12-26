@@ -12,10 +12,10 @@
 
 import { RNSecureStorageService } from '../secure-storage'
 
-const mockKeychain = {
-    setGenericPassword: vi.fn(async () => true),
-    getGenericPassword: vi.fn(),
-    resetGenericPassword: vi.fn(async () => true),
+jest.mock('react-native-keychain', () => ({
+    setGenericPassword: jest.fn(async () => true),
+    getGenericPassword: jest.fn(),
+    resetGenericPassword: jest.fn(async () => true),
     ACCESSIBLE: {
         WHEN_UNLOCKED_THIS_DEVICE_ONLY: 'WhenUnlockedThisDeviceOnly',
     },
@@ -25,16 +25,17 @@ const mockKeychain = {
     SECURITY_LEVEL: {
         SECURE_HARDWARE: 'SecureHardware',
     },
-}
+}))
 
-vi.mock('react-native-keychain', () => mockKeychain)
+import * as Keychain from 'react-native-keychain'
+const mockKeychain = Keychain as jest.Mocked<typeof Keychain>
 
 describe('RNSecureStorageService', () => {
     let service: RNSecureStorageService
 
     beforeEach(() => {
         service = new RNSecureStorageService()
-        vi.clearAllMocks()
+        jest.clearAllMocks()
     })
 
     describe('initialize', () => {

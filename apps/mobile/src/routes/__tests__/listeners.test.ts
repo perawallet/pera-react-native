@@ -16,14 +16,14 @@ import { container } from 'tsyringe'
 import { AnalyticsServiceContainerKey } from '@perawallet/wallet-core-platform-integration'
 
 
-vi.mock('tsyringe', () => ({
+jest.mock('tsyringe', () => ({
     container: {
-        resolve: vi.fn(),
+        resolve: jest.fn(),
     },
 }))
 
 describe('screenListeners', () => {
-    const logEventMock = vi.fn()
+    const logEventMock = jest.fn()
 
     // Helper to create a route object
     const createRoute = (name: string, path?: string) => ({
@@ -33,7 +33,7 @@ describe('screenListeners', () => {
     })
 
     beforeEach(() => {
-        vi.clearAllMocks()
+        jest.clearAllMocks()
         resetPreviousRouteNameForTesting()
             ; (container.resolve as any).mockReturnValue({
                 logEvent: logEventMock,

@@ -12,12 +12,12 @@
 
 
 
-let platformOS = 'ios'
+let mockPlatformOS = 'ios'
 
-vi.mock('react-native', () => ({
+jest.mock('react-native', () => ({
     Platform: {
         get OS() {
-            return platformOS
+            return mockPlatformOS
         },
     },
 }))
@@ -26,12 +26,12 @@ import { isIOS } from '../utils'
 
 describe('isIOS', () => {
     it('returns true when Platform.OS === ios', () => {
-        platformOS = 'ios'
+        mockPlatformOS = 'ios'
         expect(isIOS()).toBe(true)
     })
 
     it('returns false when Platform.OS !== ios', () => {
-        platformOS = 'android'
+        mockPlatformOS = 'android'
         expect(isIOS()).toBe(false)
     })
 })

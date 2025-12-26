@@ -12,15 +12,15 @@
 
 
 
-vi.mock('../../platform/utils', () => ({
-    isIOS: vi.fn(),
+jest.mock('../../platform/utils', () => ({
+    isIOS: jest.fn(),
 }))
 
 const loadFontFamilies = async (isOnIOS: boolean) => {
-    vi.resetModules()
-    const { isIOS } = await import('../../platform/utils')
-    vi.mocked(isIOS).mockReturnValue(isOnIOS)
-    const { fontFamilies } = await import('../fonts')
+    jest.resetModules()
+    const { isIOS } = require('../../platform/utils')
+    jest.mocked(isIOS).mockReturnValue(isOnIOS)
+    const { fontFamilies } = require('../fonts')
     return fontFamilies
 }
 
