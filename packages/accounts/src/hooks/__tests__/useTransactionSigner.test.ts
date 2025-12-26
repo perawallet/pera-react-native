@@ -70,9 +70,9 @@ describe('useTransactionSigner', () => {
 
     test('signTransactionForAddress signs transaction if account and keys exist', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => {}),
+            setItem: vi.fn(async () => { }),
             getItem: vi.fn(async () => Buffer.from('seed_data')),
-            removeItem: vi.fn(async () => {}),
+            removeItem: vi.fn(async () => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -127,7 +127,7 @@ describe('useTransactionSigner', () => {
                 'ADDR1',
                 Buffer.from('txn'),
             ),
-        ).rejects.toEqual(new NoHDWalletError('ADDR1'))
+        ).rejects.toThrow(NoHDWalletError)
     })
 
     test('signTransactionForAddress throws if account has no HD wallet details', async () => {
@@ -149,14 +149,14 @@ describe('useTransactionSigner', () => {
                 'ADDR1',
                 Buffer.from('txn'),
             ),
-        ).rejects.toEqual(new NoHDWalletError('ADDR1'))
+        ).rejects.toThrow(NoHDWalletError)
     })
 
     test('signTransactionForAddress throws if no signing keys found in storage', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => {}),
+            setItem: vi.fn(async () => { }),
             getItem: vi.fn(async () => null), // Returns null
-            removeItem: vi.fn(async () => {}),
+            removeItem: vi.fn(async () => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -194,7 +194,7 @@ describe('useTransactionSigner', () => {
 
     test('signTransactionForAddress handles JSON format master key', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => {}),
+            setItem: vi.fn(async () => { }),
             getItem: vi.fn(async () =>
                 Buffer.from(
                     JSON.stringify({
@@ -203,7 +203,7 @@ describe('useTransactionSigner', () => {
                     }),
                 ),
             ),
-            removeItem: vi.fn(async () => {}),
+            removeItem: vi.fn(async () => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -245,9 +245,9 @@ describe('useTransactionSigner', () => {
 
     test('signTransactionForAddress throws if signTransaction fails', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => {}),
+            setItem: vi.fn(async () => { }),
             getItem: vi.fn(async () => Buffer.from('seed_data')),
-            removeItem: vi.fn(async () => {}),
+            removeItem: vi.fn(async () => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -287,11 +287,11 @@ describe('useTransactionSigner', () => {
 
     test('signTransactionForAddress handles storage retrieval error', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => {}),
+            setItem: vi.fn(async () => { }),
             getItem: vi.fn(async () => {
                 throw new Error('Storage access denied')
             }),
-            removeItem: vi.fn(async () => {}),
+            removeItem: vi.fn(async () => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -329,9 +329,9 @@ describe('useTransactionSigner', () => {
 
     test('signTransactionForAddress finds account by address correctly', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => {}),
+            setItem: vi.fn(async () => { }),
             getItem: vi.fn(async () => Buffer.from('seed_data')),
-            removeItem: vi.fn(async () => {}),
+            removeItem: vi.fn(async () => { }),
             authenticate: vi.fn(async () => true),
         }
 

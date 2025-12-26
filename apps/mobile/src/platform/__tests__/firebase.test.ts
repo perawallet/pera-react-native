@@ -12,7 +12,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { vi, describe, it, expect, beforeEach } from 'vitest'
+
 import { RNFirebaseService } from '../firebase'
 
 // Mock react-native Platform
@@ -32,12 +32,12 @@ vi.mock('@react-native-firebase/crashlytics', () => ({
     setCrashlyticsCollectionEnabled: vi.fn(),
 }))
 
-const mockRemoteConfig = vi.hoisted(() => ({
+const mockRemoteConfig = {
     setConfigSettings: vi.fn().mockResolvedValue(undefined),
     setDefaults: vi.fn().mockResolvedValue(undefined),
     fetchAndActivate: vi.fn().mockResolvedValue(true),
     getValue: vi.fn(),
-}))
+}
 
 vi.mock('@react-native-firebase/remote-config', () => ({
     getRemoteConfig: () => mockRemoteConfig,
@@ -46,20 +46,20 @@ vi.mock('@react-native-firebase/remote-config', () => ({
     fetchAndActivate: mockRemoteConfig.fetchAndActivate,
 }))
 
-const mockAnalytics = vi.hoisted(() => ({
+const mockAnalytics = {
     logEvent: vi.fn(),
-}))
+}
 
 vi.mock('@react-native-firebase/analytics', () => ({
     getAnalytics: () => mockAnalytics,
     logEvent: mockAnalytics.logEvent,
 }))
 
-const mockMessaging = vi.hoisted(() => ({
+const mockMessaging = {
     registerDeviceForRemoteMessages: vi.fn().mockResolvedValue(undefined),
     getToken: vi.fn().mockResolvedValue('mock-fcm-token'),
     onMessage: vi.fn(() => vi.fn()),
-}))
+}
 
 vi.mock('@react-native-firebase/messaging', () => ({
     getMessaging: () => mockMessaging,
@@ -69,12 +69,12 @@ vi.mock('@react-native-firebase/messaging', () => ({
         mockMessaging.registerDeviceForRemoteMessages,
 }))
 
-const mockNotifee = vi.hoisted(() => ({
+const mockNotifee = {
     requestPermission: vi.fn().mockResolvedValue(1),
     createChannel: vi.fn().mockResolvedValue(undefined),
     displayNotification: vi.fn().mockResolvedValue(undefined),
     onForegroundEvent: vi.fn(() => vi.fn()),
-}))
+}
 
 vi.mock('@notifee/react-native', () => ({
     default: mockNotifee,

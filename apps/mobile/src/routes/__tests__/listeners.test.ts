@@ -14,7 +14,7 @@
 import { screenListeners, resetPreviousRouteNameForTesting } from '../listeners'
 import { container } from 'tsyringe'
 import { AnalyticsServiceContainerKey } from '@perawallet/wallet-core-platform-integration'
-import { vi } from 'vitest'
+
 
 vi.mock('tsyringe', () => ({
     container: {
@@ -35,9 +35,9 @@ describe('screenListeners', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         resetPreviousRouteNameForTesting()
-        ;(container.resolve as any).mockReturnValue({
-            logEvent: logEventMock,
-        })
+            ; (container.resolve as any).mockReturnValue({
+                logEvent: logEventMock,
+            })
     })
 
     it('logs event on focus for tracked screens (not in ignored list)', () => {

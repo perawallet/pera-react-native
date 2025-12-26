@@ -12,7 +12,7 @@
 
 import { RNSecureStorageService } from '../secure-storage'
 
-const mockKeychain = vi.hoisted(() => ({
+const mockKeychain = {
     setGenericPassword: vi.fn(async () => true),
     getGenericPassword: vi.fn(),
     resetGenericPassword: vi.fn(async () => true),
@@ -25,7 +25,7 @@ const mockKeychain = vi.hoisted(() => ({
     SECURITY_LEVEL: {
         SECURE_HARDWARE: 'SecureHardware',
     },
-}))
+}
 
 vi.mock('react-native-keychain', () => mockKeychain)
 

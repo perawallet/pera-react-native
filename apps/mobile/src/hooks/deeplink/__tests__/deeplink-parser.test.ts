@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
+
 import { parseDeeplink } from '../parser'
 
 import { DeeplinkType } from '../types'

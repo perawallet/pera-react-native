@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { vi, describe, it, expect, beforeEach } from 'vitest'
+
 import { RNDeviceInfoStorageService } from '../device'
 import * as RN from 'react-native'
 

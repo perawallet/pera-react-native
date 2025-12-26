@@ -12,7 +12,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any*/
 import 'reflect-metadata'
-import { vi, afterEach } from 'vitest'
+console.log('vi type:', typeof vi)
 
 // Clean up after each test
 afterEach(() => {
@@ -50,10 +50,8 @@ vi.mock('react-native-keychain', () => ({
 }))
 
 // // Mock React Native core modules
-vi.mock('react-native', async () => {
-    const RN = await vi.importActual('react-native')
+vi.mock('react-native', () => {
     return {
-        ...RN,
         Platform: {
             OS: 'ios',
             select: vi.fn(obj => obj.ios || obj.default),
@@ -99,6 +97,43 @@ vi.mock('react-native', async () => {
             .mockImplementation(({ children }) => children),
         View: vi.fn().mockImplementation(({ children }) => children),
         Text: vi.fn().mockImplementation(({ children }) => children),
+        Image: vi.fn().mockImplementation(({ children }) => children),
+        ScrollView: vi.fn().mockImplementation(({ children }) => children),
+        TextInput: vi.fn().mockImplementation(({ children }) => children),
+        Modal: vi.fn().mockImplementation(({ children }) => children),
+        ActivityIndicator: vi.fn().mockImplementation(({ children }) => children),
+        Pressable: vi.fn().mockImplementation(({ children }) => children),
+        Appearance: {
+            getColorScheme: vi.fn(() => 'light'),
+            addChangeListener: vi.fn(),
+            removeChangeListener: vi.fn(),
+        },
+        Linking: {
+            openURL: vi.fn(),
+            canOpenURL: vi.fn(),
+            getInitialURL: vi.fn(),
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+        },
+        AppState: {
+            currentState: 'active',
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+        },
+        InteractionManager: {
+            runAfterInteractions: vi.fn(cb => cb()),
+        },
+        Keyboard: {
+            dismiss: vi.fn(),
+            addListener: vi.fn(),
+            removeListener: vi.fn(),
+        },
+        PixelRatio: {
+            get: vi.fn(() => 1),
+            getFontScale: vi.fn(() => 1),
+            getPixelSizeForLayoutSize: vi.fn(size => size),
+            roundToNearestPixel: vi.fn(size => size),
+        },
     }
 })
 
@@ -120,7 +155,7 @@ vi.mock('react-native/Libraries/Animated/NativeAnimatedHelper', () => ({}))
 
 // Basic NativeEventEmitter dependency to avoid errors when no native module is provided
 vi.mock('react-native/Libraries/EventEmitter/NativeEventEmitter', () => {
-    return class NativeEventEmitter {}
+    return class NativeEventEmitter { }
 })
 
 // Mock React Navigation
@@ -175,7 +210,7 @@ vi.mock('@react-native-firebase/messaging', () => ({
 
 vi.mock('@react-native-firebase/remote-config', () => ({
     getRemoteConfig: () => ({
-        setDefaults: vi.fn(async () => {}),
+        setDefaults: vi.fn(async () => { }),
         fetchAndActivate: vi.fn(async () => true),
         setConfigSettings: vi.fn(),
         getValue: vi.fn(() => ({

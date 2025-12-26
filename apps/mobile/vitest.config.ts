@@ -13,11 +13,26 @@
 import { defineConfig } from 'vitest/config'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
+import react from '@vitejs/plugin-react'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
 export default defineConfig({
+    plugins: [
+        react({
+            exclude: /node_modules\/(?!react-native)/,
+            babel: {
+                presets: [
+                    [
+                        'module:@react-native/babel-preset',
+                        { disableImportExportTransform: true },
+                    ],
+                ],
+                plugins: ['@babel/plugin-transform-flow-strip-types'],
+            },
+        }),
+    ],
     resolve: {
         alias: {
             '@': resolve(__dirname, 'src'),
