@@ -27,7 +27,10 @@ import PWButton from '@components/button/PWButton'
 import { useWebView } from '@hooks/webview'
 import { v7 as uuid } from 'uuid'
 import PWIcon from '@components/icons/PWIcon'
-import { useAllAccounts, WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useSigningAccounts,
+    WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import AccountDisplay from '@modules/accounts/components/account-display/AccountDisplay'
 import PWCheckbox from '@components/checkbox/PWCheckbox'
 import PWTouchableOpacity from '@components/touchable-opacity/PWTouchableOpacity'
@@ -46,7 +49,7 @@ const ConnectionView = ({
     const { pushWebView } = useWebView()
     const { removeSessionRequest } = useWalletConnectSessionRequests()
     const { approveSession, rejectSession } = useWalletConnect()
-    const accounts = useAllAccounts()
+    const accounts = useSigningAccounts()
     const [selectedAccounts, setSelectedAccounts] = React.useState<string[]>([])
     const { showToast } = useToast()
 
@@ -166,9 +169,6 @@ const ConnectionView = ({
                 >
                     {t('walletconnect.request.permissions_title')}
                 </Text>
-                <PermissionItem
-                    permission={AlgorandPermission.ACCOUNT_PERMISSION}
-                />
                 {request.permissions.map((permission, index) => (
                     <PermissionItem
                         key={index}
