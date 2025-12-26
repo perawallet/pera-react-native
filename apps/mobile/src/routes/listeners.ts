@@ -35,7 +35,7 @@ export const screenListeners = ({
     route: RouteProp<ParamListBase>
 }) => ({
     focus: () => {
-        const currentRouteName = route.name.toLowerCase()
+        const currentRouteName = route.name?.toLowerCase() || 'unknown'
 
         if (
             !NAVIGATION_STACK_NAMES.has(currentRouteName) &&
@@ -44,13 +44,10 @@ export const screenListeners = ({
             const analyticsService = container.resolve<AnalyticsService>(
                 AnalyticsServiceContainerKey,
             )
-            analyticsService.logEvent(
-                `scr_${currentRouteName ?? 'unknown'}_view`,
-                {
-                    previous: previousRouteName,
-                    path: route.path,
-                },
-            )
+            analyticsService.logEvent(`scr_${currentRouteName}_view`, {
+                previous: previousRouteName,
+                path: route.path,
+            })
             previousRouteName = currentRouteName
         }
     },

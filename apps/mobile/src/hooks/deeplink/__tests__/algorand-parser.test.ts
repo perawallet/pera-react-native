@@ -265,5 +265,40 @@ describe('ARC-90 Algorand Parser', () => {
                 expect(result.amount).toBe('100')
             }
         })
+
+        it('parses type=appl as ADDRESS_ACTIONS (noop in ARC-90)', () => {
+            // Coverage for arc90-parser.ts line 110
+            const result = parseAlgorandUri(`algorand://${TEST_ADDRESS}?type=appl`)
+            expect(result).toBeDefined()
+            expect(result?.type).toBe(DeeplinkType.ADDRESS_ACTIONS)
+        })
+
+        it('returns null for malformed query params (decodeURIComponent failure)', () => {
+            // Coverage for arc90-parser.ts line 116
+            const result = parseAlgorandUri(`algorand://${TEST_ADDRESS}?foo=%E0%A4%A`)
+            expect(result).toBeNull()
+        })
+
+        it('returns null for invalid appId in ARC-90', () => {
+            // Coverage for arc90-parser.ts line 74
+            expect(parseAlgorandUri('algorand://app/abc')).toBeNull()
+        })
+
+        it('returns null for invalid assetId in ARC-90', () => {
+            // Coverage for arc90-parser.ts line 87
+            expect(parseAlgorandUri('algorand://asset/abc')).toBeNull()
+        })
+
+        it('handles empty parameter values in ARC-90', () => {
+            // Coverage for arc90-parser.ts lines 80, 93, 103
+            const result1 = parseAlgorandUri('algorand://app/123?foo=')
+            expect(result1).toBeDefined()
+
+            const result2 = parseAlgorandUri('algorand://asset/123?foo=')
+            expect(result2).toBeDefined()
+
+            const result3 = parseAlgorandUri(`algorand://${TEST_ADDRESS}?foo=`)
+            expect(result3).toBeDefined()
+        })
     })
 })

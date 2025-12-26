@@ -55,6 +55,12 @@ describe('Deeplink Parser - Helper Functions', () => {
             expect(params.baz).toBe('qux')
         })
 
+        it('handles key without value in fallback parsing', () => {
+            // Coverage for utils.ts line 35 (the : '' part)
+            const params = parseQueryParams('invalid?foo')
+            expect(params.foo).toBe('')
+        })
+
         it('handles malformed URL without query params', () => {
             const params = parseQueryParams('invalid')
             expect(params).toEqual({})

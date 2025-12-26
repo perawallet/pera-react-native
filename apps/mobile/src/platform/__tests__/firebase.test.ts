@@ -257,6 +257,44 @@ describe('RNFirebaseService', () => {
                 expect(result).toEqual(0)
             })
         })
+
+        describe('Remote Config Edge Cases', () => {
+            it('should return fallback or default when remoteConfig is null', () => {
+                const nullService = new RNFirebaseService()
+
+                expect(nullService.getStringValue('test_key' as any, 'fallback')).toBe(
+                    'fallback',
+                )
+                expect(nullService.getStringValue('test_key' as any)).toBe('')
+
+                expect(nullService.getBooleanValue('test_key' as any, true)).toBe(true)
+                expect(nullService.getBooleanValue('test_key' as any)).toBe(false)
+
+                expect(nullService.getNumberValue('test_key' as any, 42)).toBe(42)
+                expect(nullService.getNumberValue('test_key' as any)).toBe(0)
+            })
+
+            it('should return fallback or default when getValue throws', async () => {
+                await service.initializeRemoteConfig()
+                const mockGetValue = jest.fn().mockImplementation(() => {
+                    throw new Error('test error')
+                })
+
+                    ; (service.remoteConfig!.getValue as jest.Mock) = mockGetValue
+
+                expect(service.getStringValue('test_key' as any, 'fallback')).toBe(
+                    'fallback',
+                )
+                expect(service.getStringValue('test_key' as any)).toBe('')
+
+                expect(service.getBooleanValue('test_key' as any, true)).toBe(true)
+                expect(service.getBooleanValue('test_key' as any)).toBe(false)
+
+                expect(service.getNumberValue('test_key' as any, 42)).toBe(42)
+                expect(service.getNumberValue('test_key' as any)).toBe(0)
+            })
+        })
+
     })
 
     describe('Notifications', () => {

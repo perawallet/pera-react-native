@@ -129,6 +129,7 @@
     "jsdom": "^27.1.0",
     "prettier": "catalog:",
     "react-native-svg-transformer": "^1.5.2",
+    "react-test-renderer": "19.2.0",
     "ts-jest": "^29.2.5",
     "typescript": "catalog:",
     "typescript-eslint": "catalog:",

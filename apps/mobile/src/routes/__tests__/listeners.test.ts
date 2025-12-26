@@ -96,4 +96,16 @@ describe('screenListeners', () => {
 
         expect(logEventMock).not.toHaveBeenCalled()
     })
+
+    it('logs unknown if route name is missing', () => {
+        // Coverage for listeners.ts line 48
+        const route = { name: undefined as any, path: '/test' }
+        const listeners = screenListeners({ route: route as any })
+        listeners.focus()
+
+        expect(logEventMock).toHaveBeenCalledWith('scr_unknown_view', {
+            previous: null,
+            path: '/test',
+        })
+    })
 })
