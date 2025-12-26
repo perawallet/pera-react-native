@@ -50,11 +50,12 @@ jest.mock('react-native-keychain', () => ({
 
 // // Mock React Native core modules
 jest.mock('react-native', () => {
+    const Platform = {
+        OS: 'ios',
+        select: jest.fn(obj => obj.ios || obj.default),
+    }
     return {
-        Platform: {
-            OS: 'ios',
-            select: jest.fn(obj => obj.ios || obj.default),
-        },
+        Platform,
         NativeModules: {
             SettingsManager: {
                 settings: {
@@ -134,7 +135,7 @@ jest.mock('react-native', () => {
             roundToNearestPixel: jest.fn(size => size),
         },
     }
-})
+}, { virtual: true })
 
 jest.mock('react-native-safe-area-context', () => {
     const inset = { top: 0, right: 0, bottom: 0, left: 0 }
@@ -271,5 +272,13 @@ jest.mock('@notifee/react-native', () => {
             displayNotification: jest.fn(),
             onForegroundEvent: jest.fn(),
         },
+    }
+})
+
+jest.mock('react-native-webview', () => {
+    const { View } = require('react-native')
+    return {
+        default: jest.fn().mockImplementation(() => View),
+        WebView: jest.fn().mockImplementation(() => View),
     }
 })

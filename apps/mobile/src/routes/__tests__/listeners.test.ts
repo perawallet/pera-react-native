@@ -15,7 +15,6 @@ import { screenListeners, resetPreviousRouteNameForTesting } from '../listeners'
 import { container } from 'tsyringe'
 import { AnalyticsServiceContainerKey } from '@perawallet/wallet-core-platform-integration'
 
-
 jest.mock('tsyringe', () => ({
     container: {
         resolve: jest.fn(),

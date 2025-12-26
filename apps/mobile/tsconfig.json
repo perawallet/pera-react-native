@@ -2,7 +2,7 @@
   "extends": "@react-native/typescript-config",
   "compilerOptions": {
     "types": [
-      "vitest/globals"
+      "jest"
     ],
     "baseUrl": "src",
     "paths": {
