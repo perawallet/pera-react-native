@@ -77,7 +77,9 @@ describe('useToast', () => {
                 title: 'Error',
                 description: 'Operation failed',
                 componentProps: expect.objectContaining({
-                    containerStyle: expect.arrayContaining([{ backgroundColor: 'red' }]),
+                    containerStyle: expect.arrayContaining([
+                        { backgroundColor: 'red' },
+                    ]),
                 }),
             }),
         )
@@ -98,7 +100,9 @@ describe('useToast', () => {
             expect.objectContaining({
                 title: 'Warning',
                 componentProps: expect.objectContaining({
-                    containerStyle: expect.arrayContaining([{ backgroundColor: 'yellow' }]),
+                    containerStyle: expect.arrayContaining([
+                        { backgroundColor: 'yellow' },
+                    ]),
                 }),
             }),
         )
@@ -119,7 +123,9 @@ describe('useToast', () => {
             expect.objectContaining({
                 title: 'Info',
                 componentProps: expect.objectContaining({
-                    containerStyle: expect.arrayContaining([{ backgroundColor: 'blue' }]),
+                    containerStyle: expect.arrayContaining([
+                        { backgroundColor: 'blue' },
+                    ]),
                 }),
             }),
         )

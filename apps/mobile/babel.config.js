@@ -11,7 +11,6 @@
  */
 
 module.exports = function (api) {
-  console.log('Babel config called for:', api.env());
   api.cache(true);
   const presets = ['module:@react-native/babel-preset']
   const plugins = [

@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-
 import {
     parseQueryParams,
     decodeBase64Param,

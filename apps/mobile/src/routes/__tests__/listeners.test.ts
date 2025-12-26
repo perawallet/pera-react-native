@@ -34,9 +34,9 @@ describe('screenListeners', () => {
     beforeEach(() => {
         jest.clearAllMocks()
         resetPreviousRouteNameForTesting()
-            ; (container.resolve as any).mockReturnValue({
-                logEvent: logEventMock,
-            })
+        ;(container.resolve as any).mockReturnValue({
+            logEvent: logEventMock,
+        })
     })
 
     it('logs event on focus for tracked screens (not in ignored list)', () => {

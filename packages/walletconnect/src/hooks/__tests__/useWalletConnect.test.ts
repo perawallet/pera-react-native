@@ -70,19 +70,19 @@ describe('useWalletConnect', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockSessions = []
-            ; (useWalletConnectStore as any).mockImplementation((selector: any) =>
-                selector({
-                    walletConnectSessions: mockSessions,
-                    setWalletConnectSessions: mockSetSessions,
-                }),
-            )
-            ; (useWalletConnectSessionRequests as any).mockReturnValue({
-                addSessionRequest: mockAddSessionRequest,
-            })
-            ; (useWalletConnectHandlers as any).mockReturnValue({
-                handleSignData: mockHandleSignData,
-                handleSignTransaction: mockHandleSignTransaction,
-            })
+        ;(useWalletConnectStore as any).mockImplementation((selector: any) =>
+            selector({
+                walletConnectSessions: mockSessions,
+                setWalletConnectSessions: mockSetSessions,
+            }),
+        )
+        ;(useWalletConnectSessionRequests as any).mockReturnValue({
+            addSessionRequest: mockAddSessionRequest,
+        })
+        ;(useWalletConnectHandlers as any).mockReturnValue({
+            handleSignData: mockHandleSignData,
+            handleSignTransaction: mockHandleSignTransaction,
+        })
     })
 
     afterEach(() => {
@@ -183,14 +183,14 @@ describe('useWalletConnect', () => {
             const { result } = renderHook(() => useWalletConnect())
             const session = { session: { clientId: 'mock-client-id' } } as any
             mockSessions.push(session)
-                // We need mockSessions to be returned by store.
-                ; (useWalletConnectStore as any).mockImplementation(
-                    (selector: any) =>
-                        selector({
-                            walletConnectSessions: [session],
-                            setWalletConnectSessions: mockSetSessions,
-                        }),
-                )
+            // We need mockSessions to be returned by store.
+            ;(useWalletConnectStore as any).mockImplementation(
+                (selector: any) =>
+                    selector({
+                        walletConnectSessions: [session],
+                        setWalletConnectSessions: mockSetSessions,
+                    }),
+            )
 
             await act(async () => {
                 await result.current.connectSession({ session })
@@ -220,14 +220,14 @@ describe('useWalletConnect', () => {
         it('should kill session and remove from store', async () => {
             const { result } = renderHook(() => useWalletConnect())
             const session = { session: { clientId: 'mock-client-id' } } as any
-                // Populate store so it can be filtered
-                ; (useWalletConnectStore as any).mockImplementation(
-                    (selector: any) =>
-                        selector({
-                            walletConnectSessions: [session],
-                            setWalletConnectSessions: mockSetSessions,
-                        }),
-                )
+            // Populate store so it can be filtered
+            ;(useWalletConnectStore as any).mockImplementation(
+                (selector: any) =>
+                    selector({
+                        walletConnectSessions: [session],
+                        setWalletConnectSessions: mockSetSessions,
+                    }),
+            )
 
             // First connect to populate 'connectors' map
             await act(async () => {
@@ -257,13 +257,13 @@ describe('useWalletConnect', () => {
         it('should approve session and update store', async () => {
             const { result } = renderHook(() => useWalletConnect())
             const session = { session: { clientId: 'mock-client-id' } } as any
-                ; (useWalletConnectStore as any).mockImplementation(
-                    (selector: any) =>
-                        selector({
-                            walletConnectSessions: [session],
-                            setWalletConnectSessions: mockSetSessions,
-                        }),
-                )
+            ;(useWalletConnectStore as any).mockImplementation(
+                (selector: any) =>
+                    selector({
+                        walletConnectSessions: [session],
+                        setWalletConnectSessions: mockSetSessions,
+                    }),
+            )
 
             // Connect first
             await act(async () => {
@@ -292,7 +292,7 @@ describe('useWalletConnect', () => {
             // The logic appends the new session info.
             const updatedSessions =
                 mockSetSessions.mock.calls[
-                mockSetSessions.mock.calls.length - 1
+                    mockSetSessions.mock.calls.length - 1
                 ][0]
             expect(updatedSessions).toHaveLength(1)
             expect(updatedSessions[0].clientId).toBe('mock-client-id')
@@ -305,13 +305,13 @@ describe('useWalletConnect', () => {
         it('should reject session and update store', async () => {
             const { result } = renderHook(() => useWalletConnect())
             const session = { session: { clientId: 'mock-client-id' } } as any
-                ; (useWalletConnectStore as any).mockImplementation(
-                    (selector: any) =>
-                        selector({
-                            walletConnectSessions: [session],
-                            setWalletConnectSessions: mockSetSessions,
-                        }),
-                )
+            ;(useWalletConnectStore as any).mockImplementation(
+                (selector: any) =>
+                    selector({
+                        walletConnectSessions: [session],
+                        setWalletConnectSessions: mockSetSessions,
+                    }),
+            )
 
             // Connect first
             await act(async () => {
@@ -328,7 +328,7 @@ describe('useWalletConnect', () => {
             expect(mockSetSessions).toHaveBeenCalled()
             const updatedSessions =
                 mockSetSessions.mock.calls[
-                mockSetSessions.mock.calls.length - 1
+                    mockSetSessions.mock.calls.length - 1
                 ][0]
             expect(updatedSessions).toHaveLength(0)
         })
@@ -340,14 +340,14 @@ describe('useWalletConnect', () => {
             const session2 = { session: { clientId: 'client2' } } as any
             const sessions = [session1, session2]
 
-                // Re-mock store implementation to return these sessions
-                ; (useWalletConnectStore as any).mockImplementation(
-                    (selector: any) =>
-                        selector({
-                            walletConnectSessions: sessions,
-                            setWalletConnectSessions: mockSetSessions,
-                        }),
-                )
+            // Re-mock store implementation to return these sessions
+            ;(useWalletConnectStore as any).mockImplementation(
+                (selector: any) =>
+                    selector({
+                        walletConnectSessions: sessions,
+                        setWalletConnectSessions: mockSetSessions,
+                    }),
+            )
 
             const { result } = renderHook(() => useWalletConnect())
 
@@ -366,13 +366,13 @@ describe('useWalletConnect', () => {
             const session2 = { clientId: 'client2' } as any
             const sessions = [session1, session2]
 
-                ; (useWalletConnectStore as any).mockImplementation(
-                    (selector: any) =>
-                        selector({
-                            walletConnectSessions: sessions,
-                            setWalletConnectSessions: mockSetSessions,
-                        }),
-                )
+            ;(useWalletConnectStore as any).mockImplementation(
+                (selector: any) =>
+                    selector({
+                        walletConnectSessions: sessions,
+                        setWalletConnectSessions: mockSetSessions,
+                    }),
+            )
 
             const { result } = renderHook(() => useWalletConnect())
 

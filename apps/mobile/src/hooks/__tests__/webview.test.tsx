@@ -26,6 +26,7 @@ jest.mock('react-native', () => ({
         canOpenURL: jest.fn().mockResolvedValue(true),
         openURL: jest.fn().mockResolvedValue(true),
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     View: ({ children }: any) => children,
 }))
 
@@ -91,7 +92,11 @@ describe('useWebView', () => {
     it('should provide pushWebView from context', () => {
         const mockPushWebView = jest.fn()
         const wrapper = ({ children }: { children: React.ReactNode }) => (
-            <WebViewContext.Provider value={{ pushWebView: mockPushWebView } as any}>
+
+            <WebViewContext.Provider
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                value={{ pushWebView: mockPushWebView } as any}
+            >
                 {children}
             </WebViewContext.Provider>
         )
@@ -103,6 +108,7 @@ describe('useWebView', () => {
 describe('usePeraWebviewInterface', () => {
     const mockWebview = {
         injectJavaScript: jest.fn(),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any
 
     beforeEach(() => {
@@ -112,12 +118,14 @@ describe('usePeraWebviewInterface', () => {
     })
 
     it('should handle openSystemBrowser action', async () => {
-        const { result } = renderHook(() => usePeraWebviewInterface(mockWebview, true))
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true),
+        )
 
         await act(async () => {
             result.current.handleMessage({
                 action: 'openSystemBrowser',
-                params: { url: 'https://example.com' }
+                params: { url: 'https://example.com' },
             })
         })
 
@@ -130,12 +138,14 @@ describe('usePeraWebviewInterface', () => {
 
     it('should handle openSystemBrowser action failure', async () => {
         ; (Linking.canOpenURL as jest.Mock).mockResolvedValue(false)
-        const { result } = renderHook(() => usePeraWebviewInterface(mockWebview, true))
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true),
+        )
 
         await act(async () => {
             result.current.handleMessage({
                 action: 'openSystemBrowser',
-                params: { url: 'https://example.com' }
+                params: { url: 'https://example.com' },
             })
         })
 
@@ -146,17 +156,19 @@ describe('usePeraWebviewInterface', () => {
         expect(Notifier.showNotification).toHaveBeenCalledWith(
             expect.objectContaining({
                 title: "Can't open webpage",
-            })
+            }),
         )
     })
 
     it('should handle canOpenURI action', async () => {
-        const { result } = renderHook(() => usePeraWebviewInterface(mockWebview, true))
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true),
+        )
 
         await act(async () => {
             result.current.handleMessage({
                 action: 'canOpenURI',
-                params: { uri: 'custom://uri' }
+                params: { uri: 'custom://uri' },
             })
         })
 
@@ -165,16 +177,20 @@ describe('usePeraWebviewInterface', () => {
         })
 
         expect(Linking.canOpenURL).toHaveBeenCalledWith('custom://uri')
-        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith('handleMessage(true);')
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            'handleMessage(true);',
+        )
     })
 
     it('should handle openNativeURI action', async () => {
-        const { result } = renderHook(() => usePeraWebviewInterface(mockWebview, true))
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true),
+        )
 
         await act(async () => {
             result.current.handleMessage({
                 action: 'openNativeURI',
-                params: { uri: 'custom://uri' }
+                params: { uri: 'custom://uri' },
             })
         })
 
@@ -186,42 +202,48 @@ describe('usePeraWebviewInterface', () => {
     })
 
     it('should handle getSettings action', () => {
-        const { result } = renderHook(() => usePeraWebviewInterface(mockWebview, true))
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true),
+        )
 
         act(() => {
             result.current.handleMessage({
                 action: 'getSettings',
-                params: {}
+                params: {},
             })
         })
 
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
-            expect.stringContaining('"appName":"Pera Wallet"')
+            expect.stringContaining('"appName":"Pera Wallet"'),
         )
     })
 
     it('should handle getPublicSettings action', () => {
-        const { result } = renderHook(() => usePeraWebviewInterface(mockWebview, true))
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true),
+        )
 
         act(() => {
             result.current.handleMessage({
                 action: 'getPublicSettings',
-                params: {}
+                params: {},
             })
         })
 
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
-            expect.stringContaining('"theme":"light"')
+            expect.stringContaining('"theme":"light"'),
         )
     })
 
     it('should handle logAnalyticsEvent action', () => {
-        const { result } = renderHook(() => usePeraWebviewInterface(mockWebview, true))
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true),
+        )
 
         act(() => {
             result.current.handleMessage({
                 action: 'logAnalyticsEvent',
-                params: { name: 'test_event', payload: { foo: 'bar' } }
+                params: { name: 'test_event', payload: { foo: 'bar' } },
             })
         })
 
@@ -230,12 +252,14 @@ describe('usePeraWebviewInterface', () => {
 
     it('should handle closeWebView action', () => {
         const mockOnClose = jest.fn()
-        const { result } = renderHook(() => usePeraWebviewInterface(mockWebview, true, mockOnClose))
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true, mockOnClose),
+        )
 
         act(() => {
             result.current.handleMessage({
                 action: 'closeWebView',
-                params: {}
+                params: {},
             })
         })
 
@@ -243,12 +267,14 @@ describe('usePeraWebviewInterface', () => {
     })
 
     it('should handle notifyUser action', () => {
-        const { result } = renderHook(() => usePeraWebviewInterface(mockWebview, true))
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true),
+        )
 
         act(() => {
             result.current.handleMessage({
                 action: 'notifyUser',
-                params: { type: 'message', message: 'test message' }
+                params: { type: 'message', message: 'test message' },
             })
         })
 
@@ -256,27 +282,31 @@ describe('usePeraWebviewInterface', () => {
     })
 
     it('should handle getAddresses action', () => {
-        const { result } = renderHook(() => usePeraWebviewInterface(mockWebview, true))
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true),
+        )
 
         act(() => {
             result.current.handleMessage({
                 action: 'getAddresses',
-                params: {}
+                params: {},
             })
         })
 
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
-            expect.stringContaining('"address":"addr1"')
+            expect.stringContaining('"address":"addr1"'),
         )
     })
 
     it('should handle onBackPressed action', () => {
-        const { result } = renderHook(() => usePeraWebviewInterface(mockWebview, true))
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true),
+        )
 
         act(() => {
             result.current.handleMessage({
                 action: 'onBackPressed',
-                params: {}
+                params: {},
             })
         })
 
@@ -286,19 +316,28 @@ describe('usePeraWebviewInterface', () => {
     it('should handle pushWebView action', () => {
         const mockPushWebView = jest.fn()
         const wrapper = ({ children }: { children: React.ReactNode }) => (
-            <WebViewContext.Provider value={{ pushWebView: mockPushWebView } as any}>
+
+            <WebViewContext.Provider
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                value={{ pushWebView: mockPushWebView } as any}
+            >
                 {children}
             </WebViewContext.Provider>
         )
-        const { result } = renderHook(() => usePeraWebviewInterface(mockWebview, true), { wrapper })
+        const { result } = renderHook(
+            () => usePeraWebviewInterface(mockWebview, true),
+            { wrapper },
+        )
 
         act(() => {
             result.current.handleMessage({
                 action: 'pushWebView',
-                params: { url: 'https://example.com' }
+                params: { url: 'https://example.com' },
             })
         })
 
-        expect(mockPushWebView).toHaveBeenCalledWith(expect.objectContaining({ url: 'https://example.com' }))
+        expect(mockPushWebView).toHaveBeenCalledWith(
+            expect.objectContaining({ url: 'https://example.com' }),
+        )
     })
 })

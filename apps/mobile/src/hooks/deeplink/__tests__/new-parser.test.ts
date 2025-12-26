@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-
 import { parseDeeplink } from '../parser'
 import { parsePerawalletAppUri } from '../new-parser'
 import { DeeplinkType } from '../types'
@@ -375,29 +374,47 @@ describe('Deeplink Parser - New Format', () => {
     describe('Edge Cases & Missing Params', () => {
         it('returns null for recover-address without mnemonic', () => {
             // Coverage for new-parser.ts line 170
-            expect(parsePerawalletAppUri('perawallet://app/recover-address')).toBeNull()
+            expect(
+                parsePerawalletAppUri('perawallet://app/recover-address'),
+            ).toBeNull()
         })
 
         it('returns null for wallet-connect without uri', () => {
             // Coverage for new-parser.ts line 180
-            expect(parsePerawalletAppUri('perawallet://app/wallet-connect')).toBeNull()
+            expect(
+                parsePerawalletAppUri('perawallet://app/wallet-connect'),
+            ).toBeNull()
         })
 
         it('returns null for asset-opt-in without assetId', () => {
             // Coverage for new-parser.ts line 192
-            expect(parsePerawalletAppUri('perawallet://app/asset-opt-in')).toBeNull()
+            expect(
+                parsePerawalletAppUri('perawallet://app/asset-opt-in'),
+            ).toBeNull()
         })
 
         it('returns null for asset-detail without address or assetId', () => {
             // Coverage for new-parser.ts line 202
-            expect(parsePerawalletAppUri('perawallet://app/asset-detail')).toBeNull()
-            expect(parsePerawalletAppUri('perawallet://app/asset-detail?address=ADDR')).toBeNull()
-            expect(parsePerawalletAppUri('perawallet://app/asset-detail?assetId=123')).toBeNull()
+            expect(
+                parsePerawalletAppUri('perawallet://app/asset-detail'),
+            ).toBeNull()
+            expect(
+                parsePerawalletAppUri(
+                    'perawallet://app/asset-detail?address=ADDR',
+                ),
+            ).toBeNull()
+            expect(
+                parsePerawalletAppUri(
+                    'perawallet://app/asset-detail?assetId=123',
+                ),
+            ).toBeNull()
         })
 
         it('returns null for asset-inbox without address', () => {
             // Coverage for new-parser.ts line 212
-            expect(parsePerawalletAppUri('perawallet://app/asset-inbox')).toBeNull()
+            expect(
+                parsePerawalletAppUri('perawallet://app/asset-inbox'),
+            ).toBeNull()
         })
 
         it('uses empty string fallback for cards path', () => {

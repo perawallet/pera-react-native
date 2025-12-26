@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-
 import { parseAlgorandUri } from '../algorand-parser'
 import { DeeplinkType } from '../types'
 
@@ -268,14 +267,18 @@ describe('ARC-90 Algorand Parser', () => {
 
         it('parses type=appl as ADDRESS_ACTIONS (noop in ARC-90)', () => {
             // Coverage for arc90-parser.ts line 110
-            const result = parseAlgorandUri(`algorand://${TEST_ADDRESS}?type=appl`)
+            const result = parseAlgorandUri(
+                `algorand://${TEST_ADDRESS}?type=appl`,
+            )
             expect(result).toBeDefined()
             expect(result?.type).toBe(DeeplinkType.ADDRESS_ACTIONS)
         })
 
         it('returns null for malformed query params (decodeURIComponent failure)', () => {
             // Coverage for arc90-parser.ts line 116
-            const result = parseAlgorandUri(`algorand://${TEST_ADDRESS}?foo=%E0%A4%A`)
+            const result = parseAlgorandUri(
+                `algorand://${TEST_ADDRESS}?foo=%E0%A4%A`,
+            )
             expect(result).toBeNull()
         })
 

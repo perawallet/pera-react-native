@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-
-
 let mockPlatformOS = 'ios'
 
 jest.mock('react-native', () => ({

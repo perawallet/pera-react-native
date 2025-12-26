@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-
 import { parseDeeplink } from '../parser'
 
 import { DeeplinkType } from '../types'

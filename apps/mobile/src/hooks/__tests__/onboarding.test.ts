@@ -34,14 +34,14 @@ describe('useShowOnboarding', () => {
 
     beforeEach(() => {
         jest.clearAllMocks()
-            ; (usePreferences as jest.Mock).mockReturnValue({
-                getPreference: mockGetPreference,
-            })
+        ;(usePreferences as jest.Mock).mockReturnValue({
+            getPreference: mockGetPreference,
+        })
     })
 
     it('should return true if no accounts exist', () => {
         mockGetPreference.mockReturnValue(false)
-            ; (useHasNoAccounts as jest.Mock).mockReturnValue(true)
+        ;(useHasNoAccounts as jest.Mock).mockReturnValue(true)
 
         const { result } = renderHook(() => useShowOnboarding())
         expect(result.current).toBe(true)
@@ -49,7 +49,7 @@ describe('useShowOnboarding', () => {
 
     it('should return true if user is creating an account', () => {
         mockGetPreference.mockReturnValue(true)
-            ; (useHasNoAccounts as jest.Mock).mockReturnValue(false)
+        ;(useHasNoAccounts as jest.Mock).mockReturnValue(false)
 
         const { result } = renderHook(() => useShowOnboarding())
         expect(result.current).toBe(true)
@@ -57,7 +57,7 @@ describe('useShowOnboarding', () => {
 
     it('should return false if accounts exist and user is not creating an account', () => {
         mockGetPreference.mockReturnValue(false)
-            ; (useHasNoAccounts as jest.Mock).mockReturnValue(false)
+        ;(useHasNoAccounts as jest.Mock).mockReturnValue(false)
 
         const { result } = renderHook(() => useShowOnboarding())
         expect(result.current).toBe(false)

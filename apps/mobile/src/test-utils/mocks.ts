@@ -15,7 +15,9 @@ import { vi } from 'vitest'
 // Mock core services and hooks from @perawallet/wallet-core-shared
 export const mockCoreServices = () => {
     jest.mock('@perawallet/wallet-core-shared', async () => {
-        const actual = await jest.requireActual('@perawallet/wallet-core-shared')
+        const actual = await jest.requireActual(
+            '@perawallet/wallet-core-shared',
+        )
         return {
             ...actual,
             useDeviceInfoService: jest.fn(() => ({

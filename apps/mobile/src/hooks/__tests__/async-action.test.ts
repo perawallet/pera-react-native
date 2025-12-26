@@ -23,7 +23,9 @@ describe('useAsyncAction', () => {
 
         let executionResult: string | undefined
         await act(async () => {
-            executionResult = await result.current.execute('arg1', 123)
+            executionResult = (await result.current.execute('arg1', 123)) as
+                | string
+                | undefined
         })
 
         expect(mockAction).toHaveBeenCalledWith('arg1', 123)
@@ -40,7 +42,7 @@ describe('useAsyncAction', () => {
         await act(async () => {
             try {
                 await result.current.execute()
-            } catch (err) {
+            } catch {
                 // Expected
             }
         })
@@ -56,7 +58,7 @@ describe('useAsyncAction', () => {
         await act(async () => {
             try {
                 await result.current.execute()
-            } catch (err) {
+            } catch {
                 // Expected
             }
         })
@@ -72,7 +74,7 @@ describe('useAsyncAction', () => {
         await act(async () => {
             try {
                 await result.current.execute()
-            } catch (err) {
+            } catch {
                 // Expected
             }
         })

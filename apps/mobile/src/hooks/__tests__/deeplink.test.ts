@@ -67,22 +67,26 @@ describe('useDeepLink', () => {
 
     beforeEach(() => {
         jest.clearAllMocks()
-            ; (useNavigation as jest.Mock).mockReturnValue({
-                replace: mockReplace,
-                navigate: mockNavigate,
-            })
+        ;(useNavigation as jest.Mock).mockReturnValue({
+            replace: mockReplace,
+            navigate: mockNavigate,
+        })
     })
 
     it('should validate deeplink', () => {
-        ; (parseDeeplink as jest.Mock).mockReturnValue({ type: DeeplinkType.HOME })
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
+            type: DeeplinkType.HOME,
+        })
         const { result } = renderHook(() => useDeepLink())
 
-        expect(result.current.isValidDeepLink('perawallet://app', 'deeplink')).toBe(true)
+        expect(
+            result.current.isValidDeepLink('perawallet://app', 'deeplink'),
+        ).toBe(true)
         expect(parseDeeplink).toHaveBeenCalledWith('perawallet://app')
     })
 
     it('should handle invalid deeplink', async () => {
-        ; (parseDeeplink as jest.Mock).mockReturnValue(null)
+        ;(parseDeeplink as jest.Mock).mockReturnValue(null)
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
@@ -93,402 +97,520 @@ describe('useDeepLink', () => {
     })
 
     it('should handle ADD_CONTACT deeplink', async () => {
-        ; (parseDeeplink as jest.Mock).mockReturnValue({
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
             type: DeeplinkType.ADD_CONTACT,
             address: 'addr1',
-            label: 'Label1'
+            label: 'Label1',
         })
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
-            await result.current.handleDeepLink('perawallet://app/add-contact?address=addr1', false, 'deeplink')
+            await result.current.handleDeepLink(
+                'perawallet://app/add-contact?address=addr1',
+                false,
+                'deeplink',
+            )
         })
 
         expect(mockNavigate).toHaveBeenCalledWith('AddContact', {
             address: 'addr1',
-            label: 'Label1'
+            label: 'Label1',
         })
     })
 
     it('should handle EDIT_CONTACT deeplink', async () => {
-        ; (parseDeeplink as jest.Mock).mockReturnValue({
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
             type: DeeplinkType.EDIT_CONTACT,
             address: 'addr1',
-            label: 'Label1'
+            label: 'Label1',
         })
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
-            await result.current.handleDeepLink('perawallet://app/edit-contact?address=addr1', false, 'deeplink')
+            await result.current.handleDeepLink(
+                'perawallet://app/edit-contact?address=addr1',
+                false,
+                'deeplink',
+            )
         })
 
         expect(mockNavigate).toHaveBeenCalledWith('EditContact', {
             address: 'addr1',
-            label: 'Label1'
+            label: 'Label1',
         })
     })
 
     it('should handle replaceCurrentScreen in navigateToScreen', async () => {
-        ; (parseDeeplink as jest.Mock).mockReturnValue({
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
             type: DeeplinkType.ADD_CONTACT,
             address: 'addr1',
-            label: 'Label1'
+            label: 'Label1',
         })
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
-            await result.current.handleDeepLink('perawallet://app/add-contact?address=addr1', true, 'deeplink')
+            await result.current.handleDeepLink(
+                'perawallet://app/add-contact?address=addr1',
+                true,
+                'deeplink',
+            )
         })
 
         expect(mockReplace).toHaveBeenCalledWith('AddContact', {
             address: 'addr1',
-            label: 'Label1'
+            label: 'Label1',
         })
     })
 
     it('should handle WALLET_CONNECT deeplink', async () => {
-        ; (parseDeeplink as jest.Mock).mockReturnValue({
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
             type: DeeplinkType.WALLET_CONNECT,
-            uri: 'wc:123'
+            uri: 'wc:123',
         })
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
-            await result.current.handleDeepLink('perawallet://app/wallet-connect?uri=wc:123', false, 'deeplink')
+            await result.current.handleDeepLink(
+                'perawallet://app/wallet-connect?uri=wc:123',
+                false,
+                'deeplink',
+            )
         })
 
         // Success case, connectSession should have been called (mocked in useWalletConnect)
     })
 
     it('should handle ALGO_TRANSFER deeplink', async () => {
-        ; (parseDeeplink as jest.Mock).mockReturnValue({
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
             type: DeeplinkType.ALGO_TRANSFER,
             receiverAddress: 'receiver1',
             amount: '1000000',
-            note: 'test note'
+            note: 'test note',
         })
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
-            await result.current.handleDeepLink('perawallet://app/algo-transfer', false, 'deeplink')
+            await result.current.handleDeepLink(
+                'perawallet://app/algo-transfer',
+                false,
+                'deeplink',
+            )
         })
 
         // Success case, addSignRequest should have been called
     })
 
     it('should handle ASSET_TRANSFER deeplink', async () => {
-        ; (parseDeeplink as jest.Mock).mockReturnValue({
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
             type: DeeplinkType.ASSET_TRANSFER,
             assetId: '123',
             receiverAddress: 'receiver1',
             amount: '100',
-            note: 'test note'
+            note: 'test note',
         })
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
-            await result.current.handleDeepLink('perawallet://app/asset-transfer', false, 'deeplink')
+            await result.current.handleDeepLink(
+                'perawallet://app/asset-transfer',
+                false,
+                'deeplink',
+            )
         })
 
         // Success case
     })
 
     it('should handle ASSET_OPT_IN deeplink', async () => {
-        ; (parseDeeplink as jest.Mock).mockReturnValue({
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
             type: DeeplinkType.ASSET_OPT_IN,
-            assetId: '123'
+            assetId: '123',
         })
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
-            await result.current.handleDeepLink('perawallet://app/asset-opt-in', false, 'deeplink')
+            await result.current.handleDeepLink(
+                'perawallet://app/asset-opt-in',
+                false,
+                'deeplink',
+            )
         })
 
         // Success case
     })
 
     it('should handle ASSET_DETAIL deeplink', async () => {
-        ; (parseDeeplink as jest.Mock).mockReturnValue({
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
             type: DeeplinkType.ASSET_DETAIL,
             address: 'addr1',
-            assetId: '123'
+            assetId: '123',
         })
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
-            await result.current.handleDeepLink('perawallet://app/asset-detail', false, 'deeplink')
+            await result.current.handleDeepLink(
+                'perawallet://app/asset-detail',
+                false,
+                'deeplink',
+            )
         })
 
-        expect(mockNavigate).toHaveBeenCalledWith('AssetDetail', { assetId: '123' })
+        expect(mockNavigate).toHaveBeenCalledWith('AssetDetail', {
+            assetId: '123',
+        })
     })
 
     it('should handle INTERNAL_BROWSER deeplink', async () => {
-        ; (parseDeeplink as jest.Mock).mockReturnValue({
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
             type: DeeplinkType.INTERNAL_BROWSER,
-            url: 'https://example.com'
+            url: 'https://example.com',
         })
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
-            await result.current.handleDeepLink('perawallet://app/browser', false, 'deeplink')
+            await result.current.handleDeepLink(
+                'perawallet://app/browser',
+                false,
+                'deeplink',
+            )
         })
 
         // Success case, pushWebView should have been called
     })
 
     it('should handle DISCOVER_PATH deeplink', async () => {
-        ; (parseDeeplink as jest.Mock).mockReturnValue({
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
             type: DeeplinkType.DISCOVER_PATH,
-            path: '/test'
+            path: '/test',
         })
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
-            await result.current.handleDeepLink('perawallet://app/discover?path=/test', false, 'deeplink')
+            await result.current.handleDeepLink(
+                'perawallet://app/discover?path=/test',
+                false,
+                'deeplink',
+            )
         })
 
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
             screen: 'Discover',
-            params: { path: '/test' }
+            params: { path: '/test' },
         })
     })
 
     it('should handle STAKING deeplink', async () => {
-        ; (parseDeeplink as jest.Mock).mockReturnValue({
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
             type: DeeplinkType.STAKING,
-            path: '/staking'
+            path: '/staking',
         })
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
-            await result.current.handleDeepLink('perawallet://app/staking', false, 'deeplink')
+            await result.current.handleDeepLink(
+                'perawallet://app/staking',
+                false,
+                'deeplink',
+            )
         })
 
-        expect(mockNavigate).toHaveBeenCalledWith('Staking', { path: '/staking' })
+        expect(mockNavigate).toHaveBeenCalledWith('Staking', {
+            path: '/staking',
+        })
     })
 
     it('should handle SWAP deeplink', async () => {
-        ; (parseDeeplink as jest.Mock).mockReturnValue({
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
             type: DeeplinkType.SWAP,
             address: 'addr1',
             assetInId: '0',
-            assetOutId: '123'
+            assetOutId: '123',
         })
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
-            await result.current.handleDeepLink('perawallet://app/swap', false, 'deeplink')
+            await result.current.handleDeepLink(
+                'perawallet://app/swap',
+                false,
+                'deeplink',
+            )
         })
 
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
             screen: 'Swap',
-            params: { assetInId: '0', assetOutId: '123' }
+            params: { assetInId: '0', assetOutId: '123' },
         })
     })
 
     it('should handle BUY deeplink', async () => {
-        ; (parseDeeplink as jest.Mock).mockReturnValue({
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
             type: DeeplinkType.BUY,
-            address: 'addr1'
+            address: 'addr1',
         })
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
-            await result.current.handleDeepLink('perawallet://app/buy', false, 'deeplink')
+            await result.current.handleDeepLink(
+                'perawallet://app/buy',
+                false,
+                'deeplink',
+            )
         })
 
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Fund' })
     })
 
     it('should handle ACCOUNT_DETAIL deeplink', async () => {
-        ; (parseDeeplink as jest.Mock).mockReturnValue({
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
             type: DeeplinkType.ACCOUNT_DETAIL,
-            address: 'addr1'
+            address: 'addr1',
         })
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
-            await result.current.handleDeepLink('perawallet://app/account-detail', false, 'deeplink')
+            await result.current.handleDeepLink(
+                'perawallet://app/account-detail',
+                false,
+                'deeplink',
+            )
         })
 
-        expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'AccountDetail' })
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+            screen: 'AccountDetail',
+        })
     })
 
     it('should handle DISCOVER_BROWSER deeplink', async () => {
-        ; (parseDeeplink as jest.Mock).mockReturnValue({
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
             type: DeeplinkType.DISCOVER_BROWSER,
-            url: 'https://example.com'
+            url: 'https://example.com',
         })
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
-            await result.current.handleDeepLink('perawallet://app/discover/browser?url=https://example.com', false, 'deeplink')
+            await result.current.handleDeepLink(
+                'perawallet://app/discover/browser?url=https://example.com',
+                false,
+                'deeplink',
+            )
         })
 
         // Success case
     })
 
     it('should handle HOME deeplink', async () => {
-        ; (parseDeeplink as jest.Mock).mockReturnValue({
-            type: DeeplinkType.HOME
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
+            type: DeeplinkType.HOME,
         })
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
-            await result.current.handleDeepLink('perawallet://app', false, 'deeplink')
+            await result.current.handleDeepLink(
+                'perawallet://app',
+                false,
+                'deeplink',
+            )
         })
 
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Home' })
     })
 
     it('should handle ASSET_TRANSACTIONS deeplink', async () => {
-        ; (parseDeeplink as jest.Mock).mockReturnValue({
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
             type: DeeplinkType.ASSET_TRANSACTIONS,
             address: 'addr1',
-            assetId: '123'
+            assetId: '123',
         })
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
-            await result.current.handleDeepLink('perawallet://app/asset-transactions', false, 'deeplink')
+            await result.current.handleDeepLink(
+                'perawallet://app/asset-transactions',
+                false,
+                'deeplink',
+            )
         })
 
-        expect(mockNavigate).toHaveBeenCalledWith('AssetDetail', { assetId: '123' })
+        expect(mockNavigate).toHaveBeenCalledWith('AssetDetail', {
+            assetId: '123',
+        })
     })
 
     it('should handle ASSET_INBOX deeplink', async () => {
-        ; (parseDeeplink as jest.Mock).mockReturnValue({
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
             type: DeeplinkType.ASSET_INBOX,
-            address: 'addr1'
+            address: 'addr1',
         })
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
-            await result.current.handleDeepLink('perawallet://app/asset-inbox', false, 'deeplink')
+            await result.current.handleDeepLink(
+                'perawallet://app/asset-inbox',
+                false,
+                'deeplink',
+            )
         })
 
         // Success case (infoPost called)
     })
 
     it('should handle CARDS deeplink', async () => {
-        ; (parseDeeplink as jest.Mock).mockReturnValue({
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
             type: DeeplinkType.CARDS,
-            path: '/cards'
+            path: '/cards',
         })
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
-            await result.current.handleDeepLink('perawallet://app/cards', false, 'deeplink')
+            await result.current.handleDeepLink(
+                'perawallet://app/cards',
+                false,
+                'deeplink',
+            )
         })
 
         // Success case (infoPost called)
     })
 
     it('should handle SELL deeplink', async () => {
-        ; (parseDeeplink as jest.Mock).mockReturnValue({
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
             type: DeeplinkType.SELL,
-            address: 'addr1'
+            address: 'addr1',
         })
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
-            await result.current.handleDeepLink('perawallet://app/sell', false, 'deeplink')
+            await result.current.handleDeepLink(
+                'perawallet://app/sell',
+                false,
+                'deeplink',
+            )
         })
 
         // Success case (infoPost called)
     })
 
     it('should handle RECOVER_ADDRESS deeplink', async () => {
-        ; (parseDeeplink as jest.Mock).mockReturnValue({
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
             type: DeeplinkType.RECOVER_ADDRESS,
-            mnemonic: 'test mnemonic'
+            mnemonic: 'test mnemonic',
         })
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
-            await result.current.handleDeepLink('perawallet://app/recover', false, 'qr')
+            await result.current.handleDeepLink(
+                'perawallet://app/recover',
+                false,
+                'qr',
+            )
         })
 
         // Success case (infoPost called)
     })
 
     it('should handle RECOVER_ADDRESS deeplink from non-qr source', async () => {
-        ; (parseDeeplink as jest.Mock).mockReturnValue({
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
             type: DeeplinkType.RECOVER_ADDRESS,
-            mnemonic: 'test mnemonic'
+            mnemonic: 'test mnemonic',
         })
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
-            await result.current.handleDeepLink('perawallet://app/recover', false, 'deeplink')
+            await result.current.handleDeepLink(
+                'perawallet://app/recover',
+                false,
+                'deeplink',
+            )
         })
 
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 
     it('should handle ADD_WATCH_ACCOUNT deeplink', async () => {
-        ; (parseDeeplink as jest.Mock).mockReturnValue({
-            type: DeeplinkType.ADD_WATCH_ACCOUNT
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
+            type: DeeplinkType.ADD_WATCH_ACCOUNT,
         })
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
-            await result.current.handleDeepLink('perawallet://app/add-watch', false, 'deeplink')
+            await result.current.handleDeepLink(
+                'perawallet://app/add-watch',
+                false,
+                'deeplink',
+            )
         })
 
         // Success case
     })
 
     it('should handle RECEIVER_ACCOUNT_SELECTION deeplink', async () => {
-        ; (parseDeeplink as jest.Mock).mockReturnValue({
-            type: DeeplinkType.RECEIVER_ACCOUNT_SELECTION
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
+            type: DeeplinkType.RECEIVER_ACCOUNT_SELECTION,
         })
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
-            await result.current.handleDeepLink('perawallet://app/receiver-selection', false, 'deeplink')
+            await result.current.handleDeepLink(
+                'perawallet://app/receiver-selection',
+                false,
+                'deeplink',
+            )
         })
 
         // Success case
     })
 
     it('should handle ADDRESS_ACTIONS deeplink', async () => {
-        ; (parseDeeplink as jest.Mock).mockReturnValue({
-            type: DeeplinkType.ADDRESS_ACTIONS
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
+            type: DeeplinkType.ADDRESS_ACTIONS,
         })
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
-            await result.current.handleDeepLink('perawallet://app/address-actions', false, 'deeplink')
+            await result.current.handleDeepLink(
+                'perawallet://app/address-actions',
+                false,
+                'deeplink',
+            )
         })
 
         // Success case
     })
 
     it('should handle KEYREG deeplink', async () => {
-        ; (parseDeeplink as jest.Mock).mockReturnValue({
-            type: DeeplinkType.KEYREG
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
+            type: DeeplinkType.KEYREG,
         })
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
-            await result.current.handleDeepLink('perawallet://app/keyreg', false, 'deeplink')
+            await result.current.handleDeepLink(
+                'perawallet://app/keyreg',
+                false,
+                'deeplink',
+            )
         })
 
         // Success case
     })
 
     it('should handle navigation error', async () => {
-        ; (parseDeeplink as jest.Mock).mockImplementation(() => {
+        ;(parseDeeplink as jest.Mock).mockImplementation(() => {
             return { type: DeeplinkType.HOME }
         })
-            ; (useNavigation as jest.Mock).mockReturnValue({
-                navigate: jest.fn(() => { throw new Error('Test error') })
-            })
+        ;(useNavigation as jest.Mock).mockReturnValue({
+            navigate: jest.fn(() => {
+                throw new Error('Test error')
+            }),
+        })
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
-            await result.current.handleDeepLink('perawallet://app', false, 'deeplink')
+            await result.current.handleDeepLink(
+                'perawallet://app',
+                false,
+                'deeplink',
+            )
         })
 
         // Success case (logger.error called)
@@ -505,8 +627,12 @@ describe('useDeeplinkListener', () => {
     })
 
     it('should handle initial URL', async () => {
-        ; (Linking.getInitialURL as jest.Mock).mockResolvedValue('perawallet://app')
-            ; (parseDeeplink as jest.Mock).mockReturnValue({ type: DeeplinkType.HOME })
+        ;(Linking.getInitialURL as jest.Mock).mockResolvedValue(
+            'perawallet://app',
+        )
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
+            type: DeeplinkType.HOME,
+        })
 
         renderHook(() => useDeeplinkListener())
 
@@ -522,7 +648,9 @@ describe('useDeeplinkListener', () => {
     })
 
     it('should handle initial URL error', async () => {
-        ; (Linking.getInitialURL as jest.Mock).mockRejectedValue(new Error('Test error'))
+        ;(Linking.getInitialURL as jest.Mock).mockRejectedValue(
+            new Error('Test error'),
+        )
 
         renderHook(() => useDeeplinkListener())
 

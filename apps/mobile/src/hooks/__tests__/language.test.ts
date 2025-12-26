@@ -24,13 +24,13 @@ describe('useLanguage', () => {
 
     beforeEach(() => {
         jest.clearAllMocks()
-            ; (useTranslation as jest.Mock).mockReturnValue({
-                t: mockT,
-                i18n: {
-                    language: 'en',
-                    changeLanguage: mockChangeLanguage,
-                },
-            })
+        ;(useTranslation as jest.Mock).mockReturnValue({
+            t: mockT,
+            i18n: {
+                language: 'en',
+                changeLanguage: mockChangeLanguage,
+            },
+        })
     })
 
     it('should return current language and translation function', () => {

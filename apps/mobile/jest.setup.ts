@@ -49,93 +49,101 @@ jest.mock('react-native-keychain', () => ({
 }))
 
 // // Mock React Native core modules
-jest.mock('react-native', () => {
-    const Platform = {
-        OS: 'ios',
-        select: jest.fn(obj => obj.ios || obj.default),
-    }
-    return {
-        Platform,
-        NativeModules: {
-            SettingsManager: {
-                settings: {
-                    AppleLocale: 'en_US',
-                    AppleLanguages: ['en_US', 'fr_FR'],
+jest.mock(
+    'react-native',
+    () => {
+        const Platform = {
+            OS: 'ios',
+            select: jest.fn(obj => obj.ios || obj.default),
+        }
+        return {
+            Platform,
+            NativeModules: {
+                SettingsManager: {
+                    settings: {
+                        AppleLocale: 'en_US',
+                        AppleLanguages: ['en_US', 'fr_FR'],
+                    },
+                },
+                I18nManager: {
+                    getConstants: jest.fn(() => ({
+                        localeIdentifier: 'en_US',
+                    })),
                 },
             },
-            I18nManager: {
-                getConstants: jest.fn(() => ({
-                    localeIdentifier: 'en_US',
-                })),
+            Dimensions: {
+                get: jest.fn(() => ({ width: 375, height: 812 })),
+                addEventListener: jest.fn(),
+                removeEventListener: jest.fn(),
             },
-        },
-        Dimensions: {
-            get: jest.fn(() => ({ width: 375, height: 812 })),
-            addEventListener: jest.fn(),
-            removeEventListener: jest.fn(),
-        },
-        StatusBar: {
-            setBarStyle: jest.fn(),
-            setBackgroundColor: jest.fn(),
-        },
-        Alert: {
-            alert: jest.fn(),
-        },
-        StyleSheet: {
-            create: jest.fn(styles => styles),
-            hairlineWidth: 1,
-            absoluteFill: {
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                bottom: 0,
-                right: 0,
+            StatusBar: {
+                setBarStyle: jest.fn(),
+                setBackgroundColor: jest.fn(),
             },
-        },
-        TouchableOpacity: jest
-            .fn()
-            .mockImplementation(({ children }) => children),
-        View: jest.fn().mockImplementation(({ children }) => children),
-        Text: jest.fn().mockImplementation(({ children }) => children),
-        Image: jest.fn().mockImplementation(({ children }) => children),
-        ScrollView: jest.fn().mockImplementation(({ children }) => children),
-        TextInput: jest.fn().mockImplementation(({ children }) => children),
-        Modal: jest.fn().mockImplementation(({ children }) => children),
-        ActivityIndicator: jest.fn().mockImplementation(({ children }) => children),
-        Pressable: jest.fn().mockImplementation(({ children }) => children),
-        Appearance: {
-            getColorScheme: jest.fn(() => 'light'),
-            addChangeListener: jest.fn(),
-            removeChangeListener: jest.fn(),
-        },
-        Linking: {
-            openURL: jest.fn(),
-            canOpenURL: jest.fn(),
-            getInitialURL: jest.fn(),
-            addEventListener: jest.fn(),
-            removeEventListener: jest.fn(),
-        },
-        AppState: {
-            currentState: 'active',
-            addEventListener: jest.fn(),
-            removeEventListener: jest.fn(),
-        },
-        InteractionManager: {
-            runAfterInteractions: jest.fn(cb => cb()),
-        },
-        Keyboard: {
-            dismiss: jest.fn(),
-            addListener: jest.fn(),
-            removeListener: jest.fn(),
-        },
-        PixelRatio: {
-            get: jest.fn(() => 1),
-            getFontScale: jest.fn(() => 1),
-            getPixelSizeForLayoutSize: jest.fn(size => size),
-            roundToNearestPixel: jest.fn(size => size),
-        },
-    }
-}, { virtual: true })
+            Alert: {
+                alert: jest.fn(),
+            },
+            StyleSheet: {
+                create: jest.fn(styles => styles),
+                hairlineWidth: 1,
+                absoluteFill: {
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    bottom: 0,
+                    right: 0,
+                },
+            },
+            TouchableOpacity: jest
+                .fn()
+                .mockImplementation(({ children }) => children),
+            View: jest.fn().mockImplementation(({ children }) => children),
+            Text: jest.fn().mockImplementation(({ children }) => children),
+            Image: jest.fn().mockImplementation(({ children }) => children),
+            ScrollView: jest
+                .fn()
+                .mockImplementation(({ children }) => children),
+            TextInput: jest.fn().mockImplementation(({ children }) => children),
+            Modal: jest.fn().mockImplementation(({ children }) => children),
+            ActivityIndicator: jest
+                .fn()
+                .mockImplementation(({ children }) => children),
+            Pressable: jest.fn().mockImplementation(({ children }) => children),
+            Appearance: {
+                getColorScheme: jest.fn(() => 'light'),
+                addChangeListener: jest.fn(),
+                removeChangeListener: jest.fn(),
+            },
+            Linking: {
+                openURL: jest.fn(),
+                canOpenURL: jest.fn(),
+                getInitialURL: jest.fn(),
+                addEventListener: jest.fn(),
+                removeEventListener: jest.fn(),
+            },
+            AppState: {
+                currentState: 'active',
+                addEventListener: jest.fn(),
+                removeEventListener: jest.fn(),
+            },
+            InteractionManager: {
+                runAfterInteractions: jest.fn(cb => cb()),
+            },
+            Keyboard: {
+                dismiss: jest.fn(),
+                addListener: jest.fn(),
+                removeListener: jest.fn(),
+            },
+            PixelRatio: {
+                get: jest.fn(() => 1),
+                getFontScale: jest.fn(() => 1),
+                getPixelSizeForLayoutSize: jest.fn(size => size),
+                roundToNearestPixel: jest.fn(size => size),
+            },
+        }
+    },
+    { virtual: true },
+)
 
 jest.mock('react-native-safe-area-context', () => {
     const inset = { top: 0, right: 0, bottom: 0, left: 0 }
@@ -149,8 +157,6 @@ jest.mock('react-native-safe-area-context', () => {
         useSafeAreaInsets: jest.fn().mockImplementation(() => inset),
     }
 })
-
-
 
 jest.mock('react-native-quick-base64', () => ({
     toByteArray: jest.fn(),
@@ -174,7 +180,7 @@ jest.mock('react-native-quick-crypto', () => ({
 
 // Basic NativeEventEmitter dependency to avoid errors when no native module is provided
 jest.mock('react-native/Libraries/EventEmitter/NativeEventEmitter', () => {
-    return class NativeEventEmitter { }
+    return class NativeEventEmitter {}
 })
 
 // Mock React Navigation
@@ -229,7 +235,7 @@ jest.mock('@react-native-firebase/messaging', () => ({
 
 jest.mock('@react-native-firebase/remote-config', () => ({
     getRemoteConfig: () => ({
-        setDefaults: jest.fn(async () => { }),
+        setDefaults: jest.fn(async () => {}),
         fetchAndActivate: jest.fn(async () => true),
         setConfigSettings: jest.fn(),
         getValue: jest.fn(() => ({
@@ -276,6 +282,7 @@ jest.mock('@notifee/react-native', () => {
 })
 
 jest.mock('react-native-webview', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { View } = require('react-native')
     return {
         default: jest.fn().mockImplementation(() => View),

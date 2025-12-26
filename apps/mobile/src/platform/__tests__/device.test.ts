@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-
 import { RNDeviceInfoStorageService } from '../device'
 import * as RN from 'react-native'
 
@@ -65,7 +64,11 @@ describe('RNDeviceInfoStorageService', () => {
 
     describe('initializeDeviceInfo', () => {
         it('sets up headers and calls updateBackendHeaders', async () => {
-            const { updateBackendHeaders } = require('@perawallet/wallet-core-shared')
+
+            const {
+                updateBackendHeaders,
+                // eslint-disable-next-line @typescript-eslint/no-require-imports
+            } = require('@perawallet/wallet-core-shared')
             const mockUpdateBackendHeaders = jest.mocked(updateBackendHeaders)
             const mockNativeModules = jest.mocked(RN)
             mockNativeModules.NativeModules.SettingsManager.getConstants =
@@ -93,6 +96,7 @@ describe('RNDeviceInfoStorageService', () => {
         })
 
         it('calls DeviceInfo methods for header values', async () => {
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
             const DeviceInfo = require('react-native-device-info').default
             const mockDeviceInfo = jest.mocked(DeviceInfo)
             const mockNativeModules = jest.mocked(RN)
@@ -116,6 +120,7 @@ describe('RNDeviceInfoStorageService', () => {
 
     describe('getDeviceID', () => {
         it('returns unique device ID from DeviceInfo', async () => {
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
             const DeviceInfo = require('react-native-device-info').default
             const mockDeviceInfo = jest.mocked(DeviceInfo)
 
@@ -128,6 +133,7 @@ describe('RNDeviceInfoStorageService', () => {
 
     describe('getDeviceModel', () => {
         it('returns device model from DeviceInfo', async () => {
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
             const DeviceInfo = require('react-native-device-info').default
             const mockDeviceInfo = jest.mocked(DeviceInfo)
 
@@ -147,6 +153,7 @@ describe('RNDeviceInfoStorageService', () => {
 
         it('returns android platform when Platform.OS is android', async () => {
             // Import and mock Platform directly
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
             const { Platform } = require('react-native')
             const mockPlatform = jest.mocked(Platform)
             mockPlatform.OS = 'android'
@@ -179,6 +186,7 @@ describe('RNDeviceInfoStorageService', () => {
 
         it('handles iOS locale from AppleLanguages when AppleLocale is not available', async () => {
             // Mock iOS without AppleLocale
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
             const { NativeModules } = require('react-native')
             const mockNativeModules = jest.mocked(NativeModules)
             mockNativeModules.SettingsManager.getConstants = jest.fn(() => ({
@@ -195,14 +203,13 @@ describe('RNDeviceInfoStorageService', () => {
 
         it('returns formatted locale for Android', () => {
             jest.mocked(RN).Platform.OS = 'android'
-            jest.mocked(RN).NativeModules.SettingsManager.getConstants = jest.fn(
-                () => ({
+            jest.mocked(RN).NativeModules.SettingsManager.getConstants =
+                jest.fn(() => ({
                     settings: {
                         AppleLocale: 'en_US',
                         AppleLanguages: ['en_US', 'fr_FR'],
                     },
-                }),
-            )
+                }))
             jest.mocked(RN).NativeModules.I18nManager.getConstants = jest.fn(
                 () => ({
                     isRTL: false,
@@ -220,14 +227,13 @@ describe('RNDeviceInfoStorageService', () => {
         it('converts underscores to hyphens in locale', async () => {
             // Spy on the NativeModules to override the AppleLocale value
             jest.mocked(RN).Platform.OS = 'ios'
-            jest.mocked(RN).NativeModules.SettingsManager.getConstants = jest.fn(
-                () => ({
+            jest.mocked(RN).NativeModules.SettingsManager.getConstants =
+                jest.fn(() => ({
                     settings: {
                         AppleLocale: 'fr_CA',
                         AppleLanguages: ['en_US', 'fr_FR'],
                     },
-                }),
-            )
+                }))
             jest.mocked(RN).NativeModules.I18nManager.getConstants = jest.fn(
                 () => ({
                     isRTL: false,
@@ -264,14 +270,13 @@ describe('RNDeviceInfoStorageService', () => {
         it('replaces all underscores with hyphens', async () => {
             // Spy on the NativeModules to override the AppleLocale value
             jest.mocked(RN).Platform.OS = 'ios'
-            jest.mocked(RN).NativeModules.SettingsManager.getConstants = jest.fn(
-                () => ({
+            jest.mocked(RN).NativeModules.SettingsManager.getConstants =
+                jest.fn(() => ({
                     settings: {
                         AppleLocale: 'zh_Hans_CN',
                         AppleLanguages: ['en_US', 'fr_FR'],
                     },
-                }),
-            )
+                }))
             jest.mocked(RN).NativeModules.I18nManager.getConstants = jest.fn(
                 () => ({
                     isRTL: false,

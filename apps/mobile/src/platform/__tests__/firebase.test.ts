@@ -12,7 +12,6 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-
 import { RNFirebaseService } from '../firebase'
 
 // Mock react-native Platform
@@ -96,6 +95,7 @@ import * as messaging from '@react-native-firebase/messaging'
 import notifee from '@notifee/react-native'
 
 const mockRemoteConfig = (remoteConfig as any).getRemoteConfig()
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const mockAnalytics = (analytics as any).getAnalytics()
 const mockMessaging = (messaging as any).getMessaging()
 const mockNotifee = notifee as any
@@ -262,15 +262,21 @@ describe('RNFirebaseService', () => {
             it('should return fallback or default when remoteConfig is null', () => {
                 const nullService = new RNFirebaseService()
 
-                expect(nullService.getStringValue('test_key' as any, 'fallback')).toBe(
-                    'fallback',
-                )
+                expect(
+                    nullService.getStringValue('test_key' as any, 'fallback'),
+                ).toBe('fallback')
                 expect(nullService.getStringValue('test_key' as any)).toBe('')
 
-                expect(nullService.getBooleanValue('test_key' as any, true)).toBe(true)
-                expect(nullService.getBooleanValue('test_key' as any)).toBe(false)
+                expect(
+                    nullService.getBooleanValue('test_key' as any, true),
+                ).toBe(true)
+                expect(nullService.getBooleanValue('test_key' as any)).toBe(
+                    false,
+                )
 
-                expect(nullService.getNumberValue('test_key' as any, 42)).toBe(42)
+                expect(nullService.getNumberValue('test_key' as any, 42)).toBe(
+                    42,
+                )
                 expect(nullService.getNumberValue('test_key' as any)).toBe(0)
             })
 
@@ -280,21 +286,22 @@ describe('RNFirebaseService', () => {
                     throw new Error('test error')
                 })
 
-                    ; (service.remoteConfig!.getValue as jest.Mock) = mockGetValue
+                ;(service.remoteConfig!.getValue as jest.Mock) = mockGetValue
 
-                expect(service.getStringValue('test_key' as any, 'fallback')).toBe(
-                    'fallback',
-                )
+                expect(
+                    service.getStringValue('test_key' as any, 'fallback'),
+                ).toBe('fallback')
                 expect(service.getStringValue('test_key' as any)).toBe('')
 
-                expect(service.getBooleanValue('test_key' as any, true)).toBe(true)
+                expect(service.getBooleanValue('test_key' as any, true)).toBe(
+                    true,
+                )
                 expect(service.getBooleanValue('test_key' as any)).toBe(false)
 
                 expect(service.getNumberValue('test_key' as any, 42)).toBe(42)
                 expect(service.getNumberValue('test_key' as any)).toBe(0)
             })
         })
-
     })
 
     describe('Notifications', () => {
@@ -312,6 +319,7 @@ describe('RNFirebaseService', () => {
             })
 
             it('should handle Android platform correctly', async () => {
+                // eslint-disable-next-line @typescript-eslint/no-require-imports
                 const { Platform } = require('react-native')
                 jest.mocked(Platform).OS = 'android'
                 jest.mocked(Platform.select).mockImplementation(
