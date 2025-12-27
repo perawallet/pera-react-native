@@ -22,7 +22,6 @@ import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 
-//TODO implement session item
 const WalletConnectSessionItem = ({
     session,
 }: {

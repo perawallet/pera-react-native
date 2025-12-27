@@ -37,8 +37,6 @@ export const useWalletConnect = () => {
                 clientMeta: PERA_CLIENT_META,
             })
 
-            //TODO set this up properly, also we need to make sure it continues to work
-            //if addSessionRequest changes...
             connector.on('algo_signData', (error, payload) =>
                 handleSignData(connector, error, payload),
             )

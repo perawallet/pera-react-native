@@ -22,7 +22,7 @@ import { logger } from '@perawallet/wallet-core-shared'
 const cache = new QueryCache({
     onError: error => {
         logger.error('An error has occurred:', { error })
-        //TODO should we use a toast here?
+        //TODO should we throw here?
     },
 })
 const queryClient = new QueryClient({
@@ -34,8 +34,7 @@ const queryClient = new QueryClient({
             retry: 2,
         },
         mutations: {
-            //TODO should we enable throwOnError and handle exceptions everywhere or should we just show a toast here?
-            // throwOnError: true
+            throwOnError: true,
         },
     },
 })

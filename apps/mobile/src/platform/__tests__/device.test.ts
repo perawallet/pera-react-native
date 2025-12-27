@@ -64,7 +64,6 @@ describe('RNDeviceInfoStorageService', () => {
 
     describe('initializeDeviceInfo', () => {
         it('sets up headers and calls updateBackendHeaders', async () => {
-
             const {
                 updateBackendHeaders,
                 // eslint-disable-next-line @typescript-eslint/no-require-imports

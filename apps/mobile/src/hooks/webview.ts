@@ -74,6 +74,7 @@ export const usePeraWebviewInterface = (
     webview: WebView | null,
     securedConnection: boolean,
     onCloseRequested?: () => void,
+    onBackRequested?: () => void,
 ) => {
     const { showToast } = useToast()
     const accounts = useAllAccounts()
@@ -97,6 +98,8 @@ export const usePeraWebviewInterface = (
         (params: PushInternalBrowserParams) => {
             pushWebViewContext({
                 url: params.url,
+                onCloseRequested,
+                onBackRequested,
                 id: '',
             })
         },
@@ -196,8 +199,9 @@ export const usePeraWebviewInterface = (
         sendMessageToWebview(payload)
     }, [webview])
 
-    //TODO not sure what the correct behavior here is?
-    const onBackPressed = useCallback(() => {}, [])
+    const onBackPressed = useCallback(() => {
+        onBackRequested?.()
+    }, [onBackRequested])
 
     const logAnalyticsEvent = useCallback(
         (params: LogAnalyticsParams) => {

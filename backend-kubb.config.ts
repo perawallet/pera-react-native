@@ -45,7 +45,7 @@ export default defineConfig(() => {
                 },
                 paramsType: 'object',
                 pathParamsType: 'object',
-                parser: 'client', //TODO: we should replace this with 'zod' once the backend OpenAPI is cleaned up
+                parser: 'client',
             }),
             pluginZod({
                 output: {
@@ -55,7 +55,7 @@ export default defineConfig(() => {
                 typed: false,
                 unknownType: 'unknown',
                 inferred: true,
-                dateType: false, //TODO: zod doesn't support +1000 style offsets - we need to switch the backend to a supported model
+                dateType: false,
             }),
         ],
     }

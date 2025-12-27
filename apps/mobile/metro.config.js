@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-//TODO fix this?
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
 // eslint-disable-next-line @typescript-eslint/no-require-imports

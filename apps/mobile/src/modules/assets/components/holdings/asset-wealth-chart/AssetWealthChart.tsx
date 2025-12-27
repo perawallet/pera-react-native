@@ -45,7 +45,6 @@ type AssetWealthChartProps = {
     onSelectionChanged: (item: AccountBalanceHistoryItem | null) => void
 }
 
-//TODO debug why this isn't showing data
 const AssetWealthChart = ({
     onSelectionChanged,
     account,

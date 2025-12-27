@@ -45,6 +45,8 @@ export const configSchema = z.object({
     termsOfServiceUrl: z.url(),
     privacyPolicyUrl: z.url(),
 
+    sendFundsFaqUrl: z.url(),
+
     debugEnabled: z.boolean(),
     profilingEnabled: z.boolean(),
     pollingEnabled: z.boolean(),

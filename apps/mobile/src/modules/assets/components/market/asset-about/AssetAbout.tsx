@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { View, Linking } from 'react-native'
+import { View } from 'react-native'
 import { useStyles } from './styles'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import Clipboard from '@react-native-clipboard/clipboard'
@@ -20,6 +20,8 @@ import RowTitledItem from '@components/row-titled-item/RowTitledItem'
 import useToast from '@hooks/toast'
 import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/language'
+import { useWebView } from '@hooks/webview'
+import { v7 as uuid } from 'uuid'
 
 type AssetAboutProps = {
     assetDetails: PeraAsset
@@ -29,6 +31,7 @@ const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
     const styles = useStyles()
     const { showToast } = useToast()
     const { t } = useLanguage()
+    const { pushWebView } = useWebView()
 
     const copyToClipboard = (text: string) => {
         Clipboard.setString(text)
@@ -47,8 +50,10 @@ const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
     }
 
     const openLink = (url: string) => {
-        // TODO: Open link in webview
-        Linking.openURL(url)
+        pushWebView({
+            id: uuid(),
+            url,
+        })
     }
 
     return (

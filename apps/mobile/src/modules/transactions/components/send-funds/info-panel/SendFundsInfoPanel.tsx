@@ -12,16 +12,19 @@
 
 import PWBottomSheet, {
     PWBottomSheetProps,
-} from '../../../../../components/bottom-sheet/PWBottomSheet'
+} from '@components/bottom-sheet/PWBottomSheet'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { Text } from '@rneui/themed'
 import { useEffect, useState } from 'react'
-import PWIcon from '../../../../../components/icons/PWIcon'
-import PWButton from '../../../../../components/button/PWButton'
+import PWIcon from '@components/icons/PWIcon'
+import PWButton from '@components/button/PWButton'
 import { UserPreferences } from '@constants/user-preferences'
 import { useStyles } from './styles'
-import PWView from '../../../../../components/view/PWView'
+import PWView from '@components/view/PWView'
 import { useLanguage } from '@hooks/language'
+import { useWebView } from '@hooks/webview'
+import { v7 as uuid } from 'uuid'
+import { config } from '@perawallet/wallet-core-config'
 
 type SendFundsInfoPanelProps = {
     onClose: () => void
@@ -37,6 +40,7 @@ const SendFundsInfoPanel = ({
     const [forceOpen, setForceOpen] = useState(false)
     const hasAgreed = getPreference(UserPreferences.spendAgreed)
     const { t } = useLanguage()
+    const { pushWebView } = useWebView()
 
     useEffect(() => {
         if (!hasAgreed) {
@@ -47,6 +51,13 @@ const SendFundsInfoPanel = ({
             setForceOpen(false)
         }
     }, [hasAgreed])
+
+    const handleOpenInfoLink = () => {
+        pushWebView({
+            id: uuid(),
+            url: config.sendFundsFaqUrl,
+        })
+    }
 
     const handleClose = () => {
         setPreference(UserPreferences.spendAgreed, true)
@@ -92,10 +103,12 @@ const SendFundsInfoPanel = ({
                         </Text>
                     </PWView>
                 </PWView>
-                {/* TODO implement link */}
                 <Text style={styles.postamble}>
                     For more information on transacting{' '}
-                    <Text style={styles.link}>
+                    <Text
+                        style={styles.link}
+                        onPress={handleOpenInfoLink}
+                    >
                         {t('send_funds.info.tap_here')}
                     </Text>
                 </Text>

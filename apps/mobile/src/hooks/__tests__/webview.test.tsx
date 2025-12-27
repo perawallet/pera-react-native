@@ -92,7 +92,6 @@ describe('useWebView', () => {
     it('should provide pushWebView from context', () => {
         const mockPushWebView = jest.fn()
         const wrapper = ({ children }: { children: React.ReactNode }) => (
-
             <WebViewContext.Provider
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 value={{ pushWebView: mockPushWebView } as any}
@@ -113,8 +112,8 @@ describe('usePeraWebviewInterface', () => {
 
     beforeEach(() => {
         jest.clearAllMocks()
-            ; (Linking.canOpenURL as jest.Mock).mockResolvedValue(true)
-            ; (Linking.openURL as jest.Mock).mockResolvedValue(true)
+        ;(Linking.canOpenURL as jest.Mock).mockResolvedValue(true)
+        ;(Linking.openURL as jest.Mock).mockResolvedValue(true)
     })
 
     it('should handle openSystemBrowser action', async () => {
@@ -137,7 +136,7 @@ describe('usePeraWebviewInterface', () => {
     })
 
     it('should handle openSystemBrowser action failure', async () => {
-        ; (Linking.canOpenURL as jest.Mock).mockResolvedValue(false)
+        ;(Linking.canOpenURL as jest.Mock).mockResolvedValue(false)
         const { result } = renderHook(() =>
             usePeraWebviewInterface(mockWebview, true),
         )
@@ -316,7 +315,6 @@ describe('usePeraWebviewInterface', () => {
     it('should handle pushWebView action', () => {
         const mockPushWebView = jest.fn()
         const wrapper = ({ children }: { children: React.ReactNode }) => (
-
             <WebViewContext.Provider
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 value={{ pushWebView: mockPushWebView } as any}

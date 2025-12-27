@@ -63,7 +63,6 @@ const WealthChart = ({
         period,
     )
 
-    //TODO move the currency conversion into the useAccountsBalanceHistory hook
     const dataPoints = useMemo(
         () =>
             data?.map(p => {

@@ -15,11 +15,17 @@ import PWWebView from '@components/webview/PWWebView'
 import { useStyles } from './styles'
 import PWView from '@components/view/PWView'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useNavigation } from '@react-navigation/native'
 
 const StakingScreen = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const url = config.stakingBaseUrl
+    const navigation = useNavigation()
+
+    const onClose = () => {
+        navigation.goBack()
+    }
 
     return (
         <PWView style={styles.container}>
@@ -28,6 +34,7 @@ const StakingScreen = () => {
                 enablePeraConnect={true}
                 style={styles.webview}
                 containerStyle={styles.webview}
+                onClose={onClose}
             />
         </PWView>
     )

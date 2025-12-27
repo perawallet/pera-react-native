@@ -96,7 +96,6 @@ const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
                                     key={`contact-${c.address}`}
                                     onPress={() => onSelected(c.address)}
                                 >
-                                    {/* TODO: probably inefficient to use AddressDisplay - maybe we need a ContactItem or something */}
                                     <AddressDisplay
                                         address={c.address}
                                         showCopy={false}

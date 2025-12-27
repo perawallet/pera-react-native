@@ -56,6 +56,8 @@ export type PWWebViewProps = {
     enablePeraConnect: boolean
     requestId?: string
     showControls?: boolean
+    onClose?: () => void
+    onBack?: () => void
 } & WebViewProps
 
 const updateTheme = (mode: 'light' | 'dark') => {
@@ -70,6 +72,8 @@ const PWWebView = (props: PWWebViewProps) => {
         enablePeraConnect,
         requestId,
         showControls = false,
+        onClose,
+        onBack,
         ...rest
     } = props
     const { removeWebView } = useContext(WebViewContext)
@@ -98,15 +102,18 @@ const PWWebView = (props: PWWebViewProps) => {
 
     const onCloseRequested = useCallback(() => {
         if (!requestId) {
+            onClose?.()
             return
         }
         removeWebView(requestId)
+        onClose?.()
     }, [removeWebView, requestId])
 
     const mobileInterface = usePeraWebviewInterface(
         webview.current,
         isSecure,
         onCloseRequested,
+        onBack,
     )
 
     const handleEvent = useCallback(

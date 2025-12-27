@@ -24,6 +24,7 @@ import { useStyles } from './styles'
 import { SendFundsContext } from '@modules/transactions/providers/SendFundsProvider'
 import PWHeader from '@components/header/PWHeader'
 import { useLanguage } from '@hooks/language'
+import { FlashList } from '@shopify/flash-list'
 
 type SendFundsAssetSelectionViewProps = {
     onSelected: () => void
@@ -49,7 +50,7 @@ const SendFundsAssetSelectionView = ({
     const selectedAccount = useSelectedAccount()
     const { setSelectedAsset } = useContext(SendFundsContext)
     const { t } = useLanguage()
-    const { accountBalances, isPending } = useAccountBalancesQuery(
+    const { accountBalances } = useAccountBalancesQuery(
         selectedAccount ? [selectedAccount] : [],
     )
 
@@ -69,7 +70,7 @@ const SendFundsAssetSelectionView = ({
         [accountBalances, selectedAccount?.address],
     )
     const renderItem = useCallback(
-        (item: AssetWithAccountBalance) => {
+        ({ item }: { item: AssetWithAccountBalance }) => {
             return (
                 <PWTouchableOpacity
                     onPress={() => handleSelected(item)}
@@ -83,17 +84,20 @@ const SendFundsAssetSelectionView = ({
         [handleSelected, styles],
     )
 
-    //TODO use flatlist/flashlist for performance here
     return (
-        <PWView style={styles.container}>
-            <PWHeader
-                leftIcon='cross'
-                onLeftPress={onBack}
-                title={t('send_funds.asset_selection.title')}
-            />
-            {isPending && <LoadingView />}
-            {!isPending && balanceData?.map(b => renderItem(b))}
-        </PWView>
+        <FlashList
+            data={balanceData}
+            renderItem={renderItem}
+            keyExtractor={item => item.assetId}
+            ListHeaderComponent={
+                <PWHeader
+                    leftIcon='cross'
+                    onLeftPress={onBack}
+                    title={t('send_funds.asset_selection.title')}
+                />
+            }
+            ListEmptyComponent={<LoadingView />}
+        />
     )
 }
 

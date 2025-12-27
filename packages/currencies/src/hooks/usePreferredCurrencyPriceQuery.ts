@@ -25,7 +25,7 @@ const mapCurrencyToPrice = (data: CurrencyResponse): CurrencyPrice => {
     }
 }
 
-//TODO include ALGO
+//TODO include ALGO?
 export const usePreferredCurrencyPriceQuery = (preferredCurrency: string) => {
     const { network } = useNetwork()
     return useQuery({

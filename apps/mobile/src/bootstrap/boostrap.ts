@@ -47,9 +47,8 @@ export const useBootstrapper = () => {
         //Important - this has to happen first so all subsequent services can use the platform services
         await registerPlatformServices(platformServices)
 
-        // TODO: This is a mess - we should find a more elegant solution here...
-        // the issue is that we have to initialize the state stores after setting up the platform services
-        // which configure the persistence layer.
+        // Initialize the data stores.  The issue is that the underlying persistence layer is configured
+        // in the platform services, so we have to initialize the data stores after that.
         await initDeviceStore()
         await initAccountsStore()
         await initAssetsStore()
@@ -77,7 +76,7 @@ export const useBootstrapper = () => {
         const notificationResults =
             await platformServices.notification.initializeNotifications()
 
-        logger.debug('Bootstrapped')
+        logger.debug('Bootstrapping completed')
 
         return {
             platformServices,

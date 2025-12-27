@@ -31,7 +31,7 @@ import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import { AssetHolding } from '../models/algod-types/AssetHolding'
 import { getAccountBalancesQueryKey } from './querykeys'
 
-//TODO optimize this to use the combine option
+//TODO we may not need this query - maybe we should just fetch each account separately
 export const useAccountBalancesQuery = (
     accounts: WalletAccount[],
     enabled?: boolean,

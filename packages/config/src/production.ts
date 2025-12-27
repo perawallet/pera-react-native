@@ -37,9 +37,12 @@ export const productionConfig: Config = {
     discoverBaseUrl: 'https://discover-mobile.perawallet.app/',
     stakingBaseUrl: 'https://staking-mobile.perawallet.app/',
     onrampBaseUrl: 'https://onramp-mobile.perawallet.app/',
-    supportBaseUrl: 'https://perawallet.app/', //TODO: add support url
-    termsOfServiceUrl: 'https://perawallet.app/', //TODO: add terms of service url
-    privacyPolicyUrl: 'https://perawallet.app/', //TODO: add privacy policy url
+    supportBaseUrl: 'https://supportperawallet.app/',
+    termsOfServiceUrl: 'https://perawallet.app/terms-and-services/',
+    privacyPolicyUrl: 'https://perawallet.app/privacy-policy/',
+
+    sendFundsFaqUrl:
+        'https://support.perawallet.app/en/category/transactions-1tq8s9h/',
 
     notificationRefreshTime: THIRTY_SECONDS,
     remoteConfigRefreshTime: ONE_HOUR,

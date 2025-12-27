@@ -21,6 +21,7 @@ import {
 } from '@perawallet/wallet-core-xhdwallet'
 import * as bip39 from 'bip39'
 import messageSchema from '../schema/message-schema.json'
+import { WORDLIST } from '../wordlist'
 
 const api = new XHDWalletAPI()
 
@@ -33,10 +34,10 @@ const createPath = (account: number, keyIndex: number) => {
     return [HD_PURPOSE, HD_COIN_TYPE, account, 0, keyIndex]
 }
 
-//TODO use a specific word list here
 const generateMasterKey = async (mnemonic?: string) => {
     const storableMnemonic =
-        mnemonic ?? bip39.generateMnemonic(HD_MNEMONIC_LENGTH)
+        mnemonic ??
+        bip39.generateMnemonic(HD_MNEMONIC_LENGTH, undefined, WORDLIST)
     const seed = await bip39.mnemonicToSeed(storableMnemonic)
     const entropy = await bip39.mnemonicToEntropy(storableMnemonic)
     return {

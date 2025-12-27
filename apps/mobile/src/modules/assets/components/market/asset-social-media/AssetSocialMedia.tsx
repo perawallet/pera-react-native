@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { Linking } from 'react-native'
 import { useStyles } from './styles'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 import { Text } from '@rneui/themed'
@@ -18,6 +17,8 @@ import PWIcon, { IconName } from '@components/icons/PWIcon'
 import PWView from '@components/view/PWView'
 import PWTouchableOpacity from '@components/touchable-opacity/PWTouchableOpacity'
 import { useLanguage } from '@hooks/language'
+import { useWebView } from '@hooks/webview'
+import { v7 as uuid } from 'uuid'
 
 type AssetSocialMediaProps = {
     assetDetails: PeraAsset
@@ -26,6 +27,7 @@ type AssetSocialMediaProps = {
 const AssetSocialMedia = ({ assetDetails }: AssetSocialMediaProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const { pushWebView } = useWebView()
 
     const socialLinks = [
         {
@@ -52,8 +54,10 @@ const AssetSocialMedia = ({ assetDetails }: AssetSocialMediaProps) => {
     }
 
     const openLink = (url: string) => {
-        //TODO open in webview - we might want a hook for this
-        Linking.openURL(url)
+        pushWebView({
+            id: uuid(),
+            url,
+        })
     }
 
     return (

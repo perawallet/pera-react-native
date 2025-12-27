@@ -84,7 +84,6 @@ const SettingsWalletConnectDetailsScreen = ({
         )
     }, [session, accounts])
 
-    //TODO: add fallback
     const preferredIcon =
         session?.session?.peerMeta?.icons?.find(
             icon =>
@@ -121,10 +120,18 @@ const SettingsWalletConnectDetailsScreen = ({
 
     return (
         <ScrollView contentContainerStyle={styles.container}>
-            <Image
-                source={{ uri: preferredIcon }}
-                style={styles.icon}
-            />
+            {!!preferredIcon && (
+                <Image
+                    source={{ uri: preferredIcon }}
+                    style={styles.icon}
+                />
+            )}
+            {!preferredIcon && (
+                <PWIcon
+                    name='wallet-connect'
+                    size='lg'
+                />
+            )}
             <Text h4>{peerMeta?.name ?? 'Unknown'}</Text>
             {peerMeta?.url && (
                 <PWTouchableOpacity onPress={handleOpenLink}>
