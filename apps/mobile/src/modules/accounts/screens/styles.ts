@@ -44,7 +44,7 @@ export const useStyles = makeStyles(theme => {
         },
         valueBar: {
             paddingTop: theme.spacing.md,
-            paddingBottom: theme.spacing.xl * 1.5,
+            paddingBottom: theme.spacing.xxl,
         },
         secondaryValueBar: {
             flexDirection: 'row',
@@ -76,10 +76,10 @@ export const useStyles = makeStyles(theme => {
             flex: 1,
         },
         scannerClose: {
-            marginTop: theme.spacing.xl * 1.5,
+            marginTop: theme.spacing.xxl,
             marginLeft: theme.spacing.lg,
-            width: theme.spacing.xl * 2,
-            height: theme.spacing.xl * 2,
+            width: theme.spacingspacing['3xl'],
+            height: theme.spacingspacing['3xl'],
             alignItems: 'center',
             justifyContent: 'center',
         },

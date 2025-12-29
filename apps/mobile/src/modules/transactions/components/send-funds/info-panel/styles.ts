@@ -19,7 +19,7 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
         container: {
             height,
             padding: theme.spacing.xl,
-            paddingTop: theme.spacing.xl * 2,
+            paddingTop: theme.spacingspacing['3xl'],
             borderTopStartRadius: theme.spacing.sm,
             borderTopEndRadius: theme.spacing.sm,
             overflow: 'hidden',
@@ -50,14 +50,14 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
             alignItems: 'center',
         },
         tipNumberContainer: {
-            borderRadius: theme.spacing.xl * 2,
+            borderRadius: theme.spacingspacing['3xl'],
             borderColor: theme.colors.layerGrayLight,
             boxShadow: '1px 1px 1px 0px #00000015',
             borderWidth: 1,
             alignItems: 'center',
             justifyContent: 'center',
-            width: theme.spacing.xl * 2,
-            height: theme.spacing.xl * 2,
+            width: theme.spacingspacing['3xl'],
+            height: theme.spacingspacing['3xl'],
         },
         tipNumber: {
             fontSize: theme.spacing.lg,

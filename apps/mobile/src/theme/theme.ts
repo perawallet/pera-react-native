@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+/* eslint-disable max-lines */
+
 import { DefaultTheme } from '@react-navigation/native'
 import { createTheme } from '@rneui/themed'
 import { fontFamilies } from '@constants/fonts'
@@ -176,7 +178,17 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             divider: 'rgba(255,255,255,0.05)', // Border/default (dark)
         },
         mode,
-        spacing: { xs: 4, sm: 8, md: 12, lg: 16, xl: 24 },
+        spacing: {
+            xs: 4,
+            sm: 8,
+            md: 12,
+            lg: 16,
+            xl: 24,
+            xxl: 36,
+            '3xl': 48,
+            '4xl': 72,
+            '5xl': 96,
+        },
         components: {
             Button: (_, theme) => ({
                 containerStyle: {

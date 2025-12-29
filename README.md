@@ -74,7 +74,7 @@ This writes typed clients, zod schemas, msw mocks, and React Query hooks under:
 - generated/algod
 - generated/indexer
 
-Note that our code does not directly use this generated code as the openapi specs are not up to scratch but the generated code can be used for reference or inspiration.
+Note that our code does not directly use this generated code (yet) as the openapi specs are not up to scratch but the generated code can be used for reference or inspiration.
 
 ## Common commands (root)
 

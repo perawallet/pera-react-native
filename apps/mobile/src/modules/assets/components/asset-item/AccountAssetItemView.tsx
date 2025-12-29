@@ -85,7 +85,7 @@ const AccountAssetItemView = ({
         >
             <AssetIcon
                 asset={asset}
-                size={iconSize ?? theme.spacing.xl * 1.5}
+                size={iconSize ?? theme.spacing.xxl}
             />
             <PWView style={styles.dataContainer}>
                 <PWView style={styles.unitContainer}>

@@ -26,6 +26,6 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     },
     backIconContainer: {
         paddingHorizontal: theme.spacing.sm,
-        width: theme.spacing.xl * 2,
+        width: theme.spacingspacing['3xl'],
     },
 }))

@@ -24,7 +24,7 @@ export const useStyles = makeStyles(theme => {
             justifyContent: 'space-between',
         },
         key: {
-            width: theme.spacing.xl * 3,
+            width: theme.spacing['4xl'],
             height: theme.spacing.xl * 2.5,
             alignItems: 'center',
             justifyContent: 'center',

@@ -39,13 +39,13 @@ export const useStyles = makeStyles(theme => {
         title: {
             color: theme.colors.textWhite,
             textAlign: 'center',
-            marginTop: theme.spacing.xl * 1.5,
+            marginTop: theme.spacing.xxl,
             marginBottom: theme.spacing.xl,
             zIndex: 2,
         },
         icon: {
             color: theme.colors.textWhite,
-            marginTop: theme.spacing.xl * 1.5,
+            marginTop: theme.spacing.xxl,
             marginLeft: theme.spacing.xl,
             zIndex: 2,
         },

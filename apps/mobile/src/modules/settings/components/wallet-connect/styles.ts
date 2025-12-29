@@ -35,8 +35,8 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.md,
         },
         icon: {
-            width: theme.spacing.xl * 1.5,
-            height: theme.spacing.xl * 1.5,
+            width: theme.spacing.xxl,
+            height: theme.spacing.xxl,
             borderRadius: theme.spacing.xl,
             overflow: 'hidden',
         },

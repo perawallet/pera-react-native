@@ -21,11 +21,11 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.xl,
     },
     iconContainer: {
-        width: theme.spacing.xl * 3,
-        height: theme.spacing.xl * 3,
+        width: theme.spacingspacing['4xl'],
+        height: theme.spacingspacing['4xl'],
         justifyContent: 'center',
         alignItems: 'center',
-        borderRadius: theme.spacing.xl * 1.5,
+        borderRadius: theme.spacing.xxl,
         backgroundColor: theme.colors.layerGrayLighter,
     },
     text: {

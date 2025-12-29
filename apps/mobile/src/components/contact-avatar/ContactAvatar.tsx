@@ -25,8 +25,8 @@ type ContactAvatarProps = {
 const ContactAvatar = ({ size, contact, ...rest }: ContactAvatarProps) => {
     const { theme } = useTheme()
     const dimensions =
-        size === 'small' ? theme.spacing.xl : theme.spacing.xl * 3
-    const imageSize = size === 'small' ? theme.spacing.lg : theme.spacing.xl * 2
+        size === 'small' ? theme.spacing.xl : theme.spacingspacing['4xl']
+    const imageSize = size === 'small' ? theme.spacing.lg : theme.spacing['3xl']
     const iconSize = size === 'small' ? 'sm' : 'lg'
     const styles = useStyles(dimensions)
 

@@ -35,7 +35,7 @@ const AssetTitle = ({ asset }: AssetTitleProps) => {
         <PWView style={styles.container}>
             <AssetIcon
                 asset={asset}
-                size={theme.spacing.xl * 1.5}
+                size={theme.spacing.xxl}
             />
             <PWView style={styles.nameContainer}>
                 <Text

@@ -16,7 +16,7 @@ import { EdgeInsets } from 'react-native-safe-area-context'
 export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
     return {
         sectionContainer: {
-            gap: theme.spacing.xl * 1.5,
+            gap: theme.spacing.xxl,
             marginBottom: theme.spacing.xl,
         },
         section: {

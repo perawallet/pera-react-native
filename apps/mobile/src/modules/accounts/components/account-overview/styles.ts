@@ -90,8 +90,8 @@ export const useStyles = makeStyles(theme => {
         scannerClose: {
             marginTop: theme.spacing.xl,
             marginLeft: theme.spacing.lg,
-            width: theme.spacing.xl * 2,
-            height: theme.spacing.xl * 2,
+            width: theme.spacingspacing['3xl'],
+            height: theme.spacingspacing['3xl'],
             zIndex: 2,
         },
         chartContainer: {

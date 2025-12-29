@@ -16,7 +16,7 @@ export const useStyles = makeStyles(theme => {
     return {
         flex: {
             flex: 1,
-            marginBottom: theme.spacing.xl * 2,
+            marginBottom: theme.spacingspacing['3xl'],
         },
         webview: {
             alignItems: 'flex-start',

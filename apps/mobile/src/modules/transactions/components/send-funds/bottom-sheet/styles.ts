@@ -28,11 +28,11 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
             justifyContent: 'space-between',
             width: '100%',
             alignItems: 'center',
-            height: theme.spacing.xl * 2,
+            height: theme.spacingspacing['3xl'],
             marginBottom: theme.spacing.xl,
         },
         titleButtonContainer: {
-            width: theme.spacing.xl * 1.5,
+            width: theme.spacing.xxl,
             alignItems: 'center',
             justifyContent: 'center',
         },

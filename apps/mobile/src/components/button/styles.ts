@@ -32,7 +32,7 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
         color = theme.colors.linkPrimary
     }
 
-    let paddingHorizontal = theme.spacing.xl * 1.5
+    let paddingHorizontal = theme.spacing.xxl
     if (props.paddingStyle === 'dense') {
         paddingHorizontal = theme.spacing.md
     } else if (props.paddingStyle === 'none') {
@@ -46,7 +46,7 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
 
     let minWidth: number | undefined
     if (props.paddingStyle === 'dense') {
-        minWidth = theme.spacing.xl * 1.5
+        minWidth = theme.spacing.xxl
     }
 
     return {
