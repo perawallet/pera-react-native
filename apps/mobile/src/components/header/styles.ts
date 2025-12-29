@@ -30,6 +30,6 @@ export const useStyles = makeStyles(theme => ({
         textAlign: 'center',
     },
     iconContainer: {
-        width: theme.spacingspacing['3xl'],
+        width: theme.spacing['3xl'],
     },
 }))

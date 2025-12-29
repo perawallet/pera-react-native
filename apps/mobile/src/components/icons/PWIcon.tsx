@@ -193,8 +193,8 @@ const PWIcon = ({
             xs: theme.spacing.md,
             sm: theme.spacing.lg,
             md: theme.spacing.xl,
-            lg: theme.spacingspacing['3xl'],
-            xl: theme.spacingspacing['4xl'],
+            lg: theme.spacing['3xl'],
+            xl: theme.spacing['4xl'],
         }),
         [theme],
     )

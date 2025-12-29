@@ -96,7 +96,7 @@ export const useStyles = () => {
             gap: theme.spacing.md,
         },
         skeleton: {
-            height: theme.spacingspacing['5xl'],
+            height: theme.spacing['5xl'],
             width: '100%',
         },
         trendContainer: {

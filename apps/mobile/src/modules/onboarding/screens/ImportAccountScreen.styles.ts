@@ -19,7 +19,7 @@ export const useStyles = makeStyles(theme => {
         },
         helperText: {
             color: theme.colors.textGray,
-            paddingBottom: theme.spacingspacing['3xl'],
+            paddingBottom: theme.spacing['3xl'],
         },
         walletNameContainer: {
             backgroundColor: theme.colors.layerGrayLighter,

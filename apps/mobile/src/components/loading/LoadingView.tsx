@@ -45,8 +45,8 @@ const LoadingView = ({ variant, size = 'sm', count = 1 }: LoadingViewProps) => {
                         style={styles.skeleton}
                         height={
                             size === 'sm'
-                                ? theme.spacingspacing['3xl']
-                                : theme.spacingspacing['5xl']
+                                ? theme.spacing['3xl']
+                                : theme.spacing['5xl']
                         }
                     />
                 ))}

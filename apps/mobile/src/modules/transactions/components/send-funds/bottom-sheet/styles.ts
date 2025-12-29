@@ -28,7 +28,7 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
             justifyContent: 'space-between',
             width: '100%',
             alignItems: 'center',
-            height: theme.spacingspacing['3xl'],
+            height: theme.spacing['3xl'],
             marginBottom: theme.spacing.xl,
         },
         titleButtonContainer: {

@@ -26,8 +26,8 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.md,
         },
         icon: {
-            width: theme.spacingspacing['3xl'],
-            height: theme.spacingspacing['3xl'],
+            width: theme.spacing['3xl'],
+            height: theme.spacing['3xl'],
             borderRadius: theme.spacing.xl,
         },
         link: {

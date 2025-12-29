@@ -21,8 +21,8 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.xl,
     },
     iconContainer: {
-        width: theme.spacingspacing['4xl'],
-        height: theme.spacingspacing['4xl'],
+        width: theme.spacing['4xl'],
+        height: theme.spacing['4xl'],
         justifyContent: 'center',
         alignItems: 'center',
         borderRadius: theme.spacing.xxl,

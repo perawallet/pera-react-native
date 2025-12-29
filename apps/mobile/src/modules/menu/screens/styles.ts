@@ -42,8 +42,8 @@ export const useStyles = makeStyles(theme => {
         scannerClose: {
             marginTop: theme.spacing.xl,
             marginLeft: theme.spacing.lg,
-            width: theme.spacingspacing['3xl'],
-            height: theme.spacingspacing['3xl'],
+            width: theme.spacing['3xl'],
+            height: theme.spacing['3xl'],
             zIndex: 2,
         },
     }

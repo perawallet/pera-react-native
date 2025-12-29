@@ -22,7 +22,7 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.sm,
             borderRadius: theme.spacing.lg,
             backgroundColor: theme.colors.layerGrayLightest,
-            width: theme.spacingspacing['5xl'],
+            width: theme.spacing['5xl'],
         },
         icon: {
             width: theme.spacing.xl,
