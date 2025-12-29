@@ -30,7 +30,7 @@ import AccountNfts from '../components/account-nfts/AccountNfts'
 import AccountHistory from '../components/account-history/AccountHistory'
 import { TAB_ANIMATION_CONFIG } from '@constants/ui'
 import { useLanguage } from '@hooks/language'
-import { AccountStackParamsList } from '@routes/account'
+import { AccountStackParamsList } from '../routes'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import ConfettiAnimation from '../components/confetti-animation/ConfettiAnimation'
 

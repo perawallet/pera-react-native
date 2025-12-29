@@ -32,7 +32,7 @@ import { KeyboardAvoidingView, Platform } from 'react-native'
 import { useLanguage } from '@hooks/language'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
-import { OnboardingStackParamList } from '@routes/onboarding'
+import { OnboardingStackParamList } from '../routes'
 import { RootStackParamList } from '@routes/index'
 
 type NameAccountScreenProps = NativeStackScreenProps<

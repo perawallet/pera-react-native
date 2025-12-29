@@ -21,7 +21,7 @@ import ContactListHeaderButtons from '@modules/contacts/components/ContactListHe
 import ViewContactHeaderButtons from '@modules/contacts/components/ViewContactHeaderButtons'
 import ViewContactScreen from '@modules/contacts/screens/ViewContactScreen'
 import EditContactScreen from '@modules/contacts/screens/EditContactScreen'
-import { headeredLayout } from './layouts'
+import { headeredLayout } from '@layouts/index'
 
 export type ContactsStackParamsList = {
     ContactsList: undefined

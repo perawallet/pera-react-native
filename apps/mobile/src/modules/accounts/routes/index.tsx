@@ -15,11 +15,11 @@ import {
     NativeStackHeaderProps,
 } from '@react-navigation/native-stack'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
-import { screenListeners } from './listeners'
+import { screenListeners } from '@routes/listeners'
 import AccountScreen from '@modules/accounts/screens/AccountScreen'
 import AssetDetailsScreen from '@modules/assets/screens/AssetDetailsScreen'
 import NavigationHeader from '@components/navigation-header/NavigationHeader'
-import { fullScreenLayout, safeAreaLayout } from './layouts'
+import { fullScreenLayout, safeAreaLayout } from '@layouts/index'
 
 export type AccountStackParamsList = {
     AccountDetails?: { playConfetti?: boolean }

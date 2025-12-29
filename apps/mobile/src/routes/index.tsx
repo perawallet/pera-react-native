@@ -24,11 +24,17 @@ import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import {
     OnboardingStackNavigator,
     OnboardingStackParamList,
-} from './onboarding'
+} from '@modules/onboarding/routes'
 import { screenListeners } from './listeners'
 import { TabBarStackNavigator, TabBarStackParamList } from './tabbar'
-import { ContactsStackNavigator, ContactsStackParamsList } from './contacts'
-import { SettingsStackNavigator, SettingsStackParamsList } from './settings'
+import {
+    ContactsStackNavigator,
+    ContactsStackParamsList,
+} from '@modules/contacts/routes'
+import {
+    SettingsStackNavigator,
+    SettingsStackParamsList,
+} from '@modules/settings/routes'
 import { useShowOnboarding } from '@hooks/onboarding'
 import NavigationHeader from '@components/navigation-header/NavigationHeader'
 import { getNavigationTheme } from '@theme/theme'

@@ -16,7 +16,7 @@ import {
     createNativeStackNavigator,
     NativeStackHeaderProps,
 } from '@react-navigation/native-stack'
-import { screenListeners } from './listeners'
+import { screenListeners } from '@routes/listeners'
 import SettingsScreen from '@modules/settings/screens/SettingsScreen'
 import SettingsSecurityScreen from '@modules/settings/screens/security/SettingsSecurtyScreen'
 import SettingsNotificationsScreen from '@modules/settings/screens/notifications/SettingsNotificationsScreen'
@@ -25,7 +25,7 @@ import SettingsPasskeyScreen from '@modules/settings/screens/passkeys/SettingsPa
 import SettingsCurrencyScreen from '@modules/settings/screens/currency/SettingsCurrencyScreen'
 import SettingsThemeScreen from '@modules/settings/screens/theme/SettingsThemeScreen'
 import SettingsDeveloperScreen from '@modules/settings/screens/developer/SettingsDeveloperScreen'
-import { fullScreenLayout, headeredLayout } from './layouts'
+import { fullScreenLayout, headeredLayout } from '@layouts/index'
 import SettingsDeveloperNodeSettingsScreen from '@modules/settings/screens/developer/node-settings/SettingsDeveloperNodeSettingsScreen'
 import SettingsDeveloperDispenserScreen from '@modules/settings/screens/developer/dispenser/SettingsDeveloperDispenserScreen'
 import { NavigatorScreenParams } from '@react-navigation/native'
