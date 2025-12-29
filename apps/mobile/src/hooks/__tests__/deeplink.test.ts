@@ -615,6 +615,108 @@ describe('useDeepLink', () => {
 
         // Success case (logger.error called)
     })
+
+    it('should handle SWAP deeplink without address', async () => {
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
+            type: DeeplinkType.SWAP,
+            assetInId: '0',
+            assetOutId: '123',
+            // no address
+        })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/swap',
+                false,
+                'deeplink',
+            )
+        })
+
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+            screen: 'Swap',
+            params: { assetInId: '0', assetOutId: '123' },
+        })
+    })
+
+    it('should handle BUY deeplink without address', async () => {
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
+            type: DeeplinkType.BUY,
+            // no address
+        })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/buy',
+                false,
+                'deeplink',
+            )
+        })
+
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Fund' })
+    })
+
+    it('should call onError callback when deeplink is invalid', async () => {
+        ;(parseDeeplink as jest.Mock).mockReturnValue(null)
+        const mockOnError = jest.fn()
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'invalid',
+                false,
+                'deeplink',
+                mockOnError,
+            )
+        })
+
+        expect(mockOnError).toHaveBeenCalled()
+    })
+
+    it('should call onSuccess callback when deeplink is handled', async () => {
+        ;(parseDeeplink as jest.Mock).mockReturnValue({
+            type: DeeplinkType.HOME,
+        })
+        const mockOnSuccess = jest.fn()
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app',
+                false,
+                'deeplink',
+                undefined,
+                mockOnSuccess,
+            )
+        })
+
+        expect(mockOnSuccess).toHaveBeenCalled()
+    })
+
+    it('should call onError callback when navigation throws', async () => {
+        ;(parseDeeplink as jest.Mock).mockImplementation(() => {
+            return { type: DeeplinkType.HOME }
+        })
+        ;(useNavigation as jest.Mock).mockReturnValue({
+            navigate: jest.fn(() => {
+                throw new Error('Test error')
+            }),
+        })
+        const mockOnError = jest.fn()
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app',
+                false,
+                'deeplink',
+                mockOnError,
+            )
+        })
+
+        expect(mockOnError).toHaveBeenCalled()
+    })
 })
 
 describe('useDeeplinkListener', () => {
@@ -672,5 +774,51 @@ describe('useDeeplinkListener', () => {
         })
 
         // Success case
+    })
+
+    it('should not handle null initial URL', async () => {
+        ;(Linking.getInitialURL as jest.Mock).mockResolvedValue(null)
+        ;(parseDeeplink as jest.Mock).mockReturnValue(null)
+
+        renderHook(() => useDeeplinkListener())
+
+        await act(async () => {
+            await Promise.resolve()
+        })
+
+        // Should not attempt to handle deeplink since initial URL is null
+        expect(parseDeeplink).not.toHaveBeenCalled()
+    })
+
+    it('should not handle invalid initial URL', async () => {
+        ;(Linking.getInitialURL as jest.Mock).mockResolvedValue('invalid://url')
+        ;(parseDeeplink as jest.Mock).mockReturnValue(null)
+
+        renderHook(() => useDeeplinkListener())
+
+        await act(async () => {
+            await Promise.resolve()
+        })
+
+        act(() => {
+            jest.runAllTimers()
+        })
+
+        // parseDeeplink called but returns null, so no deeplink handled
+        expect(parseDeeplink).toHaveBeenCalledWith('invalid://url')
+    })
+
+    it('should ignore invalid URL events', async () => {
+        ;(parseDeeplink as jest.Mock).mockReturnValue(null)
+        const mockAddListener = Linking.addEventListener as jest.Mock
+        renderHook(() => useDeeplinkListener())
+
+        const callback = mockAddListener.mock.calls[0][1]
+
+        await act(async () => {
+            callback({ url: 'invalid://url' })
+        })
+
+        // parseDeeplink returns null, so deeplink is not handled
     })
 })

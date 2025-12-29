@@ -25,7 +25,7 @@ import SettingsPasskeyScreen from '@modules/settings/screens/passkeys/SettingsPa
 import SettingsCurrencyScreen from '@modules/settings/screens/currency/SettingsCurrencyScreen'
 import SettingsThemeScreen from '@modules/settings/screens/theme/SettingsThemeScreen'
 import SettingsDeveloperScreen from '@modules/settings/screens/developer/SettingsDeveloperScreen'
-import { fullScreenLayout, headeredLayout } from '@layouts/index'
+import { fullScreenLayout } from '@layouts/index'
 import SettingsDeveloperNodeSettingsScreen from '@modules/settings/screens/developer/node-settings/SettingsDeveloperNodeSettingsScreen'
 import SettingsDeveloperDispenserScreen from '@modules/settings/screens/developer/dispenser/SettingsDeveloperDispenserScreen'
 import { NavigatorScreenParams } from '@react-navigation/native'
@@ -53,7 +53,7 @@ const DeveloperSettingsStackNavigator = () => {
                 ...SCREEN_ANIMATION_CONFIG,
             }}
             screenListeners={screenListeners}
-            layout={headeredLayout}
+            layout={fullScreenLayout}
         >
             <DeveloperSettingsStack.Screen
                 name='DeveloperSettingsHome'
@@ -100,7 +100,7 @@ export const WalletConnectSettingsStackNavigator = () => {
                 ...SCREEN_ANIMATION_CONFIG,
             }}
             screenListeners={screenListeners}
-            layout={headeredLayout}
+            layout={fullScreenLayout}
         >
             <WalletConnectSettingsStack.Screen
                 name='WalletConnectSettingsHome'
@@ -201,6 +201,7 @@ export const SettingsStackNavigator = () => {
                 name='DeveloperSettings'
                 options={{
                     title: 'screens.developer_settings',
+                    headerShown: false,
                 }}
                 component={DeveloperSettingsStackNavigator}
             />

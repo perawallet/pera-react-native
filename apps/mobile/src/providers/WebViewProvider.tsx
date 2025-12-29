@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 type WebViewRequest = {
     id: string
     url: string
+    enablePeraConnect?: boolean
     onBackRequested?: () => void
     onCloseRequested?: () => void
 }
@@ -77,7 +78,7 @@ const WebViewProvider = ({ children }: WebViewProviderProps) => {
             }}
         >
             {children}
-            {openWebViews.map(view => (
+            {openWebViews.map((view: WebViewRequest) => (
                 <PWBottomSheet
                     key={view.id}
                     innerContainerStyle={{
@@ -90,7 +91,7 @@ const WebViewProvider = ({ children }: WebViewProviderProps) => {
                         <PWWebView
                             requestId={view.id}
                             url={view.url}
-                            enablePeraConnect={false}
+                            enablePeraConnect={view.enablePeraConnect ?? false}
                             showControls
                             onBack={view.onBackRequested}
                             onClose={view.onCloseRequested}

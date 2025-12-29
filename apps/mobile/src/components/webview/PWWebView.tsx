@@ -106,7 +106,6 @@ const PWWebView = (props: PWWebViewProps) => {
             return
         }
         removeWebView(requestId)
-        onClose?.()
     }, [removeWebView, requestId])
 
     const mobileInterface = usePeraWebviewInterface(
@@ -118,9 +117,9 @@ const PWWebView = (props: PWWebViewProps) => {
 
     const handleEvent = useCallback(
         (event: WebViewMessageEvent) => {
-            logger.debug('WebView: Received onMessage event', {
-                data: event.nativeEvent.data,
-            })
+            if (!enablePeraConnect) {
+                return
+            }
 
             const dataString = event.nativeEvent.data
             if (!dataString) {
@@ -132,6 +131,9 @@ const PWWebView = (props: PWWebViewProps) => {
             }
 
             const data = JSON.parse(dataString)
+            logger.debug('WebView: Received onMessage event', {
+                data,
+            })
             mobileInterface.handleMessage(data)
         },
         [showToast, mobileInterface],
@@ -243,7 +245,7 @@ const PWWebView = (props: PWWebViewProps) => {
                 onMessage={handleEvent}
                 webviewDebuggingEnabled={config.debugEnabled}
                 pullToRefreshEnabled={true}
-                injectedJavaScript={jsToLoad}
+                injectedJavaScriptBeforeContentLoaded={jsToLoad}
                 setSupportMultipleWindows={false}
                 userAgent={userAgent}
                 forceDarkOn={isDarkMode}

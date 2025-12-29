@@ -16,11 +16,20 @@ var style = document.createElement('style'); style.type = 'text/css';
 style.appendChild(document.createTextNode(css)); head.appendChild(style);`
 
 export const peraMobileInterfaceJS = `
+const sendJsonRPCMessage = (request) => {
+    window.ReactNativeWebView?.postMessage(request); 
+};
 const sendRNMessage = (action, params = {}) => {
-    window.ReactNativeWebView?.postMessage(JSON.stringify({ action, params })); 
+    sendJsonRPCMessage(JSON.stringify({
+        jsonrpc: '2.0',
+        method: action,
+        params,
+        id: Date.now()
+    }))
 };
 window.peraMobileInterface = {
     version: '2',
+    handleRequest: (request) => sendJsonRPCMessage(request),
     pushWebView: (params) => sendRNMessage('pushWebView', params),
     openSystemBrowser: (params) => sendRNMessage('openSystemBrowser', params),
     canOpenURI: (params) => sendRNMessage('canOpenURI', params),
@@ -32,8 +41,10 @@ window.peraMobileInterface = {
     onBackPressed: () => sendRNMessage('onBackPressed'),
     logAnalyticsEvent: (params) => sendRNMessage('logAnalyticsEvent', params),
     closeWebView: () => sendRNMessage('closeWebView'),
-    getAuthorizedAddresses: () => sendRNMessage('getAddresses'), //LEGACY FUNCTION
     pushDappViewerScreen: (params) => sendRNMessage('pushWebView', JSON.parse(params)),
+
+    // V1 function for backwards compatibility
+    getAuthorizedAddresses: () => sendRNMessage('getAddresses'),
 };
 `
 

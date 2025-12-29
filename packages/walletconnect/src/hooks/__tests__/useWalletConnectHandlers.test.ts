@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { renderHook } from '@testing-library/react'
+import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import useWalletConnectHandlers from '../useWalletConnectHandlers'
 import { useWalletConnectStore } from '../../store'
@@ -78,6 +78,7 @@ describe('useWalletConnectHandlers', () => {
             const connector = {
                 clientId: 'test-client-id',
                 accounts: ['addr1'],
+                sendTransaction: vi.fn(),
             }
             const payload = {
                 params: [
@@ -92,12 +93,49 @@ describe('useWalletConnectHandlers', () => {
 
             expect(mockAddSignRequest).toHaveBeenCalledWith({
                 type: 'arbitrary-data',
-                transport: 'walletconnect',
+                transport: 'callback',
                 transportId: 'test-client-id',
                 message: 'Sign me',
                 addresses: ['addr1'],
                 data: 'somedata',
+                success: expect.any(Function),
+                error: expect.any(Function),
             })
+
+            // Test success callback
+            const { success } = mockAddSignRequest.mock.calls[0][0]
+            const signature = new Uint8Array([1, 2, 3])
+
+            act(() => {
+                success('addr1', signature)
+            })
+
+            expect(connector.sendTransaction).toHaveBeenCalledWith({
+                from: 'addr1',
+                data: Buffer.from(signature).toString('base64'),
+            })
+        })
+
+        it('should handle handleSignData error', async () => {
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = {
+                clientId: 'test-client-id',
+                accounts: ['addr1'],
+            }
+            const payload = {
+                params: [{ message: 'Sign me', data: 'somedata' }],
+            }
+
+            result.current.handleSignData(connector as any, null, payload)
+
+            const { error } =
+                mockAddSignRequest.mock.calls[
+                    mockAddSignRequest.mock.calls.length - 1
+                ][0]
+
+            await expect(error('addr1', 'Rejected')).rejects.toThrow(
+                WalletConnectSignRequestError,
+            )
         })
 
         it('should throw WalletConnectSignRequestError if error is present', () => {
@@ -177,6 +215,7 @@ describe('useWalletConnectHandlers', () => {
             const connector = {
                 clientId: 'test-client-id',
                 accounts: ['addr1'],
+                sendTransaction: vi.fn(),
             }
             const payload = {
                 params: [
@@ -195,12 +234,58 @@ describe('useWalletConnectHandlers', () => {
 
             expect(mockAddSignRequest).toHaveBeenCalledWith({
                 type: 'transactions',
-                transport: 'walletconnect',
+                transport: 'callback',
                 transportId: 'test-client-id',
                 message: 'Sign tx',
                 addresses: ['addr1'],
                 txs: ['encodedTxn'],
+                success: expect.any(Function),
+                error: expect.any(Function),
             })
+
+            // Test success callback
+            const { success } =
+                mockAddSignRequest.mock.calls[
+                    mockAddSignRequest.mock.calls.length - 1
+                ][0]
+            const signedTxs = [[{ id: 'tx1' }]]
+
+            act(() => {
+                success('addr1', signedTxs)
+            })
+
+            expect(connector.sendTransaction).toHaveBeenCalledWith({
+                from: 'addr1',
+                data: Buffer.from(JSON.stringify(signedTxs[0][0])).toString(
+                    'base64',
+                ),
+            })
+        })
+
+        it('should handle handleSignTransaction error', async () => {
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = {
+                clientId: 'test-client-id',
+                accounts: ['addr1'],
+            }
+            const payload = {
+                params: [{ message: 'Sign tx', txn: 'encodedTxn' }],
+            }
+
+            result.current.handleSignTransaction(
+                connector as any,
+                null,
+                payload,
+            )
+
+            const { error } =
+                mockAddSignRequest.mock.calls[
+                    mockAddSignRequest.mock.calls.length - 1
+                ][0]
+
+            await expect(error('addr1', 'Rejected')).rejects.toThrow(
+                WalletConnectSignRequestError,
+            )
         })
 
         it('should throw WalletConnectInvalidSessionError if session not found', () => {
