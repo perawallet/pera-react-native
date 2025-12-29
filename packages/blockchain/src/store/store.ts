@@ -63,7 +63,10 @@ const createBlockchainStore = (storage: KeyValueStorageService) =>
                 storage: createJSONStorage(() => storage),
                 version: 1,
                 partialize: state => ({
-                    pendingSignRequests: state.pendingSignRequests,
+                    // don't persist callback sign requests because the callback function can't be serialized and they become defunct
+                    pendingSignRequests: state.pendingSignRequests.filter(
+                        r => r.transport !== 'callback',
+                    ),
                 }),
             },
         ),

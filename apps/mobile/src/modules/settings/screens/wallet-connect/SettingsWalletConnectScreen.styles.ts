@@ -18,10 +18,10 @@ export const useStyles = makeStyles(theme => {
             flex: 1,
         },
         scannerClose: {
-            marginTop: theme.spacing.xl * 1.5,
+            marginTop: theme.spacing.xxl,
             marginLeft: theme.spacing.lg,
-            width: theme.spacing.xl * 2,
-            height: theme.spacing.xl * 2,
+            width: theme.spacing['3xl'],
+            height: theme.spacing['3xl'],
             alignItems: 'center',
             justifyContent: 'center',
         },
@@ -56,7 +56,7 @@ export const useStyles = makeStyles(theme => {
         listFooter: {
             flex: 1,
             justifyContent: 'flex-end',
-            paddingBottom: theme.spacing.xl * 2,
+            paddingBottom: theme.spacing['3xl'],
         },
     }
 })

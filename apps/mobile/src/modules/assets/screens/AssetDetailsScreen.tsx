@@ -28,7 +28,7 @@ import { TAB_ANIMATION_CONFIG } from '@constants/ui'
 import PWView from '@components/view/PWView'
 import { useLanguage } from '@hooks/language'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
-import { AccountStackParamsList } from '@routes/account'
+import { AccountStackParamsList } from '@modules/accounts/routes'
 
 type AssetDetailsScreenProps = NativeStackScreenProps<
     AccountStackParamsList,
