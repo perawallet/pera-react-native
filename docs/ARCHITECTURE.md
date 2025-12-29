@@ -14,14 +14,19 @@ This project is a **monorepo** managed by [Turborepo](https://turbo.build/) and 
 - Connects to the "Business Logic" (packages) via Hooks.
 - Implements **platform integration** (e.g., Secure Storage, File System, Network).
 
-### `packages/*` (Business Logic)
-
-Headless libraries that handle data, state, and complex logic.
+### `packages` ("Headless" Business Logic Layer)
 
 - **`shared`**: Common utilities, constants, types, and logging.
 - **`platform-integration`**: Interfaces for platform specific features (Secure Storage, File System, Network).
-- **`account`, `assets`, `contacts`, `settings`**: Domain-specific logic and state stores.
-- **`blockchain`**: Algorand specific code, transaction signing, and node/indexer interaction.
+- **`accounts`, `assets`, `contacts`, `settings`, `swaps`**: Domain-specific logic and state stores.
+- **`kmd`**: KMD (Key Management Daemon) integration separate from accounts.
+- **`blockchain`**: Algorand specific code and node/indexer interaction.
+- **`walletconnect`**: WalletConnect v1 integration (v2 still pending)
+- **`currencies`**: Currency formatting and preferences.
+- **`config`**: Configuration and environment variables.
+- **`devtools`**: Development tools and debugging utilities.
+- **`polling`**: Polling logic for background tasks.
+- **`xhdwallet`**: XHD (Extended HD) key derivation and signing logic (temp fork of @algorandfoundation/xhd-wallet-ts until react native is supported upstream).
 
 ## Separation of Concerns
 

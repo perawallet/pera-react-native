@@ -18,7 +18,7 @@ We follow strict standards to keep the codebase clean, consistent, and maintaina
 
 - **Functional Components**: Use functional components with Hooks wherever possible. Class components are legacy.
 - **PascalCase**: Component names and files containing components (e.g., `AccountList.tsx`).
-- **Custom Hooks**: Encapsulate logic in `use[Feature]` hooks (e.g., `useAccountStore`) - lower, snake_case file names.
+- **Custom Hooks**: Encapsulate logic in `use[Feature]` hooks (e.g., `useAccountStore`).
 
 ## Naming Conventions
 

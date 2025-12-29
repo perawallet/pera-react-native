@@ -4,7 +4,8 @@ We prioritize high test coverage for business logic and critical UI paths.
 
 ## Tools
 
-- **[Vitest](https://vitest.dev/)**: Fast unit test runner (Jest-compatible). Used for all `packages/*` and most non-UI logic.
+- **[Vitest](https://vitest.dev/)**: Fast unit test runner (Jest-compatible). Used for all headless `packages/*`.
+- **[Jest](https://jestjs.io/)**: Used for the UI layer and hooks in `apps/mobile` to better support React Native specific testing.
 - **[React Native Testing Library (RNTL)](https://callstack.github.io/react-native-testing-library/)**: Used for testing React Components and Hooks in `apps/mobile`.
 
 ## Writing Tests

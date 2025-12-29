@@ -49,10 +49,9 @@ pnpm -C apps/mobile start|ios|android
 
 - apps/mobile — React Native app scaffold and screens
 - packages/\* - headless libraries containing all the business logic & state management for a wallet app
-- packages/eslint-config — shared ESLint rules
-- packages/typescript-config — shared tsconfig bases
-- packages/xhdwallet — HD wallet crypto helpers (this is a modified version of @algorandfoundation/xhd-wallet-api which isn't babel friendly)
-- specs — OpenAPI specs used for generation
+- packages/devtools/eslint — shared ESLint rules
+- packages/devtools/typescript — shared tsconfig bases
+- packages/xhdwallet — HD wallet crypto helpers (this is a modified version of @algorandfoundation/xhd-wallet-api which isn't babel friendly yet)
 
 See workspace definition in [`pnpm-workspace.yaml`](pnpm-workspace.yaml).
 
@@ -60,11 +59,10 @@ See workspace definition in [`pnpm-workspace.yaml`](pnpm-workspace.yaml).
 
 - Task runner/cache: Turborepo (scripts in [`package.json`](package.json))
 - Formatting: Prettier
-- Linting: ESLint with shared config from [`packages/eslint-config`](packages/eslint-config/index.js)
-- TypeScript project references via [`packages/typescript-config`](packages/typescript-config/package.json)
-- API codegen: Kubb with configs [`backend-kubb.config.ts`](backend-kubb.config.ts), [`algod-kubb.config.ts`](algod-kubb.config.ts), [`indexer-kubb.config.ts`](indexer-kubb.config.ts); specs live in [`specs/`](specs/backend-openapi.json) (note that the openapi specs are not up to scratch and so generated code is used for reference/inspiration only)
+- Linting: ESLint with shared config from [`packages/devtools/eslint`](packages/devtools/eslint/index.js)
+- TypeScript project references via [`packages/devtools/typescript`](packages/devtools/typescript/package.json)
 
-Generate all API clients:
+Generate all API clients (using Kubb):
 
 ```sh
 pnpm run generate:all-apis
@@ -86,6 +84,7 @@ pnpm test           # run tests with coverage
 pnpm lint           # report linting errors
 pnpm lint:fix       # fix linting errors
 pnpm lint:copyright # add/update necessary copyright headers to any files that are missing them
+pnpm lint:i18n      # report i18n errors
 pnpm format         # format files
 ```
 
