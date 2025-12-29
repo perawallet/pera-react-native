@@ -235,6 +235,11 @@
             "permission_body": "You have received an unauthorized request from an app. Please check the app and try again.",
             "invalid_session": "Invalid Session",
             "invalid_session_body": "You have received an invalid session request from an app. Please check the app and try again."
+        },
+        "webview": {
+            "invalid_method": "Invalid method {{method}}",
+            "invalid_params": "Invalid parameters. Missing: {{params}}",
+            "unsupported_url": "Unsupported URL: {{url}}"
         }
     },
     "menu": {
@@ -396,7 +401,8 @@
             "node_settings": {
                 "mainnet_label": "Algorand MainNet",
                 "testnet_label": "Algorand TestNet"
-            }
+            },
+            "debug_webview": "Debug Webview"
         }
     },
     "tabbar": {

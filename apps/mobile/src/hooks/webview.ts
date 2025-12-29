@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+/* eslint-disable max-lines */
+
 import WebView from 'react-native-webview'
 import useToast from './toast'
 import { Linking } from 'react-native'
@@ -27,41 +29,41 @@ import { useSettings } from '@perawallet/wallet-core-settings'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useCallback, useContext } from 'react'
 import { WebViewContext } from '@providers/WebViewProvider'
-
-type PushNewScreenParams = {
-    url: string
-}
-
-type PushInternalBrowserParams = {
-    url: string
-    name?: string
-    projectId?: string
-    isFavorite?: boolean
-}
-
-type OpenSystemBrowserParams = {
-    url: string
-}
-
-type CanOpenURIParams = {
-    uri: string
-}
-
-type NotifyUserParams = {
-    type: 'haptic' | 'sound' | 'message'
-    variant: string
-    message?: string
-}
-
-type LogAnalyticsParams = {
-    name: string
-    payload: unknown
-}
+import { useLanguage } from './language'
+import {
+    ArbitraryDataSignRequest,
+    PeraArbitraryDataMessage,
+    SignRequestSource,
+    Transaction,
+    TransactionSignRequest,
+    useSigningRequest,
+} from '@perawallet/wallet-core-blockchain'
+import {
+    requireSecure,
+    sendErrorToWebview,
+    sendMessageToWebview,
+} from './webview/handlers'
+import { logger } from '@perawallet/wallet-core-shared'
 
 type WebviewMessage = {
-    action: string
-    params: Record<string, unknown>
+    id: string
+    jsonrpc: '2.0'
+    method: string
+    params?: Record<string, unknown>
 }
+
+export const JsonRpcErrorCode = {
+    ParseError: -32700,
+    InvalidRequest: -32600,
+    MethodNotFound: -32601,
+    InvalidParams: -32602,
+    InternalError: -32603,
+    ServerErrorStart: -32000,
+    ServerErrorEnd: -32099,
+} as const
+
+export type JsonRpcErrorCode =
+    (typeof JsonRpcErrorCode)[keyof typeof JsonRpcErrorCode]
 
 export const useWebView = () => {
     const { pushWebView } = useContext(WebViewContext)
@@ -84,130 +86,302 @@ export const usePeraWebviewInterface = (
     const deviceInfo = useDeviceInfoService()
     const { preferredCurrency } = useCurrency()
     const analytics = useAnalyticsService()
+    const { t } = useLanguage()
     const { pushWebView: pushWebViewContext } = useContext(WebViewContext)
+    const { addSignRequest } = useSigningRequest()
 
-    const sendMessageToWebview = useCallback(
-        (payload: unknown) => {
-            const message = `handleMessage(${JSON.stringify(payload)});`
-            webview?.injectJavaScript(message)
+    const hadRequiredParams = useCallback(
+        (requiredParams: string[], message: WebviewMessage) => {
+            for (const param of requiredParams) {
+                if (!message.params?.[param]) {
+                    sendErrorToWebview(
+                        message.id,
+                        JsonRpcErrorCode.InvalidParams,
+                        t('errors.webview.invalid_params', { params: param }),
+                        webview,
+                    )
+                    return false
+                }
+            }
+            return true
         },
-        [webview],
+        [t, webview],
     )
 
     const pushWebView = useCallback(
-        (params: PushInternalBrowserParams) => {
-            pushWebViewContext({
-                url: params.url,
-                onCloseRequested,
-                onBackRequested,
-                id: '',
+        (message: WebviewMessage) => {
+            requireSecure(securedConnection, () => {
+                if (!hadRequiredParams(['url'], message)) {
+                    return
+                }
+                pushWebViewContext({
+                    url: message.params!.url as string,
+                    onCloseRequested,
+                    onBackRequested,
+                    id: message.id,
+                })
             })
         },
-        [pushWebViewContext],
+        [pushWebViewContext, t, webview],
     )
 
     const openSystemBrowser = useCallback(
-        (params: OpenSystemBrowserParams) => {
-            Linking.canOpenURL(params.url).then(supported => {
-                if (supported) {
-                    Linking.openURL(params.url)
-                } else {
-                    showToast({
-                        title: "Can't open webpage",
-                        body: "The page you're viewing has sent an invalid message format.",
-                        type: 'error',
-                    })
+        (message: WebviewMessage) => {
+            requireSecure(securedConnection, () => {
+                if (!hadRequiredParams(['url'], message)) {
+                    return
                 }
+                Linking.canOpenURL(message.params!.url as string).then(
+                    supported => {
+                        if (supported) {
+                            Linking.openURL(message.params?.url as string)
+                        } else {
+                            sendErrorToWebview(
+                                message.id,
+                                JsonRpcErrorCode.InvalidParams,
+                                t('errors.webview.unsupported_url', {
+                                    url: message.params?.url,
+                                }),
+                                webview,
+                            )
+                        }
+                    },
+                )
             })
         },
-        [showToast],
+        [requireSecure, t, webview],
     )
 
-    const canOpenURI = useCallback((params: CanOpenURIParams) => {
-        Linking.canOpenURL(params.uri).then(supported => {
-            sendMessageToWebview(supported)
-        })
-    }, [])
-
-    const openNativeURI = useCallback(
-        (params: CanOpenURIParams) => {
-            Linking.canOpenURL(params.uri).then(supported => {
-                if (supported) {
-                    Linking.openURL(params.uri)
-                } else {
-                    showToast({
-                        title: "Can't open URI",
-                        body: "The page you're viewing has sent an invalid message format.",
-                        type: 'error',
-                    })
+    const canOpenURI = useCallback(
+        (message: WebviewMessage) => {
+            requireSecure(securedConnection, () => {
+                if (!hadRequiredParams(['uri'], message)) {
+                    return
                 }
+                Linking.canOpenURL(message.params!.uri as string).then(
+                    supported => {
+                        sendMessageToWebview(message.id, { supported }, webview)
+                    },
+                )
             })
         },
-        [showToast],
+        [requireSecure, t, webview],
+    )
+
+    const openNativeURI = useCallback(
+        (message: WebviewMessage) => {
+            requireSecure(securedConnection, () => {
+                if (!hadRequiredParams(['uri'], message)) {
+                    return
+                }
+                Linking.canOpenURL(message.params!.uri as string).then(
+                    supported => {
+                        if (supported) {
+                            Linking.openURL(message.params?.uri as string)
+                        } else {
+                            sendErrorToWebview(
+                                message.id,
+                                JsonRpcErrorCode.InvalidParams,
+                                t('errors.webview.unsupported_url', {
+                                    url: message.params?.uri,
+                                }),
+                                webview,
+                            )
+                        }
+                    },
+                )
+            })
+        },
+        [requireSecure, t, webview],
     )
 
     const notifyUser = useCallback(
-        (params: NotifyUserParams) => {
-            if (params.type === 'message') {
-                showToast({
-                    title: '',
-                    body: params.message ?? '',
-                    type: 'info',
-                })
-            }
-            //TODO add haptic (and maybe message.banner) support and maybe sound
+        (message: WebviewMessage) => {
+            requireSecure(securedConnection, () => {
+                if (!hadRequiredParams(['type'], message)) {
+                    return
+                }
+                if (message.params?.type === 'message') {
+                    showToast({
+                        title: '',
+                        body: message.params?.message as string,
+                        type: 'info',
+                    })
+                }
+                //TODO add haptic (and maybe message.banner) support and maybe sound
+            })
         },
-        [showToast],
+        [requireSecure, showToast],
     )
 
-    const getAddresses = useCallback(() => {
-        const payload = accounts.map(a => ({
-            name: getAccountDisplayName(a),
-            address: a.address,
-            type: 'HdKey', //TODO support other types also
-        }))
-        sendMessageToWebview(payload)
-    }, [accounts, webview])
+    const getAddresses = useCallback(
+        (message: WebviewMessage) => {
+            requireSecure(securedConnection, () => {
+                const payload = accounts.map(a => ({
+                    name: getAccountDisplayName(a),
+                    address: a.address,
+                    type: 'HdKey', //TODO support other types also
+                }))
+                sendMessageToWebview(message.id, payload, webview)
+            })
+        },
+        [requireSecure, accounts, webview],
+    )
 
-    const getSettings = useCallback(() => {
-        const payload = {
-            //TODO make some more of this configurable and/or add to deviceInfo
-            appName: 'Pera Wallet',
-            appPackageName: 'pera-rn',
-            appVersion: deviceInfo.getAppVersion(),
-            clientType: deviceInfo.getDevicePlatform(),
-            deviceId: deviceID,
-            deviceVersion: deviceInfo.getDeviceModel(),
-            deviceOSVersion: deviceInfo.getDevicePlatform(),
-            deviceModel: deviceInfo.getDeviceModel(),
+    const getSettings = useCallback(
+        (message: WebviewMessage) => {
+            requireSecure(securedConnection, () => {
+                const payload = {
+                    //TODO make some more of this configurable and/or add to deviceInfo
+                    appName: 'Pera Wallet',
+                    appPackageName: 'pera-rn',
+                    appVersion: deviceInfo.getAppVersion(),
+                    clientType: deviceInfo.getDevicePlatform(),
+                    deviceId: deviceID,
+                    deviceVersion: deviceInfo.getDeviceModel(),
+                    deviceOSVersion: deviceInfo.getDevicePlatform(),
+                    deviceModel: deviceInfo.getDeviceModel(),
+                    theme,
+                    network,
+                    currency: preferredCurrency,
+                    region: 'en-US', //TODO pull from state eventually (or device location or something)
+                    language: 'en-US', //TODO pull from app locale
+                }
+                sendMessageToWebview(message.id, payload, webview)
+            })
+        },
+        [
+            deviceID,
+            deviceInfo,
+            preferredCurrency,
+            requireSecure,
             theme,
             network,
-            currency: preferredCurrency,
-            region: 'en-US', //TODO pull from state eventually (or device location or something)
-            language: 'en-US', //TODO pull from app locale
-        }
-        sendMessageToWebview(payload)
-    }, [webview])
+            webview,
+        ],
+    )
 
-    const getPublicSettings = useCallback(() => {
-        const payload = {
-            theme,
-            network,
-            currency: preferredCurrency,
-            language: 'en-US', //TODO pull from app locale
-        }
-        sendMessageToWebview(payload)
-    }, [webview])
+    const requestTransactionSigning = useCallback(
+        (message: WebviewMessage) => {
+            requireSecure(securedConnection, () => {
+                if (
+                    !hadRequiredParams(['txns', 'metadata', 'address'], message)
+                ) {
+                    return
+                }
+                const txns = message.params!['txns'] as (Transaction | null)[]
+                const metadata = message.params![
+                    'metadata'
+                ] as SignRequestSource
+                const address = message.params!['address'] as string
+                addSignRequest({
+                    id: message.id,
+                    type: 'transactions',
+                    transport: 'callback',
+                    txs: [txns],
+                    transportId: message.id,
+                    addresses: [address],
+                    sourceMetadata: metadata,
+                    success: async (_, signed: (Transaction | null)[][]) => {
+                        sendMessageToWebview(
+                            message.id,
+                            {
+                                signedTxs: signed,
+                            },
+                            webview,
+                        )
+                    },
+                    error: (_, err) =>
+                        sendErrorToWebview(
+                            message.id,
+                            JsonRpcErrorCode.InternalError,
+                            err,
+                            webview,
+                        ),
+                } as TransactionSignRequest)
+            })
+        },
+        [requireSecure, sendErrorToWebview, sendMessageToWebview, webview],
+    )
+
+    const requestDataSigning = useCallback(
+        (message: WebviewMessage) => {
+            requireSecure(securedConnection, () => {
+                if (
+                    !hadRequiredParams(['data', 'metadata', 'address'], message)
+                ) {
+                    return
+                }
+                const dataMessage = message.params![
+                    'data'
+                ] as PeraArbitraryDataMessage
+                const userMessage = dataMessage.message
+                const metadata = message.params![
+                    'metadata'
+                ] as SignRequestSource
+                const address = message.params!['address'] as string
+                addSignRequest({
+                    id: message.id,
+                    type: 'arbitrary-data',
+                    transport: 'callback',
+                    data: dataMessage.data,
+                    transportId: message.id,
+                    addresses: [address],
+                    sourceMetadata: metadata,
+                    message: userMessage,
+                    success: async (_, signature: Uint8Array) => {
+                        sendMessageToWebview(
+                            message.id,
+                            {
+                                signature:
+                                    Buffer.from(signature).toString('base64'),
+                            },
+                            webview,
+                        )
+                    },
+                    error: (_, err) =>
+                        sendErrorToWebview(
+                            message.id,
+                            JsonRpcErrorCode.InternalError,
+                            err,
+                            webview,
+                        ),
+                } as ArbitraryDataSignRequest)
+            })
+        },
+        [requireSecure, sendErrorToWebview, sendMessageToWebview, webview],
+    )
+
+    const getPublicSettings = useCallback(
+        (message: WebviewMessage) => {
+            const payload = {
+                theme,
+                network,
+                currency: preferredCurrency,
+                language: 'en-US', //TODO pull from app locale
+            }
+            sendMessageToWebview(message.id, payload, webview)
+        },
+        [preferredCurrency, theme, network, webview],
+    )
 
     const onBackPressed = useCallback(() => {
         onBackRequested?.()
     }, [onBackRequested])
 
     const logAnalyticsEvent = useCallback(
-        (params: LogAnalyticsParams) => {
-            analytics.logEvent(params.name, params.payload)
+        (message: WebviewMessage) => {
+            requireSecure(securedConnection, () => {
+                if (!hadRequiredParams(['name', 'payload'], message)) {
+                    return
+                }
+                analytics.logEvent(
+                    message.params!.name as string,
+                    message.params!.payload,
+                )
+            })
         },
-        [analytics],
+        [analytics, requireSecure],
     )
 
     const closeWebView = useCallback(() => {
@@ -215,69 +389,64 @@ export const usePeraWebviewInterface = (
     }, [onCloseRequested])
 
     const handleMessage = useCallback(
-        ({ action, params }: WebviewMessage) => {
-            switch (action) {
-                case 'pushWebView':
-                    if (securedConnection) {
-                        pushWebView(params as PushNewScreenParams)
-                    }
-                    break
-                case 'openSystemBrowser':
-                    if (securedConnection) {
-                        openSystemBrowser(params as OpenSystemBrowserParams)
-                    }
-                    break
-                case 'canOpenURI':
-                    if (securedConnection) {
-                        canOpenURI(params as CanOpenURIParams)
-                    }
-                    break
-                case 'openNativeURI':
-                    if (securedConnection) {
-                        openNativeURI(params as CanOpenURIParams)
-                    }
-                    break
-                case 'notifyUser':
-                    if (securedConnection) {
-                        notifyUser(params as NotifyUserParams)
-                    }
-                    break
-                case 'getAddresses':
-                    if (securedConnection) {
-                        getAddresses()
-                    }
-                    break
-                case 'getSettings':
-                    if (securedConnection) {
-                        getSettings()
-                    }
-                    break
-                case 'getPublicSettings':
-                    getPublicSettings()
-                    break
-                case 'onBackPressed':
-                    if (securedConnection) {
-                        onBackPressed()
-                    }
-                    break
-                case 'logAnalyticsEvent':
-                    if (securedConnection) {
-                        logAnalyticsEvent(params as LogAnalyticsParams)
-                    }
-                    break
-                case 'closeWebView':
-                    if (securedConnection) {
-                        closeWebView()
-                    }
-                    break
-                default:
-                    showToast({
-                        title: 'Invalid message received.',
-                        body: "The page you're viewing has sent an invalid message format.",
-                        type: 'error',
-                    })
-                    break
+        (message: WebviewMessage | WebviewMessage[]) => {
+            if (!Array.isArray(message)) {
+                message = [message]
             }
+            logger.debug('Received webview interface call', { message })
+            message.forEach(message => {
+                switch (message.method) {
+                    case 'pushWebView':
+                        pushWebView(message)
+                        break
+                    case 'openSystemBrowser':
+                        openSystemBrowser(message)
+                        break
+                    case 'canOpenURI':
+                        canOpenURI(message)
+                        break
+                    case 'openNativeURI':
+                        openNativeURI(message)
+                        break
+                    case 'notifyUser':
+                        notifyUser(message)
+                        break
+                    case 'getAddresses':
+                        getAddresses(message)
+                        break
+                    case 'getSettings':
+                        getSettings(message)
+                        break
+                    case 'getPublicSettings':
+                        getPublicSettings(message)
+                        break
+                    case 'onBackPressed':
+                        onBackPressed()
+                        break
+                    case 'logAnalyticsEvent':
+                        logAnalyticsEvent(message)
+                        break
+                    case 'closeWebView':
+                        closeWebView()
+                        break
+                    case 'requestTransactionSigning':
+                        requestTransactionSigning(message)
+                        break
+                    case 'requestDataSigning':
+                        requestDataSigning(message)
+                        break
+                    default:
+                        sendErrorToWebview(
+                            message.id,
+                            JsonRpcErrorCode.MethodNotFound,
+                            t('errors.webview.invalid_method', {
+                                method: message.method,
+                            }),
+                            webview,
+                        )
+                        break
+                }
+            })
         },
         [
             pushWebView,

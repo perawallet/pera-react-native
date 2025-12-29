@@ -18,28 +18,50 @@ export * from './indexer-models'
 
 export const MAX_TX_NOTE_BYTES = 1024
 
+export type SignRequestSource = {
+    name?: string
+    description?: string
+    url?: string
+    icons?: string[]
+}
+
 type BaseSignRequest = {
     id?: string
     type: 'transactions' | 'arbitrary-data' | 'arc60'
-    transport: 'walletconnect' | 'multisig' | 'algod'
+    transport: 'algod' | 'callback'
     transportId?: string
+    sourceMetadata?: SignRequestSource
     message?: string
     addresses?: string[]
 }
 
 export type TransactionSignRequest = {
-    // A list of transaction groups (which in turn are a list of transactions)
-    txs: Transaction[][]
+    // A list of transaction groups (which in turn are a list of transactions) - nulls are used to represent transactions that the caller does not need signed
+    txs: (Transaction | null)[][]
+    success?: (
+        signingAddress: string,
+        signedTxs: (Transaction | null)[][] | null,
+    ) => Promise<void>
+    error?: (signingAddress: string, error: string) => Promise<void>
 } & BaseSignRequest
+
+export type PeraArbitraryDataMessage = {
+    data: string // base64 encoded
+    message?: string // optional message to display to the user
+}
 
 export type ArbitraryDataSignRequest = {
     // A raw data blob to sign
-    data: Uint8Array
+    data: string // base64 encoded
+    success?: (signingAddress: string, signature: Uint8Array) => Promise<void>
+    error?: (signingAddress: string, error: string) => Promise<void>
 } & BaseSignRequest
 
 //ARC 60 arbitrary data signing request
 export type Arc60SignRequest = {
     //TODO add data in here that matches the expected structure
+    success?: (signingAddress: string, signature: Uint8Array) => Promise<void>
+    error?: (signingAddress: string, error: string) => Promise<void>
 } & BaseSignRequest
 
 export type SignRequest =

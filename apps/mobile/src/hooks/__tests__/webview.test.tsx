@@ -13,7 +13,6 @@
 import { renderHook, act } from '@testing-library/react-native'
 import { usePeraWebviewInterface, useWebView } from '../webview'
 import { Linking } from 'react-native'
-import { Notifier } from 'react-native-notifier'
 import React from 'react'
 import { WebViewContext } from '@providers/WebViewProvider'
 
@@ -76,8 +75,9 @@ jest.mock('@perawallet/wallet-core-currencies', () => ({
     })),
 }))
 
+const mockAddSignRequest = jest.fn()
 jest.mock('@perawallet/wallet-core-blockchain', () => ({
-    useSigningRequest: () => ({ addSignRequest: jest.fn() }),
+    useSigningRequest: () => ({ addSignRequest: mockAddSignRequest }),
 }))
 
 jest.mock('@perawallet/wallet-core-walletconnect', () => ({
@@ -86,6 +86,17 @@ jest.mock('@perawallet/wallet-core-walletconnect', () => ({
 
 jest.mock('@rneui/themed', () => ({
     makeStyles: () => () => ({}),
+}))
+
+jest.mock('../language', () => ({
+    useLanguage: jest.fn(() => ({
+        t: (key: string, params?: Record<string, string>) => {
+            if (key === 'errors.webview.unsupported_url' && params?.url) {
+                return `Unsupported URL: ${params.url}`
+            }
+            return key
+        },
+    })),
 }))
 
 describe('useWebView', () => {
@@ -123,7 +134,9 @@ describe('usePeraWebviewInterface', () => {
 
         await act(async () => {
             result.current.handleMessage({
-                action: 'openSystemBrowser',
+                id: '1',
+                jsonrpc: '2.0',
+                method: 'openSystemBrowser',
                 params: { url: 'https://example.com' },
             })
         })
@@ -143,7 +156,9 @@ describe('usePeraWebviewInterface', () => {
 
         await act(async () => {
             result.current.handleMessage({
-                action: 'openSystemBrowser',
+                id: '2',
+                jsonrpc: '2.0',
+                method: 'openSystemBrowser',
                 params: { url: 'https://example.com' },
             })
         })
@@ -152,10 +167,13 @@ describe('usePeraWebviewInterface', () => {
             await Promise.resolve()
         })
 
-        expect(Notifier.showNotification).toHaveBeenCalledWith(
-            expect.objectContaining({
-                title: "Can't open webpage",
-            }),
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining('"id":"2"'),
+        )
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining(
+                '"error":{"code":-32602,"message":"Unsupported URL: https://example.com"}',
+            ),
         )
     })
 
@@ -166,7 +184,9 @@ describe('usePeraWebviewInterface', () => {
 
         await act(async () => {
             result.current.handleMessage({
-                action: 'canOpenURI',
+                id: '3',
+                jsonrpc: '2.0',
+                method: 'canOpenURI',
                 params: { uri: 'custom://uri' },
             })
         })
@@ -177,7 +197,10 @@ describe('usePeraWebviewInterface', () => {
 
         expect(Linking.canOpenURL).toHaveBeenCalledWith('custom://uri')
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
-            'handleMessage(true);',
+            expect.stringContaining('"id":"3"'),
+        )
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining('"result":{"supported":true}'),
         )
     })
 
@@ -188,7 +211,9 @@ describe('usePeraWebviewInterface', () => {
 
         await act(async () => {
             result.current.handleMessage({
-                action: 'openNativeURI',
+                id: '4',
+                jsonrpc: '2.0',
+                method: 'openNativeURI',
                 params: { uri: 'custom://uri' },
             })
         })
@@ -207,11 +232,16 @@ describe('usePeraWebviewInterface', () => {
 
         act(() => {
             result.current.handleMessage({
-                action: 'getSettings',
+                id: '5',
+                jsonrpc: '2.0',
+                method: 'getSettings',
                 params: {},
             })
         })
 
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining('"id":"5"'),
+        )
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
             expect.stringContaining('"appName":"Pera Wallet"'),
         )
@@ -224,11 +254,16 @@ describe('usePeraWebviewInterface', () => {
 
         act(() => {
             result.current.handleMessage({
-                action: 'getPublicSettings',
+                id: '6',
+                jsonrpc: '2.0',
+                method: 'getPublicSettings',
                 params: {},
             })
         })
 
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining('"id":"6"'),
+        )
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
             expect.stringContaining('"theme":"light"'),
         )
@@ -241,7 +276,9 @@ describe('usePeraWebviewInterface', () => {
 
         act(() => {
             result.current.handleMessage({
-                action: 'logAnalyticsEvent',
+                id: '7',
+                jsonrpc: '2.0',
+                method: 'logAnalyticsEvent',
                 params: { name: 'test_event', payload: { foo: 'bar' } },
             })
         })
@@ -257,7 +294,9 @@ describe('usePeraWebviewInterface', () => {
 
         act(() => {
             result.current.handleMessage({
-                action: 'closeWebView',
+                id: '8',
+                jsonrpc: '2.0',
+                method: 'closeWebView',
                 params: {},
             })
         })
@@ -272,7 +311,9 @@ describe('usePeraWebviewInterface', () => {
 
         act(() => {
             result.current.handleMessage({
-                action: 'notifyUser',
+                id: '9',
+                jsonrpc: '2.0',
+                method: 'notifyUser',
                 params: { type: 'message', message: 'test message' },
             })
         })
@@ -287,11 +328,16 @@ describe('usePeraWebviewInterface', () => {
 
         act(() => {
             result.current.handleMessage({
-                action: 'getAddresses',
+                id: '10',
+                jsonrpc: '2.0',
+                method: 'getAddresses',
                 params: {},
             })
         })
 
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining('"id":"10"'),
+        )
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
             expect.stringContaining('"address":"addr1"'),
         )
@@ -304,7 +350,9 @@ describe('usePeraWebviewInterface', () => {
 
         act(() => {
             result.current.handleMessage({
-                action: 'onBackPressed',
+                id: '11',
+                jsonrpc: '2.0',
+                method: 'onBackPressed',
                 params: {},
             })
         })
@@ -329,13 +377,412 @@ describe('usePeraWebviewInterface', () => {
 
         act(() => {
             result.current.handleMessage({
-                action: 'pushWebView',
+                id: '12',
+                jsonrpc: '2.0',
+                method: 'pushWebView',
                 params: { url: 'https://example.com' },
             })
         })
 
         expect(mockPushWebView).toHaveBeenCalledWith(
-            expect.objectContaining({ url: 'https://example.com' }),
+            expect.objectContaining({ url: 'https://example.com', id: '12' }),
         )
+    })
+
+    it('should handle requestTransactionSigning action', async () => {
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true),
+        )
+
+        const txns = [{}]
+        const metadata = { name: 'Test dApp' }
+        const address = 'addr1'
+
+        await act(async () => {
+            result.current.handleMessage({
+                id: '13',
+                jsonrpc: '2.0',
+                method: 'requestTransactionSigning',
+                params: { txns, metadata, address },
+            })
+        })
+
+        expect(mockAddSignRequest).toHaveBeenCalledWith(
+            expect.objectContaining({
+                id: '13',
+                type: 'transactions',
+                transport: 'callback',
+                sourceMetadata: metadata,
+            }),
+        )
+
+        // Test success
+        const signRequest = mockAddSignRequest.mock.calls[0][0]
+        const signedTxs = [[{ id: 'tx1' }]]
+
+        await act(async () => {
+            await signRequest.success(address, signedTxs)
+        })
+
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining('"id":"13"'),
+        )
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining('"signedTxs":[[{"id":"tx1"}]]'),
+        )
+    })
+
+    it('should handle requestTransactionSigning error', async () => {
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true),
+        )
+
+        const txns = [{}]
+        const metadata = { name: 'Test dApp' }
+        const address = 'addr1'
+
+        await act(async () => {
+            result.current.handleMessage({
+                id: '13-error',
+                jsonrpc: '2.0',
+                method: 'requestTransactionSigning',
+                params: { txns, metadata, address },
+            })
+        })
+
+        const signRequest =
+            mockAddSignRequest.mock.calls[
+                mockAddSignRequest.mock.calls.length - 1
+            ][0]
+
+        await act(async () => {
+            await signRequest.error(address, 'User rejected')
+        })
+
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining('"id":"13-error"'),
+        )
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining(
+                '"error":{"code":-32603,"message":"User rejected"}',
+            ),
+        )
+    })
+
+    it('should handle requestDataSigning action', async () => {
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true),
+        )
+
+        const data = { data: 'AQID', message: 'Sign this' }
+        const metadata = { name: 'Test dApp' }
+        const address = 'addr1'
+
+        await act(async () => {
+            result.current.handleMessage({
+                id: '14',
+                jsonrpc: '2.0',
+                method: 'requestDataSigning',
+                params: { data, metadata, address },
+            })
+        })
+
+        expect(mockAddSignRequest).toHaveBeenCalledWith(
+            expect.objectContaining({
+                id: '14',
+                type: 'arbitrary-data',
+                transport: 'callback',
+                data: 'AQID',
+                message: 'Sign this',
+                sourceMetadata: metadata,
+            }),
+        )
+
+        // Test success
+        const signRequest =
+            mockAddSignRequest.mock.calls[
+                mockAddSignRequest.mock.calls.length - 1
+            ][0]
+        const signature = new Uint8Array([4, 5, 6])
+
+        await act(async () => {
+            await signRequest.success(address, signature)
+        })
+
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining('"id":"14"'),
+        )
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining('"signature":"BAUG"'), // [4,5,6] in base64 is BAUG
+        )
+    })
+
+    it('should handle requestDataSigning error', async () => {
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true),
+        )
+
+        const data = { data: 'AQID' }
+        const metadata = { name: 'Test dApp' }
+        const address = 'addr1'
+
+        await act(async () => {
+            result.current.handleMessage({
+                id: '14-error',
+                jsonrpc: '2.0',
+                method: 'requestDataSigning',
+                params: { data, metadata, address },
+            })
+        })
+
+        const signRequest =
+            mockAddSignRequest.mock.calls[
+                mockAddSignRequest.mock.calls.length - 1
+            ][0]
+
+        await act(async () => {
+            await signRequest.error(address, 'Unauthorized')
+        })
+
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining('"id":"14-error"'),
+        )
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining(
+                '"error":{"code":-32603,"message":"Unauthorized"}',
+            ),
+        )
+    })
+
+    describe('insecure connection handling', () => {
+        it('should silently return for getAddresses when connection is insecure', () => {
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(mockWebview, false),
+            )
+
+            act(() => {
+                result.current.handleMessage({
+                    id: '15',
+                    jsonrpc: '2.0',
+                    method: 'getAddresses',
+                    params: {},
+                })
+            })
+
+            // Should not inject any message since connection is insecure
+            expect(mockWebview.injectJavaScript).not.toHaveBeenCalled()
+        })
+
+        it('should silently return for getSettings when connection is insecure', () => {
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(mockWebview, false),
+            )
+
+            act(() => {
+                result.current.handleMessage({
+                    id: '16',
+                    jsonrpc: '2.0',
+                    method: 'getSettings',
+                    params: {},
+                })
+            })
+
+            expect(mockWebview.injectJavaScript).not.toHaveBeenCalled()
+        })
+
+        it('should silently return for requestTransactionSigning when connection is insecure', () => {
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(mockWebview, false),
+            )
+
+            act(() => {
+                result.current.handleMessage({
+                    id: '17',
+                    jsonrpc: '2.0',
+                    method: 'requestTransactionSigning',
+                    params: { txns: [], metadata: {}, address: 'addr1' },
+                })
+            })
+
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('missing parameter validation', () => {
+        it('should send error for pushWebView with missing url', () => {
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(mockWebview, true),
+            )
+
+            act(() => {
+                result.current.handleMessage({
+                    id: '18',
+                    jsonrpc: '2.0',
+                    method: 'pushWebView',
+                    params: {},
+                })
+            })
+
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('"error"'),
+            )
+        })
+
+        it('should send error for openSystemBrowser with missing url', () => {
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(mockWebview, true),
+            )
+
+            act(() => {
+                result.current.handleMessage({
+                    id: '19',
+                    jsonrpc: '2.0',
+                    method: 'openSystemBrowser',
+                    params: {},
+                })
+            })
+
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('"error"'),
+            )
+        })
+
+        it('should send error for canOpenURI with missing uri', () => {
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(mockWebview, true),
+            )
+
+            act(() => {
+                result.current.handleMessage({
+                    id: '20',
+                    jsonrpc: '2.0',
+                    method: 'canOpenURI',
+                    params: {},
+                })
+            })
+
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('"error"'),
+            )
+        })
+
+        it('should send error for openNativeURI with missing uri', () => {
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(mockWebview, true),
+            )
+
+            act(() => {
+                result.current.handleMessage({
+                    id: '21',
+                    jsonrpc: '2.0',
+                    method: 'openNativeURI',
+                    params: {},
+                })
+            })
+
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('"error"'),
+            )
+        })
+
+        it('should send error for notifyUser with missing type', () => {
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(mockWebview, true),
+            )
+
+            act(() => {
+                result.current.handleMessage({
+                    id: '22',
+                    jsonrpc: '2.0',
+                    method: 'notifyUser',
+                    params: {},
+                })
+            })
+
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('"error"'),
+            )
+        })
+
+        it('should send error for requestTransactionSigning with missing params', () => {
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(mockWebview, true),
+            )
+
+            act(() => {
+                result.current.handleMessage({
+                    id: '23',
+                    jsonrpc: '2.0',
+                    method: 'requestTransactionSigning',
+                    params: { txns: [] }, // missing metadata and address
+                })
+            })
+
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('"error"'),
+            )
+        })
+
+        it('should send error for requestDataSigning with missing params', () => {
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(mockWebview, true),
+            )
+
+            act(() => {
+                result.current.handleMessage({
+                    id: '24',
+                    jsonrpc: '2.0',
+                    method: 'requestDataSigning',
+                    params: { data: 'AQID' }, // missing metadata and address
+                })
+            })
+
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('"error"'),
+            )
+        })
+
+        it('should send error for logAnalyticsEvent with missing params', () => {
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(mockWebview, true),
+            )
+
+            act(() => {
+                result.current.handleMessage({
+                    id: '25',
+                    jsonrpc: '2.0',
+                    method: 'logAnalyticsEvent',
+                    params: { name: 'test' }, // missing payload
+                })
+            })
+
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('"error"'),
+            )
+        })
+    })
+
+    describe('unknown method handling', () => {
+        it('should send error for unknown method', () => {
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(mockWebview, true),
+            )
+
+            act(() => {
+                result.current.handleMessage({
+                    id: '26',
+                    jsonrpc: '2.0',
+                    method: 'unknownMethod',
+                    params: {},
+                })
+            })
+
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('"error"'),
+            )
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('"id":"26"'),
+            )
+        })
     })
 })
