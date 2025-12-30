@@ -28,8 +28,12 @@ const ButtonPanel = () => {
     const { t } = useLanguage()
     const { showToast } = useToast()
 
-    const goToRootPage = (name: string) => {
+    const goToTabBarPage = (name: string) => {
         navigation.replace('TabBar', { screen: name })
+    }
+
+    const goToRootPage = (name: string) => {
+        navigation.push(name)
     }
 
     const notImplemented = () => {
@@ -54,7 +58,7 @@ const ButtonPanel = () => {
                 title={t('account_details.button_panel.swap')}
                 icon='swap'
                 variant='primary'
-                onPress={() => goToRootPage('Swap')}
+                onPress={() => goToTabBarPage('Swap')}
             />
             <RoundButton
                 title={t('account_details.button_panel.stake')}

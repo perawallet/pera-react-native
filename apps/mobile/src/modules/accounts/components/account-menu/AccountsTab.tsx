@@ -11,10 +11,8 @@
  */
 
 import PWView from '@components/view/PWView'
-import AccountIcon from '../account-icon/AccountIcon'
 import PWTouchableOpacity from '@components/touchable-opacity/PWTouchableOpacity'
 import {
-    getAccountDisplayName,
     useAllAccounts,
     useSelectedAccountAddress,
     WalletAccount,
@@ -22,35 +20,17 @@ import {
 import PWButton from '@components/button/PWButton'
 import { useLanguage } from '@hooks/language'
 import { useStyles } from './styles'
-import { Text, useTheme } from '@rneui/themed'
+import AccountWithBalance from '../account-with-balance/AccountWithBalance'
 
 type AccountsTabProps = {
     onSelected: (account: WalletAccount) => void
 }
 const AccountsTab = (props: AccountsTabProps) => {
     const styles = useStyles()
-    const { theme } = useTheme()
     const accounts = useAllAccounts()
     const { selectedAccountAddress, setSelectedAccountAddress } =
         useSelectedAccountAddress()
     const { t } = useLanguage()
-
-    const getRouteName = (account?: WalletAccount): string => {
-        return account ? getAccountDisplayName(account) : 'Account'
-    }
-
-    const getWalletIcon = (acct: WalletAccount) => {
-        return (
-            <AccountIcon
-                account={acct}
-                color={
-                    acct.address === selectedAccountAddress
-                        ? theme.colors.secondary
-                        : theme.colors.textMain
-                }
-            />
-        )
-    }
 
     const handleTap = (acct: WalletAccount) => {
         setSelectedAccountAddress(acct.address)
@@ -85,17 +65,7 @@ const AccountsTab = (props: AccountsTabProps) => {
                         }
                         onPress={() => handleTap(acct)}
                     >
-                        {getWalletIcon(acct)}
-                        <Text
-                            h4
-                            h4Style={
-                                acct.address === selectedAccountAddress
-                                    ? styles.activeLabel
-                                    : styles.passiveLabel
-                            }
-                        >
-                            {getRouteName(acct)}
-                        </Text>
+                        <AccountWithBalance account={acct} />
                     </PWTouchableOpacity>
                 ))}
             </PWView>

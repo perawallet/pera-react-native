@@ -46,6 +46,7 @@ export const configSchema = z.object({
     privacyPolicyUrl: z.url(),
 
     sendFundsFaqUrl: z.url(),
+    swapSupportUrl: z.url(),
 
     debugEnabled: z.boolean(),
     profilingEnabled: z.boolean(),

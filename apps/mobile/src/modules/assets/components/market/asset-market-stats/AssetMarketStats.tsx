@@ -15,7 +15,6 @@ import { formatNumber, formatWithUnits } from '@perawallet/wallet-core-shared'
 import CurrencyDisplay from '@components/currency-display/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import { Text } from '@rneui/themed'
-import PWIcon from '@components/icons/PWIcon'
 import PWView from '@components/view/PWView'
 import { useMemo } from 'react'
 import {
@@ -24,6 +23,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useLanguage } from '@hooks/language'
+import InfoButton from '@components/info-button/InfoButton'
 
 type AssetMarketStatsProps = {
     assetDetails: PeraAsset
@@ -83,11 +83,18 @@ const AssetMarketStats = ({ assetDetails }: AssetMarketStatsProps) => {
                         <Text style={styles.label}>
                             {t('asset_details.markets.total_supply')}
                         </Text>
-                        <PWIcon
-                            name='info'
-                            size='sm'
+                        <InfoButton
                             variant='secondary'
-                        />
+                            title={t(
+                                'asset_details.markets.total_supply_info_title',
+                            )}
+                        >
+                            <Text>
+                                {t(
+                                    'asset_details.markets.total_supply_info_body',
+                                )}
+                            </Text>
+                        </InfoButton>
                     </PWView>
                     <Text
                         style={styles.value}

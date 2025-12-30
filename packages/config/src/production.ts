@@ -43,6 +43,8 @@ export const productionConfig: Config = {
 
     sendFundsFaqUrl:
         'https://support.perawallet.app/en/category/transactions-1tq8s9h/',
+    swapSupportUrl:
+        'https://support.perawallet.app/en/article/pera-swap-swapping-with-pera-1ep84ky/',
 
     notificationRefreshTime: THIRTY_SECONDS,
     remoteConfigRefreshTime: ONE_HOUR,

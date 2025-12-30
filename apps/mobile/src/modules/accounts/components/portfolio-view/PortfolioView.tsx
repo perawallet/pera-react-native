@@ -17,11 +17,9 @@ import { useLanguage } from '@hooks/language'
 import PWView, { PWViewProps } from '@components/view/PWView'
 import CurrencyDisplay from '@components/currency-display/CurrencyDisplay'
 import WealthChart from '@components/wealth-chart/WealthChart'
-import PWTouchableOpacity from '@components/touchable-opacity/PWTouchableOpacity'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { useCallback } from 'react'
 import { useChartInteraction } from '@hooks/chart-interaction'
-import PWIcon from '@components/icons/PWIcon'
 import WealthTrend from '@components/wealth-trend/WealthTrend'
 import ChartPeriodSelection from '@components/chart-period-selection/ChartPeriodSelection'
 import PWButton from '@components/button/PWButton'
@@ -33,6 +31,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
+import InfoButton from '@components/info-button/InfoButton'
 
 type PortfolioViewProps = {
     onDataSelected?: (selected: AccountBalanceHistoryItem | null) => void
@@ -73,12 +72,12 @@ const PortfolioView = (props: PortfolioViewProps) => {
                 >
                     {t('portfolio.title')}
                 </Text>
-                <PWTouchableOpacity>
-                    <PWIcon
-                        name='info'
-                        variant='secondary'
-                    />
-                </PWTouchableOpacity>
+                <InfoButton
+                    variant='secondary'
+                    title={t('portfolio.info.title')}
+                >
+                    <Text>{t('portfolio.info.body')}</Text>
+                </InfoButton>
             </PWView>
             <PWView style={styles.valueBar}>
                 <CurrencyDisplay
