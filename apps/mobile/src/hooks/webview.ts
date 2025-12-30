@@ -44,6 +44,7 @@ import {
     sendMessageToWebview,
 } from './webview/handlers'
 import { logger } from '@perawallet/wallet-core-shared'
+import { getAccountType } from './webview/utils'
 
 type WebviewMessage = {
     id: string
@@ -220,7 +221,7 @@ export const usePeraWebviewInterface = (
                 const payload = accounts.map(a => ({
                     name: getAccountDisplayName(a),
                     address: a.address,
-                    type: 'HdKey', //TODO support other types also
+                    type: getAccountType(a),
                 }))
                 sendMessageToWebview(message.id, payload, webview)
             })

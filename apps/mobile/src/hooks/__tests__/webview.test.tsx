@@ -60,7 +60,15 @@ jest.mock('@perawallet/wallet-core-platform-integration', () => ({
 
 jest.mock('@perawallet/wallet-core-accounts', () => ({
     getAccountDisplayName: jest.fn(account => account.name),
-    useAllAccounts: jest.fn(() => [{ address: 'addr1', name: 'Account 1' }]),
+    isHDWalletAccount: jest.fn(account => account.type === 'standard'),
+    useAllAccounts: jest.fn(() => [
+        {
+            address: 'addr1',
+            name: 'Account 1',
+            type: 'standard',
+            hdWalletDetails: { hdWalletAddress: 'addr1' },
+        },
+    ]),
 }))
 
 jest.mock('@perawallet/wallet-core-settings', () => ({

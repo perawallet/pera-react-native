@@ -3,6 +3,12 @@
 
 echo "Running pre-push checks..."
 
+FAIL_ON_ERROR=1
+if [ $1 = "--no-fail-on-error" ]; then
+    echo "Skipping pre-push checks..."
+    FAIL_ON_ERROR=0
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -16,7 +22,9 @@ pnpm run lint
 if [ $? -ne 0 ]; then
   echo "${RED}ESLint failed. Please fix the errors before pushing.${NC}"
   echo "${YELLOW}You can run 'pnpm lint:fix' to auto-fix some issues.${NC}"
-  exit 1
+  if [ $FAIL_ON_ERROR -ne 0 ]; then
+    exit 1
+  fi
 fi
 
 echo "${GREEN}✓ ESLint passed${NC}"
@@ -27,14 +35,18 @@ pnpm run format
 
 if [ $? -ne 0 ]; then
   echo "${RED}Formatting failed.${NC}"
-  exit 1
+  if [ $FAIL_ON_ERROR -ne 0 ]; then
+    exit 1
+  fi
 fi
 
 # Check for modified files
 if ! git diff --quiet; then
   echo "${RED}Formatting detected changes.${NC}"
   echo "${YELLOW}Please commit these changes before pushing.${NC}"
-  exit 1
+  if [ $FAIL_ON_ERROR -ne 0 ]; then
+    exit 1
+  fi
 fi
 
 echo "${GREEN}✓ Formatting complete${NC}"
@@ -46,7 +58,9 @@ pnpm run lint:copyright
 if [ $? -ne 0 ]; then
   echo "${RED}Copyright header check failed.${NC}"
   echo "${YELLOW}Please ensure all files have the proper copyright header.${NC}"
-  exit 1
+  if [ $FAIL_ON_ERROR -ne 0 ]; then
+    exit 1
+  fi
 fi
 
 echo "${GREEN}✓ Copyright headers valid${NC}"
@@ -58,7 +72,9 @@ pnpm run lint:i18n
 if [ $? -ne 0 ]; then
   echo "${RED}i18n check failed.${NC}"
   echo "${YELLOW}Please ensure all files have the proper i18n.${NC}"
-  exit 1
+  if [ $FAIL_ON_ERROR -ne 0 ]; then
+    exit 1
+  fi
 fi
 
 echo "${GREEN}✓ i18n valid${NC}"
