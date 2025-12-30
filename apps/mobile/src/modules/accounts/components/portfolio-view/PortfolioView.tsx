@@ -32,6 +32,7 @@ import {
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import InfoButton from '@components/info-button/InfoButton'
+import ExpandablePanel from '@components/expandable-panel/ExpandablePanel'
 
 type PortfolioViewProps = {
     onDataSelected?: (selected: AccountBalanceHistoryItem | null) => void
@@ -124,18 +125,16 @@ const PortfolioView = (props: PortfolioViewProps) => {
                 )}
             </PWView>
 
-            {chartVisible && (
-                <PWView style={styles.chartContainer}>
-                    <WealthChart
-                        period={period}
-                        onSelectionChanged={chartSelectionChanged}
-                    />
-                    <ChartPeriodSelection
-                        value={period}
-                        onChange={setPeriod}
-                    />
-                </PWView>
-            )}
+            <ExpandablePanel expanded={chartVisible} containerStyle={styles.chartContainer}>
+                <WealthChart
+                    period={period}
+                    onSelectionChanged={chartSelectionChanged}
+                />
+                <ChartPeriodSelection
+                    value={period}
+                    onChange={setPeriod}
+                />
+            </ExpandablePanel>
         </PWView>
     )
 }

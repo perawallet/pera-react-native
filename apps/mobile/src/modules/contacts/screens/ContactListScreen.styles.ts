@@ -43,7 +43,6 @@ export const useStyles = makeStyles(theme => {
         empty: {
             marginTop: theme.spacing.xl,
             flex: 1,
-            backgroundColor: 'red',
             alignItems: 'center',
             justifyContent: 'center',
         },

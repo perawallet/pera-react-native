@@ -97,6 +97,7 @@ export const useStyles = makeStyles(theme => {
         chartContainer: {
             gap: theme.spacing.md,
             marginBottom: theme.spacing.md,
+            maxWidth: '100%',
         },
     }
 })

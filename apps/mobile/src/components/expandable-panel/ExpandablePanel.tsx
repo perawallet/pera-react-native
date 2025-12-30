@@ -10,15 +10,12 @@
  limitations under the License
  */
 
-import PWIcon from '@components/icons/PWIcon'
-import PWTouchableOpacity from '@components/touchable-opacity/PWTouchableOpacity'
 import React, { PropsWithChildren, useState } from 'react'
 import {
     View,
     StyleProp,
     ViewStyle,
     LayoutChangeEvent,
-    GestureResponderEvent,
 } from 'react-native'
 import Animated, {
     useSharedValue,
@@ -26,22 +23,18 @@ import Animated, {
     useAnimatedStyle,
 } from 'react-native-reanimated'
 import { useStyles } from './styles'
-import PWView from '@components/view/PWView'
 import { EXPANDABLE_PANEL_ANIMATION_DURATION } from '@constants/ui'
 
 type ExpandablePanelProps = {
-    title: React.ReactNode
-    iconPressed?: () => void
+    expanded: boolean
     containerStyle?: StyleProp<ViewStyle>
 } & PropsWithChildren
 
-export const CollapsableContainer = ({
+const ExpandablePanel = ({
     children,
     expanded,
-}: {
-    children: React.ReactNode
-    expanded: boolean
-}) => {
+    containerStyle,
+}: ExpandablePanelProps) => {
     const [height, setHeight] = useState(0)
     const animatedHeight = useSharedValue(0)
     const animatedOpacity = useSharedValue(0)
@@ -58,8 +51,8 @@ export const CollapsableContainer = ({
     const collapsableStyle = useAnimatedStyle(() => {
         animatedHeight.value = expanded
             ? withTiming(height, {
-                  duration: EXPANDABLE_PANEL_ANIMATION_DURATION,
-              })
+                duration: EXPANDABLE_PANEL_ANIMATION_DURATION,
+            })
             : withTiming(0, { duration: EXPANDABLE_PANEL_ANIMATION_DURATION })
         animatedOpacity.value = expanded
             ? withTiming(1, { duration: EXPANDABLE_PANEL_ANIMATION_DURATION })
@@ -72,7 +65,7 @@ export const CollapsableContainer = ({
     }, [expanded, height])
 
     return (
-        <Animated.View style={[collapsableStyle, styles.collapsableContainer]}>
+        <Animated.View style={[collapsableStyle, containerStyle]}>
             <View
                 style={styles.wrapper}
                 onLayout={onLayout}
@@ -83,55 +76,4 @@ export const CollapsableContainer = ({
     )
 }
 
-export const ExpandablePanel = ({
-    title,
-    containerStyle,
-    children,
-    iconPressed,
-}: ExpandablePanelProps) => {
-    const [expanded, setExpanded] = useState(false)
-    const styles = useStyles()
-    const onPress = () => {
-        setExpanded(!expanded)
-    }
-
-    const iconStyle = useAnimatedStyle(() => {
-        return {
-            transform: [
-                {
-                    rotate: withTiming(expanded ? '90deg' : '0deg', {
-                        duration: EXPANDABLE_PANEL_ANIMATION_DURATION,
-                    }),
-                },
-            ],
-        }
-    }, [expanded])
-
-    const handleIconPress = (event: GestureResponderEvent) => {
-        if (iconPressed) {
-            iconPressed()
-            event.stopPropagation()
-        }
-    }
-
-    return (
-        <PWView style={containerStyle}>
-            <PWTouchableOpacity
-                onPress={onPress}
-                style={styles.header}
-            >
-                {title}
-                <Animated.View style={iconStyle}>
-                    <PWIcon
-                        name='chevron-right'
-                        size='sm'
-                        onPress={handleIconPress}
-                    />
-                </Animated.View>
-            </PWTouchableOpacity>
-            <CollapsableContainer expanded={expanded}>
-                {children}
-            </CollapsableContainer>
-        </PWView>
-    )
-}
+export default ExpandablePanel

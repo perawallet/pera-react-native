@@ -21,7 +21,6 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
             marginRight: insets.right,
             marginTop: insets.top,
             paddingTop: theme.spacing.sm,
-            marginBottom: insets.bottom,
         },
     }
 })

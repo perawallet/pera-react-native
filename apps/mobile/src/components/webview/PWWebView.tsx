@@ -66,7 +66,7 @@ const updateTheme = (mode: 'light' | 'dark') => {
 }
 
 const PWWebView = (props: PWWebViewProps) => {
-    const styles = useStyles(props)
+    const styles = useStyles()
     const {
         url,
         enablePeraConnect,

@@ -20,7 +20,6 @@ export const useStyles = makeStyles((_, insets: EdgeInsets) => {
             marginLeft: insets.left,
             marginRight: insets.right,
             marginTop: insets.top,
-            marginBottom: insets.bottom,
         },
     }
 })

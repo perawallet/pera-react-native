@@ -30,7 +30,11 @@ import { FlashList } from '@shopify/flash-list'
 import EmptyView from '@components/empty-view/EmptyView'
 import LoadingView from '@components/loading/LoadingView'
 import { useLanguage } from '@hooks/language'
+import { KeyboardAvoidingView, Platform } from 'react-native'
+import ExpandablePanel from '@components/expandable-panel/ExpandablePanel'
+import { useModalState } from '@hooks/modal-state'
 
+const TAB_AND_HEADER_HEIGHT = 100
 type AccountAssetListProps = {
     account: WalletAccount
     scrollEnabled?: boolean
@@ -44,6 +48,7 @@ const AccountAssetList = ({
 }: AccountAssetListProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const headerState = useModalState()
     const { accountBalances, isPending } = useAccountBalancesQuery([account])
     const balanceData = useMemo(
         () => accountBalances.get(account.address),
@@ -70,63 +75,75 @@ const AccountAssetList = ({
     }
 
     return (
-        <FlashList
-            data={balanceData?.assetBalances}
-            renderItem={renderItem}
-            scrollEnabled={scrollEnabled}
-            keyExtractor={item => item.assetId}
-            contentContainerStyle={styles.rootContainer}
-            ListHeaderComponent={
-                <PWView style={styles.headerContainer}>
-                    {children}
-                    <PWView style={styles.titleBar}>
-                        <Text
-                            style={styles.title}
-                            h4
-                        >
-                            {t('account_details.assets.title')}
-                        </Text>
-                        <PWView style={styles.titleBarButtonContainer}>
-                            <PWButton
-                                icon='sliders'
-                                variant='helper'
-                                paddingStyle='dense'
-                            />
-                            <PWButton
-                                icon='plus'
-                                title={t('account_details.assets.add_asset')}
-                                variant='helper'
-                                paddingStyle='dense'
-                            />
-                        </PWView>
-                    </PWView>
-                    <SearchInput
-                        placeholder={t(
-                            'account_details.assets.search_placeholder',
-                        )}
-                    />
-                </PWView>
-            }
-            ListEmptyComponent={
-                <EmptyView
-                    title={t('account_details.assets.empty_title')}
-                    body={t('account_details.assets.empty_body')}
-                />
-            }
-            ListFooterComponent={
-                isPending ? (
-                    <PWView style={styles.footer}>
-                        <LoadingView
-                            variant='skeleton'
-                            size='sm'
-                            count={3}
+        <KeyboardAvoidingView
+            keyboardVerticalOffset={TAB_AND_HEADER_HEIGHT}
+            enabled
+            behavior='padding'
+            style={styles.keyboardAvoidingViewContainer}
+        >
+            <FlashList
+                data={balanceData?.assetBalances}
+                renderItem={renderItem}
+                scrollEnabled={scrollEnabled}
+                keyExtractor={item => item.assetId}
+                automaticallyAdjustKeyboardInsets
+
+                contentContainerStyle={styles.rootContainer}
+                ListHeaderComponent={
+                    <PWView style={styles.headerContainer}>
+                        <ExpandablePanel expanded={headerState.isOpen}>
+                            {children}
+                            <PWView style={styles.titleBar}>
+                                <Text
+                                    style={styles.title}
+                                    h4
+                                >
+                                    {t('account_details.assets.title')}
+                                </Text>
+                                <PWView style={styles.titleBarButtonContainer}>
+                                    <PWButton
+                                        icon='sliders'
+                                        variant='helper'
+                                        paddingStyle='dense'
+                                    />
+                                    <PWButton
+                                        icon='plus'
+                                        title={t('account_details.assets.add_asset')}
+                                        variant='helper'
+                                        paddingStyle='dense'
+                                    />
+                                </PWView>
+                            </PWView>
+                        </ExpandablePanel>
+                        <SearchInput
+                            onFocus={headerState.close}
+                            placeholder={t(
+                                'account_details.assets.search_placeholder',
+                            )}
                         />
                     </PWView>
-                ) : (
-                    <PWView style={styles.footer} />
-                )
-            }
-        />
+                }
+                ListEmptyComponent={
+                    <EmptyView
+                        title={t('account_details.assets.empty_title')}
+                        body={t('account_details.assets.empty_body')}
+                    />
+                }
+                ListFooterComponent={
+                    isPending ? (
+                        <PWView style={styles.footer}>
+                            <LoadingView
+                                variant='skeleton'
+                                size='sm'
+                                count={3}
+                            />
+                        </PWView>
+                    ) : (
+                        <PWView style={styles.footer} />
+                    )
+                }
+            />
+        </KeyboardAvoidingView>
     )
 }
 

@@ -16,7 +16,7 @@ import { Input } from '@rneui/themed'
 import PWIcon from '../icons/PWIcon'
 import { useStyles } from './styles'
 
-type SearchInputProps = {} & Omit<InputProps, 'leftIcon'>
+type SearchInputProps = {} & Omit<InputProps, 'leftIcon' | 'rightIcon' | 'ref'>
 
 const SearchInput = (props: SearchInputProps) => {
     const styles = useStyles()
@@ -31,6 +31,14 @@ const SearchInput = (props: SearchInputProps) => {
                     name='magnifying-glass'
                     variant='secondary'
                 />
+            }
+            rightIcon={
+                props.value ? (
+                    <PWIcon
+                        name='cross'
+                        variant='secondary'
+                    />
+                ) : undefined
             }
         />
     )

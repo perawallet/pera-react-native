@@ -33,7 +33,7 @@ import AccountDisplay from '@modules/accounts/components/account-display/Account
 import PWTouchableOpacity from '@components/touchable-opacity/PWTouchableOpacity'
 import PWIcon from '@components/icons/PWIcon'
 import { ScrollView } from 'react-native-gesture-handler'
-import { ExpandablePanel } from '@components/expandable-panel/ExpandablePanel'
+import TitledExpandablePanel from '@components/expandable-panel/TitledExpandablePanel'
 import PermissionItem from '@modules/walletconnect/components/permission-item/PermissionItem'
 import { useNavigation } from '@react-navigation/native'
 import InfoButton from '@components/info-button/InfoButton'
@@ -186,7 +186,7 @@ const SettingsWalletConnectDetailsScreen = ({
                     ))}
                 </PWView>
             )}
-            <ExpandablePanel
+            <TitledExpandablePanel
                 title={
                     <PWView style={styles.permissionsTitle}>
                         <Text>{t('walletconnect.settings.permissions')}</Text>
@@ -213,7 +213,7 @@ const SettingsWalletConnectDetailsScreen = ({
                         />
                     ))}
                 </PWView>
-            </ExpandablePanel>
+            </TitledExpandablePanel>
 
             <PWView style={styles.deleteContainer}>
                 <PWButton
