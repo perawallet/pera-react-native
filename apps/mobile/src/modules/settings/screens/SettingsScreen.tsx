@@ -18,16 +18,16 @@ import { useStyles } from './SettingsScreen.styles'
 import { ScrollView } from 'react-native'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { useDeviceInfoService } from '@perawallet/wallet-core-platform-integration'
-import { useContext, useMemo } from 'react'
+import { useContext } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { IconName } from '@components/icons/PWIcon'
-import { config } from '@perawallet/wallet-core-config'
 import { WebViewContext } from '@providers/WebViewProvider'
 import PWListItem from '@components/list-item/PWListItem'
 import { useLanguage } from '@hooks/language'
 import { useModalState } from '@hooks/modal-state'
 import { useDeleteAllData } from '../hooks/delete-all-data'
+import AppVersion from '../components/app-version/AppVersion'
+import { useSettingsOptions } from '../hooks/settings-options'
 
 //TODO: add ratings view handling
 
@@ -35,96 +35,17 @@ const SettingsScreen = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-    const { getAppVersion } = useDeviceInfoService()
     const { pushWebView } = useContext(WebViewContext)
     const { t } = useLanguage()
     const { isOpen, open, close } = useModalState()
     const { theme } = useTheme()
     const clearAllData = useDeleteAllData()
-
-    const settingsOptions = useMemo(
-        () => [
-            {
-                title: t('settings.main.account_section'),
-                items: [
-                    {
-                        route: 'SecuritySettings',
-                        icon: 'shield-check',
-                        title: t('settings.main.security_title'),
-                    },
-                    {
-                        route: 'NotificationsSettings',
-                        icon: 'bell',
-                        title: t('settings.main.notifications_title'),
-                    },
-                    {
-                        route: 'WalletConnectSettings',
-                        icon: 'wallet-connect',
-                        title: t('settings.main.wallet_connect_title'),
-                    },
-                    {
-                        route: 'PasskeysSettings',
-                        icon: 'person-key',
-                        title: t('settings.main.passkeys_title'),
-                    },
-                ],
-            },
-            {
-                title: t('settings.main.app_preferences_section'),
-                items: [
-                    {
-                        route: 'CurrencySettings',
-                        icon: 'dollar',
-                        title: t('settings.main.currency_title'),
-                    },
-                    {
-                        route: 'ThemeSettings',
-                        icon: 'moon',
-                        title: t('settings.main.theme_title'),
-                    },
-                ],
-            },
-            {
-                title: t('settings.main.support_section'),
-                items: [
-                    {
-                        icon: 'feedback',
-                        title: t('settings.main.get_help_title'),
-                        url: config.supportBaseUrl,
-                    },
-                    {
-                        icon: 'star',
-                        title: t('settings.main.rate_title'),
-                    },
-                    {
-                        icon: 'text-document',
-                        title: t('settings.main.terms_title'),
-                        url: config.termsOfServiceUrl,
-                    },
-                    {
-                        icon: 'text-document',
-                        title: t('settings.main.privacy_title'),
-                        url: config.privacyPolicyUrl,
-                    },
-                    {
-                        route: 'DeveloperSettings',
-                        icon: 'code',
-                        title: t('settings.main.developer_title'),
-                    },
-                ],
-            },
-        ],
-        [t],
-    )
+    const { settingsOptions } = useSettingsOptions()
 
     const handleDeleteAllAccounts = () => {
         clearAllData()
         close()
     }
-
-    const appVersion = useMemo(() => {
-        return getAppVersion()
-    }, [getAppVersion])
 
     const goToSettingsPage = (route: string, title: string) => {
         navigation.push(route, { title })
@@ -185,9 +106,7 @@ const SettingsScreen = () => {
                 title={t('settings.main.remove_all_accounts')}
                 onPress={open}
             />
-            <Text style={styles.versionText}>
-                {t('settings.main.version_footer', { version: appVersion })}
-            </Text>
+            <AppVersion enableSecretTaps />
             <Dialog
                 isVisible={isOpen}
                 onBackdropPress={close}

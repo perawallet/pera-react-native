@@ -33,23 +33,26 @@ const validateRequest = (
     sessions: WalletConnectSession[],
     network: Network,
     error: Error | null,
-) => {
+): WalletConnectSession => {
     if (error) {
         logger.error(error)
         throw new WalletConnectSignRequestError(error)
     }
 
-    const existingSession = sessions.find(
-        session => session.session?.clientId === connector.clientId,
+    const foundSession = sessions.find(
+        session =>
+            session.clientId === connector.clientId ||
+            session.session?.clientId === connector.clientId,
     )
-    if (!existingSession || !existingSession.session) {
+
+    if (!foundSession || !foundSession.session) {
         logger.error('WC algo_signData received, but no session found')
         throw new WalletConnectInvalidSessionError(
             new Error('No session found'),
         )
     }
 
-    const { chainId } = existingSession.session
+    const { chainId } = foundSession.session
 
     if (
         chainId !== 4160 &&
@@ -59,6 +62,8 @@ const validateRequest = (
         logger.error("WC algo_signData received, but chainId doesn't match")
         throw new WalletConnectInvalidNetworkError()
     }
+
+    return foundSession
 }
 
 const useWalletConnectHandlers = () => {
@@ -130,14 +135,8 @@ const useWalletConnectHandlers = () => {
             logger.debug('WC algo_signTxn received', { error, payload })
             validateRequest(connector, sessions, network, error)
 
-            const existingSession = sessions.find(
-                session => session.session?.clientId === connector.clientId,
-            )
-            if (!existingSession) {
-                logger.error('WC algo_signTxn received, but no session found')
-                return
-            }
             const { message, txn } = payload.params.at(0)
+
             addSignRequest({
                 type: 'transactions',
                 transport: 'callback',
@@ -164,7 +163,7 @@ const useWalletConnectHandlers = () => {
                 },
             } as TransactionSignRequest)
         },
-        [sessions, addSignRequest],
+        [sessions, addSignRequest, network],
     )
 
     return {

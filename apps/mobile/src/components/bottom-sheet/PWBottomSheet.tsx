@@ -15,6 +15,7 @@ import PWView from '../view/PWView'
 import { PropsWithChildren } from 'react'
 import { useStyles } from './styles'
 import { StyleProp, ViewStyle } from 'react-native'
+import { NotifierWrapper } from 'react-native-notifier'
 
 export type PWBottomSheetProps = {
     innerContainerStyle?: StyleProp<ViewStyle>
@@ -34,9 +35,11 @@ const PWBottomSheet = ({
             {...rest}
             scrollViewProps={{ scrollEnabled: scrollEnabled ?? true }}
         >
-            <PWView style={[style.defaultStyle, innerContainerStyle]}>
-                {children}
-            </PWView>
+            <NotifierWrapper>
+                <PWView style={[style.defaultStyle, innerContainerStyle]}>
+                    {children}
+                </PWView>
+            </NotifierWrapper>
         </BottomSheet>
     )
 }

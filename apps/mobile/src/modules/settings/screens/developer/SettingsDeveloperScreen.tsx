@@ -18,27 +18,20 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import { Networks } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/language'
-import { config } from '@perawallet/wallet-core-config'
-import { useWebView } from '@hooks/webview'
+import { usePreferences } from '@perawallet/wallet-core-settings'
+import { UserPreferences } from '@constants/user-preferences'
 
 const SettingsDeveloperScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { network } = useNetwork()
     const styles = useStyles()
     const { t } = useLanguage()
-    const { pushWebView } = useWebView()
+    const { getPreference } = usePreferences()
 
     const handleTapEvent = (page: string) => {
         navigation.push(page)
     }
 
-    const openTestingWebview = () => {
-        pushWebView({
-            url: config.onrampBaseUrl + 'test',
-            id: 'Testing Webview',
-            enablePeraConnect: true,
-        })
-    }
     return (
         <PWView style={styles.container}>
             <PWListItem
@@ -53,11 +46,11 @@ const SettingsDeveloperScreen = () => {
                     title={t('settings.developer.dispenser_title')}
                 />
             )}
-            {config.debugEnabled && (
+            {getPreference(UserPreferences.developerMenuEnabled) && (
                 <PWListItem
-                    onPress={() => openTestingWebview()}
+                    onPress={() => handleTapEvent('DevMenu')}
                     icon='globe'
-                    title={t('settings.developer.debug_webview')}
+                    title={t('screens.developer_menu')}
                 />
             )}
         </PWView>

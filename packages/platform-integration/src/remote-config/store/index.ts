@@ -10,9 +10,4 @@
  limitations under the License
  */
 
-export const UserPreferences = {
-    spendAgreed: 'send-fund-agreed',
-    chartVisible: 'chart-visible',
-    isCreatingAccount: 'is-creating-account',
-    developerMenuEnabled: 'developer-menu-enabled',
-} as const
+export * from './store'

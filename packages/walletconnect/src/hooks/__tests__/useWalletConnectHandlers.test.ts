@@ -52,6 +52,7 @@ describe('useWalletConnectHandlers', () => {
     const mockAddSignRequest = vi.fn()
     const mockSessions = [
         {
+            clientId: 'test-client-id',
             session: {
                 clientId: 'test-client-id',
                 chainId: 4160,

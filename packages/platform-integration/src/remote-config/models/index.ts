@@ -24,6 +24,14 @@ export const RemoteConfigDefaults: Record<
     welcome_message: 'Hello',
 }
 
+export type RemoteConfigStore = {
+    configOverrides: Record<string, string | boolean | number>
+    setConfigOverride: (
+        key: string,
+        value: string | boolean | number | null,
+    ) => void
+}
+
 export interface RemoteConfigService {
     initializeRemoteConfig(): void
     getStringValue(key: RemoteConfigKey, fallback?: string): string

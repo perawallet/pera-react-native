@@ -19,9 +19,10 @@ import { useStyles } from './styles'
 import PWView from '@components/view/PWView'
 import { EXPANDABLE_PANEL_ANIMATION_DURATION } from '@constants/ui'
 import ExpandablePanel from './ExpandablePanel'
+import { Text } from '@rneui/themed'
 
 type TitledExpandablePanelProps = {
-    title: React.ReactNode
+    title: React.ReactNode | string
     iconPressed?: () => void
     containerStyle?: StyleProp<ViewStyle>
 } & PropsWithChildren
@@ -63,7 +64,7 @@ const TitledExpandablePanel = ({
                 onPress={onPress}
                 style={styles.header}
             >
-                {title}
+                {typeof title === 'string' ? <Text>{title}</Text> : title}
                 <Animated.View style={iconStyle}>
                     <PWIcon
                         name='chevron-right'
