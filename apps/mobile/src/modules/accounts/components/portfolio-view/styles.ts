@@ -35,7 +35,7 @@ export const useStyles = makeStyles(theme => {
         valueTitleBar: {
             flexDirection: 'row',
             alignItems: 'center',
-            gap: theme.spacing.sm,
+            gap: theme.spacing.xs,
         },
         valueTitle: {
             color: theme.colors.textGray,

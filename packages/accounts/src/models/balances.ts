@@ -29,18 +29,17 @@ export type AccountBalancesWithTotals = {
     isError: boolean
 }
 
-export type AccountBalances = Map<
-    string,
-    {
-        assetBalances: AssetWithAccountBalance[]
-        algoValue: Decimal
-        fiatValue: Decimal
-        isPending: boolean
-        isFetched: boolean
-        isRefetching: boolean
-        isError: boolean
-    }
->
+export type AccountBalance = {
+    assetBalances: AssetWithAccountBalance[]
+    algoValue: Decimal
+    fiatValue: Decimal
+    isPending: boolean
+    isFetched: boolean
+    isRefetching: boolean
+    isError: boolean
+}
+
+export type AccountBalances = Map<string, AccountBalance>
 
 export type AccountBalanceResponse = {
     results: AccountAssetBalanceResponse[]

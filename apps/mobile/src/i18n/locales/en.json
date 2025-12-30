@@ -43,7 +43,9 @@
             "no_clawback": "No Clawback",
             "description": "Description",
             "social_media": "Social Media",
-            "chart_empty_body": "You will see a chart here once you have some balance history"
+            "chart_empty_body": "You will see a chart here once you have some balance history",
+            "total_supply_info_title": "Total Supply",
+            "total_supply_info_body": "The total supply of an asset is set at creation time and it corresponds to the asset's total created units."
         },
         "action_buttons": {
             "swap": "Swap",
@@ -282,7 +284,11 @@
         }
     },
     "portfolio": {
-        "title": "Portfolio Value"
+        "title": "Portfolio Value",
+        "info": {
+            "title": "How we calculate portfolio value",
+            "body": "The Total Portfolio Value is calculated by adding up the value of all asset values and Algo available in your accounts, excluding Watch Accounts.\n\nAsset values are calculated based on daily values fetched from several ecosystem partners.  Since some asset values are not available, the Total Portfolio Value should be considered an estimation."
+        }
     },
     "send_funds": {
         "input_view": {

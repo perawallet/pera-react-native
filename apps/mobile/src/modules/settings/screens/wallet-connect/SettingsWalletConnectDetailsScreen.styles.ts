@@ -98,9 +98,5 @@ export const useStyles = makeStyles(theme => {
         expandIcon: {
             alignSelf: 'flex-end',
         },
-        infoSheet: {
-            padding: theme.spacing.xl,
-            gap: theme.spacing.lg,
-        },
     }
 })

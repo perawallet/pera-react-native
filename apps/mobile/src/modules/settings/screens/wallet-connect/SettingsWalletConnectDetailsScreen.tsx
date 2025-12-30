@@ -34,9 +34,9 @@ import PWTouchableOpacity from '@components/touchable-opacity/PWTouchableOpacity
 import PWIcon from '@components/icons/PWIcon'
 import { ScrollView } from 'react-native-gesture-handler'
 import { ExpandablePanel } from '@components/expandable-panel/ExpandablePanel'
-import PWBottomSheet from '@components/bottom-sheet/PWBottomSheet'
 import PermissionItem from '@modules/walletconnect/components/permission-item/PermissionItem'
 import { useNavigation } from '@react-navigation/native'
+import InfoButton from '@components/info-button/InfoButton'
 
 type SettingsWalletConnectDetailsScreenProps = NativeStackScreenProps<
     WalletConnectSettingsStackParamsList,
@@ -69,7 +69,6 @@ const SettingsWalletConnectDetailsScreen = ({
     const { t } = useLanguage()
     const { disconnectSession } = useWalletConnect()
     const deleteState = useModalState()
-    const infoState = useModalState()
     const styles = useStyles()
     const { theme } = useTheme()
     const [loading, setLoading] = useState(false)
@@ -191,11 +190,18 @@ const SettingsWalletConnectDetailsScreen = ({
                 title={
                     <PWView style={styles.permissionsTitle}>
                         <Text>{t('walletconnect.settings.permissions')}</Text>
-                        <PWIcon
-                            name='info'
+                        <InfoButton
                             size='sm'
-                            onPress={infoState.open}
-                        />
+                            title={t(
+                                'walletconnect.settings.permissions_info_title',
+                            )}
+                        >
+                            <Text>
+                                {t(
+                                    'walletconnect.settings.permissions_info_body',
+                                )}
+                            </Text>
+                        </InfoButton>
                     </PWView>
                 }
             >
@@ -238,21 +244,6 @@ const SettingsWalletConnectDetailsScreen = ({
                     />
                 </Dialog.Actions>
             </Dialog>
-            <PWBottomSheet isVisible={infoState.isOpen}>
-                <PWView style={styles.infoSheet}>
-                    <Text h3>
-                        {t('walletconnect.settings.permissions_info_title')}
-                    </Text>
-                    <Text>
-                        {t('walletconnect.settings.permissions_info_body')}
-                    </Text>
-                    <PWButton
-                        variant='secondary'
-                        title={t('common.close.label')}
-                        onPress={infoState.close}
-                    />
-                </PWView>
-            </PWBottomSheet>
         </ScrollView>
     )
 }
