@@ -28,11 +28,13 @@ import { EXPANDABLE_PANEL_ANIMATION_DURATION } from '@constants/ui'
 type ExpandablePanelProps = {
     expanded: boolean
     containerStyle?: StyleProp<ViewStyle>
+    onStateChangeEnd?: (expanded: boolean) => void
 } & PropsWithChildren
 
 const ExpandablePanel = ({
     children,
     expanded,
+    onStateChangeEnd,
     containerStyle,
 }: ExpandablePanelProps) => {
     const [height, setHeight] = useState(0)
@@ -52,8 +54,8 @@ const ExpandablePanel = ({
         animatedHeight.value = expanded
             ? withTiming(height, {
                 duration: EXPANDABLE_PANEL_ANIMATION_DURATION,
-            })
-            : withTiming(0, { duration: EXPANDABLE_PANEL_ANIMATION_DURATION })
+            }, () => onStateChangeEnd?.(expanded))
+            : withTiming(0, { duration: EXPANDABLE_PANEL_ANIMATION_DURATION }, () => onStateChangeEnd?.(expanded))
         animatedOpacity.value = expanded
             ? withTiming(1, { duration: EXPANDABLE_PANEL_ANIMATION_DURATION })
             : withTiming(0, { duration: EXPANDABLE_PANEL_ANIMATION_DURATION })
@@ -69,6 +71,7 @@ const ExpandablePanel = ({
             <View
                 style={styles.wrapper}
                 onLayout={onLayout}
+                pointerEvents={expanded ? 'auto' : 'none'}
             >
                 {children}
             </View>

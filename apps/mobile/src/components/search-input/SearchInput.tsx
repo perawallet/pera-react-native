@@ -32,14 +32,11 @@ const SearchInput = (props: SearchInputProps) => {
                     variant='secondary'
                 />
             }
-            rightIcon={
-                props.value ? (
-                    <PWIcon
-                        name='cross'
-                        variant='secondary'
-                    />
-                ) : undefined
-            }
+            clearButtonMode='while-editing'
+            selectTextOnFocus
+            autoComplete='off'
+            autoCapitalize='none'
+            autoCorrect={false}
         />
     )
 }

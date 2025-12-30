@@ -19,6 +19,7 @@ export const useStyles = makeStyles(theme => ({
     },
     keyboardAvoidingViewContainer: {
         flexGrow: 1,
+        backgroundColor: theme.colors.background,
     },
     rootContainer: {
         flexGrow: 1,
