@@ -23,6 +23,8 @@ export const useStyles = makeStyles(theme => {
         },
         wrapper: {
             position: 'absolute',
+            left: 0,
+            right: 0,
         },
         collapsableContainer: {
             overflow: 'hidden',

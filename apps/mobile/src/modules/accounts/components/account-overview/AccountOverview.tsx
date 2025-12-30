@@ -33,6 +33,7 @@ import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { usePreferences, useSettings } from '@perawallet/wallet-core-settings'
 import PWButton from '@components/button/PWButton'
 import { UserPreferences } from '@constants/user-preferences'
+import ExpandablePanel from '@components/expandable-panel/ExpandablePanel'
 
 type AccountOverviewProps = {
     account: WalletAccount
@@ -135,19 +136,20 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
                 </PWView>
             </PWTouchableOpacity>
 
-            {!!account && chartVisible && (
-                <PWView style={styles.chartContainer}>
-                    <WealthChart
-                        account={account}
-                        period={period}
-                        onSelectionChanged={chartSelectionChanged}
-                    />
-                    <ChartPeriodSelection
-                        value={period}
-                        onChange={setPeriod}
-                    />
-                </PWView>
-            )}
+            <ExpandablePanel
+                expanded={chartVisible}
+                containerStyle={styles.chartContainer}
+            >
+                <WealthChart
+                    account={account}
+                    period={period}
+                    onSelectionChanged={chartSelectionChanged}
+                />
+                <ChartPeriodSelection
+                    value={period}
+                    onChange={setPeriod}
+                />
+            </ExpandablePanel>
 
             <ButtonPanel />
         </AccountAssetList>

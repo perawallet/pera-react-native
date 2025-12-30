@@ -77,7 +77,9 @@
             "add_asset": "Add Asset",
             "search_placeholder": "Search assets",
             "empty_title": "No Assets",
-            "empty_body": "You have no assets linked to this account"
+            "empty_body": "You have no assets linked to this account",
+            "nomatch_title": "No Matching Assets",
+            "nomatch_body": "No assets matched your search term"
         },
         "button_panel": {
             "swap": "Swap",

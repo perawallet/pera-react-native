@@ -17,6 +17,10 @@ export const useStyles = makeStyles(theme => ({
         marginTop: theme.spacing.sm,
         marginBottom: theme.spacing.md,
     },
+    keyboardAvoidingViewContainer: {
+        flexGrow: 1,
+        backgroundColor: theme.colors.background,
+    },
     rootContainer: {
         flexGrow: 1,
         paddingHorizontal: theme.spacing.md,

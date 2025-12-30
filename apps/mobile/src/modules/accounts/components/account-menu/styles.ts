@@ -15,7 +15,7 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => {
     return {
         portfolioContainer: {
-            paddingHorizontal: theme.spacing.xl,
+            paddingHorizontal: theme.spacing.lg,
             paddingTop: theme.spacing.md,
         },
         activeLabel: {
@@ -26,7 +26,7 @@ export const useStyles = makeStyles(theme => {
             color: theme.colors.textMain,
         },
         accountContainer: {
-            paddingHorizontal: theme.spacing.xl,
+            paddingHorizontal: theme.spacing.lg,
             gap: theme.spacing.md,
         },
         activeItem: {
@@ -58,7 +58,7 @@ export const useStyles = makeStyles(theme => {
             alignItems: 'center',
             justifyContent: 'space-between',
             marginBottom: theme.spacing.sm,
-            paddingHorizontal: theme.spacing.xl,
+            paddingHorizontal: theme.spacing.lg,
         },
         titleBarButtonContainer: {
             flexDirection: 'row',

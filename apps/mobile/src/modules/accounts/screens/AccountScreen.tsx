@@ -39,7 +39,6 @@ import ConfettiAnimation from '../components/confetti-animation/ConfettiAnimatio
 //TODO figure out and implement banners/spot banners
 //TODO implement nft and history tabs
 //TODO implement account info screen somewhere (see old app top right corner)
-//TODO add navigation to asset details screen
 //TODO implement rekey information && multisig information
 type AccountScreenProps = NativeStackScreenProps<
     AccountStackParamsList,
