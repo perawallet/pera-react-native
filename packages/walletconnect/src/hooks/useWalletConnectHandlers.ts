@@ -40,7 +40,7 @@ const validateRequest = (
     }
 
     const existingSession = sessions.find(
-        session => session.session?.clientId === connector.clientId,
+        session => session.clientId === connector.clientId,
     )
     if (!existingSession || !existingSession.session) {
         logger.error('WC algo_signData received, but no session found')
@@ -131,7 +131,7 @@ const useWalletConnectHandlers = () => {
             validateRequest(connector, sessions, network, error)
 
             const existingSession = sessions.find(
-                session => session.session?.clientId === connector.clientId,
+                session => session.clientId === connector.clientId,
             )
             if (!existingSession) {
                 logger.error('WC algo_signTxn received, but no session found')
