@@ -125,7 +125,10 @@ const PortfolioView = (props: PortfolioViewProps) => {
                 )}
             </PWView>
 
-            <ExpandablePanel expanded={chartVisible} containerStyle={styles.chartContainer}>
+            <ExpandablePanel
+                expanded={chartVisible}
+                containerStyle={styles.chartContainer}
+            >
                 <WealthChart
                     period={period}
                     onSelectionChanged={chartSelectionChanged}

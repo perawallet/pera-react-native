@@ -13,15 +13,8 @@
 import PWIcon from '@components/icons/PWIcon'
 import PWTouchableOpacity from '@components/touchable-opacity/PWTouchableOpacity'
 import React, { PropsWithChildren, useState } from 'react'
-import {
-    StyleProp,
-    ViewStyle,
-    GestureResponderEvent,
-} from 'react-native'
-import Animated, {
-    withTiming,
-    useAnimatedStyle,
-} from 'react-native-reanimated'
+import { StyleProp, ViewStyle, GestureResponderEvent } from 'react-native'
+import Animated, { withTiming, useAnimatedStyle } from 'react-native-reanimated'
 import { useStyles } from './styles'
 import PWView from '@components/view/PWView'
 import { EXPANDABLE_PANEL_ANIMATION_DURATION } from '@constants/ui'
@@ -79,7 +72,10 @@ const TitledExpandablePanel = ({
                     />
                 </Animated.View>
             </PWTouchableOpacity>
-            <ExpandablePanel expanded={expanded} containerStyle={styles.collapsableContainer}>
+            <ExpandablePanel
+                expanded={expanded}
+                containerStyle={styles.collapsableContainer}
+            >
                 {children}
             </ExpandablePanel>
         </PWView>
@@ -87,4 +83,3 @@ const TitledExpandablePanel = ({
 }
 
 export default TitledExpandablePanel
-

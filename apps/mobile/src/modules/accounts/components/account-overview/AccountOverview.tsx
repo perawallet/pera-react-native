@@ -136,7 +136,10 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
                 </PWView>
             </PWTouchableOpacity>
 
-            <ExpandablePanel expanded={chartVisible} containerStyle={styles.chartContainer}>
+            <ExpandablePanel
+                expanded={chartVisible}
+                containerStyle={styles.chartContainer}
+            >
                 <WealthChart
                     account={account}
                     period={period}

@@ -11,12 +11,7 @@
  */
 
 import React, { PropsWithChildren, useState } from 'react'
-import {
-    View,
-    StyleProp,
-    ViewStyle,
-    LayoutChangeEvent,
-} from 'react-native'
+import { View, StyleProp, ViewStyle, LayoutChangeEvent } from 'react-native'
 import Animated, {
     useSharedValue,
     withTiming,
@@ -52,10 +47,18 @@ const ExpandablePanel = ({
 
     const collapsableStyle = useAnimatedStyle(() => {
         animatedHeight.value = expanded
-            ? withTiming(height, {
-                duration: EXPANDABLE_PANEL_ANIMATION_DURATION,
-            }, () => onStateChangeEnd?.(expanded))
-            : withTiming(0, { duration: EXPANDABLE_PANEL_ANIMATION_DURATION }, () => onStateChangeEnd?.(expanded))
+            ? withTiming(
+                  height,
+                  {
+                      duration: EXPANDABLE_PANEL_ANIMATION_DURATION,
+                  },
+                  () => onStateChangeEnd?.(expanded),
+              )
+            : withTiming(
+                  0,
+                  { duration: EXPANDABLE_PANEL_ANIMATION_DURATION },
+                  () => onStateChangeEnd?.(expanded),
+              )
         animatedOpacity.value = expanded
             ? withTiming(1, { duration: EXPANDABLE_PANEL_ANIMATION_DURATION })
             : withTiming(0, { duration: EXPANDABLE_PANEL_ANIMATION_DURATION })

@@ -30,11 +30,13 @@ import { FlashList } from '@shopify/flash-list'
 import EmptyView from '@components/empty-view/EmptyView'
 import LoadingView from '@components/loading/LoadingView'
 import { useLanguage } from '@hooks/language'
-import { GestureResponderEvent, KeyboardAvoidingView, Platform, ScrollView } from 'react-native'
+import {
+    GestureResponderEvent,
+    KeyboardAvoidingView,
+} from 'react-native'
 import ExpandablePanel from '@components/expandable-panel/ExpandablePanel'
 import { useModalState } from '@hooks/modal-state'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
-import { logger } from '@perawallet/wallet-core-shared'
 
 const TAB_AND_HEADER_HEIGHT = 100
 type AccountAssetListProps = {
@@ -66,14 +68,20 @@ const AccountAssetList = ({
         }
         const searchTerm = searchFilter.toLowerCase()
 
-        return balanceData.assetBalances.filter((asset) => {
+        return balanceData.assetBalances.filter(asset => {
             const assetInfo = assets?.get(asset.assetId)
-            return (assetInfo?.unitName?.toLowerCase().includes(searchTerm)
-                || assetInfo?.name?.toLowerCase().includes(searchTerm)) ?? false
+            return (
+                (assetInfo?.unitName?.toLowerCase().includes(searchTerm) ||
+                    assetInfo?.name?.toLowerCase().includes(searchTerm)) ??
+                false
+            )
         })
     }, [balanceData, searchFilter, assets])
 
-    const goToAssetScreen = (event: GestureResponderEvent, asset: AssetWithAccountBalance) => {
+    const goToAssetScreen = (
+        event: GestureResponderEvent,
+        asset: AssetWithAccountBalance,
+    ) => {
         event.stopPropagation()
         headerState.open()
         navigation.navigate('AssetDetails', {
@@ -85,7 +93,7 @@ const AccountAssetList = ({
         return (
             <PWTouchableOpacity
                 style={styles.itemContainer}
-                onPress={(event) => goToAssetScreen(event, item)}
+                onPress={event => goToAssetScreen(event, item)}
                 key={`asset-key-${item.assetId}`}
             >
                 <AccountAssetItemView accountBalance={item} />
@@ -123,7 +131,9 @@ const AccountAssetList = ({
                                     >
                                         {t('account_details.assets.title')}
                                     </Text>
-                                    <PWView style={styles.titleBarButtonContainer}>
+                                    <PWView
+                                        style={styles.titleBarButtonContainer}
+                                    >
                                         <PWButton
                                             icon='sliders'
                                             variant='helper'
@@ -131,7 +141,9 @@ const AccountAssetList = ({
                                         />
                                         <PWButton
                                             icon='plus'
-                                            title={t('account_details.assets.add_asset')}
+                                            title={t(
+                                                'account_details.assets.add_asset',
+                                            )}
                                             variant='helper'
                                             paddingStyle='dense'
                                         />
@@ -149,8 +161,16 @@ const AccountAssetList = ({
                     }
                     ListEmptyComponent={
                         <EmptyView
-                            title={searchFilter?.length ? t('account_details.assets.nomatch_title') : t('account_details.assets.empty_title')}
-                            body={searchFilter?.length ? t('account_details.assets.nomatch_body') : t('account_details.assets.empty_body')}
+                            title={
+                                searchFilter?.length
+                                    ? t('account_details.assets.nomatch_title')
+                                    : t('account_details.assets.empty_title')
+                            }
+                            body={
+                                searchFilter?.length
+                                    ? t('account_details.assets.nomatch_body')
+                                    : t('account_details.assets.empty_body')
+                            }
                         />
                     }
                     ListFooterComponent={
