@@ -12,7 +12,16 @@
 
 import { describe, test, expect } from 'vitest'
 import type { WalletAccount } from '../models'
-import { getAccountDisplayName } from '../utils'
+import {
+    canSignWithAccount,
+    getAccountDisplayName,
+    isAlgo25Account,
+    isHDWalletAccount,
+    isLedgerAccount,
+    isMultisigAccount,
+    isRekeyedAccount,
+    isWatchAccount,
+} from '../utils'
 
 describe('services/accounts/utils - getAccountDisplayName', () => {
     test('returns account name when present', () => {
@@ -74,5 +83,98 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
 
     test('returns "No Account" when account is null', () => {
         expect(getAccountDisplayName(null)).toEqual('No Account')
+    })
+})
+
+describe('services/accounts/utils - account type checks', () => {
+    const baseAccount: WalletAccount = {
+        id: '1',
+        type: 'standard',
+        address: 'ADDR1',
+        canSign: true,
+    }
+
+    test('isHDWalletAccount returns true if hdWalletDetails is present', () => {
+        expect(isHDWalletAccount(baseAccount)).toBe(false)
+        expect(
+            isHDWalletAccount({
+                ...baseAccount,
+                hdWalletDetails: {} as any,
+            }),
+        ).toBe(true)
+    })
+
+    test('isLedgerAccount returns true if type is hardware and manufacturer is ledger', () => {
+        expect(isLedgerAccount(baseAccount)).toBe(false)
+        expect(
+            isLedgerAccount({
+                ...baseAccount,
+                type: 'hardware',
+                hardwareDetails: { manufacturer: 'ledger' },
+            }),
+        ).toBe(true)
+        expect(
+            isLedgerAccount({
+                ...baseAccount,
+                type: 'hardware',
+                hardwareDetails: { manufacturer: 'other' as any },
+            }),
+        ).toBe(false)
+    })
+
+    test('isRekeyedAccount returns true if rekeyAddress is present', () => {
+        expect(isRekeyedAccount(baseAccount)).toBe(false)
+        expect(
+            isRekeyedAccount({
+                ...baseAccount,
+                rekeyAddress: 'ADDR2',
+            }),
+        ).toBe(true)
+    })
+
+    test('isAlgo25Account returns true if type is standard and no hdWalletDetails', () => {
+        expect(isAlgo25Account(baseAccount)).toBe(true)
+        expect(
+            isAlgo25Account({
+                ...baseAccount,
+                hdWalletDetails: {} as any,
+            }),
+        ).toBe(false)
+        expect(
+            isAlgo25Account({
+                ...baseAccount,
+                type: 'watch',
+            }),
+        ).toBe(false)
+    })
+
+    test('isWatchAccount returns true if type is watch', () => {
+        expect(isWatchAccount(baseAccount)).toBe(false)
+        expect(
+            isWatchAccount({
+                ...baseAccount,
+                type: 'watch',
+            }),
+        ).toBe(true)
+    })
+
+    test('isMultisigAccount returns true if type is multisig', () => {
+        expect(isMultisigAccount(baseAccount)).toBe(false)
+        expect(
+            isMultisigAccount({
+                ...baseAccount,
+                type: 'multisig',
+            }),
+        ).toBe(true)
+    })
+
+    test('canSignWithAccount returns canSign property', () => {
+        expect(canSignWithAccount(baseAccount)).toBe(true)
+        expect(
+            canSignWithAccount({
+                ...baseAccount,
+                canSign: false,
+            }),
+        ).toBe(false)
     })
 })
