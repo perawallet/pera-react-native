@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi } from 'vitest'
+import { describe, test, expect, vi, beforeEach, Mock } from 'vitest'
 import { container } from 'tsyringe'
 import {
     RemoteConfigServiceContainerKey,
     useRemoteConfigService,
 } from '../index'
-import { type RemoteConfigService } from '../../models'
+import { RemoteConfigKey, type RemoteConfigService } from '../../models'
 
 vi.mock('../../store', () => ({
     useRemoteConfigStore: vi.fn(selector => {
@@ -61,9 +61,9 @@ describe('services/remote-config/platform-service', () => {
         svc.initializeRemoteConfig()
         expect(dummy.initializeRemoteConfig).toHaveBeenCalledTimes(1)
 
-        expect(svc.getStringValue('key')).toBe('value')
-        expect(svc.getBooleanValue('key')).toBe(true)
-        expect(svc.getNumberValue('key')).toBe(42)
+        expect(svc.getStringValue('key' as RemoteConfigKey)).toBe('value')
+        expect(svc.getBooleanValue('key' as RemoteConfigKey)).toBe(true)
+        expect(svc.getNumberValue('key' as RemoteConfigKey)).toBe(42)
     })
 
     test('should use override values when present', () => {
@@ -83,18 +83,22 @@ describe('services/remote-config/platform-service', () => {
             number_key: 99,
         }
 
-        ;(useRemoteConfigOverrides as any).mockReturnValue({
+        ;(useRemoteConfigOverrides as Mock).mockReturnValue({
             configOverrides: mockOverrides,
             setConfigOverride: vi.fn(),
         })
 
         const svc = useRemoteConfigService()
 
-        expect(svc.getStringValue('string_key')).toBe('overridden')
-        expect(svc.getBooleanValue('bool_key')).toBe(true)
-        expect(svc.getNumberValue('number_key')).toBe(99)
+        expect(svc.getStringValue('string_key' as RemoteConfigKey)).toBe(
+            'overridden',
+        )
+        expect(svc.getBooleanValue('bool_key' as RemoteConfigKey)).toBe(true)
+        expect(svc.getNumberValue('number_key' as RemoteConfigKey)).toBe(99)
 
         // Should fallback to original if no override
-        expect(svc.getStringValue('other_key')).toBe('original')
+        expect(svc.getStringValue('other_key' as RemoteConfigKey)).toBe(
+            'original',
+        )
     })
 })
