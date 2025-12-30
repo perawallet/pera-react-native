@@ -29,6 +29,7 @@ import { initSettingsStore } from '@perawallet/wallet-core-settings'
 import { initSwapsStore } from '@perawallet/wallet-core-swaps'
 import { initKeyManagerStore } from '../../../../packages/kmd/src'
 import { initWalletConnectStore } from '@perawallet/wallet-core-walletconnect/src/store'
+import { initRemoteConfigStore } from '@perawallet/wallet-core-platform-integration/src/remote-config/store'
 
 const firebaseService = new RNFirebaseService()
 const platformServices = {
@@ -49,17 +50,20 @@ export const useBootstrapper = () => {
 
         // Initialize the data stores.  The issue is that the underlying persistence layer is configured
         // in the platform services, so we have to initialize the data stores after that.
-        await initDeviceStore()
-        await initAccountsStore()
-        await initAssetsStore()
-        await initBlockchainStore()
-        await initContactsStore()
-        await initCurrenciesStore()
-        await initPollingStore()
-        await initSettingsStore()
-        await initSwapsStore()
-        await initKeyManagerStore()
-        await initWalletConnectStore()
+        const inits = []
+        inits.push(initDeviceStore())
+        inits.push(initAccountsStore())
+        inits.push(initAssetsStore())
+        inits.push(initBlockchainStore())
+        inits.push(initContactsStore())
+        inits.push(initCurrenciesStore())
+        inits.push(initPollingStore())
+        inits.push(initSettingsStore())
+        inits.push(initSwapsStore())
+        inits.push(initKeyManagerStore())
+        inits.push(initWalletConnectStore())
+        inits.push(initRemoteConfigStore())
+        await Promise.allSettled(inits)
 
         const crashlyticsInit =
             platformServices.crashReporting.initializeCrashReporting()

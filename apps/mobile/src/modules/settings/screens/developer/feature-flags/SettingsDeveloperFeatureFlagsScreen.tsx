@@ -10,9 +10,18 @@
  limitations under the License
  */
 
-export const UserPreferences = {
-    spendAgreed: 'send-fund-agreed',
-    chartVisible: 'chart-visible',
-    isCreatingAccount: 'is-creating-account',
-    developerMenuEnabled: 'developer-menu-enabled',
-} as const
+import PWView from '@components/view/PWView'
+import FeatureFlagOverrides from '@modules/settings/components/feature-flag-overrides/FeatureFlagOverrides'
+import { useStyles } from './styles'
+
+const SettingsDeveloperFeatureFlagsScreen = () => {
+    const styles = useStyles()
+
+    return (
+        <PWView style={styles.container}>
+            <FeatureFlagOverrides />
+        </PWView>
+    )
+}
+
+export default SettingsDeveloperFeatureFlagsScreen

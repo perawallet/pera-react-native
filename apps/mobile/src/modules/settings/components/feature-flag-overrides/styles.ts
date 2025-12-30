@@ -10,9 +10,17 @@
  limitations under the License
  */
 
-export const UserPreferences = {
-    spendAgreed: 'send-fund-agreed',
-    chartVisible: 'chart-visible',
-    isCreatingAccount: 'is-creating-account',
-    developerMenuEnabled: 'developer-menu-enabled',
-} as const
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => {
+    return {
+        container: {
+            padding: theme.spacing.xl,
+        },
+        row: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+        },
+    }
+})

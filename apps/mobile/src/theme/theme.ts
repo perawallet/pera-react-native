@@ -306,6 +306,15 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
                     presentationStyle: 'overFullScreen',
                 },
             }),
+            Switch: (props, theme) => ({
+                trackColor: {
+                    false: theme.colors.layerGray,
+                    true: theme.colors.layerGray,
+                },
+                thumbColor: props.value
+                    ? theme.colors.helperPositive
+                    : theme.colors.textGray,
+            }),
             Text: () => ({
                 //TODO: It seems to be selecting the wrong font at larger sizes - we may need additional font files
                 h1Style: {

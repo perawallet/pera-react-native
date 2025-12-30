@@ -12,8 +12,41 @@
 
 import { container } from 'tsyringe'
 import type { RemoteConfigService } from '../models'
+import { useRemoteConfigOverrides } from './useRemoteConfigOverrides'
 
 export const RemoteConfigServiceContainerKey = 'RemoteConfigService'
 
-export const useRemoteConfigService = () =>
-    container.resolve<RemoteConfigService>(RemoteConfigServiceContainerKey)
+export const useRemoteConfigService = () => {
+    const configOverrides = useRemoteConfigOverrides()
+
+    const remoteConfigService = container.resolve<RemoteConfigService>(
+        RemoteConfigServiceContainerKey,
+    )
+
+    const wrapperService: RemoteConfigService = {
+        initializeRemoteConfig: () =>
+            remoteConfigService.initializeRemoteConfig(),
+        getStringValue: (key, fallback) => {
+            const override = configOverrides.configOverrides[key]
+            if (override !== undefined && typeof override === 'string') {
+                return override
+            }
+            return remoteConfigService.getStringValue(key, fallback)
+        },
+        getBooleanValue: (key, fallback) => {
+            const override = configOverrides.configOverrides[key]
+            if (override !== undefined && typeof override === 'boolean') {
+                return override
+            }
+            return remoteConfigService.getBooleanValue(key, fallback)
+        },
+        getNumberValue: (key, fallback) => {
+            const override = configOverrides.configOverrides[key]
+            if (override !== undefined && typeof override === 'number') {
+                return override
+            }
+            return remoteConfigService.getNumberValue(key, fallback)
+        },
+    }
+    return wrapperService
+}

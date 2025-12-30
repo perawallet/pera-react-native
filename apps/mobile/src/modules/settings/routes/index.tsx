@@ -31,11 +31,15 @@ import SettingsDeveloperDispenserScreen from '@modules/settings/screens/develope
 import { NavigatorScreenParams } from '@react-navigation/native'
 import { WalletConnectSession } from '@perawallet/wallet-core-walletconnect'
 import SettingsWalletConnectDetailsScreen from '@modules/settings/screens/wallet-connect/SettingsWalletConnectDetailsScreen'
+import SettingsDeveloperMenuScreen from '../screens/developer/dev-menu/SettingsDeveloperMenuScreen'
+import SettingsDeveloperFeatureFlagsScreen from '../screens/developer/feature-flags/SettingsDeveloperFeatureFlagsScreen'
 
 export type DeveloperSettingsStackParamsList = {
     DeveloperSettingsHome: undefined
     NodeSettings: undefined
     DispenserSettings: undefined
+    DevMenu: undefined
+    FeatureFlags: undefined
 }
 
 const DeveloperSettingsStack =
@@ -75,6 +79,20 @@ const DeveloperSettingsStackNavigator = () => {
                     title: 'screens.dispenser',
                 }}
                 component={SettingsDeveloperDispenserScreen}
+            />
+            <DeveloperSettingsStack.Screen
+                name='DevMenu'
+                options={{
+                    title: 'screens.developer_menu',
+                }}
+                component={SettingsDeveloperMenuScreen}
+            />
+            <DeveloperSettingsStack.Screen
+                name='FeatureFlags'
+                options={{
+                    title: 'screens.feature_flags',
+                }}
+                component={SettingsDeveloperFeatureFlagsScreen}
             />
         </DeveloperSettingsStack.Navigator>
     )

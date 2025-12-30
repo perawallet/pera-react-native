@@ -10,9 +10,16 @@
  limitations under the License
  */
 
-export const UserPreferences = {
-    spendAgreed: 'send-fund-agreed',
-    chartVisible: 'chart-visible',
-    isCreatingAccount: 'is-creating-account',
-    developerMenuEnabled: 'developer-menu-enabled',
-} as const
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => {
+    return {
+        versionText: {
+            color: theme.colors.textGrayLighter,
+            paddingVertical: theme.spacing.sm,
+            textAlign: 'center',
+            width: '100%',
+            fontSize: 11,
+        },
+    }
+})
