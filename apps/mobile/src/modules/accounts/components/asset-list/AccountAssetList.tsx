@@ -30,10 +30,7 @@ import { FlashList } from '@shopify/flash-list'
 import EmptyView from '@components/empty-view/EmptyView'
 import LoadingView from '@components/loading/LoadingView'
 import { useLanguage } from '@hooks/language'
-import {
-    GestureResponderEvent,
-    KeyboardAvoidingView,
-} from 'react-native'
+import { GestureResponderEvent, KeyboardAvoidingView } from 'react-native'
 import ExpandablePanel from '@components/expandable-panel/ExpandablePanel'
 import { useModalState } from '@hooks/modal-state'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
