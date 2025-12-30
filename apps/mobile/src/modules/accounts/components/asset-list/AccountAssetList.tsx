@@ -13,13 +13,13 @@
 import PWTouchableOpacity from '@components/touchable-opacity/PWTouchableOpacity'
 import AccountAssetItemView from '@modules/assets/components/asset-item/AccountAssetItemView'
 import PWView from '@components/view/PWView'
-import { PropsWithChildren, useMemo, useState } from 'react'
+import { PropsWithChildren, useCallback, useEffect, useMemo, useState } from 'react'
 import { useStyles } from './styles'
 import { Text } from '@rneui/themed'
 
 import SearchInput from '@components/search-input/SearchInput'
 import PWButton from '@components/button/PWButton'
-import { ParamListBase, useNavigation } from '@react-navigation/native'
+import { ParamListBase, useFocusEffect, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
     useAccountBalancesQuery,
@@ -49,7 +49,7 @@ const AccountAssetList = ({
 }: AccountAssetListProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const headerState = useModalState()
+    const headerState = useModalState(true)
     const [searchFilter, setSearchFilter] = useState('')
     const { accountBalances, isPending } = useAccountBalancesQuery([account])
     const { data: assets } = useAssetsQuery()
