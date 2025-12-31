@@ -116,7 +116,7 @@ const ImportAccountScreen = () => {
                                                         h4
                                                         h4Style={
                                                             focused ===
-                                                            offsetIndex
+                                                                offsetIndex
                                                                 ? styles.focusedLabel
                                                                 : styles.label
                                                         }
@@ -129,7 +129,7 @@ const ImportAccountScreen = () => {
                                                         }
                                                         inputContainerStyle={
                                                             focused ===
-                                                            offsetIndex
+                                                                offsetIndex
                                                                 ? styles.focusedInputContainer
                                                                 : styles.inputContainer
                                                         }
@@ -186,7 +186,7 @@ const ImportAccountScreen = () => {
                 <Text>{t('onboarding.import_account.importing')}</Text>
                 <ActivityIndicator
                     size='large'
-                    color={theme.colors.primary}
+                    color={theme.colors.linkPrimary}
                 />
             </Overlay>
         </>

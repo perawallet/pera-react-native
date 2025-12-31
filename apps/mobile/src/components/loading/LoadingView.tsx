@@ -30,7 +30,7 @@ const LoadingView = ({ variant, size = 'sm', count = 1 }: LoadingViewProps) => {
             <PWView style={styles.container}>
                 <ActivityIndicator
                     size={size === 'sm' ? 'small' : 'large'}
-                    color={theme.colors.primary}
+                    color={theme.colors.linkPrimary}
                 />
             </PWView>
         )

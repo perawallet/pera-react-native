@@ -23,12 +23,22 @@ import { Drawer } from 'react-native-drawer-layout'
 import { useState } from 'react'
 import AccountMenu from '@modules/accounts/components/account-menu/AccountMenu'
 import { useLanguage } from '@hooks/language'
+import { useWebView } from '@hooks/webview'
+import { config } from '@perawallet/wallet-core-config'
 
 const SwapScreen = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const [drawerOpen, setDrawerOpen] = useState<boolean>(false)
     const { t } = useLanguage()
+    const { pushWebView } = useWebView()
+
+    const openSwapSupport = () => {
+        pushWebView({
+            url: config.swapSupportUrl,
+            id: 'swap-support',
+        })
+    }
 
     return (
         <Drawer
@@ -53,6 +63,7 @@ const SwapScreen = () => {
                     <PWIcon
                         name='info'
                         style={styles.titleIcon}
+                        onPress={openSwapSupport}
                     />
                 </PWView>
                 <AccountSelection onPress={() => setDrawerOpen(true)} />

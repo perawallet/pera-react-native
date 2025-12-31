@@ -72,7 +72,7 @@ const NotificationsScreen = () => {
             }
             ListFooterComponent={
                 isFetchingNextPage ? (
-                    <ActivityIndicator color={theme.colors.layerGray} />
+                    <ActivityIndicator color={theme.colors.linkPrimary} />
                 ) : (
                     <></>
                 )

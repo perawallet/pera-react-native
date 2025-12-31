@@ -61,13 +61,10 @@ const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
     return (
         <ErrorBoundary onError={showError}>
             <PWView style={styles.container}>
+                {network === Networks.testnet && <PWView style={styles.testnetBar} />}
                 <StatusBar
                     barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-                    backgroundColor={
-                        network === Networks.testnet
-                            ? theme.colors.testnetBackground
-                            : theme.colors.background
-                    }
+                    translucent={true}
                 />
 
                 {!hasInternet && (
