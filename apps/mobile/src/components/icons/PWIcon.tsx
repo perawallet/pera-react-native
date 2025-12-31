@@ -124,7 +124,7 @@ const ICON_LIBRARY = {
     'edit-pen': EditPenIcon,
     ellipsis: EllipsisIcon,
     'envelope-letter': EnvelopeLetterIcon,
-    'eye': EyeIcon,
+    eye: EyeIcon,
     feedback: FeedbackIcon,
     fund: FundIcon,
     gear: GearIcon,

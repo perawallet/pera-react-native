@@ -14,7 +14,14 @@ import PWIcon, { IconName } from '@components/icons/PWIcon'
 
 import { useMemo } from 'react'
 import { SvgProps } from 'react-native-svg'
-import { isAlgo25Account, isHDWalletAccount, isLedgerAccount, isRekeyedAccount, isWatchAccount, WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    isAlgo25Account,
+    isHDWalletAccount,
+    isLedgerAccount,
+    isRekeyedAccount,
+    isWatchAccount,
+    WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { useIsDarkMode } from '@hooks/theme'
 
 export type AccountIconProps = {
