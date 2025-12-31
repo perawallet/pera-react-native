@@ -94,6 +94,7 @@ pnpm format         # format files
 - [Testing Guide](docs/TESTING.md)
 - [Style Guide](docs/STYLE_GUIDE.md)
 - [Security Best Practices](docs/SECURITY.md)
+- [Contributing Guide](CONTRIBUTING.md)
 
 ## Development patterns
 
