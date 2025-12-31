@@ -40,6 +40,7 @@ export const productionConfig: Config = {
     supportBaseUrl: 'https://supportperawallet.app/',
     termsOfServiceUrl: 'https://perawallet.app/terms-and-services/',
     privacyPolicyUrl: 'https://perawallet.app/privacy-policy/',
+    peraDemoDappUrl: 'https://perawallet.github.io/pera-demo-dapp/',
 
     sendFundsFaqUrl:
         'https://support.perawallet.app/en/category/transactions-1tq8s9h/',

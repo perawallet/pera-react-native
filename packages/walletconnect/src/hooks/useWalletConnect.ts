@@ -19,6 +19,7 @@ import { useCallback } from 'react'
 import { useWalletConnectSessionRequests } from './useWalletConnectSessionRequests'
 import useWalletConnectHandlers from './useWalletConnectHandlers'
 import { logger } from '@perawallet/wallet-core-shared'
+import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 
 const connectors = new Map<string, WalletConnect>()
 
@@ -29,6 +30,7 @@ export const useWalletConnect = () => {
     )
     const { addSessionRequest } = useWalletConnectSessionRequests()
     const { handleSignData, handleSignTransaction } = useWalletConnectHandlers()
+    const accounts = useAllAccounts()
 
     const connectSession = useCallback(
         async ({ session }: { session: WalletConnectSession }) => {
@@ -56,12 +58,20 @@ export const useWalletConnect = () => {
                 const { peerMeta, chainId, permissions } = payload.params[0]
 
                 logger.debug('WC session_request received', { payload })
-                addSessionRequest({
-                    peerMeta,
-                    chainId,
-                    permissions: permissions ?? ALL_PERMISSIONS,
-                    clientId: connector.clientId,
-                })
+                if (session.autoConnect) {
+                    approveSession(
+                        connector.clientId,
+                        payload.params[0],
+                        accounts.map(a => a.address),
+                    )
+                } else {
+                    addSessionRequest({
+                        peerMeta,
+                        chainId,
+                        permissions: permissions ?? ALL_PERMISSIONS,
+                        clientId: connector.clientId,
+                    })
+                }
             })
 
             if (!connector.connected) {

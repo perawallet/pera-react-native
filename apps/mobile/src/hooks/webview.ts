@@ -45,6 +45,7 @@ import {
 } from './webview/handlers'
 import { logger } from '@perawallet/wallet-core-shared'
 import { getAccountType } from './webview/utils'
+import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
 
 type WebviewMessage = {
     id: string
@@ -90,6 +91,7 @@ export const usePeraWebviewInterface = (
     const { t } = useLanguage()
     const { pushWebView: pushWebViewContext } = useContext(WebViewContext)
     const { addSignRequest } = useSigningRequest()
+    const { connectSession } = useWalletConnect()
 
     const hadRequiredParams = useCallback(
         (requiredParams: string[], message: WebviewMessage) => {
@@ -150,7 +152,7 @@ export const usePeraWebviewInterface = (
                 )
             })
         },
-        [requireSecure, t, webview],
+        [securedConnection, t, webview],
     )
 
     const canOpenURI = useCallback(
@@ -166,7 +168,7 @@ export const usePeraWebviewInterface = (
                 )
             })
         },
-        [requireSecure, t, webview],
+        [securedConnection, t, webview],
     )
 
     const openNativeURI = useCallback(
@@ -193,7 +195,7 @@ export const usePeraWebviewInterface = (
                 )
             })
         },
-        [requireSecure, t, webview],
+        [securedConnection, t, webview],
     )
 
     const notifyUser = useCallback(
@@ -212,7 +214,7 @@ export const usePeraWebviewInterface = (
                 //TODO add haptic (and maybe message.banner) support and maybe sound
             })
         },
-        [requireSecure, showToast],
+        [securedConnection, showToast],
     )
 
     const getAddresses = useCallback(
@@ -226,7 +228,7 @@ export const usePeraWebviewInterface = (
                 sendMessageToWebview(message.id, payload, webview)
             })
         },
-        [requireSecure, accounts, webview],
+        [securedConnection, accounts, webview],
     )
 
     const getSettings = useCallback(
@@ -255,7 +257,7 @@ export const usePeraWebviewInterface = (
             deviceID,
             deviceInfo,
             preferredCurrency,
-            requireSecure,
+            securedConnection,
             theme,
             network,
             webview,
@@ -302,7 +304,7 @@ export const usePeraWebviewInterface = (
                 } as TransactionSignRequest)
             })
         },
-        [requireSecure, sendErrorToWebview, sendMessageToWebview, webview],
+        [securedConnection, sendErrorToWebview, sendMessageToWebview, webview],
     )
 
     const requestDataSigning = useCallback(
@@ -350,7 +352,7 @@ export const usePeraWebviewInterface = (
                 } as ArbitraryDataSignRequest)
             })
         },
-        [requireSecure, sendErrorToWebview, sendMessageToWebview, webview],
+        [securedConnection, sendErrorToWebview, sendMessageToWebview, webview],
     )
 
     const getPublicSettings = useCallback(
@@ -364,6 +366,22 @@ export const usePeraWebviewInterface = (
             sendMessageToWebview(message.id, payload, webview)
         },
         [preferredCurrency, theme, network, webview],
+    )
+
+    const openWalletConnect = useCallback(
+        (message: WebviewMessage) => {
+            if (!hadRequiredParams(['uri'], message)) {
+                return
+            }
+
+            connectSession({
+                session: {
+                    uri: message.params!.uri as string,
+                    autoConnect: securedConnection,
+                },
+            })
+        },
+        [connectSession, securedConnection, webview],
     )
 
     const onBackPressed = useCallback(() => {
@@ -382,7 +400,7 @@ export const usePeraWebviewInterface = (
                 )
             })
         },
-        [analytics, requireSecure],
+        [analytics, securedConnection],
     )
 
     const closeWebView = useCallback(() => {
@@ -435,6 +453,9 @@ export const usePeraWebviewInterface = (
                         break
                     case 'requestDataSigning':
                         requestDataSigning(message)
+                        break
+                    case 'walletConnect':
+                        openWalletConnect(message)
                         break
                     default:
                         sendErrorToWebview(
