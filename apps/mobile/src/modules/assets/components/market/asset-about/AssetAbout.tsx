@@ -13,15 +13,14 @@
 import { View } from 'react-native'
 import { useStyles } from './styles'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import Clipboard from '@react-native-clipboard/clipboard'
 import { Text } from '@rneui/themed'
 import PWButton from '@components/button/PWButton'
 import RowTitledItem from '@components/row-titled-item/RowTitledItem'
-import useToast from '@hooks/toast'
 import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/language'
 import { useWebView } from '@hooks/webview'
 import { v7 as uuid } from 'uuid'
+import { useClipboard } from '@hooks/clipboard'
 
 type AssetAboutProps = {
     assetDetails: PeraAsset
@@ -29,18 +28,9 @@ type AssetAboutProps = {
 
 const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
     const styles = useStyles()
-    const { showToast } = useToast()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
-
-    const copyToClipboard = (text: string) => {
-        Clipboard.setString(text)
-        showToast({
-            title: t('common.copied_to_clipboard.title'),
-            body: t('common.copied_to_clipboard.body'),
-            type: 'success',
-        })
-    }
+    const { copyToClipboard } = useClipboard()
 
     const extractDomain = (url: string) => {
         const urlObj = new URL(url)

@@ -22,12 +22,14 @@ import { useSigningRequest } from '@perawallet/wallet-core-blockchain'
 import {
     useSelectedAccount,
     useSelectedAccountAddress,
+    WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useWebView } from './webview'
 import { v7 as uuidv7 } from 'uuid'
 import { useEffect, useRef } from 'react'
 import { Linking } from 'react-native'
 import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
+import { ALGORAND_SCHEME } from './deeplink/arc90-parser'
 
 type LinkSource = 'qr' | 'deeplink'
 
@@ -65,6 +67,10 @@ export const useDeepLink = () => {
         } else {
             navigation.navigate(screenName, params)
         }
+    }
+
+    const buildAccountDeeplink = (account: WalletAccount) => {
+        return `${ALGORAND_SCHEME}${account.address}`
     }
 
     const handleDeepLink = async (
@@ -338,6 +344,7 @@ export const useDeepLink = () => {
         isValidDeepLink,
         handleDeepLink,
         parseDeeplink,
+        buildAccountDeeplink,
     }
 }
 

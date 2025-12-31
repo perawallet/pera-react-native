@@ -15,11 +15,14 @@ import PWView from '@components/view/PWView'
 import RoundButton from '@components/round-button/RoundButton'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import SendFundsBottomSheet from '@modules/transactions/components/send-funds/bottom-sheet/SendFundsBottomSheet'
 import useToast from '@hooks/toast'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/language'
+import { useModalState } from '@hooks/modal-state'
+import ReceiveFundsBottomSheet from '@modules/transactions/components/receive-funds/bottom-sheet/ReceiveFundsBottomSheet'
+import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 
 type AssetActionButtonsProps = {
     asset: PeraAsset
@@ -30,8 +33,9 @@ const AssetActionButtons = ({ asset }: AssetActionButtonsProps) => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { showToast } = useToast()
     const { t } = useLanguage()
-
-    const [sendFundsOpen, setSendFundsOpen] = useState<boolean>(false)
+    const sendFunds = useModalState()
+    const receiveFunds = useModalState()
+    const account = useSelectedAccount()
 
     const goToRootPage = (name: string) => {
         navigation.replace('TabBar', { screen: name })
@@ -44,14 +48,6 @@ const AssetActionButtons = ({ asset }: AssetActionButtonsProps) => {
             type: 'error',
         })
     }, [showToast, t])
-
-    const openSendFunds = () => {
-        setSendFundsOpen(true)
-    }
-
-    const closeSendFunds = () => {
-        setSendFundsOpen(false)
-    }
 
     return (
         <PWView style={styles.container}>
@@ -71,18 +67,23 @@ const AssetActionButtons = ({ asset }: AssetActionButtonsProps) => {
                 title={t('asset_details.action_buttons.send')}
                 icon='outflow'
                 variant='secondary'
-                onPress={openSendFunds}
+                onPress={sendFunds.open}
             />
             <RoundButton
                 title={t('asset_details.action_buttons.receive')}
                 icon='inflow'
                 variant='secondary'
-                onPress={notImplemented}
+                onPress={receiveFunds.open}
             />
             <SendFundsBottomSheet
                 assetId={asset.assetId}
-                onClose={closeSendFunds}
-                isVisible={sendFundsOpen}
+                onClose={sendFunds.close}
+                isVisible={sendFunds.isOpen}
+            />
+            <ReceiveFundsBottomSheet
+                account={account ?? undefined}
+                onClose={receiveFunds.close}
+                isVisible={receiveFunds.isOpen}
             />
         </PWView>
     )

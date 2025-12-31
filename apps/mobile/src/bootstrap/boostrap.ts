@@ -30,6 +30,7 @@ import { initSwapsStore } from '@perawallet/wallet-core-swaps'
 import { initKeyManagerStore } from '../../../../packages/kmd/src'
 import { initWalletConnectStore } from '@perawallet/wallet-core-walletconnect/src/store'
 import { initRemoteConfigStore } from '@perawallet/wallet-core-platform-integration/src/remote-config/store'
+import { useCallback } from 'react'
 
 const firebaseService = new RNFirebaseService()
 const platformServices = {
@@ -43,7 +44,7 @@ const platformServices = {
 }
 
 export const useBootstrapper = () => {
-    return async () => {
+    return useCallback(async () => {
         logger.debug('Bootstrapping')
         //Important - this has to happen first so all subsequent services can use the platform services
         await registerPlatformServices(platformServices)
@@ -86,5 +87,5 @@ export const useBootstrapper = () => {
             platformServices,
             token: notificationResults.token,
         }
-    }
+    }, [])
 }

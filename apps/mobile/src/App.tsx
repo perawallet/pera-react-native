@@ -25,7 +25,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { TokenProvider } from './providers/TokenProvider'
 import { useLanguage } from './hooks/language'
 
-function App() {
+const App = () => {
     const [persister, setPersister] = useState<Persister>()
 
     const [bootstrapped, setBootstrapped] = useState(false)
