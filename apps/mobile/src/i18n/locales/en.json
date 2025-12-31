@@ -410,7 +410,8 @@
                 "mainnet_label": "Algorand MainNet",
                 "testnet_label": "Algorand TestNet"
             },
-            "debug_webview": "Debug Webview",
+            "debug_webview": "Test Webview API",
+            "debug_dapp": "Test Dapp",
             "taps_to_notify": "Developer menu will enable in {{remaining}} taps",
             "developer_menu_enabled": "Developer menu enabled"
         }

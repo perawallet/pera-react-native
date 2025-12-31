@@ -32,6 +32,14 @@ const SettingsDeveloperMenuScreen = () => {
         })
     }
 
+    const openTestingDapp = () => {
+        pushWebView({
+            url: config.peraDemoDappUrl,
+            id: 'Testing Dapp',
+            enablePeraConnect: true,
+        })
+    }
+
     const handleTapEvent = (page: string) => {
         navigation.push(page)
     }
@@ -47,6 +55,11 @@ const SettingsDeveloperMenuScreen = () => {
                 onPress={() => openTestingWebview()}
                 icon='globe'
                 title={t('settings.developer.debug_webview')}
+            />
+            <PWListItem
+                onPress={() => openTestingDapp()}
+                icon='globe'
+                title={t('settings.developer.debug_dapp')}
             />
         </PWView>
     )

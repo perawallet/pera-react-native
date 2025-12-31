@@ -42,6 +42,7 @@ export type WalletConnectSession = {
     connected?: boolean
     lastActiveAt?: Date
     createdAt?: Date
+    autoConnect?: boolean
 }
 
 export type WalletConnectSessionRequest = {

@@ -15,6 +15,30 @@ catalogs:
     '@babel/runtime':
       specifier: ^7.28.4
       version: 7.28.4
+    '@kubb/cli':
+      specifier: ^4.5.8
+      version: 4.12.13
+    '@kubb/core':
+      specifier: ^4.5.8
+      version: 4.12.13
+    '@kubb/plugin-client':
+      specifier: ^4.5.8
+      version: 4.12.13
+    '@kubb/plugin-msw':
+      specifier: ^4.5.8
+      version: 4.12.13
+    '@kubb/plugin-oas':
+      specifier: ^4.5.8
+      version: 4.12.13
+    '@kubb/plugin-react-query':
+      specifier: ^4.5.8
+      version: 4.12.13
+    '@kubb/plugin-ts':
+      specifier: ^4.5.8
+      version: 4.12.13
+    '@kubb/plugin-zod':
+      specifier: ^4.5.8
+      version: 4.12.13
     '@tanstack/query-async-storage-persister':
       specifier: ^5.90.9
       version: 5.90.16
@@ -24,18 +48,27 @@ catalogs:
     '@tanstack/react-query-persist-client':
       specifier: ^5.90.9
       version: 5.90.16
+    '@testing-library/react':
+      specifier: 16.3.0
+      version: 16.3.0
     '@types/react':
       specifier: ^19.2.2
       version: 19.2.7
     '@vitejs/plugin-react':
       specifier: 5.1.0
       version: 5.1.0
+    '@vitest/coverage-v8':
+      specifier: ^4.0.16
+      version: 4.0.16
     algosdk:
       specifier: ^3.5.2
       version: 3.5.2
     bip39:
       specifier: ^3.1.0
       version: 3.1.0
+    decimal.js:
+      specifier: ^10.6.0
+      version: 10.6.0
     eslint:
       specifier: 9.39.1
       version: 9.39.1
@@ -49,6 +82,9 @@ catalogs:
       specifier: 3.6.2
       version: 3.6.2
     react:
+      specifier: 19.2.0
+      version: 19.2.0
+    react-dom:
       specifier: 19.2.0
       version: 19.2.0
     reflect-metadata:
@@ -69,6 +105,15 @@ catalogs:
     uuid:
       specifier: 13.0.0
       version: 13.0.0
+    vite:
+      specifier: ^7.2.7
+      version: 7.3.0
+    vitest:
+      specifier: ^4.0.16
+      version: 4.0.16
+    zod:
+      specifier: ^4.1.12
+      version: 4.2.1
     zustand:
       specifier: ^5.0.8
       version: 5.0.9
@@ -1273,6 +1318,9 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.28.4
+      '@perawallet/wallet-core-accounts':
+        specifier: workspace:*
+        version: link:../accounts
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain

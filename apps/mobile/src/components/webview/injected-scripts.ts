@@ -16,35 +16,38 @@ var style = document.createElement('style'); style.type = 'text/css';
 style.appendChild(document.createTextNode(css)); head.appendChild(style);`
 
 export const peraMobileInterfaceJS = `
-const sendJsonRPCMessage = (request) => {
-    window.ReactNativeWebView?.postMessage(request); 
-};
-const sendRNMessage = (action, params = {}) => {
-    sendJsonRPCMessage(JSON.stringify({
-        jsonrpc: '2.0',
-        method: action,
-        params,
-        id: Date.now()
-    }))
+console.log('peraMobileInterfaceJS setup');
+window.peraRPC = {
+    sendJsonRPCMessage: (request) => {
+        window.ReactNativeWebView?.postMessage(request); 
+    },
+    sendRNMessage: (action, params = {}) => {
+        window.ReactNativeWebView?.postMessage(JSON.stringify({
+            jsonrpc: '2.0',
+            method: action,
+            params,
+            id: Date.now()
+        }));
+    },
 };
 window.peraMobileInterface = {
     version: '2',
-    handleRequest: (request) => sendJsonRPCMessage(request),
-    pushWebView: (params) => sendRNMessage('pushWebView', params),
-    openSystemBrowser: (params) => sendRNMessage('openSystemBrowser', params),
-    canOpenURI: (params) => sendRNMessage('canOpenURI', params),
-    openNativeURI: (params) => sendRNMessage('openNativeURI', params),
-    notifyUser: (params) => sendRNMessage('notifyUser', params),
-    getAddresses: () => sendRNMessage('getAddresses'),
-    getSettings: () => sendRNMessage('getSettings'),
-    getPublicSettings: () => sendRNMessage('getPublicSettings'),
-    onBackPressed: () => sendRNMessage('onBackPressed'),
-    logAnalyticsEvent: (params) => sendRNMessage('logAnalyticsEvent', params),
-    closeWebView: () => sendRNMessage('closeWebView'),
-    pushDappViewerScreen: (params) => sendRNMessage('pushWebView', JSON.parse(params)),
+    handleRequest: (request) => window.peraRPC.sendJsonRPCMessage(request),
+    pushWebView: (params) => window.peraRPC.sendRNMessage('pushWebView', params),
+    openSystemBrowser: (params) => window.peraRPC.sendRNMessage('openSystemBrowser', params),
+    canOpenURI: (params) => window.peraRPC.sendRNMessage('canOpenURI', params),
+    openNativeURI: (params) => window.peraRPC.sendRNMessage('openNativeURI', params),
+    notifyUser: (params) => window.peraRPC.sendRNMessage('notifyUser', params),
+    getAddresses: () => window.peraRPC.sendRNMessage('getAddresses'),
+    getSettings: () => window.peraRPC.sendRNMessage('getSettings'),
+    getPublicSettings: () => window.peraRPC.sendRNMessage('getPublicSettings'),
+    onBackPressed: () => window.peraRPC.sendRNMessage('onBackPressed'),
+    logAnalyticsEvent: (params) => window.peraRPC.sendRNMessage('logAnalyticsEvent', params),
+    closeWebView: () => window.peraRPC.sendRNMessage('closeWebView'),
+    pushDappViewerScreen: (params) => window.peraRPC.sendRNMessage('pushWebView', JSON.parse(params)),
 
     // V1 function for backwards compatibility
-    getAuthorizedAddresses: () => sendRNMessage('getAddresses'),
+    getAuthorizedAddresses: () => window.peraRPC.sendRNMessage('getAddresses'),
 };
 `
 
@@ -61,18 +64,12 @@ export const peraConnectJS = `
                         .querySelector("pera-wallet-modal-touch-screen-mode")
                         .shadowRoot
                         .querySelector("#pera-wallet-connect-modal-touch-screen-mode-launch-pera-wallet-button");
-                    alert("LINK_ELEMENT_V1" + a);
                     a && (e = a.getAttribute("href"));
                 } else {
                     const r = t.getElementsByClassName("pera-wallet-connect-modal-touch-screen-mode__launch-pera-wallet-button");
-                    alert("LINK_ELEMENT_V0" + r);
                     r && (e = r[0].getAttribute("href"));
                 }
-                alert("WC_URI " + e);
-                e && (
-                    window.ReactNativeWebView.postMessage(e),
-                    alert("Message sent to App" + e)
-                );
+                e && window.peraRPC?.sendRNMessage('walletConnect', { uri: e });
                 t.remove();
             }
         });

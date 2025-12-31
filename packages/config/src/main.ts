@@ -44,6 +44,7 @@ export const configSchema = z.object({
     supportBaseUrl: z.url(),
     termsOfServiceUrl: z.url(),
     privacyPolicyUrl: z.url(),
+    peraDemoDappUrl: z.url(),
 
     sendFundsFaqUrl: z.url(),
     swapSupportUrl: z.url(),

@@ -32,6 +32,10 @@ vi.mock('../useWalletConnectHandlers', () => ({
     default: vi.fn(),
 }))
 
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useAllAccounts: vi.fn(() => []),
+}))
+
 vi.mock('@walletconnect/client', () => {
     return {
         default: vi.fn().mockImplementation(function () {

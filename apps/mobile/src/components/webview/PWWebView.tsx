@@ -62,7 +62,7 @@ export type PWWebViewProps = {
 
 const updateTheme = (mode: 'light' | 'dark') => {
     const jsTheme = mode === 'dark' ? 'dark-theme' : 'light-theme'
-    return `if (updateTheme) { updateTheme('${jsTheme}'); }`
+    return `updateTheme?.('${jsTheme}');`
 }
 
 const PWWebView = (props: PWWebViewProps) => {
@@ -86,7 +86,7 @@ const PWWebView = (props: PWWebViewProps) => {
     const { t } = useLanguage()
 
     const isSecure = useMemo(() => {
-        // TODO: We ultimately want to replace this with a more SRI style method
+        // TODO: We ultimately want to replace this with a more SRI style security method
         return (
             url.startsWith(config.onrampBaseUrl) ||
             url.startsWith(config.discoverBaseUrl) ||
@@ -189,8 +189,8 @@ const PWWebView = (props: PWWebViewProps) => {
         let js = baseJS
 
         if (enablePeraConnect) {
-            js += ';' + peraConnectJS
-            js += ';' + peraMobileInterfaceJS
+            js += peraConnectJS
+            js += peraMobileInterfaceJS
         }
 
         js += updateTheme(theme.mode)
@@ -216,7 +216,7 @@ const PWWebView = (props: PWWebViewProps) => {
                 }}
                 style={styles.webview}
                 renderLoading={() => (
-                    <PWView style={StyleSheet.absoluteFillObject}>
+                    <PWView style={StyleSheet.absoluteFill}>
                         <LoadingView
                             variant='circle'
                             size='lg'
@@ -225,7 +225,7 @@ const PWWebView = (props: PWWebViewProps) => {
                 )}
                 renderError={() => {
                     return (
-                        <PWView style={StyleSheet.absoluteFillObject}>
+                        <PWView style={StyleSheet.absoluteFill}>
                             <EmptyView
                                 title={t('common.webview.failed_title')}
                                 body={t('common.webview.failed_body')}
@@ -245,7 +245,7 @@ const PWWebView = (props: PWWebViewProps) => {
                 onMessage={handleEvent}
                 webviewDebuggingEnabled={config.debugEnabled}
                 pullToRefreshEnabled={true}
-                injectedJavaScriptBeforeContentLoaded={jsToLoad}
+                injectedJavaScript={jsToLoad}
                 setSupportMultipleWindows={false}
                 userAgent={userAgent}
                 forceDarkOn={isDarkMode}
