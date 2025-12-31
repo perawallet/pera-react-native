@@ -38,7 +38,7 @@ import DotStackIcon from '@assets/icons/dot-stack.svg'
 import EditPenIcon from '@assets/icons/edit-pen.svg'
 import EllipsisIcon from '@assets/icons/ellipsis.svg'
 import EnvelopeLetterIcon from '@assets/icons/envelope-letter.svg'
-import EyeInCircleIcon from '@assets/icons/eye-in-circle.svg'
+import EyeIcon from '@assets/icons/eye.svg'
 import FeedbackIcon from '@assets/icons/feedback.svg'
 import FundIcon from '@assets/icons/fund.svg'
 import GearIcon from '@assets/icons/gear.svg'
@@ -49,7 +49,6 @@ import HouseIcon from '@assets/icons/house.svg'
 import InflowIcon from '@assets/icons/inflow.svg'
 import InfoIcon from '@assets/icons/info.svg'
 import KeyIcon from '@assets/icons/key.svg'
-import LedgerInCircleIcon from '@assets/icons/ledger-in-circle.svg'
 import ListArrowDownIcon from '@assets/icons/list-arrow-down.svg'
 import MagnifyingGlassIcon from '@assets/icons/magnifying-glass.svg'
 import MoonIcon from '@assets/icons/moon.svg'
@@ -59,6 +58,7 @@ import PersonMenuIcon from '@assets/icons/person-menu.svg'
 import PersonIcon from '@assets/icons/person.svg'
 import PlusWithBorderIcon from '@assets/icons/plus-with-border.svg'
 import PlusIcon from '@assets/icons/plus.svg'
+import QuestionMarkIcon from '@assets/icons/question-mark.svg'
 import ReloadIcon from '@assets/icons/reload.svg'
 import ShareIcon from '@assets/icons/share.svg'
 import ShieldCheckIcon from '@assets/icons/shield-check.svg'
@@ -70,13 +70,24 @@ import SwitchIcon from '@assets/icons/switch.svg'
 import TextDocumentIcon from '@assets/icons/text-document.svg'
 import TreeIcon from '@assets/icons/tree.svg'
 import WalletConnectIcon from '@assets/icons/wallet-connect.svg'
-import WalletInCircleIcon from '@assets/icons/wallet-in-circle.svg'
 import WalletWithAlgoIcon from '@assets/icons/wallet-with-algo.svg'
 import WalletIcon from '@assets/icons/wallet.svg'
 import AlgoAssetIcon from '@assets/icons/assets/algo.svg'
 import SuspiciousAssetIcon from '@assets/icons/assets/suspicious.svg'
 import TrustedAssetIcon from '@assets/icons/assets/trusted.svg'
 import UndoIcon from '@assets/icons/undo.svg'
+import DarkAlgo25AccountIcon from '@assets/icons/accounts/dark/algo25-account.svg'
+import DarkHdWalletAccountIcon from '@assets/icons/accounts/dark/hdwallet-account.svg'
+import DarkLedgerAccountIcon from '@assets/icons/accounts/dark/ledger-account.svg'
+import DarkRekeyedAccountIcon from '@assets/icons/accounts/dark/rekeyed-account.svg'
+import DarkUnknownAccountIcon from '@assets/icons/accounts/dark/unknown-account.svg'
+import DarkWatchAccountIcon from '@assets/icons/accounts/dark/watch-account.svg'
+import LightAlgo25AccountIcon from '@assets/icons/accounts/light/algo25-account.svg'
+import LightHdWalletAccountIcon from '@assets/icons/accounts/light/hdwallet-account.svg'
+import LightLedgerAccountIcon from '@assets/icons/accounts/light/ledger-account.svg'
+import LightRekeyedAccountIcon from '@assets/icons/accounts/light/rekeyed-account.svg'
+import LightUnknownAccountIcon from '@assets/icons/accounts/light/unknown-account.svg'
+import LightWatchAccountIcon from '@assets/icons/accounts/light/watch-account.svg'
 import USDCAssetIcon from '@assets/icons/assets/usdc.svg'
 import VerifiedAssetIcon from '@assets/icons/assets/verified.svg'
 import VestAssetIcon from '@assets/icons/assets/vest.svg'
@@ -113,7 +124,7 @@ const ICON_LIBRARY = {
     'edit-pen': EditPenIcon,
     ellipsis: EllipsisIcon,
     'envelope-letter': EnvelopeLetterIcon,
-    'eye-in-circle': EyeInCircleIcon,
+    eye: EyeIcon,
     feedback: FeedbackIcon,
     fund: FundIcon,
     gear: GearIcon,
@@ -124,7 +135,6 @@ const ICON_LIBRARY = {
     inflow: InflowIcon,
     info: InfoIcon,
     key: KeyIcon,
-    'ledger-in-circle': LedgerInCircleIcon,
     'list-arrow-down': ListArrowDownIcon,
     'magnifying-glass': MagnifyingGlassIcon,
     moon: MoonIcon,
@@ -134,6 +144,7 @@ const ICON_LIBRARY = {
     'person-key': PersonKeyIcon,
     'plus-with-border': PlusWithBorderIcon,
     plus: PlusIcon,
+    'question-mark': QuestionMarkIcon,
     reload: ReloadIcon,
     share: ShareIcon,
     'shield-check': ShieldCheckIcon,
@@ -146,9 +157,20 @@ const ICON_LIBRARY = {
     tree: TreeIcon,
     undo: UndoIcon,
     'wallet-connect': WalletConnectIcon,
-    'wallet-in-circle': WalletInCircleIcon,
     'wallet-with-algo': WalletWithAlgoIcon,
     wallet: WalletIcon,
+    'accounts/dark/algo25-account': DarkAlgo25AccountIcon,
+    'accounts/dark/hdwallet-account': DarkHdWalletAccountIcon,
+    'accounts/dark/ledger-account': DarkLedgerAccountIcon,
+    'accounts/dark/rekeyed-account': DarkRekeyedAccountIcon,
+    'accounts/dark/unknown-account': DarkUnknownAccountIcon,
+    'accounts/dark/watch-account': DarkWatchAccountIcon,
+    'accounts/light/algo25-account': LightAlgo25AccountIcon,
+    'accounts/light/hdwallet-account': LightHdWalletAccountIcon,
+    'accounts/light/ledger-account': LightLedgerAccountIcon,
+    'accounts/light/rekeyed-account': LightRekeyedAccountIcon,
+    'accounts/light/unknown-account': LightUnknownAccountIcon,
+    'accounts/light/watch-account': LightWatchAccountIcon,
     'assets/algo': AlgoAssetIcon,
     'assets/suspicious': SuspiciousAssetIcon,
     'assets/trusted': TrustedAssetIcon,

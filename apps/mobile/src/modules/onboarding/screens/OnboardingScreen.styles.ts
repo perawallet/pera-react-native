@@ -50,7 +50,7 @@ export const useStyles = makeStyles(theme => {
             justifyContent: 'center',
             backgroundColor: theme.colors.layerGray,
             borderRadius: theme.spacing.lg,
-            gap: theme.spacing.lg,
+            gap: theme.spacing.md,
         },
     }
 })

@@ -115,11 +115,11 @@ const OnboardingScreen = () => {
                 overlayStyle={styles.overlay}
                 backdropStyle={styles.overlayBackdrop}
             >
-                <Text>{t('onboarding.create_account.processing')}</Text>
                 <ActivityIndicator
                     size='large'
-                    color={theme.colors.primary}
+                    color={theme.colors.linkPrimary}
                 />
+                <Text>{t('onboarding.create_account.processing')}</Text>
             </Overlay>
         </>
     )

@@ -10,27 +10,49 @@
  limitations under the License
  */
 
-import PWIcon from '@components/icons/PWIcon'
+import PWIcon, { IconName } from '@components/icons/PWIcon'
 
 import { useMemo } from 'react'
 import { SvgProps } from 'react-native-svg'
-import { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    isAlgo25Account,
+    isHDWalletAccount,
+    isLedgerAccount,
+    isRekeyedAccount,
+    isWatchAccount,
+    WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { useIsDarkMode } from '@hooks/theme'
 
-//TODO support all account types
 export type AccountIconProps = {
     account?: WalletAccount
 } & SvgProps
 
+// TODO: Add governor badges (if needed - see Figma)
 const AccountIcon = (props: AccountIconProps) => {
     const { account, ...rest } = props
+    const darkmode = useIsDarkMode()
 
     const icon = useMemo(() => {
         if (!account) return <></>
-        const name = account.hdWalletDetails ? 'wallet-in-circle' : 'wallet'
+
+        const theme = darkmode ? 'dark' : 'light'
+        let iconName: IconName = `accounts/${theme}/unknown-account`
+        if (isHDWalletAccount(account)) {
+            iconName = `accounts/${theme}/hdwallet-account`
+        } else if (isAlgo25Account(account)) {
+            iconName = `accounts/${theme}/algo25-account`
+        } else if (isLedgerAccount(account)) {
+            iconName = `accounts/${theme}/ledger-account`
+        } else if (isWatchAccount(account)) {
+            iconName = `accounts/${theme}/watch-account`
+        } else if (isRekeyedAccount(account)) {
+            iconName = `accounts/${theme}/rekeyed-account`
+        }
         return (
             <PWIcon
                 {...rest}
-                name={name}
+                name={iconName}
             />
         )
     }, [account, rest])

@@ -21,8 +21,12 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
         },
         testnetBar: {
             backgroundColor: theme.colors.testnetBackground,
-            height: insets.top + theme.spacing.sm,
+            height: insets.top,
             zIndex: 1,
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
         },
         mainnetBar: {
             backgroundColor: theme.colors.background,

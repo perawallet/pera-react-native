@@ -186,7 +186,7 @@ const ImportAccountScreen = () => {
                 <Text>{t('onboarding.import_account.importing')}</Text>
                 <ActivityIndicator
                     size='large'
-                    color={theme.colors.primary}
+                    color={theme.colors.linkPrimary}
                 />
             </Overlay>
         </>

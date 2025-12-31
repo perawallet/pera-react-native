@@ -37,7 +37,7 @@ export const productionConfig: Config = {
     discoverBaseUrl: 'https://discover-mobile.perawallet.app/',
     stakingBaseUrl: 'https://staking-mobile.perawallet.app/',
     onrampBaseUrl: 'https://onramp-mobile.perawallet.app/',
-    supportBaseUrl: 'https://supportperawallet.app/',
+    supportBaseUrl: 'https://support.perawallet.app/',
     termsOfServiceUrl: 'https://perawallet.app/terms-and-services/',
     privacyPolicyUrl: 'https://perawallet.app/privacy-policy/',
     peraDemoDappUrl: 'https://perawallet.github.io/pera-demo-dapp/',
