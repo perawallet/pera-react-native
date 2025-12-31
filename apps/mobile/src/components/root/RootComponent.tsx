@@ -17,7 +17,7 @@ import { AppState, StatusBar } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { MainRoutes } from '@routes/index'
 import { getTheme } from '@theme/theme'
-import { Text, ThemeProvider, useTheme } from '@rneui/themed'
+import { Text, ThemeProvider } from '@rneui/themed'
 import { useStyles } from './styles'
 import PWView from '@components/view/PWView'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -44,7 +44,6 @@ const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
     const styles = useStyles(insets)
     const { hasInternet } = useContext(NetworkStatusContext)
     const { network } = useNetwork()
-    const { theme } = useTheme()
     const { showToast } = useToast()
     const { t } = useLanguage()
 
