@@ -60,6 +60,7 @@ import PersonIcon from '@assets/icons/person.svg'
 import PlusWithBorderIcon from '@assets/icons/plus-with-border.svg'
 import PlusIcon from '@assets/icons/plus.svg'
 import ReloadIcon from '@assets/icons/reload.svg'
+import ShareIcon from '@assets/icons/share.svg'
 import ShieldCheckIcon from '@assets/icons/shield-check.svg'
 import SlidersIcon from '@assets/icons/sliders.svg'
 import SnowflakeIcon from '@assets/icons/snowflake.svg'
@@ -134,6 +135,7 @@ const ICON_LIBRARY = {
     'plus-with-border': PlusWithBorderIcon,
     plus: PlusIcon,
     reload: ReloadIcon,
+    share: ShareIcon,
     'shield-check': ShieldCheckIcon,
     sliders: SlidersIcon,
     snowflake: SnowflakeIcon,

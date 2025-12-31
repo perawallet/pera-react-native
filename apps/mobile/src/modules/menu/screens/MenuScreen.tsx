@@ -23,11 +23,13 @@ import PWTouchableOpacity from '@components/touchable-opacity/PWTouchableOpacity
 import QRScannerView from '@components/qr-scanner/QRScannerView'
 import { useModalState } from '@hooks/modal-state'
 import { useLanguage } from '@hooks/language'
+import ReceiveFundsBottomSheet from '@modules/transactions/components/receive-funds/bottom-sheet/ReceiveFundsBottomSheet'
 
 const MenuScreen = () => {
     const styles = useStyles()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const scanner = useModalState()
+    const receiveFunds = useModalState()
     const { t } = useLanguage()
 
     const goToSettings = () => {
@@ -96,7 +98,7 @@ const MenuScreen = () => {
                     titleWeight='h3'
                     leftIcon='inflow'
                     rightIcon='chevron-right'
-                    onPress={() => {}}
+                    onPress={receiveFunds.open}
                 />
                 <PanelButton
                     title={t('menu.contacts')}
@@ -111,6 +113,10 @@ const MenuScreen = () => {
                 onSuccess={scanner.close}
                 onClose={scanner.close}
                 animationType='slide'
+            />
+            <ReceiveFundsBottomSheet
+                isVisible={receiveFunds.isOpen}
+                onClose={receiveFunds.close}
             />
         </PWView>
     )

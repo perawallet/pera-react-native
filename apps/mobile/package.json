@@ -71,6 +71,7 @@
     "react-native-mmkv": "^3.3.3",
     "react-native-nitro-modules": "^0.29.8",
     "react-native-notifier": "^2.0.0",
+    "react-native-qrcode-svg": "^6.3.21",
     "react-native-quick-base64": "^2.2.2",
     "react-native-quick-crypto": "1.0.0-beta.20",
     "react-native-reanimated": "^4.2.0",

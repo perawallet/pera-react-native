@@ -40,12 +40,13 @@ interface AssetQuery extends BaseParams {
     assetId: string
 }
 
+export const ALGORAND_SCHEME = 'algorand://'
 type AlgorandURI = PaymentTx | KeyRegTx | NoopTx | AppQuery | AssetQuery
 
 export function parseAlgorandURI(uri: string): AlgorandURI | null {
     try {
-        if (!uri.startsWith('algorand://')) return null
-        const stripped = uri.slice('algorand://'.length)
+        if (!uri.startsWith(ALGORAND_SCHEME)) return null
+        const stripped = uri.slice(ALGORAND_SCHEME.length)
 
         // Split network/address vs query
         const [beforeQuery, query] = stripped.split('?', 2)

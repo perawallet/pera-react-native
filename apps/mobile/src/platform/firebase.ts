@@ -51,11 +51,7 @@ import {
 import { config } from '@perawallet/wallet-core-config'
 
 export class RNFirebaseService
-    implements
-        CrashReportingService,
-        RemoteConfigService,
-        CrashReportingService,
-        AnalyticsService
+    implements CrashReportingService, RemoteConfigService, AnalyticsService
 {
     remoteConfig: FirebaseRemoteConfigTypes.Module | null = null
     messaging: FirebaseMessagingTypes.Module | null = null

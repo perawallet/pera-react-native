@@ -292,6 +292,36 @@
             "body": "The Total Portfolio Value is calculated by adding up the value of all asset values and Algo available in your accounts, excluding Watch Accounts.\n\nAsset values are calculated based on daily values fetched from several ecosystem partners.  Since some asset values are not available, the Total Portfolio Value should be considered an estimation."
         }
     },
+    "receive_funds": {
+        "account_selection": {
+            "title": "Select Account"
+        },
+        "qrview": {
+            "error_title": "No Account Selected",
+            "error_body": "No account has been selected, please select an account first",
+            "copy_address": "Copy Address",
+            "share": "Share Address"
+        }
+    },
+    "screens": {
+        "contacts": "Contacts",
+        "view_contact": "View Contact",
+        "edit_contact": "Edit Contact",
+        "add_contact": "Add New Contact",
+        "settings": "Settings",
+        "security": "Security",
+        "notifications": "Notifications",
+        "wallet_connect": "Wallet Connect",
+        "wallet_connect_details": "Connection Details",
+        "passkeys": "Passkeys",
+        "currency": "Currency",
+        "theme": "Theme",
+        "developer_settings": "Developer Settings",
+        "node_settings": "Node Settings",
+        "feature_flags": "Feature Flags",
+        "dispenser": "Dispenser",
+        "developer_menu": "Developer Menu"
+    },
     "send_funds": {
         "input_view": {
             "title": "Send {{asset}}"
@@ -339,39 +369,6 @@
             "confirm_button": "Confirm transfer"
         }
     },
-    "signing": {
-        "impact": {
-            "you_receive": "YOU WILL RECEIVE",
-            "you_spend": "YOU WILL SPEND"
-        },
-        "view": {
-            "invalid_title": "Invalid Transaction",
-            "cancel": "Cancel",
-            "confirm": "Confirm",
-            "confirm_all": "Confirm All",
-            "invalid_body": "There does not appear to be a receiver for this transaction"
-        },
-        "unknown_request_type": {
-            "title": "Unknown Request Type",
-            "body": "The request type is unknown."
-        }
-    },
-    "swaps": {
-        "pair_selection": {
-            "you_pay": "You pay",
-            "balance": "Balance:",
-            "max": "MAX",
-            "you_receive": "You receive"
-        },
-        "history": {
-            "title": "Swap History",
-            "see_all": "See all"
-        },
-        "top_pairs": {
-            "title": "Top 5 Swaps",
-            "volume": "Volume (24H)"
-        }
-    },
     "settings": {
         "currency": {
             "title": "Main Currency",
@@ -416,31 +413,45 @@
             "developer_menu_enabled": "Developer menu enabled"
         }
     },
+    "signing": {
+        "impact": {
+            "you_receive": "YOU WILL RECEIVE",
+            "you_spend": "YOU WILL SPEND"
+        },
+        "view": {
+            "invalid_title": "Invalid Transaction",
+            "cancel": "Cancel",
+            "confirm": "Confirm",
+            "confirm_all": "Confirm All",
+            "invalid_body": "There does not appear to be a receiver for this transaction"
+        },
+        "unknown_request_type": {
+            "title": "Unknown Request Type",
+            "body": "The request type is unknown."
+        }
+    },
+    "swaps": {
+        "pair_selection": {
+            "you_pay": "You pay",
+            "balance": "Balance:",
+            "max": "MAX",
+            "you_receive": "You receive"
+        },
+        "history": {
+            "title": "Swap History",
+            "see_all": "See all"
+        },
+        "top_pairs": {
+            "title": "Top 5 Swaps",
+            "volume": "Volume (24H)"
+        }
+    },
     "tabbar": {
         "home": "Home",
         "discover": "Discover",
         "swap": "Swap",
         "fund": "Fund",
         "menu": "Menu"
-    },
-    "screens": {
-        "contacts": "Contacts",
-        "view_contact": "View Contact",
-        "edit_contact": "Edit Contact",
-        "add_contact": "Add New Contact",
-        "settings": "Settings",
-        "security": "Security",
-        "notifications": "Notifications",
-        "wallet_connect": "Wallet Connect",
-        "wallet_connect_details": "Connection Details",
-        "passkeys": "Passkeys",
-        "currency": "Currency",
-        "theme": "Theme",
-        "developer_settings": "Developer Settings",
-        "node_settings": "Node Settings",
-        "feature_flags": "Feature Flags",
-        "dispenser": "Dispenser",
-        "developer_menu": "Developer Menu"
     },
     "walletconnect": {
         "request": {
