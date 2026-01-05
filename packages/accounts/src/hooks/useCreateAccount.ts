@@ -24,6 +24,7 @@ import { BIP32DerivationTypes } from '@perawallet/wallet-core-xhdwallet'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import { useWithKey, useKMD, KeyType } from '@perawallet/wallet-core-kmd'
 import { NoHDWalletError } from '../errors'
+import { KEY_DOMAIN } from '../constants'
 
 export const useCreateAccount = () => {
     const { network } = useNetwork()
@@ -46,26 +47,27 @@ export const useCreateAccount = () => {
         keyIndex: number
     }) => {
         const rootWalletId = walletId ?? uuidv7()
+        //TODO dry this code - maybe create a useHDWalletKey hook and share with useImportAccount
         const rootKey = getKey(rootWalletId)
         if (!rootKey) {
             const masterKey = await generateMasterKey()
-            const base64Seed = masterKey.seed.toString('base64')
             const keyData = {
-                seed: base64Seed,
+                seed: masterKey.seed.toString('base64'),
                 entropy: masterKey.entropy,
             }
             const stringifiedObj = JSON.stringify(keyData)
             const rootKeyPair = {
                 id: rootWalletId,
                 publicKey: '',
-                privateDataStorageKey: rootWalletId,
+                privateDataStorageKey: '',
                 createdAt: new Date(),
                 type: KeyType.HDWalletRootKey,
             }
             await saveKey(rootKeyPair, new TextEncoder().encode(stringifiedObj))
+            masterKey.seed.fill(0)
         }
 
-        return executeWithKey(rootWalletId, 'pera.accounts', async data => {
+        return executeWithKey(rootWalletId, KEY_DOMAIN, async data => {
             const masterKeyData = JSON.parse(new TextDecoder().decode(data))
             if (!masterKeyData?.seed) {
                 throw new NoHDWalletError(rootWalletId)
@@ -83,7 +85,7 @@ export const useCreateAccount = () => {
             const keyPair = {
                 id,
                 publicKey: encodeAlgorandAddress(address),
-                privateDataStorageKey: id,
+                privateDataStorageKey: '',
                 createdAt: new Date(),
                 type: KeyType.HDWalletDerivedKey,
             }

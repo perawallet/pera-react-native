@@ -34,6 +34,7 @@ import PWHeader from '@components/header/PWHeader'
 import {
     useAccountAssetBalanceQuery,
     useSelectedAccount,
+    useTransactionSigner,
 } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
@@ -41,9 +42,8 @@ import {
     useAssetFiatPricesQuery,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
-import { useLanguage } from '../../../hooks/useLanguage'
+import { useLanguage } from '@hooks/language'
 import { useAlgorandClient } from '@perawallet/wallet-core-blockchain'
-import { useTransactionSigner } from '@perawallet/wallet-core-accounts'
 
 type SendFundsTransactionConfirmationProps = {
     onNext: () => void
@@ -130,8 +130,8 @@ const SendFundsTransactionConfirmation = ({
                 await algokit.send.payment({
                     sender: selectedAccount!.address,
                     receiver: destination!,
-                    amount: (amount.toNumber()).algo(),
-                    note
+                    amount: amount.toNumber().algo(),
+                    note,
                 })
 
                 onSuccess()
@@ -142,7 +142,7 @@ const SendFundsTransactionConfirmation = ({
                     receiver: destination!,
                     amount: BigInt(amount.toNumber()),
                     assetId: BigInt(selectedAsset.assetId),
-                    note
+                    note,
                 })
 
                 onSuccess()

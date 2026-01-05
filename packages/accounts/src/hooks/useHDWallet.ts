@@ -80,7 +80,7 @@ const deriveKey = async ({
 const signTransaction = (
     seed: Buffer,
     hdWalletDetails: HDWalletDetails,
-    transaction: Buffer,
+    transaction: Uint8Array,
 ) => {
     const rootKey = fromSeed(seed)
     return api.signAlgoTransaction(
@@ -96,7 +96,7 @@ const signTransaction = (
 const signData = (
     seed: Buffer,
     hdWalletDetails: HDWalletDetails,
-    data: Buffer,
+    data: Uint8Array,
 ) => {
     const rootKey = fromSeed(seed)
     const metadata = {

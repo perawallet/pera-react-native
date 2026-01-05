@@ -12,3 +12,4 @@
 
 export * from './useAlgorandClient'
 export * from './useSigningRequest'
+export * from './useTransactionEncoder'

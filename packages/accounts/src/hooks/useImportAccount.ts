@@ -29,9 +29,8 @@ export const useImportAccount = () => {
     }) => {
         const rootWalletId = walletId ?? uuidv7()
         const masterKey = await generateMasterKey(mnemonic)
-        const base64Seed = masterKey.seed.toString('base64')
         const stringifiedObj = JSON.stringify({
-            seed: base64Seed,
+            seed: masterKey.seed.toString('base64'),
             entropy: masterKey.entropy,
         })
         const rootKeyPair = {

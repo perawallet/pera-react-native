@@ -10,19 +10,15 @@
  limitations under the License
  */
 
-/**
- * @description BoxReference names a box by its name and the application ID it belongs to.
- */
-export type BoxReference = {
-    /**
-     * @description Application ID to which the box belongs, or zero if referring to the called application.
-     * @type integer
-     */
-    app: number
-    /**
-     * @description Base64 encoded box name
-     * @pattern ^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
-     * @type string, byte
-     */
-    name: string
+import { PeraTransaction } from '../models'
+
+// import { encodeTransaction } from '@algorandfoundation/algokit-utils/transact'
+
+export const useTransactionEncoder = () => {
+    return {
+        encodeTransaction: (_: PeraTransaction) => {
+            //TODO: implement this once we can find encodeTransaction in algokit-utils somewhere
+            return Uint8Array.from([0])
+        },
+    }
 }

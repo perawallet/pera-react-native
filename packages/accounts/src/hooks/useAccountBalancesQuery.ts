@@ -66,9 +66,7 @@ export const useAccountBalancesQuery = (
     })
 
     const { data: assets } = useAssetsQuery(
-        results.flatMap(
-            r => r.data?.assets?.map(a => `${a.assetId}`) ?? [],
-        ),
+        results.flatMap(r => r.data?.assets?.map(a => `${a.assetId}`) ?? []),
     )
     const { data: assetPrices } = useAssetFiatPricesQuery()
     const usdAlgoPrice = useMemo(
@@ -90,11 +88,11 @@ export const useAccountBalancesQuery = (
             let fiatValue = Decimal(0)
 
             const assetBalances: AssetWithAccountBalance[] = []
-            r.data?.assets?.forEach((assetHolding: AssetHolding) => {
+            r.data?.assets?.forEach(assetHolding => {
                 const usdAssetPrice =
-                    assetPrices?.get(`${assetHolding['asset-id']}`)
-                        ?.fiatPrice ?? Decimal(0)
-                const asset = assets.get(`${assetHolding['asset-id']}`)
+                    assetPrices?.get(`${assetHolding.assetId}`)?.fiatPrice ??
+                    Decimal(0)
+                const asset = assets.get(`${assetHolding.assetId}`)
                 const assetAmount = Decimal(assetHolding.amount ?? '0').div(
                     Decimal(10).pow(asset?.decimals ?? 0),
                 )
@@ -106,7 +104,7 @@ export const useAccountBalancesQuery = (
                 algoValue = algoValue.plus(algoAssetValue)
                 fiatValue = fiatValue.plus(fiatAssetValue)
                 assetBalances.push({
-                    assetId: `${assetHolding['asset-id']}`,
+                    assetId: `${assetHolding.assetId}`,
                     amount: assetAmount,
                     algoValue: algoAssetValue,
                     fiatValue: fiatAssetValue,
@@ -114,7 +112,7 @@ export const useAccountBalancesQuery = (
             })
 
             //Now add algo into the mix
-            const algoAmount = Decimal(r.data?.amount ?? '0').div(
+            const algoAmount = Decimal(r.data?.balance?.algos ?? '0').div(
                 Decimal(10).pow(ALGO_ASSET.decimals),
             )
             const usdAlgoValue = algoAmount.times(usdAlgoPrice)

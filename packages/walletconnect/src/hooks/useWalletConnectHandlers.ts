@@ -19,7 +19,7 @@ import {
 import { useWalletConnectStore } from '../store'
 import {
     ArbitraryDataSignRequest,
-    Transaction,
+    PeraTransactionGroup,
     TransactionSignRequest,
     useSigningRequest,
 } from '@perawallet/wallet-core-blockchain'
@@ -146,7 +146,7 @@ const useWalletConnectHandlers = () => {
                 txs: [txn],
                 success: async (
                     signingAddress: string,
-                    signed: (Transaction | null)[][],
+                    signed: (PeraTransactionGroup | null)[],
                 ) => {
                     //TODO we probably need to use algokit here to pack this up correctly
                     const signedTxn = JSON.stringify(signed.at(0)?.at(0))

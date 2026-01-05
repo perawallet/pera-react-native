@@ -15,9 +15,9 @@ import { useMemo } from 'react'
 import { Networks } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
-import { TransactionSigner } from '@algorandfoundation/algokit-utils/transact'
+import { PeraTransactionSigner } from '../models'
 
-export const useAlgorandClient = (signer?: TransactionSigner) => {
+export const useAlgorandClient = (signer?: PeraTransactionSigner) => {
     const { network } = useNetwork()
 
     return useMemo(() => {

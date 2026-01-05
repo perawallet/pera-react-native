@@ -27,7 +27,7 @@ export const AccountTypes = {
 
 export type AccountType = (typeof AccountTypes)[keyof typeof AccountTypes]
 
-export interface HDWalletDetails {
+export type HDWalletDetails = {
     walletId: string
     account: number
     change: number
@@ -35,27 +35,44 @@ export interface HDWalletDetails {
     derivationType: DerivationType
 }
 
-export interface MultiSigDetails {
+export type MultiSigDetails = {
     threshold: number
     addresses: string[]
 }
 
-export interface HardwareWalletDetails {
+export type HardwareWalletDetails = {
     manufacturer: 'ledger'
     //TODO add any additional details here as needed (MAC addresses, models, etc)
 }
 
-export interface WalletAccount {
+export type WalletAccount =
+    | Algo25Account
+    | HDWalletAccount
+    | MultiSigAccount
+    | HardwareWalletAccount
+
+export type BaseWalletAccount = {
     id?: string
     name?: string
     type: AccountType
     address: string
     canSign: boolean
     keyPairId?: string
-    hdWalletDetails?: HDWalletDetails
-    multisigDetails?: MultiSigDetails
-    hardwareDetails?: HardwareWalletDetails
     rekeyAddress?: string
+}
+
+export type Algo25Account = BaseWalletAccount
+
+export type HDWalletAccount = BaseWalletAccount & {
+    hdWalletDetails: HDWalletDetails
+}
+
+export type MultiSigAccount = BaseWalletAccount & {
+    multisigDetails: MultiSigDetails
+}
+
+export type HardwareWalletAccount = BaseWalletAccount & {
+    hardwareDetails: HardwareWalletDetails
 }
 
 export type AccountAddress = string
