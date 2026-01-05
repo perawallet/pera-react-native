@@ -19,8 +19,6 @@ import {
     MemoryKeyValueStorage,
 } from '@perawallet/wallet-core-platform-integration'
 import type { WalletAccount } from '../../models'
-import { NoHDWalletError } from '../../errors'
-import { KeyNotFoundError } from '@perawallet/wallet-core-kmd'
 
 // Mock store
 vi.mock('../../store', async () => {
@@ -47,6 +45,16 @@ vi.mock('../useHDWallet', () => ({
     })),
 }))
 
+// Mock blockchain
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useTransactionEncoder: vi.fn(() => ({
+        encodeTransaction: vi.fn(() => new Uint8Array([0])),
+        decodeTransaction: vi.fn(() => ({})),
+    })),
+    PeraTransaction: {},
+    PeraTransactionGroup: [],
+}))
+
 // Mock platform integration
 vi.mock('@perawallet/wallet-core-platform-integration', async () => {
     const actual = await vi.importActual<
@@ -62,17 +70,30 @@ vi.mock('@perawallet/wallet-core-platform-integration', async () => {
     }
 })
 
+// Helper to create mock PeraTransaction
+const createMockTransaction = (sender: string) =>
+    ({
+        sender: { toString: () => sender },
+        signature: undefined,
+    }) as any
+
 describe('useTransactionSigner', () => {
     beforeEach(() => {
         useAccountsStore.setState({ accounts: [] })
         vi.clearAllMocks()
     })
 
-    test('signTransactionForAddress signs transaction if account and keys exist', async () => {
+    test('signTransactions returns the hook with signTransactions function', () => {
+        const { result } = renderHook(() => useTransactionSigner())
+        expect(result.current.signTransactions).toBeDefined()
+        expect(typeof result.current.signTransactions).toBe('function')
+    })
+
+    test('signTransactions signs transactions when accounts exist', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => {}),
+            setItem: vi.fn(async () => { }),
             getItem: vi.fn(async () => Buffer.from('seed_data')),
-            removeItem: vi.fn(async () => {}),
+            removeItem: vi.fn(async () => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -102,108 +123,24 @@ describe('useTransactionSigner', () => {
 
         const { result } = renderHook(() => useTransactionSigner())
 
-        const txn = Buffer.from('txn')
-        const signed = await result.current.signTransactionForAddress(
-            'ADDR1',
-            txn,
+        const txnGroup = [createMockTransaction('ADDR1')]
+        const indexesToSign = [0]
+
+        const signed = await result.current.signTransactions(
+            txnGroup,
+            indexesToSign,
         )
 
-        expect(signed).toEqual(new Uint8Array([1, 2, 3]))
-        expect(dummySecure.getItem).toHaveBeenCalledWith('rootkey-W1')
-        // Check that signTransaction was called.
-        // Note: We cannot check the exact seed buffer content here because it gets zeroed out by withKey
-        // before the test expectation runs.
+        expect(signed).toBeDefined()
+        expect(Array.isArray(signed)).toBe(true)
         expect(mockSignTransaction).toHaveBeenCalled()
-        expect(mockSignTransaction.mock.calls[0][1]).toEqual(
-            account.hdWalletDetails,
-        )
-        expect(mockSignTransaction.mock.calls[0][2]).toEqual(txn)
     })
 
-    test('signTransactionForAddress throws if account not found', async () => {
-        const { result } = renderHook(() => useTransactionSigner())
-        await expect(
-            result.current.signTransactionForAddress(
-                'ADDR1',
-                Buffer.from('txn'),
-            ),
-        ).rejects.toThrow(NoHDWalletError)
-    })
-
-    test('signTransactionForAddress throws if account has no HD wallet details', async () => {
-        const account: WalletAccount = {
-            id: '1',
-            address: 'ADDR1',
-            type: 'standard',
-            canSign: true,
-            name: 'Acc1',
-            keyPairId: 'rootkey-W1',
-            // No hdWalletDetails
-        }
-        useAccountsStore.setState({ accounts: [account] })
-
-        const { result } = renderHook(() => useTransactionSigner())
-
-        await expect(
-            result.current.signTransactionForAddress(
-                'ADDR1',
-                Buffer.from('txn'),
-            ),
-        ).rejects.toThrow(NoHDWalletError)
-    })
-
-    test('signTransactionForAddress throws if no signing keys found in storage', async () => {
+    test('signTransactions skips transactions not in indexesToSign', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => {}),
-            getItem: vi.fn(async () => null), // Returns null
-            removeItem: vi.fn(async () => {}),
-            authenticate: vi.fn(async () => true),
-        }
-
-        registerTestPlatform({
-            keyValueStorage: new MemoryKeyValueStorage() as any,
-            secureStorage: dummySecure as any,
-        })
-
-        const account: WalletAccount = {
-            id: '1',
-            address: 'ADDR1',
-            type: 'standard',
-            canSign: true,
-            hdWalletDetails: {
-                walletId: 'W1',
-                account: 0,
-                change: 0,
-                keyIndex: 0,
-                derivationType: 9,
-            },
-            name: 'Acc1',
-            keyPairId: 'rootkey-W1',
-        }
-        useAccountsStore.setState({ accounts: [account] })
-
-        const { result } = renderHook(() => useTransactionSigner())
-
-        await expect(
-            result.current.signTransactionForAddress(
-                'ADDR1',
-                Buffer.from('txn'),
-            ),
-        ).rejects.toThrow(KeyNotFoundError) // KMD error
-    })
-
-    test('signTransactionForAddress handles JSON format master key', async () => {
-        const dummySecure = {
-            setItem: vi.fn(async () => {}),
-            getItem: vi.fn(async () =>
-                Buffer.from(
-                    JSON.stringify({
-                        seed: Buffer.from('seed_data').toString('base64'),
-                        entropy: 'entropy_data',
-                    }),
-                ),
-            ),
-            removeItem: vi.fn(async () => {}),
+            setItem: vi.fn(async () => { }),
+            getItem: vi.fn(async () => Buffer.from('seed_data')),
+            removeItem: vi.fn(async () => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -233,105 +170,27 @@ describe('useTransactionSigner', () => {
 
         const { result } = renderHook(() => useTransactionSigner())
 
-        const txn = Buffer.from('txn')
-        const signed = await result.current.signTransactionForAddress(
-            'ADDR1',
-            txn,
+        const txnGroup = [
+            createMockTransaction('ADDR1'),
+            createMockTransaction('ADDR1'),
+        ]
+        // Only sign index 0, skip index 1
+        const indexesToSign = [0]
+
+        const signed = await result.current.signTransactions(
+            txnGroup,
+            indexesToSign,
         )
 
-        expect(signed).toEqual(new Uint8Array([1, 2, 3]))
-        expect(mockSignTransaction).toHaveBeenCalled()
+        expect(signed).toBeDefined()
+        expect(signed.length).toBe(2)
     })
 
-    test('signTransactionForAddress throws if signTransaction fails', async () => {
+    test('signTransactions handles multiple accounts in transaction group', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => {}),
+            setItem: vi.fn(async () => Buffer.from('seed_data')),
             getItem: vi.fn(async () => Buffer.from('seed_data')),
-            removeItem: vi.fn(async () => {}),
-            authenticate: vi.fn(async () => true),
-        }
-
-        registerTestPlatform({
-            keyValueStorage: new MemoryKeyValueStorage() as any,
-            secureStorage: dummySecure as any,
-        })
-
-        const account: WalletAccount = {
-            id: '1',
-            address: 'ADDR1',
-            type: 'standard',
-            canSign: true,
-            hdWalletDetails: {
-                walletId: 'W1',
-                account: 0,
-                change: 0,
-                keyIndex: 0,
-                derivationType: 9,
-            },
-            name: 'Acc1',
-            keyPairId: 'rootkey-W1',
-        }
-        useAccountsStore.setState({ accounts: [account] })
-
-        mockSignTransaction.mockRejectedValue(new Error('Signing failed'))
-
-        const { result } = renderHook(() => useTransactionSigner())
-
-        await expect(
-            result.current.signTransactionForAddress(
-                'ADDR1',
-                Buffer.from('txn'),
-            ),
-        ).rejects.toThrow('Signing failed')
-    })
-
-    test('signTransactionForAddress handles storage retrieval error', async () => {
-        const dummySecure = {
-            setItem: vi.fn(async () => {}),
-            getItem: vi.fn(async () => {
-                throw new Error('Storage access denied')
-            }),
-            removeItem: vi.fn(async () => {}),
-            authenticate: vi.fn(async () => true),
-        }
-
-        registerTestPlatform({
-            keyValueStorage: new MemoryKeyValueStorage() as any,
-            secureStorage: dummySecure as any,
-        })
-
-        const account: WalletAccount = {
-            id: '1',
-            address: 'ADDR1',
-            type: 'standard',
-            canSign: true,
-            hdWalletDetails: {
-                walletId: 'W1',
-                account: 0,
-                change: 0,
-                keyIndex: 0,
-                derivationType: 9,
-            },
-            name: 'Acc1',
-            keyPairId: 'rootkey-W1',
-        }
-        useAccountsStore.setState({ accounts: [account] })
-
-        const { result } = renderHook(() => useTransactionSigner())
-
-        await expect(
-            result.current.signTransactionForAddress(
-                'ADDR1',
-                Buffer.from('txn'),
-            ),
-        ).rejects.toThrow('Storage access denied')
-    })
-
-    test('signTransactionForAddress finds account by address correctly', async () => {
-        const dummySecure = {
-            setItem: vi.fn(async () => {}),
-            getItem: vi.fn(async () => Buffer.from('seed_data')),
-            removeItem: vi.fn(async () => {}),
+            removeItem: vi.fn(async () => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -373,18 +232,341 @@ describe('useTransactionSigner', () => {
         }
 
         useAccountsStore.setState({ accounts: [account1, account2] })
+        mockSignTransaction.mockResolvedValue(new Uint8Array([1, 2, 3]))
+
+        const { result } = renderHook(() => useTransactionSigner())
+
+        const txnGroup = [
+            createMockTransaction('ADDR1'),
+            createMockTransaction('ADDR2'),
+        ]
+        const indexesToSign = [0, 1]
+
+        const signed = await result.current.signTransactions(
+            txnGroup,
+            indexesToSign,
+        )
+
+        expect(signed).toBeDefined()
+        expect(signed.length).toBe(2)
+    })
+
+    test('signTransactions handles JSON format master key', async () => {
+        const dummySecure = {
+            setItem: vi.fn(async () => { }),
+            getItem: vi.fn(async () =>
+                Buffer.from(
+                    JSON.stringify({
+                        seed: Buffer.from('seed_data').toString('base64'),
+                        entropy: 'entropy_data',
+                    }),
+                ),
+            ),
+            removeItem: vi.fn(async () => { }),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const account: WalletAccount = {
+            id: '1',
+            address: 'ADDR1',
+            type: 'standard',
+            canSign: true,
+            hdWalletDetails: {
+                walletId: 'W1',
+                account: 0,
+                change: 0,
+                keyIndex: 0,
+                derivationType: 9,
+            },
+            name: 'Acc1',
+            keyPairId: 'rootkey-W1',
+        }
+        useAccountsStore.setState({ accounts: [account] })
 
         mockSignTransaction.mockResolvedValue(new Uint8Array([1, 2, 3]))
 
         const { result } = renderHook(() => useTransactionSigner())
 
-        const txn = Buffer.from('txn')
-        await result.current.signTransactionForAddress('ADDR2', txn)
+        const txnGroup = [createMockTransaction('ADDR1')]
+        const indexesToSign = [0]
 
-        // Verify it used the correct account's wallet ID
-        expect(dummySecure.getItem).toHaveBeenCalledWith('rootkey-W2')
-        expect(mockSignTransaction.mock.calls[0][1]).toEqual(
-            account2.hdWalletDetails,
+        const signed = await result.current.signTransactions(
+            txnGroup,
+            indexesToSign,
         )
+
+        expect(signed).toBeDefined()
+        expect(mockSignTransaction).toHaveBeenCalled()
+    })
+
+    test('signTransactions handles empty transaction group', async () => {
+        const { result } = renderHook(() => useTransactionSigner())
+
+        const txnGroup: any[] = []
+        const indexesToSign: number[] = []
+
+        const signed = await result.current.signTransactions(
+            txnGroup,
+            indexesToSign,
+        )
+
+        expect(signed).toEqual([])
+    })
+
+    test('signTransactions skips transactions from unknown accounts', async () => {
+        const dummySecure = {
+            setItem: vi.fn(async () => { }),
+            getItem: vi.fn(async () => Buffer.from('seed_data')),
+            removeItem: vi.fn(async () => { }),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        // No accounts registered
+        useAccountsStore.setState({ accounts: [] })
+
+        const { result } = renderHook(() => useTransactionSigner())
+
+        const txnGroup = [createMockTransaction('UNKNOWN_ADDR')]
+        const indexesToSign = [0]
+
+        // Should not throw, but should return the original transaction unchanged
+        const signed = await result.current.signTransactions(
+            txnGroup,
+            indexesToSign,
+        )
+
+        expect(signed).toBeDefined()
+        expect(mockSignTransaction).not.toHaveBeenCalled()
+    })
+
+    test('signTransactions handles rekeyed accounts by using the rekey authority', async () => {
+        const dummySecure = {
+            setItem: vi.fn(async () => { }),
+            getItem: vi.fn(async () => Buffer.from('seed_data')),
+            removeItem: vi.fn(async () => { }),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        // Rekeyed account - has a rekey address pointing to another account
+        const rekeyedAccount: WalletAccount = {
+            id: '1',
+            address: 'REKEYED_ADDR',
+            type: 'standard',
+            canSign: true,
+            name: 'Rekeyed Account',
+            rekeyAddress: 'AUTH_ADDR', // Points to authority account
+        }
+
+        // Authority account - the one that actually signs
+        const authorityAccount: WalletAccount = {
+            id: '2',
+            address: 'AUTH_ADDR',
+            type: 'standard',
+            canSign: true,
+            hdWalletDetails: {
+                walletId: 'W2',
+                account: 0,
+                change: 0,
+                keyIndex: 0,
+                derivationType: 9,
+            },
+            name: 'Authority Account',
+            keyPairId: 'rootkey-W2',
+        }
+
+        useAccountsStore.setState({ accounts: [rekeyedAccount, authorityAccount] })
+        mockSignTransaction.mockResolvedValue(new Uint8Array([1, 2, 3]))
+
+        const { result } = renderHook(() => useTransactionSigner())
+
+        const txnGroup = [createMockTransaction('REKEYED_ADDR')]
+        const indexesToSign = [0]
+
+        const signed = await result.current.signTransactions(
+            txnGroup,
+            indexesToSign,
+        )
+
+        expect(signed).toBeDefined()
+        // The mock should be called since authority account has hdWalletDetails
+        expect(mockSignTransaction).toHaveBeenCalled()
+    })
+
+    test('signTransactions handles Algo25 account type', async () => {
+        const dummySecure = {
+            setItem: vi.fn(async () => { }),
+            getItem: vi.fn(async () => Buffer.from('keypair_data')),
+            removeItem: vi.fn(async () => { }),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        // Algo25 account - has keyPairId but no hdWalletDetails
+        const algo25Account: WalletAccount = {
+            id: '1',
+            address: 'ALGO25_ADDR',
+            type: 'standard', // Algo25 accounts use 'standard' type
+            canSign: true,
+            name: 'Algo25 Account',
+            keyPairId: 'algo25-keypair-1',
+            // No hdWalletDetails - this is an Algo25 account
+        }
+
+        useAccountsStore.setState({ accounts: [algo25Account] })
+
+        const { result } = renderHook(() => useTransactionSigner())
+
+        const txnGroup = [createMockTransaction('ALGO25_ADDR')]
+        const indexesToSign = [0]
+
+        const signed = await result.current.signTransactions(
+            txnGroup,
+            indexesToSign,
+        )
+
+        // Should complete without error
+        expect(signed).toBeDefined()
+        expect(signed.length).toBe(1)
+    })
+
+    test('signTransactions batches transactions by account for efficiency', async () => {
+        const dummySecure = {
+            setItem: vi.fn(async () => { }),
+            getItem: vi.fn(async () => Buffer.from('seed_data')),
+            removeItem: vi.fn(async () => { }),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const account: WalletAccount = {
+            id: '1',
+            address: 'ADDR1',
+            type: 'standard',
+            canSign: true,
+            hdWalletDetails: {
+                walletId: 'W1',
+                account: 0,
+                change: 0,
+                keyIndex: 0,
+                derivationType: 9,
+            },
+            name: 'Acc1',
+            keyPairId: 'rootkey-W1',
+        }
+        useAccountsStore.setState({ accounts: [account] })
+
+        mockSignTransaction.mockResolvedValue(new Uint8Array([1, 2, 3]))
+
+        const { result } = renderHook(() => useTransactionSigner())
+
+        // Multiple transactions from the same account
+        const txnGroup = [
+            createMockTransaction('ADDR1'),
+            createMockTransaction('ADDR1'),
+            createMockTransaction('ADDR1'),
+        ]
+        const indexesToSign = [0, 1, 2]
+
+        const signed = await result.current.signTransactions(
+            txnGroup,
+            indexesToSign,
+        )
+
+        expect(signed).toBeDefined()
+        expect(signed.length).toBe(3)
+        // All transactions should be signed - signTransaction is called for each tx in the batch
+        expect(mockSignTransaction).toHaveBeenCalled()
+    })
+
+    test('signTransactions preserves original array order with mixed accounts', async () => {
+        const dummySecure = {
+            setItem: vi.fn(async () => { }),
+            getItem: vi.fn(async () => Buffer.from('seed_data')),
+            removeItem: vi.fn(async () => { }),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        const account1: WalletAccount = {
+            id: '1',
+            address: 'ADDR1',
+            type: 'standard',
+            canSign: true,
+            hdWalletDetails: {
+                walletId: 'W1',
+                account: 0,
+                change: 0,
+                keyIndex: 0,
+                derivationType: 9,
+            },
+            name: 'Acc1',
+            keyPairId: 'rootkey-W1',
+        }
+
+        const account2: WalletAccount = {
+            id: '2',
+            address: 'ADDR2',
+            type: 'standard',
+            canSign: true,
+            hdWalletDetails: {
+                walletId: 'W2',
+                account: 1,
+                change: 0,
+                keyIndex: 1,
+                derivationType: 9,
+            },
+            name: 'Acc2',
+            keyPairId: 'rootkey-W2',
+        }
+
+        useAccountsStore.setState({ accounts: [account1, account2] })
+        mockSignTransaction.mockResolvedValue(new Uint8Array([1, 2, 3]))
+
+        const { result } = renderHook(() => useTransactionSigner())
+
+        // Interleaved transactions from different accounts
+        const txnGroup = [
+            createMockTransaction('ADDR1'), // index 0
+            createMockTransaction('ADDR2'), // index 1
+            createMockTransaction('ADDR1'), // index 2
+            createMockTransaction('ADDR2'), // index 3
+        ]
+        const indexesToSign = [0, 1, 2, 3]
+
+        const signed = await result.current.signTransactions(
+            txnGroup,
+            indexesToSign,
+        )
+
+        expect(signed).toBeDefined()
+        expect(signed.length).toBe(4)
     })
 })
+

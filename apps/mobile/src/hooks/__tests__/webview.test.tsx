@@ -429,7 +429,7 @@ describe('usePeraWebviewInterface', () => {
         const signedTxs = [[{ id: 'tx1' }]]
 
         await act(async () => {
-            await signRequest.success(address, signedTxs)
+            await signRequest.success(signedTxs)
         })
 
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
@@ -514,7 +514,7 @@ describe('usePeraWebviewInterface', () => {
         const signature = new Uint8Array([4, 5, 6])
 
         await act(async () => {
-            await signRequest.success(address, signature)
+            await signRequest.success(signature)
         })
 
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(

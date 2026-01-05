@@ -22,10 +22,14 @@ import Decimal from 'decimal.js'
 import type { WalletAccount } from '../../models/accounts'
 
 // Mock dependencies
-const mockFetchAccountBalances = vi.hoisted(() => vi.fn())
-vi.mock('../endpoints', () => ({
-    fetchAccountBalances: mockFetchAccountBalances,
-    getAccountBalancesQueryKey: vi.fn(() => ['accountAssets']),
+const mockGetInformation = vi.fn()
+
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useAlgorandClient: vi.fn(() => ({
+        account: {
+            getInformation: mockGetInformation,
+        },
+    })),
 }))
 
 const mockUsdToPreferred = vi.fn((amount: Decimal) => amount)
@@ -100,19 +104,14 @@ describe('useAccountBalances', () => {
             canSign: true,
         }
 
-        mockFetchAccountBalances.mockResolvedValue({
-            results: [
+        // Mock algokit response format
+        mockGetInformation.mockResolvedValue({
+            address: 'ADDR1',
+            balance: { algos: 1000000, microAlgos: 1000000 }, // 1 Algo
+            assets: [
                 {
-                    asset_id: 0,
-                    amount: '1000000', // 1 Algo
-                    fraction_decimals: 6,
-                    balance_usd_value: '1.5',
-                },
-                {
-                    asset_id: 123,
-                    amount: '100',
-                    fraction_decimals: 2,
-                    balance_usd_value: '2.0',
+                    assetId: 123,
+                    amount: 100,
                 },
             ],
         })
@@ -145,7 +144,7 @@ describe('useAccountBalances', () => {
             canSign: true,
         }
 
-        mockFetchAccountBalances.mockReturnValue(new Promise(() => {}))
+        mockGetInformation.mockReturnValue(new Promise(() => { }))
 
         const { result } = renderHook(
             () => useAccountBalancesQuery([account]),
@@ -166,7 +165,7 @@ describe('useAccountBalances', () => {
             canSign: true,
         }
 
-        mockFetchAccountBalances.mockRejectedValue(new Error('Network Error'))
+        mockGetInformation.mockRejectedValue(new Error('Network Error'))
 
         const { result } = renderHook(
             () => useAccountBalancesQuery([account]),
@@ -197,16 +196,18 @@ describe('useAccountBalances', () => {
         mockAssetPrices.set('456', { fiatPrice: Decimal(10) }) // Token at $10
         mockAssetPrices.set('789', { fiatPrice: Decimal(0.5) }) // Token at $0.50
 
-        mockFetchAccountBalances.mockResolvedValue({
+        // Mock algokit response format
+        // Note: the hook reads balance.algos and divides by 10^6
+        mockGetInformation.mockResolvedValue({
             address: 'ADDR1',
-            amount: 5000000, // 5 ALGO (decimals: 6)
+            balance: { algos: 5000000, microAlgos: 5000000 }, // 5 ALGO in microAlgos
             assets: [
                 {
-                    'asset-id': 456,
+                    assetId: 456,
                     amount: 1000, // 10.00 tokens (decimals: 2)
                 },
                 {
-                    'asset-id': 789,
+                    assetId: 789,
                     amount: 2000000, // 2.0 tokens (decimals: 6)
                 },
             ],
@@ -226,7 +227,6 @@ describe('useAccountBalances', () => {
         const asset456 = accountData?.assetBalances.find(
             b => b.assetId === '456',
         )
-        console.log('asset456', accountData)
         expect(asset456).toBeDefined()
         expect(asset456?.amount).toEqual(Decimal(10)) // 1000 / 10^2
 
@@ -261,12 +261,13 @@ describe('useAccountBalances', () => {
         mockAssetPrices.set('0', { fiatPrice: Decimal(1) })
         // No price for asset 999, should default to 0
 
-        mockFetchAccountBalances.mockResolvedValue({
+        // Mock algokit response format
+        mockGetInformation.mockResolvedValue({
             address: 'ADDR1',
-            amount: 1000000,
+            balance: { algos: 1, microAlgos: 1000000 },
             assets: [
                 {
-                    'asset-id': 999,
+                    assetId: 999,
                     amount: 100,
                 },
             ],
@@ -311,24 +312,18 @@ describe('useAccountAssetBalanceQuery', () => {
         mockAssetPrices.set('0', { fiatPrice: Decimal(1) })
         mockAssetPrices.set('123', { fiatPrice: Decimal(5) })
 
-        mockFetchAccountBalances.mockResolvedValue({
-            results: [
+        // Mock algokit response format
+        mockGetInformation.mockResolvedValue({
+            address: 'ADDR1',
+            balance: { algos: 1, microAlgos: 1000000 },
+            assets: [
                 {
-                    address: 'ADDR1',
-                    data: {
-                        address: 'ADDR1',
-                        amount: 1000000,
-                        assets: [
-                            {
-                                'asset-id': 123,
-                                amount: 50000, // 5.0000 tokens
-                            },
-                            {
-                                'asset-id': 456,
-                                amount: 10000, // Different asset
-                            },
-                        ],
-                    },
+                    assetId: 123,
+                    amount: 50000, // 5.0000 tokens (decimals: 4)
+                },
+                {
+                    assetId: 456,
+                    amount: 10000, // Different asset
                 },
             ],
         })
@@ -340,7 +335,6 @@ describe('useAccountAssetBalanceQuery', () => {
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
-        // The hook returns data from assetBalances array
         expect(result.current.data).toBeDefined()
         if (result.current.data) {
             expect(result.current.data.assetId).toBe('123')
@@ -359,17 +353,11 @@ describe('useAccountAssetBalanceQuery', () => {
 
         mockAssetPrices.set('0', { fiatPrice: Decimal(1) })
 
-        mockFetchAccountBalances.mockResolvedValue({
-            results: [
-                {
-                    address: 'ADDR1',
-                    data: {
-                        address: 'ADDR1',
-                        amount: 1000000,
-                        assets: [],
-                    },
-                },
-            ],
+        // Mock algokit response with no assets
+        mockGetInformation.mockResolvedValue({
+            address: 'ADDR1',
+            balance: { algos: 1, microAlgos: 1000000 },
+            assets: [],
         })
 
         const { result } = renderHook(

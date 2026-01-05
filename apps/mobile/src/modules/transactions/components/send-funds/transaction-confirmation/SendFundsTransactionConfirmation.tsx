@@ -38,19 +38,25 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
+    ALGO_ASSET,
     ALGO_ASSET_ID,
+    toDecimalUnits,
+    toWholeUnits,
     useAssetFiatPricesQuery,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/language'
-import { useAlgorandClient } from '@perawallet/wallet-core-blockchain'
+import {
+    useAlgorandClient,
+    useSuggestedParametersQuery,
+} from '@perawallet/wallet-core-blockchain'
+import LoadingView from '@components/loading/LoadingView'
 
 type SendFundsTransactionConfirmationProps = {
     onNext: () => void
     onBack: () => void
 }
 
-//TODO figure out fee calculation
 const SendFundsTransactionConfirmation = ({
     onNext,
     onBack,
@@ -84,6 +90,9 @@ const SendFundsTransactionConfirmation = ({
         return null
     }, [selectedAsset, fiatPrices, amount])
 
+    const { data: params, isPending: paramsPending } =
+        useSuggestedParametersQuery()
+
     const openNote = () => {
         setNoteOpen(true)
     }
@@ -92,10 +101,11 @@ const SendFundsTransactionConfirmation = ({
         setNoteOpen(false)
     }
 
-    const { data: currentBalance } = useAccountAssetBalanceQuery(
-        selectedAccount ?? undefined,
-        selectedAsset?.assetId,
-    )
+    const { data: currentBalance, isPending: currentBalancePending } =
+        useAccountAssetBalanceQuery(
+            selectedAccount ?? undefined,
+            selectedAsset?.assetId,
+        )
 
     const onSuccess = () => {
         showToast({
@@ -115,7 +125,13 @@ const SendFundsTransactionConfirmation = ({
     }
 
     const handleConfirm = async () => {
-        if (!selectedAccount || !selectedAsset || !destination || !amount) {
+        if (
+            !selectedAccount ||
+            !selectedAsset ||
+            !destination ||
+            !amount ||
+            !asset
+        ) {
             showToast({
                 title: 'Invalid transaction',
                 body: 'Something appears to have gone wrong with this transaction.',
@@ -126,21 +142,21 @@ const SendFundsTransactionConfirmation = ({
 
         try {
             if (selectedAsset.assetId === ALGO_ASSET_ID) {
-                //TODO types aren't right - we're using Decimal.toString and pasting into a BigInt...
                 await algokit.send.payment({
                     sender: selectedAccount!.address,
                     receiver: destination!,
-                    amount: amount.toNumber().algo(),
+                    amount: amount.toNumber().microAlgo(),
                     note,
                 })
 
                 onSuccess()
             } else {
-                //TODO types aren't right - we're using Decimal.toString and pasting into a BigInt...
                 await algokit.send.assetTransfer({
                     sender: selectedAccount!.address,
                     receiver: destination!,
-                    amount: BigInt(amount.toNumber()),
+                    amount: BigInt(
+                        toDecimalUnits(amount.toNumber(), asset).toString(),
+                    ),
                     assetId: BigInt(selectedAsset.assetId),
                     note,
                 })
@@ -156,9 +172,8 @@ const SendFundsTransactionConfirmation = ({
         }
     }
 
-    //not ready to render yet
-    if (!selectedAccount || !selectedAsset || !amount) {
-        return <></>
+    if (!selectedAccount || !selectedAsset || !amount || !asset) {
+        return <LoadingView variant='circle' />
     }
 
     return (
@@ -208,7 +223,18 @@ const SendFundsTransactionConfirmation = ({
                 </RowTitledItem>
             )}
             <RowTitledItem title={t('send_funds.confirmation.fee')}>
-                <Text>{t('send_funds.confirmation.tbd')}</Text>
+                <CurrencyDisplay
+                    currency='ALGO'
+                    precision={ALGO_ASSET.decimals}
+                    minPrecision={DEFAULT_PRECISION}
+                    showSymbol
+                    value={
+                        params?.minFee != null
+                            ? toWholeUnits(params.minFee, ALGO_ASSET)
+                            : null
+                    }
+                    skeleton={paramsPending}
+                />
             </RowTitledItem>
             <Divider style={styles.divider} />
             {currentBalance && (
@@ -221,6 +247,7 @@ const SendFundsTransactionConfirmation = ({
                         minPrecision={DEFAULT_PRECISION}
                         showSymbol
                         value={currentBalance.amount}
+                        skeleton={currentBalancePending}
                     />
                     <CurrencyDisplay
                         currency={preferredCurrency}

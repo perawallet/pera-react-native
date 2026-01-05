@@ -20,5 +20,9 @@ export const useTransactionEncoder = () => {
             //TODO: implement this once we can find encodeTransaction in algokit-utils somewhere
             return Uint8Array.from([0])
         },
+        decodeTransaction: (_: Uint8Array) => {
+            //TODO: implement this once we can find decodeTransaction in algokit-utils somewhere
+            return {} as PeraTransaction
+        },
     }
 }

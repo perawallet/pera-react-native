@@ -350,14 +350,13 @@
             "max": "MAX",
             "next": "Next",
             "error_title": "Invalid Amount",
-            "error_body": "Please enter a valid amount."
+            "error_body": "Please enter an amount greater than {{min}}."
         },
         "destination": {
             "error_title": "Something went wrong",
             "error_body": "An unexpected error has occurred. Please try again."
         },
         "confirmation": {
-            "tbd": "TBD",
             "edit": "Edit",
             "title": "Confirm Transaction",
             "amount": "Amount",
@@ -423,7 +422,9 @@
             "cancel": "Cancel",
             "confirm": "Confirm",
             "confirm_all": "Confirm All",
-            "invalid_body": "There does not appear to be a receiver for this transaction"
+            "invalid_body": "There does not appear to be a receiver for this transaction",
+            "transaction_failed_title": "Signing Failed",
+            "transaction_failed_body": "The transaction failed to send. Please try again."
         },
         "unknown_request_type": {
             "title": "Unknown Request Type",

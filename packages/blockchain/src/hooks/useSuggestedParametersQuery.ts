@@ -10,10 +10,14 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-assets'
+import { useQuery } from '@tanstack/react-query'
+import { useAlgorandClient } from './useAlgorandClient'
 
-export * from './models'
-export * from './hooks'
-export * from './utils'
+export const useSuggestedParametersQuery = () => {
+    const algokit = useAlgorandClient()
 
-export { initAssetsStore } from './store'
+    return useQuery({
+        queryKey: ['suggested-parameters'],
+        queryFn: async () => await algokit.getSuggestedParams(),
+    })
+}

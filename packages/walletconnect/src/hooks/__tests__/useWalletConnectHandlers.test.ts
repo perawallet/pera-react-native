@@ -108,7 +108,7 @@ describe('useWalletConnectHandlers', () => {
             const signature = new Uint8Array([1, 2, 3])
 
             act(() => {
-                success('addr1', signature)
+                success(signature)
             })
 
             expect(connector.sendTransaction).toHaveBeenCalledWith({
@@ -252,7 +252,7 @@ describe('useWalletConnectHandlers', () => {
             const signedTxs = [[{ id: 'tx1' }]]
 
             act(() => {
-                success('addr1', signedTxs)
+                success(signedTxs)
             })
 
             expect(connector.sendTransaction).toHaveBeenCalledWith({
