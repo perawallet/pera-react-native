@@ -103,16 +103,17 @@ describe('useWalletConnectHandlers', () => {
                 message: 'Sign me',
                 addresses: ['addr1'],
                 data: 'somedata',
-                success: expect.any(Function),
+                approve: expect.any(Function),
+                reject: expect.any(Function),
                 error: expect.any(Function),
             })
 
             // Test success callback
-            const { success } = mockAddSignRequest.mock.calls[0][0]
+            const { approve } = mockAddSignRequest.mock.calls[0][0]
             const signature = new Uint8Array([1, 2, 3])
 
             act(() => {
-                success('addr1', signature)
+                approve('addr1', signature)
             })
 
             expect(connector.sendTransaction).toHaveBeenCalledWith({
@@ -244,12 +245,13 @@ describe('useWalletConnectHandlers', () => {
                 message: 'Sign tx',
                 addresses: ['addr1'],
                 txs: ['encodedTxn'],
-                success: expect.any(Function),
+                approve: expect.any(Function),
+                reject: expect.any(Function),
                 error: expect.any(Function),
             })
 
             // Test success callback
-            const { success } =
+            const { approve } =
                 mockAddSignRequest.mock.calls[
                     mockAddSignRequest.mock.calls.length - 1
                 ][0]
@@ -267,7 +269,7 @@ describe('useWalletConnectHandlers', () => {
             ]
 
             act(() => {
-                success(signedTxs)
+                approve(signedTxs)
             })
 
             expect(connector.sendTransaction).toHaveBeenCalledWith({
@@ -295,7 +297,7 @@ describe('useWalletConnectHandlers', () => {
                 payload,
             )
 
-            const { success } =
+            const { approve } =
                 mockAddSignRequest.mock.calls[
                     mockAddSignRequest.mock.calls.length - 1
                 ][0]
@@ -315,7 +317,7 @@ describe('useWalletConnectHandlers', () => {
             ]
 
             act(() => {
-                success(signedTxs)
+                approve(signedTxs)
             })
 
             // Mock encodeAlgorandAddress returns same string, but we verify it was called
@@ -349,13 +351,13 @@ describe('useWalletConnectHandlers', () => {
                 payload,
             )
 
-            const { success } =
+            const { approve } =
                 mockAddSignRequest.mock.calls[
                     mockAddSignRequest.mock.calls.length - 1
                 ][0]
 
             act(() => {
-                success([])
+                approve([])
             })
 
             expect(connector.sendTransaction).not.toHaveBeenCalled()

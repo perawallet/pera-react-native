@@ -14,7 +14,7 @@ import { Text } from '@rneui/themed'
 import { useStyles } from './styles'
 import PWIcon, { IconName, PWIconVariant } from '../icons/PWIcon'
 import PWTouchableOpacity from '../touchable-opacity/PWTouchableOpacity'
-import { StyleProp, ViewStyle } from 'react-native'
+import { ActivityIndicator, StyleProp, ViewStyle } from 'react-native'
 
 export type PWButtonProps = {
     variant: 'primary' | 'secondary' | 'helper' | 'link' | 'destructive'
@@ -24,6 +24,7 @@ export type PWButtonProps = {
     minWidth?: number
     style?: StyleProp<ViewStyle>
     disabled?: boolean
+    loading?: boolean
     paddingStyle?: 'none' | 'dense' | 'normal'
 }
 
@@ -46,7 +47,7 @@ const PWButton = (props: PWButtonProps) => {
             onPress={props.onPress}
             disabled={props.disabled}
         >
-            {!!props.icon && (
+            {!!props.icon && !props.loading && (
                 <PWIcon
                     name={props.icon}
                     variant={iconVariant}
@@ -58,8 +59,15 @@ const PWButton = (props: PWButtonProps) => {
                     }
                 />
             )}
-            {!!props.title && (
+            {!!props.title && !props.loading && (
                 <Text style={styles.titleStyle}>{props.title}</Text>
+            )}
+
+            {props.loading && (
+                <ActivityIndicator
+                    size='small'
+                    color={styles.loadingStyle.color}
+                />
             )}
         </PWTouchableOpacity>
     )

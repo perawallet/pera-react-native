@@ -50,6 +50,9 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
     }
 
     return {
+        loadingStyle: {
+            color,
+        },
         buttonStyle: {
             flexDirection: 'row',
             flexWrap: 'nowrap',

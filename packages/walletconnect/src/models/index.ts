@@ -14,6 +14,13 @@ import { IClientMeta, IWalletConnectSession } from '@walletconnect/types'
 
 export type AlgorandChainId = 416001 | 416002 | 416003 | 4160
 
+export const AlgorandChainId = {
+    mainnet: 416001,
+    testnet: 416002,
+    betanet: 416003,
+    all: 4160,
+}
+
 export const AlgorandChain = {
     416001: 'mainnet',
     416002: 'testnet',

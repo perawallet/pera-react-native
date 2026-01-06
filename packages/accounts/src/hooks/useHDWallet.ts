@@ -93,6 +93,19 @@ const signTransaction = (
     )
 }
 
+const rawSign = (
+    seed: Buffer,
+    hdWalletDetails: HDWalletDetails,
+    data: Uint8Array,
+) => {
+    const rootKey = fromSeed(seed)
+    const bip44Path = createPath(
+        hdWalletDetails.account,
+        hdWalletDetails.keyIndex,
+    )
+    return api.rawSign(rootKey, bip44Path, data, BIP32DerivationTypes.Peikert)
+}
+
 const signData = (
     seed: Buffer,
     hdWalletDetails: HDWalletDetails,
@@ -114,10 +127,29 @@ const signData = (
     )
 }
 
+const verifySignature = async (
+    seed: Buffer,
+    hdWalletDetails: HDWalletDetails,
+    data: Uint8Array,
+    signature: Uint8Array,
+) => {
+    const rootKey = fromSeed(seed)
+    const address = await api.keyGen(
+        rootKey,
+        KeyContexts.Address,
+        hdWalletDetails.account,
+        hdWalletDetails.keyIndex,
+        BIP32DerivationTypes.Peikert,
+    )
+    return api.verifyWithPublicKey(signature, data, address)
+}
+
 export const useHDWallet = () => ({
     generateMasterKey,
     entropyToMnemonic,
     deriveKey,
     signTransaction,
+    rawSign,
     signData,
+    verifySignature,
 })

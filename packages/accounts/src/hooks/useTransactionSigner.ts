@@ -91,7 +91,7 @@ export const useTransactionSigner = () => {
     const signAlgo25Transactions = useCallback(
         async (
             account: Algo25Account,
-            txns: PeraTransactionGroup,
+            _: PeraTransactionGroup,
         ): Promise<PeraSignedTransaction[]> => {
             const storageKey = account.keyPairId
 
@@ -111,11 +111,8 @@ export const useTransactionSigner = () => {
                         )
                     }
 
-                    //TODO: implement this once we can find signTransaction in algokit-utils somewhere
-                    // const encodedTransaction = encodeTransaction(txn)
-                    // const signature = await signTransaction(encodedTransaction)
-                    // txn.signature = signature
-                    return txns.map(txn => ({ txn }))
+                    //TODO: implement this once we can find algo25 signing in algokit-utils somewhere
+                    throw new Error('Not implemented')
                 },
             )
         },

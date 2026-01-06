@@ -30,33 +30,40 @@ type BaseSignRequest = {
     transport: 'algod' | 'callback'
     transportId?: string
     sourceMetadata?: SignRequestSource
-    message?: string
-    addresses?: string[]
 }
 
 export type TransactionSignRequest = {
     // A list of transaction groups (which in turn are a list of transactions) - nulls are used to represent transactions that the caller does not need signed
     txs: PeraTransactionGroup[]
-    success?: (signedTxs: PeraSignedTransactionGroup[]) => Promise<void>
+    approve?: (signedTxs: PeraSignedTransactionGroup[]) => Promise<void>
+    reject?: () => Promise<void>
     error?: (error: string) => Promise<void>
 } & BaseSignRequest
 
 export type PeraArbitraryDataMessage = {
-    data: string // base64 encoded
+    signer: string
+    data: string
     message?: string // optional message to display to the user
+    chainId: number
+}
+
+export type PeraArbitraryDataSignResult = {
+    signature: Uint8Array
+    signer: string
 }
 
 export type ArbitraryDataSignRequest = {
-    // A raw data blob to sign
-    data: string // base64 encoded
-    success?: (signingAddress: string, signature: Uint8Array) => Promise<void>
+    data: PeraArbitraryDataMessage[]
+    approve?: (signed: PeraArbitraryDataSignResult[]) => Promise<void>
+    reject?: () => Promise<void>
     error?: (error: string) => Promise<void>
 } & BaseSignRequest
 
 //ARC 60 arbitrary data signing request
 export type Arc60SignRequest = {
     //TODO add data in here that matches the expected structure
-    success?: (signingAddress: string, signature: Uint8Array) => Promise<void>
+    approve?: (signed: PeraArbitraryDataSignResult[]) => Promise<void>
+    reject?: () => Promise<void>
     error?: (error: string) => Promise<void>
 } & BaseSignRequest
 

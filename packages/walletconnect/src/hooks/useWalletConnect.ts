@@ -39,9 +39,9 @@ export const useWalletConnect = () => {
                 clientMeta: PERA_CLIENT_META,
             })
 
-            connector.on('algo_signData', (error, payload) =>
-                handleSignData(connector, error, payload),
-            )
+            connector.on('algo_signData', (error, payload) => {
+                return handleSignData(connector, error, payload)
+            })
             connector.on('algo_signTxn', (error, payload) =>
                 handleSignTransaction(connector, error, payload),
             )

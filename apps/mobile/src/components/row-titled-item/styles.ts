@@ -28,6 +28,7 @@ export const useStyles = makeStyles((theme, props: RowTitledItemProps) => {
         childContainer: {
             alignItems: 'flex-start',
             flexGrow: 1,
+            flexShrink: 1,
         },
     }
 })
