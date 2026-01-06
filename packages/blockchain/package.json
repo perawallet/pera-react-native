@@ -14,7 +14,6 @@
     "@perawallet/wallet-core-platform-integration": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "@algorandfoundation/algokit-utils": "catalog:",
-    "algosdk": "catalog:",
     "react": "catalog:",
     "uuid": "catalog:",
     "zod": "catalog:",
