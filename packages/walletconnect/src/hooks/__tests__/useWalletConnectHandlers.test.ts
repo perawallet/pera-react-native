@@ -256,12 +256,14 @@ describe('useWalletConnectHandlers', () => {
 
             // Mock PeraSignedTransaction
             const signedTxs = [
-                {
-                    txn: {
-                        sender: { publicKey: new Uint8Array([10, 20, 30]) },
+                [
+                    {
+                        txn: {
+                            sender: { publicKey: new Uint8Array([10, 20, 30]) },
+                        },
+                        sig: new Uint8Array([1, 2, 3]),
                     },
-                    sig: new Uint8Array([1, 2, 3]),
-                },
+                ],
             ]
 
             act(() => {
@@ -299,13 +301,17 @@ describe('useWalletConnectHandlers', () => {
                 ][0]
 
             const signedTxs = [
-                {
-                    txn: {
-                        sender: { publicKey: new Uint8Array([10, 20, 30]) },
+                [
+                    {
+                        txn: {
+                            sender: { publicKey: new Uint8Array([10, 20, 30]) },
+                        },
+                        authAddress: {
+                            publicKey: new Uint8Array([40, 50, 60]),
+                        },
+                        sig: new Uint8Array([1, 2, 3]),
                     },
-                    authAddress: { publicKey: new Uint8Array([40, 50, 60]) },
-                    sig: new Uint8Array([1, 2, 3]),
-                },
+                ],
             ]
 
             act(() => {
