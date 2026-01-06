@@ -153,7 +153,7 @@ const useWalletConnectHandlers = () => {
                     if (signedTxn) {
                         const fromAddress = encodeAlgorandAddress(
                             signedTxn.authAddress?.publicKey ??
-                            signedTxn.txn.sender.publicKey,
+                                signedTxn.txn.sender.publicKey,
                         )
                         connector.sendTransaction({
                             from: fromAddress,
