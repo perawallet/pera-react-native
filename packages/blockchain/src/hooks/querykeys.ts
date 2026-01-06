@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-
 const MODULE_PREFIX = 'blockchain'
 
 export const getAccountInformationQueryKey = (address: string) => [
