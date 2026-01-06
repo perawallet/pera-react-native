@@ -10,10 +10,4 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-assets'
-
-export * from './models'
-export * from './hooks'
-export * from './utils'
-
-export { initAssetsStore } from './store'
+export const KEY_DOMAIN = 'pera.accounts'

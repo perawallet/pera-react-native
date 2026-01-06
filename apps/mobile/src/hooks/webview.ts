@@ -33,8 +33,9 @@ import { useLanguage } from './language'
 import {
     ArbitraryDataSignRequest,
     PeraArbitraryDataMessage,
+    PeraSignedTransaction,
+    PeraTransaction,
     SignRequestSource,
-    Transaction,
     TransactionSignRequest,
     useSigningRequest,
 } from '@perawallet/wallet-core-blockchain'
@@ -272,7 +273,9 @@ export const usePeraWebviewInterface = (
                 ) {
                     return
                 }
-                const txns = message.params!['txns'] as (Transaction | null)[]
+                const txns = message.params![
+                    'txns'
+                ] as (PeraTransaction | null)[]
                 const metadata = message.params![
                     'metadata'
                 ] as SignRequestSource
@@ -285,7 +288,9 @@ export const usePeraWebviewInterface = (
                     transportId: message.id,
                     addresses: [address],
                     sourceMetadata: metadata,
-                    success: async (_, signed: (Transaction | null)[][]) => {
+                    success: async (
+                        signed: (PeraSignedTransaction | null)[],
+                    ) => {
                         sendMessageToWebview(
                             message.id,
                             {
@@ -294,7 +299,7 @@ export const usePeraWebviewInterface = (
                             webview,
                         )
                     },
-                    error: (_, err) =>
+                    error: (err: string) =>
                         sendErrorToWebview(
                             message.id,
                             JsonRpcErrorCode.InternalError,
@@ -332,7 +337,7 @@ export const usePeraWebviewInterface = (
                     addresses: [address],
                     sourceMetadata: metadata,
                     message: userMessage,
-                    success: async (_, signature: Uint8Array) => {
+                    success: async (address: string, signature: Uint8Array) => {
                         sendMessageToWebview(
                             message.id,
                             {
@@ -342,7 +347,7 @@ export const usePeraWebviewInterface = (
                             webview,
                         )
                     },
-                    error: (_, err) =>
+                    error: (err: string) =>
                         sendErrorToWebview(
                             message.id,
                             JsonRpcErrorCode.InternalError,

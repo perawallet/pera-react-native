@@ -16,6 +16,7 @@ import TransactionIcon from '@components/transaction-icon/TransactionIcon'
 import PWView from '@components/view/PWView'
 import {
     TransactionSignRequest,
+    useAlgorandClient,
     useSigningRequest,
 } from '@perawallet/wallet-core-blockchain'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
@@ -27,6 +28,8 @@ import BalanceImpactView from '../balance-impact/BalanceImpactView'
 import { useLanguage } from '@hooks/language'
 import useToast from '@hooks/toast'
 import PWButton from '@components/button/PWButton'
+import { useTransactionSigner } from '@perawallet/wallet-core-accounts'
+import { config } from '@perawallet/wallet-core-config'
 
 type TransactionSigningViewProps = {
     request: TransactionSignRequest
@@ -110,43 +113,36 @@ const GroupTransactionView = ({ request }: TransactionSigningViewProps) => {
 const TransactionSigningView = ({ request }: TransactionSigningViewProps) => {
     const styles = useStyles()
     const { removeSignRequest } = useSigningRequest()
-    //const { signTransactionForAddress } = useTransactionSigner()
+    const { signTransactions } = useTransactionSigner()
+    const algokit = useAlgorandClient()
     const { showToast } = useToast()
     const { t } = useLanguage()
     const isMultipleTransactions = request.txs?.length > 1
 
     const signAndSend = async () => {
         try {
-            // TODO when we have valid TXs we'll need to sign them and then send them to the server
-            // We might do this using algokit-utils or we can do it ourselves
-            // Same with the signing - maybe we can hook up our infra to algokit-util's Signer
-            //
-            // let allSigs = []
-            // for(let group of request.txs) {
-            //     let sigs = []
-
-            //     for(let tx of group) {
-            //         //TODO maybe we should turn the binary tx into a Transaction using decodeTransaction from algokit
-            //         const sig = await signTransactionForAddress(tx.sender, tx)
-            //         sigs.push(sig)
-            //     }
-
-            //     allSigs.push(sigs)
-            // }
-
-            showToast({
-                type: 'info',
-                title: 'Signing Not Fully Implemented',
-                body: `The transaction signing has not been fully implemented, no TXs were sent yet.`,
-            })
-
+            const signedTxs = await signTransactions(
+                request.txs,
+                request.txs.map((_, idx) => idx),
+            )
+            if (request.transport === 'algod') {
+                await algokit.client.algod.sendRawTransaction(signedTxs)
+            } else {
+                request.success?.(signedTxs)
+            }
             removeSignRequest(request)
         } catch (error) {
-            showToast({
-                type: 'error',
-                title: 'Signing Failed',
-                body: `${error}`,
-            })
+            if (request.transport === 'algod') {
+                showToast({
+                    type: 'error',
+                    title: t('signing.view.transaction_failed_title'),
+                    body: config.debugEnabled
+                        ? `${error}`
+                        : t('signing.view.transaction_failed_body'),
+                })
+            } else {
+                request.error?.(`${error}`)
+            }
         }
     }
 

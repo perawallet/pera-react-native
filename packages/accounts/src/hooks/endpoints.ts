@@ -17,24 +17,6 @@ import {
 } from '@perawallet/wallet-core-shared'
 
 import { AccountBalanceHistoryResponse } from '../models'
-import { Account } from '../models/algod-types/Account'
-
-const getAccountBalancesEndpointPath = (address: string) =>
-    `/v2/accounts/${address}`
-
-export const fetchAccountBalances = async (
-    address: string,
-    network: Network,
-): Promise<Account> => {
-    const endpointPath = getAccountBalancesEndpointPath(address)
-    const response = await queryClient<Account>({
-        backend: 'algod',
-        network,
-        method: 'GET',
-        url: endpointPath,
-    })
-    return response.data
-}
 
 export const getAccountsBalanceHistoryEndpointPath = () => `/v1/wallet/wealth/`
 

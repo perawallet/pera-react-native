@@ -12,7 +12,7 @@
 
 import PWView from '@components/view/PWView'
 import Decimal from 'decimal.js'
-import { useContext, useMemo, useState } from 'react'
+import { useContext } from 'react'
 import CurrencyDisplay from '@components/currency-display/CurrencyDisplay'
 import { useStyles } from './styles'
 import PWButton from '@components/button/PWButton'
@@ -21,20 +21,15 @@ import { Button, Text } from '@rneui/themed'
 import NumberPad from '@components/number-pad/NumberPad'
 import { SendFundsContext } from '@modules/transactions/providers/SendFundsProvider'
 import AddNotePanel from '../add-note-panel/AddNotePanel'
-import useToast from '@hooks/toast'
 import PWHeader from '@components/header/PWHeader'
 import AccountDisplay from '@modules/accounts/components/account-display/AccountDisplay'
 import SendFundsInfoPanel from '../info-panel/SendFundsInfoPanel'
-import {
-    useAccountBalancesQuery,
-    useSelectedAccount,
-} from '@perawallet/wallet-core-accounts'
+import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import {
-    useAssetFiatPricesQuery,
-    useAssetsQuery,
-} from '@perawallet/wallet-core-assets'
+import LoadingView from '@components/loading/LoadingView'
+import { useInputView } from '@modules/transactions/hooks/send-funds/use-input-view'
 import { useLanguage } from '@hooks/language'
+import { useModalState } from '@hooks/modal-state'
 
 type SendFundsInputViewProps = {
     onNext: () => void
@@ -45,101 +40,27 @@ type SendFundsInputViewProps = {
 //TODO: max amount validation (+ max amount popup)
 const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
     const styles = useStyles()
-    const selectedAccount = useSelectedAccount()
+    const {
+        asset,
+        selectedAsset,
+        params,
+        accountInformation,
+        cryptoValue,
+        fiatValue,
+        setMax,
+        handleKey,
+        handleNext,
+    } = useInputView(onNext)
     const { preferredCurrency } = useCurrency()
-    const { canSelectAsset, selectedAsset, note, setNote, setAmount } =
-        useContext(SendFundsContext)
-    const [value, setValue] = useState<string | null>()
-    const [noteOpen, setNoteOpen] = useState(false)
-    const [infoOpen, setInfoOpen] = useState(false)
-    const { showToast } = useToast()
+    const selectedAccount = useSelectedAccount()
+    const { canSelectAsset, note } = useContext(SendFundsContext)
     const { t } = useLanguage()
+    const noteState = useModalState()
+    const infoState = useModalState()
 
-    const { accountBalances } = useAccountBalancesQuery(
-        selectedAccount ? [selectedAccount] : [],
-    )
-    const { data: assets } = useAssetsQuery()
-
-    const asset = useMemo(() => {
-        if (!selectedAsset?.assetId) return null
-        return assets.get(selectedAsset?.assetId)
-    }, [selectedAsset, assets])
-    const { data: fiatPrices } = useAssetFiatPricesQuery()
-    const fiatPrice = useMemo(
-        () =>
-            selectedAsset?.assetId
-                ? (fiatPrices.get(selectedAsset?.assetId)?.fiatPrice ?? null)
-                : null,
-        [selectedAsset, fiatPrices],
-    )
-
-    const tokenBalance = useMemo(() => {
-        if (!selectedAccount) {
-            return null
-        }
-        const assetToUse = accountBalances
-            ?.get(selectedAccount.address)
-            ?.assetBalances?.find(b => b.assetId === selectedAsset?.assetId)
-        const assetAmount = assetToUse?.amount ?? Decimal(0)
-        return assetAmount
-    }, [accountBalances, selectedAsset?.assetId, selectedAccount])
-
-    const openNote = () => {
-        setNoteOpen(true)
+    if (!asset || !selectedAsset || !params || !accountInformation) {
+        return <LoadingView variant='circle' />
     }
-
-    const closeNote = () => {
-        setNoteOpen(false)
-    }
-
-    const openInfo = () => {
-        setInfoOpen(true)
-    }
-    const closeInfo = () => {
-        setInfoOpen(false)
-    }
-
-    const setMax = () => {
-        setAmount(tokenBalance ?? Decimal(0))
-    }
-
-    const handleNext = () => {
-        if (!value || Decimal(value) <= Decimal(0)) {
-            showToast({
-                title: t('send_funds.input.error_title'),
-                body: t('send_funds.input.error_body'),
-                type: 'error',
-            })
-        }
-        setAmount(Decimal(value ?? '0'))
-        setNote(note ?? undefined)
-        onNext()
-    }
-
-    const handleKey = (key?: string) => {
-        if (key) {
-            setValue((value ?? '') + key)
-        } else {
-            if (value?.length) {
-                const newValue = value.substring(0, value.length - 1)
-                if (newValue.length) {
-                    setValue(newValue)
-                } else {
-                    setValue(null)
-                }
-            }
-        }
-    }
-
-    const fiatValue = useMemo(() => {
-        if (!value || !fiatPrice) {
-            return null
-        }
-
-        return Decimal(value).mul(fiatPrice)
-    }, [value, fiatPrice])
-
-    if (!asset || !selectedAsset) return <></>
 
     return (
         <PWView style={styles.container}>
@@ -147,7 +68,7 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
                 leftIcon={!canSelectAsset ? 'chevron-left' : 'cross'}
                 onLeftPress={onBack}
                 rightIcon='info'
-                onRightPress={openInfo}
+                onRightPress={infoState.open}
             >
                 <Text>
                     {t('send_funds.input_view.title', { asset: asset?.name })}
@@ -163,9 +84,9 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
             <CurrencyDisplay
                 currency={asset.unitName ?? ''}
                 precision={asset.decimals}
-                value={value ? Decimal(value) : Decimal(0)}
+                value={cryptoValue ? Decimal(cryptoValue) : Decimal(0)}
                 style={[
-                    value ? styles.amount : styles.amountPlaceholder,
+                    cryptoValue ? styles.amount : styles.amountPlaceholder,
                     styles.h1,
                 ]} //h1Style doesn't seem to override fontfamily
                 showSymbol={false}
@@ -193,7 +114,7 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
                     }
                     buttonStyle={styles.secondaryButton}
                     titleStyle={styles.secondaryButtonTitle}
-                    onPress={openNote}
+                    onPress={noteState.open}
                 />
                 <Button
                     title={t('send_funds.input.max')}
@@ -217,16 +138,16 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
                 title={t('send_funds.input.next')}
                 style={styles.nextButton}
                 onPress={handleNext}
-                disabled={!value}
+                disabled={!cryptoValue}
             />
 
             <AddNotePanel
-                isVisible={noteOpen}
-                onClose={closeNote}
+                isVisible={noteState.isOpen}
+                onClose={noteState.close}
             />
             <SendFundsInfoPanel
-                isVisible={infoOpen}
-                onClose={closeInfo}
+                isVisible={infoState.isOpen}
+                onClose={infoState.close}
             />
         </PWView>
     )

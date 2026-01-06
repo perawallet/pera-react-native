@@ -12,45 +12,214 @@
 
 import { useAccountsStore } from '../store'
 import { useHDWallet } from './useHDWallet'
-import { NoHDWalletError } from '../errors'
 import { useWithKey } from '@perawallet/wallet-core-kmd'
+import { useCallback } from 'react'
+import { KEY_DOMAIN } from '../constants'
+import {
+    Address,
+    encodeAlgorandAddress,
+    PeraSignedTransaction,
+    PeraTransaction,
+    PeraTransactionGroup,
+    useTransactionEncoder,
+} from '@perawallet/wallet-core-blockchain'
+import { isAlgo25Account, isHDWalletAccount } from '../utils'
+import { Algo25Account, HDWalletAccount, WalletAccount } from '../models'
 
 export const useTransactionSigner = () => {
     const accounts = useAccountsStore(state => state.accounts)
     const { signTransaction } = useHDWallet()
     const { executeWithKey } = useWithKey()
+    const { encodeTransaction } = useTransactionEncoder()
 
-    const signTransactionForAddress = async (
-        address: string,
-        transaction: Buffer,
-    ): Promise<Uint8Array> => {
-        const account = accounts.find(a => a.address === address) ?? null
-        const hdWalletDetails = account?.hdWalletDetails
+    const signHDWalletTransactions = useCallback(
+        async (
+            account: HDWalletAccount,
+            txns: PeraTransactionGroup,
+        ): Promise<PeraSignedTransaction[]> => {
+            const hdWalletDetails = account.hdWalletDetails
+            const storageKey = hdWalletDetails.walletId
 
-        if (!hdWalletDetails || !account?.keyPairId) {
-            return Promise.reject(new NoHDWalletError(address))
-        }
+            return await executeWithKey(
+                storageKey,
+                KEY_DOMAIN,
+                async keyData => {
+                    if (!keyData) {
+                        return Promise.reject(
+                            `No signing keys found for ${account.address}`,
+                        )
+                    }
 
-        const signedTxn = await executeWithKey(
-            account.keyPairId,
-            'accounts',
-            async privateKey => {
-                let seed: Buffer
-                try {
-                    // Try to parse as JSON first (new format)
-                    const masterKey = JSON.parse(privateKey.toString())
-                    seed = Buffer.from(masterKey.seed, 'base64')
-                } catch {
-                    // Fall back to treating it as raw seed data (old format or tests)
-                    seed = Buffer.from(privateKey)
+                    let seed: Buffer
+                    try {
+                        // Try to parse as JSON first (new format)
+                        const masterKey = JSON.parse(keyData.toString())
+                        seed = Buffer.from(masterKey.seed, 'base64')
+                    } catch {
+                        // Fall back to treating it as raw seed data (old format or tests)
+                        seed = Buffer.from(keyData)
+                    }
+
+                    const signedTxns = txns.map(async txn => {
+                        const encodedTransaction = encodeTransaction(txn)
+                        const signature = await signTransaction(
+                            seed,
+                            hdWalletDetails,
+                            encodedTransaction,
+                        )
+
+                        const senderPublicKey = encodeAlgorandAddress(
+                            txn.sender.publicKey,
+                        )
+                        const signedTxn: PeraSignedTransaction = {
+                            txn,
+                            sig: signature,
+                            authAddress:
+                                account.address !== senderPublicKey
+                                    ? Address.fromString(account.address)
+                                    : undefined,
+                        }
+                        return signedTxn
+                    })
+                    return Promise.all(signedTxns)
+                },
+            )
+        },
+        [signTransaction],
+    )
+
+    const signAlgo25Transactions = useCallback(
+        async (
+            account: Algo25Account,
+            txns: PeraTransactionGroup,
+        ): Promise<PeraSignedTransaction[]> => {
+            const storageKey = account.keyPairId
+
+            if (!storageKey) {
+                return Promise.reject(
+                    `No signing keys found for ${account.address}`,
+                )
+            }
+
+            return await executeWithKey(
+                storageKey,
+                KEY_DOMAIN,
+                async keyData => {
+                    if (!keyData) {
+                        return Promise.reject(
+                            `No signing keys found for ${account.address}`,
+                        )
+                    }
+
+                    //TODO: implement this once we can find signTransaction in algokit-utils somewhere
+                    // const encodedTransaction = encodeTransaction(txn)
+                    // const signature = await signTransaction(encodedTransaction)
+                    // txn.signature = signature
+                    return txns.map(txn => ({ txn }))
+                },
+            )
+        },
+        [signTransaction],
+    )
+
+    const signSingleAccountTransactions = useCallback(
+        async (
+            account: WalletAccount,
+            txns: PeraTransactionGroup,
+        ): Promise<PeraSignedTransaction[]> => {
+            if (account.rekeyAddress) {
+                const rekeyedAccount =
+                    accounts.find(a => a.address === account.rekeyAddress) ??
+                    null
+                if (!rekeyedAccount) {
+                    return Promise.reject(
+                        `No rekeyed account found for ${account.rekeyAddress}`,
+                    )
                 }
-                return signTransaction(seed, hdWalletDetails, transaction)
-            },
-        )
-        return signedTxn
-    }
+                return signSingleAccountTransactions(rekeyedAccount, txns)
+            }
+
+            if (isHDWalletAccount(account)) {
+                return signHDWalletTransactions(
+                    account as HDWalletAccount,
+                    txns,
+                )
+            }
+
+            if (isAlgo25Account(account)) {
+                return signAlgo25Transactions(account as Algo25Account, txns)
+            }
+
+            //TODO: handle hardware accounts
+
+            return Promise.reject(
+                `Unsupported account type ${account.type} for ${account.address}`,
+            )
+        },
+        [signTransaction],
+    )
+
+    const signTransactions = useCallback(
+        async (
+            txnGroup: PeraTransactionGroup,
+            indexesToSign: number[],
+        ): Promise<PeraSignedTransaction[]> => {
+            // we want to group the transactions by account for signing efficiency
+            // but we must remember where they were originally in the array
+            const originalIndexes = txnGroup.map((txn, index) => ({
+                index,
+                txn,
+            }))
+            const groupedByAccount = originalIndexes.reduce(
+                (acc, { index, txn }) => {
+                    const account = accounts.find(
+                        a => a.address === txn.sender.toString(),
+                    )
+                    if (!account) {
+                        return acc
+                    }
+                    if (!acc.has(account.address)) {
+                        acc.set(account.address, [])
+                    }
+                    acc.get(account.address)?.push({ index, txn })
+                    return acc
+                },
+                new Map<string, { index: number; txn: PeraTransaction }[]>(),
+            )
+
+            // sign each group of transactions for the same account
+            const result = txnGroup.map(txn => ({ txn }))
+            await Promise.all(
+                groupedByAccount.entries().map(async entry => {
+                    const accountAddress = entry[0]
+                    const txns = entry[1]
+                    const toSign = txns.filter(txnHolder =>
+                        indexesToSign.includes(txnHolder.index),
+                    )
+
+                    const account = accounts.find(
+                        a => a.address === accountAddress,
+                    )
+                    if (!account) {
+                        return Promise.reject(
+                            `No account found for ${accountAddress}`,
+                        )
+                    }
+                    const signedTxns = await signSingleAccountTransactions(
+                        account,
+                        toSign.map(txnHolder => txnHolder.txn),
+                    )
+                    signedTxns.forEach((signedTxn, idx) => {
+                        result[toSign[idx].index] = signedTxn
+                    })
+                }),
+            )
+            return result
+        },
+        [accounts, signSingleAccountTransactions],
+    )
 
     return {
-        signTransactionForAddress,
+        signTransactions,
     }
 }

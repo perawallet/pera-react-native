@@ -7,8 +7,8 @@ settings:
 catalogs:
   default:
     '@algorandfoundation/algokit-utils':
-      specifier: ^9.2.0-beta.4
-      version: 9.2.0
+      specifier: ^10.0.0-alpha.29
+      version: 10.0.0-alpha.29
     '@algorandfoundation/xhd-wallet-api':
       specifier: ^1.0.3
       version: 1.0.3
@@ -60,9 +60,6 @@ catalogs:
     '@vitest/coverage-v8':
       specifier: ^4.0.16
       version: 4.0.16
-    algosdk:
-      specifier: ^3.5.2
-      version: 3.5.2
     bip39:
       specifier: ^3.1.0
       version: 3.1.0
@@ -185,7 +182,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 9.2.0(algosdk@3.5.2)
+        version: 10.0.0-alpha.29
       '@algorandfoundation/xhd-wallet-api':
         specifier: 'catalog:'
         version: 1.0.3(@types/node@25.0.3)
@@ -288,9 +285,6 @@ importers:
       '@tanstack/react-query-persist-client':
         specifier: 'catalog:'
         version: 5.90.16(@tanstack/react-query@5.90.14(react@19.2.0))(react@19.2.0)
-      algosdk:
-        specifier: 'catalog:'
-        version: 3.5.2
       bip39:
         specifier: 'catalog:'
         version: 3.1.0
@@ -683,7 +677,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 9.2.0(algosdk@3.5.2)
+        version: 10.0.0-alpha.29
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.28.4
@@ -699,9 +693,6 @@ importers:
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.90.14(react@19.2.0)
-      algosdk:
-        specifier: 'catalog:'
-        version: 3.5.2
       react:
         specifier: 'catalog:'
         version: 19.2.0
@@ -1150,7 +1141,7 @@ importers:
     dependencies:
       '@algorandfoundation/algokit-utils':
         specifier: 'catalog:'
-        version: 9.2.0(algosdk@3.5.2)
+        version: 10.0.0-alpha.29
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.28.4
@@ -1172,9 +1163,6 @@ importers:
       '@tanstack/react-query-persist-client':
         specifier: 'catalog:'
         version: 5.90.16(@tanstack/react-query@5.90.14(react@19.2.0))(react@19.2.0)
-      algosdk:
-        specifier: 'catalog:'
-        version: 3.5.2
       base32-encode:
         specifier: ^2.0.0
         version: 2.0.0
@@ -1485,11 +1473,9 @@ packages:
   '@acemir/cssom@0.9.30':
     resolution: {integrity: sha512-9CnlMCI0LmCIq0olalQqdWrJHPzm0/tw3gzOA9zJSgvFX7Xau3D24mAGa4BtwxwY69nsuJW6kQqqCzf/mEcQgg==}
 
-  '@algorandfoundation/algokit-utils@9.2.0':
-    resolution: {integrity: sha512-jILpK3PlSJ55crS8+Dl7iIiADEj/VowokTGSVEEneDG41XM3jMmogGVpCNipBil/YAGC2eh2yc4l9iHnfQdT/g==}
+  '@algorandfoundation/algokit-utils@10.0.0-alpha.29':
+    resolution: {integrity: sha512-vDAVAyKt4BKKY1oPffe11jxiJpma7mUMT3wQd8HNeTV39UHfq+6Qnjrk1oGaNDVT+60SydCY11yE2mzVypKt9Q==}
     engines: {node: '>=20.0'}
-    peerDependencies:
-      algosdk: ^3.5.2
 
   '@algorandfoundation/xhd-wallet-api@1.0.3':
     resolution: {integrity: sha512-g/FM5Kviu+YMj5KnUntnX4ILKTuHpmKGN+7TAcChBfVo0l3hC4/OUOSZnDy3SdGC3Ovw/O0XkzeQxEKj/Owzzg==}
@@ -4282,10 +4268,6 @@ packages:
     resolution: {integrity: sha512-08k7pBQnkaUB5p+jL7f1TRaUIlTSDE0cesFu1mD7llLao+1cAhtvvZmGE3OnisTd0xOn118QMw74SRqddqaYvw==}
     engines: {node: '>= 14'}
 
-  algosdk@3.5.2:
-    resolution: {integrity: sha512-frhGtZl1JvfrLRKmMvUm880wj4OiWsWo2FhbreNWh7pdFsKuWPj60fV682wt/CYefLI70iwHavPOwGBkTVt0VA==}
-    engines: {node: '>=18.0.0'}
-
   alien-signals@0.4.14:
     resolution: {integrity: sha512-itUAVzhczTmP2U5yX67xVpsbbOiquusbWVyA9N+sy6+r6YVbFkahXvNCeEPWEOMhwDYwbVbGHFkVL03N9I5g+Q==}
 
@@ -6387,9 +6369,6 @@ packages:
   js-runtime@0.0.8:
     resolution: {integrity: sha512-/nxfuHRkzajgNgGP/7j2A9y8k54XtTWizq+vEGrWh3eBWlSqFhwgToXHAGZeHX3wRMTC3VFBw1iVeemlX4qxZw==}
     engines: {node: '>=18', pnpm: '>=8.3.0'}
-
-  js-sha256@0.9.0:
-    resolution: {integrity: sha512-sga3MHh9sgQN2+pJ9VYZ+1LPwXOxuBJBA5nrR5/ofPfuiJBE2hnjsaN8se8JznOmGLN2p49Pe5U/ttafcs/apA==}
 
   js-sha3@0.8.0:
     resolution: {integrity: sha512-gF1cRrHhIzNfToc802P800N8PpXS+evLLXfsVpowqmAFR9uwbi89WvXg2QspOmXL8QL86J4T1EpFu+yUkwJY3Q==}
@@ -9045,10 +9024,15 @@ snapshots:
 
   '@acemir/cssom@0.9.30': {}
 
-  '@algorandfoundation/algokit-utils@9.2.0(algosdk@3.5.2)':
+  '@algorandfoundation/algokit-utils@10.0.0-alpha.29':
     dependencies:
-      algosdk: 3.5.2
+      algorand-msgpack: 1.1.0
       buffer: 6.0.3
+      hi-base32: 0.5.1
+      js-sha512: 0.8.0
+      json-bigint: 1.0.0
+      tweetnacl: 1.0.3
+      vlq: 2.0.4
 
   '@algorandfoundation/xhd-wallet-api@1.0.3(@types/node@25.0.3)':
     dependencies:
@@ -12654,17 +12638,6 @@ snapshots:
 
   algorand-msgpack@1.1.0: {}
 
-  algosdk@3.5.2:
-    dependencies:
-      algorand-msgpack: 1.1.0
-      hi-base32: 0.5.1
-      js-sha256: 0.9.0
-      js-sha3: 0.8.0
-      js-sha512: 0.8.0
-      json-bigint: 1.0.0
-      tweetnacl: 1.0.3
-      vlq: 2.0.4
-
   alien-signals@0.4.14: {}
 
   anser@1.4.10: {}
@@ -15235,8 +15208,6 @@ snapshots:
   js-levenshtein@1.1.6: {}
 
   js-runtime@0.0.8: {}
-
-  js-sha256@0.9.0: {}
 
   js-sha3@0.8.0: {}
 

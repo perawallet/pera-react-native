@@ -426,17 +426,17 @@ describe('usePeraWebviewInterface', () => {
 
         // Test success
         const signRequest = mockAddSignRequest.mock.calls[0][0]
-        const signedTxs = [[{ id: 'tx1' }]]
+        const signedTxs = [{ id: 'tx1' }]
 
         await act(async () => {
-            await signRequest.success(address, signedTxs)
+            await signRequest.success(signedTxs)
         })
 
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
             expect.stringContaining('"id":"13"'),
         )
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
-            expect.stringContaining('"signedTxs":[[{"id":"tx1"}]]'),
+            expect.stringContaining('"signedTxs":[{"id":"tx1"}]'),
         )
     })
 
@@ -464,7 +464,7 @@ describe('usePeraWebviewInterface', () => {
             ][0]
 
         await act(async () => {
-            await signRequest.error(address, 'User rejected')
+            await signRequest.error('User rejected')
         })
 
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
@@ -549,7 +549,7 @@ describe('usePeraWebviewInterface', () => {
             ][0]
 
         await act(async () => {
-            await signRequest.error(address, 'Unauthorized')
+            await signRequest.error('Unauthorized')
         })
 
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(

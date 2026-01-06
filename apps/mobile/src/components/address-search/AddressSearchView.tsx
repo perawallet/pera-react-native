@@ -99,6 +99,7 @@ const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
                                     <AddressDisplay
                                         address={c.address}
                                         showCopy={false}
+                                        style={styles.accountDisplay}
                                     />
                                 </PWTouchableOpacity>
                             ))}

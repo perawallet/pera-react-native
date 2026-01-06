@@ -10,10 +10,15 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-assets'
+const MODULE_PREFIX = 'blockchain'
 
-export * from './models'
-export * from './hooks'
-export * from './utils'
+export const getAccountInformationQueryKey = (address: string) => [
+    MODULE_PREFIX,
+    'account-information',
+    { address },
+]
 
-export { initAssetsStore } from './store'
+export const getSuggestedParametersQueryKey = () => [
+    MODULE_PREFIX,
+    'suggested-parameters',
+]

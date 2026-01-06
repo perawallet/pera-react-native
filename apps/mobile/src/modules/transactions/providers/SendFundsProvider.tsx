@@ -16,7 +16,7 @@ import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import Decimal from 'decimal.js'
 import { createContext, PropsWithChildren, useState } from 'react'
 
-type SendFundsState = {
+export type SendFundsState = {
     selectedAsset?: AssetWithAccountBalance
     canSelectAsset?: boolean
     amount?: Decimal

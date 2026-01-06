@@ -19,9 +19,11 @@ import {
 import { useWalletConnectStore } from '../store'
 import {
     ArbitraryDataSignRequest,
-    Transaction,
+    encodeAlgorandAddress,
+    PeraSignedTransaction,
     TransactionSignRequest,
     useSigningRequest,
+    useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import WalletConnect from '@walletconnect/client'
@@ -69,6 +71,7 @@ const validateRequest = (
 const useWalletConnectHandlers = () => {
     const sessions = useWalletConnectStore(state => state.walletConnectSessions)
     const { addSignRequest } = useSigningRequest()
+    const { encodeSignedTransaction } = useTransactionEncoder()
     const { network } = useNetwork()
 
     const handleSignData = useCallback(
@@ -117,7 +120,7 @@ const useWalletConnectHandlers = () => {
                         })
                     }
                 },
-                error: async (_, error: string) => {
+                error: async (error: string) => {
                     throw new WalletConnectSignRequestError(new Error(error))
                 },
             } as ArbitraryDataSignRequest)
@@ -144,21 +147,24 @@ const useWalletConnectHandlers = () => {
                 message,
                 addresses: connector.accounts,
                 txs: [txn],
-                success: async (
-                    signingAddress: string,
-                    signed: (Transaction | null)[][],
-                ) => {
+                success: async (signed: (PeraSignedTransaction | null)[]) => {
                     //TODO we probably need to use algokit here to pack this up correctly
-                    const signedTxn = JSON.stringify(signed.at(0)?.at(0))
+                    const signedTxn = signed.at(0)
 
                     if (signedTxn) {
+                        const fromAddress = encodeAlgorandAddress(
+                            signedTxn.authAddress?.publicKey ??
+                                signedTxn.txn.sender.publicKey,
+                        )
                         connector.sendTransaction({
-                            from: signingAddress,
-                            data: Buffer.from(signedTxn).toString('base64'),
+                            from: fromAddress,
+                            data: Buffer.from(
+                                encodeSignedTransaction(signedTxn),
+                            ).toString('base64'),
                         })
                     }
                 },
-                error: async (_, error: string) => {
+                error: async (error: string) => {
                     throw new WalletConnectSignRequestError(new Error(error))
                 },
             } as TransactionSignRequest)

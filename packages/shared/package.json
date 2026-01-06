@@ -22,7 +22,6 @@
     "@perawallet/wallet-core-xhdwallet": "workspace:*",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-query-persist-client": "catalog:",
-    "algosdk": "catalog:",
     "base32-encode": "^2.0.0",
     "base64-js": "^1.5.1",
     "bip39": "catalog:",
