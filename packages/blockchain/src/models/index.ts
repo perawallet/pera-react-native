@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { Transaction } from '@algorandfoundation/algokit-utils/transact'
+import type {
+    SignedTransaction,
+    Transaction,
+} from '@algorandfoundation/algokit-utils/transact'
 
 export const MAX_TX_NOTE_BYTES = 1024
 
@@ -70,11 +73,20 @@ export type BlockchainStore = {
     removeSignRequest: (request: SignRequest) => boolean
 }
 
+export { Address } from '@algorandfoundation/algokit-utils'
+
 export type PeraTransaction = Transaction
 
-export type PeraTransactionGroup = (PeraTransaction | null)[]
+export type PeraTransactionGroup = PeraTransaction[]
+
+export type PeraSignedTransaction = SignedTransaction
 
 export type PeraTransactionSigner = (
     txnGroup: PeraTransactionGroup,
     indexesToSign: number[],
-) => Promise<PeraTransactionGroup>
+) => Promise<PeraSignedTransaction[]>
+
+export type PeraEncodedTransactionSigner = (
+    txnGroup: PeraTransactionGroup,
+    indexesToSign: number[],
+) => Promise<Uint8Array[]>

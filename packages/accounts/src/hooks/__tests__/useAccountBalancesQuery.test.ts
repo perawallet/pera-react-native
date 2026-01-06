@@ -144,7 +144,7 @@ describe('useAccountBalances', () => {
             canSign: true,
         }
 
-        mockGetInformation.mockReturnValue(new Promise(() => { }))
+        mockGetInformation.mockReturnValue(new Promise(() => {}))
 
         const { result } = renderHook(
             () => useAccountBalancesQuery([account]),

@@ -210,4 +210,3 @@ describe('services/accounts/store', () => {
         expect(useAccountsStore.getState().getSelectedAccount()).toBeNull()
     })
 })
-

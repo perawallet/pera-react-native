@@ -25,7 +25,8 @@ describe('useAccountInformationQuery', () => {
     let queryClient: QueryClient
     let wrapper: React.FC<{ children: React.ReactNode }>
 
-    const mockAddress = 'TESTADDRESS123456789012345678901234567890123456789012345678'
+    const mockAddress =
+        'TESTADDRESS123456789012345678901234567890123456789012345678'
     const mockAccountInfo = {
         minBalance: 100000,
         amount: 1000000,
@@ -44,16 +45,22 @@ describe('useAccountInformationQuery', () => {
             },
         })
         wrapper = ({ children }) =>
-            React.createElement(QueryClientProvider, { client: queryClient }, children)
+            React.createElement(
+                QueryClientProvider,
+                { client: queryClient },
+                children,
+            )
 
-            // Mock the AlgorandClient
-            ; (useAlgorandClient as Mock).mockReturnValue({
-                client: {
-                    algod: {
-                        accountInformation: vi.fn().mockResolvedValue(mockAccountInfo),
-                    },
+        // Mock the AlgorandClient
+        ;(useAlgorandClient as Mock).mockReturnValue({
+            client: {
+                algod: {
+                    accountInformation: vi
+                        .fn()
+                        .mockResolvedValue(mockAccountInfo),
                 },
-            })
+            },
+        })
     })
 
     test('fetches account information for a given address', async () => {
@@ -84,13 +91,13 @@ describe('useAccountInformationQuery', () => {
 
     test('handles errors', async () => {
         const mockError = new Error('Account not found')
-            ; (useAlgorandClient as Mock).mockReturnValue({
-                client: {
-                    algod: {
-                        accountInformation: vi.fn().mockRejectedValue(mockError),
-                    },
+        ;(useAlgorandClient as Mock).mockReturnValue({
+            client: {
+                algod: {
+                    accountInformation: vi.fn().mockRejectedValue(mockError),
                 },
-            })
+            },
+        })
 
         const { result } = renderHook(
             () => useAccountInformationQuery(mockAddress),
@@ -109,17 +116,18 @@ describe('useAccountInformationQuery', () => {
         const mockAccountInfo1 = { ...mockAccountInfo, address: address1 }
         const mockAccountInfo2 = { ...mockAccountInfo, address: address2 }
 
-        const mockAccountInfoFn = vi.fn()
+        const mockAccountInfoFn = vi
+            .fn()
             .mockResolvedValueOnce(mockAccountInfo1)
             .mockResolvedValueOnce(mockAccountInfo2)
 
-            ; (useAlgorandClient as Mock).mockReturnValue({
-                client: {
-                    algod: {
-                        accountInformation: mockAccountInfoFn,
-                    },
+        ;(useAlgorandClient as Mock).mockReturnValue({
+            client: {
+                algod: {
+                    accountInformation: mockAccountInfoFn,
                 },
-            })
+            },
+        })
 
         const { result: result1 } = renderHook(
             () => useAccountInformationQuery(address1),

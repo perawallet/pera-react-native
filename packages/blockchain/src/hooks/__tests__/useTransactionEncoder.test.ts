@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { renderHook, waitFor } from '@testing-library/react'
+import { describe, test, expect, beforeEach } from 'vitest'
+import { renderHook } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
@@ -30,11 +30,17 @@ describe('useTransactionEncoder', () => {
             },
         })
         wrapper = ({ children }) =>
-            React.createElement(QueryClientProvider, { client: queryClient }, children)
+            React.createElement(
+                QueryClientProvider,
+                { client: queryClient },
+                children,
+            )
     })
 
     test('encodeTransaction returns a Uint8Array', () => {
-        const { result } = renderHook(() => useTransactionEncoder(), { wrapper })
+        const { result } = renderHook(() => useTransactionEncoder(), {
+            wrapper,
+        })
 
         const mockTransaction = {} as any
         const encoded = result.current.encodeTransaction(mockTransaction)
@@ -44,7 +50,9 @@ describe('useTransactionEncoder', () => {
     })
 
     test('decodeTransaction returns a transaction object', () => {
-        const { result } = renderHook(() => useTransactionEncoder(), { wrapper })
+        const { result } = renderHook(() => useTransactionEncoder(), {
+            wrapper,
+        })
 
         const mockEncoded = Uint8Array.from([0])
         const decoded = result.current.decodeTransaction(mockEncoded)

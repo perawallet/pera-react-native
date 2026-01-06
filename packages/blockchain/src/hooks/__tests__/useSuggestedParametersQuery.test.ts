@@ -44,12 +44,16 @@ describe('useSuggestedParametersQuery', () => {
             },
         })
         wrapper = ({ children }) =>
-            React.createElement(QueryClientProvider, { client: queryClient }, children)
+            React.createElement(
+                QueryClientProvider,
+                { client: queryClient },
+                children,
+            )
 
-            // Mock the AlgorandClient
-            ; (useAlgorandClient as Mock).mockReturnValue({
-                getSuggestedParams: vi.fn().mockResolvedValue(mockSuggestedParams),
-            })
+        // Mock the AlgorandClient
+        ;(useAlgorandClient as Mock).mockReturnValue({
+            getSuggestedParams: vi.fn().mockResolvedValue(mockSuggestedParams),
+        })
     })
 
     test('fetches suggested parameters', async () => {
@@ -72,9 +76,9 @@ describe('useSuggestedParametersQuery', () => {
 
     test('handles errors', async () => {
         const mockError = new Error('Network error')
-            ; (useAlgorandClient as Mock).mockReturnValue({
-                getSuggestedParams: vi.fn().mockRejectedValue(mockError),
-            })
+        ;(useAlgorandClient as Mock).mockReturnValue({
+            getSuggestedParams: vi.fn().mockRejectedValue(mockError),
+        })
 
         const { result } = renderHook(() => useSuggestedParametersQuery(), {
             wrapper,

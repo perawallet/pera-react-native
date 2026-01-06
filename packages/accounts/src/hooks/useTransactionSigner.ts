@@ -16,6 +16,9 @@ import { useWithKey } from '@perawallet/wallet-core-kmd'
 import { useCallback } from 'react'
 import { KEY_DOMAIN } from '../constants'
 import {
+    Address,
+    encodeAlgorandAddress,
+    PeraSignedTransaction,
     PeraTransaction,
     PeraTransactionGroup,
     useTransactionEncoder,
@@ -33,7 +36,7 @@ export const useTransactionSigner = () => {
         async (
             account: HDWalletAccount,
             txns: PeraTransactionGroup,
-        ): Promise<PeraTransactionGroup> => {
+        ): Promise<PeraSignedTransaction[]> => {
             const hdWalletDetails = account.hdWalletDetails
             const storageKey = hdWalletDetails.walletId
 
@@ -64,8 +67,19 @@ export const useTransactionSigner = () => {
                             hdWalletDetails,
                             encodedTransaction,
                         )
-                        txn.signature = signature
-                        return txn
+
+                        const senderPublicKey = encodeAlgorandAddress(
+                            txn.sender.publicKey,
+                        )
+                        const signedTxn: PeraSignedTransaction = {
+                            txn,
+                            sig: signature,
+                            authAddress:
+                                account.address !== senderPublicKey
+                                    ? Address.fromString(account.address)
+                                    : undefined,
+                        }
+                        return signedTxn
                     })
                     return Promise.all(signedTxns)
                 },
@@ -78,7 +92,7 @@ export const useTransactionSigner = () => {
         async (
             account: Algo25Account,
             txns: PeraTransactionGroup,
-        ): Promise<PeraTransactionGroup> => {
+        ): Promise<PeraSignedTransaction[]> => {
             const storageKey = account.keyPairId
 
             if (!storageKey) {
@@ -101,7 +115,7 @@ export const useTransactionSigner = () => {
                     // const encodedTransaction = encodeTransaction(txn)
                     // const signature = await signTransaction(encodedTransaction)
                     // txn.signature = signature
-                    return txns
+                    return txns.map(txn => ({ txn }))
                 },
             )
         },
@@ -112,7 +126,7 @@ export const useTransactionSigner = () => {
         async (
             account: WalletAccount,
             txns: PeraTransactionGroup,
-        ): Promise<PeraTransactionGroup> => {
+        ): Promise<PeraSignedTransaction[]> => {
             if (account.rekeyAddress) {
                 const rekeyedAccount =
                     accounts.find(a => a.address === account.rekeyAddress) ??
@@ -149,7 +163,7 @@ export const useTransactionSigner = () => {
         async (
             txnGroup: PeraTransactionGroup,
             indexesToSign: number[],
-        ): Promise<PeraTransactionGroup> => {
+        ): Promise<PeraSignedTransaction[]> => {
             // we want to group the transactions by account for signing efficiency
             // but we must remember where they were originally in the array
             const originalIndexes = txnGroup.map((txn, index) => ({
@@ -174,7 +188,7 @@ export const useTransactionSigner = () => {
             )
 
             // sign each group of transactions for the same account
-            const result = [...txnGroup]
+            const result = txnGroup.map(txn => ({ txn }))
             await Promise.all(
                 groupedByAccount.entries().map(async entry => {
                     const accountAddress = entry[0]
