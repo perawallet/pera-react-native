@@ -10,19 +10,29 @@
  limitations under the License
  */
 
-import { PeraTransaction } from '../models'
+import { PeraSignedTransaction, PeraTransaction } from '../models'
 
-// import { encodeTransaction } from '@algorandfoundation/algokit-utils/transact'
+import {
+    encodeTransaction,
+    encodeSignedTransaction,
+    encodeSignedTransactions,
+    decodeSignedTransaction,
+    decodeTransaction,
+    decodeSignedTransactions,
+} from '@algorandfoundation/algokit-utils/transact'
 
 export const useTransactionEncoder = () => {
     return {
-        encodeTransaction: (_: PeraTransaction) => {
-            //TODO: implement this once we can find encodeTransaction in algokit-utils somewhere
-            return Uint8Array.from([0])
-        },
-        decodeTransaction: (_: Uint8Array) => {
-            //TODO: implement this once we can find decodeTransaction in algokit-utils somewhere
-            return {} as PeraTransaction
-        },
+        encodeTransaction: (tx: PeraTransaction) => encodeTransaction(tx),
+        encodeSignedTransaction: (tx: PeraSignedTransaction) =>
+            encodeSignedTransaction(tx),
+        encodeSignedTransactions: (txs: PeraSignedTransaction[]) =>
+            encodeSignedTransactions(txs),
+        decodeTransaction: (txn: Uint8Array) =>
+            decodeTransaction(txn) as PeraTransaction,
+        decodeSignedTransaction: (txn: Uint8Array) =>
+            decodeSignedTransaction(txn) as PeraSignedTransaction,
+        decodeSignedTransactions: (txns: Uint8Array[]) =>
+            decodeSignedTransactions(txns) as PeraSignedTransaction[],
     }
 }

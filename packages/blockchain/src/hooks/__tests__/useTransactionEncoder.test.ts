@@ -10,12 +10,17 @@
  limitations under the License
  */
 
-import { describe, test, expect, beforeEach } from 'vitest'
+import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
 import { useTransactionEncoder } from '../useTransactionEncoder'
+
+vi.mock('@algorandfoundation/algokit-utils/transact', () => ({
+    encodeTransaction: vi.fn(() => new Uint8Array([0])),
+    decodeTransaction: vi.fn(() => ({})),
+}))
 
 describe('useTransactionEncoder', () => {
     let queryClient: QueryClient

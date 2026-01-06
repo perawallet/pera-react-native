@@ -103,7 +103,7 @@ export const useInputView = (onNext: () => void) => {
     }, [maxAmount])
 
     const handleNext = useCallback(() => {
-        if (!value || Decimal(value) <= Decimal(0)) {
+        if (!value || Decimal(value).lte(0)) {
             showToast({
                 title: t('send_funds.input.error_title'),
                 body: t('send_funds.input.error_body', { min: 0 }),
@@ -112,7 +112,7 @@ export const useInputView = (onNext: () => void) => {
             return
         }
 
-        if (Decimal(value) > maxAmount) {
+        if (Decimal(value).gt(maxAmount)) {
             //TODO: show popup with explanation
             logger.warn('Send funds input view', { value, maxAmount })
             showToast({

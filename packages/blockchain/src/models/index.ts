@@ -37,9 +37,7 @@ type BaseSignRequest = {
 export type TransactionSignRequest = {
     // A list of transaction groups (which in turn are a list of transactions) - nulls are used to represent transactions that the caller does not need signed
     txs: (Transaction | null)[][]
-    success?: (
-        signedTxs: (PeraTransactionGroup | null)[] | null,
-    ) => Promise<void>
+    success?: (signedTxs: (PeraSignedTransaction | null)[]) => Promise<void>
     error?: (error: string) => Promise<void>
 } & BaseSignRequest
 
@@ -51,14 +49,14 @@ export type PeraArbitraryDataMessage = {
 export type ArbitraryDataSignRequest = {
     // A raw data blob to sign
     data: string // base64 encoded
-    success?: (signature: Uint8Array) => Promise<void>
+    success?: (signingAddress: string, signature: Uint8Array) => Promise<void>
     error?: (error: string) => Promise<void>
 } & BaseSignRequest
 
 //ARC 60 arbitrary data signing request
 export type Arc60SignRequest = {
     //TODO add data in here that matches the expected structure
-    success?: (signature: Uint8Array) => Promise<void>
+    success?: (signingAddress: string, signature: Uint8Array) => Promise<void>
     error?: (error: string) => Promise<void>
 } & BaseSignRequest
 
