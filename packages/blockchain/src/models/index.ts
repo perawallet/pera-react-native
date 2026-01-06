@@ -36,8 +36,8 @@ type BaseSignRequest = {
 
 export type TransactionSignRequest = {
     // A list of transaction groups (which in turn are a list of transactions) - nulls are used to represent transactions that the caller does not need signed
-    txs: (Transaction | null)[][]
-    success?: (signedTxs: (PeraSignedTransaction | null)[]) => Promise<void>
+    txs: PeraTransactionGroup[]
+    success?: (signedTxs: PeraSignedTransactionGroup[]) => Promise<void>
     error?: (error: string) => Promise<void>
 } & BaseSignRequest
 
@@ -79,10 +79,12 @@ export type PeraTransactionGroup = PeraTransaction[]
 
 export type PeraSignedTransaction = SignedTransaction
 
+export type PeraSignedTransactionGroup = PeraSignedTransaction[]
+
 export type PeraTransactionSigner = (
     txnGroup: PeraTransactionGroup,
     indexesToSign: number[],
-) => Promise<PeraSignedTransaction[]>
+) => Promise<PeraSignedTransactionGroup>
 
 export type PeraEncodedTransactionSigner = (
     txnGroup: PeraTransactionGroup,

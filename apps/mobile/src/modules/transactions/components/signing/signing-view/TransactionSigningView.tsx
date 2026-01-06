@@ -12,12 +12,14 @@
 
 import CurrencyDisplay from '@components/currency-display/CurrencyDisplay'
 import EmptyView from '@components/empty-view/EmptyView'
-import TransactionIcon from '@components/transaction-icon/TransactionIcon'
+import TransactionIcon from '@modules/transactions/components/transaction-icon/TransactionIcon'
 import PWView from '@components/view/PWView'
 import {
+    encodeAlgorandAddress,
     TransactionSignRequest,
     useAlgorandClient,
     useSigningRequest,
+    useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { Text } from '@rneui/themed'
@@ -43,9 +45,7 @@ const SingleTransactionView = ({ request }: TransactionSigningViewProps) => {
     const { t } = useLanguage()
 
     const tx = request.txs?.at(0)?.at(0)
-    const receiver =
-        tx?.['asset-transfer-transaction']?.receiver ??
-        tx?.['payment-transaction']?.receiver
+    const receiver = tx?.assetTransfer?.receiver ?? tx?.payment?.receiver
 
     //TODO this isn't really a valid error since it might be an app call or something but that
     //will get fixed when we implement all tx types
@@ -64,7 +64,12 @@ const SingleTransactionView = ({ request }: TransactionSigningViewProps) => {
                 type='pay'
                 size='large'
             />
-            <Text h4>Transfer to {truncateAlgorandAddress(receiver)}</Text>
+            <Text h4>
+                Transfer to{' '}
+                {truncateAlgorandAddress(
+                    encodeAlgorandAddress(receiver.publicKey),
+                )}
+            </Text>
             <CurrencyDisplay
                 currency='ALGO'
                 precision={3}
@@ -114,6 +119,7 @@ const TransactionSigningView = ({ request }: TransactionSigningViewProps) => {
     const styles = useStyles()
     const { removeSignRequest } = useSigningRequest()
     const { signTransactions } = useTransactionSigner()
+    const { encodeSignedTransactions } = useTransactionEncoder()
     const algokit = useAlgorandClient()
     const { showToast } = useToast()
     const { t } = useLanguage()
@@ -121,12 +127,20 @@ const TransactionSigningView = ({ request }: TransactionSigningViewProps) => {
 
     const signAndSend = async () => {
         try {
-            const signedTxs = await signTransactions(
-                request.txs,
-                request.txs.map((_, idx) => idx),
+            const signedTxs = await Promise.all(
+                request.txs.map(txs => {
+                    return signTransactions(
+                        txs,
+                        request.txs.map((_, idx) => idx),
+                    )
+                }),
             )
             if (request.transport === 'algod') {
-                await algokit.client.algod.sendRawTransaction(signedTxs)
+                signedTxs.forEach(group => {
+                    algokit.client.algod.sendRawTransaction(
+                        encodeSignedTransactions(group),
+                    )
+                })
             } else {
                 request.success?.(signedTxs)
             }
