@@ -12,12 +12,13 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useAlgorandClient } from './useAlgorandClient'
+import { getAccountInformationQueryKey } from './querykeys'
 
 export const useAccountInformationQuery = (address: string) => {
     const algokit = useAlgorandClient()
 
     return useQuery({
-        queryKey: ['account-information', address],
+        queryKey: getAccountInformationQueryKey(address),
         queryFn: async () => {
             const accountInformation =
                 await algokit.client.algod.accountInformation(address)

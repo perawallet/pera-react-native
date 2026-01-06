@@ -10,15 +10,16 @@
  limitations under the License
  */
 
-import { useQuery } from '@tanstack/react-query'
-import { useAlgorandClient } from './useAlgorandClient'
-import { getSuggestedParametersQueryKey } from './querykeys'
 
-export const useSuggestedParametersQuery = () => {
-    const algokit = useAlgorandClient()
+const MODULE_PREFIX = 'blockchain'
 
-    return useQuery({
-        queryKey: getSuggestedParametersQueryKey(),
-        queryFn: async () => await algokit.getSuggestedParams(),
-    })
-}
+export const getAccountInformationQueryKey = (address: string) => [
+    MODULE_PREFIX,
+    'account-information',
+    { address },
+]
+
+export const getSuggestedParametersQueryKey = () => [
+    MODULE_PREFIX,
+    'suggested-parameters',
+]
