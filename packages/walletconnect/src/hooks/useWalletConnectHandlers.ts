@@ -147,14 +147,13 @@ const useWalletConnectHandlers = () => {
                 message,
                 addresses: connector.accounts,
                 txs: [txn],
-                success: async (signed: (PeraSignedTransaction | null)[]) => {
-                    //TODO we probably need to use algokit here to pack this up correctly
-                    const signedTxn = signed.at(0)
+                success: async (signed: (PeraSignedTransaction | null)[][]) => {
+                    const signedTxn = signed.at(0)?.at(0)
 
                     if (signedTxn) {
                         const fromAddress = encodeAlgorandAddress(
                             signedTxn.authAddress?.publicKey ??
-                                signedTxn.txn.sender.publicKey,
+                            signedTxn.txn.sender.publicKey,
                         )
                         connector.sendTransaction({
                             from: fromAddress,
