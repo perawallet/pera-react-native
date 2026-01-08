@@ -492,6 +492,8 @@
             "accounts_title": "SELECT ACCOUNTS",
             "accounts_select_one_account_title": "Select at least one account",
             "accounts_select_one_account_body": "Please select at least one account to connect with",
+            "success_title": "Connection approved",
+            "success_body": "You are now connected to {{name}}",
             "networks_mainnet": "Mainnet",
             "networks_testnet": "Testnet"
         },

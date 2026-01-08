@@ -91,6 +91,13 @@ const ConnectionView = ({
             return
         }
         approveSession(request.clientId, request, selectedAccounts)
+        showToast({
+            title: t('walletconnect.request.success_title'),
+            body: t('walletconnect.request.success_body', {
+                name: request.peerMeta.name,
+            }),
+            type: 'success',
+        })
         removeSessionRequest(request)
     }
 
