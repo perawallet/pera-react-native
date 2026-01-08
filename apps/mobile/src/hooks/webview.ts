@@ -93,7 +93,7 @@ export const usePeraWebviewInterface = (
     const { t } = useLanguage()
     const { pushWebView: pushWebViewContext } = useContext(WebViewContext)
     const { addSignRequest } = useSigningRequest()
-    const { connectSession } = useWalletConnect()
+    const { connect } = useWalletConnect()
 
     const hadRequiredParams = useCallback(
         (requiredParams: string[], message: WebviewMessage) => {
@@ -386,14 +386,14 @@ export const usePeraWebviewInterface = (
                 return
             }
 
-            connectSession({
-                session: {
+            connect({
+                connection: {
                     uri: message.params!.uri as string,
                     autoConnect: securedConnection,
                 },
             })
         },
-        [connectSession, securedConnection, webview],
+        [connect, securedConnection, webview],
     )
 
     const onBackPressed = useCallback(() => {

@@ -36,6 +36,7 @@ export const useArbitraryDataSigningView = (
             const account = allAccounts.find(
                 account => account.address === data.signer,
             )
+
             if (!account) {
                 removeSignRequest(request)
                 throw new Error(

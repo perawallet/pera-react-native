@@ -46,7 +46,7 @@ jest.mock('../webview', () => ({
 }))
 
 jest.mock('@perawallet/wallet-core-walletconnect', () => ({
-    useWalletConnect: () => ({ connectSession: jest.fn() }),
+    useWalletConnect: () => ({ connect: jest.fn() }),
 }))
 
 jest.mock('../toast', () => ({
@@ -177,7 +177,7 @@ describe('useDeepLink', () => {
             )
         })
 
-        // Success case, connectSession should have been called (mocked in useWalletConnect)
+        // Success case, connect should have been called (mocked in useWalletConnect)
     })
 
     it('should handle ALGO_TRANSFER deeplink', async () => {

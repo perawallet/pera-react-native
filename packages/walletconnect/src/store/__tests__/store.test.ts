@@ -99,13 +99,13 @@ describe('WalletConnectStore', () => {
             setState: set,
         })
 
-        expect(storeState.walletConnectSessions).toEqual([])
+        expect(storeState.walletConnectConnections).toEqual([])
         expect(storeState.sessionRequests).toEqual([])
 
-        // Test setWalletConnectSessions
+        // Test setWalletConnectConnections
         const sessions = [{ session: { clientId: '1' } }]
-        storeState.setWalletConnectSessions(sessions)
-        expect(set).toHaveBeenCalledWith({ walletConnectSessions: sessions })
+        storeState.setWalletConnectConnections(sessions)
+        expect(set).toHaveBeenCalledWith({ walletConnectConnections: sessions })
 
         // Test setSessionRequests
         const requests = [{ id: 1 }]
@@ -121,11 +121,11 @@ describe('WalletConnectStore', () => {
 
         // Test partialize
         const fullState = {
-            walletConnectSessions: ['s1'],
+            walletConnectConnections: ['s1'],
             sessionRequests: ['r1'],
-            setWalletConnectSessions: () => {},
+            setWalletConnectConnections: () => {},
         }
         const persisted = options.partialize(fullState)
-        expect(persisted).toEqual({ walletConnectSessions: ['s1'] })
+        expect(persisted).toEqual({ walletConnectConnections: ['s1'] })
     })
 })

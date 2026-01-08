@@ -109,7 +109,7 @@ describe('services/accounts/useHDWallet', () => {
         expect(xhdSpies.fromSeed).toHaveBeenCalledWith(seed)
         expect(apiSpies.deriveSpy).toHaveBeenCalledWith(
             'ROOT_KEY',
-            [44, 283, 0, 0, 0],
+            [2147483692, 2147483931, 2147483648, 0, 0],
             true,
             9,
         )
@@ -140,7 +140,7 @@ describe('services/accounts/useHDWallet', () => {
 
         expect(apiSpies.deriveSpy).toHaveBeenCalledWith(
             'ROOT_KEY',
-            [44, 283, 7, 0, 9],
+            [2147483692, 2147483931, 2147483655, 0, 9],
             true,
             'OTHER',
         )

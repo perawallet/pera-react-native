@@ -61,6 +61,7 @@ jest.mock('@perawallet/wallet-core-platform-integration', () => ({
 jest.mock('@perawallet/wallet-core-accounts', () => ({
     getAccountDisplayName: jest.fn(account => account.name),
     isHDWalletAccount: jest.fn(account => account.type === 'standard'),
+    isRekeyedAccount: jest.fn(() => false),
     useAllAccounts: jest.fn(() => [
         {
             address: 'addr1',
@@ -89,7 +90,7 @@ jest.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 jest.mock('@perawallet/wallet-core-walletconnect', () => ({
-    useWalletConnect: () => ({ connectSession: jest.fn() }),
+    useWalletConnect: () => ({ connect: jest.fn() }),
 }))
 
 jest.mock('@rneui/themed', () => ({
@@ -131,8 +132,8 @@ describe('usePeraWebviewInterface', () => {
 
     beforeEach(() => {
         jest.clearAllMocks()
-        ;(Linking.canOpenURL as jest.Mock).mockResolvedValue(true)
-        ;(Linking.openURL as jest.Mock).mockResolvedValue(true)
+            ; (Linking.canOpenURL as jest.Mock).mockResolvedValue(true)
+            ; (Linking.openURL as jest.Mock).mockResolvedValue(true)
     })
 
     it('should handle openSystemBrowser action', async () => {
@@ -157,7 +158,7 @@ describe('usePeraWebviewInterface', () => {
     })
 
     it('should handle openSystemBrowser action failure', async () => {
-        ;(Linking.canOpenURL as jest.Mock).mockResolvedValue(false)
+        ; (Linking.canOpenURL as jest.Mock).mockResolvedValue(false)
         const { result } = renderHook(() =>
             usePeraWebviewInterface(mockWebview, true),
         )
@@ -429,7 +430,7 @@ describe('usePeraWebviewInterface', () => {
         const signedTxs = [{ id: 'tx1' }]
 
         await act(async () => {
-            await signRequest.success(signedTxs)
+            await signRequest.approve(signedTxs)
         })
 
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
@@ -460,7 +461,7 @@ describe('usePeraWebviewInterface', () => {
 
         const signRequest =
             mockAddSignRequest.mock.calls[
-                mockAddSignRequest.mock.calls.length - 1
+            mockAddSignRequest.mock.calls.length - 1
             ][0]
 
         await act(async () => {
@@ -500,8 +501,7 @@ describe('usePeraWebviewInterface', () => {
                 id: '14',
                 type: 'arbitrary-data',
                 transport: 'callback',
-                data: 'AQID',
-                message: 'Sign this',
+                data: [{ data: 'AQID', message: 'Sign this' }],
                 sourceMetadata: metadata,
             }),
         )
@@ -509,19 +509,19 @@ describe('usePeraWebviewInterface', () => {
         // Test success
         const signRequest =
             mockAddSignRequest.mock.calls[
-                mockAddSignRequest.mock.calls.length - 1
+            mockAddSignRequest.mock.calls.length - 1
             ][0]
         const signature = new Uint8Array([4, 5, 6])
 
         await act(async () => {
-            await signRequest.success(address, signature)
+            await signRequest.approve([{ signature }])
         })
 
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
             expect.stringContaining('"id":"14"'),
         )
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
-            expect.stringContaining('"signature":"BAUG"'), // [4,5,6] in base64 is BAUG
+            expect.stringContaining('"result":[{"0":4,"1":5,"2":6}]'),
         )
     })
 
@@ -545,7 +545,7 @@ describe('usePeraWebviewInterface', () => {
 
         const signRequest =
             mockAddSignRequest.mock.calls[
-                mockAddSignRequest.mock.calls.length - 1
+            mockAddSignRequest.mock.calls.length - 1
             ][0]
 
         await act(async () => {

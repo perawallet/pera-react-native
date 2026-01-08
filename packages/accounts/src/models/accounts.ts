@@ -19,7 +19,8 @@ export type DerivationType =
     (typeof DerivationTypes)[keyof typeof DerivationTypes]
 
 export const AccountTypes = {
-    standard: 'standard',
+    algo25: 'algo25',
+    hdWallet: 'hdWallet',
     hardware: 'hardware',
     multisig: 'multisig',
     watch: 'watch',

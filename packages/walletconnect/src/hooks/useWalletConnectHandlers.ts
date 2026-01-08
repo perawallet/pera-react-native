@@ -29,7 +29,7 @@ import {
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import WalletConnect from '@walletconnect/client'
 import { useCallback } from 'react'
-import { AlgorandChainId, WalletConnectSession } from '../models'
+import { AlgorandChainId, WalletConnectConnection } from '../models'
 import { MAX_DATA_SIGN_REQUESTS } from '../constants'
 import {
     isLedgerAccount,
@@ -39,28 +39,31 @@ import {
 
 const validateRequest = (
     connector: WalletConnect,
-    sessions: WalletConnectSession[],
+    connections: WalletConnectConnection[],
     network: Network,
     error: Error | null,
-): WalletConnectSession => {
+): WalletConnectConnection => {
     if (error) {
         logger.error(error)
         throw new WalletConnectSignRequestError(error)
     }
 
-    const foundSession = sessions.find(
-        session =>
-            session.clientId === connector.clientId ||
-            session.session?.clientId === connector.clientId,
+    const foundConnection = connections.find(
+        conn => conn.clientId === connector.clientId,
     )
 
-    if (!foundSession || !foundSession.session) {
+    if (!foundConnection || !foundConnection.session) {
+        logger.debug('No session found', {
+            clientId: connector.clientId,
+            connections,
+        })
+
         throw new WalletConnectInvalidSessionError(
             new Error('No session found'),
         )
     }
 
-    const { chainId } = foundSession.session
+    const { chainId } = foundConnection.session
 
     if (
         chainId !== 4160 &&
@@ -70,19 +73,20 @@ const validateRequest = (
         throw new WalletConnectInvalidNetworkError()
     }
 
-    return foundSession
+    return foundConnection
 }
 
-//TODO implement better error handling mechanism
+//TODO implement better error handling mechanism or maybe we just need to create a better
+// Error boundary in the app?
 const validateDataSignRequest = (
     connector: WalletConnect,
     accounts: WalletAccount[],
-    sessions: WalletConnectSession[],
+    connections: WalletConnectConnection[],
     network: Network,
     data: PeraArbitraryDataMessage[],
     error: Error | null,
 ) => {
-    const foundSession = validateRequest(connector, sessions, network, error)
+    const foundSession = validateRequest(connector, connections, network, error)
 
     if (!data) {
         throw new WalletConnectSignRequestError(new Error('No data found'))
@@ -128,11 +132,19 @@ const validateDataSignRequest = (
                 new Error('Ledger accounts are not supported'),
             )
         }
+
+        if (!item.data) {
+            throw new WalletConnectSignRequestError(
+                new Error('Data is missing'),
+            )
+        }
     })
 }
 
 const useWalletConnectHandlers = () => {
-    const sessions = useWalletConnectStore(state => state.walletConnectSessions)
+    const connections = useWalletConnectStore(
+        state => state.walletConnectConnections,
+    )
     const { addSignRequest } = useSigningRequest()
     const { encodeSignedTransaction } = useTransactionEncoder()
     const { network } = useNetwork()
@@ -151,7 +163,7 @@ const useWalletConnectHandlers = () => {
             validateDataSignRequest(
                 connector,
                 accounts,
-                sessions,
+                connections,
                 network,
                 params,
                 error,
@@ -165,7 +177,6 @@ const useWalletConnectHandlers = () => {
                 data: params,
                 approve: async (signedData: PeraArbitraryDataSignResult[]) => {
                     try {
-                        logger.debug('signedData', { signedData })
                         if (signedData) {
                             const result = signedData.map(item =>
                                 Buffer.from(item.signature).toString('base64'),
@@ -174,9 +185,6 @@ const useWalletConnectHandlers = () => {
                                 id: payload.id,
                                 result,
                             }
-                            logger.debug('toSend', {
-                                toSend: JSON.stringify(toSend),
-                            })
                             await connector.approveRequest(toSend)
                         }
                     } catch (error) {
@@ -197,7 +205,7 @@ const useWalletConnectHandlers = () => {
                 },
             } as ArbitraryDataSignRequest)
         },
-        [sessions, addSignRequest, network],
+        [connections, addSignRequest, network],
     )
 
     const handleSignTransaction = useCallback(
@@ -208,7 +216,7 @@ const useWalletConnectHandlers = () => {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             payload: any | null,
         ) => {
-            validateRequest(connector, sessions, network, error)
+            validateRequest(connector, connections, network, error)
 
             //TODO more validation
 
@@ -244,7 +252,7 @@ const useWalletConnectHandlers = () => {
                 },
             } as TransactionSignRequest)
         },
-        [sessions, addSignRequest, network],
+        [connections, addSignRequest, network],
     )
 
     return {

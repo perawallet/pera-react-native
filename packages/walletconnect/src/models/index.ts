@@ -37,7 +37,7 @@ export const AlgorandPermission = {
 export type AlgorandPermission =
     (typeof AlgorandPermission)[keyof typeof AlgorandPermission]
 
-export type WalletConnectSession = {
+export type WalletConnectConnection = {
     clientId?: string
     version?: number
     bridge?: string
@@ -60,10 +60,10 @@ export type WalletConnectSessionRequest = {
 }
 
 export type WalletConnectStore = {
-    walletConnectSessions: WalletConnectSession[]
+    walletConnectConnections: WalletConnectConnection[]
     sessionRequests: WalletConnectSessionRequest[]
-    setWalletConnectSessions: (
-        walletConnectSessions: WalletConnectSession[],
+    setWalletConnectConnections: (
+        walletConnectConnections: WalletConnectConnection[],
     ) => void
     setSessionRequests: (sessionRequests: WalletConnectSessionRequest[]) => void
 }

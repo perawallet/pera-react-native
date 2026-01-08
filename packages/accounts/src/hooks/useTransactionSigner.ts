@@ -23,7 +23,11 @@ import {
     PeraTransactionGroup,
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
-import { isAlgo25Account, isHDWalletAccount } from '../utils'
+import {
+    getSeedFromMasterKey,
+    isAlgo25Account,
+    isHDWalletAccount,
+} from '../utils'
 import { Algo25Account, HDWalletAccount, WalletAccount } from '../models'
 
 export const useTransactionSigner = () => {
@@ -50,15 +54,7 @@ export const useTransactionSigner = () => {
                         )
                     }
 
-                    let seed: Buffer
-                    try {
-                        // Try to parse as JSON first (new format)
-                        const masterKey = JSON.parse(keyData.toString())
-                        seed = Buffer.from(masterKey.seed, 'base64')
-                    } catch {
-                        // Fall back to treating it as raw seed data (old format or tests)
-                        seed = Buffer.from(keyData)
-                    }
+                    const seed: Buffer = getSeedFromMasterKey(keyData)
 
                     const signedTxns = txns.map(async txn => {
                         const encodedTransaction = encodeTransaction(txn)

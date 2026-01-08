@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-/* eslint-disable max-lines */
-
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import useToast from './toast'
@@ -20,7 +18,6 @@ import { parseDeeplink } from './deeplink/parser'
 import { DeeplinkType } from './deeplink/types'
 import { useSigningRequest } from '@perawallet/wallet-core-blockchain'
 import {
-    useSelectedAccount,
     useSelectedAccountAddress,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -37,10 +34,9 @@ export const useDeepLink = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { showToast } = useToast()
     const { addSignRequest } = useSigningRequest()
-    const selectedAccount = useSelectedAccount()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { pushWebView } = useWebView()
-    const { connectSession } = useWalletConnect()
+    const { connect } = useWalletConnect()
 
     const isValidDeepLink = (url: string, source: LinkSource): boolean => {
         logger.debug('Validating deeplink', { url, source })
@@ -141,22 +137,7 @@ export const useDeepLink = () => {
                     addSignRequest({
                         type: 'transactions',
                         transport: 'algod',
-                        txs: [
-                            [
-                                {
-                                    'tx-type': 'pay',
-                                    sender: selectedAccount?.address ?? '',
-                                    'payment-transaction': {
-                                        receiver: parsedData.receiverAddress,
-                                        amount: Number(parsedData.amount ?? 0),
-                                    },
-                                    note: parsedData.note,
-                                    fee: 1000,
-                                    'first-valid': 0,
-                                    'last-valid': 1000,
-                                },
-                            ],
-                        ],
+                        txs: [],
                     })
                     break
 
@@ -166,25 +147,7 @@ export const useDeepLink = () => {
                     addSignRequest({
                         type: 'transactions',
                         transport: 'algod',
-                        txs: [
-                            [
-                                {
-                                    'tx-type': 'axfer',
-                                    sender: selectedAccount?.address ?? '',
-                                    'asset-transfer-transaction': {
-                                        'asset-id': Number(
-                                            parsedData.assetId ?? 0,
-                                        ),
-                                        receiver: parsedData.receiverAddress,
-                                        amount: Number(parsedData.amount ?? 0),
-                                    },
-                                    note: parsedData.note,
-                                    fee: 1000,
-                                    'first-valid': 0,
-                                    'last-valid': 1000,
-                                },
-                            ],
-                        ],
+                        txs: [],
                     })
                     break
 
@@ -210,8 +173,8 @@ export const useDeepLink = () => {
                     break
 
                 case DeeplinkType.WALLET_CONNECT:
-                    connectSession({
-                        session: {
+                    connect({
+                        connection: {
                             uri: parsedData.uri,
                         },
                     })
@@ -223,25 +186,7 @@ export const useDeepLink = () => {
                     addSignRequest({
                         type: 'transactions',
                         transport: 'algod',
-                        txs: [
-                            [
-                                {
-                                    'tx-type': 'axfer',
-                                    sender: selectedAccount?.address ?? '',
-                                    'asset-transfer-transaction': {
-                                        'asset-id': Number(
-                                            parsedData.assetId ?? 0,
-                                        ),
-                                        receiver:
-                                            selectedAccount?.address ?? '',
-                                        amount: 0,
-                                    },
-                                    fee: 1000,
-                                    'first-valid': 0,
-                                    'last-valid': 1000,
-                                },
-                            ],
-                        ],
+                        txs: [],
                     })
                     break
 

@@ -12,7 +12,7 @@
 
 import PWBadge from '@components/badge/PWBadge'
 import PWView from '@components/view/PWView'
-import { WalletConnectSession } from '@perawallet/wallet-core-walletconnect'
+import { WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
 import { Image, Text } from '@rneui/themed'
 import { useStyles } from './styles'
 import PWTouchableOpacity from '@components/touchable-opacity/PWTouchableOpacity'
@@ -25,12 +25,12 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 const WalletConnectSessionItem = ({
     session,
 }: {
-    session: WalletConnectSession
+    session: WalletConnectConnection
 }) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-    const isConnected = session.connected
+    const isConnected = session.session?.connected
 
     const preferredIcon =
         session?.session?.peerMeta?.icons?.find(

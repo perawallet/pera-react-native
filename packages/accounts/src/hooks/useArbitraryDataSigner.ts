@@ -15,14 +15,16 @@ import { useHDWallet } from './useHDWallet'
 import { useWithKey } from '@perawallet/wallet-core-kmd'
 import { useCallback } from 'react'
 import { KEY_DOMAIN } from '../constants'
-import { isAlgo25Account, isHDWalletAccount } from '../utils'
+import {
+    getSeedFromMasterKey,
+    isAlgo25Account,
+    isHDWalletAccount,
+} from '../utils'
 import { Algo25Account, HDWalletAccount, WalletAccount } from '../models'
-import { logger } from '@perawallet/wallet-core-shared'
-import { config } from '@perawallet/wallet-core-config'
 
 export const useArbitraryDataSigner = () => {
     const accounts = useAccountsStore(state => state.accounts)
-    const { signTransaction, verifySignature } = useHDWallet()
+    const { signTransaction } = useHDWallet()
     const { executeWithKey } = useWithKey()
 
     const signHDWalletArbitraryData = useCallback(
@@ -43,47 +45,28 @@ export const useArbitraryDataSigner = () => {
                         )
                     }
 
-                    let seed: Buffer
-                    try {
-                        // Try to parse as JSON first (new format)
-                        const masterKey = JSON.parse(keyData.toString())
-                        seed = Buffer.from(masterKey.seed, 'base64')
-                    } catch {
-                        // Fall back to treating it as raw seed data (old format or tests)
-                        seed = Buffer.from(keyData)
-                    }
+                    const seed: Buffer = getSeedFromMasterKey(keyData)
 
                     const toSign = typeof data === 'string' ? [data] : data
 
-                    logger.debug('To sign', { toSign })
-
                     const signatures = await Promise.all(
-                        toSign.map(
-                            async data =>
-                                await signTransaction(
-                                    seed,
-                                    hdWalletDetails,
+                        toSign.map(async data => {
+                            const prefixedData = new Uint8Array(
+                                Buffer.concat([
+                                    //MX prefix required by algosdk.verifyBytes
+                                    Buffer.from('MX', 'utf-8'),
                                     Buffer.from(data, 'base64'),
-                                ),
-                        ),
-                    )
-
-                    if (config.debugEnabled) {
-                        await signatures.forEach(async (signature, index) => {
-                            const result = await verifySignature(
+                                ]),
+                            )
+                            const signature = await signTransaction(
                                 seed,
                                 hdWalletDetails,
-                                Buffer.from(toSign[index], 'base64'),
-                                signature,
+                                prefixedData,
                             )
 
-                            logger.debug('Signature verification result', {
-                                index,
-                                result,
-                            })
-                        })
-                    }
-
+                            return signature
+                        }),
+                    )
                     return signatures
                 },
             )

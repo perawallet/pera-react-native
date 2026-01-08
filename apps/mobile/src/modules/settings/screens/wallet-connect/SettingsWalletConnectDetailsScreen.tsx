@@ -67,7 +67,7 @@ const SettingsWalletConnectDetailsScreen = ({
     route,
 }: SettingsWalletConnectDetailsScreenProps) => {
     const { t } = useLanguage()
-    const { disconnectSession } = useWalletConnect()
+    const { disconnect } = useWalletConnect()
     const deleteState = useModalState()
     const styles = useStyles()
     const { theme } = useTheme()
@@ -98,7 +98,7 @@ const SettingsWalletConnectDetailsScreen = ({
             return
         }
         setLoading(true)
-        disconnectSession(session.clientId, true)
+        disconnect(session.clientId, true)
             .then(() => {
                 deleteState.close()
             })

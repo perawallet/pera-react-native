@@ -11,7 +11,7 @@
  */
 
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import { AccountTypes, type WalletAccount } from './models'
+import { AccountTypes, HardwareWalletAccount, type WalletAccount } from './models'
 
 export const getAccountDisplayName = (account: WalletAccount | null) => {
     if (!account) return 'No Account'
@@ -21,14 +21,12 @@ export const getAccountDisplayName = (account: WalletAccount | null) => {
 }
 
 export const isHDWalletAccount = (account: WalletAccount) => {
-    return !!account.hdWalletDetails
+    return account.type === AccountTypes.hdWallet
 }
 
 export const isLedgerAccount = (account: WalletAccount) => {
-    return (
-        account.type === AccountTypes.hardware &&
-        account.hardwareDetails?.manufacturer === 'ledger'
-    )
+    return account.type === AccountTypes.hardware
+        && (account as HardwareWalletAccount).hardwareDetails?.manufacturer === 'ledger'
 }
 
 export const isRekeyedAccount = (account: WalletAccount) => {
@@ -36,7 +34,7 @@ export const isRekeyedAccount = (account: WalletAccount) => {
 }
 
 export const isAlgo25Account = (account: WalletAccount) => {
-    return account.type === AccountTypes.standard && !account.hdWalletDetails
+    return account.type === AccountTypes.algo25
 }
 
 export const isWatchAccount = (account: WalletAccount) => {
@@ -49,4 +47,15 @@ export const isMultisigAccount = (account: WalletAccount) => {
 
 export const canSignWithAccount = (account: WalletAccount) => {
     return account.canSign
+}
+
+export const getSeedFromMasterKey = (keyData: Uint8Array) => {
+    try {
+        // Try to parse as JSON first (new format)
+        const masterKey = JSON.parse(new TextDecoder().decode(keyData))
+        return Buffer.from(masterKey.seed, 'base64')
+    } catch {
+        // Fall back to treating it as raw seed data (old format or tests)
+        return Buffer.from(keyData)
+    }
 }

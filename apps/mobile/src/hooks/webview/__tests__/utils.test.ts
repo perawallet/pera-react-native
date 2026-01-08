@@ -18,7 +18,7 @@ import {
 
 describe('webview/utils - getAccountType', () => {
     const baseAccount: WalletAccount = {
-        type: 'standard',
+        type: 'hdWallet',
         address: 'ADDR1',
         canSign: true,
     }
@@ -63,7 +63,10 @@ describe('webview/utils - getAccountType', () => {
     })
 
     it('returns Algo25 for standard accounts without HD details', () => {
-        expect(getAccountType(baseAccount)).toBe('Algo25')
+        expect(getAccountType({
+            ...baseAccount,
+            type: 'algo25'
+        })).toBe('Algo25')
     })
 
     it('returns NoAuth for watch accounts', () => {

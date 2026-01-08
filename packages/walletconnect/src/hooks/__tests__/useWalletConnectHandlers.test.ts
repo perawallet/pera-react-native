@@ -40,6 +40,21 @@ vi.mock('@perawallet/wallet-core-platform-integration', () => ({
     useNetwork: vi.fn(),
 }))
 
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-accounts')
+        >()
+    return {
+        ...actual,
+        useAllAccounts: vi.fn(() => [
+            { address: 'addr1', name: 'Account 1', type: 'standard' },
+        ]),
+        getAccountDisplayName: vi.fn(a => a.name || a.address),
+        isLedgerAccount: vi.fn(() => false),
+    }
+})
+
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const actual = await vi.importActual('@perawallet/wallet-core-shared')
     return {
@@ -60,21 +75,22 @@ describe('useWalletConnectHandlers', () => {
             session: {
                 clientId: 'test-client-id',
                 chainId: 4160,
+                accounts: ['addr1'],
             },
         },
     ]
 
     beforeEach(() => {
         vi.clearAllMocks()
-        ;(useSigningRequest as any).mockReturnValue({
-            addSignRequest: mockAddSignRequest,
-        })
-        ;(useNetwork as any).mockReturnValue({
-            network: Networks.mainnet,
-        })
-        ;(useWalletConnectStore as any).mockImplementation((selector: any) =>
-            selector({ walletConnectSessions: mockSessions }),
-        )
+            ; (useSigningRequest as any).mockReturnValue({
+                addSignRequest: mockAddSignRequest,
+            })
+            ; (useNetwork as any).mockReturnValue({
+                network: Networks.mainnet,
+            })
+            ; (useWalletConnectStore as any).mockImplementation((selector: any) =>
+                selector({ walletConnectConnections: mockSessions }),
+            )
     })
 
     describe('handleSignData', () => {
@@ -84,14 +100,19 @@ describe('useWalletConnectHandlers', () => {
                 clientId: 'test-client-id',
                 accounts: ['addr1'],
                 sendTransaction: vi.fn(),
+                approveRequest: vi.fn(),
+                rejectRequest: vi.fn(),
             }
             const payload = {
                 params: [
                     {
                         message: 'Sign me',
                         data: 'somedata',
+                        chainId: 4160,
+                        signer: 'addr1',
                     },
                 ],
+                id: 1,
             }
 
             result.current.handleSignData(connector as any, null, payload)
@@ -100,9 +121,15 @@ describe('useWalletConnectHandlers', () => {
                 type: 'arbitrary-data',
                 transport: 'callback',
                 transportId: 'test-client-id',
-                message: 'Sign me',
-                addresses: ['addr1'],
-                data: 'somedata',
+                data: [
+                    {
+                        message: 'Sign me',
+                        data: 'somedata',
+                        chainId: 4160,
+                        signer: 'addr1',
+                    },
+                ],
+                sourceMetadata: undefined,
                 approve: expect.any(Function),
                 reject: expect.any(Function),
                 error: expect.any(Function),
@@ -113,12 +140,12 @@ describe('useWalletConnectHandlers', () => {
             const signature = new Uint8Array([1, 2, 3])
 
             act(() => {
-                approve('addr1', signature)
+                approve([{ signature }])
             })
 
-            expect(connector.sendTransaction).toHaveBeenCalledWith({
-                from: 'addr1',
-                data: Buffer.from(signature).toString('base64'),
+            expect(connector.approveRequest).toHaveBeenCalledWith({
+                id: 1,
+                result: [Buffer.from(signature).toString('base64')],
             })
         })
 
@@ -129,14 +156,22 @@ describe('useWalletConnectHandlers', () => {
                 accounts: ['addr1'],
             }
             const payload = {
-                params: [{ message: 'Sign me', data: 'somedata' }],
+                params: [
+                    {
+                        message: 'Sign me',
+                        data: 'somedata',
+                        chainId: 4160,
+                        signer: 'addr1',
+                    },
+                ],
+                id: 1,
             }
 
             result.current.handleSignData(connector as any, null, payload)
 
             const { error } =
                 mockAddSignRequest.mock.calls[
-                    mockAddSignRequest.mock.calls.length - 1
+                mockAddSignRequest.mock.calls.length - 1
                 ][0]
 
             await expect(error('Rejected')).rejects.toThrow(
@@ -155,8 +190,8 @@ describe('useWalletConnectHandlers', () => {
         })
 
         it('should throw WalletConnectInvalidSessionError if session not found', () => {
-            ;(useWalletConnectStore as any).mockImplementation(
-                (selector: any) => selector({ walletConnectSessions: [] }),
+            ; (useWalletConnectStore as any).mockImplementation(
+                (selector: any) => selector({ walletConnectConnections: [] }),
             )
             const { result } = renderHook(() => useWalletConnectHandlers())
             const connector = { clientId: 'test-client-id' }
@@ -169,16 +204,19 @@ describe('useWalletConnectHandlers', () => {
         it('should throw WalletConnectInvalidNetworkError if chainId mismatches', () => {
             const mockSessionsMismatch = [
                 {
+                    clientId: 'test-client-id',
                     session: {
                         clientId: 'test-client-id',
                         chainId: 999999,
                     },
                 },
             ]
-            ;(useWalletConnectStore as any).mockImplementation(
-                (selector: any) =>
-                    selector({ walletConnectSessions: mockSessionsMismatch }),
-            )
+                ; (useWalletConnectStore as any).mockImplementation(
+                    (selector: any) =>
+                        selector({
+                            walletConnectConnections: mockSessionsMismatch,
+                        }),
+                )
             const { result } = renderHook(() => useWalletConnectHandlers())
             const connector = { clientId: 'test-client-id' }
 
@@ -205,6 +243,8 @@ describe('useWalletConnectHandlers', () => {
                     {
                         message: 'Sign me',
                         // data is missing
+                        chainId: 4160,
+                        signer: 'addr1',
                     },
                 ],
             }
@@ -222,6 +262,8 @@ describe('useWalletConnectHandlers', () => {
                 clientId: 'test-client-id',
                 accounts: ['addr1'],
                 sendTransaction: vi.fn(),
+                approveRequest: vi.fn(),
+                rejectRequest: vi.fn(),
             }
             const payload = {
                 params: [
@@ -230,6 +272,7 @@ describe('useWalletConnectHandlers', () => {
                         txn: 'encodedTxn',
                     },
                 ],
+                id: 1,
             }
 
             result.current.handleSignTransaction(
@@ -242,8 +285,6 @@ describe('useWalletConnectHandlers', () => {
                 type: 'transactions',
                 transport: 'callback',
                 transportId: 'test-client-id',
-                message: 'Sign tx',
-                addresses: ['addr1'],
                 txs: ['encodedTxn'],
                 approve: expect.any(Function),
                 reject: expect.any(Function),
@@ -253,7 +294,7 @@ describe('useWalletConnectHandlers', () => {
             // Test success callback
             const { approve } =
                 mockAddSignRequest.mock.calls[
-                    mockAddSignRequest.mock.calls.length - 1
+                mockAddSignRequest.mock.calls.length - 1
                 ][0]
 
             // Mock PeraSignedTransaction
@@ -272,11 +313,9 @@ describe('useWalletConnectHandlers', () => {
                 approve(signedTxs)
             })
 
-            expect(connector.sendTransaction).toHaveBeenCalledWith({
-                from: 'TEST_ADDRESS',
-                data: Buffer.from(new Uint8Array([1, 2, 3, 4])).toString(
-                    'base64',
-                ),
+            expect(connector.approveRequest).toHaveBeenCalledWith({
+                id: 1,
+                result: [[new Uint8Array([1, 2, 3, 4])]],
             })
         })
 
@@ -286,9 +325,12 @@ describe('useWalletConnectHandlers', () => {
                 clientId: 'test-client-id',
                 accounts: ['addr1'],
                 sendTransaction: vi.fn(),
+                approveRequest: vi.fn(),
+                rejectRequest: vi.fn(),
             }
             const payload = {
                 params: [{ message: 'Sign tx', txn: 'encodedTxn' }],
+                id: 1,
             }
 
             result.current.handleSignTransaction(
@@ -299,7 +341,7 @@ describe('useWalletConnectHandlers', () => {
 
             const { approve } =
                 mockAddSignRequest.mock.calls[
-                    mockAddSignRequest.mock.calls.length - 1
+                mockAddSignRequest.mock.calls.length - 1
                 ][0]
 
             const signedTxs = [
@@ -326,11 +368,9 @@ describe('useWalletConnectHandlers', () => {
             // Since our mock encodeAlgorandAddress always returns 'TEST_ADDRESS', verification is limited.
             // But we can check if it didn't crash.
 
-            expect(connector.sendTransaction).toHaveBeenCalledWith({
-                from: 'TEST_ADDRESS',
-                data: Buffer.from(new Uint8Array([1, 2, 3, 4])).toString(
-                    'base64',
-                ),
+            expect(connector.approveRequest).toHaveBeenCalledWith({
+                id: 1,
+                result: [[new Uint8Array([1, 2, 3, 4])]],
             })
         })
 
@@ -340,9 +380,12 @@ describe('useWalletConnectHandlers', () => {
                 clientId: 'test-client-id',
                 accounts: ['addr1'],
                 sendTransaction: vi.fn(),
+                approveRequest: vi.fn(),
+                rejectRequest: vi.fn(),
             }
             const payload = {
                 params: [{ message: 'Sign tx', txn: 'encodedTxn' }],
+                id: 1,
             }
 
             result.current.handleSignTransaction(
@@ -353,14 +396,17 @@ describe('useWalletConnectHandlers', () => {
 
             const { approve } =
                 mockAddSignRequest.mock.calls[
-                    mockAddSignRequest.mock.calls.length - 1
+                mockAddSignRequest.mock.calls.length - 1
                 ][0]
 
             act(() => {
                 approve([])
             })
 
-            expect(connector.sendTransaction).not.toHaveBeenCalled()
+            expect(connector.approveRequest).toHaveBeenCalledWith({
+                id: 1,
+                result: [],
+            })
         })
 
         it('should handle handleSignTransaction error', async () => {
@@ -381,7 +427,7 @@ describe('useWalletConnectHandlers', () => {
 
             const { error } =
                 mockAddSignRequest.mock.calls[
-                    mockAddSignRequest.mock.calls.length - 1
+                mockAddSignRequest.mock.calls.length - 1
                 ][0]
 
             await expect(error('addr1', 'Rejected')).rejects.toThrow(
@@ -390,8 +436,8 @@ describe('useWalletConnectHandlers', () => {
         })
 
         it('should throw WalletConnectInvalidSessionError if session not found', () => {
-            ;(useWalletConnectStore as any).mockImplementation(
-                (selector: any) => selector({ walletConnectSessions: [] }),
+            ; (useWalletConnectStore as any).mockImplementation(
+                (selector: any) => selector({ walletConnectConnections: [] }),
             )
             const { result } = renderHook(() => useWalletConnectHandlers())
             const connector = { clientId: 'test-client-id' }

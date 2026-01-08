@@ -25,13 +25,14 @@ import { WORDLIST } from '../wordlist'
 
 const api = new XHDWalletAPI()
 
-const HD_PURPOSE = 44
-const HD_COIN_TYPE = 283
+const HD_HARDEN_MASK = 0x80_00_00_00
+const harden = (num: number): number => HD_HARDEN_MASK + num
+const HD_PURPOSE = harden(44)
+const HD_COIN_TYPE = harden(283)
 const HD_MNEMONIC_LENGTH = 256
 
-const createPath = (account: number, keyIndex: number) => {
-    //m / purpose (bip44) / coin type (algorand) / account / change / address index
-    return [HD_PURPOSE, HD_COIN_TYPE, account, 0, keyIndex]
+function createAddressPath(account: number, keyIndex: number): number[] {
+    return [HD_PURPOSE, HD_COIN_TYPE, harden(account), 0, keyIndex]
 }
 
 const generateMasterKey = async (mnemonic?: string) => {
@@ -62,7 +63,7 @@ const deriveKey = async ({
     derivationType?: BIP32DerivationType
 }) => {
     const rootKey = fromSeed(seed)
-    const path = createPath(account, keyIndex)
+    const path = createAddressPath(account, keyIndex)
     const key = await api.deriveKey(rootKey, path, true, derivationType)
     const address = await api.keyGen(
         rootKey,
@@ -93,19 +94,6 @@ const signTransaction = (
     )
 }
 
-const rawSign = (
-    seed: Buffer,
-    hdWalletDetails: HDWalletDetails,
-    data: Uint8Array,
-) => {
-    const rootKey = fromSeed(seed)
-    const bip44Path = createPath(
-        hdWalletDetails.account,
-        hdWalletDetails.keyIndex,
-    )
-    return api.rawSign(rootKey, bip44Path, data, BIP32DerivationTypes.Peikert)
-}
-
 const signData = (
     seed: Buffer,
     hdWalletDetails: HDWalletDetails,
@@ -127,29 +115,10 @@ const signData = (
     )
 }
 
-const verifySignature = async (
-    seed: Buffer,
-    hdWalletDetails: HDWalletDetails,
-    data: Uint8Array,
-    signature: Uint8Array,
-) => {
-    const rootKey = fromSeed(seed)
-    const address = await api.keyGen(
-        rootKey,
-        KeyContexts.Address,
-        hdWalletDetails.account,
-        hdWalletDetails.keyIndex,
-        BIP32DerivationTypes.Peikert,
-    )
-    return api.verifyWithPublicKey(signature, data, address)
-}
-
 export const useHDWallet = () => ({
     generateMasterKey,
     entropyToMnemonic,
     deriveKey,
     signTransaction,
-    rawSign,
     signData,
-    verifySignature,
 })

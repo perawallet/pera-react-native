@@ -27,7 +27,7 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
     test('returns account name when present', () => {
         const acc: WalletAccount = {
             id: '1',
-            type: 'standard',
+            type: 'hdWallet',
             address: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
             name: 'Named',
             canSign: true,
@@ -38,7 +38,7 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
     test('returns "No Address Found" when address is missing or empty', () => {
         const acc: WalletAccount = {
             id: '2',
-            type: 'standard',
+            type: 'hdWallet',
             address: '',
             canSign: false,
         }
@@ -48,7 +48,7 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
     test('returns address unchanged when length <= 11', () => {
         const acc1: WalletAccount = {
             id: '3',
-            type: 'standard',
+            type: 'hdWallet',
             address: 'SHORT',
             canSign: true,
         }
@@ -56,7 +56,7 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
 
         const acc2: WalletAccount = {
             id: '4',
-            type: 'standard',
+            type: 'hdWallet',
             address: 'ABCDEFGHIJK',
             canSign: true,
         }
@@ -66,7 +66,7 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
     test('truncates long addresses to 5 prefix and suffix characters', () => {
         const acc1: WalletAccount = {
             id: '5',
-            type: 'standard',
+            type: 'hdWallet',
             address: 'ABCDEFGHIJKL',
             canSign: true,
         }
@@ -74,7 +74,7 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
 
         const acc2: WalletAccount = {
             id: '6',
-            type: 'standard',
+            type: 'hdWallet',
             address: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
             canSign: true,
         }
@@ -89,19 +89,19 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
 describe('services/accounts/utils - account type checks', () => {
     const baseAccount: WalletAccount = {
         id: '1',
-        type: 'standard',
+        type: 'hdWallet',
         address: 'ADDR1',
         canSign: true,
     }
 
-    test('isHDWalletAccount returns true if hdWalletDetails is present', () => {
-        expect(isHDWalletAccount(baseAccount)).toBe(false)
+    test('isHDWalletAccount returns true if type is hdWallet', () => {
+        expect(isHDWalletAccount(baseAccount)).toBe(true)
         expect(
             isHDWalletAccount({
                 ...baseAccount,
-                hdWalletDetails: {} as any,
+                type: 'algo25',
             }),
-        ).toBe(true)
+        ).toBe(false)
     })
 
     test('isLedgerAccount returns true if type is hardware and manufacturer is ledger', () => {
@@ -132,12 +132,18 @@ describe('services/accounts/utils - account type checks', () => {
         ).toBe(true)
     })
 
-    test('isAlgo25Account returns true if type is standard and no hdWalletDetails', () => {
-        expect(isAlgo25Account(baseAccount)).toBe(true)
+    test('isAlgo25Account returns true if type is algo25', () => {
+        expect(isAlgo25Account(baseAccount)).toBe(false)
         expect(
             isAlgo25Account({
                 ...baseAccount,
-                hdWalletDetails: {} as any,
+                type: 'algo25',
+            }),
+        ).toBe(true)
+        expect(
+            isAlgo25Account({
+                ...baseAccount,
+                type: 'hdWallet',
             }),
         ).toBe(false)
         expect(
