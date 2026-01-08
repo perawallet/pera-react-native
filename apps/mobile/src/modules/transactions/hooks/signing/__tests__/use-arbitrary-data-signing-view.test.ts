@@ -1,5 +1,5 @@
 /*
- Copyright 2025 Pera Wallet, LDA
+ Copyright 2022-2025 Pera Wallet, LDA
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -58,14 +58,14 @@ describe('useArbitraryDataSigningView', () => {
 
     beforeEach(() => {
         jest.clearAllMocks()
-            ; (useToast as jest.Mock).mockReturnValue({ showToast: mockShowToast })
-            ; (useSigningRequest as jest.Mock).mockReturnValue({
-                removeSignRequest: mockRemoveSignRequest,
-            })
-            ; (useAllAccounts as jest.Mock).mockReturnValue(mockAccounts)
-            ; (useArbitraryDataSigner as jest.Mock).mockReturnValue({
-                signArbitraryData: mockSignArbitraryData,
-            })
+        ;(useToast as jest.Mock).mockReturnValue({ showToast: mockShowToast })
+        ;(useSigningRequest as jest.Mock).mockReturnValue({
+            removeSignRequest: mockRemoveSignRequest,
+        })
+        ;(useAllAccounts as jest.Mock).mockReturnValue(mockAccounts)
+        ;(useArbitraryDataSigner as jest.Mock).mockReturnValue({
+            signArbitraryData: mockSignArbitraryData,
+        })
     })
 
     describe('approveRequest', () => {
@@ -87,7 +87,7 @@ describe('useArbitraryDataSigningView', () => {
         })
 
         it('should fail if account is not found', async () => {
-            ; (useAllAccounts as jest.Mock).mockReturnValue([])
+            ;(useAllAccounts as jest.Mock).mockReturnValue([])
             const { result } = renderHook(() =>
                 useArbitraryDataSigningView(baseRequest),
             )

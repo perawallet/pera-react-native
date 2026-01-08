@@ -11,7 +11,11 @@
  */
 
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import { AccountTypes, HardwareWalletAccount, type WalletAccount } from './models'
+import {
+    AccountTypes,
+    HardwareWalletAccount,
+    type WalletAccount,
+} from './models'
 
 export const getAccountDisplayName = (account: WalletAccount | null) => {
     if (!account) return 'No Account'
@@ -25,8 +29,11 @@ export const isHDWalletAccount = (account: WalletAccount) => {
 }
 
 export const isLedgerAccount = (account: WalletAccount) => {
-    return account.type === AccountTypes.hardware
-        && (account as HardwareWalletAccount).hardwareDetails?.manufacturer === 'ledger'
+    return (
+        account.type === AccountTypes.hardware &&
+        (account as HardwareWalletAccount).hardwareDetails?.manufacturer ===
+            'ledger'
+    )
 }
 
 export const isRekeyedAccount = (account: WalletAccount) => {

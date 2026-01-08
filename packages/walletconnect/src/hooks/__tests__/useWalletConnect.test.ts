@@ -75,19 +75,19 @@ describe('useWalletConnect', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockConnections = []
-            ; (useWalletConnectStore as any).mockImplementation((selector: any) =>
-                selector({
-                    walletConnectConnections: mockConnections,
-                    setWalletConnectConnections: mockSetConnections,
-                }),
-            )
-            ; (useWalletConnectSessionRequests as any).mockReturnValue({
-                addSessionRequest: mockAddSessionRequest,
-            })
-            ; (useWalletConnectHandlers as any).mockReturnValue({
-                handleSignData: mockHandleSignData,
-                handleSignTransaction: mockHandleSignTransaction,
-            })
+        ;(useWalletConnectStore as any).mockImplementation((selector: any) =>
+            selector({
+                walletConnectConnections: mockConnections,
+                setWalletConnectConnections: mockSetConnections,
+            }),
+        )
+        ;(useWalletConnectSessionRequests as any).mockReturnValue({
+            addSessionRequest: mockAddSessionRequest,
+        })
+        ;(useWalletConnectHandlers as any).mockReturnValue({
+            handleSignData: mockHandleSignData,
+            handleSignTransaction: mockHandleSignTransaction,
+        })
     })
 
     afterEach(() => {
@@ -218,21 +218,21 @@ describe('useWalletConnect', () => {
                 ],
             }
 
-                // We need to spy on approveSession of the *hook* or check if connector.approveSession is called.
-                // But approveSession in hook logic calls `approveSession(clientId, ...)`
-                // Wait, line 62 in useWalletConnect.ts calls `approveSession(...)` (the hook function).
-                // It calls the internal `approveSession` function defined in the hook.
-                // Which then calls `connector.approveSession`.
+            // We need to spy on approveSession of the *hook* or check if connector.approveSession is called.
+            // But approveSession in hook logic calls `approveSession(clientId, ...)`
+            // Wait, line 62 in useWalletConnect.ts calls `approveSession(...)` (the hook function).
+            // It calls the internal `approveSession` function defined in the hook.
+            // Which then calls `connector.approveSession`.
 
-                // However, `approveSession` requires the session to be in the store to find it (lines 140-142).
-                // So we must put the session in the store.
-                ; (useWalletConnectStore as any).mockImplementation(
-                    (selector: any) =>
-                        selector({
-                            walletConnectConnections: [connection],
-                            setWalletConnectConnections: mockSetConnections,
-                        }),
-                )
+            // However, `approveSession` requires the session to be in the store to find it (lines 140-142).
+            // So we must put the session in the store.
+            ;(useWalletConnectStore as any).mockImplementation(
+                (selector: any) =>
+                    selector({
+                        walletConnectConnections: [connection],
+                        setWalletConnectConnections: mockSetConnections,
+                    }),
+            )
 
             act(() => {
                 sessionRequestCallback(null, payload)
@@ -305,14 +305,14 @@ describe('useWalletConnect', () => {
             const { result } = renderHook(() => useWalletConnect())
             const connection = { clientId: 'client-disconnect' } as any
             mockConnections.push(connection)
-                // We need mockSessions to be returned by store.
-                ; (useWalletConnectStore as any).mockImplementation(
-                    (selector: any) =>
-                        selector({
-                            walletConnectConnections: [connection],
-                            setWalletConnectConnections: mockSetConnections,
-                        }),
-                )
+            // We need mockSessions to be returned by store.
+            ;(useWalletConnectStore as any).mockImplementation(
+                (selector: any) =>
+                    selector({
+                        walletConnectConnections: [connection],
+                        setWalletConnectConnections: mockSetConnections,
+                    }),
+            )
 
             await act(async () => {
                 await result.current.connect({ connection })
@@ -342,14 +342,14 @@ describe('useWalletConnect', () => {
         it('should kill session and remove from store', async () => {
             const { result } = renderHook(() => useWalletConnect())
             const connection = { clientId: 'client-kill' } as any
-                // Populate store so it can be filtered
-                ; (useWalletConnectStore as any).mockImplementation(
-                    (selector: any) =>
-                        selector({
-                            walletConnectConnections: [connection],
-                            setWalletConnectConnections: mockSetConnections,
-                        }),
-                )
+            // Populate store so it can be filtered
+            ;(useWalletConnectStore as any).mockImplementation(
+                (selector: any) =>
+                    selector({
+                        walletConnectConnections: [connection],
+                        setWalletConnectConnections: mockSetConnections,
+                    }),
+            )
 
             // First connect to populate 'connectors' map
             await act(async () => {
@@ -379,13 +379,13 @@ describe('useWalletConnect', () => {
         it('should approve session and update store', async () => {
             const { result } = renderHook(() => useWalletConnect())
             const connection = { clientId: 'client-approve' } as any
-                ; (useWalletConnectStore as any).mockImplementation(
-                    (selector: any) =>
-                        selector({
-                            walletConnectConnections: [connection],
-                            setWalletConnectConnections: mockSetConnections,
-                        }),
-                )
+            ;(useWalletConnectStore as any).mockImplementation(
+                (selector: any) =>
+                    selector({
+                        walletConnectConnections: [connection],
+                        setWalletConnectConnections: mockSetConnections,
+                    }),
+            )
 
             // Connect first
             await act(async () => {
@@ -414,7 +414,7 @@ describe('useWalletConnect', () => {
             // The logic appends the new session info.
             const updatedConnections =
                 mockSetConnections.mock.calls[
-                mockSetConnections.mock.calls.length - 1
+                    mockSetConnections.mock.calls.length - 1
                 ][0]
             expect(updatedConnections).toHaveLength(1)
             expect(updatedConnections[0].clientId).toBe('client-approve')
@@ -427,13 +427,13 @@ describe('useWalletConnect', () => {
         it('should reject session and update store', async () => {
             const { result } = renderHook(() => useWalletConnect())
             const connection = { clientId: 'client-reject' } as any
-                ; (useWalletConnectStore as any).mockImplementation(
-                    (selector: any) =>
-                        selector({
-                            walletConnectConnections: [connection],
-                            setWalletConnectConnections: mockSetConnections,
-                        }),
-                )
+            ;(useWalletConnectStore as any).mockImplementation(
+                (selector: any) =>
+                    selector({
+                        walletConnectConnections: [connection],
+                        setWalletConnectConnections: mockSetConnections,
+                    }),
+            )
 
             // Connect first
             await act(async () => {
@@ -450,7 +450,7 @@ describe('useWalletConnect', () => {
             expect(mockSetConnections).toHaveBeenCalled()
             const updatedConnections =
                 mockSetConnections.mock.calls[
-                mockSetConnections.mock.calls.length - 1
+                    mockSetConnections.mock.calls.length - 1
                 ][0]
             expect(updatedConnections).toHaveLength(0)
         })
@@ -462,14 +462,14 @@ describe('useWalletConnect', () => {
             const connection2 = { clientId: 'client2' } as any
             const connections = [connection1, connection2]
 
-                // Re-mock store implementation to return these sessions
-                ; (useWalletConnectStore as any).mockImplementation(
-                    (selector: any) =>
-                        selector({
-                            walletConnectConnections: connections,
-                            setWalletConnectConnections: mockSetConnections,
-                        }),
-                )
+            // Re-mock store implementation to return these sessions
+            ;(useWalletConnectStore as any).mockImplementation(
+                (selector: any) =>
+                    selector({
+                        walletConnectConnections: connections,
+                        setWalletConnectConnections: mockSetConnections,
+                    }),
+            )
 
             const { result } = renderHook(() => useWalletConnect())
 
@@ -489,13 +489,13 @@ describe('useWalletConnect', () => {
             const connection2 = { clientId: 'client2' } as any
             const connections = [connection1, connection2]
 
-                ; (useWalletConnectStore as any).mockImplementation(
-                    (selector: any) =>
-                        selector({
-                            walletConnectConnections: connections,
-                            setWalletConnectConnections: mockSetConnections,
-                        }),
-                )
+            ;(useWalletConnectStore as any).mockImplementation(
+                (selector: any) =>
+                    selector({
+                        walletConnectConnections: connections,
+                        setWalletConnectConnections: mockSetConnections,
+                    }),
+            )
 
             const { result } = renderHook(() => useWalletConnect())
 
@@ -525,13 +525,13 @@ describe('useWalletConnect', () => {
         it('should ignore sessions without clientId', async () => {
             // Sessions with no clientId
             const connections = [{ clientId: undefined }, { clientId: null }]
-                ; (useWalletConnectStore as any).mockImplementation(
-                    (selector: any) =>
-                        selector({
-                            walletConnectConnections: connections,
-                            setWalletConnectConnections: mockSetConnections,
-                        }),
-                )
+            ;(useWalletConnectStore as any).mockImplementation(
+                (selector: any) =>
+                    selector({
+                        walletConnectConnections: connections,
+                        setWalletConnectConnections: mockSetConnections,
+                    }),
+            )
 
             const { result } = renderHook(() => useWalletConnect())
 

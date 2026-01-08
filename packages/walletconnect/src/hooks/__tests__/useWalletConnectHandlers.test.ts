@@ -82,15 +82,15 @@ describe('useWalletConnectHandlers', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-            ; (useSigningRequest as any).mockReturnValue({
-                addSignRequest: mockAddSignRequest,
-            })
-            ; (useNetwork as any).mockReturnValue({
-                network: Networks.mainnet,
-            })
-            ; (useWalletConnectStore as any).mockImplementation((selector: any) =>
-                selector({ walletConnectConnections: mockSessions }),
-            )
+        ;(useSigningRequest as any).mockReturnValue({
+            addSignRequest: mockAddSignRequest,
+        })
+        ;(useNetwork as any).mockReturnValue({
+            network: Networks.mainnet,
+        })
+        ;(useWalletConnectStore as any).mockImplementation((selector: any) =>
+            selector({ walletConnectConnections: mockSessions }),
+        )
     })
 
     describe('handleSignData', () => {
@@ -171,7 +171,7 @@ describe('useWalletConnectHandlers', () => {
 
             const { error } =
                 mockAddSignRequest.mock.calls[
-                mockAddSignRequest.mock.calls.length - 1
+                    mockAddSignRequest.mock.calls.length - 1
                 ][0]
 
             await expect(error('Rejected')).rejects.toThrow(
@@ -190,7 +190,7 @@ describe('useWalletConnectHandlers', () => {
         })
 
         it('should throw WalletConnectInvalidSessionError if session not found', () => {
-            ; (useWalletConnectStore as any).mockImplementation(
+            ;(useWalletConnectStore as any).mockImplementation(
                 (selector: any) => selector({ walletConnectConnections: [] }),
             )
             const { result } = renderHook(() => useWalletConnectHandlers())
@@ -211,12 +211,12 @@ describe('useWalletConnectHandlers', () => {
                     },
                 },
             ]
-                ; (useWalletConnectStore as any).mockImplementation(
-                    (selector: any) =>
-                        selector({
-                            walletConnectConnections: mockSessionsMismatch,
-                        }),
-                )
+            ;(useWalletConnectStore as any).mockImplementation(
+                (selector: any) =>
+                    selector({
+                        walletConnectConnections: mockSessionsMismatch,
+                    }),
+            )
             const { result } = renderHook(() => useWalletConnectHandlers())
             const connector = { clientId: 'test-client-id' }
 
@@ -294,7 +294,7 @@ describe('useWalletConnectHandlers', () => {
             // Test success callback
             const { approve } =
                 mockAddSignRequest.mock.calls[
-                mockAddSignRequest.mock.calls.length - 1
+                    mockAddSignRequest.mock.calls.length - 1
                 ][0]
 
             // Mock PeraSignedTransaction
@@ -341,7 +341,7 @@ describe('useWalletConnectHandlers', () => {
 
             const { approve } =
                 mockAddSignRequest.mock.calls[
-                mockAddSignRequest.mock.calls.length - 1
+                    mockAddSignRequest.mock.calls.length - 1
                 ][0]
 
             const signedTxs = [
@@ -396,7 +396,7 @@ describe('useWalletConnectHandlers', () => {
 
             const { approve } =
                 mockAddSignRequest.mock.calls[
-                mockAddSignRequest.mock.calls.length - 1
+                    mockAddSignRequest.mock.calls.length - 1
                 ][0]
 
             act(() => {
@@ -427,7 +427,7 @@ describe('useWalletConnectHandlers', () => {
 
             const { error } =
                 mockAddSignRequest.mock.calls[
-                mockAddSignRequest.mock.calls.length - 1
+                    mockAddSignRequest.mock.calls.length - 1
                 ][0]
 
             await expect(error('addr1', 'Rejected')).rejects.toThrow(
@@ -436,7 +436,7 @@ describe('useWalletConnectHandlers', () => {
         })
 
         it('should throw WalletConnectInvalidSessionError if session not found', () => {
-            ; (useWalletConnectStore as any).mockImplementation(
+            ;(useWalletConnectStore as any).mockImplementation(
                 (selector: any) => selector({ walletConnectConnections: [] }),
             )
             const { result } = renderHook(() => useWalletConnectHandlers())

@@ -63,10 +63,12 @@ describe('webview/utils - getAccountType', () => {
     })
 
     it('returns Algo25 for standard accounts without HD details', () => {
-        expect(getAccountType({
-            ...baseAccount,
-            type: 'algo25'
-        })).toBe('Algo25')
+        expect(
+            getAccountType({
+                ...baseAccount,
+                type: 'algo25',
+            }),
+        ).toBe('Algo25')
     })
 
     it('returns NoAuth for watch accounts', () => {

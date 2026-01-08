@@ -132,8 +132,8 @@ describe('usePeraWebviewInterface', () => {
 
     beforeEach(() => {
         jest.clearAllMocks()
-            ; (Linking.canOpenURL as jest.Mock).mockResolvedValue(true)
-            ; (Linking.openURL as jest.Mock).mockResolvedValue(true)
+        ;(Linking.canOpenURL as jest.Mock).mockResolvedValue(true)
+        ;(Linking.openURL as jest.Mock).mockResolvedValue(true)
     })
 
     it('should handle openSystemBrowser action', async () => {
@@ -158,7 +158,7 @@ describe('usePeraWebviewInterface', () => {
     })
 
     it('should handle openSystemBrowser action failure', async () => {
-        ; (Linking.canOpenURL as jest.Mock).mockResolvedValue(false)
+        ;(Linking.canOpenURL as jest.Mock).mockResolvedValue(false)
         const { result } = renderHook(() =>
             usePeraWebviewInterface(mockWebview, true),
         )
@@ -461,7 +461,7 @@ describe('usePeraWebviewInterface', () => {
 
         const signRequest =
             mockAddSignRequest.mock.calls[
-            mockAddSignRequest.mock.calls.length - 1
+                mockAddSignRequest.mock.calls.length - 1
             ][0]
 
         await act(async () => {
@@ -509,7 +509,7 @@ describe('usePeraWebviewInterface', () => {
         // Test success
         const signRequest =
             mockAddSignRequest.mock.calls[
-            mockAddSignRequest.mock.calls.length - 1
+                mockAddSignRequest.mock.calls.length - 1
             ][0]
         const signature = new Uint8Array([4, 5, 6])
 
@@ -545,7 +545,7 @@ describe('usePeraWebviewInterface', () => {
 
         const signRequest =
             mockAddSignRequest.mock.calls[
-            mockAddSignRequest.mock.calls.length - 1
+                mockAddSignRequest.mock.calls.length - 1
             ][0]
 
         await act(async () => {
