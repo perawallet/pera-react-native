@@ -16,8 +16,12 @@ import {
     useAllAccounts,
     useArbitraryDataSigner,
 } from '@perawallet/wallet-core-accounts'
-import { useSigningRequest } from '@perawallet/wallet-core-blockchain'
+import {
+    ArbitraryDataSignRequest,
+    useSigningRequest,
+} from '@perawallet/wallet-core-blockchain'
 import useToast from '@hooks/toast'
+import { AlgorandChainId } from '@perawallet/wallet-core-walletconnect'
 
 jest.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: jest.fn(),
@@ -48,9 +52,12 @@ describe('useArbitraryDataSigningView', () => {
     const mockAccount = { address: 'ADDR1', name: 'Account 1' }
     const mockAccounts = [mockAccount]
 
-    const baseRequest: any = {
-        transport: 'p2p',
-        data: [{ signer: 'ADDR1', data: 'data1' }],
+    const baseRequest: ArbitraryDataSignRequest = {
+        type: 'arbitrary-data',
+        transport: 'callback',
+        data: [
+            { signer: 'ADDR1', data: 'data1', chainId: AlgorandChainId.all },
+        ],
         approve: mockApprove,
         reject: mockReject,
         error: mockRequestError,
@@ -70,7 +77,10 @@ describe('useArbitraryDataSigningView', () => {
 
     describe('approveRequest', () => {
         it('should show error and remove request validation fails (algod transport)', async () => {
-            const request = { ...baseRequest, transport: 'algod' }
+            const request = {
+                ...baseRequest,
+                transport: 'algod' as 'algod' | 'callback',
+            }
             const { result } = renderHook(() =>
                 useArbitraryDataSigningView(request),
             )
@@ -157,7 +167,10 @@ describe('useArbitraryDataSigningView', () => {
 
     describe('rejectRequest', () => {
         it('should remove request and call reject if transport is callback', () => {
-            const request = { ...baseRequest, transport: 'callback' }
+            const request = {
+                ...baseRequest,
+                transport: 'callback' as 'algod' | 'callback',
+            }
             const { result } = renderHook(() =>
                 useArbitraryDataSigningView(request),
             )
@@ -171,7 +184,10 @@ describe('useArbitraryDataSigningView', () => {
         })
 
         it('should remove request but NOT call reject if transport is not callback', () => {
-            const request = { ...baseRequest, transport: 'p2p' }
+            const request = {
+                ...baseRequest,
+                transport: 'algod' as 'algod' | 'callback',
+            }
             const { result } = renderHook(() =>
                 useArbitraryDataSigningView(request),
             )
