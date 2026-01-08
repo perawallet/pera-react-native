@@ -131,6 +131,12 @@
         "connect": {
             "label": "Connect"
         },
+        "confirm": {
+            "label": "Confirm"
+        },
+        "confirm_all": {
+            "label": "Confirm All"
+        },
         "copied_to_clipboard": {
             "title": "Copied to clipboard",
             "body": ""
@@ -418,11 +424,12 @@
             "body": "Data Signing Request",
             "details_title": "Arbitrary Signing Details",
             "show_details": "Show Details",
-            "error_title": "Invalid Request",
             "algod_not_valid": "The request has an invalid signing recipient.",
             "account_not_found": "The requested signing account was not found.",
             "on_behalf_of": "Signing On Behalf Of",
-            "signature_not_found": "An error occurred during the signing process."
+            "signature_not_found": "An error occurred during the signing process.",
+            "success_title": "Request Approved",
+            "success_body": "The data has been signed."
         },
         "arbitrary_data_details": {
             "title": "{{name}} is asking you to sign some data.",
@@ -439,14 +446,13 @@
             "you_receive": "YOU WILL RECEIVE",
             "you_spend": "YOU WILL SPEND"
         },
-        "view": {
+        "transaction_view": {
             "invalid_title": "Invalid Transaction",
-            "cancel": "Cancel",
-            "confirm": "Confirm",
-            "confirm_all": "Confirm All",
             "invalid_body": "There does not appear to be a receiver for this transaction",
             "transaction_failed_title": "Signing Failed",
-            "transaction_failed_body": "The transaction failed to send. Please try again."
+            "transaction_failed_body": "The transaction failed to send. Please try again.",
+            "success_title": "Transaction signed",
+            "success_body": "The transaction has been signed and sent."
         },
         "unknown_request_type": {
             "title": "Unknown Request Type",

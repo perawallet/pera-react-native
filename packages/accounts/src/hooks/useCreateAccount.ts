@@ -30,7 +30,7 @@ export const useCreateAccount = () => {
     const { network } = useNetwork()
     const deviceID = useDeviceID(network)
     const accounts = useAccountsStore(state => state.accounts)
-    const { generateMasterKey, deriveKey } = useHDWallet()
+    const { generateMasterKey, deriveAccountAddress } = useHDWallet()
     const setAccounts = useAccountsStore(state => state.setAccounts)
     const deviceInfo = useDeviceInfoService()
     const { mutateAsync: updateDeviceOnBackend } = useUpdateDeviceMutation()
@@ -73,26 +73,12 @@ export const useCreateAccount = () => {
                 throw new NoHDWalletError(rootWalletId)
             }
 
-            const { address, privateKey } = await deriveKey({
+            const { address } = await deriveAccountAddress({
                 seed: Buffer.from(masterKeyData.seed, 'base64'),
                 account,
                 keyIndex,
                 derivationType: BIP32DerivationTypes.Peikert,
             })
-
-            const id = uuidv7()
-
-            const keyPair = {
-                id,
-                publicKey: encodeAlgorandAddress(address),
-                privateDataStorageKey: '',
-                createdAt: new Date(),
-                type: KeyType.HDWalletDerivedKey,
-            }
-
-            await saveKey(keyPair, privateKey)
-
-            privateKey.fill(0)
 
             const newAccount: WalletAccount = {
                 id: uuidv7(),
@@ -106,7 +92,6 @@ export const useCreateAccount = () => {
                     keyIndex: keyIndex,
                     derivationType: BIP32DerivationTypes.Peikert,
                 },
-                keyPairId: keyPair.id,
             }
 
             accounts.push(newAccount)

@@ -79,11 +79,19 @@ export const useWalletConnect = () => {
             }
 
             connector.on('algo_signData', (error, payload) => {
-                logger.debug('WC algo_signData received', { error, payload })
+                logger.debug('WC algo_signData received', {
+                    error,
+                    payload,
+                    clientId: connector.clientId,
+                })
                 handleSignData(connector, error, payload)
             })
             connector.on('algo_signTxn', (error, payload) => {
-                logger.debug('WC algo_signTxn received', { error, payload })
+                logger.debug('WC algo_signTxn received', {
+                    error,
+                    payload,
+                    clientId: connector.clientId,
+                })
                 handleSignTransaction(connector, error, payload)
             })
 
@@ -206,8 +214,6 @@ export const useWalletConnect = () => {
                     clientId,
                 },
             }
-
-            logger.debug('Adding session', { replacementSession })
 
             setConnections([
                 ...connections.filter(conn => conn.clientId !== clientId),

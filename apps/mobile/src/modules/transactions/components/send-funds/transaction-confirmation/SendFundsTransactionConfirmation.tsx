@@ -51,6 +51,7 @@ import {
     useSuggestedParametersQuery,
 } from '@perawallet/wallet-core-blockchain'
 import LoadingView from '@components/loading/LoadingView'
+import { bottomSheetNotifier } from '@components/bottom-sheet/PWBottomSheet'
 
 type SendFundsTransactionConfirmationProps = {
     onNext: () => void
@@ -132,11 +133,16 @@ const SendFundsTransactionConfirmation = ({
             !amount ||
             !asset
         ) {
-            showToast({
-                title: 'Invalid transaction',
-                body: 'Something appears to have gone wrong with this transaction.',
-                type: 'error',
-            })
+            showToast(
+                {
+                    title: 'Invalid transaction',
+                    body: 'Something appears to have gone wrong with this transaction.',
+                    type: 'error',
+                },
+                {
+                    notifier: bottomSheetNotifier.current ?? undefined,
+                },
+            )
             return
         }
 
@@ -164,11 +170,16 @@ const SendFundsTransactionConfirmation = ({
                 onSuccess()
             }
         } catch (error) {
-            showToast({
-                title: 'Error sending transaction',
-                body: `${error}`,
-                type: 'error',
-            })
+            showToast(
+                {
+                    title: 'Error sending transaction',
+                    body: `${error}`,
+                    type: 'error',
+                },
+                {
+                    notifier: bottomSheetNotifier.current ?? undefined,
+                },
+            )
         }
     }
 

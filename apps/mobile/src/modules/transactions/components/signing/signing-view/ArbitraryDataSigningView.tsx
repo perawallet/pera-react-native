@@ -232,7 +232,7 @@ const ArbitraryDataSigningView = ({
                         </PWView>
                         <PWView style={styles.buttonContainer}>
                             <PWButton
-                                title={t('signing.view.cancel')}
+                                title={t('common.cancel.label')}
                                 variant='secondary'
                                 onPress={rejectRequest}
                                 style={styles.button}
@@ -241,8 +241,8 @@ const ArbitraryDataSigningView = ({
                             <PWButton
                                 title={
                                     isSingleSignRequest
-                                        ? t('signing.view.confirm')
-                                        : t('signing.view.confirm_all')
+                                        ? t('common.confirm.label')
+                                        : t('common.confirm_all.label')
                                 }
                                 variant='primary'
                                 onPress={approveRequest}

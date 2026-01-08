@@ -53,6 +53,7 @@ describe('useArbitraryDataSigningView', () => {
     const mockAccounts = [mockAccount]
 
     const baseRequest: ArbitraryDataSignRequest = {
+        id: 'test-id',
         type: 'arbitrary-data',
         transport: 'callback',
         data: [

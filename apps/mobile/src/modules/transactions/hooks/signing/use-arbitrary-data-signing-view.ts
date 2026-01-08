@@ -34,13 +34,8 @@ export const useArbitraryDataSigningView = (
 
     const approveRequest = useCallback(async () => {
         if (request.transport === 'algod') {
-            showToast({
-                title: t('signing.arbitrary_data_view.error_title'),
-                body: t('signing.arbitrary_data_view.algod_not_valid'),
-                type: 'error',
-            })
             removeSignRequest(request)
-            return
+            throw new Error(t('signing.arbitrary_data_view.algod_not_valid'))
         }
 
         setIsPending(true)
@@ -71,6 +66,11 @@ export const useArbitraryDataSigningView = (
         try {
             const signatures = await Promise.all(signedData)
             await request.approve?.(signatures)
+            showToast({
+                title: t('signing.arbitrary_data_view.success_title'),
+                body: t('signing.arbitrary_data_view.success_body'),
+                type: 'success',
+            })
         } catch (error) {
             await request.error?.(`${error}`)
         } finally {

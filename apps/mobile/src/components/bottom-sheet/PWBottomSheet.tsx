@@ -12,10 +12,12 @@
 
 import { BottomSheet, BottomSheetProps } from '@rneui/themed'
 import PWView from '../view/PWView'
-import { PropsWithChildren } from 'react'
+import { createRef, PropsWithChildren } from 'react'
 import { useStyles } from './styles'
 import { StyleProp, ViewStyle } from 'react-native'
-import { NotifierWrapper } from 'react-native-notifier'
+import { NotifierRoot, NotifierWrapper } from 'react-native-notifier'
+
+export const bottomSheetNotifier = createRef<NotifierRoot | null>()
 
 export type PWBottomSheetProps = {
     innerContainerStyle?: StyleProp<ViewStyle>
@@ -35,7 +37,10 @@ const PWBottomSheet = ({
             {...rest}
             scrollViewProps={{ scrollEnabled: scrollEnabled ?? true }}
         >
-            <NotifierWrapper>
+            <NotifierWrapper
+                omitGlobalMethodsHookup
+                ref={bottomSheetNotifier}
+            >
                 <PWView style={[style.defaultStyle, innerContainerStyle]}>
                     {children}
                 </PWView>

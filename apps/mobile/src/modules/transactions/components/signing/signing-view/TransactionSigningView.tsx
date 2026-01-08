@@ -32,6 +32,7 @@ import useToast from '@hooks/toast'
 import PWButton from '@components/button/PWButton'
 import { useTransactionSigner } from '@perawallet/wallet-core-accounts'
 import { config } from '@perawallet/wallet-core-config'
+import { bottomSheetNotifier } from '@components/bottom-sheet/PWBottomSheet'
 
 type TransactionSigningViewProps = {
     request: TransactionSignRequest
@@ -52,8 +53,8 @@ const SingleTransactionView = ({ request }: TransactionSigningViewProps) => {
     if (!receiver) {
         return (
             <EmptyView
-                title={t('signing.view.invalid_title')}
-                body={t('signing.view.invalid_body')}
+                title={t('signing.transaction_view.invalid_title')}
+                body={t('signing.transaction_view.invalid_body')}
             />
         )
     }
@@ -142,18 +143,32 @@ const TransactionSigningView = ({ request }: TransactionSigningViewProps) => {
                     )
                 })
             } else {
-                request.approve?.(signedTxs)
+                await request.approve?.(signedTxs)
+                showToast({
+                    title: t('signing.transaction_view.success_title'),
+                    body: t('signing.transaction_view.success_body'),
+                    type: 'success',
+                })
             }
             removeSignRequest(request)
         } catch (error) {
             if (request.transport === 'algod') {
-                showToast({
-                    type: 'error',
-                    title: t('signing.view.transaction_failed_title'),
-                    body: config.debugEnabled
-                        ? `${error}`
-                        : t('signing.view.transaction_failed_body'),
-                })
+                showToast(
+                    {
+                        type: 'error',
+                        title: t(
+                            'signing.transaction_view.transaction_failed_title',
+                        ),
+                        body: config.debugEnabled
+                            ? `${error}`
+                            : t(
+                                  'signing.transaction_view.transaction_failed_body',
+                              ),
+                    },
+                    {
+                        notifier: bottomSheetNotifier.current ?? undefined,
+                    },
+                )
             } else {
                 request.error?.(`${error}`)
             }
@@ -176,7 +191,7 @@ const TransactionSigningView = ({ request }: TransactionSigningViewProps) => {
             )}
             <PWView style={styles.buttonContainer}>
                 <PWButton
-                    title={t('signing.view.cancel')}
+                    title={t('common.cancel.label')}
                     variant='secondary'
                     onPress={rejectRequest}
                     style={styles.button}
@@ -184,8 +199,8 @@ const TransactionSigningView = ({ request }: TransactionSigningViewProps) => {
                 <PWButton
                     title={
                         isMultipleTransactions
-                            ? t('signing.view.confirm_all')
-                            : t('signing.view.confirm')
+                            ? t('common.confirm_all.label')
+                            : t('common.confirm.label')
                     }
                     variant='primary'
                     onPress={signAndSend}

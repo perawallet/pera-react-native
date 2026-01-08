@@ -25,15 +25,7 @@ import { WORDLIST } from '../wordlist'
 
 const api = new XHDWalletAPI()
 
-const HD_HARDEN_MASK = 0x80_00_00_00
-const harden = (num: number): number => HD_HARDEN_MASK + num
-const HD_PURPOSE = harden(44)
-const HD_COIN_TYPE = harden(283)
 const HD_MNEMONIC_LENGTH = 256
-
-function createAddressPath(account: number, keyIndex: number): number[] {
-    return [HD_PURPOSE, HD_COIN_TYPE, harden(account), 0, keyIndex]
-}
 
 const generateMasterKey = async (mnemonic?: string) => {
     const storableMnemonic =
@@ -51,7 +43,7 @@ const entropyToMnemonic = (entropy: Buffer) => {
     return bip39.entropyToMnemonic(entropy)
 }
 
-const deriveKey = async ({
+const deriveAccountAddress = async ({
     seed,
     account = 0,
     keyIndex = 0,
@@ -63,8 +55,6 @@ const deriveKey = async ({
     derivationType?: BIP32DerivationType
 }) => {
     const rootKey = fromSeed(seed)
-    const path = createAddressPath(account, keyIndex)
-    const key = await api.deriveKey(rootKey, path, true, derivationType)
     const address = await api.keyGen(
         rootKey,
         KeyContexts.Address,
@@ -74,7 +64,6 @@ const deriveKey = async ({
     )
     return {
         address: address,
-        privateKey: key,
     }
 }
 
@@ -118,7 +107,7 @@ const signData = (
 export const useHDWallet = () => ({
     generateMasterKey,
     entropyToMnemonic,
-    deriveKey,
+    deriveAccountAddress,
     signTransaction,
     signData,
 })
