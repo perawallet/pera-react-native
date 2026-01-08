@@ -93,6 +93,10 @@ jest.mock('@perawallet/wallet-core-walletconnect', () => ({
     useWalletConnect: () => ({ connect: jest.fn() }),
 }))
 
+jest.mock('uuid', () => ({
+    v7: jest.fn(() => 'test-id'),
+}))
+
 jest.mock('@rneui/themed', () => ({
     makeStyles: () => () => ({}),
 }))
@@ -418,7 +422,7 @@ describe('usePeraWebviewInterface', () => {
 
         expect(mockAddSignRequest).toHaveBeenCalledWith(
             expect.objectContaining({
-                id: '13',
+                id: 'test-id',
                 type: 'transactions',
                 transport: 'callback',
                 sourceMetadata: metadata,
@@ -498,7 +502,7 @@ describe('usePeraWebviewInterface', () => {
 
         expect(mockAddSignRequest).toHaveBeenCalledWith(
             expect.objectContaining({
-                id: '14',
+                id: 'test-id',
                 type: 'arbitrary-data',
                 transport: 'callback',
                 data: [{ data: 'AQID', message: 'Sign this' }],

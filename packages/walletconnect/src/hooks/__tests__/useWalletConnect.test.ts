@@ -454,6 +454,38 @@ describe('useWalletConnect', () => {
                 ][0]
             expect(updatedConnections).toHaveLength(0)
         })
+
+        it('should correctly filter only the rejected session when multiple exist', async () => {
+            const connection1 = { clientId: 'client-multi-1' } as any
+            const connection2 = { clientId: 'client-multi-2' } as any
+            const connections = [connection1, connection2]
+
+            ;(useWalletConnectStore as any).mockImplementation(
+                (selector: any) =>
+                    selector({
+                        walletConnectConnections: connections,
+                        setWalletConnectConnections: mockSetConnections,
+                    }),
+            )
+
+            const { result } = renderHook(() => useWalletConnect())
+
+            await act(async () => {
+                await result.current.connect({ connection: connection1 })
+                await result.current.connect({ connection: connection2 })
+            })
+
+            const mockConnectorInstance1 = (WalletConnect as any).mock.results[
+                (WalletConnect as any).mock.results.length - 2
+            ].value
+
+            act(() => {
+                result.current.rejectSession('client-multi-1')
+            })
+
+            expect(mockConnectorInstance1.rejectSession).toHaveBeenCalled()
+            expect(mockSetConnections).toHaveBeenCalledWith([connection2])
+        })
     })
 
     describe('reconnectAllSessions', () => {
@@ -480,6 +512,24 @@ describe('useWalletConnect', () => {
             // 2 calls from initWalletConnect (on mount). Manual reconnectAllSessions reuses existing connectors so no new calls.
             expect(WalletConnect).toHaveBeenCalledTimes(2)
             expect(mockSetConnections).toHaveBeenCalled()
+        })
+
+        it('should do nothing if connections is null', async () => {
+            ;(useWalletConnectStore as any).mockImplementation(
+                (selector: any) =>
+                    selector({
+                        walletConnectConnections: null,
+                        setWalletConnectConnections: mockSetConnections,
+                    }),
+            )
+
+            const { result } = renderHook(() => useWalletConnect())
+
+            await act(async () => {
+                result.current.reconnectAllSessions()
+            })
+
+            expect(mockSetConnections).not.toHaveBeenCalled()
         })
     })
 

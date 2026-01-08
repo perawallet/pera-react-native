@@ -141,16 +141,12 @@ describe('useImportAccount', () => {
         expect(imported.address).toBeTruthy()
         expect(imported.id).toBeTruthy()
 
-        // Verify storage calls - root key saved first, then derived key
+        // Verify storage calls - only root key saved
+        expect(dummySecure.setItem).toHaveBeenCalledTimes(1)
         expect(dummySecure.setItem).toHaveBeenNthCalledWith(
             1,
             'WALLET1',
             expect.anything(), // Root key data (JSON string as Uint8Array)
-        )
-        expect(dummySecure.setItem).toHaveBeenNthCalledWith(
-            2,
-            'KEY1',
-            expect.anything(), // Private key data (Uint8Array)
         )
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
     })
@@ -182,40 +178,6 @@ describe('useImportAccount', () => {
         })
     })
 
-    test('throws error when deriveKey fails', async () => {
-        const storage = new Map<string, any>()
-        const dummySecure = {
-            setItem: vi.fn(async (key, value) => {
-                storage.set(key, value)
-            }),
-            getItem: vi.fn(async key => storage.get(key) ?? null),
-            removeItem: vi.fn(async key => {
-                storage.delete(key)
-            }),
-            authenticate: vi.fn(async () => true),
-        }
-
-        registerTestPlatform({
-            keyValueStorage: new MemoryKeyValueStorage() as any,
-            secureStorage: dummySecure as any,
-        })
-
-        // Make deriveKey throw an error
-        apiSpies.deriveSpy.mockRejectedValueOnce(
-            new Error('Key derivation failed'),
-        )
-
-        uuidSpies.v7.mockImplementationOnce(() => 'WALLET1')
-
-        const { result } = renderHook(() => useImportAccount())
-
-        await act(async () => {
-            await expect(
-                result.current({ mnemonic: 'test mnemonic' }),
-            ).rejects.toThrow('Key derivation failed')
-        })
-    })
-
     test('throws error when secure storage setItem fails for root key', async () => {
         const dummySecure = {
             setItem: vi.fn().mockRejectedValueOnce(new Error('Storage full')), // First call for root key fails
@@ -237,45 +199,6 @@ describe('useImportAccount', () => {
             await expect(
                 result.current({ mnemonic: 'test mnemonic' }),
             ).rejects.toThrow('Storage full')
-        })
-    })
-
-    test('throws error when secure storage setItem fails for private key', async () => {
-        const storage = new Map<string, any>()
-        const dummySecure = {
-            setItem: vi
-                .fn()
-                .mockImplementationOnce(async (key, value) => {
-                    storage.set(key, value)
-                }) // First call for root key succeeds
-                .mockRejectedValueOnce(new Error('Cannot store private key')), // Second call for private key fails
-            getItem: vi.fn(async key => storage.get(key) ?? null),
-            removeItem: vi.fn(async key => {
-                storage.delete(key)
-            }),
-            authenticate: vi.fn(async () => true),
-        }
-
-        registerTestPlatform({
-            keyValueStorage: new MemoryKeyValueStorage() as any,
-            secureStorage: dummySecure as any,
-        })
-
-        const priv = new Uint8Array(32).fill(1)
-        const addr = new Uint8Array(32).fill(2)
-        apiSpies.deriveSpy.mockResolvedValueOnce(priv)
-        apiSpies.keyGenSpy.mockResolvedValueOnce(addr)
-
-        uuidSpies.v7
-            .mockImplementationOnce(() => 'WALLET1')
-            .mockImplementationOnce(() => 'KEY1')
-
-        const { result } = renderHook(() => useImportAccount())
-
-        await act(async () => {
-            await expect(
-                result.current({ mnemonic: 'test mnemonic' }),
-            ).rejects.toThrow('Cannot store private key')
         })
     })
 
@@ -345,15 +268,11 @@ describe('useImportAccount', () => {
 
         expect(imported).toBeTruthy()
         expect(imported.hdWalletDetails?.walletId).toBe('CUSTOM_WALLET')
-        // Verify storage calls - root key saved first, then derived key
+        // Verify storage calls - only root key saved
+        expect(dummySecure.setItem).toHaveBeenCalledTimes(1)
         expect(dummySecure.setItem).toHaveBeenNthCalledWith(
             1,
             'CUSTOM_WALLET',
-            expect.anything(),
-        )
-        expect(dummySecure.setItem).toHaveBeenNthCalledWith(
-            2,
-            'KEY1',
             expect.anything(),
         )
     })

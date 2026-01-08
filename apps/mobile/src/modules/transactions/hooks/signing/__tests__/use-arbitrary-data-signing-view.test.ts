@@ -87,12 +87,13 @@ describe('useArbitraryDataSigningView', () => {
             )
 
             await act(async () => {
-                await result.current.approveRequest()
+                try {
+                    await result.current.approveRequest()
+                    fail('Expected error to be thrown')
+                } catch (error) {
+                    expect(error).toBeInstanceOf(Error)
+                }
             })
-
-            expect(mockShowToast).toHaveBeenCalledWith(
-                expect.objectContaining({ type: 'error' }),
-            )
             expect(mockRemoveSignRequest).toHaveBeenCalledWith(request)
             expect(mockSignArbitraryData).not.toHaveBeenCalled()
         })
