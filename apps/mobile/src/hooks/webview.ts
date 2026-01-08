@@ -33,7 +33,8 @@ import { useLanguage } from './language'
 import {
     ArbitraryDataSignRequest,
     PeraArbitraryDataMessage,
-    PeraSignedTransaction,
+    PeraArbitraryDataSignResult,
+    PeraSignedTransactionGroup,
     PeraTransaction,
     SignRequestSource,
     TransactionSignRequest,
@@ -92,7 +93,7 @@ export const usePeraWebviewInterface = (
     const { t } = useLanguage()
     const { pushWebView: pushWebViewContext } = useContext(WebViewContext)
     const { addSignRequest } = useSigningRequest()
-    const { connectSession } = useWalletConnect()
+    const { connect } = useWalletConnect()
 
     const hadRequiredParams = useCallback(
         (requiredParams: string[], message: WebviewMessage) => {
@@ -288,9 +289,7 @@ export const usePeraWebviewInterface = (
                     transportId: message.id,
                     addresses: [address],
                     sourceMetadata: metadata,
-                    success: async (
-                        signed: (PeraSignedTransaction | null)[],
-                    ) => {
+                    approve: async (signed: PeraSignedTransactionGroup[]) => {
                         sendMessageToWebview(
                             message.id,
                             {
@@ -299,7 +298,15 @@ export const usePeraWebviewInterface = (
                             webview,
                         )
                     },
-                    error: (err: string) =>
+                    reject: async () => {
+                        sendErrorToWebview(
+                            message.id,
+                            JsonRpcErrorCode.InternalError,
+                            'User rejected',
+                            webview,
+                        )
+                    },
+                    error: async (err: string) =>
                         sendErrorToWebview(
                             message.id,
                             JsonRpcErrorCode.InternalError,
@@ -312,42 +319,42 @@ export const usePeraWebviewInterface = (
         [securedConnection, sendErrorToWebview, sendMessageToWebview, webview],
     )
 
+    //TODO handle arc60 here
     const requestDataSigning = useCallback(
         (message: WebviewMessage) => {
             requireSecure(securedConnection, () => {
-                if (
-                    !hadRequiredParams(['data', 'metadata', 'address'], message)
-                ) {
+                if (!hadRequiredParams(['data', 'metadata'], message)) {
                     return
                 }
                 const dataMessage = message.params![
                     'data'
                 ] as PeraArbitraryDataMessage
-                const userMessage = dataMessage.message
                 const metadata = message.params![
                     'metadata'
                 ] as SignRequestSource
-                const address = message.params!['address'] as string
                 addSignRequest({
                     id: message.id,
                     type: 'arbitrary-data',
                     transport: 'callback',
-                    data: dataMessage.data,
                     transportId: message.id,
-                    addresses: [address],
                     sourceMetadata: metadata,
-                    message: userMessage,
-                    success: async (address: string, signature: Uint8Array) => {
+                    data: [dataMessage],
+                    approve: async (signed: PeraArbitraryDataSignResult[]) => {
                         sendMessageToWebview(
                             message.id,
-                            {
-                                signature:
-                                    Buffer.from(signature).toString('base64'),
-                            },
+                            signed.map(s => s.signature),
                             webview,
                         )
                     },
-                    error: (err: string) =>
+                    reject: async () => {
+                        sendErrorToWebview(
+                            message.id,
+                            JsonRpcErrorCode.InternalError,
+                            'User rejected',
+                            webview,
+                        )
+                    },
+                    error: async (err: string) =>
                         sendErrorToWebview(
                             message.id,
                             JsonRpcErrorCode.InternalError,
@@ -379,14 +386,14 @@ export const usePeraWebviewInterface = (
                 return
             }
 
-            connectSession({
-                session: {
+            connect({
+                connection: {
                     uri: message.params!.uri as string,
                     autoConnect: securedConnection,
                 },
             })
         },
-        [connectSession, securedConnection, webview],
+        [connect, securedConnection, webview],
     )
 
     const onBackPressed = useCallback(() => {

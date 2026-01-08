@@ -54,7 +54,6 @@ const createBlockchainStore = (storage: KeyValueStorageService) =>
                     if (remaining.length != existing.length) {
                         set({ pendingSignRequests: remaining })
                     }
-
                     return remaining.length != existing.length
                 },
             }),

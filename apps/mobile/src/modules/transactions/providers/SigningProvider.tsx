@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import React, { PropsWithChildren } from 'react'
+import React, { PropsWithChildren, useEffect } from 'react'
 import PWBottomSheet from '@components/bottom-sheet/PWBottomSheet'
 import SigningView from '@modules/transactions/components/signing/signing-view/SigningView'
 import { useWindowDimensions } from 'react-native'
@@ -22,13 +22,23 @@ export function SigningProvider({ children }: SigningProviderProps) {
     const { pendingSignRequests } = useSigningRequest()
     const nextRequest = pendingSignRequests.at(0)
     const { height } = useWindowDimensions()
+    const [isVisible, setIsVisible] = React.useState(false)
+
+    useEffect(() => {
+        setIsVisible(false)
+        if (nextRequest) {
+            setTimeout(() => {
+                setIsVisible(true)
+            }, 0)
+        }
+    }, [pendingSignRequests])
 
     return (
         <>
             {children}
             <PWBottomSheet
                 innerContainerStyle={{ height: height - 100 }}
-                isVisible={!!nextRequest}
+                isVisible={isVisible}
             >
                 {!!nextRequest && <SigningView request={nextRequest} />}
             </PWBottomSheet>

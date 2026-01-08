@@ -14,6 +14,13 @@ import { IClientMeta, IWalletConnectSession } from '@walletconnect/types'
 
 export type AlgorandChainId = 416001 | 416002 | 416003 | 4160
 
+export const AlgorandChainId = {
+    mainnet: 416001,
+    testnet: 416002,
+    betanet: 416003,
+    all: 4160,
+}
+
 export const AlgorandChain = {
     416001: 'mainnet',
     416002: 'testnet',
@@ -30,7 +37,7 @@ export const AlgorandPermission = {
 export type AlgorandPermission =
     (typeof AlgorandPermission)[keyof typeof AlgorandPermission]
 
-export type WalletConnectSession = {
+export type WalletConnectConnection = {
     clientId?: string
     version?: number
     bridge?: string
@@ -53,10 +60,10 @@ export type WalletConnectSessionRequest = {
 }
 
 export type WalletConnectStore = {
-    walletConnectSessions: WalletConnectSession[]
+    walletConnectConnections: WalletConnectConnection[]
     sessionRequests: WalletConnectSessionRequest[]
-    setWalletConnectSessions: (
-        walletConnectSessions: WalletConnectSession[],
+    setWalletConnectConnections: (
+        walletConnectConnections: WalletConnectConnection[],
     ) => void
     setSessionRequests: (sessionRequests: WalletConnectSessionRequest[]) => void
 }

@@ -20,3 +20,6 @@ export const PERA_CLIENT_META = {
 }
 
 export const ALL_PERMISSIONS = Object.values(AlgorandPermission)
+
+export const MAX_DATA_SIGN_REQUESTS = 1000
+export const MAX_TRANSACTION_SIGN_REQUESTS = 1000

@@ -19,7 +19,7 @@ import {
 import { useAccountsStore } from '../store'
 import { useHDWallet } from './useHDWallet'
 import { v7 as uuidv7 } from 'uuid'
-import { WalletAccount } from '../models'
+import { AccountTypes, WalletAccount } from '../models'
 import { BIP32DerivationTypes } from '@perawallet/wallet-core-xhdwallet'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import { useWithKey, useKMD, KeyType } from '@perawallet/wallet-core-kmd'
@@ -97,7 +97,7 @@ export const useCreateAccount = () => {
             const newAccount: WalletAccount = {
                 id: uuidv7(),
                 address: encodeAlgorandAddress(address),
-                type: 'standard',
+                type: AccountTypes.hdWallet,
                 canSign: true,
                 hdWalletDetails: {
                     walletId: rootWalletId,

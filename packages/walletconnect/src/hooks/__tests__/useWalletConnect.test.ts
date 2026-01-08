@@ -38,14 +38,15 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 
 vi.mock('@walletconnect/client', () => {
     return {
-        default: vi.fn().mockImplementation(function () {
+        default: vi.fn().mockImplementation(function (options) {
             return {
                 on: vi.fn(),
+                off: vi.fn(),
                 killSession: vi.fn(),
                 approveSession: vi.fn(),
                 rejectSession: vi.fn(),
                 connected: false,
-                clientId: 'mock-client-id',
+                clientId: options?.clientId || 'mock-client-id',
                 session: {},
             }
         }),
@@ -65,19 +66,19 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 })
 
 describe('useWalletConnect', () => {
-    const mockSetSessions = vi.fn()
+    const mockSetConnections = vi.fn()
     const mockAddSessionRequest = vi.fn()
     const mockHandleSignData = vi.fn()
     const mockHandleSignTransaction = vi.fn()
-    let mockSessions: any[]
+    let mockConnections: any[]
 
     beforeEach(() => {
         vi.clearAllMocks()
-        mockSessions = []
+        mockConnections = []
         ;(useWalletConnectStore as any).mockImplementation((selector: any) =>
             selector({
-                walletConnectSessions: mockSessions,
-                setWalletConnectSessions: mockSetSessions,
+                walletConnectConnections: mockConnections,
+                setWalletConnectConnections: mockSetConnections,
             }),
         )
         ;(useWalletConnectSessionRequests as any).mockReturnValue({
@@ -92,29 +93,27 @@ describe('useWalletConnect', () => {
     afterEach(() => {
         // Clear static connectors map in the hook module?
         // The hook uses a module-level variable `connectors`.
-        // To properly reset it, we might need to rely on `disconnectSession` or `deleteAllSessions` logic if we assume isolate modules is not full reload.
+        // To properly reset it, we might need to rely on `disconnect` or `deleteAllSessions` logic if we assume isolate modules is not full reload.
         // However, in unit tests, usually modules are cached.
         // For now, we will just expect new instances of WalletConnect to be created.
     })
 
-    describe('connectSession', () => {
+    describe('connect', () => {
         it('should initialize connector and bind events', async () => {
             const { result } = renderHook(() => useWalletConnect())
-            const session = {
-                session: {
-                    clientId: 'test-session',
-                    topic: 'abc',
-                    bridge: 'xyz',
-                    key: '123',
-                },
+            const connection = {
+                clientId: 'test-session',
+                topic: 'abc',
+                bridge: 'xyz',
+                key: '123',
             } as any
 
             await act(async () => {
-                await result.current.connectSession({ session })
+                await result.current.connect({ connection })
             })
 
             expect(WalletConnect).toHaveBeenCalledWith({
-                ...session,
+                ...connection,
                 clientMeta: PERA_CLIENT_META,
             })
 
@@ -148,10 +147,10 @@ describe('useWalletConnect', () => {
 
         it('should handle session_request event', async () => {
             const { result } = renderHook(() => useWalletConnect())
-            const session = { session: { clientId: 'test-session' } } as any
+            const connection = { clientId: 'client-request' } as any
 
             await act(async () => {
-                await result.current.connectSession({ session })
+                await result.current.connect({ connection })
             })
 
             const mockConnectorInstance = (WalletConnect as any).mock.results[0]
@@ -179,27 +178,27 @@ describe('useWalletConnect', () => {
                 peerMeta: { name: 'App' },
                 chainId: 4160,
                 permissions: ['perm1'],
-                clientId: 'mock-client-id',
+                clientId: 'client-request',
             })
         })
 
         it('should auto-approve session if autoConnect is true', async () => {
             const { result } = renderHook(() => useWalletConnect())
-            const session = {
-                session: { clientId: 'test-session' },
+            const connection = {
+                clientId: 'client-auto',
                 autoConnect: true,
             } as any
 
             // Must mock store to return specific session or assume passed session is enough for autoConnect logic?
             // The logic: if (session.autoConnect) { approveSession(...) }
-            // references 'session' from closure scope of 'connectSession'.
+            // references 'session' from closure scope of 'connect'.
             // Yes, passes 'session' arg.
 
             // Also needs accounts to be present for approveSession
             // useAllAccounts mock returns [] by default (line 36)
 
             await act(async () => {
-                await result.current.connectSession({ session })
+                await result.current.connect({ connection })
             })
 
             const mockConnectorInstance = (WalletConnect as any).mock.results[0]
@@ -230,8 +229,8 @@ describe('useWalletConnect', () => {
             ;(useWalletConnectStore as any).mockImplementation(
                 (selector: any) =>
                     selector({
-                        walletConnectSessions: [session],
-                        setWalletConnectSessions: mockSetSessions,
+                        walletConnectConnections: [connection],
+                        setWalletConnectConnections: mockSetConnections,
                     }),
             )
 
@@ -248,10 +247,10 @@ describe('useWalletConnect', () => {
 
         it('should trigger handleSignData on algo_signData event', async () => {
             const { result } = renderHook(() => useWalletConnect())
-            const session = { session: { clientId: 'test-session' } } as any
+            const connection = { clientId: 'client-signdata' } as any
 
             await act(async () => {
-                await result.current.connectSession({ session })
+                await result.current.connect({ connection })
             })
 
             const mockConnectorInstance = (WalletConnect as any).mock.results[0]
@@ -276,10 +275,10 @@ describe('useWalletConnect', () => {
 
         it('should trigger handleSignTransaction on algo_signTxn event', async () => {
             const { result } = renderHook(() => useWalletConnect())
-            const session = { session: { clientId: 'test-session' } } as any
+            const connection = { clientId: 'client-signtxn' } as any
 
             await act(async () => {
-                await result.current.connectSession({ session })
+                await result.current.connect({ connection })
             })
 
             const mockConnectorInstance = (WalletConnect as any).mock.results[0]
@@ -304,19 +303,19 @@ describe('useWalletConnect', () => {
 
         it('should handle disconnect event', async () => {
             const { result } = renderHook(() => useWalletConnect())
-            const session = { session: { clientId: 'mock-client-id' } } as any
-            mockSessions.push(session)
+            const connection = { clientId: 'client-disconnect' } as any
+            mockConnections.push(connection)
             // We need mockSessions to be returned by store.
             ;(useWalletConnectStore as any).mockImplementation(
                 (selector: any) =>
                     selector({
-                        walletConnectSessions: [session],
-                        setWalletConnectSessions: mockSetSessions,
+                        walletConnectConnections: [connection],
+                        setWalletConnectConnections: mockSetConnections,
                     }),
             )
 
             await act(async () => {
-                await result.current.connectSession({ session })
+                await result.current.connect({ connection })
             })
 
             const mockConnectorInstance = (WalletConnect as any).mock.results[0]
@@ -329,46 +328,46 @@ describe('useWalletConnect', () => {
                 await disconnectCallback()
             })
 
-            // disconnectSession calls setSessions filtering out the disconnected one
+            // disconnect calls setSessions filtering out the disconnected one
             // filtering: session.session?.clientId !== clientId
             // clientId is from the connector: 'mock-client-id'
 
-            expect(mockSetSessions).toHaveBeenCalled()
-            const newSessions = mockSetSessions.mock.calls[0][0]
-            expect(newSessions).toHaveLength(0)
+            expect(mockSetConnections).toHaveBeenCalled()
+            const newConnections = mockSetConnections.mock.calls[0][0]
+            expect(newConnections).toHaveLength(0)
         })
     })
 
-    describe('disconnectSession', () => {
+    describe('disconnect', () => {
         it('should kill session and remove from store', async () => {
             const { result } = renderHook(() => useWalletConnect())
-            const session = { session: { clientId: 'mock-client-id' } } as any
+            const connection = { clientId: 'client-kill' } as any
             // Populate store so it can be filtered
             ;(useWalletConnectStore as any).mockImplementation(
                 (selector: any) =>
                     selector({
-                        walletConnectSessions: [session],
-                        setWalletConnectSessions: mockSetSessions,
+                        walletConnectConnections: [connection],
+                        setWalletConnectConnections: mockSetConnections,
                     }),
             )
 
             // First connect to populate 'connectors' map
             await act(async () => {
-                await result.current.connectSession({ session })
+                await result.current.connect({ connection })
             })
             const mockConnectorInstance = (WalletConnect as any).mock.results[0]
                 .value
             mockConnectorInstance.connected = true
 
             await act(async () => {
-                await result.current.disconnectSession('mock-client-id', true)
+                await result.current.disconnect('client-kill', true)
             })
 
             expect(mockConnectorInstance.killSession).toHaveBeenCalledWith({
                 message: 'User disconnected',
             })
-            expect(mockSetSessions).toHaveBeenCalled()
-            const args = mockSetSessions.mock.calls[0][0]
+            expect(mockSetConnections).toHaveBeenCalled()
+            const args = mockSetConnections.mock.calls[0][0]
             // actually mockSetSessions could be called multiple times.
 
             // safer check
@@ -379,18 +378,18 @@ describe('useWalletConnect', () => {
     describe('approveSession', () => {
         it('should approve session and update store', async () => {
             const { result } = renderHook(() => useWalletConnect())
-            const session = { session: { clientId: 'mock-client-id' } } as any
+            const connection = { clientId: 'client-approve' } as any
             ;(useWalletConnectStore as any).mockImplementation(
                 (selector: any) =>
                     selector({
-                        walletConnectSessions: [session],
-                        setWalletConnectSessions: mockSetSessions,
+                        walletConnectConnections: [connection],
+                        setWalletConnectConnections: mockSetConnections,
                     }),
             )
 
             // Connect first
             await act(async () => {
-                await result.current.connectSession({ session })
+                await result.current.connect({ connection })
             })
             const mockConnectorInstance = (WalletConnect as any).mock.results[0]
                 .value
@@ -400,7 +399,7 @@ describe('useWalletConnect', () => {
 
             act(() => {
                 result.current.approveSession(
-                    'mock-client-id',
+                    'client-approve',
                     request,
                     addresses,
                 )
@@ -411,15 +410,15 @@ describe('useWalletConnect', () => {
                 accounts: ['addr1'],
             })
 
-            expect(mockSetSessions).toHaveBeenCalled()
+            expect(mockSetConnections).toHaveBeenCalled()
             // The logic appends the new session info.
-            const updatedSessions =
-                mockSetSessions.mock.calls[
-                    mockSetSessions.mock.calls.length - 1
+            const updatedConnections =
+                mockSetConnections.mock.calls[
+                    mockSetConnections.mock.calls.length - 1
                 ][0]
-            expect(updatedSessions).toHaveLength(1)
-            expect(updatedSessions[0].clientId).toBe('mock-client-id')
-            expect(updatedSessions[0].connected).toBe(false) // from mock default
+            expect(updatedConnections).toHaveLength(1)
+            expect(updatedConnections[0].clientId).toBe('client-approve')
+            expect(updatedConnections[0].connected).toBe(false) // from mock default
             // verify existingSession merge
         })
     })
@@ -427,48 +426,48 @@ describe('useWalletConnect', () => {
     describe('rejectSession', () => {
         it('should reject session and update store', async () => {
             const { result } = renderHook(() => useWalletConnect())
-            const session = { session: { clientId: 'mock-client-id' } } as any
+            const connection = { clientId: 'client-reject' } as any
             ;(useWalletConnectStore as any).mockImplementation(
                 (selector: any) =>
                     selector({
-                        walletConnectSessions: [session],
-                        setWalletConnectSessions: mockSetSessions,
+                        walletConnectConnections: [connection],
+                        setWalletConnectConnections: mockSetConnections,
                     }),
             )
 
             // Connect first
             await act(async () => {
-                await result.current.connectSession({ session })
+                await result.current.connect({ connection })
             })
             const mockConnectorInstance = (WalletConnect as any).mock.results[0]
                 .value
 
             act(() => {
-                result.current.rejectSession('mock-client-id')
+                result.current.rejectSession('client-reject')
             })
 
             expect(mockConnectorInstance.rejectSession).toHaveBeenCalled()
-            expect(mockSetSessions).toHaveBeenCalled()
-            const updatedSessions =
-                mockSetSessions.mock.calls[
-                    mockSetSessions.mock.calls.length - 1
+            expect(mockSetConnections).toHaveBeenCalled()
+            const updatedConnections =
+                mockSetConnections.mock.calls[
+                    mockSetConnections.mock.calls.length - 1
                 ][0]
-            expect(updatedSessions).toHaveLength(0)
+            expect(updatedConnections).toHaveLength(0)
         })
     })
 
     describe('reconnectAllSessions', () => {
         it('should reconnect consistent sessions', async () => {
-            const session1 = { session: { clientId: 'client1' } } as any
-            const session2 = { session: { clientId: 'client2' } } as any
-            const sessions = [session1, session2]
+            const connection1 = { clientId: 'client1' } as any
+            const connection2 = { clientId: 'client2' } as any
+            const connections = [connection1, connection2]
 
             // Re-mock store implementation to return these sessions
             ;(useWalletConnectStore as any).mockImplementation(
                 (selector: any) =>
                     selector({
-                        walletConnectSessions: sessions,
-                        setWalletConnectSessions: mockSetSessions,
+                        walletConnectConnections: connections,
+                        setWalletConnectConnections: mockSetConnections,
                     }),
             )
 
@@ -478,22 +477,23 @@ describe('useWalletConnect', () => {
                 result.current.reconnectAllSessions()
             })
 
+            // 2 calls from initWalletConnect (on mount). Manual reconnectAllSessions reuses existing connectors so no new calls.
             expect(WalletConnect).toHaveBeenCalledTimes(2)
-            expect(mockSetSessions).toHaveBeenCalled()
+            expect(mockSetConnections).toHaveBeenCalled()
         })
     })
 
     describe('deleteAllSessions', () => {
         it('should kill all sessions and clear store', async () => {
-            const session1 = { clientId: 'client1' } as any
-            const session2 = { clientId: 'client2' } as any
-            const sessions = [session1, session2]
+            const connection1 = { clientId: 'client1' } as any
+            const connection2 = { clientId: 'client2' } as any
+            const connections = [connection1, connection2]
 
             ;(useWalletConnectStore as any).mockImplementation(
                 (selector: any) =>
                     selector({
-                        walletConnectSessions: sessions,
-                        setWalletConnectSessions: mockSetSessions,
+                        walletConnectConnections: connections,
+                        setWalletConnectConnections: mockSetConnections,
                     }),
             )
 
@@ -501,15 +501,15 @@ describe('useWalletConnect', () => {
 
             // We need connectors to be present to kill them
             // Inject connectors into the module scope map using a trick?
-            // Since we can't easily access the private `connectors` map, we have to rely on `connectSession` to populate it.
-            // But `deleteAllSessions` uses `disconnectSession` which checks the map.
+            // Since we can't easily access the private `connectors` map, we have to rely on `connect` to populate it.
+            // But `deleteAllSessions` uses `disconnect` which checks the map.
 
             await act(async () => {
-                await result.current.connectSession({
-                    session: { clientId: 'client1' },
+                await result.current.connect({
+                    connection: { clientId: 'client1' },
                 } as any)
-                await result.current.connectSession({
-                    session: { clientId: 'client2' },
+                await result.current.connect({
+                    connection: { clientId: 'client2' },
                 } as any)
             })
 
@@ -519,17 +519,17 @@ describe('useWalletConnect', () => {
                 await result.current.deleteAllSessions()
             })
 
-            expect(mockSetSessions).toHaveBeenCalledWith([])
+            expect(mockSetConnections).toHaveBeenCalledWith([])
         })
 
         it('should ignore sessions without clientId', async () => {
             // Sessions with no clientId
-            const sessions = [{ session: {} }, { clientId: null }]
+            const connections = [{ clientId: undefined }, { clientId: null }]
             ;(useWalletConnectStore as any).mockImplementation(
                 (selector: any) =>
                     selector({
-                        walletConnectSessions: sessions,
-                        setWalletConnectSessions: mockSetSessions,
+                        walletConnectConnections: connections,
+                        setWalletConnectConnections: mockSetConnections,
                     }),
             )
 
@@ -540,8 +540,8 @@ describe('useWalletConnect', () => {
             })
 
             // Should verify no disconnect calls made (hard to check on static/hidden map?)
-            // verify setSessions called with empty
-            expect(mockSetSessions).toHaveBeenCalledWith([])
+            // verify setConnections called with empty
+            expect(mockSetConnections).toHaveBeenCalledWith([])
         })
     })
 
@@ -549,8 +549,8 @@ describe('useWalletConnect', () => {
         it('should handle error event', async () => {
             const { result } = renderHook(() => useWalletConnect())
             await act(async () => {
-                await result.current.connectSession({
-                    session: { clientId: 'test' },
+                await result.current.connect({
+                    connection: { clientId: 'test' },
                 } as any)
             })
             const mockConnectorInstance = (WalletConnect as any).mock.results[0]
@@ -580,8 +580,8 @@ describe('useWalletConnect', () => {
         it('should handle session_request error', async () => {
             const { result } = renderHook(() => useWalletConnect())
             await act(async () => {
-                await result.current.connectSession({
-                    session: { clientId: 'test' },
+                await result.current.connect({
+                    connection: { clientId: 'client-requesterror' },
                 } as any)
             })
             const mockConnectorInstance = (WalletConnect as any).mock.results[0]

@@ -155,7 +155,7 @@ export class XHDWalletAPI {
      * @returns
      * - signature holding R and S, totally 64 bytes
      */
-    private async rawSign(
+    async rawSign(
         rootKey: Uint8Array,
         bip44Path: number[],
         data: Uint8Array,

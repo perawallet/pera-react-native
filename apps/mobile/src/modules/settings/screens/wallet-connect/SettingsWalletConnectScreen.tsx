@@ -18,25 +18,23 @@ import { useLanguage } from '@hooks/language'
 import { useModalState } from '@hooks/modal-state'
 import {
     useWalletConnect,
-    WalletConnectSession,
+    WalletConnectConnection,
 } from '@perawallet/wallet-core-walletconnect'
 import { FlashList } from '@shopify/flash-list'
 import { useStyles } from './SettingsWalletConnectScreen.styles'
-import { logger } from '@perawallet/wallet-core-shared'
 import WalletConnectSessionItem from '../../components/wallet-connect/WalletConnectSessionItem'
 import { Dialog, Text, useTheme } from '@rneui/themed'
 import { useLayoutEffect, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import PWIcon from '@components/icons/PWIcon'
 
-const renderItem = ({ item }: { item: WalletConnectSession }) => {
-    logger.debug('rendering session', { item })
+const renderItem = ({ item }: { item: WalletConnectConnection }) => {
     return <WalletConnectSessionItem session={item} />
 }
 
 const SettingsWalletConnectScreen = () => {
     const { t } = useLanguage()
-    const { sessions, deleteAllSessions } = useWalletConnect()
+    const { connections, deleteAllSessions } = useWalletConnect()
     const scannerState = useModalState()
     const deleteState = useModalState()
     const styles = useStyles()
@@ -45,7 +43,7 @@ const SettingsWalletConnectScreen = () => {
     const navigation = useNavigation()
 
     useLayoutEffect(() => {
-        if (sessions.length > 0) {
+        if (connections.length > 0) {
             navigation.setOptions({
                 title: t('settings.main.wallet_connect_title'),
                 headerRight: () => (
@@ -56,7 +54,7 @@ const SettingsWalletConnectScreen = () => {
                 ),
             })
         }
-    }, [navigation, scannerState, sessions])
+    }, [navigation, scannerState, connections])
 
     const handleDeleteAll = () => {
         setLoading(true)
@@ -73,7 +71,7 @@ const SettingsWalletConnectScreen = () => {
         <PWView style={styles.container}>
             <FlashList
                 contentContainerStyle={styles.listContainer}
-                data={sessions}
+                data={connections}
                 renderItem={renderItem}
                 ListEmptyComponent={
                     <EmptyView
@@ -92,7 +90,7 @@ const SettingsWalletConnectScreen = () => {
                 }
                 ListFooterComponentStyle={styles.listFooter}
                 ListFooterComponent={
-                    sessions.length > 0 ? (
+                    connections.length > 0 ? (
                         <PWButton
                             title={t('walletconnect.settings.clear_all')}
                             variant='secondary'

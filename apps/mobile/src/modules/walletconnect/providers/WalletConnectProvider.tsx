@@ -18,7 +18,6 @@ import {
     useWalletConnect,
     useWalletConnectSessionRequests,
 } from '@perawallet/wallet-core-walletconnect'
-import { logger } from '@perawallet/wallet-core-shared'
 import { WalletConnectErrorBoundary } from '../components/error-boundaries/WalletConnectErrorBoundary'
 import { useLanguage } from '@hooks/language'
 
@@ -30,12 +29,11 @@ export function WalletConnectProvider({
     const { sessionRequests } = useWalletConnectSessionRequests()
     const nextRequest = sessionRequests.at(0)
     const { height } = useWindowDimensions()
-    const { reconnectAllSessions } = useWalletConnect()
+    const { initWalletConnect } = useWalletConnect()
     const { t } = useLanguage()
 
     useEffect(() => {
-        logger.debug('Reconnecting WalletConnect sessions')
-        reconnectAllSessions()
+        initWalletConnect()
     }, [])
 
     return (

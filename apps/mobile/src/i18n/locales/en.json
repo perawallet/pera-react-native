@@ -413,6 +413,28 @@
         }
     },
     "signing": {
+        "arbitrary_data_view": {
+            "title": "Request",
+            "body": "Data Signing Request",
+            "details_title": "Arbitrary Signing Details",
+            "show_details": "Show Details",
+            "error_title": "Invalid Request",
+            "algod_not_valid": "The request has an invalid signing recipient.",
+            "account_not_found": "The requested signing account was not found.",
+            "on_behalf_of": "Signing On Behalf Of",
+            "signature_not_found": "An error occurred during the signing process."
+        },
+        "arbitrary_data_details": {
+            "title": "{{name}} is asking you to sign some data.",
+            "unnamed": "Someone",
+            "description": "A data signing request is a request to sign arbitrary data. This is a commonly used by services to verify ownership of an account, but it does not incur any fees.",
+            "from": "Signing With",
+            "to": "Requested By",
+            "amount": "Amount",
+            "fee": "Fee",
+            "message": "Message",
+            "data": "Raw Data"
+        },
         "impact": {
             "you_receive": "YOU WILL RECEIVE",
             "you_spend": "YOU WILL SPEND"

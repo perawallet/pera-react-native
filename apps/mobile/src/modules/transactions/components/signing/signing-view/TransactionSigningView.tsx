@@ -142,7 +142,7 @@ const TransactionSigningView = ({ request }: TransactionSigningViewProps) => {
                     )
                 })
             } else {
-                request.success?.(signedTxs)
+                request.approve?.(signedTxs)
             }
             removeSignRequest(request)
         } catch (error) {
@@ -161,6 +161,9 @@ const TransactionSigningView = ({ request }: TransactionSigningViewProps) => {
     }
 
     const rejectRequest = () => {
+        if (request.transport === 'callback') {
+            request.reject?.()
+        }
         removeSignRequest(request)
     }
 

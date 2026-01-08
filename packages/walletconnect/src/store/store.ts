@@ -13,7 +13,7 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type {
-    WalletConnectSession,
+    WalletConnectConnection,
     WalletConnectSessionRequest,
     WalletConnectStore,
 } from '../models'
@@ -35,11 +35,11 @@ const createWalletConnectStore = (storage: KeyValueStorageService) =>
     create<WalletConnectStore>()(
         persist(
             set => ({
-                walletConnectSessions: [],
+                walletConnectConnections: [],
                 sessionRequests: [],
-                setWalletConnectSessions: (
-                    walletConnectSessions: WalletConnectSession[],
-                ) => set({ walletConnectSessions }),
+                setWalletConnectConnections: (
+                    walletConnectConnections: WalletConnectConnection[],
+                ) => set({ walletConnectConnections }),
                 setSessionRequests: (
                     sessionRequests: WalletConnectSessionRequest[],
                 ) => set({ sessionRequests }),
@@ -49,7 +49,7 @@ const createWalletConnectStore = (storage: KeyValueStorageService) =>
                 storage: createJSONStorage(() => storage),
                 version: 1,
                 partialize: state => ({
-                    walletConnectSessions: state.walletConnectSessions,
+                    walletConnectConnections: state.walletConnectConnections,
                 }),
             },
         ),

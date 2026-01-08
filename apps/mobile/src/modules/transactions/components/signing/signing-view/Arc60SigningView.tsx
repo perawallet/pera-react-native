@@ -37,8 +37,10 @@ const Arc60SigningView = ({ request }: Arc60SigningViewProps) => {
     }
 
     const rejectRequest = () => {
-        logger.warn('Arc60 signing not implemented yet', request)
         removeSignRequest(request)
+        if (request.transport === 'callback') {
+            request.reject?.()
+        }
     }
 
     return (
