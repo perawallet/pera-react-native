@@ -50,6 +50,7 @@ import WebViewFooterBar from './WebViewFooterBar'
 import { WebViewContext } from '@providers/WebViewProvider'
 import { useIsDarkMode } from '@hooks/theme'
 import { useLanguage } from '@hooks/language'
+import { bottomSheetNotifier } from '@components/bottom-sheet/PWBottomSheet'
 
 export type PWWebViewProps = {
     url: string
@@ -123,11 +124,16 @@ const PWWebView = (props: PWWebViewProps) => {
 
             const dataString = event.nativeEvent.data
             if (!dataString) {
-                showToast({
-                    title: 'Invalid message received',
-                    body: `Pera Wallet mobile interface received an invalid event`,
-                    type: 'error',
-                })
+                showToast(
+                    {
+                        title: 'Invalid message received',
+                        body: `Pera Wallet mobile interface received an invalid event`,
+                        type: 'error',
+                    },
+                    {
+                        notifier: bottomSheetNotifier.current ?? undefined,
+                    },
+                )
             }
 
             const data = JSON.parse(dataString)
@@ -165,22 +171,32 @@ const PWWebView = (props: PWWebViewProps) => {
 
     const showLoadError = useCallback(
         (event: WebViewErrorEvent) => {
-            showToast({
-                title: 'Failed to load resource',
-                body: `${event.nativeEvent.url}`,
-                type: 'error',
-            })
+            showToast(
+                {
+                    title: 'Failed to load resource',
+                    body: `${event.nativeEvent.url}`,
+                    type: 'error',
+                },
+                {
+                    notifier: bottomSheetNotifier.current ?? undefined,
+                },
+            )
         },
         [showToast],
     )
 
     const showError = useCallback(
         (event: WebViewHttpErrorEvent) => {
-            showToast({
-                title: event.nativeEvent.title,
-                body: `${event.nativeEvent.statusCode} - ${event.nativeEvent.description}`,
-                type: 'error',
-            })
+            showToast(
+                {
+                    title: event.nativeEvent.title,
+                    body: `${event.nativeEvent.statusCode} - ${event.nativeEvent.description}`,
+                    type: 'error',
+                },
+                {
+                    notifier: bottomSheetNotifier.current ?? undefined,
+                },
+            )
         },
         [showToast],
     )

@@ -30,6 +30,10 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import useToast from '@hooks/toast'
 
+jest.mock('@components/bottom-sheet/PWBottomSheet', () => ({
+    bottomSheetNotifier: { current: null },
+}))
+
 jest.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: jest.fn(),
     useAccountBalancesQuery: jest.fn(),
@@ -171,6 +175,7 @@ describe('useInputView', () => {
         })
         expect(mockShowToast).toHaveBeenCalledWith(
             expect.objectContaining({ type: 'error' }),
+            expect.anything(),
         )
         expect(mockOnNext).not.toHaveBeenCalled()
     })
@@ -191,6 +196,7 @@ describe('useInputView', () => {
         })
         expect(mockShowToast).toHaveBeenCalledWith(
             expect.objectContaining({ type: 'error' }),
+            expect.anything(),
         )
         expect(mockOnNext).not.toHaveBeenCalled()
     })

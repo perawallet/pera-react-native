@@ -89,70 +89,6 @@ describe('services/accounts/useHDWallet', () => {
         expect(mnemonic).toBe('entropy mnemonic')
     })
 
-    test('deriveKey uses seed and returns key material', async () => {
-        vi.resetModules()
-        const seed = Buffer.from('sync_seed')
-
-        // Prepare API responses: "PRIVKEY" and "ADDRESS"
-        const priv = new Uint8Array([80, 82, 73, 86, 75, 69, 89])
-        const addr = new Uint8Array([65, 68, 68, 82, 69, 83, 83])
-        apiSpies.deriveSpy.mockResolvedValueOnce(priv)
-        apiSpies.keyGenSpy.mockResolvedValueOnce(addr)
-
-        const { useHDWallet } = await import('../useHDWallet')
-        const { result } = renderHook(() => useHDWallet())
-        const out = await result.current.deriveKey({
-            seed,
-        })
-
-        // Assert calls
-        expect(xhdSpies.fromSeed).toHaveBeenCalledWith(seed)
-        expect(apiSpies.deriveSpy).toHaveBeenCalledWith(
-            'ROOT_KEY',
-            [2147483692, 2147483931, 2147483648, 0, 0],
-            true,
-            9,
-        )
-        expect(apiSpies.keyGenSpy).toHaveBeenCalledWith('ROOT_KEY', 0, 0, 0, 9)
-
-        // Assert
-        expect(out.privateKey).toBe(priv)
-        expect(out.address).toBe(addr)
-    })
-
-    test('deriveKey allows overriding account, keyIndex and derivationType', async () => {
-        vi.resetModules()
-        const seed = Buffer.from('sync_seed')
-
-        // Mock API responses (values not important)
-        apiSpies.deriveSpy.mockResolvedValueOnce(new Uint8Array([49]).buffer)
-        apiSpies.keyGenSpy.mockResolvedValueOnce(new Uint8Array([50]).buffer)
-
-        const { useHDWallet } = await import('../useHDWallet')
-        const xhd = await import('@perawallet/wallet-core-xhdwallet')
-        const { result } = renderHook(() => useHDWallet())
-        await result.current.deriveKey({
-            seed,
-            account: 7,
-            keyIndex: 9,
-            derivationType: (xhd as any).BIP32DerivationType.Other,
-        })
-
-        expect(apiSpies.deriveSpy).toHaveBeenCalledWith(
-            'ROOT_KEY',
-            [2147483692, 2147483931, 2147483655, 0, 9],
-            true,
-            'OTHER',
-        )
-        expect(apiSpies.keyGenSpy).toHaveBeenCalledWith(
-            'ROOT_KEY',
-            0,
-            7,
-            9,
-            'OTHER',
-        )
-    })
-
     test('signTransaction derives root and signs with correct params', async () => {
         vi.resetModules()
         const seed = Buffer.from('sync_seed')
@@ -257,37 +193,6 @@ describe('services/accounts/useHDWallet', () => {
         expect(bip39Spies.mnemonicToSeed).toHaveBeenCalledWith(customMnemonic)
         expect(bip39Spies.mnemonicToEntropy).toHaveBeenCalledWith(
             customMnemonic,
-        )
-    })
-
-    test('deriveKey throws when api.deriveKey fails', async () => {
-        vi.resetModules()
-        const seed = Buffer.from('sync_seed')
-        apiSpies.deriveSpy.mockRejectedValueOnce(
-            new Error('Key derivation failed'),
-        )
-
-        const { useHDWallet } = await import('../useHDWallet')
-        const { result } = renderHook(() => useHDWallet())
-
-        await expect(result.current.deriveKey({ seed })).rejects.toThrow(
-            'Key derivation failed',
-        )
-    })
-
-    test('deriveKey throws when api.keyGen fails', async () => {
-        vi.resetModules()
-        const seed = Buffer.from('sync_seed')
-        apiSpies.deriveSpy.mockResolvedValueOnce(new Uint8Array([1, 2, 3]))
-        apiSpies.keyGenSpy.mockRejectedValueOnce(
-            new Error('Address generation failed'),
-        )
-
-        const { useHDWallet } = await import('../useHDWallet')
-        const { result } = renderHook(() => useHDWallet())
-
-        await expect(result.current.deriveKey({ seed })).rejects.toThrow(
-            'Address generation failed',
         )
     })
 

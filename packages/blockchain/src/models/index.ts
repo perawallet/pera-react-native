@@ -25,7 +25,7 @@ export type SignRequestSource = {
 }
 
 type BaseSignRequest = {
-    id?: string
+    id: string
     type: 'transactions' | 'arbitrary-data' | 'arc60'
     transport: 'algod' | 'callback'
     transportId?: string

@@ -51,13 +51,13 @@ const Arc60SigningView = ({ request }: Arc60SigningViewProps) => {
             />
             <PWView style={styles.buttonContainer}>
                 <PWButton
-                    title={t('signing.view.cancel')}
+                    title={t('common.cancel.label')}
                     variant='secondary'
                     onPress={rejectRequest}
                     style={styles.button}
                 />
                 <PWButton
-                    title={t('signing.view.confirm')}
+                    title={t('common.confirm.label')}
                     variant='primary'
                     onPress={signAndSend}
                     style={styles.button}

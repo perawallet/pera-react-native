@@ -18,6 +18,7 @@ import EmptyView from '@components/empty-view/EmptyView'
 import PWButton from '@components/button/PWButton'
 import useToast from '@hooks/toast'
 import { WalletConnectError } from '@perawallet/wallet-core-walletconnect'
+import { bottomSheetNotifier } from '@components/bottom-sheet/PWBottomSheet'
 
 interface WalletConnectErrorBoundaryProps {
     children: ReactNode
@@ -65,11 +66,16 @@ export const WalletConnectErrorBoundary: React.FC<
     const handleError = (error: Error) => {
         if (error instanceof WalletConnectError) {
             const bodyKey = `${error.getI18nKey()}_body`
-            showToast({
-                title: t(error.getI18nKey()),
-                body: t(bodyKey),
-                type: 'error',
-            })
+            showToast(
+                {
+                    title: t(error.getI18nKey()),
+                    body: t(bodyKey),
+                    type: 'error',
+                },
+                {
+                    notifier: bottomSheetNotifier.current ?? undefined,
+                },
+            )
         }
     }
 

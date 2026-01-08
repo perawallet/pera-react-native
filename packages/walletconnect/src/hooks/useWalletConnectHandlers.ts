@@ -36,6 +36,7 @@ import {
     useAllAccounts,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { v7 as uuid } from 'uuid'
 
 const validateRequest = (
     connector: WalletConnect,
@@ -170,6 +171,7 @@ const useWalletConnectHandlers = () => {
             )
 
             addSignRequest({
+                id: uuid(),
                 type: 'arbitrary-data',
                 transport: 'callback',
                 transportId: connector.clientId,
@@ -223,6 +225,7 @@ const useWalletConnectHandlers = () => {
             const { txn } = payload.params.at(0)
 
             addSignRequest({
+                id: uuid(),
                 type: 'transactions',
                 transport: 'callback',
                 transportId: connector.clientId,

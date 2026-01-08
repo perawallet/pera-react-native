@@ -48,6 +48,7 @@ import {
 import { logger } from '@perawallet/wallet-core-shared'
 import { getAccountType } from './webview/utils'
 import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
+import { v7 as uuid } from 'uuid'
 
 type WebviewMessage = {
     id: string
@@ -282,7 +283,7 @@ export const usePeraWebviewInterface = (
                 ] as SignRequestSource
                 const address = message.params!['address'] as string
                 addSignRequest({
-                    id: message.id,
+                    id: uuid(),
                     type: 'transactions',
                     transport: 'callback',
                     txs: [txns],
@@ -333,7 +334,7 @@ export const usePeraWebviewInterface = (
                     'metadata'
                 ] as SignRequestSource
                 addSignRequest({
-                    id: message.id,
+                    id: uuid(),
                     type: 'arbitrary-data',
                     transport: 'callback',
                     transportId: message.id,

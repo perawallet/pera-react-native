@@ -28,6 +28,7 @@ import { useClipboard } from '@hooks/clipboard'
 import { useDeepLink } from '@hooks/deeplink'
 import { useMemo } from 'react'
 import QRCode from 'react-native-qrcode-svg'
+import { bottomSheetNotifier } from '@components/bottom-sheet/PWBottomSheet'
 
 type ReceiveFundsQRViewProps = {
     account?: WalletAccount
@@ -69,13 +70,18 @@ const ReceiveFundsQRView = ({
                 message: account.address,
             })
         } catch (error) {
-            showToast({
-                title: t('errors.general.title'),
-                body: config.debugEnabled
-                    ? `${error}`
-                    : t('errors.general.body'),
-                type: 'error',
-            })
+            showToast(
+                {
+                    title: t('errors.general.title'),
+                    body: config.debugEnabled
+                        ? `${error}`
+                        : t('errors.general.body'),
+                    type: 'error',
+                },
+                {
+                    notifier: bottomSheetNotifier.current ?? undefined,
+                },
+            )
         }
     }
 

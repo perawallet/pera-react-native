@@ -18,6 +18,10 @@ import { useSigningRequest } from '@perawallet/wallet-core-blockchain'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import { Networks } from '@perawallet/wallet-core-shared'
 import {
+    useAllAccounts,
+    isLedgerAccount,
+} from '@perawallet/wallet-core-accounts'
+import {
     WalletConnectInvalidNetworkError,
     WalletConnectInvalidSessionError,
     WalletConnectSignRequestError,
@@ -27,6 +31,14 @@ import {
 vi.mock('../../store', () => ({
     useWalletConnectStore: vi.fn(),
 }))
+
+vi.mock('uuid', async importOriginal => {
+    const actual = await importOriginal<typeof import('uuid')>()
+    return {
+        ...actual,
+        v7: vi.fn(() => 'MOCK_UUID'),
+    }
+})
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useSigningRequest: vi.fn(),
@@ -118,6 +130,7 @@ describe('useWalletConnectHandlers', () => {
             result.current.handleSignData(connector as any, null, payload)
 
             expect(mockAddSignRequest).toHaveBeenCalledWith({
+                id: 'MOCK_UUID',
                 type: 'arbitrary-data',
                 transport: 'callback',
                 transportId: 'test-client-id',
@@ -146,6 +159,73 @@ describe('useWalletConnectHandlers', () => {
             expect(connector.approveRequest).toHaveBeenCalledWith({
                 id: 1,
                 result: [Buffer.from(signature).toString('base64')],
+            })
+        })
+
+        it('should handle rejection callback', () => {
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = {
+                clientId: 'test-client-id',
+                rejectRequest: vi.fn(),
+            }
+            const payload = {
+                params: [
+                    {
+                        message: 'Sign me',
+                        data: 'somedata',
+                        chainId: 4160,
+                        signer: 'addr1',
+                    },
+                ],
+                id: 1,
+            }
+
+            result.current.handleSignData(connector as any, null, payload)
+
+            const { reject } = mockAddSignRequest.mock.calls[0][0]
+
+            act(() => {
+                reject()
+            })
+
+            expect(connector.rejectRequest).toHaveBeenCalledWith({
+                id: 1,
+                error: expect.objectContaining({ message: 'User rejected' }),
+            })
+        })
+
+        it('should handle error during approval', () => {
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = {
+                clientId: 'test-client-id',
+                approveRequest: vi.fn(() => {
+                    throw new Error('Approval failed')
+                }),
+                rejectRequest: vi.fn(),
+            }
+            const payload = {
+                params: [
+                    {
+                        message: 'Sign me',
+                        data: 'somedata',
+                        chainId: 4160,
+                        signer: 'addr1',
+                    },
+                ],
+                id: 1,
+            }
+
+            result.current.handleSignData(connector as any, null, payload)
+
+            const { approve } = mockAddSignRequest.mock.calls[0][0]
+
+            act(() => {
+                approve([{ signature: new Uint8Array([1]) }])
+            })
+
+            expect(connector.rejectRequest).toHaveBeenCalledWith({
+                id: 1,
+                error: expect.objectContaining({ message: 'Approval failed' }),
             })
         })
 
@@ -253,6 +333,98 @@ describe('useWalletConnectHandlers', () => {
                 result.current.handleSignData(connector as any, null, payload),
             ).toThrow(WalletConnectSignRequestError)
         })
+
+        it('should throw WalletConnectInvalidSessionError if signer is not in session', () => {
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = { clientId: 'test-client-id' }
+            const payload = {
+                params: [
+                    {
+                        message: 'Sign me',
+                        data: 'somedata',
+                        chainId: 4160,
+                        signer: 'unknown-addr',
+                    },
+                ],
+            }
+
+            expect(() =>
+                result.current.handleSignData(connector as any, null, payload),
+            ).toThrow(WalletConnectInvalidSessionError)
+        })
+
+        it('should throw WalletConnectInvalidSessionError if signer is not in local accounts', () => {
+            ;(useAllAccounts as any).mockReturnValue([])
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = { clientId: 'test-client-id' }
+            const payload = {
+                params: [
+                    {
+                        message: 'Sign me',
+                        data: 'somedata',
+                        chainId: 4160,
+                        signer: 'addr1',
+                    },
+                ],
+            }
+            // Mock session to have the address but useAllAccounts to NOT have it
+            const mockSessionsLocal = [
+                {
+                    clientId: 'test-client-id',
+                    session: {
+                        clientId: 'test-client-id',
+                        chainId: 4160,
+                        accounts: ['addr1'],
+                    },
+                },
+            ]
+            ;(useWalletConnectStore as any).mockImplementation(
+                (selector: any) =>
+                    selector({ walletConnectConnections: mockSessionsLocal }),
+            )
+
+            expect(() =>
+                result.current.handleSignData(connector as any, null, payload),
+            ).toThrow(WalletConnectInvalidSessionError)
+        })
+
+        it('should throw WalletConnectInvalidSessionError for Ledger accounts', () => {
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = { clientId: 'test-client-id' }
+            const payload = {
+                params: [
+                    {
+                        message: 'Sign me',
+                        data: 'somedata',
+                        chainId: 4160,
+                        signer: 'ledger-addr',
+                    },
+                ],
+            }
+            // Mock session and accounts
+            const mockSessionsLocal = [
+                {
+                    clientId: 'test-client-id',
+                    session: {
+                        clientId: 'test-client-id',
+                        chainId: 4160,
+                        accounts: ['ledger-addr'],
+                    },
+                },
+            ]
+            ;(useWalletConnectStore as any).mockImplementation(
+                (selector: any) =>
+                    selector({ walletConnectConnections: mockSessionsLocal }),
+            )
+            ;(useAllAccounts as any).mockReturnValue([
+                { address: 'ledger-addr', name: 'Ledger', type: 'ledger' },
+            ])
+            ;(isLedgerAccount as any).mockReturnValue(true)
+
+            expect(() =>
+                result.current.handleSignData(connector as any, null, payload),
+            ).toThrow(WalletConnectInvalidSessionError)
+        })
     })
 
     describe('handleSignTransaction', () => {
@@ -282,6 +454,7 @@ describe('useWalletConnectHandlers', () => {
             )
 
             expect(mockAddSignRequest).toHaveBeenCalledWith({
+                id: 'MOCK_UUID',
                 type: 'transactions',
                 transport: 'callback',
                 transportId: 'test-client-id',
@@ -316,6 +489,38 @@ describe('useWalletConnectHandlers', () => {
             expect(connector.approveRequest).toHaveBeenCalledWith({
                 id: 1,
                 result: [[new Uint8Array([1, 2, 3, 4])]],
+            })
+        })
+
+        it('should handle rejection callback', () => {
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = {
+                clientId: 'test-client-id',
+                rejectRequest: vi.fn(),
+            }
+            const payload = {
+                params: [{ message: 'Sign tx', txn: 'encodedTxn' }],
+                id: 1,
+            }
+
+            result.current.handleSignTransaction(
+                connector as any,
+                null,
+                payload,
+            )
+
+            const { reject } =
+                mockAddSignRequest.mock.calls[
+                    mockAddSignRequest.mock.calls.length - 1
+                ][0]
+
+            act(() => {
+                reject()
+            })
+
+            expect(connector.rejectRequest).toHaveBeenCalledWith({
+                id: 1,
+                error: expect.objectContaining({ message: 'User rejected' }),
             })
         })
 

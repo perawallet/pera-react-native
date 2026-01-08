@@ -206,8 +206,8 @@ describe('useCreateAccount', () => {
             created = await result.current({ account: 0, keyIndex: 0 })
         })
 
-        // Verify saveKey was called for both root key and derived key
-        expect(mockSaveKey).toHaveBeenCalledTimes(2)
+        // Verify saveKey was called only for root key
+        expect(mockSaveKey).toHaveBeenCalledTimes(1)
         expect(mockSaveKey).toHaveBeenNthCalledWith(
             1,
             expect.objectContaining({
@@ -216,17 +216,9 @@ describe('useCreateAccount', () => {
             }),
             expect.anything(),
         )
-        expect(mockSaveKey).toHaveBeenNthCalledWith(
-            2,
-            expect.objectContaining({
-                id: 'KEY1',
-                type: KeyType.HDWalletDerivedKey,
-            }),
-            expect.anything(),
-        )
 
         expect(created).toMatchObject({
-            id: 'ACC1',
+            id: 'KEY1',
         })
         expect(created.address).toBeTruthy()
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
@@ -276,8 +268,8 @@ describe('useCreateAccount', () => {
             executeWithKey: mockExecuteWithKey,
         })
 
-        // Make deriveKey throw an error
-        apiSpies.deriveSpy.mockRejectedValueOnce(new Error('Derivation failed'))
+        // Make deriveKey (via keyGen) throw an error
+        apiSpies.keyGenSpy.mockRejectedValueOnce(new Error('Derivation failed'))
 
         uuidSpies.v7.mockImplementationOnce(() => 'WALLET1')
 
@@ -354,78 +346,6 @@ describe('useCreateAccount', () => {
                     keyIndex: 0,
                 }),
             ).rejects.toThrow('errors.account.no_hd_wallet')
-        })
-    })
-
-    test('throws error when secure storage setItem fails for private key', async () => {
-        const storage = new Map<string, any>()
-        // Pre-populate with valid master key data
-        storage.set(
-            'WALLET1',
-            new TextEncoder().encode(
-                JSON.stringify({
-                    seed: Buffer.from('seed').toString('base64'),
-                    entropy: 'test',
-                }),
-            ),
-        )
-
-        const dummySecure = {
-            setItem: vi
-                .fn()
-                .mockImplementationOnce(async (key, value) => {
-                    storage.set(key, value)
-                }) // First call for root key succeeds
-                .mockRejectedValueOnce(new Error('Storage full')), // Second call for private key fails
-            getItem: vi.fn(async (key: string) => {
-                return storage.get(key) ?? null
-            }),
-            removeItem: vi.fn(async key => {
-                storage.delete(key)
-            }),
-            authenticate: vi.fn(async () => true),
-        }
-
-        registerTestPlatform({
-            keyValueStorage: new MemoryKeyValueStorage() as any,
-            secureStorage: dummySecure as any,
-        })
-
-        // Configure KMD mocks
-        const mockSaveKey = vi
-            .fn()
-            .mockResolvedValueOnce(undefined) // First call succeeds
-            .mockRejectedValueOnce(new Error('Storage full')) // Second call fails
-        const mockGetKey = vi.fn(() => null) // No existing key
-        const mockExecuteWithKey = vi.fn(async (id, _, handler) => {
-            const data = storage.get(id)
-            return handler(data)
-        })
-
-        kmdSpies.useKMD.mockReturnValue({
-            saveKey: mockSaveKey,
-            getKey: mockGetKey,
-            removeKey: vi.fn(),
-        })
-        kmdSpies.useWithKey.mockReturnValue({
-            executeWithKey: mockExecuteWithKey,
-        })
-
-        const priv = new Uint8Array(32).fill(1)
-        const addr = new Uint8Array(32).fill(2)
-        apiSpies.deriveSpy.mockResolvedValueOnce(priv)
-        apiSpies.keyGenSpy.mockResolvedValueOnce(addr)
-
-        uuidSpies.v7
-            .mockImplementationOnce(() => 'WALLET1')
-            .mockImplementationOnce(() => 'KEY1')
-
-        const { result } = renderHook(() => useCreateAccount())
-
-        await act(async () => {
-            await expect(
-                result.current({ account: 0, keyIndex: 0 }),
-            ).rejects.toThrow('Storage full')
         })
     })
 
@@ -533,14 +453,7 @@ describe('useCreateAccount', () => {
 
         expect(created).toBeTruthy()
         expect(created.hdWalletDetails?.walletId).toBe('EXISTING_WALLET')
-        // Should only call saveKey for private key since root key already exists
-        expect(mockSaveKey).toHaveBeenCalledTimes(1)
-        expect(mockSaveKey).toHaveBeenCalledWith(
-            expect.objectContaining({
-                id: 'KEY1',
-                type: KeyType.HDWalletDerivedKey,
-            }),
-            expect.any(Uint8Array),
-        )
+        // Should NOT call saveKey since root key exists and we don't save derived keys
+        expect(mockSaveKey).toHaveBeenCalledTimes(0)
     })
 })

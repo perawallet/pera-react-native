@@ -31,6 +31,7 @@ import {
     useAccountInformationQuery,
 } from '@perawallet/wallet-core-blockchain'
 import { logger } from '@perawallet/wallet-core-shared'
+import { bottomSheetNotifier } from '@components/bottom-sheet/PWBottomSheet'
 
 //business logic for the SendFundsInputView component - factored out for maintainability
 export const useInputView = (onNext: () => void) => {
@@ -104,22 +105,31 @@ export const useInputView = (onNext: () => void) => {
 
     const handleNext = useCallback(() => {
         if (!value || Decimal(value).lte(0)) {
-            showToast({
-                title: t('send_funds.input.error_title'),
-                body: t('send_funds.input.error_body', { min: 0 }),
-                type: 'error',
-            })
+            showToast(
+                {
+                    title: t('send_funds.input.error_title'),
+                    body: t('send_funds.input.error_body', { min: 0 }),
+                    type: 'error',
+                },
+                {
+                    notifier: bottomSheetNotifier.current ?? undefined,
+                },
+            )
             return
         }
 
         if (Decimal(value).gt(maxAmount)) {
             //TODO: show popup with explanation
-            logger.warn('Send funds input view', { value, maxAmount })
-            showToast({
-                title: t('send_funds.input.error_title'),
-                body: t('send_funds.input.error_body', { min: 0 }),
-                type: 'error',
-            })
+            showToast(
+                {
+                    title: t('send_funds.input.error_title'),
+                    body: t('send_funds.input.error_body', { min: 0 }),
+                    type: 'error',
+                },
+                {
+                    notifier: bottomSheetNotifier.current ?? undefined,
+                },
+            )
             return
         }
 

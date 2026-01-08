@@ -37,6 +37,7 @@ import PWTouchableOpacity from '@components/touchable-opacity/PWTouchableOpacity
 import { ScrollView } from 'react-native-gesture-handler'
 import useToast from '@hooks/toast'
 import PermissionItem from '../permission-item/PermissionItem'
+import { bottomSheetNotifier } from '@components/bottom-sheet/PWBottomSheet'
 
 //TODO implement project validation using our backend to show a "verified" badge somewhere
 const ConnectionView = ({
@@ -73,18 +74,30 @@ const ConnectionView = ({
 
     const handleConnect = () => {
         if (!selectedAccounts.length) {
-            showToast({
-                title: t(
-                    'walletconnect.request.accounts_select_one_account_title',
-                ),
-                body: t(
-                    'walletconnect.request.accounts_select_one_account_body',
-                ),
-                type: 'error',
-            })
+            showToast(
+                {
+                    title: t(
+                        'walletconnect.request.accounts_select_one_account_title',
+                    ),
+                    body: t(
+                        'walletconnect.request.accounts_select_one_account_body',
+                    ),
+                    type: 'error',
+                },
+                {
+                    notifier: bottomSheetNotifier.current ?? undefined,
+                },
+            )
             return
         }
         approveSession(request.clientId, request, selectedAccounts)
+        showToast({
+            title: t('walletconnect.request.success_title'),
+            body: t('walletconnect.request.success_body', {
+                name: request.peerMeta.name,
+            }),
+            type: 'success',
+        })
         removeSessionRequest(request)
     }
 
