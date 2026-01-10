@@ -44,6 +44,8 @@ export const useKMD = () => {
                 privateKeyData,
             )
             addKey(key)
+
+            return key
         },
         [addKey, secureStorage],
     )

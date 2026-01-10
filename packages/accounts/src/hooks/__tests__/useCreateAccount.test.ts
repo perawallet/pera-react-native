@@ -32,7 +32,7 @@ const apiSpies = vi.hoisted(() => ({
 
 const xhdSpies = vi.hoisted(() => ({ fromSeed: vi.fn(() => 'ROOT_KEY') }))
 
-vi.mock('@perawallet/wallet-core-xhdwallet', () => ({
+vi.mock('@algorandfoundation/xhd-wallet-api', () => ({
     BIP32DerivationType: { Peikert: 'PEIKERT' },
     BIP32DerivationTypes: { Peikert: 9 },
     fromSeed: xhdSpies.fromSeed,
@@ -171,8 +171,8 @@ describe('useCreateAccount', () => {
                 const data =
                     keyPair.type === KeyType.HDWalletRootKey
                         ? new TextEncoder().encode(
-                              JSON.stringify({ seed: 'test', entropy: 'test' }),
-                          )
+                            JSON.stringify({ seed: 'test', entropy: 'test' }),
+                        )
                         : priv
                 storage.set(keyPair.id, data)
             }
@@ -351,9 +351,9 @@ describe('useCreateAccount', () => {
 
     test('throws error when generateMasterKey fails', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => {}),
+            setItem: vi.fn(async () => { }),
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => {}),
+            removeItem: vi.fn(async () => { }),
             authenticate: vi.fn(async () => true),
         }
 

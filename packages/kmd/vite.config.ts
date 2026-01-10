@@ -28,7 +28,7 @@ export default defineConfig({
                 '@tanstack/react-query',
                 '@perawallet/wallet-core-shared',
                 '@perawallet/storage',
-                '@perawallet/wallet-core-xhdwallet',
+                '@algorandfoundation/xhd-wallet-api',
                 'uuid',
                 'bip39',
             ],

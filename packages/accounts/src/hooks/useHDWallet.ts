@@ -18,7 +18,7 @@ import {
     fromSeed,
     KeyContexts,
     XHDWalletAPI,
-} from '@perawallet/wallet-core-xhdwallet'
+} from '@algorandfoundation/xhd-wallet-api'
 import * as bip39 from 'bip39'
 import messageSchema from '../schema/message-schema.json'
 import { WORDLIST } from '../wordlist'

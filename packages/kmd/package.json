@@ -12,7 +12,7 @@
     "@babel/runtime": "catalog:",
     "@perawallet/wallet-core-platform-integration": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
-    "@perawallet/wallet-core-xhdwallet": "workspace:*",
+    "@algorandfoundation/xhd-wallet-api": "workspace:*",
     "react": "catalog:",
     "uuid": "catalog:",
     "zustand": "catalog:"

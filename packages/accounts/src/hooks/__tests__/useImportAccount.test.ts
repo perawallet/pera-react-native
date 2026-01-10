@@ -31,7 +31,7 @@ const apiSpies = vi.hoisted(() => ({
 
 const xhdSpies = vi.hoisted(() => ({ fromSeed: vi.fn(() => 'ROOT_KEY') }))
 
-vi.mock('@perawallet/wallet-core-xhdwallet', () => ({
+vi.mock('@algorandfoundation/xhd-wallet-api', () => ({
     BIP32DerivationType: { Peikert: 'PEIKERT' },
     BIP32DerivationTypes: { Peikert: 9 },
     fromSeed: xhdSpies.fromSeed,
@@ -153,9 +153,9 @@ describe('useImportAccount', () => {
 
     test('throws error when generateMasterKey fails with invalid mnemonic', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => {}),
+            setItem: vi.fn(async () => { }),
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => {}),
+            removeItem: vi.fn(async () => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -182,7 +182,7 @@ describe('useImportAccount', () => {
         const dummySecure = {
             setItem: vi.fn().mockRejectedValueOnce(new Error('Storage full')), // First call for root key fails
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => {}),
+            removeItem: vi.fn(async () => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -204,9 +204,9 @@ describe('useImportAccount', () => {
 
     test('throws error when mnemonicToEntropy fails', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => {}),
+            setItem: vi.fn(async () => { }),
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => {}),
+            removeItem: vi.fn(async () => { }),
             authenticate: vi.fn(async () => true),
         }
 

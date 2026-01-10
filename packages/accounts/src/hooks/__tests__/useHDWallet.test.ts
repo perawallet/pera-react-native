@@ -39,7 +39,7 @@ const bip39Spies = vi.hoisted(() => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-xhdwallet', () => {
+vi.mock('@algorandfoundation/xhd-wallet-api', () => {
     return {
         BIP32DerivationTypes: { Khovratovich: 32, Peikert: 9 },
         BIP32DerivationType: { Peikert: 'PEIKERT', Other: 'OTHER' },

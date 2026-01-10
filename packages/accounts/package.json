@@ -17,7 +17,7 @@
     "@perawallet/wallet-core-platform-integration": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-core-kmd": "workspace:*",
-    "@perawallet/wallet-core-xhdwallet": "workspace:*",
+    "@algorandfoundation/xhd-wallet-api": "workspace:*",
     "@tanstack/react-query": "catalog:",
     "bip39": "catalog:",
     "decimal.js": "catalog:",
