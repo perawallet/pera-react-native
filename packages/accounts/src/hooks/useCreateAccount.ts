@@ -22,7 +22,12 @@ import { v7 as uuidv7 } from 'uuid'
 import { AccountTypes, WalletAccount } from '../models'
 import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import { useWithKey, useKMD, KeyType, KeyPair } from '@perawallet/wallet-core-kmd'
+import {
+    useWithKey,
+    useKMD,
+    KeyType,
+    KeyPair,
+} from '@perawallet/wallet-core-kmd'
 import { NoHDWalletError } from '../errors'
 import { KEY_DOMAIN } from '../constants'
 import { logger } from '@perawallet/wallet-core-shared'
@@ -67,7 +72,10 @@ export const useCreateAccount = () => {
             } as KeyPair
 
             logger.debug('Saving root key', { rootKey })
-            rootKey = await saveKey(rootKey, new TextEncoder().encode(stringifiedObj))
+            rootKey = await saveKey(
+                rootKey,
+                new TextEncoder().encode(stringifiedObj),
+            )
             masterKey.seed.fill(0)
         }
 

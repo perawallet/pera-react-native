@@ -1,8 +1,8 @@
-import type { JestConfigWithTsJest } from 'ts-jest';
+import type { JestConfigWithTsJest } from 'ts-jest'
 
 const jestConfig: JestConfigWithTsJest = {
     preset: 'ts-jest/presets/default-esm',
-    testPathIgnorePatterns: ["src"],
-};
+    testPathIgnorePatterns: ['src'],
+}
 
-export default jestConfig;
+export default jestConfig

@@ -171,8 +171,8 @@ describe('useCreateAccount', () => {
                 const data =
                     keyPair.type === KeyType.HDWalletRootKey
                         ? new TextEncoder().encode(
-                            JSON.stringify({ seed: 'test', entropy: 'test' }),
-                        )
+                              JSON.stringify({ seed: 'test', entropy: 'test' }),
+                          )
                         : priv
                 storage.set(keyPair.id, data)
             }
@@ -351,9 +351,9 @@ describe('useCreateAccount', () => {
 
     test('throws error when generateMasterKey fails', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 

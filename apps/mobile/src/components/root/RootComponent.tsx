@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { logger, Networks } from '@perawallet/wallet-core-shared'
+import { Networks } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
 import { useContext, useEffect, useRef } from 'react'
 import { AppState } from 'react-native'

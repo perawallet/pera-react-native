@@ -8,18 +8,18 @@ import {
     crypto_sign_ed25519_pk_to_curve25519,
     crypto_scalarmult,
     crypto_generichash,
-} from './sumo.facade.js';
-import * as msgpack from "algo-msgpack-with-bigint"
-import Ajv from "ajv"
+} from './sumo.facade.js'
+import * as msgpack from 'algo-msgpack-with-bigint'
+import Ajv from 'ajv'
 //@ts-expect-error, we handle this with ts-alias
-import { deriveChildNodePrivate } from './bip32-ed25519';
+import { deriveChildNodePrivate } from './bip32-ed25519'
 
 /**
  *
  */
 export enum KeyContext {
     Address = 0,
-    Identity = 1
+    Identity = 1,
 }
 
 export enum BIP32DerivationType {
@@ -28,7 +28,7 @@ export enum BIP32DerivationType {
     Khovratovich = 32,
     // Derivations based on Peikert's ammendments to the original BIP32-Ed25519
     // Picking only 9 bits to be zeroed from each derived zL
-    Peikert = 9
+    Peikert = 9,
 }
 
 export interface ChannelKeys {
@@ -37,9 +37,9 @@ export interface ChannelKeys {
 }
 
 export enum Encoding {
-    MSGPACK = "msgpack",
-    BASE64 = "base64",
-    NONE = "none"
+    MSGPACK = 'msgpack',
+    BASE64 = 'base64',
+    NONE = 'none',
 }
 
 export interface SignMetadata {
@@ -47,24 +47,27 @@ export interface SignMetadata {
     schema: Object
 }
 
-export const harden = (num: number): number => 0x80_00_00_00 + num;
+export const harden = (num: number): number => 0x80_00_00_00 + num
 
-function GetBIP44PathFromContext(context: KeyContext, account:number, key_index: number): number[] {
+function GetBIP44PathFromContext(
+    context: KeyContext,
+    account: number,
+    key_index: number,
+): number[] {
     switch (context) {
         case KeyContext.Address:
             return [harden(44), harden(283), harden(account), 0, key_index]
         case KeyContext.Identity:
             return [harden(44), harden(0), harden(account), 0, key_index]
         default:
-            throw Error("Invalid context")
+            throw Error('Invalid context')
     }
 }
 
-export const ERROR_BAD_DATA: Error = Error("Invalid Data")
-export const ERROR_TAGS_FOUND: Error = Error("Transactions tags found")
+export const ERROR_BAD_DATA: Error = Error('Invalid Data')
+export const ERROR_TAGS_FOUND: Error = Error('Transactions tags found')
 
 export class XHDWalletAPI {
-
     constructor() {}
 
     /**
@@ -75,9 +78,15 @@ export class XHDWalletAPI {
      * @param isPrivate  - if true, return the private key, otherwise return the public key
      * @returns - The extended private key (kL, kR, chainCode) or the extended public key (pub, chainCode)
      */
-    async deriveKey(rootKey: Uint8Array, bip44Path: number[], isPrivate: boolean = true, derivationType: BIP32DerivationType): Promise<Uint8Array> {
+    async deriveKey(
+        rootKey: Uint8Array,
+        bip44Path: number[],
+        isPrivate: boolean = true,
+        derivationType: BIP32DerivationType,
+    ): Promise<Uint8Array> {
         // Pick `g`, which is amount of bits zeroed from each derived node
-        const g: number = derivationType === BIP32DerivationType.Peikert ? 9 : 32
+        const g: number =
+            derivationType === BIP32DerivationType.Peikert ? 9 : 32
 
         for (let i = 0; i < bip44Path.length; i++) {
             rootKey = await deriveChildNodePrivate(rootKey, bip44Path[i], g)
@@ -87,7 +96,12 @@ export class XHDWalletAPI {
 
         // extended public key
         // [public] [nodeCC]
-        return new Uint8Array(Buffer.concat([crypto_scalarmult_ed25519_base_noclamp(rootKey.subarray(0, 32)), rootKey.subarray(64, 96)]))
+        return new Uint8Array(
+            Buffer.concat([
+                crypto_scalarmult_ed25519_base_noclamp(rootKey.subarray(0, 32)),
+                rootKey.subarray(64, 96),
+            ]),
+        )
     }
 
     /**
@@ -98,10 +112,25 @@ export class XHDWalletAPI {
      * @param keyIndex - key index. This value will be a SOFT derivation as part of BIP44.
      * @returns - public key 32 bytes
      */
-    async keyGen(rootKey: Uint8Array, context: KeyContext, account:number, keyIndex: number, derivationType: BIP32DerivationType = BIP32DerivationType.Peikert): Promise<Uint8Array> {
-        const bip44Path: number[] = GetBIP44PathFromContext(context, account, keyIndex)
+    async keyGen(
+        rootKey: Uint8Array,
+        context: KeyContext,
+        account: number,
+        keyIndex: number,
+        derivationType: BIP32DerivationType = BIP32DerivationType.Peikert,
+    ): Promise<Uint8Array> {
+        const bip44Path: number[] = GetBIP44PathFromContext(
+            context,
+            account,
+            keyIndex,
+        )
 
-        const extendedKey: Uint8Array = await this.deriveKey(rootKey, bip44Path, false, derivationType)
+        const extendedKey: Uint8Array = await this.deriveKey(
+            rootKey,
+            bip44Path,
+            false,
+            derivationType,
+        )
         return extendedKey.subarray(0, 32) // only public key
     }
 
@@ -120,28 +149,45 @@ export class XHDWalletAPI {
      * @returns
      * - signature holding R and S, totally 64 bytes
      */
-    private async rawSign(rootKey: Uint8Array, bip44Path: number[], data: Uint8Array, derivationType: BIP32DerivationType): Promise<Uint8Array> {
-        const raw: Uint8Array = await this.deriveKey(rootKey, bip44Path, true, derivationType)
+    private async rawSign(
+        rootKey: Uint8Array,
+        bip44Path: number[],
+        data: Uint8Array,
+        derivationType: BIP32DerivationType,
+    ): Promise<Uint8Array> {
+        const raw: Uint8Array = await this.deriveKey(
+            rootKey,
+            bip44Path,
+            true,
+            derivationType,
+        )
 
-        const scalar: Uint8Array = raw.slice(0, 32);
-        const kR: Uint8Array = raw.slice(32, 64);
+        const scalar: Uint8Array = raw.slice(0, 32)
+        const kR: Uint8Array = raw.slice(32, 64)
 
         // \(1): pubKey = scalar * G (base point, no clamp)
-        const publicKey = crypto_scalarmult_ed25519_base_noclamp(scalar);
+        const publicKey = crypto_scalarmult_ed25519_base_noclamp(scalar)
 
         // \(2): h = hash(c || msg) mod q
-        const r = crypto_core_ed25519_scalar_reduce(crypto_hash_sha512(Buffer.concat([kR, data])))
+        const r = crypto_core_ed25519_scalar_reduce(
+            crypto_hash_sha512(Buffer.concat([kR, data])),
+        )
 
         // \(4):  R = r * G (base point, no clamp)
         const R = crypto_scalarmult_ed25519_base_noclamp(r)
 
         // h = hash(R || pubKey || msg) mod q
-        let h = crypto_core_ed25519_scalar_reduce(crypto_hash_sha512(Buffer.concat([R, publicKey, data])));
+        let h = crypto_core_ed25519_scalar_reduce(
+            crypto_hash_sha512(Buffer.concat([R, publicKey, data])),
+        )
 
         // \(5): S = (r + h * k) mod q
-        const S = crypto_core_ed25519_scalar_add(r, crypto_core_ed25519_scalar_mul(h, scalar))
+        const S = crypto_core_ed25519_scalar_add(
+            r,
+            crypto_core_ed25519_scalar_mul(h, scalar),
+        )
 
-        return Buffer.concat([R, S]);
+        return Buffer.concat([R, S])
     }
 
     /**
@@ -159,19 +205,33 @@ export class XHDWalletAPI {
      *
      * @returns - signature holding R and S, totally 64 bytes
      * */
-    async signData(rootKey: Uint8Array, context: KeyContext, account: number, keyIndex: number, data: Uint8Array, metadata: SignMetadata, derivationType: BIP32DerivationType = BIP32DerivationType.Peikert): Promise<Uint8Array> {
+    async signData(
+        rootKey: Uint8Array,
+        context: KeyContext,
+        account: number,
+        keyIndex: number,
+        data: Uint8Array,
+        metadata: SignMetadata,
+        derivationType: BIP32DerivationType = BIP32DerivationType.Peikert,
+    ): Promise<Uint8Array> {
         // validate data
         const result: boolean | Error = this.validateData(data, metadata)
 
-        if (result instanceof Error) { // decoding errors
+        if (result instanceof Error) {
+            // decoding errors
             throw result
         }
 
-        if (!result) { // failed schema validation
+        if (!result) {
+            // failed schema validation
             throw ERROR_BAD_DATA
         }
 
-        const bip44Path: number[] = GetBIP44PathFromContext(context, account, keyIndex)
+        const bip44Path: number[] = GetBIP44PathFromContext(
+            context,
+            account,
+            keyIndex,
+        )
         return await this.rawSign(rootKey, bip44Path, data, derivationType)
     }
 
@@ -191,14 +251,29 @@ export class XHDWalletAPI {
      * @returns sig
      * - Raw bytes signature
      */
-    async signAlgoTransaction(rootKey: Uint8Array, context: KeyContext, account: number, keyIndex: number, prefixEncodedTx: Uint8Array, derivationType: BIP32DerivationType = BIP32DerivationType.Peikert): Promise<Uint8Array> {
-        const bip44Path: number[] = GetBIP44PathFromContext(context, account, keyIndex)
+    async signAlgoTransaction(
+        rootKey: Uint8Array,
+        context: KeyContext,
+        account: number,
+        keyIndex: number,
+        prefixEncodedTx: Uint8Array,
+        derivationType: BIP32DerivationType = BIP32DerivationType.Peikert,
+    ): Promise<Uint8Array> {
+        const bip44Path: number[] = GetBIP44PathFromContext(
+            context,
+            account,
+            keyIndex,
+        )
 
-        const sig =  await this.rawSign(rootKey, bip44Path, prefixEncodedTx, derivationType)
+        const sig = await this.rawSign(
+            rootKey,
+            bip44Path,
+            prefixEncodedTx,
+            derivationType,
+        )
 
         return sig
     }
-
 
     /**
      * SAMPLE IMPLEMENTATION to show how to validate data with encoding and schema, using base64 as an example
@@ -207,8 +282,10 @@ export class XHDWalletAPI {
      * @param metadata
      * @returns
      */
-    private validateData(message: Uint8Array, metadata: SignMetadata): boolean | Error {
-
+    private validateData(
+        message: Uint8Array,
+        metadata: SignMetadata,
+    ): boolean | Error {
         // Check that decoded doesn't include the following prefixes: TX, MX, progData, Program
         // These prefixes are reserved for the protocol
         if (this.hasAlgorandTags(message)) {
@@ -218,7 +295,9 @@ export class XHDWalletAPI {
         let decoded: Uint8Array
         switch (metadata.encoding) {
             case Encoding.BASE64:
-                decoded = new Uint8Array(Buffer.from(Buffer.from(message).toString(), 'base64'))
+                decoded = new Uint8Array(
+                    Buffer.from(Buffer.from(message).toString(), 'base64'),
+                )
                 break
             case Encoding.MSGPACK:
                 decoded = msgpack.decode<Uint8Array>(message) as Uint8Array
@@ -228,13 +307,13 @@ export class XHDWalletAPI {
                 decoded = message
                 break
             default:
-                throw Error("Invalid encoding")
+                throw Error('Invalid encoding')
         }
 
         // validate with schema
         //@ts-expect-error, this is constructable
         const ajv = new Ajv()
-		const validate = ajv.compile(metadata.schema)
+        const validate = ajv.compile(metadata.schema)
 
         const valid = validate(decoded)
 
@@ -250,24 +329,65 @@ export class XHDWalletAPI {
      * @returns - true if message has Algorand protocol specific tags, false otherwise
      */
     private hasAlgorandTags(message: Uint8Array): boolean {
-
         // Check that decoded doesn't include the following prefixes
         // Prefixes taken from go-algorand node software code
         // https://github.com/algorand/go-algorand/blob/master/protocol/hash.go
         const prefixes: string[] = [
-            "appID","arc","aB","aD","aO","aP","aS","AS","B256","BH","BR","CR","GE","KP","MA","MB",
-            "MX","NIC","NIR","NIV","NPR","OT1","OT2","PF","PL","Program","ProgData","PS","PK","SD",
-            "SpecialAddr","STIB","spc","spm","spp","sps","spv","TE","TG","TL","TX","VO"
+            'appID',
+            'arc',
+            'aB',
+            'aD',
+            'aO',
+            'aP',
+            'aS',
+            'AS',
+            'B256',
+            'BH',
+            'BR',
+            'CR',
+            'GE',
+            'KP',
+            'MA',
+            'MB',
+            'MX',
+            'NIC',
+            'NIR',
+            'NIV',
+            'NPR',
+            'OT1',
+            'OT2',
+            'PF',
+            'PL',
+            'Program',
+            'ProgData',
+            'PS',
+            'PK',
+            'SD',
+            'SpecialAddr',
+            'STIB',
+            'spc',
+            'spm',
+            'spp',
+            'sps',
+            'spv',
+            'TE',
+            'TG',
+            'TL',
+            'TX',
+            'VO',
         ]
         for (const prefix of prefixes) {
-            if (Buffer.from(message.subarray(0, prefix.length)).toString("ascii") === prefix) {
+            if (
+                Buffer.from(message.subarray(0, prefix.length)).toString(
+                    'ascii',
+                ) === prefix
+            ) {
                 return true
             }
         }
 
         return false
     }
-
 
     /**
      * Wrapper around libsodium basica signature verification
@@ -279,10 +399,13 @@ export class XHDWalletAPI {
      * @param publicKey - raw 32 bytes public key (x,y)
      * @returns true if signature is valid, false otherwise
      */
-    async verifyWithPublicKey(signature: Uint8Array, message: Uint8Array, publicKey: Uint8Array): Promise<boolean> {
+    async verifyWithPublicKey(
+        signature: Uint8Array,
+        message: Uint8Array,
+        publicKey: Uint8Array,
+    ): Promise<boolean> {
         return crypto_sign_verify_detached(signature, message, publicKey)
     }
-
 
     /**
      * Function to perform ECDH against a provided public key
@@ -299,28 +422,58 @@ export class XHDWalletAPI {
      * @param meFirst - defines the order in which the keys will be considered for the shared secret. If true, our key will be used first, otherwise the other party's key will be used first
      * @returns - raw 32 bytes shared secret
      */
-    async ECDH(rootKey: Uint8Array, context: KeyContext, account: number, keyIndex: number, otherPartyPub: Uint8Array, meFirst: boolean, derivationType: BIP32DerivationType = BIP32DerivationType.Peikert): Promise<Uint8Array> {
-        const bip44Path: number[] = GetBIP44PathFromContext(context, account, keyIndex)
-        const childKey: Uint8Array = await this.deriveKey(rootKey, bip44Path, true, derivationType)
+    async ECDH(
+        rootKey: Uint8Array,
+        context: KeyContext,
+        account: number,
+        keyIndex: number,
+        otherPartyPub: Uint8Array,
+        meFirst: boolean,
+        derivationType: BIP32DerivationType = BIP32DerivationType.Peikert,
+    ): Promise<Uint8Array> {
+        const bip44Path: number[] = GetBIP44PathFromContext(
+            context,
+            account,
+            keyIndex,
+        )
+        const childKey: Uint8Array = await this.deriveKey(
+            rootKey,
+            bip44Path,
+            true,
+            derivationType,
+        )
 
         const scalar: Uint8Array = childKey.slice(0, 32)
 
         // our public key is derived from the private key
-        const ourPub: Uint8Array = crypto_scalarmult_ed25519_base_noclamp(scalar)
+        const ourPub: Uint8Array =
+            crypto_scalarmult_ed25519_base_noclamp(scalar)
 
         // convert from ed25519 to curve25519
-        const ourPubCurve25519: Uint8Array = crypto_sign_ed25519_pk_to_curve25519(ourPub)
-        const otherPartyPubCurve25519: Uint8Array = crypto_sign_ed25519_pk_to_curve25519(otherPartyPub)
+        const ourPubCurve25519: Uint8Array =
+            crypto_sign_ed25519_pk_to_curve25519(ourPub)
+        const otherPartyPubCurve25519: Uint8Array =
+            crypto_sign_ed25519_pk_to_curve25519(otherPartyPub)
 
         // find common point
-        const sharedPoint: Uint8Array = crypto_scalarmult(scalar, otherPartyPubCurve25519)
+        const sharedPoint: Uint8Array = crypto_scalarmult(
+            scalar,
+            otherPartyPubCurve25519,
+        )
 
         let concatenation: Uint8Array
         if (meFirst) {
-            concatenation = Buffer.concat([sharedPoint, ourPubCurve25519, otherPartyPubCurve25519])
+            concatenation = Buffer.concat([
+                sharedPoint,
+                ourPubCurve25519,
+                otherPartyPubCurve25519,
+            ])
         } else {
-            concatenation = Buffer.concat([sharedPoint, otherPartyPubCurve25519, ourPubCurve25519])
-
+            concatenation = Buffer.concat([
+                sharedPoint,
+                otherPartyPubCurve25519,
+                ourPubCurve25519,
+            ])
         }
 
         return crypto_generichash(32, new Uint8Array(concatenation))
