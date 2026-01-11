@@ -80,13 +80,26 @@ android {
     compileSdk rootProject.ext.compileSdkVersion
 
     namespace "com.algorand.android"
+
     defaultConfig {
-        applicationId "com.algorand.android.staging.debug"
+        // Default values (will be overridden by flavors)
+        applicationId "com.algorand.android.perarn"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
-        versionName "7.0.0-alpha"
+        versionName "7.0.0"
+
+        // Make APP_ENV available to React Native at build time
+        resValue "string", "build_config_package", "com.algorand.android"
     }
+
+    // Load keystore properties for release builds
+    def keystorePropertiesFile = rootProject.file("keystore.properties")
+    def keystoreProperties = new Properties()
+    if (keystorePropertiesFile.exists()) {
+        keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+    }
+
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
@@ -94,15 +107,56 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        release {
+            if (keystorePropertiesFile.exists()) {
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            } else {
+                // Fallback to debug signing if keystore.properties doesn't exist
+                // This allows OSS builds to work without release keys
+                storeFile file('debug.keystore')
+                storePassword 'android'
+                keyAlias 'androiddebugkey'
+                keyPassword 'android'
+            }
+        }
     }
+
+    flavorDimensions "environment"
+
+    productFlavors {
+        dev {
+            dimension "environment"
+            applicationId "com.algorand.android.perarn.dev"
+            versionNameSuffix "-dev"
+            resValue "string", "app_name", "Pera Dev"
+            buildConfigField "String", "APP_ENV", '"development"'
+        }
+
+        staging {
+            dimension "environment"
+            applicationId "com.algorand.android.perarn.staging"
+            versionNameSuffix "-staging"
+            resValue "string", "app_name", "Pera Staging"
+            buildConfigField "String", "APP_ENV", '"staging"'
+        }
+
+        production {
+            dimension "environment"
+            applicationId "com.algorand.android.perarn"
+            resValue "string", "app_name", "Pera"
+            buildConfigField "String", "APP_ENV", '"production"'
+        }
+    }
+
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }

@@ -1,0 +1,21 @@
+// Production.xcconfig
+// Production environment configuration
+
+#include "Shared.xcconfig"
+
+// App Identity
+PRODUCT_BUNDLE_IDENTIFIER = com.algorand.ios.perarn
+PRODUCT_NAME = Pera
+
+// Environment Variable for Config Package
+APP_ENV = production
+
+// Display Name
+DISPLAY_NAME = Pera
+
+// Code Signing
+DEVELOPMENT_TEAM = $(APPLE_TEAM_ID)
+CODE_SIGN_IDENTITY = Apple Distribution
+
+// Provisioning Profile
+PROVISIONING_PROFILE_SPECIFIER = match AppStore com.algorand.ios.perarn

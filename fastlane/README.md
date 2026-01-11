@@ -5,6 +5,7 @@ This directory contains Fastlane configuration for automating iOS and Android bu
 ## Overview
 
 Fastlane is used to:
+
 - Build iOS and Android apps for different environments (dev, staging, production)
 - Manage code signing certificates and provisioning profiles (via Match)
 - Deploy builds to TestFlight and Play Store
@@ -34,31 +35,33 @@ Development builds use default configurations and don't require environment vari
 ### Staging/Production Builds
 
 1. Copy the environment template:
-   ```bash
-   cp fastlane/.env.default fastlane/.env.staging
-   # or
-   cp fastlane/.env.default fastlane/.env.production
-   ```
+
+    ```bash
+    cp fastlane/.env.default fastlane/.env.staging
+    # or
+    cp fastlane/.env.default fastlane/.env.production
+    ```
 
 2. Edit the file and fill in real values:
-   ```bash
-   # Required for iOS
-   APPLE_ID=your-apple-id@example.com
-   APPLE_TEAM_ID=YOUR_TEAM_ID
-   MATCH_GIT_URL=git@github.com:your-org/certificates.git
-   MATCH_PASSWORD=your-secure-password
 
-   # Required for Android
-   ANDROID_KEYSTORE_FILE=../path/to/release.keystore
-   ANDROID_KEYSTORE_PASSWORD=your-keystore-password
-   ANDROID_KEY_ALIAS=pera-wallet-release
-   ANDROID_KEY_PASSWORD=your-key-password
+    ```bash
+    # Required for iOS
+    APPLE_ID=your-apple-id@example.com
+    APPLE_TEAM_ID=YOUR_TEAM_ID
+    MATCH_GIT_URL=git@github.com:your-org/certificates.git
+    MATCH_PASSWORD=your-secure-password
 
-   # Required for Pera backend
-   PERA_MAINNET_BACKEND_URL=https://mainnet.api.perawallet.app
-   PERA_TESTNET_BACKEND_URL=https://testnet.api.perawallet.app
-   PERA_BACKEND_API_KEY=your-api-key
-   ```
+    # Required for Android
+    ANDROID_KEYSTORE_FILE=../path/to/release.keystore
+    ANDROID_KEYSTORE_PASSWORD=your-keystore-password
+    ANDROID_KEY_ALIAS=pera-wallet-release
+    ANDROID_KEY_PASSWORD=your-key-password
+
+    # Required for Pera backend
+    PERA_MAINNET_BACKEND_URL=https://mainnet.api.perawallet.app
+    PERA_TESTNET_BACKEND_URL=https://testnet.api.perawallet.app
+    PERA_BACKEND_API_KEY=your-api-key
+    ```
 
 3. **Important**: Never commit `.env.staging` or `.env.production` files!
 
@@ -122,24 +125,27 @@ Match syncs code signing certificates and provisioning profiles across your team
 ### Initial Setup
 
 1. Create a private git repository for certificates:
-   ```bash
-   gh repo create pera-wallet-certificates --private
-   ```
+
+    ```bash
+    gh repo create pera-wallet-certificates --private
+    ```
 
 2. Initialize Match:
-   ```bash
-   cd apps/mobile
-   bundle exec fastlane match init
-   ```
+
+    ```bash
+    cd apps/mobile
+    bundle exec fastlane match init
+    ```
 
 3. Generate certificates for all bundle IDs:
-   ```bash
-   # Development certificates
-   bundle exec fastlane match development
 
-   # Distribution certificates (for TestFlight/App Store)
-   bundle exec fastlane match appstore
-   ```
+    ```bash
+    # Development certificates
+    bundle exec fastlane match development
+
+    # Distribution certificates (for TestFlight/App Store)
+    bundle exec fastlane match appstore
+    ```
 
 4. Set the `MATCH_PASSWORD` in your environment files.
 
@@ -170,6 +176,7 @@ pnpm --filter mobile build:android:production
 ## Output Artifacts
 
 Built artifacts are saved to:
+
 - **iOS**: `./build/ios/*.ipa`
 - **Android**: `apps/mobile/android/app/build/outputs/bundle/`
 
@@ -187,10 +194,10 @@ Built artifacts are saved to:
 - Ensure the keystore file exists at the specified path
 - Verify the keystore password and key alias are correct
 - For first-time builds, you may need to generate a keystore:
-  ```bash
-  keytool -genkey -v -keystore release.keystore -alias pera-wallet-release \
-    -keyalg RSA -keysize 2048 -validity 10000
-  ```
+    ```bash
+    keytool -genkey -v -keystore release.keystore -alias pera-wallet-release \
+      -keyalg RSA -keysize 2048 -validity 10000
+    ```
 
 ### Environment Variables Not Loading
 
@@ -220,6 +227,7 @@ Built artifacts are saved to:
 For automated builds in GitHub Actions, see `.github/workflows/build-staging.yml` and `.github/workflows/build-production.yml`.
 
 Required GitHub Secrets:
+
 - `APPLE_ID`
 - `APPLE_TEAM_ID`
 - `MATCH_GIT_URL`
