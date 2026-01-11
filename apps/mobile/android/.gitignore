@@ -1,0 +1,42 @@
+# Android Gitignore
+#
+# This file prevents sensitive files and build artifacts from being
+# committed to version control.
+
+# Keystore files - NEVER commit these!
+*.keystore
+*.jks
+keystore.properties
+release.keystore
+
+# Firebase configuration files (contain app-specific IDs)
+# Each developer/environment should have their own
+google-services.json
+app/google-services.json
+app/src/*/google-services.json
+
+# Gradle files
+.gradle/
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+*.iml
+local.properties
+
+# NDK
+obj/
+
+# IntelliJ IDEA
+*.iml
+.idea/
+misc.xml
+deploymentTargetDropDown.xml
+render.experimental.xml
+
+# macOS
+.DS_Store
+
+# Signing files
+signing.properties
+app/release/
