@@ -34,13 +34,11 @@ const apiKey = config.backendAPIKey
 ### Environment Selection
 
 The environment is selected based on:
-
 - `APP_ENV` environment variable (highest priority)
 - `NODE_ENV` environment variable (fallback)
 - Defaults to `'development'` if neither is set
 
 Supported environments:
-
 - `development` / `dev` - Development overrides
 - `staging` / `stage` - Staging overrides
 - `production` / `prod` - Production config (no overrides)
@@ -59,7 +57,7 @@ By default, the configuration uses safe values for open source builds:
 - **Backend URLs**: Placeholder values
     - Mainnet: `https://api.example.com`
     - Testnet: `https://testnet-api.example.com`
-
+    
 - **API Keys**: Empty strings (no authentication)
 
 These defaults allow the app to compile and partially function out of the box. Community builders can provide their own backend infrastructure by setting environment variables (see below).
@@ -73,25 +71,21 @@ For official Pera Wallet builds, sensitive values are injected at build time usi
 All variables are optional and prefixed with `PERA_`:
 
 **Backend Configuration:**
-
 - `PERA_MAINNET_BACKEND_URL` - Mainnet backend API URL
 - `PERA_TESTNET_BACKEND_URL` - Testnet backend API URL
 - `PERA_BACKEND_API_KEY` - Backend API authentication key
 
 **Algorand Nodes (override public defaults):**
-
 - `PERA_MAINNET_ALGOD_URL` - Custom mainnet algod URL
 - `PERA_TESTNET_ALGOD_URL` - Custom testnet algod URL
 - `PERA_MAINNET_INDEXER_URL` - Custom mainnet indexer URL
 - `PERA_TESTNET_INDEXER_URL` - Custom testnet indexer URL
 
 **Node Authentication:**
-
 - `PERA_ALGOD_API_KEY` - Algod API key (if using custom nodes)
 - `PERA_INDEXER_API_KEY` - Indexer API key (if using custom nodes)
 
 **Feature Flags:**
-
 - `PERA_DEBUG_ENABLED` - Enable debug logging (`'true'` or `'false'`)
 - `PERA_PROFILING_ENABLED` - Enable React profiling (`'true'` or `'false'`)
 - `PERA_POLLING_ENABLED` - Enable background polling (`'true'` or `'false'`)
@@ -122,7 +116,6 @@ pnpm build
 The configuration is validated using Zod. See `main.ts` for the complete schema definition.
 
 Key configuration sections:
-
 - **Algorand nodes** - Algod and indexer URLs for mainnet/testnet
 - **Backend APIs** - Pera backend service URLs
 - **API keys** - Authentication keys for services
