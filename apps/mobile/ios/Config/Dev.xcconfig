@@ -1,0 +1,21 @@
+// Dev.xcconfig
+// Development environment configuration
+
+#include "Shared.xcconfig"
+
+// App Identity
+PRODUCT_BUNDLE_IDENTIFIER = com.algorand.ios.perarn.dev
+PRODUCT_NAME = Pera Dev
+
+// Environment Variable for Config Package
+APP_ENV = development
+
+// Display Name
+DISPLAY_NAME = Pera Dev
+
+// Code Signing
+DEVELOPMENT_TEAM = $(APPLE_TEAM_ID)
+CODE_SIGN_IDENTITY = Apple Development
+
+// Provisioning Profile
+PROVISIONING_PROFILE_SPECIFIER = match Development com.algorand.ios.perarn.dev

@@ -6,9 +6,31 @@ dist
 dist-ssr
 *.local
 .env
+.env.staging
+.env.production
+.env.local
 .cache
 server/dist
 public/dist
 /generated
 coverage
 /packages/platform-integration/coverage
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
+fastlane/.env.staging
+fastlane/.env.production
+fastlane/.env.local
+
+# Build outputs
+build/
+*.ipa
+*.apk
+*.aab
+*.dSYM.zip
+
+# Environment setup exports
+apps/mobile/scripts/.env-exports.sh

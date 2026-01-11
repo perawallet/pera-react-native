@@ -1,0 +1,19 @@
+// Shared.xcconfig
+// Common configuration shared across all environments
+
+// Version and Build Settings
+MARKETING_VERSION = 7.0.0
+CURRENT_PROJECT_VERSION = 1
+
+// Deployment Target
+IPHONEOS_DEPLOYMENT_TARGET = 16.0
+
+// Swift Settings
+SWIFT_VERSION = 5.9
+
+// Build Settings
+ENABLE_BITCODE = NO
+ONLY_ACTIVE_ARCH = NO
+
+// Code Signing (will be overridden by environment-specific configs)
+CODE_SIGN_STYLE = Automatic
