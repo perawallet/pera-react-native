@@ -1,0 +1,54 @@
+# Matchfile for Pera Wallet iOS Code Signing
+#
+# Match is a fastlane tool that syncs your certificates and provisioning
+# profiles across your team using a git repository.
+#
+# For more information, see: https://docs.fastlane.tools/actions/match/
+
+# Git repository URL where certificates and profiles are stored
+# This should be a private repository
+git_url(ENV["MATCH_GIT_URL"] || "https://github.com/your-org/certificates")
+
+# Storage mode (git, google_cloud, s3, gitlab_secure_files)
+storage_mode("git")
+
+# Type of provisioning profile to generate
+# Options: "development", "adhoc", "appstore", "enterprise"
+type("appstore")
+
+# App Identifier(s) to manage certificates for
+app_identifier([
+  ENV["IOS_DEV_BUNDLE_ID"] || "com.algorand.pera.dev",
+  ENV["IOS_STAGING_BUNDLE_ID"] || "com.algorand.pera.staging",
+  ENV["IOS_PRODUCTION_BUNDLE_ID"] || "com.algorand.pera"
+])
+
+# Apple Developer Portal username
+username(ENV["APPLE_ID"] || "your-apple-id@example.com")
+
+# Team ID for Apple Developer Portal
+team_id(ENV["APPLE_TEAM_ID"])
+
+# For faster execution, define which certificate types to sync
+# Options: "development", "adhoc", "appstore", "enterprise"
+# Leave empty to sync all types
+# type_filters = ["development", "adhoc", "appstore"]
+
+# Platform (ios, macos, tvos, catalyst)
+platform("ios")
+
+# Readonly mode (useful for CI - doesn't create new certificates)
+# readonly(true)
+
+# Skip confirmation prompts
+# force(true)
+
+# Shallow clone (faster, but only gets latest version)
+shallow_clone(true)
+
+# Clone branch name (default: master)
+git_branch("main")
+
+# Additional information for certificate generation
+# company_name("Pera Wallet")
+# country_code("US")
