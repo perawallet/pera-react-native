@@ -9,6 +9,7 @@ This is Pera Wallet, a React Native monorepo using pnpm workspaces and Turborepo
 ## Essential Commands
 
 ### Setup and Installation
+
 ```sh
 pnpm install
 pnpm run setup  # Installs Git hooks (pre-commit, pre-push)
@@ -18,6 +19,7 @@ pnpm run setup  # Installs Git hooks (pre-commit, pre-push)
 ```
 
 ### Running the Mobile App
+
 ```sh
 # Start Metro bundler (keep running)
 pnpm --filter mobile start
@@ -31,6 +33,7 @@ pnpm -C apps/mobile start|ios|android
 ```
 
 ### Testing
+
 ```sh
 # Run all tests with coverage
 pnpm test
@@ -44,6 +47,7 @@ pnpm test --watch
 ```
 
 ### Code Quality
+
 ```sh
 pnpm lint              # Check for linting errors
 pnpm lint:fix          # Auto-fix linting errors
@@ -53,11 +57,13 @@ pnpm lint:i18n         # Check i18n errors
 ```
 
 ### Building
+
 ```sh
 pnpm build  # Build all packages (Turborepo orchestrates dependencies)
 ```
 
 ### API Generation
+
 ```sh
 pnpm run generate:all-apis  # Generate typed clients, zod schemas, msw mocks from OpenAPI specs
 ```
@@ -67,21 +73,22 @@ Note: Generated code (in `generated/`) is reference only - OpenAPI specs need im
 ## Architecture
 
 ### Package Manager
+
 Always use **pnpm** for this workspace. The repository uses pnpm workspaces with a catalog for version management.
 
 ### Core Principles
 
 1. **Separation of Concerns**:
-   - `apps/mobile`: React Native UI, screens, navigation, platform integrations
-   - `packages/*`: Headless business logic, testable without a simulator
+    - `apps/mobile`: React Native UI, screens, navigation, platform integrations
+    - `packages/*`: Headless business logic, testable without a simulator
 
 2. **State Management**:
-   - **Client State**: Zustand stores in packages (e.g., `packages/settings/src/store`)
-   - **Server State**: TanStack Query for API data with automatic caching/refetching
-   - **Never export stores directly**: Always expose hooks (e.g., `useSettingsStore`)
+    - **Client State**: Zustand stores in packages (e.g., `packages/settings/src/store`)
+    - **Server State**: TanStack Query for API data with automatic caching/refetching
+    - **Never export stores directly**: Always expose hooks (e.g., `useSettingsStore`)
 
 3. **Data Flow**:
-   - User interacts with UI → UI calls Hook → Hook interacts with Store/API → State updates → UI re-renders
+    - User interacts with UI → UI calls Hook → Hook interacts with Store/API → State updates → UI re-renders
 
 ### Key Packages
 
@@ -116,6 +123,7 @@ Always use **pnpm** for this workspace. The repository uses pnpm workspaces with
 ## Development Guidelines
 
 ### Code Style
+
 - TypeScript strict mode (never disable)
 - No `any` - use `unknown` with type guards
 - Explicit return types on exported functions
@@ -124,6 +132,7 @@ Always use **pnpm** for this workspace. The repository uses pnpm workspaces with
 - Boolean props prefixed with `is`, `has`, `should`
 
 ### Security
+
 - **Never** store private keys/mnemonics in plain text - always use `SecureStorageService` via `platform-integration`
 - **Never** log sensitive data (private keys, mnemonics)
 - Use custom `Logger` with sanitization for object logging
@@ -131,6 +140,7 @@ Always use **pnpm** for this workspace. The repository uses pnpm workspaces with
 - Use Zod for schema validation where possible
 
 ### Testing
+
 - Vitest for packages (headless logic)
 - Jest for apps/mobile (React Native specifics)
 - React Native Testing Library for component tests
@@ -139,41 +149,49 @@ Always use **pnpm** for this workspace. The repository uses pnpm workspaces with
 - Test behavior, not implementation details
 
 ### Git Workflow
+
 - Branch naming: `<user-name>/<feature-or-fix>`
 - Conventional Commits format
 - PRs target `main` branch
 - Use Squash Merge when merging
 
 ### Reusability Focus
+
 Build reusable, scalable patterns and components early. Refactor for reusability to improve future development pace. Quality over quantity in documentation.
 
 ## Platform-Specific Notes
 
 ### iOS
+
 - Requires Xcode 15+
 - CocoaPods managed via Bundler (Ruby)
 - Run `pod install` in `apps/mobile/ios` after dependency changes
 
 ### Android
+
 - Requires Android Studio + SDKs
 - JDK 17
 - Emulator or physical device for testing
 
 ### macOS
+
 - Install Watchman for fast reloads: `brew install watchman`
 
 ## Common Issues
 
 ### Dependency Management
+
 - Dependencies are locked - be cautious updating to avoid supply chain attacks
 - Run `pnpm audit` regularly
 - The catalog in `pnpm-workspace.yaml` centralizes version management
 
 ### Git Hooks
+
 - Pre-commit: Runs linting, formatting, copyright checks
 - Pre-push: Runs tests
 - Installed via `pnpm run setup`
 
 ### Metro Bundler
+
 - Keep Metro running in separate terminal while developing
 - Clear cache if issues: `pnpm --filter mobile start --reset-cache`

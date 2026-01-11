@@ -5,6 +5,7 @@ This directory contains Fastlane configuration for automating iOS and Android bu
 ## Overview
 
 Fastlane is used to:
+
 - Build iOS and Android apps for different environments (dev, staging, production)
 - Manage code signing certificates and provisioning profiles (via Match)
 - Deploy builds to TestFlight and Play Store
@@ -175,6 +176,7 @@ pnpm --filter mobile build:android:production
 ## Output Artifacts
 
 Built artifacts are saved to:
+
 - **iOS**: `./build/ios/*.ipa`
 - **Android**: `apps/mobile/android/app/build/outputs/bundle/`
 
@@ -225,6 +227,7 @@ Built artifacts are saved to:
 For automated builds in GitHub Actions, see `.github/workflows/build-staging.yml` and `.github/workflows/build-production.yml`.
 
 Required GitHub Secrets:
+
 - `APPLE_ID`
 - `APPLE_TEAM_ID`
 - `MATCH_GIT_URL`

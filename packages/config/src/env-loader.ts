@@ -77,7 +77,8 @@ export function loadEnvOverrides(): Partial<Config> {
         overrides.debugEnabled = process.env.PERA_DEBUG_ENABLED === 'true'
     }
     if (process.env.PERA_PROFILING_ENABLED !== undefined) {
-        overrides.profilingEnabled = process.env.PERA_PROFILING_ENABLED === 'true'
+        overrides.profilingEnabled =
+            process.env.PERA_PROFILING_ENABLED === 'true'
     }
     if (process.env.PERA_POLLING_ENABLED !== undefined) {
         overrides.pollingEnabled = process.env.PERA_POLLING_ENABLED === 'true'
@@ -105,7 +106,12 @@ export function getConfigWithEnvOverrides(baseConfig: Config): Config {
     try {
         return configSchema.parse(mergedConfig)
     } catch (error) {
-        console.error('Configuration validation failed with env overrides:', error)
-        throw new Error('Invalid configuration after applying environment variables')
+        console.error(
+            'Configuration validation failed with env overrides:',
+            error,
+        )
+        throw new Error(
+            'Invalid configuration after applying environment variables',
+        )
     }
 }
