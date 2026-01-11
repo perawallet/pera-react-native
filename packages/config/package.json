@@ -29,6 +29,7 @@
   "devDependencies": {
     "@perawallet/wallet-core-devtools": "workspace:*",
     "@testing-library/react": "catalog:",
+    "@types/node": "^20.19.0",
     "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "eslint": "catalog:",
