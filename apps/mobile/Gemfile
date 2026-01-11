@@ -4,3 +4,4 @@ source "https://rubygems.org"
 
 # gem "rails"
 gem 'cocoapods', '~> 1.15.2'
+gem 'fastlane'

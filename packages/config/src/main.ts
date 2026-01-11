@@ -14,6 +14,7 @@ import { z } from 'zod'
 import { developmentOverrides } from './development'
 import { stagingOverrides } from './staging'
 import { productionConfig } from './production'
+import { getConfigWithEnvOverrides } from './env-loader'
 
 export const configSchema = z.object({
     mainnetBackendUrl: z.url(),
@@ -58,9 +59,19 @@ export type Config = z.infer<typeof configSchema>
 
 /**
  * Select a validated config object based on the provided env or environment variables.
+ *
+ * Configuration loading order (later values override earlier ones):
+ * 1. Base production config (safe OSS defaults)
+ * 2. Environment-specific overrides (development/staging)
+ * 3. Environment variable overrides (PERA_* prefix for build-time injection)
+ *
+ * Environment selection:
  * - APP_ENV has precedence over NODE_ENV
- * - Maps 'test' (Vitest) to staging by default
- * - Fallback for unknown values is staging
+ * - Maps 'test' (Vitest) to development by default
+ * - Fallback for unknown values is production
+ *
+ * @param env - Optional environment name to use instead of reading from process.env
+ * @returns Validated configuration object with all overrides applied
  */
 export function getConfigForEnv(env?: string): Config {
     const key = (env ?? 'development')?.toLowerCase() || 'development'
@@ -84,8 +95,11 @@ export function getConfigForEnv(env?: string): Config {
             break
     }
 
-    // Validate the selected config against the schema
-    return configSchema.parse({ ...productionConfig, ...overrides })
+    // Merge base config with environment overrides
+    const baseConfig = configSchema.parse({ ...productionConfig, ...overrides })
+
+    // Apply environment variable overrides (for build-time injection)
+    return getConfigWithEnvOverrides(baseConfig)
 }
 
 export const config = getConfigForEnv()

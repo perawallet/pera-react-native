@@ -19,21 +19,39 @@ import {
     THIRTY_SECONDS,
 } from './constants'
 
+/**
+ * Production configuration with safe defaults for open source builds.
+ *
+ * For production deployments, override these values at build time using
+ * environment variables (see env-loader.ts for details).
+ *
+ * OSS-Safe Defaults:
+ * - Algorand nodes: Public AlgoNode infrastructure
+ * - Backend URLs: Placeholder URLs (builders must provide their own)
+ * - API Keys: Empty (injected at build time for official builds)
+ */
 export const productionConfig: Config = {
-    mainnetBackendUrl: 'https://mainnet.staging.api.perawallet.app',
-    testnetBackendUrl: 'https://testnet.staging.api.perawallet.app',
+    // Algorand nodes - Public AlgoNode infrastructure (free, no authentication required)
     mainnetAlgodUrl: 'https://mainnet-api.algonode.cloud',
     testnetAlgodUrl: 'https://testnet-api.algonode.cloud',
-    mainnetIndexerUrl: 'http://mainnet-idx.algonode.cloud',
-    testnetIndexerUrl: 'http://testnet-idx.algonode.cloud',
-    backendAPIKey:
-        'development-purposes-only-dc98f2c7-908f-4f74-81ef-9f5464213f99',
+    mainnetIndexerUrl: 'https://mainnet-idx.algonode.cloud',
+    testnetIndexerUrl: 'https://testnet-idx.algonode.cloud',
+
+    // Pera backend URLs - Placeholder values for OSS builds
+    // Official builds inject real URLs via PERA_MAINNET_BACKEND_URL and PERA_TESTNET_BACKEND_URL
+    mainnetBackendUrl: 'https://api.example.com',
+    testnetBackendUrl: 'https://testnet-api.example.com',
+
+    // API Keys - Empty by default, injected at build time for official builds
+    backendAPIKey: '',
     algodApiKey: '',
     indexerApiKey: '',
 
+    // Public URLs - These are safe to keep as-is
     mainnetExplorerUrl: 'https://explorer.perawallet.app',
     testnetExplorerUrl: 'https://testnet.explorer.perawallet.app',
 
+    // Service URLs - Official Pera services (public websites)
     discoverBaseUrl: 'https://discover-mobile.perawallet.app/',
     stakingBaseUrl: 'https://staking-mobile.perawallet.app/',
     onrampBaseUrl: 'https://onramp-mobile.perawallet.app/',
@@ -47,15 +65,18 @@ export const productionConfig: Config = {
     swapSupportUrl:
         'https://support.perawallet.app/en/article/pera-swap-swapping-with-pera-1ep84ky/',
 
+    // Timing configuration
     notificationRefreshTime: THIRTY_SECONDS,
     remoteConfigRefreshTime: ONE_HOUR,
 
+    // React Query cache settings
     reactQueryDefaultGCTime: ONE_HOUR,
     reactQueryDefaultStaleTime: ONE_MINUTE,
     reactQueryShortLivedGCTime: 60 * ONE_DAY,
     reactQueryShortLivedStaleTime: 30 * ONE_SECOND,
     reactQueryPersistenceAge: 60 * ONE_DAY,
 
+    // Feature flags
     debugEnabled: false,
     profilingEnabled: false,
     pollingEnabled: true,
