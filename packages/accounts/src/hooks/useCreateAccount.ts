@@ -24,7 +24,7 @@ import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import {
     useWithKey,
-    useKMD,
+    useKMS,
     KeyType,
     KeyPair,
 } from '@perawallet/wallet-core-kms'
@@ -40,7 +40,7 @@ export const useCreateAccount = () => {
     const deviceInfo = useDeviceInfoService()
     const { mutateAsync: updateDeviceOnBackend } = useUpdateDeviceMutation()
     const { executeWithKey } = useWithKey()
-    const { saveKey, getKey } = useKMD()
+    const { saveKey, getKey } = useKMS()
 
     return async ({
         walletId,

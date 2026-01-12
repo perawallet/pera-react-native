@@ -17,7 +17,7 @@ import { v7 as uuidv7 } from 'uuid'
 import { useCallback } from 'react'
 import { logger } from '@perawallet/wallet-core-shared'
 
-export const useKMD = () => {
+export const useKMS = () => {
     const keys = useKeyManagerStore(state => state.keys)
     const addKey = useKeyManagerStore(state => state.addKey)
     const removeKey = useKeyManagerStore(state => state.removeKey)

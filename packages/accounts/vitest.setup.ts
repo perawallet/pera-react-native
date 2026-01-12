@@ -29,7 +29,7 @@ vi.mock('@perawallet/wallet-core-kms', async importOriginal => {
 
     return {
         ...actual,
-        useKMD: vi.fn(() => ({
+        useKMS: vi.fn(() => ({
             saveKey: vi.fn(async (keyPair, privateKey) => {
                 const storage = useSecureStorageService()
                 await storage.setItem(keyPair.id, privateKey)

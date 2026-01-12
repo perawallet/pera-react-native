@@ -228,7 +228,7 @@
             "title": "An error occurred processing this transaction",
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists."
         },
-        "kmd": {
+        "kms": {
             "key_not_found": "Could not find the key for wallet {{walletId}}.",
             "key_access_error": "Failed to access the signing key.",
             "invalid_key": "The key for wallet {{walletId}} is invalid."

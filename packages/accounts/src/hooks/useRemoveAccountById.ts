@@ -11,11 +11,11 @@
  */
 
 import { useAccountsStore } from '../store'
-import { useKMD } from '@perawallet/wallet-core-kms'
+import { useKMS } from '@perawallet/wallet-core-kms'
 
 export const useRemoveAccountById = () => {
     const accounts = useAccountsStore(state => state.accounts)
-    const { deleteKey } = useKMD()
+    const { deleteKey } = useKMS()
     const setAccounts = useAccountsStore(state => state.setAccounts)
 
     return (id: string) => {

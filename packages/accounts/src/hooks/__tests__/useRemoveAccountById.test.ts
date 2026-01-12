@@ -36,7 +36,7 @@ vi.mock('../../store', async () => {
 
 const deleteKeySpy = vi.fn()
 vi.mock('@perawallet/wallet-core-kms', () => ({
-    useKMD: () => ({
+    useKMS: () => ({
         deleteKey: deleteKeySpy,
     }),
 }))
