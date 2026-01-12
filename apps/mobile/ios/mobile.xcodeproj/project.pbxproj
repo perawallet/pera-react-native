@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		0A8CF9DFA897B35E3010B1F3 /* libPods-mobile.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 178BB8951C4B01B8563BF1DD /* libPods-mobile.a */; };
 		0E346744DD894FED9C9B572C /* DMSansBlack.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 16E0E01ED2D24A8DACC9C2A0 /* DMSansBlack.ttf */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		26681905ED0133E55BB249B7 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
@@ -24,6 +23,7 @@
 		CD2ECEDA543A40089D629368 /* DMSansMedium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 28EA62634FCE43039FFDFC1C /* DMSansMedium.ttf */; };
 		DDBD33E351BE43238CB5CB5E /* DMSansItalic.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C6F6FA7AA6A44C03B6FA653E /* DMSansItalic.ttf */; };
 		EF7AC1E9635C4C85BE10CB35 /* DMSansRegular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 1FA0C2AA738C4BF09C7C6B42 /* DMSansRegular.ttf */; };
+		F131600A6CBAE90477A36CA0 /* libPods-pera.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1EAF11C3D4FAEFFF055B79DF /* libPods-pera.a */; };
 		F1E23D725642489CAC71A429 /* DMSansBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = C4E6722D99744E1E8255DCE9 /* DMSansBold.ttf */; };
 		F2A7E484F5914AE8A4421FB1 /* DMMonoMedium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 52490A0821134E56A26ACF00 /* DMMonoMedium.ttf */; };
 		F89341C1A1594326B4BC919D /* BootSplash.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 1C828B83D3E94D22916C3A70 /* BootSplash.storyboard */; };
@@ -35,8 +35,8 @@
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = mobile/Info.plist; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = mobile/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		16E0E01ED2D24A8DACC9C2A0 /* DMSansBlack.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = DMSansBlack.ttf; path = ../assets/fonts/DMSansBlack.ttf; sourceTree = "<group>"; };
-		178BB8951C4B01B8563BF1DD /* libPods-mobile.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-mobile.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1C828B83D3E94D22916C3A70 /* BootSplash.storyboard */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = BootSplash.storyboard; path = mobile/BootSplash.storyboard; sourceTree = "<group>"; };
+		1EAF11C3D4FAEFFF055B79DF /* libPods-pera.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-pera.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1FA0C2AA738C4BF09C7C6B42 /* DMSansRegular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = DMSansRegular.ttf; path = ../assets/fonts/DMSansRegular.ttf; sourceTree = "<group>"; };
 		28EA62634FCE43039FFDFC1C /* DMSansMedium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = DMSansMedium.ttf; path = ../assets/fonts/DMSansMedium.ttf; sourceTree = "<group>"; };
 		30FECC5916FD4B988778C3B5 /* DMSansSemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = DMSansSemiBold.ttf; path = ../assets/fonts/DMSansSemiBold.ttf; sourceTree = "<group>"; };
@@ -46,10 +46,12 @@
 		594D57512E8FDD1500D0DA38 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		5956385C5D594D168439900B /* Colors.xcassets */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = folder.assetcatalog; name = Colors.xcassets; path = mobile/Colors.xcassets; sourceTree = "<group>"; };
 		59B13B462EF5996B00282240 /* pera.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = pera.entitlements; sourceTree = "<group>"; };
+		630D5D0F020E9AB53CC3AEED /* Pods-pera.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-pera.debug.xcconfig"; path = "Target Support Files/Pods-pera/Pods-pera.debug.xcconfig"; sourceTree = "<group>"; };
 		756DEB473739420CAC360BA1 /* DMMonoRegular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = DMMonoRegular.ttf; path = ../assets/fonts/DMMonoRegular.ttf; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = mobile/AppDelegate.swift; sourceTree = "<group>"; };
 		81495CD2062D4908A7642D8D /* DMSansThin.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = DMSansThin.ttf; path = ../assets/fonts/DMSansThin.ttf; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = mobile/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		8BAC8F0F04C81DE13A6358C7 /* Pods-pera.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-pera.release.xcconfig"; path = "Target Support Files/Pods-pera/Pods-pera.release.xcconfig"; sourceTree = "<group>"; };
 		9C8899B3BEAC4B5E960FB5C4 /* DMSansExtraBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = DMSansExtraBold.ttf; path = ../assets/fonts/DMSansExtraBold.ttf; sourceTree = "<group>"; };
 		BF7FDD972E7B47C8A1F40714 /* DMSansExtraLight.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = DMSansExtraLight.ttf; path = ../assets/fonts/DMSansExtraLight.ttf; sourceTree = "<group>"; };
 		C4E6722D99744E1E8255DCE9 /* DMSansBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = DMSansBold.ttf; path = ../assets/fonts/DMSansBold.ttf; sourceTree = "<group>"; };
@@ -63,7 +65,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0A8CF9DFA897B35E3010B1F3 /* libPods-mobile.a in Frameworks */,
+				F131600A6CBAE90477A36CA0 /* libPods-pera.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -89,7 +91,7 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				178BB8951C4B01B8563BF1DD /* libPods-mobile.a */,
+				1EAF11C3D4FAEFFF055B79DF /* libPods-pera.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -130,6 +132,8 @@
 			children = (
 				3B4392A12AC88292D35C810B /* Pods-mobile.debug.xcconfig */,
 				5709B34CF0A7D63546082F79 /* Pods-mobile.release.xcconfig */,
+				630D5D0F020E9AB53CC3AEED /* Pods-pera.debug.xcconfig */,
+				8BAC8F0F04C81DE13A6358C7 /* Pods-pera.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -261,15 +265,15 @@
 			files = (
 			);
 			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-mobile/Pods-mobile-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+				"${PODS_ROOT}/Target Support Files/Pods-pera/Pods-pera-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-mobile/Pods-mobile-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+				"${PODS_ROOT}/Target Support Files/Pods-pera/Pods-pera-frameworks-${CONFIGURATION}-output-files.xcfilelist",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-mobile/Pods-mobile-frameworks.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-pera/Pods-pera-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		40EE50766B7E752CD99E8887 /* [CP-User] [RNFB] Core Configuration */ = {
@@ -314,7 +318,7 @@
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-mobile-checkManifestLockResult.txt",
+				"$(DERIVED_FILE_DIR)/Pods-pera-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -327,15 +331,15 @@
 			files = (
 			);
 			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-mobile/Pods-mobile-resources-${CONFIGURATION}-input-files.xcfilelist",
+				"${PODS_ROOT}/Target Support Files/Pods-pera/Pods-pera-resources-${CONFIGURATION}-input-files.xcfilelist",
 			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-mobile/Pods-mobile-resources-${CONFIGURATION}-output-files.xcfilelist",
+				"${PODS_ROOT}/Target Support Files/Pods-pera/Pods-pera-resources-${CONFIGURATION}-output-files.xcfilelist",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-mobile/Pods-mobile-resources.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-pera/Pods-pera-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -354,7 +358,7 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 3B4392A12AC88292D35C810B /* Pods-mobile.debug.xcconfig */;
+			baseConfigurationReference = 630D5D0F020E9AB53CC3AEED /* Pods-pera.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -384,7 +388,7 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 5709B34CF0A7D63546082F79 /* Pods-mobile.release.xcconfig */;
+			baseConfigurationReference = 8BAC8F0F04C81DE13A6358C7 /* Pods-pera.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
