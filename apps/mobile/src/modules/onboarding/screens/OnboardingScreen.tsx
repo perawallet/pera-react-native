@@ -25,7 +25,6 @@ import { useLanguage } from '@hooks/language'
 import useToast from '@hooks/toast'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
-import { logger } from '@perawallet/wallet-core-shared'
 
 const OnboardingScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
@@ -46,9 +45,6 @@ const OnboardingScreen = () => {
                 params: { account: account },
             })
         } catch (error) {
-            logger.error('OnboardingScreen', {
-                error,
-            })
             showToast({
                 title: t('onboarding.create_account.error_title'),
                 body: t('onboarding.create_account.error_message', {

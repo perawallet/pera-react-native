@@ -30,7 +30,6 @@ import {
 } from '@perawallet/wallet-core-kms'
 import { NoHDWalletError } from '../errors'
 import { KEY_DOMAIN } from '../constants'
-import { logger } from '@perawallet/wallet-core-shared'
 
 export const useCreateAccount = () => {
     const { network } = useNetwork()
@@ -71,7 +70,6 @@ export const useCreateAccount = () => {
                 type: KeyType.HDWalletRootKey,
             } as KeyPair
 
-            logger.debug('Saving root key', { rootKey })
             rootKey = await saveKey(
                 rootKey,
                 new TextEncoder().encode(stringifiedObj),
