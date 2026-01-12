@@ -13,7 +13,7 @@
 import { Networks } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
 import { useContext, useEffect, useRef } from 'react'
-import { AppState, StatusBar } from 'react-native'
+import { AppState } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { MainRoutes } from '@routes/index'
 import { getTheme } from '@theme/theme'
@@ -39,7 +39,7 @@ import WebViewProvider from '@providers/WebViewProvider'
 import { useLanguage } from '@hooks/language'
 import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
 
-const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
+const RootContentContainer = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const { hasInternet } = useContext(NetworkStatusContext)
@@ -63,10 +63,6 @@ const RootContentContainer = ({ isDarkMode }: { isDarkMode: boolean }) => {
                 {network === Networks.testnet && (
                     <PWView style={styles.testnetBar} />
                 )}
-                <StatusBar
-                    barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-                    translucent={true}
-                />
 
                 {!hasInternet && (
                     <PWView style={styles.offlineTextContainer}>
@@ -131,7 +127,7 @@ export const RootComponent = () => {
                 <WebViewProvider>
                     <SigningProvider>
                         <WalletConnectProvider>
-                            <RootContentContainer isDarkMode={isDarkMode} />
+                            <RootContentContainer />
                         </WalletConnectProvider>
                     </SigningProvider>
                 </WebViewProvider>
