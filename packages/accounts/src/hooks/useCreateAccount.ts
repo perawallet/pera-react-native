@@ -27,7 +27,7 @@ import {
     useKMD,
     KeyType,
     KeyPair,
-} from '@perawallet/wallet-core-kmd'
+} from '@perawallet/wallet-core-kms'
 import { NoHDWalletError } from '../errors'
 import { KEY_DOMAIN } from '../constants'
 import { logger } from '@perawallet/wallet-core-shared'

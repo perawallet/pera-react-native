@@ -10,11 +10,10 @@
  limitations under the License
  */
 
-import type { JestConfigWithTsJest } from 'ts-jest'
+export const name = '@perawallet/wallet-core-kms'
 
-const jestConfig: JestConfigWithTsJest = {
-    preset: 'ts-jest/presets/default-esm',
-    testPathIgnorePatterns: ['src'],
-}
-
-export default jestConfig
+export * from './hooks/useKMD'
+export * from './hooks/useWithKey'
+export * from './models'
+export * from './store'
+export * from './errors'

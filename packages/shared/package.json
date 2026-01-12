@@ -19,7 +19,7 @@
     "@kubb/core": "catalog:",
     "@kubb/plugin-client": "catalog:",
     "@perawallet/wallet-core-config": "workspace:*",
-    "@algorandfoundation/xhd-wallet-api": "workspace:*",
+    "@algorandfoundation/xhd-wallet-api": "catalog:",
     "@tanstack/react-query": "catalog:",
     "@tanstack/react-query-persist-client": "catalog:",
     "base32-encode": "^2.0.0",

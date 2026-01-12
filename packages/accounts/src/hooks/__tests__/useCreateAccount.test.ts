@@ -18,7 +18,7 @@ import {
     registerTestPlatform,
     MemoryKeyValueStorage,
 } from '@perawallet/wallet-core-platform-integration'
-import { KeyPair, KeyType } from '@perawallet/wallet-core-kmd'
+import { KeyPair, KeyType } from '@perawallet/wallet-core-kms'
 
 const uuidSpies = vi.hoisted(() => ({ v7: vi.fn() }))
 vi.mock('uuid', () => ({ v7: uuidSpies.v7 }))
@@ -63,10 +63,10 @@ const kmdSpies = vi.hoisted(() => ({
     removeKey: vi.fn(),
     executeWithKey: vi.fn(),
 }))
-vi.mock('@perawallet/wallet-core-kmd', async () => {
-    const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-kmd')
-    >('@perawallet/wallet-core-kmd')
+vi.mock('@perawallet/wallet-core-kms', async () => {
+    const actual = await vi.importActual<typeof import('kms/src')>(
+        '@perawallet/wallet-core-kms',
+    )
     return {
         ...actual,
         ...kmdSpies,

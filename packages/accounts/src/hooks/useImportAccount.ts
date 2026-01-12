@@ -12,7 +12,7 @@
 
 import { useHDWallet } from './useHDWallet'
 import { v7 as uuidv7 } from 'uuid'
-import { KeyType, useKMD } from '@perawallet/wallet-core-kmd'
+import { KeyType, useKMD } from '@perawallet/wallet-core-kms'
 import { useCreateAccount } from './useCreateAccount'
 
 export const useImportAccount = () => {
