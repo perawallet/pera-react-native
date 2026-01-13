@@ -6,9 +6,8 @@ We test to ensure code works correctly and stays working as changes are made.
 
 | Tool                             | Used For                              |
 | -------------------------------- | ------------------------------------- |
-| **Vitest**                       | Testing `packages/*` (business logic) |
-| **Jest**                         | Testing `apps/mobile` (React Native)  |
-| **React Native Testing Library** | Component testing (via Jest)          |
+| **Vitest**                       | Testing everything (packages & apps)  |
+| **React Native Testing Library** | Component testing (via Vitest/React)  |
 
 ## Running Tests
 
@@ -64,11 +63,11 @@ Avoid:
 // ✅ Good Example
 it('submits form when save is pressed', () => {
     // Arrange
-    const onSave = jest.fn()
+    const onSave = vi.fn()
     render(<UserForm onSave={onSave} />)
     
     // Act
-    fireEvent.press(screen.getByText('Save'))
+    fireEvent.click(screen.getByText('Save'))
     
     // Assert
     expect(onSave).toHaveBeenCalled()

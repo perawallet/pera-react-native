@@ -428,4 +428,3 @@ vi.mock('react-native-notifier', () => {
     },
   }
 })
-global.jest = vi
