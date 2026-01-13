@@ -21,14 +21,14 @@ pnpm format            # Format code
 
 Before writing ANY code, reference the appropriate documentation in `docs/`:
 
-| Task                      | Required Documentation                              |
-| ------------------------- | --------------------------------------------------- |
-| Any code change           | `docs/STYLE_GUIDE.md`, `docs/NAMING_CONVENTIONS.md` |
-| Creating files/folders    | `docs/FOLDER_STRUCTURE.md`                          |
-| Business logic            | `docs/ARCHITECTURE.md`                              |
-| Writing tests             | `docs/TESTING.md`                                   |
-| Security-sensitive code   | `docs/SECURITY.md`                                  |
-| Performance-critical code | `docs/PERFORMANCE.md`                               |
+| Task | Required Documentation |
+|------|------------------------|
+| Any code change | `docs/STYLE_GUIDE.md`, `docs/NAMING_CONVENTIONS.md` |
+| Creating files/folders | `docs/FOLDER_STRUCTURE.md` |
+| Business logic | `docs/ARCHITECTURE.md` |
+| Writing tests | `docs/TESTING.md` |
+| Security-sensitive code | `docs/SECURITY.md` |
+| Performance-critical code | `docs/PERFORMANCE.md` |
 
 ## Code Location Rules
 

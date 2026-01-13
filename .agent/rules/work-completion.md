@@ -8,25 +8,27 @@ Before considering ANY task complete, you MUST verify the following acceptance c
 
 ## Pre-Completion Checklist
 
-### 1. Code Quality Checks
+### 1. Run Pre-Push Checks
 
-Run these commands and ensure they pass:
+Run the unified verification command:
 
 ```sh
-# Check for linting errors
-pnpm lint
+pnpm pre-push
+```
 
-# Check formatting
-pnpm format
+This single command runs:
+- ESLint (linting)
+- Prettier (formatting)
+- Copyright header validation
+- i18n validation
 
-# Check copyright headers
-pnpm lint:copyright
+### 2. Run Tests
 
-# Run tests
+```sh
 pnpm test
 ```
 
-### 2. Specific Package Checks
+### 3. Specific Package Checks (Optional)
 
 If you modified code in a specific workspace:
 
@@ -40,9 +42,9 @@ pnpm --filter [package-name] test
 pnpm --filter [package-name] lint
 ```
 
-### 3. TypeScript Compilation
+### 4. TypeScript Compilation (For Major Changes)
 
-Ensure TypeScript compiles without errors:
+For significant changes, ensure TypeScript compiles:
 
 ```sh
 pnpm build
@@ -50,26 +52,24 @@ pnpm build
 
 ## Work Is NOT Complete Until
 
-- [ ] All linting errors are resolved (`pnpm lint` passes)
-- [ ] All tests pass (`pnpm test` passes)
-- [ ] Code is properly formatted (`pnpm format` applied)
-- [ ] Copyright headers are present (`pnpm lint:copyright` passes)
-- [ ] TypeScript compiles successfully (`pnpm build` passes)
+- [ ] `pnpm pre-push` passes (lint, format, copyright, i18n)
+- [ ] `pnpm test` passes (all tests green)
 - [ ] Any new files follow naming conventions from `docs/NAMING_CONVENTIONS.md`
 - [ ] Any new code follows patterns from `docs/STYLE_GUIDE.md`
 - [ ] Tests are written for new functionality per `docs/TESTING.md`
 
 ## If Checks Fail
 
-1. **Linting errors**: Fix the issues, don't disable rules
-2. **Test failures**: Debug and fix the failing tests
-3. **Build errors**: Resolve TypeScript errors
-4. **Format issues**: Run `pnpm format` to auto-fix
+1. **Linting errors**: Run `pnpm lint:fix` to auto-fix, then fix remaining manually
+2. **Formatting issues**: Run `pnpm format` to auto-fix
+3. **Copyright errors**: Run `pnpm lint:copyright` to add headers
+4. **Test failures**: Debug and fix the failing tests
+5. **Build errors**: Resolve TypeScript errors
 
 ## Reporting Completion
 
 When reporting task completion to the user, include:
 
 1. Summary of changes made
-2. Confirmation that all checks pass
+2. Confirmation that `pnpm pre-push` and `pnpm test` pass
 3. Any notable design decisions or trade-offs
