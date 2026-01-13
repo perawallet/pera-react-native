@@ -27,32 +27,34 @@ Determine which files are affected:
 
 **For human-readable overviews (docs/):**
 
-| Change Type | File |
-|-------------|------|
-| Architecture changes | `docs/ARCHITECTURE.md` |
-| New directories | `docs/FOLDER_STRUCTURE.md` |
-| Naming changes | `docs/NAMING_CONVENTIONS.md` |
-| Code style | `docs/STYLE_GUIDE.md` |
-| Testing | `docs/TESTING.md` |
-| Security | `docs/SECURITY.md` |
-| Performance | `docs/PERFORMANCE.md` |
+| Change Type          | File                         |
+| -------------------- | ---------------------------- |
+| Architecture changes | `docs/ARCHITECTURE.md`       |
+| New directories      | `docs/FOLDER_STRUCTURE.md`   |
+| Naming changes       | `docs/NAMING_CONVENTIONS.md` |
+| Code style           | `docs/STYLE_GUIDE.md`        |
+| Testing              | `docs/TESTING.md`            |
+| Security             | `docs/SECURITY.md`           |
+| Performance          | `docs/PERFORMANCE.md`        |
 
 **For agent rules with code examples (.agent/):**
 
-| Change Type | File |
-|-------------|------|
-| Code patterns | `.agent/rules/code-patterns.md` |
+| Change Type       | File                               |
+| ----------------- | ---------------------------------- |
+| Code patterns     | `.agent/rules/code-patterns.md`    |
 | Project standards | `.agent/rules/running-commands.md` |
-| Work completion | `.agent/rules/work-completion.md` |
+| Work completion   | `.agent/rules/work-completion.md`  |
 
 ### 2. Update Documentation
 
 **In `docs/`**: Keep it high-level and human-readable
+
 - Tables, simple lists
 - Minimal code examples
 - Focus on "what" and "why"
 
 **In `.agent/`**: Add detailed patterns
+
 - Full code examples (good AND bad)
 - Anti-patterns with explanations
 - Specific implementation details
@@ -66,12 +68,14 @@ Determine which files are affected:
 ### 4. Keep It Agent-Agnostic
 
 Documentation must be readable by any AI or human. Avoid:
+
 - Tool-specific syntax
 - Platform-specific references
 
 ### 5. Format Documentation
 
 // turbo
+
 ```sh
 pnpm format "docs/**/*.md"
 ```

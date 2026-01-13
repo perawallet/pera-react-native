@@ -19,26 +19,17 @@ pnpm format            # Format code
 
 ## Required Documentation Reference
 
-Before writing ANY code, reference the appropriate documentation in `docs/`:
+Before writing ANY code, reference the appropriate documentation:
 
-| Task | Required Documentation |
-|------|------------------------|
-| Any code change | `docs/STYLE_GUIDE.md`, `docs/NAMING_CONVENTIONS.md` |
-| Creating files/folders | `docs/FOLDER_STRUCTURE.md` |
-| Business logic | `docs/ARCHITECTURE.md` |
-| Writing tests | `docs/TESTING.md` |
-| Security-sensitive code | `docs/SECURITY.md` |
-| Performance-critical code | `docs/PERFORMANCE.md` |
-
-## Code Location Rules
-
-1. **Business logic** → `packages/[domain]/src/`
-2. **UI components (shared)** → `apps/mobile/src/components/` (prefix with `PW`)
-3. **Feature screens** → `apps/mobile/src/modules/[module]/screens/`
-4. **Module components** → `apps/mobile/src/modules/[module]/components/`
-5. **Hooks (business)** → `packages/[domain]/src/hooks/`
-6. **Hooks (UI-specific)** → `apps/mobile/src/hooks/`
-7. **Tests** → `__tests__/` directory colocated with source
+| Task                       | Reference                       |
+| -------------------------- | ------------------------------- |
+| Understanding architecture | `docs/ARCHITECTURE.md`          |
+| File/folder placement      | `docs/FOLDER_STRUCTURE.md`      |
+| Naming rules               | `docs/NAMING_CONVENTIONS.md`    |
+| Code patterns (detailed)   | `.agent/rules/code-patterns.md` |
+| Writing tests              | `docs/TESTING.md`               |
+| Security considerations    | `docs/SECURITY.md`              |
+| Performance optimization   | `docs/PERFORMANCE.md`           |
 
 ## Core Values
 

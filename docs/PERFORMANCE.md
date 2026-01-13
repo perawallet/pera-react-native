@@ -17,7 +17,6 @@ A smooth, responsive app is essential for a good user experience.
 
 ```jsx
 import { FlashList } from '@shopify/flash-list'
-
 ;<FlashList
     data={items}
     renderItem={renderItem}

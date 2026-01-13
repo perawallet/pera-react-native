@@ -51,18 +51,7 @@ packages/accounts/src/
 | Secure storage implementation   | `apps/mobile/src/platform/`                    |
 | Unit test                       | `__tests__/` folder next to the code           |
 
-## Naming Quick Reference
-
-| Element          | Convention     | Example              |
-| ---------------- | -------------- | -------------------- |
-| Shared component | `PW` prefix    | `PWButton.tsx`       |
-| Module component | PascalCase     | `AccountCard.tsx`    |
-| Screen           | `[Name]Screen` | `AccountsScreen.tsx` |
-| Hook file        | camelCase      | `useToast.ts`        |
-| Style file       | `styles.ts`    | `styles.ts`          |
-| Directory        | kebab-case     | `account-card/`      |
-
 ## Learn More
 
 - [Architecture](ARCHITECTURE.md) - The big picture
-- [Naming Conventions](NAMING_CONVENTIONS.md) - Detailed naming rules
+- [Naming Conventions](NAMING_CONVENTIONS.md) - How to name files and code

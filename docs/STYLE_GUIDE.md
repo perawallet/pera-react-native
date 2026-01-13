@@ -2,34 +2,6 @@
 
 This guide covers the key coding standards for the project.
 
-## Git Workflow
-
-### Branches
-
-Use the format: `<your-name>/<feature-or-fix>`
-
-```
-john/add-login-screen
-sarah/fix-balance-display
-```
-
-### Commits
-
-We use [Conventional Commits](https://www.conventionalcommits.org/):
-
-```
-feat(accounts): add account import
-fix(settings): correct currency format
-docs: update readme
-refactor(hooks): simplify balance hook
-```
-
-### Pull Requests
-
-- Target `main` branch
-- Ensure tests pass
-- Use **Squash Merge**
-
 ## TypeScript
 
 - **Strict mode is on** — don't disable it
@@ -60,11 +32,12 @@ pnpm format     # Auto-fix formatting
 
 ## Key Principles
 
-1. **Logic in packages, UI in mobile app**
-2. **Self-documenting code** — minimize comments
-3. **No magic numbers** — use named constants
-4. **Consistent naming** — see [Naming Conventions](NAMING_CONVENTIONS.md)
+1. **Self-documenting code** — minimize comments
+2. **No magic numbers** — use named constants
 
 ## Learn More
 
-For detailed code patterns and examples, see the development workflows.
+- [Contributing Guide](CONTRIBUTING.md) - Git workflow, branching, commits
+- [Architecture](docs/ARCHITECTURE.md) - Where logic vs UI goes
+- [Naming Conventions](docs/NAMING_CONVENTIONS.md) - How to name things
+- [Folder Structure](docs/FOLDER_STRUCTURE.md) - Where to put files

@@ -112,14 +112,6 @@ pnpm format         # format files
 - [Style Guide](docs/STYLE_GUIDE.md)
 - [Security Best Practices](docs/SECURITY.md)
 - [Performance Guidelines](docs/PERFORMANCE.md)
-- [Tech Debt Registry](docs/TECH_DEBT.md)
 - [Contributing Guide](CONTRIBUTING.md)
-
-## Development patterns
-
-- **Logic vs UI**: Keep business logic in `packages/*` and UI in `apps/mobile`.
-- **State**: Use hooks/services to expose state; do not access stores directly in UI.
-- **Backend**: Use generated React Query hooks; avoid direct API calls.
-- **Platform**: Keep cross-platform logic in packages; native glue in app.
 
 For app-specific notes, see [`apps/mobile/README.md`](apps/mobile/README.md).

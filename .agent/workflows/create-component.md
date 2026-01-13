@@ -9,6 +9,7 @@ Use this workflow when creating a new UI component.
 ## Prerequisites
 
 Reference these before starting:
+
 - `.agent/rules/code-patterns.md` - Detailed component patterns with examples
 - `docs/FOLDER_STRUCTURE.md` - Where to place the component
 - `docs/NAMING_CONVENTIONS.md` - How to name files and the component
@@ -54,11 +55,13 @@ Create `__tests__/[ComponentName].test.tsx`:
 ### 6. Verify
 
 // turbo
+
 ```sh
 pnpm --filter mobile lint
 ```
 
 // turbo
+
 ```sh
 pnpm --filter mobile test
 ```

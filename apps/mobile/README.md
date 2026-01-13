@@ -13,35 +13,11 @@ pnpm start
 pnpm ios      # or: pnpm android
 ```
 
-## Project Structure
-
-```
-src/
-├── components/    # Shared UI components (PW-prefixed)
-├── modules/       # Feature modules (accounts, settings, etc.)
-├── hooks/         # UI-specific hooks
-├── providers/     # React context providers
-├── routes/        # Navigation
-├── theme/         # Colors, typography
-└── platform/      # Native implementations
-```
-
 ## Key Concepts
-
-### Modules
-
-Features are organized into modules. Each has its own screens, components, and routes:
-
-```
-modules/accounts/
-├── screens/        # AccountsScreen, etc.
-├── components/     # AccountCard, etc.
-└── routes/
-```
 
 ### Business Logic
 
-Import from `packages/*`, don't implement in the app:
+All business logic lives in `packages/*`. Import from there, don't implement in the app:
 
 ```typescript
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
@@ -49,7 +25,7 @@ import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 
 ### Shared Components
 
-Use `PW` prefix for shared components:
+Use `PW` prefix for shared components in `src/components/`:
 
 ```typescript
 import PWButton from '@components/button/PWButton'
@@ -76,7 +52,8 @@ cd ios && bundle exec pod install --clean-install
 pnpm start -- --reset-cache
 ```
 
-## Related Docs
+## Learn More
 
-- [Root README](../../README.md)
-- [Architecture](../../docs/ARCHITECTURE.md)
+- [Root README](../../README.md) - Setup and commands
+- [Architecture](../../docs/ARCHITECTURE.md) - How the codebase is structured
+- [Folder Structure](../../docs/FOLDER_STRUCTURE.md) - Where to put files
