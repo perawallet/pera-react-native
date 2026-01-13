@@ -112,6 +112,7 @@ pnpm format         # format files
 - [Style Guide](docs/STYLE_GUIDE.md)
 - [Security Best Practices](docs/SECURITY.md)
 - [Performance Guidelines](docs/PERFORMANCE.md)
+- [Tech Debt Registry](docs/TECH_DEBT.md)
 - [Contributing Guide](CONTRIBUTING.md)
 
 ## Development patterns
