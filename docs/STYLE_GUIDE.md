@@ -35,6 +35,17 @@ pnpm format     # Auto-fix formatting
 1. **Self-documenting code** — minimize comments
 2. **No magic numbers** — use named constants
 
+## Images
+
+| Format   | Use For                                          |
+| -------- | ------------------------------------------------ |
+| **SVG**  | Icons, logos, simple graphics that need to scale |
+| **WebP** | Photos, complex images, screenshots              |
+
+**SVG** — Use for vector graphics. They scale perfectly at any size and are smaller for simple shapes. Import as React components for easy theming.
+
+**WebP** — Use for raster images. Better compression than PNG/JPEG while maintaining quality. Use for photos, gradients, and complex artwork.
+
 ## Learn More
 
 - [Contributing Guide](CONTRIBUTING.md) - Git workflow, branching, commits
