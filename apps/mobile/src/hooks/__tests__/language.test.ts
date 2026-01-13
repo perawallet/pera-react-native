@@ -10,21 +10,21 @@
  limitations under the License
  */
 
-import { renderHook, act } from '@testing-library/react-native'
+import { renderHook, act } from '@testing-library/react'
 import { useLanguage } from '../language'
 import { useTranslation } from 'react-i18next'
 
-jest.mock('react-i18next', () => ({
-    useTranslation: jest.fn(),
+vi.mock('react-i18next', () => ({
+    useTranslation: vi.fn(),
 }))
 
 describe('useLanguage', () => {
-    const mockChangeLanguage = jest.fn()
-    const mockT = jest.fn()
+    const mockChangeLanguage = vi.fn()
+    const mockT = vi.fn()
 
     beforeEach(() => {
-        jest.clearAllMocks()
-        ;(useTranslation as jest.Mock).mockReturnValue({
+        vi.clearAllMocks()
+        ;(useTranslation as vi.Mock).mockReturnValue({
             t: mockT,
             i18n: {
                 language: 'en',

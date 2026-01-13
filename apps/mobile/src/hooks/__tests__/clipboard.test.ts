@@ -10,38 +10,41 @@
  limitations under the License
  */
 
-import { renderHook, act } from '@testing-library/react-native'
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
+import { renderHook, act } from '@testing-library/react'
 import { useClipboard } from '../clipboard'
 import Clipboard from '@react-native-clipboard/clipboard'
 import useToast from '../toast'
 
-jest.mock('@react-native-clipboard/clipboard', () => ({
-    setString: jest.fn(),
+vi.mock('@react-native-clipboard/clipboard', () => ({
+    default: {
+        setString: vi.fn(),
+    },
 }))
 
-jest.mock('../toast', () => ({
+vi.mock('../toast', () => ({
     __esModule: true,
-    default: jest.fn(() => ({
-        showToast: jest.fn(),
+    default: vi.fn(() => ({
+        showToast: vi.fn(),
     })),
 }))
 
-jest.mock('@hooks/language', () => ({
-    useLanguage: jest.fn(() => ({
+vi.mock('@hooks/language', () => ({
+    useLanguage: vi.fn(() => ({
         t: (key: string) => key,
     })),
 }))
 
 describe('useClipboard', () => {
     beforeEach(() => {
-        jest.clearAllMocks()
+        vi.clearAllMocks()
     })
 
     it('should copy text to clipboard and show toast', () => {
-        const mockShowToast = jest.fn()
-        ;(useToast as jest.Mock).mockReturnValue({
-            showToast: mockShowToast,
-        })
+        const mockShowToast = vi.fn()
+            ; (useToast as Mock).mockReturnValue({
+                showToast: mockShowToast,
+            })
 
         const { result } = renderHook(() => useClipboard())
 

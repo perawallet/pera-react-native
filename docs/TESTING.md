@@ -6,16 +6,14 @@ We test to ensure code works correctly and stays working as changes are made.
 
 | Tool                             | Used For                              |
 | -------------------------------- | ------------------------------------- |
-| **Vitest**                       | Testing `packages/*` (business logic) |
-| **Jest**                         | Testing `apps/mobile` (React Native)  |
-| **React Native Testing Library** | Component testing                     |
+| **Vitest**                       | Testing everything (packages & apps)  |
+| **React Native Testing Library** | Component testing (via Vitest/React)  |
 
 ## Running Tests
 
 ```sh
 pnpm test                    # Run all tests
 pnpm --filter mobile test    # Mobile app tests only
-pnpm --filter accounts test  # Specific package tests
 ```
 
 ## Where Tests Live
@@ -53,14 +51,27 @@ Avoid:
 - Snapshot tests for complex components
 - Testing third-party library behavior
 
-## Test File Naming
+## Component Testing Standards
 
-Both `.test.ts` and `.spec.ts` are accepted:
+1. **File Naming**: Use `.spec.tsx` extension.
+2. **Behavior Only**: Test interactions (presses, inputs) and conditionals. Do not test static text rendering.
+3. **AAA Pattern**: Structure tests with Arrange, Act, Assert comments.
+4. **Naming**: Use `it('does something when event happens')`.
+5. **Atomicity**: Tests must be independent and self-contained. Setup dependencies inside the test or `beforeEach`.
 
-```
-useToast.test.ts     ✅
-useToast.spec.ts     ✅
-PWButton.test.tsx    ✅
+```typescript
+// ✅ Good Example
+it('submits form when save is pressed', () => {
+    // Arrange
+    const onSave = vi.fn()
+    render(<UserForm onSave={onSave} />)
+    
+    // Act
+    fireEvent.click(screen.getByText('Save'))
+    
+    // Assert
+    expect(onSave).toHaveBeenCalled()
+})
 ```
 
 ## Key Principle

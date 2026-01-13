@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { renderHook, act } from '@testing-library/react-native'
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
+import { renderHook, act } from '@testing-library/react'
 import { useArbitraryDataSigningView } from '../use-arbitrary-data-signing-view'
 import {
     useAllAccounts,
@@ -23,31 +24,31 @@ import {
 import useToast from '@hooks/toast'
 import { AlgorandChainId } from '@perawallet/wallet-core-walletconnect'
 
-jest.mock('@perawallet/wallet-core-accounts', () => ({
-    useAllAccounts: jest.fn(),
-    useArbitraryDataSigner: jest.fn(),
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useAllAccounts: vi.fn(),
+    useArbitraryDataSigner: vi.fn(),
 }))
 
-jest.mock('@perawallet/wallet-core-blockchain', () => ({
-    useSigningRequest: jest.fn(),
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useSigningRequest: vi.fn(),
 }))
 
-jest.mock('@hooks/toast', () => ({
+vi.mock('@hooks/toast', () => ({
     __esModule: true,
-    default: jest.fn(),
+    default: vi.fn(),
 }))
 
-jest.mock('@hooks/language', () => ({
-    useLanguage: jest.fn().mockReturnValue({ t: (key: string) => key }),
+vi.mock('@hooks/language', () => ({
+    useLanguage: vi.fn().mockReturnValue({ t: (key: string) => key }),
 }))
 
 describe('useArbitraryDataSigningView', () => {
-    const mockShowToast = jest.fn()
-    const mockRemoveSignRequest = jest.fn()
-    const mockSignArbitraryData = jest.fn()
-    const mockApprove = jest.fn()
-    const mockReject = jest.fn()
-    const mockRequestError = jest.fn()
+    const mockShowToast = vi.fn()
+    const mockRemoveSignRequest = vi.fn()
+    const mockSignArbitraryData = vi.fn()
+    const mockApprove = vi.fn()
+    const mockReject = vi.fn()
+    const mockRequestError = vi.fn()
 
     const mockAccount = { address: 'ADDR1', name: 'Account 1' }
     const mockAccounts = [mockAccount]
@@ -65,15 +66,15 @@ describe('useArbitraryDataSigningView', () => {
     }
 
     beforeEach(() => {
-        jest.clearAllMocks()
-        ;(useToast as jest.Mock).mockReturnValue({ showToast: mockShowToast })
-        ;(useSigningRequest as jest.Mock).mockReturnValue({
-            removeSignRequest: mockRemoveSignRequest,
-        })
-        ;(useAllAccounts as jest.Mock).mockReturnValue(mockAccounts)
-        ;(useArbitraryDataSigner as jest.Mock).mockReturnValue({
-            signArbitraryData: mockSignArbitraryData,
-        })
+        vi.clearAllMocks()
+            ; (useToast as Mock).mockReturnValue({ showToast: mockShowToast })
+            ; (useSigningRequest as Mock).mockReturnValue({
+                removeSignRequest: mockRemoveSignRequest,
+            })
+            ; (useAllAccounts as Mock).mockReturnValue(mockAccounts)
+            ; (useArbitraryDataSigner as Mock).mockReturnValue({
+                signArbitraryData: mockSignArbitraryData,
+            })
     })
 
     describe('approveRequest', () => {
@@ -99,7 +100,7 @@ describe('useArbitraryDataSigningView', () => {
         })
 
         it('should fail if account is not found', async () => {
-            ;(useAllAccounts as jest.Mock).mockReturnValue([])
+            ; (useAllAccounts as Mock).mockReturnValue([])
             const { result } = renderHook(() =>
                 useArbitraryDataSigningView(baseRequest),
             )

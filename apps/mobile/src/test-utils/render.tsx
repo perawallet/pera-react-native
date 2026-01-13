@@ -11,7 +11,9 @@
  */
 
 import React, { ReactElement } from 'react'
-import { render, RenderOptions } from '@testing-library/react-native'
+// Use @testing-library/react instead of @testing-library/react-native
+// since we're testing with react-native-web in Vitest
+import { render, RenderOptions, RenderResult } from '@testing-library/react'
 import { ThemeProvider, createTheme } from '@rneui/themed'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { NavigationContainer } from '@react-navigation/native'
@@ -111,7 +113,7 @@ const customRender = (
         navigationProps,
         ...renderOptions
     }: CustomRenderOptions = {},
-) => {
+): RenderResult => {
     const Wrapper = ({ children }: { children: React.ReactNode }) => (
         <TestProviders
             queryClient={queryClient}
@@ -125,6 +127,6 @@ const customRender = (
     return render(ui, { wrapper: Wrapper, ...renderOptions })
 }
 
-// Re-export everything
-export * from '@testing-library/react-native'
+// Re-export everything from @testing-library/react
+export * from '@testing-library/react'
 export { customRender as render, createTestQueryClient, testTheme }

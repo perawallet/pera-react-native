@@ -10,15 +10,16 @@
  limitations under the License
  */
 
-import { renderHook } from '@testing-library/react-native'
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
+import { renderHook } from '@testing-library/react'
 import { useSettingsOptions } from '../settings-options'
 import { useLanguage } from '@hooks/language'
 
-jest.mock('@hooks/language', () => ({
-    useLanguage: jest.fn(),
+vi.mock('@hooks/language', () => ({
+    useLanguage: vi.fn(),
 }))
 
-jest.mock('@perawallet/wallet-core-config', () => ({
+vi.mock('@perawallet/wallet-core-config', () => ({
     config: {
         supportBaseUrl: 'https://support.example.com',
         termsOfServiceUrl: 'https://terms.example.com',
@@ -27,13 +28,13 @@ jest.mock('@perawallet/wallet-core-config', () => ({
 }))
 
 describe('useSettingsOptions', () => {
-    const mockT = jest.fn((key: string) => key)
+    const mockT = vi.fn((key: string) => key)
 
     beforeEach(() => {
-        jest.clearAllMocks()
-        ;(useLanguage as jest.Mock).mockReturnValue({
-            t: mockT,
-        })
+        vi.clearAllMocks()
+            ; (useLanguage as Mock).mockReturnValue({
+                t: mockT,
+            })
     })
 
     it('should return the correctly structured settings options', () => {

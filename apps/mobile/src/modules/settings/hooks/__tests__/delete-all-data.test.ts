@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { renderHook, act } from '@testing-library/react-native'
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
+import { renderHook, act } from '@testing-library/react'
 import { useDeleteAllData } from '../delete-all-data'
 import {
     useAllAccounts,
@@ -20,48 +21,48 @@ import { useContacts } from '@perawallet/wallet-core-contacts'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { useQueryClient } from '@tanstack/react-query'
 
-jest.mock('@perawallet/wallet-core-accounts', () => ({
-    useAllAccounts: jest.fn(),
-    useRemoveAccountById: jest.fn(),
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useAllAccounts: vi.fn(),
+    useRemoveAccountById: vi.fn(),
 }))
 
-jest.mock('@perawallet/wallet-core-contacts', () => ({
-    useContacts: jest.fn(),
+vi.mock('@perawallet/wallet-core-contacts', () => ({
+    useContacts: vi.fn(),
 }))
 
-jest.mock('@perawallet/wallet-core-settings', () => ({
-    usePreferences: jest.fn(),
+vi.mock('@perawallet/wallet-core-settings', () => ({
+    usePreferences: vi.fn(),
 }))
 
-jest.mock('@tanstack/react-query', () => ({
-    useQueryClient: jest.fn(),
+vi.mock('@tanstack/react-query', () => ({
+    useQueryClient: vi.fn(),
 }))
 
 describe('useDeleteAllData', () => {
-    const mockRemoveAccountById = jest.fn()
-    const mockDeleteContact = jest.fn()
-    const mockClearAllPreferences = jest.fn()
-    const mockRemoveQueries = jest.fn()
+    const mockRemoveAccountById = vi.fn()
+    const mockDeleteContact = vi.fn()
+    const mockClearAllPreferences = vi.fn()
+    const mockRemoveQueries = vi.fn()
 
     beforeEach(() => {
-        jest.clearAllMocks()
-        ;(useAllAccounts as jest.Mock).mockReturnValue([
-            { id: 'account-1' },
-            { id: 'account-2' },
-        ])
-        ;(useRemoveAccountById as jest.Mock).mockReturnValue(
-            mockRemoveAccountById,
-        )
-        ;(useContacts as jest.Mock).mockReturnValue({
-            contacts: ['contact-1', 'contact-2'],
-            deleteContact: mockDeleteContact,
-        })
-        ;(usePreferences as jest.Mock).mockReturnValue({
-            clearAllPreferences: mockClearAllPreferences,
-        })
-        ;(useQueryClient as jest.Mock).mockReturnValue({
-            removeQueries: mockRemoveQueries,
-        })
+        vi.clearAllMocks()
+            ; (useAllAccounts as Mock).mockReturnValue([
+                { id: 'account-1' },
+                { id: 'account-2' },
+            ])
+            ; (useRemoveAccountById as Mock).mockReturnValue(
+                mockRemoveAccountById,
+            )
+            ; (useContacts as Mock).mockReturnValue({
+                contacts: ['contact-1', 'contact-2'],
+                deleteContact: mockDeleteContact,
+            })
+            ; (usePreferences as Mock).mockReturnValue({
+                clearAllPreferences: mockClearAllPreferences,
+            })
+            ; (useQueryClient as Mock).mockReturnValue({
+                removeQueries: mockRemoveQueries,
+            })
     })
 
     it('should delete all accounts, contacts, preferences and queries', () => {
@@ -84,7 +85,7 @@ describe('useDeleteAllData', () => {
     })
 
     it('should not call removeAccountById if account id is missing', () => {
-        ;(useAllAccounts as jest.Mock).mockReturnValue([{ id: undefined }])
+        ; (useAllAccounts as Mock).mockReturnValue([{ id: undefined }])
 
         const { result } = renderHook(() => useDeleteAllData())
 

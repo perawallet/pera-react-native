@@ -12,67 +12,69 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { vi } from 'vitest'
+import { Platform } from 'react-native'
 import { RNFirebaseService } from '../firebase'
 
 // Mock react-native Platform
-jest.mock('react-native', () => ({
+vi.mock('react-native', () => ({
     Platform: {
         OS: 'ios',
-        select: jest.fn(config => config.ios),
+        select: vi.fn(config => config.ios),
     },
 }))
 
 // Mock Firebase modules with simple implementations
-jest.mock('@react-native-firebase/crashlytics', () => ({
+vi.mock('@react-native-firebase/crashlytics', () => ({
     getCrashlytics: () => ({
-        setCrashlyticsCollectionEnabled: jest.fn().mockResolvedValue(null),
-        recordError: jest.fn(),
+        setCrashlyticsCollectionEnabled: vi.fn().mockResolvedValue(null),
+        recordError: vi.fn(),
     }),
-    setCrashlyticsCollectionEnabled: jest.fn(),
+    setCrashlyticsCollectionEnabled: vi.fn(),
 }))
 
-jest.mock('@react-native-firebase/remote-config', () => ({
+vi.mock('@react-native-firebase/remote-config', () => ({
     __esModule: true,
-    getRemoteConfig: jest.fn(() => ({
-        setConfigSettings: jest.fn().mockResolvedValue(undefined),
-        setDefaults: jest.fn().mockResolvedValue(undefined),
-        fetchAndActivate: jest.fn().mockResolvedValue(true),
-        getValue: jest.fn(),
+    getRemoteConfig: vi.fn(() => ({
+        setConfigSettings: vi.fn().mockResolvedValue(undefined),
+        setDefaults: vi.fn().mockResolvedValue(undefined),
+        fetchAndActivate: vi.fn().mockResolvedValue(true),
+        getValue: vi.fn(),
     })),
-    setConfigSettings: jest.fn().mockResolvedValue(undefined),
-    setDefaults: jest.fn().mockResolvedValue(undefined),
-    fetchAndActivate: jest.fn().mockResolvedValue(true),
+    setConfigSettings: vi.fn().mockResolvedValue(undefined),
+    setDefaults: vi.fn().mockResolvedValue(undefined),
+    fetchAndActivate: vi.fn().mockResolvedValue(true),
 }))
 
-jest.mock('@react-native-firebase/analytics', () => ({
+vi.mock('@react-native-firebase/analytics', () => ({
     __esModule: true,
-    getAnalytics: jest.fn(() => ({
-        logEvent: jest.fn(),
+    getAnalytics: vi.fn(() => ({
+        logEvent: vi.fn(),
     })),
-    logEvent: jest.fn(),
+    logEvent: vi.fn(),
 }))
 
-jest.mock('@react-native-firebase/messaging', () => ({
+vi.mock('@react-native-firebase/messaging', () => ({
     __esModule: true,
-    getMessaging: jest.fn(() => ({
-        registerDeviceForRemoteMessages: jest.fn().mockResolvedValue(undefined),
-        getToken: jest.fn().mockResolvedValue('mock-fcm-token'),
-        onMessage: jest.fn(() => jest.fn()),
+    getMessaging: vi.fn(() => ({
+        registerDeviceForRemoteMessages: vi.fn().mockResolvedValue(undefined),
+        getToken: vi.fn().mockResolvedValue('mock-fcm-token'),
+        onMessage: vi.fn(() => vi.fn()),
     })),
-    getToken: jest.fn().mockResolvedValue('mock-fcm-token'),
-    onMessage: jest.fn(() => jest.fn()),
-    registerDeviceForRemoteMessages: jest.fn().mockResolvedValue(undefined),
+    getToken: vi.fn().mockResolvedValue('mock-fcm-token'),
+    onMessage: vi.fn(() => vi.fn()),
+    registerDeviceForRemoteMessages: vi.fn().mockResolvedValue(undefined),
 }))
 
-jest.mock('@notifee/react-native', () => ({
+vi.mock('@notifee/react-native', () => ({
     __esModule: true,
     default: {
-        requestPermission: jest.fn().mockResolvedValue({
+        requestPermission: vi.fn().mockResolvedValue({
             authorizationStatus: 1,
         }),
-        createChannel: jest.fn().mockResolvedValue(undefined),
-        displayNotification: jest.fn().mockResolvedValue(undefined),
-        onForegroundEvent: jest.fn(() => jest.fn()),
+        createChannel: vi.fn().mockResolvedValue(undefined),
+        displayNotification: vi.fn().mockResolvedValue(undefined),
+        onForegroundEvent: vi.fn(() => vi.fn()),
     },
     AndroidImportance: {
         DEFAULT: 3,
@@ -104,7 +106,7 @@ describe('RNFirebaseService', () => {
     let service: RNFirebaseService
 
     beforeEach(() => {
-        jest.clearAllMocks()
+        vi.clearAllMocks()
         service = new RNFirebaseService()
     })
 
@@ -282,11 +284,11 @@ describe('RNFirebaseService', () => {
 
             it('should return fallback or default when getValue throws', async () => {
                 await service.initializeRemoteConfig()
-                const mockGetValue = jest.fn().mockImplementation(() => {
+                const mockGetValue = vi.fn().mockImplementation(() => {
                     throw new Error('test error')
                 })
 
-                ;(service.remoteConfig!.getValue as jest.Mock) = mockGetValue
+                    ; (service.remoteConfig!.getValue as vi.Mock) = mockGetValue
 
                 expect(
                     service.getStringValue('test_key' as any, 'fallback'),
@@ -319,10 +321,8 @@ describe('RNFirebaseService', () => {
             })
 
             it('should handle Android platform correctly', async () => {
-                // eslint-disable-next-line @typescript-eslint/no-require-imports
-                const { Platform } = require('react-native')
-                jest.mocked(Platform).OS = 'android'
-                jest.mocked(Platform.select).mockImplementation(
+                vi.mocked(Platform).OS = 'android'
+                vi.mocked(Platform.select).mockImplementation(
                     (config: any) => config.android,
                 )
                 mockNotifee.requestPermission.mockResolvedValue({

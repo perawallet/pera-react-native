@@ -10,17 +10,18 @@
  limitations under the License
  */
 
-import { renderHook, act } from '@testing-library/react-native'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { renderHook, act } from '@testing-library/react'
 import useToast from '../toast'
 import { Notifier } from 'react-native-notifier'
 
-jest.mock('react-native-notifier', () => ({
+vi.mock('react-native-notifier', () => ({
     Notifier: {
-        showNotification: jest.fn(),
+        showNotification: vi.fn(),
     },
 }))
 
-jest.mock('@rneui/themed', () => ({
+vi.mock('@rneui/themed', () => ({
     makeStyles: () => () => ({
         baseStyle: { zIndex: 10000 },
         successStyle: { backgroundColor: 'green' },
@@ -36,7 +37,7 @@ jest.mock('@rneui/themed', () => ({
 
 describe('useToast', () => {
     beforeEach(() => {
-        jest.clearAllMocks()
+        vi.clearAllMocks()
     })
 
     it('should show success toast', () => {

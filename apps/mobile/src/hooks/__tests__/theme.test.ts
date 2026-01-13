@@ -10,51 +10,51 @@
  limitations under the License
  */
 
-import { renderHook } from '@testing-library/react-native'
+import { renderHook } from '@testing-library/react'
 import { useIsDarkMode } from '../theme'
 import { useColorScheme } from 'react-native'
 import { useSettings } from '@perawallet/wallet-core-settings'
 
-jest.mock('react-native', () => ({
-    useColorScheme: jest.fn(),
+vi.mock('react-native', () => ({
+    useColorScheme: vi.fn(),
 }))
 
-jest.mock('@perawallet/wallet-core-settings', () => ({
-    useSettings: jest.fn(),
+vi.mock('@perawallet/wallet-core-settings', () => ({
+    useSettings: vi.fn(),
 }))
 
 describe('useIsDarkMode', () => {
     beforeEach(() => {
-        jest.clearAllMocks()
+        vi.clearAllMocks()
     })
 
     it('should return true if theme is dark', () => {
-        ;(useSettings as jest.Mock).mockReturnValue({ theme: 'dark' })
-        ;(useColorScheme as jest.Mock).mockReturnValue('light')
+        ;(useSettings as vi.Mock).mockReturnValue({ theme: 'dark' })
+        ;(useColorScheme as vi.Mock).mockReturnValue('light')
 
         const { result } = renderHook(() => useIsDarkMode())
         expect(result.current).toBe(true)
     })
 
     it('should return false if theme is light', () => {
-        ;(useSettings as jest.Mock).mockReturnValue({ theme: 'light' })
-        ;(useColorScheme as jest.Mock).mockReturnValue('dark')
+        ;(useSettings as vi.Mock).mockReturnValue({ theme: 'light' })
+        ;(useColorScheme as vi.Mock).mockReturnValue('dark')
 
         const { result } = renderHook(() => useIsDarkMode())
         expect(result.current).toBe(false)
     })
 
     it('should return true if theme is system and scheme is dark', () => {
-        ;(useSettings as jest.Mock).mockReturnValue({ theme: 'system' })
-        ;(useColorScheme as jest.Mock).mockReturnValue('dark')
+        ;(useSettings as vi.Mock).mockReturnValue({ theme: 'system' })
+        ;(useColorScheme as vi.Mock).mockReturnValue('dark')
 
         const { result } = renderHook(() => useIsDarkMode())
         expect(result.current).toBe(true)
     })
 
     it('should return false if theme is system and scheme is light', () => {
-        ;(useSettings as jest.Mock).mockReturnValue({ theme: 'system' })
-        ;(useColorScheme as jest.Mock).mockReturnValue('light')
+        ;(useSettings as vi.Mock).mockReturnValue({ theme: 'system' })
+        ;(useColorScheme as vi.Mock).mockReturnValue('light')
 
         const { result } = renderHook(() => useIsDarkMode())
         expect(result.current).toBe(false)
