@@ -10,4 +10,11 @@
  limitations under the License
  */
 
-export * from '../src/index'
+export const name = '@perawallet/wallet-core-kms'
+
+export * from './hooks/useKMS'
+export * from './hooks/useWithKey'
+export * from './models'
+export * from './errors'
+
+export { initKeyManagerStore } from './store'

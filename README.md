@@ -45,6 +45,26 @@ Tip: you can also run these from the app folder:
 pnpm -C apps/mobile start|ios|android
 ```
 
+## Building packages
+
+Workspace packages in `packages/*` are built to `dist/` folders. The Turbo configuration automatically builds packages before running the mobile app or tests, so **no manual build step is required** for most development.
+
+> [!NOTE]
+> During local development, the Metro bundler is configured to resolve packages directly from their `src/index.ts` files. This means you do not need to run a manual build to see your changes reflected in the app.
+
+For active package development with hot-reloading:
+
+```sh
+# Watch mode - rebuilds packages on file changes (useful for editors/tests)
+pnpm dev:packages
+```
+
+To manually build all packages:
+
+```sh
+pnpm build:packages
+```
+
 ## Workspace layout
 
 ```
@@ -94,11 +114,13 @@ This writes typed clients, zod schemas, msw mocks, and React Query hooks. Note t
 ## Common commands (root)
 
 ```sh
-pnpm build          # build across packages
+pnpm build          # build all packages
+pnpm build:packages # build only workspace packages
+pnpm dev:packages   # watch mode for package development
 pnpm test           # run tests with coverage
 pnpm lint           # report linting errors
 pnpm lint:fix       # fix linting errors
-pnpm lint:copyright # add/update necessary copyright headers to any files that are missing them
+pnpm lint:copyright # add/update necessary copyright headers
 pnpm lint:i18n      # report i18n errors
 pnpm format         # format files
 ```

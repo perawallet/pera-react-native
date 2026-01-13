@@ -20,16 +20,16 @@ beforeEach(() => {
     mockKeyStore.clear()
 })
 
-vi.mock('@perawallet/wallet-core-kmd', async importOriginal => {
+vi.mock('@perawallet/wallet-core-kms', async importOriginal => {
     const actual =
-        await importOriginal<typeof import('@perawallet/wallet-core-kmd')>()
+        await importOriginal<typeof import('@perawallet/wallet-core-kms')>()
     const { useSecureStorageService } = await import(
         '@perawallet/wallet-core-platform-integration'
     )
 
     return {
         ...actual,
-        useKMD: vi.fn(() => ({
+        useKMS: vi.fn(() => ({
             saveKey: vi.fn(async (keyPair, privateKey) => {
                 const storage = useSecureStorageService()
                 await storage.setItem(keyPair.id, privateKey)

@@ -12,7 +12,7 @@
 
 import { useAccountsStore } from '../store'
 import { useHDWallet } from './useHDWallet'
-import { useWithKey } from '@perawallet/wallet-core-kmd'
+import { useWithKey } from '@perawallet/wallet-core-kms'
 import { useCallback } from 'react'
 import { KEY_DOMAIN } from '../constants'
 import {

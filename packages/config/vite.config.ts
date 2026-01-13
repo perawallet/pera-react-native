@@ -16,14 +16,27 @@ import react from '@vitejs/plugin-react'
 import dts from 'vite-plugin-dts'
 
 export default defineConfig({
-    plugins: [react(), dts({ include: ['src'] })],
+    plugins: [
+        react(),
+        dts({
+            include: ['src'],
+            exclude: ['**/__tests__/**', '**/*.test.ts', '**/*.test.tsx'],
+        }),
+    ],
     build: {
         lib: {
             entry: resolve(__dirname, 'src/index.ts'),
             formats: ['es'],
+            fileName: 'index',
         },
         rollupOptions: {
-            external: ['react', 'react/jsx-runtime', 'crypto'],
+            external: [
+                'react',
+                'react/jsx-runtime',
+                'reflect-metadata',
+                'tsyringe',
+                'zod',
+            ],
         },
     },
 })

@@ -11,18 +11,21 @@
  */
 
 import { useAccountsStore } from '../store'
-import { useKMD } from '@perawallet/wallet-core-kmd'
+import { useKMS } from '@perawallet/wallet-core-kms'
 
 export const useRemoveAccountById = () => {
     const accounts = useAccountsStore(state => state.accounts)
-    const { deleteKey } = useKMD()
+    const { deleteKey } = useKMS()
     const setAccounts = useAccountsStore(state => state.setAccounts)
 
     return (id: string) => {
         const account = accounts.find(a => a.id === id)
-        if (account && account.hdWalletDetails && account.id) {
-            deleteKey(account.id)
+        if (account && account.type === 'algo25' && account.keyPairId) {
+            deleteKey(account.keyPairId)
         }
+
+        //TODO we need to delete the wallet key if there are no other accounts with that wallet id
+
         const remaining = accounts.filter(a => a.id !== id)
         setAccounts([...remaining])
     }

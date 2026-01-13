@@ -78,11 +78,11 @@ vi.mock('@perawallet/wallet-core-platform-integration', async () => {
     }
 })
 
-// Mock KMD
+// Mock KMS
 const mockExecuteWithKey = vi.fn(async (_, __, fn) => {
     return fn(Buffer.from('seed_data'))
 })
-vi.mock('@perawallet/wallet-core-kmd', () => ({
+vi.mock('@perawallet/wallet-core-kms', () => ({
     useWithKey: vi.fn(() => ({
         executeWithKey: mockExecuteWithKey,
     })),

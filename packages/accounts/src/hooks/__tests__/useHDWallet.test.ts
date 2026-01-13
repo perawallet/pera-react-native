@@ -39,15 +39,12 @@ const bip39Spies = vi.hoisted(() => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-xhdwallet', () => {
+vi.mock('@algorandfoundation/xhd-wallet-api', () => {
     return {
-        BIP32DerivationTypes: { Khovratovich: 32, Peikert: 9 },
-        BIP32DerivationType: { Peikert: 'PEIKERT', Other: 'OTHER' },
-        Encoding: { BASE64: 'BASE64' },
+        BIP32DerivationType: { Khovratovich: 32, Peikert: 9 },
+        Encoding: { MSGPACK: 'msgpack', BASE64: 'base64', NONE: 'none' },
         fromSeed: xhdSpies.fromSeed,
-        KeyContext: { Address: 'Address' },
-        KeyContexts: { Address: 0, Identity: 1 },
-        Encodings: { MSGPACK: 'msgpack', BASE64: 'base64', NONE: 'none' },
+        KeyContext: { Address: 0, Identity: 1 },
         XHDWalletAPI: class {
             deriveKey = apiSpies.deriveSpy
             keyGen = apiSpies.keyGenSpy
@@ -101,7 +98,7 @@ describe('services/accounts/useHDWallet', () => {
             account: 4,
             change: 0,
             keyIndex: 6,
-            derivationType: 'PEIKERT',
+            derivationType: 9,
         }
         const txn = Buffer.from('txn')
         const signed = await result.current.signTransaction(seed, hd, txn)
@@ -130,7 +127,7 @@ describe('services/accounts/useHDWallet', () => {
             account: 1,
             change: 0,
             keyIndex: 2,
-            derivationType: 'PEIKERT',
+            derivationType: 9,
         }
         const payload = Buffer.from('data')
         const signed = await result.current.signData(seed, hd, payload)
@@ -210,7 +207,7 @@ describe('services/accounts/useHDWallet', () => {
             account: 0,
             change: 0,
             keyIndex: 0,
-            derivationType: 'PEIKERT',
+            derivationType: 9,
         }
         const txn = Buffer.from('txn')
 
@@ -233,7 +230,7 @@ describe('services/accounts/useHDWallet', () => {
             account: 0,
             change: 0,
             keyIndex: 0,
-            derivationType: 'PEIKERT',
+            derivationType: 9,
         }
         const payload = Buffer.from('data')
 

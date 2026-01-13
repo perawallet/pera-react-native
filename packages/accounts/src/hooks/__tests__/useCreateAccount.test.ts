@@ -18,40 +18,23 @@ import {
     registerTestPlatform,
     MemoryKeyValueStorage,
 } from '@perawallet/wallet-core-platform-integration'
-import { KeyPair, KeyType } from '@perawallet/wallet-core-kmd'
+import { KeyPair, KeyType } from '@perawallet/wallet-core-kms'
 
-// Mocks
 const uuidSpies = vi.hoisted(() => ({ v7: vi.fn() }))
 vi.mock('uuid', () => ({ v7: uuidSpies.v7 }))
 
-const apiSpies = vi.hoisted(() => ({
-    deriveSpy: vi.fn(),
-    keyGenSpy: vi.fn(),
-    signTransactionSpy: vi.fn(async () => new Uint8Array([1, 2, 3, 4])),
+const hdWalletSpies = vi.hoisted(() => ({
+    generateMasterKey: vi.fn(),
+    deriveAccountAddress: vi.fn(),
+}))
+vi.mock('../useHDWallet', () => ({
+    useHDWallet: () => hdWalletSpies,
 }))
 
-const xhdSpies = vi.hoisted(() => ({ fromSeed: vi.fn(() => 'ROOT_KEY') }))
-
-vi.mock('@perawallet/wallet-core-xhdwallet', () => ({
-    BIP32DerivationType: { Peikert: 'PEIKERT' },
-    BIP32DerivationTypes: { Peikert: 9 },
-    fromSeed: xhdSpies.fromSeed,
-    KeyContext: { Address: 'Address' },
-    KeyContexts: { Address: 0 },
-    XHDWalletAPI: class {
-        deriveKey = apiSpies.deriveSpy
-        keyGen = apiSpies.keyGenSpy
-        signAlgoTransaction = apiSpies.signTransactionSpy
-    },
+vi.mock('@algorandfoundation/xhd-wallet-api', () => ({
+    BIP32DerivationType: { Peikert: 9 },
+    KeyContext: { Address: 0 },
 }))
-
-const bip39Spies = vi.hoisted(() => ({
-    generateMnemonic: vi.fn(() => 'test mnemonic'),
-    mnemonicToSeedSync: vi.fn(() => Buffer.from('seed_sync')),
-    mnemonicToSeed: vi.fn(async () => Buffer.from('seed_async')),
-    mnemonicToEntropy: vi.fn(async () => Buffer.from('entropy')),
-}))
-vi.mock('bip39', () => bip39Spies)
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const actual = await vi.importActual<
@@ -65,8 +48,8 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     }
 })
 
-const kmdSpies = vi.hoisted(() => ({
-    useKMD: vi.fn().mockReturnValue({
+const kmsSpies = vi.hoisted(() => ({
+    useKMS: vi.fn().mockReturnValue({
         saveKey: vi.fn(),
         getKey: vi.fn(),
         removeKey: vi.fn(),
@@ -80,13 +63,13 @@ const kmdSpies = vi.hoisted(() => ({
     removeKey: vi.fn(),
     executeWithKey: vi.fn(),
 }))
-vi.mock('@perawallet/wallet-core-kmd', async () => {
+vi.mock('@perawallet/wallet-core-kms', async () => {
     const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-kmd')
-    >('@perawallet/wallet-core-kmd')
+        typeof import('@perawallet/wallet-core-kms')
+    >('@perawallet/wallet-core-kms')
     return {
         ...actual,
-        ...kmdSpies,
+        ...kmsSpies,
     }
 })
 
@@ -128,13 +111,20 @@ describe('useCreateAccount', () => {
         useAccountsStore.setState({ accounts: [] })
         vi.clearAllMocks()
         uuidSpies.v7.mockReset()
-        // Reset KMD mocks to default behavior
-        kmdSpies.useKMD.mockReturnValue({
-            saveKey: vi.fn(),
+        hdWalletSpies.generateMasterKey.mockResolvedValue({
+            seed: Buffer.from('seed'),
+            entropy: Buffer.from('entropy'),
+        })
+        hdWalletSpies.deriveAccountAddress.mockResolvedValue({
+            address: new Uint8Array(32).fill(2),
+        })
+        // Reset KMS mocks to default behavior
+        kmsSpies.useKMS.mockReturnValue({
+            saveKey: vi.fn(k => k), // Default to return input
             getKey: vi.fn(() => null),
             removeKey: vi.fn(),
         })
-        kmdSpies.useWithKey.mockReturnValue({
+        kmsSpies.useWithKey.mockReturnValue({
             executeWithKey: vi.fn(async (_, __, handler) =>
                 handler(new Uint8Array()),
             ),
@@ -159,12 +149,12 @@ describe('useCreateAccount', () => {
             secureStorage: dummySecure as any,
         })
 
-        const priv = new Uint8Array(32).fill(1)
         const addr = new Uint8Array(32).fill(2)
-        apiSpies.deriveSpy.mockResolvedValueOnce(priv)
-        apiSpies.keyGenSpy.mockResolvedValueOnce(addr)
+        hdWalletSpies.deriveAccountAddress.mockResolvedValueOnce({
+            address: addr,
+        })
 
-        // Configure KMD mocks
+        // Configure KMS mocks
         const mockSaveKey = vi.fn(async keyPair => {
             // Simulate actual saveKey behavior by storing in secure storage
             if (keyPair.id) {
@@ -173,9 +163,10 @@ describe('useCreateAccount', () => {
                         ? new TextEncoder().encode(
                               JSON.stringify({ seed: 'test', entropy: 'test' }),
                           )
-                        : priv
+                        : new Uint8Array(32).fill(1)
                 storage.set(keyPair.id, data)
             }
+            return keyPair
         })
         const mockGetKey = vi.fn(() => null) // No existing root key
         const mockExecuteWithKey = vi.fn(async (id, _, handler) => {
@@ -185,12 +176,12 @@ describe('useCreateAccount', () => {
             return handler(data)
         })
 
-        kmdSpies.useKMD.mockReturnValue({
+        kmsSpies.useKMS.mockReturnValue({
             saveKey: mockSaveKey,
             getKey: mockGetKey,
             removeKey: vi.fn(),
         })
-        kmdSpies.useWithKey.mockReturnValue({
+        kmsSpies.useWithKey.mockReturnValue({
             executeWithKey: mockExecuteWithKey,
         })
 
@@ -252,24 +243,26 @@ describe('useCreateAccount', () => {
             secureStorage: dummySecure as any,
         })
 
-        // Configure KMD mocks
+        // Configure KMS mocks
         const mockGetKey = vi.fn(() => ({ id: 'WALLET1' })) // Key exists
         const mockExecuteWithKey = vi.fn(async (id, _, handler) => {
             const data = storage.get(id)
             return handler(data)
         })
 
-        kmdSpies.useKMD.mockReturnValue({
+        kmsSpies.useKMS.mockReturnValue({
             saveKey: vi.fn(),
             getKey: mockGetKey,
             removeKey: vi.fn(),
         })
-        kmdSpies.useWithKey.mockReturnValue({
+        kmsSpies.useWithKey.mockReturnValue({
             executeWithKey: mockExecuteWithKey,
         })
 
-        // Make deriveKey (via keyGen) throw an error
-        apiSpies.keyGenSpy.mockRejectedValueOnce(new Error('Derivation failed'))
+        // Make deriveAccountAddress throw an error
+        hdWalletSpies.deriveAccountAddress.mockRejectedValueOnce(
+            new Error('Derivation failed'),
+        )
 
         uuidSpies.v7.mockImplementationOnce(() => 'WALLET1')
 
@@ -320,19 +313,19 @@ describe('useCreateAccount', () => {
             secureStorage: dummySecure as any,
         })
 
-        // Configure KMD mocks
+        // Configure KMS mocks
         const mockGetKey = vi.fn(() => ({ id: 'WALLET1' })) // Key exists
         const mockExecuteWithKey = vi.fn(async (id, _, handler) => {
             const data = storage.get(id)
             return handler(data)
         })
 
-        kmdSpies.useKMD.mockReturnValue({
+        kmsSpies.useKMS.mockReturnValue({
             saveKey: vi.fn(),
             getKey: mockGetKey,
             removeKey: vi.fn(),
         })
-        kmdSpies.useWithKey.mockReturnValue({
+        kmsSpies.useWithKey.mockReturnValue({
             executeWithKey: mockExecuteWithKey,
         })
 
@@ -363,7 +356,7 @@ describe('useCreateAccount', () => {
         })
 
         // Make generateMasterKey throw
-        bip39Spies.mnemonicToSeed.mockRejectedValueOnce(
+        hdWalletSpies.generateMasterKey.mockRejectedValueOnce(
             new Error('Failed to generate master key'),
         )
 
@@ -413,12 +406,12 @@ describe('useCreateAccount', () => {
             secureStorage: dummySecure as any,
         })
 
-        const priv = new Uint8Array(32).fill(1)
         const addr = new Uint8Array(32).fill(2)
-        apiSpies.deriveSpy.mockResolvedValueOnce(priv)
-        apiSpies.keyGenSpy.mockResolvedValueOnce(addr)
+        hdWalletSpies.deriveAccountAddress.mockResolvedValueOnce({
+            address: addr,
+        })
 
-        // Configure KMD mocks
+        // Configure KMS mocks
         const mockSaveKey = vi.fn()
         const mockGetKey = vi.fn(() => ({ id: 'EXISTING_WALLET' })) // Existing root key
         const mockExecuteWithKey = vi.fn(async (id, _, handler) => {
@@ -426,12 +419,12 @@ describe('useCreateAccount', () => {
             return handler(data)
         })
 
-        kmdSpies.useKMD.mockReturnValue({
+        kmsSpies.useKMS.mockReturnValue({
             saveKey: mockSaveKey,
             getKey: mockGetKey,
             removeKey: vi.fn(),
         })
-        kmdSpies.useWithKey.mockReturnValue({
+        kmsSpies.useWithKey.mockReturnValue({
             executeWithKey: mockExecuteWithKey,
         })
 

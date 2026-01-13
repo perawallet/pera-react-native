@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useKMD } from '../useKMD'
+import { useKMS } from '../useKMS'
 import { KeyPair, KeyType } from '../../models'
 
 // Mocks
@@ -50,14 +50,14 @@ vi.mock('uuid', () => ({
     v7: vi.fn(() => 'mock-uuid'),
 }))
 
-describe('useKMD', () => {
+describe('useKMS', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockKeys.clear()
     })
 
     it('should save a key', async () => {
-        const { result } = renderHook(() => useKMD())
+        const { result } = renderHook(() => useKMS())
         const key: KeyPair = {
             privateDataStorageKey: '', // specific logic will overwrite this
             publicKey: 'public-key',
@@ -83,7 +83,7 @@ describe('useKMD', () => {
     })
 
     it('should save a key with no public key', async () => {
-        const { result } = renderHook(() => useKMD())
+        const { result } = renderHook(() => useKMS())
         const key: KeyPair = {
             privateDataStorageKey: '', // specific logic will overwrite this
             publicKey: '',
@@ -107,7 +107,7 @@ describe('useKMD', () => {
     })
 
     it('should use provided id if available when saving key', async () => {
-        const { result } = renderHook(() => useKMD())
+        const { result } = renderHook(() => useKMS())
         const key: KeyPair = {
             id: 'provided-id',
             privateDataStorageKey: '',
@@ -133,7 +133,7 @@ describe('useKMD', () => {
     })
 
     it('should delete a key', async () => {
-        const { result } = renderHook(() => useKMD())
+        const { result } = renderHook(() => useKMS())
         const keyId = 'test-id'
         const key: KeyPair = {
             id: keyId,
@@ -154,7 +154,7 @@ describe('useKMD', () => {
     })
 
     it('should do nothing when deleting a non-existent key', async () => {
-        const { result } = renderHook(() => useKMD())
+        const { result } = renderHook(() => useKMS())
         mockGetKey.mockReturnValue(undefined)
 
         await act(async () => {
@@ -166,7 +166,7 @@ describe('useKMD', () => {
     })
 
     it('should get private data', async () => {
-        const { result } = renderHook(() => useKMD())
+        const { result } = renderHook(() => useKMS())
         const keyId = 'test-id'
         const key: KeyPair = {
             id: keyId,
@@ -190,7 +190,7 @@ describe('useKMD', () => {
     })
 
     it('should return null when getting private data for non-existent key', async () => {
-        const { result } = renderHook(() => useKMD())
+        const { result } = renderHook(() => useKMS())
         mockGetKey.mockReturnValue(undefined)
 
         let data

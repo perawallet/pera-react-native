@@ -20,7 +20,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 
 /**
- * Base kmd error
+ * Base kms error
  */
 export class KeyManagementError extends AppError {
     constructor(
@@ -32,7 +32,7 @@ export class KeyManagementError extends AppError {
             message,
             {
                 severity: ErrorSeverity.HIGH,
-                category: ErrorCategory.KMD,
+                category: ErrorCategory.KMS,
                 retryable: false,
                 ...metadata,
             },

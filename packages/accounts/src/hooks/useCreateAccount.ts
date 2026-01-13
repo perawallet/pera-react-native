@@ -20,9 +20,14 @@ import { useAccountsStore } from '../store'
 import { useHDWallet } from './useHDWallet'
 import { v7 as uuidv7 } from 'uuid'
 import { AccountTypes, WalletAccount } from '../models'
-import { BIP32DerivationTypes } from '@perawallet/wallet-core-xhdwallet'
+import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import { useWithKey, useKMD, KeyType } from '@perawallet/wallet-core-kmd'
+import {
+    useWithKey,
+    useKMS,
+    KeyType,
+    KeyPair,
+} from '@perawallet/wallet-core-kms'
 import { NoHDWalletError } from '../errors'
 import { KEY_DOMAIN } from '../constants'
 
@@ -35,7 +40,7 @@ export const useCreateAccount = () => {
     const deviceInfo = useDeviceInfoService()
     const { mutateAsync: updateDeviceOnBackend } = useUpdateDeviceMutation()
     const { executeWithKey } = useWithKey()
-    const { saveKey, getKey } = useKMD()
+    const { saveKey, getKey } = useKMS()
 
     return async ({
         walletId,
@@ -48,7 +53,7 @@ export const useCreateAccount = () => {
     }) => {
         const rootWalletId = walletId ?? uuidv7()
         //TODO dry this code - maybe create a useHDWalletKey hook and share with useImportAccount
-        const rootKey = getKey(rootWalletId)
+        let rootKey = getKey(rootWalletId)
         if (!rootKey) {
             const masterKey = await generateMasterKey()
             const keyData = {
@@ -56,18 +61,27 @@ export const useCreateAccount = () => {
                 entropy: masterKey.entropy,
             }
             const stringifiedObj = JSON.stringify(keyData)
-            const rootKeyPair = {
+            rootKey = {
                 id: rootWalletId,
                 publicKey: '',
                 privateDataStorageKey: '',
+                domain: KEY_DOMAIN,
                 createdAt: new Date(),
                 type: KeyType.HDWalletRootKey,
-            }
-            await saveKey(rootKeyPair, new TextEncoder().encode(stringifiedObj))
+            } as KeyPair
+
+            rootKey = await saveKey(
+                rootKey,
+                new TextEncoder().encode(stringifiedObj),
+            )
             masterKey.seed.fill(0)
         }
 
-        return executeWithKey(rootWalletId, KEY_DOMAIN, async data => {
+        if (!rootKey?.id) {
+            throw new NoHDWalletError(rootWalletId)
+        }
+
+        return executeWithKey(rootKey.id, KEY_DOMAIN, async data => {
             const masterKeyData = JSON.parse(new TextDecoder().decode(data))
             if (!masterKeyData?.seed) {
                 throw new NoHDWalletError(rootWalletId)
@@ -77,7 +91,7 @@ export const useCreateAccount = () => {
                 seed: Buffer.from(masterKeyData.seed, 'base64'),
                 account,
                 keyIndex,
-                derivationType: BIP32DerivationTypes.Peikert,
+                derivationType: BIP32DerivationType.Peikert,
             })
 
             const newAccount: WalletAccount = {
@@ -90,7 +104,7 @@ export const useCreateAccount = () => {
                     account: account,
                     change: 0,
                     keyIndex: keyIndex,
-                    derivationType: BIP32DerivationTypes.Peikert,
+                    derivationType: BIP32DerivationType.Peikert,
                 },
             }
 
