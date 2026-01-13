@@ -85,6 +85,7 @@ jest.mock(
             },
             StyleSheet: {
                 create: jest.fn(styles => styles),
+                flatten: jest.fn(styles => (Array.isArray(styles) ? Object.assign({}, ...styles) : styles)),
                 hairlineWidth: 1,
                 absoluteFill: {
                     position: 'absolute',
@@ -96,19 +97,19 @@ jest.mock(
             },
             TouchableOpacity: jest
                 .fn()
-                .mockImplementation(({ children }) => children),
-            View: jest.fn().mockImplementation(({ children }) => children),
-            Text: jest.fn().mockImplementation(({ children }) => children),
-            Image: jest.fn().mockImplementation(({ children }) => children),
+                .mockImplementation((props) => require('react').createElement('TouchableOpacity', props, props.children)),
+            View: jest.fn().mockImplementation((props) => require('react').createElement('View', props, props.children)),
+            Text: jest.fn().mockImplementation((props) => require('react').createElement('Text', props, props.children)),
+            Image: jest.fn().mockImplementation((props) => require('react').createElement('Image', props, props.children)),
             ScrollView: jest
                 .fn()
-                .mockImplementation(({ children }) => children),
-            TextInput: jest.fn().mockImplementation(({ children }) => children),
-            Modal: jest.fn().mockImplementation(({ children }) => children),
+                .mockImplementation((props) => require('react').createElement('ScrollView', props, props.children)),
+            TextInput: jest.fn().mockImplementation((props) => require('react').createElement('TextInput', props, props.children)),
+            Modal: jest.fn().mockImplementation((props) => require('react').createElement('Modal', props, props.children)),
             ActivityIndicator: jest
                 .fn()
-                .mockImplementation(({ children }) => children),
-            Pressable: jest.fn().mockImplementation(({ children }) => children),
+                .mockImplementation((props) => require('react').createElement('ActivityIndicator', props, props.children)),
+            Pressable: jest.fn().mockImplementation((props) => require('react').createElement('Pressable', props, props.children)),
             Appearance: {
                 getColorScheme: jest.fn(() => 'light'),
                 addChangeListener: jest.fn(),
@@ -134,6 +135,25 @@ jest.mock(
                 addListener: jest.fn(),
                 removeListener: jest.fn(),
             },
+            Easing: {
+                inOut: jest.fn(),
+                out: jest.fn(),
+                ease: jest.fn(),
+                linear: jest.fn(),
+                quad: jest.fn(),
+            },
+            Animated: {
+                timing: jest.fn(() => ({ start: jest.fn() })),
+                spring: jest.fn(() => ({ start: jest.fn() })),
+                event: jest.fn(),
+                Value: jest.fn(() => ({
+                    setValue: jest.fn(),
+                    interpolate: jest.fn(() => '0px')
+                })),
+                createAnimatedComponent: jest.fn(c => c),
+                View: jest.fn(({ children }) => children),
+                Text: jest.fn(({ children }) => children),
+            },
             PixelRatio: {
                 get: jest.fn(() => 1),
                 getFontScale: jest.fn(() => 1),
@@ -148,7 +168,7 @@ jest.mock(
 jest.mock('react-native-safe-area-context', () => {
     const inset = { top: 0, right: 0, bottom: 0, left: 0 }
     return {
-        SafeAreaProjestder: jest
+        SafeAreaProvider: jest
             .fn()
             .mockImplementation(({ children }) => children),
         SafeAreaConsumer: jest
@@ -180,7 +200,7 @@ jest.mock('react-native-quick-crypto', () => ({
 
 // Basic NativeEventEmitter dependency to avoid errors when no native module is provided
 jest.mock('react-native/Libraries/EventEmitter/NativeEventEmitter', () => {
-    return class NativeEventEmitter {}
+    return class NativeEventEmitter { }
 })
 
 // Mock React Navigation
@@ -235,7 +255,7 @@ jest.mock('@react-native-firebase/messaging', () => ({
 
 jest.mock('@react-native-firebase/remote-config', () => ({
     getRemoteConfig: () => ({
-        setDefaults: jest.fn(async () => {}),
+        setDefaults: jest.fn(async () => { }),
         fetchAndActivate: jest.fn(async () => true),
         setConfigSettings: jest.fn(),
         getValue: jest.fn(() => ({
@@ -287,5 +307,124 @@ jest.mock('react-native-webview', () => {
     return {
         default: jest.fn().mockImplementation(() => View),
         WebView: jest.fn().mockImplementation(() => View),
+    }
+})
+
+// Mock Gesture Handler
+jest.mock('react-native-gesture-handler', () => {
+    const View = require('react-native').View
+    return {
+        Swipeable: View,
+        DrawerLayout: View,
+        State: {},
+        ScrollView: View,
+        Slider: View,
+        Switch: View,
+        TextInput: View,
+        ToolbarAndroid: View,
+        ViewPagerAndroid: View,
+        DrawerLayoutAndroid: View,
+        WebView: View,
+        NativeViewGestureHandler: View,
+        TapGestureHandler: View,
+        FlingGestureHandler: View,
+        ForceTouchGestureHandler: View,
+        LongPressGestureHandler: View,
+        PanGestureHandler: View,
+        PinchGestureHandler: View,
+        RotationGestureHandler: View,
+        /* Buttons */
+        RawButton: View,
+        BaseButton: View,
+        RectButton: View,
+        BorderlessButton: View,
+        /* Other */
+        FlatList: View,
+        gestureHandlerRootHOC: jest.fn(),
+        Directions: {},
+    }
+})
+
+jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => 'Icon')
+jest.mock('react-native-vector-icons/Ionicons', () => 'Icon')
+jest.mock('react-native-vector-icons/FontAwesome', () => 'Icon')
+jest.mock('react-native-vector-icons/FontAwesome5', () => 'Icon')
+
+jest.mock('@rneui/themed', () => {
+    const React = require('react')
+    const { View, Text, TextInput } = require('react-native')
+
+    const colors = {
+        buttonPrimaryBg: '#FABADA',
+        buttonPrimaryText: '#fff',
+        textMain: '#000',
+        textGray: '#ccc',
+        buttonSquareText: '#000',
+        textWhite: '#fff',
+        linkPrimary: 'blue',
+        error: 'red',
+        helperPositive: 'green',
+        primary: 'blue',
+        secondary: 'gray',
+        background: 'white',
+        layerGrayLighter: '#f0f0f0',
+        white: '#ffffff',
+        black: '#000000',
+        grey0: '#e1e8ee',
+        grey1: '#bdc6cf',
+        grey2: '#86939e',
+        grey3: '#5e6977',
+        grey4: '#43484d',
+        grey5: '#3e3e3e',
+    }
+
+    const mockTheme = {
+        colors,
+        lightColors: colors,
+        darkColors: colors,
+        spacing: {
+            xs: 4, sm: 8, md: 16, lg: 24, xl: 32, '2xl': 40, '3xl': 48, '4xl': 56
+        },
+        mode: 'light',
+    }
+
+    return {
+        makeStyles: (styleFn) => (props) => {
+            return styleFn(mockTheme, props) || {}
+        },
+        useTheme: () => ({ theme: mockTheme }),
+        createTheme: () => mockTheme,
+        ThemeProvider: ({ children }) => children,
+        withTheme: (Component) => (props) => React.createElement(Component, { ...props, theme: mockTheme }),
+
+        // Mock Components
+        Button: (props) => React.createElement(View, props, props.title ? React.createElement(Text, null, props.title) : props.children),
+        Text: (props) => React.createElement(Text, props, props.children),
+        Input: (props) => React.createElement(TextInput, { ...props, testID: 'RNEInput' }),
+        CheckBox: (props) => React.createElement(View, props, props.children),
+        BottomSheet: ({ isVisible, children, ...props }) => isVisible ? React.createElement(View, { ...props, testID: 'RNEBottomSheet' }, children) : null,
+        Icon: (props) => React.createElement(View, props),
+        ListItem: Object.assign(
+            (props) => React.createElement(View, props, props.children),
+            {
+                Content: (props) => React.createElement(View, props, props.children),
+                Title: (props) => React.createElement(Text, props, props.children),
+                Subtitle: (props) => React.createElement(Text, props, props.children),
+                Chevron: (props) => React.createElement(View, props),
+            }
+        ),
+    }
+})
+
+jest.mock('react-native-notifier', () => {
+    const React = require('react')
+    const { View } = require('react-native')
+    return {
+        NotifierRoot: ({ children }) => React.createElement(View, {}, children),
+        NotifierWrapper: ({ children }) => React.createElement(View, {}, children),
+        Notifier: {
+            showNotification: jest.fn(),
+            hideNotification: jest.fn(),
+        },
     }
 })

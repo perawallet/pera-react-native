@@ -21,6 +21,7 @@ module.exports = {
     },
     transformIgnorePatterns: [],
     moduleNameMapper: {
+        '\\.svg$': '<rootDir>/__mocks__/svgMock.js',
         '^@/(.*)$': '<rootDir>/src/$1',
         '^@components/(.*)$': '<rootDir>/src/components/$1',
         '^@providers/(.*)$': '<rootDir>/src/providers/$1',
