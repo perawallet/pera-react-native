@@ -4,7 +4,11 @@
   "scripts": {
     "setup": "bash tools/setup.sh",
     "build": "turbo run build",
+    "build:packages": "turbo run build --filter='./packages/*'",
     "dev": "turbo run dev",
+    "dev:packages": "turbo run dev --filter='./packages/*' --parallel",
+    "android": "turbo run android --filter=mobile",
+    "ios": "turbo run ios --filter=mobile",
     "pre-push": "./tools/pre-push --no-fail-on-error",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint -- --fix",

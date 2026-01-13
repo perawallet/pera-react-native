@@ -84,6 +84,19 @@ const config = {
                 };
             }
 
+            // Resolve @perawallet workspace packages to source files for development
+            // This prevents module duplication issues with lazy store initialization
+            if (moduleName.startsWith('@perawallet/wallet-core-') && !moduleName.includes('devtools')) {
+                const packageName = moduleName.replace('@perawallet/wallet-core-', '');
+                const sourcePath = path.resolve(__dirname, '..', '..', 'packages', packageName, 'src', 'index.ts');
+                try {
+                    require.resolve(sourcePath);
+                    return context.resolveRequest(context, sourcePath, platform);
+                } catch {
+                    // Fall through to default resolution
+                }
+            }
+
             // Chain to the standard Metro resolver
             return context.resolveRequest(context, moduleName, platform);
         },

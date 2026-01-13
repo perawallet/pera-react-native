@@ -2,11 +2,18 @@
   "name": "@perawallet/wallet-core-shared",
   "private": true,
   "version": "0.0.0",
-  "main": "src/index.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "vite build",
+    "dev": "vite build --watch",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest --watch",

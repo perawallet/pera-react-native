@@ -12,8 +12,20 @@
 
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
+import dts from 'vite-plugin-dts'
+
 export default defineConfig({
-    plugins: [],
+    plugins: [
+        dts({
+            include: ['src'],
+            exclude: [
+                '**/__tests__/**',
+                '**/*.test.ts',
+                '**/*.test.tsx',
+                '**/test-utils/**',
+            ],
+        }),
+    ],
     build: {
         lib: {
             entry: resolve(__dirname, 'src/index.ts'),
@@ -25,12 +37,10 @@ export default defineConfig({
                 'react',
                 'react/jsx-runtime',
                 'zustand',
-                '@tanstack/react-query',
+                '@perawallet/wallet-core-platform-integration',
                 '@perawallet/wallet-core-shared',
-                '@perawallet/storage',
                 '@algorandfoundation/xhd-wallet-api',
                 'uuid',
-                'bip39',
             ],
         },
     },

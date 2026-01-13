@@ -16,14 +16,49 @@ import react from '@vitejs/plugin-react'
 import dts from 'vite-plugin-dts'
 
 export default defineConfig({
-    plugins: [react(), dts({ include: ['lib'] })],
+    plugins: [
+        react(),
+        dts({
+            include: ['src'],
+            exclude: [
+                '**/__tests__/**',
+                '**/*.test.ts',
+                '**/*.test.tsx',
+                '**/test-utils/**',
+            ],
+        }),
+    ],
     build: {
         lib: {
-            entry: resolve(__dirname, 'lib/main.ts'),
+            entry: resolve(__dirname, 'src/index.ts'),
             formats: ['es'],
+            fileName: 'index',
         },
         rollupOptions: {
-            external: ['react', 'react/jsx-runtime', 'crypto'],
+            external: [
+                'react',
+                'react/jsx-runtime',
+                'zustand',
+                '@tanstack/react-query',
+                '@tanstack/react-query-persist-client',
+                '@perawallet/wallet-core-config',
+                '@algorandfoundation/algokit-utils',
+                '@algorandfoundation/xhd-wallet-api',
+                '@kubb/core',
+                '@kubb/plugin-client',
+                'base32-encode',
+                'base64-js',
+                'bip39',
+                'decimal.js',
+                'ky',
+                'react-native-quick-base64',
+                'reflect-metadata',
+                'tsyringe',
+                'util',
+                'uuid',
+                'zod',
+                'crypto',
+            ],
         },
     },
 })
