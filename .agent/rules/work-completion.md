@@ -17,6 +17,7 @@ pnpm pre-push
 ```
 
 This single command runs:
+
 - ESLint (linting)
 - Prettier (formatting)
 - Copyright header validation

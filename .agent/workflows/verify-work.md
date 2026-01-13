@@ -13,6 +13,7 @@ Run this workflow before reporting any task as complete.
 This is the primary verification command that runs linting, formatting, copyright, and i18n checks:
 
 // turbo
+
 ```sh
 pnpm pre-push
 ```
@@ -22,6 +23,7 @@ If this fails, fix the issues before proceeding.
 ### 2. Run Tests
 
 // turbo
+
 ```sh
 pnpm test
 ```
@@ -33,6 +35,7 @@ If tests fail, debug and fix them.
 For significant changes, verify TypeScript compiles:
 
 // turbo
+
 ```sh
 pnpm build
 ```
@@ -42,6 +45,7 @@ pnpm build
 Work is NOT complete until ALL checks pass without errors.
 
 If any check fails:
+
 1. Fix the underlying issue
 2. Re-run all checks
 3. Only then report completion
