@@ -18,9 +18,9 @@ type("appstore")
 
 # App Identifier(s) to manage certificates for
 app_identifier([
-  ENV["IOS_DEV_BUNDLE_ID"] || "com.algorand.pera.dev",
-  ENV["IOS_STAGING_BUNDLE_ID"] || "com.algorand.pera.staging",
-  ENV["IOS_PRODUCTION_BUNDLE_ID"] || "com.algorand.pera"
+  ENV["IOS_DEV_BUNDLE_ID"] || "com.algorand.perarn.dev",
+  ENV["IOS_STAGING_BUNDLE_ID"] || "com.algorand.perarn.staging",
+  ENV["IOS_PRODUCTION_BUNDLE_ID"] || "com.algorand.perarn"
 ])
 
 # Apple Developer Portal username

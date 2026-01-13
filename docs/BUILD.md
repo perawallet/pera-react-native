@@ -21,9 +21,9 @@ Pera Wallet supports three build environments:
 
 | Environment     | Description                     | Bundle ID (iOS)             | App ID (Android)            |
 | --------------- | ------------------------------- | --------------------------- | --------------------------- |
-| **Development** | Local development, debug builds | `com.algorand.pera.dev`     | `com.algorand.pera.dev`     |
-| **Staging**     | Pre-production testing          | `com.algorand.pera.staging` | `com.algorand.pera.staging` |
-| **Production**  | Official app store releases     | `com.algorand.pera`         | `com.algorand.pera`         |
+| **Development** | Local development, debug builds | `com.algorand.perarn.dev`     | `com.algorand.perarn.dev`     |
+| **Staging**     | Pre-production testing          | `com.algorand.perarn.staging` | `com.algorand.perarn.staging` |
+| **Production**  | Official app store releases     | `com.algorand.perarn`         | `com.algorand.perarn`         |
 
 Each environment can have different:
 
