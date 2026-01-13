@@ -23,50 +23,55 @@ Use this workflow when the USER requests documentation updates or establishes ne
 
 ### 1. Identify What Changed
 
-Determine which documentation files are affected:
+Determine which files are affected:
 
-| Change Type               | Documentation File           |
-| ------------------------- | ---------------------------- |
-| Architecture changes      | `docs/ARCHITECTURE.md`       |
-| New directories/structure | `docs/FOLDER_STRUCTURE.md`   |
-| Naming changes            | `docs/NAMING_CONVENTIONS.md` |
-| Code style changes        | `docs/STYLE_GUIDE.md`        |
-| Testing changes           | `docs/TESTING.md`            |
-| Security patterns         | `docs/SECURITY.md`           |
-| Performance patterns      | `docs/PERFORMANCE.md`        |
+**For human-readable overviews (docs/):**
+
+| Change Type | File |
+|-------------|------|
+| Architecture changes | `docs/ARCHITECTURE.md` |
+| New directories | `docs/FOLDER_STRUCTURE.md` |
+| Naming changes | `docs/NAMING_CONVENTIONS.md` |
+| Code style | `docs/STYLE_GUIDE.md` |
+| Testing | `docs/TESTING.md` |
+| Security | `docs/SECURITY.md` |
+| Performance | `docs/PERFORMANCE.md` |
+
+**For agent rules with code examples (.agent/):**
+
+| Change Type | File |
+|-------------|------|
+| Code patterns | `.agent/rules/code-patterns.md` |
+| Project standards | `.agent/rules/running-commands.md` |
+| Work completion | `.agent/rules/work-completion.md` |
 
 ### 2. Update Documentation
 
-Update the relevant files with:
+**In `docs/`**: Keep it high-level and human-readable
+- Tables, simple lists
+- Minimal code examples
+- Focus on "what" and "why"
 
-- Clear explanation of the pattern
-- Code examples (good AND bad)
-- When to use / when not to use
+**In `.agent/`**: Add detailed patterns
+- Full code examples (good AND bad)
+- Anti-patterns with explanations
+- Specific implementation details
 
-### 3. Update Agent Rules (if needed)
+### 3. Avoid Duplication
 
-If the change affects how code should be generated:
-
-Update `.agent/rules/running-commands.md` or create a new rule file.
+- `docs/` = overview for humans
+- `.agent/` = details for agents
+- Don't repeat the same information in both
 
 ### 4. Keep It Agent-Agnostic
 
-Documentation must be readable by:
-
-- Any AI coding assistant
-- Human developers
-- Future maintainers
-
-Avoid:
-
-- Tool-specific syntax or commands
+Documentation must be readable by any AI or human. Avoid:
+- Tool-specific syntax
 - Platform-specific references
-- Markdown that only works in specific viewers
 
 ### 5. Format Documentation
 
 // turbo
-
 ```sh
 pnpm format "docs/**/*.md"
 ```

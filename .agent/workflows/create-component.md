@@ -8,11 +8,10 @@ Use this workflow when creating a new UI component.
 
 ## Prerequisites
 
-Before starting, read:
-
+Reference these before starting:
+- `.agent/rules/code-patterns.md` - Detailed component patterns with examples
 - `docs/FOLDER_STRUCTURE.md` - Where to place the component
 - `docs/NAMING_CONVENTIONS.md` - How to name files and the component
-- `docs/STYLE_GUIDE.md` - Component patterns
 
 ## Steps
 
@@ -29,7 +28,7 @@ mkdir -p apps/mobile/src/components/[component-name]
 
 ### 3. Create Component File
 
-Create `[ComponentName].tsx`:
+Create `[ComponentName].tsx` following the pattern in `.agent/rules/code-patterns.md`:
 
 - Use `PW` prefix for shared components (e.g., `PWButton.tsx`)
 - No prefix for module-specific components
@@ -39,7 +38,7 @@ Create `[ComponentName].tsx`:
 
 ### 4. Create Styles File
 
-Create `styles.ts`:
+Create `styles.ts` following the style pattern in `.agent/rules/code-patterns.md`:
 
 - Use `makeStyles` from `@rneui/themed` for theme access
 - Export a `useStyles` hook
@@ -55,13 +54,11 @@ Create `__tests__/[ComponentName].test.tsx`:
 ### 6. Verify
 
 // turbo
-
 ```sh
 pnpm --filter mobile lint
 ```
 
 // turbo
-
 ```sh
 pnpm --filter mobile test
 ```

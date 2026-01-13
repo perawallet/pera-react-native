@@ -21,14 +21,14 @@ pnpm format            # Format code
 
 Before writing ANY code, reference the appropriate documentation in `docs/`:
 
-| Task                      | Required Documentation                              |
-| ------------------------- | --------------------------------------------------- |
-| Any code change           | `docs/STYLE_GUIDE.md`, `docs/NAMING_CONVENTIONS.md` |
-| Creating files/folders    | `docs/FOLDER_STRUCTURE.md`                          |
-| Business logic            | `docs/ARCHITECTURE.md`                              |
-| Writing tests             | `docs/TESTING.md`                                   |
-| Security-sensitive code   | `docs/SECURITY.md`                                  |
-| Performance-critical code | `docs/PERFORMANCE.md`                               |
+| Task | Required Documentation |
+|------|------------------------|
+| Any code change | `docs/STYLE_GUIDE.md`, `docs/NAMING_CONVENTIONS.md` |
+| Creating files/folders | `docs/FOLDER_STRUCTURE.md` |
+| Business logic | `docs/ARCHITECTURE.md` |
+| Writing tests | `docs/TESTING.md` |
+| Security-sensitive code | `docs/SECURITY.md` |
+| Performance-critical code | `docs/PERFORMANCE.md` |
 
 ## Code Location Rules
 
@@ -39,26 +39,6 @@ Before writing ANY code, reference the appropriate documentation in `docs/`:
 5. **Hooks (business)** → `packages/[domain]/src/hooks/`
 6. **Hooks (UI-specific)** → `apps/mobile/src/hooks/`
 7. **Tests** → `__tests__/` directory colocated with source
-
-## Naming Conventions
-
-- **Components**: `PascalCase`, shared UI prefixed with `PW` (e.g., `PWButton`)
-- **Hooks**: `use[Domain][Action]` (e.g., `useAccountBalancesQuery`)
-- **Files**: Components in `PascalCase.tsx`, utilities in `kebab-case.ts`
-- **Directories**: Always `kebab-case`
-- **Booleans**: Prefix with `is`, `has`, `should`, `can`
-
-## State Management
-
-- **Zustand stores** → `packages/[domain]/src/store/`
-- **Never export stores directly** - expose via hooks only
-- **React Query** for server state → `packages/[domain]/src/hooks/`
-
-## TypeScript Rules
-
-- Strict mode ENABLED - never disable it
-- Avoid `any` - use `unknown` with type guards
-- Define explicit return types for exported functions
 
 ## Core Values
 
