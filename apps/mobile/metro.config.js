@@ -60,34 +60,41 @@ const config = {
                 }
             }
 
-            // Handle crypto polyfills
-            if (moduleName === 'crypto') {
-                return context.resolveRequest(
-                    context,
-                    'react-native-quick-crypto',
-                    platform,
-                )
+            // Handle crypto polyfills - resolve from mobile app's node_modules
+            // regardless of where the import originates (fixes xhdwallet imports)
+            // Include both the Node.js module names AND the polyfill package names
+            const polyfillMap = {
+                // Node.js core modules
+                'crypto': path.resolve(__dirname, 'node_modules/react-native-quick-crypto'),
+                'buffer': path.resolve(__dirname, 'node_modules/@craftzdog/react-native-buffer'),
+                'stream': path.resolve(__dirname, 'node_modules/readable-stream'),
+                'base64-js': path.resolve(__dirname, 'node_modules/react-native-quick-base64'),
+                'util': path.resolve(__dirname, 'node_modules/util'),
+                // Polyfill package names (for when Babel has already transformed the import)
+                'react-native-quick-crypto': path.resolve(__dirname, 'node_modules/react-native-quick-crypto'),
+                '@craftzdog/react-native-buffer': path.resolve(__dirname, 'node_modules/@craftzdog/react-native-buffer'),
+                'readable-stream': path.resolve(__dirname, 'node_modules/readable-stream'),
+                'react-native-quick-base64': path.resolve(__dirname, 'node_modules/react-native-quick-base64'),
+            };
+
+            if (polyfillMap[moduleName]) {
+                return {
+                    filePath: require.resolve(polyfillMap[moduleName]),
+                    type: 'sourceFile',
+                };
             }
-            if (moduleName === 'buffer') {
-                return context.resolveRequest(
-                    context,
-                    '@craftzdog/react-native-buffer',
-                    platform,
-                )
-            }
-            if (moduleName === 'stream') {
-                return context.resolveRequest(
-                    context,
-                    'readable-stream',
-                    platform,
-                )
-            }
-            if (moduleName === 'base64-js') {
-                return context.resolveRequest(
-                    context,
-                    'react-native-quick-base64',
-                    platform,
-                )
+
+            // Resolve @perawallet workspace packages to source files for development
+            // This prevents module duplication issues with lazy store initialization
+            if (moduleName.startsWith('@perawallet/wallet-core-') && !moduleName.includes('devtools')) {
+                const packageName = moduleName.replace('@perawallet/wallet-core-', '');
+                const sourcePath = path.resolve(__dirname, '..', '..', 'packages', packageName, 'src', 'index.ts');
+                try {
+                    require.resolve(sourcePath);
+                    return context.resolveRequest(context, sourcePath, platform);
+                } catch {
+                    // Fall through to default resolution
+                }
             }
 
             // Chain to the standard Metro resolver

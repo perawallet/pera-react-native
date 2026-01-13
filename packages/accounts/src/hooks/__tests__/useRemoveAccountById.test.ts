@@ -35,8 +35,8 @@ vi.mock('../../store', async () => {
 })
 
 const deleteKeySpy = vi.fn()
-vi.mock('@perawallet/wallet-core-kmd', () => ({
-    useKMD: () => ({
+vi.mock('@perawallet/wallet-core-kms', () => ({
+    useKMS: () => ({
         deleteKey: deleteKeySpy,
     }),
 }))
@@ -76,16 +76,10 @@ describe('useRemoveAccountById', () => {
         const a: WalletAccount = {
             id: '1',
             name: 'Alice',
-            type: 'standard',
+            type: 'algo25',
             address: 'ALICE',
             canSign: true,
-            hdWalletDetails: {
-                walletId: '1',
-                account: 0,
-                change: 0,
-                keyIndex: 0,
-                derivationType: 9,
-            },
+            keyPairId: '1',
         }
         useAccountsStore.setState({ accounts: [a] })
 

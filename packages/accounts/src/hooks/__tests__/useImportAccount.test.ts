@@ -31,12 +31,10 @@ const apiSpies = vi.hoisted(() => ({
 
 const xhdSpies = vi.hoisted(() => ({ fromSeed: vi.fn(() => 'ROOT_KEY') }))
 
-vi.mock('@perawallet/wallet-core-xhdwallet', () => ({
-    BIP32DerivationType: { Peikert: 'PEIKERT' },
-    BIP32DerivationTypes: { Peikert: 9 },
+vi.mock('@algorandfoundation/xhd-wallet-api', () => ({
+    BIP32DerivationType: { Peikert: 9 },
     fromSeed: xhdSpies.fromSeed,
-    KeyContext: { Address: 'Address' },
-    KeyContexts: { Address: 0 },
+    KeyContext: { Address: 0 },
     XHDWalletAPI: class {
         deriveKey = apiSpies.deriveSpy
         keyGen = apiSpies.keyGenSpy

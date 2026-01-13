@@ -38,7 +38,7 @@ export type KeyPair = {
     privateDataStorageKey?: string // where the private key information is stored in secure storage
     publicKey: string
     createdAt?: Date
-    expiresAt?: Date // optional key expiry. KMD will autodelete keys when accessed after this date
+    expiresAt?: Date // optional key expiry. KMS will autodelete keys when accessed after this date
     acl?: AccessControl[] // who can access this key or what can be done with it
     type: KeyType
 }

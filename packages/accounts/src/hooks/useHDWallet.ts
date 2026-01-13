@@ -12,13 +12,12 @@
 
 import type { HDWalletDetails } from '../models'
 import {
-    BIP32DerivationTypes,
-    type BIP32DerivationType,
-    Encodings,
+    BIP32DerivationType,
+    Encoding,
     fromSeed,
-    KeyContexts,
+    KeyContext,
     XHDWalletAPI,
-} from '@perawallet/wallet-core-xhdwallet'
+} from '@algorandfoundation/xhd-wallet-api'
 import * as bip39 from 'bip39'
 import messageSchema from '../schema/message-schema.json'
 import { WORDLIST } from '../wordlist'
@@ -47,7 +46,7 @@ const deriveAccountAddress = async ({
     seed,
     account = 0,
     keyIndex = 0,
-    derivationType = BIP32DerivationTypes.Peikert,
+    derivationType = BIP32DerivationType.Peikert,
 }: {
     seed: Buffer
     account?: number
@@ -57,7 +56,7 @@ const deriveAccountAddress = async ({
     const rootKey = fromSeed(seed)
     const address = await api.keyGen(
         rootKey,
-        KeyContexts.Address,
+        KeyContext.Address,
         account,
         keyIndex,
         derivationType,
@@ -75,11 +74,11 @@ const signTransaction = (
     const rootKey = fromSeed(seed)
     return api.signAlgoTransaction(
         rootKey,
-        KeyContexts.Address,
+        KeyContext.Address,
         hdWalletDetails.account,
         hdWalletDetails.keyIndex,
         transaction,
-        BIP32DerivationTypes.Peikert,
+        BIP32DerivationType.Peikert,
     )
 }
 
@@ -90,17 +89,17 @@ const signData = (
 ) => {
     const rootKey = fromSeed(seed)
     const metadata = {
-        encoding: Encodings.BASE64,
+        encoding: Encoding.BASE64,
         schema: messageSchema,
     }
     return api.signData(
         rootKey,
-        KeyContexts.Address,
+        KeyContext.Address,
         hdWalletDetails.account,
         hdWalletDetails.keyIndex,
         data,
         metadata,
-        BIP32DerivationTypes.Peikert,
+        BIP32DerivationType.Peikert,
     )
 }
 

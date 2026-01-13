@@ -4,8 +4,8 @@
 echo "Running pre-push checks..."
 
 FAIL_ON_ERROR=1
-if [ $1 = "--no-fail-on-error" ]; then
-    echo "Skipping pre-push checks..."
+if [ "$1" = "--no-fail-on-error" ]; then
+    echo "Skipping pre-push checks failure enforcement..."
     FAIL_ON_ERROR=0
 fi
 
@@ -40,7 +40,7 @@ if [ $? -ne 0 ]; then
   fi
 fi
 
-# Check for modified files
+# Check for modified files after formatting
 if ! git diff --quiet; then
   echo "${RED}Formatting detected changes.${NC}"
   echo "${YELLOW}Please commit these changes before pushing.${NC}"
@@ -63,6 +63,15 @@ if [ $? -ne 0 ]; then
   fi
 fi
 
+# Check for modified files after copyright header check
+if ! git diff --quiet; then
+  echo "${RED}Copyright header check detected changes.${NC}"
+  echo "${YELLOW}Please commit these changes before pushing.${NC}"
+  if [ $FAIL_ON_ERROR -ne 0 ]; then
+    exit 1
+  fi
+fi
+
 echo "${GREEN}✓ Copyright headers valid${NC}"
 
 # Run i18n check
@@ -78,10 +87,6 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "${GREEN}✓ i18n valid${NC}"
-
-
-
-echo "\n${GREEN}All pre-push checks passed!${NC}"
 
 echo "\n${GREEN}All pre-push checks passed!${NC}"
 exit 0
