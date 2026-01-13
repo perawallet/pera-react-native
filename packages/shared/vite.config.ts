@@ -20,11 +20,7 @@ export default defineConfig({
         react(),
         dts({
             include: ['src'],
-            exclude: [
-                '**/__tests__/**',
-                '**/*.test.ts',
-                '**/*.test.tsx',
-            ],
+            exclude: ['**/__tests__/**', '**/*.test.ts', '**/*.test.tsx'],
         }),
     ],
     build: {

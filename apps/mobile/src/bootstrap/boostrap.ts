@@ -18,6 +18,7 @@ import { RNSecureStorageService } from '../platform/secure-storage'
 import {
     registerPlatformServices,
     initDeviceStore,
+    initRemoteConfigStore,
 } from '@perawallet/wallet-core-platform-integration'
 import { logger } from '@perawallet/wallet-core-shared'
 import { initAssetsStore } from '@perawallet/wallet-core-assets'
@@ -29,7 +30,6 @@ import { initSettingsStore } from '@perawallet/wallet-core-settings'
 import { initSwapsStore } from '@perawallet/wallet-core-swaps'
 import { initKeyManagerStore } from '@perawallet/wallet-core-kms'
 import { initWalletConnectStore } from '@perawallet/wallet-core-walletconnect'
-import { initRemoteConfigStore } from '@perawallet/wallet-core-platform-integration'
 import { useCallback } from 'react'
 
 const firebaseService = new RNFirebaseService()

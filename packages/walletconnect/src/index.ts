@@ -19,4 +19,3 @@ export * from './hooks/useWalletConnect'
 export * from './constants'
 
 export { initWalletConnectStore } from './store'
-
