@@ -10,8 +10,10 @@
  limitations under the License
  */
 
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { RNDeviceInfoStorageService } from '../device'
 import * as RN from 'react-native'
+import DeviceInfo from 'react-native-device-info'
 
 // Mock @perawallet/wallet-core-shared
 vi.mock('@perawallet/wallet-core-shared', () => ({
@@ -64,10 +66,7 @@ describe('RNDeviceInfoStorageService', () => {
 
     describe('initializeDeviceInfo', () => {
         it('sets up headers and calls updateBackendHeaders', async () => {
-            const {
-                updateBackendHeaders,
-                // eslint-disable-next-line @typescript-eslint/no-require-imports
-            } = require('@perawallet/wallet-core-shared')
+            const { updateBackendHeaders } = await import('@perawallet/wallet-core-shared')
             const mockUpdateBackendHeaders = vi.mocked(updateBackendHeaders)
             const mockNativeModules = vi.mocked(RN)
             mockNativeModules.NativeModules.SettingsManager.getConstants =
@@ -95,8 +94,6 @@ describe('RNDeviceInfoStorageService', () => {
         })
 
         it('calls DeviceInfo methods for header values', async () => {
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
-            const DeviceInfo = require('react-native-device-info').default
             const mockDeviceInfo = vi.mocked(DeviceInfo)
             const mockNativeModules = vi.mocked(RN)
             mockNativeModules.NativeModules.SettingsManager.getConstants =
@@ -119,8 +116,6 @@ describe('RNDeviceInfoStorageService', () => {
 
     describe('getDeviceID', () => {
         it('returns unique device ID from DeviceInfo', async () => {
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
-            const DeviceInfo = require('react-native-device-info').default
             const mockDeviceInfo = vi.mocked(DeviceInfo)
 
             const deviceId = await service.getDeviceID()
@@ -132,8 +127,6 @@ describe('RNDeviceInfoStorageService', () => {
 
     describe('getDeviceModel', () => {
         it('returns device model from DeviceInfo', async () => {
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
-            const DeviceInfo = require('react-native-device-info').default
             const mockDeviceInfo = vi.mocked(DeviceInfo)
 
             const model = service.getDeviceModel()
@@ -153,7 +146,7 @@ describe('RNDeviceInfoStorageService', () => {
         it('returns android platform when Platform.OS is android', async () => {
             // Import and mock Platform directly
             // eslint-disable-next-line @typescript-eslint/no-require-imports
-            const { Platform } = require('react-native')
+            const { Platform } = RN
             const mockPlatform = vi.mocked(Platform)
             mockPlatform.OS = 'android'
 
@@ -186,7 +179,7 @@ describe('RNDeviceInfoStorageService', () => {
         it('handles iOS locale from AppleLanguages when AppleLocale is not available', async () => {
             // Mock iOS without AppleLocale
             // eslint-disable-next-line @typescript-eslint/no-require-imports
-            const { NativeModules } = require('react-native')
+            const { NativeModules } = RN
             const mockNativeModules = vi.mocked(NativeModules)
             mockNativeModules.SettingsManager.getConstants = vi.fn(() => ({
                 settings: {

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { renderHook } from '@testing-library/react-native'
+import { renderHook } from '@testing-library/react'
 import { useIsDarkMode } from '../theme'
 import { useColorScheme } from 'react-native'
 import { useSettings } from '@perawallet/wallet-core-settings'

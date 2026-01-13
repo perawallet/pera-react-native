@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { renderHook, act } from '@testing-library/react-native'
+import { renderHook, act } from '@testing-library/react'
 import { useLanguage } from '../language'
 import { useTranslation } from 'react-i18next'
 

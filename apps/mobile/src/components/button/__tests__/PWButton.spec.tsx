@@ -1,3 +1,4 @@
+import { vi } from 'vitest'
 import React from 'react'
 import { render, fireEvent, screen } from '@test-utils/render'
 import PWButton from '../PWButton'
@@ -7,7 +8,8 @@ describe('PWButton', () => {
         const onPress = vi.fn()
         render(<PWButton title="Click Me" onPress={onPress} variant="primary" />)
         
-        fireEvent.press(screen.getByText('Click Me'))
+        // Use click instead of press since we're testing with react-native-web
+        fireEvent.click(screen.getByText('Click Me'))
         expect(onPress).toHaveBeenCalledTimes(1)
     })
 

@@ -4,6 +4,12 @@ import 'reflect-metadata'
 import { vi, afterEach } from 'vitest'
 // import '@testing-library/jest-native/extend-expect'
 
+// Mock PWIcon component to avoid SVG import issues
+vi.mock('@components/icons/PWIcon', () => ({
+  default: () => null,
+  PWIcon: () => null,
+}))
+
 // Clean up after each test
 afterEach(() => {
   vi.clearAllMocks()
@@ -88,21 +94,22 @@ vi.mock(
           right: 0,
         },
       },
-      TouchableOpacity: vi
-        .fn()
-        .mockImplementation((props) => require('react').createElement('TouchableOpacity', props, props.children)),
-      View: vi.fn().mockImplementation((props) => require('react').createElement('View', props, props.children)),
-      Text: vi.fn().mockImplementation((props) => require('react').createElement('Text', props, props.children)),
-      Image: vi.fn().mockImplementation((props) => require('react').createElement('Image', props, props.children)),
-      ScrollView: vi
-        .fn()
-        .mockImplementation((props) => require('react').createElement('ScrollView', props, props.children)),
-      TextInput: vi.fn().mockImplementation((props) => require('react').createElement('TextInput', props, props.children)),
-      Modal: vi.fn().mockImplementation((props) => require('react').createElement('Modal', props, props.children)),
-      ActivityIndicator: vi
-        .fn()
-        .mockImplementation((props) => require('react').createElement('ActivityIndicator', props, props.children)),
-      Pressable: vi.fn().mockImplementation((props) => require('react').createElement('Pressable', props, props.children)),
+      // Map React Native components to web-compatible HTML elements with proper event handling
+      TouchableOpacity: vi.fn().mockImplementation(({ onPress, children, ...props }) => {
+        const React = require('react')
+        return React.createElement('button', { ...props, onClick: onPress }, children)
+      }),
+      View: vi.fn().mockImplementation((props) => require('react').createElement('div', props, props.children)),
+      Text: vi.fn().mockImplementation((props) => require('react').createElement('span', props, props.children)),
+      Image: vi.fn().mockImplementation((props) => require('react').createElement('img', props, props.children)),
+      ScrollView: vi.fn().mockImplementation((props) => require('react').createElement('div', props, props.children)),
+      TextInput: vi.fn().mockImplementation((props) => require('react').createElement('input', props, props.children)),
+      Modal: vi.fn().mockImplementation((props) => require('react').createElement('div', props, props.children)),
+      ActivityIndicator: vi.fn().mockImplementation((props) => require('react').createElement('div', { ...props, 'data-testid': 'activity-indicator' }, 'Loading...')),
+      Pressable: vi.fn().mockImplementation(({ onPress, ...props }) => {
+        const React = require('react')
+        return React.createElement('button', { ...props, onClick: onPress }, props.children)
+      }),
       Appearance: {
         getColorScheme: vi.fn(() => 'light'),
         addChangeListener: vi.fn(),
@@ -289,44 +296,45 @@ vi.mock('react-native-mmkv', () => {
 })
 
 vi.mock('react-native-webview', () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { View } = require('react-native')
+  const React = require('react')
+  const MockView = (props: any) => React.createElement('div', props, props.children)
   return {
-    default: vi.fn().mockImplementation(() => View),
-    WebView: vi.fn().mockImplementation(() => View),
+    default: vi.fn().mockImplementation(() => MockView),
+    WebView: vi.fn().mockImplementation(() => MockView),
   }
 })
 
 // Mock Gesture Handler
 vi.mock('react-native-gesture-handler', () => {
-  const View = require('react-native').View
+  const React = require('react')
+  const MockView = (props: any) => React.createElement('div', props, props.children)
   return {
-    Swipeable: View,
-    DrawerLayout: View,
+    Swipeable: MockView,
+    DrawerLayout: MockView,
     State: {},
-    ScrollView: View,
-    Slider: View,
-    Switch: View,
-    TextInput: View,
-    ToolbarAndroid: View,
-    ViewPagerAndroid: View,
-    DrawerLayoutAndroid: View,
-    WebView: View,
-    NativeViewGestureHandler: View,
-    TapGestureHandler: View,
-    FlingGestureHandler: View,
-    ForceTouchGestureHandler: View,
-    LongPressGestureHandler: View,
-    PanGestureHandler: View,
-    PinchGestureHandler: View,
-    RotationGestureHandler: View,
+    ScrollView: MockView,
+    Slider: MockView,
+    Switch: MockView,
+    TextInput: MockView,
+    ToolbarAndroid: MockView,
+    ViewPagerAndroid: MockView,
+    DrawerLayoutAndroid: MockView,
+    WebView: MockView,
+    NativeViewGestureHandler: MockView,
+    TapGestureHandler: MockView,
+    FlingGestureHandler: MockView,
+    ForceTouchGestureHandler: MockView,
+    LongPressGestureHandler: MockView,
+    PanGestureHandler: MockView,
+    PinchGestureHandler: MockView,
+    RotationGestureHandler: MockView,
     /* Buttons */
-    RawButton: View,
-    BaseButton: View,
-    RectButton: View,
-    BorderlessButton: View,
+    RawButton: MockView,
+    BaseButton: MockView,
+    RectButton: MockView,
+    BorderlessButton: MockView,
     /* Other */
-    FlatList: View,
+    FlatList: MockView,
     gestureHandlerRootHOC: vi.fn(),
     Directions: {},
   }
@@ -339,7 +347,12 @@ vi.mock('react-native-vector-icons/FontAwesome5', () => 'Icon')
 
 vi.mock('@rneui/themed', () => {
   const React = require('react')
-  const { View, Text, TextInput } = require('react-native')
+
+  // Create simple mock components using basic React elements only
+  // Do NOT import from react-native here as that would trigger the Flow syntax error
+  const MockView = ({ onPress, children, ...props }: any) => React.createElement('div', { onClick: onPress, ...props }, children)
+  const MockText = (props: any) => React.createElement('span', props, props.children)
+  const MockTextInput = ({ onChangeText, ...props }: any) => React.createElement('input', { onChange: (e: any) => onChangeText?.(e.target.value), ...props })
 
   const colors = {
     buttonPrimaryBg: '#FABADA',
@@ -384,20 +397,20 @@ vi.mock('@rneui/themed', () => {
     ThemeProvider: ({ children }: any) => children,
     withTheme: (Component: any) => (props: any) => React.createElement(Component, { ...props, theme: mockTheme }),
 
-    // Mock Components
-    Button: (props: any) => React.createElement(View, props, props.title ? React.createElement(Text, null, props.title) : props.children),
-    Text: (props: any) => React.createElement(Text, props, props.children),
-    Input: (props: any) => React.createElement(TextInput, { ...props, testID: 'RNEInput' }),
-    CheckBox: (props: any) => React.createElement(View, props, props.children),
-    BottomSheet: ({ isVisible, children, ...props }: any) => isVisible ? React.createElement(View, { ...props, testID: 'RNEBottomSheet' }, children) : null,
-    Icon: (props: any) => React.createElement(View, props),
+    // Mock Components using basic HTML elements
+    Button: (props: any) => React.createElement(MockView, props, props.title ? React.createElement(MockText, null, props.title) : props.children),
+    Text: (props: any) => React.createElement(MockText, props, props.children),
+    Input: (props: any) => React.createElement(MockTextInput, { ...props, 'data-testid': 'RNEInput' }),
+    CheckBox: (props: any) => React.createElement(MockView, props, props.children),
+    BottomSheet: ({ isVisible, children, ...props }: any) => isVisible ? React.createElement(MockView, { ...props, 'data-testid': 'RNEBottomSheet' }, children) : null,
+    Icon: (props: any) => React.createElement(MockView, props),
     ListItem: Object.assign(
-      (props: any) => React.createElement(View, props, props.children),
+      (props: any) => React.createElement(MockView, props, props.children),
       {
-        Content: (props: any) => React.createElement(View, props, props.children),
-        Title: (props: any) => React.createElement(Text, props, props.children),
-        Subtitle: (props: any) => React.createElement(Text, props, props.children),
-        Chevron: (props: any) => React.createElement(View, props),
+        Content: (props: any) => React.createElement(MockView, props, props.children),
+        Title: (props: any) => React.createElement(MockText, props, props.children),
+        Subtitle: (props: any) => React.createElement(MockText, props, props.children),
+        Chevron: (props: any) => React.createElement(MockView, props),
       }
     ),
   }
@@ -405,10 +418,10 @@ vi.mock('@rneui/themed', () => {
 
 vi.mock('react-native-notifier', () => {
   const React = require('react')
-  const { View } = require('react-native')
+  const MockView = (props: any) => React.createElement('div', props, props.children)
   return {
-    NotifierRoot: ({ children }: any) => React.createElement(View, {}, children),
-    NotifierWrapper: ({ children }: any) => React.createElement(View, {}, children),
+    NotifierRoot: ({ children }: any) => React.createElement(MockView, {}, children),
+    NotifierWrapper: ({ children }: any) => React.createElement(MockView, {}, children),
     Notifier: {
       showNotification: vi.fn(),
       hideNotification: vi.fn(),

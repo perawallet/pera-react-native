@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { renderHook, act } from '@testing-library/react-native'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { renderHook, act } from '@testing-library/react'
 import useToast from '../toast'
 import { Notifier } from 'react-native-notifier'
 

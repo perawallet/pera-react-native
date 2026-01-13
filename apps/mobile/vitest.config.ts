@@ -1,13 +1,14 @@
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
+import svgr from 'vite-plugin-svgr'
 import path from 'path'
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [svgr(), react()],
+  assetsInclude: ['**/*.svg'],
   resolve: {
     alias: [
-      { find: 'react-native', replacement: 'react-native-web' },
-      { find: /\.svg$/, replacement: path.resolve(__dirname, './__mocks__/svgMock.js') },
+      { find: 'react-native', replacement: path.resolve(__dirname, './node_modules/react-native-web') },
       { find: '@components', replacement: path.resolve(__dirname, './src/components') },
       { find: '@modules', replacement: path.resolve(__dirname, './src/modules') },
       { find: '@hooks', replacement: path.resolve(__dirname, './src/hooks') },
@@ -19,14 +20,21 @@ export default defineConfig({
       { find: '@layouts', replacement: path.resolve(__dirname, './src/layouts') },
       { find: '@test-utils', replacement: path.resolve(__dirname, './src/test-utils') },
       { find: '@', replacement: path.resolve(__dirname, './src') },
-      { find: '@perawallet/wallet-core-shared', replacement: path.resolve(__dirname, '../../packages/shared/src') },
-      { find: '@perawallet/wallet-core-platform-integration', replacement: path.resolve(__dirname, '../../packages/platform-integration/src') },
-      { find: '@perawallet/wallet-core-accounts', replacement: path.resolve(__dirname, '../../packages/accounts/src') },
-      { find: '@perawallet/wallet-core-assets', replacement: path.resolve(__dirname, '../../packages/assets/src') },
-      { find: '@perawallet/wallet-core-blockchain', replacement: path.resolve(__dirname, '../../packages/blockchain/src') },
-      { find: '@perawallet/wallet-core-config', replacement: path.resolve(__dirname, '../../packages/config/src') },
-      { find: '@tanstack/query-core', replacement: path.resolve(__dirname, './node_modules/@tanstack/query-core') },
-      { find: 'stacktrace-js', replacement: path.resolve(__dirname, './node_modules/stacktrace-js') }
+      { find: '@perawallet/wallet-core-shared', replacement: path.resolve(__dirname, '../../packages/shared/src/index.ts') },
+      { find: '@perawallet/wallet-core-platform-integration', replacement: path.resolve(__dirname, '../../packages/platform-integration/src/index.ts') },
+      { find: '@perawallet/wallet-core-accounts', replacement: path.resolve(__dirname, '../../packages/accounts/src/index.ts') },
+      { find: '@perawallet/wallet-core-assets', replacement: path.resolve(__dirname, '../../packages/assets/src/index.ts') },
+      { find: '@perawallet/wallet-core-blockchain', replacement: path.resolve(__dirname, '../../packages/blockchain/src/index.ts') },
+      { find: '@perawallet/wallet-core-config', replacement: path.resolve(__dirname, '../../packages/config/src/index.ts') },
+      { find: '@perawallet/wallet-core-currencies', replacement: path.resolve(__dirname, '../../packages/currencies/src/index.ts') },
+      { find: '@perawallet/wallet-core-contacts', replacement: path.resolve(__dirname, '../../packages/contacts/src/index.ts') },
+      { find: '@perawallet/wallet-core-walletconnect', replacement: path.resolve(__dirname, '../../packages/walletconnect/src/index.ts') },
+      { find: '@perawallet/wallet-core-settings', replacement: path.resolve(__dirname, '../../packages/settings/src/index.ts') },
+      { find: '@perawallet/wallet-core-kms', replacement: path.resolve(__dirname, '../../packages/kms/src/index.ts') },
+      { find: '@perawallet/wallet-core-swaps', replacement: path.resolve(__dirname, '../../packages/swaps/src/index.ts') },
+      { find: '@perawallet/wallet-core-polling', replacement: path.resolve(__dirname, '../../packages/polling/src/index.ts') },
+      { find: '@perawallet/wallet-core-devtools', replacement: path.resolve(__dirname, '../../packages/devtools/src/index.ts') },
+      { find: '@tanstack/query-core', replacement: path.resolve(__dirname, './node_modules/@tanstack/query-core') }
     ],
     extensions: ['.mjs', '.js', '.mts', '.ts', '.jsx', '.tsx', '.json', '.d.ts'],
     preserveSymlinks: true
@@ -38,19 +46,31 @@ export default defineConfig({
     server: {
       deps: {
         inline: [
-          'react-native',
+          /@perawallet\//,
           'react-native-web',
-          /@react-native/,
-
-          'react-native-reanimated',
-          'react-native-gesture-handler',
           '@rneui/themed',
           '@rneui/base',
           'react-native-vector-icons',
           'react-native-notifier',
-          /@react-native-firebase/,
-          /@perawallet/,
         ]
+      }
+    },
+    deps: {
+      optimizer: {
+        web: {
+          enabled: true,
+          include: [
+            'react-native-web',
+            '@rneui/themed',
+            '@rneui/base',
+            'react-native-reanimated',
+            'react-native-gesture-handler',
+            'react-native-vector-icons',
+            'react-native-notifier',
+            '@testing-library/react',
+            'react-test-renderer',
+          ]
+        }
       }
     }
   }

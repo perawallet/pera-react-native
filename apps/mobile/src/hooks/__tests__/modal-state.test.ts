@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { renderHook, act } from '@testing-library/react-native'
+import { renderHook, act } from '@testing-library/react'
 import { useModalState } from '../modal-state'
 
 describe('useModalState', () => {

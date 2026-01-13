@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { renderHook } from '@testing-library/react-native'
+import { renderHook } from '@testing-library/react'
 import { useShowOnboarding } from '../onboarding'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { useHasNoAccounts } from '@perawallet/wallet-core-accounts'

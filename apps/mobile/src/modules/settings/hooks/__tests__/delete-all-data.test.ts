@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { renderHook, act } from '@testing-library/react-native'
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
+import { renderHook, act } from '@testing-library/react'
 import { useDeleteAllData } from '../delete-all-data'
 import {
     useAllAccounts,
@@ -45,23 +46,23 @@ describe('useDeleteAllData', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        ;(useAllAccounts as vi.Mock).mockReturnValue([
-            { id: 'account-1' },
-            { id: 'account-2' },
-        ])
-        ;(useRemoveAccountById as vi.Mock).mockReturnValue(
-            mockRemoveAccountById,
-        )
-        ;(useContacts as vi.Mock).mockReturnValue({
-            contacts: ['contact-1', 'contact-2'],
-            deleteContact: mockDeleteContact,
-        })
-        ;(usePreferences as vi.Mock).mockReturnValue({
-            clearAllPreferences: mockClearAllPreferences,
-        })
-        ;(useQueryClient as vi.Mock).mockReturnValue({
-            removeQueries: mockRemoveQueries,
-        })
+            ; (useAllAccounts as Mock).mockReturnValue([
+                { id: 'account-1' },
+                { id: 'account-2' },
+            ])
+            ; (useRemoveAccountById as Mock).mockReturnValue(
+                mockRemoveAccountById,
+            )
+            ; (useContacts as Mock).mockReturnValue({
+                contacts: ['contact-1', 'contact-2'],
+                deleteContact: mockDeleteContact,
+            })
+            ; (usePreferences as Mock).mockReturnValue({
+                clearAllPreferences: mockClearAllPreferences,
+            })
+            ; (useQueryClient as Mock).mockReturnValue({
+                removeQueries: mockRemoveQueries,
+            })
     })
 
     it('should delete all accounts, contacts, preferences and queries', () => {
@@ -84,7 +85,7 @@ describe('useDeleteAllData', () => {
     })
 
     it('should not call removeAccountById if account id is missing', () => {
-        ;(useAllAccounts as vi.Mock).mockReturnValue([{ id: undefined }])
+        ; (useAllAccounts as Mock).mockReturnValue([{ id: undefined }])
 
         const { result } = renderHook(() => useDeleteAllData())
 

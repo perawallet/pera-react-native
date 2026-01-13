@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { renderHook, act } from '@testing-library/react-native'
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
+import { renderHook, act } from '@testing-library/react'
 import { useInputView } from '../use-input-view'
 import { SendFundsContext } from '@modules/transactions/providers/SendFundsProvider'
 import Decimal from 'decimal.js'
@@ -30,42 +31,42 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import useToast from '@hooks/toast'
 
-jest.mock('@components/bottom-sheet/PWBottomSheet', () => ({
+vi.mock('@components/bottom-sheet/PWBottomSheet', () => ({
     bottomSheetNotifier: { current: null },
 }))
 
-jest.mock('@perawallet/wallet-core-accounts', () => ({
-    useSelectedAccount: jest.fn(),
-    useAccountBalancesQuery: jest.fn(),
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useSelectedAccount: vi.fn(),
+    useAccountBalancesQuery: vi.fn(),
 }))
 
-jest.mock('@perawallet/wallet-core-assets', () => ({
-    useAssetsQuery: jest.fn(),
-    useAssetFiatPricesQuery: jest.fn(),
+vi.mock('@perawallet/wallet-core-assets', () => ({
+    useAssetsQuery: vi.fn(),
+    useAssetFiatPricesQuery: vi.fn(),
     ALGO_ASSET_ID: 0,
     ALGO_ASSET: { id: 0, decimals: 6 },
-    toWholeUnits: jest.fn(() => 0.001),
+    toWholeUnits: vi.fn(() => 0.001),
 }))
 
-jest.mock('@perawallet/wallet-core-blockchain', () => ({
-    useSuggestedParametersQuery: jest.fn(),
-    useAccountInformationQuery: jest.fn(),
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useSuggestedParametersQuery: vi.fn(),
+    useAccountInformationQuery: vi.fn(),
 }))
 
-jest.mock('@hooks/toast', () => ({
+vi.mock('@hooks/toast', () => ({
     __esModule: true,
-    default: jest.fn(() => ({ showToast: jest.fn() })),
+    default: vi.fn(() => ({ showToast: vi.fn() })),
 }))
 
-jest.mock('@hooks/language', () => ({
-    useLanguage: jest.fn(() => ({ t: (key: string) => key })),
+vi.mock('@hooks/language', () => ({
+    useLanguage: vi.fn(() => ({ t: (key: string) => key })),
 }))
 
 describe('useInputView', () => {
-    const mockOnNext = jest.fn()
-    const mockSetAmount = jest.fn()
-    const mockSetNote = jest.fn()
-    const mockShowToast = jest.fn()
+    const mockOnNext = vi.fn()
+    const mockSetAmount = vi.fn()
+    const mockSetNote = vi.fn()
+    const mockShowToast = vi.fn()
 
     const defaultContext = {
         selectedAsset: { assetId: 0 },
@@ -75,21 +76,21 @@ describe('useInputView', () => {
     }
 
     beforeEach(() => {
-        jest.clearAllMocks()
-        ;(useToast as jest.Mock).mockReturnValue({ showToast: mockShowToast })
-        ;(useSelectedAccount as jest.Mock).mockReturnValue({
+        vi.clearAllMocks()
+        ;(useToast as Mock).mockReturnValue({ showToast: mockShowToast })
+        ;(useSelectedAccount as Mock).mockReturnValue({
             address: 'test-addr',
         })
-        ;(useAssetsQuery as jest.Mock).mockReturnValue({
+        ;(useAssetsQuery as Mock).mockReturnValue({
             data: new Map([
                 [0, { id: 0, decimals: 6 }],
                 [1, { id: 1, decimals: 0 }],
             ]),
         })
-        ;(useAssetFiatPricesQuery as jest.Mock).mockReturnValue({
+        ;(useAssetFiatPricesQuery as Mock).mockReturnValue({
             data: new Map([[0, { fiatPrice: Decimal(1.5) }]]),
         })
-        ;(useAccountBalancesQuery as jest.Mock).mockReturnValue({
+        ;(useAccountBalancesQuery as Mock).mockReturnValue({
             accountBalances: new Map([
                 [
                     'test-addr',
@@ -102,10 +103,10 @@ describe('useInputView', () => {
                 ],
             ]),
         })
-        ;(useSuggestedParametersQuery as jest.Mock).mockReturnValue({
+        ;(useSuggestedParametersQuery as Mock).mockReturnValue({
             data: { minFee: 1000 },
         })
-        ;(useAccountInformationQuery as jest.Mock).mockReturnValue({
+        ;(useAccountInformationQuery as Mock).mockReturnValue({
             data: {
                 amount: 100,
                 minBalance: 0.1,
@@ -181,7 +182,7 @@ describe('useInputView', () => {
     })
 
     it('validates input on next (error if > max)', () => {
-        ;(useAccountInformationQuery as jest.Mock).mockReturnValue({
+        ;(useAccountInformationQuery as Mock).mockReturnValue({
             data: { amount: 10, minBalance: 0 },
         })
 
@@ -202,7 +203,7 @@ describe('useInputView', () => {
     })
 
     it('proceeds on next if valid', () => {
-        ;(useAccountInformationQuery as jest.Mock).mockReturnValue({
+        ;(useAccountInformationQuery as Mock).mockReturnValue({
             data: { amount: 100, minBalance: 0 },
         })
 

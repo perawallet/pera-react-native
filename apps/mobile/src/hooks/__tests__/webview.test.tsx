@@ -10,59 +10,60 @@
  limitations under the License
  */
 
-import { renderHook, act } from '@testing-library/react-native'
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
+import { renderHook, act } from '@testing-library/react'
 import { usePeraWebviewInterface, useWebView } from '../webview'
 import { Linking } from 'react-native'
 import React from 'react'
 import { WebViewContext } from '@providers/WebViewProvider'
 
-jest.mock('react-native', () => ({
+vi.mock('react-native', () => ({
     Platform: {
         OS: 'ios',
-        select: jest.fn(obj => obj.ios || obj.default),
+        select: vi.fn(obj => obj.ios || obj.default),
     },
     Linking: {
-        canOpenURL: jest.fn().mockResolvedValue(true),
-        openURL: jest.fn().mockResolvedValue(true),
+        canOpenURL: vi.fn().mockResolvedValue(true),
+        openURL: vi.fn().mockResolvedValue(true),
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     View: ({ children }: any) => children,
 }))
 
-jest.mock('react-native-notifier', () => ({
+vi.mock('react-native-notifier', () => ({
     Notifier: {
-        showNotification: jest.fn(),
+        showNotification: vi.fn(),
     },
 }))
 
-jest.mock('@perawallet/wallet-core-shared', () => ({
+vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: {
-        debug: jest.fn(),
-        error: jest.fn(),
+        debug: vi.fn(),
+        error: vi.fn(),
     },
-    createLazyStore: jest.fn(() => () => ({})),
+    createLazyStore: vi.fn(() => () => ({})),
 }))
 
-jest.mock('@perawallet/wallet-core-platform-integration', () => ({
-    useAnalyticsService: jest.fn(() => ({
-        logEvent: jest.fn(),
+vi.mock('@perawallet/wallet-core-platform-integration', () => ({
+    useAnalyticsService: vi.fn(() => ({
+        logEvent: vi.fn(),
     })),
-    useDeviceID: jest.fn(() => 'device-id'),
-    useDeviceInfoService: jest.fn(() => ({
-        getAppVersion: jest.fn(() => '1.0.0'),
-        getDevicePlatform: jest.fn(() => 'ios'),
-        getDeviceModel: jest.fn(() => 'iPhone'),
+    useDeviceID: vi.fn(() => 'device-id'),
+    useDeviceInfoService: vi.fn(() => ({
+        getAppVersion: vi.fn(() => '1.0.0'),
+        getDevicePlatform: vi.fn(() => 'ios'),
+        getDeviceModel: vi.fn(() => 'iPhone'),
     })),
-    useNetwork: jest.fn(() => ({
+    useNetwork: vi.fn(() => ({
         network: 'mainnet',
     })),
 }))
 
-jest.mock('@perawallet/wallet-core-accounts', () => ({
-    getAccountDisplayName: jest.fn(account => account.name),
-    isHDWalletAccount: jest.fn(account => account.type === 'standard'),
-    isRekeyedAccount: jest.fn(() => false),
-    useAllAccounts: jest.fn(() => [
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    getAccountDisplayName: vi.fn(account => account.name),
+    isHDWalletAccount: vi.fn(account => account.type === 'standard'),
+    isRekeyedAccount: vi.fn(() => false),
+    useAllAccounts: vi.fn(() => [
         {
             address: 'addr1',
             name: 'Account 1',
@@ -72,37 +73,37 @@ jest.mock('@perawallet/wallet-core-accounts', () => ({
     ]),
 }))
 
-jest.mock('@perawallet/wallet-core-settings', () => ({
-    useSettings: jest.fn(() => ({
+vi.mock('@perawallet/wallet-core-settings', () => ({
+    useSettings: vi.fn(() => ({
         theme: 'light',
     })),
 }))
 
-jest.mock('@perawallet/wallet-core-currencies', () => ({
-    useCurrency: jest.fn(() => ({
+vi.mock('@perawallet/wallet-core-currencies', () => ({
+    useCurrency: vi.fn(() => ({
         preferredCurrency: 'USD',
     })),
 }))
 
-const mockAddSignRequest = jest.fn()
-jest.mock('@perawallet/wallet-core-blockchain', () => ({
+const mockAddSignRequest = vi.fn()
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useSigningRequest: () => ({ addSignRequest: mockAddSignRequest }),
 }))
 
-jest.mock('@perawallet/wallet-core-walletconnect', () => ({
-    useWalletConnect: () => ({ connect: jest.fn() }),
+vi.mock('@perawallet/wallet-core-walletconnect', () => ({
+    useWalletConnect: () => ({ connect: vi.fn() }),
 }))
 
-jest.mock('uuid', () => ({
-    v7: jest.fn(() => 'test-id'),
+vi.mock('uuid', () => ({
+    v7: vi.fn(() => 'test-id'),
 }))
 
-jest.mock('@rneui/themed', () => ({
+vi.mock('@rneui/themed', () => ({
     makeStyles: () => () => ({}),
 }))
 
-jest.mock('../language', () => ({
-    useLanguage: jest.fn(() => ({
+vi.mock('../language', () => ({
+    useLanguage: vi.fn(() => ({
         t: (key: string, params?: Record<string, string>) => {
             if (key === 'errors.webview.unsupported_url' && params?.url) {
                 return `Unsupported URL: ${params.url}`
@@ -114,7 +115,7 @@ jest.mock('../language', () => ({
 
 describe('useWebView', () => {
     it('should provide pushWebView from context', () => {
-        const mockPushWebView = jest.fn()
+        const mockPushWebView = vi.fn()
         const wrapper = ({ children }: { children: React.ReactNode }) => (
             <WebViewContext.Provider
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -130,14 +131,14 @@ describe('useWebView', () => {
 
 describe('usePeraWebviewInterface', () => {
     const mockWebview = {
-        injectJavaScript: jest.fn(),
+        injectJavaScript: vi.fn(),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any
 
     beforeEach(() => {
-        jest.clearAllMocks()
-        ;(Linking.canOpenURL as jest.Mock).mockResolvedValue(true)
-        ;(Linking.openURL as jest.Mock).mockResolvedValue(true)
+        vi.clearAllMocks()
+        ;(Linking.canOpenURL as Mock).mockResolvedValue(true)
+        ;(Linking.openURL as Mock).mockResolvedValue(true)
     })
 
     it('should handle openSystemBrowser action', async () => {
@@ -162,7 +163,7 @@ describe('usePeraWebviewInterface', () => {
     })
 
     it('should handle openSystemBrowser action failure', async () => {
-        ;(Linking.canOpenURL as jest.Mock).mockResolvedValue(false)
+        ;(Linking.canOpenURL as Mock).mockResolvedValue(false)
         const { result } = renderHook(() =>
             usePeraWebviewInterface(mockWebview, true),
         )
@@ -300,7 +301,7 @@ describe('usePeraWebviewInterface', () => {
     })
 
     it('should handle closeWebView action', () => {
-        const mockOnClose = jest.fn()
+        const mockOnClose = vi.fn()
         const { result } = renderHook(() =>
             usePeraWebviewInterface(mockWebview, true, mockOnClose),
         )
@@ -374,7 +375,7 @@ describe('usePeraWebviewInterface', () => {
     })
 
     it('should handle pushWebView action', () => {
-        const mockPushWebView = jest.fn()
+        const mockPushWebView = vi.fn()
         const wrapper = ({ children }: { children: React.ReactNode }) => (
             <WebViewContext.Provider
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any

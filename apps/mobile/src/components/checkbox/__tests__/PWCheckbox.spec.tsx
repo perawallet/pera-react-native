@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
 import { render, fireEvent, screen } from '@test-utils/render'
 import PWCheckbox from '../PWCheckbox'
@@ -12,7 +13,7 @@ describe('PWCheckbox', () => {
             </PWCheckbox>
         )
         
-        fireEvent.press(screen.getByText('Accept Terms'))
+        fireEvent.click(screen.getByText('Accept Terms'))
         expect(onPress).toHaveBeenCalledTimes(1)
     })
 })

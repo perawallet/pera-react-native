@@ -10,13 +10,16 @@
  limitations under the License
  */
 
-import { renderHook, act } from '@testing-library/react-native'
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
+import { renderHook, act } from '@testing-library/react'
 import { useClipboard } from '../clipboard'
 import Clipboard from '@react-native-clipboard/clipboard'
 import useToast from '../toast'
 
 vi.mock('@react-native-clipboard/clipboard', () => ({
-    setString: vi.fn(),
+    default: {
+        setString: vi.fn(),
+    },
 }))
 
 vi.mock('../toast', () => ({
@@ -39,9 +42,9 @@ describe('useClipboard', () => {
 
     it('should copy text to clipboard and show toast', () => {
         const mockShowToast = vi.fn()
-        ;(useToast as vi.Mock).mockReturnValue({
-            showToast: mockShowToast,
-        })
+            ; (useToast as Mock).mockReturnValue({
+                showToast: mockShowToast,
+            })
 
         const { result } = renderHook(() => useClipboard())
 

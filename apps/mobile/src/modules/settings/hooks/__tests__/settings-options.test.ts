@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { renderHook } from '@testing-library/react-native'
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
+import { renderHook } from '@testing-library/react'
 import { useSettingsOptions } from '../settings-options'
 import { useLanguage } from '@hooks/language'
 
@@ -31,9 +32,9 @@ describe('useSettingsOptions', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        ;(useLanguage as vi.Mock).mockReturnValue({
-            t: mockT,
-        })
+            ; (useLanguage as Mock).mockReturnValue({
+                t: mockT,
+            })
     })
 
     it('should return the correctly structured settings options', () => {

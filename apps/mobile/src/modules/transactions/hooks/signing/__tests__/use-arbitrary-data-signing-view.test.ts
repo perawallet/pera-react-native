@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { renderHook, act } from '@testing-library/react-native'
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
+import { renderHook, act } from '@testing-library/react'
 import { useArbitraryDataSigningView } from '../use-arbitrary-data-signing-view'
 import {
     useAllAccounts,
@@ -66,14 +67,14 @@ describe('useArbitraryDataSigningView', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        ;(useToast as vi.Mock).mockReturnValue({ showToast: mockShowToast })
-        ;(useSigningRequest as vi.Mock).mockReturnValue({
-            removeSignRequest: mockRemoveSignRequest,
-        })
-        ;(useAllAccounts as vi.Mock).mockReturnValue(mockAccounts)
-        ;(useArbitraryDataSigner as vi.Mock).mockReturnValue({
-            signArbitraryData: mockSignArbitraryData,
-        })
+            ; (useToast as Mock).mockReturnValue({ showToast: mockShowToast })
+            ; (useSigningRequest as Mock).mockReturnValue({
+                removeSignRequest: mockRemoveSignRequest,
+            })
+            ; (useAllAccounts as Mock).mockReturnValue(mockAccounts)
+            ; (useArbitraryDataSigner as Mock).mockReturnValue({
+                signArbitraryData: mockSignArbitraryData,
+            })
     })
 
     describe('approveRequest', () => {
@@ -99,7 +100,7 @@ describe('useArbitraryDataSigningView', () => {
         })
 
         it('should fail if account is not found', async () => {
-            ;(useAllAccounts as vi.Mock).mockReturnValue([])
+            ; (useAllAccounts as Mock).mockReturnValue([])
             const { result } = renderHook(() =>
                 useArbitraryDataSigningView(baseRequest),
             )
