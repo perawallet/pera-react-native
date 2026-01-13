@@ -79,18 +79,18 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.algorand.android"
+    namespace "com.algorand.perarn"
 
     defaultConfig {
         // Default values (will be overridden by flavors)
-        applicationId "com.algorand.android.perarn"
+        applicationId "com.algorand.perarn"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "7.0.0"
 
         // Make APP_ENV available to React Native at build time
-        resValue "string", "build_config_package", "com.algorand.android"
+        resValue "string", "build_config_package", "com.algorand.perarn"
     }
 
     // Load keystore properties for release builds
@@ -129,7 +129,7 @@ android {
     productFlavors {
         dev {
             dimension "environment"
-            applicationId "com.algorand.android.perarn.dev"
+            applicationId "com.algorand.perarn.dev"
             versionNameSuffix "-dev"
             resValue "string", "app_name", "Pera Dev"
             buildConfigField "String", "APP_ENV", '"development"'
@@ -137,7 +137,7 @@ android {
 
         staging {
             dimension "environment"
-            applicationId "com.algorand.android.perarn.staging"
+            applicationId "com.algorand.perarn.staging"
             versionNameSuffix "-staging"
             resValue "string", "app_name", "Pera Staging"
             buildConfigField "String", "APP_ENV", '"staging"'
@@ -145,7 +145,7 @@ android {
 
         production {
             dimension "environment"
-            applicationId "com.algorand.android.perarn"
+            applicationId "com.algorand.perarn"
             resValue "string", "app_name", "Pera"
             buildConfigField "String", "APP_ENV", '"production"'
         }

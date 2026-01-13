@@ -6,101 +6,108 @@
  Unless required by applicable law or agreed to in writing, software
  distributed under the License is distributed on an "AS IS" BASIS,
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
  limitations under the License
  */
 
-import { z } from 'zod'
-import { developmentOverrides } from './development'
-import { stagingOverrides } from './staging'
-import { productionConfig } from './production'
-import { getConfigWithEnvOverrides } from './env-loader'
+import { z } from 'zod';
+import {
+    ONE_DAY,
+    ONE_HOUR,
+    ONE_MINUTE,
+    ONE_SECOND,
+    THIRTY_SECONDS,
+} from './constants';
+
+import { generatedEnv } from './generated-env';
 
 export const configSchema = z.object({
-    mainnetBackendUrl: z.url(),
-    testnetBackendUrl: z.url(),
-    mainnetAlgodUrl: z.url(),
-    testnetAlgodUrl: z.url(),
-    mainnetIndexerUrl: z.url(),
-    testnetIndexerUrl: z.url(),
+    mainnetBackendUrl: z.string().url(),
+    testnetBackendUrl: z.string().url(),
+    mainnetAlgodUrl: z.string().url(),
+    testnetAlgodUrl: z.string().url(),
+    mainnetIndexerUrl: z.string().url(),
+    testnetIndexerUrl: z.string().url(),
     backendAPIKey: z.string(),
     algodApiKey: z.string(),
     indexerApiKey: z.string(),
 
-    mainnetExplorerUrl: z.url(),
-    testnetExplorerUrl: z.url(),
+    mainnetExplorerUrl: z.string().url(),
+    testnetExplorerUrl: z.string().url(),
 
-    notificationRefreshTime: z.int(),
-    remoteConfigRefreshTime: z.int(),
+    notificationRefreshTime: z.number().int(),
+    remoteConfigRefreshTime: z.number().int(),
 
-    reactQueryDefaultGCTime: z.int(),
-    reactQueryDefaultStaleTime: z.int(),
-    reactQueryShortLivedGCTime: z.int(),
-    reactQueryShortLivedStaleTime: z.int(),
-    reactQueryPersistenceAge: z.int(),
+    reactQueryDefaultGCTime: z.number().int(),
+    reactQueryDefaultStaleTime: z.number().int(),
+    reactQueryShortLivedGCTime: z.number().int(),
+    reactQueryShortLivedStaleTime: z.number().int(),
+    reactQueryPersistenceAge: z.number().int(),
 
-    discoverBaseUrl: z.url(),
-    stakingBaseUrl: z.url(),
-    onrampBaseUrl: z.url(),
-    supportBaseUrl: z.url(),
-    termsOfServiceUrl: z.url(),
-    privacyPolicyUrl: z.url(),
-    peraDemoDappUrl: z.url(),
+    discoverBaseUrl: z.string().url(),
+    stakingBaseUrl: z.string().url(),
+    onrampBaseUrl: z.string().url(),
+    supportBaseUrl: z.string().url(),
+    termsOfServiceUrl: z.string().url(),
+    privacyPolicyUrl: z.string().url(),
+    peraDemoDappUrl: z.string().url(),
 
-    sendFundsFaqUrl: z.url(),
-    swapSupportUrl: z.url(),
+    sendFundsFaqUrl: z.string().url(),
+    swapSupportUrl: z.string().url(),
 
     debugEnabled: z.boolean(),
     profilingEnabled: z.boolean(),
     pollingEnabled: z.boolean(),
-})
+});
 
-export type Config = z.infer<typeof configSchema>
+export type Config = z.infer<typeof configSchema>;
 
 /**
- * Select a validated config object based on the provided env or environment variables.
- *
- * Configuration loading order (later values override earlier ones):
- * 1. Base production config (safe OSS defaults)
- * 2. Environment-specific overrides (development/staging)
- * 3. Environment variable overrides (PERA_* prefix for build-time injection)
- *
- * Environment selection:
- * - APP_ENV has precedence over NODE_ENV
- * - Maps 'test' (Vitest) to development by default
- * - Fallback for unknown values is production
- *
- * @param env - Optional environment name to use instead of reading from process.env
- * @returns Validated configuration object with all overrides applied
+ * Production configuration with safe defaults for open source builds.
  */
-export function getConfigForEnv(env?: string): Config {
-    const key = (env ?? 'development')?.toLowerCase() || 'development'
+const productionConfig = {
+    mainnetAlgodUrl: 'https://mainnet-api.algonode.cloud',
+    testnetAlgodUrl: 'https://testnet-api.algonode.cloud',
+    mainnetIndexerUrl: 'https://mainnet-idx.algonode.cloud',
+    testnetIndexerUrl: 'https://testnet-idx.algonode.cloud',
+    mainnetBackendUrl: 'https://api.example.com',
+    testnetBackendUrl: 'https://testnet-api.example.com',
+    backendAPIKey: '',
+    algodApiKey: '',
+    indexerApiKey: '',
+    mainnetExplorerUrl: 'https://explorer.perawallet.app',
+    testnetExplorerUrl: 'https://testnet.explorer.perawallet.app',
+    discoverBaseUrl: 'https://discover-mobile.perawallet.app/',
+    stakingBaseUrl: 'https://staking-mobile.perawallet.app/',
+    onrampBaseUrl: 'https://onramp-mobile.perawallet.app/',
+    supportBaseUrl: 'https://support.perawallet.app/',
+    termsOfServiceUrl: 'https://perawallet.app/terms-and-services/',
+    privacyPolicyUrl: 'https://perawallet.app/privacy-policy/',
+    peraDemoDappUrl: 'https://perawallet.github.io/pera-demo-dapp/',
+    sendFundsFaqUrl: 'https://support.perawallet.app/en/category/transactions-1tq8s9h/',
+    swapSupportUrl: 'https://support.perawallet.app/en/article/pera-swap-swapping-with-pera-1ep84ky/',
+    notificationRefreshTime: THIRTY_SECONDS,
+    remoteConfigRefreshTime: ONE_HOUR,
+    reactQueryDefaultGCTime: ONE_HOUR,
+    reactQueryDefaultStaleTime: ONE_MINUTE,
+    reactQueryShortLivedGCTime: 60 * ONE_DAY,
+    reactQueryShortLivedStaleTime: 30 * ONE_SECOND,
+    reactQueryPersistenceAge: 60 * ONE_DAY,
+    debugEnabled: false,
+    profilingEnabled: false,
+    pollingEnabled: true,
+};
 
-    let overrides: Partial<Config> = {}
-    switch (key) {
-        case 'staging':
-        case 'stage':
-            console.log('Configured for staging')
-            overrides = stagingOverrides
-            break
-        case 'development':
-        case 'dev':
-        case 'test': // vitest default
-            console.log('Configured for development')
-            overrides = developmentOverrides
-            break
-        default:
-            console.log('Configured for production')
-            overrides = {}
-            break
-    }
+/**
+ * Load configuration.
+ * It merges the safe production defaults with the generated environment configuration.
+ * 
+ * @returns Validated configuration object
+ */
+export function getConfig(): Config {
+    const mergedConfig = { ...productionConfig, ...generatedEnv };
 
-    // Merge base config with environment overrides
-    const baseConfig = configSchema.parse({ ...productionConfig, ...overrides })
-
-    // Apply environment variable overrides (for build-time injection)
-    return getConfigWithEnvOverrides(baseConfig)
+    return configSchema.parse(mergedConfig);
 }
 
-export const config = getConfigForEnv()
-Object.freeze(config)
+export const config = getConfig();
+Object.freeze(config);
