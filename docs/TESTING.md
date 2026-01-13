@@ -1,51 +1,74 @@
 # Testing Guide
 
-We prioritize high test coverage for business logic and critical UI paths.
+We test to ensure code works correctly and stays working as changes are made.
 
-## Tools
+## Testing Stack
 
-- **[Vitest](https://vitest.dev/)**: Fast unit test runner (Jest-compatible). Used for all headless `packages/*`.
-- **[Jest](https://jestjs.io/)**: Used for the UI layer and hooks in `apps/mobile` to better support React Native specific testing.
-- **[React Native Testing Library (RNTL)](https://callstack.github.io/react-native-testing-library/)**: Used for testing React Components and Hooks in `apps/mobile`.
+| Tool                             | Used For                              |
+| -------------------------------- | ------------------------------------- |
+| **Vitest**                       | Testing `packages/*` (business logic) |
+| **Jest**                         | Testing `apps/mobile` (React Native)  |
+| **React Native Testing Library** | Component testing                     |
 
-## Writing Tests
-
-### Location
-
-- Tests should be **colocated** with the source code.
-- Create a `__tests__` directory inside the folder where the code lives.
-- Test files should be named `*.test.ts` or `*.test.tsx`.
-
-### What to Test
-
-1.  **Packages (Logic)**:
-    - Test **Stores** (Zustand) updates.
-    - Test **Utils** and helper functions.
-    - Mock external dependencies (Network, Storage).
-    - _Goal: ~90% coverage or higher._
-
-2.  **Apps (UI)**:
-    - Test **Hooks** (`renderHook`).
-    - Test **Screens/Components** for user interaction (presses, inputs).
-    - Avoid testing implementation details; test **behavior**.
-
-## running Tests
-
-### Run All Tests
+## Running Tests
 
 ```sh
-pnpm test
+pnpm test                    # Run all tests
+pnpm --filter mobile test    # Mobile app tests only
+pnpm --filter accounts test  # Specific package tests
 ```
 
-### Run Tests for a Specific Package
+## Where Tests Live
 
-```sh
-pnpm --filter mobile test      # Tests for mobile app
-pnpm --filter accounts test    # Tests for accounts package
+Tests are **colocated** with source code in `__tests__/` folders:
+
+```
+src/hooks/
+├── useToast.ts
+└── __tests__/
+    └── useToast.test.ts
 ```
 
-### Watching Tests (Dev Mode)
+## What to Test
 
-```sh
-pnpm test --watch
+### In Packages (Business Logic)
+
+Focus on:
+
+- Zustand store updates
+- Data transformation functions
+- Hook behavior (with `renderHook`)
+- Error handling
+
+### In Mobile App (UI)
+
+Focus on:
+
+- User interactions (button presses, form inputs)
+- Conditional rendering
+- Critical user flows
+
+Avoid:
+
+- Snapshot tests for complex components
+- Testing third-party library behavior
+
+## Test File Naming
+
+Both `.test.ts` and `.spec.ts` are accepted:
+
 ```
+useToast.test.ts     ✅
+useToast.spec.ts     ✅
+PWButton.test.tsx    ✅
+```
+
+## Key Principle
+
+**Test behavior, not implementation.**
+
+Ask: "What should happen when the user does X?" rather than "Does internal method Y get called?"
+
+## Learn More
+
+For detailed test patterns and examples, see the development workflows.

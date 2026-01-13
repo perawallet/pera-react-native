@@ -1,41 +1,54 @@
-# Style Guide & Coding Standards
+# Style Guide
 
-We follow strict standards to keep the codebase clean, consistent, and maintainable.
-
-## Git
-
-- **Branches**: Use `<user-name>/[branch-name]` branch naming so it's easy to determine who owns the branch.
-- **Commits**: We use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
-- **PR**: PRs are required and should be based on `main` in most cases. Use Squash Merge when merging the PR.
+This guide covers the key coding standards for the project.
 
 ## TypeScript
 
-- **Strict Mode**: Enabled. Do not disable it.
-- **No `any`**: Avoid `any` whenever possible. Use `unknown` with type guards or define proper interfaces.
-- **Explicit Returns**: Define return types for functions, especially exported ones.
+- **Strict mode is on** — don't disable it
+- **Avoid `any`** — use `unknown` with type guards, or define proper types
+- **Define return types** for exported functions
 
-## Components & Hooks
+## Components
 
-- **Functional Components**: Use functional components with Hooks wherever possible. Class components are legacy.
-- **PascalCase**: Component names and files containing components (e.g., `AccountList.tsx`).
-- **Custom Hooks**: Encapsulate logic in `use[Feature]` hooks (e.g., `useAccountStore`).
+- Use **functional components** (no classes)
+- Keep styles in separate `styles.ts` files
+- Use **StyleSheet** or theme-based `useStyles`, not inline styles
 
-## Naming Conventions
+## Code Quality
 
-- **Variables/Functions**: `camelCase` (e.g., `fetchBalance`, `isValid`).
-- **Components/Classes**: `PascalCase` (e.g., `UserProfile`, `WalletStore`).
-- **Constants**: `UPPER_CASE` (e.g., `MAX_RETRIES`, `API_URL`).
-- **Boolean Props**: Prefix with `is`, `has`, `should` (e.g., `isLoading`, `hasError`).
+Run these before pushing:
 
-## Formatting & Linting
+```sh
+pnpm pre-push   # Lint, format, copyright, i18n
+pnpm test       # Run tests
+```
 
-- **Prettier**: We use Prettier for code formatting. It runs automatically on pre-commit.
-    - Run manually: `pnpm format`
-- **ESLint**: We use ESLint for code quality rules.
-    - Run manually: `pnpm lint`
+If checks fail:
 
-## Project Rules
+```sh
+pnpm lint:fix   # Auto-fix lint issues
+pnpm format     # Auto-fix formatting
+```
 
-1.  **No Magic Numbers/Strings**: Extract invalid or recurring values to constants.
-2.  **Comments**: Comment _why_, not _what_. Code should be self-documenting.
-3.  **Imports**: Use absolute paths (aliases) where configured (e.g., inside `apps/mobile`).
+## Key Principles
+
+1. **Self-documenting code** — minimize comments
+2. **No magic numbers** — use named constants
+
+## Images
+
+| Format   | Use For                                          |
+| -------- | ------------------------------------------------ |
+| **SVG**  | Icons, logos, simple graphics that need to scale |
+| **WebP** | Photos, complex images, screenshots              |
+
+**SVG** — Use for vector graphics. They scale perfectly at any size and are smaller for simple shapes. Import as React components for easy theming.
+
+**WebP** — Use for raster images. Better compression than PNG/JPEG while maintaining quality. Use for photos, gradients, and complex artwork.
+
+## Learn More
+
+- [Contributing Guide](CONTRIBUTING.md) - Git workflow, branching, commits
+- [Architecture](docs/ARCHITECTURE.md) - Where logic vs UI goes
+- [Naming Conventions](docs/NAMING_CONVENTIONS.md) - How to name things
+- [Folder Structure](docs/FOLDER_STRUCTURE.md) - Where to put files

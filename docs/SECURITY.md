@@ -1,31 +1,43 @@
 # Security Best Practices
 
-Security is paramount in a non-custodial wallet application.
+This is a **non-custodial wallet** — security is critical. Users trust us with their keys.
 
-## Sensitive Data
+## Golden Rules
 
-- **Private Keys / Mnemonic Seeds**:
-    - **NEVER** store these in plain text (Redux state, AsyncStorage, Files).
-    - **ALWAYS** use the `SecureStorageService` (wraps Keychain/Keystore) via the `platform-integration` package.
-    - Keep them in memory for as short a time as possible.
+### 1. Never Log Sensitive Data
 
-- **Logging**:
-    - **NEVER** log Private Keys or Mnemonics
-    - Use our custom `Logger` which supports `LogContext`.
-    - Ensure any object passed to the logger is sanitized (e.g., replace sensitive fields with `[REDACTED]`). We store very little sensitive data so it mostly is signing keys and maybe in some cases tx data or addresses.
+Private keys, mnemonics, and passwords must **never** appear in logs.
 
-## Environment Variables
+### 2. Use Secure Storage
 
-- **Credentials**: Do not commit distinct API keys (beyond the defaults) or secrets to the repo.
-- **Config**: Use `.env` files for configuration.
-- **Exposure**: Be aware that anything in the mobile app bundle is public.
+Store sensitive data (keys, mnemonics) using `SecureStorageService`, which uses the device's secure keychain/keystore.
 
-## Input Validation
+### 3. Validate All Input
 
-- **User Input**: Validate all user input (Addresses, Amounts) before processing.
-- **API Responses**: Do not implicitly trust API responses. Ideally validate schemas using Zod (generated clients do this).
+Never trust user input or API responses. Validate before processing.
+
+### 4. No Secrets in Code
+
+Environment variables and API keys should be in `.env` files, not hardcoded.
+
+## Sensitive Data Checklist
+
+| Data               | Storage            | Logging |
+| ------------------ | ------------------ | ------- |
+| Private keys       | SecureStorage only | Never   |
+| Mnemonic seeds     | SecureStorage only | Never   |
+| Passwords/PINs     | SecureStorage only | Never   |
+| Addresses          | Any storage        | Safe    |
+| Transaction hashes | Any storage        | Safe    |
 
 ## Dependency Safety
 
-- **Audits**: Regularly run `pnpm audit`.
-- **Pinning**: We lock dependencies to ensure reproducible and reviewed builds. Be very careful when updating dependencies to avoid supply chain attacks.
+```sh
+pnpm audit              # Check for vulnerabilities
+```
+
+Review dependency updates carefully. Supply chain attacks are real.
+
+## When in Doubt
+
+If you're unsure whether something is secure, ask. Security mistakes are expensive.

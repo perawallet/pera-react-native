@@ -4,35 +4,80 @@ Welcome! We're glad you're here. This guide will help you get started with contr
 
 ## Getting Started
 
-1.  **Environment Setup**: Follow the [Prerequisites and Install instructions](README.md#prerequisites) in the main README.
-2.  **Initialize**: Run `pnpm install` and then `pnpm run setup`. The setup command installs Git hooks that automatically handle linting and formatting.
-3.  **Explore**: Familiarize yourself with the [Workspace layout](README.md#workspace-layout). Business logic lives in `packages/*` and UI lives in `apps/mobile`.
+1. **Setup**: Follow the [README](README.md) for prerequisites and installation
+2. **Initialize**: Run `pnpm install` then `pnpm run setup` (installs Git hooks)
+3. **Explore**: Read [Architecture](docs/ARCHITECTURE.md) to understand the codebase
 
 ## Core Values
 
-When contributing, keep these principles in mind:
+- **Reusability** — Build flexible, reusable components and patterns
+- **Clean Code** — Self-documenting code; comments explain _why_, not _what_
+- **Concise Docs** — Keep documentation accurate but brief
+- **Separation** — Business logic in `packages/*`, UI in `apps/mobile`
 
-- **Reusability & Scalability**: We prioritize building flexible, reusable components and patterns to accelerate future development.
-- **Clean Code**: Minimize in-code comments. Code should be self-documenting; comments should explain _why_, not _what_.
-- **Quality Documentation**: Keep external documentation (like this guide and `docs/*`) accurate and up to date, but keep it concise.
+## Branching
 
-## Workflow & Standards
+Use the format `<your-name>/<feature-or-fix>`:
 
-To keep the codebase healthy, we follow these standards:
+```
+john/add-login-screen
+sarah/fix-balance-display
+```
 
-- **Style Guide**: Please read the [Style Guide](docs/STYLE_GUIDE.md) before making changes. It covers naming conventions, TypeScript rules, and component patterns.
-- **Branching**: Use the format `<your-name>/<feature-or-fix>` for branch names (e.g., `john/add-login-screen`).
-- **Commits**: Use [Conventional Commits](https://www.conventionalcommits.org/).
-- **Pull Requests**:
-    - Target the `main` branch.
-    - Ensure all tests pass.
-    - Use **Squash Merge** when merging.
+## Commits
 
-## Additional Documentation
+We use [Conventional Commits](https://www.conventionalcommits.org/):
 
-- [Architecture & State Management](docs/ARCHITECTURE.md)
-- [Testing Guide](docs/TESTING.md)
-- [Security Best Practices](docs/SECURITY.md)
-- [Performance Guidelines](docs/PERFORMANCE.md)
+```
+feat(accounts): add account import functionality
+fix(settings): correct theme toggle behavior
+docs: update testing guide
+refactor(hooks): simplify useAccountBalance
+```
+
+Common prefixes:
+
+| Prefix     | Use For                                          |
+| ---------- | ------------------------------------------------ |
+| `feat`     | New features                                     |
+| `fix`      | Bug fixes                                        |
+| `docs`     | Documentation only                               |
+| `refactor` | Code changes that don't add features or fix bugs |
+| `test`     | Adding or updating tests                         |
+| `chore`    | Build, tooling, or maintenance                   |
+
+## Pull Requests
+
+- Target the `main` branch
+- Ensure all tests pass
+- Use **Squash Merge** when merging
+- Fill out the PR template
+
+## Before Submitting
+
+Run these checks locally:
+
+```sh
+pnpm pre-push   # Lint, format, copyright, i18n
+pnpm test       # Run all tests
+```
+
+The pre-push hook runs these automatically, but catching issues early is faster.
+
+## Essential Reading
+
+Before making changes, review the documentation in [docs/](docs/):
+
+- **Architecture** — Understand packages vs mobile app separation
+- **Folder Structure** — Know where to put different types of code
+- **Naming Conventions** — Follow consistent naming patterns
+
+## Getting Help
+
+If you have questions:
+
+1. Check the documentation in `docs/`
+2. Search existing issues and PRs
+3. Ask in the team chat/discussion
 
 Thank you for contributing!

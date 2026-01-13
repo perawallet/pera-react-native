@@ -47,11 +47,32 @@ pnpm -C apps/mobile start|ios|android
 
 ## Workspace layout
 
-- apps/mobile — React Native app scaffold and screens
-- packages/\* - headless libraries containing all the business logic & state management for a wallet app
-- packages/devtools/eslint — shared ESLint rules
-- packages/devtools/typescript — shared tsconfig bases
-- packages/xhdwallet — HD wallet crypto helpers (this is a modified version of @algorandfoundation/xhd-wallet-api which isn't babel friendly yet)
+```
+pera-react-native/
+├── apps/
+│   └── mobile/              # React Native app (UI layer)
+├── packages/                # Headless business logic packages
+│   ├── accounts/            # Account management and state
+│   ├── assets/              # Asset management
+│   ├── blockchain/          # Algorand-specific code (node/indexer)
+│   ├── config/              # Configuration and environment
+│   ├── contacts/            # Contact management
+│   ├── currencies/          # Currency formatting and preferences
+│   ├── devtools/            # Development tools
+│   │   ├── eslint/          # Shared ESLint configuration
+│   │   └── tsconfig/        # Shared TypeScript configuration
+│   ├── kmd/                 # Key Management Daemon integration
+│   ├── platform-integration/# Platform abstraction layer
+│   ├── polling/             # Background polling logic
+│   ├── settings/            # User settings and preferences
+│   ├── shared/              # Common utilities, types, and models
+│   ├── swaps/               # Token swap functionality
+│   ├── walletconnect/       # WalletConnect integration
+│   └── xhdwallet/           # HD wallet crypto helpers
+├── tools/                   # Development and CI scripts
+├── specs/                   # OpenAPI specifications
+└── docs/                    # Project documentation
+```
 
 See workspace definition in [`pnpm-workspace.yaml`](pnpm-workspace.yaml).
 
@@ -59,8 +80,8 @@ See workspace definition in [`pnpm-workspace.yaml`](pnpm-workspace.yaml).
 
 - Task runner/cache: Turborepo (scripts in [`package.json`](package.json))
 - Formatting: Prettier
-- Linting: ESLint with shared config from [`packages/devtools/eslint`](packages/devtools/eslint/index.js)
-- TypeScript project references via [`packages/devtools/typescript`](packages/devtools/typescript/package.json)
+- Linting: ESLint with shared config from [`packages/devtools/eslint`](packages/devtools/eslint)
+- TypeScript project references via [`packages/devtools/tsconfig`](packages/devtools/tsconfig)
 
 Generate all API clients (using Kubb):
 
@@ -68,13 +89,7 @@ Generate all API clients (using Kubb):
 pnpm run generate:all-apis
 ```
 
-This writes typed clients, zod schemas, msw mocks, and React Query hooks under:
-
-- generated/backend
-- generated/algod
-- generated/indexer
-
-Note that our code does not directly use this generated code (yet) as the openapi specs are not up to scratch but the generated code can be used for reference or inspiration.
+This writes typed clients, zod schemas, msw mocks, and React Query hooks. Note that our code does not directly use this generated code (yet) as the OpenAPI specs are not up to scratch, but the generated code can be used for reference or inspiration.
 
 ## Common commands (root)
 
@@ -91,16 +106,12 @@ pnpm format         # format files
 ## Documentation
 
 - [Architecture & State Management](docs/ARCHITECTURE.md)
+- [Folder Structure Guide](docs/FOLDER_STRUCTURE.md)
+- [Naming Conventions](docs/NAMING_CONVENTIONS.md)
 - [Testing Guide](docs/TESTING.md)
 - [Style Guide](docs/STYLE_GUIDE.md)
 - [Security Best Practices](docs/SECURITY.md)
+- [Performance Guidelines](docs/PERFORMANCE.md)
 - [Contributing Guide](CONTRIBUTING.md)
-
-## Development patterns
-
-- **Logic vs UI**: Keep business logic in `packages/*` and UI in `apps/mobile`.
-- **State**: Use hooks/services to expose state; do not access stores directly in UI.
-- **Backend**: Use generated React Query hooks; avoid direct API calls.
-- **Platform**: Keep cross-platform logic in `wallet-core`; native glue in app.
 
 For app-specific notes, see [`apps/mobile/README.md`](apps/mobile/README.md).
