@@ -7,7 +7,7 @@ Place your Firebase `google-services.json` file for the **development** environm
 1. Go to [Firebase Console](https://console.firebase.google.com/)
 2. Select your development project
 3. Go to Project Settings → General
-4. Under "Your apps", find the Android app with package name: `com.algorand.pera.dev`
+4. Under "Your apps", find the Android app with package name: `com.algorand.perarn.dev`
 5. Download the `google-services.json` file
 6. Place it in this directory: `apps/mobile/android/app/src/dev/google-services.json`
 

@@ -72,7 +72,7 @@
 #                   PERA_MAINNET_BACKEND_URL: ${{ secrets.PRODUCTION_MAINNET_BACKEND_URL }}
 #                   PERA_TESTNET_BACKEND_URL: ${{ secrets.PRODUCTION_TESTNET_BACKEND_URL }}
 #                   PERA_BACKEND_API_KEY: ${{ secrets.PRODUCTION_BACKEND_API_KEY }}
-#                   IOS_PRODUCTION_BUNDLE_ID: com.algorand.pera
+#                   IOS_PRODUCTION_BUNDLE_ID: com.algorand.perarn
 #               run: |
 #                   cd apps/mobile
 #                   bundle exec fastlane ios build_production

@@ -170,7 +170,7 @@ Click **Close** to save all schemes.
 3. Verify:
     - **Mobile-Dev**: Uses Debug configuration, bundle ID ends with `.dev`
     - **Mobile-Staging**: Uses Staging configuration, bundle ID ends with `.staging`
-    - **Mobile-Production**: Uses Release configuration, bundle ID is `com.algorand.pera`
+    - **Mobile-Production**: Uses Release configuration, bundle ID is `com.algorand.perarn`
 
 4. Build each scheme to verify:
     ```bash
