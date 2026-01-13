@@ -13,7 +13,6 @@
 export const name = '@perawallet/wallet-core-accounts'
 
 export * from './models'
-export * from './store'
 export * from './hooks'
 export * from './errors'
 export * from './utils'

@@ -15,5 +15,6 @@ export const name = '@perawallet/wallet-core-kms'
 export * from './hooks/useKMS'
 export * from './hooks/useWithKey'
 export * from './models'
-export * from './store'
 export * from './errors'
+
+export { initKeyManagerStore } from './store'

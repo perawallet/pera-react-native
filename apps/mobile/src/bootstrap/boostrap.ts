@@ -27,9 +27,9 @@ import { initCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import { initPollingStore } from '@perawallet/wallet-core-polling'
 import { initSettingsStore } from '@perawallet/wallet-core-settings'
 import { initSwapsStore } from '@perawallet/wallet-core-swaps'
-import { initKeyManagerStore } from '../../../../packages/kms/src'
-import { initWalletConnectStore } from '@perawallet/wallet-core-walletconnect/src/store'
-import { initRemoteConfigStore } from '@perawallet/wallet-core-platform-integration/src/remote-config/store'
+import { initKeyManagerStore } from '@perawallet/wallet-core-kms'
+import { initWalletConnectStore } from '@perawallet/wallet-core-walletconnect'
+import { initRemoteConfigStore } from '@perawallet/wallet-core-platform-integration'
 import { useCallback } from 'react'
 
 const firebaseService = new RNFirebaseService()

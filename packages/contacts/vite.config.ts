@@ -22,7 +22,6 @@ export default defineConfig({
                 '**/__tests__/**',
                 '**/*.test.ts',
                 '**/*.test.tsx',
-                '**/test-utils/**',
             ],
         }),
     ],

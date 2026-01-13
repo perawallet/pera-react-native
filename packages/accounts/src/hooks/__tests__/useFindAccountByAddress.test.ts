@@ -48,14 +48,14 @@ describe('useFindAccountByAddress', () => {
             {
                 id: '1',
                 address: 'A',
-                type: 'standard',
+                type: 'algo25',
                 canSign: true,
                 name: 'A',
             },
             {
                 id: '2',
                 address: 'B',
-                type: 'standard',
+                type: 'algo25',
                 canSign: true,
                 name: 'B',
             },
