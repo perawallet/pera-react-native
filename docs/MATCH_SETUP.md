@@ -124,7 +124,7 @@ export APPLE_TEAM_ID="XXXXXXXXXX"
 
 ```bash
 bundle exec fastlane match development \
-  --app_identifier "com.algorand.perarn.dev,com.algorand.perarn.staging,com.algorand.perarn" \
+  --app_identifier "com.algorandllc.perarn.dev,com.algorandllc.perarn.staging,com.algorandllc.perarn" \
   --username "$APPLE_ID" \
   --team_id "$APPLE_TEAM_ID"
 ```
@@ -139,7 +139,7 @@ You may be prompted to:
 
 ```bash
 bundle exec fastlane match appstore \
-  --app_identifier "com.algorand.perarn.dev,com.algorand.perarn.staging,com.algorand.perarn" \
+  --app_identifier "com.algorandllc.perarn.dev,com.algorandllc.perarn.staging,com.algorandllc.perarn" \
   --username "$APPLE_ID" \
   --team_id "$APPLE_TEAM_ID"
 ```
@@ -148,7 +148,7 @@ bundle exec fastlane match appstore \
 
 ```bash
 bundle exec fastlane match adhoc \
-  --app_identifier "com.algorand.perarn.staging" \
+  --app_identifier "com.algorandllc.perarn.staging" \
   --username "$APPLE_ID" \
   --team_id "$APPLE_TEAM_ID"
 ```
@@ -181,7 +181,7 @@ If Xcode doesn't automatically recognize the new certificates:
 4. For each configuration (Debug, Staging, Release):
     - Ensure "Automatically manage signing" is **unchecked**
     - Select the correct provisioning profile from the dropdown
-    - Profile names will be like "match Development com.algorand.perarn.dev"
+    - Profile names will be like "match Development com.algorandllc.perarn.dev"
 
 ## Step 7: Test Builds
 
@@ -240,7 +240,7 @@ For GitHub Actions or other CI systems:
     match(
       type: "appstore",
       readonly: true,
-      app_identifier: ["com.algorand.perarn"]
+      app_identifier: ["com.algorandllc.perarn"]
     )
     ```
 
@@ -275,9 +275,9 @@ For GitHub Actions or other CI systems:
 
 - App identifier in Match doesn't match bundle ID in Xcode
 - Verify bundle IDs match exactly:
-    - `com.algorand.perarn.dev`
-    - `com.algorand.perarn.staging`
-    - `com.algorand.perarn`
+    - `com.algorandllc.perarn.dev`
+    - `com.algorandllc.perarn.staging`
+    - `com.algorandllc.perarn`
 - Regenerate profiles: `bundle exec fastlane match appstore --force_for_new_devices`
 
 ### "Authentication failed"

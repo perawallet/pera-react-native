@@ -12,11 +12,12 @@
     }
   },
   "scripts": {
-    "build": "vite build",
-    "dev": "vite build --watch",
+    "config:generate": "node ../../tools/generate-config.mjs",
+    "build": "pnpm config:generate && vite build",
+    "dev": "pnpm config:generate && vite build --watch",
     "preview": "vite preview",
-    "test": "vitest run",
-    "test:watch": "vitest --watch",
+    "test": "pnpm config:generate && vitest run",
+    "test:watch": "pnpm config:generate && vitest --watch",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix"
   },
