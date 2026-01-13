@@ -5,7 +5,7 @@ import { Text } from 'react-native'
 
 describe('PWCheckbox', () => {
     it('calls onPress when pressed', () => {
-        const onPress = jest.fn()
+        const onPress = vi.fn()
         render(
             <PWCheckbox checked={false} onPress={onPress}>
                 <Text>Accept Terms</Text>

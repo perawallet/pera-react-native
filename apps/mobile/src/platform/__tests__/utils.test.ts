@@ -10,12 +10,19 @@
  limitations under the License
  */
 
-let mockPlatformOS = 'ios'
 
-jest.mock('react-native', () => ({
+import { vi } from 'vitest'
+
+const mocks = vi.hoisted(() => ({
+    Platform: {
+        OS: 'ios',
+    },
+}))
+
+vi.mock('react-native', () => ({
     Platform: {
         get OS() {
-            return mockPlatformOS
+            return mocks.Platform.OS
         },
     },
 }))
@@ -24,12 +31,12 @@ import { isIOS } from '../utils'
 
 describe('isIOS', () => {
     it('returns true when Platform.OS === ios', () => {
-        mockPlatformOS = 'ios'
+        mocks.Platform.OS = 'ios'
         expect(isIOS()).toBe(true)
     })
 
     it('returns false when Platform.OS !== ios', () => {
-        mockPlatformOS = 'android'
+        mocks.Platform.OS = 'android'
         expect(isIOS()).toBe(false)
     })
 })

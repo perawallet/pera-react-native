@@ -14,11 +14,11 @@ import { renderHook } from '@testing-library/react-native'
 import { useSettingsOptions } from '../settings-options'
 import { useLanguage } from '@hooks/language'
 
-jest.mock('@hooks/language', () => ({
-    useLanguage: jest.fn(),
+vi.mock('@hooks/language', () => ({
+    useLanguage: vi.fn(),
 }))
 
-jest.mock('@perawallet/wallet-core-config', () => ({
+vi.mock('@perawallet/wallet-core-config', () => ({
     config: {
         supportBaseUrl: 'https://support.example.com',
         termsOfServiceUrl: 'https://terms.example.com',
@@ -27,11 +27,11 @@ jest.mock('@perawallet/wallet-core-config', () => ({
 }))
 
 describe('useSettingsOptions', () => {
-    const mockT = jest.fn((key: string) => key)
+    const mockT = vi.fn((key: string) => key)
 
     beforeEach(() => {
-        jest.clearAllMocks()
-        ;(useLanguage as jest.Mock).mockReturnValue({
+        vi.clearAllMocks()
+        ;(useLanguage as vi.Mock).mockReturnValue({
             t: mockT,
         })
     })

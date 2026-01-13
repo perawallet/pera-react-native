@@ -15,31 +15,31 @@ import { useClipboard } from '../clipboard'
 import Clipboard from '@react-native-clipboard/clipboard'
 import useToast from '../toast'
 
-jest.mock('@react-native-clipboard/clipboard', () => ({
-    setString: jest.fn(),
+vi.mock('@react-native-clipboard/clipboard', () => ({
+    setString: vi.fn(),
 }))
 
-jest.mock('../toast', () => ({
+vi.mock('../toast', () => ({
     __esModule: true,
-    default: jest.fn(() => ({
-        showToast: jest.fn(),
+    default: vi.fn(() => ({
+        showToast: vi.fn(),
     })),
 }))
 
-jest.mock('@hooks/language', () => ({
-    useLanguage: jest.fn(() => ({
+vi.mock('@hooks/language', () => ({
+    useLanguage: vi.fn(() => ({
         t: (key: string) => key,
     })),
 }))
 
 describe('useClipboard', () => {
     beforeEach(() => {
-        jest.clearAllMocks()
+        vi.clearAllMocks()
     })
 
     it('should copy text to clipboard and show toast', () => {
-        const mockShowToast = jest.fn()
-        ;(useToast as jest.Mock).mockReturnValue({
+        const mockShowToast = vi.fn()
+        ;(useToast as vi.Mock).mockReturnValue({
             showToast: mockShowToast,
         })
 

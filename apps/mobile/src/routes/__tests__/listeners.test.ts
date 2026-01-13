@@ -15,14 +15,14 @@ import { screenListeners, resetPreviousRouteNameForTesting } from '../listeners'
 import { container } from 'tsyringe'
 import { AnalyticsServiceContainerKey } from '@perawallet/wallet-core-platform-integration'
 
-jest.mock('tsyringe', () => ({
+vi.mock('tsyringe', () => ({
     container: {
-        resolve: jest.fn(),
+        resolve: vi.fn(),
     },
 }))
 
 describe('screenListeners', () => {
-    const logEventMock = jest.fn()
+    const logEventMock = vi.fn()
 
     // Helper to create a route object
     const createRoute = (name: string, path?: string) => ({
@@ -32,7 +32,7 @@ describe('screenListeners', () => {
     })
 
     beforeEach(() => {
-        jest.clearAllMocks()
+        vi.clearAllMocks()
         resetPreviousRouteNameForTesting()
         ;(container.resolve as any).mockReturnValue({
             logEvent: logEventMock,

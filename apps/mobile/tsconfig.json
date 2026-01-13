@@ -32,6 +32,9 @@
       ],
       "@layouts/*": [
         "layouts/*"
+      ],
+      "@test-utils/*": [
+        "test-utils/*"
       ]
     }
   },

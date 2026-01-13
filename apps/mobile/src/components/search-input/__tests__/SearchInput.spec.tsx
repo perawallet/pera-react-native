@@ -4,7 +4,7 @@ import SearchInput from '../SearchInput'
 
 describe('SearchInput', () => {
     it('calls onChangeText when text changes', () => {
-        const onChangeText = jest.fn()
+        const onChangeText = vi.fn()
         render(<SearchInput onChangeText={onChangeText} placeholder="Search coins" />)
         
         fireEvent.changeText(screen.getByPlaceholderText('Search coins'), 'Algorand')

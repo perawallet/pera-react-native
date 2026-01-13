@@ -15,7 +15,7 @@ import { useAsyncAction } from '../async-action'
 
 describe('useAsyncAction', () => {
     it('should handle successful execution', async () => {
-        const mockAction = jest.fn().mockResolvedValue('success')
+        const mockAction = vi.fn().mockResolvedValue('success')
         const { result } = renderHook(() => useAsyncAction(mockAction))
 
         expect(result.current.isProcessing).toBe(false)
@@ -36,7 +36,7 @@ describe('useAsyncAction', () => {
 
     it('should handle execution error', async () => {
         const mockError = new Error('failed')
-        const mockAction = jest.fn().mockRejectedValue(mockError)
+        const mockAction = vi.fn().mockRejectedValue(mockError)
         const { result } = renderHook(() => useAsyncAction(mockAction))
 
         await act(async () => {
@@ -52,7 +52,7 @@ describe('useAsyncAction', () => {
     })
 
     it('should handle non-Error catch values', async () => {
-        const mockAction = jest.fn().mockRejectedValue('string error')
+        const mockAction = vi.fn().mockRejectedValue('string error')
         const { result } = renderHook(() => useAsyncAction(mockAction))
 
         await act(async () => {
@@ -68,7 +68,7 @@ describe('useAsyncAction', () => {
     })
 
     it('should reset state', async () => {
-        const mockAction = jest.fn().mockRejectedValue(new Error('failed'))
+        const mockAction = vi.fn().mockRejectedValue(new Error('failed'))
         const { result } = renderHook(() => useAsyncAction(mockAction))
 
         await act(async () => {

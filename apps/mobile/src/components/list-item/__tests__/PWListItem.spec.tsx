@@ -4,7 +4,7 @@ import PWListItem from '../PWListItem'
 
 describe('PWListItem', () => {
     it('calls onPress when pressed', () => {
-        const onPress = jest.fn()
+        const onPress = vi.fn()
         render(<PWListItem icon="wallet" title="My Accounts" onPress={onPress} />)
         
         fireEvent.press(screen.getByText('My Accounts'))

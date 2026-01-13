@@ -15,33 +15,33 @@ import { useShowOnboarding } from '../onboarding'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { useHasNoAccounts } from '@perawallet/wallet-core-accounts'
 
-jest.mock('@perawallet/wallet-core-settings', () => ({
-    usePreferences: jest.fn(),
+vi.mock('@perawallet/wallet-core-settings', () => ({
+    usePreferences: vi.fn(),
 }))
 
-jest.mock('@perawallet/wallet-core-accounts', () => ({
-    useHasNoAccounts: jest.fn(),
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useHasNoAccounts: vi.fn(),
 }))
 
-jest.mock('@perawallet/wallet-core-shared', () => ({
+vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: {
-        debug: jest.fn(),
+        debug: vi.fn(),
     },
 }))
 
 describe('useShowOnboarding', () => {
-    const mockGetPreference = jest.fn()
+    const mockGetPreference = vi.fn()
 
     beforeEach(() => {
-        jest.clearAllMocks()
-        ;(usePreferences as jest.Mock).mockReturnValue({
+        vi.clearAllMocks()
+        ;(usePreferences as vi.Mock).mockReturnValue({
             getPreference: mockGetPreference,
         })
     })
 
     it('should return true if no accounts exist', () => {
         mockGetPreference.mockReturnValue(false)
-        ;(useHasNoAccounts as jest.Mock).mockReturnValue(true)
+        ;(useHasNoAccounts as vi.Mock).mockReturnValue(true)
 
         const { result } = renderHook(() => useShowOnboarding())
         expect(result.current).toBe(true)
@@ -49,7 +49,7 @@ describe('useShowOnboarding', () => {
 
     it('should return true if user is creating an account', () => {
         mockGetPreference.mockReturnValue(true)
-        ;(useHasNoAccounts as jest.Mock).mockReturnValue(false)
+        ;(useHasNoAccounts as vi.Mock).mockReturnValue(false)
 
         const { result } = renderHook(() => useShowOnboarding())
         expect(result.current).toBe(true)
@@ -57,7 +57,7 @@ describe('useShowOnboarding', () => {
 
     it('should return false if accounts exist and user is not creating an account', () => {
         mockGetPreference.mockReturnValue(false)
-        ;(useHasNoAccounts as jest.Mock).mockReturnValue(false)
+        ;(useHasNoAccounts as vi.Mock).mockReturnValue(false)
 
         const { result } = renderHook(() => useShowOnboarding())
         expect(result.current).toBe(false)

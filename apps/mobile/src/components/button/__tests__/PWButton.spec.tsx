@@ -4,7 +4,7 @@ import PWButton from '../PWButton'
 
 describe('PWButton', () => {
     it('calls onPress when pressed', () => {
-        const onPress = jest.fn()
+        const onPress = vi.fn()
         render(<PWButton title="Click Me" onPress={onPress} variant="primary" />)
         
         fireEvent.press(screen.getByText('Click Me'))
@@ -12,7 +12,7 @@ describe('PWButton', () => {
     })
 
     it('shows loading indicator and does not call onPress when loading', () => {
-        const onPress = jest.fn()
+        const onPress = vi.fn()
         render(
             <PWButton 
                 title="Click Me" 
