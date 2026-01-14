@@ -184,41 +184,11 @@ export default defineConfig({
             '.json',
             '.d.ts',
         ],
-        preserveSymlinks: true,
+        preserveSymlinks: false,
     },
     test: {
         globals: true,
         environment: 'jsdom',
         setupFiles: ['./vitest.setup.ts'],
-        server: {
-            deps: {
-                inline: [
-                    /@perawallet\//,
-                    'react-native-web',
-                    '@rneui/themed',
-                    '@rneui/base',
-                    'react-native-vector-icons',
-                    'react-native-notifier',
-                ],
-            },
-        },
-        deps: {
-            optimizer: {
-                web: {
-                    enabled: true,
-                    include: [
-                        'react-native-web',
-                        '@rneui/themed',
-                        '@rneui/base',
-                        'react-native-reanimated',
-                        'react-native-gesture-handler',
-                        'react-native-vector-icons',
-                        'react-native-notifier',
-                        '@testing-library/react',
-                        'react-test-renderer',
-                    ],
-                },
-            },
-        },
     },
 })
