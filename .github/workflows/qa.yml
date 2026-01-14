@@ -1,9 +1,10 @@
 name: QA Build
 
 on:
-  push:
-    branches:
-      - main
+# TODO: Re-enable this when we're ready to automate QA builds
+#   push:
+#     branches:
+#       - main
   workflow_dispatch:
 
 jobs:
@@ -145,7 +146,7 @@ jobs:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
           SLACK_TITLE: "QA Build: iOS Staging ${{ job.status }}"
-          SLACK_MESSAGE: "Version: ${{ env.VERSION }} (${{ env.BUILD }})\nDetails: ${{ job.status }}\n@qateam"
+          SLACK_MESSAGE: "Version: ${{ env.VERSION }} (${{ env.BUILD }})\nDetails: ${{ job.status }}\n\n@qateam"
 
   ios-production:
     name: iOS Production (QA)
@@ -250,7 +251,7 @@ jobs:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
           SLACK_TITLE: "QA Build: iOS Production ${{ job.status }}"
-          SLACK_MESSAGE: "Version: ${{ env.VERSION }} (${{ env.BUILD }})\nDetails: ${{ job.status }}\n@qateam"
+          SLACK_MESSAGE: "Version: ${{ env.VERSION }} (${{ env.BUILD }})\nDetails: ${{ job.status }}\n\n@qateam"
 
   android-staging:
     name: Android Staging (QA)
@@ -362,7 +363,7 @@ jobs:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
           SLACK_TITLE: "QA Build: Android Staging ${{ job.status }}"
-          SLACK_MESSAGE: "Version: ${{ env.VERSION }} (${{ env.BUILD }})\nDetails: ${{ job.status }}\n@qateam"
+          SLACK_MESSAGE: "Version: ${{ env.VERSION }} (${{ env.BUILD }})\nDetails: ${{ job.status }}\n\n@qateam"
 
   android-production:
     name: Android Production (QA)
@@ -474,4 +475,4 @@ jobs:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
           SLACK_TITLE: "QA Build: Android Production ${{ job.status }}"
-          SLACK_MESSAGE: "Version: ${{ env.VERSION }} (${{ env.BUILD }})\nDetails: ${{ job.status }}\n@qateam"
+          SLACK_MESSAGE: "Version: ${{ env.VERSION }} (${{ env.BUILD }})\nDetails: ${{ job.status }}\n\n@qateam"
