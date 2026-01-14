@@ -1,0 +1,81 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { render, screen } from '@testing-library/react-native'
+import { describe, it, expect, vi } from 'vitest'
+import AccountScreen from '../AccountScreen'
+// import { mockedWalletAccount } from '@perawallet/wallet-core-accounts'
+
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-accounts')
+        >()
+    return {
+        ...actual,
+        useSelectedAccount: vi.fn(() => ({ address: 'test', name: 'Test' })),
+        useAllAccounts: vi.fn(() => []),
+        useSelectedAccountAddress: vi.fn(() => ({
+            selectedAccountAddress: 'test',
+            setSelectedAccountAddress: vi.fn(),
+        })),
+        useAccountBalancesQuery: vi.fn(() => ({
+            portfolioAlgoValue: '0',
+            portfolioFiatValue: '0',
+            isPending: false,
+        })),
+    }
+})
+
+vi.mock('react-native-drawer-layout', () => ({
+    Drawer: ({ children }: any) => children,
+}))
+
+// Mock children to simplify test
+vi.mock('@modules/accounts/components/AccountMenu', () => ({
+    default: 'AccountMenu',
+}))
+vi.mock('@modules/accounts/components/AccountOverview', () => ({
+    default: 'AccountOverview',
+}))
+vi.mock('@modules/accounts/components/AccountNfts', () => ({
+    default: 'AccountNfts',
+}))
+vi.mock('@modules/accounts/components/AccountHistory', () => ({
+    default: 'AccountHistory',
+}))
+vi.mock('@modules/accounts/components/AccountSelection', () => ({
+    default: 'AccountSelection',
+}))
+vi.mock('@modules/notifications/components/NotificationsIcon', () => ({
+    default: 'NotificationsIcon',
+}))
+vi.mock('@components/QRScannerView', () => ({ default: 'QRScannerView' }))
+vi.mock('@modules/accounts/components/ConfettiAnimation', () => ({
+    default: 'ConfettiAnimation',
+}))
+
+const mockRoute: any = { params: {} }
+
+describe('AccountScreen', () => {
+    it('renders correctly with account', () => {
+        render(
+            <AccountScreen
+                route={mockRoute}
+                navigation={undefined as any}
+            />,
+        )
+        expect(
+            screen.getByText('account_details.main_screen.overview_tab'),
+        ).toBeTruthy()
+    })
+})
