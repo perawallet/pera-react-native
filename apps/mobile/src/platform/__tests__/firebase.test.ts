@@ -288,7 +288,7 @@ describe('RNFirebaseService', () => {
                     throw new Error('test error')
                 })
 
-                    ; (service.remoteConfig!.getValue as vi.Mock) = mockGetValue
+                ;(service.remoteConfig!.getValue as vi.Mock) = mockGetValue
 
                 expect(
                     service.getStringValue('test_key' as any, 'fallback'),

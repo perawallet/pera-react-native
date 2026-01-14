@@ -4,10 +4,10 @@ We test to ensure code works correctly and stays working as changes are made.
 
 ## Testing Stack
 
-| Tool                             | Used For                              |
-| -------------------------------- | ------------------------------------- |
-| **Vitest**                       | Testing everything (packages & apps)  |
-| **React Native Testing Library** | Component testing (via Vitest/React)  |
+| Tool                             | Used For                             |
+| -------------------------------- | ------------------------------------ |
+| **Vitest**                       | Testing everything (packages & apps) |
+| **React Native Testing Library** | Component testing (via Vitest/React) |
 
 ## Running Tests
 
@@ -65,10 +65,10 @@ it('submits form when save is pressed', () => {
     // Arrange
     const onSave = vi.fn()
     render(<UserForm onSave={onSave} />)
-    
+
     // Act
     fireEvent.click(screen.getByText('Save'))
-    
+
     // Assert
     expect(onSave).toHaveBeenCalled()
 })

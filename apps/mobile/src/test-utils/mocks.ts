@@ -15,9 +15,7 @@ import { vi } from 'vitest'
 // Mock core services and hooks from @perawallet/wallet-core-shared
 export const mockCoreServices = () => {
     vi.mock('@perawallet/wallet-core-shared', async () => {
-        const actual = await vi.importActual(
-            '@perawallet/wallet-core-shared',
-        )
+        const actual = await vi.importActual('@perawallet/wallet-core-shared')
         return {
             ...actual,
             useDeviceInfoService: vi.fn(() => ({

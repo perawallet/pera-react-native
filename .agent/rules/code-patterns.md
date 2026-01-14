@@ -501,10 +501,12 @@ import PWButton from '@components/button/PWButton'
 All UI components MUST have behavior tests using Vitest and React Native Testing Library.
 
 ### File Naming
+
 - Use `.spec.tsx` extension
 - Colocate with component in `__tests__` directory
 
 ### Testing Principles
+
 1. **Behavior Only**: Do not test static styles or text rendering unless conditional.
 2. **AAA Pattern**: Arrange, Act, Assert.
 3. **Atomic**: Keep tests focused on a single behavior.
@@ -534,11 +536,11 @@ describe('PWButton', () => {
         // Arrange
         const onPress = vi.fn()
         render(
-            <PWButton 
-                title="Submit" 
-                onPress={onPress} 
-                variant="primary" 
-                isLoading={true} 
+            <PWButton
+                title="Submit"
+                onPress={onPress}
+                variant="primary"
+                isLoading={true}
             />
         )
 

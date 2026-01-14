@@ -32,9 +32,9 @@ describe('useSettingsOptions', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-            ; (useLanguage as Mock).mockReturnValue({
-                t: mockT,
-            })
+        ;(useLanguage as Mock).mockReturnValue({
+            t: mockT,
+        })
     })
 
     it('should return the correctly structured settings options', () => {
