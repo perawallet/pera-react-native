@@ -10,18 +10,11 @@
  limitations under the License
  */
 
-import PWView from '@components/PWView'
-import FeatureFlagOverrides from '@modules/settings/components/FeatureFlagOverrides/FeatureFlagOverrides'
-import { useStyles } from './styles'
+import { makeStyles } from '@rneui/themed'
 
-const SettingsDeveloperFeatureFlagsScreen = () => {
-    const styles = useStyles()
-
-    return (
-        <PWView style={styles.container}>
-            <FeatureFlagOverrides />
-        </PWView>
-    )
-}
-
-export default SettingsDeveloperFeatureFlagsScreen
+export const useStyles = makeStyles(theme => ({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+}))

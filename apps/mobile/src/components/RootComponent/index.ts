@@ -10,5 +10,4 @@
  limitations under the License
  */
 
-export { default } from './RootComponent'
-export type { RootComponentProps } from './RootComponent'
+export { RootComponent } from './RootComponent'

@@ -26,10 +26,10 @@ import SettingsCurrencyScreen from '@modules/settings/screens/currency/SettingsC
 import SettingsThemeScreen from '@modules/settings/screens/theme/SettingsThemeScreen'
 import SettingsDeveloperScreen from '@modules/settings/screens/developer/SettingsDeveloperScreen'
 import { fullScreenLayout } from '@layouts/index'
-import SettingsDeveloperNodeSettingsScreen from '@modules/settings/screens/developer/node-settings/SettingsDeveloperNodeSettingsScreen'
+import SettingsDeveloperNodeSettingsScreen from '@modules/settings/screens/developer/SettingsDeveloperNodeSettingsScreen/SettingsDeveloperNodeSettingsScreen'
 import SettingsDeveloperDispenserScreen from '@modules/settings/screens/developer/dispenser/SettingsDeveloperDispenserScreen'
 import { NavigatorScreenParams } from '@react-navigation/native'
-import { WalletConnectSession } from '@perawallet/wallet-core-walletconnect'
+import { WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
 import SettingsWalletConnectDetailsScreen from '@modules/settings/screens/WalletConnect/SettingsWalletConnectDetailsScreen'
 import SettingsDeveloperMenuScreen from '../screens/developer/dev-menu/SettingsDeveloperMenuScreen'
 import SettingsDeveloperFeatureFlagsScreen from '../screens/developer/feature-flags/SettingsDeveloperFeatureFlagsScreen'
@@ -100,7 +100,7 @@ const DeveloperSettingsStackNavigator = () => {
 
 export type WalletConnectSettingsStackParamsList = {
     WalletConnectSettingsHome: undefined
-    WalletConnectSettingsDetails: { session: WalletConnectSession }
+    WalletConnectSettingsDetails: { session: WalletConnectConnection }
 }
 
 const WalletConnectSettingsStack =

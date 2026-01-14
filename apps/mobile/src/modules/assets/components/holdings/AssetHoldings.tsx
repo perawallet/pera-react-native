@@ -20,7 +20,7 @@ import AssetActionButtons from './asset-action-buttons/AssetActionButtons'
 import AssetTransactionList from './asset-transaction-list/AssetTransactionList'
 
 import { useStyles } from './styles'
-import AssetTitle from '@modules/assets/components/asset-title/AssetTitle'
+import AssetTitle from '@modules/assets/components/AssetTitle'
 import CurrencyDisplay from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import RoundButton from '@components/RoundButton'

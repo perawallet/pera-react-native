@@ -11,11 +11,11 @@
  */
 
 import { useStyles } from './styles'
-import PWView from '../../../../../components/PWView/PWView'
-import RadioButton from '../../../../../components/RadioButton/RadioButton'
+import PWView from '@components/PWView'
+import RadioButton from '@components/RadioButton'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import { Networks } from '@perawallet/wallet-core-shared'
-import { useLanguage } from '../../../../../hooks/language'
+import { useLanguage } from '@hooks/language'
 
 const SettingsDeveloperNodeSettingsScreen = () => {
     const styles = useStyles()

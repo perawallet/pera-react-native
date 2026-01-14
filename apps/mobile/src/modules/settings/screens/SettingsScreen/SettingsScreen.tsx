@@ -25,9 +25,9 @@ import { WebViewContext } from '@providers/WebViewProvider'
 import PWListItem from '@components/PWListItem'
 import { useLanguage } from '@hooks/language'
 import { useModalState } from '@hooks/modal-state'
-import { useDeleteAllData } from '../hooks/delete-all-data'
-import AppVersion from '../components/AppVersion'
-import { useSettingsOptions } from '../hooks/settings-options'
+import { useDeleteAllData } from '@modules/settings/hooks/delete-all-data'
+import AppVersion from '@modules/settings/components/AppVersion'
+import { useSettingsOptions } from '@modules/settings/hooks/settings-options'
 
 //TODO: add ratings view handling
 

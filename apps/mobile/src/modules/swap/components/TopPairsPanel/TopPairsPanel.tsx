@@ -15,7 +15,7 @@ import PWView from '@components/PWView'
 import { Text } from '@rneui/themed'
 import { useCallback } from 'react'
 
-import SwapPair from '../SwapPair'
+import SwapPair from '@modules/swap/components/SwapPair/SwapPair'
 import CurrencyDisplay from '@components/CurrencyDisplay'
 import {
     ALGO_ASSET_ID,

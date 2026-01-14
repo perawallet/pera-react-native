@@ -12,16 +12,27 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles((theme, dimensions: number) => {
-    return {
-        container: {
-            width: dimensions,
-            height: dimensions,
-            borderRadius: dimensions,
-            overflow: 'hidden',
-            backgroundColor: theme.colors.layerGrayLighter,
-            alignItems: 'center',
-            justifyContent: 'center',
-        },
-    }
-})
+type StyleProps = {
+    containerSize: number
+    imageSize: number
+}
+
+export const useStyles = makeStyles(
+    (theme, { containerSize, imageSize }: StyleProps) => {
+        return {
+            container: {
+                width: containerSize,
+                height: containerSize,
+                borderRadius: containerSize,
+                overflow: 'hidden',
+                backgroundColor: theme.colors.layerGrayLighter,
+                alignItems: 'center',
+                justifyContent: 'center',
+            },
+            image: {
+                width: imageSize,
+                height: imageSize,
+            },
+        }
+    },
+)

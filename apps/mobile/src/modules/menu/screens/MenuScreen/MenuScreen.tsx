@@ -16,7 +16,7 @@ import { useStyles } from './styles'
 import PWIcon from '@components/PWIcon'
 
 import PanelButton from '@components/PanelButton'
-import CardPanel from '../components/CardPanel'
+import CardPanel from '@modules/menu/components/CardPanel/CardPanel'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import PWTouchableOpacity from '@components/PWTouchableOpacity'

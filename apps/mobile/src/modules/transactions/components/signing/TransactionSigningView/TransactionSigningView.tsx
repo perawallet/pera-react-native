@@ -12,7 +12,7 @@
 
 import CurrencyDisplay from '@components/CurrencyDisplay'
 import EmptyView from '@components/EmptyView'
-import TransactionIcon from '@modules/transactions/components/transaction-icon/TransactionIcon'
+import TransactionIcon from '@modules/transactions/components/TransactionIcon/TransactionIcon'
 import PWView from '@components/PWView'
 import {
     encodeAlgorandAddress,
@@ -26,7 +26,7 @@ import { Text } from '@rneui/themed'
 import Decimal from 'decimal.js'
 import { ScrollView } from 'react-native-gesture-handler'
 import { useStyles } from './styles'
-import BalanceImpactView from '../BalanceImpact/BalanceImpactView'
+import BalanceImpactView from '../BalanceImpactView/BalanceImpactView'
 import { useLanguage } from '@hooks/language'
 import useToast from '@hooks/toast'
 import PWButton from '@components/PWButton'

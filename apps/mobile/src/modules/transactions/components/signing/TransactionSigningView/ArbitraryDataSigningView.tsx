@@ -24,7 +24,7 @@ import {
     useAllAccounts,
     useFindAccountByAddress,
 } from '@perawallet/wallet-core-accounts'
-import AccountDisplay from '@modules/accounts/components/account-display/AccountDisplay'
+import AccountDisplay from '@modules/accounts/components/AccountDisplay'
 import PWIcon from '@components/PWIcon'
 import { useWebView } from '@hooks/webview'
 import { v7 as uuid } from 'uuid'

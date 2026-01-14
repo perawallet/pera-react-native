@@ -22,7 +22,7 @@ import {
 } from '@perawallet/wallet-core-walletconnect'
 import { FlashList } from '@shopify/flash-list'
 import { useStyles } from './SettingsWalletConnectScreen.styles'
-import WalletConnectSessionItem from '../../components/WalletConnect/WalletConnectSessionItem'
+import WalletConnectSessionItem from '@modules/settings/components/WalletConnect/WalletConnectSessionItem'
 import { Dialog, Text, useTheme } from '@rneui/themed'
 import { useLayoutEffect, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'

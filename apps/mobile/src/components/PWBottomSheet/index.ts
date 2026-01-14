@@ -11,4 +11,5 @@
  */
 
 export { default } from './PWBottomSheet'
+export { bottomSheetNotifier } from './PWBottomSheet'
 export type { PWBottomSheetProps } from './PWBottomSheet'

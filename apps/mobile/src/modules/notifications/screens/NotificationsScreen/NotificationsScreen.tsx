@@ -18,7 +18,7 @@ import {
 import { ActivityIndicator } from 'react-native'
 import EmptyView from '@components/EmptyView'
 import { useStyles } from './styles'
-import NotificationItem from '../components/NotificationItem'
+import NotificationItem from '@modules/notifications/components/NotificationItem/NotificationItem'
 import LoadingView from '@components/LoadingView'
 import { FlashList } from '@shopify/flash-list'
 import { RefreshControl } from 'react-native-gesture-handler'
