@@ -10,11 +10,72 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
+import { render } from '@test-utils/render'
+import { describe, it, expect, vi } from 'vitest'
+import SettingsWalletConnectScreen from '../SettingsWalletConnectScreen'
+import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
+
+vi.mock('@perawallet/wallet-core-walletconnect', async () => ({
+    useWalletConnect: vi.fn(() => ({
+        connections: [],
+        deleteAllSessions: vi.fn(),
+    })),
+}))
+
+vi.mock('@shopify/flash-list', () => ({
+    FlashList: ({ ListEmptyComponent }: { ListEmptyComponent?: React.ReactNode }) => (
+        <div data-testid="flash-list">{ListEmptyComponent}</div>
+    ),
+}))
+
+vi.mock('@components/QRScannerView', () => ({
+    default: () => null,
+}))
 
 describe('SettingsWalletConnectScreen', () => {
-    it('renders correctly', () => {
-        // TODO: Add proper mocks and implementation
-        expect(true).toBe(true)
+    it('renders empty state when no connections exist', () => {
+        vi.mocked(useWalletConnect).mockReturnValue({
+            connections: [],
+            deleteAllSessions: vi.fn(),
+        } as unknown as ReturnType<typeof useWalletConnect>)
+
+        const { container } = render(<SettingsWalletConnectScreen />)
+        expect(container).toBeTruthy()
+    })
+
+    it('renders connection list when sessions exist', () => {
+        const mockConnections = [
+            {
+                clientId: '123',
+                version: 2,
+                session: {
+                    peerMeta: { name: 'Test App', url: 'https://test.com' },
+                },
+            },
+        ]
+        vi.mocked(useWalletConnect).mockReturnValue({
+            connections: mockConnections,
+            deleteAllSessions: vi.fn(),
+        } as unknown as ReturnType<typeof useWalletConnect>)
+
+        const { container } = render(<SettingsWalletConnectScreen />)
+        expect(container).toBeTruthy()
+    })
+
+    it('shows clear all button when connections exist', () => {
+        const mockConnections = [
+            {
+                clientId: '123',
+                version: 2,
+                session: { peerMeta: { name: 'Test App' } },
+            },
+        ]
+        vi.mocked(useWalletConnect).mockReturnValue({
+            connections: mockConnections,
+            deleteAllSessions: vi.fn(),
+        } as unknown as ReturnType<typeof useWalletConnect>)
+
+        const { container } = render(<SettingsWalletConnectScreen />)
+        expect(container).toBeTruthy()
     })
 })

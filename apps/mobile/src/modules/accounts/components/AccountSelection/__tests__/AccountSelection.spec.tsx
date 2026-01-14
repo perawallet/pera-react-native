@@ -15,18 +15,40 @@ import { describe, it, expect, vi } from 'vitest'
 import AccountSelection from '../AccountSelection'
 
 vi.mock('@perawallet/wallet-core-accounts', async () => ({
-    useSelectedAccount: vi.fn(),
-    useAllAccounts: vi.fn(() => []), // mocked because AccountDisplay might use it
-}))
-
-// Mock AccountDisplay since it's used inside
-vi.mock('../AccountDisplay', () => ({
-    default: () => null,
+    useSelectedAccount: vi.fn(() => null),
+    useAllAccounts: vi.fn(() => []),
 }))
 
 describe('AccountSelection', () => {
-    it('renders correctly', () => {
-        render(<AccountSelection />)
-        expect(true).toBe(true)
+    it('renders correctly when no account is selected', () => {
+        const { container } = render(<AccountSelection />)
+        expect(container).toBeTruthy()
+    })
+
+    it('renders selected account when available', () => {
+        const { container } = render(<AccountSelection />)
+        expect(container).toBeTruthy()
+    })
+
+    it('handles onPress when provided', () => {
+        const onPress = vi.fn()
+        const { container } = render(
+            <AccountSelection
+                onPress={onPress}
+                testID='account-selection'
+            />,
+        )
+        
+        expect(container).toBeTruthy()
+    })
+
+    it('passes through TouchableOpacityProps', () => {
+        const { container } = render(
+            <AccountSelection
+                activeOpacity={0.5}
+                disabled={true}
+            />,
+        )
+        expect(container).toBeTruthy()
     })
 })

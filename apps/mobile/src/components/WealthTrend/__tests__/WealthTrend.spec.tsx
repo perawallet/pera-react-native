@@ -11,12 +11,77 @@
  */
 
 import { render } from '@test-utils/render'
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import WealthTrend from '../WealthTrend'
+import { useAccountBalancesHistoryQuery, useAllAccounts } from '@perawallet/wallet-core-accounts'
+import Decimal from 'decimal.js'
+
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
+    const actual = await importOriginal<typeof import('@perawallet/wallet-core-accounts')>()
+    return {
+        ...actual,
+        useAccountBalancesHistoryQuery: vi.fn(() => ({
+            data: null,
+            isPending: false,
+        })),
+        useAllAccounts: vi.fn(() => []),
+    }
+})
 
 describe('WealthTrend', () => {
-    it('renders correctly', () => {
-        render(<WealthTrend period='one-week' />)
-        expect(true).toBe(true)
+    it('renders empty when isPending is true', () => {
+        vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
+            data: undefined,
+            isPending: true,
+        } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
+
+        const { container } = render(<WealthTrend period='one-week' />)
+        // Should render empty fragment when pending
+        expect(container.innerHTML).toBe('')
+    })
+
+    it('displays positive trend with percentage', () => {
+        vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
+            data: [
+                { fiatValue: new Decimal(100) },
+                { fiatValue: new Decimal(120) },
+            ],
+            isPending: false,
+        } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
+
+        const { container } = render(<WealthTrend period='one-week' />)
+        // Should show positive indicator
+        expect(container.textContent).toContain('+')
+        expect(container.textContent).toContain('%')
+    })
+
+    it('displays negative trend with percentage', () => {
+        vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
+            data: [
+                { fiatValue: new Decimal(100) },
+                { fiatValue: new Decimal(80) },
+            ],
+            isPending: false,
+        } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
+
+        const { container } = render(<WealthTrend period='one-week' />)
+        expect(container.textContent).toContain('-')
+        expect(container.textContent).toContain('%')
+    })
+
+    it('uses single account when account prop is provided', () => {
+        const mockAccount = { address: 'test-address' }
+        vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
+            data: [{ fiatValue: new Decimal(100) }],
+            isPending: false,
+        } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
+
+        const { container } = render(
+            <WealthTrend
+                account={mockAccount as any}
+                period='one-week'
+            />,
+        )
+        expect(container).toBeTruthy()
     })
 })

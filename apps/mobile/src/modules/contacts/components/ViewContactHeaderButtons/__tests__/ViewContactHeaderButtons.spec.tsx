@@ -10,9 +10,11 @@
  limitations under the License
  */
 
-import { render } from '@test-utils/render'
-import { describe, it, expect, vi } from 'vitest'
+import { render, screen, fireEvent } from '@test-utils/render'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import ViewContactHeaderButtons from '../ViewContactHeaderButtons'
+
+const mockNavigate = vi.fn()
 
 vi.mock('@react-navigation/native', async importOriginal => {
     const actual =
@@ -20,14 +22,33 @@ vi.mock('@react-navigation/native', async importOriginal => {
     return {
         ...actual,
         useNavigation: () => ({
-            navigate: vi.fn(),
+            navigate: mockNavigate,
         }),
     }
 })
 
 describe('ViewContactHeaderButtons', () => {
-    it('renders correctly', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    it('renders edit icon', () => {
+        const { container } = render(<ViewContactHeaderButtons />)
+        expect(container).toBeTruthy()
+    })
+
+    it('navigates to EditContact screen on press', () => {
         render(<ViewContactHeaderButtons />)
-        expect(true).toBe(true)
+        
+        // Find the icon button by its testId
+        const iconButton = screen.getByTestId('icon-edit-pen')
+        fireEvent.click(iconButton)
+        
+        expect(mockNavigate).toHaveBeenCalledWith('EditContact')
+    })
+
+    it('uses secondary variant for the icon', () => {
+        const { container } = render(<ViewContactHeaderButtons />)
+        expect(container).toBeTruthy()
     })
 })

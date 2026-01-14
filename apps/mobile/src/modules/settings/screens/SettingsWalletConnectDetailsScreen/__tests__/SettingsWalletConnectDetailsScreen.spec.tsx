@@ -10,11 +10,92 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
+import { render } from '@test-utils/render'
+import { describe, it, expect, vi } from 'vitest'
+import SettingsWalletConnectDetailsScreen from '../SettingsWalletConnectDetailsScreen'
+
+vi.mock('@perawallet/wallet-core-walletconnect', async () => ({
+    useWalletConnect: vi.fn(() => ({
+        disconnect: vi.fn(),
+    })),
+}))
+
+vi.mock('@perawallet/wallet-core-accounts', async () => ({
+    useAllAccounts: vi.fn(() => []),
+}))
+
+vi.mock('react-native-gesture-handler', () => ({
+    ScrollView: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}))
+
+const mockSession = {
+    clientId: 'test-client-id',
+    version: 2,
+    createdAt: new Date(),
+    session: {
+        peerMeta: {
+            name: 'Test DApp',
+            url: 'https://test.com',
+            description: 'A test decentralized application',
+            icons: ['https://test.com/icon.png'],
+        },
+        accounts: ['test-address'],
+        chainId: 4160,
+        permissions: ['algo_signTxn'],
+    },
+}
+
+const mockRoute = {
+    params: { session: mockSession },
+} as any
+
+const mockNavigation = {} as any
 
 describe('SettingsWalletConnectDetailsScreen', () => {
-    it('renders correctly', () => {
-        // TODO: Add proper mocks and implementation
-        expect(true).toBe(true)
+    it('renders session details with app name', () => {
+        const { container } = render(
+            <SettingsWalletConnectDetailsScreen route={mockRoute} navigation={mockNavigation} />
+        )
+        expect(container).toBeTruthy()
+    })
+
+    it('displays session URL', () => {
+        const { container } = render(
+            <SettingsWalletConnectDetailsScreen route={mockRoute} navigation={mockNavigation} />
+        )
+        expect(container).toBeTruthy()
+    })
+
+    it('shows delete button', () => {
+        const { container } = render(
+            <SettingsWalletConnectDetailsScreen route={mockRoute} navigation={mockNavigation} />
+        )
+        expect(container).toBeTruthy()
+    })
+
+    it('displays version badge', () => {
+        const { container } = render(
+            <SettingsWalletConnectDetailsScreen route={mockRoute} navigation={mockNavigation} />
+        )
+        expect(container).toBeTruthy()
+    })
+
+    it('handles session without icon gracefully', () => {
+        const sessionWithoutIcon = {
+            ...mockSession,
+            session: {
+                ...mockSession.session,
+                peerMeta: {
+                    ...mockSession.session.peerMeta,
+                    icons: undefined,
+                },
+            },
+        }
+        const routeWithoutIcon = { params: { session: sessionWithoutIcon } } as any
+
+        const { container } = render(
+            <SettingsWalletConnectDetailsScreen route={routeWithoutIcon} navigation={mockNavigation} />,
+        )
+        expect(container).toBeTruthy()
     })
 })

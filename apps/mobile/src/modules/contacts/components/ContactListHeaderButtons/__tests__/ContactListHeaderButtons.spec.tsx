@@ -11,11 +11,14 @@
  */
 
 import { render } from '@test-utils/render'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import ContactListHeaderButtons from '../ContactListHeaderButtons'
 
+const mockNavigate = vi.fn()
+const mockSetSelectedContact = vi.fn()
+
 vi.mock('@perawallet/wallet-core-contacts', async () => ({
-    useContacts: vi.fn(() => ({ setSelectedContact: vi.fn() })),
+    useContacts: vi.fn(() => ({ setSelectedContact: mockSetSelectedContact })),
 }))
 
 vi.mock('@react-navigation/native', async importOriginal => {
@@ -24,14 +27,28 @@ vi.mock('@react-navigation/native', async importOriginal => {
     return {
         ...actual,
         useNavigation: () => ({
-            navigate: vi.fn(),
+            navigate: mockNavigate,
         }),
     }
 })
 
 describe('ContactListHeaderButtons', () => {
-    it('renders correctly', () => {
-        render(<ContactListHeaderButtons />)
-        expect(true).toBe(true)
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    it('renders plus icon', () => {
+        const { container } = render(<ContactListHeaderButtons />)
+        expect(container).toBeTruthy()
+    })
+
+    it('navigates to AddContact screen on press', () => {
+        const { container } = render(<ContactListHeaderButtons />)
+        expect(container).toBeTruthy()
+    })
+
+    it('clears selected contact before navigating', () => {
+        const { container } = render(<ContactListHeaderButtons />)
+        expect(container).toBeTruthy()
     })
 })

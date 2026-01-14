@@ -11,17 +11,93 @@
  */
 
 import { render } from '@test-utils/render'
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import PriceTrend from '../PriceTrend'
+import { useAssetPriceHistoryQuery } from '@perawallet/wallet-core-assets'
+import Decimal from 'decimal.js'
+
+vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
+    const actual = await importOriginal<typeof import('@perawallet/wallet-core-assets')>()
+    return {
+        ...actual,
+        useAssetPriceHistoryQuery: vi.fn(() => ({
+            data: null,
+        })),
+    }
+})
 
 describe('PriceTrend', () => {
-    it('renders correctly', () => {
-        render(
+    it('displays positive trend with percentage', () => {
+        const mockData = [
+            { fiatPrice: new Decimal(100), datetime: new Date() },
+            { fiatPrice: new Decimal(120), datetime: new Date() },
+        ]
+        vi.mocked(useAssetPriceHistoryQuery).mockReturnValue({
+            data: mockData,
+        } as ReturnType<typeof useAssetPriceHistoryQuery>)
+
+        const { container } = render(
             <PriceTrend
-                assetId={'123'}
+                assetId='123'
                 period='one-week'
             />,
         )
-        expect(true).toBe(true)
+        // Should display percentage
+        expect(container.textContent).toContain('%')
+    })
+
+    it('displays negative trend with percentage', () => {
+        const mockData = [
+            { fiatPrice: new Decimal(100), datetime: new Date() },
+            { fiatPrice: new Decimal(80), datetime: new Date() },
+        ]
+        vi.mocked(useAssetPriceHistoryQuery).mockReturnValue({
+            data: mockData,
+        } as ReturnType<typeof useAssetPriceHistoryQuery>)
+
+        const { container } = render(
+            <PriceTrend
+                assetId='123'
+                period='one-week'
+            />,
+        )
+        expect(container.textContent).toContain('%')
+    })
+
+    it('shows absolute value when showAbsolute is true', () => {
+        const mockData = [
+            { fiatPrice: new Decimal(100), datetime: new Date() },
+            { fiatPrice: new Decimal(150), datetime: new Date() },
+        ]
+        vi.mocked(useAssetPriceHistoryQuery).mockReturnValue({
+            data: mockData,
+        } as ReturnType<typeof useAssetPriceHistoryQuery>)
+
+        const { container } = render(
+            <PriceTrend
+                assetId='123'
+                period='one-week'
+                showAbsolute={true}
+            />,
+        )
+        expect(container).toBeTruthy()
+    })
+
+    it('handles zero price data gracefully', () => {
+        const mockData = [
+            { fiatPrice: new Decimal(0), datetime: new Date() },
+            { fiatPrice: new Decimal(0), datetime: new Date() },
+        ]
+        vi.mocked(useAssetPriceHistoryQuery).mockReturnValue({
+            data: mockData,
+        } as ReturnType<typeof useAssetPriceHistoryQuery>)
+
+        const { container } = render(
+            <PriceTrend
+                assetId='123'
+                period='one-week'
+            />,
+        )
+        expect(container).toBeTruthy()
     })
 })

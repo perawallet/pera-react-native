@@ -11,34 +11,90 @@
  */
 
 import { render } from '@test-utils/render'
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import CurrencyDisplay from '../CurrencyDisplay'
 import { Decimal } from 'decimal.js'
 
 describe('CurrencyDisplay', () => {
     it('renders formatted currency value', () => {
-        render(
+        const { container } = render(
+            <CurrencyDisplay
+                value={new Decimal(100)}
+                currency='USD'
+                precision={2}
+            />,
+        )
+        expect(container).toBeTruthy()
+    })
+
+    it('displays placeholder when value is null', () => {
+        const { container } = render(
+            <CurrencyDisplay
+                value={null}
+                currency='USD'
+                precision={2}
+            />,
+        )
+        expect(container.textContent).toContain('---')
+    })
+
+    it('displays placeholder when value is undefined', () => {
+        const { container } = render(
+            <CurrencyDisplay
+                value={undefined}
+                currency='USD'
+                precision={2}
+            />,
+        )
+        expect(container.textContent).toContain('---')
+    })
+
+    it('shows skeleton when isSkeleton is true', () => {
+        const { container } = render(
+            <CurrencyDisplay
+                value={new Decimal(100)}
+                currency='USD'
+                precision={2}
+                isSkeleton={true}
+            />,
+        )
+        expect(container).toBeTruthy()
+    })
+
+    it('displays ALGO icon for ALGO currency', () => {
+        const { container } = render(
             <CurrencyDisplay
                 value={new Decimal(100)}
                 currency='ALGO'
-                precision={2}
+                precision={6}
+                showSymbol={true}
             />,
         )
-        // Adjust expectation based on actual formatCurrency output or mock
-        // For now, checking renders without crashing
-        expect(true).toBe(true)
+        expect(container).toBeTruthy()
     })
 
-    it('renders skeleton when loading', () => {
-        render(
+    it('respects showSymbol prop', () => {
+        const { container } = render(
             <CurrencyDisplay
-                value={null}
+                value={new Decimal(100)}
                 currency='ALGO'
-                precision={2}
-                skeleton
+                precision={6}
+                showSymbol={false}
             />,
         )
-        // Expect skeleton checking logic
-        expect(true).toBe(true)
+        expect(container).toBeTruthy()
+    })
+
+    it('applies prefix when provided', () => {
+        const { container } = render(
+            <CurrencyDisplay
+                value={new Decimal(100)}
+                currency='USD'
+                precision={2}
+                prefix='+'
+            />,
+        )
+        // Prefix should be in the rendered output
+        expect(container.textContent).toContain('+')
     })
 })

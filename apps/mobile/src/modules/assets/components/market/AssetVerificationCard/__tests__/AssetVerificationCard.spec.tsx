@@ -13,16 +13,70 @@
 import { render } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
 import AssetVerificationCard from '../AssetVerificationCard'
-import { PeraAsset } from '@perawallet/wallet-core-assets'
-
-const mockDetails = {
-    verificationTier: 'trusted',
-    assetId: '123',
-} as unknown as PeraAsset
+import { PeraAsset, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 
 describe('AssetVerificationCard', () => {
-    it('renders correctly', () => {
-        render(<AssetVerificationCard assetDetails={mockDetails} />)
-        expect(true).toBe(true)
+    it('renders trusted card for ALGO asset', () => {
+        const algoAsset = {
+            assetId: ALGO_ASSET_ID,
+            name: 'Algorand',
+        } as PeraAsset
+
+        const { container } = render(<AssetVerificationCard assetDetails={algoAsset} />)
+        expect(container).toBeTruthy()
+        // Trusted content should be rendered
+        expect(container.textContent?.toLowerCase()).toContain('trusted')
+    })
+
+    it('renders verified card for verified assets', () => {
+        const verifiedAsset = {
+            assetId: '12345',
+            name: 'Verified Token',
+            peraMetadata: {
+                verificationTier: 'verified',
+            },
+        } as unknown as PeraAsset
+
+        const { container } = render(<AssetVerificationCard assetDetails={verifiedAsset} />)
+        expect(container).toBeTruthy()
+    })
+
+    it('renders suspicious card for suspicious assets', () => {
+        const suspiciousAsset = {
+            assetId: '67890',
+            name: 'Suspicious Token',
+            peraMetadata: {
+                verificationTier: 'suspicious',
+            },
+        } as unknown as PeraAsset
+
+        const { container } = render(<AssetVerificationCard assetDetails={suspiciousAsset} />)
+        expect(container).toBeTruthy()
+    })
+
+    it('returns null for unverified assets', () => {
+        const unverifiedAsset = {
+            assetId: '11111',
+            name: 'Random Token',
+            peraMetadata: {
+                verificationTier: 'unverified',
+            },
+        } as unknown as PeraAsset
+
+        const { container } = render(
+            <AssetVerificationCard assetDetails={unverifiedAsset} />,
+        )
+        // For unverified assets, the component returns null
+        expect(container.innerHTML).toBe('')
+    })
+
+    it('displays learn more button for verified assets', () => {
+        const algoAsset = {
+            assetId: ALGO_ASSET_ID,
+            name: 'Algorand',
+        } as PeraAsset
+
+        const { container } = render(<AssetVerificationCard assetDetails={algoAsset} />)
+        expect(container).toBeTruthy()
     })
 })

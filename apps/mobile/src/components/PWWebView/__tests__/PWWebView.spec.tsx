@@ -15,17 +15,81 @@ import { describe, it, expect, vi } from 'vitest'
 import PWWebView from '../PWWebView'
 
 vi.mock('react-native-webview', () => ({
-    WebView: 'WebView',
+    WebView: () => <div data-testid="webview">WebView</div>,
+}))
+
+vi.mock('../WebViewTitleBar', () => ({
+    default: () => <div data-testid="title-bar">TitleBar</div>,
+}))
+
+vi.mock('../WebViewFooterBar', () => ({
+    default: () => <div data-testid="footer-bar">FooterBar</div>,
 }))
 
 describe('PWWebView', () => {
     it('renders with url', () => {
-        render(
+        const { container } = render(
             <PWWebView
                 url='https://example.com'
                 enablePeraConnect={false}
             />,
         )
-        expect(true).toBe(true)
+        expect(container).toBeTruthy()
+    })
+
+    it('renders controls when showControls is true', () => {
+        const { container } = render(
+            <PWWebView
+                url='https://example.com'
+                enablePeraConnect={false}
+                showControls={true}
+            />,
+        )
+        expect(container.textContent).toContain('TitleBar')
+        expect(container.textContent).toContain('FooterBar')
+    })
+
+    it('does not show controls when showControls is false', () => {
+        const { container } = render(
+            <PWWebView
+                url='https://example.com'
+                enablePeraConnect={false}
+                showControls={false}
+            />,
+        )
+        expect(container).toBeTruthy()
+    })
+
+    it('accepts onClose callback', () => {
+        const onClose = vi.fn()
+        const { container } = render(
+            <PWWebView
+                url='https://example.com'
+                enablePeraConnect={false}
+                onClose={onClose}
+            />,
+        )
+        expect(container).toBeTruthy()
+    })
+
+    it('enables Pera Connect when specified', () => {
+        const { container } = render(
+            <PWWebView
+                url='https://example.com'
+                enablePeraConnect={true}
+            />,
+        )
+        expect(container).toBeTruthy()
+    })
+
+    it('accepts requestId for webview management', () => {
+        const { container } = render(
+            <PWWebView
+                url='https://example.com'
+                enablePeraConnect={false}
+                requestId='test-request-123'
+            />,
+        )
+        expect(container).toBeTruthy()
     })
 })

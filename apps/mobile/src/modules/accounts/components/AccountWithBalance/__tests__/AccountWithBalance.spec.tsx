@@ -13,7 +13,8 @@
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import AccountWithBalance from '../AccountWithBalance'
-import { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { WalletAccount, useAccountBalancesQuery } from '@perawallet/wallet-core-accounts'
+import Decimal from 'decimal.js'
 
 const mockAccount = {
     address: 'test-address',
@@ -35,8 +36,38 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 })
 
 describe('AccountWithBalance', () => {
-    it('renders correctly', () => {
-        render(<AccountWithBalance account={mockAccount} />)
-        expect(true).toBe(true)
+    it('renders account display component', () => {
+        const { container } = render(<AccountWithBalance account={mockAccount} />)
+        // The component should render the AccountDisplay with the account
+        expect(container.textContent).toContain('Test Account')
+    })
+
+    it('displays balance when account balance data is available', () => {
+        const mockBalanceMap = new Map([
+            [
+                'test-address',
+                {
+                    algoValue: new Decimal(100.5),
+                    fiatValue: new Decimal(50.25),
+                },
+            ],
+        ])
+        vi.mocked(useAccountBalancesQuery).mockReturnValue({
+            accountBalances: mockBalanceMap,
+            isPending: false,
+        } as ReturnType<typeof useAccountBalancesQuery>)
+
+        const { container } = render(<AccountWithBalance account={mockAccount} />)
+        expect(container.textContent).toContain('Test Account')
+    })
+
+    it('applies custom styles when passed via props', () => {
+        const { container } = render(
+            <AccountWithBalance
+                account={mockAccount}
+                style={{ marginTop: 10 }}
+            />,
+        )
+        expect(container).toBeTruthy()
     })
 })

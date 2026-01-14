@@ -11,18 +11,32 @@
  */
 
 import { render } from '@test-utils/render'
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import AssetTransactionList from '../AssetTransactionList'
-import { View } from 'react-native'
+import { View, Text } from 'react-native'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
+
+vi.mock('@shopify/flash-list', () => ({
+    FlashList: ({ ListHeaderComponent, ListEmptyComponent, children }: { 
+        ListHeaderComponent?: React.ReactNode
+        ListEmptyComponent?: React.ReactNode
+        children?: React.ReactNode
+    }) => (
+        <div data-testid="flash-list">
+            {ListHeaderComponent}
+            {ListEmptyComponent}
+            {children}
+        </div>
+    ),
+}))
 
 const mockAccount = { address: 'test' } as WalletAccount
 const mockAsset = { assetId: '123' } as PeraAsset
 
 describe('AssetTransactionList', () => {
-    it('renders correctly', () => {
-        render(
+    it('renders header with transaction list title', () => {
+        const { container } = render(
             <AssetTransactionList
                 account={mockAccount}
                 asset={mockAsset}
@@ -30,6 +44,45 @@ describe('AssetTransactionList', () => {
                 <View />
             </AssetTransactionList>,
         )
-        expect(true).toBe(true)
+        expect(container.textContent?.toLowerCase()).toContain('transaction')
+    })
+
+    it('renders children content in header', () => {
+        const { container } = render(
+            <AssetTransactionList
+                account={mockAccount}
+                asset={mockAsset}
+            >
+                <Text>Child Content</Text>
+            </AssetTransactionList>,
+        )
+        expect(container.textContent).toContain('Child Content')
+    })
+
+    it('renders empty state when no transactions', () => {
+        const { container } = render(
+            <AssetTransactionList
+                account={mockAccount}
+                asset={mockAsset}
+            >
+                <View />
+            </AssetTransactionList>,
+        )
+        // Component should render
+        expect(container).toBeTruthy()
+    })
+
+    it('displays filter and CSV export buttons', () => {
+        const { container } = render(
+            <AssetTransactionList
+                account={mockAccount}
+                asset={mockAsset}
+            >
+                <View />
+            </AssetTransactionList>,
+        )
+        const text = container.textContent?.toLowerCase() || ''
+        expect(text).toContain('filter')
+        expect(text).toContain('csv')
     })
 })

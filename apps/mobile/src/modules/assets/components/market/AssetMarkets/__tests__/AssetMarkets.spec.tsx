@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { render } from '@test-utils/render'
+import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import AssetMarkets from '../AssetMarkets'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
@@ -35,28 +35,34 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
     }
 })
 
-// Mock complex children
 vi.mock('../AssetPriceChart/AssetPriceChart', () => ({
-    default: 'AssetPriceChart',
+    default: () => <div>AssetPriceChart</div>,
 }))
 vi.mock('../AssetMarketStats/AssetMarketStats', () => ({
-    default: 'AssetMarketStats',
+    default: () => <div>AssetMarketStats</div>,
 }))
-vi.mock('../AssetAbout/AssetAbout', () => ({ default: 'AssetAbout' }))
+vi.mock('../AssetAbout/AssetAbout', () => ({ default: () => <div>AssetAbout</div> }))
 vi.mock('../AssetVerificationCard/AssetVerificationCard', () => ({
-    default: 'AssetVerificationCard',
+    default: () => <div>AssetVerificationCard</div>,
 }))
 vi.mock('../AssetDescription/AssetDescription', () => ({
-    default: 'AssetDescription',
+    default: () => <div>AssetDescription</div>,
 }))
 vi.mock('../AssetSocialMedia/AssetSocialMedia', () => ({
-    default: 'AssetSocialMedia',
+    default: () => <div>AssetSocialMedia</div>,
 }))
-vi.mock('../PriceTrend/PriceTrend', () => ({ default: 'PriceTrend' }))
+vi.mock('../PriceTrend/PriceTrend', () => ({ default: () => <div>PriceTrend</div> }))
 
 describe('AssetMarkets', () => {
-    it('renders correctly', () => {
+    it('renders all sections correctly', () => {
         render(<AssetMarkets asset={mockAsset} />)
-        expect(true).toBe(true)
+        
+        // Check for presence of mocked children as text since they return strings in mocks
+        expect(screen.getByText('AssetPriceChart')).toBeTruthy()
+        expect(screen.getByText('AssetMarketStats')).toBeTruthy()
+        expect(screen.getByText('AssetAbout')).toBeTruthy()
+        expect(screen.getByText('AssetVerificationCard')).toBeTruthy()
+        expect(screen.getByText('AssetDescription')).toBeTruthy()
+        expect(screen.getByText('AssetSocialMedia')).toBeTruthy()
     })
 })

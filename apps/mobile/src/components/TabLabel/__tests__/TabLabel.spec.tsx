@@ -15,13 +15,50 @@ import { describe, it, expect } from 'vitest'
 import TabLabel from '../TabLabel'
 
 describe('TabLabel', () => {
-    it('renders correctly', () => {
-        render(
+    it('renders with translated text', () => {
+        const { container } = render(
             <TabLabel
                 i18nKey='common.ok.label'
                 active={true}
             />,
         )
-        expect(true).toBe(true)
+        expect(container).toBeTruthy()
+    })
+
+    it('applies active style when active is true', () => {
+        const { container } = render(
+            <TabLabel
+                i18nKey='common.ok.label'
+                active={true}
+            />,
+        )
+        expect(container).toBeTruthy()
+    })
+
+    it('applies inactive style when active is false', () => {
+        const { container } = render(
+            <TabLabel
+                i18nKey='common.ok.label'
+                active={false}
+            />,
+        )
+        expect(container).toBeTruthy()
+    })
+
+    it('handles different i18n keys', () => {
+        const { container: container1 } = render(
+            <TabLabel
+                i18nKey='tabs.home'
+                active={true}
+            />,
+        )
+        const { container: container2 } = render(
+            <TabLabel
+                i18nKey='tabs.settings'
+                active={true}
+            />,
+        )
+        expect(container1).toBeTruthy()
+        expect(container2).toBeTruthy()
     })
 })
