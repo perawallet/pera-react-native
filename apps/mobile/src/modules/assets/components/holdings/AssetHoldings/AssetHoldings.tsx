@@ -12,12 +12,12 @@
 
 import { formatDatetime } from '@perawallet/wallet-core-shared'
 import PWView from '@components/PWView'
-import AssetWealthChart from './AssetWealthChart/AssetWealthChart'
+import AssetWealthChart from '../AssetWealthChart/AssetWealthChart'
 import ChartPeriodSelection from '@components/ChartPeriodSelection'
 import { useMemo } from 'react'
 import { useChartInteraction } from '@hooks/chart-interaction'
-import AssetActionButtons from './AssetActionButtons/AssetActionButtons'
-import AssetTransactionList from './AssetTransactionList/AssetTransactionList'
+import AssetActionButtons from '../AssetActionButtons/AssetActionButtons'
+import AssetTransactionList from '../AssetTransactionList/AssetTransactionList'
 
 import { useStyles } from './styles'
 import AssetTitle from '@modules/assets/components/AssetTitle'

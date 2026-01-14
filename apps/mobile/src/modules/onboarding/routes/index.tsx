@@ -19,7 +19,7 @@ import {
 import OnboardingScreen from '@modules/onboarding/screens/OnboardingScreen'
 import NameAccountScreen from '@modules/onboarding/screens/NameAccountScreen'
 import ImportAccountScreen from '@modules/onboarding/screens/ImportAccountScreen'
-import { AccountErrorBoundary } from '@modules/accounts/components/BaseErrorBoundary/AccountErrorBoundary'
+import { AccountErrorBoundary } from '@modules/accounts/components/AccountErrorBoundary/AccountErrorBoundary'
 import { useLanguage } from '@hooks/language'
 import { screenListeners } from '@routes/listeners'
 import { safeAreaLayout } from '@layouts/index'
