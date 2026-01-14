@@ -2,7 +2,7 @@
   "project_info": {
     "project_number": "537717066676",
     "project_id": "pera-wallet-public",
-    "storage_bucket": "pera-wallet-public.appspot.com"
+    "storage_bucket": "pera-wallet-public.firebasestorage.app"
   },
   "client": [
     {
@@ -67,6 +67,44 @@
         "mobilesdk_app_id": "1:537717066676:android:6bb5b0ff464e0d9572c0e1",
         "android_client_info": {
           "package_name": "com.algorand.android.staging.debug"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB9J9S6XMpUN0hqzzIvvWwXux8ufQWgONU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:537717066676:android:78156202a20fa0ef72c0e1",
+        "android_client_info": {
+          "package_name": "com.algorand.perarn"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB9J9S6XMpUN0hqzzIvvWwXux8ufQWgONU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:537717066676:android:3d3b9e5c3b516e6372c0e1",
+        "android_client_info": {
+          "package_name": "com.algorand.perarn.staging"
         }
       },
       "oauth_client": [],
