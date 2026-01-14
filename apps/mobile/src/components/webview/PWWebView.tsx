@@ -37,7 +37,6 @@ import {
     peraMobileInterfaceJS,
 } from './injected-scripts'
 import useToast from '@hooks/toast'
-import { StyleSheet } from 'react-native'
 import { useStyles } from './styles'
 import PWView from '../view/PWView'
 import { usePeraWebviewInterface } from '@hooks/webview'
@@ -232,7 +231,7 @@ const PWWebView = (props: PWWebViewProps) => {
                 }}
                 style={styles.webview}
                 renderLoading={() => (
-                    <PWView style={StyleSheet.absoluteFill}>
+                    <PWView style={styles.absoluteFill}>
                         <LoadingView
                             variant='circle'
                             size='lg'
@@ -241,7 +240,7 @@ const PWWebView = (props: PWWebViewProps) => {
                 )}
                 renderError={() => {
                     return (
-                        <PWView style={StyleSheet.absoluteFill}>
+                        <PWView style={styles.absoluteFill}>
                             <EmptyView
                                 title={t('common.webview.failed_title')}
                                 body={t('common.webview.failed_body')}

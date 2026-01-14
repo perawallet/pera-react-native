@@ -10,21 +10,17 @@
  limitations under the License
  */
 
-import { StyleSheet } from 'react-native'
-import { useTheme } from '@rneui/themed'
+import { makeStyles } from '@rneui/themed'
 
-export const useStyles = () => {
-    const { theme } = useTheme()
-    return StyleSheet.create({
-        container: {
-            paddingVertical: theme.spacing.xl,
-            borderBottomWidth: 1,
-            borderBottomColor: theme.colors.divider,
-        },
-        title: {
-            color: theme.colors.textGray,
-            marginBottom: theme.spacing.md,
-            textTransform: 'uppercase',
-        },
-    })
-}
+export const useStyles = makeStyles(theme => ({
+    container: {
+        paddingVertical: theme.spacing.xl,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.colors.divider,
+    },
+    title: {
+        color: theme.colors.textGray,
+        marginBottom: theme.spacing.md,
+        textTransform: 'uppercase',
+    },
+}))
