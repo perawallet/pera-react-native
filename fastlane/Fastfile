@@ -13,7 +13,7 @@ platform :ios do
   desc "Build iOS Development"
   lane :build_dev do
     build_ios(
-      scheme: "Mobile-Dev",
+      scheme: "Pera-Dev",
       configuration: "Debug",
       export_method: "development"
     )
@@ -23,7 +23,7 @@ platform :ios do
   lane :build_staging do
     setup_match
     build_ios(
-      scheme: "Mobile-Staging",
+      scheme: "Pera-Staging",
       configuration: "Release",
       export_method: "ad-hoc"
     )
@@ -33,7 +33,7 @@ platform :ios do
   lane :build_production do
     setup_match
     build_ios(
-      scheme: "Mobile-Production",
+      scheme: "Pera-Production",
       configuration: "Release",
       export_method: "app-store"
     )
@@ -45,7 +45,7 @@ platform :ios do
       scheme: options[:scheme],
       configuration: options[:configuration],
       export_method: options[:export_method],
-      workspace: "apps/mobile/ios/mobile.xcworkspace",
+      workspace: "apps/mobile/ios/pera.xcworkspace",
       output_directory: "./build/ios",
       output_name: "#{options[:scheme]}.ipa",
       clean: true,
@@ -75,7 +75,14 @@ platform :ios do
 
   desc "Deploy to TestFlight"
   lane :deploy_testflight do |options|
-    scheme = options[:scheme] || "Mobile-Staging"
+    scheme = options[:scheme] || "Pera-Staging"
+
+    if ENV['BUILD_NUMBER']
+      increment_build_number(
+        build_number: ENV['BUILD_NUMBER'],
+        xcodeproj: "apps/mobile/ios/pera.xcodeproj"
+      )
+    end
 
     build_ios(
       scheme: scheme,
@@ -92,14 +99,14 @@ platform :ios do
   desc "Increment build number"
   lane :bump_build do
     increment_build_number(
-      xcodeproj: "apps/mobile/ios/mobile.xcodeproj"
+      xcodeproj: "apps/mobile/ios/pera.xcodeproj"
     )
   end
 
   desc "Increment version number"
   lane :bump_version do |options|
     increment_version_number(
-      xcodeproj: "apps/mobile/ios/mobile.xcodeproj",
+      xcodeproj: "apps/mobile/ios/pera.xcodeproj",
       bump_type: options[:bump_type] || "patch"
     )
   end
@@ -151,15 +158,19 @@ platform :android do
   end
 
   desc "Build and publish to Play Store Internal Track"
-  lane :deploy_internal do
+  lane :deploy_internal do |options|
+    flavor = options[:flavor] || "staging"
+    # Helper to convert flavor to camelCase for AAB path (e.g., production -> productionRelease)
+    flavor_release = "#{flavor}Release"
+    
     build_android(
-      flavor: "staging",
+      flavor: flavor,
       build_type: "Release"
     )
 
     upload_to_play_store(
       track: "internal",
-      aab: "apps/mobile/android/app/build/outputs/bundle/stagingRelease/app-staging-release.aab",
+      aab: "apps/mobile/android/app/build/outputs/bundle/#{flavor_release}/app-#{flavor}-release.aab",
       skip_upload_metadata: true,
       skip_upload_images: true,
       skip_upload_screenshots: true

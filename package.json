@@ -16,7 +16,9 @@
     "lint:copyright": "copyright-header -i \"apps/** packages/**\" -e \"*/node_modules/*\" -f tools/copyright.js",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "generate:all-apis": "kubb generate --config backend-kubb.config.ts && kubb generate --config algod-kubb.config.ts && kubb generate --config indexer-kubb.config.ts",
-    "test": "turbo run test -- --coverage"
+    "test": "turbo run test -- --coverage",
+    "generate:config": "bash tools/generate-config.sh",
+    "bump-version": "bash tools/bump-version.sh"
   },
   "devDependencies": {
     "@babel/runtime": "catalog:",
