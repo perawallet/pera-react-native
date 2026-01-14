@@ -88,32 +88,54 @@ jobs:
           cd apps/mobile/ios
           bundle exec pod install
 
-      - name: Setup Match certificates
+      - name: Setup MacOS Keychain & Signing
         env:
-          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CERT_BASE64: ${{ secrets.IOS_DISTRIBUTION_CERT_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.IOS_DISTRIBUTION_CERT_PASSWORD }}
+          PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_STAGING_BASE64 }}
         run: |
-          cd apps/mobile
-          bundle exec fastlane match appstore --readonly
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PASSWORD="actions"
+
+          # Re-create keychain
+          security delete-keychain $KEYCHAIN_PATH || true
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # Import Certificate
+          echo "$CERT_BASE64" | base64 --decode > certificate.p12
+          security import certificate.p12 -P "$CERT_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          
+          # Install Profile
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "$PROFILE_BASE64" | base64 --decode > profile.mobileprovision
+          cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+          
+          # Set keychain as default search list
+          security list-keychain -d user -s $KEYCHAIN_PATH
 
       - name: Build & Deploy iOS Staging
         id: build
         env:
-          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
           IOS_STAGING_BUNDLE_ID: com.algorandllc.perarn.staging
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }} 
+          # Note: MATCH_GIT_URL key removed but checking if strictly needed for other lanes? No.
+          # But we need build number
           BUILD_NUMBER: ${{ github.run_number }}
         run: |
-          cd apps/mobile
+          # Decode API Key
+          echo "${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT_BASE64 }}" | base64 --decode > api_key.p8
+          export APP_STORE_CONNECT_API_KEY_CONTENT=$(cat api_key.p8)
+          
           bundle exec fastlane ios deploy_testflight scheme:Pera-Staging
           
-          # Extract Version for Notification
-          VERSION=$(grep -A1 'MARKETING_VERSION' ios/pera.xcodeproj/project.pbxproj | head -n2 | tail -n1 | cut -d '=' -f2 | xargs | tr -d ';')
-          BUILD=$(grep -A1 'CURRENT_PROJECT_VERSION' ios/pera.xcodeproj/project.pbxproj | head -n2 | tail -n1 | cut -d '=' -f2 | xargs | tr -d ';')
+          # Extract Version (Naive extraction, fastlane handles most)
+          VERSION=$(agvtool what-marketing-version -terse1)
+          BUILD=$(agvtool what-version -terse)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "BUILD=$BUILD" >> $GITHUB_ENV
 
@@ -194,31 +216,50 @@ jobs:
           cd apps/mobile/ios
           bundle exec pod install
 
-      - name: Setup Match certificates
+      - name: Setup MacOS Keychain & Signing
         env:
-          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CERT_BASE64: ${{ secrets.IOS_DISTRIBUTION_CERT_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.IOS_DISTRIBUTION_CERT_PASSWORD }}
+          PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_PRODUCTION_BASE64 }}
         run: |
-          cd apps/mobile
-          bundle exec fastlane match appstore --readonly
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PASSWORD="actions"
+
+          # Re-create keychain
+          security delete-keychain $KEYCHAIN_PATH || true
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # Import Certificate
+          echo "$CERT_BASE64" | base64 --decode > certificate.p12
+          security import certificate.p12 -P "$CERT_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          
+          # Install Profile
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "$PROFILE_BASE64" | base64 --decode > profile.mobileprovision
+          cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+          
+          # Set keychain as default search list
+          security list-keychain -d user -s $KEYCHAIN_PATH
 
       - name: Build & Deploy iOS Production
         env:
-          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
           IOS_PRODUCTION_BUNDLE_ID: com.algorandllc.perarn
           BUILD_NUMBER: ${{ github.run_number }}
         run: |
-          cd apps/mobile
+          # Decode API Key
+          echo "${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT_BASE64 }}" | base64 --decode > api_key.p8
+          export APP_STORE_CONNECT_API_KEY_CONTENT=$(cat api_key.p8)
+
           bundle exec fastlane ios deploy_testflight scheme:Pera-Production
           
           # Extract Version
-          VERSION=$(grep -A1 'MARKETING_VERSION' ios/pera.xcodeproj/project.pbxproj | head -n2 | tail -n1 | cut -d '=' -f2 | xargs | tr -d ';')
-          BUILD=$(grep -A1 'CURRENT_PROJECT_VERSION' ios/pera.xcodeproj/project.pbxproj | head -n2 | tail -n1 | cut -d '=' -f2 | xargs | tr -d ';')
+          VERSION=$(agvtool what-marketing-version -terse1)
+          BUILD=$(agvtool what-version -terse)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "BUILD=$BUILD" >> $GITHUB_ENV
 
@@ -323,14 +364,14 @@ jobs:
         env:
           ANDROID_JSON_KEY_FILE: ${{ secrets.ANDROID_JSON_KEY_FILE }}
           BUILD_NUMBER: ${{ github.run_number }}
+          SUPPLY_JSON_KEY: apps/mobile/android/api-key.json
         run: |
           echo "$ANDROID_JSON_KEY_FILE" > apps/mobile/android/api-key.json
-          cd apps/mobile
           bundle exec fastlane android deploy_internal flavor:staging
           
           # Extract Version
-          VERSION=$(grep 'versionName' android/app/build.gradle | cut -d '"' -f2)
-          BUILD=$(grep 'versionCode' android/app/build.gradle | awk '{print $2}')
+          VERSION=$(grep 'versionName' apps/mobile/android/app/build.gradle | cut -d '"' -f2)
+          BUILD=$(grep 'versionCode' apps/mobile/android/app/build.gradle | awk '{print $2}')
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "BUILD=$BUILD" >> $GITHUB_ENV
 
@@ -435,14 +476,14 @@ jobs:
         env:
           ANDROID_JSON_KEY_FILE: ${{ secrets.ANDROID_JSON_KEY_FILE }}
           BUILD_NUMBER: ${{ github.run_number }}
+          SUPPLY_JSON_KEY: apps/mobile/android/api-key.json
         run: |
           echo "$ANDROID_JSON_KEY_FILE" > apps/mobile/android/api-key.json
-          cd apps/mobile
           bundle exec fastlane android deploy_internal flavor:production
           
           # Extract Version
-          VERSION=$(grep 'versionName' android/app/build.gradle | cut -d '"' -f2)
-          BUILD=$(grep 'versionCode' android/app/build.gradle | awk '{print $2}')
+          VERSION=$(grep 'versionName' apps/mobile/android/app/build.gradle | cut -d '"' -f2)
+          BUILD=$(grep 'versionCode' apps/mobile/android/app/build.gradle | awk '{print $2}')
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "BUILD=$BUILD" >> $GITHUB_ENV
 
