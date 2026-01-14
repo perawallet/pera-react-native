@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './BaseErrorBoundary'
+export { BaseErrorBoundary, BaseErrorBoundary as default } from './BaseErrorBoundary'
 export type { BaseErrorBoundaryProps } from './BaseErrorBoundary'
