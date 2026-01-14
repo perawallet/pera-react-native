@@ -73,7 +73,8 @@ const productionConfig = {
     mainnetBackendUrl: 'https://mainnet.staging.api.perawallet.app',
     testnetBackendUrl: 'https://testnet.staging.api.perawallet.app',
     //Dev API Key only - not suitable for production use
-    backendAPIKey: 'development-purposes-only-dc98f2c7-908f-4f74-81ef-9f5464213f99',
+    backendAPIKey:
+        'development-purposes-only-dc98f2c7-908f-4f74-81ef-9f5464213f99',
     algodApiKey: '',
     indexerApiKey: '',
     mainnetExplorerUrl: 'https://explorer.perawallet.app',
