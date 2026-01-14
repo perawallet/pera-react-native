@@ -1,4 +1,4 @@
-package com.algorand.android
+package com.algorand.perarn
 
 import android.app.Application
 import com.facebook.react.PackageList

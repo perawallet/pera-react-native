@@ -517,6 +517,9 @@ importers:
       globals:
         specifier: 'catalog:'
         version: 15.15.0
+      hermes-compiler:
+        specifier: ^250829098.0.2
+        version: 250829098.0.2
       jest:
         specifier: ^29.7.0
         version: 29.7.0(@types/node@20.19.28)(ts-node@10.9.2(@types/node@20.19.28)(typescript@5.9.3))
@@ -5757,6 +5760,9 @@ packages:
 
   hermes-compiler@0.14.0:
     resolution: {integrity: sha512-clxa193o+GYYwykWVFfpHduCATz8fR5jvU7ngXpfKHj+E9hr9vjLNtdLSEe8MUbObvVexV3wcyxQ00xTPIrB1Q==}
+
+  hermes-compiler@250829098.0.2:
+    resolution: {integrity: sha512-9+la7TeGGZg5Cj0UV5MbqhqyT/Hd/PUlQZ3Uhggy0jiaiG2qxFJbi/uGWALTqa7GwETyQa4A7ngus1A1aXA8QQ==}
 
   hermes-estree@0.25.1:
     resolution: {integrity: sha512-0wUoCcLp+5Ev5pDW2OriHC2MJCbwLwuRx+gAqMTOkGKJJiBCLjtrvy4PWUGn6MIVefecRpzoOZ/UV6iGdOr+Cw==}
@@ -14432,6 +14438,8 @@ snapshots:
   headers-polyfill@4.0.3: {}
 
   hermes-compiler@0.14.0: {}
+
+  hermes-compiler@250829098.0.2: {}
 
   hermes-estree@0.25.1: {}
 

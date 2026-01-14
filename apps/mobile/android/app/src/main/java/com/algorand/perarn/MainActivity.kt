@@ -1,4 +1,4 @@
-package com.algorand.android
+package com.algorand.perarn
 
 import android.os.Bundle;
 
