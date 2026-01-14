@@ -3,8 +3,8 @@
   "version": "7.0.0-alpha",
   "private": true,
   "scripts": {
-    "android": "react-native run-android --verbose",
-    "ios": "react-native run-ios",
+    "android": "react-native run-android --mode=devDebug",
+    "ios": "react-native run-ios --scheme Pera-Dev",
     "lint": "eslint .",
     "start": "react-native start",
     "test": "jest",

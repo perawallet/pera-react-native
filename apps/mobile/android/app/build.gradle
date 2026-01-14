@@ -129,7 +129,7 @@ android {
     productFlavors {
         dev {
             dimension "environment"
-            applicationId "com.algorand.perarn.dev"
+            applicationId "com.algorand.perarn.staging"
             versionNameSuffix "-dev"
             resValue "string", "app_name", "Pera Dev"
             buildConfigField "String", "APP_ENV", '"development"'

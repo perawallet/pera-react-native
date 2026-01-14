@@ -400,7 +400,7 @@
 					"-ObjC",
 					"-lc++",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.algorandllc.perarn.dev;
+				PRODUCT_BUNDLE_IDENTIFIER = com.algorandllc.perarn.staging;
 				PRODUCT_NAME = pera;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
