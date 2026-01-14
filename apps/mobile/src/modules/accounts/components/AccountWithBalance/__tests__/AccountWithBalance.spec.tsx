@@ -72,7 +72,7 @@ describe('AccountWithBalance', () => {
         const { container } = render(
             <AccountWithBalance
                 account={mockAccount}
-                style={{ marginTop: 10 }}
+                style={{ marginTop: 10 }} // eslint-disable-line react-native/no-inline-styles
             />,
         )
         expect(container).toBeTruthy()

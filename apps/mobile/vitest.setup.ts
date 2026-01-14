@@ -22,7 +22,7 @@ vi.mock('react-native-reanimated', () => {
     const React = require('react')
     const Reanimated = {
         default: {
-            call: () => { },
+            call: () => {},
             createAnimatedComponent: (component: any) => component,
             View: (props: any) =>
                 React.createElement('div', props, props.children),
@@ -31,16 +31,16 @@ vi.mock('react-native-reanimated', () => {
             Image: (props: any) => React.createElement('img', props),
             ScrollView: (props: any) =>
                 React.createElement('div', props, props.children),
-            addWhitelistedNativeProps: () => { },
-            addWhitelistedUIProps: () => { },
+            addWhitelistedNativeProps: () => {},
+            addWhitelistedUIProps: () => {},
         },
         useSharedValue: (v: any) => ({ value: v }),
         useDerivedValue: (a: any) => ({ value: a() }),
         useAnimatedStyle: () => ({}),
         useAnimatedProps: () => ({}),
-        useAnimatedGestureHandler: () => { },
-        useAnimatedScrollHandler: () => { },
-        useAnimatedReaction: () => { },
+        useAnimatedGestureHandler: () => {},
+        useAnimatedScrollHandler: () => {},
+        useAnimatedReaction: () => {},
         withTiming: (toValue: any) => toValue,
         withSpring: (toValue: any) => toValue,
         withDecay: () => 0,
@@ -50,7 +50,7 @@ vi.mock('react-native-reanimated', () => {
         runOnJS: (fn: any) => fn,
         runOnUI: (fn: any) => fn,
         makeMutable: (v: any) => ({ value: v }),
-        cancelAnimation: () => { },
+        cancelAnimation: () => {},
         interpolate: () => 0,
         Extrapolate: { CLAMP: 'clamp' },
         Layout: {
@@ -396,7 +396,7 @@ vi.mock('react-native-quick-crypto', () => ({
 
 // Basic NativeEventEmitter dependency to avoid errors when no native module is provided
 vi.mock('react-native/Libraries/EventEmitter/NativeEventEmitter', () => {
-    return class NativeEventEmitter { }
+    return class NativeEventEmitter {}
 })
 
 // Mock React Navigation
@@ -461,7 +461,7 @@ vi.mock('@react-native-firebase/messaging', () => ({
 
 vi.mock('@react-native-firebase/remote-config', () => ({
     getRemoteConfig: () => ({
-        setDefaults: vi.fn(async () => { }),
+        setDefaults: vi.fn(async () => {}),
         fetchAndActivate: vi.fn(async () => true),
         setConfigSettings: vi.fn(),
         getValue: vi.fn(() => ({
@@ -654,10 +654,10 @@ vi.mock('@rneui/themed', () => {
         ({ isVisible, children, ...props }: any) =>
             isVisible
                 ? React.createElement(
-                    MockView,
-                    { ...props, 'data-testid': 'Dialog' },
-                    children,
-                )
+                      MockView,
+                      { ...props, 'data-testid': 'Dialog' },
+                      children,
+                  )
                 : null,
         {
             Title: DialogTitle,
@@ -722,10 +722,10 @@ vi.mock('@rneui/themed', () => {
         BottomSheet: ({ isVisible, children, ...props }: any) =>
             isVisible
                 ? React.createElement(
-                    MockView,
-                    { ...props, 'data-testid': 'RNEBottomSheet' },
-                    children,
-                )
+                      MockView,
+                      { ...props, 'data-testid': 'RNEBottomSheet' },
+                      children,
+                  )
                 : null,
         Icon: (props: any) => React.createElement(MockView, props),
         Tab,
