@@ -100,7 +100,7 @@ const SettingsWalletConnectScreen = () => {
                 }
             />
             <QRScannerView
-                visible={scannerState.isOpen}
+                isVisible={scannerState.isOpen}
                 onSuccess={scannerState.close}
                 onClose={scannerState.close}
                 animationType='slide'

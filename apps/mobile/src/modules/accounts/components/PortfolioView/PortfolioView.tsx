@@ -91,7 +91,7 @@ const PortfolioView = (props: PortfolioViewProps) => {
                     currency='ALGO'
                     precision={2}
                     h1Style={styles.primaryCurrency}
-                    skeleton={isPending}
+                    isSkeleton={isPending}
                 />
                 <PWButton
                     icon='chart'
@@ -112,7 +112,7 @@ const PortfolioView = (props: PortfolioViewProps) => {
                     currency={preferredCurrency}
                     prefix='≈ '
                     precision={2}
-                    skeleton={isPending}
+                    isSkeleton={isPending}
                 />
                 {!selectedPoint && <WealthTrend period={period} />}
                 {selectedPoint && (
@@ -126,7 +126,7 @@ const PortfolioView = (props: PortfolioViewProps) => {
             </PWView>
 
             <ExpandablePanel
-                expanded={chartVisible}
+                isExpanded={chartVisible}
                 containerStyle={styles.chartContainer}
             >
                 <WealthChart

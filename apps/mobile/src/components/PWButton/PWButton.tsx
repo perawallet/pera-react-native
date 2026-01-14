@@ -23,8 +23,8 @@ export type PWButtonProps = {
     onPress?: () => void
     minWidth?: number
     style?: StyleProp<ViewStyle>
-    disabled?: boolean
-    loading?: boolean
+    isDisabled?: boolean
+    isLoading?: boolean
     paddingStyle?: 'none' | 'dense' | 'normal'
 }
 
@@ -45,9 +45,9 @@ const PWButton = (props: PWButtonProps) => {
         <PWTouchableOpacity
             style={[styles.buttonStyle, props.style]}
             onPress={props.onPress}
-            disabled={props.disabled}
+            disabled={props.isDisabled}
         >
-            {!!props.icon && !props.loading && (
+            {!!props.icon && !props.isLoading && (
                 <PWIcon
                     name={props.icon}
                     variant={iconVariant}
@@ -59,11 +59,11 @@ const PWButton = (props: PWButtonProps) => {
                     }
                 />
             )}
-            {!!props.title && !props.loading && (
+            {!!props.title && !props.isLoading && (
                 <Text style={styles.titleStyle}>{props.title}</Text>
             )}
 
-            {props.loading && (
+            {props.isLoading && (
                 <ActivityIndicator
                     size='small'
                     color={styles.loadingStyle.color}

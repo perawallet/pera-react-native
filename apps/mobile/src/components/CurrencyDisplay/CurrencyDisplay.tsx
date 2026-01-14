@@ -28,7 +28,7 @@ export type CurrencyDisplayProps = {
     prefix?: string
     alignRight?: boolean
     showSymbol?: boolean
-    skeleton?: boolean
+    isSkeleton?: boolean
     truncateToUnits?: boolean
 } & TextProps
 
@@ -43,7 +43,7 @@ const CurrencyDisplay = (props: CurrencyDisplayProps) => {
         prefix,
         truncateToUnits,
         showSymbol = true,
-        skeleton = false,
+        isSkeleton = false,
         minPrecision,
         ...rest
     } = props
@@ -78,7 +78,7 @@ const CurrencyDisplay = (props: CurrencyDisplayProps) => {
         privacyMode,
     ])
 
-    if (skeleton) {
+    if (isSkeleton) {
         return (
             <PWView style={themeStyle.container}>
                 <Skeleton style={themeStyle.skeleton} />

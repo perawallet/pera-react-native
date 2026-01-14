@@ -18,9 +18,9 @@ import PWView from '../PWView'
 type RadioButtonProps = {
     onPress: () => void
     title: string
-    selected: boolean
+    isSelected: boolean
 }
-const RadioButton = ({ onPress, title, selected }: RadioButtonProps) => {
+const RadioButton = ({ onPress, title, isSelected }: RadioButtonProps) => {
     const styles = useStyles()
 
     return (
@@ -30,7 +30,7 @@ const RadioButton = ({ onPress, title, selected }: RadioButtonProps) => {
         >
             <Text>{title}</Text>
             <PWView style={styles.radioContainer}>
-                {selected && <PWView style={styles.selectedRadio} />}
+                {isSelected && <PWView style={styles.selectedRadio} />}
             </PWView>
         </PWTouchableOpacity>
     )

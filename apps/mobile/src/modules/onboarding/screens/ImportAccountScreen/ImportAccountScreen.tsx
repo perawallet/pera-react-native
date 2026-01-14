@@ -174,7 +174,7 @@ const ImportAccountScreen = () => {
                         variant='primary'
                         title={t('onboarding.import_account.button')}
                         onPress={handleImportAccount}
-                        disabled={!canImport}
+                        isDisabled={!canImport}
                     />
                 </ScrollView>
             </KeyboardAvoidingView>

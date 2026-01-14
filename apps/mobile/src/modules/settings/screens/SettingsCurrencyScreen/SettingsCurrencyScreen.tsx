@@ -62,7 +62,7 @@ const SettingsCurrencyScreen = () => {
             <RadioButton
                 title={`${item.name} (${item.id})`}
                 onPress={() => setCurrency(item)}
-                selected={preferredCurrency === item.id}
+                isSelected={preferredCurrency === item.id}
             />
         )
     }

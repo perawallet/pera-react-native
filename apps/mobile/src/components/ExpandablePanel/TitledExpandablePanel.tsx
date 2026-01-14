@@ -74,7 +74,7 @@ const TitledExpandablePanel = ({
                 </Animated.View>
             </PWTouchableOpacity>
             <ExpandablePanel
-                expanded={expanded}
+                isExpanded={expanded}
                 containerStyle={styles.collapsableContainer}
             >
                 {children}

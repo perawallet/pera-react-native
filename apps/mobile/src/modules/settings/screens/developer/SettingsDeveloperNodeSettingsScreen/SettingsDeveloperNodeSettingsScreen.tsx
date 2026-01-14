@@ -27,12 +27,12 @@ const SettingsDeveloperNodeSettingsScreen = () => {
             <RadioButton
                 title={t('settings.developer.node_settings.mainnet_label')}
                 onPress={() => setNetwork(Networks.mainnet)}
-                selected={network === Networks.mainnet}
+                isSelected={network === Networks.mainnet}
             />
             <RadioButton
                 title={t('settings.developer.node_settings.testnet_label')}
                 onPress={() => setNetwork(Networks.testnet)}
-                selected={network === Networks.testnet}
+                isSelected={network === Networks.testnet}
             />
         </PWView>
     )

@@ -96,7 +96,7 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
                         currency='ALGO'
                         precision={2}
                         h1Style={styles.primaryCurrency}
-                        skeleton={isPending}
+                        isSkeleton={isPending}
                     />
                     <PWButton
                         icon='chart'
@@ -117,7 +117,7 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
                         currency={preferredCurrency}
                         prefix='≈ '
                         precision={2}
-                        skeleton={isPending}
+                        isSkeleton={isPending}
                     />
                     {!selectedPoint && (
                         <WealthTrend
@@ -137,7 +137,7 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
             </PWTouchableOpacity>
 
             <ExpandablePanel
-                expanded={chartVisible}
+                isExpanded={chartVisible}
                 containerStyle={styles.chartContainer}
             >
                 <WealthChart

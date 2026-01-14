@@ -31,7 +31,7 @@ import PWIcon from '@components/PWIcon'
 
 type QRScannerViewProps = {
     title?: string
-    visible: boolean
+    isVisible: boolean
     animationType: 'slide' | 'fade' | 'none'
     onClose: () => void
     onSuccess: (url: string, restartScanning: () => void) => void
@@ -47,12 +47,12 @@ const QRScannerView = (props: QRScannerViewProps) => {
     const { handleDeepLink, isValidDeepLink } = useDeepLink()
 
     useEffect(() => {
-        if (!props.visible) {
+        if (!props.isVisible) {
             setScanningEnabled(false)
         } else {
             setScanningEnabled(true)
         }
-    }, [props.visible])
+    }, [props.isVisible])
 
     const codeScanner = useCodeScanner({
         codeTypes: ['qr', 'ean-13'],
@@ -92,7 +92,7 @@ const QRScannerView = (props: QRScannerViewProps) => {
     return (
         <Modal
             style={styles.container}
-            visible={props.visible}
+            visible={props.isVisible}
             animationType={props.animationType}
         >
             {device == null ? (

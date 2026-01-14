@@ -63,7 +63,7 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
             paddingHorizontal,
             paddingVertical,
             minWidth,
-            opacity: props.disabled ? 0.7 : 1,
+            opacity: props.isDisabled ? 0.7 : 1,
             backgroundColor,
         },
         titleStyle: {

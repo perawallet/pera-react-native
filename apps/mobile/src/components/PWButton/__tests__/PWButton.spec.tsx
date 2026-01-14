@@ -38,7 +38,7 @@ describe('PWButton', () => {
                 title='Click Me'
                 onPress={onPress}
                 variant='primary'
-                loading={true}
+                isLoading={true}
             />,
         )
 

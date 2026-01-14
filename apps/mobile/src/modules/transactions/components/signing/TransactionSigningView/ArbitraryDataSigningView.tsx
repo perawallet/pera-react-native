@@ -236,7 +236,7 @@ const ArbitraryDataSigningView = ({
                                 variant='secondary'
                                 onPress={rejectRequest}
                                 style={styles.button}
-                                disabled={isPending}
+                                isDisabled={isPending}
                             />
                             <PWButton
                                 title={
@@ -247,8 +247,8 @@ const ArbitraryDataSigningView = ({
                                 variant='primary'
                                 onPress={approveRequest}
                                 style={styles.button}
-                                disabled={isPending}
-                                loading={isPending}
+                                isDisabled={isPending}
+                                isLoading={isPending}
                             />
                         </PWView>
                     </PWView>

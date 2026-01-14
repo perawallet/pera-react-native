@@ -138,7 +138,7 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
                 title={t('send_funds.input.next')}
                 style={styles.nextButton}
                 onPress={handleNext}
-                disabled={!cryptoValue}
+                isDisabled={!cryptoValue}
             />
 
             <AddNotePanel

@@ -21,14 +21,14 @@ import { useStyles } from './styles'
 import { EXPANDABLE_PANEL_ANIMATION_DURATION } from '@constants/ui'
 
 type ExpandablePanelProps = {
-    expanded: boolean
+    isExpanded: boolean
     containerStyle?: StyleProp<ViewStyle>
-    onStateChangeEnd?: (expanded: boolean) => void
+    onStateChangeEnd?: (isExpanded: boolean) => void
 } & PropsWithChildren
 
 const ExpandablePanel = ({
     children,
-    expanded,
+    isExpanded,
     onStateChangeEnd,
     containerStyle,
 }: ExpandablePanelProps) => {
@@ -46,20 +46,20 @@ const ExpandablePanel = ({
     }
 
     const collapsableStyle = useAnimatedStyle(() => {
-        animatedHeight.value = expanded
+        animatedHeight.value = isExpanded
             ? withTiming(
                   height,
                   {
                       duration: EXPANDABLE_PANEL_ANIMATION_DURATION,
                   },
-                  () => onStateChangeEnd?.(expanded),
+                  () => onStateChangeEnd?.(isExpanded),
               )
             : withTiming(
                   0,
                   { duration: EXPANDABLE_PANEL_ANIMATION_DURATION },
-                  () => onStateChangeEnd?.(expanded),
+                  () => onStateChangeEnd?.(isExpanded),
               )
-        animatedOpacity.value = expanded
+        animatedOpacity.value = isExpanded
             ? withTiming(1, { duration: EXPANDABLE_PANEL_ANIMATION_DURATION })
             : withTiming(0, { duration: EXPANDABLE_PANEL_ANIMATION_DURATION })
 
@@ -67,14 +67,14 @@ const ExpandablePanel = ({
             height: animatedHeight.value,
             opacity: animatedOpacity.value,
         }
-    }, [expanded, height])
+    }, [isExpanded, height])
 
     return (
         <Animated.View style={[collapsableStyle, containerStyle]}>
             <View
                 style={styles.wrapper}
                 onLayout={onLayout}
-                pointerEvents={expanded ? 'auto' : 'none'}
+                pointerEvents={isExpanded ? 'auto' : 'none'}
             >
                 {children}
             </View>

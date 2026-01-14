@@ -21,7 +21,7 @@ describe('RadioButton', () => {
         render(
             <RadioButton
                 title='Option 1'
-                selected={false}
+                isSelected={false}
                 onPress={onPress}
             />,
         )

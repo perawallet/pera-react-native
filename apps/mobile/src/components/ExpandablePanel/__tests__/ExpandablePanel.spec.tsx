@@ -18,7 +18,7 @@ import { Text } from 'react-native'
 describe('ExpandablePanel', () => {
     it('renders children', () => {
         render(
-            <ExpandablePanel expanded={true}>
+            <ExpandablePanel isExpanded={true}>
                 <Text>Panel Content</Text>
             </ExpandablePanel>,
         )

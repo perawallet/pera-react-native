@@ -119,7 +119,7 @@ const AccountAssetList = ({
                     contentContainerStyle={styles.rootContainer}
                     ListHeaderComponent={
                         <PWView style={styles.headerContainer}>
-                            <ExpandablePanel expanded={headerState.isOpen}>
+                            <ExpandablePanel isExpanded={headerState.isOpen}>
                                 {children}
                                 <PWView style={styles.titleBar}>
                                     <Text

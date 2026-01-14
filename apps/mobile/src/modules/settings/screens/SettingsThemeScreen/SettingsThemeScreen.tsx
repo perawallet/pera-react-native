@@ -26,17 +26,17 @@ const SettingsThemeScreen = () => {
             <RadioButton
                 title={t('settings.theme.system_label')}
                 onPress={() => setTheme('system')}
-                selected={!theme || theme === 'system'}
+                isSelected={!theme || theme === 'system'}
             />
             <RadioButton
                 title={t('settings.theme.light_label')}
                 onPress={() => setTheme('light')}
-                selected={theme === 'light'}
+                isSelected={theme === 'light'}
             />
             <RadioButton
                 title={t('settings.theme.dark_label')}
                 onPress={() => setTheme('dark')}
-                selected={theme === 'dark'}
+                isSelected={theme === 'dark'}
             />
         </PWView>
     )
