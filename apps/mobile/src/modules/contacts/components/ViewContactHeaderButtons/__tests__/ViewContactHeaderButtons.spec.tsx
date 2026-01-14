@@ -39,11 +39,11 @@ describe('ViewContactHeaderButtons', () => {
 
     it('navigates to EditContact screen on press', () => {
         render(<ViewContactHeaderButtons />)
-        
+
         // Find the icon button by its testId
         const iconButton = screen.getByTestId('icon-edit-pen')
         fireEvent.click(iconButton)
-        
+
         expect(mockNavigate).toHaveBeenCalledWith('EditContact')
     })
 

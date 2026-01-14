@@ -13,7 +13,10 @@
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import AccountWithBalance from '../AccountWithBalance'
-import { WalletAccount, useAccountBalancesQuery } from '@perawallet/wallet-core-accounts'
+import {
+    WalletAccount,
+    useAccountBalancesQuery,
+} from '@perawallet/wallet-core-accounts'
 import Decimal from 'decimal.js'
 
 const mockAccount = {
@@ -37,7 +40,9 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 
 describe('AccountWithBalance', () => {
     it('renders account display component', () => {
-        const { container } = render(<AccountWithBalance account={mockAccount} />)
+        const { container } = render(
+            <AccountWithBalance account={mockAccount} />,
+        )
         // The component should render the AccountDisplay with the account
         expect(container.textContent).toContain('Test Account')
     })
@@ -57,7 +62,9 @@ describe('AccountWithBalance', () => {
             isPending: false,
         } as ReturnType<typeof useAccountBalancesQuery>)
 
-        const { container } = render(<AccountWithBalance account={mockAccount} />)
+        const { container } = render(
+            <AccountWithBalance account={mockAccount} />,
+        )
         expect(container.textContent).toContain('Test Account')
     })
 

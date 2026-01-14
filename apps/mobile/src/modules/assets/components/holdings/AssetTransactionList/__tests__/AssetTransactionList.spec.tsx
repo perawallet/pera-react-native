@@ -18,12 +18,16 @@ import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 
 vi.mock('@shopify/flash-list', () => ({
-    FlashList: ({ ListHeaderComponent, ListEmptyComponent, children }: { 
+    FlashList: ({
+        ListHeaderComponent,
+        ListEmptyComponent,
+        children,
+    }: {
         ListHeaderComponent?: React.ReactNode
         ListEmptyComponent?: React.ReactNode
         children?: React.ReactNode
     }) => (
-        <div data-testid="flash-list">
+        <div data-testid='flash-list'>
             {ListHeaderComponent}
             {ListEmptyComponent}
             {children}

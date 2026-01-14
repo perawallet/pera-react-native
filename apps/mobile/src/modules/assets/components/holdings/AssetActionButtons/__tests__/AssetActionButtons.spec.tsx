@@ -19,7 +19,8 @@ const mockNavigate = vi.fn()
 const mockReplace = vi.fn()
 
 vi.mock('@react-navigation/native', async importOriginal => {
-    const actual = await importOriginal<typeof import('@react-navigation/native')>()
+    const actual =
+        await importOriginal<typeof import('@react-navigation/native')>()
     return {
         ...actual,
         useNavigation: () => ({
@@ -29,12 +30,18 @@ vi.mock('@react-navigation/native', async importOriginal => {
     }
 })
 
-vi.mock('@modules/transactions/components/SendFunds/PWBottomSheet/SendFundsBottomSheet', () => ({
-    default: () => null,
-}))
-vi.mock('@modules/transactions/components/ReceiveFunds/PWBottomSheet/ReceiveFundsBottomSheet', () => ({
-    default: () => null,
-}))
+vi.mock(
+    '@modules/transactions/components/SendFunds/PWBottomSheet/SendFundsBottomSheet',
+    () => ({
+        default: () => null,
+    }),
+)
+vi.mock(
+    '@modules/transactions/components/ReceiveFunds/PWBottomSheet/ReceiveFundsBottomSheet',
+    () => ({
+        default: () => null,
+    }),
+)
 
 const mockAsset = {
     assetId: '123',
@@ -50,7 +57,7 @@ describe('AssetActionButtons', () => {
 
     it('renders all action buttons', () => {
         const { container } = render(<AssetActionButtons asset={mockAsset} />)
-        
+
         const text = container.textContent?.toLowerCase() || ''
         expect(text).toContain('swap')
         expect(text).toContain('send')
@@ -59,15 +66,17 @@ describe('AssetActionButtons', () => {
 
     it('navigates to swap screen when swap button is pressed', () => {
         const { container } = render(<AssetActionButtons asset={mockAsset} />)
-        
+
         // Find swap button by text content and click
         const buttons = container.querySelectorAll('button')
-        const swapButton = Array.from(buttons).find(btn => 
-            btn.textContent?.toLowerCase().includes('swap')
+        const swapButton = Array.from(buttons).find(btn =>
+            btn.textContent?.toLowerCase().includes('swap'),
         )
         if (swapButton) {
             fireEvent.click(swapButton)
-            expect(mockReplace).toHaveBeenCalledWith('TabBar', { screen: 'Swap' })
+            expect(mockReplace).toHaveBeenCalledWith('TabBar', {
+                screen: 'Swap',
+            })
         }
     })
 

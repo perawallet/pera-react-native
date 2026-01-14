@@ -13,7 +13,10 @@
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import AccountAssetList from '../AccountAssetList'
-import { WalletAccount, useAccountBalancesQuery } from '@perawallet/wallet-core-accounts'
+import {
+    WalletAccount,
+    useAccountBalancesQuery,
+} from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { Text } from 'react-native'
 
@@ -37,12 +40,16 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 })
 
 vi.mock('@shopify/flash-list', () => ({
-    FlashList: ({ ListHeaderComponent, ListEmptyComponent, children }: { 
+    FlashList: ({
+        ListHeaderComponent,
+        ListEmptyComponent,
+        children,
+    }: {
         ListHeaderComponent?: React.ReactNode
         ListEmptyComponent?: React.ReactNode
         children?: React.ReactNode
     }) => (
-        <div data-testid="flash-list">
+        <div data-testid='flash-list'>
             {ListHeaderComponent}
             {ListEmptyComponent}
             {children}
@@ -67,9 +74,7 @@ describe('AccountAssetList', () => {
 
     it('renders empty state when no assets are present', () => {
         vi.mocked(useAccountBalancesQuery).mockReturnValue({
-            accountBalances: new Map([
-                ['test-address', { assetBalances: [] }],
-            ]),
+            accountBalances: new Map([['test-address', { assetBalances: [] }]]),
             isPending: false,
         } as unknown as ReturnType<typeof useAccountBalancesQuery>)
 

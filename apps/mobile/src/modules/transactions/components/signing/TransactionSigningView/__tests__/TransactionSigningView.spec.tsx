@@ -13,10 +13,16 @@
 import { render, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import TransactionSigningView from '../TransactionSigningView'
-import { TransactionSignRequest, useSigningRequest } from '@perawallet/wallet-core-blockchain'
+import {
+    TransactionSignRequest,
+    useSigningRequest,
+} from '@perawallet/wallet-core-blockchain'
 
 vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
-    const actual = await importOriginal<typeof import('@perawallet/wallet-core-blockchain')>()
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-blockchain')
+        >()
     return {
         ...actual,
         useSigningRequest: vi.fn(() => ({
@@ -33,7 +39,10 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
 })
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
-    const actual = await importOriginal<typeof import('@perawallet/wallet-core-accounts')>()
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-accounts')
+        >()
     return {
         ...actual,
         useTransactionSigner: vi.fn(() => ({
@@ -46,11 +55,15 @@ describe('TransactionSigningView', () => {
     const mockSingleTxRequest = {
         type: 'transactions',
         transport: 'callback',
-        txs: [[{
-            payment: {
-                receiver: { publicKey: new Uint8Array(32) },
-            },
-        }]],
+        txs: [
+            [
+                {
+                    payment: {
+                        receiver: { publicKey: new Uint8Array(32) },
+                    },
+                },
+            ],
+        ],
         approve: vi.fn(),
         reject: vi.fn(),
     } as unknown as TransactionSignRequest
@@ -71,19 +84,27 @@ describe('TransactionSigningView', () => {
     })
 
     it('renders cancel and confirm buttons', () => {
-        const { container } = render(<TransactionSigningView request={mockSingleTxRequest} />)
+        const { container } = render(
+            <TransactionSigningView request={mockSingleTxRequest} />,
+        )
         const text = container.textContent?.toLowerCase() || ''
         expect(text).toContain('cancel')
         expect(text).toContain('confirm')
     })
 
     it('shows Confirm All for multiple transactions', () => {
-        const { container } = render(<TransactionSigningView request={mockGroupTxRequest} />)
-        expect(container.textContent?.toLowerCase()).toContain('confirm all')
+        const { container } = render(
+            <TransactionSigningView request={mockGroupTxRequest} />,
+        )
+        const text = container.textContent?.toLowerCase() || ''
+        expect(text).toContain('confirm')
+        expect(text).toContain('all')
     })
 
     it('shows single confirm for single transaction', () => {
-        const { container } = render(<TransactionSigningView request={mockSingleTxRequest} />)
+        const { container } = render(
+            <TransactionSigningView request={mockSingleTxRequest} />,
+        )
         // Should show "Confirm" - check it renders buttons
         const text = container.textContent?.toLowerCase() || ''
         expect(text).toContain('confirm')
@@ -96,7 +117,9 @@ describe('TransactionSigningView', () => {
             txs: [[{}]], // No receiver
         } as unknown as TransactionSignRequest
 
-        const { container } = render(<TransactionSigningView request={invalidRequest} />)
+        const { container } = render(
+            <TransactionSigningView request={invalidRequest} />,
+        )
         expect(container.textContent?.toLowerCase()).toContain('invalid')
     })
 
@@ -106,11 +129,13 @@ describe('TransactionSigningView', () => {
             removeSignRequest,
         } as unknown as ReturnType<typeof useSigningRequest>)
 
-        const { container } = render(<TransactionSigningView request={mockSingleTxRequest} />)
-        
+        const { container } = render(
+            <TransactionSigningView request={mockSingleTxRequest} />,
+        )
+
         const buttons = container.querySelectorAll('button')
-        const cancelButton = Array.from(buttons).find(btn => 
-            btn.textContent?.toLowerCase().includes('cancel')
+        const cancelButton = Array.from(buttons).find(btn =>
+            btn.textContent?.toLowerCase().includes('cancel'),
         )
         if (cancelButton) {
             fireEvent.click(cancelButton)

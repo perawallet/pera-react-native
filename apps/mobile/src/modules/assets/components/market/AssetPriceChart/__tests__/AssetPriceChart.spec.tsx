@@ -13,7 +13,10 @@
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import AssetPriceChart from '../AssetPriceChart'
-import { PeraAsset, useAssetPriceHistoryQuery } from '@perawallet/wallet-core-assets'
+import {
+    PeraAsset,
+    useAssetPriceHistoryQuery,
+} from '@perawallet/wallet-core-assets'
 import Decimal from 'decimal.js'
 
 vi.mock('react-native-gifted-charts', () => ({
@@ -21,7 +24,8 @@ vi.mock('react-native-gifted-charts', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
-    const actual = await importOriginal<typeof import('@perawallet/wallet-core-assets')>()
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-assets')>()
     return {
         ...actual,
         useAssetPriceHistoryQuery: vi.fn(() => ({
@@ -89,9 +93,7 @@ describe('AssetPriceChart', () => {
 
     it('calls onSelectionChanged callback when provided', () => {
         const onSelectionChanged = vi.fn()
-        const mockData = [
-            { fiatPrice: new Decimal(100), datetime: new Date() },
-        ]
+        const mockData = [{ fiatPrice: new Decimal(100), datetime: new Date() }]
         vi.mocked(useAssetPriceHistoryQuery).mockReturnValue({
             data: mockData,
             isPending: false,

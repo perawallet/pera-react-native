@@ -15,6 +15,14 @@ import { describe, it, expect, vi } from 'vitest'
 import ArbitraryDataSigningView from '../ArbitraryDataSigningView'
 import { ArbitraryDataSignRequest } from '@perawallet/wallet-core-blockchain'
 
+// Correctly mock TabView and its static Item property
+const MockTabView = ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+)
+MockTabView.Item = ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+)
+
 vi.mock('@perawallet/wallet-core-blockchain', async () => ({
     useSigningRequest: vi.fn(() => ({
         removeSignRequest: vi.fn(),
@@ -26,22 +34,37 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
     useFindAccountByAddress: vi.fn(() => null),
 }))
 
-vi.mock('@modules/transactions/hooks/signing/use-arbitrary-data-signing-view', () => ({
-    useArbitraryDataSigningView: vi.fn(() => ({
-        approveRequest: vi.fn(),
-        rejectRequest: vi.fn(),
-        isPending: false,
+vi.mock(
+    '@modules/transactions/hooks/signing/use-arbitrary-data-signing-view',
+    () => ({
+        useArbitraryDataSigningView: vi.fn(() => ({
+            approveRequest: vi.fn(),
+            rejectRequest: vi.fn(),
+            isPending: false,
+        })),
+    }),
+)
+
+vi.mock('@hooks/webview', () => ({
+    useWebView: vi.fn(() => ({
+        pushWebView: vi.fn(),
     })),
+}))
+
+vi.mock('../ArbitraryDataSigningDetailsView', () => ({
+    default: () => <div data-testid='details-view'>DetailsView</div>,
 }))
 
 describe('ArbitraryDataSigningView', () => {
     const mockSingleRequest = {
         type: 'arbitrary-data',
         transport: 'callback',
-        data: [{
-            signer: 'test-address',
-            message: 'Please sign this message',
-        }],
+        data: [
+            {
+                signer: 'test-address',
+                message: 'Please sign this message',
+            },
+        ],
         approve: vi.fn(),
         reject: vi.fn(),
     } as unknown as ArbitraryDataSignRequest
@@ -58,23 +81,36 @@ describe('ArbitraryDataSigningView', () => {
     } as unknown as ArbitraryDataSignRequest
 
     it('renders title for arbitrary data signing', () => {
-        const { container } = render(<ArbitraryDataSigningView request={mockSingleRequest} />)
-        expect(container).toBeTruthy()
+        const { container } = render(
+            <ArbitraryDataSigningView request={mockSingleRequest} />,
+        )
+        // Check for key part of title since we might be getting translation keys
+        expect(container.textContent?.toLowerCase()).toContain('sign')
     })
 
     it('renders cancel and confirm buttons', () => {
-        const { container } = render(<ArbitraryDataSigningView request={mockSingleRequest} />)
-        expect(container).toBeTruthy()
+        const { container } = render(
+            <ArbitraryDataSigningView request={mockSingleRequest} />,
+        )
+        const text = container.textContent?.toLowerCase() || ''
+        expect(text).toContain('cancel')
+        expect(text).toContain('confirm')
     })
 
     it('shows Confirm All for multiple sign requests', () => {
-        const { container } = render(<ArbitraryDataSigningView request={mockMultipleRequest} />)
-        expect(container).toBeTruthy()
+        const { container } = render(
+            <ArbitraryDataSigningView request={mockMultipleRequest} />,
+        )
+        const text = container.textContent?.toLowerCase() || ''
+        expect(text).toContain('confirm')
+        expect(text).toContain('all')
     })
 
     it('displays the message to be signed', () => {
-        const { container } = render(<ArbitraryDataSigningView request={mockSingleRequest} />)
-        expect(container).toBeTruthy()
+        const { container } = render(
+            <ArbitraryDataSigningView request={mockSingleRequest} />,
+        )
+        expect(container.textContent).toContain('Please sign this message')
     })
 
     it('renders source metadata when available', () => {
@@ -86,7 +122,9 @@ describe('ArbitraryDataSigningView', () => {
             },
         } as unknown as ArbitraryDataSignRequest
 
-        const { container } = render(<ArbitraryDataSigningView request={requestWithMetadata} />)
-        expect(container).toBeTruthy()
+        const { container } = render(
+            <ArbitraryDataSigningView request={requestWithMetadata} />,
+        )
+        expect(container.textContent).toContain('Test DApp')
     })
 })

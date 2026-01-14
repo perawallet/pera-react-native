@@ -18,6 +18,10 @@ vi.mock('@perawallet/wallet-core-walletconnect', async () => ({
     useWalletConnect: vi.fn(() => ({
         disconnect: vi.fn(),
     })),
+    AlgorandPermission: {
+        TX_PERMISSION: 'algo_signTxn',
+        DATA_PERMISSION: 'algo_signData',
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async () => ({
@@ -25,7 +29,9 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
 }))
 
 vi.mock('react-native-gesture-handler', () => ({
-    ScrollView: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    ScrollView: ({ children }: { children: React.ReactNode }) => (
+        <div>{children}</div>
+    ),
 }))
 
 const mockSession = {
@@ -47,37 +53,69 @@ const mockSession = {
 
 const mockRoute = {
     params: { session: mockSession },
-} as any
+} as any // eslint-disable-line @typescript-eslint/no-explicit-any
 
-const mockNavigation = {} as any
+const mockNavigation = {} as any // eslint-disable-line @typescript-eslint/no-explicit-any
+
+// Mock the image component to avoid issues
+vi.mock('react-native', async importOriginal => {
+    const actual = await importOriginal<typeof import('react-native')>()
+    return {
+        ...actual,
+        Image: (
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            props: any,
+        ) => (
+            <div
+                data-testid='image'
+                {...props}
+            />
+        ),
+    }
+})
 
 describe('SettingsWalletConnectDetailsScreen', () => {
     it('renders session details with app name', () => {
         const { container } = render(
-            <SettingsWalletConnectDetailsScreen route={mockRoute} navigation={mockNavigation} />
+            <SettingsWalletConnectDetailsScreen
+                route={mockRoute}
+                navigation={mockNavigation}
+            />,
         )
-        expect(container).toBeTruthy()
+        expect(container.textContent).toContain('Test DApp')
     })
 
     it('displays session URL', () => {
         const { container } = render(
-            <SettingsWalletConnectDetailsScreen route={mockRoute} navigation={mockNavigation} />
+            <SettingsWalletConnectDetailsScreen
+                route={mockRoute}
+                navigation={mockNavigation}
+            />,
         )
-        expect(container).toBeTruthy()
+        expect(container.textContent).toContain('https://test.com')
     })
 
     it('shows delete button', () => {
         const { container } = render(
-            <SettingsWalletConnectDetailsScreen route={mockRoute} navigation={mockNavigation} />
+            <SettingsWalletConnectDetailsScreen
+                route={mockRoute}
+                navigation={mockNavigation}
+            />,
         )
-        expect(container).toBeTruthy()
+        // Check for text (likely 'Disconnect' or translated key)
+        expect(container.textContent?.toLowerCase()).toMatch(
+            /delete|disconnect/,
+        )
     })
 
     it('displays version badge', () => {
         const { container } = render(
-            <SettingsWalletConnectDetailsScreen route={mockRoute} navigation={mockNavigation} />
+            <SettingsWalletConnectDetailsScreen
+                route={mockRoute}
+                navigation={mockNavigation}
+            />,
         )
-        expect(container).toBeTruthy()
+        expect(container.textContent).toContain('WCV2')
     })
 
     it('handles session without icon gracefully', () => {
@@ -91,10 +129,15 @@ describe('SettingsWalletConnectDetailsScreen', () => {
                 },
             },
         }
-        const routeWithoutIcon = { params: { session: sessionWithoutIcon } } as any
+        const routeWithoutIcon = {
+            params: { session: sessionWithoutIcon },
+        } as any // eslint-disable-line @typescript-eslint/no-explicit-any
 
         const { container } = render(
-            <SettingsWalletConnectDetailsScreen route={routeWithoutIcon} navigation={mockNavigation} />,
+            <SettingsWalletConnectDetailsScreen
+                route={routeWithoutIcon}
+                navigation={mockNavigation}
+            />,
         )
         expect(container).toBeTruthy()
     })

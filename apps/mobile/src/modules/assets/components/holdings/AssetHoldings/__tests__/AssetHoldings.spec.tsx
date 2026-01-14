@@ -14,7 +14,10 @@ import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import AssetHoldings from '../AssetHoldings'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
-import { WalletAccount, useAccountAssetBalanceQuery } from '@perawallet/wallet-core-accounts'
+import {
+    WalletAccount,
+    useAccountAssetBalanceQuery,
+} from '@perawallet/wallet-core-accounts'
 import Decimal from 'decimal.js'
 
 const mockAsset = {
@@ -43,13 +46,15 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 
 // Mock complex children
 vi.mock('../AssetTransactionList/AssetTransactionList', () => ({
-    default: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    default: ({ children }: { children: React.ReactNode }) => (
+        <div>{children}</div>
+    ),
 }))
 vi.mock('../AssetWealthChart/AssetWealthChart', () => ({
-    default: () => <div data-testid="wealth-chart">WealthChart</div>,
+    default: () => <div data-testid='wealth-chart'>WealthChart</div>,
 }))
 vi.mock('../AssetActionButtons/AssetActionButtons', () => ({
-    default: () => <div data-testid="action-buttons">ActionButtons</div>,
+    default: () => <div data-testid='action-buttons'>ActionButtons</div>,
 }))
 
 describe('AssetHoldings', () => {

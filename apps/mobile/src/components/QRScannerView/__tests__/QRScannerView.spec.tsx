@@ -21,7 +21,7 @@ vi.mock('react-native-vision-camera', () => ({
         hasPermission: true,
         requestPermission: vi.fn(),
     }),
-    Camera: () => <div data-testid="camera">Camera</div>,
+    Camera: () => <div data-testid='camera'>Camera</div>,
     useCodeScanner: vi.fn(() => ({})),
 }))
 

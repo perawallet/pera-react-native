@@ -17,7 +17,8 @@ import { useAssetPriceHistoryQuery } from '@perawallet/wallet-core-assets'
 import Decimal from 'decimal.js'
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
-    const actual = await importOriginal<typeof import('@perawallet/wallet-core-assets')>()
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-assets')>()
     return {
         ...actual,
         useAssetPriceHistoryQuery: vi.fn(() => ({

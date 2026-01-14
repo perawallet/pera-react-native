@@ -23,9 +23,11 @@ vi.mock('@perawallet/wallet-core-walletconnect', async () => ({
 }))
 
 vi.mock('@shopify/flash-list', () => ({
-    FlashList: ({ ListEmptyComponent }: { ListEmptyComponent?: React.ReactNode }) => (
-        <div data-testid="flash-list">{ListEmptyComponent}</div>
-    ),
+    FlashList: ({
+        ListEmptyComponent,
+    }: {
+        ListEmptyComponent?: React.ReactNode
+    }) => <div data-testid='flash-list'>{ListEmptyComponent}</div>,
 }))
 
 vi.mock('@components/QRScannerView', () => ({

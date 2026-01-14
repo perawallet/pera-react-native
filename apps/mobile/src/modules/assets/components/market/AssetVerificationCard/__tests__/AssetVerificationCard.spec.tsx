@@ -22,7 +22,9 @@ describe('AssetVerificationCard', () => {
             name: 'Algorand',
         } as PeraAsset
 
-        const { container } = render(<AssetVerificationCard assetDetails={algoAsset} />)
+        const { container } = render(
+            <AssetVerificationCard assetDetails={algoAsset} />,
+        )
         expect(container).toBeTruthy()
         // Trusted content should be rendered
         expect(container.textContent?.toLowerCase()).toContain('trusted')
@@ -37,7 +39,9 @@ describe('AssetVerificationCard', () => {
             },
         } as unknown as PeraAsset
 
-        const { container } = render(<AssetVerificationCard assetDetails={verifiedAsset} />)
+        const { container } = render(
+            <AssetVerificationCard assetDetails={verifiedAsset} />,
+        )
         expect(container).toBeTruthy()
     })
 
@@ -50,7 +54,9 @@ describe('AssetVerificationCard', () => {
             },
         } as unknown as PeraAsset
 
-        const { container } = render(<AssetVerificationCard assetDetails={suspiciousAsset} />)
+        const { container } = render(
+            <AssetVerificationCard assetDetails={suspiciousAsset} />,
+        )
         expect(container).toBeTruthy()
     })
 
@@ -76,7 +82,9 @@ describe('AssetVerificationCard', () => {
             name: 'Algorand',
         } as PeraAsset
 
-        const { container } = render(<AssetVerificationCard assetDetails={algoAsset} />)
+        const { container } = render(
+            <AssetVerificationCard assetDetails={algoAsset} />,
+        )
         expect(container).toBeTruthy()
     })
 })

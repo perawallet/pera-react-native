@@ -38,7 +38,7 @@ describe('AccountSelection', () => {
                 testID='account-selection'
             />,
         )
-        
+
         expect(container).toBeTruthy()
     })
 

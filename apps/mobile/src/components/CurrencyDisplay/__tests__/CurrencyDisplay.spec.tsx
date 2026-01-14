@@ -11,7 +11,7 @@
  */
 
 import { render } from '@test-utils/render'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import CurrencyDisplay from '../CurrencyDisplay'
 import { Decimal } from 'decimal.js'
 

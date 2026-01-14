@@ -13,11 +13,14 @@
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import WealthTrend from '../WealthTrend'
-import { useAccountBalancesHistoryQuery, useAllAccounts } from '@perawallet/wallet-core-accounts'
+import { useAccountBalancesHistoryQuery } from '@perawallet/wallet-core-accounts'
 import Decimal from 'decimal.js'
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
-    const actual = await importOriginal<typeof import('@perawallet/wallet-core-accounts')>()
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-accounts')
+        >()
     return {
         ...actual,
         useAccountBalancesHistoryQuery: vi.fn(() => ({
@@ -31,8 +34,9 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 describe('WealthTrend', () => {
     it('renders empty when isPending is true', () => {
         vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
-            data: undefined,
-            isPending: true,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            data: undefined as any, // Changed to undefined to match test description, but with 'as any'
+            isPending: true, // Kept as true to match test description
         } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
 
         const { container } = render(<WealthTrend period='one-week' />)
@@ -78,6 +82,7 @@ describe('WealthTrend', () => {
 
         const { container } = render(
             <WealthTrend
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 account={mockAccount as any}
                 period='one-week'
             />,

@@ -116,6 +116,11 @@ vi.mock('@components/PWIcon/PWIcon', () => {
     }
 })
 
+// Mock react-native-ratings
+vi.mock('react-native-ratings', () => ({
+    Rating: vi.fn(() => null),
+}))
+
 // Clean up after each test
 afterEach(() => {
     vi.clearAllMocks()
@@ -247,6 +252,24 @@ vi.mock('react-native', () => {
                     require('react').createElement(
                         'img',
                         props,
+                        props.children,
+                    ),
+                ),
+            {
+                resolveAssetSource: vi.fn(() => ({
+                    uri: 'mock-image-uri',
+                    width: 100,
+                    height: 100,
+                })),
+            },
+        ),
+        ImageBackground: Object.assign(
+            vi
+                .fn()
+                .mockImplementation(props =>
+                    require('react').createElement(
+                        'div',
+                        { ...props, 'data-testid': 'ImageBackground' },
                         props.children,
                     ),
                 ),
@@ -814,6 +837,10 @@ vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     AlgorandChainId: {
         MainNet: 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k',
         TestNet: 'algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDe',
+    },
+    AlgorandPermission: {
+        TX_PERMISSION: 'algo_signTxn',
+        DATA_PERMISSION: 'algo_signData',
     },
 }))
 

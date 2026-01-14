@@ -183,13 +183,20 @@ export default defineConfig({
         ],
         preserveSymlinks: false,
     },
+    optimizeDeps: {
+        esbuildOptions: {
+            loader: {
+                '.js': 'jsx',
+            },
+        },
+    },
     test: {
         globals: true,
         environment: 'jsdom',
         setupFiles: ['./vitest.setup.ts'],
         server: {
             deps: {
-                inline: [/@react-navigation/],
+                inline: [/@react-navigation/, /react-native-ratings/],
             },
         },
     },

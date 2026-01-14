@@ -13,15 +13,21 @@
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import WealthChart from '../WealthChart'
-import { useAccountBalancesHistoryQuery, useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountBalancesHistoryQuery,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
 import Decimal from 'decimal.js'
 
 vi.mock('react-native-gifted-charts', () => ({
-    LineChart: () => <div data-testid="line-chart">LineChart</div>,
+    LineChart: () => <div data-testid='line-chart'>LineChart</div>,
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
-    const actual = await importOriginal<typeof import('@perawallet/wallet-core-accounts')>()
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-accounts')
+        >()
     return {
         ...actual,
         useAccountBalancesHistoryQuery: vi.fn(() => ({
@@ -89,10 +95,11 @@ describe('WealthChart', () => {
         vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
             data: mockData,
             isPending: false,
-        } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
+        } as any as ReturnType<typeof useAccountBalancesHistoryQuery>) // eslint-disable-line @typescript-eslint/no-explicit-any
 
         const { container } = render(
             <WealthChart
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 account={mockAccount as any}
                 period='one-week'
                 onSelectionChanged={vi.fn()}
@@ -105,7 +112,7 @@ describe('WealthChart', () => {
         vi.mocked(useAllAccounts).mockReturnValue([
             { address: 'addr1' },
             { address: 'addr2' },
-        ] as any)
+        ] as any) // eslint-disable-line @typescript-eslint/no-explicit-any
 
         vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
             data: [{ fiatValue: new Decimal(200), datetime: new Date() }],

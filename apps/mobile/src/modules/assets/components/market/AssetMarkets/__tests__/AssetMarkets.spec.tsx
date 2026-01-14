@@ -10,16 +10,41 @@
  limitations under the License
  */
 
-import { render, screen } from '@test-utils/render'
+import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import AssetMarkets from '../AssetMarkets'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 
-const mockAsset = {
-    assetId: '123',
-    name: 'TEST',
-    decimals: 6,
-} as unknown as PeraAsset
+// Use absolute paths with aliases to ensure accurate mocking
+vi.mock('@modules/assets/components/AssetTitle', () => ({
+    default: () => <div>AssetTitle</div>,
+}))
+vi.mock(
+    '@modules/assets/components/market/AssetPriceChart/AssetPriceChart',
+    () => ({ default: () => <div>AssetPriceChart</div> }),
+)
+vi.mock(
+    '@modules/assets/components/market/AssetMarketStats/AssetMarketStats',
+    () => ({ default: () => <div>AssetMarketStats</div> }),
+)
+vi.mock('@modules/assets/components/market/AssetAbout/AssetAbout', () => ({
+    default: () => <div>AssetAbout</div>,
+}))
+vi.mock(
+    '@modules/assets/components/market/AssetVerificationCard/AssetVerificationCard',
+    () => ({ default: () => <div>AssetVerificationCard</div> }),
+)
+vi.mock(
+    '@modules/assets/components/market/AssetDescription/AssetDescription',
+    () => ({ default: () => <div>AssetDescription</div> }),
+)
+vi.mock(
+    '@modules/assets/components/market/AssetSocialMedia/AssetSocialMedia',
+    () => ({ default: () => <div>AssetSocialMedia</div> }),
+)
+vi.mock('@modules/assets/components/market/PriceTrend/PriceTrend', () => ({
+    default: () => <div>PriceTrend</div>,
+}))
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
     const actual =
@@ -27,42 +52,40 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
     return {
         ...actual,
         useSingleAssetDetailsQuery: vi.fn(() => ({
-            data: { assetId: 123 },
+            data: { assetId: '123' },
             isPending: false,
             isError: false,
         })),
-        useAssetFiatPricesQuery: vi.fn(() => ({ data: new Map() })),
+        useAssetFiatPricesQuery: vi.fn(() => ({
+            data: new Map(),
+        })),
     }
 })
 
-vi.mock('../AssetPriceChart/AssetPriceChart', () => ({
-    default: () => <div>AssetPriceChart</div>,
+vi.mock('@hooks/chart-interaction', () => ({
+    useChartInteraction: () => ({
+        period: 'day',
+        setPeriod: vi.fn(),
+        selectedPoint: null,
+        setSelectedPoint: vi.fn(),
+    }),
 }))
-vi.mock('../AssetMarketStats/AssetMarketStats', () => ({
-    default: () => <div>AssetMarketStats</div>,
-}))
-vi.mock('../AssetAbout/AssetAbout', () => ({ default: () => <div>AssetAbout</div> }))
-vi.mock('../AssetVerificationCard/AssetVerificationCard', () => ({
-    default: () => <div>AssetVerificationCard</div>,
-}))
-vi.mock('../AssetDescription/AssetDescription', () => ({
-    default: () => <div>AssetDescription</div>,
-}))
-vi.mock('../AssetSocialMedia/AssetSocialMedia', () => ({
-    default: () => <div>AssetSocialMedia</div>,
-}))
-vi.mock('../PriceTrend/PriceTrend', () => ({ default: () => <div>PriceTrend</div> }))
+
+const mockAsset = {
+    assetId: '123',
+    name: 'Test Asset',
+    unitName: 'TEST',
+} as PeraAsset
 
 describe('AssetMarkets', () => {
     it('renders all sections correctly', () => {
-        render(<AssetMarkets asset={mockAsset} />)
-        
-        // Check for presence of mocked children as text since they return strings in mocks
-        expect(screen.getByText('AssetPriceChart')).toBeTruthy()
-        expect(screen.getByText('AssetMarketStats')).toBeTruthy()
-        expect(screen.getByText('AssetAbout')).toBeTruthy()
-        expect(screen.getByText('AssetVerificationCard')).toBeTruthy()
-        expect(screen.getByText('AssetDescription')).toBeTruthy()
-        expect(screen.getByText('AssetSocialMedia')).toBeTruthy()
+        const { container } = render(<AssetMarkets asset={mockAsset} />)
+
+        expect(container.textContent).toContain('AssetTitle')
+        expect(container.textContent).toContain('AssetMarketStats')
+        expect(container.textContent).toContain('AssetAbout')
+        expect(container.textContent).toContain('AssetVerificationCard')
+        expect(container.textContent).toContain('AssetDescription')
+        expect(container.textContent).toContain('AssetSocialMedia')
     })
 })

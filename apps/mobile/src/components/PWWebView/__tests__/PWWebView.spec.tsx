@@ -15,15 +15,15 @@ import { describe, it, expect, vi } from 'vitest'
 import PWWebView from '../PWWebView'
 
 vi.mock('react-native-webview', () => ({
-    WebView: () => <div data-testid="webview">WebView</div>,
+    WebView: () => <div data-testid='webview'>WebView</div>,
 }))
 
 vi.mock('../WebViewTitleBar', () => ({
-    default: () => <div data-testid="title-bar">TitleBar</div>,
+    default: () => <div data-testid='title-bar'>TitleBar</div>,
 }))
 
 vi.mock('../WebViewFooterBar', () => ({
-    default: () => <div data-testid="footer-bar">FooterBar</div>,
+    default: () => <div data-testid='footer-bar'>FooterBar</div>,
 }))
 
 describe('PWWebView', () => {
