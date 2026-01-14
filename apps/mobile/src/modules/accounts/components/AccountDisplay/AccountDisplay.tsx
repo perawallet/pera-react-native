@@ -18,7 +18,7 @@ import {
 import PWView, { PWViewProps } from '@components/PWView'
 import { useStyles } from './styles'
 
-import AccountIcon, { AccountIconProps } from '../account-icon/AccountIcon'
+import AccountIcon, { AccountIconProps } from '../AccountIcon'
 import PWIcon from '@components/PWIcon'
 
 type AccountDisplayProps = {

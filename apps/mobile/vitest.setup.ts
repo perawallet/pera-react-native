@@ -139,6 +139,11 @@ vi.mock('react-native', () => {
                     )
                 },
             ),
+        KeyboardAvoidingView: vi
+            .fn()
+            .mockImplementation(props =>
+                require('react').createElement('div', props, props.children),
+            ),
         View: vi
             .fn()
             .mockImplementation(props =>
@@ -559,3 +564,93 @@ vi.mock('react-native-notifier', () => {
         },
     }
 })
+
+// Mock @perawallet/wallet-core-settings
+vi.mock('@perawallet/wallet-core-settings', () => {
+    return {
+        useSettings: vi.fn(() => ({
+            theme: 'light',
+            privacyMode: false,
+            setPrivacyMode: vi.fn(),
+            setTheme: vi.fn(),
+        })),
+        usePreferences: vi.fn(() => ({
+            getPreference: vi.fn(),
+            setPreference: vi.fn(),
+        })),
+    }
+})
+
+// Mock @perawallet/wallet-core-platform-integration
+vi.mock('@perawallet/wallet-core-platform-integration', () => {
+    return {
+        useDeviceInfoService: vi.fn(() => ({
+            getDeviceLocale: vi.fn(() => 'en-US'),
+        })),
+        useNetwork: vi.fn(() => ({
+            network: 'mainnet',
+        })),
+        RemoteConfigDefaults: {
+            welcome_message: 'Hello',
+        },
+        AnalyticsServiceContainerKey: 'AnalyticsService',
+    }
+})
+
+// Mock @hooks/theme only if needed, but not globally to avoid breaking its own tests
+// Components that need it should mock it locally or we can use a more surgical approach.
+
+// Mock common SVG files to avoid InvalidCharacterError and loading issues
+vi.mock('@assets/icons/algo.svg', () => {
+    const React = require('react')
+    return {
+        default: (props: any) =>
+            React.createElement('div', {
+                ...props,
+                'data-testid': 'SvgIcon',
+            }),
+    }
+})
+
+vi.mock('@assets/icons/assets/algo.svg', () => {
+    const React = require('react')
+    return {
+        default: (props: any) =>
+            React.createElement('div', {
+                ...props,
+                'data-testid': 'SvgIcon',
+            }),
+    }
+})
+
+// Mock react-native-svg as simple components
+vi.mock('react-native-svg', () => {
+    const React = require('react')
+    return {
+        default: (props: any) =>
+            React.createElement('svg', props, props.children),
+        Svg: (props: any) => React.createElement('svg', props, props.children),
+        Path: (props: any) => React.createElement('path', props, props.children),
+        Circle: (props: any) =>
+            React.createElement('circle', props, props.children),
+        Rect: (props: any) => React.createElement('rect', props, props.children),
+        G: (props: any) => React.createElement('g', props, props.children),
+        Defs: (props: any) => React.createElement('defs', props, props.children),
+        ClipPath: (props: any) =>
+            React.createElement('clipPath', props, props.children),
+    }
+})
+
+// Mock @shopify/flash-list
+vi.mock('@shopify/flash-list', () => {
+    const React = require('react');
+    return {
+        FlashList: ({ data, renderItem }: any) => {
+            return React.createElement(
+                'div',
+                { 'data-testid': 'FlashList' },
+                data?.map((item: any, index: number) => renderItem({ item, index }))
+            );
+        }
+    };
+});

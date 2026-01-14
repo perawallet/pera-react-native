@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import AssetIcon from '../asset-icon/AssetIcon'
+import AssetIcon from '../AssetIcon'
 import CurrencyDisplay from '@components/CurrencyDisplay'
 import PWView, { PWViewProps } from '@components/PWView'
 import { ALGO_ASSET_ID, useAssetsQuery } from '@perawallet/wallet-core-assets'

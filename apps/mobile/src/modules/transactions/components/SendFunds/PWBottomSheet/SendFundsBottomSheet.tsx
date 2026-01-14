@@ -16,19 +16,19 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import PWBottomSheet from '@components/PWBottomSheet'
 import EmptyView from '@components/EmptyView'
-import SendFundsAssetSelectionView from '../asset-selection/SendFundsAssetSelectionView'
-import SendFundsInputView from '../input-view/SendFundsInputView'
+import SendFundsAssetSelectionView from '../AssetSelection/SendFundsAssetSelectionView'
+import SendFundsInputView from '../InputView/SendFundsInputView'
 
 import { useContext, useLayoutEffect, useState } from 'react'
 import { useStyles } from './styles'
 import { useWindowDimensions } from 'react-native'
 import { TabView } from '@rneui/themed'
-import SendFundsSelectDestination from '../select-destination/SendFundsSelectDestination'
-import SendFundsTransactionConfirmation from '../transaction-confirmation/SendFundsTransactionConfirmation'
+import SendFundsSelectDestination from '../SelectDestination/SendFundsSelectDestination'
+import SendFundsTransactionConfirmation from '../TransactionConfirmation/SendFundsTransactionConfirmation'
 import SendFundsProvider, {
     SendFundsContext,
 } from '@modules/transactions/providers/SendFundsProvider'
-import { TransactionErrorBoundary } from '@modules/transactio../components/BaseErrorBoundary/TransactionErrorBoundary'
+import { TransactionErrorBoundary } from '@modules/transactions/components/BaseErrorBoundary/TransactionErrorBoundary'
 import { TAB_ANIMATION_CONFIG } from '@constants/ui'
 import { useLanguage } from '@hooks/language'
 

@@ -15,7 +15,7 @@ import PWView from '@components/PWView'
 import { useStyles } from './styles'
 import PWIcon from '@components/PWIcon'
 
-import AssetIcon from '../asset-icon/AssetIcon'
+import AssetIcon from '../AssetIcon'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 
 export type AssetSelectionProps = {

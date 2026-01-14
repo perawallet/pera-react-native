@@ -11,7 +11,7 @@
  */
 
 import { ActivityIndicator } from 'react-native'
-import PWView from '../PWView/PWView'
+import PWView from '../PWView'
 import { Skeleton, useTheme } from '@rneui/themed'
 import { useStyles } from './styles'
 

@@ -20,7 +20,7 @@ import {
 import PWButton from '@components/PWButton'
 import { useLanguage } from '@hooks/language'
 import { useStyles } from './styles'
-import AccountWithBalance from '../account-with-balance/AccountWithBalance'
+import AccountWithBalance from '../AccountWithBalance'
 
 type AccountsTabProps = {
     onSelected: (account: WalletAccount) => void

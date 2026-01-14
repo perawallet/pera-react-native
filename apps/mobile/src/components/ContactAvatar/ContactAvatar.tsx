@@ -14,8 +14,8 @@ import { Contact } from '@perawallet/wallet-core-contacts'
 import { Image, useTheme } from '@rneui/themed'
 import { SvgProps } from 'react-native-svg'
 import { useStyles } from './styles'
-import PWView from '../PWView/PWView'
-import PWIcon from '../PWIcon/PWIcon'
+import PWView from '../PWView'
+import PWIcon from '../PWIcon'
 
 type ContactAvatarProps = {
     size: 'small' | 'large'

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import PWView, { PWViewProps } from '../PWView/PWView'
+import PWView, { PWViewProps } from '../PWView'
 import { useStyles } from './styles'
 import { Text } from '@rneui/themed'
 

@@ -17,7 +17,7 @@ import {
 import PWView, { PWViewProps } from '@components/PWView'
 import { useStyles } from './styles'
 
-import AccountDisplay from '../account-display/AccountDisplay'
+import AccountDisplay from '../AccountDisplay'
 import CurrencyDisplay from '@components/CurrencyDisplay'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'

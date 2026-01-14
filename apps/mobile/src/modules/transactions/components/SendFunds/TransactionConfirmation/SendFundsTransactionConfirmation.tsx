@@ -28,7 +28,7 @@ import PWTouchableOpacity from '@components/PWTouchableOpacity'
 import { useStyles } from './styles'
 import PWButton from '@components/PWButton'
 import useToast from '@hooks/toast'
-import AddNotePanel from '../add-note-panel/AddNotePanel'
+import AddNotePanel from '../AddNotePanel'
 import PWIcon from '@components/PWIcon'
 import PWHeader from '@components/PWHeader'
 import {

@@ -11,12 +11,12 @@
  */
 
 import { useStyles } from './styles'
-import PWView from '../PWView/PWView'
+import PWView from '../PWView'
 import { Text } from '@rneui/themed'
 import PWTouchableOpacity, {
     type PWTouchableOpacityProps,
-} from '../PWTouchableOpacity/PWTouchableOpacity'
-import PWIcon, { IconName } from '../PWIcon/PWIcon'
+} from '../PWTouchableOpacity'
+import PWIcon, { IconName } from '../PWIcon'
 
 export type RoundButtonProps = {
     icon: IconName

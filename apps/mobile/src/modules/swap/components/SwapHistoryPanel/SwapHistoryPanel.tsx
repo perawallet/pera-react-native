@@ -16,7 +16,7 @@ import { ScrollView } from 'react-native'
 import { Text } from '@rneui/themed'
 import { useCallback } from 'react'
 
-import SwapPair from '../swap-pair/SwapPair'
+import SwapPair from '../SwapPair'
 import {
     ALGO_ASSET_ID,
     PeraAsset,

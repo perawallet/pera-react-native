@@ -11,8 +11,8 @@
  */
 
 import { Text } from '@rneui/themed'
-import PWIcon, { IconName } from '../PWIcon/PWIcon'
-import PWView from '../PWView/PWView'
+import PWIcon, { IconName } from '../PWIcon'
+import PWView from '../PWView'
 import { useStyles } from './styles'
 import { PropsWithChildren } from 'react'
 

@@ -14,7 +14,7 @@ import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
 import PWView from '@components/PWView'
 import PWIcon from '@components/PWIcon'
 import { useStyles } from './styles'
-import AssetIcon from '../asset-icon/AssetIcon'
+import AssetIcon from '../AssetIcon'
 import { Text, useTheme } from '@rneui/themed'
 import { useMemo } from 'react'
 

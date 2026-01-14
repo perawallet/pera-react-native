@@ -11,7 +11,7 @@
  */
 
 import { BottomSheet, BottomSheetProps } from '@rneui/themed'
-import PWView from '../PWView/PWView'
+import PWView from '../PWView'
 import { createRef, PropsWithChildren } from 'react'
 import { useStyles } from './styles'
 import { StyleProp, ViewStyle } from 'react-native'

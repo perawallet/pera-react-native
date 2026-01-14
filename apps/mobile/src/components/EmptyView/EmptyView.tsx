@@ -11,9 +11,9 @@
  */
 
 import { Text } from '@rneui/themed'
-import PWView, { PWViewProps } from '../PWView/PWView'
+import PWView, { PWViewProps } from '../PWView'
 import { useStyles } from './styles'
-import PWIcon, { IconName } from '../PWIcon/PWIcon'
+import PWIcon, { IconName } from '../PWIcon'
 
 export type EmptyViewProps = {
     title?: string

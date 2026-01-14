@@ -36,7 +36,7 @@ import PWCheckbox from '@components/PWCheckbox'
 import PWTouchableOpacity from '@components/PWTouchableOpacity'
 import { ScrollView } from 'react-native-gesture-handler'
 import useToast from '@hooks/toast'
-import PermissionItem from '../permission-item/PermissionItem'
+import PermissionItem from '../PermissionItem'
 import { bottomSheetNotifier } from '@components/PWBottomSheet'
 
 //TODO implement project validation using our backend to show a "verified" badge somewhere

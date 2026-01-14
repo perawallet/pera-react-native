@@ -13,7 +13,7 @@
 import { InputProps } from '@rneui/base'
 
 import { Input } from '@rneui/themed'
-import PWIcon from '../PWIcon/PWIcon'
+import PWIcon from '../PWIcon'
 import { useStyles } from './styles'
 
 type SearchInputProps = {} & Omit<InputProps, 'leftIcon' | 'rightIcon' | 'ref'>

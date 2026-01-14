@@ -14,7 +14,7 @@ import { useLanguage } from '@hooks/language'
 import { Tab, TabView } from '@rneui/themed'
 
 import { useStyles } from './styles'
-import PortfolioView from '../portfolio-view/PortfolioView'
+import PortfolioView from '../PortfolioView'
 import PWView from '@components/PWView'
 import { useEffect, useState } from 'react'
 import InboxTab from './InboxTab'

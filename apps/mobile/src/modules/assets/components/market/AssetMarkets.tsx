@@ -13,7 +13,7 @@
 import { ScrollView } from 'react-native'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
-import AssetTitle from '../asset-title/AssetTitle'
+import AssetTitle from '../AssetTitle'
 import RoundButton from '@components/RoundButton'
 import CurrencyDisplay from '@components/CurrencyDisplay'
 import AssetPriceChart from './asset-price-chart/AssetPriceChart'
