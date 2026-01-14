@@ -3,5 +3,12 @@
 source "https://rubygems.org"
 
 # gem "rails"
+# Gems for Ruby 3.4+ compatibility
+gem 'nkf'
+gem 'mutex_m'
+gem 'base64'
+gem 'bigdecimal'
+gem 'ostruct'
+
 gem 'cocoapods', '~> 1.15.2'
 gem 'fastlane'
