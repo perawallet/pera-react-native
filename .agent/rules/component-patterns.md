@@ -9,13 +9,31 @@ trigger: always_on
 Every component MUST follow this folder structure:
 
 ```
-ComponentName/              # PascalCase folder name
+ComponentName/              # PascalCase folder name (REQUIRED for components)
 ├── ComponentName.tsx       # Component file (same name as folder)
 ├── styles.ts               # Styles file at same level
 ├── index.ts                # Barrel file re-exporting the component
 ├── __tests__/              # Tests folder
 │   └── ComponentName.spec.tsx  # Test file (same name + .spec.tsx)
 └── SubComponent.tsx        # Subcomponents live here (NOT re-exported)
+```
+
+### Folder Naming Rules
+
+| Folder Type      | Case         | Example                                        |
+| ---------------- | ------------ | ---------------------------------------------- |
+| Component folder | `PascalCase` | `PWButton/`, `AccountCard/`, `SettingsScreen/` |
+| Grouping folder  | `kebab-case` | `signing/`, `market/`, `holdings/`             |
+| Utility folder   | `kebab-case` | `hooks/`, `utils/`, `providers/`               |
+
+**Grouping folders** organize multiple component folders but are NOT components themselves:
+
+```
+modules/transactions/components/
+├── signing/                    # Grouping folder (kebab-case)
+│   ├── BalanceImpactView/      # Component folder (PascalCase)
+│   └── TransactionSigningView/ # Component folder (PascalCase)
+└── TransactionIcon/            # Component folder (PascalCase)
 ```
 
 ### Barrel File Pattern
