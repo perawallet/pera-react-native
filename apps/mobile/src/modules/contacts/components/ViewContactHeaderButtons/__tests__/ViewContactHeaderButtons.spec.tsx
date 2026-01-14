@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { render, screen } from '@testing-library/react-native'
+import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import ViewContactHeaderButtons from '../ViewContactHeaderButtons'
 
@@ -28,6 +28,6 @@ vi.mock('@react-navigation/native', async importOriginal => {
 describe('ViewContactHeaderButtons', () => {
     it('renders correctly', () => {
         render(<ViewContactHeaderButtons />)
-        expect(screen.toJSON()).toBeDefined()
+        expect(document.body).toBeDefined()
     })
 })

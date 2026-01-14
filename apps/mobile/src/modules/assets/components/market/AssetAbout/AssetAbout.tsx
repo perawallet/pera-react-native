@@ -33,10 +33,14 @@ const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
     const { copyToClipboard } = useClipboard()
 
     const extractDomain = (url: string) => {
-        const urlObj = new URL(url)
-        return urlObj.hostname.startsWith('www.')
-            ? urlObj.hostname.slice(4)
-            : urlObj.hostname
+        try {
+            const urlObj = new URL(url)
+            return urlObj.hostname.startsWith('www.')
+                ? urlObj.hostname.slice(4)
+                : urlObj.hostname
+        } catch {
+            return url
+        }
     }
 
     const openLink = (url: string) => {
@@ -48,13 +52,19 @@ const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
 
     return (
         <View style={styles.container}>
-            {!!assetDetails.assetId && (
-                <Text style={styles.sectionTitle}>
-                    {t('asset_details.about.title', {
+            {!!assetDetails.peraMetadata?.description && (
+                <RowTitledItem
+                    title={t('asset_details.about.title', {
                         name: assetDetails.name,
                     })}
-                </Text>
+                    verticalAlignment='top'
+                >
+                    <Text style={styles.description}>
+                        {assetDetails.peraMetadata.description}
+                    </Text>
+                </RowTitledItem>
             )}
+
             {!!assetDetails.assetId &&
                 assetDetails.assetId !== ALGO_ASSET_ID && (
                     <RowTitledItem
@@ -117,6 +127,11 @@ const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                         onPress={() =>
                             assetDetails.peraMetadata?.explorerUrl &&
                             openLink(assetDetails.peraMetadata?.explorerUrl)
+                        }
+                        title={
+                            assetDetails.assetId === ALGO_ASSET_ID
+                                ? 'Algoscan'
+                                : 'Pera Explorer'
                         }
                         variant='link'
                         paddingStyle='none'

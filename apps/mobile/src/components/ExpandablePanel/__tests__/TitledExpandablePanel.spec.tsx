@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { render, fireEvent, screen } from '@testing-library/react-native'
+import { render, fireEvent, screen } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
 import TitledExpandablePanel from '../TitledExpandablePanel'
 import { Text } from 'react-native'
@@ -34,6 +34,6 @@ describe('TitledExpandablePanel', () => {
 
         // Initial state check might be hard via text visibility if it's just hidden via value
         // But we can check if press works without error
-        fireEvent.press(screen.getByText('My Panel'))
+        fireEvent.click(screen.getByText('My Panel'))
     })
 })

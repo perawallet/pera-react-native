@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { render, screen } from '@testing-library/react-native'
+import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import NavigationHeader from '../NavigationHeader'
 import { NativeStackHeaderProps } from '@react-navigation/native-stack'

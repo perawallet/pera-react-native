@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { render, screen } from '@testing-library/react-native'
+import { render, screen } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
 import AssetActionButtons from '../AssetActionButtons'
 import { mockedAsset } from '@perawallet/wallet-core-assets'
@@ -25,6 +25,6 @@ const mockAsset: any = {
 describe('AssetActionButtons', () => {
     it('renders correctly', () => {
         render(<AssetActionButtons asset={mockAsset} />)
-        expect(screen.toJSON()).toBeDefined()
+        expect(document.body).toBeDefined()
     })
 })

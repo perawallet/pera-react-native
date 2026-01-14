@@ -17,6 +17,84 @@ import 'reflect-metadata'
 import { vi, afterEach } from 'vitest'
 // import '@testing-library/jest-native/extend-expect'
 
+// Mock react-native-reanimated
+vi.mock('react-native-reanimated', () => {
+    const React = require('react')
+    const Reanimated = {
+        default: {
+            call: () => {},
+            createAnimatedComponent: (component: any) => component,
+            View: (props: any) =>
+                React.createElement('div', props, props.children),
+            Text: (props: any) =>
+                React.createElement('div', props, props.children),
+            Image: (props: any) => React.createElement('img', props),
+            ScrollView: (props: any) =>
+                React.createElement('div', props, props.children),
+            addWhitelistedNativeProps: () => {},
+            addWhitelistedUIProps: () => {},
+        },
+        useSharedValue: (v: any) => ({ value: v }),
+        useDerivedValue: (a: any) => ({ value: a() }),
+        useAnimatedStyle: () => ({}),
+        useAnimatedProps: () => ({}),
+        useAnimatedGestureHandler: () => {},
+        useAnimatedScrollHandler: () => {},
+        useAnimatedReaction: () => {},
+        withTiming: (toValue: any) => toValue,
+        withSpring: (toValue: any) => toValue,
+        withDecay: () => 0,
+        withDelay: (_: any, toValue: any) => toValue,
+        withSequence: (...args: any[]) => args[args.length - 1],
+        withRepeat: (anim: any) => anim,
+        runOnJS: (fn: any) => fn,
+        runOnUI: (fn: any) => fn,
+        makeMutable: (v: any) => ({ value: v }),
+        cancelAnimation: () => {},
+        interpolate: () => 0,
+        Extrapolate: { CLAMP: 'clamp' },
+        Layout: {
+            springify: () => ({ damping: () => ({}) }),
+        },
+        FadeIn: {
+            duration: () => ({}),
+        },
+        FadeInDown: {
+            duration: () => ({}),
+        },
+        FadeOut: {
+            duration: () => ({}),
+        },
+        SlideInDown: {
+            // Used in QRScannerView
+            springify: () => ({ damping: () => ({}) }),
+        },
+        SlideOutDown: {
+            springify: () => ({ damping: () => ({}) }),
+        },
+    }
+    return Reanimated
+})
+
+// Mock react-native-vision-camera
+vi.mock('react-native-vision-camera', () => {
+    console.log('Mocking react-native-vision-camera')
+    return {
+        Camera: vi.fn(),
+        useCameraDevice: vi.fn(() => ({
+            id: 'device-id',
+            devices: ['wide-angle-camera'],
+            hasFlash: true,
+            isMultiCam: false,
+        })),
+        useCameraPermission: vi.fn(() => ({
+            hasPermission: true,
+            requestPermission: vi.fn().mockResolvedValue(true),
+        })),
+        useCodeScanner: vi.fn(),
+    }
+})
+
 // Mock PWIcon component to avoid SVG import issues
 vi.mock('@components/PWIcon', () => {
     const React = require('react')
@@ -97,6 +175,15 @@ vi.mock('react-native', () => {
                 })),
             },
         },
+        I18nManager: {
+            isRTL: false,
+            allowRTL: vi.fn(),
+            forceRTL: vi.fn(),
+            swapLeftAndRightInRTL: vi.fn(),
+            getConstants: vi.fn(() => ({ isRTL: false })),
+        },
+        useColorScheme: vi.fn(() => 'light'),
+        useWindowDimensions: vi.fn(() => ({ width: 375, height: 812 })),
         Dimensions: {
             get: vi.fn(() => ({ width: 375, height: 812 })),
             addEventListener: vi.fn(),
@@ -154,11 +241,24 @@ vi.mock('react-native', () => {
             .mockImplementation(props =>
                 require('react').createElement('span', props, props.children),
             ),
-        Image: vi
-            .fn()
-            .mockImplementation(props =>
-                require('react').createElement('img', props, props.children),
-            ),
+        Image: Object.assign(
+            vi
+                .fn()
+                .mockImplementation(props =>
+                    require('react').createElement(
+                        'img',
+                        props,
+                        props.children,
+                    ),
+                ),
+            {
+                resolveAssetSource: vi.fn(source => ({
+                    uri: 'mock-image-uri',
+                    width: 100,
+                    height: 100,
+                })),
+            },
+        ),
         ScrollView: vi
             .fn()
             .mockImplementation(props =>
@@ -295,6 +395,16 @@ vi.mock('@react-navigation/native', () => ({
     }),
     useFocusEffect: vi.fn(),
     NavigationContainer: ({ children }: any) => children,
+    DefaultTheme: {
+        colors: {
+            primary: 'blue',
+            background: 'white',
+            card: 'white',
+            text: 'black',
+            border: 'gray',
+            notification: 'red',
+        },
+    },
 }))
 
 vi.mock('@react-navigation/bottom-tabs', () => ({
@@ -476,12 +586,68 @@ vi.mock('@rneui/themed', () => {
             md: 16,
             lg: 24,
             xl: 32,
-            '2xl': 40,
+            xxl: 36,
             '3xl': 48,
             '4xl': 56,
         },
         mode: 'light',
     }
+
+    // Tab mock component with Item subcomponent
+    const TabItem = (props: any) =>
+        React.createElement(
+            MockView,
+            { ...props, 'data-testid': 'Tab.Item' },
+            props.children,
+        )
+    const Tab = Object.assign(
+        (props: any) =>
+            React.createElement(
+                MockView,
+                { ...props, 'data-testid': 'Tab' },
+                props.children,
+            ),
+        { Item: TabItem },
+    )
+
+    // Dialog mock component with subcomponents
+    const DialogTitle = (props: any) =>
+        React.createElement(
+            MockText,
+            { ...props, 'data-testid': 'Dialog.Title' },
+            props.children,
+        )
+    const DialogButton = (props: any) =>
+        React.createElement(
+            MockView,
+            {
+                ...props,
+                'data-testid': 'Dialog.Button',
+                onClick: props.onPress,
+            },
+            props.title || props.children,
+        )
+    const DialogActions = (props: any) =>
+        React.createElement(
+            MockView,
+            { ...props, 'data-testid': 'Dialog.Actions' },
+            props.children,
+        )
+    const Dialog = Object.assign(
+        ({ isVisible, children, ...props }: any) =>
+            isVisible
+                ? React.createElement(
+                      MockView,
+                      { ...props, 'data-testid': 'Dialog' },
+                      children,
+                  )
+                : null,
+        {
+            Title: DialogTitle,
+            Button: DialogButton,
+            Actions: DialogActions,
+        },
+    )
 
     return {
         makeStyles: (styleFn: any) => (props: any) => {
@@ -515,8 +681,20 @@ vi.mock('@rneui/themed', () => {
                 { ...props, 'data-testid': 'RNEBadge' },
                 value || label || props.children,
             ),
-        Image: (props: any) =>
-            React.createElement('img', { ...props, 'data-testid': 'RNEImage' }),
+        Image: Object.assign(
+            (props: any) =>
+                React.createElement('img', {
+                    ...props,
+                    'data-testid': 'RNEImage',
+                }),
+            {
+                resolveAssetSource: (source: any) => ({
+                    uri: 'mock-image-uri',
+                    width: 100,
+                    height: 100,
+                }),
+            },
+        ),
         Skeleton: (props: any) =>
             React.createElement('div', {
                 ...props,
@@ -533,6 +711,24 @@ vi.mock('@rneui/themed', () => {
                   )
                 : null,
         Icon: (props: any) => React.createElement(MockView, props),
+        Tab,
+        TabView: Object.assign(
+            (props: any) =>
+                React.createElement(
+                    MockView,
+                    { ...props, 'data-testid': 'TabView' },
+                    props.children,
+                ),
+            {
+                Item: (props: any) =>
+                    React.createElement(
+                        MockView,
+                        { ...props, 'data-testid': 'TabView.Item' },
+                        props.children,
+                    ),
+            },
+        ),
+        Dialog,
         ListItem: Object.assign(
             (props: any) =>
                 React.createElement(MockView, props, props.children),
@@ -565,6 +761,108 @@ vi.mock('react-native-notifier', () => {
     }
 })
 
+// Mock @react-native-clipboard/clipboard
+vi.mock('@react-native-clipboard/clipboard', () => ({
+    default: {
+        setString: vi.fn(),
+        getString: vi.fn(),
+        hasString: vi.fn(),
+    },
+}))
+
+// Mock @perawallet/wallet-core-shared
+vi.mock('@perawallet/wallet-core-shared', () => ({
+    logger: {
+        debug: vi.fn(),
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+    },
+    truncateAlgorandAddress: vi.fn(a => a),
+    ALGO_EXPLORER_URL: 'https://explorer.perawallet.app',
+    Networks: { mainnet: 'mainnet', testnet: 'testnet' },
+    formatDatetime: vi.fn(d => String(d)),
+    formatCurrency: vi.fn(
+        (value, decimals, currency, locale) => `${currency || '$'}${value}`,
+    ),
+    formatWithUnits: vi.fn((value, decimals) => String(value)),
+    formatNumber: vi.fn((value, decimals) => String(value)),
+    AppError: class AppError extends Error {
+        constructor(message: string) {
+            super(message)
+            this.name = 'AppError'
+        }
+    },
+    ErrorSeverity: { LOW: 'low', MEDIUM: 'medium', HIGH: 'high' },
+    ErrorCategory: { WALLETCONNECT: 'walletconnect', UI: 'ui' },
+    ERROR_I18N_KEYS: {
+        WALLETCONNECT_INVALID_SESSION: 'walletconnect_invalid_session',
+        WALLETCONNECT_SIGN_REQUEST: 'walletconnect_sign_request',
+        WALLETCONNECT_PERMISSION: 'walletconnect_permission',
+        WALLETCONNECT_INVALID_NETWORK: 'walletconnect_invalid_network',
+    },
+    createLazyStore: vi.fn(createStore => ({
+        useStore: vi.fn(),
+        initStore: vi.fn(() => createStore()),
+    })),
+}))
+
+// Mock @perawallet/wallet-core-walletconnect
+vi.mock('@perawallet/wallet-core-walletconnect', () => ({
+    useWalletConnect: vi.fn(() => ({ connections: [] })),
+    useWalletConnectStore: vi.fn(),
+    initWalletConnectStore: vi.fn(),
+    AlgorandChainId: {
+        MainNet: 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k',
+        TestNet: 'algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDe',
+    },
+}))
+
+vi.mock('@perawallet/wallet-core-swaps', () => ({
+    useSwaps: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-polling', () => ({
+    usePolling: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-devtools', () => ({
+    useDevTools: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-kms', () => ({
+    useKMS: vi.fn(),
+    initKMSStore: vi.fn(),
+}))
+
+// Mock @perawallet/wallet-core-assets
+vi.mock('@perawallet/wallet-core-assets', () => ({
+    ALGO_ASSET_ID: '0',
+    ALGO_ASSET: {
+        assetId: '0',
+        name: 'Algo',
+        unitName: 'ALGO',
+        decimals: 6,
+        totalSupply: '10000000000000000000',
+        creator: { address: '' },
+        peraMetadata: { isDeleted: false, verificationTier: 'unverified' },
+    },
+    PeraAssetVerificationTier: {
+        verified: 'verified',
+        unverified: 'unverified',
+        suspicious: 'suspicious',
+    },
+    useAssetPriceHistoryQuery: vi.fn(() => ({ data: [], isPending: false })),
+    useAssetsQuery: vi.fn(() => ({ data: [], isPending: false })),
+    useAssetFiatPricesQuery: vi.fn(() => ({
+        data: new Map(),
+        isPending: false,
+    })),
+    useSingleAssetDetailsQuery: vi.fn(() => ({ data: null, isPending: false })),
+    useInvalidateAssetPrices: vi.fn(() => ({ invalidate: vi.fn() })),
+    initAssetsStore: vi.fn(),
+}))
+
 // Mock @perawallet/wallet-core-settings
 vi.mock('@perawallet/wallet-core-settings', () => {
     return {
@@ -581,24 +879,121 @@ vi.mock('@perawallet/wallet-core-settings', () => {
     }
 })
 
-// Mock @perawallet/wallet-core-platform-integration
-vi.mock('@perawallet/wallet-core-platform-integration', () => {
+// Mock @perawallet/wallet-core-accounts
+vi.mock('@perawallet/wallet-core-accounts', () => {
     return {
-        useDeviceInfoService: vi.fn(() => ({
-            getDeviceLocale: vi.fn(() => 'en-US'),
+        useAllAccounts: vi.fn(() => []),
+        useAccountBalancesQuery: vi.fn(() => ({ data: [], isPending: false })),
+        useSelectedAccount: vi.fn(() => null),
+        useSelectedAccountAddress: vi.fn(() => ({
+            selectedAccountAddress: null,
+            setSelectedAccountAddress: vi.fn(),
         })),
-        useNetwork: vi.fn(() => ({
-            network: 'mainnet',
+        useAccountBalancesHistoryQuery: vi.fn(() => ({
+            data: [],
+            isPending: false,
         })),
-        RemoteConfigDefaults: {
-            welcome_message: 'Hello',
-        },
-        AnalyticsServiceContainerKey: 'AnalyticsService',
+        useAccountsAssetsBalanceHistoryQuery: vi.fn(() => ({
+            data: [],
+            isPending: false,
+        })),
+        getAccountDisplayName: vi.fn(a => a?.name || ''),
+        // Account type functions with actual implementations
+        isLedgerAccount: vi.fn(
+            (account: any) =>
+                account?.type === 'hardware' &&
+                account?.hardwareDetails?.manufacturer === 'ledger',
+        ),
+        isRekeyedAccount: vi.fn((account: any) => !!account?.rekeyAddress),
+        isHDWalletAccount: vi.fn((account: any) => !!account?.hdWalletDetails),
+        isAlgo25Account: vi.fn((account: any) => account?.type === 'algo25'),
+        isWatchAccount: vi.fn((account: any) => account?.type === 'watch'),
+        isMultisigAccount: vi.fn(
+            (account: any) => account?.type === 'multisig',
+        ),
+        canSignWithAccount: vi.fn((account: any) => !!account?.canSign),
+        useAccountAssetBalanceQuery: vi.fn(() => ({
+            data: null,
+            isPending: false,
+        })),
+        ALGO_ASSET_ID: '0',
     }
 })
 
-// Mock @hooks/theme only if needed, but not globally to avoid breaking its own tests
-// Components that need it should mock it locally or we can use a more surgical approach.
+// Mock @perawallet/wallet-core-contacts
+vi.mock('@perawallet/wallet-core-contacts', () => ({
+    useContacts: vi.fn(() => ({
+        contacts: [],
+        findContacts: vi.fn(() => []),
+        addContact: vi.fn(),
+        removeContact: vi.fn(),
+        updateContact: vi.fn(),
+    })),
+    useContactsStore: vi.fn(() => ({
+        contacts: [],
+        addContact: vi.fn(),
+        removeContact: vi.fn(),
+        updateContact: vi.fn(),
+    })),
+    initContactsStore: vi.fn(),
+}))
+
+// Mock @perawallet/wallet-core-currencies
+vi.mock('@perawallet/wallet-core-currencies', () => ({
+    useCurrency: vi.fn(() => ({
+        preferredCurrency: 'USD',
+        portfolioFiatValue: '0',
+    })),
+}))
+
+// Mock @perawallet/wallet-core-blockchain
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useAlgorandClient: vi.fn(),
+    useSigningRequest: vi.fn(() => ({ addSignRequest: vi.fn() })),
+    useTransactionEncoder: vi.fn(() => ({ encodeSignedTransaction: vi.fn() })),
+    isValidAlgorandAddress: vi.fn(address => {
+        if (!address) return false
+        return new RegExp('^[0-9a-zA-Z]{58}$').test(address)
+    }),
+    encodeAlgorandAddress: vi.fn(bytes => 'MOCKADDRESS'),
+    initBlockchainStore: vi.fn(),
+}))
+
+// Mock @perawallet/wallet-core-platform-integration
+vi.mock('@perawallet/wallet-core-platform-integration', () => ({
+    useID: vi.fn(() => 'id'),
+    useDeviceID: vi.fn(() => 'device-id'),
+    useDeviceInfoService: vi.fn(() => ({
+        getDeviceLocale: vi.fn(() => 'en-US'),
+        getAppVersion: vi.fn(() => '1.0.0'),
+        getDevicePlatform: vi.fn(() => 'ios'),
+        getDeviceModel: vi.fn(() => 'iPhone'),
+        getUserAgent: vi.fn(() => 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0)'),
+    })),
+    useNetwork: vi.fn(() => ({
+        network: 'mainnet',
+    })),
+    useAnalyticsService: vi.fn(() => ({
+        logEvent: vi.fn(),
+    })),
+    RemoteConfigDefaults: {
+        welcome_message: 'Hello',
+    },
+    AnalyticsServiceContainerKey: 'AnalyticsService',
+}))
+
+// Mock react-native-advanced-input-mask
+vi.mock('react-native-advanced-input-mask', () => {
+    const React = require('react')
+    return {
+        MaskedTextInput: (props: any) =>
+            React.createElement('input', {
+                ...props,
+                'data-testid': 'masked-text-input',
+                type: 'text',
+            }),
+    }
+})
 
 // Mock common SVG files to avoid InvalidCharacterError and loading issues
 vi.mock('@assets/icons/algo.svg', () => {
@@ -644,6 +1039,18 @@ vi.mock('react-native-svg', () => {
     }
 })
 
+// Mock react-native-qrcode-svg (contains JSX in .js files)
+vi.mock('react-native-qrcode-svg', () => {
+    const React = require('react')
+    return {
+        default: (props: any) =>
+            React.createElement('svg', {
+                ...props,
+                'data-testid': 'QRCode',
+            }),
+    }
+})
+
 // Mock @shopify/flash-list
 vi.mock('@shopify/flash-list', () => {
     const React = require('react')
@@ -659,3 +1066,25 @@ vi.mock('@shopify/flash-list', () => {
         },
     }
 })
+
+vi.mock('react-native-gifted-charts', () => {
+    const React = require('react')
+    return {
+        LineChart: (props: any) =>
+            React.createElement('div', {
+                ...props,
+                'data-testid': 'LineChart',
+            }),
+        BarChart: (props: any) =>
+            React.createElement('div', { ...props, 'data-testid': 'BarChart' }),
+        PieChart: (props: any) =>
+            React.createElement('div', { ...props, 'data-testid': 'PieChart' }),
+    }
+})
+
+vi.mock('react-test-renderer', () => ({
+    create: vi.fn(() => ({
+        toJSON: vi.fn(() => ({})),
+        root: {},
+    })),
+}))

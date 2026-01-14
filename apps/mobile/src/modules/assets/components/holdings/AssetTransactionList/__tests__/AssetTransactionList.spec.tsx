@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { render, screen } from '@testing-library/react-native'
+import { render, screen } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
 import AssetTransactionList from '../AssetTransactionList'
 import { View } from 'react-native'
@@ -28,6 +28,6 @@ describe('AssetTransactionList', () => {
                 <View />
             </AssetTransactionList>,
         )
-        expect(screen.toJSON()).toBeDefined()
+        expect(document.body).toBeDefined()
     })
 })

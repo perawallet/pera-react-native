@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { render, screen } from '@testing-library/react-native'
+import { render, screen } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
 import AssetSocialMedia from '../AssetSocialMedia'
 
@@ -26,6 +26,6 @@ const mockDetails: any = {
 describe('AssetSocialMedia', () => {
     it('renders correctly', () => {
         render(<AssetSocialMedia assetDetails={mockDetails} />)
-        expect(screen.toJSON()).toBeDefined()
+        expect(document.body).toBeDefined()
     })
 })

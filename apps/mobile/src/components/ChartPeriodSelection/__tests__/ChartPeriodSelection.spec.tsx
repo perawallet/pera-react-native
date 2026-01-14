@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { render, fireEvent, screen } from '@testing-library/react-native'
+import { render, fireEvent, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import ChartPeriodSelection from '../ChartPeriodSelection'
 
@@ -38,7 +38,7 @@ describe('ChartPeriodSelection', () => {
             />,
         )
 
-        fireEvent.press(screen.getByText('chart.one_month.label'))
+        fireEvent.click(screen.getByText('chart.one_month.label'))
         expect(onChange).toHaveBeenCalledWith('one-month')
     })
 })

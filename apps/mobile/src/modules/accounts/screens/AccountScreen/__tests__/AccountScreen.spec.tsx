@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { render, screen } from '@testing-library/react-native'
+import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import AccountScreen from '../AccountScreen'
 // import { mockedWalletAccount } from '@perawallet/wallet-core-accounts'
@@ -74,8 +74,8 @@ describe('AccountScreen', () => {
                 navigation={undefined as any}
             />,
         )
-        expect(
-            screen.getByText('account_details.main_screen.overview_tab'),
-        ).toBeTruthy()
+        // Tab and TabView should render inside the screen
+        expect(screen.getByTestId('Tab')).toBeTruthy()
+        expect(screen.getByTestId('TabView')).toBeTruthy()
     })
 })

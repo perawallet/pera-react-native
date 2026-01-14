@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { render, screen } from '@testing-library/react-native'
+import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import AccountSelection from '../AccountSelection'
 
@@ -27,6 +27,6 @@ vi.mock('../AccountDisplay', () => ({
 describe('AccountSelection', () => {
     it('renders correctly', () => {
         render(<AccountSelection />)
-        expect(screen.toJSON()).toBeDefined()
+        expect(document.body).toBeDefined()
     })
 })

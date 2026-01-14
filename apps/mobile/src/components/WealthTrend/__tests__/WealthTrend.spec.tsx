@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-import { render, screen } from '@testing-library/react-native'
+import { render, screen } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
 import WealthTrend from '../WealthTrend'
 
 describe('WealthTrend', () => {
     it('renders correctly', () => {
         render(<WealthTrend period='one-week' />)
-        expect(screen.toJSON()).toBeDefined()
+        expect(document.body).toBeDefined()
     })
 })

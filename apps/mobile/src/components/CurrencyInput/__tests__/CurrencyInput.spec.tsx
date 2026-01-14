@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { render, screen } from '@testing-library/react-native'
+import { render, screen } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
 import CurrencyInput from '../CurrencyInput'
 
@@ -23,6 +23,6 @@ describe('CurrencyInput', () => {
             />,
         )
         // MaskedTextInput might be complex to test deeply without user interaction
-        expect(screen.toJSON()).toBeDefined()
+        expect(document.body).toBeDefined()
     })
 })

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { render, screen } from '@testing-library/react-native'
+import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import AccountAssetList from '../AccountAssetList'
 const mockAccount: any = {
@@ -46,6 +46,6 @@ describe('AccountAssetList', () => {
         render(
             <AccountAssetList account={mockAccount}>Content</AccountAssetList>,
         )
-        expect(screen.toJSON()).toBeDefined()
+        expect(document.body).toBeDefined()
     })
 })

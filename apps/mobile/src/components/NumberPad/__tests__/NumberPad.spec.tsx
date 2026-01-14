@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { render, fireEvent, screen } from '@testing-library/react-native'
+import { render, fireEvent, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import NumberPad from '../NumberPad'
 
@@ -26,7 +26,7 @@ describe('NumberPad', () => {
     it('calls onPress when key is pressed', () => {
         const onPress = vi.fn()
         render(<NumberPad onPress={onPress} />)
-        fireEvent.press(screen.getByText('5'))
+        fireEvent.click(screen.getByText('5'))
         expect(onPress).toHaveBeenCalledWith('5')
     })
 })

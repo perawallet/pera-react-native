@@ -22,10 +22,7 @@ export default defineConfig({
         alias: [
             {
                 find: 'react-native',
-                replacement: path.resolve(
-                    __dirname,
-                    './node_modules/react-native-web',
-                ),
+                replacement: 'react-native-web',
             },
             {
                 find: '@components',
@@ -190,5 +187,25 @@ export default defineConfig({
         globals: true,
         environment: 'jsdom',
         setupFiles: ['./vitest.setup.ts'],
+        server: {
+            deps: {
+                inline: [
+                    'react-native',
+                    /react-native-web/,
+                    /react-native-/,
+                    /@react-native/,
+                    /@react-navigation/,
+                    /@rneui/,
+                    /@walletconnect/,
+                    /@shopify\/flash-list/,
+                    /@testing-library\/react-native/,
+                    /@perawallet\//,
+                    'react-test-renderer',
+                    'uuid',
+                    'expo-linear-gradient',
+                    path.resolve(__dirname, '../../packages'),
+                ],
+            },
+        },
     },
 })

@@ -10,20 +10,19 @@
  limitations under the License
  */
 
-import { render, screen } from '@testing-library/react-native'
+import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import AddressEntryField from '../AddressEntryField'
 
 describe('AddressEntryField', () => {
     it('renders correctly', () => {
         render(<AddressEntryField />)
-        expect(screen.getByTestId('RNE__Input__text-input')).toBeTruthy()
+        // RNE Input renders an input element
+        expect(screen.getByRole('textbox')).toBeTruthy()
     })
 
     it('shows QR scanner icon when allowed', () => {
         render(<AddressEntryField allowQRCode />)
-        // Implementation detail: PWIcon renders likely an svg or icon
-        // We'll trust basic render for now as deep drilling depends on PWIcon mock
-        expect(screen.getByTestId('RNE__Input__text-input')).toBeTruthy()
+        expect(screen.getByRole('textbox')).toBeTruthy()
     })
 })

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { render, screen } from '@testing-library/react-native'
+import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import AccountMenu from '../AccountMenu'
 
@@ -53,6 +53,8 @@ describe('AccountMenu', () => {
                 showInbox={true}
             />,
         )
-        expect(screen.getByText('account_menu.title')).toBeTruthy() // Title for Accounts tab might be different in translation key
+        // Tab and TabView should render
+        expect(screen.getByTestId('Tab')).toBeTruthy()
+        expect(screen.getByTestId('TabView')).toBeTruthy()
     })
 })

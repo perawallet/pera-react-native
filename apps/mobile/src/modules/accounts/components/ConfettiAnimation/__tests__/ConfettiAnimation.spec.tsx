@@ -10,23 +10,22 @@
  limitations under the License
  */
 
-import { render, screen } from '@testing-library/react-native'
+import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import ConfettiAnimation from '../ConfettiAnimation'
 
 vi.mock('lottie-react-native', () => ({
-    default: 'LottieView',
+    default: () => <div data-testid='lottie-view' />,
 }))
 
 describe('ConfettiAnimation', () => {
     it('renders lottie view when playing', () => {
         render(<ConfettiAnimation play={true} />)
-        // With mock, it renders Text 'LottieView' or similar? No, standard mock returns element type 'LottieView'
-        expect(screen.toJSON()).toBeDefined()
+        expect(screen.getByTestId('lottie-view')).toBeTruthy()
     })
 
     it('returns null when not visible', () => {
-        render(<ConfettiAnimation play={false} />)
-        expect(screen.toJSON()).toBeNull()
+        const { container } = render(<ConfettiAnimation play={false} />)
+        expect(container.firstChild).toBeNull()
     })
 })
