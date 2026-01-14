@@ -15,7 +15,7 @@ import AlgoAssetIcon from '@assets/icons/assets/algo.svg'
 import { useMemo } from 'react'
 import { SvgProps } from 'react-native-svg'
 import { Image, Text } from '@rneui/themed'
-import PWView from '@components/view/PWView'
+import PWView from '@components/PWView'
 import { useStyles } from './styles'
 
 export type AssetIconProps = {

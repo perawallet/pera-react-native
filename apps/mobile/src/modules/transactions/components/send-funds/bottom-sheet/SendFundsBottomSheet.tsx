@@ -14,8 +14,8 @@ import {
     useAccountAssetBalanceQuery,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
-import PWBottomSheet from '@components/bottom-sheet/PWBottomSheet'
-import EmptyView from '@components/empty-view/EmptyView'
+import PWBottomSheet from '@components/PWBottomSheet'
+import EmptyView from '@components/EmptyView'
 import SendFundsAssetSelectionView from '../asset-selection/SendFundsAssetSelectionView'
 import SendFundsInputView from '../input-view/SendFundsInputView'
 
@@ -28,7 +28,7 @@ import SendFundsTransactionConfirmation from '../transaction-confirmation/SendFu
 import SendFundsProvider, {
     SendFundsContext,
 } from '@modules/transactions/providers/SendFundsProvider'
-import { TransactionErrorBoundary } from '@modules/transactions/components/error-boundaries/TransactionErrorBoundary'
+import { TransactionErrorBoundary } from '@modules/transactio../components/BaseErrorBoundary/TransactionErrorBoundary'
 import { TAB_ANIMATION_CONFIG } from '@constants/ui'
 import { useLanguage } from '@hooks/language'
 

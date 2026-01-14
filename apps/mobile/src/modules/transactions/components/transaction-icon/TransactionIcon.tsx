@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import PWIcon from '@components/icons/PWIcon'
+import PWIcon from '@components/PWIcon'
 
 import { SvgProps } from 'react-native-svg'
-import PWView from '@components/view/PWView'
+import PWView from '@components/PWView'
 import { useStyles } from './styles'
 
 //TODO support all tx types

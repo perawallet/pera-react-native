@@ -11,18 +11,18 @@
  */
 
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
-import PWBottomSheet from '@components/bottom-sheet/PWBottomSheet'
+import PWBottomSheet from '@components/PWBottomSheet'
 
 import { useState } from 'react'
 import { useStyles } from './styles'
 import { useWindowDimensions } from 'react-native'
 import { TabView } from '@rneui/themed'
-import { TransactionErrorBoundary } from '@modules/transactions/components/error-boundaries/TransactionErrorBoundary'
+import { TransactionErrorBoundary } from '@modules/transactio../components/BaseErrorBoundary/TransactionErrorBoundary'
 import { TAB_ANIMATION_CONFIG } from '@constants/ui'
 import { useLanguage } from '@hooks/language'
 import ReceiveFundsAccountSelectionView from '../account-selection/ReceiveFundsAccountSelectionView'
 import ReceiveFundsQRView from '../qr-view/ReceiveFundsQRView'
-import PWView from '@components/view/PWView'
+import PWView from '@components/PWView'
 
 type ReceiveFundsBottomSheetProps = {
     account?: WalletAccount

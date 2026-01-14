@@ -12,10 +12,10 @@
 
 import { useStyles } from './styles'
 import { formatNumber, formatWithUnits } from '@perawallet/wallet-core-shared'
-import CurrencyDisplay from '@components/currency-display/CurrencyDisplay'
+import CurrencyDisplay from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import { Text } from '@rneui/themed'
-import PWView from '@components/view/PWView'
+import PWView from '@components/PWView'
 import { useMemo } from 'react'
 import {
     PeraAsset,
@@ -23,7 +23,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useLanguage } from '@hooks/language'
-import InfoButton from '@components/info-button/InfoButton'
+import InfoButton from '@components/InfoButton'
 
 type AssetMarketStatsProps = {
     assetDetails: PeraAsset

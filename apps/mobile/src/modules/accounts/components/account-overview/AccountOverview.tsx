@@ -10,20 +10,20 @@
  limitations under the License
  */
 
-import PWView from '@components/view/PWView'
+import PWView from '@components/PWView'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
-import CurrencyDisplay from '@components/currency-display/CurrencyDisplay'
+import CurrencyDisplay from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
-import WealthChart from '@components/wealth-chart/WealthChart'
+import WealthChart from '@components/WealthChart'
 import ButtonPanel from '../button-panel/ButtonPanel'
 import AccountAssetList from '../asset-list/AccountAssetList'
 import { Text } from '@rneui/themed'
 import { useCallback, useState } from 'react'
 import { useChartInteraction } from '@hooks/chart-interaction'
 import { useStyles } from './styles'
-import PWTouchableOpacity from '@components/touchable-opacity/PWTouchableOpacity'
-import WealthTrend from '@components/wealth-trend/WealthTrend'
-import ChartPeriodSelection from '@components/chart-period-selection/ChartPeriodSelection'
+import PWTouchableOpacity from '@components/PWTouchableOpacity'
+import WealthTrend from '@components/WealthTrend'
+import ChartPeriodSelection from '@components/ChartPeriodSelection'
 import {
     AccountBalanceHistoryItem,
     useAccountBalancesQuery,
@@ -31,9 +31,9 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { usePreferences, useSettings } from '@perawallet/wallet-core-settings'
-import PWButton from '@components/button/PWButton'
+import PWButton from '@components/PWButton'
 import { UserPreferences } from '@constants/user-preferences'
-import ExpandablePanel from '@components/expandable-panel/ExpandablePanel'
+import ExpandablePanel from '@components/ExpandablePanel'
 
 type AccountOverviewProps = {
     account: WalletAccount

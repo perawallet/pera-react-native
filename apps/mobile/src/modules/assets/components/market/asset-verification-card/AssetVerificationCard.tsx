@@ -13,9 +13,9 @@
 import { useStyles } from './styles'
 import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
 import { Text, useTheme } from '@rneui/themed'
-import PWView from '@components/view/PWView'
-import PWIcon, { IconName } from '@components/icons/PWIcon'
-import PWButton from '@components/button/PWButton'
+import PWView from '@components/PWView'
+import PWIcon, { IconName } from '@components/PWIcon'
+import PWButton from '@components/PWButton'
 import { useMemo } from 'react'
 import { useLanguage } from '@hooks/language'
 

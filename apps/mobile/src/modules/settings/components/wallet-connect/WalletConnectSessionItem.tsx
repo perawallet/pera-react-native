@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-import PWBadge from '@components/badge/PWBadge'
-import PWView from '@components/view/PWView'
+import PWBadge from '@components/PWBadge'
+import PWView from '@components/PWView'
 import { WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
 import { Image, Text } from '@rneui/themed'
 import { useStyles } from './styles'
-import PWTouchableOpacity from '@components/touchable-opacity/PWTouchableOpacity'
-import PWIcon from '@components/icons/PWIcon'
+import PWTouchableOpacity from '@components/PWTouchableOpacity'
+import PWIcon from '@components/PWIcon'
 import { useLanguage } from '@hooks/language'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { ParamListBase, useNavigation } from '@react-navigation/native'

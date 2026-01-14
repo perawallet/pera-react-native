@@ -11,9 +11,9 @@
  */
 
 import { formatDatetime } from '@perawallet/wallet-core-shared'
-import PWView from '@components/view/PWView'
+import PWView from '@components/PWView'
 import AssetWealthChart from './asset-wealth-chart/AssetWealthChart'
-import ChartPeriodSelection from '@components/chart-period-selection/ChartPeriodSelection'
+import ChartPeriodSelection from '@components/ChartPeriodSelection'
 import { useMemo } from 'react'
 import { useChartInteraction } from '@hooks/chart-interaction'
 import AssetActionButtons from './asset-action-buttons/AssetActionButtons'
@@ -21,9 +21,9 @@ import AssetTransactionList from './asset-transaction-list/AssetTransactionList'
 
 import { useStyles } from './styles'
 import AssetTitle from '@modules/assets/components/asset-title/AssetTitle'
-import CurrencyDisplay from '@components/currency-display/CurrencyDisplay'
+import CurrencyDisplay from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
-import RoundButton from '@components/round-button/RoundButton'
+import RoundButton from '@components/RoundButton'
 import { Text } from '@rneui/themed'
 import {
     AccountBalanceHistoryItem,
@@ -34,7 +34,7 @@ import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
-import PWButton from '@components/button/PWButton'
+import PWButton from '@components/PWButton'
 
 type AssetHoldingsProps = {
     account: WalletAccount

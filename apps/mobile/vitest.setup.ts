@@ -17,9 +17,11 @@ import { vi, afterEach } from 'vitest'
 // import '@testing-library/jest-native/extend-expect'
 
 // Mock PWIcon component to avoid SVG import issues
-vi.mock('@components/icons/PWIcon', () => ({
+vi.mock('@components/PWIcon', () => ({
     default: () => null,
-    PWIcon: () => null,
+}))
+vi.mock('@components/PWIcon/PWIcon', () => ({
+    default: () => null,
 }))
 
 // Clean up after each test

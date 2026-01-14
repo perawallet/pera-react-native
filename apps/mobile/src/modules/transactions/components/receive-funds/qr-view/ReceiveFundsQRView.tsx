@@ -10,17 +10,17 @@
  limitations under the License
  */
 
-import PWView from '@components/view/PWView'
+import PWView from '@components/PWView'
 import { Text, useTheme } from '@rneui/themed'
 import {
     getAccountDisplayName,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import EmptyView from '@components/empty-view/EmptyView'
+import EmptyView from '@components/EmptyView'
 import { useLanguage } from '@hooks/language'
 import { useStyles } from './styles'
-import PWHeader from '@components/header/PWHeader'
-import PWButton from '@components/button/PWButton'
+import PWHeader from '@components/PWHeader'
+import PWButton from '@components/PWButton'
 import { Share, useWindowDimensions } from 'react-native'
 import useToast from '@hooks/toast'
 import { config } from '@perawallet/wallet-core-config'
@@ -28,7 +28,7 @@ import { useClipboard } from '@hooks/clipboard'
 import { useDeepLink } from '@hooks/deeplink'
 import { useMemo } from 'react'
 import QRCode from 'react-native-qrcode-svg'
-import { bottomSheetNotifier } from '@components/bottom-sheet/PWBottomSheet'
+import { bottomSheetNotifier } from '@components/PWBottomSheet'
 
 type ReceiveFundsQRViewProps = {
     account?: WalletAccount

@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import PWButton from '@components/button/PWButton'
-import EmptyView from '@components/empty-view/EmptyView'
-import QRScannerView from '@components/qr-scanner/QRScannerView'
-import PWView from '@components/view/PWView'
+import PWButton from '@components/PWButton'
+import EmptyView from '@components/EmptyView'
+import QRScannerView from '@components/QRScannerView'
+import PWView from '@components/PWView'
 import { useLanguage } from '@hooks/language'
 import { useModalState } from '@hooks/modal-state'
 import {
@@ -26,7 +26,7 @@ import WalletConnectSessionItem from '../../components/wallet-connect/WalletConn
 import { Dialog, Text, useTheme } from '@rneui/themed'
 import { useLayoutEffect, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
-import PWIcon from '@components/icons/PWIcon'
+import PWIcon from '@components/PWIcon'
 
 const renderItem = ({ item }: { item: WalletConnectConnection }) => {
     return <WalletConnectSessionItem session={item} />

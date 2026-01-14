@@ -11,7 +11,7 @@
  */
 
 import React, { PropsWithChildren, useEffect } from 'react'
-import PWBottomSheet from '@components/bottom-sheet/PWBottomSheet'
+import PWBottomSheet from '@components/PWBottomSheet'
 import SigningView from '@modules/transactions/components/signing/signing-view/SigningView'
 import { useWindowDimensions } from 'react-native'
 import { useSigningRequest } from '@perawallet/wallet-core-blockchain'

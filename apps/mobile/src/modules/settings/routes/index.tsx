@@ -11,7 +11,7 @@
  */
 
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
-import NavigationHeader from '@components/navigation-header/NavigationHeader'
+import NavigationHeader from '@components/NavigationHeader'
 import {
     createNativeStackNavigator,
     NativeStackHeaderProps,

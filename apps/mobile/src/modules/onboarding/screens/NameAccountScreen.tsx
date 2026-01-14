@@ -17,9 +17,9 @@ import {
 } from '@react-navigation/native-stack'
 import { useStyles } from './NameAccountScreen.styles'
 import { Input, Text } from '@rneui/themed'
-import PWView from '@components/view/PWView'
-import PWButton from '@components/button/PWButton'
-import PWIcon from '@components/icons/PWIcon'
+import PWView from '@components/PWView'
+import PWButton from '@components/PWButton'
+import PWIcon from '@components/PWIcon'
 
 import {
     useAllAccounts,

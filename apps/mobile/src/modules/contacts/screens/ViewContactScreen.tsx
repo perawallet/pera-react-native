@@ -10,12 +10,12 @@
  limitations under the License
  */
 
-import EmptyView from '@components/empty-view/EmptyView'
-import PWView from '@components/view/PWView'
+import EmptyView from '@components/EmptyView'
+import PWView from '@components/PWView'
 import { Text } from '@rneui/themed'
 import { useStyles } from './ViewContactScreen.styles'
-import ContactAvatar from '@components/contact-avatar/ContactAvatar'
-import AddressDisplay from '@components/address-display/AddressDisplay'
+import ContactAvatar from '@components/ContactAvatar'
+import AddressDisplay from '@components/AddressDisplay'
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import { useLanguage } from '@hooks/language'
 

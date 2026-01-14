@@ -14,15 +14,15 @@ import { Text } from '@rneui/themed'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/language'
 
-import PWView, { PWViewProps } from '@components/view/PWView'
-import CurrencyDisplay from '@components/currency-display/CurrencyDisplay'
-import WealthChart from '@components/wealth-chart/WealthChart'
+import PWView, { PWViewProps } from '@components/PWView'
+import CurrencyDisplay from '@components/CurrencyDisplay'
+import WealthChart from '@components/WealthChart'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { useCallback } from 'react'
 import { useChartInteraction } from '@hooks/chart-interaction'
-import WealthTrend from '@components/wealth-trend/WealthTrend'
-import ChartPeriodSelection from '@components/chart-period-selection/ChartPeriodSelection'
-import PWButton from '@components/button/PWButton'
+import WealthTrend from '@components/WealthTrend'
+import ChartPeriodSelection from '@components/ChartPeriodSelection'
+import PWButton from '@components/PWButton'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
     AccountBalanceHistoryItem,
@@ -31,8 +31,8 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
-import InfoButton from '@components/info-button/InfoButton'
-import ExpandablePanel from '@components/expandable-panel/ExpandablePanel'
+import InfoButton from '@components/InfoButton'
+import ExpandablePanel from '@components/ExpandablePanel'
 
 type PortfolioViewProps = {
     onDataSelected?: (selected: AccountBalanceHistoryItem | null) => void

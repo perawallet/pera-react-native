@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import PWView from '@components/view/PWView'
+import PWView from '@components/PWView'
 import FeatureFlagOverrides from '@modules/settings/components/feature-flag-overrides/FeatureFlagOverrides'
 import { useStyles } from './styles'
 

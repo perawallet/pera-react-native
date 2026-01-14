@@ -14,7 +14,7 @@ import { View } from 'react-native'
 import { Text } from '@rneui/themed'
 import { useStyles } from './styles'
 import { formatCurrency, HistoryPeriod } from '@perawallet/wallet-core-shared'
-import PWIcon from '@components/icons/PWIcon'
+import PWIcon from '@components/PWIcon'
 import Decimal from 'decimal.js'
 import { useMemo } from 'react'
 import {

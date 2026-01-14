@@ -13,7 +13,7 @@
 import { Text } from '@rneui/themed'
 
 import { useStyles } from './styles'
-import PWView from '@components/view/PWView'
+import PWView from '@components/PWView'
 import {
     Currency,
     useCurrenciesQuery,
@@ -22,8 +22,8 @@ import {
 import { useEffect, useState } from 'react'
 import { FlatList } from 'react-native'
 
-import RadioButton from '@components/radio-button/RadioButton'
-import SearchInput from '@components/search-input/SearchInput'
+import RadioButton from '@components/RadioButton'
+import SearchInput from '@components/SearchInput'
 import { useInvalidateAssetPrices } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/language'
 

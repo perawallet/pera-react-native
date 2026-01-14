@@ -11,12 +11,12 @@
  */
 
 import { useStyles } from './styles'
-import PWView from '@components/view/PWView'
+import PWView from '@components/PWView'
 import { Text } from '@rneui/themed'
 import { useCallback } from 'react'
 
 import SwapPair from '../swap-pair/SwapPair'
-import CurrencyDisplay from '@components/currency-display/CurrencyDisplay'
+import CurrencyDisplay from '@components/CurrencyDisplay'
 import {
     ALGO_ASSET_ID,
     PeraAsset,

@@ -10,12 +10,12 @@
  limitations under the License
  */
 
-import PWView from '@components/view/PWView'
+import PWView from '@components/PWView'
 import { useStyles } from './styles'
 import { Text } from '@rneui/themed'
-import CurrencyDisplay from '@components/currency-display/CurrencyDisplay'
+import CurrencyDisplay from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
-import PWIcon from '@components/icons/PWIcon'
+import PWIcon from '@components/PWIcon'
 import { useLanguage } from '@hooks/language'
 
 const AssetImpact = () => {

@@ -11,9 +11,9 @@
  */
 
 import { Text } from '@rneui/themed'
-import PWView from '@components/view/PWView'
+import PWView from '@components/PWView'
 import { useStyles } from './styles'
-import PWIcon from '@components/icons/PWIcon'
+import PWIcon from '@components/PWIcon'
 
 import AssetIcon from '../asset-icon/AssetIcon'
 import { PeraAsset } from '@perawallet/wallet-core-assets'

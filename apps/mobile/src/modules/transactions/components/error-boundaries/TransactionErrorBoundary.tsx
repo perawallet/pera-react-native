@@ -12,10 +12,10 @@
 
 import React, { ReactNode } from 'react'
 import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
-import { BaseErrorBoundary } from '@components/error-boundaries/BaseErrorBoundary'
+import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
 import { useLanguage } from '@hooks/language'
-import EmptyView from '@components/empty-view/EmptyView'
-import PWButton from '@components/button/PWButton'
+import EmptyView from '@components/EmptyView'
+import PWButton from '@components/PWButton'
 
 interface TransactionErrorBoundaryProps {
     children: ReactNode

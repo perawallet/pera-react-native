@@ -11,26 +11,26 @@
  */
 
 import { useContext, useMemo, useState } from 'react'
-import PWView from '@components/view/PWView'
+import PWView from '@components/PWView'
 import { SendFundsContext } from '@modules/transactions/providers/SendFundsProvider'
 import {
     DEFAULT_PRECISION,
     formatCurrency,
 } from '@perawallet/wallet-core-shared'
 
-import RowTitledItem from '@components/row-titled-item/RowTitledItem'
-import CurrencyDisplay from '@components/currency-display/CurrencyDisplay'
+import RowTitledItem from '@components/RowTitledItem'
+import CurrencyDisplay from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import AccountDisplay from '@modules/accounts/components/account-display/AccountDisplay'
-import AddressDisplay from '@components/address-display/AddressDisplay'
+import AddressDisplay from '@components/AddressDisplay'
 import { Divider, Text, useTheme } from '@rneui/themed'
-import PWTouchableOpacity from '@components/touchable-opacity/PWTouchableOpacity'
+import PWTouchableOpacity from '@components/PWTouchableOpacity'
 import { useStyles } from './styles'
-import PWButton from '@components/button/PWButton'
+import PWButton from '@components/PWButton'
 import useToast from '@hooks/toast'
 import AddNotePanel from '../add-note-panel/AddNotePanel'
-import PWIcon from '@components/icons/PWIcon'
-import PWHeader from '@components/header/PWHeader'
+import PWIcon from '@components/PWIcon'
+import PWHeader from '@components/PWHeader'
 import {
     useAccountAssetBalanceQuery,
     useSelectedAccount,
@@ -50,8 +50,8 @@ import {
     useAlgorandClient,
     useSuggestedParametersQuery,
 } from '@perawallet/wallet-core-blockchain'
-import LoadingView from '@components/loading/LoadingView'
-import { bottomSheetNotifier } from '@components/bottom-sheet/PWBottomSheet'
+import LoadingView from '@components/LoadingView'
+import { bottomSheetNotifier } from '@components/PWBottomSheet'
 
 type SendFundsTransactionConfirmationProps = {
     onNext: () => void

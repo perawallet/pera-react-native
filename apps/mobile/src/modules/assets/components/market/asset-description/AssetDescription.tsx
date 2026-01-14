@@ -11,9 +11,9 @@
  */
 
 import { useStyles } from './styles'
-import ExpandableText from '@components/expandable-text/ExpandableText'
+import ExpandableText from '@components/ExpandableText'
 import { Text } from '@rneui/themed'
-import PWView from '@components/view/PWView'
+import PWView from '@components/PWView'
 import { useLanguage } from '@hooks/language'
 
 type AssetDescriptionProps = {

@@ -11,11 +11,11 @@
  */
 
 import React, { createContext, PropsWithChildren, useState } from 'react'
-import PWBottomSheet from '@components/bottom-sheet/PWBottomSheet'
+import PWBottomSheet from '@components/PWBottomSheet'
 import { useWindowDimensions } from 'react-native'
-import PWWebView from '@components/webview/PWWebView'
+import PWWebView from '@components/PWWebView'
 import { v7 as uuidv7 } from 'uuid'
-import PWView from '@components/view/PWView'
+import PWView from '@components/PWView'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 type WebViewRequest = {

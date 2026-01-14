@@ -10,17 +10,15 @@
  limitations under the License
  */
 
-import PWBottomSheet, {
-    PWBottomSheetProps,
-} from '@components/bottom-sheet/PWBottomSheet'
+import PWBottomSheet, { PWBottomSheetProps } from '@components/PWBottomSheet'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { Text } from '@rneui/themed'
 import { useEffect, useState } from 'react'
-import PWIcon from '@components/icons/PWIcon'
-import PWButton from '@components/button/PWButton'
+import PWIcon from '@components/PWIcon'
+import PWButton from '@components/PWButton'
 import { UserPreferences } from '@constants/user-preferences'
 import { useStyles } from './styles'
-import PWView from '@components/view/PWView'
+import PWView from '@components/PWView'
 import { useLanguage } from '@hooks/language'
 import { useWebView } from '@hooks/webview'
 import { v7 as uuid } from 'uuid'

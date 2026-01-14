@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import PWButton from '@components/button/PWButton'
-import PWView from '@components/view/PWView'
+import PWButton from '@components/PWButton'
+import PWView from '@components/PWView'
 import {
     ArbitraryDataSignRequest,
     PeraArbitraryDataMessage,
@@ -25,7 +25,7 @@ import {
     useFindAccountByAddress,
 } from '@perawallet/wallet-core-accounts'
 import AccountDisplay from '@modules/accounts/components/account-display/AccountDisplay'
-import PWIcon from '@components/icons/PWIcon'
+import PWIcon from '@components/PWIcon'
 import { useWebView } from '@hooks/webview'
 import { v7 as uuid } from 'uuid'
 import { useArbitraryDataSigningView } from '@modules/transactions/hooks/signing/use-arbitrary-data-signing-view'

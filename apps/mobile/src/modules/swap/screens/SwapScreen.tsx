@@ -11,9 +11,9 @@
  */
 
 import { Text } from '@rneui/themed'
-import PWView from '@components/view/PWView'
+import PWView from '@components/PWView'
 import { useStyles } from './styles'
-import PWIcon from '@components/icons/PWIcon'
+import PWIcon from '@components/PWIcon'
 import PairSelectionPanel from '../components/pair-selection-panel/PairSelectionPanel'
 import SwapHistoryPanel from '../components/swap-history-panel/SwapHistoryPanel'
 import TopPairsPanel from '../components/top-pairs-panel/TopPairsPanel'

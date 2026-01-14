@@ -10,15 +10,15 @@
  limitations under the License
  */
 
-import PWTouchableOpacity from '@components/touchable-opacity/PWTouchableOpacity'
+import PWTouchableOpacity from '@components/PWTouchableOpacity'
 import AccountAssetItemView from '@modules/assets/components/asset-item/AccountAssetItemView'
-import PWView from '@components/view/PWView'
+import PWView from '@components/PWView'
 import { PropsWithChildren, useMemo, useState } from 'react'
 import { useStyles } from './styles'
 import { Text } from '@rneui/themed'
 
-import SearchInput from '@components/search-input/SearchInput'
-import PWButton from '@components/button/PWButton'
+import SearchInput from '@components/SearchInput'
+import PWButton from '@components/PWButton'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
@@ -27,11 +27,11 @@ import {
     AssetWithAccountBalance,
 } from '@perawallet/wallet-core-accounts'
 import { FlashList } from '@shopify/flash-list'
-import EmptyView from '@components/empty-view/EmptyView'
-import LoadingView from '@components/loading/LoadingView'
+import EmptyView from '@components/EmptyView'
+import LoadingView from '@components/LoadingView'
 import { useLanguage } from '@hooks/language'
 import { GestureResponderEvent, KeyboardAvoidingView } from 'react-native'
-import ExpandablePanel from '@components/expandable-panel/ExpandablePanel'
+import ExpandablePanel from '@components/ExpandablePanel'
 import { useModalState } from '@hooks/modal-state'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 

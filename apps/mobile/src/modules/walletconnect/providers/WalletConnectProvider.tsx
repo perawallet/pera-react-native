@@ -11,14 +11,14 @@
  */
 
 import React, { PropsWithChildren, useEffect } from 'react'
-import PWBottomSheet from '@components/bottom-sheet/PWBottomSheet'
+import PWBottomSheet from '@components/PWBottomSheet'
 import { useWindowDimensions } from 'react-native'
 import ConnectionView from '../components/connection-view/ConnectionView'
 import {
     useWalletConnect,
     useWalletConnectSessionRequests,
 } from '@perawallet/wallet-core-walletconnect'
-import { WalletConnectErrorBoundary } from '../components/error-boundaries/WalletConnectErrorBoundary'
+import { WalletConnectErrorBoundary } from '../components/BaseErrorBoundary/WalletConnectErrorBoundary'
 import { useLanguage } from '@hooks/language'
 
 type WalletConnectProviderProps = {} & PropsWithChildren

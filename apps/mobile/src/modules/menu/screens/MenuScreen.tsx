@@ -10,17 +10,17 @@
  limitations under the License
  */
 
-import PWView from '@components/view/PWView'
+import PWView from '@components/PWView'
 import { Text } from '@rneui/themed'
 import { useStyles } from './styles'
-import PWIcon from '@components/icons/PWIcon'
+import PWIcon from '@components/PWIcon'
 
-import PanelButton from '@components/panel-button/PanelButton'
+import PanelButton from '@components/PanelButton'
 import CardPanel from '../components/card-panel/CardPanel'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import PWTouchableOpacity from '@components/touchable-opacity/PWTouchableOpacity'
-import QRScannerView from '@components/qr-scanner/QRScannerView'
+import PWTouchableOpacity from '@components/PWTouchableOpacity'
+import QRScannerView from '@components/QRScannerView'
 import { useModalState } from '@hooks/modal-state'
 import { useLanguage } from '@hooks/language'
 import ReceiveFundsBottomSheet from '@modules/transactions/components/receive-funds/bottom-sheet/ReceiveFundsBottomSheet'

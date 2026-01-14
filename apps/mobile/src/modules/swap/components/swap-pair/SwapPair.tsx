@@ -11,7 +11,7 @@
  */
 
 import { useStyles } from './styles'
-import PWView from '@components/view/PWView'
+import PWView from '@components/PWView'
 import { ViewStyle } from 'react-native'
 import { Text } from '@rneui/themed'
 import AssetIcon from '@modules/assets/components/asset-icon/AssetIcon'

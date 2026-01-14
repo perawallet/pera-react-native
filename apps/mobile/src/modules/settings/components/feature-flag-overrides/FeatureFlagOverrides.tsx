@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import PWView from '@components/view/PWView'
+import PWView from '@components/PWView'
 import { RemoteConfigKeys } from '@perawallet/wallet-core-platform-integration'
 import { Switch, Text } from '@rneui/themed'
 import { useStyles } from './styles'

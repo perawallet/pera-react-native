@@ -11,9 +11,9 @@
  */
 
 import { useStyles } from './styles'
-import PWView from '@components/view/PWView'
+import PWView from '@components/PWView'
 import { useSettings } from '@perawallet/wallet-core-settings'
-import RadioButton from '@components/radio-button/RadioButton'
+import RadioButton from '@components/RadioButton'
 import { useLanguage } from '@hooks/language'
 
 const SettingsThemeScreen = () => {

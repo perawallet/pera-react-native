@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import CurrencyDisplay from '@components/currency-display/CurrencyDisplay'
-import EmptyView from '@components/empty-view/EmptyView'
+import CurrencyDisplay from '@components/CurrencyDisplay'
+import EmptyView from '@components/EmptyView'
 import TransactionIcon from '@modules/transactions/components/transaction-icon/TransactionIcon'
-import PWView from '@components/view/PWView'
+import PWView from '@components/PWView'
 import {
     encodeAlgorandAddress,
     TransactionSignRequest,
@@ -29,10 +29,10 @@ import { useStyles } from './styles'
 import BalanceImpactView from '../balance-impact/BalanceImpactView'
 import { useLanguage } from '@hooks/language'
 import useToast from '@hooks/toast'
-import PWButton from '@components/button/PWButton'
+import PWButton from '@components/PWButton'
 import { useTransactionSigner } from '@perawallet/wallet-core-accounts'
 import { config } from '@perawallet/wallet-core-config'
-import { bottomSheetNotifier } from '@components/bottom-sheet/PWBottomSheet'
+import { bottomSheetNotifier } from '@components/PWBottomSheet'
 
 type TransactionSigningViewProps = {
     request: TransactionSignRequest

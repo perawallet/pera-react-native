@@ -11,14 +11,14 @@
  */
 
 import AssetIcon from '../asset-icon/AssetIcon'
-import CurrencyDisplay from '@components/currency-display/CurrencyDisplay'
-import PWView, { PWViewProps } from '@components/view/PWView'
+import CurrencyDisplay from '@components/CurrencyDisplay'
+import PWView, { PWViewProps } from '@components/PWView'
 import { ALGO_ASSET_ID, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { Text, useTheme } from '@rneui/themed'
 import { useStyles } from './styles'
 import { useMemo } from 'react'
-import PWIcon from '@components/icons/PWIcon'
+import PWIcon from '@components/PWIcon'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 
 type AccountAssetItemViewProps = {

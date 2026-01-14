@@ -14,11 +14,11 @@ import {
     useAccountBalancesQuery,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import PWView, { PWViewProps } from '@components/view/PWView'
+import PWView, { PWViewProps } from '@components/PWView'
 import { useStyles } from './styles'
 
 import AccountDisplay from '../account-display/AccountDisplay'
-import CurrencyDisplay from '@components/currency-display/CurrencyDisplay'
+import CurrencyDisplay from '@components/CurrencyDisplay'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 

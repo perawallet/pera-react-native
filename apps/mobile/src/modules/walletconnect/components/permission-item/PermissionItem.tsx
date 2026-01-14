@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import PWIcon from '@components/icons/PWIcon'
-import PWView from '@components/view/PWView'
+import PWIcon from '@components/PWIcon'
+import PWView from '@components/PWView'
 import { Text } from '@rneui/themed'
 import { useStyles } from './styles'
 import { AlgorandPermission } from '@perawallet/wallet-core-walletconnect'
