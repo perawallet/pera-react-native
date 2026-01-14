@@ -50,11 +50,13 @@
 		5709B34CF0A7D63546082F79 /* Pods-mobile.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-mobile.release.xcconfig"; path = "Target Support Files/Pods-pera/Pods-mobile.release.xcconfig"; sourceTree = "<group>"; };
 		594D57512E8FDD1500D0DA38 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		5956385C5D594D168439900B /* Colors.xcassets */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = folder.assetcatalog; name = Colors.xcassets; path = pera/Colors.xcassets; sourceTree = "<group>"; };
-		59B13B462EF5996B00282240 /* pera.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = pera.entitlements; sourceTree = "<group>"; };
 		59B140BE2F16A5B600282240 /* Dev.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Dev.xcconfig; path = Config/Dev.xcconfig; sourceTree = "<group>"; };
 		59B140BF2F16A5B600282240 /* Production.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Production.xcconfig; path = Config/Production.xcconfig; sourceTree = "<group>"; };
 		59B140C02F16A5B600282240 /* Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Shared.xcconfig; path = Config/Shared.xcconfig; sourceTree = "<group>"; };
 		59B140C12F16A5B600282240 /* Staging.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Staging.xcconfig; path = Config/Staging.xcconfig; sourceTree = "<group>"; };
+		59B140C82F17801400282240 /* dev.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = dev.entitlements; path = pera/dev.entitlements; sourceTree = "<group>"; };
+		59B140C92F17802B00282240 /* production.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = production.entitlements; path = pera/production.entitlements; sourceTree = "<group>"; };
+		59B140CB2F17818E00282240 /* staging.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = staging.entitlements; path = pera/staging.entitlements; sourceTree = "<group>"; };
 		630D5D0F020E9AB53CC3AEED /* Pods-pera.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-pera.debug.xcconfig"; path = "Target Support Files/Pods-pera/Pods-pera.debug.xcconfig"; sourceTree = "<group>"; };
 		756DEB473739420CAC360BA1 /* DMMonoRegular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = DMMonoRegular.ttf; path = ../assets/fonts/DMMonoRegular.ttf; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = pera/AppDelegate.swift; sourceTree = "<group>"; };
@@ -84,6 +86,9 @@
 		13B07FAE1A68108700A75B9A /* pera */ = {
 			isa = PBXGroup;
 			children = (
+				59B140CB2F17818E00282240 /* staging.entitlements */,
+				59B140C92F17802B00282240 /* production.entitlements */,
+				59B140C82F17801400282240 /* dev.entitlements */,
 				594D57512E8FDD1500D0DA38 /* GoogleService-Info.plist */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				761780EC2CA45674006654EE /* AppDelegate.swift */,
@@ -119,7 +124,6 @@
 				59B140BF2F16A5B600282240 /* Production.xcconfig */,
 				59B140C02F16A5B600282240 /* Shared.xcconfig */,
 				59B140C12F16A5B600282240 /* Staging.xcconfig */,
-				59B13B462EF5996B00282240 /* pera.entitlements */,
 				13B07FAE1A68108700A75B9A /* pera */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
@@ -380,7 +384,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = pera.entitlements;
+				CODE_SIGN_ENTITLEMENTS = pera/dev.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 87QL82XC78;
 				ENABLE_BITCODE = NO;
@@ -398,6 +402,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.algorandllc.perarn.dev;
 				PRODUCT_NAME = pera;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -410,7 +415,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = pera.entitlements;
+				CODE_SIGN_ENTITLEMENTS = pera/production.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 87QL82XC78;
 				INFOPLIST_FILE = pera/Info.plist;
@@ -521,7 +526,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = pera.entitlements;
+				CODE_SIGN_ENTITLEMENTS = pera/staging.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 87QL82XC78;
 				INFOPLIST_FILE = pera/Info.plist;
