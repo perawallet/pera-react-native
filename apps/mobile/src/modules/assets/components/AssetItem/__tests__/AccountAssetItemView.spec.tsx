@@ -14,6 +14,7 @@ import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
 import { render, screen } from '@test-utils/render'
 import AccountAssetItemView from '../AccountAssetItemView'
+import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
     ALGO_ASSET_ID: 0,
@@ -51,7 +52,7 @@ describe('AccountAssetItemView', () => {
             assetId: 0,
             amount: '1000000',
             fiatValue: '100',
-        } as any
+        } as unknown as AssetWithAccountBalance
 
         render(<AccountAssetItemView accountBalance={accountBalance} />)
 
@@ -76,13 +77,14 @@ describe('AccountAssetItemView', () => {
                     },
                 ],
             ]),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any)
 
         const accountBalance = {
             assetId: 123,
             amount: '500',
             fiatValue: '50',
-        } as any
+        } as unknown as AssetWithAccountBalance
 
         render(<AccountAssetItemView accountBalance={accountBalance} />)
 

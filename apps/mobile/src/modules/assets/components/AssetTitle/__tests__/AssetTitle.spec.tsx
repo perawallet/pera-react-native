@@ -14,7 +14,7 @@ import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
 import { render, screen } from '@test-utils/render'
 import AssetTitle from '../AssetTitle'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
+import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
 
 // Mock AssetIcon to keep test focused
 vi.mock('../AssetIcon', () => ({
@@ -30,7 +30,7 @@ describe('AssetTitle', () => {
         const asset = {
             assetId: ALGO_ASSET_ID,
             name: 'Algorand',
-        } as any
+        } as unknown as PeraAsset
         render(<AssetTitle asset={asset} />)
 
         expect(screen.getByText('Algo')).toBeTruthy()
@@ -42,7 +42,7 @@ describe('AssetTitle', () => {
             assetId: 123,
             name: 'Test Asset',
             peraMetadata: { verificationTier: 'verified' },
-        } as any
+        } as unknown as PeraAsset
         render(<AssetTitle asset={asset} />)
 
         expect(screen.getByText('Test Asset')).toBeTruthy()
@@ -54,7 +54,7 @@ describe('AssetTitle', () => {
             assetId: 456,
             name: 'Bad Asset',
             peraMetadata: { verificationTier: 'suspicious' },
-        } as any
+        } as unknown as PeraAsset
         render(<AssetTitle asset={asset} />)
 
         expect(screen.getByText('Bad Asset')).toBeTruthy()

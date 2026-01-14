@@ -18,6 +18,7 @@ import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
 
 // Mock SVG
 vi.mock('@assets/icons/assets/algo.svg', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     default: (props: any) =>
         React.createElement('svg', { ...props, 'data-testid': 'ALGO_ICON' }),
 }))
