@@ -10,22 +10,37 @@
  limitations under the License
  */
 
-import { render } from '@test-utils/render'
-import { describe, it, expect } from 'vitest'
+import { render, fireEvent } from '@test-utils/render'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import InfoButton from '../InfoButton'
-import { Text } from 'react-native'
+
+// Mock dependencies
+const mockOpen = vi.fn()
+const mockClose = vi.fn()
+
+vi.mock('@hooks/modal-state', () => ({
+    useModalState: () => ({
+        isOpen: false,
+        open: mockOpen,
+        close: mockClose,
+    }),
+}))
 
 describe('InfoButton', () => {
-    it('opens bottom sheet on press', () => {
-        // Mock useModalState if needed, but integration test with real state is better if isolated
-        // Simple render test
-        render(
-            <InfoButton title='Info Title'>
-                <Text>Info Content</Text>
-            </InfoButton>,
-        )
-        // Check if icon is rendered
-        // Actually testing internal logic requires more setup or interaction
-        expect(true).toBe(true)
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    it('renders and handles press interaction', () => {
+        const { container } = render(<InfoButton title='Test Info' />)
+
+        // Use querySelector because the environment renders 'testid' instead of 'data-testid' for TouchableOpacity
+        const button = container.querySelector('[testid="info-button"]')
+        expect(button).toBeTruthy()
+
+        if (button) {
+            fireEvent.click(button)
+            expect(mockOpen).toHaveBeenCalledTimes(1)
+        }
     })
 })

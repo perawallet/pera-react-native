@@ -10,14 +10,18 @@
  limitations under the License
  */
 
-import { render } from '@test-utils/render'
+import { render, screen } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
 import PWIcon from '../PWIcon'
 
 describe('PWIcon', () => {
-    it('renders correctly', () => {
-        // This relies on svg mocking
-        render(<PWIcon name='algo' />)
-        expect(true).toBe(true)
+    it('renders correctly with testID', () => {
+        render(
+            <PWIcon
+                name='algo'
+                testID='algo-icon'
+            />,
+        )
+        expect(screen.getByTestId('algo-icon')).toBeTruthy()
     })
 })

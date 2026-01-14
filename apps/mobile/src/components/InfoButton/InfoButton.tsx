@@ -42,6 +42,7 @@ const InfoButton = ({
             <PWTouchableOpacity
                 style={styles.iconContainer}
                 onPress={bottomSheetState.open}
+                testID='info-button'
             >
                 <PWIcon
                     name='info'

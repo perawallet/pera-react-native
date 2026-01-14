@@ -11,4 +11,4 @@
  */
 
 export { default } from './PWIcon'
-export type { PWIconProps } from './PWIcon'
+export type { PWIconProps, PWIconSize, PWIconVariant } from './PWIcon'

@@ -10,9 +10,21 @@
  limitations under the License
  */
 
-import { render } from '@test-utils/render'
-import { describe, it, expect } from 'vitest'
+import { render, screen } from '@test-utils/render'
+import { describe, it, expect, vi } from 'vitest'
 import CurrencyInput from '../CurrencyInput'
+
+// Mock react-native-advanced-input-mask
+vi.mock('react-native-advanced-input-mask', async () => {
+    const React = await import('react')
+    return {
+        MaskedTextInput: (props: Record<string, unknown>) =>
+            React.createElement('div', {
+                ...props,
+                'data-testid': 'currency-input',
+            }),
+    }
+})
 
 describe('CurrencyInput', () => {
     it('renders correctly', () => {
@@ -22,7 +34,6 @@ describe('CurrencyInput', () => {
                 maxPrecision={6}
             />,
         )
-        // MaskedTextInput might be complex to test deeply without user interaction
-        expect(true).toBe(true)
+        expect(screen.getByTestId('currency-input')).toBeTruthy()
     })
 })
