@@ -17,9 +17,10 @@ import AccountDisplay from '../AccountDisplay'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
-    const actual = await importOriginal<
-        typeof import('@perawallet/wallet-core-accounts')
-    >()
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-accounts')
+        >()
     return {
         ...actual,
         getAccountDisplayName: vi.fn(() => 'Test Account'),

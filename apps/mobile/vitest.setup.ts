@@ -279,7 +279,7 @@ vi.mock('react-native-quick-crypto', () => ({
 
 // Basic NativeEventEmitter dependency to avoid errors when no native module is provided
 vi.mock('react-native/Libraries/EventEmitter/NativeEventEmitter', () => {
-    return class NativeEventEmitter { }
+    return class NativeEventEmitter {}
 })
 
 // Mock React Navigation
@@ -334,7 +334,7 @@ vi.mock('@react-native-firebase/messaging', () => ({
 
 vi.mock('@react-native-firebase/remote-config', () => ({
     getRemoteConfig: () => ({
-        setDefaults: vi.fn(async () => { }),
+        setDefaults: vi.fn(async () => {}),
         fetchAndActivate: vi.fn(async () => true),
         setConfigSettings: vi.fn(),
         getValue: vi.fn(() => ({
@@ -527,10 +527,10 @@ vi.mock('@rneui/themed', () => {
         BottomSheet: ({ isVisible, children, ...props }: any) =>
             isVisible
                 ? React.createElement(
-                    MockView,
-                    { ...props, 'data-testid': 'RNEBottomSheet' },
-                    children,
-                )
+                      MockView,
+                      { ...props, 'data-testid': 'RNEBottomSheet' },
+                      children,
+                  )
                 : null,
         Icon: (props: any) => React.createElement(MockView, props),
         ListItem: Object.assign(
@@ -630,12 +630,15 @@ vi.mock('react-native-svg', () => {
         default: (props: any) =>
             React.createElement('svg', props, props.children),
         Svg: (props: any) => React.createElement('svg', props, props.children),
-        Path: (props: any) => React.createElement('path', props, props.children),
+        Path: (props: any) =>
+            React.createElement('path', props, props.children),
         Circle: (props: any) =>
             React.createElement('circle', props, props.children),
-        Rect: (props: any) => React.createElement('rect', props, props.children),
+        Rect: (props: any) =>
+            React.createElement('rect', props, props.children),
         G: (props: any) => React.createElement('g', props, props.children),
-        Defs: (props: any) => React.createElement('defs', props, props.children),
+        Defs: (props: any) =>
+            React.createElement('defs', props, props.children),
         ClipPath: (props: any) =>
             React.createElement('clipPath', props, props.children),
     }
@@ -643,14 +646,16 @@ vi.mock('react-native-svg', () => {
 
 // Mock @shopify/flash-list
 vi.mock('@shopify/flash-list', () => {
-    const React = require('react');
+    const React = require('react')
     return {
         FlashList: ({ data, renderItem }: any) => {
             return React.createElement(
                 'div',
                 { 'data-testid': 'FlashList' },
-                data?.map((item: any, index: number) => renderItem({ item, index }))
-            );
-        }
-    };
-});
+                data?.map((item: any, index: number) =>
+                    renderItem({ item, index }),
+                ),
+            )
+        },
+    }
+})
