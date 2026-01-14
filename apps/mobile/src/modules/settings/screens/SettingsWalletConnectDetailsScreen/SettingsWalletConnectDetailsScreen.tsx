@@ -18,7 +18,7 @@ import {
     AlgorandPermission,
     useWalletConnect,
 } from '@perawallet/wallet-core-walletconnect'
-import { useStyles } from './SettingsWalletConnectDetailsScreen.styles'
+import { useStyles } from './styles'
 import { Dialog, Image, Text, useTheme } from '@rneui/themed'
 import { useMemo, useState } from 'react'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
@@ -71,7 +71,7 @@ const SettingsWalletConnectDetailsScreen = ({
     const deleteState = useModalState()
     const styles = useStyles()
     const { theme } = useTheme()
-    const [loading, setLoading] = useState(false)
+    const [isLoading, setIsLoading] = useState(false)
     const { pushWebView } = useWebView()
     const navigation = useNavigation()
     const accounts = useAllAccounts()
@@ -97,13 +97,13 @@ const SettingsWalletConnectDetailsScreen = ({
             deleteState.close()
             return
         }
-        setLoading(true)
+        setIsLoading(true)
         disconnect(session.clientId, true)
             .then(() => {
                 deleteState.close()
             })
             .finally(() => {
-                setLoading(false)
+                setIsLoading(false)
                 navigation.goBack()
             })
     }
@@ -235,12 +235,12 @@ const SettingsWalletConnectDetailsScreen = ({
                         title={t('common.delete.label')}
                         titleStyle={{ color: theme.colors.error }}
                         onPress={handleDelete}
-                        disabled={loading}
+                        disabled={isLoading}
                     />
                     <Dialog.Button
                         title={t('common.cancel.label')}
                         onPress={deleteState.close}
-                        disabled={loading}
+                        disabled={isLoading}
                     />
                 </Dialog.Actions>
             </Dialog>

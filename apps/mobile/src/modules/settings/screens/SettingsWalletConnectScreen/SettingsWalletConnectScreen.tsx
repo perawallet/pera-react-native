@@ -21,7 +21,7 @@ import {
     WalletConnectConnection,
 } from '@perawallet/wallet-core-walletconnect'
 import { FlashList } from '@shopify/flash-list'
-import { useStyles } from './SettingsWalletConnectScreen.styles'
+import { useStyles } from './styles'
 import WalletConnectSessionItem from '@modules/settings/components/WalletConnect/WalletConnectSessionItem'
 import { Dialog, Text, useTheme } from '@rneui/themed'
 import { useLayoutEffect, useState } from 'react'
@@ -39,7 +39,7 @@ const SettingsWalletConnectScreen = () => {
     const deleteState = useModalState()
     const styles = useStyles()
     const { theme } = useTheme()
-    const [loading, setLoading] = useState(false)
+    const [isLoading, setIsLoading] = useState(false)
     const navigation = useNavigation()
 
     useLayoutEffect(() => {
@@ -57,13 +57,13 @@ const SettingsWalletConnectScreen = () => {
     }, [navigation, scannerState, connections])
 
     const handleDeleteAll = () => {
-        setLoading(true)
+        setIsLoading(true)
         deleteAllSessions()
             .then(() => {
                 deleteState.close()
             })
             .finally(() => {
-                setLoading(false)
+                setIsLoading(false)
             })
     }
 
@@ -118,12 +118,12 @@ const SettingsWalletConnectScreen = () => {
                         title={t('common.delete.label')}
                         titleStyle={{ color: theme.colors.error }}
                         onPress={handleDeleteAll}
-                        disabled={loading}
+                        disabled={isLoading}
                     />
                     <Dialog.Button
                         title={t('common.cancel.label')}
                         onPress={deleteState.close}
-                        disabled={loading}
+                        disabled={isLoading}
                     />
                 </Dialog.Actions>
             </Dialog>

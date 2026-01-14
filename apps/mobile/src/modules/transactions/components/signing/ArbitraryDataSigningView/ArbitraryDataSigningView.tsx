@@ -17,7 +17,7 @@ import {
     PeraArbitraryDataMessage,
     SignRequestSource,
 } from '@perawallet/wallet-core-blockchain'
-import { useStyles } from './ArbitraryDataSigningView.style'
+import { useStyles } from './styles'
 import { useLanguage } from '@hooks/language'
 import { Image, TabView, Text } from '@rneui/themed'
 import {

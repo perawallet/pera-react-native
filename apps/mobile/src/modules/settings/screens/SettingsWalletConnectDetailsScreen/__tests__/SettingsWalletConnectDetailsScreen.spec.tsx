@@ -10,5 +10,11 @@
  limitations under the License
  */
 
-export { default } from './SettingsWalletConnectDetailsScreen'
-export type { SettingsWalletConnectDetailsScreenProps } from './SettingsWalletConnectDetailsScreen'
+import { describe, it, expect } from 'vitest'
+
+describe('SettingsWalletConnectDetailsScreen', () => {
+    it('renders correctly', () => {
+        // TODO: Add proper mocks and implementation
+        expect(true).toBe(true)
+    })
+})

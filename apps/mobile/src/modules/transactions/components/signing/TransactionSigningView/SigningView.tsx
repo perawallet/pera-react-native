@@ -18,7 +18,7 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import EmptyView from '@components/EmptyView'
 import TransactionSigningView from './TransactionSigningView'
-import ArbitraryDataSigningView from './ArbitraryDataSigningView'
+import ArbitraryDataSigningView from '../ArbitraryDataSigningView'
 import Arc60SigningView from './Arc60SigningView'
 import { useLanguage } from '@hooks/language'
 
