@@ -1,0 +1,188 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { Dialog, Input, Text, useTheme } from '@rneui/themed'
+import ContactAvatar from '@components/ContactAvatar'
+import PWView from '@components/PWView'
+import AddressEntryField from '@components/AddressEntryField'
+import {
+    Contact,
+    useContacts,
+    contactSchema,
+} from '@perawallet/wallet-core-contacts'
+import { ParamListBase, useNavigation } from '@react-navigation/native'
+import { KeyboardAvoidingView } from 'react-native'
+import { useStyles } from './styles'
+import PWButton from '@components/PWButton'
+import { ScrollView } from 'react-native-gesture-handler'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm, Controller } from 'react-hook-form'
+import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import AddressDisplay from '@components/AddressDisplay'
+import { useLanguage } from '@hooks/language'
+import { useModalState } from '@hooks/modal-state'
+
+const EditContactScreen = () => {
+    const styles = useStyles()
+    const { t } = useLanguage()
+    const {
+        saveContact,
+        findContacts,
+        deleteContact,
+        selectedContact,
+        setSelectedContact,
+    } = useContacts()
+    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
+    const { theme } = useTheme()
+    const { isOpen, open, close } = useModalState()
+    const isEditMode = !!selectedContact
+
+    const {
+        control,
+        handleSubmit,
+        setError,
+        formState: { isValid, errors },
+    } = useForm({
+        resolver: zodResolver(contactSchema),
+        defaultValues: selectedContact ?? {},
+    })
+
+    const save = (data: Contact) => {
+        if (!isEditMode) {
+            const matches = findContacts({
+                keyword: data.address,
+                matchAddress: true,
+                matchName: false,
+                matchNFD: false,
+            })
+
+            if (matches?.length) {
+                setError('address', {
+                    message: 'Contact for this address already exists.',
+                })
+                return
+            }
+        }
+
+        if (isValid) {
+            saveContact(data)
+            setSelectedContact(null)
+            navigation.goBack()
+        }
+    }
+
+    const removeContact = () => {
+        if (!isEditMode) {
+            navigation.replace('Contacts')
+        } else {
+            deleteContact(selectedContact)
+            setSelectedContact(null)
+            navigation.replace('Contacts')
+        }
+    }
+
+    return (
+        <KeyboardAvoidingView behavior='height'>
+            <ScrollView style={styles.container}>
+                <PWView style={styles.avatar}>
+                    <ContactAvatar
+                        size='large'
+                        contact={selectedContact ?? { name: '', address: '' }}
+                    />
+                </PWView>
+                <PWView style={styles.formContainer}>
+                    <Controller
+                        control={control}
+                        name='name'
+                        render={({ field: { onChange, onBlur, value } }) => (
+                            <Input
+                                onBlur={onBlur}
+                                onChangeText={onChange}
+                                value={value}
+                                label={t('contacts.edit_contact.name_label')}
+                                errorMessage={errors.name?.message}
+                            />
+                        )}
+                    />
+                    {!isEditMode && (
+                        <Controller
+                            control={control}
+                            name='address'
+                            render={({
+                                field: { onChange, onBlur, value },
+                            }) => (
+                                <AddressEntryField
+                                    allowQRCode
+                                    label={t(
+                                        'contacts.edit_contact.address_label',
+                                    )}
+                                    onBlur={onBlur}
+                                    onChangeText={onChange}
+                                    value={value}
+                                    errorMessage={errors.address?.message}
+                                />
+                            )}
+                        />
+                    )}
+                    {isEditMode && (
+                        <PWView>
+                            <Text style={styles.label}>
+                                {t('contacts.edit_contact.address_label')}
+                            </Text>
+                            <AddressDisplay
+                                address={selectedContact.address}
+                                showCopy
+                                rawDisplay
+                            />
+                        </PWView>
+                    )}
+                    <PWView style={styles.buttonContainer}>
+                        {isEditMode && (
+                            <PWButton
+                                onPress={open}
+                                title={t('contacts.edit_contact.delete')}
+                                variant='destructive'
+                                minWidth={100}
+                            />
+                        )}
+                        <PWButton
+                            onPress={handleSubmit(save)}
+                            title={t('contacts.edit_contact.save')}
+                            variant='primary'
+                            minWidth={100}
+                        />
+                    </PWView>
+                </PWView>
+            </ScrollView>
+            <Dialog
+                isVisible={isOpen}
+                onBackdropPress={close}
+            >
+                <Dialog.Title title={t('contacts.edit_contact.are_you_sure')} />
+                <Text>{t('contacts.edit_contact.delete_confirm')}</Text>
+                <Dialog.Actions>
+                    <Dialog.Button
+                        title={t('common.delete.label')}
+                        titleStyle={{ color: theme.colors.error }}
+                        onPress={removeContact}
+                    />
+                    <Dialog.Button
+                        title={t('common.cancel.label')}
+                        onPress={close}
+                    />
+                </Dialog.Actions>
+            </Dialog>
+        </KeyboardAvoidingView>
+    )
+}
+
+export default EditContactScreen

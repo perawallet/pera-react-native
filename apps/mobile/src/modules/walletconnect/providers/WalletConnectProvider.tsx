@@ -13,7 +13,7 @@
 import React, { PropsWithChildren, useEffect } from 'react'
 import PWBottomSheet from '@components/PWBottomSheet'
 import { useWindowDimensions } from 'react-native'
-import ConnectionView from '../components/connection-view/ConnectionView'
+import ConnectionView from '../components/ConnectionView'
 import {
     useWalletConnect,
     useWalletConnectSessionRequests,

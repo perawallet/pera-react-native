@@ -163,11 +163,13 @@ const AccountCard = ({ account, onPress }: AccountCardProps) => {
 
 ## Screen Components
 
-Location: `apps/mobile/src/modules/[module]/screens/`
+Location: `apps/mobile/src/modules/[module]/screens/[ScreenName]/`
+
+Every screen MUST follow the same folder structure as standard components.
 
 ```typescript
-// AccountsScreen.tsx
-import { useStyles } from './AccountsScreen.styles'
+// AccountsScreen.tsx (in modules/accounts/screens/AccountsScreen/)
+import { useStyles } from './styles'
 
 const AccountsScreen = () => {
     const styles = useStyles()
