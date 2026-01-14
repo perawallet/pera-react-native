@@ -59,7 +59,6 @@ By default, the configuration uses safe values for open source builds:
 - **Backend URLs**: Placeholder values
     - Mainnet: `https://api.example.com`
     - Testnet: `https://testnet-api.example.com`
-    
 - **API Keys**: Empty strings (no authentication)
 
 These defaults allow the app to compile and partially function out of the box. Community builders can provide their own backend infrastructure by setting environment variables (see below).
