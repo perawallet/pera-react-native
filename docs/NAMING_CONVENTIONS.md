@@ -4,14 +4,15 @@ Consistent naming makes the codebase predictable and easy to navigate.
 
 ## Files & Folders
 
-| Type           | Convention       | Example                               |
-| -------------- | ---------------- | ------------------------------------- |
-| Component file | `PascalCase.tsx` | `PWButton.tsx`, `AccountCard.tsx`     |
-| Hook file      | `camelCase.ts`   | `useToast.ts`, `useAccountBalance.ts` |
-| Utility file   | `kebab-case.ts`  | `string-utils.ts`                     |
-| Style file     | `styles.ts`      | `styles.ts` or `PWButton.styles.ts`   |
-| Test file      | `*.test.ts(x)`   | `PWButton.test.tsx`                   |
-| Folder         | `kebab-case`     | `account-card/`, `send-funds/`        |
+| Type             | Convention       | Example                               |
+| ---------------- | ---------------- | ------------------------------------- |
+| Component file   | `PascalCase.tsx` | `PWButton.tsx`, `AccountCard.tsx`     |
+| Hook file        | `camelCase.ts`   | `useToast.ts`, `useAccountBalance.ts` |
+| Utility file     | `kebab-case.ts`  | `string-utils.ts`                     |
+| Style file       | `styles.ts`      | `styles.ts`                           |
+| Test file        | `*.spec.tsx`     | `PWButton.spec.tsx`                   |
+| Component folder | `PascalCase`     | `PWButton/`, `AccountCard/`           |
+| Other folders    | `kebab-case`     | `hooks/`, `send-funds/`               |
 
 ## Components
 
@@ -55,17 +56,19 @@ type LoadingState = 'idle' | 'loading' | 'success' | 'error'
 ## Quick Examples
 
 ```
+✅ PWButton/              (component folder - PascalCase)
 ✅ PWButton.tsx           (shared component)
 ✅ AccountCard.tsx        (module component)
 ✅ AccountsScreen.tsx     (screen)
+✅ PWButton.spec.tsx      (test file)
 ✅ useToast.ts            (hook)
-✅ account-card/          (folder)
 ✅ isLoading              (boolean prop)
 ✅ onPress                (event prop)
 ✅ handlePress            (handler function)
 
 ❌ button.tsx             (should be PascalCase)
 ❌ UseToast.ts            (hooks are camelCase)
-❌ AccountCard/           (folders are kebab-case)
+❌ pw-button/             (component folders should be PascalCase)
+❌ PWButton.test.tsx      (tests should use .spec.tsx)
 ❌ loading                (booleans need prefix)
 ```

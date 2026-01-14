@@ -10,7 +10,7 @@ Use this workflow when creating a new UI component.
 
 Reference these before starting:
 
-- `.agent/rules/code-patterns.md` - Detailed component patterns with examples
+- `.agent/rules/component-patterns.md` - Detailed component patterns with examples
 - `docs/FOLDER_STRUCTURE.md` - Where to place the component
 - `docs/NAMING_CONVENTIONS.md` - How to name files and the component
 
@@ -18,18 +18,21 @@ Reference these before starting:
 
 ### 1. Determine Component Location
 
-- **Shared component** → `apps/mobile/src/components/[component-name]/`
-- **Module-specific** → `apps/mobile/src/modules/[module]/components/[component-name]/`
+- **Shared component** → `apps/mobile/src/components/[ComponentName]/`
+- **Module-specific** → `apps/mobile/src/modules/[module]/components/[ComponentName]/`
+
+Note: Folder names use **PascalCase** matching the component name.
 
 ### 2. Create Component Directory
 
 ```sh
-mkdir -p apps/mobile/src/components/[component-name]
+mkdir -p apps/mobile/src/components/[ComponentName]
+mkdir -p apps/mobile/src/components/[ComponentName]/__tests__
 ```
 
 ### 3. Create Component File
 
-Create `[ComponentName].tsx` following the pattern in `.agent/rules/code-patterns.md`:
+Create `[ComponentName].tsx` following the pattern in `.agent/rules/component-patterns.md`:
 
 - Use `PW` prefix for shared components (e.g., `PWButton.tsx`)
 - No prefix for module-specific components
@@ -39,20 +42,39 @@ Create `[ComponentName].tsx` following the pattern in `.agent/rules/code-pattern
 
 ### 4. Create Styles File
 
-Create `styles.ts` using the `makeStyles` pattern from `.agent/rules/code-patterns.md`:
+Create `styles.ts` using the `makeStyles` pattern from `.agent/rules/component-patterns.md`:
 
 - Use `makeStyles` from `@rneui/themed` (never `StyleSheet.create`)
 - Export a `useStyles` hook
 
-### 5. Create Test File (Optional but Recommended)
+### 5. Create Barrel File
 
-Create `__tests__/[ComponentName].test.tsx`:
+Create `index.ts` to re-export the component:
+
+```typescript
+// index.ts
+export { default } from './[ComponentName]'
+export type { [ComponentName]Props } from './[ComponentName]'
+```
+
+### 6. Create Test File
+
+Create `__tests__/[ComponentName].spec.tsx`:
 
 - Import from `@test-utils` for providers
 - Test user behavior, not implementation
 - Cover key interactions
+- Use `.spec.tsx` extension (NOT `.test.tsx`)
 
-### 6. Verify
+### 7. Subcomponents (if needed)
+
+If the component has subcomponents:
+
+- Create them in the same folder as the main component
+- Do NOT re-export them in `index.ts`
+- Subcomponents should only be used by the parent component
+
+### 8. Verify
 
 // turbo
 
