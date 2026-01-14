@@ -39,9 +39,9 @@ Create `[ComponentName].tsx` following the pattern in `.agent/rules/code-pattern
 
 ### 4. Create Styles File
 
-Create `styles.ts` following the style pattern in `.agent/rules/code-patterns.md`:
+Create `styles.ts` using the `makeStyles` pattern from `.agent/rules/code-patterns.md`:
 
-- Use `makeStyles` from `@rneui/themed` for theme access
+- Use `makeStyles` from `@rneui/themed` (never `StyleSheet.create`)
 - Export a `useStyles` hook
 
 ### 5. Create Test File (Optional but Recommended)

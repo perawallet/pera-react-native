@@ -62,7 +62,32 @@ const PWButton = ({
 export default PWButton
 ```
 
-### Style Files
+### Style Files (REQUIRED: makeStyles Pattern)
+
+All component styling MUST use the RNE `makeStyles` hook. **Never use `StyleSheet.create`**.
+
+#### Basic Usage
+
+```typescript
+// styles.ts
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    container: {
+        flex: 1,
+        backgroundColor: theme.colors.background,
+        padding: theme.spacing.md,
+    },
+    title: {
+        color: theme.colors.textMain,
+        fontSize: 16,
+    },
+}))
+```
+
+#### With Props
+
+When styles depend on component props, pass them as the second argument:
 
 ```typescript
 // styles.ts
@@ -97,6 +122,15 @@ export const useStyles = makeStyles(
     }),
 )
 ```
+
+#### Theme Tokens
+
+Always use theme tokens instead of hardcoded values:
+
+| Type              | Usage                   | Examples                                                     |
+| ----------------- | ----------------------- | ------------------------------------------------------------ |
+| `theme.colors.*`  | All colors              | `background`, `textMain`, `textGray`, `linkPrimary`, `error` |
+| `theme.spacing.*` | Margins, paddings, gaps | `xs`, `sm`, `md`, `lg`, `xl`, `xxl`, `3xl`, `4xl`, `5xl`     |
 
 ### Module-Specific Components
 
@@ -370,11 +404,11 @@ Always follow this order:
 ```typescript
 // 1. React/React Native
 import React, { useState, useEffect, useCallback } from 'react'
-import { View, Text, StyleSheet } from 'react-native'
+import { View, ActivityIndicator } from 'react-native'
 
 // 2. Third-party libraries
 import { useQuery } from '@tanstack/react-query'
-import { useTheme } from '@rneui/themed'
+import { Text } from '@rneui/themed'
 
 // 3. Internal packages (@perawallet/*)
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
@@ -453,6 +487,37 @@ const AccountScreen = () => {
 }
 ```
 
+### ❌ StyleSheet.create
+
+```typescript
+// ❌ BAD: Never use StyleSheet.create
+import { StyleSheet } from 'react-native'
+const styles = StyleSheet.create({
+    container: { padding: 16 },
+})
+
+// ❌ BAD: Never use StyleSheet with useTheme
+import { StyleSheet } from 'react-native'
+import { useTheme } from '@rneui/themed'
+
+export const useStyles = () => {
+    const { theme } = useTheme()
+    return StyleSheet.create({
+        container: { backgroundColor: theme.colors.background },
+    })
+}
+
+// ✅ GOOD: Always use makeStyles
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    container: {
+        padding: theme.spacing.md,
+        backgroundColor: theme.colors.background,
+    },
+}))
+```
+
 ### ❌ Inline Styles
 
 ```typescript
@@ -461,6 +526,22 @@ const AccountScreen = () => {
 
 // ✅ GOOD
 <View style={styles.container}>
+```
+
+### ❌ Hardcoded Colors and Values
+
+```typescript
+// ❌ BAD: Hardcoded colors
+container: { backgroundColor: '#FFFFFF' }
+text: { color: '#000000' }
+
+// ❌ BAD: Hardcoded spacing
+container: { padding: 16, margin: 8 }
+
+// ✅ GOOD: Use theme tokens
+container: { backgroundColor: theme.colors.background }
+text: { color: theme.colors.textMain }
+container: { padding: theme.spacing.md, margin: theme.spacing.sm }
 ```
 
 ### ❌ Magic Numbers

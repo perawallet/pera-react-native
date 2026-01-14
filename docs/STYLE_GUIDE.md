@@ -12,7 +12,24 @@ This guide covers the key coding standards for the project.
 
 - Use **functional components** (no classes)
 - Keep styles in separate `styles.ts` files
-- Use **StyleSheet** or theme-based `useStyles`, not inline styles
+- Use RNE theme-based `makeStyles`/`useStyles` — **never** `StyleSheet.create`
+
+## Styling
+
+All component styling uses React Native Elements (RNE) theming via the `makeStyles` hook. This ensures:
+
+- Consistent theming across the app
+- Automatic dark mode support
+- Centralized design tokens
+
+**Key rules:**
+
+- Always use `makeStyles` from `@rneui/themed`
+- Never use `StyleSheet.create` from `react-native`
+- Use theme tokens (`theme.colors.*`, `theme.spacing.*`) — no hardcoded values
+- No inline styles
+
+For detailed patterns and examples, see `.agent/rules/code-patterns.md`.
 
 ## Code Quality
 
@@ -34,6 +51,7 @@ pnpm format     # Auto-fix formatting
 
 1. **Self-documenting code** — minimize comments
 2. **No magic numbers** — use named constants
+3. **Theme-based styling** — always use `makeStyles` with theme tokens
 
 ## Images
 
@@ -42,13 +60,8 @@ pnpm format     # Auto-fix formatting
 | **SVG**  | Icons, logos, simple graphics that need to scale |
 | **WebP** | Photos, complex images, screenshots              |
 
-**SVG** — Use for vector graphics. They scale perfectly at any size and are smaller for simple shapes. Import as React components for easy theming.
-
-**WebP** — Use for raster images. Better compression than PNG/JPEG while maintaining quality. Use for photos, gradients, and complex artwork.
-
 ## Learn More
 
-- [Contributing Guide](CONTRIBUTING.md) - Git workflow, branching, commits
-- [Architecture](docs/ARCHITECTURE.md) - Where logic vs UI goes
-- [Naming Conventions](docs/NAMING_CONVENTIONS.md) - How to name things
-- [Folder Structure](docs/FOLDER_STRUCTURE.md) - Where to put files
+- [Architecture](ARCHITECTURE.md) - Where logic vs UI goes
+- [Naming Conventions](NAMING_CONVENTIONS.md) - How to name things
+- [Folder Structure](FOLDER_STRUCTURE.md) - Where to put files

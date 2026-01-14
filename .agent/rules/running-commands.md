@@ -26,6 +26,7 @@ Before writing ANY code, reference the appropriate documentation:
 | Understanding architecture | `docs/ARCHITECTURE.md`          |
 | File/folder placement      | `docs/FOLDER_STRUCTURE.md`      |
 | Naming rules               | `docs/NAMING_CONVENTIONS.md`    |
+| Coding standards           | `docs/STYLE_GUIDE.md`           |
 | Code patterns (detailed)   | `.agent/rules/code-patterns.md` |
 | Writing tests              | `docs/TESTING.md`               |
 | Security considerations    | `docs/SECURITY.md`              |
