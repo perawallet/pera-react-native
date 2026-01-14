@@ -1,0 +1,19 @@
+// Production.xcconfig
+// Production environment configuration
+
+#include "Shared.xcconfig"
+#include "Pods/Target Support Files/Pods-pera/Pods-pera.production.xcconfig"
+
+// App Identity
+PRODUCT_BUNDLE_IDENTIFIER = com.algorandllc.perarn
+PRODUCT_NAME = Pera
+
+// Environment Variable for Config Package
+APP_ENV = production
+
+// Display Name
+DISPLAY_NAME = Pera
+
+// Code Signing
+DEVELOPMENT_TEAM = $(APPLE_TEAM_ID)
+CODE_SIGN_IDENTITY = Apple Distribution

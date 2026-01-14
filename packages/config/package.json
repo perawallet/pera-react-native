@@ -12,11 +12,12 @@
     }
   },
   "scripts": {
-    "build": "vite build",
-    "dev": "vite build --watch",
+    "generate:config": "bash ../../tools/generate-config.sh",
+    "build": "pnpm generate:config && vite build",
+    "dev": "pnpm generate:config && vite build --watch",
     "preview": "vite preview",
-    "test": "vitest run",
-    "test:watch": "vitest --watch",
+    "test": "pnpm generate:config && vitest run",
+    "test:watch": "pnpm generate:config && vitest --watch",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix"
   },
@@ -29,6 +30,7 @@
   "devDependencies": {
     "@perawallet/wallet-core-devtools": "workspace:*",
     "@testing-library/react": "catalog:",
+    "@types/node": "^20.19.0",
     "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "eslint": "catalog:",

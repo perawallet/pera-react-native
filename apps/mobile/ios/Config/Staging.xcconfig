@@ -1,0 +1,22 @@
+// Staging.xcconfig
+// Staging environment configuration
+
+#include "Shared.xcconfig"
+#include "Pods/Target Support Files/Pods-pera/Pods-pera.staging.xcconfig"
+
+// App Identity
+PRODUCT_BUNDLE_IDENTIFIER = com.algorandllc.perarn.staging
+PRODUCT_NAME = Pera Staging
+
+// Environment Variable for Config Package
+APP_ENV = staging
+
+// Display Name
+DISPLAY_NAME = Pera Staging
+
+// Code Signing
+DEVELOPMENT_TEAM = $(APPLE_TEAM_ID)
+CODE_SIGN_IDENTITY = Apple Distribution
+
+// Provisioning Profile
+PROVISIONING_PROFILE_SPECIFIER = match AdHoc com.algorandllc.perarn.staging
