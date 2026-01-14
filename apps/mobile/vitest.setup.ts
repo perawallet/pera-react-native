@@ -78,8 +78,6 @@ vi.mock('react-native-reanimated', () => {
 
 // Mock react-native-vision-camera
 vi.mock('react-native-vision-camera', () => {
-    // eslint-disable-next-line no-console
-    console.log('Mocking react-native-vision-camera')
     return {
         Camera: vi.fn(),
         useCameraDevice: vi.fn(() => ({
@@ -827,10 +825,6 @@ vi.mock('@perawallet/wallet-core-polling', () => ({
     usePolling: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-devtools', () => ({
-    useDevTools: vi.fn(),
-}))
-
 vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMS: vi.fn(),
     initKMSStore: vi.fn(),
@@ -1082,10 +1076,3 @@ vi.mock('react-native-gifted-charts', () => {
             React.createElement('div', { ...props, 'data-testid': 'PieChart' }),
     }
 })
-
-vi.mock('react-test-renderer', () => ({
-    create: vi.fn(() => ({
-        toJSON: vi.fn(() => ({})),
-        root: {},
-    })),
-}))
