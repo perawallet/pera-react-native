@@ -29,7 +29,7 @@ const ContactAvatar = ({ size, contact, ...rest }: ContactAvatarProps) => {
     const imageSize = size === 'small' ? theme.spacing.lg : theme.spacing['3xl']
     const iconSize = size === 'small' ? 'sm' : 'lg'
     const styles = useStyles({ containerSize: dimensions, imageSize })
-    
+
     return (
         <PWView style={styles.container}>
             {!!contact?.image && (

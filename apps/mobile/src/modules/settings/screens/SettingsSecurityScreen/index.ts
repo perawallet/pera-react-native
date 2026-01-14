@@ -10,8 +10,4 @@
  limitations under the License
  */
 
-export {
-    BaseErrorBoundary,
-    BaseErrorBoundary as default,
-} from './BaseErrorBoundary'
-export type { BaseErrorBoundaryProps } from './BaseErrorBoundary'
+export { default } from './SettingsSecurtyScreen'
