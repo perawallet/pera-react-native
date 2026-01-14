@@ -6,19 +6,20 @@
  Unless required by applicable law or agreed to in writing, software
  distributed under the License is distributed on an "AS IS" BASIS,
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
  limitations under the License
  */
 
-import { z } from 'zod';
+import { z } from 'zod'
 import {
     ONE_DAY,
     ONE_HOUR,
     ONE_MINUTE,
     ONE_SECOND,
     THIRTY_SECONDS,
-} from './constants';
+} from './constants'
 
-import { generatedEnv } from './generated-env';
+import { generatedEnv } from './generated-env'
 
 export const configSchema = z.object({
     mainnetBackendUrl: z.string().url(),
@@ -57,9 +58,9 @@ export const configSchema = z.object({
     debugEnabled: z.boolean(),
     profilingEnabled: z.boolean(),
     pollingEnabled: z.boolean(),
-});
+})
 
-export type Config = z.infer<typeof configSchema>;
+export type Config = z.infer<typeof configSchema>
 
 /**
  * Production configuration with safe defaults for open source builds.
@@ -83,8 +84,10 @@ const productionConfig = {
     termsOfServiceUrl: 'https://perawallet.app/terms-and-services/',
     privacyPolicyUrl: 'https://perawallet.app/privacy-policy/',
     peraDemoDappUrl: 'https://perawallet.github.io/pera-demo-dapp/',
-    sendFundsFaqUrl: 'https://support.perawallet.app/en/category/transactions-1tq8s9h/',
-    swapSupportUrl: 'https://support.perawallet.app/en/article/pera-swap-swapping-with-pera-1ep84ky/',
+    sendFundsFaqUrl:
+        'https://support.perawallet.app/en/category/transactions-1tq8s9h/',
+    swapSupportUrl:
+        'https://support.perawallet.app/en/article/pera-swap-swapping-with-pera-1ep84ky/',
     notificationRefreshTime: THIRTY_SECONDS,
     remoteConfigRefreshTime: ONE_HOUR,
     reactQueryDefaultGCTime: ONE_HOUR,
@@ -95,19 +98,19 @@ const productionConfig = {
     debugEnabled: false,
     profilingEnabled: false,
     pollingEnabled: true,
-};
+}
 
 /**
  * Load configuration.
  * It merges the safe production defaults with the generated environment configuration.
- * 
+ *
  * @returns Validated configuration object
  */
 export function getConfig(): Config {
-    const mergedConfig = { ...productionConfig, ...generatedEnv };
+    const mergedConfig = { ...productionConfig, ...generatedEnv }
 
-    return configSchema.parse(mergedConfig);
+    return configSchema.parse(mergedConfig)
 }
 
-export const config = getConfig();
-Object.freeze(config);
+export const config = getConfig()
+Object.freeze(config)
