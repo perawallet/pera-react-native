@@ -78,6 +78,7 @@ vi.mock('react-native-reanimated', () => {
 
 // Mock react-native-vision-camera
 vi.mock('react-native-vision-camera', () => {
+    // eslint-disable-next-line no-console
     console.log('Mocking react-native-vision-camera')
     return {
         Camera: vi.fn(),
@@ -252,7 +253,7 @@ vi.mock('react-native', () => {
                     ),
                 ),
             {
-                resolveAssetSource: vi.fn(source => ({
+                resolveAssetSource: vi.fn(() => ({
                     uri: 'mock-image-uri',
                     width: 100,
                     height: 100,
@@ -688,7 +689,7 @@ vi.mock('@rneui/themed', () => {
                     'data-testid': 'RNEImage',
                 }),
             {
-                resolveAssetSource: (source: any) => ({
+                resolveAssetSource: () => ({
                     uri: 'mock-image-uri',
                     width: 100,
                     height: 100,
@@ -783,10 +784,10 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     Networks: { mainnet: 'mainnet', testnet: 'testnet' },
     formatDatetime: vi.fn(d => String(d)),
     formatCurrency: vi.fn(
-        (value, decimals, currency, locale) => `${currency || '$'}${value}`,
+        (value, _decimals, currency) => `${currency || '$'}${value}`,
     ),
-    formatWithUnits: vi.fn((value, decimals) => String(value)),
-    formatNumber: vi.fn((value, decimals) => String(value)),
+    formatWithUnits: vi.fn(value => String(value)),
+    formatNumber: vi.fn(value => String(value)),
     AppError: class AppError extends Error {
         constructor(message: string) {
             super(message)
@@ -955,7 +956,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         if (!address) return false
         return new RegExp('^[0-9a-zA-Z]{58}$').test(address)
     }),
-    encodeAlgorandAddress: vi.fn(bytes => 'MOCKADDRESS'),
+    encodeAlgorandAddress: vi.fn(() => 'MOCKADDRESS'),
     initBlockchainStore: vi.fn(),
 }))
 

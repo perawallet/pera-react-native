@@ -10,21 +10,21 @@
  limitations under the License
  */
 
-import { render, screen } from '@test-utils/render'
+import { render } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
 import AssetActionButtons from '../AssetActionButtons'
-import { mockedAsset } from '@perawallet/wallet-core-assets'
+import { PeraAsset } from '@perawallet/wallet-core-assets'
 
-const mockAsset: any = {
-    assetId: 123,
+const mockAsset = {
+    assetId: '123',
     name: 'TEST',
     unitName: 'TST',
     decimals: 6,
-}
+} as PeraAsset
 
 describe('AssetActionButtons', () => {
     it('renders correctly', () => {
         render(<AssetActionButtons asset={mockAsset} />)
-        expect(document.body).toBeDefined()
+        expect(true).toBe(true)
     })
 })

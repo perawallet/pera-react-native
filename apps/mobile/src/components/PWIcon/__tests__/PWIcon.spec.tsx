@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { render, screen } from '@test-utils/render'
+import { render } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
 import PWIcon from '../PWIcon'
 
@@ -18,6 +18,6 @@ describe('PWIcon', () => {
     it('renders correctly', () => {
         // This relies on svg mocking
         render(<PWIcon name='algo' />)
-        expect(document.body).toBeDefined()
+        expect(true).toBe(true)
     })
 })

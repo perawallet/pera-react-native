@@ -11,7 +11,7 @@
  */
 
 import { render, screen } from '@test-utils/render'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import AddressEntryField from '../AddressEntryField'
 
 describe('AddressEntryField', () => {

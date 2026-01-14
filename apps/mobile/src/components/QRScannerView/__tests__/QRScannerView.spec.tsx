@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { render, screen } from '@test-utils/render'
+import React from 'react'
+import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import QRScannerView from '../QRScannerView'
 
@@ -25,11 +26,10 @@ vi.mock('react-native-vision-camera', () => ({
 }))
 
 vi.mock('@assets/images/camera-overlay.svg', () => {
-    const React = require('react')
     return {
-        default: (props: any) =>
+        default: (props: unknown) =>
             React.createElement('div', {
-                ...props,
+                ...(props as object),
                 'data-testid': 'camera-overlay',
             }),
     }

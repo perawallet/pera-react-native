@@ -10,8 +10,12 @@
  limitations under the License
  */
 
+import React, { ReactNode } from 'react'
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
+import { RouteProp } from '@react-navigation/native'
+import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { AccountStackParamsList } from '@modules/accounts/routes'
 import AccountScreen from '../AccountScreen'
 // import { mockedWalletAccount } from '@perawallet/wallet-core-accounts'
 
@@ -36,9 +40,12 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     }
 })
 
-vi.mock('react-native-drawer-layout', () => ({
-    Drawer: ({ children }: any) => children,
-}))
+vi.mock('react-native-drawer-layout', () => {
+    return {
+        Drawer: ({ children }: { children: ReactNode }) =>
+            children as unknown as ReactNode,
+    }
+})
 
 // Mock children to simplify test
 vi.mock('@modules/accounts/components/AccountMenu', () => ({
@@ -64,14 +71,21 @@ vi.mock('@modules/accounts/components/ConfettiAnimation', () => ({
     default: 'ConfettiAnimation',
 }))
 
-const mockRoute: any = { params: {} }
+const mockRoute = {
+    params: {},
+} as unknown as RouteProp<AccountStackParamsList, 'AccountDetails'>
 
 describe('AccountScreen', () => {
     it('renders correctly with account', () => {
         render(
             <AccountScreen
                 route={mockRoute}
-                navigation={undefined as any}
+                navigation={
+                    null as unknown as NativeStackNavigationProp<
+                        AccountStackParamsList,
+                        'AccountDetails'
+                    >
+                }
             />,
         )
         // Tab and TabView should render inside the screen

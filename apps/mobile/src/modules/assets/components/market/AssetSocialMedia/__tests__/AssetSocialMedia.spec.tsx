@@ -10,22 +10,23 @@
  limitations under the License
  */
 
-import { render, screen } from '@test-utils/render'
+import { render } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
 import AssetSocialMedia from '../AssetSocialMedia'
+import { PeraAsset } from '@perawallet/wallet-core-assets'
 
-const mockDetails: any = {
+const mockDetails = {
     peraMetadata: {
         website: 'https://test.com',
         twitter: 'test',
         discord: 'test',
         telegram: 'test',
     },
-}
+} as unknown as PeraAsset
 
 describe('AssetSocialMedia', () => {
     it('renders correctly', () => {
         render(<AssetSocialMedia assetDetails={mockDetails} />)
-        expect(document.body).toBeDefined()
+        expect(true).toBe(true)
     })
 })

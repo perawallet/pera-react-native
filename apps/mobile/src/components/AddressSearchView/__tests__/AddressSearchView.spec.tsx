@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { render, fireEvent, screen } from '@test-utils/render'
+import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import AddressSearchView from '../AddressSearchView'
 

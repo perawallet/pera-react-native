@@ -13,12 +13,13 @@
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
 import AssetAbout from '../AssetAbout'
+import { PeraAsset } from '@perawallet/wallet-core-assets'
 
-const mockDetails: any = {
+const mockDetails = {
     peraMetadata: {
         description: 'Test Description',
     },
-}
+} as PeraAsset
 
 describe('AssetAbout', () => {
     it('renders correctly', () => {

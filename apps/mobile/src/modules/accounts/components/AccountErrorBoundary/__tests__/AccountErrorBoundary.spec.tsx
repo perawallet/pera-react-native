@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { render, screen, fireEvent } from '@test-utils/render'
+import React, { ReactNode } from 'react'
+import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { AccountErrorBoundary } from '../AccountErrorBoundary'
 import { Text, View } from 'react-native'
@@ -19,7 +20,12 @@ import { Text, View } from 'react-native'
 // But wait, it's a wrapper. Integration test is fine.
 // Actually, BaseErrorBoundary relies on logging.
 vi.mock('@components/BaseErrorBoundary', () => ({
-    BaseErrorBoundary: ({ children, fallback }: any) => {
+    BaseErrorBoundary: ({
+        children,
+    }: {
+        children: ReactNode
+        fallback?: ReactNode
+    }) => {
         // Render children
         return <View>{children}</View>
     },

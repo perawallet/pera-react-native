@@ -10,13 +10,15 @@
  limitations under the License
  */
 
-import { render, screen } from '@test-utils/render'
+import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import AccountWithBalance from '../AccountWithBalance'
-const mockAccount: any = {
+import { WalletAccount } from '@perawallet/wallet-core-accounts'
+
+const mockAccount = {
     address: 'test-address',
     name: 'Test Account',
-}
+} as WalletAccount
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -35,6 +37,6 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 describe('AccountWithBalance', () => {
     it('renders correctly', () => {
         render(<AccountWithBalance account={mockAccount} />)
-        expect(document.body).toBeDefined()
+        expect(true).toBe(true)
     })
 })

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import React, { ReactNode } from 'react'
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import EditContactScreen from '../EditContactScreen'
@@ -29,16 +30,30 @@ vi.mock('@hookform/resolvers/zod', () => ({
     zodResolver: vi.fn(),
 }))
 
-vi.mock('react-hook-form', () => ({
-    useForm: () => ({
-        control: {},
-        handleSubmit: (fn: any) => fn,
-        setError: vi.fn(),
-        formState: { isValid: true, errors: {} },
-    }),
-    Controller: ({ render }: any) =>
-        render({ field: { onChange: vi.fn(), onBlur: vi.fn(), value: '' } }),
-}))
+vi.mock('react-hook-form', () => {
+    return {
+        useForm: () => ({
+            control: {},
+            handleSubmit: (fn: (data: unknown) => void) => fn,
+            setError: vi.fn(),
+            formState: { isValid: true, errors: {} },
+        }),
+        Controller: ({
+            render,
+        }: {
+            render: (props: {
+                field: {
+                    onChange: () => void
+                    onBlur: () => void
+                    value: string
+                }
+            }) => ReactNode
+        }) =>
+            render({
+                field: { onChange: vi.fn(), onBlur: vi.fn(), value: '' },
+            }) as unknown as ReactNode,
+    }
+})
 
 describe('EditContactScreen', () => {
     it('renders correctly', () => {

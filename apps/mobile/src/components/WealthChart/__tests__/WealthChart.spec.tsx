@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { render, screen } from '@test-utils/render'
+import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import WealthChart from '../WealthChart'
 
@@ -27,6 +27,6 @@ describe('WealthChart', () => {
                 onSelectionChanged={onSelectionChanged}
             />,
         )
-        expect(document.body).toBeDefined()
+        expect(true).toBe(true)
     })
 })

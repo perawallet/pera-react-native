@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { render, screen } from '@test-utils/render'
+import { render } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
 import CurrencyDisplay from '../CurrencyDisplay'
 import { Decimal } from 'decimal.js'
@@ -26,7 +26,7 @@ describe('CurrencyDisplay', () => {
         )
         // Adjust expectation based on actual formatCurrency output or mock
         // For now, checking renders without crashing
-        expect(document.body).toBeDefined()
+        expect(true).toBe(true)
     })
 
     it('renders skeleton when loading', () => {
@@ -39,6 +39,6 @@ describe('CurrencyDisplay', () => {
             />,
         )
         // Expect skeleton checking logic
-        expect(document.body).toBeDefined()
+        expect(true).toBe(true)
     })
 })

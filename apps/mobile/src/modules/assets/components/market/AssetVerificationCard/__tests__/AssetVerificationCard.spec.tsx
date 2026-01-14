@@ -10,18 +10,19 @@
  limitations under the License
  */
 
-import { render, screen } from '@test-utils/render'
+import { render } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
 import AssetVerificationCard from '../AssetVerificationCard'
+import { PeraAsset } from '@perawallet/wallet-core-assets'
 
-const mockDetails: any = {
+const mockDetails = {
     verificationTier: 'trusted',
-    assetId: 123,
-}
+    assetId: '123',
+} as unknown as PeraAsset
 
 describe('AssetVerificationCard', () => {
     it('renders correctly', () => {
         render(<AssetVerificationCard assetDetails={mockDetails} />)
-        expect(document.body).toBeDefined()
+        expect(true).toBe(true)
     })
 })

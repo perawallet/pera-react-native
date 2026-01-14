@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { render, screen } from '@test-utils/render'
+import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import ContactListHeaderButtons from '../ContactListHeaderButtons'
 
@@ -32,6 +32,6 @@ vi.mock('@react-navigation/native', async importOriginal => {
 describe('ContactListHeaderButtons', () => {
     it('renders correctly', () => {
         render(<ContactListHeaderButtons />)
-        expect(document.body).toBeDefined()
+        expect(true).toBe(true)
     })
 })

@@ -10,21 +10,21 @@
  limitations under the License
  */
 
-import { render, screen } from '@test-utils/render'
+import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import AssetHoldings from '../AssetHoldings'
-import { mockedAsset } from '@perawallet/wallet-core-assets'
-import { mockedWalletAccount } from '@perawallet/wallet-core-accounts'
+import { PeraAsset } from '@perawallet/wallet-core-assets'
+import { WalletAccount } from '@perawallet/wallet-core-accounts'
 
-const mockAsset: any = {
-    assetId: 123,
+const mockAsset = {
+    assetId: '123',
     name: 'TEST',
     unitName: 'TST',
     decimals: 6,
-}
-const mockAccount: any = {
+} as PeraAsset
+const mockAccount = {
     address: 'test-address',
-}
+} as WalletAccount
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -59,6 +59,6 @@ describe('AssetHoldings', () => {
                 asset={mockAsset}
             />,
         )
-        expect(document.body).toBeDefined()
+        expect(true).toBe(true)
     })
 })

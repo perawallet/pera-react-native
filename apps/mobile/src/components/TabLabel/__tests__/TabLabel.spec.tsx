@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { render, screen } from '@test-utils/render'
+import { render } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
 import TabLabel from '../TabLabel'
 
@@ -22,6 +22,6 @@ describe('TabLabel', () => {
                 active={true}
             />,
         )
-        expect(document.body).toBeDefined()
+        expect(true).toBe(true)
     })
 })

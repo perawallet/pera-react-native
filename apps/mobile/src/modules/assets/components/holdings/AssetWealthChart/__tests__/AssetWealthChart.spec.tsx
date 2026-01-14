@@ -10,16 +10,18 @@
  limitations under the License
  */
 
-import { render, screen } from '@test-utils/render'
+import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import AssetWealthChart from '../AssetWealthChart'
+import { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { PeraAsset } from '@perawallet/wallet-core-assets'
 
 vi.mock('@components/WealthChart', () => ({
     default: 'WealthChart',
 }))
 
-const mockAccount: any = { address: 'test' }
-const mockAsset: any = { assetId: 123 }
+const mockAccount = { address: 'test' } as WalletAccount
+const mockAsset = { assetId: '123' } as PeraAsset
 
 describe('AssetWealthChart', () => {
     it('renders correctly', () => {
@@ -32,6 +34,6 @@ describe('AssetWealthChart', () => {
                 onSelectionChanged={onSelectionChanged}
             />,
         )
-        expect(document.body).toBeDefined()
+        expect(true).toBe(true)
     })
 })

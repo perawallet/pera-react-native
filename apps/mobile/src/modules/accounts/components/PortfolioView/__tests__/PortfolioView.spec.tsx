@@ -13,7 +13,6 @@
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import PortfolioView from '../PortfolioView'
-import { UserPreferences } from '@constants/user-preferences'
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =

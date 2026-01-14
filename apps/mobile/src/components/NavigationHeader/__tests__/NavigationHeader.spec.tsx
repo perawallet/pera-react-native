@@ -15,7 +15,7 @@ import { describe, it, expect, vi } from 'vitest'
 import NavigationHeader from '../NavigationHeader'
 import { NativeStackHeaderProps } from '@react-navigation/native-stack'
 
-const mockProps: any = {
+const mockProps = {
     navigation: {
         canGoBack: () => true,
         goBack: vi.fn(),
@@ -26,7 +26,7 @@ const mockProps: any = {
     options: {
         title: 'Test Title',
     },
-}
+} as unknown as NativeStackHeaderProps
 
 describe('NavigationHeader', () => {
     it('renders title', () => {

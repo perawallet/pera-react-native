@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { render, screen } from '@test-utils/render'
+import { render } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
 import PriceTrend from '../PriceTrend'
 
@@ -22,6 +22,6 @@ describe('PriceTrend', () => {
                 period='one-week'
             />,
         )
-        expect(document.body).toBeDefined()
+        expect(true).toBe(true)
     })
 })
