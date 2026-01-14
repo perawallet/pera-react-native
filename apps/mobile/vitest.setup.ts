@@ -12,17 +12,32 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any*/
 /* eslint-disable @typescript-eslint/no-require-imports */
+/* eslint-disable max-lines */
 import 'reflect-metadata'
 import { vi, afterEach } from 'vitest'
 // import '@testing-library/jest-native/extend-expect'
 
 // Mock PWIcon component to avoid SVG import issues
-vi.mock('@components/PWIcon', () => ({
-    default: () => null,
-}))
-vi.mock('@components/PWIcon/PWIcon', () => ({
-    default: () => null,
-}))
+vi.mock('@components/PWIcon', () => {
+    const React = require('react')
+    return {
+        default: ({ onPress, name, testID }: any) =>
+            React.createElement('button', {
+                onClick: onPress,
+                'data-testid': testID || `icon-${name}`,
+            }),
+    }
+})
+vi.mock('@components/PWIcon/PWIcon', () => {
+    const React = require('react')
+    return {
+        default: ({ onPress, name, testID }: any) =>
+            React.createElement('button', {
+                onClick: onPress,
+                'data-testid': testID || `icon-${name}`,
+            }),
+    }
+})
 
 // Clean up after each test
 afterEach(() => {
@@ -111,14 +126,19 @@ vi.mock('react-native', () => {
         // Map React Native components to web-compatible HTML elements with proper event handling
         TouchableOpacity: vi
             .fn()
-            .mockImplementation(({ onPress, children, ...props }) => {
-                const React = require('react')
-                return React.createElement(
-                    'button',
-                    { ...props, onClick: onPress },
-                    children,
-                )
-            }),
+            .mockImplementation(
+                ({ onPress, children, activeOpacity, ...props }) => {
+                    const React = require('react')
+
+                    void activeOpacity
+
+                    return React.createElement(
+                        'button',
+                        { ...props, onClick: onPress },
+                        children,
+                    )
+                },
+            ),
         View: vi
             .fn()
             .mockImplementation(props =>
@@ -254,7 +274,7 @@ vi.mock('react-native-quick-crypto', () => ({
 
 // Basic NativeEventEmitter dependency to avoid errors when no native module is provided
 vi.mock('react-native/Libraries/EventEmitter/NativeEventEmitter', () => {
-    return class NativeEventEmitter {}
+    return class NativeEventEmitter { }
 })
 
 // Mock React Navigation
@@ -309,7 +329,7 @@ vi.mock('@react-native-firebase/messaging', () => ({
 
 vi.mock('@react-native-firebase/remote-config', () => ({
     getRemoteConfig: () => ({
-        setDefaults: vi.fn(async () => {}),
+        setDefaults: vi.fn(async () => { }),
         fetchAndActivate: vi.fn(async () => true),
         setConfigSettings: vi.fn(),
         getValue: vi.fn(() => ({
@@ -484,15 +504,28 @@ vi.mock('@rneui/themed', () => {
                 ...props,
                 'data-testid': 'RNEInput',
             }),
+        Badge: ({ value, label, ...props }: any) =>
+            React.createElement(
+                MockText,
+                { ...props, 'data-testid': 'RNEBadge' },
+                value || label || props.children,
+            ),
+        Image: (props: any) =>
+            React.createElement('img', { ...props, 'data-testid': 'RNEImage' }),
+        Skeleton: (props: any) =>
+            React.createElement('div', {
+                ...props,
+                'data-testid': 'RNESkeleton',
+            }),
         CheckBox: (props: any) =>
             React.createElement(MockView, props, props.children),
         BottomSheet: ({ isVisible, children, ...props }: any) =>
             isVisible
                 ? React.createElement(
-                      MockView,
-                      { ...props, 'data-testid': 'RNEBottomSheet' },
-                      children,
-                  )
+                    MockView,
+                    { ...props, 'data-testid': 'RNEBottomSheet' },
+                    children,
+                )
                 : null,
         Icon: (props: any) => React.createElement(MockView, props),
         ListItem: Object.assign(

@@ -13,17 +13,11 @@
 import { describe, it, expect } from 'vitest'
 import React from 'react'
 import { render, screen } from '@test-utils/render'
-import PWBottomSheet from '../PWBottomSheet'
-import { Text } from 'react-native'
+import PWBadge from '../PWBadge'
 
-describe('PWBottomSheet', () => {
-    it('shows children when visible', () => {
-        render(
-            <PWBottomSheet isVisible={true}>
-                <Text>Sheet Content</Text>
-            </PWBottomSheet>,
-        )
-
-        expect(screen.getByText('Sheet Content')).toBeTruthy()
+describe('PWBadge', () => {
+    it('renders value correctly', () => {
+        render(<PWBadge value='Verified' />)
+        expect(screen.getByText('Verified')).toBeTruthy()
     })
 })

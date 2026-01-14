@@ -10,20 +10,23 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
-import { render, screen } from '@test-utils/render'
-import PWBottomSheet from '../PWBottomSheet'
-import { Text } from 'react-native'
+import { render, fireEvent, screen } from '@test-utils/render'
+import RadioButton from '../RadioButton'
 
-describe('PWBottomSheet', () => {
-    it('shows children when visible', () => {
+describe('RadioButton', () => {
+    it('calls onPress when clicked', () => {
+        const onPress = vi.fn()
         render(
-            <PWBottomSheet isVisible={true}>
-                <Text>Sheet Content</Text>
-            </PWBottomSheet>,
+            <RadioButton
+                title='Option 1'
+                selected={false}
+                onPress={onPress}
+            />,
         )
 
-        expect(screen.getByText('Sheet Content')).toBeTruthy()
+        fireEvent.click(screen.getByText('Option 1'))
+        expect(onPress).toHaveBeenCalledTimes(1)
     })
 })

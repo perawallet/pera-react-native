@@ -13,38 +13,29 @@
 import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
 import { render, fireEvent, screen } from '@test-utils/render'
-import PWButton from '../PWButton'
+import { Text } from 'react-native'
+import PWTouchableOpacity from '../PWTouchableOpacity'
 
-describe('PWButton', () => {
-    it('calls onPress when pressed', () => {
+describe('PWTouchableOpacity', () => {
+    it('calls onPress when clicked', () => {
         const onPress = vi.fn()
         render(
-            <PWButton
-                title='Click Me'
-                onPress={onPress}
-                variant='primary'
-            />,
+            <PWTouchableOpacity onPress={onPress}>
+                <Text>Click Me</Text>
+            </PWTouchableOpacity>,
         )
 
-        // Use click instead of press since we're testing with react-native-web
         fireEvent.click(screen.getByText('Click Me'))
         expect(onPress).toHaveBeenCalledTimes(1)
     })
 
-    it('shows loading indicator and does not call onPress when loading', () => {
-        const onPress = vi.fn()
+    it('renders children correctly', () => {
         render(
-            <PWButton
-                title='Click Me'
-                onPress={onPress}
-                variant='primary'
-                loading={true}
-            />,
+            <PWTouchableOpacity>
+                <Text>Child Text</Text>
+            </PWTouchableOpacity>,
         )
 
-        // When loading, loading indicator should be present.
-        // Since we don't have explicit testID, check for absence of text or verify logic.
-        // Implementation: {!!props.title && !props.loading && <Text...>}
-        expect(screen.queryByText('Click Me')).toBeNull()
+        expect(screen.getByText('Child Text')).toBeTruthy()
     })
 })

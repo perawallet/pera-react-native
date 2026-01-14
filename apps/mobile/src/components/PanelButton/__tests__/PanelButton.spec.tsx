@@ -13,38 +13,32 @@
 import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
 import { render, fireEvent, screen } from '@test-utils/render'
-import PWButton from '../PWButton'
+import PanelButton from '../PanelButton'
 
-describe('PWButton', () => {
-    it('calls onPress when pressed', () => {
+describe('PanelButton', () => {
+    it('calls onPress when clicked', () => {
         const onPress = vi.fn()
         render(
-            <PWButton
+            <PanelButton
                 title='Click Me'
+                titleWeight='h4'
                 onPress={onPress}
-                variant='primary'
             />,
         )
 
-        // Use click instead of press since we're testing with react-native-web
         fireEvent.click(screen.getByText('Click Me'))
         expect(onPress).toHaveBeenCalledTimes(1)
     })
 
-    it('shows loading indicator and does not call onPress when loading', () => {
-        const onPress = vi.fn()
+    it('renders the title correctly', () => {
         render(
-            <PWButton
-                title='Click Me'
-                onPress={onPress}
-                variant='primary'
-                loading={true}
+            <PanelButton
+                title='Button Title'
+                titleWeight='h4'
+                onPress={() => {}}
             />,
         )
 
-        // When loading, loading indicator should be present.
-        // Since we don't have explicit testID, check for absence of text or verify logic.
-        // Implementation: {!!props.title && !props.loading && <Text...>}
-        expect(screen.queryByText('Click Me')).toBeNull()
+        expect(screen.getByText('Button Title')).toBeTruthy()
     })
 })

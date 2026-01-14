@@ -13,17 +13,21 @@
 import { describe, it, expect } from 'vitest'
 import React from 'react'
 import { render, screen } from '@test-utils/render'
-import PWBottomSheet from '../PWBottomSheet'
-import { Text } from 'react-native'
+import LoadingView from '../LoadingView'
 
-describe('PWBottomSheet', () => {
-    it('shows children when visible', () => {
+describe('LoadingView', () => {
+    it('renders activity indicator when variant is circle', () => {
+        render(<LoadingView variant='circle' />)
+        expect(screen.getByTestId('activity-indicator')).toBeTruthy()
+    })
+
+    it('renders skeletons when variant is skeleton', () => {
         render(
-            <PWBottomSheet isVisible={true}>
-                <Text>Sheet Content</Text>
-            </PWBottomSheet>,
+            <LoadingView
+                variant='skeleton'
+                count={3}
+            />,
         )
-
-        expect(screen.getByText('Sheet Content')).toBeTruthy()
+        expect(screen.getAllByTestId('RNESkeleton')).toHaveLength(3)
     })
 })

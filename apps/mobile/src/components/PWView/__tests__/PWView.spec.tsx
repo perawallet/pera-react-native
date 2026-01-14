@@ -13,17 +13,27 @@
 import { describe, it, expect } from 'vitest'
 import React from 'react'
 import { render, screen } from '@test-utils/render'
-import PWBottomSheet from '../PWBottomSheet'
 import { Text } from 'react-native'
+import PWView from '../PWView'
 
-describe('PWBottomSheet', () => {
-    it('shows children when visible', () => {
+describe('PWView', () => {
+    it('renders children correctly', () => {
         render(
-            <PWBottomSheet isVisible={true}>
-                <Text>Sheet Content</Text>
-            </PWBottomSheet>,
+            <PWView>
+                <Text>Test Child</Text>
+            </PWView>,
         )
 
-        expect(screen.getByText('Sheet Content')).toBeTruthy()
+        expect(screen.getByText('Test Child')).toBeTruthy()
+    })
+
+    it('passes extra props to the underlying View', () => {
+        render(
+            <PWView data-testid='pw-view'>
+                <Text>Test</Text>
+            </PWView>,
+        )
+
+        expect(screen.getByTestId('pw-view')).toBeTruthy()
     })
 })

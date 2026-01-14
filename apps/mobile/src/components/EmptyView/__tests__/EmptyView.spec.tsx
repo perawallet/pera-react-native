@@ -13,17 +13,28 @@
 import { describe, it, expect } from 'vitest'
 import React from 'react'
 import { render, screen } from '@test-utils/render'
-import PWBottomSheet from '../PWBottomSheet'
 import { Text } from 'react-native'
+import EmptyView from '../EmptyView'
 
-describe('PWBottomSheet', () => {
-    it('shows children when visible', () => {
+describe('EmptyView', () => {
+    it('renders title and body correctly', () => {
         render(
-            <PWBottomSheet isVisible={true}>
-                <Text>Sheet Content</Text>
-            </PWBottomSheet>,
+            <EmptyView
+                title='Empty Title'
+                body='Empty Body'
+            />,
         )
+        expect(screen.getByText('Empty Title')).toBeTruthy()
+        expect(screen.getByText('Empty Body')).toBeTruthy()
+    })
 
-        expect(screen.getByText('Sheet Content')).toBeTruthy()
+    it('renders button if provided', () => {
+        render(
+            <EmptyView
+                body='Test'
+                button={<Text>Action</Text>}
+            />,
+        )
+        expect(screen.getByText('Action')).toBeTruthy()
     })
 })
