@@ -123,7 +123,7 @@ jobs:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
           SLACK_TITLE: "Release Candidate: iOS Staging ${{ job.status }}"
-          SLACK_MESSAGE: "Version: ${{ env.VERSION }} (${{ env.BUILD }})\nDetails: ${{ job.status }}\n@qateam"
+          SLACK_MESSAGE: "Version: ${{ env.VERSION }} (${{ env.BUILD }})\nDetails: ${{ job.status }}\n\n@qateam"
 
   ios-production:
     name: iOS Production (RC)
@@ -206,7 +206,7 @@ jobs:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
           SLACK_TITLE: "Release Candidate: iOS Production ${{ job.status }}"
-          SLACK_MESSAGE: "Version: ${{ env.VERSION }} (${{ env.BUILD }})\nDetails: ${{ job.status }}\n@qateam"
+          SLACK_MESSAGE: "Version: ${{ env.VERSION }} (${{ env.BUILD }})\nDetails: ${{ job.status }}\n\n@qateam"
 
   android-staging:
     name: Android Staging (RC)
@@ -296,7 +296,7 @@ jobs:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
           SLACK_TITLE: "Release Candidate: Android Staging ${{ job.status }}"
-          SLACK_MESSAGE: "Version: ${{ env.VERSION }} (${{ env.BUILD }})\nDetails: ${{ job.status }}\n@qateam"
+          SLACK_MESSAGE: "Version: ${{ env.VERSION }} (${{ env.BUILD }})\nDetails: ${{ job.status }}\n\n@qateam"
 
   android-production:
     name: Android Production (RC)
@@ -386,4 +386,4 @@ jobs:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
           SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
           SLACK_TITLE: "Release Candidate: Android Production ${{ job.status }}"
-          SLACK_MESSAGE: "Version: ${{ env.VERSION }} (${{ env.BUILD }})\nDetails: ${{ job.status }}\n@qateam"
+          SLACK_MESSAGE: "Version: ${{ env.VERSION }} (${{ env.BUILD }})\nDetails: ${{ job.status }}\n\n@qateam"
