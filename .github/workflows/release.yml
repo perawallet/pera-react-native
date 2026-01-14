@@ -36,6 +36,12 @@ jobs:
           PERA_MAINNET_BACKEND_URL: ${{ secrets.PRODUCTION_MAINNET_BACKEND_URL }}
           PERA_TESTNET_BACKEND_URL: ${{ secrets.PRODUCTION_TESTNET_BACKEND_URL }}
           PERA_BACKEND_API_KEY: ${{ secrets.PRODUCTION_BACKEND_API_KEY }}
+          PERA_ALGOD_API_KEY: ${{ secrets.PRODUCTION_ALGOD_API_KEY }}
+          PERA_INDEXER_API_KEY: ${{ secrets.PRODUCTION_INDEXER_API_KEY }}
+          PERA_MAINNET_ALGOD_URL: ${{ secrets.PRODUCTION_MAINNET_ALGOD_URL }}
+          PERA_TESTNET_ALGOD_URL: ${{ secrets.PRODUCTION_TESTNET_ALGOD_URL }}
+          PERA_MAINNET_INDEXER_URL: ${{ secrets.PRODUCTION_MAINNET_INDEXER_URL }}
+          PERA_TESTNET_INDEXER_URL: ${{ secrets.PRODUCTION_TESTNET_INDEXER_URL }}
         run: pnpm run build:packages --filter=@perawallet/wallet-core-config
 
       - name: Test
@@ -68,6 +74,12 @@ jobs:
           PERA_MAINNET_BACKEND_URL: ${{ secrets.STAGING_MAINNET_BACKEND_URL }}
           PERA_TESTNET_BACKEND_URL: ${{ secrets.STAGING_TESTNET_BACKEND_URL }}
           PERA_BACKEND_API_KEY: ${{ secrets.STAGING_BACKEND_API_KEY }}
+          PERA_ALGOD_API_KEY: ${{ secrets.STAGING_ALGOD_API_KEY }}
+          PERA_INDEXER_API_KEY: ${{ secrets.STAGING_INDEXER_API_KEY }}
+          PERA_MAINNET_ALGOD_URL: ${{ secrets.STAGING_MAINNET_ALGOD_URL }}
+          PERA_TESTNET_ALGOD_URL: ${{ secrets.STAGING_TESTNET_ALGOD_URL }}
+          PERA_MAINNET_INDEXER_URL: ${{ secrets.STAGING_MAINNET_INDEXER_URL }}
+          PERA_TESTNET_INDEXER_URL: ${{ secrets.STAGING_TESTNET_INDEXER_URL }}
         run: pnpm run build:packages --filter=@perawallet/wallet-core-config
 
       - name: Inject Google Service Info
@@ -171,6 +183,12 @@ jobs:
           PERA_MAINNET_BACKEND_URL: ${{ secrets.PRODUCTION_MAINNET_BACKEND_URL }}
           PERA_TESTNET_BACKEND_URL: ${{ secrets.PRODUCTION_TESTNET_BACKEND_URL }}
           PERA_BACKEND_API_KEY: ${{ secrets.PRODUCTION_BACKEND_API_KEY }}
+          PERA_ALGOD_API_KEY: ${{ secrets.PRODUCTION_ALGOD_API_KEY }}
+          PERA_INDEXER_API_KEY: ${{ secrets.PRODUCTION_INDEXER_API_KEY }}
+          PERA_MAINNET_ALGOD_URL: ${{ secrets.PRODUCTION_MAINNET_ALGOD_URL }}
+          PERA_TESTNET_ALGOD_URL: ${{ secrets.PRODUCTION_TESTNET_ALGOD_URL }}
+          PERA_MAINNET_INDEXER_URL: ${{ secrets.PRODUCTION_MAINNET_INDEXER_URL }}
+          PERA_TESTNET_INDEXER_URL: ${{ secrets.PRODUCTION_TESTNET_INDEXER_URL }}
         run: pnpm run build:packages --filter=@perawallet/wallet-core-config
 
       - name: Inject Google Service Info
@@ -273,6 +291,12 @@ jobs:
           PERA_MAINNET_BACKEND_URL: ${{ secrets.STAGING_MAINNET_BACKEND_URL }}
           PERA_TESTNET_BACKEND_URL: ${{ secrets.STAGING_TESTNET_BACKEND_URL }}
           PERA_BACKEND_API_KEY: ${{ secrets.STAGING_BACKEND_API_KEY }}
+          PERA_ALGOD_API_KEY: ${{ secrets.STAGING_ALGOD_API_KEY }}
+          PERA_INDEXER_API_KEY: ${{ secrets.STAGING_INDEXER_API_KEY }}
+          PERA_MAINNET_ALGOD_URL: ${{ secrets.STAGING_MAINNET_ALGOD_URL }}
+          PERA_TESTNET_ALGOD_URL: ${{ secrets.STAGING_TESTNET_ALGOD_URL }}
+          PERA_MAINNET_INDEXER_URL: ${{ secrets.STAGING_MAINNET_INDEXER_URL }}
+          PERA_TESTNET_INDEXER_URL: ${{ secrets.STAGING_TESTNET_INDEXER_URL }}
         run: pnpm run build:packages --filter=@perawallet/wallet-core-config
 
       - name: Inject Google Services JSON
@@ -363,6 +387,12 @@ jobs:
           PERA_MAINNET_BACKEND_URL: ${{ secrets.PRODUCTION_MAINNET_BACKEND_URL }}
           PERA_TESTNET_BACKEND_URL: ${{ secrets.PRODUCTION_TESTNET_BACKEND_URL }}
           PERA_BACKEND_API_KEY: ${{ secrets.PRODUCTION_BACKEND_API_KEY }}
+          PERA_ALGOD_API_KEY: ${{ secrets.PRODUCTION_ALGOD_API_KEY }}
+          PERA_INDEXER_API_KEY: ${{ secrets.PRODUCTION_INDEXER_API_KEY }}
+          PERA_MAINNET_ALGOD_URL: ${{ secrets.PRODUCTION_MAINNET_ALGOD_URL }}
+          PERA_TESTNET_ALGOD_URL: ${{ secrets.PRODUCTION_TESTNET_ALGOD_URL }}
+          PERA_MAINNET_INDEXER_URL: ${{ secrets.PRODUCTION_MAINNET_INDEXER_URL }}
+          PERA_TESTNET_INDEXER_URL: ${{ secrets.PRODUCTION_TESTNET_INDEXER_URL }}
         run: pnpm run build:packages --filter=@perawallet/wallet-core-config
 
       - name: Inject Google Services JSON
