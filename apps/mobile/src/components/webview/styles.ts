@@ -77,5 +77,12 @@ export const useStyles = makeStyles(theme => {
             paddingHorizontal: theme.spacing.lg,
             backgroundColor: theme.colors.background,
         },
+        absoluteFill: {
+            position: 'absolute',
+            left: 0,
+            right: 0,
+            top: 0,
+            bottom: 0,
+        },
     }
 })

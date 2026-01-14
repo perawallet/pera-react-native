@@ -6,6 +6,10 @@ description: Update project documentation when patterns change
 
 Use this workflow when the USER requests documentation updates or establishes new patterns.
 
+## Prerequisites
+
+Read `.agent/rules/documentation-standards.md` first - it defines where content belongs.
+
 ## IMPORTANT: Pattern Authority
 
 - Only update documentation when the USER initiates the change
@@ -23,9 +27,9 @@ Use this workflow when the USER requests documentation updates or establishes ne
 
 ### 1. Identify What Changed
 
-Determine which files are affected:
+Determine which location is appropriate:
 
-**For human-readable overviews (docs/):**
+**docs/ (lean overviews for humans):**
 
 | Change Type          | File                         |
 | -------------------- | ---------------------------- |
@@ -37,45 +41,55 @@ Determine which files are affected:
 | Security             | `docs/SECURITY.md`           |
 | Performance          | `docs/PERFORMANCE.md`        |
 
-**For agent rules with code examples (.agent/):**
+**.agent/rules/ (detailed patterns for AI):**
 
-| Change Type       | File                               |
-| ----------------- | ---------------------------------- |
-| Code patterns     | `.agent/rules/code-patterns.md`    |
-| Project standards | `.agent/rules/running-commands.md` |
-| Work completion   | `.agent/rules/work-completion.md`  |
+| Change Type            | File                         |
+| ---------------------- | ---------------------------- |
+| UI components, styling | `component-patterns.md`      |
+| Custom hooks           | `hook-patterns.md`           |
+| Zustand stores         | `store-patterns.md`          |
+| TypeScript conventions | `typescript-patterns.md`     |
+| Testing templates      | `testing-patterns.md`        |
+| What NOT to do         | `anti-patterns.md`           |
+| Documentation rules    | `documentation-standards.md` |
+| Project commands       | `running-commands.md`        |
 
-### 2. Update Documentation
+### 2. Apply Content Rules
 
-**In `docs/`**: Keep it high-level and human-readable
+**For docs/:**
 
-- Tables, simple lists
-- Minimal code examples
-- Focus on "what" and "why"
+- Bullet points and tables only
+- No extensive code examples
+- Under 100 lines
+- Point to `.agent/rules/` for details
 
-**In `.agent/`**: Add detailed patterns
+**For .agent/rules/:**
 
 - Full code examples (good AND bad)
-- Anti-patterns with explanations
-- Specific implementation details
+- Include `trigger: always_on` frontmatter
+- Under 150 lines per file
+- One topic per file
 
-### 3. Avoid Duplication
+### 3. Check for Duplication
 
-- `docs/` = overview for humans
-- `.agent/` = details for agents
-- Don't repeat the same information in both
+Before adding content, verify:
 
-### 4. Keep It Agent-Agnostic
+- Same info doesn't exist in another location
+- If adding to docs/, reference rules file for details
+- If adding to rules/, don't repeat high-level overview
 
-Documentation must be readable by any AI or human. Avoid:
-
-- Tool-specific syntax
-- Platform-specific references
-
-### 5. Format Documentation
+### 4. Format Documentation
 
 // turbo
 
 ```sh
-pnpm format "docs/**/*.md"
+pnpm format
+```
+
+### 5. Verify
+
+// turbo
+
+```sh
+pnpm pre-push
 ```

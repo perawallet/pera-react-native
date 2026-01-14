@@ -46,23 +46,21 @@ describe('useDeleteAllData', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-            ; (useAllAccounts as Mock).mockReturnValue([
-                { id: 'account-1' },
-                { id: 'account-2' },
-            ])
-            ; (useRemoveAccountById as Mock).mockReturnValue(
-                mockRemoveAccountById,
-            )
-            ; (useContacts as Mock).mockReturnValue({
-                contacts: ['contact-1', 'contact-2'],
-                deleteContact: mockDeleteContact,
-            })
-            ; (usePreferences as Mock).mockReturnValue({
-                clearAllPreferences: mockClearAllPreferences,
-            })
-            ; (useQueryClient as Mock).mockReturnValue({
-                removeQueries: mockRemoveQueries,
-            })
+        ;(useAllAccounts as Mock).mockReturnValue([
+            { id: 'account-1' },
+            { id: 'account-2' },
+        ])
+        ;(useRemoveAccountById as Mock).mockReturnValue(mockRemoveAccountById)
+        ;(useContacts as Mock).mockReturnValue({
+            contacts: ['contact-1', 'contact-2'],
+            deleteContact: mockDeleteContact,
+        })
+        ;(usePreferences as Mock).mockReturnValue({
+            clearAllPreferences: mockClearAllPreferences,
+        })
+        ;(useQueryClient as Mock).mockReturnValue({
+            removeQueries: mockRemoveQueries,
+        })
     })
 
     it('should delete all accounts, contacts, preferences and queries', () => {
@@ -85,7 +83,7 @@ describe('useDeleteAllData', () => {
     })
 
     it('should not call removeAccountById if account id is missing', () => {
-        ; (useAllAccounts as Mock).mockReturnValue([{ id: undefined }])
+        ;(useAllAccounts as Mock).mockReturnValue([{ id: undefined }])
 
         const { result } = renderHook(() => useDeleteAllData())
 

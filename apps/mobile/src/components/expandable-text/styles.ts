@@ -10,14 +10,10 @@
  limitations under the License
  */
 
-import { StyleSheet } from 'react-native'
-import { useTheme } from '@rneui/themed'
+import { makeStyles } from '@rneui/themed'
 
-export const useStyles = () => {
-    const { theme } = useTheme()
-    return StyleSheet.create({
-        text: {
-            color: theme.colors.textMain,
-        },
-    })
-}
+export const useStyles = makeStyles(theme => ({
+    text: {
+        color: theme.colors.textMain,
+    },
+}))

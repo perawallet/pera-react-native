@@ -67,14 +67,14 @@ describe('useArbitraryDataSigningView', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-            ; (useToast as Mock).mockReturnValue({ showToast: mockShowToast })
-            ; (useSigningRequest as Mock).mockReturnValue({
-                removeSignRequest: mockRemoveSignRequest,
-            })
-            ; (useAllAccounts as Mock).mockReturnValue(mockAccounts)
-            ; (useArbitraryDataSigner as Mock).mockReturnValue({
-                signArbitraryData: mockSignArbitraryData,
-            })
+        ;(useToast as Mock).mockReturnValue({ showToast: mockShowToast })
+        ;(useSigningRequest as Mock).mockReturnValue({
+            removeSignRequest: mockRemoveSignRequest,
+        })
+        ;(useAllAccounts as Mock).mockReturnValue(mockAccounts)
+        ;(useArbitraryDataSigner as Mock).mockReturnValue({
+            signArbitraryData: mockSignArbitraryData,
+        })
     })
 
     describe('approveRequest', () => {
@@ -100,7 +100,7 @@ describe('useArbitraryDataSigningView', () => {
         })
 
         it('should fail if account is not found', async () => {
-            ; (useAllAccounts as Mock).mockReturnValue([])
+            ;(useAllAccounts as Mock).mockReturnValue([])
             const { result } = renderHook(() =>
                 useArbitraryDataSigningView(baseRequest),
             )
