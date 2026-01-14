@@ -29,6 +29,17 @@ All component styling uses React Native Elements (RNE) theming via the `makeStyl
 - Use theme tokens (`theme.colors.*`, `theme.spacing.*`) — no hardcoded values
 - No inline styles
 
+### Why RNE?
+
+**Decision:** Maintain React Native Elements (RNE) as the primary UI and styling library.
+
+**Alternatives Considered:** Unistyles, NativeWind (Tailwind).
+
+**Reasoning:**
+
+- **Component Ecosystem:** Unlike pure styling engines (Unistyles/NativeWind), RNE provides complex, pre-built components (e.g., BottomSheets, Tabs, Accordions) out of the box.
+- **Maintenance Overhead:** Migrating to a pure styling engine would require building and maintaining these core components from scratch, significantly increasing our maintenance burden.
+
 For detailed patterns and examples, see `.agent/rules/code-patterns.md`.
 
 ## Code Quality
