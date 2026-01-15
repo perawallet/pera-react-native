@@ -1,0 +1,4 @@
+# We use asdf to manage our tool versions but ruby version is set in apps/mobile/.ruby-version 
+# since the ruby setup runs in that pwd
+nodejs 22
+java 17

@@ -65,12 +65,10 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: '.tool-versions'
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 10.26.2
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -98,7 +96,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version-file: '.tool-versions'
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
