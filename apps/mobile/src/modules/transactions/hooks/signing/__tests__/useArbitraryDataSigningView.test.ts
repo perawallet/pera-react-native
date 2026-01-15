@@ -12,7 +12,7 @@
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useArbitraryDataSigningView } from '../use-arbitrary-data-signing-view'
+import { useArbitraryDataSigningView } from '../useArbitraryDataSigningView'
 import {
     useAllAccounts,
     useArbitraryDataSigner,

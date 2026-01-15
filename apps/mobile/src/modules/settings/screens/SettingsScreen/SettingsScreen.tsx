@@ -28,9 +28,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useWebView } from '@modules/webview'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
-import { useDeleteAllData } from '@modules/settings/hooks/delete-all-data'
+import { useDeleteAllData } from '@modules/settings/hooks/useDeleteAllData'
 import { AppVersion } from '@modules/settings/components/AppVersion'
-import { useSettingsOptions } from '@modules/settings/hooks/settings-options'
+import { useSettingsOptions } from '@modules/settings/hooks/useSettingsOptions'
 
 //TODO: add ratings view handling
 

@@ -35,7 +35,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
 }))
 
 vi.mock(
-    '@modules/transactions/hooks/signing/use-arbitrary-data-signing-view',
+    '@modules/transactions/hooks/signing/useArbitraryDataSigningView',
     () => ({
         useArbitraryDataSigningView: vi.fn(() => ({
             approveRequest: vi.fn(),

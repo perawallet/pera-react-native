@@ -24,7 +24,7 @@ import { SendFundsInfoPanel } from '../InfoPanel/SendFundsInfoPanel'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { LoadingView } from '@components/LoadingView'
-import { useInputView } from '@modules/transactions/hooks/send-funds/use-input-view'
+import { useInputView } from '@modules/transactions/hooks/send-funds/useInputView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 
