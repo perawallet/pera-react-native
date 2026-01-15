@@ -11,7 +11,7 @@ This is the index of code patterns for the Pera Wallet mobile app. Each pattern 
 | Pattern              | File                     | When to Use                    |
 | -------------------- | ------------------------ | ------------------------------ |
 | Components & Styling | `component-patterns.md`  | Creating UI components, styles |
-| Hooks                | `hook-patterns.md`       | Creating custom hooks          |
+| Hooks                | `hook-patterns.md`       | Query, Mutation, Store, component logic hooks |
 | State Management     | `store-patterns.md`      | Zustand stores, state access   |
 | TypeScript           | `typescript-patterns.md` | Types, interfaces, naming      |
 | Testing              | `testing-patterns.md`    | Writing tests                  |
