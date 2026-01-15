@@ -244,7 +244,7 @@ const SendFundsTransactionConfirmation = ({
                             ? toWholeUnits(params.minFee, ALGO_ASSET)
                             : null
                     }
-                    isSkeleton={paramsPending}
+                    isLoading={paramsPending}
                 />
             </RowTitledItem>
             <Divider style={styles.divider} />
@@ -258,7 +258,7 @@ const SendFundsTransactionConfirmation = ({
                         minPrecision={DEFAULT_PRECISION}
                         showSymbol
                         value={currentBalance.amount}
-                        isSkeleton={currentBalancePending}
+                        isLoading={currentBalancePending}
                     />
                     <CurrencyDisplay
                         currency={preferredCurrency}
