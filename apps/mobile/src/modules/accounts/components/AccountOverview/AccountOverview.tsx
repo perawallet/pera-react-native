@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWView } from '@components/PWView'
+import { PWView } from '@components/core/PWView'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
@@ -21,7 +21,7 @@ import { Text } from '@rneui/themed'
 import { useCallback, useState } from 'react'
 import { useChartInteraction } from '@hooks/chart-interaction'
 import { useStyles } from './styles'
-import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
+import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import { WealthTrend } from '@components/WealthTrend'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import {
@@ -31,7 +31,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { usePreferences, useSettings } from '@perawallet/wallet-core-settings'
-import { PWButton } from '@components/PWButton'
+import { PWButton } from '@components/core/PWButton'
 import { UserPreferences } from '@constants/user-preferences'
 import { ExpandablePanel } from '@components/ExpandablePanel'
 

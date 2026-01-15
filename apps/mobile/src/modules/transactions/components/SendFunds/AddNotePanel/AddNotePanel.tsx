@@ -10,13 +10,16 @@
  limitations under the License
  */
 
-import { PWBottomSheet, PWBottomSheetProps } from '@components/PWBottomSheet'
+import {
+    PWBottomSheet,
+    PWBottomSheetProps,
+} from '@components/core/PWBottomSheet'
 import { Input, Text } from '@rneui/themed'
 import { useContext, useEffect, useState } from 'react'
-import { PWIcon } from '@components/PWIcon'
+import { PWIcon } from '@components/core/PWIcon'
 import { useForm, Controller } from 'react-hook-form'
 import { useStyles } from './styles'
-import { PWView } from '@components/PWView'
+import { PWView } from '@components/core/PWView'
 import { SendFundsContext } from '@modules/transactions/providers/SendFundsProvider'
 import { useLanguage } from '@hooks/language'
 import { zodResolver } from '@hookform/resolvers/zod'

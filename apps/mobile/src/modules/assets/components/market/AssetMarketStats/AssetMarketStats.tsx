@@ -15,7 +15,7 @@ import { formatNumber, formatWithUnits } from '@perawallet/wallet-core-shared'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import { Text } from '@rneui/themed'
-import { PWView } from '@components/PWView'
+import { PWView } from '@components/core/PWView'
 import { useMemo } from 'react'
 import {
     PeraAsset,

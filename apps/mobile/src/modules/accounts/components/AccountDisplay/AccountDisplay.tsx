@@ -15,11 +15,11 @@ import {
     getAccountDisplayName,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { PWView, PWViewProps } from '@components/PWView'
+import { PWView, PWViewProps } from '@components/core/PWView'
 import { useStyles } from './styles'
 
 import { AccountIcon, AccountIconProps } from '../AccountIcon'
-import { PWIcon } from '@components/PWIcon'
+import { PWIcon } from '@components/core/PWIcon'
 
 type AccountDisplayProps = {
     account?: WalletAccount

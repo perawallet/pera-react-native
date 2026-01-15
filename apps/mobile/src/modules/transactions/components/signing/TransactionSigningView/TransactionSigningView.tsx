@@ -13,7 +13,7 @@
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { EmptyView } from '@components/EmptyView'
 import { TransactionIcon } from '@modules/transactions/components/TransactionIcon/TransactionIcon'
-import { PWView } from '@components/PWView'
+import { PWView } from '@components/core/PWView'
 import {
     encodeAlgorandAddress,
     TransactionSignRequest,
@@ -29,10 +29,10 @@ import { useStyles } from './styles'
 import { BalanceImpactView } from '../BalanceImpactView/BalanceImpactView'
 import { useLanguage } from '@hooks/language'
 import { useToast } from '@hooks/toast'
-import { PWButton } from '@components/PWButton'
+import { PWButton } from '@components/core/PWButton'
 import { useTransactionSigner } from '@perawallet/wallet-core-accounts'
 import { config } from '@perawallet/wallet-core-config'
-import { bottomSheetNotifier } from '@components/PWBottomSheet'
+import { bottomSheetNotifier } from '@components/core/PWBottomSheet'
 
 type TransactionSigningViewProps = {
     request: TransactionSignRequest

@@ -10,11 +10,11 @@
  limitations under the License
  */
 
-import { PWButton } from '@components/PWButton'
-import { PWView } from '@components/PWView'
+import { PWButton } from '@components/core/PWButton'
+import { PWView } from '@components/core/PWView'
 import { Image, Text } from '@rneui/themed'
 import { useStyles } from './styles'
-import { PWIcon } from '@components/PWIcon'
+import { PWIcon } from '@components/core/PWIcon'
 import { useLanguage } from '@hooks/language'
 
 import CardBackground from '@assets/images/card-background.png'

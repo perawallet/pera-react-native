@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import { PWView } from '@components/PWView'
+import { PWView } from '@components/core/PWView'
 import { useLanguage } from '@hooks/language'
 import { useWebView } from '@hooks/webview'
-import { PWListItem } from '@components/PWListItem'
+import { PWListItem } from '@components/core/PWListItem'
 import { config } from '@perawallet/wallet-core-config'
 import { useStyles } from './styles'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'

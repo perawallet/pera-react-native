@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWIcon } from '@components/PWIcon'
+import { PWIcon } from '@components/core/PWIcon'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 

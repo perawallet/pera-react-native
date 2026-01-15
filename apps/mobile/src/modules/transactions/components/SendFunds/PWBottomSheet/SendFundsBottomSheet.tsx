@@ -14,7 +14,7 @@ import {
     useAccountAssetBalanceQuery,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
-import { PWBottomSheet } from '@components/PWBottomSheet'
+import { PWBottomSheet } from '@components/core/PWBottomSheet'
 import { EmptyView } from '@components/EmptyView'
 import { SendFundsAssetSelectionView } from '../AssetSelection/SendFundsAssetSelectionView'
 import { SendFundsInputView } from '../InputView/SendFundsInputView'

@@ -15,16 +15,16 @@ import {
     ArbitraryDataSignRequest,
     PeraArbitraryDataMessage,
 } from '@perawallet/wallet-core-blockchain'
-import { PWView } from '@components/PWView'
+import { PWView } from '@components/core/PWView'
 import { useLanguage } from '@hooks/language'
-import { PWHeader } from '@components/PWHeader'
+import { PWHeader } from '@components/core/PWHeader'
 import { RowTitledItem } from '@components/RowTitledItem'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { useStyles } from './ArbitraryDataSigningDetailsView.style'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
-import { PWIcon } from '@components/PWIcon'
+import { PWIcon } from '@components/core/PWIcon'
 import { ScrollView } from 'react-native-gesture-handler'
 
 type ArbitraryDataSigningDetailsViewProps = {

@@ -11,8 +11,8 @@
  */
 
 import { ParamListBase, useNavigation } from '@react-navigation/native'
-import { PWListItem } from '@components/PWListItem'
-import { PWView } from '@components/PWView'
+import { PWListItem } from '@components/core/PWListItem'
+import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'

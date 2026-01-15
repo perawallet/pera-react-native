@@ -10,16 +10,16 @@
  limitations under the License
  */
 
-import { PWIcon, PWIconSize } from '@components/PWIcon'
-import { PWBottomSheet } from '@components/PWBottomSheet'
+import { PWIcon, PWIconSize } from '@components/core/PWIcon'
+import { PWBottomSheet } from '@components/core/PWBottomSheet'
 import { useModalState } from '@hooks/modal-state'
 import { PropsWithChildren } from 'react'
 import { useStyles } from './styles'
-import { PWView } from '@components/PWView'
+import { PWView } from '@components/core/PWView'
 import { Text } from '@rneui/themed'
 import { useLanguage } from '@hooks/language'
-import { PWButton } from '@components/PWButton'
-import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
+import { PWButton } from '@components/core/PWButton'
+import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 
 type InfoButtonProps = {
     variant?: 'primary' | 'secondary'

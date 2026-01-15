@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWIcon } from '@components/PWIcon'
+import { PWIcon } from '@components/core/PWIcon'
 import { CheckBox, CheckBoxProps } from '@rneui/themed'
 
 type PWCheckboxProps = {

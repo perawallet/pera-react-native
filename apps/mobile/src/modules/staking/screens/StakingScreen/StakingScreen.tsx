@@ -11,9 +11,9 @@
  */
 
 import { config } from '@perawallet/wallet-core-config'
-import { PWWebView } from '@components/PWWebView'
+import { PWWebView } from '@components/core/PWWebView'
 import { useStyles } from './styles'
-import { PWView } from '@components/PWView'
+import { PWView } from '@components/core/PWView'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 

@@ -13,7 +13,7 @@
 import { useStyles } from './styles'
 import { ExpandableText } from '@components/ExpandableText'
 import { Text } from '@rneui/themed'
-import { PWView } from '@components/PWView'
+import { PWView } from '@components/core/PWView'
 import { useLanguage } from '@hooks/language'
 
 type AssetDescriptionProps = {

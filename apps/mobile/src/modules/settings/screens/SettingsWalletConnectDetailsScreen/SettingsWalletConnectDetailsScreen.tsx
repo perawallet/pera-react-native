@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { PWButton } from '@components/PWButton'
-import { PWView } from '@components/PWView'
+import { PWButton } from '@components/core/PWButton'
+import { PWView } from '@components/core/PWView'
 import { useLanguage } from '@hooks/language'
 import { useModalState } from '@hooks/modal-state'
 import {
@@ -25,13 +25,13 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { WalletConnectSettingsStackParamsList } from '@modules/settings/routes'
 import { useWebView } from '@hooks/webview'
 import { v7 as uuid } from 'uuid'
-import { PWBadge } from '@components/PWBadge'
+import { PWBadge } from '@components/core/PWBadge'
 import { RowTitledItem } from '@components/RowTitledItem'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
-import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
-import { PWIcon } from '@components/PWIcon'
+import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
+import { PWIcon } from '@components/core/PWIcon'
 import { ScrollView } from 'react-native-gesture-handler'
 import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
 import { PermissionItem } from '@modules/walletconnect/components/PermissionItem'

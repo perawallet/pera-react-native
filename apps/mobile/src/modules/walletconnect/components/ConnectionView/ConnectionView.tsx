@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWView } from '@components/PWView'
+import { PWView } from '@components/core/PWView'
 import {
     AlgorandChain,
     AlgorandPermission,
@@ -20,24 +20,24 @@ import {
 } from '@perawallet/wallet-core-walletconnect'
 import { Image, Text } from '@rneui/themed'
 import { useStyles } from './styles'
-import { PWBadge } from '@components/PWBadge'
+import { PWBadge } from '@components/core/PWBadge'
 import { useLanguage } from '@hooks/language'
 import React from 'react'
-import { PWButton } from '@components/PWButton'
+import { PWButton } from '@components/core/PWButton'
 import { useWebView } from '@hooks/webview'
 import { v7 as uuid } from 'uuid'
-import { PWIcon } from '@components/PWIcon'
+import { PWIcon } from '@components/core/PWIcon'
 import {
     useSigningAccounts,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
-import { PWCheckbox } from '@components/PWCheckbox'
-import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
+import { PWCheckbox } from '@components/core/PWCheckbox'
+import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import { ScrollView } from 'react-native-gesture-handler'
 import { useToast } from '@hooks/toast'
 import { PermissionItem } from '../PermissionItem'
-import { bottomSheetNotifier } from '@components/PWBottomSheet'
+import { bottomSheetNotifier } from '@components/core/PWBottomSheet'
 
 //TODO implement project validation using our backend to show a "verified" badge somewhere
 export const ConnectionView = ({

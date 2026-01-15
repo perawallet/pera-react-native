@@ -14,7 +14,7 @@ import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useStyles } from './styles'
 import { Text, useTheme, Overlay } from '@rneui/themed'
-import { PWView } from '@components/PWView'
+import { PWView } from '@components/core/PWView'
 import { PanelButton } from '@components/PanelButton'
 
 import WelcomeImage from '@assets/images/welcome-background.svg'

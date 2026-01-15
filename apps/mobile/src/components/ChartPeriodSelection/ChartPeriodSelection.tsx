@@ -11,10 +11,10 @@
  */
 
 import { Text } from '@rneui/themed'
-import { PWView } from '../PWView'
+import { PWView } from '../core/PWView'
 import { useStyles } from './styles'
 import { useCallback, useState } from 'react'
-import { PWTouchableOpacity } from '../PWTouchableOpacity'
+import { PWTouchableOpacity } from '../core/PWTouchableOpacity'
 import { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/language'
 

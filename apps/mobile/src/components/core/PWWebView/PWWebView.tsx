@@ -49,7 +49,7 @@ import { WebViewFooterBar } from './WebViewFooterBar'
 import { WebViewContext } from '@providers/WebViewProvider'
 import { useIsDarkMode } from '@hooks/theme'
 import { useLanguage } from '@hooks/language'
-import { bottomSheetNotifier } from '@components/PWBottomSheet'
+import { bottomSheetNotifier } from '@components/core/PWBottomSheet'
 
 export type PWWebViewProps = {
     url: string

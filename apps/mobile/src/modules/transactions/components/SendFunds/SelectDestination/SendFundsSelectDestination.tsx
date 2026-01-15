@@ -10,12 +10,12 @@
  limitations under the License
  */
 
-import { PWView } from '@components/PWView'
+import { PWView } from '@components/core/PWView'
 import { AddressSearchView } from '@components/AddressSearchView'
 import { useContext, useMemo } from 'react'
 import { SendFundsContext } from '@modules/transactions/providers/SendFundsProvider'
 import { useStyles } from './styles'
-import { PWHeader } from '@components/PWHeader'
+import { PWHeader } from '@components/core/PWHeader'
 import { AssetIcon } from '@modules/assets/components/AssetIcon'
 import { Text, useTheme } from '@rneui/themed'
 import { EmptyView } from '@components/EmptyView'

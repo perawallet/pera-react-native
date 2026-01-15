@@ -11,7 +11,7 @@
  */
 
 import { Skeleton } from '@rneui/themed'
-import { PWView } from '@components/PWView'
+import { PWView } from '@components/core/PWView'
 import {
     AssetWithAccountBalance,
     useAccountBalancesQuery,
@@ -19,10 +19,10 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useCallback, useContext, useMemo } from 'react'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
-import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
+import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import { useStyles } from './styles'
 import { SendFundsContext } from '@modules/transactions/providers/SendFundsProvider'
-import { PWHeader } from '@components/PWHeader'
+import { PWHeader } from '@components/core/PWHeader'
 import { useLanguage } from '@hooks/language'
 import { FlashList } from '@shopify/flash-list'
 

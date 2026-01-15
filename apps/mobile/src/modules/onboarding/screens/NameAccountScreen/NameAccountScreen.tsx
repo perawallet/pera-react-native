@@ -17,9 +17,9 @@ import {
 } from '@react-navigation/native-stack'
 import { useStyles } from './styles'
 import { Input, Text } from '@rneui/themed'
-import { PWView } from '@components/PWView'
-import { PWButton } from '@components/PWButton'
-import { PWIcon } from '@components/PWIcon'
+import { PWView } from '@components/core/PWView'
+import { PWButton } from '@components/core/PWButton'
+import { PWIcon } from '@components/core/PWIcon'
 
 import {
     useAllAccounts,

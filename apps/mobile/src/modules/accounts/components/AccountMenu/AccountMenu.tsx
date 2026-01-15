@@ -15,7 +15,7 @@ import { Tab, TabView } from '@rneui/themed'
 
 import { useStyles } from './styles'
 import { PortfolioView } from '../PortfolioView'
-import { PWView } from '@components/PWView'
+import { PWView } from '@components/core/PWView'
 import { useEffect, useState } from 'react'
 import { InboxTab } from './InboxTab'
 import { AccountsTab } from './AccountsTab'

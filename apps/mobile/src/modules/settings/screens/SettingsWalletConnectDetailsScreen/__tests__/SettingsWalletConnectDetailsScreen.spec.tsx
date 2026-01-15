@@ -63,17 +63,17 @@ vi.mock('@hooks/language', () => ({
     useLanguage: vi.fn(() => ({ t: (key: string) => key })),
 }))
 
-vi.mock('@components/PWButton', () => ({
+vi.mock('@components/core/PWButton', () => ({
     PWButton: ({ title }: { title: string }) => <button>{title}</button>,
 }))
 
-vi.mock('@components/PWView', () => ({
+vi.mock('@components/core/PWView', () => ({
     PWView: ({ children }: { children: React.ReactNode }) => (
         <div>{children}</div>
     ),
 }))
 
-vi.mock('@components/PWTouchableOpacity', () => ({
+vi.mock('@components/core/PWTouchableOpacity', () => ({
     PWTouchableOpacity: ({
         children,
         onPress,
@@ -120,11 +120,11 @@ vi.mock('@components/ExpandablePanel/TitledExpandablePanel', () => ({
     ),
 }))
 
-vi.mock('@components/PWBadge', () => ({
+vi.mock('@components/core/PWBadge', () => ({
     PWBadge: ({ value }: { value: string | number }) => <span>{value}</span>,
 }))
 
-vi.mock('@components/PWIcon', () => ({
+vi.mock('@components/core/PWIcon', () => ({
     PWIcon: () => <div data-testid='pw-icon' />,
 }))
 

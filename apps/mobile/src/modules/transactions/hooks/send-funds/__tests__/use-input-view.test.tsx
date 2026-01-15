@@ -31,7 +31,7 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { useToast } from '@hooks/toast'
 
-vi.mock('@components/PWBottomSheet', () => ({
+vi.mock('@components/core/PWBottomSheet', () => ({
     bottomSheetNotifier: { current: null },
 }))
 

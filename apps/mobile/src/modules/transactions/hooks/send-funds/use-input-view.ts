@@ -31,7 +31,7 @@ import {
     useAccountInformationQuery,
 } from '@perawallet/wallet-core-blockchain'
 import { logger } from '@perawallet/wallet-core-shared'
-import { bottomSheetNotifier } from '@components/PWBottomSheet'
+import { bottomSheetNotifier } from '@components/core/PWBottomSheet'
 
 //business logic for the SendFundsInputView component - factored out for maintainability
 export const useInputView = (onNext: () => void) => {

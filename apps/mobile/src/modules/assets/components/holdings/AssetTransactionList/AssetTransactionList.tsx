@@ -11,10 +11,10 @@
  */
 
 import { useStyles } from './styles'
-import { PWView } from '@components/PWView'
+import { PWView } from '@components/core/PWView'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { PWButton } from '@components/PWButton'
+import { PWButton } from '@components/core/PWButton'
 import { Text } from '@rneui/themed'
 import { EmptyView } from '@components/EmptyView'
 import { FlashList } from '@shopify/flash-list'

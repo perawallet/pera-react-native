@@ -10,18 +10,18 @@
  limitations under the License
  */
 
-import { PWView } from '@components/PWView'
+import { PWView } from '@components/core/PWView'
 import Decimal from 'decimal.js'
 import { useContext } from 'react'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { useStyles } from './styles'
-import { PWButton } from '@components/PWButton'
+import { PWButton } from '@components/core/PWButton'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
 import { Button, Text } from '@rneui/themed'
 import { NumberPad } from '@components/NumberPad'
 import { SendFundsContext } from '@modules/transactions/providers/SendFundsProvider'
 import { AddNotePanel } from '../AddNotePanel'
-import { PWHeader } from '@components/PWHeader'
+import { PWHeader } from '@components/core/PWHeader'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { SendFundsInfoPanel } from '../InfoPanel/SendFundsInfoPanel'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'

@@ -11,11 +11,11 @@
  */
 
 import { Text } from '@rneui/themed'
-import { PWView } from '../PWView'
+import { PWView } from '../core/PWView'
 import { useStyles } from './styles'
 import { formatCurrency, HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { useMemo } from 'react'
-import { PWIcon } from '../PWIcon'
+import { PWIcon } from '../core/PWIcon'
 import Decimal from 'decimal.js'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import { useCurrency } from '@perawallet/wallet-core-currencies'

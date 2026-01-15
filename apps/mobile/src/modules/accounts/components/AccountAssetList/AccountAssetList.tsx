@@ -10,15 +10,15 @@
  limitations under the License
  */
 
-import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
+import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
-import { PWView } from '@components/PWView'
+import { PWView } from '@components/core/PWView'
 import { PropsWithChildren, useMemo, useState } from 'react'
 import { useStyles } from './styles'
 import { Text } from '@rneui/themed'
 
 import { SearchInput } from '@components/SearchInput'
-import { PWButton } from '@components/PWButton'
+import { PWButton } from '@components/core/PWButton'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {

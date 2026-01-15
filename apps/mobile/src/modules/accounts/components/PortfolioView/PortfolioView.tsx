@@ -14,7 +14,7 @@ import { Text } from '@rneui/themed'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/language'
 
-import { PWView, PWViewProps } from '@components/PWView'
+import { PWView, PWViewProps } from '@components/core/PWView'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { WealthChart } from '@components/WealthChart'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
@@ -22,7 +22,7 @@ import { useCallback } from 'react'
 import { useChartInteraction } from '@hooks/chart-interaction'
 import { WealthTrend } from '@components/WealthTrend'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
-import { PWButton } from '@components/PWButton'
+import { PWButton } from '@components/core/PWButton'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
     AccountBalanceHistoryItem,

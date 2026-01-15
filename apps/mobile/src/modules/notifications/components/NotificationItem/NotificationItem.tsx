@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-import { PWView } from '@components/PWView'
+import { PWView } from '@components/core/PWView'
 import { formatRelativeTime } from '@perawallet/wallet-core-shared'
 import { Image, Text } from '@rneui/themed'
 import { useStyles } from './styles'
 import { useCallback, useMemo } from 'react'
-import { PWIcon } from '@components/PWIcon'
-import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
+import { PWIcon } from '@components/core/PWIcon'
+import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import { PeraNotification } from '@perawallet/wallet-core-platform-integration'
 
 type NotificationItemProps = {

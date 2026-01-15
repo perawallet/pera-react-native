@@ -12,7 +12,7 @@
 
 import { Dialog, Input, Text, useTheme } from '@rneui/themed'
 import { ContactAvatar } from '@components/ContactAvatar'
-import { PWView } from '@components/PWView'
+import { PWView } from '@components/core/PWView'
 import { AddressEntryField } from '@components/AddressEntryField'
 import {
     Contact,
@@ -22,7 +22,7 @@ import {
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { KeyboardAvoidingView } from 'react-native'
 import { useStyles } from './styles'
-import { PWButton } from '@components/PWButton'
+import { PWButton } from '@components/core/PWButton'
 import { ScrollView } from 'react-native-gesture-handler'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, Controller } from 'react-hook-form'

@@ -16,13 +16,13 @@ import { Divider, Text, useTheme } from '@rneui/themed'
 import Decimal from 'decimal.js'
 import { AssetSelection } from '@modules/assets/components/AssetSelection'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import { PWView } from '@components/PWView'
+import { PWView } from '@components/core/PWView'
 import { View } from 'react-native'
 
 import { CurrencyInput } from '@components/CurrencyInput'
 import { ALGO_ASSET_ID, useAssetsQuery } from '@perawallet/wallet-core-assets'
-import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
-import { PWIcon } from '@components/PWIcon'
+import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
+import { PWIcon } from '@components/core/PWIcon'
 import { useLanguage } from '@hooks/language'
 
 //TODO this iz a mock implementation - implement properly

@@ -11,7 +11,7 @@
  */
 
 import { useContext, useMemo, useState } from 'react'
-import { PWView } from '@components/PWView'
+import { PWView } from '@components/core/PWView'
 import { SendFundsContext } from '@modules/transactions/providers/SendFundsProvider'
 import {
     DEFAULT_PRECISION,
@@ -24,13 +24,13 @@ import Decimal from 'decimal.js'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { Divider, Text, useTheme } from '@rneui/themed'
-import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
+import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import { useStyles } from './styles'
-import { PWButton } from '@components/PWButton'
+import { PWButton } from '@components/core/PWButton'
 import { useToast } from '@hooks/toast'
 import { AddNotePanel } from '../AddNotePanel'
-import { PWIcon } from '@components/PWIcon'
-import { PWHeader } from '@components/PWHeader'
+import { PWIcon } from '@components/core/PWIcon'
+import { PWHeader } from '@components/core/PWHeader'
 import {
     useAccountAssetBalanceQuery,
     useSelectedAccount,
@@ -51,7 +51,7 @@ import {
     useSuggestedParametersQuery,
 } from '@perawallet/wallet-core-blockchain'
 import { LoadingView } from '@components/LoadingView'
-import { bottomSheetNotifier } from '@components/PWBottomSheet'
+import { bottomSheetNotifier } from '@components/core/PWBottomSheet'
 
 type SendFundsTransactionConfirmationProps = {
     onNext: () => void

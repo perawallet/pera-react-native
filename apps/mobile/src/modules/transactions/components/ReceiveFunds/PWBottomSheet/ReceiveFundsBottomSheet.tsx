@@ -11,7 +11,7 @@
  */
 
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { PWBottomSheet } from '@components/PWBottomSheet'
+import { PWBottomSheet } from '@components/core/PWBottomSheet'
 
 import { useState } from 'react'
 import { useStyles } from './styles'
@@ -22,7 +22,7 @@ import { TAB_ANIMATION_CONFIG } from '@constants/ui'
 import { useLanguage } from '@hooks/language'
 import { ReceiveFundsAccountSelectionView } from '../AccountSelection/ReceiveFundsAccountSelectionView'
 import { ReceiveFundsQRView } from '../QrView/ReceiveFundsQRView'
-import { PWView } from '@components/PWView'
+import { PWView } from '@components/core/PWView'
 
 type ReceiveFundsBottomSheetProps = {
     account?: WalletAccount
