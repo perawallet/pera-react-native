@@ -34,10 +34,4 @@ describe('RootComponent', () => {
         // it cannot be unit tested in a Vitest environment.
         expect(true).toBe(true)
     })
-
-    it('exports are valid (type checking only)', () => {
-        // Verify the module can at least be imported without type errors
-        // The actual rendering tests should be done via E2E
-        expect(typeof describe).toBe('function')
-    })
 })
