@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './PermissionItem'
+export { PermissionItem } from './PermissionItem'
 export type { PermissionItemProps } from './PermissionItem'

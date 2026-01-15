@@ -19,7 +19,7 @@ type TabLabelProps = {
     active: boolean
 }
 
-const TabLabel = ({ i18nKey, active }: TabLabelProps) => {
+export const TabLabel = ({ i18nKey, active }: TabLabelProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
     return (
@@ -28,5 +28,3 @@ const TabLabel = ({ i18nKey, active }: TabLabelProps) => {
         </Text>
     )
 }
-
-export default TabLabel

@@ -12,7 +12,7 @@
 
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import useWalletConnectHandlers from '../useWalletConnectHandlers'
+import { useWalletConnectHandlers } from '../useWalletConnectHandlers'
 import { useWalletConnectStore } from '../../store'
 import { useSigningRequest } from '@perawallet/wallet-core-blockchain'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'

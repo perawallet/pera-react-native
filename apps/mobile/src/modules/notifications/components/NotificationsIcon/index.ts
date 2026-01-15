@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './NotificationsIcon'
+export { NotificationsIcon } from './NotificationsIcon'
 export type { NotificationsIconProps } from './NotificationsIcon'

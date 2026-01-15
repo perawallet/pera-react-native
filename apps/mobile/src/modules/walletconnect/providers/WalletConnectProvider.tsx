@@ -11,9 +11,9 @@
  */
 
 import React, { PropsWithChildren, useEffect } from 'react'
-import PWBottomSheet from '@components/PWBottomSheet'
+import { PWBottomSheet } from '@components/PWBottomSheet'
 import { useWindowDimensions } from 'react-native'
-import ConnectionView from '@modules/walletconnect/components/ConnectionView/ConnectionView'
+import { ConnectionView } from '@modules/walletconnect/components/ConnectionView/ConnectionView'
 import {
     useWalletConnect,
     useWalletConnectSessionRequests,

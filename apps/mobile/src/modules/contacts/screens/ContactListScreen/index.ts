@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { default } from './ContactListScreen'
+export { ContactListScreen } from './ContactListScreen'

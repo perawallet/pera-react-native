@@ -12,7 +12,7 @@
 
 import { render } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
-import SettingsSecurityScreen from '../SettingsSecurityScreen'
+import { SettingsSecurityScreen } from '../SettingsSecurityScreen'
 
 describe('SettingsSecurityScreen', () => {
     it('renders correctly', () => {

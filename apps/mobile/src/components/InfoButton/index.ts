@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './InfoButton'
+export { InfoButton } from './InfoButton'
 export type { InfoButtonProps } from './InfoButton'

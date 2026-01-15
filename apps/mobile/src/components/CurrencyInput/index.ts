@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './CurrencyInput'
+export { CurrencyInput } from './CurrencyInput'
 export type { CurrencyInputProps } from './CurrencyInput'

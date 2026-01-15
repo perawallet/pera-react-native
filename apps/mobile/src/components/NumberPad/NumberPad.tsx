@@ -11,10 +11,10 @@
  */
 
 import { Text } from '@rneui/themed'
-import PWTouchableOpacity from '../PWTouchableOpacity'
-import PWView from '../PWView'
+import { PWTouchableOpacity } from '../PWTouchableOpacity'
+import { PWView } from '../PWView'
 import { useStyles } from './styles'
-import PWIcon from '../PWIcon'
+import { PWIcon } from '../PWIcon'
 
 type NumberPadProps = {
     onPress: (key?: string) => void
@@ -27,7 +27,7 @@ const padArrangment = [
     ['.', '0', undefined],
 ]
 
-const NumberPad = ({ onPress }: NumberPadProps) => {
+export const NumberPad = ({ onPress }: NumberPadProps) => {
     const styles = useStyles()
     return (
         <PWView style={styles.container}>
@@ -51,5 +51,3 @@ const NumberPad = ({ onPress }: NumberPadProps) => {
         </PWView>
     )
 }
-
-export default NumberPad

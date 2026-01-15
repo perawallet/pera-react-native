@@ -10,12 +10,12 @@
  limitations under the License
  */
 
-import PWView from '@components/PWView'
+import { PWView } from '@components/PWView'
 import { useStyles } from './styles'
 import { Text } from '@rneui/themed'
-import CurrencyDisplay from '@components/CurrencyDisplay'
+import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
-import PWIcon from '@components/PWIcon'
+import { PWIcon } from '@components/PWIcon'
 import { useLanguage } from '@hooks/language'
 
 const AssetImpact = () => {
@@ -47,7 +47,7 @@ const AssetImpact = () => {
     )
 }
 
-const BalanceImpactView = () => {
+export const BalanceImpactView = () => {
     const styles = useStyles()
     const { t } = useLanguage()
 
@@ -72,5 +72,3 @@ const BalanceImpactView = () => {
         </PWView>
     )
 }
-
-export default BalanceImpactView

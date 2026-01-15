@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './SendFundsInputView'
+export { SendFundsInputView } from './SendFundsInputView'
 export type { SendFundsInputViewProps } from './SendFundsInputView'

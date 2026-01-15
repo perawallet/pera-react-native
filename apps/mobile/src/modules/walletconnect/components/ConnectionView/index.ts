@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './ConnectionView'
+export { ConnectionView } from './ConnectionView'
 export type { ConnectionViewProps } from './ConnectionView'

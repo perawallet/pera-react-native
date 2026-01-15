@@ -12,7 +12,7 @@
 
 import { render, screen, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import ViewContactHeaderButtons from '../ViewContactHeaderButtons'
+import { ViewContactHeaderButtons } from '../ViewContactHeaderButtons'
 
 const mockNavigate = vi.fn()
 

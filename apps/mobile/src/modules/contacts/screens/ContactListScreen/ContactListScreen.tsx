@@ -16,14 +16,14 @@ import { useNavigation, ParamListBase } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { Text } from '@rneui/themed'
 
-import EmptyView from '@components/EmptyView'
-import PWButton from '@components/PWButton'
+import { EmptyView } from '@components/EmptyView'
+import { PWButton } from '@components/PWButton'
 import { useStyles } from './styles'
 import { Contact, useContacts } from '@perawallet/wallet-core-contacts'
-import ContactAvatar from '@components/ContactAvatar'
-import PWView from '@components/PWView'
-import PWTouchableOpacity from '@components/PWTouchableOpacity'
-import SearchInput from '@components/SearchInput'
+import { ContactAvatar } from '@components/ContactAvatar'
+import { PWView } from '@components/PWView'
+import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
+import { SearchInput } from '@components/SearchInput'
 import { useLanguage } from '@hooks/language'
 
 const contactSorter = (a: Contact, b: Contact) => a.name.localeCompare(b.name)
@@ -68,7 +68,7 @@ const ContactItem = ({ contact }: { contact: Contact }) => {
     )
 }
 
-const ContactListScreen = () => {
+export const ContactListScreen = () => {
     const { findContacts, setSelectedContact } = useContacts()
     const styles = useStyles()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
@@ -153,5 +153,3 @@ const ContactListScreen = () => {
         </>
     )
 }
-
-export default ContactListScreen

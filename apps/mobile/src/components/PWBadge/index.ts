@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './PWBadge'
+export { PWBadge } from './PWBadge'
 export type { PWBadgeProps } from './PWBadge'

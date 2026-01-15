@@ -15,11 +15,11 @@ import {
     getAccountDisplayName,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import PWView, { PWViewProps } from '@components/PWView'
+import { PWView, PWViewProps } from '@components/PWView'
 import { useStyles } from './styles'
 
-import AccountIcon, { AccountIconProps } from '../AccountIcon'
-import PWIcon from '@components/PWIcon'
+import { AccountIcon, AccountIconProps } from '../AccountIcon'
+import { PWIcon } from '@components/PWIcon'
 
 type AccountDisplayProps = {
     account?: WalletAccount
@@ -28,7 +28,7 @@ type AccountDisplayProps = {
     showChevron?: boolean
 } & PWViewProps
 
-const AccountDisplay = ({
+export const AccountDisplay = ({
     account,
     iconProps,
     showChevron = true,
@@ -67,5 +67,3 @@ const AccountDisplay = ({
         </PWView>
     )
 }
-
-export default AccountDisplay

@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './AddNotePanel'
+export { AddNotePanel } from './AddNotePanel'
 export type { AddNotePanelProps } from './AddNotePanel'

@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './AccountAssetList'
+export { AccountAssetList } from './AccountAssetList'
 export type { AccountAssetListProps } from './AccountAssetList'

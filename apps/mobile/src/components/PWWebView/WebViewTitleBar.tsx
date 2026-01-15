@@ -11,8 +11,8 @@
  */
 
 import { useMemo } from 'react'
-import PWIcon from '../PWIcon'
-import PWView from '../PWView'
+import { PWIcon } from '../PWIcon'
+import { PWView } from '../PWView'
 import { useStyles } from './styles'
 import { Text } from '@rneui/themed'
 
@@ -23,7 +23,7 @@ type WebViewTitleBarProps = {
     onReload?: () => void
 }
 
-const WebViewTitleBar = ({
+export const WebViewTitleBar = ({
     title,
     url,
     onCloseRequested,
@@ -70,5 +70,3 @@ const WebViewTitleBar = ({
         </PWView>
     )
 }
-
-export default WebViewTitleBar

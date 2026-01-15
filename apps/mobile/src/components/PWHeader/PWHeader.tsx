@@ -11,8 +11,8 @@
  */
 
 import { Text } from '@rneui/themed'
-import PWIcon, { IconName } from '../PWIcon'
-import PWView from '../PWView'
+import { PWIcon, IconName } from '../PWIcon'
+import { PWView } from '../PWView'
 import { useStyles } from './styles'
 import { PropsWithChildren } from 'react'
 
@@ -24,7 +24,7 @@ type PWHeaderProps = {
     onRightPress?: () => void
 } & PropsWithChildren
 
-const PWHeader = ({
+export const PWHeader = ({
     title,
     leftIcon,
     rightIcon,
@@ -66,5 +66,3 @@ const PWHeader = ({
         </PWView>
     )
 }
-
-export default PWHeader

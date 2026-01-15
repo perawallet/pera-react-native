@@ -10,16 +10,16 @@
  limitations under the License
  */
 
-import EmptyView from '@components/EmptyView'
-import PWView from '@components/PWView'
+import { EmptyView } from '@components/EmptyView'
+import { PWView } from '@components/PWView'
 import { Text } from '@rneui/themed'
 import { useStyles } from './styles'
-import ContactAvatar from '@components/ContactAvatar'
-import AddressDisplay from '@components/AddressDisplay'
+import { ContactAvatar } from '@components/ContactAvatar'
+import { AddressDisplay } from '@components/AddressDisplay'
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import { useLanguage } from '@hooks/language'
 
-const ViewContactScreen = () => {
+export const ViewContactScreen = () => {
     const { selectedContact } = useContacts()
     const styles = useStyles()
     const { t } = useLanguage()
@@ -61,5 +61,3 @@ const ViewContactScreen = () => {
         </PWView>
     )
 }
-
-export default ViewContactScreen

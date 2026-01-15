@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './PortfolioView'
+export { PortfolioView } from './PortfolioView'
 export type { PortfolioViewProps } from './PortfolioView'

@@ -18,8 +18,8 @@ import {
     createNativeStackNavigator,
     NativeStackHeaderProps,
 } from '@react-navigation/native-stack'
-import StakingScreen from '@modules/staking/screens/StakingScreen'
-import NotificationsScreen from '@modules/notifications/screens/NotificationsScreen'
+import { StakingScreen } from '@modules/staking/screens/StakingScreen'
+import { NotificationsScreen } from '@modules/notifications/screens/NotificationsScreen'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import {
     OnboardingStackNavigator,
@@ -36,7 +36,7 @@ import {
     SettingsStackParamsList,
 } from '@modules/settings/routes'
 import { useShowOnboarding } from '@hooks/onboarding'
-import NavigationHeader from '@components/NavigationHeader'
+import { NavigationHeader } from '@components/NavigationHeader'
 import { getNavigationTheme } from '@theme/theme'
 import { useIsDarkMode } from '@hooks/theme'
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'

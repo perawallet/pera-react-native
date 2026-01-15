@@ -10,15 +10,15 @@
  limitations under the License
  */
 
-import PWIcon, { IconName } from '@components/PWIcon'
+import { PWIcon, IconName } from '@components/PWIcon'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { screenListeners } from './listeners'
-import DiscoverScreen from '@modules/discover/screens/DiscoverScreen'
-import FundScreen from '@modules/fund/screens/FundScreen'
-import SwapScreen from '@modules/swap/screens/SwapScreen'
-import MenuScreen from '@modules/menu/screens/MenuScreen'
+import { DiscoverScreen } from '@modules/discover/screens/DiscoverScreen'
+import { FundScreen } from '@modules/fund/screens/FundScreen'
+import { SwapScreen } from '@modules/swap/screens/SwapScreen'
+import { MenuScreen } from '@modules/menu/screens/MenuScreen'
 import { headeredLayout, safeAreaLayout } from '@layouts/index'
-import TabLabel from '@components/TabLabel'
+import { TabLabel } from '@components/TabLabel'
 import {
     AccountStackNavigator,
     AccountStackParamsList,

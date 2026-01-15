@@ -12,7 +12,7 @@
 
 import { render, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import TransactionSigningView from '../TransactionSigningView'
+import { TransactionSigningView } from '../TransactionSigningView'
 import {
     TransactionSignRequest,
     useSigningRequest,

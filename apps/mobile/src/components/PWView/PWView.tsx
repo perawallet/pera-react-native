@@ -15,7 +15,7 @@ import { View, ViewProps } from 'react-native'
 
 export type PWViewProps = ViewProps
 
-const PWView = (props: PWViewProps) => {
+export const PWView = (props: PWViewProps) => {
     const style = useStyles(props)
 
     return (
@@ -27,5 +27,3 @@ const PWView = (props: PWViewProps) => {
         </View>
     )
 }
-
-export default PWView

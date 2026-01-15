@@ -11,16 +11,20 @@
  */
 
 import { Text } from '@rneui/themed'
-import PWTouchableOpacity from '../PWTouchableOpacity'
+import { PWTouchableOpacity } from '../PWTouchableOpacity'
 import { useStyles } from './styles'
-import PWView from '../PWView'
+import { PWView } from '../PWView'
 
 type RadioButtonProps = {
     onPress: () => void
     title: string
     isSelected: boolean
 }
-const RadioButton = ({ onPress, title, isSelected }: RadioButtonProps) => {
+export const RadioButton = ({
+    onPress,
+    title,
+    isSelected,
+}: RadioButtonProps) => {
     const styles = useStyles()
 
     return (
@@ -35,5 +39,3 @@ const RadioButton = ({ onPress, title, isSelected }: RadioButtonProps) => {
         </PWTouchableOpacity>
     )
 }
-
-export default RadioButton

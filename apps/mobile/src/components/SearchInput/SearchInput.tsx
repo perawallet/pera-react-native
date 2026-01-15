@@ -13,12 +13,12 @@
 import { InputProps } from '@rneui/base'
 
 import { Input } from '@rneui/themed'
-import PWIcon from '../PWIcon'
+import { PWIcon } from '../PWIcon'
 import { useStyles } from './styles'
 
 type SearchInputProps = {} & Omit<InputProps, 'leftIcon' | 'rightIcon' | 'ref'>
 
-const SearchInput = (props: SearchInputProps) => {
+export const SearchInput = (props: SearchInputProps) => {
     const styles = useStyles()
 
     return (
@@ -40,5 +40,3 @@ const SearchInput = (props: SearchInputProps) => {
         />
     )
 }
-
-export default SearchInput

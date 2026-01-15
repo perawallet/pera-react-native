@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './FeatureFlagOverrides'
+export { FeatureFlagOverrides } from './FeatureFlagOverrides'
 export type { FeatureFlagOverridesProps } from './FeatureFlagOverrides'

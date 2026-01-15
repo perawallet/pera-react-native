@@ -14,7 +14,7 @@ import { describe, it, expect } from 'vitest'
 import React from 'react'
 import { render, screen } from '@test-utils/render'
 import { Text } from 'react-native'
-import EmptyView from '../EmptyView'
+import { EmptyView } from '../EmptyView'
 
 describe('EmptyView', () => {
     it('renders title and body correctly', () => {

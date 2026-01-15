@@ -17,9 +17,9 @@ import {
 } from '@react-navigation/native-stack'
 import { useStyles } from './styles'
 import { Input, Text } from '@rneui/themed'
-import PWView from '@components/PWView'
-import PWButton from '@components/PWButton'
-import PWIcon from '@components/PWIcon'
+import { PWView } from '@components/PWView'
+import { PWButton } from '@components/PWButton'
+import { PWIcon } from '@components/PWIcon'
 
 import {
     useAllAccounts,
@@ -40,7 +40,7 @@ type NameAccountScreenProps = NativeStackScreenProps<
     'NameAccount'
 >
 
-const NameAccountScreen = ({ route }: NameAccountScreenProps) => {
+export const NameAccountScreen = ({ route }: NameAccountScreenProps) => {
     const navigation =
         useNavigation<NativeStackNavigationProp<RootStackParamList>>()
     const styles = useStyles()
@@ -117,5 +117,3 @@ const NameAccountScreen = ({ route }: NameAccountScreenProps) => {
         </KeyboardAvoidingView>
     )
 }
-
-export default NameAccountScreen

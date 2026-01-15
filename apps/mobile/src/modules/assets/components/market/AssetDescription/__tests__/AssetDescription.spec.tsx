@@ -12,7 +12,7 @@
 
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
-import AssetDescription from '../AssetDescription'
+import { AssetDescription } from '../AssetDescription'
 
 describe('AssetDescription', () => {
     it('renders text', () => {

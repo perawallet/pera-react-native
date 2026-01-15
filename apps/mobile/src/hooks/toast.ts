@@ -58,7 +58,7 @@ const useStyles = makeStyles(theme => {
     }
 })
 
-const useToast = () => {
+export const useToast = () => {
     const styles = useStyles()
 
     const showToast = useCallback(
@@ -98,5 +98,3 @@ const useToast = () => {
         showToast,
     }
 }
-
-export default useToast

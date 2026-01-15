@@ -12,27 +12,27 @@
 
 import { Tab, TabView } from '@rneui/themed'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import PWIcon from '@components/PWIcon'
+import { PWIcon } from '@components/PWIcon'
 
 import { useStyles } from './styles'
 import { useState } from 'react'
 import { useModalState } from '@hooks/modal-state'
-import PWView from '@components/PWView'
-import NotificationsIcon from '@modules/notifications/components/NotificationsIcon'
-import AccountSelection from '@modules/accounts/components/AccountSelection'
-import AccountMenu from '@modules/accounts/components/AccountMenu'
+import { PWView } from '@components/PWView'
+import { NotificationsIcon } from '@modules/notifications/components/NotificationsIcon'
+import { AccountSelection } from '@modules/accounts/components/AccountSelection'
+import { AccountMenu } from '@modules/accounts/components/AccountMenu'
 import { Drawer } from 'react-native-drawer-layout'
-import QRScannerView from '@components/QRScannerView'
-import PWTouchableOpacity from '@components/PWTouchableOpacity'
-import EmptyView from '@components/EmptyView'
-import AccountOverview from '@modules/accounts/components/AccountOverview'
-import AccountNfts from '@modules/accounts/components/AccountNfts'
-import AccountHistory from '@modules/accounts/components/AccountHistory'
+import { QRScannerView } from '@components/QRScannerView'
+import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
+import { EmptyView } from '@components/EmptyView'
+import { AccountOverview } from '@modules/accounts/components/AccountOverview'
+import { AccountNfts } from '@modules/accounts/components/AccountNfts'
+import { AccountHistory } from '@modules/accounts/components/AccountHistory'
 import { TAB_ANIMATION_CONFIG } from '@constants/ui'
 import { useLanguage } from '@hooks/language'
 import { AccountStackParamsList } from '@modules/accounts/routes'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
-import ConfettiAnimation from '@modules/accounts/components/ConfettiAnimation'
+import { ConfettiAnimation } from '@modules/accounts/components/ConfettiAnimation'
 
 //TODO hook up all the button panel buttons correctly
 //TODO implement more menu
@@ -45,7 +45,7 @@ type AccountScreenProps = NativeStackScreenProps<
     'AccountDetails'
 >
 
-const AccountScreen = ({ route }: AccountScreenProps) => {
+export const AccountScreen = ({ route }: AccountScreenProps) => {
     const styles = useStyles()
     const account = useSelectedAccount()
     const scannerState = useModalState()
@@ -137,5 +137,3 @@ const AccountScreen = ({ route }: AccountScreenProps) => {
         </Drawer>
     )
 }
-
-export default AccountScreen

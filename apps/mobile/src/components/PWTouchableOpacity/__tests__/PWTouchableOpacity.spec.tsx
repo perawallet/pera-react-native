@@ -14,7 +14,7 @@ import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
 import { render, fireEvent, screen } from '@test-utils/render'
 import { Text } from 'react-native'
-import PWTouchableOpacity from '../PWTouchableOpacity'
+import { PWTouchableOpacity } from '../PWTouchableOpacity'
 
 describe('PWTouchableOpacity', () => {
     it('calls onPress when clicked', () => {

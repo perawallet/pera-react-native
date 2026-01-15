@@ -10,19 +10,19 @@
  limitations under the License
  */
 
-import PWView from '@components/PWView'
+import { PWView } from '@components/PWView'
 
-import QRScannerView from '@components/QRScannerView'
+import { QRScannerView } from '@components/QRScannerView'
 import { useState } from 'react'
 import { Input, InputProps } from '@rneui/themed'
-import PWIcon from '@components/PWIcon'
+import { PWIcon } from '@components/PWIcon'
 import { useLanguage } from '@hooks/language'
 
 export type AddressEntryFieldProps = {
     allowQRCode?: boolean
 } & InputProps
 
-const AddressEntryField = ({
+export const AddressEntryField = ({
     allowQRCode,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     ref,
@@ -69,5 +69,3 @@ const AddressEntryField = ({
         </PWView>
     )
 }
-
-export default AddressEntryField

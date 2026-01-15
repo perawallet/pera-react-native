@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './AccountAssetItemView'
+export { AccountAssetItemView } from './AccountAssetItemView'
 export type { AccountAssetItemViewProps } from './AccountAssetItemView'

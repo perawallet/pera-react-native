@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import PWView, { PWViewProps } from '../PWView'
+import { PWView, PWViewProps } from '../PWView'
 import { useStyles } from './styles'
 import { Text } from '@rneui/themed'
 
@@ -19,7 +19,7 @@ export type RowTitledItemProps = {
     verticalAlignment?: 'center' | 'top'
 } & PWViewProps
 
-const RowTitledItem = (props: RowTitledItemProps) => {
+export const RowTitledItem = (props: RowTitledItemProps) => {
     const { title, children, ...rest } = props
     const styles = useStyles(props)
     return (
@@ -32,5 +32,3 @@ const RowTitledItem = (props: RowTitledItemProps) => {
         </PWView>
     )
 }
-
-export default RowTitledItem

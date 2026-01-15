@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './AccountOverview'
+export { AccountOverview } from './AccountOverview'
 export type { AccountOverviewProps } from './AccountOverview'

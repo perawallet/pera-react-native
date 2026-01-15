@@ -12,7 +12,7 @@
 
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import AccountMenu from '../AccountMenu'
+import { AccountMenu } from '../AccountMenu'
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -37,7 +37,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 
 // Mock child components
 vi.mock('../PortfolioView', () => ({
-    default: 'PortfolioView',
+    PortfolioView: 'PortfolioView',
 }))
 
 // Mock InboxTab and AccountsTab if they are complex, but they are in same file/folder?

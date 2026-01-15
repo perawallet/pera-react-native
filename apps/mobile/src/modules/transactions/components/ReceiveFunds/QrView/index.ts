@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './ReceiveFundsQRView'
+export { ReceiveFundsQRView } from './ReceiveFundsQRView'
 export type { ReceiveFundsQRViewProps } from './ReceiveFundsQRView'

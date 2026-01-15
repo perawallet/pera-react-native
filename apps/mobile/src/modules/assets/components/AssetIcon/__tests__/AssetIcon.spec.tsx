@@ -13,7 +13,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
 import { render, screen } from '@test-utils/render'
-import AssetIcon from '../AssetIcon'
+import { AssetIcon } from '../AssetIcon'
 import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
 
 // Mock SVG

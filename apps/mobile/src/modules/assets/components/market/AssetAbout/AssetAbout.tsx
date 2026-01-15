@@ -14,8 +14,8 @@ import { View } from 'react-native'
 import { useStyles } from './styles'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { Text } from '@rneui/themed'
-import PWButton from '@components/PWButton'
-import RowTitledItem from '@components/RowTitledItem'
+import { PWButton } from '@components/PWButton'
+import { RowTitledItem } from '@components/RowTitledItem'
 import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/language'
 import { useWebView } from '@hooks/webview'
@@ -26,7 +26,7 @@ type AssetAboutProps = {
     assetDetails: PeraAsset
 }
 
-const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
+export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
@@ -158,5 +158,3 @@ const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
         </View>
     )
 }
-
-export default AssetAbout

@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './PWWebView'
+export { PWWebView } from './PWWebView'
 export type { PWWebViewProps } from './PWWebView'

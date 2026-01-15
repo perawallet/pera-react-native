@@ -12,7 +12,7 @@
 
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import SettingsWalletConnectDetailsScreen from '../SettingsWalletConnectDetailsScreen'
+import { SettingsWalletConnectDetailsScreen } from '../SettingsWalletConnectDetailsScreen'
 
 vi.mock('@perawallet/wallet-core-walletconnect', async () => ({
     useWalletConnect: vi.fn(() => ({

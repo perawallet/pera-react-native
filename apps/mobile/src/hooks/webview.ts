@@ -13,7 +13,7 @@
 /* eslint-disable max-lines */
 
 import WebView from 'react-native-webview'
-import useToast from './toast'
+import { useToast } from './toast'
 import { Linking } from 'react-native'
 import {
     useAnalyticsService,

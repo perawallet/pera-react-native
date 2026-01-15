@@ -12,7 +12,7 @@
 
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import AssetMarketStats from '../AssetMarketStats'
+import { AssetMarketStats } from '../AssetMarketStats'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 import Decimal from 'decimal.js'
 
@@ -46,12 +46,10 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     }
 })
 vi.mock('@components/CurrencyDisplay', () => ({
-    __esModule: true,
-    default: () => <div>CurrencyDisplay</div>,
+    CurrencyDisplay: () => <div>CurrencyDisplay</div>,
 }))
 vi.mock('@components/InfoButton', () => ({
-    __esModule: true,
-    default: () => <div>InfoButton</div>,
+    InfoButton: () => <div>InfoButton</div>,
 }))
 const mockDetails = {
     assetId: 123,

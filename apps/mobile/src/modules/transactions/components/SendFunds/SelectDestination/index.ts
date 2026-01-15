@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './SendFundsSelectDestination'
+export { SendFundsSelectDestination } from './SendFundsSelectDestination'
 export type { SendFundsSelectDestinationProps } from './SendFundsSelectDestination'

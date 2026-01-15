@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './ReceiveFundsAccountSelectionView'
+export { ReceiveFundsAccountSelectionView } from './ReceiveFundsAccountSelectionView'
 export type { ReceiveFundsAccountSelectionViewProps } from './ReceiveFundsAccountSelectionView'

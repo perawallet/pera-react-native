@@ -12,7 +12,7 @@
 
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import AssetTransactionList from '../AssetTransactionList'
+import { AssetTransactionList } from '../AssetTransactionList'
 import { View, Text } from 'react-native'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PeraAsset } from '@perawallet/wallet-core-assets'

@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import PWIcon from '@components/PWIcon'
+import { PWIcon } from '@components/PWIcon'
 
 import { SvgProps } from 'react-native-svg'
-import PWView from '@components/PWView'
+import { PWView } from '@components/PWView'
 import { useStyles } from './styles'
 
 //TODO support all tx types
@@ -22,7 +22,7 @@ export type TransactionIconProps = {
     size?: 'small' | 'large'
 } & SvgProps
 
-const TransactionIcon = (props: TransactionIconProps) => {
+export const TransactionIcon = (props: TransactionIconProps) => {
     const { type, style, size = 'small', ...rest } = props
     const styles = useStyles(props)
     const iconSize = size === 'small' ? 'md' : 'lg'
@@ -38,5 +38,3 @@ const TransactionIcon = (props: TransactionIconProps) => {
         </PWView>
     )
 }
-
-export default TransactionIcon

@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './AssetIcon'
+export { AssetIcon } from './AssetIcon'
 export type { AssetIconProps } from './AssetIcon'

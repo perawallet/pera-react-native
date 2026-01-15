@@ -11,22 +11,22 @@
  */
 
 import { Text } from '@rneui/themed'
-import PWView from '@components/PWView'
+import { PWView } from '@components/PWView'
 import { useStyles } from './styles'
-import PWIcon from '@components/PWIcon'
-import PairSelectionPanel from '@modules/swap/components/PairSelectionPanel/PairSelectionPanel'
-import SwapHistoryPanel from '@modules/swap/components/SwapHistoryPanel/SwapHistoryPanel'
-import TopPairsPanel from '@modules/swap/components/TopPairsPanel/TopPairsPanel'
-import AccountSelection from '@modules/accounts/components/AccountSelection'
+import { PWIcon } from '@components/PWIcon'
+import { PairSelectionPanel } from '@modules/swap/components/PairSelectionPanel/PairSelectionPanel'
+import { SwapHistoryPanel } from '@modules/swap/components/SwapHistoryPanel/SwapHistoryPanel'
+import { TopPairsPanel } from '@modules/swap/components/TopPairsPanel/TopPairsPanel'
+import { AccountSelection } from '@modules/accounts/components/AccountSelection'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Drawer } from 'react-native-drawer-layout'
 import { useState } from 'react'
-import AccountMenu from '@modules/accounts/components/AccountMenu'
+import { AccountMenu } from '@modules/accounts/components/AccountMenu'
 import { useLanguage } from '@hooks/language'
 import { useWebView } from '@hooks/webview'
 import { config } from '@perawallet/wallet-core-config'
 
-const SwapScreen = () => {
+export const SwapScreen = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const [drawerOpen, setDrawerOpen] = useState<boolean>(false)
@@ -74,5 +74,3 @@ const SwapScreen = () => {
         </Drawer>
     )
 }
-
-export default SwapScreen

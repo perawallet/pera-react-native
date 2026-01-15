@@ -13,7 +13,7 @@
 import { describe, it, expect } from 'vitest'
 import React from 'react'
 import { render, screen } from '@test-utils/render'
-import LoadingView from '../LoadingView'
+import { LoadingView } from '../LoadingView'
 
 describe('LoadingView', () => {
     it('renders activity indicator when variant is circle', () => {

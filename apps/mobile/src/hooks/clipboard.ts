@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import useToast from './toast'
+import { useToast } from './toast'
 import { useLanguage } from '@hooks/language'
 import Clipboard from '@react-native-clipboard/clipboard'
 import { useCallback } from 'react'

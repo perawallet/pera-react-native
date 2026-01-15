@@ -10,29 +10,29 @@
  limitations under the License
  */
 
-import PWView from '@components/PWView'
+import { PWView } from '@components/PWView'
 import { useStyles } from './styles'
 
 import { useMemo, useState } from 'react'
 import { Text } from '@rneui/themed'
-import AddressEntryField from '@components/AddressEntryField'
+import { AddressEntryField } from '@components/AddressEntryField'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import { ScrollView } from 'react-native'
-import PWTouchableOpacity from '../PWTouchableOpacity'
-import AccountDisplay from '@modules/accounts/components/AccountDisplay'
-import EmptyView from '@components/EmptyView'
-import AddressDisplay from '@components/AddressDisplay'
-import PWIcon from '@components/PWIcon'
+import { PWTouchableOpacity } from '../PWTouchableOpacity'
+import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
+import { EmptyView } from '@components/EmptyView'
+import { AddressDisplay } from '@components/AddressDisplay'
+import { PWIcon } from '@components/PWIcon'
 import { useLanguage } from '@hooks/language'
 
 type AddressSearchViewProps = {
     onSelected: (address: string) => void
 }
 
-const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
+export const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
     const styles = useStyles()
     const [value, setValue] = useState('')
     const { findContacts } = useContacts()
@@ -132,5 +132,3 @@ const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
         </PWView>
     )
 }
-
-export default AddressSearchView

@@ -17,9 +17,9 @@ import {
     useMemo,
     useState,
 } from 'react'
-import PWView from '../PWView'
+import { PWView } from '../PWView'
 import { useStyles } from './styles'
-import PWIcon from '../PWIcon'
+import { PWIcon } from '../PWIcon'
 import WebView from 'react-native-webview'
 import { WebViewNativeEvent } from 'react-native-webview/lib/RNCWebViewNativeComponent'
 
@@ -29,7 +29,7 @@ type WebViewFooterBarProps = {
     navigationState?: WebViewNativeEvent
 }
 
-const WebViewFooterBar = ({
+export const WebViewFooterBar = ({
     webview,
     homeUrl,
     navigationState,
@@ -103,5 +103,3 @@ const WebViewFooterBar = ({
         </PWView>
     )
 }
-
-export default WebViewFooterBar

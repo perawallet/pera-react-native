@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './LoadingView'
+export { LoadingView } from './LoadingView'
 export type { LoadingViewProps } from './LoadingView'

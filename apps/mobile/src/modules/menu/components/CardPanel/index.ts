@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './CardPanel'
+export { CardPanel } from './CardPanel'
 export type { CardPanelProps } from './CardPanel'

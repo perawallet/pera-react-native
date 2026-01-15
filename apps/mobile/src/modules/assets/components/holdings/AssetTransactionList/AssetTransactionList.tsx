@@ -11,12 +11,12 @@
  */
 
 import { useStyles } from './styles'
-import PWView from '@components/PWView'
+import { PWView } from '@components/PWView'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
-import PWButton from '@components/PWButton'
+import { PWButton } from '@components/PWButton'
 import { Text } from '@rneui/themed'
-import EmptyView from '@components/EmptyView'
+import { EmptyView } from '@components/EmptyView'
 import { FlashList } from '@shopify/flash-list'
 import { useLanguage } from '@hooks/language'
 
@@ -27,7 +27,9 @@ type AssetTransactionListProps = {
 }
 
 //TODO implement fully
-const AssetTransactionList = ({ children }: AssetTransactionListProps) => {
+export const AssetTransactionList = ({
+    children,
+}: AssetTransactionListProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
 
@@ -84,5 +86,3 @@ const AssetTransactionList = ({ children }: AssetTransactionListProps) => {
         />
     )
 }
-
-export default AssetTransactionList

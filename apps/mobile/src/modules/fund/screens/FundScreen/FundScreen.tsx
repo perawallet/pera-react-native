@@ -11,12 +11,12 @@
  */
 
 import { config } from '@perawallet/wallet-core-config'
-import PWWebView from '@components/PWWebView'
+import { PWWebView } from '@components/PWWebView'
 import { useStyles } from './styles'
-import PWView from '@components/PWView'
+import { PWView } from '@components/PWView'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-const FundScreen = () => {
+export const FundScreen = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const url = config.onrampBaseUrl
@@ -31,5 +31,3 @@ const FundScreen = () => {
         </PWView>
     )
 }
-
-export default FundScreen

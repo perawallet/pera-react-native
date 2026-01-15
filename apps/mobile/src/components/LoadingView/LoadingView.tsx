@@ -11,7 +11,7 @@
  */
 
 import { ActivityIndicator } from 'react-native'
-import PWView from '../PWView'
+import { PWView } from '../PWView'
 import { Skeleton, useTheme } from '@rneui/themed'
 import { useStyles } from './styles'
 
@@ -21,7 +21,11 @@ type LoadingViewProps = {
     count?: number
 }
 
-const LoadingView = ({ variant, size = 'sm', count = 1 }: LoadingViewProps) => {
+export const LoadingView = ({
+    variant,
+    size = 'sm',
+    count = 1,
+}: LoadingViewProps) => {
     const { theme } = useTheme()
     const styles = useStyles()
 
@@ -54,5 +58,3 @@ const LoadingView = ({ variant, size = 'sm', count = 1 }: LoadingViewProps) => {
         )
     }
 }
-
-export default LoadingView

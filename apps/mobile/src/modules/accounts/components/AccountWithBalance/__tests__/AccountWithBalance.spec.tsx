@@ -12,7 +12,7 @@
 
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import AccountWithBalance from '../AccountWithBalance'
+import { AccountWithBalance } from '../AccountWithBalance'
 import {
     WalletAccount,
     useAccountBalancesQuery,

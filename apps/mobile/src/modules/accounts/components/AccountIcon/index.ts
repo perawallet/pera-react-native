@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './AccountIcon'
+export { AccountIcon } from './AccountIcon'
 export type { AccountIconProps } from './AccountIcon'

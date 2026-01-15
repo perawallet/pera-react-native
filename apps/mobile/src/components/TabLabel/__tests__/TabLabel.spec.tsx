@@ -12,7 +12,7 @@
 
 import { render } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
-import TabLabel from '../TabLabel'
+import { TabLabel } from '../TabLabel'
 
 describe('TabLabel', () => {
     it('renders with translated text', () => {

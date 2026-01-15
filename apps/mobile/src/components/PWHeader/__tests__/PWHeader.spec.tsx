@@ -14,7 +14,7 @@ import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
 import { render, fireEvent, screen } from '@test-utils/render'
 import { Text } from 'react-native'
-import PWHeader from '../PWHeader'
+import { PWHeader } from '../PWHeader'
 
 describe('PWHeader', () => {
     it('renders the title correctly', () => {

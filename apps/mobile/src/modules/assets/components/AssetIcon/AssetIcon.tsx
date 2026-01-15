@@ -15,7 +15,7 @@ import AlgoAssetIcon from '@assets/icons/assets/algo.svg'
 import { useMemo } from 'react'
 import { SvgProps } from 'react-native-svg'
 import { Image, Text } from '@rneui/themed'
-import PWView from '@components/PWView'
+import { PWView } from '@components/PWView'
 import { useStyles } from './styles'
 
 export type AssetIconProps = {
@@ -24,7 +24,7 @@ export type AssetIconProps = {
 } & SvgProps
 
 //TODO: we may want a few more "local" asset icons for popular icons (e.g. USDC, DEFLY, etc)
-const AssetIcon = (props: AssetIconProps) => {
+export const AssetIcon = (props: AssetIconProps) => {
     const { asset, size, style, ...rest } = props
     const styles = useStyles(props)
 
@@ -59,5 +59,3 @@ const AssetIcon = (props: AssetIconProps) => {
 
     return <PWView style={[style, styles.container]}>{icon}</PWView>
 }
-
-export default AssetIcon

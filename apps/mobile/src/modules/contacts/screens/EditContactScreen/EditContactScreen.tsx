@@ -11,9 +11,9 @@
  */
 
 import { Dialog, Input, Text, useTheme } from '@rneui/themed'
-import ContactAvatar from '@components/ContactAvatar'
-import PWView from '@components/PWView'
-import AddressEntryField from '@components/AddressEntryField'
+import { ContactAvatar } from '@components/ContactAvatar'
+import { PWView } from '@components/PWView'
+import { AddressEntryField } from '@components/AddressEntryField'
 import {
     Contact,
     useContacts,
@@ -22,16 +22,16 @@ import {
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { KeyboardAvoidingView } from 'react-native'
 import { useStyles } from './styles'
-import PWButton from '@components/PWButton'
+import { PWButton } from '@components/PWButton'
 import { ScrollView } from 'react-native-gesture-handler'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, Controller } from 'react-hook-form'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import AddressDisplay from '@components/AddressDisplay'
+import { AddressDisplay } from '@components/AddressDisplay'
 import { useLanguage } from '@hooks/language'
 import { useModalState } from '@hooks/modal-state'
 
-const EditContactScreen = () => {
+export const EditContactScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const {
@@ -184,5 +184,3 @@ const EditContactScreen = () => {
         </KeyboardAvoidingView>
     )
 }
-
-export default EditContactScreen

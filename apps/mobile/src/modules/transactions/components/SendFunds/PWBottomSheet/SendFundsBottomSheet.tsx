@@ -14,17 +14,17 @@ import {
     useAccountAssetBalanceQuery,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
-import PWBottomSheet from '@components/PWBottomSheet'
-import EmptyView from '@components/EmptyView'
-import SendFundsAssetSelectionView from '../AssetSelection/SendFundsAssetSelectionView'
-import SendFundsInputView from '../InputView/SendFundsInputView'
+import { PWBottomSheet } from '@components/PWBottomSheet'
+import { EmptyView } from '@components/EmptyView'
+import { SendFundsAssetSelectionView } from '../AssetSelection/SendFundsAssetSelectionView'
+import { SendFundsInputView } from '../InputView/SendFundsInputView'
 
 import { useContext, useLayoutEffect, useState } from 'react'
 import { useStyles } from './styles'
 import { useWindowDimensions } from 'react-native'
 import { TabView } from '@rneui/themed'
-import SendFundsSelectDestination from '../SelectDestination/SendFundsSelectDestination'
-import SendFundsTransactionConfirmation from '../TransactionConfirmation/SendFundsTransactionConfirmation'
+import { SendFundsSelectDestination } from '../SelectDestination/SendFundsSelectDestination'
+import { SendFundsTransactionConfirmation } from '../TransactionConfirmation/SendFundsTransactionConfirmation'
 import SendFundsProvider, {
     SendFundsContext,
 } from '@modules/transactions/providers/SendFundsProvider'
@@ -53,7 +53,7 @@ const getScreenCount = (canSelectAsset: boolean) => {
 
 //TODO: add support for ASA Inbox sends (check whether destination account is opted into asset)
 //TODO: something isn't working with canSelectAsset
-const SendFundsBottomSheet = ({
+export const SendFundsBottomSheet = ({
     assetId,
     onClose,
     isVisible,
@@ -161,5 +161,3 @@ const SendFundsBottomSheet = ({
         </PWBottomSheet>
     )
 }
-
-export default SendFundsBottomSheet

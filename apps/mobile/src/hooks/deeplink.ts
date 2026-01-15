@@ -12,7 +12,7 @@
 
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import useToast from './toast'
+import { useToast } from './toast'
 import { logger } from '@perawallet/wallet-core-shared'
 import { parseDeeplink } from './deeplink/parser'
 import { DeeplinkType } from './deeplink/types'

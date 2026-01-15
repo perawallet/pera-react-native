@@ -11,10 +11,10 @@
  */
 
 import { useStyles } from './styles'
-import PWView from '@components/PWView'
+import { PWView } from '@components/PWView'
 import { ViewStyle } from 'react-native'
 import { Text } from '@rneui/themed'
-import AssetIcon from '@modules/assets/components/AssetIcon'
+import { AssetIcon } from '@modules/assets/components/AssetIcon'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 
 type SwapPairItemProps = {
@@ -23,7 +23,7 @@ type SwapPairItemProps = {
     style: ViewStyle
 }
 
-const SwapPair = (props: SwapPairItemProps) => {
+export const SwapPair = (props: SwapPairItemProps) => {
     const themeStyle = useStyles()
 
     return (
@@ -44,4 +44,3 @@ const SwapPair = (props: SwapPairItemProps) => {
         </PWView>
     )
 }
-export default SwapPair

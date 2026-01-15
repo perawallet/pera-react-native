@@ -10,15 +10,15 @@
  limitations under the License
  */
 
-import PWView from '@components/PWView'
-import AddressSearchView from '@components/AddressSearchView'
+import { PWView } from '@components/PWView'
+import { AddressSearchView } from '@components/AddressSearchView'
 import { useContext, useMemo } from 'react'
 import { SendFundsContext } from '@modules/transactions/providers/SendFundsProvider'
 import { useStyles } from './styles'
-import PWHeader from '@components/PWHeader'
-import AssetIcon from '@modules/assets/components/AssetIcon'
+import { PWHeader } from '@components/PWHeader'
+import { AssetIcon } from '@modules/assets/components/AssetIcon'
 import { Text, useTheme } from '@rneui/themed'
-import EmptyView from '@components/EmptyView'
+import { EmptyView } from '@components/EmptyView'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/language'
 
@@ -27,7 +27,7 @@ type SendFundsSelectDestinationProps = {
     onBack: () => void
 }
 
-const SendFundsSelectDestination = ({
+export const SendFundsSelectDestination = ({
     onNext,
     onBack,
 }: SendFundsSelectDestinationProps) => {
@@ -73,5 +73,3 @@ const SendFundsSelectDestination = ({
         </PWView>
     )
 }
-
-export default SendFundsSelectDestination

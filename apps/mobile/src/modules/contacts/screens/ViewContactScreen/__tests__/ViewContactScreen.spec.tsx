@@ -12,7 +12,7 @@
 
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import ViewContactScreen from '../ViewContactScreen'
+import { ViewContactScreen } from '../ViewContactScreen'
 
 vi.mock('@perawallet/wallet-core-contacts', async () => ({
     useContacts: vi.fn(() => ({

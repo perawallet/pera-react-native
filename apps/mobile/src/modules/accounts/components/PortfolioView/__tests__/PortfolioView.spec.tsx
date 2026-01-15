@@ -12,7 +12,7 @@
 
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import PortfolioView from '../PortfolioView'
+import { PortfolioView } from '../PortfolioView'
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -46,13 +46,13 @@ vi.mock('@perawallet/wallet-core-settings', async importOriginal => {
 
 // Mock complex child components
 vi.mock('@components/WealthChart', () => ({
-    default: 'WealthChart',
+    WealthChart: 'WealthChart',
 }))
 vi.mock('@components/WealthTrend', () => ({
-    default: 'WealthTrend',
+    WealthTrend: 'WealthTrend',
 }))
 vi.mock('@components/ChartPeriodSelection', () => ({
-    default: 'ChartPeriodSelection',
+    ChartPeriodSelection: 'ChartPeriodSelection',
 }))
 
 describe('PortfolioView', () => {

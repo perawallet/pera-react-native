@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-import PWView from '@components/PWView'
+import { PWView } from '@components/PWView'
 import { RemoteConfigKeys } from '@perawallet/wallet-core-platform-integration'
 import { Switch, Text } from '@rneui/themed'
 import { useStyles } from './styles'
 import { useRemoteConfigOverrides } from '@perawallet/wallet-core-platform-integration/src/remote-config/hooks/useRemoteConfigOverrides'
 
-const FeatureFlagOverrides = () => {
+export const FeatureFlagOverrides = () => {
     const styles = useStyles()
     const { configOverrides, setConfigOverride } = useRemoteConfigOverrides()
 
@@ -46,5 +46,3 @@ const FeatureFlagOverrides = () => {
         </PWView>
     )
 }
-
-export default FeatureFlagOverrides

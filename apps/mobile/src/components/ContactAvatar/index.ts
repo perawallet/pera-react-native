@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './ContactAvatar'
+export { ContactAvatar } from './ContactAvatar'
 export type { ContactAvatarProps } from './ContactAvatar'

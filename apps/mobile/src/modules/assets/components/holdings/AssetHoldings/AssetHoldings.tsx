@@ -11,19 +11,19 @@
  */
 
 import { formatDatetime } from '@perawallet/wallet-core-shared'
-import PWView from '@components/PWView'
-import AssetWealthChart from '../AssetWealthChart/AssetWealthChart'
-import ChartPeriodSelection from '@components/ChartPeriodSelection'
+import { PWView } from '@components/PWView'
+import { AssetWealthChart } from '../AssetWealthChart/AssetWealthChart'
+import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import { useMemo } from 'react'
 import { useChartInteraction } from '@hooks/chart-interaction'
-import AssetActionButtons from '../AssetActionButtons/AssetActionButtons'
-import AssetTransactionList from '../AssetTransactionList/AssetTransactionList'
+import { AssetActionButtons } from '../AssetActionButtons/AssetActionButtons'
+import { AssetTransactionList } from '../AssetTransactionList/AssetTransactionList'
 
 import { useStyles } from './styles'
-import AssetTitle from '@modules/assets/components/AssetTitle'
-import CurrencyDisplay from '@components/CurrencyDisplay'
+import { AssetTitle } from '@modules/assets/components/AssetTitle'
+import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
-import RoundButton from '@components/RoundButton'
+import { RoundButton } from '@components/RoundButton'
 import { Text } from '@rneui/themed'
 import {
     AccountBalanceHistoryItem,
@@ -34,14 +34,14 @@ import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
-import PWButton from '@components/PWButton'
+import { PWButton } from '@components/PWButton'
 
 type AssetHoldingsProps = {
     account: WalletAccount
     asset: PeraAsset
 }
 
-const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
+export const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
     const styles = useStyles()
     const { preferredCurrency } = useCurrency()
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
@@ -146,5 +146,3 @@ const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
         </AssetTransactionList>
     )
 }
-
-export default AssetHoldings

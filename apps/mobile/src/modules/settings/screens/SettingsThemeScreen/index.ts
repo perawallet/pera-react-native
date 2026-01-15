@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { default } from './SettingsThemeScreen'
+export { SettingsThemeScreen } from './SettingsThemeScreen'

@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './AccountHistory'
+export { AccountHistory } from './AccountHistory'
 export type { AccountHistoryProps } from './AccountHistory'

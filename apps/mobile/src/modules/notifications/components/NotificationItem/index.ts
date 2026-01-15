@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './NotificationItem'
+export { NotificationItem } from './NotificationItem'
 export type { NotificationItemProps } from './NotificationItem'

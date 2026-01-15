@@ -12,7 +12,7 @@
 
 import { render } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
-import CurrencyDisplay from '../CurrencyDisplay'
+import { CurrencyDisplay } from '../CurrencyDisplay'
 import { Decimal } from 'decimal.js'
 
 describe('CurrencyDisplay', () => {

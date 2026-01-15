@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import PWButton from '@components/PWButton'
-import EmptyView from '@components/EmptyView'
-import QRScannerView from '@components/QRScannerView'
-import PWView from '@components/PWView'
+import { PWButton } from '@components/PWButton'
+import { EmptyView } from '@components/EmptyView'
+import { QRScannerView } from '@components/QRScannerView'
+import { PWView } from '@components/PWView'
 import { useLanguage } from '@hooks/language'
 import { useModalState } from '@hooks/modal-state'
 import {
@@ -22,17 +22,17 @@ import {
 } from '@perawallet/wallet-core-walletconnect'
 import { FlashList } from '@shopify/flash-list'
 import { useStyles } from './styles'
-import WalletConnectSessionItem from '@modules/settings/components/WalletConnect/WalletConnectSessionItem'
+import { WalletConnectSessionItem } from '@modules/settings/components/WalletConnect/WalletConnectSessionItem'
 import { Dialog, Text, useTheme } from '@rneui/themed'
 import { useLayoutEffect, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
-import PWIcon from '@components/PWIcon'
+import { PWIcon } from '@components/PWIcon'
 
 const renderItem = ({ item }: { item: WalletConnectConnection }) => {
     return <WalletConnectSessionItem session={item} />
 }
 
-const SettingsWalletConnectScreen = () => {
+export const SettingsWalletConnectScreen = () => {
     const { t } = useLanguage()
     const { connections, deleteAllSessions } = useWalletConnect()
     const scannerState = useModalState()
@@ -130,5 +130,3 @@ const SettingsWalletConnectScreen = () => {
         </PWView>
     )
 }
-
-export default SettingsWalletConnectScreen

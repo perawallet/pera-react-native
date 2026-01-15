@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './AssetSelection'
+export { AssetSelection } from './AssetSelection'
 export type { AssetSelectionProps } from './AssetSelection'

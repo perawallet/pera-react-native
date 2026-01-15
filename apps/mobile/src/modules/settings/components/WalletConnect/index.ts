@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './WalletConnectSessionItem'
+export { WalletConnectSessionItem } from './WalletConnectSessionItem'
 export type { WalletConnectSessionItemProps } from './WalletConnectSessionItem'

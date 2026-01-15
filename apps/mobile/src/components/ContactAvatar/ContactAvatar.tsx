@@ -14,15 +14,19 @@ import { Contact } from '@perawallet/wallet-core-contacts'
 import { Image, useTheme } from '@rneui/themed'
 import { SvgProps } from 'react-native-svg'
 import { useStyles } from './styles'
-import PWView from '../PWView'
-import PWIcon from '../PWIcon'
+import { PWView } from '../PWView'
+import { PWIcon } from '../PWIcon'
 
 type ContactAvatarProps = {
     size: 'small' | 'large'
     contact?: Contact
 } & SvgProps
 
-const ContactAvatar = ({ size, contact, ...rest }: ContactAvatarProps) => {
+export const ContactAvatar = ({
+    size,
+    contact,
+    ...rest
+}: ContactAvatarProps) => {
     const { theme } = useTheme()
     const dimensions =
         size === 'small' ? theme.spacing.xl : theme.spacing['4xl']
@@ -49,5 +53,3 @@ const ContactAvatar = ({ size, contact, ...rest }: ContactAvatarProps) => {
         </PWView>
     )
 }
-
-export default ContactAvatar

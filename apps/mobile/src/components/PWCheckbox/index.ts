@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './PWCheckbox'
+export { PWCheckbox } from './PWCheckbox'
 export type { PWCheckboxProps } from './PWCheckbox'

@@ -14,11 +14,11 @@ import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useStyles } from './styles'
 
 import { TouchableOpacity, TouchableOpacityProps } from 'react-native'
-import AccountDisplay from '../AccountDisplay'
+import { AccountDisplay } from '../AccountDisplay'
 
 type AccountSelectionProps = {} & TouchableOpacityProps
 
-const AccountSelection = (props: AccountSelectionProps) => {
+export const AccountSelection = (props: AccountSelectionProps) => {
     const styles = useStyles()
     const account = useSelectedAccount()
 
@@ -36,5 +36,3 @@ const AccountSelection = (props: AccountSelectionProps) => {
         </TouchableOpacity>
     )
 }
-
-export default AccountSelection

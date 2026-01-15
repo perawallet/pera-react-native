@@ -14,15 +14,15 @@ import { Text } from '@rneui/themed'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/language'
 
-import PWView, { PWViewProps } from '@components/PWView'
-import CurrencyDisplay from '@components/CurrencyDisplay'
-import WealthChart from '@components/WealthChart'
+import { PWView, PWViewProps } from '@components/PWView'
+import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { WealthChart } from '@components/WealthChart'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { useCallback } from 'react'
 import { useChartInteraction } from '@hooks/chart-interaction'
-import WealthTrend from '@components/WealthTrend'
-import ChartPeriodSelection from '@components/ChartPeriodSelection'
-import PWButton from '@components/PWButton'
+import { WealthTrend } from '@components/WealthTrend'
+import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
+import { PWButton } from '@components/PWButton'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
     AccountBalanceHistoryItem,
@@ -31,15 +31,15 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
-import InfoButton from '@components/InfoButton'
-import ExpandablePanel from '@components/ExpandablePanel'
+import { InfoButton } from '@components/InfoButton'
+import { ExpandablePanel } from '@components/ExpandablePanel'
 
 type PortfolioViewProps = {
     onDataSelected?: (selected: AccountBalanceHistoryItem | null) => void
 } & PWViewProps
 
 //TODO layout and spacing needs a bit of clean up
-const PortfolioView = (props: PortfolioViewProps) => {
+export const PortfolioView = (props: PortfolioViewProps) => {
     const styles = useStyles()
     const { preferredCurrency } = useCurrency()
     const { t } = useLanguage()
@@ -141,5 +141,3 @@ const PortfolioView = (props: PortfolioViewProps) => {
         </PWView>
     )
 }
-
-export default PortfolioView

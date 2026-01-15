@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import FullScreenLayout from '@layouts/FullScreenLayout'
-import HeaderedLayout from '@layouts/HeaderedLayout'
-import SafeAreaLayout from '@layouts/SafeAreaLayout'
+import { FullScreenLayout } from '@layouts/FullScreenLayout'
+import { HeaderedLayout } from '@layouts/HeaderedLayout'
+import { SafeAreaLayout } from '@layouts/SafeAreaLayout'
 
 const headeredLayout = ({ children }: { children: React.ReactNode }) => {
     return <HeaderedLayout>{children}</HeaderedLayout>

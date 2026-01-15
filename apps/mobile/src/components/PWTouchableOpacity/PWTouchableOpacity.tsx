@@ -16,7 +16,7 @@ export type PWTouchableOpacityProps = {} & TouchableOpacityProps
 
 const DEFAULT_ACTIVE_OPACITY = 0.8
 
-const PWTouchableOpacity = ({
+export const PWTouchableOpacity = ({
     children,
     activeOpacity,
     ...rest
@@ -30,5 +30,3 @@ const PWTouchableOpacity = ({
         </TouchableOpacity>
     )
 }
-
-export default PWTouchableOpacity

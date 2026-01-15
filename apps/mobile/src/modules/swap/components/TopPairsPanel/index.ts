@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './TopPairsPanel'
+export { TopPairsPanel } from './TopPairsPanel'
 export type { TopPairsPanelProps } from './TopPairsPanel'

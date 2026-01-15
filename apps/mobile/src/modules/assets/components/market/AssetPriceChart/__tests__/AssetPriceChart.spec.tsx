@@ -12,7 +12,7 @@
 
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import AssetPriceChart from '../AssetPriceChart'
+import { AssetPriceChart } from '../AssetPriceChart'
 import {
     PeraAsset,
     useAssetPriceHistoryQuery,

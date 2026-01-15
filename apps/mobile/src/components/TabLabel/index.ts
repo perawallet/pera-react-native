@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './TabLabel'
+export { TabLabel } from './TabLabel'
 export type { TabLabelProps } from './TabLabel'

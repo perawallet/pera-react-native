@@ -12,7 +12,7 @@
 
 import { useStyles } from './styles'
 import { Skeleton, Text, TextProps, useTheme } from '@rneui/themed'
-import PWView from '@components/PWView'
+import { PWView } from '@components/PWView'
 import { useMemo } from 'react'
 import { formatCurrency } from '@perawallet/wallet-core-shared'
 import { Decimal } from 'decimal.js'
@@ -32,7 +32,7 @@ export type CurrencyDisplayProps = {
     truncateToUnits?: boolean
 } & TextProps
 
-const CurrencyDisplay = (props: CurrencyDisplayProps) => {
+export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
     const themeStyle = useStyles(props)
     const { theme } = useTheme()
     const deviceInfo = useDeviceInfoService()
@@ -109,5 +109,3 @@ const CurrencyDisplay = (props: CurrencyDisplayProps) => {
         </PWView>
     )
 }
-
-export default CurrencyDisplay

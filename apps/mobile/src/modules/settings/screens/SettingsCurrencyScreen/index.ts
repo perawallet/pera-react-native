@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { default } from './SettingsCurrencyScreen'
+export { SettingsCurrencyScreen } from './SettingsCurrencyScreen'

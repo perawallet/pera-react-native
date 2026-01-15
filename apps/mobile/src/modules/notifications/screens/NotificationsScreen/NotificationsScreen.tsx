@@ -16,15 +16,15 @@ import {
     useNotificationsListQuery,
 } from '@perawallet/wallet-core-platform-integration'
 import { ActivityIndicator } from 'react-native'
-import EmptyView from '@components/EmptyView'
+import { EmptyView } from '@components/EmptyView'
 import { useStyles } from './styles'
-import NotificationItem from '@modules/notifications/components/NotificationItem/NotificationItem'
-import LoadingView from '@components/LoadingView'
+import { NotificationItem } from '@modules/notifications/components/NotificationItem/NotificationItem'
+import { LoadingView } from '@components/LoadingView'
 import { FlashList } from '@shopify/flash-list'
 import { RefreshControl } from 'react-native-gesture-handler'
 import { useLanguage } from '@hooks/language'
 
-const NotificationsScreen = () => {
+export const NotificationsScreen = () => {
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
@@ -88,5 +88,3 @@ const NotificationsScreen = () => {
         />
     )
 }
-
-export default NotificationsScreen

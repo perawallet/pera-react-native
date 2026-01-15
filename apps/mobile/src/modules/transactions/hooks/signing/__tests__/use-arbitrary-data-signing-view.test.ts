@@ -21,7 +21,7 @@ import {
     ArbitraryDataSignRequest,
     useSigningRequest,
 } from '@perawallet/wallet-core-blockchain'
-import useToast from '@hooks/toast'
+import { useToast } from '@hooks/toast'
 import { AlgorandChainId } from '@perawallet/wallet-core-walletconnect'
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({

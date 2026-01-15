@@ -10,14 +10,14 @@
  limitations under the License
  */
 
-import PWIcon from '@components/PWIcon'
+import { PWIcon } from '@components/PWIcon'
 import { CheckBox, CheckBoxProps } from '@rneui/themed'
 
 type PWCheckboxProps = {
     children?: React.ReactNode
 } & CheckBoxProps
 
-const PWCheckbox = ({ children, ...props }: PWCheckboxProps) => {
+export const PWCheckbox = ({ children, ...props }: PWCheckboxProps) => {
     return (
         <CheckBox
             {...props}
@@ -32,5 +32,3 @@ const PWCheckbox = ({ children, ...props }: PWCheckboxProps) => {
         </CheckBox>
     )
 }
-
-export default PWCheckbox

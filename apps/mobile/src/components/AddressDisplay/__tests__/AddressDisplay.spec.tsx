@@ -12,7 +12,7 @@
 
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
-import AddressDisplay from '../AddressDisplay'
+import { AddressDisplay } from '../AddressDisplay'
 
 describe('AddressDisplay', () => {
     it('renders correctly with address', () => {

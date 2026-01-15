@@ -10,20 +10,20 @@
  limitations under the License
  */
 
-import PWIcon, { IconName } from '../PWIcon'
+import { PWIcon, IconName } from '../PWIcon'
 import PWTouchableOpacity, {
     PWTouchableOpacityProps,
 } from '../PWTouchableOpacity'
 import { Text } from '@rneui/themed'
 import { useStyles } from './styles'
-import PWView from '../PWView'
+import { PWView } from '../PWView'
 
 type PWListItemProps = PWTouchableOpacityProps & {
     icon: IconName
     title: string
 }
 
-const PWListItem = ({ icon, title, ...props }: PWListItemProps) => {
+export const PWListItem = ({ icon, title, ...props }: PWListItemProps) => {
     const styles = useStyles()
 
     return (
@@ -42,5 +42,3 @@ const PWListItem = ({ icon, title, ...props }: PWListItemProps) => {
         </PWTouchableOpacity>
     )
 }
-
-export default PWListItem

@@ -13,9 +13,9 @@
 import { useStyles } from './styles'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 import { Text } from '@rneui/themed'
-import PWIcon, { IconName } from '@components/PWIcon'
-import PWView from '@components/PWView'
-import PWTouchableOpacity from '@components/PWTouchableOpacity'
+import { PWIcon, IconName } from '@components/PWIcon'
+import { PWView } from '@components/PWView'
+import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
 import { useLanguage } from '@hooks/language'
 import { useWebView } from '@hooks/webview'
 import { v7 as uuid } from 'uuid'
@@ -24,7 +24,7 @@ type AssetSocialMediaProps = {
     assetDetails: PeraAsset
 }
 
-const AssetSocialMedia = ({ assetDetails }: AssetSocialMediaProps) => {
+export const AssetSocialMedia = ({ assetDetails }: AssetSocialMediaProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
@@ -89,5 +89,3 @@ const AssetSocialMedia = ({ assetDetails }: AssetSocialMediaProps) => {
         </PWView>
     )
 }
-
-export default AssetSocialMedia

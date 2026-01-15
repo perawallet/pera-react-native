@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './ChartPeriodSelection'
+export { ChartPeriodSelection } from './ChartPeriodSelection'
 export type { ChartPeriodSelectionProps } from './ChartPeriodSelection'

@@ -12,20 +12,20 @@
 
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import SigningView from '../SigningView'
+import { SigningView } from '../SigningView'
 import { SignRequest } from '@perawallet/wallet-core-blockchain'
 
 // Correct mocks return non-empty strings so they can be detected by textContent assertions
 vi.mock('../TransactionSigningView', () => ({
-    default: () => <div>TransactionSigningView</div>,
+    TransactionSigningView: () => <div>TransactionSigningView</div>,
 }))
 
 vi.mock('../../ArbitraryDataSigningView', () => ({
-    default: () => <div>ArbitraryDataSigningView</div>,
+    ArbitraryDataSigningView: () => <div>ArbitraryDataSigningView</div>,
 }))
 
 vi.mock('../Arc60SigningView', () => ({
-    default: () => <div>Arc60SigningView</div>,
+    Arc60SigningView: () => <div>Arc60SigningView</div>,
 }))
 
 describe('SigningView', () => {

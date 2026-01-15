@@ -11,11 +11,11 @@
  */
 
 import React, { createContext, PropsWithChildren, useState } from 'react'
-import PWBottomSheet from '@components/PWBottomSheet'
+import { PWBottomSheet } from '@components/PWBottomSheet'
 import { useWindowDimensions } from 'react-native'
-import PWWebView from '@components/PWWebView'
+import { PWWebView } from '@components/PWWebView'
 import { v7 as uuidv7 } from 'uuid'
-import PWView from '@components/PWView'
+import { PWView } from '@components/PWView'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 type WebViewRequest = {
@@ -46,7 +46,7 @@ type WebViewProviderProps = {} & PropsWithChildren
 
 const flexStyle = { flex: 1 }
 
-const WebViewProvider = ({ children }: WebViewProviderProps) => {
+export const WebViewProvider = ({ children }: WebViewProviderProps) => {
     const [openWebViews, setOpenWebViews] = useState<WebViewRequest[]>([])
     const { height } = useWindowDimensions()
     const insets = useSafeAreaInsets()
@@ -102,5 +102,3 @@ const WebViewProvider = ({ children }: WebViewProviderProps) => {
         </WebViewContext.Provider>
     )
 }
-
-export default WebViewProvider

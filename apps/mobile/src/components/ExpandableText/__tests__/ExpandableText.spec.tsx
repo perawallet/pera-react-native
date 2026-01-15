@@ -13,7 +13,7 @@
 import { describe, it, expect } from 'vitest'
 import React from 'react'
 import { render, fireEvent, screen } from '@test-utils/render'
-import ExpandableText from '../ExpandableText'
+import { ExpandableText } from '../ExpandableText'
 
 describe('ExpandableText', () => {
     it('truncates text if it exceeds limit', () => {

@@ -17,7 +17,7 @@ export type PWBadgeProps = {
     variant?: 'primary' | 'testnet' | 'secondary' | 'positive'
 } & BadgeProps
 
-const PWBadge = ({ variant = 'primary', ...rest }: PWBadgeProps) => {
+export const PWBadge = ({ variant = 'primary', ...rest }: PWBadgeProps) => {
     const styles = useStyles({ variant })
     return (
         <Badge
@@ -27,5 +27,3 @@ const PWBadge = ({ variant = 'primary', ...rest }: PWBadgeProps) => {
         ></Badge>
     )
 }
-
-export default PWBadge

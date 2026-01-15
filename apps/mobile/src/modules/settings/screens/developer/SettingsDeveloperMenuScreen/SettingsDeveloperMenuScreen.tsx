@@ -10,16 +10,16 @@
  limitations under the License
  */
 
-import PWView from '@components/PWView'
+import { PWView } from '@components/PWView'
 import { useLanguage } from '@hooks/language'
 import { useWebView } from '@hooks/webview'
-import PWListItem from '@components/PWListItem'
+import { PWListItem } from '@components/PWListItem'
 import { config } from '@perawallet/wallet-core-config'
 import { useStyles } from './styles'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 
-const SettingsDeveloperMenuScreen = () => {
+export const SettingsDeveloperMenuScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const styles = useStyles()
     const { t } = useLanguage()
@@ -64,5 +64,3 @@ const SettingsDeveloperMenuScreen = () => {
         </PWView>
     )
 }
-
-export default SettingsDeveloperMenuScreen

@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './WealthChart'
+export { WealthChart } from './WealthChart'
 export type { WealthChartProps } from './WealthChart'

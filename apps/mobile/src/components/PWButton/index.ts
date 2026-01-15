@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './PWButton'
+export { PWButton } from './PWButton'
 export type { PWButtonProps } from './PWButton'

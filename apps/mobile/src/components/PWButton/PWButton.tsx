@@ -12,8 +12,8 @@
 
 import { Text } from '@rneui/themed'
 import { useStyles } from './styles'
-import PWIcon, { IconName, PWIconVariant } from '../PWIcon'
-import PWTouchableOpacity from '../PWTouchableOpacity'
+import { PWIcon, IconName, PWIconVariant } from '../PWIcon'
+import { PWTouchableOpacity } from '../PWTouchableOpacity'
 import { ActivityIndicator, StyleProp, ViewStyle } from 'react-native'
 
 export type PWButtonProps = {
@@ -36,7 +36,7 @@ const ICON_VARIANT_MAP: Record<string, PWIconVariant> = {
     destructive: 'white',
 }
 
-const PWButton = (props: PWButtonProps) => {
+export const PWButton = (props: PWButtonProps) => {
     const styles = useStyles(props)
 
     const iconVariant = ICON_VARIANT_MAP[props.variant]
@@ -73,4 +73,4 @@ const PWButton = (props: PWButtonProps) => {
     )
 }
 
-export default PWButton
+//

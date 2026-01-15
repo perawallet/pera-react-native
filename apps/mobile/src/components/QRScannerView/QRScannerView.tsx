@@ -23,11 +23,11 @@ import { useEffect, useState } from 'react'
 import { Modal } from 'react-native'
 import { useLanguage } from '@hooks/language'
 import { useDeepLink } from '@hooks/deeplink'
-import EmptyView from '@components/EmptyView'
+import { EmptyView } from '@components/EmptyView'
 import { logger } from '@perawallet/wallet-core-shared'
-import PWButton from '@components/PWButton'
-import PWTouchableOpacity from '@components/PWTouchableOpacity'
-import PWIcon from '@components/PWIcon'
+import { PWButton } from '@components/PWButton'
+import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
+import { PWIcon } from '@components/PWIcon'
 
 type QRScannerViewProps = {
     title?: string
@@ -37,7 +37,7 @@ type QRScannerViewProps = {
     onSuccess: (url: string, restartScanning: () => void) => void
 }
 
-const QRScannerView = (props: QRScannerViewProps) => {
+export const QRScannerView = (props: QRScannerViewProps) => {
     const styles = useStyles()
     const device = useCameraDevice('back')
     const { hasPermission, requestPermission } = useCameraPermission()
@@ -139,5 +139,3 @@ const QRScannerView = (props: QRScannerViewProps) => {
         </Modal>
     )
 }
-
-export default QRScannerView

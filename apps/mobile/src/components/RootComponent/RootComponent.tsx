@@ -19,10 +19,10 @@ import { MainRoutes } from '@routes/index'
 import { getTheme } from '@theme/theme'
 import { Text, ThemeProvider } from '@rneui/themed'
 import { useStyles } from './styles'
-import PWView from '@components/PWView'
+import { PWView } from '@components/PWView'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ErrorBoundary from 'react-native-error-boundary'
-import useToast from '@hooks/toast'
+import { useToast } from '@hooks/toast'
 import { useIsDarkMode } from '@hooks/theme'
 import { SigningProvider } from '@modules/transactions/providers/SigningProvider'
 import {
@@ -35,7 +35,7 @@ import {
     NetworkStatusContext,
     NetworkStatusProvider,
 } from '@providers/NetworkStatusProvider'
-import WebViewProvider from '@providers/WebViewProvider'
+import { WebViewProvider } from '@providers/WebViewProvider'
 import { useLanguage } from '@hooks/language'
 import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
 

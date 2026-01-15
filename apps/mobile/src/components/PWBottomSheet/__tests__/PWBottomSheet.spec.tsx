@@ -13,7 +13,7 @@
 import { describe, it, expect } from 'vitest'
 import React from 'react'
 import { render, screen } from '@test-utils/render'
-import PWBottomSheet from '../PWBottomSheet'
+import { PWBottomSheet } from '../PWBottomSheet'
 import { Text } from 'react-native'
 
 describe('PWBottomSheet', () => {
