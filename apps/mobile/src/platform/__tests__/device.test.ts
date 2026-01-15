@@ -147,7 +147,6 @@ describe('RNDeviceInfoStorageService', () => {
 
         it('returns android platform when Platform.OS is android', async () => {
             // Import and mock Platform directly
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
             const { Platform } = RN
             const mockPlatform = vi.mocked(Platform)
             mockPlatform.OS = 'android'
@@ -180,7 +179,6 @@ describe('RNDeviceInfoStorageService', () => {
 
         it('handles iOS locale from AppleLanguages when AppleLocale is not available', async () => {
             // Mock iOS without AppleLocale
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
             const { NativeModules } = RN
             const mockNativeModules = vi.mocked(NativeModules)
             mockNativeModules.SettingsManager.getConstants = vi.fn(() => ({

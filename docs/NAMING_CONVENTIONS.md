@@ -4,22 +4,58 @@ Consistent naming makes the codebase predictable and easy to navigate.
 
 ## Files & Folders
 
-| Type           | Convention       | Example                               |
-| -------------- | ---------------- | ------------------------------------- |
-| Component file | `PascalCase.tsx` | `PWButton.tsx`, `AccountCard.tsx`     |
-| Hook file      | `camelCase.ts`   | `useToast.ts`, `useAccountBalance.ts` |
-| Utility file   | `kebab-case.ts`  | `string-utils.ts`                     |
-| Style file     | `styles.ts`      | `styles.ts` or `PWButton.styles.ts`   |
-| Test file      | `*.test.ts(x)`   | `PWButton.test.tsx`                   |
-| Folder         | `kebab-case`     | `account-card/`, `send-funds/`        |
+| Type             | Convention       | Example                                        |
+| ---------------- | ---------------- | ---------------------------------------------- |
+| Component file   | `PascalCase.tsx` | `PWButton.tsx`, `AccountCard.tsx`              |
+| Hook file        | `camelCase.ts`   | `useToast.ts`, `useAccountBalance.ts`          |
+| Utility file     | `kebab-case.ts`  | `string-utils.ts`                              |
+| Style file       | `styles.ts`      | `styles.ts` (always this exact name)           |
+| Test file        | `*.spec.tsx`     | `PWButton.spec.tsx`                            |
+| Component folder | `PascalCase`     | `PWButton/`, `AccountCard/`, `SettingsScreen/` |
+| Grouping folder  | `kebab-case`     | `signing/`, `market/`, `hooks/`                |
+
+### Component Folders vs Grouping Folders
+
+**Component folders** contain a single component and its related files:
+
+```
+PWButton/           ← PascalCase
+├── PWButton.tsx
+├── styles.ts
+└── index.ts
+```
+
+**Grouping folders** organize multiple related components or non-component code:
+
+```
+signing/            ← kebab-case (grouping folder)
+├── BalanceImpactView/    ← PascalCase (component folder)
+└── TransactionSigningView/  ← PascalCase (component folder)
+```
 
 ## Components
 
-| Type            | Rule            | Example                            |
-| --------------- | --------------- | ---------------------------------- |
-| Shared UI       | `PW` prefix     | `PWButton`, `PWCard`, `PWModal`    |
-| Module-specific | No prefix       | `AccountCard`, `TransactionRow`    |
-| Screen          | `Screen` suffix | `AccountsScreen`, `SettingsScreen` |
+| Type            | Rule            | Example                           |
+| --------------- | --------------- | --------------------------------- |
+| Shared UI       | `PW` prefix     | `PWButton`, `PWCard`, `PWModal`   |
+| Module-specific | No prefix       | `AccountCard`, `TransactionRow`   |
+| Screen          | `Screen` suffix | `AccountScreen`, `SettingsScreen` |
+
+## Screens
+
+Screens follow the same folder structure as components:
+
+```
+screens/
+├── AccountScreen/          # PascalCase
+│   ├── AccountScreen.tsx
+│   ├── styles.ts
+│   └── index.ts
+└── SettingsScreen/         # PascalCase
+    ├── SettingsScreen.tsx
+    ├── styles.ts
+    └── index.ts
+```
 
 ## Hooks
 
@@ -55,17 +91,26 @@ type LoadingState = 'idle' | 'loading' | 'success' | 'error'
 ## Quick Examples
 
 ```
+✅ PWButton/              (component folder - PascalCase)
 ✅ PWButton.tsx           (shared component)
 ✅ AccountCard.tsx        (module component)
-✅ AccountsScreen.tsx     (screen)
+✅ AccountScreen/         (screen folder - PascalCase)
+✅ AccountScreen.tsx      (screen file)
+✅ PWButton.spec.tsx      (test file)
 ✅ useToast.ts            (hook)
-✅ account-card/          (folder)
+✅ signing/               (grouping folder - kebab-case)
 ✅ isLoading              (boolean prop)
 ✅ onPress                (event prop)
 ✅ handlePress            (handler function)
 
 ❌ button.tsx             (should be PascalCase)
 ❌ UseToast.ts            (hooks are camelCase)
-❌ AccountCard/           (folders are kebab-case)
+❌ pw-button/             (component folders should be PascalCase)
+❌ PWButton.test.tsx      (tests should use .spec.tsx)
 ❌ loading                (booleans need prefix)
+❌ settings-screen/       (screen folders should be PascalCase)
 ```
+
+## Learn More
+
+For detailed patterns and code examples, see `.agent/rules/component-patterns.md`.

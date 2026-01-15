@@ -127,6 +127,6 @@ const customRender = (
     return render(ui, { wrapper: Wrapper, ...renderOptions })
 }
 
-// Re-export everything from @testing-library/react
+// Re-export everything from '@testing-library/react'
 export * from '@testing-library/react'
 export { customRender as render, createTestQueryClient, testTheme }

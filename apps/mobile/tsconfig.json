@@ -36,7 +36,11 @@
       "@test-utils/*": [
         "test-utils/*"
       ]
-    }
+    },
+    "lib": [
+        "esnext",
+        "dom"
+    ]
   },
   "include": [
     "**/*.ts",

@@ -36,7 +36,7 @@ import {
     SettingsStackParamsList,
 } from '@modules/settings/routes'
 import { useShowOnboarding } from '@hooks/onboarding'
-import NavigationHeader from '@components/navigation-header/NavigationHeader'
+import NavigationHeader from '@components/NavigationHeader'
 import { getNavigationTheme } from '@theme/theme'
 import { useIsDarkMode } from '@hooks/theme'
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'

@@ -4,15 +4,62 @@ trigger: always_on
 
 # Component Patterns
 
+## Component Folder Structure
+
+Every component MUST follow this folder structure:
+
+```
+ComponentName/              # PascalCase folder name (REQUIRED for components)
+├── ComponentName.tsx       # Component file (same name as folder)
+├── styles.ts               # Styles file at same level
+├── index.ts                # Barrel file re-exporting the component
+├── __tests__/              # Tests folder
+│   └── ComponentName.spec.tsx  # Test file (same name + .spec.tsx)
+└── SubComponent.tsx        # Subcomponents live here (NOT re-exported)
+```
+
+### Folder Naming Rules
+
+| Folder Type      | Case         | Example                                        |
+| ---------------- | ------------ | ---------------------------------------------- |
+| Component folder | `PascalCase` | `PWButton/`, `AccountCard/`, `SettingsScreen/` |
+| Grouping folder  | `kebab-case` | `signing/`, `market/`, `holdings/`             |
+| Utility folder   | `kebab-case` | `hooks/`, `utils/`, `providers/`               |
+
+**Grouping folders** organize multiple component folders but are NOT components themselves:
+
+```
+modules/transactions/components/
+├── signing/                    # Grouping folder (kebab-case)
+│   ├── BalanceImpactView/      # Component folder (PascalCase)
+│   └── TransactionSigningView/ # Component folder (PascalCase)
+└── TransactionIcon/            # Component folder (PascalCase)
+```
+
+### Barrel File Pattern
+
+```typescript
+// index.ts
+export { default } from './PWButton'
+export type { PWButtonProps } from './PWButton'
+```
+
+### Subcomponent Rules
+
+- Subcomponents live in the same folder as the main component
+- Subcomponents are **NOT** re-exported in the barrel file
+- Subcomponents should only be used by the parent component
+- If a subcomponent is needed elsewhere, it should become its own component
+
 ## Shared UI Components (PW-prefixed)
 
-Location: `apps/mobile/src/components/[component-name]/`
+Location: `apps/mobile/src/components/[ComponentName]/`
 
 ```typescript
 // PWButton.tsx
 import { Text } from '@rneui/themed'
 import { ActivityIndicator } from 'react-native'
-import PWTouchableOpacity from '@components/touchable-opacity/PWTouchableOpacity'
+import PWTouchableOpacity from '@components/PWTouchableOpacity'
 import { useStyles } from './styles'
 
 export type PWButtonProps = {
@@ -121,7 +168,7 @@ export const useStyles = makeStyles(
 
 ## Module-Specific Components
 
-Location: `apps/mobile/src/modules/[module]/components/[component-name]/`
+Location: `apps/mobile/src/modules/[module]/components/[ComponentName]/`
 
 NO `PW` prefix for module components:
 
@@ -134,11 +181,13 @@ const AccountCard = ({ account, onPress }: AccountCardProps) => {
 
 ## Screen Components
 
-Location: `apps/mobile/src/modules/[module]/screens/`
+Location: `apps/mobile/src/modules/[module]/screens/[ScreenName]/`
+
+Every screen MUST follow the same folder structure as standard components.
 
 ```typescript
-// AccountsScreen.tsx
-import { useStyles } from './AccountsScreen.styles'
+// AccountsScreen.tsx (in modules/accounts/screens/AccountsScreen/)
+import { useStyles } from './styles'
 
 const AccountsScreen = () => {
     const styles = useStyles()
