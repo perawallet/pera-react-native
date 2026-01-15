@@ -97,12 +97,12 @@ jobs:
         with:
           distribution: 'temurin'
           java-version-file: '.tool-versions'
-          cache: 'gradle'
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
             accept-android-sdk-licenses: true
+            log-accepted-android-sdk-licenses: false
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
