@@ -18,8 +18,9 @@ import { PWIcon } from '@components/core/PWIcon'
 import { useLanguage } from '@hooks/language'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMemo } from 'react'
+export type NavigationHeaderProps = NativeStackHeaderProps
 
-export const NavigationHeader = (props: NativeStackHeaderProps) => {
+export const NavigationHeader = (props: NavigationHeaderProps) => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const { t } = useLanguage()

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { describe, it, expect, vi, beforeEach, Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useIsDarkMode } from '../theme'
 import { useColorScheme } from 'react-native'
@@ -29,32 +30,32 @@ describe('useIsDarkMode', () => {
     })
 
     it('should return true if theme is dark', () => {
-        ;(useSettings as vi.Mock).mockReturnValue({ theme: 'dark' })
-        ;(useColorScheme as vi.Mock).mockReturnValue('light')
+        ;(useSettings as Mock).mockReturnValue({ theme: 'dark' })
+        ;(useColorScheme as Mock).mockReturnValue('light')
 
         const { result } = renderHook(() => useIsDarkMode())
         expect(result.current).toBe(true)
     })
 
     it('should return false if theme is light', () => {
-        ;(useSettings as vi.Mock).mockReturnValue({ theme: 'light' })
-        ;(useColorScheme as vi.Mock).mockReturnValue('dark')
+        ;(useSettings as Mock).mockReturnValue({ theme: 'light' })
+        ;(useColorScheme as Mock).mockReturnValue('dark')
 
         const { result } = renderHook(() => useIsDarkMode())
         expect(result.current).toBe(false)
     })
 
     it('should return true if theme is system and scheme is dark', () => {
-        ;(useSettings as vi.Mock).mockReturnValue({ theme: 'system' })
-        ;(useColorScheme as vi.Mock).mockReturnValue('dark')
+        ;(useSettings as Mock).mockReturnValue({ theme: 'system' })
+        ;(useColorScheme as Mock).mockReturnValue('dark')
 
         const { result } = renderHook(() => useIsDarkMode())
         expect(result.current).toBe(true)
     })
 
     it('should return false if theme is system and scheme is light', () => {
-        ;(useSettings as vi.Mock).mockReturnValue({ theme: 'system' })
-        ;(useColorScheme as vi.Mock).mockReturnValue('light')
+        ;(useSettings as Mock).mockReturnValue({ theme: 'system' })
+        ;(useColorScheme as Mock).mockReturnValue('light')
 
         const { result } = renderHook(() => useIsDarkMode())
         expect(result.current).toBe(false)

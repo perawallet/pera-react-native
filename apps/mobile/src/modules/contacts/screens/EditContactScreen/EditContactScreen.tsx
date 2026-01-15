@@ -170,7 +170,9 @@ export const EditContactScreen = () => {
                 isVisible={isOpen}
                 onBackdropPress={close}
             >
-                <PWDialog.Title title={t('contacts.edit_contact.are_you_sure')} />
+                <PWDialog.Title
+                    title={t('contacts.edit_contact.are_you_sure')}
+                />
                 <PWText>{t('contacts.edit_contact.delete_confirm')}</PWText>
                 <PWDialog.Actions>
                     <PWDialog.Button

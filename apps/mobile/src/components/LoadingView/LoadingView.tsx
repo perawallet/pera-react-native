@@ -16,7 +16,7 @@ import { useTheme } from '@rneui/themed'
 import { PWSkeleton } from '@components/core/PWSkeleton'
 import { useStyles } from './styles'
 
-type LoadingViewProps = {
+export type LoadingViewProps = {
     variant: 'circle' | 'skeleton'
     size?: 'sm' | 'lg'
     count?: number

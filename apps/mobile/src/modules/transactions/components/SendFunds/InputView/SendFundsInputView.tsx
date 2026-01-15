@@ -31,7 +31,7 @@ import { useInputView } from '@modules/transactions/hooks/send-funds/use-input-v
 import { useLanguage } from '@hooks/language'
 import { useModalState } from '@hooks/modal-state'
 
-type SendFundsInputViewProps = {
+export type SendFundsInputViewProps = {
     onNext: () => void
     onBack: () => void
 }

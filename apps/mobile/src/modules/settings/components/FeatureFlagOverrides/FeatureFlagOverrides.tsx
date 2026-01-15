@@ -11,11 +11,13 @@
  */
 
 import { PWView } from '@components/core/PWView'
-import { RemoteConfigKeys } from '@perawallet/wallet-core-platform-integration'
+import {
+    RemoteConfigKeys,
+    useRemoteConfigOverrides,
+} from '@perawallet/wallet-core-platform-integration'
 import { PWSwitch } from '@components/core/PWSwitch'
 import { PWText } from '@components/core/PWText'
 import { useStyles } from './styles'
-import { useRemoteConfigOverrides } from '@perawallet/wallet-core-platform-integration'
 
 export const FeatureFlagOverrides = () => {
     const styles = useStyles()

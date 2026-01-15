@@ -91,7 +91,9 @@ export const SettingsScreen = () => {
                         style={styles.section}
                         key={`settings-section-${item.title}`}
                     >
-                        <PWText style={styles.sectionTitle}>{item.title}</PWText>
+                        <PWText style={styles.sectionTitle}>
+                            {item.title}
+                        </PWText>
                         {item.items.map(page => (
                             <PWListItem
                                 key={`settings-sectionrow-${page.title}`}

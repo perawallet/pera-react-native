@@ -14,7 +14,7 @@ import { Text } from '@rneui/themed'
 import { useLanguage } from '@hooks/language'
 import { useStyles } from './styles'
 
-type TabLabelProps = {
+export type TabLabelProps = {
     i18nKey: string
     active: boolean
 }

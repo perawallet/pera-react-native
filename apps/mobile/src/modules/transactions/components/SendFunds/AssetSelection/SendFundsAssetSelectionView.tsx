@@ -26,7 +26,7 @@ import { PWHeader } from '@components/core/PWHeader'
 import { useLanguage } from '@hooks/language'
 import { FlashList } from '@shopify/flash-list'
 
-type SendFundsAssetSelectionViewProps = {
+export type SendFundsAssetSelectionViewProps = {
     onSelected: () => void
     onBack: () => void
 }

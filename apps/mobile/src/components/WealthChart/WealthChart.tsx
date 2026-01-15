@@ -32,7 +32,7 @@ import {
     CHART_HEIGHT,
 } from '@constants/ui'
 
-type WealthChartProps = {
+export type WealthChartProps = {
     account?: WalletAccount
     period: HistoryPeriod
     onSelectionChanged: (item: AccountBalanceHistoryItem | null) => void

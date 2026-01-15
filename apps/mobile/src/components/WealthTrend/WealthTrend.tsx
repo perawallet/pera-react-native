@@ -25,7 +25,7 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
-type WealthTrendProps = {
+export type WealthTrendProps = {
     account?: WalletAccount
     period: HistoryPeriod
 }

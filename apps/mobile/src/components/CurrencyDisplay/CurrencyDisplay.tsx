@@ -88,15 +88,7 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
         privacyMode,
     ])
 
-    const variant = h1
-        ? 'h1'
-        : h2
-        ? 'h2'
-        : h3
-        ? 'h3'
-        : h4
-        ? 'h4'
-        : 'body'
+    const variant = h1 ? 'h1' : h2 ? 'h2' : h3 ? 'h3' : h4 ? 'h4' : 'body'
 
     if (isLoading) {
         return (
@@ -110,14 +102,14 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
             {isAlgo && showSymbol && (
                 <AlgoIcon
                     color={theme.colors.textMain}
-                    style={[
-                        themeStyle.algoIcon,
-                        props.style,
-                    ]}
+                    style={[themeStyle.algoIcon, props.style]}
                 />
             )}
             <PWView style={themeStyle.textContainer}>
-                <PWText variant={variant} {...rest}>
+                <PWText
+                    variant={variant}
+                    {...rest}
+                >
                     {prefix ? prefix : ''}
                     {displayValue}
                 </PWText>

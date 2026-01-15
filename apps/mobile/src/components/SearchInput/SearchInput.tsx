@@ -16,7 +16,10 @@ import { PWInput } from '@components/core/PWInput'
 import { PWIcon } from '@components/core/PWIcon'
 import { useStyles } from './styles'
 
-type SearchInputProps = {} & Omit<InputProps, 'leftIcon' | 'rightIcon' | 'ref'>
+export type SearchInputProps = {} & Omit<
+    InputProps,
+    'leftIcon' | 'rightIcon' | 'ref'
+>
 
 export const SearchInput = (props: SearchInputProps) => {
     const styles = useStyles()

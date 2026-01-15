@@ -15,7 +15,7 @@ import { useState } from 'react'
 import { PWButton } from '@components/core/PWButton'
 import { PWText } from '@components/core/PWText'
 
-type ExpandableTextProps = {
+export type ExpandableTextProps = {
     text: string
     limit?: number
     textStyle?: StyleProp<TextStyle>

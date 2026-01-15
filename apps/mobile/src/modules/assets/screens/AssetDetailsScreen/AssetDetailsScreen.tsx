@@ -95,8 +95,12 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
                 titleStyle={styles.tabItem}
                 dense
             >
-                <PWTab.Item title={t('asset_details.main_screen.holdings_tab')} />
-                <PWTab.Item title={t('asset_details.main_screen.markets_tab')} />
+                <PWTab.Item
+                    title={t('asset_details.main_screen.holdings_tab')}
+                />
+                <PWTab.Item
+                    title={t('asset_details.main_screen.markets_tab')}
+                />
             </PWTab>
             <PWTabView
                 value={tabIndex}

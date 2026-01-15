@@ -16,7 +16,7 @@ import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles'
 import { PWIcon } from '@components/core/PWIcon'
 
-type NumberPadProps = {
+export type NumberPadProps = {
     onPress: (key?: string) => void
 }
 

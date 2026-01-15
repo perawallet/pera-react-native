@@ -21,7 +21,7 @@ import { useLanguage } from '@hooks/language'
 import { PWButton } from '@components/core/PWButton'
 import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 
-type InfoButtonProps = {
+export type InfoButtonProps = {
     variant?: 'primary' | 'secondary'
     size?: PWIconSize
     title?: string

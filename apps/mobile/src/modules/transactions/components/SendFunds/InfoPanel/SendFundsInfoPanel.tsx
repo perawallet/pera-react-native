@@ -27,7 +27,7 @@ import { useWebView } from '@hooks/webview'
 import { v7 as uuid } from 'uuid'
 import { config } from '@perawallet/wallet-core-config'
 
-type SendFundsInfoPanelProps = {
+export type SendFundsInfoPanelProps = {
     onClose: () => void
 } & PWBottomSheetProps
 

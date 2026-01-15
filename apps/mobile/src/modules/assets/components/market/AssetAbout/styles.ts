@@ -26,6 +26,6 @@ export const useStyles = makeStyles(theme => ({
     },
     description: {
         color: theme.colors.textMain,
-        // ...theme.components?.Text?.().style, 
+        // ...theme.components?.Text?.().style,
     },
 }))

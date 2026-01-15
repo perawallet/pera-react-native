@@ -33,7 +33,7 @@ import { TransactionErrorBoundary } from '@modules/transactions/components/BaseE
 import { TAB_ANIMATION_CONFIG } from '@constants/ui'
 import { useLanguage } from '@hooks/language'
 
-type SendFundsBottomSheetProps = {
+export type SendFundsBottomSheetProps = {
     assetId?: string
     isVisible: boolean
     onClose: () => void

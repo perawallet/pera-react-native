@@ -29,7 +29,7 @@ import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import { PWIcon } from '@components/core/PWIcon'
 import { PWText } from '@components/core/PWText'
 
-type QRScannerViewProps = {
+export type QRScannerViewProps = {
     title?: string
     isVisible: boolean
     animationType: 'slide' | 'fade' | 'none'

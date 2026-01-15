@@ -15,7 +15,7 @@ import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import { useStyles } from './styles'
 import { PWView } from '@components/core/PWView'
 
-type RadioButtonProps = {
+export type RadioButtonProps = {
     onPress: () => void
     title: string
     isSelected: boolean

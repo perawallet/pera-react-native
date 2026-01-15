@@ -16,7 +16,7 @@ import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles'
 import { PropsWithChildren } from 'react'
 
-type PWHeaderProps = {
+export type PWHeaderProps = {
     title?: string
     leftIcon?: IconName
     rightIcon?: IconName

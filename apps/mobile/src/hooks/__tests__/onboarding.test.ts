@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { describe, it, expect, vi, beforeEach, Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useShowOnboarding } from '../onboarding'
 import { usePreferences } from '@perawallet/wallet-core-settings'
@@ -34,14 +35,14 @@ describe('useShowOnboarding', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        ;(usePreferences as vi.Mock).mockReturnValue({
+        ;(usePreferences as Mock).mockReturnValue({
             getPreference: mockGetPreference,
         })
     })
 
     it('should return true if no accounts exist', () => {
         mockGetPreference.mockReturnValue(false)
-        ;(useHasNoAccounts as vi.Mock).mockReturnValue(true)
+        ;(useHasNoAccounts as Mock).mockReturnValue(true)
 
         const { result } = renderHook(() => useShowOnboarding())
         expect(result.current).toBe(true)
@@ -49,7 +50,7 @@ describe('useShowOnboarding', () => {
 
     it('should return true if user is creating an account', () => {
         mockGetPreference.mockReturnValue(true)
-        ;(useHasNoAccounts as vi.Mock).mockReturnValue(false)
+        ;(useHasNoAccounts as Mock).mockReturnValue(false)
 
         const { result } = renderHook(() => useShowOnboarding())
         expect(result.current).toBe(true)
@@ -57,7 +58,7 @@ describe('useShowOnboarding', () => {
 
     it('should return false if accounts exist and user is not creating an account', () => {
         mockGetPreference.mockReturnValue(false)
-        ;(useHasNoAccounts as vi.Mock).mockReturnValue(false)
+        ;(useHasNoAccounts as Mock).mockReturnValue(false)
 
         const { result } = renderHook(() => useShowOnboarding())
         expect(result.current).toBe(false)
