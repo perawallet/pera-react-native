@@ -11,10 +11,10 @@
  */
 
 import { Text } from '@rneui/themed'
-import { PWTouchableOpacity } from '../core/PWTouchableOpacity'
-import { PWView } from '../core/PWView'
+import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
+import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles'
-import { PWIcon } from '../core/PWIcon'
+import { PWIcon } from '@components/core/PWIcon'
 
 type NumberPadProps = {
     onPress: (key?: string) => void

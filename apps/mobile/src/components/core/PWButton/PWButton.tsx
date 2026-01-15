@@ -12,8 +12,8 @@
 
 import { Text } from '@rneui/themed'
 import { useStyles } from './styles'
-import { PWIcon, IconName, PWIconVariant } from '../PWIcon'
-import { PWTouchableOpacity } from '../PWTouchableOpacity'
+import { PWIcon, IconName, PWIconVariant } from '@components/core/PWIcon'
+import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import { ActivityIndicator, StyleProp, ViewStyle } from 'react-native'
 
 export type PWButtonProps = {

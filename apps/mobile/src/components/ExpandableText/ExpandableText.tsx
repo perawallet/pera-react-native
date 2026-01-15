@@ -12,7 +12,7 @@
 
 import { TextStyle, StyleProp } from 'react-native'
 import { useState } from 'react'
-import { PWButton } from '../core/PWButton'
+import { PWButton } from '@components/core/PWButton'
 import { Text } from '@rneui/themed'
 
 type ExpandableTextProps = {

@@ -11,10 +11,10 @@
  */
 
 import { NativeStackHeaderProps } from '@react-navigation/native-stack'
-import { PWView } from '../core/PWView'
+import { PWView } from '@components/core/PWView'
 import { Text } from '@rneui/themed'
 import { useStyles } from './styles'
-import { PWIcon } from '../core/PWIcon'
+import { PWIcon } from '@components/core/PWIcon'
 import { useLanguage } from '@hooks/language'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMemo } from 'react'

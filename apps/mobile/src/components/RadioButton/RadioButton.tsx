@@ -11,9 +11,9 @@
  */
 
 import { Text } from '@rneui/themed'
-import { PWTouchableOpacity } from '../core/PWTouchableOpacity'
+import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import { useStyles } from './styles'
-import { PWView } from '../core/PWView'
+import { PWView } from '@components/core/PWView'
 
 type RadioButtonProps = {
     onPress: () => void

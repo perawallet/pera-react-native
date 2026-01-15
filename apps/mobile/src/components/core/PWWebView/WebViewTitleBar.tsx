@@ -11,8 +11,8 @@
  */
 
 import { useMemo } from 'react'
-import { PWIcon } from '../PWIcon'
-import { PWView } from '../PWView'
+import { PWIcon } from '@components/core/PWIcon'
+import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles'
 import { Text } from '@rneui/themed'
 

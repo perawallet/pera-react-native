@@ -96,7 +96,7 @@ vi.mock('react-native-vision-camera', () => {
 
 // Mock PWIcon component to avoid SVG import issues
 // Mock PWIcon component to avoid SVG import issues
-vi.mock('@components/PWIcon', () => {
+vi.mock('@components/core/PWIcon', () => {
     const React = require('react')
     return {
         PWIcon: ({ onPress, name, testID }: any) =>
@@ -107,7 +107,7 @@ vi.mock('@components/PWIcon', () => {
             }),
     }
 })
-vi.mock('@components/PWIcon/PWIcon', () => {
+vi.mock('@components/core/PWIcon/PWIcon', () => {
     const React = require('react')
     return {
         PWIcon: ({ onPress, name, testID }: any) =>

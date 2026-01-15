@@ -10,14 +10,14 @@
  limitations under the License
  */
 
-import { PWIcon, IconName } from '../PWIcon'
+import { PWIcon, IconName } from '@components/core/PWIcon'
 import {
     PWTouchableOpacity,
     PWTouchableOpacityProps,
-} from '../PWTouchableOpacity'
+} from '@components/core/PWTouchableOpacity'
 import { Text } from '@rneui/themed'
 import { useStyles } from './styles'
-import { PWView } from '../PWView'
+import { PWView } from '@components/core/PWView'
 
 type PWListItemProps = PWTouchableOpacityProps & {
     icon: IconName
