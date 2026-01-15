@@ -29,7 +29,7 @@ vi.mock('../useWalletConnectSessionRequests', () => ({
 }))
 
 vi.mock('../useWalletConnectHandlers', () => ({
-    default: vi.fn(),
+    useWalletConnectHandlers: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({

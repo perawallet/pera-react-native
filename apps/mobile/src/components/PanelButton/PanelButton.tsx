@@ -13,7 +13,8 @@
 import { useStyles } from './styles'
 import { Text } from '@rneui/themed'
 import { PWView } from '../PWView'
-import PWTouchableOpacity, {
+import {
+    PWTouchableOpacity,
     type PWTouchableOpacityProps,
 } from '../PWTouchableOpacity'
 import { PWIcon, IconName } from '../PWIcon'

@@ -23,10 +23,7 @@ vi.mock('@react-native-clipboard/clipboard', () => ({
 }))
 
 vi.mock('../toast', () => ({
-    __esModule: true,
-    default: vi.fn(() => ({
-        showToast: vi.fn(),
-    })),
+    useToast: vi.fn(() => ({ showToast: vi.fn() })),
 }))
 
 vi.mock('@hooks/language', () => ({

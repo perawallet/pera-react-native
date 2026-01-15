@@ -11,7 +11,8 @@
  */
 
 import { PWIcon, IconName } from '../PWIcon'
-import PWTouchableOpacity, {
+import {
+    PWTouchableOpacity,
     PWTouchableOpacityProps,
 } from '../PWTouchableOpacity'
 import { Text } from '@rneui/themed'

@@ -28,10 +28,81 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
     useAllAccounts: vi.fn(() => []),
 }))
 
+vi.mock('@perawallet/wallet-core-shared', async () => ({
+    formatDatetime: vi.fn().mockReturnValue('10/10/2020'),
+}))
+
 vi.mock('react-native-gesture-handler', () => ({
     ScrollView: ({ children }: { children: React.ReactNode }) => (
         <div>{children}</div>
     ),
+}))
+
+vi.mock('@components/InfoButton', () => ({
+    InfoButton: ({ children }: any) => <div>{children}</div>,
+}))
+
+vi.mock('@modules/walletconnect/components/PermissionItem', () => ({
+    PermissionItem: () => <div>PermissionItem</div>,
+}))
+
+vi.mock('@modules/accounts/components/AccountDisplay', () => ({
+    AccountDisplay: () => <div>AccountDisplay</div>,
+}))
+
+vi.mock('@hooks/webview', () => ({
+    useWebView: vi.fn(() => ({
+        pushWebView: vi.fn(),
+    })),
+}))
+
+vi.mock('@hooks/language', () => ({
+    useLanguage: vi.fn(() => ({ t: (key: string) => key })),
+}))
+
+vi.mock('@components/PWButton', () => ({
+    PWButton: ({ title }: any) => <button>{title}</button>,
+}))
+
+vi.mock('@components/PWView', () => ({
+    PWView: ({ children }: any) => <div>{children}</div>,
+}))
+
+vi.mock('@components/PWTouchableOpacity', () => ({
+    PWTouchableOpacity: ({ children, onPress }: any) => (
+        <div
+            onClick={onPress}
+            role='button'
+        >
+            {children}
+        </div>
+    ),
+}))
+
+vi.mock('@components/RowTitledItem', () => ({
+    RowTitledItem: ({ title, children }: any) => (
+        <div>
+            {title}
+            {children}
+        </div>
+    ),
+}))
+
+vi.mock('@components/ExpandablePanel/TitledExpandablePanel', () => ({
+    TitledExpandablePanel: ({ title, children }: any) => (
+        <div>
+            {title}
+            {children}
+        </div>
+    ),
+}))
+
+vi.mock('@components/PWBadge', () => ({
+    PWBadge: ({ value }: any) => <span>{value}</span>,
+}))
+
+vi.mock('@components/PWIcon', () => ({
+    PWIcon: () => <div data-testid='pw-icon' />,
 }))
 
 const mockSession = {
