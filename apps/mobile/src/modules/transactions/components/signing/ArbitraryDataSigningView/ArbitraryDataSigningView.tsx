@@ -24,13 +24,13 @@ import {
     SignRequestSource,
 } from '@perawallet/wallet-core-blockchain'
 import { useStyles } from './styles'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 import {
     useAllAccounts,
     useFindAccountByAddress,
 } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
-import { useWebView } from '@hooks/webview'
+import { useWebView } from '@hooks/usePeraWebviewInterface'
 import { v7 as uuid } from 'uuid'
 import { useArbitraryDataSigningView } from '@modules/transactions/hooks/signing/use-arbitrary-data-signing-view'
 import { ArbitraryDataSigningDetailsView } from './ArbitraryDataSigningDetailsView'

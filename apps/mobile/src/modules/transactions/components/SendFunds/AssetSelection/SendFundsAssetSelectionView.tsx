@@ -25,7 +25,7 @@ import { useCallback, useMemo } from 'react'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
 import { useStyles } from './styles'
 import { useSendFunds } from '@modules/transactions/hooks'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 import { FlashList } from '@shopify/flash-list'
 
 export type SendFundsAssetSelectionViewProps = {

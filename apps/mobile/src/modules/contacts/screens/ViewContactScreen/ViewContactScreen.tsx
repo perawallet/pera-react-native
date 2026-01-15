@@ -17,7 +17,7 @@ import { useStyles } from './styles'
 import { ContactAvatar } from '@components/ContactAvatar'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useContacts } from '@perawallet/wallet-core-contacts'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 
 export const ViewContactScreen = () => {
     const { selectedContact } = useContacts()

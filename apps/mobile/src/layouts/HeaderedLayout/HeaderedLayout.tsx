@@ -11,14 +11,14 @@
  */
 
 import { ViewProps } from 'react-native'
-import { useStyles } from './SafeAreaLayout.style'
+import { useStyles } from './styles'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWView } from '@components/core'
-import { useDeeplinkListener } from '@hooks/deeplink'
+import { useDeeplinkListener } from '@hooks/useDeepLink'
 
-export type SafeAreaLayoutProps = ViewProps
+export type HeaderedLayoutProps = ViewProps
 
-export const SafeAreaLayout = (props: SafeAreaLayoutProps) => {
+export const HeaderedLayout = (props: HeaderedLayoutProps) => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
 

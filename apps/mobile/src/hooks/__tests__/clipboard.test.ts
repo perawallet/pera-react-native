@@ -26,7 +26,7 @@ vi.mock('../toast', () => ({
     useToast: vi.fn(() => ({ showToast: vi.fn() })),
 }))
 
-vi.mock('@hooks/language', () => ({
+vi.mock('@hooks/useLanguage', () => ({
     useLanguage: vi.fn(() => ({
         t: (key: string) => key,
     })),

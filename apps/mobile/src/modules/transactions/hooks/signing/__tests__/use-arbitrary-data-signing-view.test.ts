@@ -21,7 +21,7 @@ import {
     ArbitraryDataSignRequest,
     useSigningRequest,
 } from '@perawallet/wallet-core-blockchain'
-import { useToast } from '@hooks/toast'
+import { useToast } from '@hooks/useToast'
 import { AlgorandChainId } from '@perawallet/wallet-core-walletconnect'
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -33,11 +33,11 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useSigningRequest: vi.fn(),
 }))
 
-vi.mock('@hooks/toast', () => ({
+vi.mock('@hooks/useToast', () => ({
     useToast: vi.fn(),
 }))
 
-vi.mock('@hooks/language', () => ({
+vi.mock('@hooks/useLanguage', () => ({
     useLanguage: vi.fn().mockReturnValue({ t: (key: string) => key }),
 }))
 

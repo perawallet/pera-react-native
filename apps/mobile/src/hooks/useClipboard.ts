@@ -11,7 +11,7 @@
  */
 
 import { useToast } from './toast'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 import Clipboard from '@react-native-clipboard/clipboard'
 import { useCallback } from 'react'
 

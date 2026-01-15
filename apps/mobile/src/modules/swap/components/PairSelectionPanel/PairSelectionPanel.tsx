@@ -21,7 +21,7 @@ import { View } from 'react-native'
 
 import { CurrencyInput } from '@components/CurrencyInput'
 import { ALGO_ASSET_ID, useAssetsQuery } from '@perawallet/wallet-core-assets'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 
 //TODO this iz a mock implementation - implement properly
 export const PairSelectionPanel = () => {

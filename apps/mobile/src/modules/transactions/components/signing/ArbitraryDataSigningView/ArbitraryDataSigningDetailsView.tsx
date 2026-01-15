@@ -15,7 +15,7 @@ import {
     ArbitraryDataSignRequest,
     PeraArbitraryDataMessage,
 } from '@perawallet/wallet-core-blockchain'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 import { RowTitledItem } from '@components/RowTitledItem'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'

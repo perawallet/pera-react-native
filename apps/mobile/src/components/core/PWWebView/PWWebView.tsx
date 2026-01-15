@@ -30,10 +30,10 @@ import {
     peraConnectJS,
     peraMobileInterfaceJS,
 } from './injected-scripts'
-import { useToast } from '@hooks/toast'
+import { useToast } from '@hooks/useToast'
 import { useStyles } from './styles'
 import { PWView } from '@components/core/PWView'
-import { usePeraWebviewInterface } from '@hooks/webview'
+import { usePeraWebviewInterface } from '@hooks/usePeraWebviewInterface'
 import { EmptyView } from '@components/EmptyView'
 import { PWButton } from '@components/core/PWButton'
 import { LoadingView } from '@components/LoadingView'
@@ -41,8 +41,8 @@ import { logger } from '@perawallet/wallet-core-shared'
 import { WebViewTitleBar } from './WebViewTitleBar'
 import { WebViewFooterBar } from './WebViewFooterBar'
 import { useWebViewStore } from '@modules/webview'
-import { useIsDarkMode } from '@hooks/theme'
-import { useLanguage } from '@hooks/language'
+import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import { useLanguage } from '@hooks/useLanguage'
 import { bottomSheetNotifier } from '@components/core/PWBottomSheet'
 
 export type PWWebViewProps = {

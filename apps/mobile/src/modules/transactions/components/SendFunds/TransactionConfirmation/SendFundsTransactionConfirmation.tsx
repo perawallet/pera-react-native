@@ -33,7 +33,7 @@ import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { Divider, useTheme } from '@rneui/themed'
 import { useStyles } from './styles'
-import { useToast } from '@hooks/toast'
+import { useToast } from '@hooks/useToast'
 import { AddNotePanel } from '../AddNotePanel'
 import {
     useAccountAssetBalanceQuery,
@@ -49,7 +49,7 @@ import {
     useAssetFiatPricesQuery,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 import {
     useAlgorandClient,
     useSuggestedParametersQuery,

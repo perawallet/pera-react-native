@@ -12,7 +12,7 @@
 
 import { PWButton, PWIcon, PWImage, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 import { Image } from 'react-native'
 
 import CardBackground from '@assets/images/card-background.png'

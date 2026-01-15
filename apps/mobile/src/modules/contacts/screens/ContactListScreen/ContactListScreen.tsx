@@ -21,7 +21,7 @@ import { useStyles } from './styles'
 import { Contact, useContacts } from '@perawallet/wallet-core-contacts'
 import { ContactAvatar } from '@components/ContactAvatar'
 import { SearchInput } from '@components/SearchInput'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 
 const contactSorter = (a: Contact, b: Contact) => a.name.localeCompare(b.name)
 

@@ -12,7 +12,7 @@
 
 import { useEffect } from 'react'
 import NetInfo, { NetInfoState } from '@react-native-community/netinfo'
-import { useToast } from '@hooks/toast'
+import { useToast } from '@hooks/useToast'
 import { LONG_NOTIFICATION_DURATION } from '@constants/ui'
 import { useNetworkStatusStore } from './useNetworkStatusStore'
 

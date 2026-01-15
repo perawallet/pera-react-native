@@ -25,8 +25,8 @@ import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { LoadingView } from '@components/LoadingView'
 import { useInputView } from '@modules/transactions/hooks/send-funds/use-input-view'
-import { useLanguage } from '@hooks/language'
-import { useModalState } from '@hooks/modal-state'
+import { useLanguage } from '@hooks/useLanguage'
+import { useModalState } from '@hooks/useModalState'
 
 export type SendFundsInputViewProps = {
     onNext: () => void

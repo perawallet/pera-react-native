@@ -10,14 +10,13 @@
  limitations under the License
  */
 
-import { Text, TextProps, useTheme } from '@rneui/themed'
-import { PWIcon, PWView, PWViewProps } from '@components/core'
+import { useTheme } from '@rneui/themed'
+import { PWIcon, PWText, PWTextProps, PWView, PWViewProps } from '@components/core'
 import { useStyles } from './styles'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useContacts } from '@perawallet/wallet-core-contacts'
-import { useToast } from '@hooks/toast'
-import Clipboard from '@react-native-clipboard/clipboard'
+import { useClipboard } from '@hooks/useClipboard'
 
 import { SvgProps } from 'react-native-svg'
 import { useMemo } from 'react'
@@ -29,7 +28,7 @@ type AddressDisplayProps = {
     addressFormat?: 'short' | 'long' | 'full'
     rawDisplay?: boolean
     showCopy?: boolean
-    textProps?: TextProps
+    textProps?: PWTextProps
     iconProps?: SvgProps
 } & PWViewProps
 
@@ -47,15 +46,10 @@ export const AddressDisplay = ({
 }: AddressDisplayProps) => {
     const styles = useStyles()
     const { theme } = useTheme()
-    const { showToast } = useToast()
+    const { copyToClipboard } = useClipboard()
 
     const copyAddress = () => {
-        Clipboard.setString(address)
-        showToast({
-            title: '',
-            body: 'Address copied to clipboard',
-            type: 'info',
-        })
+        copyToClipboard(address)
     }
 
     const accounts = useAllAccounts()
@@ -110,12 +104,12 @@ export const AddressDisplay = ({
                         size='small'
                         contact={contact}
                     />
-                    <Text>{contact.name}</Text>
+                    <PWText>{contact.name}</PWText>
                 </PWView>
             )}
 
             {!contact && !account && (
-                <Text {...textProps}>{truncatedAddress}</Text>
+                <PWText {...textProps}>{truncatedAddress}</PWText>
             )}
 
             {showCopy && (

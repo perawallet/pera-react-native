@@ -15,7 +15,7 @@ import { PWView } from '@components/core'
 import { RadioButton } from '@components/RadioButton'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import { Networks } from '@perawallet/wallet-core-shared'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 
 export const SettingsDeveloperNodeSettingsScreen = () => {
     const styles = useStyles()

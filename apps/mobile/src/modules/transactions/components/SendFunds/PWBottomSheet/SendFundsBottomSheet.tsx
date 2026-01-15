@@ -27,7 +27,7 @@ import { SendFundsTransactionConfirmation } from '../TransactionConfirmation/Sen
 import { useSendFunds } from '@modules/transactions/hooks'
 import { TransactionErrorBoundary } from '@modules/transactions/components/BaseErrorBoundary/TransactionErrorBoundary'
 import { TAB_ANIMATION_CONFIG } from '@constants/ui'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 
 export type SendFundsBottomSheetProps = {
     assetId?: string

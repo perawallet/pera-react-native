@@ -22,7 +22,7 @@ import { NotificationItem } from '@modules/notifications/components/Notification
 import { LoadingView } from '@components/LoadingView'
 import { FlashList } from '@shopify/flash-list'
 import { RefreshControl } from 'react-native-gesture-handler'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 
 export const NotificationsScreen = () => {
     const styles = useStyles()

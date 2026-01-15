@@ -23,13 +23,13 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { EmptyView } from '@components/EmptyView'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { Share, useWindowDimensions } from 'react-native'
-import { useToast } from '@hooks/toast'
+import { useToast } from '@hooks/useToast'
 import { config } from '@perawallet/wallet-core-config'
-import { useClipboard } from '@hooks/clipboard'
-import { useDeepLink } from '@hooks/deeplink'
+import { useClipboard } from '@hooks/useClipboard'
+import { useDeepLink } from '@hooks/useDeepLink'
 import { useMemo } from 'react'
 import QRCode from 'react-native-qrcode-svg'
 

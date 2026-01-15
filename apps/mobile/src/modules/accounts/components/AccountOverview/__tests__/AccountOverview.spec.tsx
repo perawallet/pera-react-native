@@ -28,7 +28,7 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
     useCurrency: vi.fn(() => ({ preferredCurrency: 'USD' })),
 }))
 
-vi.mock('@hooks/theme', () => ({
+vi.mock('@hooks/useIsDarkMode', () => ({
     useIsDarkMode: vi.fn(() => false),
 }))
 
@@ -43,7 +43,7 @@ vi.mock('@perawallet/wallet-core-settings', () => ({
     })),
 }))
 
-vi.mock('@hooks/chart-interaction', () => ({
+vi.mock('@hooks/useChartInteraction', () => ({
     useChartInteraction: vi.fn(() => ({
         period: '24H',
         setPeriod: vi.fn(),

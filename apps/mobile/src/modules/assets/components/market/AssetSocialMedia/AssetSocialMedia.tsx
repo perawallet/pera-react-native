@@ -19,8 +19,8 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { useLanguage } from '@hooks/language'
-import { useWebView } from '@hooks/webview'
+import { useLanguage } from '@hooks/useLanguage'
+import { useWebView } from '@hooks/usePeraWebviewInterface'
 import { v7 as uuid } from 'uuid'
 
 type AssetSocialMediaProps = {

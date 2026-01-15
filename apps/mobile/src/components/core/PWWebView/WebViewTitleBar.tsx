@@ -14,7 +14,7 @@ import { useMemo } from 'react'
 import { PWIcon } from '@components/core/PWIcon'
 import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles'
-import { Text } from '@rneui/themed'
+import { PWText } from '@components/core/PWText'
 
 type WebViewTitleBarProps = {
     title: string
@@ -46,18 +46,18 @@ export const WebViewTitleBar = ({
                 />
             </PWView>
             <PWView style={styles.titleBarTextContainer}>
-                <Text
+                <PWText
                     numberOfLines={1}
                     style={styles.title}
                 >
                     {title}
-                </Text>
-                <Text
+                </PWText>
+                <PWText
                     numberOfLines={1}
                     style={styles.url}
                 >
                     {domain}
-                </Text>
+                </PWText>
             </PWView>
             <PWView style={styles.titleIconContainer}>
                 <PWIcon

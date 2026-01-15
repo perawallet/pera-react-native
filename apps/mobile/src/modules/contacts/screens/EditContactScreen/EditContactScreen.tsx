@@ -27,8 +27,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, Controller } from 'react-hook-form'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { AddressDisplay } from '@components/AddressDisplay'
-import { useLanguage } from '@hooks/language'
-import { useModalState } from '@hooks/modal-state'
+import { useLanguage } from '@hooks/useLanguage'
+import { useModalState } from '@hooks/useModalState'
 
 export const EditContactScreen = () => {
     const styles = useStyles()

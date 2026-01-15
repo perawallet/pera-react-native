@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { Text } from '@rneui/themed'
-import { useLanguage } from '@hooks/language'
+import { PWText } from '@components/core'
+import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
 export type TabLabelProps = {
@@ -23,8 +23,8 @@ export const TabLabel = ({ i18nKey, active }: TabLabelProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
     return (
-        <Text style={active ? styles.active : styles.inactive}>
+        <PWText style={active ? styles.active : styles.inactive}>
             {t(i18nKey)}
-        </Text>
+        </PWText>
     )
 }

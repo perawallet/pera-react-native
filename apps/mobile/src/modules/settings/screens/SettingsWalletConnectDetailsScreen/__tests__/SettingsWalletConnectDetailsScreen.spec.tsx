@@ -53,13 +53,13 @@ vi.mock('@modules/accounts/components/AccountDisplay', () => ({
     AccountDisplay: () => <div>AccountDisplay</div>,
 }))
 
-vi.mock('@hooks/webview', () => ({
+vi.mock('@hooks/usePeraWebviewInterface', () => ({
     useWebView: vi.fn(() => ({
         pushWebView: vi.fn(),
     })),
 }))
 
-vi.mock('@hooks/language', () => ({
+vi.mock('@hooks/useLanguage', () => ({
     useLanguage: vi.fn(() => ({ t: (key: string) => key })),
 }))
 

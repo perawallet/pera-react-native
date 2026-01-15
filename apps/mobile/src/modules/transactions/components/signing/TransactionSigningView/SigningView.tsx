@@ -20,7 +20,7 @@ import { EmptyView } from '@components/EmptyView'
 import { TransactionSigningView } from './TransactionSigningView'
 import { ArbitraryDataSigningView } from '../ArbitraryDataSigningView'
 import { Arc60SigningView } from './Arc60SigningView'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 
 type SigningViewProps = {
     request: SignRequest

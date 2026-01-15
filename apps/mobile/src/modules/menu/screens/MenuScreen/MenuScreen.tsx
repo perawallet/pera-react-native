@@ -18,8 +18,8 @@ import { CardPanel } from '@modules/menu/components/CardPanel/CardPanel'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { QRScannerView } from '@components/QRScannerView'
-import { useModalState } from '@hooks/modal-state'
-import { useLanguage } from '@hooks/language'
+import { useModalState } from '@hooks/useModalState'
+import { useLanguage } from '@hooks/useLanguage'
 import { ReceiveFundsBottomSheet } from '@modules/transactions/components/ReceiveFunds/PWBottomSheet/ReceiveFundsBottomSheet'
 
 export const MenuScreen = () => {

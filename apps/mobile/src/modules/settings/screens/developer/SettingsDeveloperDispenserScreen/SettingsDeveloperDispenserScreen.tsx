@@ -11,7 +11,7 @@
  */
 
 import { EmptyView } from '@components/EmptyView'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 
 export const SettingsDeveloperDispenserScreen = () => {
     const { t } = useLanguage()

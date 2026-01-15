@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { Text } from '@rneui/themed'
-import { PWIcon, PWView } from '@components/core'
+import { PWIcon, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 import { formatCurrency, HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { useMemo } from 'react'
@@ -73,9 +72,9 @@ export const WealthTrend = ({ account, period }: WealthTrendProps) => {
         <></>
     ) : (
         <PWView style={styles.container}>
-            <Text
+            <PWText
                 style={isPositive ? styles.itemUp : styles.itemDown}
-                h4
+                variant='h4'
             >
                 {isPositive ? '+' : '-'}
                 {formatCurrency(
@@ -85,7 +84,7 @@ export const WealthTrend = ({ account, period }: WealthTrendProps) => {
                     undefined,
                     true,
                 )}
-            </Text>
+            </PWText>
             <PWView style={styles.percentageContainer}>
                 <PWIcon
                     name={isPositive ? 'arrow-up' : 'arrow-down'}
@@ -95,12 +94,12 @@ export const WealthTrend = ({ account, period }: WealthTrendProps) => {
                         isPositive ? styles.trendIconUp : styles.trendIconDown
                     }
                 />
-                <Text
+                <PWText
                     style={isPositive ? styles.itemUp : styles.itemDown}
-                    h4
+                    variant='h4'
                 >
                     {percentage.toFixed(2)}%
-                </Text>
+                </PWText>
             </PWView>
         </PWView>
     )

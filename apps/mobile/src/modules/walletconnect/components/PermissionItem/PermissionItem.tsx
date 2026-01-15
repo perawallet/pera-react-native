@@ -13,7 +13,7 @@
 import { PWIcon, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 import { AlgorandPermission } from '@perawallet/wallet-core-walletconnect'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 
 export const PermissionItem = ({
     permission,

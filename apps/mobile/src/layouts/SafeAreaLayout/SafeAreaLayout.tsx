@@ -11,14 +11,16 @@
  */
 
 import { ViewProps } from 'react-native'
+import { useStyles } from './styles'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWView } from '@components/core'
-import { useStyles } from './FullScreenLayout.style'
-import { useDeeplinkListener } from '@hooks/deeplink'
+import { useDeeplinkListener } from '@hooks/useDeepLink'
 
-export type FullScreenLayoutProps = ViewProps
+export type SafeAreaLayoutProps = ViewProps
 
-export const FullScreenLayout = (props: FullScreenLayoutProps) => {
-    const styles = useStyles()
+export const SafeAreaLayout = (props: SafeAreaLayoutProps) => {
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
 
     // this hook sets up the deeplink listener
     useDeeplinkListener()

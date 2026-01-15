@@ -17,8 +17,8 @@ import {
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useSendFunds } from '@modules/transactions/hooks'
-import { useToast } from '@hooks/toast'
-import { useLanguage } from '@hooks/language'
+import { useToast } from '@hooks/useToast'
+import { useLanguage } from '@hooks/useLanguage'
 import {
     ALGO_ASSET,
     useAssetFiatPricesQuery,

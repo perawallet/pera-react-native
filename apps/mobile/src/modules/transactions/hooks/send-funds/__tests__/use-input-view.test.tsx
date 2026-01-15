@@ -27,7 +27,7 @@ import {
     useSuggestedParametersQuery,
     useAccountInformationQuery,
 } from '@perawallet/wallet-core-blockchain'
-import { useToast } from '@hooks/toast'
+import { useToast } from '@hooks/useToast'
 
 vi.mock('@components/core/PWBottomSheet', () => ({
     bottomSheetNotifier: { current: null },
@@ -51,11 +51,11 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useAccountInformationQuery: vi.fn(),
 }))
 
-vi.mock('@hooks/toast', () => ({
+vi.mock('@hooks/useToast', () => ({
     useToast: vi.fn(() => ({ showToast: vi.fn() })),
 }))
 
-vi.mock('@hooks/language', () => ({
+vi.mock('@hooks/useLanguage', () => ({
     useLanguage: vi.fn(() => ({ t: (key: string) => key })),
 }))
 

@@ -21,8 +21,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Drawer } from 'react-native-drawer-layout'
 import { useState } from 'react'
 import { AccountMenu } from '@modules/accounts/components/AccountMenu'
-import { useLanguage } from '@hooks/language'
-import { useWebView } from '@hooks/webview'
+import { useLanguage } from '@hooks/useLanguage'
+import { useWebView } from '@hooks/usePeraWebviewInterface'
 import { config } from '@perawallet/wallet-core-config'
 
 export const SwapScreen = () => {

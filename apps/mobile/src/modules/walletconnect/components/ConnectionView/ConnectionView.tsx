@@ -29,9 +29,9 @@ import {
     WalletConnectSessionRequest,
 } from '@perawallet/wallet-core-walletconnect'
 import { useStyles } from './styles'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 import React from 'react'
-import { useWebView } from '@hooks/webview'
+import { useWebView } from '@hooks/usePeraWebviewInterface'
 import { v7 as uuid } from 'uuid'
 import {
     useSigningAccounts,
@@ -39,7 +39,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { ScrollView } from 'react-native-gesture-handler'
-import { useToast } from '@hooks/toast'
+import { useToast } from '@hooks/useToast'
 import { PermissionItem } from '../PermissionItem'
 
 //TODO implement project validation using our backend to show a "verified" badge somewhere

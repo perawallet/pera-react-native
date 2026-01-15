@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 import { PWTab, PWTabView, PWView } from '@components/core'
 
 import { useStyles } from './styles'

@@ -16,10 +16,10 @@ import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { PWButton, PWText } from '@components/core'
 import { RowTitledItem } from '@components/RowTitledItem'
 import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
-import { useLanguage } from '@hooks/language'
-import { useWebView } from '@hooks/webview'
+import { useLanguage } from '@hooks/useLanguage'
+import { useWebView } from '@hooks/usePeraWebviewInterface'
 import { v7 as uuid } from 'uuid'
-import { useClipboard } from '@hooks/clipboard'
+import { useClipboard } from '@hooks/useClipboard'
 
 type AssetAboutProps = {
     assetDetails: PeraAsset

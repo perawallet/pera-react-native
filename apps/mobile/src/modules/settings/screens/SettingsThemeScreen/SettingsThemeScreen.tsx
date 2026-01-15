@@ -14,7 +14,7 @@ import { useStyles } from './styles'
 import { PWView } from '@components/core'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import { RadioButton } from '@components/RadioButton'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 
 export const SettingsThemeScreen = () => {
     const styles = useStyles()

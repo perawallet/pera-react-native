@@ -10,17 +10,10 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-import { EdgeInsets } from 'react-native-safe-area-context'
+import { ScrollView, ScrollViewProps } from 'react-native'
 
-export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
-    return {
-        contentContainer: {
-            flex: 1,
-            marginLeft: insets.left,
-            marginRight: insets.right,
-            marginTop: insets.top,
-            paddingTop: theme.spacing.sm,
-        },
-    }
-})
+export type PWScrollViewProps = ScrollViewProps
+
+export const PWScrollView = (props: PWScrollViewProps) => {
+    return <ScrollView {...props} />
+}

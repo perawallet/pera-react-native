@@ -14,7 +14,7 @@ import { PWIcon, PWInput, PWInputProps, PWView } from '@components/core'
 
 import { QRScannerView } from '@components/QRScannerView'
 import { useState } from 'react'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 
 export type AddressEntryFieldProps = {
     allowQRCode?: boolean

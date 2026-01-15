@@ -10,14 +10,13 @@
  limitations under the License
  */
 
-import { PWIcon, PWTouchableOpacity, PWView } from '@components/core'
+import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import React, { PropsWithChildren, useState } from 'react'
 import { StyleProp, ViewStyle, GestureResponderEvent } from 'react-native'
 import Animated, { withTiming, useAnimatedStyle } from 'react-native-reanimated'
 import { useStyles } from './styles'
 import { EXPANDABLE_PANEL_ANIMATION_DURATION } from '@constants/ui'
 import { ExpandablePanel } from './ExpandablePanel'
-import { Text } from '@rneui/themed'
 
 type TitledExpandablePanelProps = {
     title: React.ReactNode | string
@@ -62,7 +61,7 @@ export const TitledExpandablePanel = ({
                 onPress={onPress}
                 style={styles.header}
             >
-                {typeof title === 'string' ? <Text>{title}</Text> : title}
+                {typeof title === 'string' ? <PWText>{title}</PWText> : title}
                 <Animated.View style={iconStyle}>
                     <PWIcon
                         name='chevron-right'

@@ -18,7 +18,7 @@ import { InfoButton } from '../InfoButton'
 const mockOpen = vi.fn()
 const mockClose = vi.fn()
 
-vi.mock('@hooks/modal-state', () => ({
+vi.mock('@hooks/useModalState', () => ({
     useModalState: () => ({
         isOpen: false,
         open: mockOpen,
