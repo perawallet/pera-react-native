@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Text } from '@rneui/themed'
+import { PWText } from '@components/core/PWText'
 import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles'
 import { PWIcon } from '@components/core/PWIcon'
@@ -31,7 +31,7 @@ export const AssetSelection = ({ asset }: AssetSelectionProps) => {
                 asset={asset}
                 style={styles.icon}
             />
-            <Text h4>{asset.unitName}</Text>
+            <PWText variant='h4'>{asset.unitName}</PWText>
             <PWIcon name='chevron-right' />
         </PWView>
     )

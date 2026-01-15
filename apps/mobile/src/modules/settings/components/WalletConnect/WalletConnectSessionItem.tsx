@@ -13,7 +13,8 @@
 import { PWBadge } from '@components/core/PWBadge'
 import { PWView } from '@components/core/PWView'
 import { WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
-import { Image, Text } from '@rneui/themed'
+import { PWImage } from '@components/core/PWImage'
+import { PWText } from '@components/core/PWText'
 import { useStyles } from './styles'
 import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import { PWIcon } from '@components/core/PWIcon'
@@ -49,21 +50,21 @@ export const WalletConnectSessionItem = ({
             style={styles.sessionItem}
             onPress={handlePress}
         >
-            <Image
+            <PWImage
                 source={{ uri: preferredIcon }}
                 style={styles.icon}
             />
             <PWView style={styles.sessionInfo}>
                 <PWView style={styles.sessionNameContainer}>
-                    <Text h4>
+                    <PWText variant='h4'>
                         {session.session?.peerMeta?.name ?? 'Unknown'}
-                    </Text>
+                    </PWText>
                     <PWBadge
                         variant='secondary'
                         value={`WCV${session?.version}`}
                     />
                 </PWView>
-                <Text style={styles.sessionDate}>
+                <PWText style={styles.sessionDate}>
                     {session.lastActiveAt
                         ? t('walletconnect.settings.last_active', {
                               date: formatDatetime(
@@ -79,7 +80,7 @@ export const WalletConnectSessionItem = ({
                                   'medium',
                               ),
                           })}
-                </Text>
+                </PWText>
                 <PWBadge
                     variant={isConnected ? 'positive' : 'secondary'}
                     value={

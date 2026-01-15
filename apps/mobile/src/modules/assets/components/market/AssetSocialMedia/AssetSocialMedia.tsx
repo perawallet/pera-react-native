@@ -12,7 +12,7 @@
 
 import { useStyles } from './styles'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
-import { Text } from '@rneui/themed'
+import { PWText } from '@components/core/PWText'
 import { PWIcon, IconName } from '@components/core/PWIcon'
 import { PWView } from '@components/core/PWView'
 import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
@@ -62,9 +62,9 @@ export const AssetSocialMedia = ({ assetDetails }: AssetSocialMediaProps) => {
 
     return (
         <PWView style={styles.container}>
-            <Text style={styles.sectionTitle}>
+            <PWText style={styles.sectionTitle}>
                 {t('asset_details.markets.social_media')}
-            </Text>
+            </PWText>
             {socialLinks.map((link, index) => (
                 <PWTouchableOpacity
                     key={index}
@@ -77,7 +77,7 @@ export const AssetSocialMedia = ({ assetDetails }: AssetSocialMediaProps) => {
                             size='md'
                             variant='secondary'
                         />
-                        <Text style={styles.label}>{link.label}</Text>
+                        <PWText style={styles.label}>{link.label}</PWText>
                     </PWView>
                     <PWIcon
                         name='arrow-up-right'

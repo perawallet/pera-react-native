@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Text } from '@rneui/themed'
+import { PWText } from '@components/core/PWText'
 import { PWView, PWViewProps } from '@components/core/PWView'
 import { useStyles } from './styles'
 import { PWIcon, IconName } from '@components/core/PWIcon'
@@ -41,14 +41,14 @@ export const EmptyView = (props: EmptyViewProps) => {
                 </PWView>
             )}
             {!!title && (
-                <Text
-                    h3
-                    h3Style={styles.text}
+                <PWText
+                    variant='h3'
+                    style={styles.text}
                 >
                     {title}
-                </Text>
+                </PWText>
             )}
-            <Text style={styles.text}>{body}</Text>
+            <PWText style={styles.text}>{body}</PWText>
             {button}
         </PWView>
     )

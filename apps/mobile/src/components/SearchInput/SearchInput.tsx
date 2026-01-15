@@ -12,7 +12,7 @@
 
 import { InputProps } from '@rneui/base'
 
-import { Input } from '@rneui/themed'
+import { PWInput } from '@components/core/PWInput'
 import { PWIcon } from '@components/core/PWIcon'
 import { useStyles } from './styles'
 
@@ -22,7 +22,7 @@ export const SearchInput = (props: SearchInputProps) => {
     const styles = useStyles()
 
     return (
-        <Input
+        <PWInput
             {...props}
             inputContainerStyle={[props.inputContainerStyle, styles.search]}
             placeholder={props.placeholder ?? 'Search'}
@@ -32,6 +32,7 @@ export const SearchInput = (props: SearchInputProps) => {
                     variant='secondary'
                 />
             }
+            // @ts-expect-error - passed through to RN Input
             clearButtonMode='while-editing'
             selectTextOnFocus
             autoComplete='off'

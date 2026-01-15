@@ -23,7 +23,8 @@ import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { AddressDisplay } from '@components/AddressDisplay'
-import { Divider, Text, useTheme } from '@rneui/themed'
+import { Divider, useTheme } from '@rneui/themed'
+import { PWText } from '@components/core/PWText'
 import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import { useStyles } from './styles'
 import { PWButton } from '@components/core/PWButton'
@@ -271,7 +272,7 @@ export const SendFundsTransactionConfirmation = ({
             )}
             <Divider style={styles.divider} />
             <RowTitledItem title={t('send_funds.confirmation.note')}>
-                {!!note && <Text>{note}</Text>}
+                {!!note && <PWText>{note}</PWText>}
                 {!!note && (
                     <PWTouchableOpacity
                         onPress={openNote}
@@ -282,19 +283,19 @@ export const SendFundsTransactionConfirmation = ({
                             variant='link'
                             size='sm'
                         />
-                        <Text style={styles.link}>
+                        <PWText style={styles.link}>
                             {t('send_funds.confirmation.edit')}
-                        </Text>
+                        </PWText>
                     </PWTouchableOpacity>
                 )}
                 {!note && (
                     <PWTouchableOpacity>
-                        <Text
+                        <PWText
                             style={styles.link}
                             onPress={openNote}
                         >
                             {t('send_funds.add_note.button')}
-                        </Text>
+                        </PWText>
                     </PWTouchableOpacity>
                 )}
             </RowTitledItem>

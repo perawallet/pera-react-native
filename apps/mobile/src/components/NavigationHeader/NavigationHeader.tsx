@@ -12,7 +12,7 @@
 
 import { NativeStackHeaderProps } from '@react-navigation/native-stack'
 import { PWView } from '@components/core/PWView'
-import { Text } from '@rneui/themed'
+import { PWText } from '@components/core/PWText'
 import { useStyles } from './styles'
 import { PWIcon } from '@components/core/PWIcon'
 import { useLanguage } from '@hooks/language'
@@ -42,12 +42,12 @@ export const NavigationHeader = (props: NativeStackHeaderProps) => {
                     />
                 )}
             </PWView>
-            <Text
-                h4
-                h4Style={styles.title}
+            <PWText
+                variant='h4'
+                style={styles.title}
             >
                 {title}
-            </Text>
+            </PWText>
             <PWView style={styles.backIconContainer}>
                 {props.options?.headerRight?.({})}
             </PWView>

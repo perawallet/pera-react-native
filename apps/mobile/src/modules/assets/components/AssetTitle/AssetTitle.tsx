@@ -15,7 +15,8 @@ import { PWView } from '@components/core/PWView'
 import { PWIcon } from '@components/core/PWIcon'
 import { useStyles } from './styles'
 import { AssetIcon } from '../AssetIcon'
-import { Text, useTheme } from '@rneui/themed'
+import { useTheme } from '@rneui/themed'
+import { PWText } from '@components/core/PWText'
 import { useMemo } from 'react'
 
 export type AssetTitleProps = {
@@ -38,12 +39,12 @@ export const AssetTitle = ({ asset }: AssetTitleProps) => {
                 size={theme.spacing.xxl}
             />
             <PWView style={styles.nameContainer}>
-                <Text
-                    h4
+                <PWText
+                    variant='h4'
                     style={styles.name}
                 >
                     {isAlgo ? 'Algo' : asset.name}
-                </Text>
+                </PWText>
                 {isAlgo && (
                     <PWIcon
                         name='assets/trusted'

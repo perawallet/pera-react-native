@@ -15,7 +15,7 @@ import { AccountAssetItemView } from '@modules/assets/components/AssetItem/Accou
 import { PWView } from '@components/core/PWView'
 import { PropsWithChildren, useMemo, useState } from 'react'
 import { useStyles } from './styles'
-import { Text } from '@rneui/themed'
+import { PWText } from '@components/core/PWText'
 
 import { SearchInput } from '@components/SearchInput'
 import { PWButton } from '@components/core/PWButton'
@@ -122,12 +122,12 @@ export const AccountAssetList = ({
                             <ExpandablePanel isExpanded={headerState.isOpen}>
                                 {children}
                                 <PWView style={styles.titleBar}>
-                                    <Text
+                                    <PWText
                                         style={styles.title}
-                                        h4
+                                        variant='h4'
                                     >
                                         {t('account_details.assets.title')}
-                                    </Text>
+                                    </PWText>
                                     <PWView
                                         style={styles.titleBarButtonContainer}
                                     >

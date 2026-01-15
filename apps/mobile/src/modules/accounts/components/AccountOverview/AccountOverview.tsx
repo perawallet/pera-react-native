@@ -17,7 +17,7 @@ import Decimal from 'decimal.js'
 import { WealthChart } from '@components/WealthChart'
 import { ButtonPanel } from '../ButtonPanel'
 import { AccountAssetList } from '../AccountAssetList'
-import { Text } from '@rneui/themed'
+import { PWText } from '@components/core/PWText'
 import { useCallback, useState } from 'react'
 import { useChartInteraction } from '@hooks/chart-interaction'
 import { useStyles } from './styles'
@@ -126,12 +126,12 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
                         />
                     )}
                     {selectedPoint && (
-                        <Text
-                            h4
-                            h4Style={styles.dateDisplay}
+                        <PWText
+                            variant='h4'
+                            style={styles.dateDisplay}
                         >
                             {formatDatetime(selectedPoint.datetime)}
-                        </Text>
+                        </PWText>
                     )}
                 </PWView>
             </PWTouchableOpacity>

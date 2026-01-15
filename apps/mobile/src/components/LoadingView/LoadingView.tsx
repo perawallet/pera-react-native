@@ -12,7 +12,8 @@
 
 import { ActivityIndicator } from 'react-native'
 import { PWView } from '@components/core/PWView'
-import { Skeleton, useTheme } from '@rneui/themed'
+import { useTheme } from '@rneui/themed'
+import { PWSkeleton } from '@components/core/PWSkeleton'
 import { useStyles } from './styles'
 
 type LoadingViewProps = {
@@ -44,7 +45,7 @@ export const LoadingView = ({
         return (
             <PWView style={styles.container}>
                 {Array.from({ length: count }, (_, i) => (
-                    <Skeleton
+                    <PWSkeleton
                         key={i}
                         style={styles.skeleton}
                         height={

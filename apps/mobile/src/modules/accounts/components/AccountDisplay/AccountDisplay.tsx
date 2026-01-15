@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Text, TextProps, useTheme } from '@rneui/themed'
+import { useTheme } from '@rneui/themed'
 import {
     getAccountDisplayName,
     WalletAccount,
@@ -20,11 +20,12 @@ import { useStyles } from './styles'
 
 import { AccountIcon, AccountIconProps } from '../AccountIcon'
 import { PWIcon } from '@components/core/PWIcon'
+import { PWText, PWTextProps } from '@components/core/PWText'
 
 type AccountDisplayProps = {
     account?: WalletAccount
     iconProps?: Omit<AccountIconProps, 'account'>
-    textProps?: TextProps
+    textProps?: PWTextProps
     showChevron?: boolean
 } & PWViewProps
 
@@ -51,13 +52,12 @@ export const AccountDisplay = ({
                     {...iconProps}
                 />
             )}
-            <Text
-                {...textProps}
-                h4Style={textProps ? textProps.h4Style : styles.text}
-                h4={!textProps}
+            <PWText
+                style={textProps?.style ?? styles.text}
+                variant={textProps ? undefined : 'h4'}
             >
                 {displayName}
-            </Text>
+            </PWText>
             {showChevron && (
                 <PWIcon
                     variant='secondary'

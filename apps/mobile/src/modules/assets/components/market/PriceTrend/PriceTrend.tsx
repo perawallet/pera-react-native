@@ -11,7 +11,7 @@
  */
 
 import { View } from 'react-native'
-import { Text } from '@rneui/themed'
+import { PWText } from '@components/core/PWText'
 import { useStyles } from './styles'
 import { formatCurrency, HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { PWIcon } from '@components/core/PWIcon'
@@ -67,9 +67,9 @@ export const PriceTrend = ({
     return (
         <View style={styles.container}>
             {showAbsolute && changeValue && (
-                <Text
+                <PWText
                     style={isPositive ? styles.itemUp : styles.itemDown}
-                    h4
+                    variant='h4'
                 >
                     {isPositive ? '+' : '-'}
                     {formatCurrency(
@@ -79,7 +79,7 @@ export const PriceTrend = ({
                         undefined,
                         true,
                     )}
-                </Text>
+                </PWText>
             )}
             <View style={styles.percentageContainer}>
                 <PWIcon
@@ -90,12 +90,12 @@ export const PriceTrend = ({
                         isPositive ? styles.trendIconUp : styles.trendIconDown
                     }
                 />
-                <Text
+                <PWText
                     style={isPositive ? styles.itemUp : styles.itemDown}
-                    h4
+                    variant='h4'
                 >
                     {Decimal.abs(changePercentage).toFixed(2)}%
-                </Text>
+                </PWText>
             </View>
         </View>
     )

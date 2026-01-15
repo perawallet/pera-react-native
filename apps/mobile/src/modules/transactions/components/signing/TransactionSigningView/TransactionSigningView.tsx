@@ -22,7 +22,7 @@ import {
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import { Text } from '@rneui/themed'
+import { PWText } from '@components/core/PWText'
 import Decimal from 'decimal.js'
 import { ScrollView } from 'react-native-gesture-handler'
 import { useStyles } from './styles'
@@ -65,12 +65,12 @@ const SingleTransactionView = ({ request }: TransactionSigningViewProps) => {
                 type='pay'
                 size='large'
             />
-            <Text h4>
+            <PWText variant='h4'>
                 Transfer to{' '}
                 {truncateAlgorandAddress(
                     encodeAlgorandAddress(receiver.publicKey),
                 )}
-            </Text>
+            </PWText>
             <CurrencyDisplay
                 currency='ALGO'
                 precision={3}
@@ -100,14 +100,14 @@ const GroupTransactionView = ({ request }: TransactionSigningViewProps) => {
                 type='group'
                 size='large'
             />
-            <Text h4>
+            <PWText variant='h4'>
                 {isMultipleGroups
                     ? 'Transaction Groups'
                     : `Group ID: ${truncateAlgorandAddress('SomeIDForAGroup')}`}
-            </Text>
+            </PWText>
             {isMultipleGroups ? (
                 <PWView>
-                    <Text>This is where we{"'"}ll show the groups</Text>
+                    <PWText>This is where we{"'"}ll show the groups</PWText>
                 </PWView>
             ) : (
                 <BalanceImpactView />

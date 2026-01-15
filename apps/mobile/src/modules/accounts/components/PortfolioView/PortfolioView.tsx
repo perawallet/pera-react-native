@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Text } from '@rneui/themed'
+import { PWText } from '@components/core/PWText'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/language'
 
@@ -67,17 +67,17 @@ export const PortfolioView = (props: PortfolioViewProps) => {
     return (
         <PWView {...props}>
             <PWView style={styles.valueTitleBar}>
-                <Text
-                    h4Style={styles.valueTitle}
-                    h4
+                <PWText
+                    style={styles.valueTitle}
+                    variant='h4'
                 >
                     {t('portfolio.title')}
-                </Text>
+                </PWText>
                 <InfoButton
                     variant='secondary'
                     title={t('portfolio.info.title')}
                 >
-                    <Text>{t('portfolio.info.body')}</Text>
+                    <PWText>{t('portfolio.info.body')}</PWText>
                 </InfoButton>
             </PWView>
             <PWView style={styles.valueBar}>
@@ -116,12 +116,12 @@ export const PortfolioView = (props: PortfolioViewProps) => {
                 />
                 {!selectedPoint && <WealthTrend period={period} />}
                 {selectedPoint && (
-                    <Text
-                        h4
-                        h4Style={styles.dateDisplay}
+                    <PWText
+                        variant='h4'
+                        style={styles.dateDisplay}
                     >
                         {formatDatetime(selectedPoint.datetime)}
-                    </Text>
+                    </PWText>
                 )}
             </PWView>
 

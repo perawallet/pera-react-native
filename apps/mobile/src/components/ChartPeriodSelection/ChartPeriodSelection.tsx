@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Text } from '@rneui/themed'
+import { PWText } from '@components/core/PWText'
 import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles'
 import { useCallback, useState } from 'react'
@@ -51,7 +51,7 @@ export const ChartPeriodSelection = ({
                         : styles.unselectedButtonContainer
                 }
             >
-                <Text>{t('chart.one_week.label')}</Text>
+                <PWText>{t('chart.one_week.label')}</PWText>
             </PWTouchableOpacity>
             <PWTouchableOpacity
                 onPress={() => handlePressed('one-month')}
@@ -61,7 +61,7 @@ export const ChartPeriodSelection = ({
                         : styles.unselectedButtonContainer
                 }
             >
-                <Text>{t('chart.one_month.label')}</Text>
+                <PWText>{t('chart.one_month.label')}</PWText>
             </PWTouchableOpacity>
             <PWTouchableOpacity
                 onPress={() => handlePressed('one-year')}
@@ -71,7 +71,7 @@ export const ChartPeriodSelection = ({
                         : styles.unselectedButtonContainer
                 }
             >
-                <Text>{t('chart.one_year.label')}</Text>
+                <PWText>{t('chart.one_year.label')}</PWText>
             </PWTouchableOpacity>
         </PWView>
     )

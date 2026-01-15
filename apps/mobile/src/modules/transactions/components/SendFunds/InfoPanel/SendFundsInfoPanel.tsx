@@ -15,7 +15,7 @@ import {
     PWBottomSheetProps,
 } from '@components/core/PWBottomSheet'
 import { usePreferences } from '@perawallet/wallet-core-settings'
-import { Text } from '@rneui/themed'
+import { PWText } from '@components/core/PWText'
 import { useEffect, useState } from 'react'
 import { PWIcon } from '@components/core/PWIcon'
 import { PWButton } from '@components/core/PWButton'
@@ -77,42 +77,42 @@ export const SendFundsInfoPanel = ({
                 variant='helper'
             />
             <PWView style={styles.bodyContainer}>
-                <Text
-                    h3
-                    h3Style={styles.title}
+                <PWText
+                    variant='h3'
+                    style={styles.title}
                 >
                     {t('send_funds.info.title')}
-                </Text>
-                <Text style={styles.preamble}>
+                </PWText>
+                <PWText style={styles.preamble}>
                     {t('send_funds.info.tip_1')}
-                </Text>
+                </PWText>
                 <PWView style={styles.tipsContainer}>
                     <PWView style={styles.tip}>
                         <PWView style={styles.tipNumberContainer}>
-                            <Text style={styles.tipNumber}>1</Text>
+                            <PWText style={styles.tipNumber}>1</PWText>
                         </PWView>
-                        <Text style={styles.tipText}>
+                        <PWText style={styles.tipText}>
                             {t('send_funds.info.tip_2')}
-                        </Text>
+                        </PWText>
                     </PWView>
                     <PWView style={styles.tip}>
                         <PWView style={styles.tipNumberContainer}>
-                            <Text style={styles.tipNumber}>2</Text>
+                            <PWText style={styles.tipNumber}>2</PWText>
                         </PWView>
-                        <Text style={styles.tipText}>
+                        <PWText style={styles.tipText}>
                             {t('send_funds.info.tip_3')}
-                        </Text>
+                        </PWText>
                     </PWView>
                 </PWView>
-                <Text style={styles.postamble}>
+                <PWText style={styles.postamble}>
                     For more information on transacting{' '}
-                    <Text
+                    <PWText
                         style={styles.link}
                         onPress={handleOpenInfoLink}
                     >
                         {t('send_funds.info.tap_here')}
-                    </Text>
-                </Text>
+                    </PWText>
+                </PWText>
                 <PWButton
                     variant='secondary'
                     onPress={handleClose}

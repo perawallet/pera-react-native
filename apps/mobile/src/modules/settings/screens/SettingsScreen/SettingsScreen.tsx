@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { Dialog, Text, useTheme } from '@rneui/themed'
+import { useTheme } from '@rneui/themed'
+import { PWDialog } from '@components/core/PWDialog'
 
 import { PWView } from '@components/core/PWView'
 import { PWButton } from '@components/core/PWButton'
@@ -28,6 +29,7 @@ import { useModalState } from '@hooks/modal-state'
 import { useDeleteAllData } from '@modules/settings/hooks/delete-all-data'
 import { AppVersion } from '@modules/settings/components/AppVersion'
 import { useSettingsOptions } from '@modules/settings/hooks/settings-options'
+import { PWText } from '@components/core/PWText'
 
 //TODO: add ratings view handling
 
@@ -89,7 +91,7 @@ export const SettingsScreen = () => {
                         style={styles.section}
                         key={`settings-section-${item.title}`}
                     >
-                        <Text style={styles.sectionTitle}>{item.title}</Text>
+                        <PWText style={styles.sectionTitle}>{item.title}</PWText>
                         {item.items.map(page => (
                             <PWListItem
                                 key={`settings-sectionrow-${page.title}`}
@@ -107,24 +109,24 @@ export const SettingsScreen = () => {
                 onPress={open}
             />
             <AppVersion enableSecretTaps />
-            <Dialog
+            <PWDialog
                 isVisible={isOpen}
                 onBackdropPress={close}
             >
-                <Dialog.Title title={t('settings.main.remove_title')} />
-                <Text>{t('settings.main.remove_message')}</Text>
-                <Dialog.Actions>
-                    <Dialog.Button
+                <PWDialog.Title title={t('settings.main.remove_title')} />
+                <PWText>{t('settings.main.remove_message')}</PWText>
+                <PWDialog.Actions>
+                    <PWDialog.Button
                         title={t('common.delete.label')}
                         titleStyle={{ color: theme.colors.error }}
                         onPress={handleDeleteAllAccounts}
                     />
-                    <Dialog.Button
+                    <PWDialog.Button
                         title={t('common.cancel.label')}
                         onPress={close}
                     />
-                </Dialog.Actions>
-            </Dialog>
+                </PWDialog.Actions>
+            </PWDialog>
         </ScrollView>
     )
 }

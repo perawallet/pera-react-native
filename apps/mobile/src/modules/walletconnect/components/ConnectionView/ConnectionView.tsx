@@ -18,7 +18,8 @@ import {
     useWalletConnectSessionRequests,
     WalletConnectSessionRequest,
 } from '@perawallet/wallet-core-walletconnect'
-import { Image, Text } from '@rneui/themed'
+import { PWImage } from '@components/core/PWImage'
+import { PWText } from '@components/core/PWText'
 import { useStyles } from './styles'
 import { PWBadge } from '@components/core/PWBadge'
 import { useLanguage } from '@hooks/language'
@@ -144,7 +145,7 @@ export const ConnectionView = ({
                     )}
                 </PWView>
                 {preferredIcon ? (
-                    <Image
+                    <PWImage
                         source={{ uri: preferredIcon }}
                         style={styles.icon}
                     />
@@ -158,14 +159,14 @@ export const ConnectionView = ({
                     </PWView>
                 )}
                 <PWView style={styles.titleContainer}>
-                    <Text
-                        h3
-                        h3Style={styles.title}
+                    <PWText
+                        variant='h3'
+                        style={styles.title}
                     >
                         {t('walletconnect.request.title', {
                             name: request.peerMeta.name,
                         })}
-                    </Text>
+                    </PWText>
                     {!!request.peerMeta.url && (
                         <PWButton
                             variant='link'
@@ -176,12 +177,12 @@ export const ConnectionView = ({
                 </PWView>
             </PWView>
             <PWView style={styles.permissionsContainer}>
-                <Text
-                    h4
-                    h4Style={styles.permissionsTitle}
+                <PWText
+                    variant='h4'
+                    style={styles.permissionsTitle}
                 >
                     {t('walletconnect.request.permissions_title')}
-                </Text>
+                </PWText>
                 {request.permissions.map((permission, index) => (
                     <PermissionItem
                         key={index}
@@ -191,12 +192,12 @@ export const ConnectionView = ({
             </PWView>
 
             <PWView style={styles.accountSelectionContainer}>
-                <Text
-                    h4
-                    h4Style={styles.permissionsTitle}
+                <PWText
+                    variant='h4'
+                    style={styles.permissionsTitle}
                 >
                     {t('walletconnect.request.accounts_title')}
-                </Text>
+                </PWText>
                 <ScrollView style={styles.accountsContainer}>
                     {accounts.map(account => (
                         <PWTouchableOpacity

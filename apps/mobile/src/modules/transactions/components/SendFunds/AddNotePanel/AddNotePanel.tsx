@@ -14,7 +14,8 @@ import {
     PWBottomSheet,
     PWBottomSheetProps,
 } from '@components/core/PWBottomSheet'
-import { Input, Text } from '@rneui/themed'
+import { PWInput } from '@components/core/PWInput'
+import { PWText } from '@components/core/PWText'
 import { useContext, useEffect, useState } from 'react'
 import { PWIcon } from '@components/core/PWIcon'
 import { useForm, Controller } from 'react-hook-form'
@@ -75,7 +76,7 @@ export const AddNotePanel = ({
                         variant='secondary'
                         onPress={handleClose}
                     />
-                    <Text h4>
+                    <PWText variant='h4'>
                         {isEdit
                             ? t('send_funds.confirmation.edit')
                             : t('send_funds.add_note.button').replace(
@@ -83,17 +84,17 @@ export const AddNotePanel = ({
                                   '',
                               )}{' '}
                         Note
-                    </Text>
-                    <Text onPress={handleSubmit(done)}>
+                    </PWText>
+                    <PWText onPress={handleSubmit(done)}>
                         {t('send_funds.add_note.done')}
-                    </Text>
+                    </PWText>
                 </PWView>
                 <PWView style={styles.container}>
                     <Controller
                         control={control}
                         name='note'
                         render={({ field: { onChange, onBlur, value } }) => (
-                            <Input
+                            <PWInput
                                 onBlur={onBlur}
                                 onChangeText={onChange}
                                 value={value}

@@ -17,9 +17,10 @@ import { AppState } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { MainRoutes } from '@routes/index'
 import { getTheme } from '@theme/theme'
-import { Text, ThemeProvider } from '@rneui/themed'
+import { ThemeProvider } from '@rneui/themed'
 import { useStyles } from './styles'
 import { PWView } from '@components/core/PWView'
+import { PWText } from '@components/core/PWText'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ErrorBoundary from 'react-native-error-boundary'
 import { useToast } from '@hooks/toast'
@@ -66,9 +67,9 @@ const RootContentContainer = () => {
 
                 {!hasInternet && (
                     <PWView style={styles.offlineTextContainer}>
-                        <Text style={styles.offlineText}>
+                        <PWText style={styles.offlineText}>
                             {t('common.offline_mode')}
-                        </Text>
+                        </PWText>
                     </PWView>
                 )}
 

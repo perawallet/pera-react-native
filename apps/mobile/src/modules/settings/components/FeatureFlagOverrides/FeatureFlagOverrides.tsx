@@ -12,9 +12,10 @@
 
 import { PWView } from '@components/core/PWView'
 import { RemoteConfigKeys } from '@perawallet/wallet-core-platform-integration'
-import { Switch, Text } from '@rneui/themed'
+import { PWSwitch } from '@components/core/PWSwitch'
+import { PWText } from '@components/core/PWText'
 import { useStyles } from './styles'
-import { useRemoteConfigOverrides } from '@perawallet/wallet-core-platform-integration/src/remote-config/hooks/useRemoteConfigOverrides'
+import { useRemoteConfigOverrides } from '@perawallet/wallet-core-platform-integration'
 
 export const FeatureFlagOverrides = () => {
     const styles = useStyles()
@@ -36,8 +37,8 @@ export const FeatureFlagOverrides = () => {
                     key={key}
                     style={styles.row}
                 >
-                    <Text>{key}</Text>
-                    <Switch
+                    <PWText>{key}</PWText>
+                    <PWSwitch
                         value={configOverrides[key] === true}
                         onValueChange={() => toggleOverride(key)}
                     />

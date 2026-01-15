@@ -12,7 +12,8 @@
 
 import { useStyles } from './styles'
 import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
-import { Text, useTheme } from '@rneui/themed'
+import { useTheme } from '@rneui/themed'
+import { PWText } from '@components/core/PWText'
 import { PWView } from '@components/core/PWView'
 import { PWIcon, IconName } from '@components/core/PWIcon'
 import { PWButton } from '@components/core/PWButton'
@@ -104,13 +105,13 @@ export const AssetVerificationCard = ({
                     style={styles.icon}
                 />
                 <PWView style={styles.content}>
-                    <Text
-                        h4
+                    <PWText
+                        variant='h4'
                         style={textStyle}
                     >
                         {cardConfig.title}
-                    </Text>
-                    <Text style={textStyle}>{cardConfig.description}</Text>
+                    </PWText>
+                    <PWText style={textStyle}>{cardConfig.description}</PWText>
                 </PWView>
             </PWView>
             <PWButton

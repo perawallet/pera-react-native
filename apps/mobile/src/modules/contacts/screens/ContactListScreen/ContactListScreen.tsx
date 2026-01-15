@@ -14,7 +14,7 @@ import { useMemo, useState } from 'react'
 import { SectionList } from 'react-native'
 import { useNavigation, ParamListBase } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { Text } from '@rneui/themed'
+import { PWText } from '@components/core/PWText'
 
 import { EmptyView } from '@components/EmptyView'
 import { PWButton } from '@components/core/PWButton'
@@ -36,12 +36,12 @@ type ContactSection = {
 const SectionHeader = ({ title }: { title: string }) => {
     const styles = useStyles()
     return (
-        <Text
-            h3
-            h3Style={styles.sectionHeader}
+        <PWText
+            variant='h3'
+            style={styles.sectionHeader}
         >
             {title}
-        </Text>
+        </PWText>
     )
 }
 
@@ -63,7 +63,7 @@ const ContactItem = ({ contact }: { contact: Contact }) => {
                 contact={contact}
                 size='small'
             />
-            <Text style={styles.contactName}>{contact.name}</Text>
+            <PWText style={styles.contactName}>{contact.name}</PWText>
         </PWTouchableOpacity>
     )
 }

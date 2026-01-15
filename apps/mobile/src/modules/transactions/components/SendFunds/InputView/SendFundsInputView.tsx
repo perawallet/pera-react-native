@@ -17,7 +17,7 @@ import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { useStyles } from './styles'
 import { PWButton } from '@components/core/PWButton'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
-import { Button, Text } from '@rneui/themed'
+import { PWText } from '@components/core/PWText'
 import { NumberPad } from '@components/NumberPad'
 import { SendFundsContext } from '@modules/transactions/providers/SendFundsProvider'
 import { AddNotePanel } from '../AddNotePanel'
@@ -73,9 +73,9 @@ export const SendFundsInputView = ({
                 rightIcon='info'
                 onRightPress={infoState.open}
             >
-                <Text>
+                <PWText>
                     {t('send_funds.input_view.title', { asset: asset?.name })}
-                </Text>
+                </PWText>
                 <AccountDisplay
                     account={selectedAccount ?? undefined}
                     style={styles.accountDisplay}
@@ -105,24 +105,24 @@ export const SendFundsInputView = ({
                     minPrecision={2}
                 />
             ) : (
-                <Text style={styles.amountPlaceholder}>--</Text>
+                <PWText style={styles.amountPlaceholder}>--</PWText>
             )}
 
             <PWView style={styles.buttonContainer}>
-                <Button
+                <PWButton
                     title={
                         note
                             ? t('send_funds.confirmation.edit')
                             : t('send_funds.add_note.button')
                     }
-                    buttonStyle={styles.secondaryButton}
-                    titleStyle={styles.secondaryButtonTitle}
+                    variant='secondary'
+                    style={styles.secondaryButton}
                     onPress={noteState.open}
                 />
-                <Button
+                <PWButton
                     title={t('send_funds.input.max')}
-                    buttonStyle={styles.secondaryButton}
-                    titleStyle={styles.secondaryButtonTitle}
+                    variant='secondary'
+                    style={styles.secondaryButton}
                     onPress={setMax}
                 />
             </PWView>

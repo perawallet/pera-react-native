@@ -12,7 +12,7 @@
 
 import { PWIcon } from '@components/core/PWIcon'
 import { PWView } from '@components/core/PWView'
-import { Text } from '@rneui/themed'
+import { PWText } from '@components/core/PWText'
 import { useStyles } from './styles'
 import { AlgorandPermission } from '@perawallet/wallet-core-walletconnect'
 import { useLanguage } from '@hooks/language'
@@ -43,7 +43,7 @@ export const PermissionItem = ({
                 name='check'
                 variant='positive'
             />
-            <Text>{getPermissionTitle(permission)}</Text>
+            <PWText>{getPermissionTitle(permission)}</PWText>
         </PWView>
     )
 }

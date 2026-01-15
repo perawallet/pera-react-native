@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Text } from '@rneui/themed'
+import { PWText } from '@components/core/PWText'
 import { PWIcon, IconName } from '@components/core/PWIcon'
 import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles'
@@ -47,12 +47,12 @@ export const PWHeader = ({
             <PWView style={styles.childContainer}>
                 {children}
                 {!!title && (
-                    <Text
-                        h4
-                        h4Style={styles.title}
+                    <PWText
+                        variant='h4'
+                        style={styles.title}
                     >
                         {title}
-                    </Text>
+                    </PWText>
                 )}
             </PWView>
             <PWView style={styles.iconContainer}>

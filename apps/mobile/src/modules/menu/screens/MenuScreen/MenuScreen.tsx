@@ -11,7 +11,7 @@
  */
 
 import { PWView } from '@components/core/PWView'
-import { Text } from '@rneui/themed'
+import { PWText } from '@components/core/PWText'
 import { useStyles } from './styles'
 import { PWIcon } from '@components/core/PWIcon'
 
@@ -48,12 +48,12 @@ export const MenuScreen = () => {
         <PWView style={styles.container}>
             <PWView style={styles.iconBar}>
                 <PWView style={styles.iconBarColumn} />
-                <Text
-                    h4
+                <PWText
+                    variant='h4'
                     style={styles.iconBarColumn}
                 >
                     {t('menu.title')}
-                </Text>
+                </PWText>
                 <PWView style={styles.iconBarColumn}>
                     <PWTouchableOpacity onPress={scanner.open}>
                         <PWIcon

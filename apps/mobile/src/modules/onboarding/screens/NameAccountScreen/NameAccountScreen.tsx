@@ -16,7 +16,8 @@ import {
     NativeStackScreenProps,
 } from '@react-navigation/native-stack'
 import { useStyles } from './styles'
-import { Input, Text } from '@rneui/themed'
+import { PWInput } from '@components/core/PWInput'
+import { PWText } from '@components/core/PWText'
 import { PWView } from '@components/core/PWView'
 import { PWButton } from '@components/core/PWButton'
 import { PWIcon } from '@components/core/PWIcon'
@@ -32,7 +33,7 @@ import { KeyboardAvoidingView, Platform } from 'react-native'
 import { useLanguage } from '@hooks/language'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
-import { OnboardingStackParamList } from '../routes'
+import { OnboardingStackParamList } from '../../routes'
 import { RootStackParamList } from '@routes/index'
 
 type NameAccountScreenProps = NativeStackScreenProps<
@@ -80,27 +81,27 @@ export const NameAccountScreen = ({ route }: NameAccountScreenProps) => {
             style={styles.mainContainer}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-            <Text
-                h4
+            <PWText
+                variant='h4'
                 style={styles.helperText}
             >
                 {t('onboarding.name_account.description')}
-            </Text>
+            </PWText>
             <PWView style={styles.walletNameContainer}>
                 <PWIcon
                     name='wallet'
                     variant='secondary'
                 />
-                <Text
-                    h4
+                <PWText
+                    variant='h4'
                     style={styles.nameText}
                 >
                     {t('onboarding.name_account.wallet_label', {
                         count: numWallets + 1,
                     })}
-                </Text>
+                </PWText>
             </PWView>
-            <Input
+            <PWInput
                 label={t('onboarding.name_account.input_label')}
                 containerStyle={styles.input}
                 value={walletDisplay}

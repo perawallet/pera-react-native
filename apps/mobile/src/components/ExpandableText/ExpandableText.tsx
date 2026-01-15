@@ -13,7 +13,7 @@
 import { TextStyle, StyleProp } from 'react-native'
 import { useState } from 'react'
 import { PWButton } from '@components/core/PWButton'
-import { Text } from '@rneui/themed'
+import { PWText } from '@components/core/PWText'
 
 type ExpandableTextProps = {
     text: string
@@ -39,7 +39,7 @@ export const ExpandableText = ({
 
     return (
         <>
-            <Text style={textStyle}>{displayText}</Text>
+            <PWText style={textStyle}>{displayText}</PWText>
             {shouldTruncate && (
                 <PWButton
                     title={isExpanded ? 'Show less' : 'Show more'}

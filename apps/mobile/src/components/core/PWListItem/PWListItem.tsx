@@ -15,7 +15,7 @@ import {
     PWTouchableOpacity,
     PWTouchableOpacityProps,
 } from '@components/core/PWTouchableOpacity'
-import { Text } from '@rneui/themed'
+import { PWText } from '@components/core/PWText'
 import { useStyles } from './styles'
 import { PWView } from '@components/core/PWView'
 
@@ -34,7 +34,7 @@ export const PWListItem = ({ icon, title, ...props }: PWListItemProps) => {
         >
             <PWView style={styles.labelContainer}>
                 <PWIcon name={icon} />
-                <Text style={styles.title}>{title}</Text>
+                <PWText style={styles.title}>{title}</PWText>
             </PWView>
             <PWIcon
                 name='chevron-right'

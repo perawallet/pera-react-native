@@ -11,7 +11,9 @@
  */
 
 import { useStyles } from './styles'
-import { Skeleton, Text, TextProps, useTheme } from '@rneui/themed'
+import { useTheme } from '@rneui/themed'
+import { PWSkeleton } from '@components/core/PWSkeleton'
+import { PWText, PWTextProps } from '@components/core/PWText'
 import { PWView } from '@components/core/PWView'
 import { useMemo } from 'react'
 import { formatCurrency } from '@perawallet/wallet-core-shared'
@@ -30,7 +32,11 @@ export type CurrencyDisplayProps = {
     showSymbol?: boolean
     isLoading?: boolean
     truncateToUnits?: boolean
-} & TextProps
+    h1?: boolean
+    h2?: boolean
+    h3?: boolean
+    h4?: boolean
+} & Omit<PWTextProps, 'children' | 'variant'>
 
 export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
     const themeStyle = useStyles(props)
@@ -45,6 +51,10 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
         showSymbol = true,
         isLoading = false,
         minPrecision,
+        h1,
+        h2,
+        h3,
+        h4,
         ...rest
     } = props
 
@@ -78,10 +88,20 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
         privacyMode,
     ])
 
+    const variant = h1
+        ? 'h1'
+        : h2
+        ? 'h2'
+        : h3
+        ? 'h3'
+        : h4
+        ? 'h4'
+        : 'body'
+
     if (isLoading) {
         return (
             <PWView style={themeStyle.container}>
-                <Skeleton style={themeStyle.skeleton} />
+                <PWSkeleton style={themeStyle.skeleton} />
             </PWView>
         )
     }
@@ -93,18 +113,14 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
                     style={[
                         themeStyle.algoIcon,
                         props.style,
-                        props.h1Style,
-                        props.h2Style,
-                        props.h3Style,
-                        props.h4Style,
                     ]}
                 />
             )}
             <PWView style={themeStyle.textContainer}>
-                <Text {...rest}>
+                <PWText variant={variant} {...rest}>
                     {prefix ? prefix : ''}
                     {displayValue}
-                </Text>
+                </PWText>
             </PWView>
         </PWView>
     )

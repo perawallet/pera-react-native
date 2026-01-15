@@ -13,7 +13,9 @@
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useStyles } from './styles'
-import { Text, useTheme, Overlay } from '@rneui/themed'
+import { useTheme } from '@rneui/themed'
+import { PWText } from '@components/core/PWText'
+import { PWOverlay } from '@components/core/PWOverlay'
 import { PWView } from '@components/core/PWView'
 import { PanelButton } from '@components/PanelButton'
 
@@ -72,21 +74,21 @@ export const OnboardingScreen = () => {
         <>
             <PWView>
                 <PWView style={styles.headerContainer}>
-                    <Text
+                    <PWText
                         style={styles.headerTitle}
-                        h1
+                        variant='h1'
                     >
                         {t('onboarding.main_screen.welcome')}
-                    </Text>
+                    </PWText>
                     <WelcomeImage style={styles.headerImage} />
                 </PWView>
                 <PWView style={styles.mainContainer}>
-                    <Text
+                    <PWText
                         style={styles.buttonTitle}
-                        h4
+                        variant='h4'
                     >
                         {t('onboarding.main_screen.new_to_algo')}
-                    </Text>
+                    </PWText>
                     <PanelButton
                         title={t('onboarding.main_screen.create_wallet')}
                         titleWeight='h4'
@@ -95,12 +97,12 @@ export const OnboardingScreen = () => {
                         rightIcon={'chevron-right'}
                     />
 
-                    <Text
+                    <PWText
                         style={styles.buttonTitle}
-                        h4
+                        variant='h4'
                     >
                         {t('onboarding.main_screen.already_have_account')}
-                    </Text>
+                    </PWText>
                     <PanelButton
                         title={t('onboarding.main_screen.import_account')}
                         titleWeight='h4'
@@ -110,7 +112,7 @@ export const OnboardingScreen = () => {
                     />
                 </PWView>
             </PWView>
-            <Overlay
+            <PWOverlay
                 isVisible={processing}
                 overlayStyle={styles.overlay}
                 backdropStyle={styles.overlayBackdrop}
@@ -119,8 +121,8 @@ export const OnboardingScreen = () => {
                     size='large'
                     color={theme.colors.linkPrimary}
                 />
-                <Text>{t('onboarding.create_account.processing')}</Text>
-            </Overlay>
+                <PWText>{t('onboarding.create_account.processing')}</PWText>
+            </PWOverlay>
         </>
     )
 }

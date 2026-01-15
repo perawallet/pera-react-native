@@ -14,18 +14,16 @@ import { PWView } from '@components/core/PWView'
 
 import { QRScannerView } from '@components/QRScannerView'
 import { useState } from 'react'
-import { Input, InputProps } from '@rneui/themed'
+import { PWInput, PWInputProps } from '@components/core/PWInput'
 import { PWIcon } from '@components/core/PWIcon'
 import { useLanguage } from '@hooks/language'
 
 export type AddressEntryFieldProps = {
     allowQRCode?: boolean
-} & InputProps
+} & PWInputProps
 
 export const AddressEntryField = ({
     allowQRCode,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    ref,
     ...rest
 }: AddressEntryFieldProps) => {
     const [scannerVisible, setScannerVisible] = useState(false)
@@ -46,7 +44,7 @@ export const AddressEntryField = ({
 
     return (
         <PWView>
-            <Input
+            <PWInput
                 {...rest}
                 rightIcon={
                     allowQRCode ? (

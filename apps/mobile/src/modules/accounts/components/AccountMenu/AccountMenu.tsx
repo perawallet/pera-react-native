@@ -11,7 +11,8 @@
  */
 
 import { useLanguage } from '@hooks/language'
-import { Tab, TabView } from '@rneui/themed'
+import { PWTab } from '@components/core/PWTab'
+import { PWTabView } from '@components/core/PWTabView'
 
 import { useStyles } from './styles'
 import { PortfolioView } from '../PortfolioView'
@@ -39,7 +40,7 @@ export const AccountMenu = (props: AccountMenuProps) => {
     return (
         <PWView style={styles.container}>
             <PortfolioView style={styles.portfolioContainer} />
-            <Tab
+            <PWTab
                 value={index}
                 onChange={setIndex}
                 containerStyle={styles.tabs}
@@ -47,7 +48,7 @@ export const AccountMenu = (props: AccountMenuProps) => {
                 disableIndicator
             >
                 {!!props.showInbox && (
-                    <Tab.Item
+                    <PWTab.Item
                         title={t('account_menu.title')}
                         titleStyle={
                             index === 0
@@ -57,7 +58,7 @@ export const AccountMenu = (props: AccountMenuProps) => {
                     />
                 )}
                 {!!props.showInbox && (
-                    <Tab.Item
+                    <PWTab.Item
                         title={t('account_menu.inbox')}
                         titleStyle={
                             index === 1
@@ -66,19 +67,19 @@ export const AccountMenu = (props: AccountMenuProps) => {
                         }
                     />
                 )}
-            </Tab>
-            <TabView
+            </PWTab>
+            <PWTabView
                 value={index}
                 onChange={setIndex}
                 animationType='spring'
             >
-                <TabView.Item style={styles.fullWidth}>
+                <PWTabView.Item style={styles.fullWidth}>
                     <AccountsTab onSelected={props.onSelected} />
-                </TabView.Item>
-                <TabView.Item style={styles.fullWidth}>
+                </PWTabView.Item>
+                <PWTabView.Item style={styles.fullWidth}>
                     <InboxTab />
-                </TabView.Item>
-            </TabView>
+                </PWTabView.Item>
+            </PWTabView>
         </PWView>
     )
 }

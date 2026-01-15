@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { Tab, TabView } from '@rneui/themed'
+import { PWTab } from '@components/core/PWTab'
+import { PWTabView } from '@components/core/PWTabView'
 import { useNavigation } from '@react-navigation/native'
 import {
     getAccountDisplayName,
@@ -86,7 +87,7 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
 
     return (
         <PWView style={styles.contentContainer}>
-            <Tab
+            <PWTab
                 value={tabIndex}
                 onChange={e => setTabIndex(e)}
                 containerStyle={styles.tabs}
@@ -94,25 +95,25 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
                 titleStyle={styles.tabItem}
                 dense
             >
-                <Tab.Item title={t('asset_details.main_screen.holdings_tab')} />
-                <Tab.Item title={t('asset_details.main_screen.markets_tab')} />
-            </Tab>
-            <TabView
+                <PWTab.Item title={t('asset_details.main_screen.holdings_tab')} />
+                <PWTab.Item title={t('asset_details.main_screen.markets_tab')} />
+            </PWTab>
+            <PWTabView
                 value={tabIndex}
                 onChange={setTabIndex}
                 animationType='spring'
                 animationConfig={TAB_ANIMATION_CONFIG}
             >
-                <TabView.Item style={styles.fullWidth}>
+                <PWTabView.Item style={styles.fullWidth}>
                     <AssetHoldings
                         account={account}
                         asset={asset}
                     />
-                </TabView.Item>
-                <TabView.Item style={styles.fullWidth}>
+                </PWTabView.Item>
+                <PWTabView.Item style={styles.fullWidth}>
                     <AssetMarkets asset={asset} />
-                </TabView.Item>
-            </TabView>
+                </PWTabView.Item>
+            </PWTabView>
         </PWView>
     )
 }

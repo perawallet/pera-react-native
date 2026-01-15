@@ -12,7 +12,8 @@
 
 import { PWView } from '@components/core/PWView'
 import { formatRelativeTime } from '@perawallet/wallet-core-shared'
-import { Image, Text } from '@rneui/themed'
+import { PWImage } from '@components/core/PWImage'
+import { PWText } from '@components/core/PWText'
 import { useStyles } from './styles'
 import { useCallback, useMemo } from 'react'
 import { PWIcon } from '@components/core/PWIcon'
@@ -38,9 +39,9 @@ export const NotificationItem = ({ item }: NotificationItemProps) => {
                 return (
                     <PWView style={styles.iconContainerNoBorder}>
                         {metadata?.icon?.shape === 'circle' ? (
-                            <Image
+                            <PWImage
                                 source={{ uri: imageUrl }}
-                                containerStyle={styles.imageCircle}
+                                style={styles.imageCircle}
                                 PlaceholderContent={
                                     <PWIcon
                                         name='bell'
@@ -50,9 +51,9 @@ export const NotificationItem = ({ item }: NotificationItemProps) => {
                                 transition
                             />
                         ) : (
-                            <Image
+                            <PWImage
                                 source={{ uri: imageUrl }}
-                                containerStyle={styles.image}
+                                style={styles.image}
                                 PlaceholderContent={
                                     <PWIcon
                                         name='bell'
@@ -91,10 +92,10 @@ export const NotificationItem = ({ item }: NotificationItemProps) => {
         >
             {image}
             <PWView style={styles.messageBox}>
-                <Text>{item.message}</Text>
-                <Text style={styles.timeText}>
+                <PWText>{item.message}</PWText>
+                <PWText style={styles.timeText}>
                     {formatRelativeTime(item.createdAt)}
-                </Text>
+                </PWText>
             </PWView>
         </PWTouchableOpacity>
     )

@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { Dialog, Input, Text, useTheme } from '@rneui/themed'
+import { useTheme } from '@rneui/themed'
+import { PWDialog } from '@components/core/PWDialog'
+import { PWInput } from '@components/core/PWInput'
+import { PWText } from '@components/core/PWText'
 import { ContactAvatar } from '@components/ContactAvatar'
 import { PWView } from '@components/core/PWView'
 import { AddressEntryField } from '@components/AddressEntryField'
@@ -104,7 +107,7 @@ export const EditContactScreen = () => {
                         control={control}
                         name='name'
                         render={({ field: { onChange, onBlur, value } }) => (
-                            <Input
+                            <PWInput
                                 onBlur={onBlur}
                                 onChangeText={onChange}
                                 value={value}
@@ -135,9 +138,9 @@ export const EditContactScreen = () => {
                     )}
                     {isEditMode && (
                         <PWView>
-                            <Text style={styles.label}>
+                            <PWText style={styles.label}>
                                 {t('contacts.edit_contact.address_label')}
-                            </Text>
+                            </PWText>
                             <AddressDisplay
                                 address={selectedContact.address}
                                 showCopy
@@ -163,24 +166,24 @@ export const EditContactScreen = () => {
                     </PWView>
                 </PWView>
             </ScrollView>
-            <Dialog
+            <PWDialog
                 isVisible={isOpen}
                 onBackdropPress={close}
             >
-                <Dialog.Title title={t('contacts.edit_contact.are_you_sure')} />
-                <Text>{t('contacts.edit_contact.delete_confirm')}</Text>
-                <Dialog.Actions>
-                    <Dialog.Button
+                <PWDialog.Title title={t('contacts.edit_contact.are_you_sure')} />
+                <PWText>{t('contacts.edit_contact.delete_confirm')}</PWText>
+                <PWDialog.Actions>
+                    <PWDialog.Button
                         title={t('common.delete.label')}
                         titleStyle={{ color: theme.colors.error }}
                         onPress={removeContact}
                     />
-                    <Dialog.Button
+                    <PWDialog.Button
                         title={t('common.cancel.label')}
                         onPress={close}
                     />
-                </Dialog.Actions>
-            </Dialog>
+                </PWDialog.Actions>
+            </PWDialog>
         </KeyboardAvoidingView>
     )
 }

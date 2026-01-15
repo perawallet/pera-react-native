@@ -11,7 +11,8 @@
  */
 
 import { PWView } from '@components/core/PWView'
-import { Text, useTheme } from '@rneui/themed'
+import { PWText } from '@components/core/PWText'
+import { useTheme } from '@rneui/themed'
 import {
     getAccountDisplayName,
     WalletAccount,
@@ -106,7 +107,7 @@ export const ReceiveFundsQRView = ({
                 leftIcon={onBack ? 'chevron-left' : 'cross'}
                 onLeftPress={onBack ? onBack : onClose}
             >
-                <Text>{getAccountDisplayName(account)}</Text>
+                <PWText>{getAccountDisplayName(account)}</PWText>
             </PWHeader>
             <PWView style={styles.qrContainer}>
                 <QRCode
@@ -115,8 +116,8 @@ export const ReceiveFundsQRView = ({
                 />
             </PWView>
             <PWView style={styles.addressContainer}>
-                <Text h3>{getAccountDisplayName(account)}</Text>
-                <Text style={styles.address}>{account.address}</Text>
+                <PWText variant='h3'>{getAccountDisplayName(account)}</PWText>
+                <PWText style={styles.address}>{account.address}</PWText>
             </PWView>
             <PWView style={styles.buttonContainer}>
                 <PWButton

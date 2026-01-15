@@ -16,7 +16,7 @@ import { PWBottomSheet } from '@components/core/PWBottomSheet'
 import { useState } from 'react'
 import { useStyles } from './styles'
 import { useWindowDimensions } from 'react-native'
-import { TabView } from '@rneui/themed'
+import { PWTabView } from '@components/core/PWTabView'
 import { TransactionErrorBoundary } from '@modules/transactions/components/BaseErrorBoundary/TransactionErrorBoundary'
 import { TAB_ANIMATION_CONFIG } from '@constants/ui'
 import { useLanguage } from '@hooks/language'
@@ -63,28 +63,27 @@ export const ReceiveFundsBottomSheet = ({
         >
             <PWView style={styles.innerContainer}>
                 <TransactionErrorBoundary t={t}>
-                    <TabView
+                    <PWTabView
                         value={screenIndex}
                         animationType='timing'
                         animationConfig={TAB_ANIMATION_CONFIG}
-                        disableSwipe
                     >
                         {!account && (
-                            <TabView.Item style={styles.tabItem}>
+                            <PWTabView.Item style={styles.tabItem}>
                                 <ReceiveFundsAccountSelectionView
                                     onSelected={handleSelected}
                                     onClose={handleClose}
                                 />
-                            </TabView.Item>
+                            </PWTabView.Item>
                         )}
-                        <TabView.Item style={styles.tabItem}>
+                        <PWTabView.Item style={styles.tabItem}>
                             <ReceiveFundsQRView
                                 account={selectedAccount}
                                 onClose={handleClose}
                                 onBack={account ? undefined : handleBack}
                             />
-                        </TabView.Item>
-                    </TabView>
+                        </PWTabView.Item>
+                    </PWTabView>
                 </TransactionErrorBoundary>
             </PWView>
         </PWBottomSheet>

@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { Tab, TabView } from '@rneui/themed'
+import { PWTab } from '@components/core/PWTab'
+import { PWTabView } from '@components/core/PWTabView'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { PWIcon } from '@components/core/PWIcon'
 
@@ -96,7 +97,7 @@ export const AccountScreen = ({ route }: AccountScreenProps) => {
                     <NotificationsIcon />
                 </PWView>
             </PWView>
-            <Tab
+            <PWTab
                 value={tabIndex}
                 onChange={e => setTabIndex(e)}
                 containerStyle={styles.tabs}
@@ -104,30 +105,30 @@ export const AccountScreen = ({ route }: AccountScreenProps) => {
                 titleStyle={styles.tabItem}
                 dense
             >
-                <Tab.Item
+                <PWTab.Item
                     title={t('account_details.main_screen.overview_tab')}
                 />
-                <Tab.Item title={t('account_details.main_screen.nfts_tab')} />
-                <Tab.Item
+                <PWTab.Item title={t('account_details.main_screen.nfts_tab')} />
+                <PWTab.Item
                     title={t('account_details.main_screen.history_tab')}
                 />
-            </Tab>
-            <TabView
+            </PWTab>
+            <PWTabView
                 value={tabIndex}
                 onChange={setTabIndex}
                 animationType='spring'
                 animationConfig={TAB_ANIMATION_CONFIG}
             >
-                <TabView.Item style={styles.fullWidth}>
+                <PWTabView.Item style={styles.fullWidth}>
                     <AccountOverview account={account} />
-                </TabView.Item>
-                <TabView.Item style={styles.fullWidth}>
+                </PWTabView.Item>
+                <PWTabView.Item style={styles.fullWidth}>
                     <AccountNfts />
-                </TabView.Item>
-                <TabView.Item style={styles.fullWidth}>
+                </PWTabView.Item>
+                <PWTabView.Item style={styles.fullWidth}>
                     <AccountHistory />
-                </TabView.Item>
-            </TabView>
+                </PWTabView.Item>
+            </PWTabView>
             <QRScannerView
                 isVisible={scannerState.isOpen}
                 onSuccess={scannerState.close}

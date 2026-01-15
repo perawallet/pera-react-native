@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Text } from '@rneui/themed'
+import { PWText } from '@components/core/PWText'
 import { useStyles } from './styles'
 import { PWIcon, IconName, PWIconVariant } from '@components/core/PWIcon'
 import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
@@ -60,7 +60,7 @@ export const PWButton = (props: PWButtonProps) => {
                 />
             )}
             {!!props.title && !props.isLoading && (
-                <Text style={styles.titleStyle}>{props.title}</Text>
+                <PWText style={styles.titleStyle}>{props.title}</PWText>
             )}
 
             {props.isLoading && (
@@ -72,5 +72,3 @@ export const PWButton = (props: PWButtonProps) => {
         </PWTouchableOpacity>
     )
 }
-
-//

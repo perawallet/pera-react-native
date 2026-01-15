@@ -12,7 +12,7 @@
 
 import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles'
-import { Text } from '@rneui/themed'
+import { PWText } from '@components/core/PWText'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import { PWIcon } from '@components/core/PWIcon'
@@ -53,20 +53,20 @@ export const BalanceImpactView = () => {
 
     return (
         <PWView style={styles.impactContainer}>
-            <Text
-                h4
-                h4Style={styles.impactHeading}
+            <PWText
+                variant='h4'
+                style={styles.impactHeading}
             >
                 {t('signing.impact.you_receive')}
-            </Text>
+            </PWText>
             <AssetImpact />
             <AssetImpact />
-            <Text
-                h4
-                h4Style={styles.impactHeading}
+            <PWText
+                variant='h4'
+                style={styles.impactHeading}
             >
                 {t('signing.impact.you_spend')}
-            </Text>
+            </PWText>
             <AssetImpact />
             <AssetImpact />
         </PWView>

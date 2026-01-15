@@ -24,7 +24,7 @@ import { AssetTitle } from '@modules/assets/components/AssetTitle'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import { RoundButton } from '@components/RoundButton'
-import { Text } from '@rneui/themed'
+import { PWText } from '@components/core/PWText'
 import {
     AccountBalanceHistoryItem,
     useAccountAssetBalanceQuery,
@@ -119,9 +119,9 @@ export const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
                             minPrecision={2}
                         />
                         {!!selectedPoint && (
-                            <Text>
+                            <PWText>
                                 {formatDatetime(selectedPoint.datetime)}
-                            </Text>
+                            </PWText>
                         )}
                     </PWView>
                 </PWView>

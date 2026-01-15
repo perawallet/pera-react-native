@@ -11,7 +11,8 @@
  */
 
 import { Contact } from '@perawallet/wallet-core-contacts'
-import { Image, useTheme } from '@rneui/themed'
+import { useTheme } from '@rneui/themed'
+import { PWImage } from '@components/core/PWImage'
 import { SvgProps } from 'react-native-svg'
 import { useStyles } from './styles'
 import { PWView } from '@components/core/PWView'
@@ -37,9 +38,11 @@ export const ContactAvatar = ({
     return (
         <PWView style={styles.container}>
             {!!contact?.image && (
-                <Image
+                <PWImage
                     source={{ uri: contact.image }}
                     style={styles.image}
+                    width={dimensions}
+                    height={dimensions}
                 />
             )}
             {!contact?.image && (

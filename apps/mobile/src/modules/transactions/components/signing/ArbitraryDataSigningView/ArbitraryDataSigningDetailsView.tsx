@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { Image, Text } from '@rneui/themed'
+import { PWText } from '@components/core/PWText'
+import { PWImage } from '@components/core/PWImage'
 import {
     ArbitraryDataSignRequest,
     PeraArbitraryDataMessage,
@@ -62,7 +63,7 @@ export const ArbitraryDataSigningDetailsView = ({
             />
             <PWView style={[styles.section, styles.titleSection]}>
                 {preferredIcon ? (
-                    <Image
+                    <PWImage
                         source={{ uri: preferredIcon }}
                         style={styles.metadataIcon}
                     />
@@ -75,17 +76,17 @@ export const ArbitraryDataSigningDetailsView = ({
                         />
                     </PWView>
                 )}
-                <Text
-                    h3
+                <PWText
+                    variant='h3'
                     style={styles.title}
                 >
                     {t('signing.arbitrary_data_details.title', {
                         name: request?.sourceMetadata?.name ?? unnamedSource,
                     })}
-                </Text>
-                <Text style={styles.description}>
+                </PWText>
+                <PWText style={styles.description}>
                     {t('signing.arbitrary_data_details.description')}
-                </Text>
+                </PWText>
             </PWView>
             <ScrollView
                 showsVerticalScrollIndicator={false}
@@ -103,10 +104,10 @@ export const ArbitraryDataSigningDetailsView = ({
                     <RowTitledItem
                         title={t('signing.arbitrary_data_details.to')}
                     >
-                        <Text>
+                        <PWText>
                             {request?.sourceMetadata?.name ??
                                 t('signing.arbitrary_data_details.unnamed')}
-                        </Text>
+                        </PWText>
                     </RowTitledItem>
                 </PWView>
                 <PWView style={styles.section}>
@@ -137,16 +138,16 @@ export const ArbitraryDataSigningDetailsView = ({
                     <RowTitledItem
                         title={t('signing.arbitrary_data_details.message')}
                     >
-                        <Text>{dataMessage.message}</Text>
+                        <PWText>{dataMessage.message}</PWText>
                     </RowTitledItem>
                     <RowTitledItem
                         title={t('signing.arbitrary_data_details.data')}
                     >
-                        <Text style={styles.data}>
+                        <PWText style={styles.data}>
                             {Buffer.from(dataMessage.data, 'base64').toString(
                                 'utf-8',
                             )}
-                        </Text>
+                        </PWText>
                     </RowTitledItem>
                 </PWView>
             </ScrollView>

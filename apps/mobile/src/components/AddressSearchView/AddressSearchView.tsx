@@ -14,7 +14,6 @@ import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles'
 
 import { useMemo, useState } from 'react'
-import { Text } from '@rneui/themed'
 import { AddressEntryField } from '@components/AddressEntryField'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useContacts } from '@perawallet/wallet-core-contacts'
@@ -27,6 +26,7 @@ import { EmptyView } from '@components/EmptyView'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { PWIcon } from '@components/core/PWIcon'
 import { useLanguage } from '@hooks/language'
+import { PWText } from '@components/core/PWText'
 
 type AddressSearchViewProps = {
     onSelected: (address: string) => void
@@ -74,23 +74,23 @@ export const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
                 <ScrollView>
                     {addressIsValid && (
                         <PWTouchableOpacity onPress={() => onSelected(value)}>
-                            <Text
-                                h4
-                                h4Style={styles.title}
+                            <PWText
+                                variant='h4'
+                                style={styles.title}
                             >
                                 {t('address_entry.address')}
-                            </Text>
-                            <Text>{truncateAlgorandAddress(value)}</Text>
+                            </PWText>
+                            <PWText>{truncateAlgorandAddress(value)}</PWText>
                         </PWTouchableOpacity>
                     )}
                     {!!matchingContacts.length && (
                         <PWView style={styles.section}>
-                            <Text
-                                h4
-                                h4Style={styles.title}
+                            <PWText
+                                variant='h4'
+                                style={styles.title}
                             >
                                 {t('address_entry.contacts')}
-                            </Text>
+                            </PWText>
                             {matchingContacts.map(c => (
                                 <PWTouchableOpacity
                                     key={`contact-${c.address}`}
@@ -107,12 +107,12 @@ export const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
                     )}
                     {!!matchingAccounts.length && (
                         <PWView style={styles.section}>
-                            <Text
-                                h4
-                                h4Style={styles.title}
+                            <PWText
+                                variant='h4'
+                                style={styles.title}
                             >
                                 {t('address_entry.my_accounts')}
-                            </Text>
+                            </PWText>
                             {matchingAccounts.map(acct => (
                                 <PWTouchableOpacity
                                     key={`account-${acct.address}`}

@@ -13,7 +13,10 @@
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useStyles } from './styles'
-import { Input, Overlay, Text, useTheme } from '@rneui/themed'
+import { useTheme } from '@rneui/themed'
+import { PWInput } from '@components/core/PWInput'
+import { PWOverlay } from '@components/core/PWOverlay'
+import { PWText } from '@components/core/PWText'
 import { PWView } from '@components/core/PWView'
 import { PWButton } from '@components/core/PWButton'
 
@@ -112,9 +115,9 @@ export const ImportAccountScreen = () => {
                                                     }
                                                     key={`wordinput-${offsetIndex}`}
                                                 >
-                                                    <Text
-                                                        h4
-                                                        h4Style={
+                                                    <PWText
+                                                        variant='h4'
+                                                        style={
                                                             focused ===
                                                             offsetIndex
                                                                 ? styles.focusedLabel
@@ -122,8 +125,8 @@ export const ImportAccountScreen = () => {
                                                         }
                                                     >
                                                         {offsetIndex + 1}
-                                                    </Text>
-                                                    <Input
+                                                    </PWText>
+                                                    <PWInput
                                                         containerStyle={
                                                             styles.inputOuterContainer
                                                         }
@@ -178,17 +181,17 @@ export const ImportAccountScreen = () => {
                     />
                 </ScrollView>
             </KeyboardAvoidingView>
-            <Overlay
+            <PWOverlay
                 isVisible={processing}
                 overlayStyle={styles.overlay}
                 backdropStyle={styles.overlayBackdrop}
             >
-                <Text>{t('onboarding.import_account.importing')}</Text>
+                <PWText>{t('onboarding.import_account.importing')}</PWText>
                 <ActivityIndicator
                     size='large'
                     color={theme.colors.linkPrimary}
                 />
-            </Overlay>
+            </PWOverlay>
         </>
     )
 }

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Skeleton } from '@rneui/themed'
+import { PWSkeleton } from '@components/core/PWSkeleton'
 import { PWView } from '@components/core/PWView'
 import {
     AssetWithAccountBalance,
@@ -35,9 +35,9 @@ const LoadingView = () => {
     const styles = useStyles()
     return (
         <PWView style={styles.loadingContainer}>
-            <Skeleton />
-            <Skeleton />
-            <Skeleton />
+            <PWSkeleton />
+            <PWSkeleton />
+            <PWSkeleton />
         </PWView>
     )
 }

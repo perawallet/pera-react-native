@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Text } from '@rneui/themed'
+import { PWText } from '@components/core/PWText'
 import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import { useStyles } from './styles'
 import { PWView } from '@components/core/PWView'
@@ -32,7 +32,7 @@ export const RadioButton = ({
             onPress={onPress}
             style={styles.row}
         >
-            <Text>{title}</Text>
+            <PWText>{title}</PWText>
             <PWView style={styles.radioContainer}>
                 {isSelected && <PWView style={styles.selectedRadio} />}
             </PWView>
