@@ -70,8 +70,16 @@ Create `index.ts` to re-export the component:
 
 ```typescript
 // index.ts
-export { default } from './[ComponentName]'
+export { [ComponentName] } from './[ComponentName]'
 export type { [ComponentName]Props } from './[ComponentName]'
+```
+
+### 6b. Update Core Barrel File (If Applicable)
+
+If you created a core component in `apps/mobile/src/components/core/`, you **MUST** update the main barrel file:
+
+1. Open `apps/mobile/src/components/core/index.ts`
+2. Add the new export: `export * from './[ComponentName]'`
 ```
 
 ### 7. Create Test File

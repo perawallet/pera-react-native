@@ -41,8 +41,23 @@ modules/transactions/components/
 // index.ts
 export { PWButton } from './PWButton'
 export type { PWButtonProps } from './PWButton'
+```
 
-````
+### Core Barrel File Pattern
+
+All core components in `apps/mobile/src/components/core/` are re-exported from a central barrel file.
+
+**ALWAYS** import core components from `@components/core`:
+
+```typescript
+// ✅ GOOD
+import { PWButton, PWText } from '@components/core'
+
+// ❌ BAD
+import { PWButton } from '@components/core/PWButton'
+import { PWText } from '@components/core/PWText/PWText'
+```
+
 
 ### Subcomponent Rules
 
@@ -153,7 +168,7 @@ These are the **design system primitives** that wrap external dependencies and p
 // PWButton.tsx
 import { Text } from '@rneui/themed'
 import { ActivityIndicator } from 'react-native'
-import PWTouchableOpacity from '@components/PWTouchableOpacity'
+import { PWTouchableOpacity } from '@components/core'
 import { useStyles } from './styles'
 
 export type PWButtonProps = {

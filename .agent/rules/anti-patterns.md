@@ -114,6 +114,18 @@ import PWButton from '../../../components/button/PWButton'
 import PWButton from '@components/button/PWButton'
 ```
 
+## ❌ Deep Import of Core Components
+
+```typescript
+// ❌ BAD: importing from specific component folder
+import { PWButton } from '@components/core/PWButton'
+import { PWText } from '@components/core/PWText/PWText'
+
+// ✅ GOOD: import from core barrel file
+import { PWButton, PWText } from '@components/core'
+
+```
+
 ## ❌ Default Exports
 
 ```typescript
@@ -152,10 +164,12 @@ const MyComponent = () => (
 )
 
 // ✅ GOOD: Use PW-wrapped components from the design system
-import { PWText } from '@components/core/PWText'
-import { PWButton } from '@components/core/PWButton'
-import { PWIcon } from '@components/core/PWIcon'
-import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
+import {
+    PWText,
+    PWButton,
+    PWIcon,
+    PWTouchableOpacity
+} from '@components/core'
 
 const MyScreen = () => (
     <PWView>
