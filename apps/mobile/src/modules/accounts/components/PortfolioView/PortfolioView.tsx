@@ -91,7 +91,7 @@ const PortfolioView = (props: PortfolioViewProps) => {
                     currency='ALGO'
                     precision={2}
                     h1Style={styles.primaryCurrency}
-                    isSkeleton={isPending}
+                    isLoading={isPending}
                 />
                 <PWButton
                     icon='chart'
@@ -112,7 +112,7 @@ const PortfolioView = (props: PortfolioViewProps) => {
                     currency={preferredCurrency}
                     prefix='≈ '
                     precision={2}
-                    isSkeleton={isPending}
+                    isLoading={isPending}
                 />
                 {!selectedPoint && <WealthTrend period={period} />}
                 {selectedPoint && (

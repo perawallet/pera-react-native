@@ -49,13 +49,13 @@ describe('CurrencyDisplay', () => {
         expect(container.textContent).toContain('---')
     })
 
-    it('shows skeleton when isSkeleton is true', () => {
+    it('shows skeleton when isLoading is true', () => {
         const { container } = render(
             <CurrencyDisplay
                 value={new Decimal(100)}
                 currency='USD'
                 precision={2}
-                isSkeleton={true}
+                isLoading={true}
             />,
         )
         expect(container).toBeTruthy()
