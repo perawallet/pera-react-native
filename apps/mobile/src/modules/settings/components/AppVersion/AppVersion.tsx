@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { Text } from '@rneui/themed'
 import { useRef, useMemo } from 'react'
 import { useLanguage } from '@hooks/language'
 import { useStyles } from './styles'
@@ -19,6 +18,7 @@ import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { useToast } from '@hooks/toast'
 import { Pressable } from 'react-native'
+import { PWText } from '@components/core'
 
 const REQUIRED_TAPS = 10
 const NOTIFY_FROM_TAP_COUNT = 7
@@ -34,9 +34,9 @@ const Version = () => {
     }, [getAppVersion])
 
     return (
-        <Text style={styles.versionText}>
+        <PWText style={styles.versionText}>
             {t('settings.main.version_footer', { version: appVersion })}
-        </Text>
+        </PWText>
     )
 }
 

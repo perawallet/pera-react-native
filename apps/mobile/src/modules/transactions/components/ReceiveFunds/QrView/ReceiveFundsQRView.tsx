@@ -10,8 +10,14 @@
  limitations under the License
  */
 
-import { PWView } from '@components/PWView'
-import { Text, useTheme } from '@rneui/themed'
+import {
+    PWButton,
+    PWHeader,
+    PWText,
+    PWView,
+    bottomSheetNotifier,
+} from '@components/core'
+import { useTheme } from '@rneui/themed'
 import {
     getAccountDisplayName,
     WalletAccount,
@@ -19,8 +25,6 @@ import {
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/language'
 import { useStyles } from './styles'
-import { PWHeader } from '@components/PWHeader'
-import { PWButton } from '@components/PWButton'
 import { Share, useWindowDimensions } from 'react-native'
 import { useToast } from '@hooks/toast'
 import { config } from '@perawallet/wallet-core-config'
@@ -28,7 +32,6 @@ import { useClipboard } from '@hooks/clipboard'
 import { useDeepLink } from '@hooks/deeplink'
 import { useMemo } from 'react'
 import QRCode from 'react-native-qrcode-svg'
-import { bottomSheetNotifier } from '@components/PWBottomSheet'
 
 type ReceiveFundsQRViewProps = {
     account?: WalletAccount
@@ -106,7 +109,7 @@ export const ReceiveFundsQRView = ({
                 leftIcon={onBack ? 'chevron-left' : 'cross'}
                 onLeftPress={onBack ? onBack : onClose}
             >
-                <Text>{getAccountDisplayName(account)}</Text>
+                <PWText>{getAccountDisplayName(account)}</PWText>
             </PWHeader>
             <PWView style={styles.qrContainer}>
                 <QRCode
@@ -115,8 +118,8 @@ export const ReceiveFundsQRView = ({
                 />
             </PWView>
             <PWView style={styles.addressContainer}>
-                <Text h3>{getAccountDisplayName(account)}</Text>
-                <Text style={styles.address}>{account.address}</Text>
+                <PWText variant='h3'>{getAccountDisplayName(account)}</PWText>
+                <PWText style={styles.address}>{account.address}</PWText>
             </PWView>
             <PWView style={styles.buttonContainer}>
                 <PWButton

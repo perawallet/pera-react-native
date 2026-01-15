@@ -10,16 +10,13 @@
  limitations under the License
  */
 
-import { PWView } from '@components/PWView'
-import { Text } from '@rneui/themed'
+import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useStyles } from './styles'
-import { PWIcon } from '@components/PWIcon'
 
 import { PanelButton } from '@components/PanelButton'
 import { CardPanel } from '@modules/menu/components/CardPanel/CardPanel'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
 import { QRScannerView } from '@components/QRScannerView'
 import { useModalState } from '@hooks/modal-state'
 import { useLanguage } from '@hooks/language'
@@ -48,12 +45,12 @@ export const MenuScreen = () => {
         <PWView style={styles.container}>
             <PWView style={styles.iconBar}>
                 <PWView style={styles.iconBarColumn} />
-                <Text
-                    h4
+                <PWText
+                    variant='h4'
                     style={styles.iconBarColumn}
                 >
                     {t('menu.title')}
-                </Text>
+                </PWText>
                 <PWView style={styles.iconBarColumn}>
                     <PWTouchableOpacity onPress={scanner.open}>
                         <PWIcon

@@ -20,7 +20,14 @@ import { AssetPriceChart } from '../AssetPriceChart/AssetPriceChart'
 import { useMemo, useCallback } from 'react'
 import { useChartInteraction } from '@hooks/chart-interaction'
 import Decimal from 'decimal.js'
-import { Skeleton, Text } from '@rneui/themed'
+import {
+    PWButton,
+    PWIcon,
+    PWSkeleton,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { AssetMarketStats } from '../AssetMarketStats/AssetMarketStats'
 import { AssetAbout } from '../AssetAbout/AssetAbout'
 import { AssetVerificationCard } from '../AssetVerificationCard/AssetVerificationCard'
@@ -28,12 +35,9 @@ import { useLanguage } from '@hooks/language'
 import { AssetDescription } from '../AssetDescription/AssetDescription'
 import { AssetSocialMedia } from '../AssetSocialMedia/AssetSocialMedia'
 import { PriceTrend } from '../PriceTrend/PriceTrend'
-import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
-import { PWIcon } from '@components/PWIcon'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useToast } from '@hooks/toast'
-import { PWView } from '@components/PWView'
 import { EmptyView } from '@components/EmptyView'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import {
@@ -45,7 +49,6 @@ import {
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
-import { PWButton } from '@components/PWButton'
 
 type AssetMarketsProps = {
     asset: PeraAsset
@@ -55,9 +58,9 @@ const Loading = () => {
     const styles = useStyles()
     return (
         <PWView style={styles.loadingContainer}>
-            <Skeleton style={styles.skeleton} />
-            <Skeleton style={styles.skeleton} />
-            <Skeleton style={styles.skeleton} />
+            <PWSkeleton style={styles.skeleton} />
+            <PWSkeleton style={styles.skeleton} />
+            <PWSkeleton style={styles.skeleton} />
         </PWView>
     )
 }
@@ -173,9 +176,9 @@ export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
                                 selectedDataPoint={selectedPoint}
                             />
                             {!!selectedPoint && (
-                                <Text>
+                                <PWText>
                                     {formatDatetime(selectedPoint.datetime)}
-                                </Text>
+                                </PWText>
                             )}
                         </PWView>
                     </PWView>
@@ -206,16 +209,16 @@ export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
                 style={styles.discoverButton}
                 onPress={openDiscover}
             >
-                <Text style={styles.discoverText}>
+                <PWText style={styles.discoverText}>
                     {t('asset_details.markets.discover_more')}
-                </Text>
+                </PWText>
                 <PWView style={styles.discoverLink}>
-                    <Text
+                    <PWText
                         style={styles.discoverLinkText}
-                        h4
+                        variant='h4'
                     >
                         {t('asset_details.markets.title')}
-                    </Text>
+                    </PWText>
                     <PWIcon
                         name='chevron-right'
                         size='md'

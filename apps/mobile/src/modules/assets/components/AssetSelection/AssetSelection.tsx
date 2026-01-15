@@ -10,10 +10,8 @@
  limitations under the License
  */
 
-import { Text } from '@rneui/themed'
-import { PWView } from '@components/PWView'
+import { PWIcon, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
-import { PWIcon } from '@components/PWIcon'
 
 import { AssetIcon } from '../AssetIcon'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
@@ -31,7 +29,7 @@ export const AssetSelection = ({ asset }: AssetSelectionProps) => {
                 asset={asset}
                 style={styles.icon}
             />
-            <Text h4>{asset.unitName}</Text>
+            <PWText variant='h4'>{asset.unitName}</PWText>
             <PWIcon name='chevron-right' />
         </PWView>
     )

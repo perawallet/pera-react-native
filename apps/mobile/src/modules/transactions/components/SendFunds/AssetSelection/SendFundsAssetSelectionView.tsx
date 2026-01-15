@@ -10,8 +10,12 @@
  limitations under the License
  */
 
-import { Skeleton } from '@rneui/themed'
-import { PWView } from '@components/PWView'
+import {
+    PWHeader,
+    PWSkeleton,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import {
     AssetWithAccountBalance,
     useAccountBalancesQuery,
@@ -19,14 +23,12 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useCallback, useContext, useMemo } from 'react'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
-import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
 import { useStyles } from './styles'
 import { SendFundsContext } from '@modules/transactions/providers/SendFundsProvider'
-import { PWHeader } from '@components/PWHeader'
 import { useLanguage } from '@hooks/language'
 import { FlashList } from '@shopify/flash-list'
 
-type SendFundsAssetSelectionViewProps = {
+export type SendFundsAssetSelectionViewProps = {
     onSelected: () => void
     onBack: () => void
 }
@@ -35,9 +37,9 @@ const LoadingView = () => {
     const styles = useStyles()
     return (
         <PWView style={styles.loadingContainer}>
-            <Skeleton />
-            <Skeleton />
-            <Skeleton />
+            <PWSkeleton />
+            <PWSkeleton />
+            <PWSkeleton />
         </PWView>
     )
 }

@@ -14,7 +14,7 @@ import {
     useAccountAssetBalanceQuery,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
-import { PWBottomSheet } from '@components/PWBottomSheet'
+import { PWBottomSheet, PWTabView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { SendFundsAssetSelectionView } from '../AssetSelection/SendFundsAssetSelectionView'
 import { SendFundsInputView } from '../InputView/SendFundsInputView'
@@ -22,17 +22,17 @@ import { SendFundsInputView } from '../InputView/SendFundsInputView'
 import { useContext, useLayoutEffect, useState } from 'react'
 import { useStyles } from './styles'
 import { useWindowDimensions } from 'react-native'
-import { TabView } from '@rneui/themed'
 import { SendFundsSelectDestination } from '../SelectDestination/SendFundsSelectDestination'
 import { SendFundsTransactionConfirmation } from '../TransactionConfirmation/SendFundsTransactionConfirmation'
-import SendFundsProvider, {
+import {
     SendFundsContext,
+    SendFundsProvider,
 } from '@modules/transactions/providers/SendFundsProvider'
 import { TransactionErrorBoundary } from '@modules/transactions/components/BaseErrorBoundary/TransactionErrorBoundary'
 import { TAB_ANIMATION_CONFIG } from '@constants/ui'
 import { useLanguage } from '@hooks/language'
 
-type SendFundsBottomSheetProps = {
+export type SendFundsBottomSheetProps = {
     assetId?: string
     isVisible: boolean
     onClose: () => void
@@ -115,39 +115,38 @@ export const SendFundsBottomSheet = ({
             <TransactionErrorBoundary t={t}>
                 <SendFundsProvider>
                     {selectedAccount ? (
-                        <TabView
+                        <PWTabView
                             value={screenIndex}
                             animationType='timing'
                             animationConfig={TAB_ANIMATION_CONFIG}
-                            disableSwipe
                         >
                             {!!canSelectAsset && (
-                                <TabView.Item style={styles.tabItem}>
+                                <PWTabView.Item style={styles.tabItem}>
                                     <SendFundsAssetSelectionView
                                         onSelected={handleNext}
                                         onBack={handleBack}
                                     />
-                                </TabView.Item>
+                                </PWTabView.Item>
                             )}
-                            <TabView.Item style={styles.tabItem}>
+                            <PWTabView.Item style={styles.tabItem}>
                                 <SendFundsInputView
                                     onNext={handleNext}
                                     onBack={handleBack}
                                 />
-                            </TabView.Item>
-                            <TabView.Item style={styles.tabItem}>
+                            </PWTabView.Item>
+                            <PWTabView.Item style={styles.tabItem}>
                                 <SendFundsSelectDestination
                                     onNext={handleNext}
                                     onBack={handleBack}
                                 />
-                            </TabView.Item>
-                            <TabView.Item style={styles.tabItem}>
+                            </PWTabView.Item>
+                            <PWTabView.Item style={styles.tabItem}>
                                 <SendFundsTransactionConfirmation
                                     onNext={handleNext}
                                     onBack={handleBack}
                                 />
-                            </TabView.Item>
-                        </TabView>
+                            </PWTabView.Item>
+                        </PWTabView>
                     ) : (
                         <EmptyView
                             title={t(

@@ -10,15 +10,12 @@
  limitations under the License
  */
 
-import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
+import { PWButton, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
-import { PWView } from '@components/PWView'
 import { PropsWithChildren, useMemo, useState } from 'react'
 import { useStyles } from './styles'
-import { Text } from '@rneui/themed'
 
 import { SearchInput } from '@components/SearchInput'
-import { PWButton } from '@components/PWButton'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
@@ -122,12 +119,12 @@ export const AccountAssetList = ({
                             <ExpandablePanel isExpanded={headerState.isOpen}>
                                 {children}
                                 <PWView style={styles.titleBar}>
-                                    <Text
+                                    <PWText
                                         style={styles.title}
-                                        h4
+                                        variant='h4'
                                     >
                                         {t('account_details.assets.title')}
-                                    </Text>
+                                    </PWText>
                                     <PWView
                                         style={styles.titleBarButtonContainer}
                                     >

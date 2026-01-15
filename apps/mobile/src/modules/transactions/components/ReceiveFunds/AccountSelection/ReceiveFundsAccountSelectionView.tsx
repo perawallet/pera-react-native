@@ -10,13 +10,11 @@
  limitations under the License
  */
 
-import { PWHeader } from '@components/PWHeader'
-import { PWView } from '@components/PWView'
+import { PWHeader, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/language'
 import { useAllAccounts, WalletAccount } from '@perawallet/wallet-core-accounts'
 import { Text } from '@rneui/themed'
 import { useStyles } from './styles'
-import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
 import { AccountWithBalance } from '@modules/accounts/components/AccountWithBalance'
 
 type ReceiveFundsAccountSelectionViewProps = {

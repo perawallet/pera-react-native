@@ -12,10 +12,13 @@
 
 import { useStyles } from './styles'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
-import { Text } from '@rneui/themed'
-import { PWIcon, IconName } from '@components/PWIcon'
-import { PWView } from '@components/PWView'
-import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
+import {
+    IconName,
+    PWIcon,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { useLanguage } from '@hooks/language'
 import { useWebView } from '@hooks/webview'
 import { v7 as uuid } from 'uuid'
@@ -62,9 +65,9 @@ export const AssetSocialMedia = ({ assetDetails }: AssetSocialMediaProps) => {
 
     return (
         <PWView style={styles.container}>
-            <Text style={styles.sectionTitle}>
+            <PWText style={styles.sectionTitle}>
                 {t('asset_details.markets.social_media')}
-            </Text>
+            </PWText>
             {socialLinks.map((link, index) => (
                 <PWTouchableOpacity
                     key={index}
@@ -77,7 +80,7 @@ export const AssetSocialMedia = ({ assetDetails }: AssetSocialMediaProps) => {
                             size='md'
                             variant='secondary'
                         />
-                        <Text style={styles.label}>{link.label}</Text>
+                        <PWText style={styles.label}>{link.label}</PWText>
                     </PWView>
                     <PWIcon
                         name='arrow-up-right'

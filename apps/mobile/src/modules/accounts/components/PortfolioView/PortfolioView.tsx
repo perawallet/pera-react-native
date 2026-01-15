@@ -10,11 +10,10 @@
  limitations under the License
  */
 
-import { Text } from '@rneui/themed'
+import { PWButton, PWText, PWView, PWViewProps } from '@components/core'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/language'
 
-import { PWView, PWViewProps } from '@components/PWView'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { WealthChart } from '@components/WealthChart'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
@@ -22,7 +21,6 @@ import { useCallback } from 'react'
 import { useChartInteraction } from '@hooks/chart-interaction'
 import { WealthTrend } from '@components/WealthTrend'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
-import { PWButton } from '@components/PWButton'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
     AccountBalanceHistoryItem,
@@ -67,17 +65,17 @@ export const PortfolioView = (props: PortfolioViewProps) => {
     return (
         <PWView {...props}>
             <PWView style={styles.valueTitleBar}>
-                <Text
-                    h4Style={styles.valueTitle}
-                    h4
+                <PWText
+                    style={styles.valueTitle}
+                    variant='h4'
                 >
                     {t('portfolio.title')}
-                </Text>
+                </PWText>
                 <InfoButton
                     variant='secondary'
                     title={t('portfolio.info.title')}
                 >
-                    <Text>{t('portfolio.info.body')}</Text>
+                    <PWText>{t('portfolio.info.body')}</PWText>
                 </InfoButton>
             </PWView>
             <PWView style={styles.valueBar}>
@@ -116,12 +114,12 @@ export const PortfolioView = (props: PortfolioViewProps) => {
                 />
                 {!selectedPoint && <WealthTrend period={period} />}
                 {selectedPoint && (
-                    <Text
-                        h4
-                        h4Style={styles.dateDisplay}
+                    <PWText
+                        variant='h4'
+                        style={styles.dateDisplay}
                     >
                         {formatDatetime(selectedPoint.datetime)}
-                    </Text>
+                    </PWText>
                 )}
             </PWView>
 

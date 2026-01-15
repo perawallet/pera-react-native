@@ -10,12 +10,10 @@
  limitations under the License
  */
 
-import { PWButton } from '@components/PWButton'
-import { PWView } from '@components/PWView'
-import { Image, Text } from '@rneui/themed'
+import { PWButton, PWIcon, PWImage, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
-import { PWIcon } from '@components/PWIcon'
 import { useLanguage } from '@hooks/language'
+import { Image } from 'react-native'
 
 import CardBackground from '@assets/images/card-background.png'
 const BACKGROUND_URI = Image.resolveAssetSource(CardBackground).uri
@@ -32,14 +30,14 @@ export const CardPanel = () => {
                             name='card'
                             style={styles.icon}
                         />
-                        <Text h3>{t('menu.cards')}</Text>
+                        <PWText variant='h3'>{t('menu.cards')}</PWText>
                     </PWView>
-                    <Text style={styles.cardSecondaryText}>
+                    <PWText style={styles.cardSecondaryText}>
                         Get the world{`'`}s first web3{'\n'}Mastercard.
-                    </Text>
+                    </PWText>
                 </PWView>
                 <PWView style={styles.cardImageContainer}>
-                    <Image
+                    <PWImage
                         source={{ uri: BACKGROUND_URI }}
                         style={styles.backgroundImage}
                     />

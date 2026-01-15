@@ -11,11 +11,9 @@
  */
 
 import { useStyles } from './styles'
-import { PWView } from '@components/PWView'
+import { PWButton, PWText, PWView } from '@components/core'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { PWButton } from '@components/PWButton'
-import { Text } from '@rneui/themed'
 import { EmptyView } from '@components/EmptyView'
 import { FlashList } from '@shopify/flash-list'
 import { useLanguage } from '@hooks/language'
@@ -40,7 +38,7 @@ export const AssetTransactionList = ({
     }
 
     const renderItem = () => {
-        return <Text>{t('asset_details.transaction_list.label')}</Text>
+        return <PWText>{t('asset_details.transaction_list.label')}</PWText>
     }
 
     return (
@@ -54,9 +52,9 @@ export const AssetTransactionList = ({
                 <PWView>
                     {children}
                     <PWView style={styles.header}>
-                        <Text h4>
+                        <PWText variant='h4'>
                             {t('asset_details.transaction_list.title')}
-                        </Text>
+                        </PWText>
                         <PWView style={styles.actions}>
                             <PWButton
                                 title={t(

@@ -10,12 +10,10 @@
  limitations under the License
  */
 
-import { Text } from '@rneui/themed'
-import { PWTouchableOpacity } from '../PWTouchableOpacity'
+import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useStyles } from './styles'
-import { PWView } from '../PWView'
 
-type RadioButtonProps = {
+export type RadioButtonProps = {
     onPress: () => void
     title: string
     isSelected: boolean
@@ -32,7 +30,7 @@ export const RadioButton = ({
             onPress={onPress}
             style={styles.row}
         >
-            <Text>{title}</Text>
+            <PWText>{title}</PWText>
             <PWView style={styles.radioContainer}>
                 {isSelected && <PWView style={styles.selectedRadio} />}
             </PWView>

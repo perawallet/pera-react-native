@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Tab, TabView } from '@rneui/themed'
+import { PWTab, PWTabView, PWView } from '@components/core'
 import { useNavigation } from '@react-navigation/native'
 import {
     getAccountDisplayName,
@@ -25,7 +25,6 @@ import { useToast } from '@hooks/toast'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import { LoadingView } from '@components/LoadingView'
 import { TAB_ANIMATION_CONFIG } from '@constants/ui'
-import { PWView } from '@components/PWView'
 import { useLanguage } from '@hooks/language'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { AccountStackParamsList } from '@modules/accounts/routes'
@@ -86,7 +85,7 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
 
     return (
         <PWView style={styles.contentContainer}>
-            <Tab
+            <PWTab
                 value={tabIndex}
                 onChange={e => setTabIndex(e)}
                 containerStyle={styles.tabs}
@@ -94,25 +93,29 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
                 titleStyle={styles.tabItem}
                 dense
             >
-                <Tab.Item title={t('asset_details.main_screen.holdings_tab')} />
-                <Tab.Item title={t('asset_details.main_screen.markets_tab')} />
-            </Tab>
-            <TabView
+                <PWTab.Item
+                    title={t('asset_details.main_screen.holdings_tab')}
+                />
+                <PWTab.Item
+                    title={t('asset_details.main_screen.markets_tab')}
+                />
+            </PWTab>
+            <PWTabView
                 value={tabIndex}
                 onChange={setTabIndex}
                 animationType='spring'
                 animationConfig={TAB_ANIMATION_CONFIG}
             >
-                <TabView.Item style={styles.fullWidth}>
+                <PWTabView.Item style={styles.fullWidth}>
                     <AssetHoldings
                         account={account}
                         asset={asset}
                     />
-                </TabView.Item>
-                <TabView.Item style={styles.fullWidth}>
+                </PWTabView.Item>
+                <PWTabView.Item style={styles.fullWidth}>
                     <AssetMarkets asset={asset} />
-                </TabView.Item>
-            </TabView>
+                </PWTabView.Item>
+            </PWTabView>
         </PWView>
     )
 }

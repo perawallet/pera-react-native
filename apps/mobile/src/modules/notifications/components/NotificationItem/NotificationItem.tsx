@@ -10,13 +10,16 @@
  limitations under the License
  */
 
-import { PWView } from '@components/PWView'
+import {
+    PWIcon,
+    PWImage,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { formatRelativeTime } from '@perawallet/wallet-core-shared'
-import { Image, Text } from '@rneui/themed'
 import { useStyles } from './styles'
 import { useCallback, useMemo } from 'react'
-import { PWIcon } from '@components/PWIcon'
-import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
 import { PeraNotification } from '@perawallet/wallet-core-platform-integration'
 
 type NotificationItemProps = {
@@ -38,9 +41,9 @@ export const NotificationItem = ({ item }: NotificationItemProps) => {
                 return (
                     <PWView style={styles.iconContainerNoBorder}>
                         {metadata?.icon?.shape === 'circle' ? (
-                            <Image
+                            <PWImage
                                 source={{ uri: imageUrl }}
-                                containerStyle={styles.imageCircle}
+                                style={styles.imageCircle}
                                 PlaceholderContent={
                                     <PWIcon
                                         name='bell'
@@ -50,9 +53,9 @@ export const NotificationItem = ({ item }: NotificationItemProps) => {
                                 transition
                             />
                         ) : (
-                            <Image
+                            <PWImage
                                 source={{ uri: imageUrl }}
-                                containerStyle={styles.image}
+                                style={styles.image}
                                 PlaceholderContent={
                                     <PWIcon
                                         name='bell'
@@ -91,10 +94,10 @@ export const NotificationItem = ({ item }: NotificationItemProps) => {
         >
             {image}
             <PWView style={styles.messageBox}>
-                <Text>{item.message}</Text>
-                <Text style={styles.timeText}>
+                <PWText>{item.message}</PWText>
+                <PWText style={styles.timeText}>
                     {formatRelativeTime(item.createdAt)}
-                </Text>
+                </PWText>
             </PWView>
         </PWTouchableOpacity>
     )

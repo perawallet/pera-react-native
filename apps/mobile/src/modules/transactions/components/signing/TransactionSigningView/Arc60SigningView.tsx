@@ -10,9 +10,8 @@
  limitations under the License
  */
 
-import { PWButton } from '@components/PWButton'
+import { PWButton, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
-import { PWView } from '@components/PWView'
 import {
     Arc60SignRequest,
     useSigningRequest,

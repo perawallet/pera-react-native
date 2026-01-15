@@ -10,14 +10,13 @@
  limitations under the License
  */
 
-import { PWView } from '@components/PWView'
+import { PWHeader, PWText, PWView } from '@components/core'
 import { AddressSearchView } from '@components/AddressSearchView'
 import { useContext, useMemo } from 'react'
 import { SendFundsContext } from '@modules/transactions/providers/SendFundsProvider'
 import { useStyles } from './styles'
-import { PWHeader } from '@components/PWHeader'
 import { AssetIcon } from '@modules/assets/components/AssetIcon'
-import { Text, useTheme } from '@rneui/themed'
+import { useTheme } from '@rneui/themed'
 import { EmptyView } from '@components/EmptyView'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/language'
@@ -66,7 +65,7 @@ export const SendFundsSelectDestination = ({
                         asset={asset}
                         size={theme.spacing.xl}
                     />
-                    <Text>{asset.name}</Text>
+                    <PWText>{asset.name}</PWText>
                 </PWView>
             </PWHeader>
             <AddressSearchView onSelected={handleSelected} />

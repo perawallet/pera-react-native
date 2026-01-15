@@ -12,8 +12,7 @@
 
 import { useStyles } from './styles'
 import { ExpandableText } from '@components/ExpandableText'
-import { Text } from '@rneui/themed'
-import { PWView } from '@components/PWView'
+import { PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/language'
 
 type AssetDescriptionProps = {
@@ -30,9 +29,9 @@ export const AssetDescription = ({ description }: AssetDescriptionProps) => {
 
     return (
         <PWView style={styles.container}>
-            <Text style={styles.title}>
+            <PWText style={styles.title}>
                 {t('asset_details.markets.description')}
-            </Text>
+            </PWText>
             <ExpandableText text={description} />
         </PWView>
     )

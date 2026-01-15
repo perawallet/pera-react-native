@@ -11,11 +11,9 @@
  */
 
 import React, { createContext, PropsWithChildren, useState } from 'react'
-import { PWBottomSheet } from '@components/PWBottomSheet'
+import { PWBottomSheet, PWView, PWWebView } from '@components/core'
 import { useWindowDimensions } from 'react-native'
-import { PWWebView } from '@components/PWWebView'
 import { v7 as uuidv7 } from 'uuid'
-import { PWView } from '@components/PWView'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 type WebViewRequest = {

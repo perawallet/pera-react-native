@@ -14,15 +14,12 @@ import { useMemo, useState } from 'react'
 import { SectionList } from 'react-native'
 import { useNavigation, ParamListBase } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { Text } from '@rneui/themed'
+import { PWButton, PWText, PWTouchableOpacity, PWView } from '@components/core'
 
 import { EmptyView } from '@components/EmptyView'
-import { PWButton } from '@components/PWButton'
 import { useStyles } from './styles'
 import { Contact, useContacts } from '@perawallet/wallet-core-contacts'
 import { ContactAvatar } from '@components/ContactAvatar'
-import { PWView } from '@components/PWView'
-import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
 import { SearchInput } from '@components/SearchInput'
 import { useLanguage } from '@hooks/language'
 
@@ -36,12 +33,12 @@ type ContactSection = {
 const SectionHeader = ({ title }: { title: string }) => {
     const styles = useStyles()
     return (
-        <Text
-            h3
-            h3Style={styles.sectionHeader}
+        <PWText
+            variant='h3'
+            style={styles.sectionHeader}
         >
             {title}
-        </Text>
+        </PWText>
     )
 }
 
@@ -63,7 +60,7 @@ const ContactItem = ({ contact }: { contact: Contact }) => {
                 contact={contact}
                 size='small'
             />
-            <Text style={styles.contactName}>{contact.name}</Text>
+            <PWText style={styles.contactName}>{contact.name}</PWText>
         </PWTouchableOpacity>
     )
 }

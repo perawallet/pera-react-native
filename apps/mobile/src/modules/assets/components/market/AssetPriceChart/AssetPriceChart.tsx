@@ -13,7 +13,7 @@
 import { useStyles } from './styles'
 import { LineChart } from 'react-native-gifted-charts'
 
-import { PWView } from '@components/PWView'
+import { PWView } from '@components/core'
 import { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { useCallback, useMemo, useState } from 'react'
 import { useTheme } from '@rneui/themed'

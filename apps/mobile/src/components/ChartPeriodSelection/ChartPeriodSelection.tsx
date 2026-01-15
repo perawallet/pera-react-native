@@ -10,11 +10,9 @@
  limitations under the License
  */
 
-import { Text } from '@rneui/themed'
-import { PWView } from '../PWView'
+import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useStyles } from './styles'
 import { useCallback, useState } from 'react'
-import { PWTouchableOpacity } from '../PWTouchableOpacity'
 import { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/language'
 
@@ -51,7 +49,7 @@ export const ChartPeriodSelection = ({
                         : styles.unselectedButtonContainer
                 }
             >
-                <Text>{t('chart.one_week.label')}</Text>
+                <PWText>{t('chart.one_week.label')}</PWText>
             </PWTouchableOpacity>
             <PWTouchableOpacity
                 onPress={() => handlePressed('one-month')}
@@ -61,7 +59,7 @@ export const ChartPeriodSelection = ({
                         : styles.unselectedButtonContainer
                 }
             >
-                <Text>{t('chart.one_month.label')}</Text>
+                <PWText>{t('chart.one_month.label')}</PWText>
             </PWTouchableOpacity>
             <PWTouchableOpacity
                 onPress={() => handlePressed('one-year')}
@@ -71,7 +69,7 @@ export const ChartPeriodSelection = ({
                         : styles.unselectedButtonContainer
                 }
             >
-                <Text>{t('chart.one_year.label')}</Text>
+                <PWText>{t('chart.one_year.label')}</PWText>
             </PWTouchableOpacity>
         </PWView>
     )

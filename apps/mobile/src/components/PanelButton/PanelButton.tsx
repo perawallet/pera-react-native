@@ -12,12 +12,13 @@
 
 import { useStyles } from './styles'
 import { Text } from '@rneui/themed'
-import { PWView } from '../PWView'
 import {
+    IconName,
+    PWIcon,
+    PWView,
     PWTouchableOpacity,
     type PWTouchableOpacityProps,
-} from '../PWTouchableOpacity'
-import { PWIcon, IconName } from '../PWIcon'
+} from '@components/core'
 
 export type PanelButtonProps = {
     leftIcon?: IconName

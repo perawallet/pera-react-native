@@ -10,8 +10,14 @@
  limitations under the License
  */
 
-import { PWButton } from '@components/PWButton'
-import { PWView } from '@components/PWView'
+import {
+    PWButton,
+    PWIcon,
+    PWImage,
+    PWTabView,
+    PWText,
+    PWView,
+} from '@components/core'
 import {
     ArbitraryDataSignRequest,
     PeraArbitraryDataMessage,
@@ -19,13 +25,11 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/language'
-import { Image, TabView, Text } from '@rneui/themed'
 import {
     useAllAccounts,
     useFindAccountByAddress,
 } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
-import { PWIcon } from '@components/PWIcon'
 import { useWebView } from '@hooks/webview'
 import { v7 as uuid } from 'uuid'
 import { useArbitraryDataSigningView } from '@modules/transactions/hooks/signing/use-arbitrary-data-signing-view'
@@ -55,7 +59,7 @@ const SourceMetadataView = ({ metadata }: { metadata: SignRequestSource }) => {
     return (
         <PWView style={styles.metadataContainer}>
             {preferredIcon ? (
-                <Image
+                <PWImage
                     source={{ uri: preferredIcon }}
                     style={styles.metadataIcon}
                 />
@@ -69,12 +73,12 @@ const SourceMetadataView = ({ metadata }: { metadata: SignRequestSource }) => {
                 </PWView>
             )}
             <PWView style={styles.metadataTitleContainer}>
-                <Text
-                    h3
-                    h3Style={styles.title}
+                <PWText
+                    variant='h3'
+                    style={styles.title}
                 >
                     {metadata.name}
-                </Text>
+                </PWText>
                 {!!metadata.url && (
                     <PWButton
                         variant='link'
@@ -105,18 +109,18 @@ const SingleSignRequestView = ({
     return (
         <PWView style={styles.bodyInnerContainer}>
             <PWView style={styles.messageContainer}>
-                <Text
-                    h1
+                <PWText
+                    variant='h1'
                     style={styles.body}
                 >
                     {t('signing.arbitrary_data_view.body')}
-                </Text>
-                <Text style={styles.message}>{request.message}</Text>
+                </PWText>
+                <PWText style={styles.message}>{request.message}</PWText>
                 {!!account && (
                     <PWView style={styles.accountContainer}>
-                        <Text style={styles.onBehalfOf}>
+                        <PWText style={styles.onBehalfOf}>
                             {t('signing.arbitrary_data_view.on_behalf_of')}
-                        </Text>
+                        </PWText>
                         <AccountDisplay
                             account={account}
                             showChevron={false}
@@ -159,13 +163,13 @@ const MultipleSignRequestView = ({
                         )}
                         showChevron={false}
                     />
-                    <Text
-                        h3
+                    <PWText
+                        variant='h3'
                         style={styles.body}
                     >
                         {t('signing.arbitrary_data_view.body')}
-                    </Text>
-                    <Text style={styles.message}>{request.message}</Text>
+                    </PWText>
+                    <PWText style={styles.message}>{request.message}</PWText>
                     <PWButton
                         title={t('signing.arbitrary_data_view.show_details')}
                         variant='link'
@@ -201,17 +205,16 @@ export const ArbitraryDataSigningView = ({
 
     return (
         <PWView style={styles.container}>
-            <TabView
+            <PWTabView
                 value={index}
                 onChange={setIndex}
                 animationType='spring'
-                disableSwipe={true}
             >
-                <TabView.Item style={styles.tabItem}>
+                <PWTabView.Item style={styles.tabItem}>
                     <PWView style={styles.tabItemContainer}>
-                        <Text style={styles.title}>
+                        <PWText style={styles.title}>
                             {t('signing.arbitrary_data_view.title')}
-                        </Text>
+                        </PWText>
                         {!!request.sourceMetadata && (
                             <SourceMetadataView
                                 metadata={request.sourceMetadata}
@@ -252,15 +255,15 @@ export const ArbitraryDataSigningView = ({
                             />
                         </PWView>
                     </PWView>
-                </TabView.Item>
-                <TabView.Item style={styles.tabItem}>
+                </PWTabView.Item>
+                <PWTabView.Item style={styles.tabItem}>
                     <ArbitraryDataSigningDetailsView
                         request={request}
                         dataMessage={selectedRequest}
                         onBack={handleBack}
                     />
-                </TabView.Item>
-            </TabView>
+                </PWTabView.Item>
+            </PWTabView>
         </PWView>
     )
 }

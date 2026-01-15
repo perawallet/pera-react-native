@@ -12,13 +12,12 @@
 
 import { AssetIcon } from '../AssetIcon'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import { PWView, PWViewProps } from '@components/PWView'
+import { PWIcon, PWText, PWView, PWViewProps } from '@components/core'
 import { ALGO_ASSET_ID, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
-import { Text, useTheme } from '@rneui/themed'
+import { useTheme } from '@rneui/themed'
 import { useStyles } from './styles'
 import { useMemo } from 'react'
-import { PWIcon } from '@components/PWIcon'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 
 type AccountAssetItemViewProps = {
@@ -90,16 +89,16 @@ export const AccountAssetItemView = ({
             <PWView style={styles.dataContainer}>
                 <PWView style={styles.unitContainer}>
                     <PWView style={styles.row}>
-                        <Text style={styles.primaryUnit}>
+                        <PWText style={styles.primaryUnit}>
                             {isAlgo ? 'Algo' : asset.name}
-                        </Text>
+                        </PWText>
                         {verificationIcon}
                     </PWView>
-                    <Text style={styles.secondaryUnit}>
+                    <PWText style={styles.secondaryUnit}>
                         {asset.unitName}
                         {asset.assetId !== ALGO_ASSET_ID &&
                             ` - ${asset.assetId}`}
-                    </Text>
+                    </PWText>
                 </PWView>
                 <PWView style={styles.amountContainer}>
                     <CurrencyDisplay

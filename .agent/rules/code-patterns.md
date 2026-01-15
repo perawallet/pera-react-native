@@ -35,7 +35,7 @@ import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { logger } from '@perawallet/wallet-core-shared'
 
 // 4. App aliases (@components, @hooks, etc.)
-import PWButton from '@components/button/PWButton'
+import { PWButton } from '@components/core'
 import { useToast } from '@hooks/toast'
 
 // 5. Relative imports

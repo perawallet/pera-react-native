@@ -10,20 +10,23 @@
  limitations under the License
  */
 
-import { Tab, TabView } from '@rneui/themed'
+import {
+    PWIcon,
+    PWTab,
+    PWTabView,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import { PWIcon } from '@components/PWIcon'
 
 import { useStyles } from './styles'
 import { useState } from 'react'
 import { useModalState } from '@hooks/modal-state'
-import { PWView } from '@components/PWView'
 import { NotificationsIcon } from '@modules/notifications/components/NotificationsIcon'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
 import { AccountMenu } from '@modules/accounts/components/AccountMenu'
 import { Drawer } from 'react-native-drawer-layout'
 import { QRScannerView } from '@components/QRScannerView'
-import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
 import { EmptyView } from '@components/EmptyView'
 import { AccountOverview } from '@modules/accounts/components/AccountOverview'
 import { AccountNfts } from '@modules/accounts/components/AccountNfts'
@@ -96,7 +99,7 @@ export const AccountScreen = ({ route }: AccountScreenProps) => {
                     <NotificationsIcon />
                 </PWView>
             </PWView>
-            <Tab
+            <PWTab
                 value={tabIndex}
                 onChange={e => setTabIndex(e)}
                 containerStyle={styles.tabs}
@@ -104,30 +107,30 @@ export const AccountScreen = ({ route }: AccountScreenProps) => {
                 titleStyle={styles.tabItem}
                 dense
             >
-                <Tab.Item
+                <PWTab.Item
                     title={t('account_details.main_screen.overview_tab')}
                 />
-                <Tab.Item title={t('account_details.main_screen.nfts_tab')} />
-                <Tab.Item
+                <PWTab.Item title={t('account_details.main_screen.nfts_tab')} />
+                <PWTab.Item
                     title={t('account_details.main_screen.history_tab')}
                 />
-            </Tab>
-            <TabView
+            </PWTab>
+            <PWTabView
                 value={tabIndex}
                 onChange={setTabIndex}
                 animationType='spring'
                 animationConfig={TAB_ANIMATION_CONFIG}
             >
-                <TabView.Item style={styles.fullWidth}>
+                <PWTabView.Item style={styles.fullWidth}>
                     <AccountOverview account={account} />
-                </TabView.Item>
-                <TabView.Item style={styles.fullWidth}>
+                </PWTabView.Item>
+                <PWTabView.Item style={styles.fullWidth}>
                     <AccountNfts />
-                </TabView.Item>
-                <TabView.Item style={styles.fullWidth}>
+                </PWTabView.Item>
+                <PWTabView.Item style={styles.fullWidth}>
                     <AccountHistory />
-                </TabView.Item>
-            </TabView>
+                </PWTabView.Item>
+            </PWTabView>
             <QRScannerView
                 isVisible={scannerState.isOpen}
                 onSuccess={scannerState.close}

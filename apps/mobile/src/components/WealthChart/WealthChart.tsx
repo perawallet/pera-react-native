@@ -14,7 +14,7 @@ import { useStyles } from './styles'
 import { useLanguage } from '@hooks/language'
 import { LineChart } from 'react-native-gifted-charts'
 
-import { PWView } from '../PWView'
+import { PWView } from '@components/core'
 import { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { useCallback, useMemo, useState } from 'react'
 import { useTheme } from '@rneui/themed'
@@ -32,7 +32,7 @@ import {
     CHART_HEIGHT,
 } from '@constants/ui'
 
-type WealthChartProps = {
+export type WealthChartProps = {
     account?: WalletAccount
     period: HistoryPeriod
     onSelectionChanged: (item: AccountBalanceHistoryItem | null) => void

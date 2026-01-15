@@ -10,13 +10,17 @@
  limitations under the License
  */
 
-import { PWBottomSheet, PWBottomSheetProps } from '@components/PWBottomSheet'
-import { Input, Text } from '@rneui/themed'
+import {
+    PWBottomSheet,
+    type PWBottomSheetProps,
+    PWIcon,
+    PWInput,
+    PWText,
+    PWView,
+} from '@components/core'
 import { useContext, useEffect, useState } from 'react'
-import { PWIcon } from '@components/PWIcon'
 import { useForm, Controller } from 'react-hook-form'
 import { useStyles } from './styles'
-import { PWView } from '@components/PWView'
 import { SendFundsContext } from '@modules/transactions/providers/SendFundsProvider'
 import { useLanguage } from '@hooks/language'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -72,7 +76,7 @@ export const AddNotePanel = ({
                         variant='secondary'
                         onPress={handleClose}
                     />
-                    <Text h4>
+                    <PWText variant='h4'>
                         {isEdit
                             ? t('send_funds.confirmation.edit')
                             : t('send_funds.add_note.button').replace(
@@ -80,17 +84,17 @@ export const AddNotePanel = ({
                                   '',
                               )}{' '}
                         Note
-                    </Text>
-                    <Text onPress={handleSubmit(done)}>
+                    </PWText>
+                    <PWText onPress={handleSubmit(done)}>
                         {t('send_funds.add_note.done')}
-                    </Text>
+                    </PWText>
                 </PWView>
                 <PWView style={styles.container}>
                     <Controller
                         control={control}
                         name='note'
                         render={({ field: { onChange, onBlur, value } }) => (
-                            <Input
+                            <PWInput
                                 onBlur={onBlur}
                                 onChangeText={onChange}
                                 value={value}

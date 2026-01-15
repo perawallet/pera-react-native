@@ -14,7 +14,7 @@ import { useStyles } from './styles'
 import { useLanguage } from '@hooks/language'
 import { LineChart } from 'react-native-gifted-charts'
 
-import { PWView } from '@components/PWView'
+import { PWView } from '@components/core'
 import { HistoryPeriod } from '@perawallet/wallet-core-shared'
 
 import { useCallback, useMemo, useState } from 'react'

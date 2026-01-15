@@ -11,11 +11,10 @@
  */
 
 import { Text } from '@rneui/themed'
-import { PWView } from '../PWView'
+import { PWIcon, PWView } from '@components/core'
 import { useStyles } from './styles'
 import { formatCurrency, HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { useMemo } from 'react'
-import { PWIcon } from '../PWIcon'
 import Decimal from 'decimal.js'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
@@ -25,7 +24,7 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
-type WealthTrendProps = {
+export type WealthTrendProps = {
     account?: WalletAccount
     period: HistoryPeriod
 }

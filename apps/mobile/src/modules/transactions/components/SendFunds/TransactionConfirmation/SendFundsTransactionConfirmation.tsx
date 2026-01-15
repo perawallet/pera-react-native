@@ -11,7 +11,15 @@
  */
 
 import { useContext, useMemo, useState } from 'react'
-import { PWView } from '@components/PWView'
+import {
+    PWButton,
+    PWHeader,
+    PWIcon,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+    bottomSheetNotifier,
+} from '@components/core'
 import { SendFundsContext } from '@modules/transactions/providers/SendFundsProvider'
 import {
     DEFAULT_PRECISION,
@@ -23,14 +31,10 @@ import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { AddressDisplay } from '@components/AddressDisplay'
-import { Divider, Text, useTheme } from '@rneui/themed'
-import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
+import { Divider, useTheme } from '@rneui/themed'
 import { useStyles } from './styles'
-import { PWButton } from '@components/PWButton'
 import { useToast } from '@hooks/toast'
 import { AddNotePanel } from '../AddNotePanel'
-import { PWIcon } from '@components/PWIcon'
-import { PWHeader } from '@components/PWHeader'
 import {
     useAccountAssetBalanceQuery,
     useSelectedAccount,
@@ -51,7 +55,6 @@ import {
     useSuggestedParametersQuery,
 } from '@perawallet/wallet-core-blockchain'
 import { LoadingView } from '@components/LoadingView'
-import { bottomSheetNotifier } from '@components/PWBottomSheet'
 
 type SendFundsTransactionConfirmationProps = {
     onNext: () => void
@@ -271,7 +274,7 @@ export const SendFundsTransactionConfirmation = ({
             )}
             <Divider style={styles.divider} />
             <RowTitledItem title={t('send_funds.confirmation.note')}>
-                {!!note && <Text>{note}</Text>}
+                {!!note && <PWText>{note}</PWText>}
                 {!!note && (
                     <PWTouchableOpacity
                         onPress={openNote}
@@ -282,19 +285,19 @@ export const SendFundsTransactionConfirmation = ({
                             variant='link'
                             size='sm'
                         />
-                        <Text style={styles.link}>
+                        <PWText style={styles.link}>
                             {t('send_funds.confirmation.edit')}
-                        </Text>
+                        </PWText>
                     </PWTouchableOpacity>
                 )}
                 {!note && (
                     <PWTouchableOpacity>
-                        <Text
+                        <PWText
                             style={styles.link}
                             onPress={openNote}
                         >
                             {t('send_funds.add_note.button')}
-                        </Text>
+                        </PWText>
                     </PWTouchableOpacity>
                 )}
             </RowTitledItem>

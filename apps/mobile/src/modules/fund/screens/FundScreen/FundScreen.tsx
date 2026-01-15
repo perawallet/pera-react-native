@@ -11,9 +11,8 @@
  */
 
 import { config } from '@perawallet/wallet-core-config'
-import { PWWebView } from '@components/PWWebView'
+import { PWView, PWWebView } from '@components/core'
 import { useStyles } from './styles'
-import { PWView } from '@components/PWView'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export const FundScreen = () => {

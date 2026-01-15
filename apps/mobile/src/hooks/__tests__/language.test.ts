@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { describe, it, expect, vi, beforeEach, Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useLanguage } from '../language'
 import { useTranslation } from 'react-i18next'
@@ -24,7 +25,7 @@ describe('useLanguage', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        ;(useTranslation as vi.Mock).mockReturnValue({
+        ;(useTranslation as Mock).mockReturnValue({
             t: mockT,
             i18n: {
                 language: 'en',

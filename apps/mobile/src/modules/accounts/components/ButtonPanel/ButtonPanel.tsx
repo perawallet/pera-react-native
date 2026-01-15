@@ -11,7 +11,7 @@
  */
 
 import { useStyles } from './styles'
-import { PWView } from '@components/PWView'
+import { PWView } from '@components/core'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { RoundButton } from '@components/RoundButton'

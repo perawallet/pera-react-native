@@ -18,18 +18,15 @@ import {
     Camera,
     useCodeScanner,
 } from 'react-native-vision-camera'
-import { Text } from '@rneui/themed'
 import { useEffect, useState } from 'react'
 import { Modal } from 'react-native'
 import { useLanguage } from '@hooks/language'
 import { useDeepLink } from '@hooks/deeplink'
 import { EmptyView } from '@components/EmptyView'
 import { logger } from '@perawallet/wallet-core-shared'
-import { PWButton } from '@components/PWButton'
-import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
-import { PWIcon } from '@components/PWIcon'
+import { PWButton, PWIcon, PWText, PWTouchableOpacity } from '@components/core'
 
-type QRScannerViewProps = {
+export type QRScannerViewProps = {
     title?: string
     isVisible: boolean
     animationType: 'slide' | 'fade' | 'none'
@@ -128,12 +125,12 @@ export const QRScannerView = (props: QRScannerViewProps) => {
                         isActive={scanningEnabled}
                     />
                     <CameraOverlay style={styles.overlay} />
-                    <Text
-                        h2
-                        h2Style={styles.title}
+                    <PWText
+                        variant='h2'
+                        style={styles.title}
                     >
                         {props.title ?? 'Find a code to scan'}
-                    </Text>
+                    </PWText>
                 </>
             )}
         </Modal>

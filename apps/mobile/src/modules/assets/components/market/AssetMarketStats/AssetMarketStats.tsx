@@ -14,8 +14,7 @@ import { useStyles } from './styles'
 import { formatNumber, formatWithUnits } from '@perawallet/wallet-core-shared'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
-import { Text } from '@rneui/themed'
-import { PWView } from '@components/PWView'
+import { PWText, PWView } from '@components/core'
 import { useMemo } from 'react'
 import {
     PeraAsset,
@@ -61,14 +60,14 @@ export const AssetMarketStats = ({ assetDetails }: AssetMarketStatsProps) => {
 
     return (
         <PWView style={styles.container}>
-            <Text style={styles.sectionTitle}>
+            <PWText style={styles.sectionTitle}>
                 {t('asset_details.markets.stats')}
-            </Text>
+            </PWText>
             <PWView style={styles.statsContainer}>
                 <PWView style={styles.itemContainer}>
-                    <Text style={styles.label}>
+                    <PWText style={styles.label}>
                         {t('asset_details.markets.price')}
-                    </Text>
+                    </PWText>
                     <CurrencyDisplay
                         h2
                         value={price}
@@ -80,28 +79,28 @@ export const AssetMarketStats = ({ assetDetails }: AssetMarketStatsProps) => {
 
                 <PWView style={styles.itemContainer}>
                     <PWView style={styles.labelContainer}>
-                        <Text style={styles.label}>
+                        <PWText style={styles.label}>
                             {t('asset_details.markets.total_supply')}
-                        </Text>
+                        </PWText>
                         <InfoButton
                             variant='secondary'
                             title={t(
                                 'asset_details.markets.total_supply_info_title',
                             )}
                         >
-                            <Text>
+                            <PWText>
                                 {t(
                                     'asset_details.markets.total_supply_info_body',
                                 )}
-                            </Text>
+                            </PWText>
                         </InfoButton>
                     </PWView>
-                    <Text
+                    <PWText
                         style={styles.value}
-                        h2
+                        variant='h2'
                     >
                         {supply}
-                    </Text>
+                    </PWText>
                 </PWView>
             </PWView>
         </PWView>

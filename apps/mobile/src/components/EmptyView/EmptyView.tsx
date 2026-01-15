@@ -10,10 +10,8 @@
  limitations under the License
  */
 
-import { Text } from '@rneui/themed'
-import { PWView, PWViewProps } from '../PWView'
+import { IconName, PWIcon, PWText, PWView, PWViewProps } from '@components/core'
 import { useStyles } from './styles'
-import { PWIcon, IconName } from '../PWIcon'
 
 export type EmptyViewProps = {
     title?: string
@@ -41,14 +39,14 @@ export const EmptyView = (props: EmptyViewProps) => {
                 </PWView>
             )}
             {!!title && (
-                <Text
-                    h3
-                    h3Style={styles.text}
+                <PWText
+                    variant='h3'
+                    style={styles.text}
                 >
                     {title}
-                </Text>
+                </PWText>
             )}
-            <Text style={styles.text}>{body}</Text>
+            <PWText style={styles.text}>{body}</PWText>
             {button}
         </PWView>
     )

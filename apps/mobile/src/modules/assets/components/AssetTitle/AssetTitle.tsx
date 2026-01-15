@@ -11,11 +11,10 @@
  */
 
 import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
-import { PWView } from '@components/PWView'
-import { PWIcon } from '@components/PWIcon'
+import { PWIcon, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 import { AssetIcon } from '../AssetIcon'
-import { Text, useTheme } from '@rneui/themed'
+import { useTheme } from '@rneui/themed'
 import { useMemo } from 'react'
 
 export type AssetTitleProps = {
@@ -38,12 +37,12 @@ export const AssetTitle = ({ asset }: AssetTitleProps) => {
                 size={theme.spacing.xxl}
             />
             <PWView style={styles.nameContainer}>
-                <Text
-                    h4
+                <PWText
+                    variant='h4'
                     style={styles.name}
                 >
                     {isAlgo ? 'Algo' : asset.name}
-                </Text>
+                </PWText>
                 {isAlgo && (
                     <PWIcon
                         name='assets/trusted'

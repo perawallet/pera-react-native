@@ -10,19 +10,23 @@
  limitations under the License
  */
 
-import { Dialog, Text, useTheme } from '@rneui/themed'
+import { useTheme } from '@rneui/themed'
+import {
+    IconName,
+    PWButton,
+    PWDialog,
+    PWListItem,
+    PWText,
+    PWView,
+} from '@components/core'
 
-import { PWView } from '@components/PWView'
-import { PWButton } from '@components/PWButton'
 import { useStyles } from './styles'
 import { ScrollView } from 'react-native'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useContext } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { IconName } from '@components/PWIcon'
 import { WebViewContext } from '@providers/WebViewProvider'
-import { PWListItem } from '@components/PWListItem'
 import { useLanguage } from '@hooks/language'
 import { useModalState } from '@hooks/modal-state'
 import { useDeleteAllData } from '@modules/settings/hooks/delete-all-data'
@@ -89,7 +93,9 @@ export const SettingsScreen = () => {
                         style={styles.section}
                         key={`settings-section-${item.title}`}
                     >
-                        <Text style={styles.sectionTitle}>{item.title}</Text>
+                        <PWText style={styles.sectionTitle}>
+                            {item.title}
+                        </PWText>
                         {item.items.map(page => (
                             <PWListItem
                                 key={`settings-sectionrow-${page.title}`}
@@ -107,24 +113,24 @@ export const SettingsScreen = () => {
                 onPress={open}
             />
             <AppVersion enableSecretTaps />
-            <Dialog
+            <PWDialog
                 isVisible={isOpen}
                 onBackdropPress={close}
             >
-                <Dialog.Title title={t('settings.main.remove_title')} />
-                <Text>{t('settings.main.remove_message')}</Text>
-                <Dialog.Actions>
-                    <Dialog.Button
+                <PWDialog.Title title={t('settings.main.remove_title')} />
+                <PWText>{t('settings.main.remove_message')}</PWText>
+                <PWDialog.Actions>
+                    <PWDialog.Button
                         title={t('common.delete.label')}
                         titleStyle={{ color: theme.colors.error }}
                         onPress={handleDeleteAllAccounts}
                     />
-                    <Dialog.Button
+                    <PWDialog.Button
                         title={t('common.cancel.label')}
                         onPress={close}
                     />
-                </Dialog.Actions>
-            </Dialog>
+                </PWDialog.Actions>
+            </PWDialog>
         </ScrollView>
     )
 }

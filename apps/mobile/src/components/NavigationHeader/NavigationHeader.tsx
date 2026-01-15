@@ -11,15 +11,14 @@
  */
 
 import { NativeStackHeaderProps } from '@react-navigation/native-stack'
-import { PWView } from '../PWView'
-import { Text } from '@rneui/themed'
+import { PWIcon, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
-import { PWIcon } from '../PWIcon'
 import { useLanguage } from '@hooks/language'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMemo } from 'react'
+export type NavigationHeaderProps = NativeStackHeaderProps
 
-export const NavigationHeader = (props: NativeStackHeaderProps) => {
+export const NavigationHeader = (props: NavigationHeaderProps) => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const { t } = useLanguage()
@@ -42,12 +41,12 @@ export const NavigationHeader = (props: NativeStackHeaderProps) => {
                     />
                 )}
             </PWView>
-            <Text
-                h4
-                h4Style={styles.title}
+            <PWText
+                variant='h4'
+                style={styles.title}
             >
                 {title}
-            </Text>
+            </PWText>
             <PWView style={styles.backIconContainer}>
                 {props.options?.headerRight?.({})}
             </PWView>

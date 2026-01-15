@@ -60,6 +60,8 @@ Avoid:
 5. **Atomicity**: Tests must be independent and self-contained. Setup dependencies inside the test or `beforeEach`.
 
 ```typescript
+import { render, fireEvent, screen } from '@test-utils/render'
+
 // ✅ Good Example
 it('submits form when save is pressed', () => {
     // Arrange

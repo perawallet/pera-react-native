@@ -11,18 +11,16 @@
  */
 
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { PWBottomSheet } from '@components/PWBottomSheet'
+import { PWBottomSheet, PWTabView, PWView } from '@components/core'
 
 import { useState } from 'react'
 import { useStyles } from './styles'
 import { useWindowDimensions } from 'react-native'
-import { TabView } from '@rneui/themed'
 import { TransactionErrorBoundary } from '@modules/transactions/components/BaseErrorBoundary/TransactionErrorBoundary'
 import { TAB_ANIMATION_CONFIG } from '@constants/ui'
 import { useLanguage } from '@hooks/language'
 import { ReceiveFundsAccountSelectionView } from '../AccountSelection/ReceiveFundsAccountSelectionView'
 import { ReceiveFundsQRView } from '../QrView/ReceiveFundsQRView'
-import { PWView } from '@components/PWView'
 
 type ReceiveFundsBottomSheetProps = {
     account?: WalletAccount
@@ -63,28 +61,27 @@ export const ReceiveFundsBottomSheet = ({
         >
             <PWView style={styles.innerContainer}>
                 <TransactionErrorBoundary t={t}>
-                    <TabView
+                    <PWTabView
                         value={screenIndex}
                         animationType='timing'
                         animationConfig={TAB_ANIMATION_CONFIG}
-                        disableSwipe
                     >
                         {!account && (
-                            <TabView.Item style={styles.tabItem}>
+                            <PWTabView.Item style={styles.tabItem}>
                                 <ReceiveFundsAccountSelectionView
                                     onSelected={handleSelected}
                                     onClose={handleClose}
                                 />
-                            </TabView.Item>
+                            </PWTabView.Item>
                         )}
-                        <TabView.Item style={styles.tabItem}>
+                        <PWTabView.Item style={styles.tabItem}>
                             <ReceiveFundsQRView
                                 account={selectedAccount}
                                 onClose={handleClose}
                                 onBack={account ? undefined : handleBack}
                             />
-                        </TabView.Item>
-                    </TabView>
+                        </PWTabView.Item>
+                    </PWTabView>
                 </TransactionErrorBoundary>
             </PWView>
         </PWBottomSheet>

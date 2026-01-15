@@ -10,9 +10,7 @@
  limitations under the License
  */
 
-import { PWIcon } from '@components/PWIcon'
-import { PWView } from '@components/PWView'
-import { Text } from '@rneui/themed'
+import { PWIcon, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 import { AlgorandPermission } from '@perawallet/wallet-core-walletconnect'
 import { useLanguage } from '@hooks/language'
@@ -43,7 +41,7 @@ export const PermissionItem = ({
                 name='check'
                 variant='positive'
             />
-            <Text>{getPermissionTitle(permission)}</Text>
+            <PWText>{getPermissionTitle(permission)}</PWText>
         </PWView>
     )
 }

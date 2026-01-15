@@ -11,3 +11,4 @@
  */
 
 export * from './useRemoteConfigService'
+export * from './useRemoteConfigOverrides'

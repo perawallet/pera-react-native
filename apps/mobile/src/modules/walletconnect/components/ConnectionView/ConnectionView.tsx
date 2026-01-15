@@ -10,7 +10,17 @@
  limitations under the License
  */
 
-import { PWView } from '@components/PWView'
+import {
+    PWBadge,
+    PWButton,
+    PWCheckbox,
+    PWIcon,
+    PWImage,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+    bottomSheetNotifier,
+} from '@components/core'
 import {
     AlgorandChain,
     AlgorandPermission,
@@ -18,26 +28,19 @@ import {
     useWalletConnectSessionRequests,
     WalletConnectSessionRequest,
 } from '@perawallet/wallet-core-walletconnect'
-import { Image, Text } from '@rneui/themed'
 import { useStyles } from './styles'
-import { PWBadge } from '@components/PWBadge'
 import { useLanguage } from '@hooks/language'
 import React from 'react'
-import { PWButton } from '@components/PWButton'
 import { useWebView } from '@hooks/webview'
 import { v7 as uuid } from 'uuid'
-import { PWIcon } from '@components/PWIcon'
 import {
     useSigningAccounts,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
-import { PWCheckbox } from '@components/PWCheckbox'
-import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
 import { ScrollView } from 'react-native-gesture-handler'
 import { useToast } from '@hooks/toast'
 import { PermissionItem } from '../PermissionItem'
-import { bottomSheetNotifier } from '@components/PWBottomSheet'
 
 //TODO implement project validation using our backend to show a "verified" badge somewhere
 export const ConnectionView = ({
@@ -144,7 +147,7 @@ export const ConnectionView = ({
                     )}
                 </PWView>
                 {preferredIcon ? (
-                    <Image
+                    <PWImage
                         source={{ uri: preferredIcon }}
                         style={styles.icon}
                     />
@@ -158,14 +161,14 @@ export const ConnectionView = ({
                     </PWView>
                 )}
                 <PWView style={styles.titleContainer}>
-                    <Text
-                        h3
-                        h3Style={styles.title}
+                    <PWText
+                        variant='h3'
+                        style={styles.title}
                     >
                         {t('walletconnect.request.title', {
                             name: request.peerMeta.name,
                         })}
-                    </Text>
+                    </PWText>
                     {!!request.peerMeta.url && (
                         <PWButton
                             variant='link'
@@ -176,12 +179,12 @@ export const ConnectionView = ({
                 </PWView>
             </PWView>
             <PWView style={styles.permissionsContainer}>
-                <Text
-                    h4
-                    h4Style={styles.permissionsTitle}
+                <PWText
+                    variant='h4'
+                    style={styles.permissionsTitle}
                 >
                     {t('walletconnect.request.permissions_title')}
-                </Text>
+                </PWText>
                 {request.permissions.map((permission, index) => (
                     <PermissionItem
                         key={index}
@@ -191,12 +194,12 @@ export const ConnectionView = ({
             </PWView>
 
             <PWView style={styles.accountSelectionContainer}>
-                <Text
-                    h4
-                    h4Style={styles.permissionsTitle}
+                <PWText
+                    variant='h4'
+                    style={styles.permissionsTitle}
                 >
                     {t('walletconnect.request.accounts_title')}
-                </Text>
+                </PWText>
                 <ScrollView style={styles.accountsContainer}>
                     {accounts.map(account => (
                         <PWTouchableOpacity

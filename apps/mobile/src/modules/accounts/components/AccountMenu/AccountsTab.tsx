@@ -10,14 +10,12 @@
  limitations under the License
  */
 
-import { PWView } from '@components/PWView'
-import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
+import { PWButton, PWTouchableOpacity, PWView } from '@components/core'
 import {
     useAllAccounts,
     useSelectedAccountAddress,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { PWButton } from '@components/PWButton'
 import { useLanguage } from '@hooks/language'
 import { useStyles } from './styles'
 import { AccountWithBalance } from '../AccountWithBalance'

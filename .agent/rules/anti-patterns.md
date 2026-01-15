@@ -114,6 +114,17 @@ import PWButton from '../../../components/button/PWButton'
 import PWButton from '@components/button/PWButton'
 ```
 
+## ❌ Deep Import of Core Components
+
+```typescript
+// ❌ BAD: importing from specific component folder
+import { PWButton } from '@components/core/PWButton'
+import { PWText } from '@components/core/PWText/PWText'
+
+// ✅ GOOD: import from core barrel file
+import { PWButton, PWText } from '@components/core'
+```
+
 ## ❌ Default Exports
 
 ```typescript
@@ -127,3 +138,50 @@ export const ComponentName = () => {}
 
 // import { ComponentName } from './ComponentName'
 ```
+
+## ❌ Direct External Component Usage
+
+```typescript
+// ❌ BAD: Direct import from @rneui/themed in screens/modules
+import { Text, Button, Icon } from '@rneui/themed'
+
+const MyScreen = () => (
+    <View>
+        <Text>Hello</Text>
+        <Button title="Submit" onPress={handleSubmit} />
+        <Icon name="check" />
+    </View>
+)
+
+// ❌ BAD: Direct import from react-native in screens/modules
+import { TouchableOpacity, ScrollView } from 'react-native'
+
+const MyComponent = () => (
+    <TouchableOpacity onPress={handlePress}>
+        <Text>Tap me</Text>
+    </TouchableOpacity>
+)
+
+// ✅ GOOD: Use PW-wrapped components from the design system
+import {
+    PWText,
+    PWButton,
+    PWIcon,
+    PWTouchableOpacity
+} from '@components/core'
+
+const MyScreen = () => (
+    <PWView>
+        <PWText variant="body">Hello</PWText>
+        <PWButton variant="primary" title="Submit" onPress={handleSubmit} />
+        <PWIcon name="check" variant="primary" />
+    </PWView>
+)
+```
+
+**Why this matters:**
+
+- External component APIs can change between versions
+- PW wrappers provide a stable, project-specific API
+- Centralized customization (default styles, behaviors)
+- Easier to migrate to different libraries in the future

@@ -24,4 +24,8 @@ export const useStyles = makeStyles(theme => ({
         marginBottom: theme.spacing.md,
         textTransform: 'uppercase',
     },
+    description: {
+        color: theme.colors.textMain,
+        // ...theme.components?.Text?.().style,
+    },
 }))

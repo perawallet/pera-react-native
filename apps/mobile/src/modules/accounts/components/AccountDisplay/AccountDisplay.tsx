@@ -10,21 +10,26 @@
  limitations under the License
  */
 
-import { Text, TextProps, useTheme } from '@rneui/themed'
+import { useTheme } from '@rneui/themed'
 import {
     getAccountDisplayName,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { PWView, PWViewProps } from '@components/PWView'
+import {
+    PWIcon,
+    PWText,
+    PWTextProps,
+    PWView,
+    PWViewProps,
+} from '@components/core'
 import { useStyles } from './styles'
 
 import { AccountIcon, AccountIconProps } from '../AccountIcon'
-import { PWIcon } from '@components/PWIcon'
 
 type AccountDisplayProps = {
     account?: WalletAccount
     iconProps?: Omit<AccountIconProps, 'account'>
-    textProps?: TextProps
+    textProps?: PWTextProps
     showChevron?: boolean
 } & PWViewProps
 
@@ -51,13 +56,12 @@ export const AccountDisplay = ({
                     {...iconProps}
                 />
             )}
-            <Text
-                {...textProps}
-                h4Style={textProps ? textProps.h4Style : styles.text}
-                h4={!textProps}
+            <PWText
+                style={textProps?.style ?? styles.text}
+                variant={textProps ? undefined : 'h4'}
             >
                 {displayName}
-            </Text>
+            </PWText>
             {showChevron && (
                 <PWIcon
                     variant='secondary'

@@ -13,8 +13,7 @@
 import { View } from 'react-native'
 import { useStyles } from './styles'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import { Text } from '@rneui/themed'
-import { PWButton } from '@components/PWButton'
+import { PWButton, PWText } from '@components/core'
 import { RowTitledItem } from '@components/RowTitledItem'
 import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/language'
@@ -59,9 +58,9 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                     })}
                     verticalAlignment='top'
                 >
-                    <Text style={styles.description}>
+                    <PWText style={styles.description}>
                         {assetDetails.peraMetadata.description}
-                    </Text>
+                    </PWText>
                 </RowTitledItem>
             )}
 
