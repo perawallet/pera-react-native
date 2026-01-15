@@ -1,9 +1,7 @@
 {
   "extends": "@react-native/typescript-config",
   "compilerOptions": {
-    "types": [
-      "jest"
-    ],
+    "types": [],
     "baseUrl": "src",
     "paths": {
       "@components/*": [
