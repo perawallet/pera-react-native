@@ -45,11 +45,11 @@ vi.mock('@algorandfoundation/algokit-utils/transact', () => ({
 describe('services/blockchain/hooks', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-            ; (useNetwork as Mock).mockReturnValue({ network: 'mainnet' })
+        ;(useNetwork as Mock).mockReturnValue({ network: 'mainnet' })
     })
 
     test('returns fromConfig client for mainnet', () => {
-        ; (useNetwork as Mock).mockReturnValue({ network: 'mainnet' })
+        ;(useNetwork as Mock).mockReturnValue({ network: 'mainnet' })
         const { result } = renderHook(() => useAlgorandClient())
 
         expect(AlgorandClient.fromConfig).toHaveBeenCalledTimes(1)
@@ -57,7 +57,7 @@ describe('services/blockchain/hooks', () => {
     })
 
     test('returns fromConfig client for testnet', () => {
-        ; (useNetwork as Mock).mockReturnValue({ network: 'testnet' })
+        ;(useNetwork as Mock).mockReturnValue({ network: 'testnet' })
         const { result } = renderHook(() => useAlgorandClient())
 
         expect(AlgorandClient.fromConfig).toHaveBeenCalledTimes(1)
@@ -65,14 +65,15 @@ describe('services/blockchain/hooks', () => {
     })
 
     test('configures signer when provided', async () => {
-        ; (useNetwork as Mock).mockReturnValue({ network: 'mainnet' })
+        ;(useNetwork as Mock).mockReturnValue({ network: 'mainnet' })
         const mockSigner = vi.fn().mockResolvedValue(['signed-tx'])
         const { result } = renderHook(() => useAlgorandClient(mockSigner))
 
         expect(result.current.setDefaultSigner).toHaveBeenCalledTimes(1)
 
         // Verify the encoding wrapper
-        const encodingSigner = (result.current.setDefaultSigner as Mock).mock.calls[0][0]
+        const encodingSigner = (result.current.setDefaultSigner as Mock).mock
+            .calls[0][0]
         const resultTx = await encodingSigner({ txnGroup: [] }, [])
 
         expect(mockSigner).toHaveBeenCalled()
