@@ -78,7 +78,7 @@ export type { [ComponentName]Props } from './[ComponentName]'
 
 Create `__tests__/[ComponentName].spec.tsx`:
 
-- Import from `@test-utils` for providers
+- Import `render`, `fireEvent`, `screen` from `@test-utils/render`
 - Test user behavior, not implementation
 - Cover key interactions
 - Use `.spec.tsx` extension (NOT `.test.tsx`)

@@ -21,9 +21,9 @@ All tests use Vitest and React Native Testing Library.
 ## Component Test Template
 
 ```typescript
-import { render, fireEvent, screen } from '@testing-library/react-native'
+import { render, fireEvent, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import PWButton from '../PWButton'
+import { PWButton } from '../PWButton'
 
 describe('PWButton', () => {
     it('calls onPress when pressed', () => {
@@ -32,10 +32,10 @@ describe('PWButton', () => {
         render(<PWButton title="Submit" onPress={onPress} variant="primary" />)
 
         // Act
-        fireEvent.press(screen.getByText('Submit'))
+        fireEvent.click(screen.getByText('Submit'))
 
         // Assert
-        expect(onPress).toHaveBeenCalledTimes(1)
+        expect(onPress).toHaveBeenCalled()
     })
 
     it('shows loader and disables press when isLoading is true', () => {
@@ -51,7 +51,8 @@ describe('PWButton', () => {
         )
 
         // Act
-        fireEvent.press(screen.getByRole('button'))
+        // Use click instead of press when using react-testing-library (web)
+        fireEvent.click(screen.getByRole('button'))
 
         // Assert
         expect(screen.getByTestId('activity-indicator')).toBeTruthy()

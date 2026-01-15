@@ -67,6 +67,8 @@ Create `apps/mobile/src/hooks/[name].ts`
 
 Create `apps/mobile/src/hooks/__tests__/[name].test.ts`
 
+- Use Vitest with `@testing-library/react` (or `@test-utils/render` if providers like theme/queries are needed)
+
 ### 3. Verify
 
 // turbo
