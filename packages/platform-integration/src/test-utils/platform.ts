@@ -47,7 +47,7 @@ export const buildTestPlatform = (
     }
 
     const defaultSecure: SecureStorageService = {
-        async setItem(_: string, __: Buffer) {},
+        async setItem(_: string, __: Uint8Array) {},
         async getItem(_: string) {
             return null
         },

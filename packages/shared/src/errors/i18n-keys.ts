@@ -32,6 +32,7 @@ export const ERROR_I18N_KEYS = {
     BLOCKCHAIN_GENERIC: 'errors.blockchain.generic',
     BLOCKCHAIN_TRANSACTION: 'errors.blockchain.transaction',
     BLOCKCHAIN_INVALID_TRANSACTION: 'errors.blockchain.invalid_transaction',
+    BLOCKCHAIN_SIGNING: 'errors.blockchain.signing',
 
     // Account errors
     ACCOUNT_GENERIC: 'errors.account.generic',

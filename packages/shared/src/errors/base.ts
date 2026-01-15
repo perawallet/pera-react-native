@@ -76,9 +76,15 @@ export class AppError extends Error {
             ...metadata,
         }
 
-        // Capture stack trace
-        if (Error.captureStackTrace) {
-            Error.captureStackTrace(this, this.constructor)
+        // Capture stack trace (V8 extension available in Node.js and most JS engines)
+        const ErrorWithStackTrace = Error as typeof Error & {
+            captureStackTrace?: (
+                target: object,
+                constructor: NewableFunction,
+            ) => void
+        }
+        if (ErrorWithStackTrace.captureStackTrace) {
+            ErrorWithStackTrace.captureStackTrace(this, this.constructor)
         }
     }
 

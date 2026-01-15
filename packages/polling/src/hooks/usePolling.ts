@@ -21,7 +21,9 @@ export const usePolling = () => {
         state => state.setLastRefreshedRound,
     )
     const { mutateAsync } = useShouldRefreshMutation()
-    const [polling, setPolling] = useState<NodeJS.Timeout | null>(null)
+    const [polling, setPolling] = useState<ReturnType<
+        typeof setInterval
+    > | null>(null)
 
     const doCheck = async () => {
         try {

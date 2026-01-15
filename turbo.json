@@ -1,6 +1,12 @@
 {
   "$schema": "https://turborepo.com/schema.json",
   "tasks": {
+    "generate:config": {
+      "cache": false,
+      "outputs": [
+        "packages/config/src/generated-env.ts"
+      ]
+    },
     "build": {
       "dependsOn": [
         "^build"
@@ -64,6 +70,16 @@
       ],
       "cache": false,
       "persistent": true
+    },
+    "@perawallet/wallet-core-config#build": {
+      "dependsOn": [
+        "generate:config"
+      ]
+    },
+    "@perawallet/wallet-core-config#test": {
+      "dependsOn": [
+        "generate:config"
+      ]
     }
   }
 }
