@@ -14,8 +14,8 @@ import React, { ReactNode } from 'react'
 import { ErrorCategory } from '@perawallet/wallet-core-shared'
 import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
 import { useLanguage } from '@hooks/language'
-import EmptyView from '@components/EmptyView'
-import PWButton from '@components/PWButton'
+import { EmptyView } from '@components/EmptyView'
+import { PWButton } from '@components/PWButton'
 
 interface AccountErrorBoundaryProps {
     children: ReactNode

@@ -12,8 +12,8 @@
 
 import { Dialog, Text, useTheme } from '@rneui/themed'
 
-import PWView from '@components/PWView'
-import PWButton from '@components/PWButton'
+import { PWView } from '@components/PWView'
+import { PWButton } from '@components/PWButton'
 import { useStyles } from './styles'
 import { ScrollView } from 'react-native'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
@@ -22,16 +22,16 @@ import { useContext } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { IconName } from '@components/PWIcon'
 import { WebViewContext } from '@providers/WebViewProvider'
-import PWListItem from '@components/PWListItem'
+import { PWListItem } from '@components/PWListItem'
 import { useLanguage } from '@hooks/language'
 import { useModalState } from '@hooks/modal-state'
 import { useDeleteAllData } from '@modules/settings/hooks/delete-all-data'
-import AppVersion from '@modules/settings/components/AppVersion'
+import { AppVersion } from '@modules/settings/components/AppVersion'
 import { useSettingsOptions } from '@modules/settings/hooks/settings-options'
 
 //TODO: add ratings view handling
 
-const SettingsScreen = () => {
+export const SettingsScreen = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
@@ -128,5 +128,3 @@ const SettingsScreen = () => {
         </ScrollView>
     )
 }
-
-export default SettingsScreen

@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import EmptyView from '@components/EmptyView'
+import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/language'
 
-const InboxTab = () => {
+export const InboxTab = () => {
     //TODO implement me
     const { t } = useLanguage()
 
@@ -24,4 +24,3 @@ const InboxTab = () => {
         />
     )
 }
-export default InboxTab

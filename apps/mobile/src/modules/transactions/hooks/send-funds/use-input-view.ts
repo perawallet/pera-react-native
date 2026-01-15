@@ -17,7 +17,7 @@ import {
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
 import { SendFundsContext } from '@modules/transactions/providers/SendFundsProvider'
-import useToast from '@hooks/toast'
+import { useToast } from '@hooks/toast'
 import { useLanguage } from '@hooks/language'
 import {
     ALGO_ASSET,

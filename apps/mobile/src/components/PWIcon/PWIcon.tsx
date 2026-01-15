@@ -203,7 +203,7 @@ export type PWIconProps = {
     variant?: PWIconVariant
 } & Omit<SvgProps, 'color' | 'width' | 'height'>
 
-const PWIcon = ({
+export const PWIcon = ({
     name,
     size = 'md',
     variant = 'primary',
@@ -267,5 +267,3 @@ const PWIcon = ({
         />
     )
 }
-
-export default PWIcon

@@ -14,18 +14,18 @@ import { useLanguage } from '@hooks/language'
 import { Tab, TabView } from '@rneui/themed'
 
 import { useStyles } from './styles'
-import PortfolioView from '../PortfolioView'
-import PWView from '@components/PWView'
+import { PortfolioView } from '../PortfolioView'
+import { PWView } from '@components/PWView'
 import { useEffect, useState } from 'react'
-import InboxTab from './InboxTab'
-import AccountsTab from './AccountsTab'
+import { InboxTab } from './InboxTab'
+import { AccountsTab } from './AccountsTab'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 type AccountMenuProps = {
     onSelected: (account: WalletAccount) => void
     showInbox?: boolean
 }
-const AccountMenu = (props: AccountMenuProps) => {
+export const AccountMenu = (props: AccountMenuProps) => {
     const [index, setIndex] = useState(0)
     const styles = useStyles()
     const { t } = useLanguage()
@@ -82,5 +82,3 @@ const AccountMenu = (props: AccountMenuProps) => {
         </PWView>
     )
 }
-
-export default AccountMenu

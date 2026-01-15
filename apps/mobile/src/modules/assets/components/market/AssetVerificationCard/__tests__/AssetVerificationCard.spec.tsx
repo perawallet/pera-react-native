@@ -12,7 +12,7 @@
 
 import { render } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
-import AssetVerificationCard from '../AssetVerificationCard'
+import { AssetVerificationCard } from '../AssetVerificationCard'
 import { PeraAsset, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 
 describe('AssetVerificationCard', () => {

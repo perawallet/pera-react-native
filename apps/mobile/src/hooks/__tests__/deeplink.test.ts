@@ -59,8 +59,7 @@ vi.mock('@perawallet/wallet-core-walletconnect', () => ({
 }))
 
 vi.mock('../toast', () => ({
-    __esModule: true,
-    default: () => ({ showToast: vi.fn() }),
+    useToast: vi.fn(() => ({ showToast: vi.fn() })),
 }))
 
 vi.mock('react-native', () => ({

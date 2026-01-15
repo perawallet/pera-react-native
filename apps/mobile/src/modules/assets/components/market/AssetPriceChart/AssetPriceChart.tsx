@@ -13,17 +13,17 @@
 import { useStyles } from './styles'
 import { LineChart } from 'react-native-gifted-charts'
 
-import PWView from '@components/PWView'
+import { PWView } from '@components/PWView'
 import { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { useCallback, useMemo, useState } from 'react'
 import { useTheme } from '@rneui/themed'
-import LoadingView from '@components/LoadingView'
+import { LoadingView } from '@components/LoadingView'
 import {
     AssetPriceHistoryItem,
     PeraAsset,
     useAssetPriceHistoryQuery,
 } from '@perawallet/wallet-core-assets'
-import EmptyView from '@components/EmptyView'
+import { EmptyView } from '@components/EmptyView'
 import {
     CHART_ANIMATION_DURATION,
     CHART_FOCUS_DEBOUNCE_TIME,
@@ -37,7 +37,7 @@ type AssetPriceChartProps = {
     onSelectionChanged: (item: AssetPriceHistoryItem | null) => void
 }
 
-const AssetPriceChart = ({
+export const AssetPriceChart = ({
     onSelectionChanged,
     asset,
     period,
@@ -157,5 +157,3 @@ const AssetPriceChart = ({
         </PWView>
     )
 }
-
-export default AssetPriceChart

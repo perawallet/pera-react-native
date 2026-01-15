@@ -26,7 +26,7 @@ type ExpandablePanelProps = {
     onStateChangeEnd?: (isExpanded: boolean) => void
 } & PropsWithChildren
 
-const ExpandablePanel = ({
+export const ExpandablePanel = ({
     children,
     isExpanded,
     onStateChangeEnd,
@@ -81,5 +81,3 @@ const ExpandablePanel = ({
         </Animated.View>
     )
 }
-
-export default ExpandablePanel

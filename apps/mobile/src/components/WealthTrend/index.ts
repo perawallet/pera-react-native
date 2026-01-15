@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './WealthTrend'
+export { WealthTrend } from './WealthTrend'
 export type { WealthTrendProps } from './WealthTrend'

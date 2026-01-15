@@ -21,7 +21,7 @@ import {
     ArbitraryDataSignRequest,
     useSigningRequest,
 } from '@perawallet/wallet-core-blockchain'
-import useToast from '@hooks/toast'
+import { useToast } from '@hooks/toast'
 import { AlgorandChainId } from '@perawallet/wallet-core-walletconnect'
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -34,8 +34,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 vi.mock('@hooks/toast', () => ({
-    __esModule: true,
-    default: vi.fn(),
+    useToast: vi.fn(),
 }))
 
 vi.mock('@hooks/language', () => ({
@@ -90,7 +89,7 @@ describe('useArbitraryDataSigningView', () => {
             await act(async () => {
                 try {
                     await result.current.approveRequest()
-                    fail('Expected error to be thrown')
+                    expect.fail('Expected error to be thrown')
                 } catch (error) {
                     expect(error).toBeInstanceOf(Error)
                 }

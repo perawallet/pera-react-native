@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './ExpandablePanel'
+export { ExpandablePanel } from './ExpandablePanel'
 export type { ExpandablePanelProps } from './ExpandablePanel'

@@ -13,29 +13,29 @@
 import { ScrollView } from 'react-native'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
-import AssetTitle from '../../AssetTitle'
-import RoundButton from '@components/RoundButton'
-import CurrencyDisplay from '@components/CurrencyDisplay'
-import AssetPriceChart from '../AssetPriceChart/AssetPriceChart'
+import { AssetTitle } from '../../AssetTitle'
+import { RoundButton } from '@components/RoundButton'
+import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { AssetPriceChart } from '../AssetPriceChart/AssetPriceChart'
 import { useMemo, useCallback } from 'react'
 import { useChartInteraction } from '@hooks/chart-interaction'
 import Decimal from 'decimal.js'
 import { Skeleton, Text } from '@rneui/themed'
-import AssetMarketStats from '../AssetMarketStats/AssetMarketStats'
-import AssetAbout from '../AssetAbout/AssetAbout'
-import AssetVerificationCard from '../AssetVerificationCard/AssetVerificationCard'
+import { AssetMarketStats } from '../AssetMarketStats/AssetMarketStats'
+import { AssetAbout } from '../AssetAbout/AssetAbout'
+import { AssetVerificationCard } from '../AssetVerificationCard/AssetVerificationCard'
 import { useLanguage } from '@hooks/language'
-import AssetDescription from '../AssetDescription/AssetDescription'
-import AssetSocialMedia from '../AssetSocialMedia/AssetSocialMedia'
-import PriceTrend from '../PriceTrend/PriceTrend'
-import PWTouchableOpacity from '@components/PWTouchableOpacity'
-import PWIcon from '@components/PWIcon'
+import { AssetDescription } from '../AssetDescription/AssetDescription'
+import { AssetSocialMedia } from '../AssetSocialMedia/AssetSocialMedia'
+import { PriceTrend } from '../PriceTrend/PriceTrend'
+import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
+import { PWIcon } from '@components/PWIcon'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import useToast from '@hooks/toast'
-import PWView from '@components/PWView'
-import EmptyView from '@components/EmptyView'
-import ChartPeriodSelection from '@components/ChartPeriodSelection'
+import { useToast } from '@hooks/toast'
+import { PWView } from '@components/PWView'
+import { EmptyView } from '@components/EmptyView'
+import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import {
     AssetPriceHistoryItem,
     PeraAsset,
@@ -45,7 +45,7 @@ import {
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
-import PWButton from '@components/PWButton'
+import { PWButton } from '@components/PWButton'
 
 type AssetMarketsProps = {
     asset: PeraAsset
@@ -62,7 +62,7 @@ const Loading = () => {
     )
 }
 
-const AssetMarkets = ({ asset }: AssetMarketsProps) => {
+export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
     const styles = useStyles()
     const { preferredCurrency } = useCurrency()
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
@@ -258,5 +258,3 @@ const AssetMarkets = ({ asset }: AssetMarketsProps) => {
         </ScrollView>
     )
 }
-
-export default AssetMarkets

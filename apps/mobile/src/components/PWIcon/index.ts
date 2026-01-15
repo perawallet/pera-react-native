@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './PWIcon'
-export type { PWIconProps, PWIconSize, PWIconVariant } from './PWIcon'
+export { PWIcon } from './PWIcon'
+export type { IconName, PWIconProps, PWIconSize, PWIconVariant } from './PWIcon'

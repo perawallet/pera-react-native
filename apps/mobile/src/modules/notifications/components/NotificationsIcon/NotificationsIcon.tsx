@@ -12,14 +12,14 @@
 
 import { useNotificationStatus } from '@perawallet/wallet-core-platform-integration'
 import { SvgProps } from 'react-native-svg'
-import PWIcon from '@components/PWIcon'
+import { PWIcon } from '@components/PWIcon'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import PWTouchableOpacity from '@components/PWTouchableOpacity'
+import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
 
 export type NotificationsIconProps = {} & SvgProps
 
-const NotificationsIcon = (props: NotificationsIconProps) => {
+export const NotificationsIcon = (props: NotificationsIconProps) => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { data } = useNotificationStatus()
 
@@ -36,5 +36,3 @@ const NotificationsIcon = (props: NotificationsIconProps) => {
         </PWTouchableOpacity>
     )
 }
-
-export default NotificationsIcon

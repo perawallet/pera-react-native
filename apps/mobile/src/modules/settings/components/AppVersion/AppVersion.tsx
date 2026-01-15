@@ -17,7 +17,7 @@ import { useStyles } from './styles'
 import { useDeviceInfoService } from '@perawallet/wallet-core-platform-integration'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
-import useToast from '@hooks/toast'
+import { useToast } from '@hooks/toast'
 import { Pressable } from 'react-native'
 
 const REQUIRED_TAPS = 10
@@ -40,7 +40,11 @@ const Version = () => {
     )
 }
 
-const AppVersion = ({ enableSecretTaps }: { enableSecretTaps?: boolean }) => {
+export const AppVersion = ({
+    enableSecretTaps,
+}: {
+    enableSecretTaps?: boolean
+}) => {
     const { setPreference } = usePreferences()
     const { showToast } = useToast()
     const { t } = useLanguage()
@@ -103,5 +107,3 @@ const AppVersion = ({ enableSecretTaps }: { enableSecretTaps?: boolean }) => {
         </Pressable>
     )
 }
-
-export default AppVersion

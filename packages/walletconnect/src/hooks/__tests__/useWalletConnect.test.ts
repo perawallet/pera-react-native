@@ -15,7 +15,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { useWalletConnect } from '../useWalletConnect'
 import { useWalletConnectStore } from '../../store'
 import { useWalletConnectSessionRequests } from '../useWalletConnectSessionRequests'
-import useWalletConnectHandlers from '../useWalletConnectHandlers'
+import { useWalletConnectHandlers } from '../useWalletConnectHandlers'
 import WalletConnect from '@walletconnect/client'
 import { PERA_CLIENT_META } from '../../constants'
 
@@ -29,7 +29,7 @@ vi.mock('../useWalletConnectSessionRequests', () => ({
 }))
 
 vi.mock('../useWalletConnectHandlers', () => ({
-    default: vi.fn(),
+    useWalletConnectHandlers: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({

@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './PWHeader'
+export { PWHeader } from './PWHeader'
 export type { PWHeaderProps } from './PWHeader'

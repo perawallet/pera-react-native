@@ -10,15 +10,15 @@
  limitations under the License
  */
 
-import AssetIcon from '../AssetIcon'
-import CurrencyDisplay from '@components/CurrencyDisplay'
-import PWView, { PWViewProps } from '@components/PWView'
+import { AssetIcon } from '../AssetIcon'
+import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { PWView, PWViewProps } from '@components/PWView'
 import { ALGO_ASSET_ID, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { Text, useTheme } from '@rneui/themed'
 import { useStyles } from './styles'
 import { useMemo } from 'react'
-import PWIcon from '@components/PWIcon'
+import { PWIcon } from '@components/PWIcon'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 
 type AccountAssetItemViewProps = {
@@ -26,7 +26,7 @@ type AccountAssetItemViewProps = {
     iconSize?: number
 } & PWViewProps
 
-const AccountAssetItemView = ({
+export const AccountAssetItemView = ({
     accountBalance,
     iconSize,
     ...rest
@@ -123,5 +123,3 @@ const AccountAssetItemView = ({
         </PWView>
     )
 }
-
-export default AccountAssetItemView

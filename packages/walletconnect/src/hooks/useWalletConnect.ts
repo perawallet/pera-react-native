@@ -17,7 +17,7 @@ import { useWalletConnectStore } from '../store'
 import WalletConnect from '@walletconnect/client'
 import { createRef, useCallback, useEffect } from 'react'
 import { useWalletConnectSessionRequests } from './useWalletConnectSessionRequests'
-import useWalletConnectHandlers from './useWalletConnectHandlers'
+import { useWalletConnectHandlers } from './useWalletConnectHandlers'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 

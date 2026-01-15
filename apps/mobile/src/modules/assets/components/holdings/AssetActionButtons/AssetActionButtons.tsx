@@ -11,24 +11,24 @@
  */
 
 import { useStyles } from './styles'
-import PWView from '@components/PWView'
-import RoundButton from '@components/RoundButton'
+import { PWView } from '@components/PWView'
+import { RoundButton } from '@components/RoundButton'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useCallback } from 'react'
-import SendFundsBottomSheet from '@modules/transactions/components/SendFunds/PWBottomSheet/SendFundsBottomSheet'
-import useToast from '@hooks/toast'
+import { useToast } from '@hooks/toast'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/language'
 import { useModalState } from '@hooks/modal-state'
-import ReceiveFundsBottomSheet from '@modules/transactions/components/ReceiveFunds/PWBottomSheet/ReceiveFundsBottomSheet'
+import { SendFundsBottomSheet } from '@modules/transactions/components/SendFunds/PWBottomSheet/SendFundsBottomSheet'
+import { ReceiveFundsBottomSheet } from '@modules/transactions/components/ReceiveFunds/PWBottomSheet/ReceiveFundsBottomSheet'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 
 type AssetActionButtonsProps = {
     asset: PeraAsset
 }
 //TODO hook up missing actions
-const AssetActionButtons = ({ asset }: AssetActionButtonsProps) => {
+export const AssetActionButtons = ({ asset }: AssetActionButtonsProps) => {
     const styles = useStyles()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { showToast } = useToast()
@@ -88,5 +88,3 @@ const AssetActionButtons = ({ asset }: AssetActionButtonsProps) => {
         </PWView>
     )
 }
-
-export default AssetActionButtons

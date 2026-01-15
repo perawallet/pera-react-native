@@ -12,7 +12,7 @@
 
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import ArbitraryDataSigningView from '../ArbitraryDataSigningView'
+import { ArbitraryDataSigningView } from '../ArbitraryDataSigningView'
 import { ArbitraryDataSignRequest } from '@perawallet/wallet-core-blockchain'
 
 // Correctly mock TabView and its static Item property
@@ -52,7 +52,9 @@ vi.mock('@hooks/webview', () => ({
 }))
 
 vi.mock('../ArbitraryDataSigningDetailsView', () => ({
-    default: () => <div data-testid='details-view'>DetailsView</div>,
+    ArbitraryDataSigningDetailsView: () => (
+        <div data-testid='details-view'>DetailsView</div>
+    ),
 }))
 
 describe('ArbitraryDataSigningView', () => {

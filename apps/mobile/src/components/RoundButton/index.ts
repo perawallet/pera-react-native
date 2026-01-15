@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './RoundButton'
+export { RoundButton } from './RoundButton'
 export type { RoundButtonProps } from './RoundButton'

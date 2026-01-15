@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './PWView'
+export { PWView } from './PWView'
 export type { PWViewProps } from './PWView'

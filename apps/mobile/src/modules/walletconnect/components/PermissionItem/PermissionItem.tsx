@@ -10,14 +10,18 @@
  limitations under the License
  */
 
-import PWIcon from '@components/PWIcon'
-import PWView from '@components/PWView'
+import { PWIcon } from '@components/PWIcon'
+import { PWView } from '@components/PWView'
 import { Text } from '@rneui/themed'
 import { useStyles } from './styles'
 import { AlgorandPermission } from '@perawallet/wallet-core-walletconnect'
 import { useLanguage } from '@hooks/language'
 
-const PermissionItem = ({ permission }: { permission: AlgorandPermission }) => {
+export const PermissionItem = ({
+    permission,
+}: {
+    permission: AlgorandPermission
+}) => {
     const styles = useStyles()
     const { t } = useLanguage()
 
@@ -43,5 +47,3 @@ const PermissionItem = ({ permission }: { permission: AlgorandPermission }) => {
         </PWView>
     )
 }
-
-export default PermissionItem

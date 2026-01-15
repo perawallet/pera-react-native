@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './SendFundsBottomSheet'
+export { SendFundsBottomSheet } from './SendFundsBottomSheet'
 export type { SendFundsBottomSheetProps } from './SendFundsBottomSheet'

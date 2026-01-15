@@ -10,23 +10,23 @@
  limitations under the License
  */
 
-import PWView from '@components/PWView'
+import { PWView } from '@components/PWView'
 import Decimal from 'decimal.js'
 import { useContext } from 'react'
-import CurrencyDisplay from '@components/CurrencyDisplay'
+import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { useStyles } from './styles'
-import PWButton from '@components/PWButton'
-import AccountAssetItemView from '@modules/assets/components/AssetItem/AccountAssetItemView'
+import { PWButton } from '@components/PWButton'
+import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
 import { Button, Text } from '@rneui/themed'
-import NumberPad from '@components/NumberPad'
+import { NumberPad } from '@components/NumberPad'
 import { SendFundsContext } from '@modules/transactions/providers/SendFundsProvider'
-import AddNotePanel from '../AddNotePanel'
-import PWHeader from '@components/PWHeader'
-import AccountDisplay from '@modules/accounts/components/AccountDisplay'
-import SendFundsInfoPanel from '../InfoPanel/SendFundsInfoPanel'
+import { AddNotePanel } from '../AddNotePanel'
+import { PWHeader } from '@components/PWHeader'
+import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
+import { SendFundsInfoPanel } from '../InfoPanel/SendFundsInfoPanel'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import LoadingView from '@components/LoadingView'
+import { LoadingView } from '@components/LoadingView'
 import { useInputView } from '@modules/transactions/hooks/send-funds/use-input-view'
 import { useLanguage } from '@hooks/language'
 import { useModalState } from '@hooks/modal-state'
@@ -38,7 +38,10 @@ type SendFundsInputViewProps = {
 
 //TODO: handle max precision (currently we don't show them but we're still adding characters)
 //TODO: max amount validation (+ max amount popup)
-const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
+export const SendFundsInputView = ({
+    onNext,
+    onBack,
+}: SendFundsInputViewProps) => {
     const styles = useStyles()
     const {
         asset,
@@ -152,5 +155,3 @@ const SendFundsInputView = ({ onNext, onBack }: SendFundsInputViewProps) => {
         </PWView>
     )
 }
-
-export default SendFundsInputView

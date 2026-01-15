@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './ReceiveFundsBottomSheet'
+export { ReceiveFundsBottomSheet } from './ReceiveFundsBottomSheet'
 export type { ReceiveFundsBottomSheetProps } from './ReceiveFundsBottomSheet'

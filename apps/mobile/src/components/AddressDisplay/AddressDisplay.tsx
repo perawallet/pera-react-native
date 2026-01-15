@@ -11,19 +11,19 @@
  */
 
 import { Text, TextProps, useTheme } from '@rneui/themed'
-import PWView, { PWViewProps } from '@components/PWView'
+import { PWView, PWViewProps } from '@components/PWView'
 import { useStyles } from './styles'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useContacts } from '@perawallet/wallet-core-contacts'
-import useToast from '@hooks/toast'
+import { useToast } from '@hooks/toast'
 import Clipboard from '@react-native-clipboard/clipboard'
 
 import { SvgProps } from 'react-native-svg'
 import { useMemo } from 'react'
-import ContactAvatar from '@components/ContactAvatar'
-import AccountDisplay from '@modules/accounts/components/AccountDisplay'
-import PWIcon from '@components/PWIcon'
+import { ContactAvatar } from '@components/ContactAvatar'
+import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
+import { PWIcon } from '@components/PWIcon'
 
 type AddressDisplayProps = {
     address: string
@@ -37,7 +37,7 @@ type AddressDisplayProps = {
 const LONG_ADDRESS_FORMAT = 20
 
 //TODO add support for NFDs
-const AddressDisplay = ({
+export const AddressDisplay = ({
     address,
     addressFormat = 'short',
     rawDisplay,
@@ -131,5 +131,3 @@ const AddressDisplay = ({
         </PWView>
     )
 }
-
-export default AddressDisplay

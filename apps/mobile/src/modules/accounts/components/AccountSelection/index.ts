@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './AccountSelection'
+export { AccountSelection } from './AccountSelection'
 export type { AccountSelectionProps } from './AccountSelection'

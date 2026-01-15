@@ -13,7 +13,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
 import { render, screen } from '@test-utils/render'
-import AccountAssetItemView from '../AccountAssetItemView'
+import { AccountAssetItemView } from '../AccountAssetItemView'
 import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
@@ -43,7 +43,7 @@ vi.mock('@hooks/theme', () => ({
 
 // Mock AssetIcon to keep test focused
 vi.mock('../AssetIcon', () => ({
-    default: () => null,
+    AssetIcon: () => null,
 }))
 
 describe('AccountAssetItemView', () => {

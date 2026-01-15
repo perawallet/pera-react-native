@@ -11,17 +11,17 @@
  */
 
 import { useStyles } from './styles'
-import PWView from '@components/PWView'
+import { PWView } from '@components/PWView'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import RoundButton from '@components/RoundButton'
+import { RoundButton } from '@components/RoundButton'
 
 import { useState } from 'react'
-import SendFundsBottomSheet from '@modules/transactions/components/SendFunds/PWBottomSheet/SendFundsBottomSheet'
+import { SendFundsBottomSheet } from '@modules/transactions/components/SendFunds/PWBottomSheet/SendFundsBottomSheet'
 import { useLanguage } from '@hooks/language'
-import useToast from '@hooks/toast'
+import { useToast } from '@hooks/toast'
 
-const ButtonPanel = () => {
+export const ButtonPanel = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const themeStyle = useStyles()
     const [sendFundsOpen, setSendFundsOpen] = useState<boolean>(false)
@@ -85,5 +85,3 @@ const ButtonPanel = () => {
         </PWView>
     )
 }
-
-export default ButtonPanel

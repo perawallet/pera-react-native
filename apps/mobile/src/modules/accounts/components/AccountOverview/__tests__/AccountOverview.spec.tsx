@@ -13,7 +13,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import React, { PropsWithChildren } from 'react'
 import { render, screen, fireEvent } from '@test-utils/render'
-import AccountOverview from '../AccountOverview'
+import { AccountOverview } from '../AccountOverview'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -53,34 +53,34 @@ vi.mock('@hooks/chart-interaction', () => ({
 }))
 
 vi.mock('@components/WealthChart', () => ({
-    default: () => null,
+    WealthChart: () => null,
 }))
 vi.mock('@components/ChartPeriodSelection', () => ({
-    default: () => null,
+    ChartPeriodSelection: () => null,
 }))
 vi.mock('@components/WealthTrend', () => ({
-    default: () => null,
+    WealthTrend: () => null,
 }))
 vi.mock('@components/CurrencyDisplay', () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    default: ({ value }: any) => <div>{value?.toString()}</div>,
+    CurrencyDisplay: ({ value }: any) => <div>{value?.toString()}</div>,
 }))
 vi.mock('@components/ExpandablePanel', () => ({
-    default: ({ children }: PropsWithChildren) => children,
+    ExpandablePanel: ({ children }: PropsWithChildren) => children,
 }))
 
 // Mock sub-components to keep test focused
-vi.mock('../ButtonPanel', () => ({
-    default: () => null,
+vi.mock('../../ButtonPanel', () => ({
+    ButtonPanel: () => null,
 }))
 vi.mock('../../AccountAssetList', () => ({
-    default: ({ children }: PropsWithChildren) => children,
+    AccountAssetList: ({ children }: PropsWithChildren) => children,
 }))
 
 vi.mock(
     '@modules/transactions/components/SendFunds/PWBottomSheet/SendFundsBottomSheet',
     () => ({
-        default: () => null,
+        SendFundsBottomSheet: () => null,
     }),
 )
 

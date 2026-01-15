@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './AccountDisplay'
+export { AccountDisplay } from './AccountDisplay'
 export type { AccountDisplayProps } from './AccountDisplay'

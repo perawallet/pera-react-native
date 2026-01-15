@@ -12,7 +12,7 @@
 
 import { TextStyle, StyleProp } from 'react-native'
 import { useState } from 'react'
-import PWButton from '../PWButton'
+import { PWButton } from '../PWButton'
 import { Text } from '@rneui/themed'
 
 type ExpandableTextProps = {
@@ -22,7 +22,7 @@ type ExpandableTextProps = {
     readMoreStyle?: StyleProp<TextStyle>
 }
 
-const ExpandableText = ({
+export const ExpandableText = ({
     text,
     limit = 150,
     textStyle,
@@ -50,5 +50,3 @@ const ExpandableText = ({
         </>
     )
 }
-
-export default ExpandableText

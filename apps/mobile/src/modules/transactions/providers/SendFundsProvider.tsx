@@ -38,7 +38,7 @@ export const SendFundsContext = createContext<SendFundsState>({
     setDestination: (_?: string) => {},
 })
 
-const SendFundsProvider = ({ children }: PropsWithChildren) => {
+export const SendFundsProvider = ({ children }: PropsWithChildren) => {
     const [canSelectAsset, setCanSelectAsset] = useState(false)
     const [selectedAsset, setSelectedAsset] =
         useState<AssetWithAccountBalance>()
@@ -65,5 +65,3 @@ const SendFundsProvider = ({ children }: PropsWithChildren) => {
         </SendFundsContext.Provider>
     )
 }
-
-export default SendFundsProvider

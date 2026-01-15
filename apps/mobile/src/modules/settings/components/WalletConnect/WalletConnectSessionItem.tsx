@@ -10,19 +10,19 @@
  limitations under the License
  */
 
-import PWBadge from '@components/PWBadge'
-import PWView from '@components/PWView'
+import { PWBadge } from '@components/PWBadge'
+import { PWView } from '@components/PWView'
 import { WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
 import { Image, Text } from '@rneui/themed'
 import { useStyles } from './styles'
-import PWTouchableOpacity from '@components/PWTouchableOpacity'
-import PWIcon from '@components/PWIcon'
+import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
+import { PWIcon } from '@components/PWIcon'
 import { useLanguage } from '@hooks/language'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 
-const WalletConnectSessionItem = ({
+export const WalletConnectSessionItem = ({
     session,
 }: {
     session: WalletConnectConnection
@@ -96,5 +96,3 @@ const WalletConnectSessionItem = ({
         </PWTouchableOpacity>
     )
 }
-
-export default WalletConnectSessionItem

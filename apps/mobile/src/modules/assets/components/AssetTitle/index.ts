@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './AssetTitle'
+export { AssetTitle } from './AssetTitle'
 export type { AssetTitleProps } from './AssetTitle'

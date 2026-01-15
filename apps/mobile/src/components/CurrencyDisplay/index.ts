@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './CurrencyDisplay'
+export { CurrencyDisplay } from './CurrencyDisplay'
 export type { CurrencyDisplayProps } from './CurrencyDisplay'

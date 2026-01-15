@@ -12,11 +12,12 @@
 
 import { useStyles } from './styles'
 import { Text } from '@rneui/themed'
-import PWView from '../PWView'
-import PWTouchableOpacity, {
+import { PWView } from '../PWView'
+import {
+    PWTouchableOpacity,
     type PWTouchableOpacityProps,
 } from '../PWTouchableOpacity'
-import PWIcon, { IconName } from '../PWIcon'
+import { PWIcon, IconName } from '../PWIcon'
 
 export type PanelButtonProps = {
     leftIcon?: IconName
@@ -26,7 +27,7 @@ export type PanelButtonProps = {
     onPress: () => void
 } & PWTouchableOpacityProps
 
-const PanelButton = (props: PanelButtonProps) => {
+export const PanelButton = (props: PanelButtonProps) => {
     const themeStyle = useStyles(props)
     const { style, leftIcon, rightIcon, title, titleWeight, onPress, ...rest } =
         props
@@ -50,5 +51,3 @@ const PanelButton = (props: PanelButtonProps) => {
         </PWTouchableOpacity>
     )
 }
-
-export default PanelButton

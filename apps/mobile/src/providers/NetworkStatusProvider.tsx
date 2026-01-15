@@ -12,7 +12,7 @@
 
 import { createContext, PropsWithChildren, useEffect, useState } from 'react'
 import NetInfo, { NetInfoState } from '@react-native-community/netinfo'
-import useToast from '@hooks/toast'
+import { useToast } from '@hooks/toast'
 import { LONG_NOTIFICATION_DURATION } from '@constants/ui'
 
 export const NetworkStatusContext = createContext({

@@ -12,7 +12,7 @@
 
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
-import RowTitledItem from '../RowTitledItem'
+import { RowTitledItem } from '../RowTitledItem'
 import { Text } from 'react-native'
 
 describe('RowTitledItem', () => {

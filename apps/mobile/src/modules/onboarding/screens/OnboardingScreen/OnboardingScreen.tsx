@@ -14,19 +14,19 @@ import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useStyles } from './styles'
 import { Text, useTheme, Overlay } from '@rneui/themed'
-import PWView from '@components/PWView'
-import PanelButton from '@components/PanelButton'
+import { PWView } from '@components/PWView'
+import { PanelButton } from '@components/PanelButton'
 
 import WelcomeImage from '@assets/images/welcome-background.svg'
 import { ActivityIndicator } from 'react-native'
 import { useCreateAccount } from '@perawallet/wallet-core-accounts'
 import { useState } from 'react'
 import { useLanguage } from '@hooks/language'
-import useToast from '@hooks/toast'
+import { useToast } from '@hooks/toast'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 
-const OnboardingScreen = () => {
+export const OnboardingScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const styles = useStyles()
     const createAccount = useCreateAccount()
@@ -124,5 +124,3 @@ const OnboardingScreen = () => {
         </>
     )
 }
-
-export default OnboardingScreen

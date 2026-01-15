@@ -113,3 +113,17 @@ import PWButton from '../../../components/button/PWButton'
 // ✅ GOOD
 import PWButton from '@components/button/PWButton'
 ```
+
+## ❌ Default Exports
+
+```typescript
+// ❌ BAD: Default exports
+export default ComponentName
+
+// import ComponentName from './ComponentName'
+
+// ✅ GOOD: Named exports
+export const ComponentName = () => {}
+
+// import { ComponentName } from './ComponentName'
+```

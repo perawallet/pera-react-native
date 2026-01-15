@@ -13,7 +13,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
 import { render, fireEvent, screen } from '@test-utils/render'
-import PWButton from '../PWButton'
+import { PWButton } from '../PWButton'
 
 describe('PWButton', () => {
     it('calls onPress when pressed', () => {

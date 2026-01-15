@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import EmptyView from '@components/EmptyView'
+import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/language'
 
-const SettingsNotificationsScreen = () => {
+export const SettingsNotificationsScreen = () => {
     const { t } = useLanguage()
     return (
         <EmptyView
@@ -23,5 +23,3 @@ const SettingsNotificationsScreen = () => {
         />
     )
 }
-
-export default SettingsNotificationsScreen

@@ -15,7 +15,7 @@ import LottieView from 'lottie-react-native'
 import confettiAnimation from '@assets/animations/confetti.json'
 import { useStyles } from './styles'
 
-const ConfettiAnimation = ({ play }: { play: boolean }) => {
+export const ConfettiAnimation = ({ play }: { play: boolean }) => {
     const styles = useStyles()
     const [visible, setVisible] = useState<boolean>(play)
 
@@ -41,5 +41,3 @@ const ConfettiAnimation = ({ play }: { play: boolean }) => {
         />
     )
 }
-
-export default ConfettiAnimation

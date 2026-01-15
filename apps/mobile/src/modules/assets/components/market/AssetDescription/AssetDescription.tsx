@@ -11,16 +11,16 @@
  */
 
 import { useStyles } from './styles'
-import ExpandableText from '@components/ExpandableText'
+import { ExpandableText } from '@components/ExpandableText'
 import { Text } from '@rneui/themed'
-import PWView from '@components/PWView'
+import { PWView } from '@components/PWView'
 import { useLanguage } from '@hooks/language'
 
 type AssetDescriptionProps = {
     description?: string
 }
 
-const AssetDescription = ({ description }: AssetDescriptionProps) => {
+export const AssetDescription = ({ description }: AssetDescriptionProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
 
@@ -37,5 +37,3 @@ const AssetDescription = ({ description }: AssetDescriptionProps) => {
         </PWView>
     )
 }
-
-export default AssetDescription

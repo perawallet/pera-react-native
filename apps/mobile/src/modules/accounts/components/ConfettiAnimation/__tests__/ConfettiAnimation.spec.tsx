@@ -12,7 +12,7 @@
 
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import ConfettiAnimation from '../ConfettiAnimation'
+import { ConfettiAnimation } from '../ConfettiAnimation'
 
 vi.mock('lottie-react-native', () => ({
     default: () => <div data-testid='lottie-view' />,

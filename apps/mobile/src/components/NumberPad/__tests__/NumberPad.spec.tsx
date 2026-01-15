@@ -12,7 +12,7 @@
 
 import { render, fireEvent, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import NumberPad from '../NumberPad'
+import { NumberPad } from '../NumberPad'
 
 describe('NumberPad', () => {
     it('renders keys', () => {

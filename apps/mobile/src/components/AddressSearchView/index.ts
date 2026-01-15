@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './AddressSearchView'
+export { AddressSearchView } from './AddressSearchView'
 export type { AddressSearchViewProps } from './AddressSearchView'

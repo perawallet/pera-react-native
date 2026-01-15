@@ -11,14 +11,14 @@
  */
 
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
-import NavigationHeader from '@components/NavigationHeader'
+import { NavigationHeader } from '@components/NavigationHeader'
 import {
     createNativeStackNavigator,
     NativeStackHeaderProps,
 } from '@react-navigation/native-stack'
-import OnboardingScreen from '@modules/onboarding/screens/OnboardingScreen'
-import NameAccountScreen from '@modules/onboarding/screens/NameAccountScreen'
-import ImportAccountScreen from '@modules/onboarding/screens/ImportAccountScreen'
+import { OnboardingScreen } from '@modules/onboarding/screens/OnboardingScreen'
+import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen'
+import { ImportAccountScreen } from '@modules/onboarding/screens/ImportAccountScreen'
 import { AccountErrorBoundary } from '@modules/accounts/components/AccountErrorBoundary/AccountErrorBoundary'
 import { useLanguage } from '@hooks/language'
 import { screenListeners } from '@routes/listeners'

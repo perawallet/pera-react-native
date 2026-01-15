@@ -12,7 +12,7 @@
 
 import { render } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
-import SettingsNotificationsScreen from '../SettingsNotificationsScreen'
+import { SettingsNotificationsScreen } from '../SettingsNotificationsScreen'
 
 describe('SettingsNotificationsScreen', () => {
     it('renders correctly', () => {

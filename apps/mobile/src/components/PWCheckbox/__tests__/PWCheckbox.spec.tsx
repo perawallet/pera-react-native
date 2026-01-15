@@ -13,7 +13,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
 import { render, fireEvent, screen } from '@test-utils/render'
-import PWCheckbox from '../PWCheckbox'
+import { PWCheckbox } from '../PWCheckbox'
 import { Text } from 'react-native'
 
 describe('PWCheckbox', () => {

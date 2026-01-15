@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './SendFundsInfoPanel'
+export { SendFundsInfoPanel } from './SendFundsInfoPanel'
 export type { SendFundsInfoPanelProps } from './SendFundsInfoPanel'

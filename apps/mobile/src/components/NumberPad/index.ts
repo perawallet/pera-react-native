@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './NumberPad'
+export { NumberPad } from './NumberPad'
 export type { NumberPadProps } from './NumberPad'

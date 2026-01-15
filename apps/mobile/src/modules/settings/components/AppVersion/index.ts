@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './AppVersion'
+export { AppVersion } from './AppVersion'
 export type { AppVersionProps } from './AppVersion'

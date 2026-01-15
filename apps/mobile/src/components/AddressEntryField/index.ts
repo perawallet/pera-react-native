@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './AddressEntryField'
+export { AddressEntryField } from './AddressEntryField'
 export type { AddressEntryFieldProps } from './AddressEntryField'

@@ -12,7 +12,7 @@
 
 import { render } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
-import AssetSelection from '../AssetSelection'
+import { AssetSelection } from '../AssetSelection'
 
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 

@@ -18,14 +18,14 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useCallback, useLayoutEffect, useMemo, useState } from 'react'
 import { useStyles } from './styles'
-import AssetMarkets from '@modules/assets/components/market/AssetMarkets'
-import AssetHoldings from '@modules/assets/components/holdings/AssetHoldings'
-import AccountIcon from '@modules/accounts/components/AccountIcon'
-import useToast from '@hooks/toast'
+import { AssetMarkets } from '@modules/assets/components/market/AssetMarkets'
+import { AssetHoldings } from '@modules/assets/components/holdings/AssetHoldings'
+import { AccountIcon } from '@modules/accounts/components/AccountIcon'
+import { useToast } from '@hooks/toast'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
-import LoadingView from '@components/LoadingView'
+import { LoadingView } from '@components/LoadingView'
 import { TAB_ANIMATION_CONFIG } from '@constants/ui'
-import PWView from '@components/PWView'
+import { PWView } from '@components/PWView'
 import { useLanguage } from '@hooks/language'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { AccountStackParamsList } from '@modules/accounts/routes'
@@ -34,7 +34,7 @@ type AssetDetailsScreenProps = NativeStackScreenProps<
     AccountStackParamsList,
     'AssetDetails'
 >
-const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
+export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
     const assetId = route.params?.assetId
     const { showToast } = useToast()
     const { t } = useLanguage()
@@ -116,5 +116,3 @@ const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
         </PWView>
     )
 }
-
-export default AssetDetailsScreen

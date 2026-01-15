@@ -13,7 +13,7 @@
 import { Component, ErrorInfo, ReactNode } from 'react'
 import { AppError, ErrorCategory, logger } from '@perawallet/wallet-core-shared'
 import crashlytics from '@react-native-firebase/crashlytics'
-import EmptyView from '@components/EmptyView'
+import { EmptyView } from '@components/EmptyView'
 
 export interface BaseErrorBoundaryProps {
     children: ReactNode

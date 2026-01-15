@@ -10,17 +10,17 @@
  limitations under the License
  */
 
-import PWButton from '@components/PWButton'
-import PWView from '@components/PWView'
+import { PWButton } from '@components/PWButton'
+import { PWView } from '@components/PWView'
 import { Image, Text } from '@rneui/themed'
 import { useStyles } from './styles'
-import PWIcon from '@components/PWIcon'
+import { PWIcon } from '@components/PWIcon'
 import { useLanguage } from '@hooks/language'
 
 import CardBackground from '@assets/images/card-background.png'
 const BACKGROUND_URI = Image.resolveAssetSource(CardBackground).uri
 
-const CardPanel = () => {
+export const CardPanel = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     return (
@@ -55,4 +55,3 @@ const CardPanel = () => {
         </PWView>
     )
 }
-export default CardPanel

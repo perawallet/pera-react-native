@@ -10,21 +10,21 @@
  limitations under the License
  */
 
-import PWHeader from '@components/PWHeader'
-import PWView from '@components/PWView'
+import { PWHeader } from '@components/PWHeader'
+import { PWView } from '@components/PWView'
 import { useLanguage } from '@hooks/language'
 import { useAllAccounts, WalletAccount } from '@perawallet/wallet-core-accounts'
 import { Text } from '@rneui/themed'
 import { useStyles } from './styles'
-import PWTouchableOpacity from '@components/PWTouchableOpacity'
-import AccountWithBalance from '@modules/accounts/components/AccountWithBalance'
+import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
+import { AccountWithBalance } from '@modules/accounts/components/AccountWithBalance'
 
 type ReceiveFundsAccountSelectionViewProps = {
     onSelected: (account: WalletAccount) => void
     onClose: () => void
 }
 
-const ReceiveFundsAccountSelectionView = ({
+export const ReceiveFundsAccountSelectionView = ({
     onSelected,
     onClose,
 }: ReceiveFundsAccountSelectionViewProps) => {
@@ -56,5 +56,3 @@ const ReceiveFundsAccountSelectionView = ({
         </PWView>
     )
 }
-
-export default ReceiveFundsAccountSelectionView

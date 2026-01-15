@@ -12,7 +12,7 @@
 
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import AccountSelection from '../AccountSelection'
+import { AccountSelection } from '../AccountSelection'
 
 vi.mock('@perawallet/wallet-core-accounts', async () => ({
     useSelectedAccount: vi.fn(() => null),

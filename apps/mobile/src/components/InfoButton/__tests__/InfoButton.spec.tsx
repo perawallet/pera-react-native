@@ -12,7 +12,7 @@
 
 import { render, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import InfoButton from '../InfoButton'
+import { InfoButton } from '../InfoButton'
 
 // Mock dependencies
 const mockOpen = vi.fn()

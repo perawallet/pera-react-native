@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { default } from './AssetVerificationCard'
+export { AssetVerificationCard } from './AssetVerificationCard'

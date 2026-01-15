@@ -11,7 +11,7 @@
  */
 
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
-import PWBottomSheet from '@components/PWBottomSheet'
+import { PWBottomSheet } from '@components/PWBottomSheet'
 
 import { useState } from 'react'
 import { useStyles } from './styles'
@@ -20,9 +20,9 @@ import { TabView } from '@rneui/themed'
 import { TransactionErrorBoundary } from '@modules/transactions/components/BaseErrorBoundary/TransactionErrorBoundary'
 import { TAB_ANIMATION_CONFIG } from '@constants/ui'
 import { useLanguage } from '@hooks/language'
-import ReceiveFundsAccountSelectionView from '../AccountSelection/ReceiveFundsAccountSelectionView'
-import ReceiveFundsQRView from '../QrView/ReceiveFundsQRView'
-import PWView from '@components/PWView'
+import { ReceiveFundsAccountSelectionView } from '../AccountSelection/ReceiveFundsAccountSelectionView'
+import { ReceiveFundsQRView } from '../QrView/ReceiveFundsQRView'
+import { PWView } from '@components/PWView'
 
 type ReceiveFundsBottomSheetProps = {
     account?: WalletAccount
@@ -30,7 +30,7 @@ type ReceiveFundsBottomSheetProps = {
     onClose: () => void
 }
 
-const ReceiveFundsBottomSheet = ({
+export const ReceiveFundsBottomSheet = ({
     account,
     onClose,
     isVisible,
@@ -90,5 +90,3 @@ const ReceiveFundsBottomSheet = ({
         </PWBottomSheet>
     )
 }
-
-export default ReceiveFundsBottomSheet

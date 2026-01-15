@@ -36,16 +36,16 @@ import {
     peraConnectJS,
     peraMobileInterfaceJS,
 } from './injected-scripts'
-import useToast from '@hooks/toast'
+import { useToast } from '@hooks/toast'
 import { useStyles } from './styles'
-import PWView from '../PWView'
+import { PWView } from '../PWView'
 import { usePeraWebviewInterface } from '@hooks/webview'
-import EmptyView from '../EmptyView'
-import PWButton from '../PWButton'
-import LoadingView from '../LoadingView'
+import { EmptyView } from '../EmptyView'
+import { PWButton } from '../PWButton'
+import { LoadingView } from '../LoadingView'
 import { logger } from '@perawallet/wallet-core-shared'
-import WebViewTitleBar from './WebViewTitleBar'
-import WebViewFooterBar from './WebViewFooterBar'
+import { WebViewTitleBar } from './WebViewTitleBar'
+import { WebViewFooterBar } from './WebViewFooterBar'
 import { WebViewContext } from '@providers/WebViewProvider'
 import { useIsDarkMode } from '@hooks/theme'
 import { useLanguage } from '@hooks/language'
@@ -65,7 +65,7 @@ const updateTheme = (mode: 'light' | 'dark') => {
     return `updateTheme?.('${jsTheme}');`
 }
 
-const PWWebView = (props: PWWebViewProps) => {
+export const PWWebView = (props: PWWebViewProps) => {
     const styles = useStyles()
     const {
         url,
@@ -283,5 +283,3 @@ const PWWebView = (props: PWWebViewProps) => {
         </PWView>
     )
 }
-
-export default PWWebView

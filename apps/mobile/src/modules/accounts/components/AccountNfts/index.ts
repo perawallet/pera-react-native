@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './AccountNfts'
+export { AccountNfts } from './AccountNfts'
 export type { AccountNftsProps } from './AccountNfts'

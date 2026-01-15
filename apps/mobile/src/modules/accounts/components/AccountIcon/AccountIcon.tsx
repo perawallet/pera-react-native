@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import PWIcon, { IconName } from '@components/PWIcon'
+import { PWIcon, IconName } from '@components/PWIcon'
 
 import { useMemo } from 'react'
 import { SvgProps } from 'react-native-svg'
@@ -29,7 +29,7 @@ export type AccountIconProps = {
 } & SvgProps
 
 // TODO: Add governor badges (if needed - see Figma)
-const AccountIcon = (props: AccountIconProps) => {
+export const AccountIcon = (props: AccountIconProps) => {
     const { account, ...rest } = props
     const darkmode = useIsDarkMode()
 
@@ -59,5 +59,3 @@ const AccountIcon = (props: AccountIconProps) => {
 
     return icon
 }
-
-export default AccountIcon

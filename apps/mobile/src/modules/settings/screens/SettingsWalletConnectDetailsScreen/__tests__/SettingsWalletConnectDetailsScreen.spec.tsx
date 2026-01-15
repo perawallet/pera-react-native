@@ -10,9 +10,10 @@
  limitations under the License
  */
 
+import React from 'react'
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import SettingsWalletConnectDetailsScreen from '../SettingsWalletConnectDetailsScreen'
+import { SettingsWalletConnectDetailsScreen } from '../SettingsWalletConnectDetailsScreen'
 
 vi.mock('@perawallet/wallet-core-walletconnect', async () => ({
     useWalletConnect: vi.fn(() => ({
@@ -28,10 +29,103 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
     useAllAccounts: vi.fn(() => []),
 }))
 
+vi.mock('@perawallet/wallet-core-shared', async () => ({
+    formatDatetime: vi.fn().mockReturnValue('10/10/2020'),
+}))
+
 vi.mock('react-native-gesture-handler', () => ({
     ScrollView: ({ children }: { children: React.ReactNode }) => (
         <div>{children}</div>
     ),
+}))
+
+vi.mock('@components/InfoButton', () => ({
+    InfoButton: ({ children }: { children: React.ReactNode }) => (
+        <div>{children}</div>
+    ),
+}))
+
+vi.mock('@modules/walletconnect/components/PermissionItem', () => ({
+    PermissionItem: () => <div>PermissionItem</div>,
+}))
+
+vi.mock('@modules/accounts/components/AccountDisplay', () => ({
+    AccountDisplay: () => <div>AccountDisplay</div>,
+}))
+
+vi.mock('@hooks/webview', () => ({
+    useWebView: vi.fn(() => ({
+        pushWebView: vi.fn(),
+    })),
+}))
+
+vi.mock('@hooks/language', () => ({
+    useLanguage: vi.fn(() => ({ t: (key: string) => key })),
+}))
+
+vi.mock('@components/PWButton', () => ({
+    PWButton: ({ title }: { title: string }) => <button>{title}</button>,
+}))
+
+vi.mock('@components/PWView', () => ({
+    PWView: ({ children }: { children: React.ReactNode }) => (
+        <div>{children}</div>
+    ),
+}))
+
+vi.mock('@components/PWTouchableOpacity', () => ({
+    PWTouchableOpacity: ({
+        children,
+        onPress,
+    }: {
+        children: React.ReactNode
+        onPress: () => void
+    }) => (
+        <div
+            onClick={onPress}
+            role='button'
+        >
+            {children}
+        </div>
+    ),
+}))
+
+vi.mock('@components/RowTitledItem', () => ({
+    RowTitledItem: ({
+        title,
+        children,
+    }: {
+        title: string
+        children: React.ReactNode
+    }) => (
+        <div>
+            {title}
+            {children}
+        </div>
+    ),
+}))
+
+vi.mock('@components/ExpandablePanel/TitledExpandablePanel', () => ({
+    TitledExpandablePanel: ({
+        title,
+        children,
+    }: {
+        title: string
+        children: React.ReactNode
+    }) => (
+        <div>
+            {title}
+            {children}
+        </div>
+    ),
+}))
+
+vi.mock('@components/PWBadge', () => ({
+    PWBadge: ({ value }: { value: string | number }) => <span>{value}</span>,
+}))
+
+vi.mock('@components/PWIcon', () => ({
+    PWIcon: () => <div data-testid='pw-icon' />,
 }))
 
 const mockSession = {

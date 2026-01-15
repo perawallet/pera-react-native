@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './AddressDisplay'
+export { AddressDisplay } from './AddressDisplay'
 export type { AddressDisplayProps } from './AddressDisplay'

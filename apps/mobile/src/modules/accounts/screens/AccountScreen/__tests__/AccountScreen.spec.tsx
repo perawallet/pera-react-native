@@ -16,7 +16,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { RouteProp } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { AccountStackParamsList } from '@modules/accounts/routes'
-import AccountScreen from '../AccountScreen'
+import { AccountScreen } from '../AccountScreen'
 // import { mockedWalletAccount } from '@perawallet/wallet-core-accounts'
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
@@ -49,26 +49,26 @@ vi.mock('react-native-drawer-layout', () => {
 
 // Mock children to simplify test
 vi.mock('@modules/accounts/components/AccountMenu', () => ({
-    default: 'AccountMenu',
+    AccountMenu: 'AccountMenu',
 }))
 vi.mock('@modules/accounts/components/AccountOverview', () => ({
-    default: 'AccountOverview',
+    AccountOverview: 'AccountOverview',
 }))
 vi.mock('@modules/accounts/components/AccountNfts', () => ({
-    default: 'AccountNfts',
+    AccountNfts: 'AccountNfts',
 }))
 vi.mock('@modules/accounts/components/AccountHistory', () => ({
-    default: 'AccountHistory',
+    AccountHistory: 'AccountHistory',
 }))
 vi.mock('@modules/accounts/components/AccountSelection', () => ({
-    default: 'AccountSelection',
+    AccountSelection: 'AccountSelection',
 }))
 vi.mock('@modules/notifications/components/NotificationsIcon', () => ({
-    default: 'NotificationsIcon',
+    NotificationsIcon: 'NotificationsIcon',
 }))
-vi.mock('@components/QRScannerView', () => ({ default: 'QRScannerView' }))
+vi.mock('@components/QRScannerView', () => ({ QRScannerView: 'QRScannerView' }))
 vi.mock('@modules/accounts/components/ConfettiAnimation', () => ({
-    default: 'ConfettiAnimation',
+    ConfettiAnimation: 'ConfettiAnimation',
 }))
 
 const mockRoute = {

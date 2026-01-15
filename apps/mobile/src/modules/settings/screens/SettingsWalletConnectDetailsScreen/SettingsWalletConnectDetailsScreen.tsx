@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import PWButton from '@components/PWButton'
-import PWView from '@components/PWView'
+import { PWButton } from '@components/PWButton'
+import { PWView } from '@components/PWView'
 import { useLanguage } from '@hooks/language'
 import { useModalState } from '@hooks/modal-state'
 import {
@@ -25,18 +25,18 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { WalletConnectSettingsStackParamsList } from '@modules/settings/routes'
 import { useWebView } from '@hooks/webview'
 import { v7 as uuid } from 'uuid'
-import PWBadge from '@components/PWBadge'
-import RowTitledItem from '@components/RowTitledItem'
+import { PWBadge } from '@components/PWBadge'
+import { RowTitledItem } from '@components/RowTitledItem'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import AccountDisplay from '@modules/accounts/components/AccountDisplay'
-import PWTouchableOpacity from '@components/PWTouchableOpacity'
-import PWIcon from '@components/PWIcon'
+import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
+import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
+import { PWIcon } from '@components/PWIcon'
 import { ScrollView } from 'react-native-gesture-handler'
-import TitledExpandablePanel from '@components/ExpandablePanel/TitledExpandablePanel'
-import PermissionItem from '@modules/walletconnect/components/PermissionItem'
+import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
+import { PermissionItem } from '@modules/walletconnect/components/PermissionItem'
 import { useNavigation } from '@react-navigation/native'
-import InfoButton from '@components/InfoButton'
+import { InfoButton } from '@components/InfoButton'
 
 type SettingsWalletConnectDetailsScreenProps = NativeStackScreenProps<
     WalletConnectSettingsStackParamsList,
@@ -63,7 +63,7 @@ const ConnectedNetworks = ({ chainId }: { chainId: number }) => {
     )
 }
 
-const SettingsWalletConnectDetailsScreen = ({
+export const SettingsWalletConnectDetailsScreen = ({
     route,
 }: SettingsWalletConnectDetailsScreenProps) => {
     const { t } = useLanguage()
@@ -247,5 +247,3 @@ const SettingsWalletConnectDetailsScreen = ({
         </ScrollView>
     )
 }
-
-export default SettingsWalletConnectDetailsScreen

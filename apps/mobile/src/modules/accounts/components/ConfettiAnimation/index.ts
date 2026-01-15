@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './ConfettiAnimation'
+export { ConfettiAnimation } from './ConfettiAnimation'
 export type { ConfettiAnimationProps } from './ConfettiAnimation'

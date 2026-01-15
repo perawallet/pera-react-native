@@ -11,8 +11,8 @@
  */
 
 import { ParamListBase, useNavigation } from '@react-navigation/native'
-import PWListItem from '@components/PWListItem'
-import PWView from '@components/PWView'
+import { PWListItem } from '@components/PWListItem'
+import { PWView } from '@components/PWView'
 import { useStyles } from './styles'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
@@ -21,7 +21,7 @@ import { useLanguage } from '@hooks/language'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 
-const SettingsDeveloperScreen = () => {
+export const SettingsDeveloperScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { network } = useNetwork()
     const styles = useStyles()
@@ -56,5 +56,3 @@ const SettingsDeveloperScreen = () => {
         </PWView>
     )
 }
-
-export default SettingsDeveloperScreen

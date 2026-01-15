@@ -13,7 +13,7 @@
 import React, { ReactNode } from 'react'
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import EditContactScreen from '../EditContactScreen'
+import { EditContactScreen } from '../EditContactScreen'
 
 vi.mock('@perawallet/wallet-core-contacts', async () => ({
     useContacts: vi.fn(() => ({

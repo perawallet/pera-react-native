@@ -13,12 +13,12 @@
 import { ViewProps } from 'react-native'
 import { useStyles } from './HeaderedLayout.style'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import PWView from '@components/PWView'
+import { PWView } from '@components/PWView'
 import { useDeeplinkListener } from '@hooks/deeplink'
 
 export type HeaderedLayoutProps = ViewProps
 
-const HeaderedLayout = (props: HeaderedLayoutProps) => {
+export const HeaderedLayout = (props: HeaderedLayoutProps) => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
 
@@ -34,5 +34,3 @@ const HeaderedLayout = (props: HeaderedLayoutProps) => {
         </PWView>
     )
 }
-
-export default HeaderedLayout

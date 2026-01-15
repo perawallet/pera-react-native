@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './PairSelectionPanel'
+export { PairSelectionPanel } from './PairSelectionPanel'
 export type { PairSelectionPanelProps } from './PairSelectionPanel'

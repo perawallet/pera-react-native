@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { default } from './AssetDetailsScreen'
+export { AssetDetailsScreen } from './AssetDetailsScreen'

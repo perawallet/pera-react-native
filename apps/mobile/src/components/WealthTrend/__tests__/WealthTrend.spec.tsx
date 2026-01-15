@@ -12,7 +12,7 @@
 
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import WealthTrend from '../WealthTrend'
+import { WealthTrend } from '../WealthTrend'
 import { useAccountBalancesHistoryQuery } from '@perawallet/wallet-core-accounts'
 import Decimal from 'decimal.js'
 

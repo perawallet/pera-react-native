@@ -11,18 +11,18 @@
  */
 
 import { useStyles } from './styles'
-import PWView from '@components/PWView'
+import { PWView } from '@components/PWView'
 import { ScrollView } from 'react-native'
 import { Text } from '@rneui/themed'
 import { useCallback } from 'react'
 
-import SwapPair from '@modules/swap/components/SwapPair/SwapPair'
+import { SwapPair } from '@modules/swap/components/SwapPair/SwapPair'
 import {
     ALGO_ASSET_ID,
     PeraAsset,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
-import PWTouchableOpacity from '@components/PWTouchableOpacity'
+import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
 import { useLanguage } from '@hooks/language'
 
 type SwapAssets = {
@@ -30,7 +30,7 @@ type SwapAssets = {
     toAsset?: PeraAsset
 }
 
-const SwapHistoryPanel = () => {
+export const SwapHistoryPanel = () => {
     const themeStyle = useStyles()
     const { t } = useLanguage()
 
@@ -96,5 +96,3 @@ const SwapHistoryPanel = () => {
         </PWView>
     )
 }
-
-export default SwapHistoryPanel

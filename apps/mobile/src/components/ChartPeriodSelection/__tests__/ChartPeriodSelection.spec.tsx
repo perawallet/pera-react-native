@@ -12,7 +12,7 @@
 
 import { render, fireEvent, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import ChartPeriodSelection from '../ChartPeriodSelection'
+import { ChartPeriodSelection } from '../ChartPeriodSelection'
 
 describe('ChartPeriodSelection', () => {
     it('renders all period options', () => {

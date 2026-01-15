@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './RowTitledItem'
+export { RowTitledItem } from './RowTitledItem'
 export type { RowTitledItemProps } from './RowTitledItem'

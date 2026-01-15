@@ -12,7 +12,7 @@
 
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
-import AccountHistory from '../AccountHistory'
+import { AccountHistory } from '../AccountHistory'
 
 describe('AccountHistory', () => {
     it('renders placeholder', () => {

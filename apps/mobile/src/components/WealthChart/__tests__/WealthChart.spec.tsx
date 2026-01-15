@@ -12,7 +12,7 @@
 
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import WealthChart from '../WealthChart'
+import { WealthChart } from '../WealthChart'
 import {
     useAccountBalancesHistoryQuery,
     useAllAccounts,

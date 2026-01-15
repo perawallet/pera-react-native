@@ -14,7 +14,7 @@ import { describe, it, expect } from 'vitest'
 import React from 'react'
 import { Contact } from '@perawallet/wallet-core-contacts'
 import { render, screen } from '@test-utils/render'
-import ContactAvatar from '../ContactAvatar'
+import { ContactAvatar } from '../ContactAvatar'
 
 describe('ContactAvatar', () => {
     it('renders icon if contact has no image', () => {

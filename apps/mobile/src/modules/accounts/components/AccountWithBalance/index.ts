@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './AccountWithBalance'
+export { AccountWithBalance } from './AccountWithBalance'
 export type { AccountWithBalanceProps } from './AccountWithBalance'

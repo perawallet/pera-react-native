@@ -10,6 +10,6 @@
  limitations under the License
  */
 
-export { default } from './PWBottomSheet'
+export { PWBottomSheet } from './PWBottomSheet'
 export { bottomSheetNotifier } from './PWBottomSheet'
 export type { PWBottomSheetProps } from './PWBottomSheet'

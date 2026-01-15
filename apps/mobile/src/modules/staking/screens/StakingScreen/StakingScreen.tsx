@@ -11,13 +11,13 @@
  */
 
 import { config } from '@perawallet/wallet-core-config'
-import PWWebView from '@components/PWWebView'
+import { PWWebView } from '@components/PWWebView'
 import { useStyles } from './styles'
-import PWView from '@components/PWView'
+import { PWView } from '@components/PWView'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
 
-const StakingScreen = () => {
+export const StakingScreen = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const url = config.stakingBaseUrl
@@ -39,5 +39,3 @@ const StakingScreen = () => {
         </PWView>
     )
 }
-
-export default StakingScreen

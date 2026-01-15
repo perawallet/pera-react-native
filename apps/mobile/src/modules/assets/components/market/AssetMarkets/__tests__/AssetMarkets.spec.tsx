@@ -12,38 +12,38 @@
 
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import AssetMarkets from '../AssetMarkets'
+import { AssetMarkets } from '../AssetMarkets'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 
 // Use absolute paths with aliases to ensure accurate mocking
 vi.mock('@modules/assets/components/AssetTitle', () => ({
-    default: () => <div>AssetTitle</div>,
+    AssetTitle: () => <div>AssetTitle</div>,
 }))
 vi.mock(
     '@modules/assets/components/market/AssetPriceChart/AssetPriceChart',
-    () => ({ default: () => <div>AssetPriceChart</div> }),
+    () => ({ AssetPriceChart: () => <div>AssetPriceChart</div> }),
 )
 vi.mock(
     '@modules/assets/components/market/AssetMarketStats/AssetMarketStats',
-    () => ({ default: () => <div>AssetMarketStats</div> }),
+    () => ({ AssetMarketStats: () => <div>AssetMarketStats</div> }),
 )
 vi.mock('@modules/assets/components/market/AssetAbout/AssetAbout', () => ({
-    default: () => <div>AssetAbout</div>,
+    AssetAbout: () => <div>AssetAbout</div>,
 }))
 vi.mock(
     '@modules/assets/components/market/AssetVerificationCard/AssetVerificationCard',
-    () => ({ default: () => <div>AssetVerificationCard</div> }),
+    () => ({ AssetVerificationCard: () => <div>AssetVerificationCard</div> }),
 )
 vi.mock(
     '@modules/assets/components/market/AssetDescription/AssetDescription',
-    () => ({ default: () => <div>AssetDescription</div> }),
+    () => ({ AssetDescription: () => <div>AssetDescription</div> }),
 )
 vi.mock(
     '@modules/assets/components/market/AssetSocialMedia/AssetSocialMedia',
-    () => ({ default: () => <div>AssetSocialMedia</div> }),
+    () => ({ AssetSocialMedia: () => <div>AssetSocialMedia</div> }),
 )
 vi.mock('@modules/assets/components/market/PriceTrend/PriceTrend', () => ({
-    default: () => <div>PriceTrend</div>,
+    PriceTrend: () => <div>PriceTrend</div>,
 }))
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => {

@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import PWButton from '@components/PWButton'
-import EmptyView from '@components/EmptyView'
-import PWView from '@components/PWView'
+import { PWButton } from '@components/PWButton'
+import { EmptyView } from '@components/EmptyView'
+import { PWView } from '@components/PWView'
 import {
     Arc60SignRequest,
     useSigningRequest,
@@ -26,7 +26,7 @@ type Arc60SigningViewProps = {
 }
 
 //TODO implement me
-const Arc60SigningView = ({ request }: Arc60SigningViewProps) => {
+export const Arc60SigningView = ({ request }: Arc60SigningViewProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const { removeSignRequest } = useSigningRequest()
@@ -66,5 +66,3 @@ const Arc60SigningView = ({ request }: Arc60SigningViewProps) => {
         </PWView>
     )
 }
-
-export default Arc60SigningView

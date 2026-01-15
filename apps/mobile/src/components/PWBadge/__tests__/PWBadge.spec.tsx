@@ -13,7 +13,7 @@
 import { describe, it, expect } from 'vitest'
 import React from 'react'
 import { render, screen } from '@test-utils/render'
-import PWBadge from '../PWBadge'
+import { PWBadge } from '../PWBadge'
 
 describe('PWBadge', () => {
     it('renders value correctly', () => {

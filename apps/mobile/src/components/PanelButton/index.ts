@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './PanelButton'
+export { PanelButton } from './PanelButton'
 export type { PanelButtonProps } from './PanelButton'

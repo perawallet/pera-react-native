@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import CurrencyDisplay from '@components/CurrencyDisplay'
-import EmptyView from '@components/EmptyView'
-import TransactionIcon from '@modules/transactions/components/TransactionIcon/TransactionIcon'
-import PWView from '@components/PWView'
+import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { EmptyView } from '@components/EmptyView'
+import { TransactionIcon } from '@modules/transactions/components/TransactionIcon/TransactionIcon'
+import { PWView } from '@components/PWView'
 import {
     encodeAlgorandAddress,
     TransactionSignRequest,
@@ -26,10 +26,10 @@ import { Text } from '@rneui/themed'
 import Decimal from 'decimal.js'
 import { ScrollView } from 'react-native-gesture-handler'
 import { useStyles } from './styles'
-import BalanceImpactView from '../BalanceImpactView/BalanceImpactView'
+import { BalanceImpactView } from '../BalanceImpactView/BalanceImpactView'
 import { useLanguage } from '@hooks/language'
-import useToast from '@hooks/toast'
-import PWButton from '@components/PWButton'
+import { useToast } from '@hooks/toast'
+import { PWButton } from '@components/PWButton'
 import { useTransactionSigner } from '@perawallet/wallet-core-accounts'
 import { config } from '@perawallet/wallet-core-config'
 import { bottomSheetNotifier } from '@components/PWBottomSheet'
@@ -116,7 +116,9 @@ const GroupTransactionView = ({ request }: TransactionSigningViewProps) => {
     )
 }
 
-const TransactionSigningView = ({ request }: TransactionSigningViewProps) => {
+export const TransactionSigningView = ({
+    request,
+}: TransactionSigningViewProps) => {
     const styles = useStyles()
     const { removeSignRequest } = useSigningRequest()
     const { signTransactions } = useTransactionSigner()
@@ -210,5 +212,3 @@ const TransactionSigningView = ({ request }: TransactionSigningViewProps) => {
         </PWView>
     )
 }
-
-export default TransactionSigningView

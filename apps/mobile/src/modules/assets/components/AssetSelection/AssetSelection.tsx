@@ -11,18 +11,18 @@
  */
 
 import { Text } from '@rneui/themed'
-import PWView from '@components/PWView'
+import { PWView } from '@components/PWView'
 import { useStyles } from './styles'
-import PWIcon from '@components/PWIcon'
+import { PWIcon } from '@components/PWIcon'
 
-import AssetIcon from '../AssetIcon'
+import { AssetIcon } from '../AssetIcon'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 
 export type AssetSelectionProps = {
     asset: PeraAsset
 }
 
-const AssetSelection = ({ asset }: AssetSelectionProps) => {
+export const AssetSelection = ({ asset }: AssetSelectionProps) => {
     const styles = useStyles()
 
     return (
@@ -36,5 +36,3 @@ const AssetSelection = ({ asset }: AssetSelectionProps) => {
         </PWView>
     )
 }
-
-export default AssetSelection

@@ -12,7 +12,7 @@
 
 import { render, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import AssetActionButtons from '../AssetActionButtons'
+import { AssetActionButtons } from '../AssetActionButtons'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 
 const mockNavigate = vi.fn()
@@ -33,13 +33,13 @@ vi.mock('@react-navigation/native', async importOriginal => {
 vi.mock(
     '@modules/transactions/components/SendFunds/PWBottomSheet/SendFundsBottomSheet',
     () => ({
-        default: () => null,
+        SendFundsBottomSheet: () => null,
     }),
 )
 vi.mock(
     '@modules/transactions/components/ReceiveFunds/PWBottomSheet/ReceiveFundsBottomSheet',
     () => ({
-        default: () => null,
+        ReceiveFundsBottomSheet: () => null,
     }),
 )
 

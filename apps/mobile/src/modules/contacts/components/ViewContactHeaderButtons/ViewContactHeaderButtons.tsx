@@ -10,11 +10,11 @@
  limitations under the License
  */
 
-import PWIcon from '@components/PWIcon'
+import { PWIcon } from '@components/PWIcon'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 
-const ViewContactHeaderButtons = () => {
+export const ViewContactHeaderButtons = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const goToAdd = () => {
         navigation.navigate('EditContact')
@@ -28,5 +28,3 @@ const ViewContactHeaderButtons = () => {
         />
     )
 }
-
-export default ViewContactHeaderButtons

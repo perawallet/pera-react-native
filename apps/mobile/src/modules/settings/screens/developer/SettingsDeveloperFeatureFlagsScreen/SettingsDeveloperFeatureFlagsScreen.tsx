@@ -10,11 +10,11 @@
  limitations under the License
  */
 
-import PWView from '@components/PWView'
-import FeatureFlagOverrides from '@modules/settings/components/FeatureFlagOverrides/FeatureFlagOverrides'
+import { PWView } from '@components/PWView'
+import { FeatureFlagOverrides } from '@modules/settings/components/FeatureFlagOverrides/FeatureFlagOverrides'
 import { useStyles } from './styles'
 
-const SettingsDeveloperFeatureFlagsScreen = () => {
+export const SettingsDeveloperFeatureFlagsScreen = () => {
     const styles = useStyles()
 
     return (
@@ -23,5 +23,3 @@ const SettingsDeveloperFeatureFlagsScreen = () => {
         </PWView>
     )
 }
-
-export default SettingsDeveloperFeatureFlagsScreen

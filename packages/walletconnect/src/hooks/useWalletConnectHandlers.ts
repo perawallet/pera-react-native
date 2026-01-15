@@ -142,7 +142,7 @@ const validateDataSignRequest = (
     })
 }
 
-const useWalletConnectHandlers = () => {
+export const useWalletConnectHandlers = () => {
     const connections = useWalletConnectStore(
         state => state.walletConnectConnections,
     )
@@ -263,5 +263,3 @@ const useWalletConnectHandlers = () => {
         handleSignTransaction,
     }
 }
-
-export default useWalletConnectHandlers

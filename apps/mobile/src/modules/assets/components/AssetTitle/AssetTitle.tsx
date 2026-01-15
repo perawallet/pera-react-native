@@ -11,10 +11,10 @@
  */
 
 import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
-import PWView from '@components/PWView'
-import PWIcon from '@components/PWIcon'
+import { PWView } from '@components/PWView'
+import { PWIcon } from '@components/PWIcon'
 import { useStyles } from './styles'
-import AssetIcon from '../AssetIcon'
+import { AssetIcon } from '../AssetIcon'
 import { Text, useTheme } from '@rneui/themed'
 import { useMemo } from 'react'
 
@@ -22,7 +22,7 @@ export type AssetTitleProps = {
     asset: PeraAsset
 }
 
-const AssetTitle = ({ asset }: AssetTitleProps) => {
+export const AssetTitle = ({ asset }: AssetTitleProps) => {
     const styles = useStyles()
     const { theme } = useTheme()
 
@@ -68,5 +68,3 @@ const AssetTitle = ({ asset }: AssetTitleProps) => {
         </PWView>
     )
 }
-
-export default AssetTitle

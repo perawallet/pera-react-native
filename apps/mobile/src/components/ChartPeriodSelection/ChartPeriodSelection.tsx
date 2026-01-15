@@ -11,10 +11,10 @@
  */
 
 import { Text } from '@rneui/themed'
-import PWView from '../PWView'
+import { PWView } from '../PWView'
 import { useStyles } from './styles'
 import { useCallback, useState } from 'react'
-import PWTouchableOpacity from '../PWTouchableOpacity'
+import { PWTouchableOpacity } from '../PWTouchableOpacity'
 import { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/language'
 
@@ -23,7 +23,7 @@ type ChartPeriodSelectionProps = {
     onChange: (val: HistoryPeriod) => void
 }
 
-const ChartPeriodSelection = ({
+export const ChartPeriodSelection = ({
     value,
     onChange,
 }: ChartPeriodSelectionProps) => {
@@ -76,5 +76,3 @@ const ChartPeriodSelection = ({
         </PWView>
     )
 }
-
-export default ChartPeriodSelection

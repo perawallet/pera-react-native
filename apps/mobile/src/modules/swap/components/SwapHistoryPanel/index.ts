@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './SwapHistoryPanel'
+export { SwapHistoryPanel } from './SwapHistoryPanel'
 export type { SwapHistoryPanelProps } from './SwapHistoryPanel'

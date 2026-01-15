@@ -12,7 +12,7 @@
 
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import ContactListHeaderButtons from '../ContactListHeaderButtons'
+import { ContactListHeaderButtons } from '../ContactListHeaderButtons'
 
 const mockNavigate = vi.fn()
 const mockSetSelectedContact = vi.fn()

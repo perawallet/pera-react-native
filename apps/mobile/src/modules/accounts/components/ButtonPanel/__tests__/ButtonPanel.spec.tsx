@@ -12,7 +12,7 @@
 
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import ButtonPanel from '../ButtonPanel'
+import { ButtonPanel } from '../ButtonPanel'
 
 vi.mock('@react-navigation/native', async importOriginal => {
     const actual =

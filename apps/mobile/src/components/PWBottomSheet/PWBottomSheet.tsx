@@ -11,7 +11,7 @@
  */
 
 import { BottomSheet, BottomSheetProps } from '@rneui/themed'
-import PWView from '../PWView'
+import { PWView } from '../PWView'
 import { createRef, PropsWithChildren } from 'react'
 import { useStyles } from './styles'
 import { StyleProp, ViewStyle } from 'react-native'
@@ -25,7 +25,7 @@ export type PWBottomSheetProps = {
 } & BottomSheetProps &
     PropsWithChildren
 
-const PWBottomSheet = ({
+export const PWBottomSheet = ({
     innerContainerStyle,
     scrollEnabled,
     children,
@@ -48,5 +48,3 @@ const PWBottomSheet = ({
         </BottomSheet>
     )
 }
-
-export default PWBottomSheet

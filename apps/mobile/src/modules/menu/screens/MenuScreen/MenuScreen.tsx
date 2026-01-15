@@ -10,22 +10,22 @@
  limitations under the License
  */
 
-import PWView from '@components/PWView'
+import { PWView } from '@components/PWView'
 import { Text } from '@rneui/themed'
 import { useStyles } from './styles'
-import PWIcon from '@components/PWIcon'
+import { PWIcon } from '@components/PWIcon'
 
-import PanelButton from '@components/PanelButton'
-import CardPanel from '@modules/menu/components/CardPanel/CardPanel'
+import { PanelButton } from '@components/PanelButton'
+import { CardPanel } from '@modules/menu/components/CardPanel/CardPanel'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import PWTouchableOpacity from '@components/PWTouchableOpacity'
-import QRScannerView from '@components/QRScannerView'
+import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
+import { QRScannerView } from '@components/QRScannerView'
 import { useModalState } from '@hooks/modal-state'
 import { useLanguage } from '@hooks/language'
-import ReceiveFundsBottomSheet from '@modules/transactions/components/ReceiveFunds/PWBottomSheet/ReceiveFundsBottomSheet'
+import { ReceiveFundsBottomSheet } from '@modules/transactions/components/ReceiveFunds/PWBottomSheet/ReceiveFundsBottomSheet'
 
-const MenuScreen = () => {
+export const MenuScreen = () => {
     const styles = useStyles()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const scanner = useModalState()
@@ -121,5 +121,3 @@ const MenuScreen = () => {
         </PWView>
     )
 }
-
-export default MenuScreen

@@ -11,12 +11,12 @@
  */
 
 import { useStyles } from './styles'
-import PWView from '@components/PWView'
+import { PWView } from '@components/PWView'
 import { Text } from '@rneui/themed'
 import { useCallback } from 'react'
 
-import SwapPair from '@modules/swap/components/SwapPair/SwapPair'
-import CurrencyDisplay from '@components/CurrencyDisplay'
+import { SwapPair } from '@modules/swap/components/SwapPair/SwapPair'
+import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import {
     ALGO_ASSET_ID,
     PeraAsset,
@@ -33,7 +33,7 @@ type SwapRecord = {
 }
 
 //TODO this iz a mock implementation - implement properly
-const TopPairsPanel = () => {
+export const TopPairsPanel = () => {
     const themeStyle = useStyles()
     const { t } = useLanguage()
 
@@ -111,5 +111,3 @@ const TopPairsPanel = () => {
         </PWView>
     )
 }
-
-export default TopPairsPanel

@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './TransactionIcon'
+export { TransactionIcon } from './TransactionIcon'
 export type { TransactionIconProps } from './TransactionIcon'

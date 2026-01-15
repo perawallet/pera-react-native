@@ -10,16 +10,16 @@
  limitations under the License
  */
 
-import PWIcon, { PWIconSize } from '@components/PWIcon'
-import PWBottomSheet from '@components/PWBottomSheet'
+import { PWIcon, PWIconSize } from '@components/PWIcon'
+import { PWBottomSheet } from '@components/PWBottomSheet'
 import { useModalState } from '@hooks/modal-state'
 import { PropsWithChildren } from 'react'
 import { useStyles } from './styles'
-import PWView from '@components/PWView'
+import { PWView } from '@components/PWView'
 import { Text } from '@rneui/themed'
 import { useLanguage } from '@hooks/language'
-import PWButton from '@components/PWButton'
-import PWTouchableOpacity from '@components/PWTouchableOpacity'
+import { PWButton } from '@components/PWButton'
+import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
 
 type InfoButtonProps = {
     variant?: 'primary' | 'secondary'
@@ -27,7 +27,7 @@ type InfoButtonProps = {
     title?: string
 } & PropsWithChildren
 
-const InfoButton = ({
+export const InfoButton = ({
     variant = 'secondary',
     size = 'sm',
     title,
@@ -73,5 +73,3 @@ const InfoButton = ({
         </>
     )
 }
-
-export default InfoButton

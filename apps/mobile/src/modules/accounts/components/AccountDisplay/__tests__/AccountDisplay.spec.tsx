@@ -13,7 +13,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
 import { render, screen } from '@test-utils/render'
-import AccountDisplay from '../AccountDisplay'
+import { AccountDisplay } from '../AccountDisplay'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {

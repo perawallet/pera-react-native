@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './PWListItem'
+export { PWListItem } from './PWListItem'
 export type { PWListItemProps } from './PWListItem'

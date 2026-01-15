@@ -14,7 +14,7 @@ import { useStyles } from './styles'
 import { useLanguage } from '@hooks/language'
 import { LineChart } from 'react-native-gifted-charts'
 
-import PWView from '@components/PWView'
+import { PWView } from '@components/PWView'
 import { HistoryPeriod } from '@perawallet/wallet-core-shared'
 
 import { useCallback, useMemo, useState } from 'react'
@@ -25,8 +25,8 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
-import LoadingView from '@components/LoadingView'
-import EmptyView from '@components/EmptyView'
+import { LoadingView } from '@components/LoadingView'
+import { EmptyView } from '@components/EmptyView'
 import {
     CHART_ANIMATION_DURATION,
     CHART_FOCUS_DEBOUNCE_TIME,
@@ -45,7 +45,7 @@ type AssetWealthChartProps = {
     onSelectionChanged: (item: AccountBalanceHistoryItem | null) => void
 }
 
-const AssetWealthChart = ({
+export const AssetWealthChart = ({
     onSelectionChanged,
     account,
     asset,
@@ -168,5 +168,3 @@ const AssetWealthChart = ({
         </PWView>
     )
 }
-
-export default AssetWealthChart

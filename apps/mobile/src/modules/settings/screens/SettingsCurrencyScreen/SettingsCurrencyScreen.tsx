@@ -13,7 +13,7 @@
 import { Text } from '@rneui/themed'
 
 import { useStyles } from './styles'
-import PWView from '@components/PWView'
+import { PWView } from '@components/PWView'
 import {
     Currency,
     useCurrenciesQuery,
@@ -22,12 +22,12 @@ import {
 import { useEffect, useState } from 'react'
 import { FlatList } from 'react-native'
 
-import RadioButton from '@components/RadioButton'
-import SearchInput from '@components/SearchInput'
+import { RadioButton } from '@components/RadioButton'
+import { SearchInput } from '@components/SearchInput'
 import { useInvalidateAssetPrices } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/language'
 
-const SettingsCurrencyScreen = () => {
+export const SettingsCurrencyScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const { preferredCurrency, setPreferredCurrency } = useCurrency()
@@ -83,5 +83,3 @@ const SettingsCurrencyScreen = () => {
         </PWView>
     )
 }
-
-export default SettingsCurrencyScreen

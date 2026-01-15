@@ -38,11 +38,11 @@ modules/transactions/components/
 
 ### Barrel File Pattern
 
-```typescript
 // index.ts
-export { default } from './PWButton'
+export { PWButton } from './PWButton'
 export type { PWButtonProps } from './PWButton'
-```
+
+````
 
 ### Subcomponent Rules
 
@@ -70,7 +70,7 @@ export type PWButtonProps = {
     onPress?: () => void
 }
 
-const PWButton = ({
+export const PWButton = ({
     variant,
     title,
     isLoading = false,
@@ -99,9 +99,7 @@ const PWButton = ({
         </PWTouchableOpacity>
     )
 }
-
-export default PWButton
-```
+````
 
 ## Style Files (REQUIRED: makeStyles)
 
@@ -189,7 +187,7 @@ Every screen MUST follow the same folder structure as standard components.
 // AccountsScreen.tsx (in modules/accounts/screens/AccountsScreen/)
 import { useStyles } from './styles'
 
-const AccountsScreen = () => {
+export const AccountsScreen = () => {
     const styles = useStyles()
     const { accounts } = useAllAccounts()
 
@@ -199,6 +197,4 @@ const AccountsScreen = () => {
         </View>
     )
 }
-
-export default AccountsScreen
 ```

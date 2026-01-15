@@ -12,7 +12,7 @@
 
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
-import ExpandablePanel from '../ExpandablePanel'
+import { ExpandablePanel } from '../ExpandablePanel'
 import { Text } from 'react-native'
 
 describe('ExpandablePanel', () => {

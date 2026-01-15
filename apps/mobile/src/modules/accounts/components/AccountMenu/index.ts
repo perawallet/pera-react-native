@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './AccountMenu'
+export { AccountMenu } from './AccountMenu'
 export type { AccountMenuProps } from './AccountMenu'

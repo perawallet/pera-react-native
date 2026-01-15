@@ -12,7 +12,7 @@
 
 import { render, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import AssetSocialMedia from '../AssetSocialMedia'
+import { AssetSocialMedia } from '../AssetSocialMedia'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 
 const mockPushWebView = vi.fn()

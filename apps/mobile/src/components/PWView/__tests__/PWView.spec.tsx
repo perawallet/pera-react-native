@@ -14,7 +14,7 @@ import { describe, it, expect } from 'vitest'
 import React from 'react'
 import { render, screen } from '@test-utils/render'
 import { Text } from 'react-native'
-import PWView from '../PWView'
+import { PWView } from '../PWView'
 
 describe('PWView', () => {
     it('renders children correctly', () => {

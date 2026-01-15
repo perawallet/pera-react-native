@@ -11,28 +11,28 @@
  */
 
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
-import NavigationHeader from '@components/NavigationHeader'
+import { NavigationHeader } from '@components/NavigationHeader'
 import {
     createNativeStackNavigator,
     NativeStackHeaderProps,
 } from '@react-navigation/native-stack'
 import { screenListeners } from '@routes/listeners'
-import SettingsScreen from '@modules/settings/screens/SettingsScreen'
-import SettingsSecurityScreen from '@modules/settings/screens/SettingsSecurityScreen/SettingsSecurityScreen'
-import SettingsNotificationsScreen from '@modules/settings/screens/SettingsNotificationsScreen/SettingsNotificationsScreen'
-import SettingsWalletConnectScreen from '@modules/settings/screens/SettingsWalletConnectScreen'
+import { SettingsScreen } from '@modules/settings/screens/SettingsScreen'
+import { SettingsSecurityScreen } from '@modules/settings/screens/SettingsSecurityScreen/SettingsSecurityScreen'
+import { SettingsNotificationsScreen } from '@modules/settings/screens/SettingsNotificationsScreen/SettingsNotificationsScreen'
+import { SettingsWalletConnectScreen } from '@modules/settings/screens/SettingsWalletConnectScreen'
 import SettingsPasskeyScreen from '@modules/settings/screens/SettingsPasskeysScreen/SettingsPasskeysScreen'
-import SettingsCurrencyScreen from '@modules/settings/screens/SettingsCurrencyScreen/SettingsCurrencyScreen'
-import SettingsThemeScreen from '@modules/settings/screens/SettingsThemeScreen/SettingsThemeScreen'
-import SettingsDeveloperScreen from '@modules/settings/screens/developer/SettingsDeveloperScreen'
+import { SettingsCurrencyScreen } from '@modules/settings/screens/SettingsCurrencyScreen/SettingsCurrencyScreen'
+import { SettingsThemeScreen } from '@modules/settings/screens/SettingsThemeScreen/SettingsThemeScreen'
+import { SettingsDeveloperScreen } from '@modules/settings/screens/developer/SettingsDeveloperScreen'
 import { fullScreenLayout } from '@layouts/index'
-import SettingsDeveloperNodeSettingsScreen from '@modules/settings/screens/developer/SettingsDeveloperNodeSettingsScreen/SettingsDeveloperNodeSettingsScreen'
-import SettingsDeveloperDispenserScreen from '@modules/settings/screens/developer/SettingsDeveloperDispenserScreen/SettingsDeveloperDispenserScreen'
+import { SettingsDeveloperNodeSettingsScreen } from '@modules/settings/screens/developer/SettingsDeveloperNodeSettingsScreen/SettingsDeveloperNodeSettingsScreen'
+import { SettingsDeveloperDispenserScreen } from '@modules/settings/screens/developer/SettingsDeveloperDispenserScreen/SettingsDeveloperDispenserScreen'
 import { NavigatorScreenParams } from '@react-navigation/native'
 import { WalletConnectConnection } from '@perawallet/wallet-core-walletconnect'
-import SettingsWalletConnectDetailsScreen from '@modules/settings/screens/SettingsWalletConnectDetailsScreen/SettingsWalletConnectDetailsScreen'
-import SettingsDeveloperMenuScreen from '../screens/developer/SettingsDeveloperMenuScreen/SettingsDeveloperMenuScreen'
-import SettingsDeveloperFeatureFlagsScreen from '../screens/developer/SettingsDeveloperFeatureFlagsScreen/SettingsDeveloperFeatureFlagsScreen'
+import { SettingsWalletConnectDetailsScreen } from '@modules/settings/screens/SettingsWalletConnectDetailsScreen/SettingsWalletConnectDetailsScreen'
+import { SettingsDeveloperMenuScreen } from '../screens/developer/SettingsDeveloperMenuScreen/SettingsDeveloperMenuScreen'
+import { SettingsDeveloperFeatureFlagsScreen } from '../screens/developer/SettingsDeveloperFeatureFlagsScreen/SettingsDeveloperFeatureFlagsScreen'
 
 export type DeveloperSettingsStackParamsList = {
     DeveloperSettingsHome: undefined

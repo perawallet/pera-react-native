@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './PWTouchableOpacity'
+export { PWTouchableOpacity } from './PWTouchableOpacity'
 export type { PWTouchableOpacityProps } from './PWTouchableOpacity'

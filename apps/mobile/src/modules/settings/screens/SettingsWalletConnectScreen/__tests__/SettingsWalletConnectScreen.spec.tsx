@@ -12,7 +12,7 @@
 
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import SettingsWalletConnectScreen from '../SettingsWalletConnectScreen'
+import { SettingsWalletConnectScreen } from '../SettingsWalletConnectScreen'
 import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
 
 vi.mock('@perawallet/wallet-core-walletconnect', async () => ({
@@ -31,7 +31,7 @@ vi.mock('@shopify/flash-list', () => ({
 }))
 
 vi.mock('@components/QRScannerView', () => ({
-    default: () => null,
+    QRScannerView: () => null,
 }))
 
 describe('SettingsWalletConnectScreen', () => {

@@ -21,7 +21,7 @@ type CurrencyInputProps = {
     maxPrecision: number
 } & Omit<MaskedTextInputProps, 'mask' | 'autocomplete' | 'allowedKeys'>
 
-const CurrencyInput = (props: CurrencyInputProps) => {
+export const CurrencyInput = (props: CurrencyInputProps) => {
     const { minPrecision, maxPrecision, ...rest } = props
 
     //TODO: the mask doesn't appear to work correctly
@@ -46,5 +46,3 @@ const CurrencyInput = (props: CurrencyInputProps) => {
         />
     )
 }
-
-export default CurrencyInput

@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './EmptyView'
+export { EmptyView } from './EmptyView'
 export type { EmptyViewProps } from './EmptyView'

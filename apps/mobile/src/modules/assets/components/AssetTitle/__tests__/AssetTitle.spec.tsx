@@ -13,12 +13,12 @@
 import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
 import { render, screen } from '@test-utils/render'
-import AssetTitle from '../AssetTitle'
+import { AssetTitle } from '../AssetTitle'
 import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
 
 // Mock AssetIcon to keep test focused
 vi.mock('../AssetIcon', () => ({
-    default: () => null,
+    AssetIcon: () => null,
 }))
 
 vi.mock('@hooks/theme', () => ({

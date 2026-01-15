@@ -12,7 +12,7 @@
 
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import Arc60SigningView from '../Arc60SigningView'
+import { Arc60SigningView } from '../Arc60SigningView'
 import { Arc60SignRequest } from '@perawallet/wallet-core-blockchain'
 
 vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {

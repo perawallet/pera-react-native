@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './SendFundsAssetSelectionView'
+export { SendFundsAssetSelectionView } from './SendFundsAssetSelectionView'
 export type { SendFundsAssetSelectionViewProps } from './SendFundsAssetSelectionView'

@@ -10,20 +10,20 @@
  limitations under the License
  */
 
-import PWView from '@components/PWView'
+import { PWView } from '@components/PWView'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
-import CurrencyDisplay from '@components/CurrencyDisplay'
+import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
-import WealthChart from '@components/WealthChart'
-import ButtonPanel from '../ButtonPanel'
-import AccountAssetList from '../AccountAssetList'
+import { WealthChart } from '@components/WealthChart'
+import { ButtonPanel } from '../ButtonPanel'
+import { AccountAssetList } from '../AccountAssetList'
 import { Text } from '@rneui/themed'
 import { useCallback, useState } from 'react'
 import { useChartInteraction } from '@hooks/chart-interaction'
 import { useStyles } from './styles'
-import PWTouchableOpacity from '@components/PWTouchableOpacity'
-import WealthTrend from '@components/WealthTrend'
-import ChartPeriodSelection from '@components/ChartPeriodSelection'
+import { PWTouchableOpacity } from '@components/PWTouchableOpacity'
+import { WealthTrend } from '@components/WealthTrend'
+import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import {
     AccountBalanceHistoryItem,
     useAccountBalancesQuery,
@@ -31,9 +31,9 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { usePreferences, useSettings } from '@perawallet/wallet-core-settings'
-import PWButton from '@components/PWButton'
+import { PWButton } from '@components/PWButton'
 import { UserPreferences } from '@constants/user-preferences'
-import ExpandablePanel from '@components/ExpandablePanel'
+import { ExpandablePanel } from '@components/ExpandablePanel'
 
 type AccountOverviewProps = {
     account: WalletAccount
@@ -41,7 +41,7 @@ type AccountOverviewProps = {
 
 //TODO implement min balance display and info icon
 //TODO layout and spacing needs a bit of clean up
-const AccountOverview = ({ account }: AccountOverviewProps) => {
+export const AccountOverview = ({ account }: AccountOverviewProps) => {
     const { preferredCurrency } = useCurrency()
     const styles = useStyles()
 
@@ -155,5 +155,3 @@ const AccountOverview = ({ account }: AccountOverviewProps) => {
         </AccountAssetList>
     )
 }
-
-export default AccountOverview

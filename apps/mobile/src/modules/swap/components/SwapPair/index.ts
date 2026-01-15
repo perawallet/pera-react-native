@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './SwapPair'
+export { SwapPair } from './SwapPair'
 export type { SwapPairProps } from './SwapPair'

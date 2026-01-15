@@ -12,7 +12,7 @@
 
 import { render, screen, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import AddressSearchView from '../AddressSearchView'
+import { AddressSearchView } from '../AddressSearchView'
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
@@ -42,12 +42,12 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 
 vi.mock('@components/AddressDisplay', () => ({
     __esModule: true,
-    default: ({ address }: { address: string }) => address,
+    AddressDisplay: ({ address }: { address: string }) => address,
 }))
 
 vi.mock('@modules/accounts/components/AccountDisplay', () => ({
     __esModule: true,
-    default: ({ account }: { account: { name: string } }) =>
+    AccountDisplay: ({ account }: { account: { name: string } }) =>
         account?.name || null,
 }))
 

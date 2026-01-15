@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { default } from './EditContactScreen'
+export { EditContactScreen } from './EditContactScreen'

@@ -12,7 +12,7 @@
 
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
-import AddressEntryField from '../AddressEntryField'
+import { AddressEntryField } from '../AddressEntryField'
 
 describe('AddressEntryField', () => {
     it('renders correctly', () => {

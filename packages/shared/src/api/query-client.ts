@@ -253,5 +253,3 @@ export const updateBackendHeaders = (headers: Map<string, string>) => {
 }
 
 export const queryClient = createFetchClient(clients)
-
-export default queryClient

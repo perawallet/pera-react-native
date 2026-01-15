@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './SendFundsTransactionConfirmation'
+export { SendFundsTransactionConfirmation } from './SendFundsTransactionConfirmation'
 export type { SendFundsTransactionConfirmationProps } from './SendFundsTransactionConfirmation'

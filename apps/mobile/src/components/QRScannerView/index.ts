@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './QRScannerView'
+export { QRScannerView } from './QRScannerView'
 export type { QRScannerViewProps } from './QRScannerView'

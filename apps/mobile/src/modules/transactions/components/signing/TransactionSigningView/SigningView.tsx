@@ -16,17 +16,17 @@ import {
     SignRequest,
     TransactionSignRequest,
 } from '@perawallet/wallet-core-blockchain'
-import EmptyView from '@components/EmptyView'
-import TransactionSigningView from './TransactionSigningView'
-import ArbitraryDataSigningView from '../ArbitraryDataSigningView'
-import Arc60SigningView from './Arc60SigningView'
+import { EmptyView } from '@components/EmptyView'
+import { TransactionSigningView } from './TransactionSigningView'
+import { ArbitraryDataSigningView } from '../ArbitraryDataSigningView'
+import { Arc60SigningView } from './Arc60SigningView'
 import { useLanguage } from '@hooks/language'
 
 type SigningViewProps = {
     request: SignRequest
 }
 
-const SigningView = ({ request }: SigningViewProps) => {
+export const SigningView = ({ request }: SigningViewProps) => {
     const { t } = useLanguage()
 
     switch (request.type) {
@@ -53,5 +53,3 @@ const SigningView = ({ request }: SigningViewProps) => {
             )
     }
 }
-
-export default SigningView

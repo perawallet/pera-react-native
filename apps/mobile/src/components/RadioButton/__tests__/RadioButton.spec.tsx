@@ -13,7 +13,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
 import { render, fireEvent, screen } from '@test-utils/render'
-import RadioButton from '../RadioButton'
+import { RadioButton } from '../RadioButton'
 
 describe('RadioButton', () => {
     it('calls onPress when clicked', () => {

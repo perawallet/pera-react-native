@@ -10,11 +10,11 @@
  limitations under the License
  */
 
-import EmptyView from '@components/EmptyView'
+import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/language'
 
 //TODO implement
-const AccountNfts = () => {
+export const AccountNfts = () => {
     const { t } = useLanguage()
     return (
         <EmptyView
@@ -23,5 +23,3 @@ const AccountNfts = () => {
         />
     )
 }
-
-export default AccountNfts

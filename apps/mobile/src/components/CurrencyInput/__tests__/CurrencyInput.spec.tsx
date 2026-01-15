@@ -12,7 +12,7 @@
 
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import CurrencyInput from '../CurrencyInput'
+import { CurrencyInput } from '../CurrencyInput'
 
 // Mock react-native-advanced-input-mask
 vi.mock('react-native-advanced-input-mask', async () => {

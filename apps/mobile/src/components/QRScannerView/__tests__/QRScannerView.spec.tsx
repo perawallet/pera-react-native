@@ -13,7 +13,7 @@
 import React from 'react'
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import QRScannerView from '../QRScannerView'
+import { QRScannerView } from '../QRScannerView'
 
 vi.mock('react-native-vision-camera', () => ({
     useCameraDevice: vi.fn(() => ({ id: 'mock-device' })),
