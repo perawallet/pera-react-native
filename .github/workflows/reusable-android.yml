@@ -97,12 +97,21 @@ jobs:
         with:
           distribution: 'temurin'
           java-version-file: '.tool-versions'
+          cache: 'gradle'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+            accept-android-sdk-licenses: true
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          working-directory: apps/mobile
           bundler-cache: true
+
+      - name: Install Bundler
+        working-directory: apps/mobile
+        run: bundle install
 
       - name: Decode Android keystore
         env:
@@ -123,18 +132,21 @@ jobs:
           keyPassword=$ANDROID_KEY_PASSWORD
           EOF
 
+      - name: Create local.properties
+        run: echo "sdk.dir=$ANDROID_HOME" > apps/mobile/android/local.properties
+
       - name: Build & Deploy Android
         env:
           ANDROID_JSON_KEY_FILE: ${{ secrets.ANDROID_JSON_KEY_FILE }}
           BUILD_NUMBER: ${{ github.run_number }}
-          SUPPLY_JSON_KEY: apps/mobile/android/api-key.json
+        working-directory: apps/mobile
         run: |
-          echo "$ANDROID_JSON_KEY_FILE" > apps/mobile/android/api-key.json
+          echo "$ANDROID_JSON_KEY_FILE" > android/api-key.json
           bundle exec fastlane android deploy_internal flavor:${{ inputs.flavor }}
           
           # Extract Version
-          VERSION=$(grep 'versionName' apps/mobile/android/app/build.gradle | cut -d '"' -f2)
-          BUILD=$(grep 'versionCode' apps/mobile/android/app/build.gradle | awk '{print $2}')
+          VERSION=$(grep 'versionName' android/app/build.gradle | cut -d '"' -f2)
+          BUILD=$(grep 'versionCode' android/app/build.gradle | awk '{print $2}')
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "BUILD=$BUILD" >> $GITHUB_ENV
 

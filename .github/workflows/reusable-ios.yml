@@ -98,8 +98,11 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          working-directory: apps/mobile
           bundler-cache: true
+
+      - name: Install Bundler
+        working-directory: apps/mobile
+        run: bundle install
 
       - name: Install CocoaPods
         run: |
@@ -140,6 +143,7 @@ jobs:
           APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
           APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
           BUILD_NUMBER: ${{ github.run_number }}
+        working-directory: apps/mobile
         run: |
           # Decode API Key
           echo "${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT_BASE64 }}" | base64 --decode > api_key.p8
