@@ -1,0 +1,187 @@
+name: Reusable iOS Build
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+      scheme:
+        required: true
+        type: string
+      notification_title_prefix:
+        required: true
+        type: string
+    secrets:
+      # We use 'secrets: inherit' in the caller, but we can list required ones here for documentation or specific passing
+      MAINNET_BACKEND_URL:
+        required: true
+      TESTNET_BACKEND_URL:
+        required: true
+      BACKEND_API_KEY:
+        required: true
+      ALGOD_API_KEY:
+        required: true
+      INDEXER_API_KEY:
+        required: true
+      MAINNET_ALGOD_URL:
+        required: true
+      TESTNET_ALGOD_URL:
+        required: true
+      MAINNET_INDEXER_URL:
+        required: true
+      TESTNET_INDEXER_URL:
+        required: true
+      IOS_GOOGLE_SERVICE_INFO_BASE64:
+        required: true
+      IOS_DISTRIBUTION_CERT_BASE64:
+        required: true
+      IOS_DISTRIBUTION_CERT_PASSWORD:
+        required: true
+      IOS_PROVISIONING_PROFILE_BASE64:
+        required: true
+      APP_STORE_CONNECT_API_KEY_KEY_ID:
+        required: true
+      APP_STORE_CONNECT_API_KEY_ISSUER_ID:
+        required: true
+      APP_STORE_CONNECT_API_KEY_CONTENT_BASE64:
+        required: true
+      JIRA_BASE_URL:
+        required: true
+      JIRA_USER_EMAIL:
+        required: true
+      JIRA_API_TOKEN:
+        required: true
+      SLACK_WEBHOOK_URL:
+        required: true
+
+jobs:
+  build:
+    name: Build & Deploy
+    runs-on: macos-14
+    environment: ${{ inputs.environment }}
+    timeout-minutes: 60
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.26.2
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Config Generate
+        env:
+          PERA_MAINNET_BACKEND_URL: ${{ secrets.MAINNET_BACKEND_URL }}
+          PERA_TESTNET_BACKEND_URL: ${{ secrets.TESTNET_BACKEND_URL }}
+          PERA_BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY }}
+          PERA_ALGOD_API_KEY: ${{ secrets.ALGOD_API_KEY }}
+          PERA_INDEXER_API_KEY: ${{ secrets.INDEXER_API_KEY }}
+          PERA_MAINNET_ALGOD_URL: ${{ secrets.MAINNET_ALGOD_URL }}
+          PERA_TESTNET_ALGOD_URL: ${{ secrets.TESTNET_ALGOD_URL }}
+          PERA_MAINNET_INDEXER_URL: ${{ secrets.MAINNET_INDEXER_URL }}
+          PERA_TESTNET_INDEXER_URL: ${{ secrets.TESTNET_INDEXER_URL }}
+        run: pnpm run build:packages --filter=@perawallet/wallet-core-config
+
+      - name: Inject Google Service Info
+        env:
+          IOS_GOOGLE_SERVICE_INFO_BASE64: ${{ secrets.IOS_GOOGLE_SERVICE_INFO_BASE64 }}
+        run: |
+          echo "$IOS_GOOGLE_SERVICE_INFO_BASE64" | base64 --decode > apps/mobile/ios/GoogleService-Info.plist
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          working-directory: apps/mobile
+          bundler-cache: true
+
+      - name: Install CocoaPods
+        run: |
+          cd apps/mobile/ios
+          bundle exec pod install
+
+      - name: Setup MacOS Keychain & Signing
+        env:
+          CERT_BASE64: ${{ secrets.IOS_DISTRIBUTION_CERT_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.IOS_DISTRIBUTION_CERT_PASSWORD }}
+          PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PASSWORD="actions"
+
+          # Re-create keychain
+          security delete-keychain $KEYCHAIN_PATH || true
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # Import Certificate
+          echo "$CERT_BASE64" | base64 --decode > certificate.p12
+          security import certificate.p12 -P "$CERT_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          
+          # Install Profile
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "$PROFILE_BASE64" | base64 --decode > profile.mobileprovision
+          cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+          
+          # Set keychain as default search list
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+      - name: Build & Deploy iOS
+        id: build
+        env:
+          APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          # Decode API Key
+          echo "${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT_BASE64 }}" | base64 --decode > api_key.p8
+          export APP_STORE_CONNECT_API_KEY_CONTENT=$(cat api_key.p8)
+          
+          bundle exec fastlane ios deploy_testflight scheme:${{ inputs.scheme }}
+          
+          # Extract Version
+          VERSION=$(agvtool what-marketing-version -terse1)
+          BUILD=$(agvtool what-version -terse)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "BUILD=$BUILD" >> $GITHUB_ENV
+
+      - name: Jira Login
+        if: success()
+        uses: atlassian/gajira-login@v3
+        env:
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+
+      - name: Jira Find Issue
+        if: success()
+        id: find_issue
+        uses: atlassian/gajira-find-issue-key@v3
+        with:
+          string: "${{ github.head_ref || github.ref_name }} ${{ github.event.head_commit.message }} ${{ github.event.pull_request.body }}"
+
+      - name: Jira Comment
+        if: success() && steps.find_issue.outputs.issue
+        uses: atlassian/gajira-comment@v3
+        with:
+          issue: ${{ steps.find_issue.outputs.issue }}
+          comment: "${{ inputs.notification_title_prefix }}: iOS ${{ inputs.scheme }} Available! Version: ${{ env.VERSION }} (${{ env.BUILD }}) - View build: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      - name: Slack Notification
+        if: always()
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
+          SLACK_TITLE: "${{ inputs.notification_title_prefix }}: iOS ${{ inputs.scheme }} ${{ job.status }}"
+          SLACK_MESSAGE: "Version: ${{ env.VERSION }} (${{ env.BUILD }})\nDetails: ${{ job.status }}\n\n@qateam"
