@@ -61,18 +61,18 @@ screens/
 
 All hooks use `camelCase` with `use` prefix.
 
-| Type               | Convention                 | Example                      |
-| ------------------ | -------------------------- | ---------------------------- |
-| Query hook         | `use[Thing]Query`          | `useAccountBalanceQuery`     |
-| Mutation hook      | `use[Action][Thing]Mutation` | `useCreateAccountMutation` |
-| Store hook         | `use[Thing]Store`          | `useAccountsStore`           |
-| Component logic    | `use[ComponentName]`       | `useAccountCard`             |
-| Screen logic       | `use[ScreenName]`          | `useAccountScreen`           |
+| Type            | Convention                   | Example                    |
+| --------------- | ---------------------------- | -------------------------- |
+| Query hook      | `use[Thing]Query`            | `useAccountBalanceQuery`   |
+| Mutation hook   | `use[Action][Thing]Mutation` | `useCreateAccountMutation` |
+| Store hook      | `use[Thing]Store`            | `useAccountsStore`         |
+| Component logic | `use[ComponentName]`         | `useAccountCard`           |
+| Screen logic    | `use[ScreenName]`            | `useAccountScreen`         |
 
 **Technology Requirements:**
+
 - **React Query**: REQUIRED for all async requests (API calls)
 - **Zustand**: REQUIRED for all local application state
-
 
 ## Variables & Props
 

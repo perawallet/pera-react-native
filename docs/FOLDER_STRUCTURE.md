@@ -89,20 +89,20 @@ packages/accounts/src/
 
 ## Quick Reference: Where Do I Put...?
 
-| What                            | Where                                                     |
-| ------------------------------- | --------------------------------------------------------- |
-| Reusable button, card, modal    | `apps/mobile/src/components/`                             |
-| Account list screen             | `apps/mobile/src/modules/accounts/screens/AccountScreen/` |
-| Component used only in accounts | `apps/mobile/src/modules/accounts/components/`            |
-| Domain-level hooks (shared)     | `apps/mobile/src/modules/[module]/hooks/`                 |
+| What                            | Where                                                                 |
+| ------------------------------- | --------------------------------------------------------------------- |
+| Reusable button, card, modal    | `apps/mobile/src/components/`                                         |
+| Account list screen             | `apps/mobile/src/modules/accounts/screens/AccountScreen/`             |
+| Component used only in accounts | `apps/mobile/src/modules/accounts/components/`                        |
+| Domain-level hooks (shared)     | `apps/mobile/src/modules/[module]/hooks/`                             |
 | Screen-specific hook            | Same folder as the screen (e.g., `AccountScreen/useAccountScreen.ts`) |
-| Component-specific hook         | Same folder as the component (e.g., `AccountCard/useAccountCard.ts`) |
-| Data fetching hook (Query)      | `modules/[module]/hooks/use[Name]Query.ts`                |
-| Mutation hook                   | `modules/[module]/hooks/use[Name]Mutation.ts`             |
-| State management hook (Store)   | `modules/[module]/hooks/use[Name]Store.ts`                |
-| Toast or navigation hook        | `apps/mobile/src/hooks/`                                  |
-| Secure storage implementation   | `apps/mobile/src/platform/`                               |
-| Unit test                       | `__tests__/` folder next to the code                      |
+| Component-specific hook         | Same folder as the component (e.g., `AccountCard/useAccountCard.ts`)  |
+| Data fetching hook (Query)      | `modules/[module]/hooks/use[Name]Query.ts`                            |
+| Mutation hook                   | `modules/[module]/hooks/use[Name]Mutation.ts`                         |
+| State management hook (Store)   | `modules/[module]/hooks/use[Name]Store.ts`                            |
+| Toast or navigation hook        | `apps/mobile/src/hooks/`                                              |
+| Secure storage implementation   | `apps/mobile/src/platform/`                                           |
+| Unit test                       | `__tests__/` folder next to the code                                  |
 
 ## Learn More
 

@@ -13,9 +13,7 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useInputView } from '../use-input-view'
-import { SendFundsContext } from '@modules/transactions/providers/SendFundsProvider'
 import Decimal from 'decimal.js'
-import React from 'react'
 
 import {
     useSelectedAccount,
@@ -61,21 +59,36 @@ vi.mock('@hooks/language', () => ({
     useLanguage: vi.fn(() => ({ t: (key: string) => key })),
 }))
 
+// Mock the useSendFunds hook
+const mockSetAmount = vi.fn()
+const mockSetNote = vi.fn()
+const mockSendFundsState = {
+    selectedAsset: { assetId: 0 },
+    canSelectAsset: true,
+    amount: undefined,
+    note: undefined,
+    destination: undefined,
+    setSelectedAsset: vi.fn(),
+    setCanSelectAsset: vi.fn(),
+    setAmount: mockSetAmount,
+    setNote: mockSetNote,
+    setDestination: vi.fn(),
+    reset: vi.fn(),
+}
+
+vi.mock('@modules/transactions/hooks', () => ({
+    useSendFunds: vi.fn(() => mockSendFundsState),
+}))
+
 describe('useInputView', () => {
     const mockOnNext = vi.fn()
-    const mockSetAmount = vi.fn()
-    const mockSetNote = vi.fn()
     const mockShowToast = vi.fn()
-
-    const defaultContext = {
-        selectedAsset: { assetId: 0 },
-        note: null,
-        setNote: mockSetNote,
-        setAmount: mockSetAmount,
-    }
 
     beforeEach(() => {
         vi.clearAllMocks()
+        // Reset the mock state
+        mockSendFundsState.selectedAsset = { assetId: 0 }
+        mockSendFundsState.note = undefined
         ;(useToast as Mock).mockReturnValue({ showToast: mockShowToast })
         ;(useSelectedAccount as Mock).mockReturnValue({
             address: 'test-addr',
@@ -113,37 +126,21 @@ describe('useInputView', () => {
         })
     })
 
-    const wrapper = ({ children }: { children: React.ReactNode }) => (
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        <SendFundsContext.Provider value={defaultContext as any}>
-            {children}
-        </SendFundsContext.Provider>
-    )
-
     it('calculates max amount for Algo correctly', () => {
-        const { result } = renderHook(() => useInputView(mockOnNext), {
-            wrapper,
-        })
+        const { result } = renderHook(() => useInputView(mockOnNext))
         expect(result.current.maxAmount.toNumber()).toBe(99.9)
     })
 
     it('calculates max amount for ASA correctly', () => {
-        const asaContext = { ...defaultContext, selectedAsset: { assetId: 1 } }
-        const { result } = renderHook(() => useInputView(mockOnNext), {
-            wrapper: ({ children }) => (
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                <SendFundsContext.Provider value={asaContext as any}>
-                    {children}
-                </SendFundsContext.Provider>
-            ),
-        })
+        // Update mock state for ASA
+        mockSendFundsState.selectedAsset = { assetId: 1 }
+
+        const { result } = renderHook(() => useInputView(mockOnNext))
         expect(result.current.maxAmount.toNumber()).toBe(50)
     })
 
     it('handles keypad input correctly', () => {
-        const { result } = renderHook(() => useInputView(mockOnNext), {
-            wrapper,
-        })
+        const { result } = renderHook(() => useInputView(mockOnNext))
 
         act(() => {
             result.current.handleKey('1')
@@ -167,9 +164,7 @@ describe('useInputView', () => {
     })
 
     it('validates input on next (error if 0/empty)', () => {
-        const { result } = renderHook(() => useInputView(mockOnNext), {
-            wrapper,
-        })
+        const { result } = renderHook(() => useInputView(mockOnNext))
         act(() => {
             result.current.handleNext()
         })
@@ -185,9 +180,7 @@ describe('useInputView', () => {
             data: { amount: 10, minBalance: 0 },
         })
 
-        const { result } = renderHook(() => useInputView(mockOnNext), {
-            wrapper,
-        })
+        const { result } = renderHook(() => useInputView(mockOnNext))
         act(() => {
             result.current.setCryptoValue('20')
         })
@@ -206,9 +199,7 @@ describe('useInputView', () => {
             data: { amount: 100, minBalance: 0 },
         })
 
-        const { result } = renderHook(() => useInputView(mockOnNext), {
-            wrapper,
-        })
+        const { result } = renderHook(() => useInputView(mockOnNext))
         act(() => {
             result.current.setCryptoValue('5')
         })
@@ -221,9 +212,7 @@ describe('useInputView', () => {
     })
 
     it('setMax updates value to max', () => {
-        const { result } = renderHook(() => useInputView(mockOnNext), {
-            wrapper,
-        })
+        const { result } = renderHook(() => useInputView(mockOnNext))
         act(() => {
             result.current.setMax()
         })

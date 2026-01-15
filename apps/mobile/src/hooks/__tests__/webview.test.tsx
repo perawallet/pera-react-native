@@ -14,8 +14,6 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { usePeraWebviewInterface, useWebView } from '../webview'
 import { Linking } from 'react-native'
-import React from 'react'
-import { WebViewContext } from '@providers/WebViewProvider'
 
 vi.mock('react-native', () => ({
     Platform: {
@@ -113,19 +111,20 @@ vi.mock('../language', () => ({
     })),
 }))
 
+const mockPushWebView = vi.fn()
+vi.mock('@modules/webview', () => ({
+    useWebViewStore: vi.fn((selector?: (state: unknown) => unknown) => {
+        const state = { pushWebView: mockPushWebView }
+        return selector ? selector(state) : state
+    }),
+    useWebView: vi.fn(() => ({ pushWebView: mockPushWebView })),
+}))
+
 describe('useWebView', () => {
-    it('should provide pushWebView from context', () => {
-        const mockPushWebView = vi.fn()
-        const wrapper = ({ children }: { children: React.ReactNode }) => (
-            <WebViewContext.Provider
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                value={{ pushWebView: mockPushWebView } as any}
-            >
-                {children}
-            </WebViewContext.Provider>
-        )
-        const { result } = renderHook(() => useWebView(), { wrapper })
-        expect(result.current.pushWebView).toBe(mockPushWebView)
+    it('should provide pushWebView from store', () => {
+        const { result } = renderHook(() => useWebView())
+        expect(result.current.pushWebView).toBeDefined()
+        expect(typeof result.current.pushWebView).toBe('function')
     })
 })
 
@@ -375,18 +374,10 @@ describe('usePeraWebviewInterface', () => {
     })
 
     it('should handle pushWebView action', () => {
-        const mockPushWebView = vi.fn()
-        const wrapper = ({ children }: { children: React.ReactNode }) => (
-            <WebViewContext.Provider
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                value={{ pushWebView: mockPushWebView } as any}
-            >
-                {children}
-            </WebViewContext.Provider>
-        )
-        const { result } = renderHook(
-            () => usePeraWebviewInterface(mockWebview, true),
-            { wrapper },
+        mockPushWebView.mockClear()
+
+        const { result } = renderHook(() =>
+            usePeraWebviewInterface(mockWebview, true),
         )
 
         act(() => {

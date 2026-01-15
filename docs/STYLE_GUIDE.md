@@ -65,16 +65,19 @@ For detailed patterns and examples, see `.agent/rules/component-patterns.md`.
 Hooks follow strict conventions for consistency and maintainability.
 
 **Technology Requirements:**
+
 - **React Query**: REQUIRED for all async requests (API calls, data fetching)
 - **Zustand**: REQUIRED for all local application state management
 
 **Naming Conventions:**
+
 - All hooks start with `use` prefix (camelCase)
 - Query hooks end with `Query` (e.g., `useAccountBalanceQuery`)
 - Mutation hooks end with `Mutation` (e.g., `useCreateAccountMutation`)
 - Store hooks end with `Store` (e.g., `useAccountsStore`)
 
 **Location Rules:**
+
 - Domain-level hooks: `modules/[moduleName]/hooks/`
 - Screen-specific hooks: Same folder as the screen
 - Component-specific hooks: Same folder as the component
@@ -83,6 +86,7 @@ Hooks follow strict conventions for consistency and maintainability.
 Complex logic MUST be extracted from component/screen bodies into dedicated hooks.
 
 **Type Safety (REQUIRED):**
+
 - All hooks must define explicit types for inputs and outputs
 - Never expose dependency-specific types (UseQueryResult, UseMutationResult, StoreApi)
 - Return types must be dependency-agnostic to enable library swapping

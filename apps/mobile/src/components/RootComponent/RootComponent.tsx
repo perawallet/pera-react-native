@@ -12,7 +12,7 @@
 
 import { Networks } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
-import { useContext, useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { AppState } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { MainRoutes } from '@routes/index'
@@ -31,18 +31,15 @@ import {
 } from '@perawallet/wallet-core-platform-integration'
 import { usePolling } from '@perawallet/wallet-core-polling'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import {
-    NetworkStatusContext,
-    NetworkStatusProvider,
-} from '@providers/NetworkStatusProvider'
-import { WebViewProvider } from '@providers/WebViewProvider'
+import { useNetworkStatus, useNetworkStatusListener } from '@modules/network'
+import { WebViewOverlay } from '@modules/webview'
 import { useLanguage } from '@hooks/language'
 import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
 
 const RootContentContainer = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
-    const { hasInternet } = useContext(NetworkStatusContext)
+    const { hasInternet } = useNetworkStatus()
     const { network } = useNetwork()
     const { showToast } = useToast()
     const { t } = useLanguage()
@@ -90,6 +87,9 @@ export const RootComponent = () => {
 
     const appState = useRef(AppState.currentState)
 
+    // Initialize network status listener (replaces NetworkStatusProvider)
+    useNetworkStatusListener()
+
     useEffect(() => {
         //TODO we should move the registerDevice stuff into the wallet-core somewhere somehow - maybe in setAccounts or something
         registerDevice(accounts?.map(account => account.address) ?? [])
@@ -123,15 +123,12 @@ export const RootComponent = () => {
 
     return (
         <ThemeProvider theme={theme}>
-            <NetworkStatusProvider>
-                <WebViewProvider>
-                    <SigningProvider>
-                        <WalletConnectProvider>
-                            <RootContentContainer />
-                        </WalletConnectProvider>
-                    </SigningProvider>
-                </WebViewProvider>
-            </NetworkStatusProvider>
+            <SigningProvider>
+                <WalletConnectProvider>
+                    <RootContentContainer />
+                    <WebViewOverlay />
+                </WalletConnectProvider>
+            </SigningProvider>
         </ThemeProvider>
     )
 }

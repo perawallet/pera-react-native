@@ -18,10 +18,10 @@ import {
     PWText,
     PWView,
 } from '@components/core'
-import { useContext, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { useStyles } from './styles'
-import { SendFundsContext } from '@modules/transactions/providers/SendFundsProvider'
+import { useSendFunds } from '@modules/transactions/hooks'
 import { useLanguage } from '@hooks/language'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { noteSchema } from '@perawallet/wallet-core-blockchain'
@@ -36,7 +36,7 @@ export const AddNotePanel = ({
     ...rest
 }: AddNotePanelProps) => {
     const styles = useStyles()
-    const { note, setNote } = useContext(SendFundsContext)
+    const { note, setNote } = useSendFunds()
     const [isEdit, setIsEdit] = useState(!!note)
     const { t } = useLanguage()
 

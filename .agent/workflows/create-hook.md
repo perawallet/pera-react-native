@@ -18,21 +18,21 @@ Reference these before starting:
 
 ### 1. Identify Hook Type
 
-| Hook Type             | Suffix       | When to Use                          |
-| --------------------- | ------------ | ------------------------------------ |
-| React Query (fetch)   | `Query`      | Fetching data from API               |
-| React Query (mutate)  | `Mutation`   | Creating, updating, deleting data    |
-| Zustand Store         | `Store`      | Local application state management   |
-| Component Logic       | Component    | Extracting component/screen logic    |
+| Hook Type            | Suffix     | When to Use                        |
+| -------------------- | ---------- | ---------------------------------- |
+| React Query (fetch)  | `Query`    | Fetching data from API             |
+| React Query (mutate) | `Mutation` | Creating, updating, deleting data  |
+| Zustand Store        | `Store`    | Local application state management |
+| Component Logic      | Component  | Extracting component/screen logic  |
 
 ### 2. Determine Location
 
-| Hook Scope             | Location                                       |
-| ---------------------- | ---------------------------------------------- |
-| Domain-level (shared)  | `modules/[moduleName]/hooks/`                  |
-| Cross-domain           | `modules/[originDomain]/hooks/` (export via barrel) |
-| Screen-specific        | `modules/[moduleName]/screens/[ScreenName]/`   |
-| Component-specific     | Same folder as the component                   |
+| Hook Scope            | Location                                            |
+| --------------------- | --------------------------------------------------- |
+| Domain-level (shared) | `modules/[moduleName]/hooks/`                       |
+| Cross-domain          | `modules/[originDomain]/hooks/` (export via barrel) |
+| Screen-specific       | `modules/[moduleName]/screens/[ScreenName]/`        |
+| Component-specific    | Same folder as the component                        |
 
 ## Steps for React Query Hook
 

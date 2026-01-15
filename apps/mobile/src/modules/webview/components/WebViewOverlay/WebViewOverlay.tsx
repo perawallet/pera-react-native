@@ -10,72 +10,31 @@
  limitations under the License
  */
 
-import React, { createContext, PropsWithChildren, useState } from 'react'
+import React from 'react'
 import { PWBottomSheet, PWView, PWWebView } from '@components/core'
 import { useWindowDimensions } from 'react-native'
-import { v7 as uuidv7 } from 'uuid'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-
-type WebViewRequest = {
-    id: string
-    url: string
-    enablePeraConnect?: boolean
-    onBackRequested?: () => void
-    onCloseRequested?: () => void
-}
-
-type WebViewStack = {
-    openWebViews: WebViewRequest[]
-    pushWebView: (view: WebViewRequest) => void
-    popWebView: () => void
-    removeWebView: (id: string) => void
-    clearWebViews: () => void
-}
-
-export const WebViewContext = createContext<WebViewStack>({
-    openWebViews: [],
-    pushWebView: () => {},
-    popWebView: () => {},
-    removeWebView: () => {},
-    clearWebViews: () => {},
-})
-
-type WebViewProviderProps = {} & PropsWithChildren
+import { useWebViewStack, WebViewRequest } from '../../hooks'
 
 const flexStyle = { flex: 1 }
 
-export const WebViewProvider = ({ children }: WebViewProviderProps) => {
-    const [openWebViews, setOpenWebViews] = useState<WebViewRequest[]>([])
+/**
+ * WebViewOverlay renders WebView bottom sheets from the store.
+ * Place this component at the app root level to enable WebView overlays.
+ * Use the `useWebView` hook to open webviews from anywhere in the app.
+ *
+ * @example
+ * // In RootComponent
+ * <RootContent />
+ * <WebViewOverlay />
+ */
+export const WebViewOverlay = () => {
+    const { openWebViews } = useWebViewStack()
     const { height } = useWindowDimensions()
     const insets = useSafeAreaInsets()
 
-    const pushWebView = (view: WebViewRequest) => {
-        setOpenWebViews(prev => [...prev, { ...view, id: uuidv7() }])
-    }
-
-    const popWebView = () => {
-        setOpenWebViews(prev => prev.slice(0, prev.length - 1))
-    }
-
-    const removeWebView = (id: string) => {
-        setOpenWebViews(prev => prev.filter(view => view.id !== id))
-    }
-
-    const clearWebViews = () => {
-        setOpenWebViews([])
-    }
-
     return (
-        <WebViewContext.Provider
-            value={{
-                openWebViews,
-                pushWebView,
-                popWebView,
-                removeWebView,
-                clearWebViews,
-            }}
-        >
-            {children}
+        <>
             {openWebViews.map((view: WebViewRequest) => (
                 <PWBottomSheet
                     key={view.id}
@@ -97,6 +56,6 @@ export const WebViewProvider = ({ children }: WebViewProviderProps) => {
                     </PWView>
                 </PWBottomSheet>
             ))}
-        </WebViewContext.Provider>
+        </>
     )
 }

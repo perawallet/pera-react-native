@@ -12,12 +12,12 @@
 
 import { PWButton, PWHeader, PWText, PWView } from '@components/core'
 import Decimal from 'decimal.js'
-import { useContext } from 'react'
+
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { useStyles } from './styles'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
 import { NumberPad } from '@components/NumberPad'
-import { SendFundsContext } from '@modules/transactions/providers/SendFundsProvider'
+import { useSendFunds } from '@modules/transactions/hooks'
 import { AddNotePanel } from '../AddNotePanel'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { SendFundsInfoPanel } from '../InfoPanel/SendFundsInfoPanel'
@@ -53,7 +53,7 @@ export const SendFundsInputView = ({
     } = useInputView(onNext)
     const { preferredCurrency } = useCurrency()
     const selectedAccount = useSelectedAccount()
-    const { canSelectAsset, note } = useContext(SendFundsContext)
+    const { canSelectAsset, note } = useSendFunds()
     const { t } = useLanguage()
     const noteState = useModalState()
     const infoState = useModalState()

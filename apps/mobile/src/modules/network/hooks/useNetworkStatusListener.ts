@@ -10,18 +10,28 @@
  limitations under the License
  */
 
-import { createContext, PropsWithChildren, useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import NetInfo, { NetInfoState } from '@react-native-community/netinfo'
 import { useToast } from '@hooks/toast'
 import { LONG_NOTIFICATION_DURATION } from '@constants/ui'
+import { useNetworkStatusStore } from './useNetworkStatusStore'
 
-export const NetworkStatusContext = createContext({
-    hasInternet: true,
-})
-
-export const NetworkStatusProvider = ({ children }: PropsWithChildren) => {
+/**
+ * Hook that initializes network status listeners.
+ * Call this once at the app root to set up:
+ * - NetInfo subscription to track connectivity
+ * - Toast notifications for offline status
+ *
+ * @example
+ * // In RootComponent
+ * useNetworkStatusListener()
+ */
+export const useNetworkStatusListener = (): void => {
     const { showToast } = useToast()
-    const [hasInternet, setHasInternet] = useState(true)
+    const setHasInternet = useNetworkStatusStore(state => state.setHasInternet)
+    const hasInternet = useNetworkStatusStore(state => state.hasInternet)
+
+    // Subscribe to network status changes
     useEffect(() => {
         const netInfoSubscription = NetInfo.addEventListener(
             (state: NetInfoState) => {
@@ -31,8 +41,9 @@ export const NetworkStatusProvider = ({ children }: PropsWithChildren) => {
         return () => {
             netInfoSubscription()
         }
-    }, [])
+    }, [setHasInternet])
 
+    // Show toast when going offline
     useEffect(() => {
         if (!hasInternet) {
             showToast(
@@ -45,10 +56,4 @@ export const NetworkStatusProvider = ({ children }: PropsWithChildren) => {
             )
         }
     }, [hasInternet, showToast])
-
-    return (
-        <NetworkStatusContext.Provider value={{ hasInternet }}>
-            {children}
-        </NetworkStatusContext.Provider>
-    )
 }

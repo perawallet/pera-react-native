@@ -11,12 +11,12 @@
  */
 
 import Decimal from 'decimal.js'
-import { useCallback, useContext, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
     useAccountBalancesQuery,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
-import { SendFundsContext } from '@modules/transactions/providers/SendFundsProvider'
+import { useSendFunds } from '@modules/transactions/hooks'
 import { useToast } from '@hooks/toast'
 import { useLanguage } from '@hooks/language'
 import {
@@ -36,8 +36,7 @@ import { bottomSheetNotifier } from '@components/core'
 //business logic for the SendFundsInputView component - factored out for maintainability
 export const useInputView = (onNext: () => void) => {
     const selectedAccount = useSelectedAccount()
-    const { selectedAsset, note, setNote, setAmount } =
-        useContext(SendFundsContext)
+    const { selectedAsset, note, setNote, setAmount } = useSendFunds()
     const [value, setValue] = useState<string | null>()
     const { showToast } = useToast()
     const { t } = useLanguage()

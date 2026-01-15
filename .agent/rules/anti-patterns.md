@@ -111,7 +111,7 @@ import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 const AccountCard = ({ account }: Props) => {
     const [isExpanded, setIsExpanded] = useState(false)
     const { data } = useAccountBalanceQuery(account.address)
-    
+
     const formattedBalance = useMemo(() => formatCurrency(data), [data])
     const handleToggle = useCallback(() => {
         setIsExpanded(prev => !prev)
@@ -126,7 +126,7 @@ const AccountCard = ({ account }: Props) => {
 export const useAccountCard = (account: Account) => {
     const [isExpanded, setIsExpanded] = useState(false)
     const { data, isLoading } = useAccountBalanceQuery(account.address)
-    
+
     const formattedBalance = useMemo(() => formatCurrency(data), [data])
     const handleToggle = useCallback(() => {
         setIsExpanded(prev => !prev)
@@ -214,7 +214,7 @@ type UseAccountsQueryResult = {
 
 export const useAccountsQuery = (): UseAccountsQueryResult => {
     const query = useQuery({ ... })
-    
+
     return {
         accounts: query.data ?? [],
         isLoading: query.isLoading,

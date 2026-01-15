@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useContext, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
     PWButton,
     PWHeader,
@@ -20,7 +20,7 @@ import {
     PWView,
     bottomSheetNotifier,
 } from '@components/core'
-import { SendFundsContext } from '@modules/transactions/providers/SendFundsProvider'
+import { useSendFunds } from '@modules/transactions/hooks'
 import {
     DEFAULT_PRECISION,
     formatCurrency,
@@ -67,8 +67,7 @@ export const SendFundsTransactionConfirmation = ({
 }: SendFundsTransactionConfirmationProps) => {
     const { theme } = useTheme()
     const styles = useStyles()
-    const { selectedAsset, amount, destination, note } =
-        useContext(SendFundsContext)
+    const { selectedAsset, amount, destination, note } = useSendFunds()
     const { signTransactions } = useTransactionSigner()
     const algokit = useAlgorandClient(signTransactions)
 

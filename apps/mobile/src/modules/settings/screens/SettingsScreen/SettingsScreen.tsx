@@ -24,9 +24,8 @@ import { useStyles } from './styles'
 import { ScrollView } from 'react-native'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { useContext } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { WebViewContext } from '@providers/WebViewProvider'
+import { useWebView } from '@modules/webview'
 import { useLanguage } from '@hooks/language'
 import { useModalState } from '@hooks/modal-state'
 import { useDeleteAllData } from '@modules/settings/hooks/delete-all-data'
@@ -39,7 +38,7 @@ export const SettingsScreen = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-    const { pushWebView } = useContext(WebViewContext)
+    const { pushWebView } = useWebView()
     const { t } = useLanguage()
     const { isOpen, open, close } = useModalState()
     const { theme } = useTheme()

@@ -8,26 +8,27 @@ All hooks MUST use the `use` prefix with camelCase naming.
 
 ## Hook Types & Naming Conventions
 
-| Hook Type       | Suffix      | Technology   | Example                         |
-| --------------- | ----------- | ------------ | ------------------------------- |
-| React Query     | `Query`     | TanStack RQ  | `useAccountBalancesQuery`       |
-| React Mutation  | `Mutation`  | TanStack RQ  | `useCreateAccountMutation`      |
-| Zustand Store   | `Store`     | Zustand      | `useAccountsStore`              |
-| Component Logic | Component   | React        | `useAccountCard`                |
+| Hook Type       | Suffix     | Technology  | Example                    |
+| --------------- | ---------- | ----------- | -------------------------- |
+| React Query     | `Query`    | TanStack RQ | `useAccountBalancesQuery`  |
+| React Mutation  | `Mutation` | TanStack RQ | `useCreateAccountMutation` |
+| Zustand Store   | `Store`    | Zustand     | `useAccountsStore`         |
+| Component Logic | Component  | React       | `useAccountCard`           |
 
 ## Hook Location Rules
 
-| Hook Scope               | Location                                       |
-| ------------------------ | ---------------------------------------------- |
-| Domain-level (shared)    | `modules/[moduleName]/hooks/`                  |
-| Screen-specific          | `modules/[moduleName]/screens/[ScreenName]/`   |
-| Component-specific       | Same folder as the component                   |
+| Hook Scope            | Location                                     |
+| --------------------- | -------------------------------------------- |
+| Domain-level (shared) | `modules/[moduleName]/hooks/`                |
+| Screen-specific       | `modules/[moduleName]/screens/[ScreenName]/` |
+| Component-specific    | Same folder as the component                 |
 
 ## Hook Type Definitions (REQUIRED)
 
 All hooks MUST define clear types for inputs and outputs. Hooks MUST NOT expose dependency-specific types to consumers.
 
 **Why this matters:**
+
 - Decouples the application from specific library implementations
 - Enables swapping dependencies without breaking consumers
 - Provides clear contracts for hook behavior
@@ -194,7 +195,7 @@ Every component/screen with complex logic MUST extract it to a dedicated hook.
 const AccountCard = ({ account }: AccountCardProps) => {
     const [isExpanded, setIsExpanded] = useState(false)
     const { data: balance } = useAccountBalanceQuery(account.address)
-    
+
     const formattedBalance = useMemo(() => {
         return formatCurrency(balance)
     }, [balance])
@@ -232,7 +233,7 @@ export const useAccountCard = (account: Account) => {
 
 // AccountCard/AccountCard.tsx
 const AccountCard = ({ account }: AccountCardProps) => {
-    const { isExpanded, isLoading, formattedBalance, handleToggle } = 
+    const { isExpanded, isLoading, formattedBalance, handleToggle } =
         useAccountCard(account)
 
     return (...)
@@ -258,9 +259,12 @@ export const useAccountScreen = () => {
     const { selectedAccount } = useSelectedAccount()
     const navigation = useNavigation()
 
-    const handleAccountPress = useCallback((account: Account) => {
-        navigation.navigate('AccountDetails', { address: account.address })
-    }, [navigation])
+    const handleAccountPress = useCallback(
+        (account: Account) => {
+            navigation.navigate('AccountDetails', { address: account.address })
+        },
+        [navigation],
+    )
 
     return {
         accounts,
@@ -290,6 +294,7 @@ modules/accounts/
 ## Cross-Domain Hook Usage
 
 Hooks from one domain that need to be used by other domains:
+
 - Keep in `modules/[originDomain]/hooks/`
 - Export via the domain's public API (`modules/[domain]/index.ts`)
 - Import using the domain's barrel file

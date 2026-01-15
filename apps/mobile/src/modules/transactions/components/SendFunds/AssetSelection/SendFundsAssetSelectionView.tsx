@@ -21,10 +21,10 @@ import {
     useAccountBalancesQuery,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useCallback, useContext, useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
 import { useStyles } from './styles'
-import { SendFundsContext } from '@modules/transactions/providers/SendFundsProvider'
+import { useSendFunds } from '@modules/transactions/hooks'
 import { useLanguage } from '@hooks/language'
 import { FlashList } from '@shopify/flash-list'
 
@@ -50,7 +50,7 @@ export const SendFundsAssetSelectionView = ({
 }: SendFundsAssetSelectionViewProps) => {
     const styles = useStyles()
     const selectedAccount = useSelectedAccount()
-    const { setSelectedAsset } = useContext(SendFundsContext)
+    const { setSelectedAsset } = useSendFunds()
     const { t } = useLanguage()
     const { accountBalances } = useAccountBalancesQuery(
         selectedAccount ? [selectedAccount] : [],

@@ -27,8 +27,8 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { useCallback, useContext } from 'react'
-import { WebViewContext } from '@providers/WebViewProvider'
+import { useCallback } from 'react'
+import { useWebView } from '@modules/webview'
 import { useLanguage } from './language'
 import {
     ArbitraryDataSignRequest,
@@ -70,12 +70,7 @@ export const JsonRpcErrorCode = {
 export type JsonRpcErrorCode =
     (typeof JsonRpcErrorCode)[keyof typeof JsonRpcErrorCode]
 
-export const useWebView = () => {
-    const { pushWebView } = useContext(WebViewContext)
-    return {
-        pushWebView,
-    }
-}
+export { useWebView } from '@modules/webview'
 
 export const usePeraWebviewInterface = (
     webview: WebView | null,
@@ -92,7 +87,7 @@ export const usePeraWebviewInterface = (
     const { preferredCurrency } = useCurrency()
     const analytics = useAnalyticsService()
     const { t } = useLanguage()
-    const { pushWebView: pushWebViewContext } = useContext(WebViewContext)
+    const { pushWebView: pushWebViewContext } = useWebView()
     const { addSignRequest } = useSigningRequest()
     const { connect } = useWalletConnect()
 
