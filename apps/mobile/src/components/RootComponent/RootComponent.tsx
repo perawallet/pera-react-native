@@ -35,6 +35,11 @@ import { useNetworkStatus, useNetworkStatusListener } from '@modules/network'
 import { WebViewOverlay } from '@modules/webview'
 import { useLanguage } from '@hooks/language'
 import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
+import { useTokenListener } from '@modules/token'
+
+type RootComponentProps = {
+    fcmToken: string | null
+}
 
 const RootContentContainer = () => {
     const insets = useSafeAreaInsets()
@@ -77,7 +82,7 @@ const RootContentContainer = () => {
     )
 }
 
-export const RootComponent = () => {
+export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     const isDarkMode = useIsDarkMode()
     const theme = getTheme(isDarkMode ? 'dark' : 'light')
     const { network } = useNetwork()
@@ -89,6 +94,9 @@ export const RootComponent = () => {
 
     // Initialize network status listener (replaces NetworkStatusProvider)
     useNetworkStatusListener()
+
+    // Initialize FCM token (replaces TokenInitializer)
+    useTokenListener(fcmToken)
 
     useEffect(() => {
         //TODO we should move the registerDevice stuff into the wallet-core somewhere somehow - maybe in setAccounts or something

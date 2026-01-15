@@ -10,21 +10,26 @@
  limitations under the License
  */
 
+import { useEffect } from 'react'
 import { useFcmToken } from '@perawallet/wallet-core-platform-integration'
-import { PropsWithChildren, useEffect } from 'react'
 
-type TokenProviderProps = {
-    token: string | null
-} & PropsWithChildren
-
-//This thing only exists to resolve a sequencing issue where we can't use the useFcmToken hook
-//before the platform services are initialized (i.e. boostrapping is done)
-export const TokenProvider = ({ children, token }: TokenProviderProps) => {
+/**
+ * Hook that initializes the FCM token after bootstrap.
+ * Call this once in App.tsx after bootstrapping is complete.
+ *
+ * This replaces the TokenProvider component, since the only purpose
+ * of that provider was to call setFcmToken() with the token from bootstrap.
+ *
+ * @param token - The FCM token from the bootstrap process
+ *
+ * @example
+ * // In App.tsx after bootstrap
+ * useTokenListener(fcmToken)
+ */
+export const useTokenListener = (token: string | null): void => {
     const { setFcmToken } = useFcmToken()
 
     useEffect(() => {
         setFcmToken(token)
     }, [token, setFcmToken])
-
-    return <>{children}</>
 }
