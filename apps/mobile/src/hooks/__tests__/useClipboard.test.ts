@@ -12,9 +12,9 @@
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useClipboard } from '../clipboard'
+import { useClipboard } from '../useClipboard'
 import Clipboard from '@react-native-clipboard/clipboard'
-import { useToast } from '../toast'
+import { useToast } from '../useToast'
 
 vi.mock('@react-native-clipboard/clipboard', () => ({
     default: {
@@ -22,7 +22,7 @@ vi.mock('@react-native-clipboard/clipboard', () => ({
     },
 }))
 
-vi.mock('../toast', () => ({
+vi.mock('../useToast', () => ({
     useToast: vi.fn(() => ({ showToast: vi.fn() })),
 }))
 

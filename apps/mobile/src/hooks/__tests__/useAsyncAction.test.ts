@@ -11,7 +11,7 @@
  */
 
 import { renderHook, act } from '@testing-library/react'
-import { useAsyncAction } from '../async-action'
+import { useAsyncAction } from '../useAsyncAction'
 
 describe('useAsyncAction', () => {
     it('should handle successful execution', async () => {

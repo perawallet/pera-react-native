@@ -11,7 +11,7 @@
  */
 
 import { renderHook, act } from '@testing-library/react'
-import { useSearch } from '../search'
+import { useSearch } from '../useSearch'
 
 describe('useSearch', () => {
     const items = ['apple', 'banana', 'cherry']

@@ -12,7 +12,7 @@
 
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { useToast } from './toast'
+import { useToast } from './useToast'
 import { logger } from '@perawallet/wallet-core-shared'
 import { parseDeeplink } from './deeplink/parser'
 import { DeeplinkType } from './deeplink/types'
@@ -21,7 +21,7 @@ import {
     useSelectedAccountAddress,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useWebView } from './webview'
+import { useWebView } from './usePeraWebviewInterface'
 import { v7 as uuidv7 } from 'uuid'
 import { useEffect, useRef } from 'react'
 import { Linking } from 'react-native'

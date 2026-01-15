@@ -39,13 +39,7 @@ export const NumberPad = ({ onPress }: NumberPadProps) => {
                             onPress={() => onPress(key)}
                             style={styles.key}
                         >
-                            {!!key && (
-                                <PWText
-                                    variant='h2'
-                                >
-                                    {key}
-                                </PWText>
-                            )}
+                            {!!key && <PWText variant='h2'>{key}</PWText>}
                             {!key && <PWIcon name='delete' />}
                         </PWTouchableOpacity>
                     ))}

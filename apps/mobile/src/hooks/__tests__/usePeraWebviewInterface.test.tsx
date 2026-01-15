@@ -12,7 +12,7 @@
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { usePeraWebviewInterface, useWebView } from '../webview'
+import { usePeraWebviewInterface, useWebView } from '../usePeraWebviewInterface'
 import { Linking } from 'react-native'
 
 vi.mock('react-native', () => ({
@@ -100,7 +100,7 @@ vi.mock('@rneui/themed', () => ({
     makeStyles: () => () => ({}),
 }))
 
-vi.mock('../language', () => ({
+vi.mock('../useLanguage', () => ({
     useLanguage: vi.fn(() => ({
         t: (key: string, params?: Record<string, string>) => {
             if (key === 'errors.webview.unsupported_url' && params?.url) {

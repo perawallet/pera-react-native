@@ -13,7 +13,7 @@
 /* eslint-disable max-lines */
 
 import WebView from 'react-native-webview'
-import { useToast } from './toast'
+import { useToast } from './useToast'
 import { Linking } from 'react-native'
 import {
     useAnalyticsService,
@@ -29,7 +29,7 @@ import { useSettings } from '@perawallet/wallet-core-settings'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useCallback } from 'react'
 import { useWebView } from '@modules/webview'
-import { useLanguage } from './language'
+import { useLanguage } from './useLanguage'
 import {
     ArbitraryDataSignRequest,
     PeraArbitraryDataMessage,

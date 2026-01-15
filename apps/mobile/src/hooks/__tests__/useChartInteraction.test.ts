@@ -11,7 +11,7 @@
  */
 
 import { renderHook, act } from '@testing-library/react'
-import { useChartInteraction } from '../chart-interaction'
+import { useChartInteraction } from '../useChartInteraction'
 
 describe('useChartInteraction', () => {
     it('should initialize with default period', () => {

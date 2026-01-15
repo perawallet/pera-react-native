@@ -13,11 +13,11 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(() => {
-  return {
-    contentContainer: {
-      flex: 1,
-      margin: 0,
-      padding: 0,
-    },
-  }
+    return {
+        contentContainer: {
+            flex: 1,
+            margin: 0,
+            padding: 0,
+        },
+    }
 })

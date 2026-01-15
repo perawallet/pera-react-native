@@ -20,7 +20,7 @@ import {
     type Mock,
 } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useDeepLink, useDeeplinkListener } from '../deeplink'
+import { useDeepLink, useDeeplinkListener } from '../useDeepLink'
 import { useNavigation } from '@react-navigation/native'
 import { parseDeeplink } from '../deeplink/parser'
 import { DeeplinkType } from '../deeplink/types'
@@ -50,7 +50,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccountAddress: () => ({ setSelectedAccountAddress: vi.fn() }),
 }))
 
-vi.mock('../webview', () => ({
+vi.mock('../usePeraWebviewInterface', () => ({
     useWebView: () => ({ pushWebView: vi.fn() }),
 }))
 
@@ -58,7 +58,7 @@ vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     useWalletConnect: () => ({ connect: vi.fn() }),
 }))
 
-vi.mock('../toast', () => ({
+vi.mock('../useToast', () => ({
     useToast: vi.fn(() => ({ showToast: vi.fn() })),
 }))
 

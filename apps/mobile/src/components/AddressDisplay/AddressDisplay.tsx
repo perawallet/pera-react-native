@@ -11,7 +11,13 @@
  */
 
 import { useTheme } from '@rneui/themed'
-import { PWIcon, PWText, PWTextProps, PWView, PWViewProps } from '@components/core'
+import {
+    PWIcon,
+    PWText,
+    PWTextProps,
+    PWView,
+    PWViewProps,
+} from '@components/core'
 import { useStyles } from './styles'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'

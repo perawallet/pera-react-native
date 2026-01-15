@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { useShowOnboarding } from '../onboarding'
+import { useShowOnboarding } from '../useShowOnboarding'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { useHasNoAccounts } from '@perawallet/wallet-core-accounts'
 

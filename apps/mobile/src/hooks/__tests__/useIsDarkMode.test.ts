@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { useIsDarkMode } from '../theme'
+import { useIsDarkMode } from '../useIsDarkMode'
 import { useColorScheme } from 'react-native'
 import { useSettings } from '@perawallet/wallet-core-settings'
 

@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useLanguage } from '../language'
+import { useLanguage } from '../useLanguage'
 import { useTranslation } from 'react-i18next'
 
 vi.mock('react-i18next', () => ({
