@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import React from 'react'
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { SettingsWalletConnectDetailsScreen } from '../SettingsWalletConnectDetailsScreen'
@@ -39,7 +40,9 @@ vi.mock('react-native-gesture-handler', () => ({
 }))
 
 vi.mock('@components/InfoButton', () => ({
-    InfoButton: ({ children }: any) => <div>{children}</div>,
+    InfoButton: ({ children }: { children: React.ReactNode }) => (
+        <div>{children}</div>
+    ),
 }))
 
 vi.mock('@modules/walletconnect/components/PermissionItem', () => ({
@@ -61,15 +64,23 @@ vi.mock('@hooks/language', () => ({
 }))
 
 vi.mock('@components/PWButton', () => ({
-    PWButton: ({ title }: any) => <button>{title}</button>,
+    PWButton: ({ title }: { title: string }) => <button>{title}</button>,
 }))
 
 vi.mock('@components/PWView', () => ({
-    PWView: ({ children }: any) => <div>{children}</div>,
+    PWView: ({ children }: { children: React.ReactNode }) => (
+        <div>{children}</div>
+    ),
 }))
 
 vi.mock('@components/PWTouchableOpacity', () => ({
-    PWTouchableOpacity: ({ children, onPress }: any) => (
+    PWTouchableOpacity: ({
+        children,
+        onPress,
+    }: {
+        children: React.ReactNode
+        onPress: () => void
+    }) => (
         <div
             onClick={onPress}
             role='button'
@@ -80,7 +91,13 @@ vi.mock('@components/PWTouchableOpacity', () => ({
 }))
 
 vi.mock('@components/RowTitledItem', () => ({
-    RowTitledItem: ({ title, children }: any) => (
+    RowTitledItem: ({
+        title,
+        children,
+    }: {
+        title: string
+        children: React.ReactNode
+    }) => (
         <div>
             {title}
             {children}
@@ -89,7 +106,13 @@ vi.mock('@components/RowTitledItem', () => ({
 }))
 
 vi.mock('@components/ExpandablePanel/TitledExpandablePanel', () => ({
-    TitledExpandablePanel: ({ title, children }: any) => (
+    TitledExpandablePanel: ({
+        title,
+        children,
+    }: {
+        title: string
+        children: React.ReactNode
+    }) => (
         <div>
             {title}
             {children}
@@ -98,7 +121,7 @@ vi.mock('@components/ExpandablePanel/TitledExpandablePanel', () => ({
 }))
 
 vi.mock('@components/PWBadge', () => ({
-    PWBadge: ({ value }: any) => <span>{value}</span>,
+    PWBadge: ({ value }: { value: string | number }) => <span>{value}</span>,
 }))
 
 vi.mock('@components/PWIcon', () => ({
