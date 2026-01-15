@@ -13,10 +13,10 @@
   },
   "scripts": {
     "generate:config": "bash ../../tools/generate-config.sh",
-    "build": "pnpm generate:config && vite build",
+    "build": "vite build",
     "dev": "pnpm generate:config && vite build --watch",
     "preview": "vite preview",
-    "test": "pnpm generate:config && vitest run",
+    "test": "vitest run",
     "test:watch": "pnpm generate:config && vitest --watch",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix"
