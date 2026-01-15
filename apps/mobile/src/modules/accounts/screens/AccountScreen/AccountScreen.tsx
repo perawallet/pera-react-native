@@ -129,7 +129,7 @@ const AccountScreen = ({ route }: AccountScreenProps) => {
                 </TabView.Item>
             </TabView>
             <QRScannerView
-                visible={scannerState.isOpen}
+                isVisible={scannerState.isOpen}
                 onSuccess={scannerState.close}
                 onClose={scannerState.close}
                 animationType='slide'

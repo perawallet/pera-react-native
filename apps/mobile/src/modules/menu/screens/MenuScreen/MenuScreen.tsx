@@ -109,7 +109,7 @@ const MenuScreen = () => {
                 />
             </PWView>
             <QRScannerView
-                visible={scanner.isOpen}
+                isVisible={scanner.isOpen}
                 onSuccess={scanner.close}
                 onClose={scanner.close}
                 animationType='slide'

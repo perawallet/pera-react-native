@@ -63,7 +63,7 @@ const AddressEntryField = ({
                     animationType='slide'
                     onClose={hideScanner}
                     title={t('address_entry.scan_qr')}
-                    visible={scannerVisible}
+                    isVisible={scannerVisible}
                 />
             )}
         </PWView>
