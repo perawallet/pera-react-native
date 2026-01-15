@@ -190,7 +190,8 @@
         "blockchain": {
             "generic": "Something went wrong accessing the blockchain.",
             "transaction": "Failed to process the transaction: {{cause}}",
-            "invalid_transaction": "Invalid transaction: {{cause}}"
+            "invalid_transaction": "Invalid transaction: {{cause}}",
+            "signing": "Failed to sign the transaction: {{cause}}"
         },
         "general": {
             "title": "An error occurred",

@@ -21,6 +21,7 @@ export default defineConfig({
         dts({
             include: ['src'],
             exclude: ['**/__tests__/**', '**/*.test.ts', '**/*.test.tsx'],
+            tsconfigPath: resolve(__dirname, 'tsconfig.json'),
             afterDiagnostic: diagnostics => {
                 if (diagnostics.length > 0) {
                     throw new Error(

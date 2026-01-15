@@ -10,7 +10,12 @@
  limitations under the License
  */
 
-import { logger, Network, Networks } from '@perawallet/wallet-core-shared'
+import {
+    encodeToBase64,
+    logger,
+    Network,
+    Networks,
+} from '@perawallet/wallet-core-shared'
 import {
     WalletConnectInvalidNetworkError,
     WalletConnectInvalidSessionError,
@@ -181,7 +186,7 @@ export const useWalletConnectHandlers = () => {
                     try {
                         if (signedData) {
                             const result = signedData.map(item =>
-                                Buffer.from(item.signature).toString('base64'),
+                                encodeToBase64(item.signature),
                             )
                             const toSend = {
                                 id: payload.id,
