@@ -12,7 +12,7 @@
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useDeleteAllData } from '../delete-all-data'
+import { useDeleteAllData } from '../useDeleteAllData'
 import {
     useAllAccounts,
     useRemoveAccountById,

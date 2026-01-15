@@ -12,7 +12,7 @@
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { useSettingsOptions } from '../settings-options'
+import { useSettingsOptions } from '../useSettingsOptions'
 import { useLanguage } from '@hooks/useLanguage'
 
 vi.mock('@hooks/useLanguage', () => ({

@@ -12,7 +12,7 @@
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useInputView } from '../use-input-view'
+import { useInputView } from '../useInputView'
 import Decimal from 'decimal.js'
 
 import {
