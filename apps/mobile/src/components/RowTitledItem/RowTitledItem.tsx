@@ -10,9 +10,8 @@
  limitations under the License
  */
 
-import { PWView, PWViewProps } from '@components/core'
+import { PWText, PWView, PWViewProps } from '@components/core'
 import { useStyles } from './styles'
-import { Text } from '@rneui/themed'
 
 export type RowTitledItemProps = {
     title: string
@@ -27,7 +26,7 @@ export const RowTitledItem = (props: RowTitledItemProps) => {
             {...rest}
             style={[rest.style, styles.container]}
         >
-            <Text style={styles.label}>{title}</Text>
+            <PWText style={styles.label}>{title}</PWText>
             <PWView style={styles.childContainer}>{children}</PWView>
         </PWView>
     )

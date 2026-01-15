@@ -21,7 +21,7 @@ vi.mock('../AssetIcon', () => ({
     AssetIcon: () => null,
 }))
 
-vi.mock('@hooks/theme', () => ({
+vi.mock('@hooks/useIsDarkMode', () => ({
     useIsDarkMode: vi.fn(() => false),
 }))
 

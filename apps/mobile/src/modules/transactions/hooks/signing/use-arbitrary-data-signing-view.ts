@@ -18,8 +18,8 @@ import {
     ArbitraryDataSignRequest,
     useSigningRequest,
 } from '@perawallet/wallet-core-blockchain'
-import { useToast } from '@hooks/toast'
-import { useLanguage } from '@hooks/language'
+import { useToast } from '@hooks/useToast'
+import { useLanguage } from '@hooks/useLanguage'
 import { useCallback, useState } from 'react'
 
 export const useArbitraryDataSigningView = (

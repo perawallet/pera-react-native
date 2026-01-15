@@ -10,75 +10,154 @@ Use this workflow when creating a new hook.
 
 Reference these before starting:
 
-- `.agent/rules/code-patterns.md` - Detailed hook patterns with examples
+- `.agent/rules/hook-patterns.md` - Detailed hook patterns with examples
 - `docs/FOLDER_STRUCTURE.md` - Where to place the hook
 - `docs/NAMING_CONVENTIONS.md` - Hook naming patterns
 
-## Determine Hook Type
+## Determine Hook Type & Location
 
-1. **Business logic hook** → `packages/[domain]/src/hooks/`
-    - Data fetching, mutations, store access
-2. **UI-specific hook** → `apps/mobile/src/hooks/`
-    - Navigation, animations, clipboard, toast
+### 1. Identify Hook Type
 
-## Steps for Business Logic Hook
+| Hook Type            | Suffix     | When to Use                        |
+| -------------------- | ---------- | ---------------------------------- |
+| React Query (fetch)  | `Query`    | Fetching data from API             |
+| React Query (mutate) | `Mutation` | Creating, updating, deleting data  |
+| Zustand Store        | `Store`    | Local application state management |
+| Component Logic      | Component  | Extracting component/screen logic  |
+
+### 2. Determine Location
+
+| Hook Scope            | Location                                            |
+| --------------------- | --------------------------------------------------- |
+| Domain-level (shared) | `modules/[moduleName]/hooks/`                       |
+| Cross-domain          | `modules/[originDomain]/hooks/` (export via barrel) |
+| Screen-specific       | `modules/[moduleName]/screens/[ScreenName]/`        |
+| Component-specific    | Same folder as the component                        |
+
+## Steps for React Query Hook
 
 ### 1. Create Hook File
 
-Create `packages/[domain]/src/hooks/use[Name].ts`
+Location: `modules/[moduleName]/hooks/use[Name]Query.ts` or `use[Name]Mutation.ts`
 
-Follow patterns in `.agent/rules/code-patterns.md`:
+```typescript
+// useAccountsQuery.ts
+import { useQuery } from '@tanstack/react-query'
+import { fetchAccounts } from '../api'
+import { accountQueryKeys } from '../queryKeys'
 
-- Query hooks: `use[Resource]Query` (e.g., `useAccountBalancesQuery`)
-- Mutation hooks: `use[Action][Resource]` (e.g., `useCreateAccount`)
-- Store hooks: `use[Resource]` (e.g., `useAllAccounts`)
+export const useAccountsQuery = () => {
+    return useQuery({
+        queryKey: accountQueryKeys.all,
+        queryFn: fetchAccounts,
+    })
+}
+```
 
-### 2. Add to Index
+### 2. Add to Barrel File
 
-Update `packages/[domain]/src/hooks/index.ts` to export the hook
+Update `modules/[moduleName]/hooks/index.ts`:
+
+```typescript
+export { useAccountsQuery } from './useAccountsQuery'
+```
 
 ### 3. Create Test
 
-Create `packages/[domain]/src/hooks/__tests__/use[Name].test.ts`
+Create `modules/[moduleName]/hooks/__tests__/use[Name]Query.spec.ts`
 
-Use Vitest with `@testing-library/react` for hook testing
-
-### 4. Verify
-
-// turbo
-
-```sh
-pnpm --filter [domain] test
-```
-
-// turbo
-
-```sh
-pnpm --filter [domain] lint
-```
-
-## Steps for UI Hook
+## Steps for Zustand Store Hook
 
 ### 1. Create Hook File
 
-Create `apps/mobile/src/hooks/[name].ts`
+Location: `modules/[moduleName]/hooks/use[Name]Store.ts`
 
-### 2. Create Test
+```typescript
+// useAccountsStore.ts
+import { useAccountsStore as useStore } from '../store'
 
-Create `apps/mobile/src/hooks/__tests__/[name].test.ts`
+export const useSelectedAccount = () => {
+    return useStore(state => state.selectedAccount)
+}
 
-- Use Vitest with `@testing-library/react` (or `@test-utils/render` if providers like theme/queries are needed)
+export const useAccountsStore = () => useStore()
+```
 
-### 3. Verify
+### 2. Add to Barrel File
+
+Update `modules/[moduleName]/hooks/index.ts`
+
+### 3. Create Test
+
+Create `modules/[moduleName]/hooks/__tests__/use[Name]Store.spec.ts`
+
+## Steps for Component/Screen Logic Hook
+
+### 1. Create Hook File
+
+Location: Same folder as component/screen
+
+- For `AccountCard/AccountCard.tsx` → `AccountCard/useAccountCard.ts`
+- For `AccountScreen/AccountScreen.tsx` → `AccountScreen/useAccountScreen.ts`
+
+```typescript
+// useAccountCard.ts
+export const useAccountCard = (account: Account) => {
+    const [isExpanded, setIsExpanded] = useState(false)
+    const { data, isLoading } = useAccountBalanceQuery(account.address)
+
+    const handleToggle = useCallback(() => {
+        setIsExpanded(prev => !prev)
+    }, [])
+
+    return { isExpanded, isLoading, handleToggle }
+}
+```
+
+### 2. Update Component
+
+Import and use the hook in the component:
+
+```typescript
+// AccountCard.tsx
+import { useAccountCard } from './useAccountCard'
+
+const AccountCard = ({ account }: Props) => {
+    const { isExpanded, isLoading, handleToggle } = useAccountCard(account)
+    return (...)
+}
+```
+
+### 3. Create Test
+
+Create `ComponentName/__tests__/useComponentName.spec.ts`
+
+## Verification
 
 // turbo
 
 ```sh
-pnpm --filter mobile test
+pnpm test
 ```
 
 // turbo
 
 ```sh
-pnpm --filter mobile lint
+pnpm lint
 ```
+
+## Naming Checklist
+
+- [ ] Hook name starts with `use` prefix (camelCase)
+- [ ] React Query fetch hooks end with `Query`
+- [ ] React Query mutation hooks end with `Mutation`
+- [ ] Zustand hooks end with `Store`
+- [ ] File name matches hook name exactly
+
+## Type Decoupling Checklist
+
+- [ ] Input parameters have explicit type definitions
+- [ ] Return value has explicit type definition
+- [ ] Return type does NOT use dependency types (UseQueryResult, UseMutationResult, StoreApi)
+- [ ] Only expose necessary properties to consumers
+- [ ] Hook provides a stable API contract independent of underlying library

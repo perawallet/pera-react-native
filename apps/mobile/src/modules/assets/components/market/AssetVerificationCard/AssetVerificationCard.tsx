@@ -15,7 +15,7 @@ import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
 import { useTheme } from '@rneui/themed'
 import { IconName, PWButton, PWIcon, PWText, PWView } from '@components/core'
 import { useMemo } from 'react'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 
 type AssetVerificationCardProps = {
     assetDetails: PeraAsset

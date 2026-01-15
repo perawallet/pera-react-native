@@ -17,8 +17,8 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { useLanguage } from '@hooks/language'
-import { useModalState } from '@hooks/modal-state'
+import { useLanguage } from '@hooks/useLanguage'
+import { useModalState } from '@hooks/useModalState'
 import {
     AlgorandPermission,
     useWalletConnect,
@@ -28,7 +28,7 @@ import { Dialog, Image, Text, useTheme } from '@rneui/themed'
 import { useMemo, useState } from 'react'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { WalletConnectSettingsStackParamsList } from '@modules/settings/routes'
-import { useWebView } from '@hooks/webview'
+import { useWebView } from '@hooks/usePeraWebviewInterface'
 import { v7 as uuid } from 'uuid'
 import { RowTitledItem } from '@components/RowTitledItem'
 import { formatDatetime } from '@perawallet/wallet-core-shared'

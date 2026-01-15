@@ -13,7 +13,7 @@
 import React, { ReactNode } from 'react'
 import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
 import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 import { EmptyView } from '@components/EmptyView'
 import { PWButton } from '@components/core'
 

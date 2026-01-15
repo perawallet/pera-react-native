@@ -11,7 +11,7 @@
  */
 
 import { PWHeader, PWTouchableOpacity, PWView } from '@components/core'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 import { useAllAccounts, WalletAccount } from '@perawallet/wallet-core-accounts'
 import { Text } from '@rneui/themed'
 import { useStyles } from './styles'

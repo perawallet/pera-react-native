@@ -13,9 +13,9 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useSettingsOptions } from '../settings-options'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 
-vi.mock('@hooks/language', () => ({
+vi.mock('@hooks/useLanguage', () => ({
     useLanguage: vi.fn(),
 }))
 

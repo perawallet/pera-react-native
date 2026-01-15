@@ -26,7 +26,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useState } from 'react'
 import { KeyboardAvoidingView, Platform } from 'react-native'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { OnboardingStackParamList } from '../../routes'

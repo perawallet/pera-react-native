@@ -13,7 +13,7 @@
 import { NativeStackHeaderProps } from '@react-navigation/native-stack'
 import { PWIcon, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMemo } from 'react'
 export type NavigationHeaderProps = NativeStackHeaderProps

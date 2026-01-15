@@ -11,13 +11,13 @@
  */
 
 import { useStyles } from './styles'
-import { Text } from '@rneui/themed'
 import {
     IconName,
     PWIcon,
     PWView,
     PWTouchableOpacity,
     type PWTouchableOpacityProps,
+    PWText,
 } from '@components/core'
 
 export type PanelButtonProps = {
@@ -40,13 +40,12 @@ export const PanelButton = (props: PanelButtonProps) => {
                 {...rest}
             >
                 {leftIcon && <PWIcon name={leftIcon} />}
-                <Text
+                <PWText
                     style={themeStyle.textStyle}
-                    h4={titleWeight === 'h4'}
-                    h3={titleWeight === 'h3'}
+                    variant={titleWeight}
                 >
                     {title}
-                </Text>
+                </PWText>
                 {rightIcon && <PWIcon name={rightIcon} />}
             </PWView>
         </PWTouchableOpacity>

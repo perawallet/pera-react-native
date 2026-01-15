@@ -19,7 +19,7 @@ import {
     useWalletConnectSessionRequests,
 } from '@perawallet/wallet-core-walletconnect'
 import { WalletConnectErrorBoundary } from '@modules/walletconnect/components/BaseErrorBoundary/WalletConnectErrorBoundary'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 
 type WalletConnectProviderProps = {} & PropsWithChildren
 

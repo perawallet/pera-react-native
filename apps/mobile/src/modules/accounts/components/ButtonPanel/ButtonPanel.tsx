@@ -18,8 +18,8 @@ import { RoundButton } from '@components/RoundButton'
 
 import { useState } from 'react'
 import { SendFundsBottomSheet } from '@modules/transactions/components/SendFunds/PWBottomSheet/SendFundsBottomSheet'
-import { useLanguage } from '@hooks/language'
-import { useToast } from '@hooks/toast'
+import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
 
 export const ButtonPanel = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()

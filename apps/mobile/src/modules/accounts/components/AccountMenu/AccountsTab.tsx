@@ -16,7 +16,7 @@ import {
     useSelectedAccountAddress,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { AccountWithBalance } from '../AccountWithBalance'
 

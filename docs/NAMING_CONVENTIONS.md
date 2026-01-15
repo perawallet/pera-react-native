@@ -59,12 +59,20 @@ screens/
 
 ## Hooks
 
-| Type          | Convention           | Example                    |
-| ------------- | -------------------- | -------------------------- |
-| Query hook    | `use[Thing]Query`    | `useAccountBalanceQuery`   |
-| Mutation hook | `use[Action][Thing]` | `useCreateAccount`         |
-| Store hook    | `use[Thing]`         | `useAllAccounts`           |
-| UI hook       | `use[Feature]`       | `useToast`, `useClipboard` |
+All hooks use `camelCase` with `use` prefix.
+
+| Type            | Convention                   | Example                    |
+| --------------- | ---------------------------- | -------------------------- |
+| Query hook      | `use[Thing]Query`            | `useAccountBalanceQuery`   |
+| Mutation hook   | `use[Action][Thing]Mutation` | `useCreateAccountMutation` |
+| Store hook      | `use[Thing]Store`            | `useAccountsStore`         |
+| Component logic | `use[ComponentName]`         | `useAccountCard`           |
+| Screen logic    | `use[ScreenName]`            | `useAccountScreen`         |
+
+**Technology Requirements:**
+
+- **React Query**: REQUIRED for all async requests (API calls)
+- **Zustand**: REQUIRED for all local application state
 
 ## Variables & Props
 
@@ -97,7 +105,10 @@ type LoadingState = 'idle' | 'loading' | 'success' | 'error'
 ✅ AccountScreen/         (screen folder - PascalCase)
 ✅ AccountScreen.tsx      (screen file)
 ✅ PWButton.spec.tsx      (test file)
-✅ useToast.ts            (hook)
+✅ useAccountsQuery.ts    (query hook)
+✅ useCreateAccountMutation.ts (mutation hook)
+✅ useAccountsStore.ts    (store hook)
+✅ useAccountCard.ts      (component logic hook)
 ✅ signing/               (grouping folder - kebab-case)
 ✅ isLoading              (boolean prop)
 ✅ onPress                (event prop)
@@ -109,6 +120,9 @@ type LoadingState = 'idle' | 'loading' | 'success' | 'error'
 ❌ PWButton.test.tsx      (tests should use .spec.tsx)
 ❌ loading                (booleans need prefix)
 ❌ settings-screen/       (screen folders should be PascalCase)
+❌ useAccountBalance.ts   (query hooks need Query suffix)
+❌ useCreateAccount.ts    (mutation hooks need Mutation suffix)
+❌ useAccounts.ts         (store hooks need Store suffix)
 ```
 
 ## Learn More

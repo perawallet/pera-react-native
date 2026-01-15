@@ -18,7 +18,7 @@ import { useStyles } from './styles'
 import { useWindowDimensions } from 'react-native'
 import { TransactionErrorBoundary } from '@modules/transactions/components/BaseErrorBoundary/TransactionErrorBoundary'
 import { TAB_ANIMATION_CONFIG } from '@constants/ui'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 import { ReceiveFundsAccountSelectionView } from '../AccountSelection/ReceiveFundsAccountSelectionView'
 import { ReceiveFundsQRView } from '../QrView/ReceiveFundsQRView'
 

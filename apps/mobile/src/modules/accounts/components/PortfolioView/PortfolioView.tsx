@@ -12,13 +12,13 @@
 
 import { PWButton, PWText, PWView, PWViewProps } from '@components/core'
 import { useStyles } from './styles'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { WealthChart } from '@components/WealthChart'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { useCallback } from 'react'
-import { useChartInteraction } from '@hooks/chart-interaction'
+import { useChartInteraction } from '@hooks/useChartInteraction'
 import { WealthTrend } from '@components/WealthTrend'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import { useCurrency } from '@perawallet/wallet-core-currencies'

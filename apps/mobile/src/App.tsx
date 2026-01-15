@@ -22,7 +22,7 @@ import { RootComponent } from '@components/RootComponent'
 import BootSplash from 'react-native-bootsplash'
 import { NotifierWrapper } from 'react-native-notifier'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
-import { TokenProvider } from './providers/TokenProvider'
+
 import { useLanguage } from './hooks/language'
 
 export const App = () => {
@@ -59,11 +59,9 @@ export const App = () => {
             {bootstrapped && persister && (
                 <GestureHandlerRootView>
                     <NotifierWrapper>
-                        <TokenProvider token={fcmToken}>
-                            <QueryProvider persister={persister}>
-                                <RootComponent />
-                            </QueryProvider>
-                        </TokenProvider>
+                        <QueryProvider persister={persister}>
+                            <RootComponent fcmToken={fcmToken} />
+                        </QueryProvider>
                     </NotifierWrapper>
                 </GestureHandlerRootView>
             )}

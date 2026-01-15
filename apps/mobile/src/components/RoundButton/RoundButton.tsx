@@ -17,8 +17,8 @@ import {
     PWView,
     PWTouchableOpacity,
     type PWTouchableOpacityProps,
+    PWText,
 } from '@components/core'
-import { Text } from '@rneui/themed'
 
 export type RoundButtonProps = {
     icon: IconName
@@ -53,7 +53,7 @@ export const RoundButton = (props: RoundButtonProps) => {
                     variant={iconVariant}
                 />
             </PWTouchableOpacity>
-            {!!title && <Text style={style.titleStyle}>{title}</Text>}
+            {!!title && <PWText style={style.titleStyle}>{title}</PWText>}
         </PWView>
     )
 }

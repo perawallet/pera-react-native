@@ -12,7 +12,7 @@
 
 import { Networks } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
-import { useContext, useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { AppState } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { MainRoutes } from '@routes/index'
@@ -22,8 +22,8 @@ import { useStyles } from './styles'
 import { PWText, PWView } from '@components/core'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ErrorBoundary from 'react-native-error-boundary'
-import { useToast } from '@hooks/toast'
-import { useIsDarkMode } from '@hooks/theme'
+import { useToast } from '@hooks/useToast'
+import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { SigningProvider } from '@modules/transactions/providers/SigningProvider'
 import {
     useDevice,
@@ -31,18 +31,20 @@ import {
 } from '@perawallet/wallet-core-platform-integration'
 import { usePolling } from '@perawallet/wallet-core-polling'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import {
-    NetworkStatusContext,
-    NetworkStatusProvider,
-} from '@providers/NetworkStatusProvider'
-import { WebViewProvider } from '@providers/WebViewProvider'
-import { useLanguage } from '@hooks/language'
+import { useNetworkStatus, useNetworkStatusListener } from '@modules/network'
+import { WebViewOverlay } from '@modules/webview'
+import { useLanguage } from '@hooks/useLanguage'
 import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
+import { useTokenListener } from '@modules/token'
+
+type RootComponentProps = {
+    fcmToken: string | null
+}
 
 const RootContentContainer = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
-    const { hasInternet } = useContext(NetworkStatusContext)
+    const { hasInternet } = useNetworkStatus()
     const { network } = useNetwork()
     const { showToast } = useToast()
     const { t } = useLanguage()
@@ -80,7 +82,7 @@ const RootContentContainer = () => {
     )
 }
 
-export const RootComponent = () => {
+export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     const isDarkMode = useIsDarkMode()
     const theme = getTheme(isDarkMode ? 'dark' : 'light')
     const { network } = useNetwork()
@@ -89,6 +91,12 @@ export const RootComponent = () => {
     const accounts = useAllAccounts()
 
     const appState = useRef(AppState.currentState)
+
+    // Initialize network status listener (replaces NetworkStatusProvider)
+    useNetworkStatusListener()
+
+    // Initialize FCM token (replaces TokenInitializer)
+    useTokenListener(fcmToken)
 
     useEffect(() => {
         //TODO we should move the registerDevice stuff into the wallet-core somewhere somehow - maybe in setAccounts or something
@@ -123,15 +131,12 @@ export const RootComponent = () => {
 
     return (
         <ThemeProvider theme={theme}>
-            <NetworkStatusProvider>
-                <WebViewProvider>
-                    <SigningProvider>
-                        <WalletConnectProvider>
-                            <RootContentContainer />
-                        </WalletConnectProvider>
-                    </SigningProvider>
-                </WebViewProvider>
-            </NetworkStatusProvider>
+            <SigningProvider>
+                <WalletConnectProvider>
+                    <RootContentContainer />
+                    <WebViewOverlay />
+                </WalletConnectProvider>
+            </SigningProvider>
         </ThemeProvider>
     )
 }

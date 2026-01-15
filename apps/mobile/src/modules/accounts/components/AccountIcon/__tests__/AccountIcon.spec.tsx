@@ -16,7 +16,7 @@ import { render, screen } from '@test-utils/render'
 import { AccountIcon } from '../AccountIcon'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 
-vi.mock('@hooks/theme', () => ({
+vi.mock('@hooks/useIsDarkMode', () => ({
     useIsDarkMode: vi.fn(() => false),
 }))
 
@@ -44,7 +44,7 @@ describe('AccountIcon', () => {
     })
 
     it('renders correct icon in dark mode', async () => {
-        const { useIsDarkMode } = await import('@hooks/theme')
+        const { useIsDarkMode } = await import('@hooks/useIsDarkMode')
         vi.mocked(useIsDarkMode).mockReturnValue(true)
         const {
             isHDWalletAccount,
@@ -68,7 +68,7 @@ describe('AccountIcon', () => {
     })
 
     it('renders unknown account icon when no specific type matches', async () => {
-        const { useIsDarkMode } = await import('@hooks/theme')
+        const { useIsDarkMode } = await import('@hooks/useIsDarkMode')
         vi.mocked(useIsDarkMode).mockReturnValue(false)
         const {
             isHDWalletAccount,

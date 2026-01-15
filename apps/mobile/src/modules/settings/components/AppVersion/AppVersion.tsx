@@ -11,12 +11,12 @@
  */
 
 import { useRef, useMemo } from 'react'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useDeviceInfoService } from '@perawallet/wallet-core-platform-integration'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
-import { useToast } from '@hooks/toast'
+import { useToast } from '@hooks/useToast'
 import { Pressable } from 'react-native'
 import { PWText } from '@components/core'
 

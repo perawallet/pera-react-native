@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { Text } from '@rneui/themed'
-import { PWIcon, PWTouchableOpacity, PWView } from '@components/core'
+import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useStyles } from './styles'
 
 export type NumberPadProps = {
@@ -40,7 +39,7 @@ export const NumberPad = ({ onPress }: NumberPadProps) => {
                             onPress={() => onPress(key)}
                             style={styles.key}
                         >
-                            {!!key && <Text h2>{key}</Text>}
+                            {!!key && <PWText variant='h2'>{key}</PWText>}
                             {!key && <PWIcon name='delete' />}
                         </PWTouchableOpacity>
                     ))}

@@ -17,12 +17,12 @@ import {
     PWIconSize,
     PWTouchableOpacity,
     PWView,
+    PWText,
 } from '@components/core'
-import { useModalState } from '@hooks/modal-state'
+import { useModalState } from '@hooks/useModalState'
 import { PropsWithChildren } from 'react'
 import { useStyles } from './styles'
-import { Text } from '@rneui/themed'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 
 export type InfoButtonProps = {
     variant?: 'primary' | 'secondary'
@@ -58,12 +58,12 @@ export const InfoButton = ({
                 innerContainerStyle={styles.container}
             >
                 {!!title && (
-                    <Text
-                        h3
-                        h3Style={styles.title}
+                    <PWText
+                        variant='h3'
+                        style={styles.title}
                     >
                         {title}
-                    </Text>
+                    </PWText>
                 )}
                 <PWView style={styles.contentContainer}>{children}</PWView>
                 <PWButton

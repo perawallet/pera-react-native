@@ -13,13 +13,7 @@
 import { useDeviceInfoService } from '@perawallet/wallet-core-platform-integration'
 import { config } from '@perawallet/wallet-core-config'
 import { useTheme } from '@rneui/themed'
-import React, {
-    useCallback,
-    useContext,
-    useMemo,
-    useRef,
-    useState,
-} from 'react'
+import React, { useCallback, useMemo, useRef, useState } from 'react'
 import {
     WebView,
     WebViewMessageEvent,
@@ -36,19 +30,19 @@ import {
     peraConnectJS,
     peraMobileInterfaceJS,
 } from './injected-scripts'
-import { useToast } from '@hooks/toast'
+import { useToast } from '@hooks/useToast'
 import { useStyles } from './styles'
 import { PWView } from '@components/core/PWView'
-import { usePeraWebviewInterface } from '@hooks/webview'
+import { usePeraWebviewInterface } from '@hooks/usePeraWebviewInterface'
 import { EmptyView } from '@components/EmptyView'
 import { PWButton } from '@components/core/PWButton'
 import { LoadingView } from '@components/LoadingView'
 import { logger } from '@perawallet/wallet-core-shared'
 import { WebViewTitleBar } from './WebViewTitleBar'
 import { WebViewFooterBar } from './WebViewFooterBar'
-import { WebViewContext } from '@providers/WebViewProvider'
-import { useIsDarkMode } from '@hooks/theme'
-import { useLanguage } from '@hooks/language'
+import { useWebViewStore } from '@modules/webview'
+import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import { useLanguage } from '@hooks/useLanguage'
 import { bottomSheetNotifier } from '@components/core/PWBottomSheet'
 
 export type PWWebViewProps = {
@@ -76,7 +70,7 @@ export const PWWebView = (props: PWWebViewProps) => {
         onBack,
         ...rest
     } = props
-    const { removeWebView } = useContext(WebViewContext)
+    const removeWebView = useWebViewStore(state => state.removeWebView)
     const { theme } = useTheme()
     const webview = useRef<WebView>(null)
     const { showToast } = useToast()

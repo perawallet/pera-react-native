@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import {
+    PWIcon,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+    PWScrollView,
+} from '@components/core'
 import { useStyles } from './styles'
 
 import { useMemo, useState } from 'react'
@@ -19,11 +25,10 @@ import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import { ScrollView } from 'react-native'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { EmptyView } from '@components/EmptyView'
 import { AddressDisplay } from '@components/AddressDisplay'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 
 type AddressSearchViewProps = {
     onSelected: (address: string) => void
@@ -68,7 +73,7 @@ export const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
                     body={t('address_entry.no_accounts_body')}
                 />
             ) : (
-                <ScrollView>
+                <PWScrollView>
                     {addressIsValid && (
                         <PWTouchableOpacity onPress={() => onSelected(value)}>
                             <PWText
@@ -124,7 +129,7 @@ export const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
                             ))}
                         </PWView>
                     )}
-                </ScrollView>
+                </PWScrollView>
             )}
         </PWView>
     )

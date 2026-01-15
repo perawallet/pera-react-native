@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useContext, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
     PWButton,
     PWHeader,
@@ -20,7 +20,7 @@ import {
     PWView,
     bottomSheetNotifier,
 } from '@components/core'
-import { SendFundsContext } from '@modules/transactions/providers/SendFundsProvider'
+import { useSendFunds } from '@modules/transactions/hooks'
 import {
     DEFAULT_PRECISION,
     formatCurrency,
@@ -33,7 +33,7 @@ import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { Divider, useTheme } from '@rneui/themed'
 import { useStyles } from './styles'
-import { useToast } from '@hooks/toast'
+import { useToast } from '@hooks/useToast'
 import { AddNotePanel } from '../AddNotePanel'
 import {
     useAccountAssetBalanceQuery,
@@ -49,7 +49,7 @@ import {
     useAssetFiatPricesQuery,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 import {
     useAlgorandClient,
     useSuggestedParametersQuery,
@@ -67,8 +67,7 @@ export const SendFundsTransactionConfirmation = ({
 }: SendFundsTransactionConfirmationProps) => {
     const { theme } = useTheme()
     const styles = useStyles()
-    const { selectedAsset, amount, destination, note } =
-        useContext(SendFundsContext)
+    const { selectedAsset, amount, destination, note } = useSendFunds()
     const { signTransactions } = useTransactionSigner()
     const algokit = useAlgorandClient(signTransactions)
 

@@ -14,7 +14,7 @@ import { PWIcon, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 
 const AssetImpact = () => {
     const styles = useStyles()

@@ -10,8 +10,9 @@
  limitations under the License
  */
 
+import { PWView } from '@components/core'
 import React, { PropsWithChildren, useState } from 'react'
-import { View, StyleProp, ViewStyle, LayoutChangeEvent } from 'react-native'
+import { StyleProp, ViewStyle, LayoutChangeEvent } from 'react-native'
 import Animated, {
     useSharedValue,
     withTiming,
@@ -71,13 +72,13 @@ export const ExpandablePanel = ({
 
     return (
         <Animated.View style={[collapsableStyle, containerStyle]}>
-            <View
+            <PWView
                 style={styles.wrapper}
                 onLayout={onLayout}
                 pointerEvents={isExpanded ? 'auto' : 'none'}
             >
                 {children}
-            </View>
+            </PWView>
         </Animated.View>
     )
 }

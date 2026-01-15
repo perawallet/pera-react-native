@@ -13,8 +13,8 @@
 import { PWButton, PWIcon, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { QRScannerView } from '@components/QRScannerView'
-import { useLanguage } from '@hooks/language'
-import { useModalState } from '@hooks/modal-state'
+import { useLanguage } from '@hooks/useLanguage'
+import { useModalState } from '@hooks/useModalState'
 import {
     useWalletConnect,
     WalletConnectConnection,

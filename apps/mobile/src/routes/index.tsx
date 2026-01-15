@@ -35,10 +35,10 @@ import {
     SettingsStackNavigator,
     SettingsStackParamsList,
 } from '@modules/settings/routes'
-import { useShowOnboarding } from '@hooks/onboarding'
+import { useShowOnboarding } from '@hooks/useShowOnboarding'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { getNavigationTheme } from '@theme/theme'
-import { useIsDarkMode } from '@hooks/theme'
+import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
 
 export type RootStackParamList = {

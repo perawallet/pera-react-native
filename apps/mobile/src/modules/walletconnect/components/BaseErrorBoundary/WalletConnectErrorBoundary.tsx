@@ -13,10 +13,10 @@
 import React, { ReactNode } from 'react'
 import { ErrorCategory } from '@perawallet/wallet-core-shared'
 import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 import { EmptyView } from '@components/EmptyView'
 import { PWButton, bottomSheetNotifier } from '@components/core'
-import { useToast } from '@hooks/toast'
+import { useToast } from '@hooks/useToast'
 import { WalletConnectError } from '@perawallet/wallet-core-walletconnect'
 
 interface WalletConnectErrorBoundaryProps {

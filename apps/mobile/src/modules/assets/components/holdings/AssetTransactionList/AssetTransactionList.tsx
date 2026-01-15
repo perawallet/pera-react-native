@@ -16,7 +16,7 @@ import { PeraAsset } from '@perawallet/wallet-core-assets'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { EmptyView } from '@components/EmptyView'
 import { FlashList } from '@shopify/flash-list'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 
 type AssetTransactionListProps = {
     account: WalletAccount

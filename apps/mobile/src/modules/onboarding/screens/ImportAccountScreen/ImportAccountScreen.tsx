@@ -24,8 +24,8 @@ import {
     Platform,
     ScrollView,
 } from 'react-native'
-import { useToast } from '@hooks/toast'
-import { useLanguage } from '@hooks/language'
+import { useToast } from '@hooks/useToast'
+import { useLanguage } from '@hooks/useLanguage'
 
 const NUM_WORDS = 24 //TODO: we'll add legacy 25 word accounts later
 

@@ -19,18 +19,15 @@ import { EmptyView } from '@components/EmptyView'
 import { SendFundsAssetSelectionView } from '../AssetSelection/SendFundsAssetSelectionView'
 import { SendFundsInputView } from '../InputView/SendFundsInputView'
 
-import { useContext, useLayoutEffect, useState } from 'react'
+import { useLayoutEffect, useState } from 'react'
 import { useStyles } from './styles'
 import { useWindowDimensions } from 'react-native'
 import { SendFundsSelectDestination } from '../SelectDestination/SendFundsSelectDestination'
 import { SendFundsTransactionConfirmation } from '../TransactionConfirmation/SendFundsTransactionConfirmation'
-import {
-    SendFundsContext,
-    SendFundsProvider,
-} from '@modules/transactions/providers/SendFundsProvider'
+import { useSendFunds } from '@modules/transactions/hooks'
 import { TransactionErrorBoundary } from '@modules/transactions/components/BaseErrorBoundary/TransactionErrorBoundary'
 import { TAB_ANIMATION_CONFIG } from '@constants/ui'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 
 export type SendFundsBottomSheetProps = {
     assetId?: string
@@ -63,14 +60,8 @@ export const SendFundsBottomSheet = ({
     const dimensions = useWindowDimensions()
     const styles = useStyles(dimensions)
     const { t } = useLanguage()
-    const {
-        canSelectAsset,
-        setSelectedAsset,
-        setCanSelectAsset,
-        setNote,
-        setAmount,
-        setDestination,
-    } = useContext(SendFundsContext)
+    const { canSelectAsset, setSelectedAsset, setCanSelectAsset, reset } =
+        useSendFunds()
     const { data: assetBalance } = useAccountAssetBalanceQuery(
         selectedAccount ?? undefined,
         assetId,
@@ -85,7 +76,7 @@ export const SendFundsBottomSheet = ({
 
     const handleNext = () => {
         if (screenIndex >= getScreenCount(!!canSelectAsset) - 1) {
-            clearContext()
+            reset()
             onClose()
         } else {
             setScreenIndex(screenIndex + 1)
@@ -94,17 +85,11 @@ export const SendFundsBottomSheet = ({
 
     const handleBack = () => {
         if (screenIndex === 0) {
-            clearContext()
+            reset()
             onClose()
         } else {
             setScreenIndex(screenIndex - 1)
         }
-    }
-
-    const clearContext = () => {
-        setNote(undefined)
-        setAmount(undefined)
-        setDestination(undefined)
     }
 
     return (
@@ -113,49 +98,45 @@ export const SendFundsBottomSheet = ({
             innerContainerStyle={styles.container}
         >
             <TransactionErrorBoundary t={t}>
-                <SendFundsProvider>
-                    {selectedAccount ? (
-                        <PWTabView
-                            value={screenIndex}
-                            animationType='timing'
-                            animationConfig={TAB_ANIMATION_CONFIG}
-                        >
-                            {!!canSelectAsset && (
-                                <PWTabView.Item style={styles.tabItem}>
-                                    <SendFundsAssetSelectionView
-                                        onSelected={handleNext}
-                                        onBack={handleBack}
-                                    />
-                                </PWTabView.Item>
-                            )}
+                {selectedAccount ? (
+                    <PWTabView
+                        value={screenIndex}
+                        animationType='timing'
+                        animationConfig={TAB_ANIMATION_CONFIG}
+                    >
+                        {!!canSelectAsset && (
                             <PWTabView.Item style={styles.tabItem}>
-                                <SendFundsInputView
-                                    onNext={handleNext}
+                                <SendFundsAssetSelectionView
+                                    onSelected={handleNext}
                                     onBack={handleBack}
                                 />
                             </PWTabView.Item>
-                            <PWTabView.Item style={styles.tabItem}>
-                                <SendFundsSelectDestination
-                                    onNext={handleNext}
-                                    onBack={handleBack}
-                                />
-                            </PWTabView.Item>
-                            <PWTabView.Item style={styles.tabItem}>
-                                <SendFundsTransactionConfirmation
-                                    onNext={handleNext}
-                                    onBack={handleBack}
-                                />
-                            </PWTabView.Item>
-                        </PWTabView>
-                    ) : (
-                        <EmptyView
-                            title={t(
-                                'send_funds.bottom_sheet.no_account_title',
-                            )}
-                            body={t('send_funds.bottom_sheet.no_account_body')}
-                        />
-                    )}
-                </SendFundsProvider>
+                        )}
+                        <PWTabView.Item style={styles.tabItem}>
+                            <SendFundsInputView
+                                onNext={handleNext}
+                                onBack={handleBack}
+                            />
+                        </PWTabView.Item>
+                        <PWTabView.Item style={styles.tabItem}>
+                            <SendFundsSelectDestination
+                                onNext={handleNext}
+                                onBack={handleBack}
+                            />
+                        </PWTabView.Item>
+                        <PWTabView.Item style={styles.tabItem}>
+                            <SendFundsTransactionConfirmation
+                                onNext={handleNext}
+                                onBack={handleBack}
+                            />
+                        </PWTabView.Item>
+                    </PWTabView>
+                ) : (
+                    <EmptyView
+                        title={t('send_funds.bottom_sheet.no_account_title')}
+                        body={t('send_funds.bottom_sheet.no_account_body')}
+                    />
+                )}
             </TransactionErrorBoundary>
         </PWBottomSheet>
     )

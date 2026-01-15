@@ -62,7 +62,7 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
     }
 })
 
-vi.mock('@hooks/chart-interaction', () => ({
+vi.mock('@hooks/useChartInteraction', () => ({
     useChartInteraction: () => ({
         period: 'day',
         setPeriod: vi.fn(),

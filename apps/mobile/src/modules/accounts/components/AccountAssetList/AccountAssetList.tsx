@@ -26,10 +26,10 @@ import {
 import { FlashList } from '@shopify/flash-list'
 import { EmptyView } from '@components/EmptyView'
 import { LoadingView } from '@components/LoadingView'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 import { GestureResponderEvent, KeyboardAvoidingView } from 'react-native'
 import { ExpandablePanel } from '@components/ExpandablePanel'
-import { useModalState } from '@hooks/modal-state'
+import { useModalState } from '@hooks/useModalState'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 
 const TAB_AND_HEADER_HEIGHT = 100

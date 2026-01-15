@@ -15,7 +15,7 @@ import { PWButton, PWText, PWView } from '@components/core'
 import { AssetWealthChart } from '../AssetWealthChart/AssetWealthChart'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import { useMemo } from 'react'
-import { useChartInteraction } from '@hooks/chart-interaction'
+import { useChartInteraction } from '@hooks/useChartInteraction'
 import { AssetActionButtons } from '../AssetActionButtons/AssetActionButtons'
 import { AssetTransactionList } from '../AssetTransactionList/AssetTransactionList'
 

@@ -22,7 +22,7 @@ import {
     PeraAsset,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 
 type SwapAssets = {
     fromAsset?: PeraAsset

@@ -22,7 +22,7 @@ import {
     isWatchAccount,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useIsDarkMode } from '@hooks/theme'
+import { useIsDarkMode } from '@hooks/useIsDarkMode'
 
 export type AccountIconProps = {
     account?: WalletAccount

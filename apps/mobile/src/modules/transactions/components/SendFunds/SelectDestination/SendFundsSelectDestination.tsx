@@ -12,14 +12,14 @@
 
 import { PWHeader, PWText, PWView } from '@components/core'
 import { AddressSearchView } from '@components/AddressSearchView'
-import { useContext, useMemo } from 'react'
-import { SendFundsContext } from '@modules/transactions/providers/SendFundsProvider'
+import { useMemo } from 'react'
+import { useSendFunds } from '@modules/transactions/hooks'
 import { useStyles } from './styles'
 import { AssetIcon } from '@modules/assets/components/AssetIcon'
 import { useTheme } from '@rneui/themed'
 import { EmptyView } from '@components/EmptyView'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 
 type SendFundsSelectDestinationProps = {
     onNext: () => void
@@ -30,7 +30,7 @@ export const SendFundsSelectDestination = ({
     onNext,
     onBack,
 }: SendFundsSelectDestinationProps) => {
-    const { selectedAsset, setDestination } = useContext(SendFundsContext)
+    const { selectedAsset, setDestination } = useSendFunds()
     const styles = useStyles()
     const { data: assets } = useAssetsQuery()
     const asset = useMemo(() => {

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { JsonRpcErrorCode } from '@hooks/webview'
+import { JsonRpcErrorCode } from '@hooks/usePeraWebviewInterface'
 import { logger } from '@perawallet/wallet-core-shared'
 import WebView from 'react-native-webview'
 

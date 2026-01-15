@@ -104,6 +104,134 @@ import { useAccountsStore } from '@perawallet/wallet-core-accounts/store'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 ```
 
+## ❌ Complex Logic in Component Body
+
+```typescript
+// ❌ BAD: Logic written directly in component
+const AccountCard = ({ account }: Props) => {
+    const [isExpanded, setIsExpanded] = useState(false)
+    const { data } = useAccountBalanceQuery(account.address)
+
+    const formattedBalance = useMemo(() => formatCurrency(data), [data])
+    const handleToggle = useCallback(() => {
+        setIsExpanded(prev => !prev)
+        analytics.track('toggle')
+    }, [])
+
+    return (...)
+}
+
+// ✅ GOOD: Logic extracted to hook in same folder
+// AccountCard/useAccountCard.ts
+export const useAccountCard = (account: Account) => {
+    const [isExpanded, setIsExpanded] = useState(false)
+    const { data, isLoading } = useAccountBalanceQuery(account.address)
+
+    const formattedBalance = useMemo(() => formatCurrency(data), [data])
+    const handleToggle = useCallback(() => {
+        setIsExpanded(prev => !prev)
+        analytics.track('toggle')
+    }, [])
+
+    return { isExpanded, isLoading, formattedBalance, handleToggle }
+}
+
+// AccountCard/AccountCard.tsx
+const AccountCard = ({ account }: Props) => {
+    const { isExpanded, formattedBalance, handleToggle } = useAccountCard(account)
+    return (...)
+}
+```
+
+## ❌ Wrong Hook Naming
+
+```typescript
+// ❌ BAD: Missing suffix for React Query hooks
+const useAccountBalance = (address: string) => useQuery(...)
+const useCreateAccount = () => useMutation(...)
+
+// ❌ BAD: Wrong suffix for Zustand hooks
+const useAccounts = () => useAccountsStore(state => state.accounts)
+
+// ❌ BAD: PascalCase hook name
+const UseAccountBalance = () => {}
+
+// ✅ GOOD: Correct suffixes
+const useAccountBalanceQuery = (address: string) => useQuery(...)
+const useCreateAccountMutation = () => useMutation(...)
+const useAccountsStore = () => useStore()
+```
+
+## ❌ Wrong Hook Location
+
+```typescript
+// ❌ BAD: Domain hook in screen folder
+// modules/accounts/screens/AccountScreen/useAccountsQuery.ts
+
+// ❌ BAD: Screen-specific hook in domain hooks folder
+// modules/accounts/hooks/useAccountScreen.ts
+
+// ✅ GOOD: Domain hooks in domain hooks folder
+// modules/accounts/hooks/useAccountsQuery.ts
+
+// ✅ GOOD: Screen-specific hook in screen folder
+// modules/accounts/screens/AccountScreen/useAccountScreen.ts
+
+// ✅ GOOD: Component-specific hook in component folder
+// modules/accounts/components/AccountCard/useAccountCard.ts
+```
+
+## ❌ Exposing Dependency Types in Hooks
+
+```typescript
+// ❌ BAD: Returning React Query's UseQueryResult directly
+import { UseQueryResult } from '@tanstack/react-query'
+
+export const useAccountsQuery = (): UseQueryResult<Account[]> => {
+    return useQuery({ ... })
+}
+
+// ❌ BAD: No explicit types, exposes all React Query internals
+export const useAccountsQuery = () => {
+    return useQuery({ ... })
+}
+
+// ❌ BAD: Returning Zustand store type directly
+import { StoreApi } from 'zustand'
+
+export const useAccountsStore = (): StoreApi<AccountsState> => {
+    return useStore()
+}
+
+// ✅ GOOD: Define explicit, dependency-agnostic return type
+type UseAccountsQueryResult = {
+    accounts: Account[]
+    isLoading: boolean
+    isError: boolean
+    error: Error | null
+    refetch: () => void
+}
+
+export const useAccountsQuery = (): UseAccountsQueryResult => {
+    const query = useQuery({ ... })
+
+    return {
+        accounts: query.data ?? [],
+        isLoading: query.isLoading,
+        isError: query.isError,
+        error: query.error,
+        refetch: query.refetch,
+    }
+}
+```
+
+**Why this matters:**
+
+- Decouples consumers from specific library implementations
+- Enables swapping libraries (React Query → SWR, Zustand → Jotai) without breaking consumers
+- Provides a stable, explicit API contract
+- Improves IDE autocompletion with focused type definitions
+
 ## ❌ Deep Relative Imports
 
 ```typescript

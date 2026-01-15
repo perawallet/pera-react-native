@@ -13,7 +13,7 @@
 import { useStyles } from './styles'
 import { ExpandableText } from '@components/ExpandableText'
 import { PWText, PWView } from '@components/core'
-import { useLanguage } from '@hooks/language'
+import { useLanguage } from '@hooks/useLanguage'
 
 type AssetDescriptionProps = {
     description?: string
