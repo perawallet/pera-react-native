@@ -42,6 +42,24 @@ All component styling uses React Native Elements (RNE) theming via the `makeStyl
 
 For detailed patterns and examples, see `.agent/rules/code-patterns.md`.
 
+## External Component Wrappers (Design System)
+
+`PW*` components form the app's **design system** — they wrap external dependencies and provide a consistent, project-specific API.
+
+All components from external dependencies **must be wrapped** before use:
+
+- Components from `@rneui/themed` → Wrap in `PW*` components
+- Components from `react-native` → Wrap common ones (`TouchableOpacity`, etc.)
+- Third-party components → Always wrap before use
+
+**Key rules:**
+
+- Design system location: `apps/mobile/src/components/core/PW[ComponentName]/`
+- Define a clean, project-specific props interface
+- Never import external components directly in screens or modules
+
+For detailed patterns and examples, see `.agent/rules/component-patterns.md`.
+
 ## Code Quality
 
 Run these before pushing:

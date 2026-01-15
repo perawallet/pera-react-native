@@ -16,21 +16,38 @@ Reference these before starting:
 
 ## Steps
 
-### 1. Determine Component Location
+### 1. Check for External Dependencies
 
+Before creating a component, check if it wraps an external component:
+
+**If wrapping an external component (RNE, React Native, third-party):**
+
+- These are **design system** components
+- **Must** use `PW` prefix (e.g., `PWButton`, `PWText`)
+- **Must** go in `apps/mobile/src/components/core/PW[ComponentName]/`
+- **Must** define a clean, project-specific props interface
+- **Must NOT** re-export all props from the external component—only expose what's needed
+
+**If NOT wrapping an external component:**
+
+- Proceed to step 2 for location determination
+
+### 2. Determine Component Location
+
+- **Design system (PW\*)** → `apps/mobile/src/components/core/[ComponentName]/`
 - **Shared component** → `apps/mobile/src/components/[ComponentName]/`
 - **Module-specific** → `apps/mobile/src/modules/[module]/components/[ComponentName]/`
 
 Note: Folder names use **PascalCase** matching the component name.
 
-### 2. Create Component Directory
+### 3. Create Component Directory
 
 ```sh
 mkdir -p apps/mobile/src/components/[ComponentName]
 mkdir -p apps/mobile/src/components/[ComponentName]/__tests__
 ```
 
-### 3. Create Component File
+### 4. Create Component File
 
 Create `[ComponentName].tsx` following the pattern in `.agent/rules/component-patterns.md`:
 
@@ -40,14 +57,14 @@ Create `[ComponentName].tsx` following the pattern in `.agent/rules/component-pa
 - Use functional component with explicit return type
 - Export as default
 
-### 4. Create Styles File
+### 5. Create Styles File
 
 Create `styles.ts` using the `makeStyles` pattern from `.agent/rules/component-patterns.md`:
 
 - Use `makeStyles` from `@rneui/themed` (never `StyleSheet.create`)
 - Export a `useStyles` hook
 
-### 5. Create Barrel File
+### 6. Create Barrel File
 
 Create `index.ts` to re-export the component:
 
@@ -57,7 +74,7 @@ export { default } from './[ComponentName]'
 export type { [ComponentName]Props } from './[ComponentName]'
 ```
 
-### 6. Create Test File
+### 7. Create Test File
 
 Create `__tests__/[ComponentName].spec.tsx`:
 
@@ -66,7 +83,7 @@ Create `__tests__/[ComponentName].spec.tsx`:
 - Cover key interactions
 - Use `.spec.tsx` extension (NOT `.test.tsx`)
 
-### 7. Subcomponents (if needed)
+### 8. Subcomponents (if needed)
 
 If the component has subcomponents:
 
@@ -74,7 +91,7 @@ If the component has subcomponents:
 - Do NOT re-export them in `index.ts`
 - Subcomponents should only be used by the parent component
 
-### 8. Verify
+### 9. Verify
 
 // turbo
 

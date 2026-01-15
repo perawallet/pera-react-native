@@ -51,9 +51,103 @@ export type { PWButtonProps } from './PWButton'
 - Subcomponents should only be used by the parent component
 - If a subcomponent is needed elsewhere, it should become its own component
 
+## External Component Wrapper Pattern (REQUIRED)
+
+All components from external dependencies (RNE, React Native, third-party libraries) **MUST** be wrapped in local `PW`-prefixed components before use in the codebase.
+
+### Why Wrap External Components?
+
+1. **Consistent API**: Define a clean, project-specific props interface
+2. **Abstraction**: Shield the codebase from external API changes
+3. **Centralized customization**: Apply default styles and behaviors in one place
+4. **Easy migration**: Swap underlying implementations without touching consumers
+5. **Type safety**: Expose only the props your codebase needs
+
+### Wrapper Component Location (Design System)
+
+`PW*` components form the app's **design system** and live in:
+
+```
+apps/mobile/src/components/core/PW[ComponentName]/
+```
+
+This location distinguishes design system primitives from feature-specific shared components.
+
+### Example: Wrapping RNE Components
+
+```typescript
+// PWText/PWText.tsx - Wrapping @rneui/themed Text
+import { Text as RNEText, TextProps as RNETextProps } from '@rneui/themed'
+import { useStyles } from './styles'
+
+export type PWTextProps = {
+    variant?: 'body' | 'heading' | 'caption'
+    children: React.ReactNode
+    style?: RNETextProps['style']
+}
+
+export const PWText = ({ variant = 'body', children, style }: PWTextProps) => {
+    const styles = useStyles({ variant })
+
+    return <RNEText style={[styles.text, style]}>{children}</RNEText>
+}
+```
+
+### Example: Wrapping React Native Components
+
+```typescript
+// PWTouchableOpacity/PWTouchableOpacity.tsx
+import {
+    TouchableOpacity,
+    TouchableOpacityProps,
+} from 'react-native'
+
+export type PWTouchableOpacityProps = {
+    children: React.ReactNode
+    onPress?: () => void
+    isDisabled?: boolean
+    style?: TouchableOpacityProps['style']
+    activeOpacity?: number
+}
+
+export const PWTouchableOpacity = ({
+    children,
+    onPress,
+    isDisabled = false,
+    style,
+    activeOpacity = 0.7,
+}: PWTouchableOpacityProps) => {
+    return (
+        <TouchableOpacity
+            style={style}
+            onPress={onPress}
+            disabled={isDisabled}
+            activeOpacity={activeOpacity}
+        >
+            {children}
+        </TouchableOpacity>
+    )
+}
+```
+
+### Components That MUST Be Wrapped
+
+| External Source    | Examples                                         |
+| ------------------ | ------------------------------------------------ |
+| `@rneui/themed`    | `Text`, `Button`, `ListItem`, `Icon`, `Skeleton` |
+| `react-native`     | `TouchableOpacity`, `View`, `ScrollView`         |
+| Third-party        | `BottomSheet`, `WebView`, modals, etc.           |
+
+### Exceptions (No Wrapper Needed)
+
+- `ActivityIndicator` - Simple, stable API
+- Basic layout primitives used only internally within PW components
+
 ## Shared UI Components (PW-prefixed)
 
-Location: `apps/mobile/src/components/[ComponentName]/`
+Location: `apps/mobile/src/components/core/[ComponentName]/`
+
+These are the **design system primitives** that wrap external dependencies and provide a consistent API across the app.
 
 ```typescript
 // PWButton.tsx
