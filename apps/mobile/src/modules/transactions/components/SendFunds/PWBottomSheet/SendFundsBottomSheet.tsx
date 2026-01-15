@@ -14,7 +14,7 @@ import {
     useAccountAssetBalanceQuery,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
-import { PWBottomSheet } from '@components/core/PWBottomSheet'
+import { PWBottomSheet, PWTabView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { SendFundsAssetSelectionView } from '../AssetSelection/SendFundsAssetSelectionView'
 import { SendFundsInputView } from '../InputView/SendFundsInputView'
@@ -22,7 +22,6 @@ import { SendFundsInputView } from '../InputView/SendFundsInputView'
 import { useContext, useLayoutEffect, useState } from 'react'
 import { useStyles } from './styles'
 import { useWindowDimensions } from 'react-native'
-import { PWTabView } from '@components/core/PWTabView'
 import { SendFundsSelectDestination } from '../SelectDestination/SendFundsSelectDestination'
 import { SendFundsTransactionConfirmation } from '../TransactionConfirmation/SendFundsTransactionConfirmation'
 import {

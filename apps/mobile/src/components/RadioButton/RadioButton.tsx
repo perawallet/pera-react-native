@@ -10,10 +10,8 @@
  limitations under the License
  */
 
-import { PWText } from '@components/core/PWText'
-import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
+import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useStyles } from './styles'
-import { PWView } from '@components/core/PWView'
 
 export type RadioButtonProps = {
     onPress: () => void

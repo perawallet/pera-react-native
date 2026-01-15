@@ -12,9 +12,7 @@
 
 import { useStyles } from './styles'
 import { useTheme } from '@rneui/themed'
-import { PWSkeleton } from '@components/core/PWSkeleton'
-import { PWText, PWTextProps } from '@components/core/PWText'
-import { PWView } from '@components/core/PWView'
+import { PWSkeleton, PWText, PWTextProps, PWView } from '@components/core'
 import { useMemo } from 'react'
 import { formatCurrency } from '@perawallet/wallet-core-shared'
 import { Decimal } from 'decimal.js'

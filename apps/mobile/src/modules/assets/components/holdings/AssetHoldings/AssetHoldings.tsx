@@ -11,7 +11,7 @@
  */
 
 import { formatDatetime } from '@perawallet/wallet-core-shared'
-import { PWView } from '@components/core/PWView'
+import { PWButton, PWText, PWView } from '@components/core'
 import { AssetWealthChart } from '../AssetWealthChart/AssetWealthChart'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import { useMemo } from 'react'
@@ -24,7 +24,6 @@ import { AssetTitle } from '@modules/assets/components/AssetTitle'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import { RoundButton } from '@components/RoundButton'
-import { PWText } from '@components/core/PWText'
 import {
     AccountBalanceHistoryItem,
     useAccountAssetBalanceQuery,
@@ -34,7 +33,6 @@ import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
-import { PWButton } from '@components/core/PWButton'
 
 type AssetHoldingsProps = {
     account: WalletAccount

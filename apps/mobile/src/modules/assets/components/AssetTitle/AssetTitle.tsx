@@ -11,12 +11,10 @@
  */
 
 import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
-import { PWView } from '@components/core/PWView'
-import { PWIcon } from '@components/core/PWIcon'
+import { PWIcon, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 import { AssetIcon } from '../AssetIcon'
 import { useTheme } from '@rneui/themed'
-import { PWText } from '@components/core/PWText'
 import { useMemo } from 'react'
 
 export type AssetTitleProps = {

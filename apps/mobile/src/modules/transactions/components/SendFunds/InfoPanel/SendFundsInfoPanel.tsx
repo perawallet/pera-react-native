@@ -12,16 +12,16 @@
 
 import {
     PWBottomSheet,
-    PWBottomSheetProps,
-} from '@components/core/PWBottomSheet'
+    type PWBottomSheetProps,
+    PWButton,
+    PWIcon,
+    PWText,
+    PWView,
+} from '@components/core'
 import { usePreferences } from '@perawallet/wallet-core-settings'
-import { PWText } from '@components/core/PWText'
 import { useEffect, useState } from 'react'
-import { PWIcon } from '@components/core/PWIcon'
-import { PWButton } from '@components/core/PWButton'
 import { UserPreferences } from '@constants/user-preferences'
 import { useStyles } from './styles'
-import { PWView } from '@components/core/PWView'
 import { useLanguage } from '@hooks/language'
 import { useWebView } from '@hooks/webview'
 import { v7 as uuid } from 'uuid'

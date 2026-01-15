@@ -10,12 +10,10 @@
  limitations under the License
  */
 
-import { PWView } from '@components/core/PWView'
+import { PWIcon, PWInput, PWInputProps, PWView } from '@components/core'
 
 import { QRScannerView } from '@components/QRScannerView'
 import { useState } from 'react'
-import { PWInput, PWInputProps } from '@components/core/PWInput'
-import { PWIcon } from '@components/core/PWIcon'
 import { useLanguage } from '@hooks/language'
 
 export type AddressEntryFieldProps = {

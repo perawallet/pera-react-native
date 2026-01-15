@@ -10,12 +10,8 @@
  limitations under the License
  */
 
-import { PWButton } from '@components/core/PWButton'
-import { PWView } from '@components/core/PWView'
-import { PWImage } from '@components/core/PWImage'
-import { PWText } from '@components/core/PWText'
+import { PWButton, PWIcon, PWImage, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
-import { PWIcon } from '@components/core/PWIcon'
 import { useLanguage } from '@hooks/language'
 import { Image } from 'react-native'
 

@@ -11,11 +11,9 @@
  */
 
 import { useStyles } from './styles'
-import { PWView } from '@components/core/PWView'
+import { PWButton, PWText, PWView } from '@components/core'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { PWButton } from '@components/core/PWButton'
-import { PWText } from '@components/core/PWText'
 import { EmptyView } from '@components/EmptyView'
 import { FlashList } from '@shopify/flash-list'
 import { useLanguage } from '@hooks/language'

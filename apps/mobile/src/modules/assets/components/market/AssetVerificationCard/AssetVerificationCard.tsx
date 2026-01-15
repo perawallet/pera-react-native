@@ -13,10 +13,7 @@
 import { useStyles } from './styles'
 import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
 import { useTheme } from '@rneui/themed'
-import { PWText } from '@components/core/PWText'
-import { PWView } from '@components/core/PWView'
-import { PWIcon, IconName } from '@components/core/PWIcon'
-import { PWButton } from '@components/core/PWButton'
+import { IconName, PWButton, PWIcon, PWText, PWView } from '@components/core'
 import { useMemo } from 'react'
 import { useLanguage } from '@hooks/language'
 

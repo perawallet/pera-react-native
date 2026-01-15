@@ -10,13 +10,11 @@
  limitations under the License
  */
 
-import { PWView } from '@components/core/PWView'
+import { PWSwitch, PWText, PWView } from '@components/core'
 import {
     RemoteConfigKeys,
     useRemoteConfigOverrides,
 } from '@perawallet/wallet-core-platform-integration'
-import { PWSwitch } from '@components/core/PWSwitch'
-import { PWText } from '@components/core/PWText'
 import { useStyles } from './styles'
 
 export const FeatureFlagOverrides = () => {

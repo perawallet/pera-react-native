@@ -10,21 +10,23 @@
  limitations under the License
  */
 
-import { PWTab } from '@components/core/PWTab'
-import { PWTabView } from '@components/core/PWTabView'
+import {
+    PWIcon,
+    PWTab,
+    PWTabView,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import { PWIcon } from '@components/core/PWIcon'
 
 import { useStyles } from './styles'
 import { useState } from 'react'
 import { useModalState } from '@hooks/modal-state'
-import { PWView } from '@components/core/PWView'
 import { NotificationsIcon } from '@modules/notifications/components/NotificationsIcon'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
 import { AccountMenu } from '@modules/accounts/components/AccountMenu'
 import { Drawer } from 'react-native-drawer-layout'
 import { QRScannerView } from '@components/QRScannerView'
-import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import { EmptyView } from '@components/EmptyView'
 import { AccountOverview } from '@modules/accounts/components/AccountOverview'
 import { AccountNfts } from '@modules/accounts/components/AccountNfts'

@@ -10,16 +10,13 @@
  limitations under the License
  */
 
-import { PWView } from '@components/core/PWView'
-import { PWText } from '@components/core/PWText'
+import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useStyles } from './styles'
-import { PWIcon } from '@components/core/PWIcon'
 
 import { PanelButton } from '@components/PanelButton'
 import { CardPanel } from '@modules/menu/components/CardPanel/CardPanel'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import { QRScannerView } from '@components/QRScannerView'
 import { useModalState } from '@hooks/modal-state'
 import { useLanguage } from '@hooks/language'

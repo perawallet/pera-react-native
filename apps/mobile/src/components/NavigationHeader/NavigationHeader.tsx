@@ -11,10 +11,8 @@
  */
 
 import { NativeStackHeaderProps } from '@react-navigation/native-stack'
-import { PWView } from '@components/core/PWView'
-import { PWText } from '@components/core/PWText'
+import { PWIcon, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
-import { PWIcon } from '@components/core/PWIcon'
 import { useLanguage } from '@hooks/language'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMemo } from 'react'

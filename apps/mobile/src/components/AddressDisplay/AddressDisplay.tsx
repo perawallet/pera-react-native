@@ -11,7 +11,7 @@
  */
 
 import { Text, TextProps, useTheme } from '@rneui/themed'
-import { PWView, PWViewProps } from '@components/core/PWView'
+import { PWIcon, PWView, PWViewProps } from '@components/core'
 import { useStyles } from './styles'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
@@ -23,7 +23,6 @@ import { SvgProps } from 'react-native-svg'
 import { useMemo } from 'react'
 import { ContactAvatar } from '@components/ContactAvatar'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
-import { PWIcon } from '@components/core/PWIcon'
 
 type AddressDisplayProps = {
     address: string

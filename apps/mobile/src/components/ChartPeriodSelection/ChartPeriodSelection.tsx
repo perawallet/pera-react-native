@@ -10,11 +10,9 @@
  limitations under the License
  */
 
-import { PWText } from '@components/core/PWText'
-import { PWView } from '@components/core/PWView'
+import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useStyles } from './styles'
 import { useCallback, useState } from 'react'
-import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/language'
 

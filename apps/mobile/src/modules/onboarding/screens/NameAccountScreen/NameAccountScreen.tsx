@@ -16,11 +16,7 @@ import {
     NativeStackScreenProps,
 } from '@react-navigation/native-stack'
 import { useStyles } from './styles'
-import { PWInput } from '@components/core/PWInput'
-import { PWText } from '@components/core/PWText'
-import { PWView } from '@components/core/PWView'
-import { PWButton } from '@components/core/PWButton'
-import { PWIcon } from '@components/core/PWIcon'
+import { PWButton, PWIcon, PWInput, PWText, PWView } from '@components/core'
 
 import {
     useAllAccounts,

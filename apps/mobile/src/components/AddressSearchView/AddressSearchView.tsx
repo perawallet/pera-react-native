@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWView } from '@components/core/PWView'
+import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useStyles } from './styles'
 
 import { useMemo, useState } from 'react'
@@ -20,13 +20,10 @@ import { useContacts } from '@perawallet/wallet-core-contacts'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import { ScrollView } from 'react-native'
-import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { EmptyView } from '@components/EmptyView'
 import { AddressDisplay } from '@components/AddressDisplay'
-import { PWIcon } from '@components/core/PWIcon'
 import { useLanguage } from '@hooks/language'
-import { PWText } from '@components/core/PWText'
 
 type AddressSearchViewProps = {
     onSelected: (address: string) => void

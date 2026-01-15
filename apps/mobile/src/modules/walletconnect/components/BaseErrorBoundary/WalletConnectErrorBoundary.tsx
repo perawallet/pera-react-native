@@ -15,10 +15,9 @@ import { ErrorCategory } from '@perawallet/wallet-core-shared'
 import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
 import { useLanguage } from '@hooks/language'
 import { EmptyView } from '@components/EmptyView'
-import { PWButton } from '@components/core/PWButton'
+import { PWButton, bottomSheetNotifier } from '@components/core'
 import { useToast } from '@hooks/toast'
 import { WalletConnectError } from '@perawallet/wallet-core-walletconnect'
-import { bottomSheetNotifier } from '@components/core/PWBottomSheet'
 
 interface WalletConnectErrorBoundaryProps {
     children: ReactNode

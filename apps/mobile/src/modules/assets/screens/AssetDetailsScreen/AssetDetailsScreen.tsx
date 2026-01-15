@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { PWTab } from '@components/core/PWTab'
-import { PWTabView } from '@components/core/PWTabView'
+import { PWTab, PWTabView, PWView } from '@components/core'
 import { useNavigation } from '@react-navigation/native'
 import {
     getAccountDisplayName,
@@ -26,7 +25,6 @@ import { useToast } from '@hooks/toast'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import { LoadingView } from '@components/LoadingView'
 import { TAB_ANIMATION_CONFIG } from '@constants/ui'
-import { PWView } from '@components/core/PWView'
 import { useLanguage } from '@hooks/language'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { AccountStackParamsList } from '@modules/accounts/routes'

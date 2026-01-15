@@ -11,12 +11,10 @@
  */
 
 import { useLanguage } from '@hooks/language'
-import { PWTab } from '@components/core/PWTab'
-import { PWTabView } from '@components/core/PWTabView'
+import { PWTab, PWTabView, PWView } from '@components/core'
 
 import { useStyles } from './styles'
 import { PortfolioView } from '../PortfolioView'
-import { PWView } from '@components/core/PWView'
 import { useEffect, useState } from 'react'
 import { InboxTab } from './InboxTab'
 import { AccountsTab } from './AccountsTab'

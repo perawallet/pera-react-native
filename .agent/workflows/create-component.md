@@ -80,7 +80,8 @@ If you created a core component in `apps/mobile/src/components/core/`, you **MUS
 
 1. Open `apps/mobile/src/components/core/index.ts`
 2. Add the new export: `export * from './[ComponentName]'`
-```
+
+````
 
 ### 7. Create Test File
 
@@ -105,7 +106,7 @@ If the component has subcomponents:
 
 ```sh
 pnpm --filter mobile lint
-```
+````
 
 // turbo
 

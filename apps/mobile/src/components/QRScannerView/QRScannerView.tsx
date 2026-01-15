@@ -24,10 +24,7 @@ import { useLanguage } from '@hooks/language'
 import { useDeepLink } from '@hooks/deeplink'
 import { EmptyView } from '@components/EmptyView'
 import { logger } from '@perawallet/wallet-core-shared'
-import { PWButton } from '@components/core/PWButton'
-import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
-import { PWIcon } from '@components/core/PWIcon'
-import { PWText } from '@components/core/PWText'
+import { PWButton, PWIcon, PWText, PWTouchableOpacity } from '@components/core'
 
 export type QRScannerViewProps = {
     title?: string

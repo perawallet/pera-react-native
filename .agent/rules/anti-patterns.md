@@ -123,7 +123,6 @@ import { PWText } from '@components/core/PWText/PWText'
 
 // ✅ GOOD: import from core barrel file
 import { PWButton, PWText } from '@components/core'
-
 ```
 
 ## ❌ Default Exports

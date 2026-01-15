@@ -10,10 +10,8 @@
  limitations under the License
  */
 
-import { PWText } from '@components/core/PWText'
-import { PWView } from '@components/core/PWView'
+import { PWIcon, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
-import { PWIcon } from '@components/core/PWIcon'
 
 import { AssetIcon } from '../AssetIcon'
 import { PeraAsset } from '@perawallet/wallet-core-assets'

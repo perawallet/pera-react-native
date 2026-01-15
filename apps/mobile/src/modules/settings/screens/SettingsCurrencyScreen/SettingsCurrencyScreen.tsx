@@ -13,7 +13,7 @@
 import { Text } from '@rneui/themed'
 
 import { useStyles } from './styles'
-import { PWView } from '@components/core/PWView'
+import { PWView } from '@components/core'
 import {
     Currency,
     useCurrenciesQuery,

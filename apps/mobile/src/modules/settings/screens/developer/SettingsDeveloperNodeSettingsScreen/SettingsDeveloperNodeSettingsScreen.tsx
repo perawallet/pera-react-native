@@ -11,7 +11,7 @@
  */
 
 import { useStyles } from './styles'
-import { PWView } from '@components/core/PWView'
+import { PWView } from '@components/core'
 import { RadioButton } from '@components/RadioButton'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import { Networks } from '@perawallet/wallet-core-shared'

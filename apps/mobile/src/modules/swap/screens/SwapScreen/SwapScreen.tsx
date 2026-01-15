@@ -11,9 +11,8 @@
  */
 
 import { Text } from '@rneui/themed'
-import { PWView } from '@components/core/PWView'
+import { PWIcon, PWView } from '@components/core'
 import { useStyles } from './styles'
-import { PWIcon } from '@components/core/PWIcon'
 import { PairSelectionPanel } from '@modules/swap/components/PairSelectionPanel/PairSelectionPanel'
 import { SwapHistoryPanel } from '@modules/swap/components/SwapHistoryPanel/SwapHistoryPanel'
 import { TopPairsPanel } from '@modules/swap/components/TopPairsPanel/TopPairsPanel'

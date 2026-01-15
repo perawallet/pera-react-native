@@ -11,9 +11,8 @@
  */
 
 import { ActivityIndicator } from 'react-native'
-import { PWView } from '@components/core/PWView'
+import { PWSkeleton, PWView } from '@components/core'
 import { useTheme } from '@rneui/themed'
-import { PWSkeleton } from '@components/core/PWSkeleton'
 import { useStyles } from './styles'
 
 export type LoadingViewProps = {

@@ -41,7 +41,8 @@ modules/transactions/components/
 // index.ts
 export { PWButton } from './PWButton'
 export type { PWButtonProps } from './PWButton'
-```
+
+````
 
 ### Core Barrel File Pattern
 
@@ -56,8 +57,7 @@ import { PWButton, PWText } from '@components/core'
 // ❌ BAD
 import { PWButton } from '@components/core/PWButton'
 import { PWText } from '@components/core/PWText/PWText'
-```
-
+````
 
 ### Subcomponent Rules
 
@@ -147,11 +147,11 @@ export const PWTouchableOpacity = ({
 
 ### Components That MUST Be Wrapped
 
-| External Source    | Examples                                         |
-| ------------------ | ------------------------------------------------ |
-| `@rneui/themed`    | `Text`, `Button`, `ListItem`, `Icon`, `Skeleton` |
-| `react-native`     | `TouchableOpacity`, `View`, `ScrollView`         |
-| Third-party        | `BottomSheet`, `WebView`, modals, etc.           |
+| External Source | Examples                                         |
+| --------------- | ------------------------------------------------ |
+| `@rneui/themed` | `Text`, `Button`, `ListItem`, `Icon`, `Skeleton` |
+| `react-native`  | `TouchableOpacity`, `View`, `ScrollView`         |
+| Third-party     | `BottomSheet`, `WebView`, modals, etc.           |
 
 ### Exceptions (No Wrapper Needed)
 
@@ -208,7 +208,7 @@ export const PWButton = ({
         </PWTouchableOpacity>
     )
 }
-````
+```
 
 ## Style Files (REQUIRED: makeStyles)
 

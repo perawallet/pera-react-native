@@ -10,14 +10,12 @@
  limitations under the License
  */
 
-import { PWView } from '@components/core/PWView'
+import { PWHeader, PWText, PWView } from '@components/core'
 import { AddressSearchView } from '@components/AddressSearchView'
 import { useContext, useMemo } from 'react'
 import { SendFundsContext } from '@modules/transactions/providers/SendFundsProvider'
 import { useStyles } from './styles'
-import { PWHeader } from '@components/core/PWHeader'
 import { AssetIcon } from '@modules/assets/components/AssetIcon'
-import { PWText } from '@components/core/PWText'
 import { useTheme } from '@rneui/themed'
 import { EmptyView } from '@components/EmptyView'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'

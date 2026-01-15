@@ -12,15 +12,15 @@
 
 import {
     PWBottomSheet,
-    PWBottomSheetProps,
-} from '@components/core/PWBottomSheet'
-import { PWInput } from '@components/core/PWInput'
-import { PWText } from '@components/core/PWText'
+    type PWBottomSheetProps,
+    PWIcon,
+    PWInput,
+    PWText,
+    PWView,
+} from '@components/core'
 import { useContext, useEffect, useState } from 'react'
-import { PWIcon } from '@components/core/PWIcon'
 import { useForm, Controller } from 'react-hook-form'
 import { useStyles } from './styles'
-import { PWView } from '@components/core/PWView'
 import { SendFundsContext } from '@modules/transactions/providers/SendFundsProvider'
 import { useLanguage } from '@hooks/language'
 import { zodResolver } from '@hookform/resolvers/zod'

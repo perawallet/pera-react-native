@@ -11,7 +11,7 @@
  */
 
 import { useStyles } from './styles'
-import { PWView } from '@components/core/PWView'
+import { PWView } from '@components/core'
 import { Text } from '@rneui/themed'
 import { useCallback } from 'react'
 

@@ -10,12 +10,10 @@
  limitations under the License
  */
 
-import { PWView } from '@components/core/PWView'
+import { PWIcon, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
-import { PWText } from '@components/core/PWText'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
-import { PWIcon } from '@components/core/PWIcon'
 import { useLanguage } from '@hooks/language'
 
 const AssetImpact = () => {

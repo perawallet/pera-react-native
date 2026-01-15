@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWIcon, IconName } from '@components/core/PWIcon'
+import { IconName, PWIcon } from '@components/core'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { screenListeners } from './listeners'
 import { DiscoverScreen } from '@modules/discover/screens/DiscoverScreen'

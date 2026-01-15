@@ -12,8 +12,7 @@
 
 import { InputProps } from '@rneui/base'
 
-import { PWInput } from '@components/core/PWInput'
-import { PWIcon } from '@components/core/PWIcon'
+import { PWIcon, PWInput } from '@components/core'
 import { useStyles } from './styles'
 
 export type SearchInputProps = {} & Omit<

@@ -18,7 +18,7 @@ import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { useToast } from '@hooks/toast'
 import { Pressable } from 'react-native'
-import { PWText } from '@components/core/PWText'
+import { PWText } from '@components/core'
 
 const REQUIRED_TAPS = 10
 const NOTIFY_FROM_TAP_COUNT = 7

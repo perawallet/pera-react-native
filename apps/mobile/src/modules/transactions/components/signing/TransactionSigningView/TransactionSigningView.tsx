@@ -13,7 +13,7 @@
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { EmptyView } from '@components/EmptyView'
 import { TransactionIcon } from '@modules/transactions/components/TransactionIcon/TransactionIcon'
-import { PWView } from '@components/core/PWView'
+import { PWButton, PWText, PWView, bottomSheetNotifier } from '@components/core'
 import {
     encodeAlgorandAddress,
     TransactionSignRequest,
@@ -22,17 +22,14 @@ import {
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import { PWText } from '@components/core/PWText'
 import Decimal from 'decimal.js'
 import { ScrollView } from 'react-native-gesture-handler'
 import { useStyles } from './styles'
 import { BalanceImpactView } from '../BalanceImpactView/BalanceImpactView'
 import { useLanguage } from '@hooks/language'
 import { useToast } from '@hooks/toast'
-import { PWButton } from '@components/core/PWButton'
 import { useTransactionSigner } from '@perawallet/wallet-core-accounts'
 import { config } from '@perawallet/wallet-core-config'
-import { bottomSheetNotifier } from '@components/core/PWBottomSheet'
 
 type TransactionSigningViewProps = {
     request: TransactionSignRequest

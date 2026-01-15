@@ -12,10 +12,13 @@
 
 import { useStyles } from './styles'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
-import { PWText } from '@components/core/PWText'
-import { PWIcon, IconName } from '@components/core/PWIcon'
-import { PWView } from '@components/core/PWView'
-import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
+import {
+    IconName,
+    PWIcon,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { useLanguage } from '@hooks/language'
 import { useWebView } from '@hooks/webview'
 import { v7 as uuid } from 'uuid'
