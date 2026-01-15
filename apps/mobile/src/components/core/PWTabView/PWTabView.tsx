@@ -31,6 +31,7 @@ const PWTabViewComponent = ({
     animationType,
     animationConfig,
     children,
+    ...props
 }: PWTabViewProps) => {
     return (
         <RNETabView
@@ -38,6 +39,7 @@ const PWTabViewComponent = ({
             onChange={onChange}
             animationType={animationType}
             animationConfig={animationConfig}
+            {...props}
         >
             {children}
         </RNETabView>
@@ -49,8 +51,15 @@ export type PWTabViewItemProps = {
     style?: StyleProp<ViewStyle>
 }
 
-const PWTabViewItem = ({ children, style }: PWTabViewItemProps) => {
-    return <RNETabView.Item style={style}>{children}</RNETabView.Item>
+const PWTabViewItem = ({ children, style, ...props }: PWTabViewItemProps) => {
+    return (
+        <RNETabView.Item
+            style={style}
+            {...props}
+        >
+            {children}
+        </RNETabView.Item>
+    )
 }
 
 export const PWTabView = Object.assign(PWTabViewComponent, {

@@ -24,12 +24,17 @@ type PWListItemProps = PWTouchableOpacityProps & {
     title: string
 }
 
-export const PWListItem = ({ icon, title, ...props }: PWListItemProps) => {
+export const PWListItem = ({
+    icon,
+    title,
+    style,
+    ...props
+}: PWListItemProps) => {
     const styles = useStyles()
 
     return (
         <PWTouchableOpacity
-            style={styles.row}
+            style={[styles.row, style]}
             {...props}
         >
             <PWView style={styles.labelContainer}>

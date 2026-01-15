@@ -38,6 +38,7 @@ const PWTabComponent = ({
     children,
     buttonStyle,
     titleStyle,
+    ...props
 }: PWTabProps) => {
     return (
         <RNETab
@@ -50,6 +51,7 @@ const PWTabComponent = ({
             dense={dense}
             buttonStyle={buttonStyle}
             titleStyle={titleStyle}
+            {...props}
         >
             {children}
         </RNETab>

@@ -16,4 +16,13 @@ export const useStyles = makeStyles(() => ({
     container: {
         // Default container styles if needed
     },
+    inputContainer: {
+        // Default input container styles if needed
+    },
+    input: {
+        // Default input styles if needed
+    },
+    label: {
+        // Default label styles if needed
+    },
 }))

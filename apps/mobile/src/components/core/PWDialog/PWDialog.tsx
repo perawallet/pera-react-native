@@ -25,44 +25,62 @@ const PWDialogComponent = ({
     onBackdropPress,
     children,
     overlayStyle,
+    ...props
 }: PWDialogProps) => {
     return (
         <RNEDialog
             isVisible={isVisible}
             onBackdropPress={onBackdropPress}
             overlayStyle={overlayStyle}
+            {...props}
         >
             {children}
         </RNEDialog>
     )
 }
 
-const PWDialogTitle = (props: {
+const PWDialogTitle = ({
+    title,
+    titleStyle,
+    ...props
+}: {
     title: string
     titleStyle?: StyleProp<TextStyle>
 }) => {
     return (
         <RNEDialog.Title
-            title={props.title}
-            titleStyle={props.titleStyle}
+            title={title}
+            titleStyle={titleStyle}
+            {...props}
         />
     )
 }
 
-const PWDialogActions = (props: { children: React.ReactNode }) => {
-    return <RNEDialog.Actions>{props.children}</RNEDialog.Actions>
+const PWDialogActions = ({
+    children,
+    ...props
+}: {
+    children: React.ReactNode
+}) => {
+    return <RNEDialog.Actions {...props}>{children}</RNEDialog.Actions>
 }
 
-const PWDialogButton = (props: {
+const PWDialogButton = ({
+    title,
+    onPress,
+    titleStyle,
+    ...props
+}: {
     title: string
     onPress?: () => void
     titleStyle?: StyleProp<TextStyle>
 }) => {
     return (
         <RNEDialog.Button
-            title={props.title}
-            onPress={props.onPress}
-            titleStyle={props.titleStyle}
+            title={title}
+            onPress={onPress}
+            titleStyle={titleStyle}
+            {...props}
         />
     )
 }

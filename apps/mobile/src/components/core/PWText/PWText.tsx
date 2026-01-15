@@ -30,6 +30,7 @@ export const PWText = ({
     numberOfLines,
     ellipsizeMode,
     onPress,
+    ...props
 }: PWTextProps) => {
     const styles = useStyles({ variant })
 
@@ -43,6 +44,7 @@ export const PWText = ({
             numberOfLines={numberOfLines}
             ellipsizeMode={ellipsizeMode}
             onPress={onPress}
+            {...props}
         >
             {children}
         </RNEText>

@@ -15,15 +15,15 @@ import { View, ViewProps } from 'react-native'
 
 export type PWViewProps = ViewProps
 
-export const PWView = (props: PWViewProps) => {
-    const style = useStyles(props)
+export const PWView = ({ children, style, ...props }: PWViewProps) => {
+    const styles = useStyles(props)
 
     return (
         <View
-            style={[style.defaultStyle, props.style]}
+            style={[styles.defaultStyle, style]}
             {...props}
         >
-            {props.children}
+            {children}
         </View>
     )
 }

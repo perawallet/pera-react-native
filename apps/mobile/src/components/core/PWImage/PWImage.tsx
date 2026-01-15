@@ -40,6 +40,7 @@ export const PWImage = ({
     transition = true,
     width,
     height,
+    ...props
 }: PWImageProps) => {
     // const styles = useStyles()
 
@@ -58,6 +59,7 @@ export const PWImage = ({
             onError={onError}
             PlaceholderContent={PlaceholderContent ?? <ActivityIndicator />}
             transition={transition}
+            {...props}
         />
     )
 }

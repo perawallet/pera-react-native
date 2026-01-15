@@ -32,6 +32,7 @@ export const PWOverlay = ({
     overlayStyle,
     backdropStyle,
     fullScreen,
+    ...props
 }: PWOverlayProps) => {
     const styles = useStyles()
 
@@ -42,6 +43,7 @@ export const PWOverlay = ({
             overlayStyle={[styles.overlay, overlayStyle]}
             backdropStyle={backdropStyle}
             fullScreen={fullScreen}
+            {...props}
         >
             {children}
         </RNEOverlay>

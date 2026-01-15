@@ -28,6 +28,7 @@ export const PWSwitch = ({
     disabled,
     style,
     color,
+    ...props
 }: PWSwitchProps) => {
     // const styles = useStyles()
 
@@ -38,6 +39,7 @@ export const PWSwitch = ({
             disabled={disabled}
             style={style}
             color={color}
+            {...props}
         />
     )
 }

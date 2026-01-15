@@ -28,6 +28,7 @@ export const PWSkeleton = ({
     width,
     style,
     circle,
+    ...props
 }: PWSkeletonProps) => {
     const styles = useStyles()
 
@@ -38,6 +39,7 @@ export const PWSkeleton = ({
             height={height}
             width={width}
             circle={circle}
+            {...props}
         />
     )
 }

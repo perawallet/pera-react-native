@@ -36,34 +36,53 @@ const ICON_VARIANT_MAP: Record<string, PWIconVariant> = {
     destructive: 'white',
 }
 
-export const PWButton = (props: PWButtonProps) => {
-    const styles = useStyles(props)
+export const PWButton = ({
+    variant,
+    title,
+    icon,
+    onPress,
+    style,
+    isDisabled,
+    isLoading,
+    paddingStyle,
+    ...props
+}: PWButtonProps) => {
+    const styles = useStyles({
+        variant,
+        title,
+        icon,
+        onPress,
+        style,
+        isDisabled,
+        isLoading,
+        paddingStyle,
+    })
 
-    const iconVariant = ICON_VARIANT_MAP[props.variant]
+    const iconVariant = ICON_VARIANT_MAP[variant]
 
     return (
         <PWTouchableOpacity
-            style={[styles.buttonStyle, props.style]}
-            onPress={props.onPress}
-            disabled={props.isDisabled}
+            style={[styles.buttonStyle, style]}
+            onPress={onPress}
+            disabled={isDisabled}
+            {...props}
         >
-            {!!props.icon && !props.isLoading && (
+            {!!icon && !isLoading && (
                 <PWIcon
-                    name={props.icon}
+                    name={icon}
                     variant={iconVariant}
                     size={
-                        props.paddingStyle === 'dense' ||
-                        props.paddingStyle === 'none'
+                        paddingStyle === 'dense' || paddingStyle === 'none'
                             ? 'sm'
                             : 'md'
                     }
                 />
             )}
-            {!!props.title && !props.isLoading && (
-                <PWText style={styles.titleStyle}>{props.title}</PWText>
+            {!!title && !isLoading && (
+                <PWText style={styles.titleStyle}>{title}</PWText>
             )}
 
-            {props.isLoading && (
+            {isLoading && (
                 <ActivityIndicator
                     size='small'
                     color={styles.loadingStyle.color}
