@@ -618,6 +618,7 @@ vi.mock('@rneui/themed', () => {
         React.createElement(
             MockView,
             { ...props, 'data-testid': 'Tab.Item' },
+            props.title,
             props.children,
         )
     const Tab = Object.assign(
@@ -625,7 +626,14 @@ vi.mock('@rneui/themed', () => {
             React.createElement(
                 MockView,
                 { ...props, 'data-testid': 'Tab' },
-                props.children,
+                React.Children.map(
+                    props.children,
+                    (child: any, index: number) => {
+                        return React.cloneElement(child, {
+                            onPress: () => props.onChange?.(index),
+                        })
+                    },
+                ),
             ),
         { Item: TabItem },
     )
@@ -722,11 +730,28 @@ vi.mock('@rneui/themed', () => {
             }),
         CheckBox: (props: any) =>
             React.createElement(MockView, props, props.children),
+        Switch: ({ value, onValueChange, ...props }: any) =>
+            React.createElement('input', {
+                type: 'checkbox',
+                role: 'switch',
+                checked: value,
+                onChange: (e: any) => onValueChange?.(e.target.checked),
+                ...props,
+                'data-testid': 'RNESwitch',
+            }),
         BottomSheet: ({ isVisible, children, ...props }: any) =>
             isVisible
                 ? React.createElement(
                       MockView,
                       { ...props, 'data-testid': 'RNEBottomSheet' },
+                      children,
+                  )
+                : null,
+        Overlay: ({ isVisible, children, ...props }: any) =>
+            isVisible
+                ? React.createElement(
+                      MockView,
+                      { ...props, 'data-testid': 'RNEOverlay' },
                       children,
                   )
                 : null,

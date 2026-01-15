@@ -24,7 +24,7 @@ describe('PWSwitch', () => {
             />,
         )
         // Switch often has role 'switch'
-        fireEvent(getByRole('switch'), 'valueChange', true)
+        fireEvent.click(getByRole('switch'))
         expect(onValueChange).toHaveBeenCalledWith(true)
     })
 })

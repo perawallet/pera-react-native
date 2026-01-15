@@ -38,7 +38,9 @@ describe('PWInput', () => {
                 onChangeText={onChangeText}
             />,
         )
-        fireEvent.change(screen.getByPlaceholderText('test'), 'hello')
+        fireEvent.change(screen.getByPlaceholderText('test'), {
+            target: { value: 'hello' },
+        })
         expect(onChangeText).toHaveBeenCalledWith('hello')
     })
 })

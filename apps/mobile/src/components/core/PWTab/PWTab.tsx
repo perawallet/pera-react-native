@@ -70,7 +70,8 @@ const PWTabItem = ({
     icon,
     buttonStyle,
     containerStyle,
-}: PWTabItemProps) => {
+    ...rest
+}: PWTabItemProps & { onPress?: () => void }) => {
     return (
         <RNETab.Item
             title={title}
@@ -79,6 +80,7 @@ const PWTabItem = ({
             icon={icon as any}
             buttonStyle={buttonStyle}
             containerStyle={containerStyle}
+            {...rest}
         />
     )
 }
