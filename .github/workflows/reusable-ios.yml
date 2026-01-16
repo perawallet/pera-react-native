@@ -219,17 +219,17 @@ jobs:
           echo "build_number=${{ env.BUILD }}" >> $GITHUB_OUTPUT
           echo "jira_issue=${{ steps.find_issue.outputs.issue }}" >> $GITHUB_OUTPUT
         id: set_outputs
-  notify:
-    needs: build
-    if: always()
-    uses: ./.github/workflows/reusable-slack-notify.yml
-    with:
-      status: ${{ needs.build.result }}
-      platform: "iOS"
-      environment: ${{ inputs.environment }}
-      # Check if outputs are available, fallback to 'N/A' if empty (e.g. build failed early)
-      version: ${{ needs.build.outputs.version || 'N/A' }}
-      build_number: ${{ needs.build.outputs.build_number || 'N/A' }}
-      jira_issue: ${{ needs.build.outputs.jira_issue }}
-      notification_title_prefix: ${{ inputs.notification_title_prefix }}
-    secrets: inherit
+#   notify:
+#     needs: build
+#     if: always()
+#     uses: ./.github/workflows/reusable-slack-notify.yml
+#     with:
+#       status: ${{ needs.build.result }}
+#       platform: "iOS"
+#       environment: ${{ inputs.environment }}
+#       # Check if outputs are available, fallback to 'N/A' if empty (e.g. build failed early)
+#       version: ${{ needs.build.outputs.version || 'N/A' }}
+#       build_number: ${{ needs.build.outputs.build_number || 'N/A' }}
+#       jira_issue: ${{ needs.build.outputs.jira_issue }}
+#       notification_title_prefix: ${{ inputs.notification_title_prefix }}
+#     secrets: inherit
