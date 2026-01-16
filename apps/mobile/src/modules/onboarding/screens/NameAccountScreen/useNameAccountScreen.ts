@@ -63,6 +63,9 @@ export const useNameAccountScreen = () => {
         try {
             setIsCreating(true)
 
+            // Wait for the next frame to ensure UI updates (overlay appears) before heavy work
+            await new Promise(resolve => requestAnimationFrame(resolve))
+
             const targetAccount: WalletAccount =
                 account || (await createAccount({ account: 0, keyIndex: 0 }))
 
