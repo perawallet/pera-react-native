@@ -47,13 +47,8 @@ const NameAccountScreenWithErrorBoundary =
 const ImportAccountScreenWithErrorBoundary =
     withAccountErrorBoundary(ImportAccountScreen)
 
-export type OnboardingStackParamList = {
-    OnboardingHome: undefined
-    NameAccount: {
-        account: WalletAccount
-    }
-    ImportAccount: undefined
-}
+import { OnboardingStackParamList } from './types'
+export type { OnboardingStackParamList } from './types'
 
 const OnboardingStack = createNativeStackNavigator<OnboardingStackParamList>()
 

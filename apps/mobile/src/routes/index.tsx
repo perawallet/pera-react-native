@@ -12,7 +12,6 @@
 
 import {
     NavigationContainer,
-    NavigatorScreenParams,
 } from '@react-navigation/native'
 import {
     createNativeStackNavigator,
@@ -23,17 +22,14 @@ import { NotificationsScreen } from '@modules/notifications/screens/Notification
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import {
     OnboardingStackNavigator,
-    OnboardingStackParamList,
 } from '@modules/onboarding/routes'
 import { screenListeners } from './listeners'
-import { TabBarStackNavigator, TabBarStackParamList } from './tabbar'
+import { TabBarStackNavigator } from './tabbar'
 import {
     ContactsStackNavigator,
-    ContactsStackParamsList,
 } from '@modules/contacts/routes'
 import {
     SettingsStackNavigator,
-    SettingsStackParamsList,
 } from '@modules/settings/routes'
 import { useShowOnboarding } from '@hooks/useShowOnboarding'
 import { NavigationHeader } from '@components/NavigationHeader'
@@ -41,14 +37,8 @@ import { getNavigationTheme } from '@theme/theme'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
 
-export type RootStackParamList = {
-    Onboarding: NavigatorScreenParams<OnboardingStackParamList>
-    TabBar: NavigatorScreenParams<TabBarStackParamList>
-    Notifications: undefined
-    Settings: NavigatorScreenParams<SettingsStackParamsList>
-    Contacts: NavigatorScreenParams<ContactsStackParamsList>
-    Staking: undefined
-}
+import { RootStackParamList } from './types'
+export type { RootStackParamList } from './types'
 
 const RootStack = createNativeStackNavigator<RootStackParamList>()
 
