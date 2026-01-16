@@ -24,7 +24,6 @@ import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { useRoute, RouteProp } from '@react-navigation/native'
 import { OnboardingStackParamList } from '../../routes'
-import { useAppNavigation } from '@hooks/useAppNavigation'
 
 type NameAccountScreenRouteProp = RouteProp<
     OnboardingStackParamList,
@@ -32,7 +31,6 @@ type NameAccountScreenRouteProp = RouteProp<
 >
 
 export const useNameAccountScreen = () => {
-    const navigation = useAppNavigation()
     const route = useRoute<NameAccountScreenRouteProp>()
 
     const accounts = useAllAccounts()
@@ -40,7 +38,7 @@ export const useNameAccountScreen = () => {
     const createAccount = useCreateAccount()
     const { t } = useLanguage()
     const { showToast } = useToast()
-    const { deletePreference } = usePreferences()
+    const { setPreference, deletePreference } = usePreferences()
 
     const routeAccount = route.params?.account
 
@@ -71,8 +69,15 @@ export const useNameAccountScreen = () => {
             targetAccount.name = walletDisplay
             updateAccount(targetAccount)
 
+            // Set confetti preference before triggering navigation
+            // AccountScreen will read this preference and play the animation
+            setPreference(UserPreferences.shouldPlayConfetti, true)
+
+            // Deleting isCreatingAccount triggers automatic navigation:
+            // 1. useShowOnboarding() returns false (no longer creating + has accounts)
+            // 2. React Navigation unmounts Onboarding stack, mounts TabBar
+            // 3. AccountScreen renders and plays confetti from preference
             deletePreference(UserPreferences.isCreatingAccount)
-            navigation.navigate('AccountDetails', { playConfetti: true })
         } catch (error) {
             showToast({
                 title: t('onboarding.create_account.error_title'),

@@ -15,4 +15,5 @@ export const UserPreferences = {
     chartVisible: 'chart-visible',
     isCreatingAccount: 'is-creating-account',
     developerMenuEnabled: 'developer-menu-enabled',
+    shouldPlayConfetti: 'should_play_confetti',
 } as const

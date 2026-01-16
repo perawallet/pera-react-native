@@ -31,17 +31,17 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 }))
 
 describe('useShowOnboarding', () => {
-    const mockGetPreference = vi.fn()
+    const mockHasPreference = vi.fn()
 
     beforeEach(() => {
         vi.clearAllMocks()
         ;(usePreferences as Mock).mockReturnValue({
-            getPreference: mockGetPreference,
+            hasPreference: mockHasPreference,
         })
     })
 
     it('should return true if no accounts exist', () => {
-        mockGetPreference.mockReturnValue(false)
+        mockHasPreference.mockReturnValue(false)
         ;(useHasNoAccounts as Mock).mockReturnValue(true)
 
         const { result } = renderHook(() => useShowOnboarding())
@@ -49,7 +49,7 @@ describe('useShowOnboarding', () => {
     })
 
     it('should return true if user is creating an account', () => {
-        mockGetPreference.mockReturnValue(true)
+        mockHasPreference.mockReturnValue(true)
         ;(useHasNoAccounts as Mock).mockReturnValue(false)
 
         const { result } = renderHook(() => useShowOnboarding())
@@ -57,7 +57,7 @@ describe('useShowOnboarding', () => {
     })
 
     it('should return false if accounts exist and user is not creating an account', () => {
-        mockGetPreference.mockReturnValue(false)
+        mockHasPreference.mockReturnValue(false)
         ;(useHasNoAccounts as Mock).mockReturnValue(false)
 
         const { result } = renderHook(() => useShowOnboarding())

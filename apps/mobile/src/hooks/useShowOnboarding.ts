@@ -17,12 +17,14 @@ import { UserPreferences } from '@constants/user-preferences'
 import { useMemo } from 'react'
 
 export const useShowOnboarding = () => {
-    const { getPreference } = usePreferences()
+    const { hasPreference } = usePreferences()
     const noAccounts = useHasNoAccounts()
 
+    // Subscribe to the actual preference value to ensure reactivity
+    // hasPreference internally depends on the preferences state, triggering re-renders
+    const isCreatingAccount = hasPreference(UserPreferences.isCreatingAccount)
+
     const showOnboarding = useMemo(() => {
-        const isCreatingAccount =
-            getPreference(UserPreferences.isCreatingAccount) === true
         logger.debug('useShowOnboarding', {
             onboardingData: {
                 isCreatingAccount,
@@ -31,7 +33,7 @@ export const useShowOnboarding = () => {
             },
         })
         return isCreatingAccount || noAccounts
-    }, [getPreference, noAccounts])
+    }, [isCreatingAccount, noAccounts])
 
     return showOnboarding
 }

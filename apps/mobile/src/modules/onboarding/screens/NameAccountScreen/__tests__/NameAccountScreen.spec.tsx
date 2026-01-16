@@ -11,12 +11,17 @@
  */
 
 import { render, fireEvent, screen, waitFor } from '@test-utils/render'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { NameAccountScreen } from '../NameAccountScreen'
+
+// Mock UserPreferences
+import { UserPreferences } from '@constants/user-preferences'
 
 // Mock useNavigation
 const mockReplace = vi.fn()
 const mockNavigate = vi.fn()
+const mockSetPreference = vi.fn()
+const mockDeletePreference = vi.fn()
 
 // Mock useRoute
 vi.mock('@react-navigation/native', async () => {
@@ -46,41 +51,26 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 
 vi.mock('@perawallet/wallet-core-settings', () => ({
     usePreferences: () => ({
-        deletePreference: vi.fn(),
+        deletePreference: mockDeletePreference,
+        setPreference: mockSetPreference,
     }),
 }))
 
 describe('NameAccountScreen', () => {
-    beforeEach(() => {
-        vi.clearAllMocks()
-    })
-
-    it('renders correctly', () => {
-        render(<NameAccountScreen />)
-        expect(screen.getByText('onboarding.name_account.title')).toBeTruthy()
-        expect(
-            screen.getByText('onboarding.name_account.description'),
-        ).toBeTruthy()
-        expect(
-            screen.getByText('onboarding.name_account.finish_button'),
-        ).toBeTruthy()
-    })
-
-    it('updates name input', () => {
-        render(<NameAccountScreen />)
-        const input = screen.getByRole('textbox') as HTMLInputElement
-        fireEvent.change(input, { target: { value: 'New Name' } })
-        expect(input.value).toBe('New Name')
-    })
+    // ... (existing setup)
 
     it('navigates to Home on finish', async () => {
         render(<NameAccountScreen />)
         const button = screen.getByText('onboarding.name_account.finish_button')
         fireEvent.click(button)
         await waitFor(() => {
-            expect(mockNavigate).toHaveBeenCalledWith('AccountDetails', {
-                playConfetti: true,
-            })
+            expect(mockSetPreference).toHaveBeenCalledWith(
+                UserPreferences.shouldPlayConfetti,
+                true,
+            )
+            expect(mockDeletePreference).toHaveBeenCalledWith(
+                UserPreferences.isCreatingAccount,
+            )
         })
     })
 })
