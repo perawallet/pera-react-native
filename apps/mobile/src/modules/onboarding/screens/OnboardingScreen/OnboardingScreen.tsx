@@ -10,21 +10,15 @@
  limitations under the License
  */
 
-import React, { useState } from 'react'
+import React from 'react'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useStyles } from './styles'
-import { useTheme } from '@rneui/themed'
-import { PWImage, PWOverlay, PWText, PWView } from '@components/core'
+import { PWImage, PWText, PWView } from '@components/core'
 import { PanelButton } from '@components/PanelButton'
 
 import welcomeBackground from '@assets/images/welcome-background.webp'
-import { ActivityIndicator } from 'react-native'
-import { useCreateAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
-import { useToast } from '@hooks/useToast'
-import { usePreferences } from '@perawallet/wallet-core-settings'
-import { UserPreferences } from '@constants/user-preferences'
 import { Trans } from 'react-i18next'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
@@ -32,12 +26,7 @@ import { config } from '@perawallet/wallet-core-config'
 export const OnboardingScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const styles = useStyles()
-    const createAccount = useCreateAccount()
-    const { theme } = useTheme()
-    const [processing, setProcessing] = useState(false)
     const { t } = useLanguage()
-    const { showToast } = useToast()
-    const { setPreference } = usePreferences()
     const { pushWebView } = useWebView()
 
     const handleTermsPress = () => {
@@ -54,35 +43,13 @@ export const OnboardingScreen = () => {
         })
     }
 
-    const doCreate = async () => {
-        try {
-            setPreference(UserPreferences.isCreatingAccount, true)
-            const account = await createAccount({ account: 0, keyIndex: 0 })
-            navigation.push('Onboarding', {
-                screen: 'NameAccount',
-                params: { account: account },
-            })
-        } catch (error) {
-            showToast({
-                title: t('onboarding.create_account.error_title'),
-                body: t('onboarding.create_account.error_message', {
-                    error: `${error}`,
-                }),
-                type: 'error',
-            })
-        } finally {
-            setProcessing(false)
-        }
-    }
-
-    const createAccountHandler = async () => {
-        setProcessing(true)
-        requestAnimationFrame(() => {
-            doCreate()
+    const handleCreateAccount = () => {
+        navigation.push('Onboarding', {
+            screen: 'NameAccount',
         })
     }
 
-    const importAccount = () => {
+    const handleImportAccount = () => {
         navigation.push('ImportAccount')
     }
 
@@ -111,7 +78,7 @@ export const OnboardingScreen = () => {
                     <PanelButton
                         title={t('onboarding.main_screen.create_wallet')}
                         titleWeight='h4'
-                        onPress={createAccountHandler}
+                        onPress={handleCreateAccount}
                         leftIcon={'wallet-with-algo'}
                         rightIcon={'chevron-right'}
                     />
@@ -125,7 +92,7 @@ export const OnboardingScreen = () => {
                     <PanelButton
                         title={t('onboarding.main_screen.import_account')}
                         titleWeight='h4'
-                        onPress={importAccount}
+                        onPress={handleImportAccount}
                         leftIcon={'key'}
                         rightIcon={'chevron-right'}
                     />
@@ -151,17 +118,6 @@ export const OnboardingScreen = () => {
                     </PWText>
                 </PWView>
             </PWView>
-            <PWOverlay
-                isVisible={processing}
-                overlayStyle={styles.overlay}
-                backdropStyle={styles.overlayBackdrop}
-            >
-                <ActivityIndicator
-                    size='large'
-                    color={theme.colors.linkPrimary}
-                />
-                <PWText>{t('onboarding.create_account.processing')}</PWText>
-            </PWOverlay>
         </>
     )
 }

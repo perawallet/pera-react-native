@@ -33,10 +33,6 @@ vi.mock('@react-navigation/native', async () => {
     }
 })
 
-// Mock wallets
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useCreateAccount: () => vi.fn(),
-}))
 
 // Mock webview
 const mockPushWebView = vi.fn()
@@ -149,6 +145,20 @@ describe('OnboardingScreen', () => {
         expect(mockPushWebView).toHaveBeenCalledWith({
             url: config.privacyPolicyUrl,
             id: 'privacy-policy',
+        })
+    })
+    it('navigates to NameAccount when Create Wallet is pressed', () => {
+        render(<OnboardingScreen />)
+
+        const createButton = screen.getByText(
+            'onboarding.main_screen.create_wallet',
+        )
+        // Buttons might fail to find by text if nested complex structure, but let's try
+        // The PanelButton likely renders text.
+        fireEvent.click(createButton)
+
+        expect(mockPush).toHaveBeenCalledWith('Onboarding', {
+            screen: 'NameAccount',
         })
     })
 })
