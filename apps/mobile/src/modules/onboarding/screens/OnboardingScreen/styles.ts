@@ -54,9 +54,6 @@ export const useStyles = makeStyles(theme => {
             textAlign: 'center',
             color: theme.colors.textGray,
         },
-        linkText: {
-            color: theme.colors.linkPrimary,
-        },
         overlayBackdrop: {
             backgroundColor: 'rgba(52, 52, 52, 0.8)',
         },

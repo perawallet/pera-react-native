@@ -17,7 +17,7 @@ import { StyleProp, TextStyle, TextProps } from 'react-native'
 export type PWTextProps = {
     children?: React.ReactNode
     style?: StyleProp<TextStyle>
-    variant?: 'h1' | 'h2' | 'h3' | 'h4' | 'body' | 'caption'
+    variant?: 'h1' | 'h2' | 'h3' | 'h4' | 'body' | 'caption' | 'link'
     numberOfLines?: number
     ellipsizeMode?: TextProps['ellipsizeMode']
     onPress?: () => void

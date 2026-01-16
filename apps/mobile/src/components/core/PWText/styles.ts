@@ -12,8 +12,15 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
+type PWTextStyleProps = {
+    variant: 'h1' | 'h2' | 'h3' | 'h4' | 'body' | 'caption' | 'link'
+}
+
+export const useStyles = makeStyles((theme, { variant }: PWTextStyleProps) => ({
     text: {
-        color: theme.colors.textMain,
+        color:
+            variant === 'link'
+                ? theme.colors.linkPrimary
+                : theme.colors.textMain,
     },
 }))

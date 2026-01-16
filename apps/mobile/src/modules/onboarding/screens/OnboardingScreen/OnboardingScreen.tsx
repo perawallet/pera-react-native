@@ -144,12 +144,12 @@ export const OnboardingScreen = () => {
                             components={[
                                 <PWText
                                     key='terms'
-                                    style={styles.linkText}
+                                    variant='link'
                                     onPress={handleTermsPress}
                                 />,
                                 <PWText
                                     key='privacy'
-                                    style={styles.linkText}
+                                    variant='link'
                                     onPress={handlePrivacyPress}
                                 />,
                             ]}
