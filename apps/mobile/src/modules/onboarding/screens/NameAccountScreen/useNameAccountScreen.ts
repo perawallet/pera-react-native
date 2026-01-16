@@ -72,7 +72,7 @@ export const useNameAccountScreen = () => {
             updateAccount(targetAccount)
 
             deletePreference(UserPreferences.isCreatingAccount)
-            navigation.replace('AccountDetails', { playConfetti: true })
+            navigation.navigate('AccountDetails', { playConfetti: true })
         } catch (error) {
             showToast({
                 title: t('onboarding.create_account.error_title'),

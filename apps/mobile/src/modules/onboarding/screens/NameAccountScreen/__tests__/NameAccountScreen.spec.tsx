@@ -10,25 +10,20 @@
  limitations under the License
  */
 
-import { render, fireEvent, screen } from '@test-utils/render'
+import { render, fireEvent, screen, waitFor } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NameAccountScreen } from '../NameAccountScreen'
-import { NativeStackScreenProps } from '@react-navigation/native-stack'
-import { OnboardingStackParamList } from '@modules/onboarding/routes'
 
 // Mock useNavigation
 const mockReplace = vi.fn()
 const mockNavigate = vi.fn()
 
+// Mock useRoute
 vi.mock('@react-navigation/native', async () => {
     const actual = await vi.importActual<object>('@react-navigation/native')
     return {
         ...actual,
-        useNavigation: () => ({
-            navigate: mockNavigate,
-            replace: mockReplace,
-        }),
-        useRoute: () => mockRoute,
+        useRoute: () => ({ params: undefined }),
     }
 })
 
@@ -55,20 +50,6 @@ vi.mock('@perawallet/wallet-core-settings', () => ({
     }),
 }))
 
-const mockRoute = {
-    params: {
-        account: {
-            name: 'Account 1',
-            address: 'ALGOREADDRESS',
-        },
-    },
-    key: 'NameAccount',
-    name: 'NameAccount',
-} as unknown as NativeStackScreenProps<
-    OnboardingStackParamList,
-    'NameAccount'
->['route']
-
 describe('NameAccountScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -92,12 +73,14 @@ describe('NameAccountScreen', () => {
         expect(input.value).toBe('New Name')
     })
 
-    it('navigates to Home on finish', () => {
+    it('navigates to Home on finish', async () => {
         render(<NameAccountScreen />)
         const button = screen.getByText('onboarding.name_account.finish_button')
         fireEvent.click(button)
-        expect(mockReplace).toHaveBeenCalledWith('AccountDetails', {
-            playConfetti: true,
+        await waitFor(() => {
+            expect(mockNavigate).toHaveBeenCalledWith('AccountDetails', {
+                playConfetti: true,
+            })
         })
     })
 })
