@@ -191,7 +191,6 @@ jobs:
           echo "build_number=${{ env.BUILD }}" >> $GITHUB_OUTPUT
           echo "jira_issue=${{ steps.find_issue.outputs.issue }}" >> $GITHUB_OUTPUT
         id: set_outputs
-
   notify:
     needs: build
     if: always()
@@ -205,6 +204,4 @@ jobs:
       build_number: ${{ needs.build.outputs.build_number || 'N/A' }}
       jira_issue: ${{ needs.build.outputs.jira_issue }}
       notification_title_prefix: ${{ inputs.notification_title_prefix }}
-    secrets:
-      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+    secrets: inherit

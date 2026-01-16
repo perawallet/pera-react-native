@@ -124,12 +124,8 @@ platform :android do
       build_type: options[:build_type],
       project_dir: "android/",
       properties: {
-        "android.injected.signing.store.file" => ENV["ANDROID_KEYSTORE_FILE"],
-        "android.injected.signing.store.password" => ENV["ANDROID_KEYSTORE_PASSWORD"],
-        "android.injected.signing.key.alias" => ENV["ANDROID_KEY_ALIAS"],
-        "android.injected.signing.key.password" => ENV["ANDROID_KEY_PASSWORD"]
-      },
-      flags: "--no-daemon"
+        "android.injected.version.code" => ENV["BUILD_NUMBER"]
+      }
     )
   end
 
@@ -147,23 +143,6 @@ platform :android do
     upload_to_play_store(
       track: "internal",
       aab: "android/app/build/outputs/bundle/#{flavor_release}/app-#{flavor}-release.aab",
-      skip_upload_metadata: true,
-      skip_upload_images: true,
-      skip_upload_screenshots: true,
-      json_key: "android/api-key.json"
-    )
-  end
-
-  desc "Build and publish to Play Store Production Track"
-  lane :deploy_production do
-    build_android(
-      flavor: "production",
-      build_type: "Release"
-    )
-
-    upload_to_play_store(
-      track: "production",
-      aab: "android/app/build/outputs/bundle/productionRelease/app-production-release.aab",
       skip_upload_metadata: true,
       skip_upload_images: true,
       skip_upload_screenshots: true,
