@@ -15,7 +15,13 @@ import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useStyles } from './styles'
 import { useTheme } from '@rneui/themed'
-import { PWImage, PWOverlay, PWText, PWView } from '@components/core'
+import {
+    PWImage,
+    PWOverlay,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { PanelButton } from '@components/PanelButton'
 
 import welcomeBackground from '@assets/images/welcome-background.webp'
@@ -25,6 +31,9 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
+import { Trans } from 'react-i18next'
+import { useWebView } from '@modules/webview'
+import { config } from '@perawallet/wallet-core-config'
 
 export const OnboardingScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
@@ -35,6 +44,21 @@ export const OnboardingScreen = () => {
     const { t } = useLanguage()
     const { showToast } = useToast()
     const { setPreference } = usePreferences()
+    const { pushWebView } = useWebView()
+
+    const handleTermsPress = () => {
+        pushWebView({
+            url: config.termsOfServiceUrl,
+            id: 'terms-of-service',
+        })
+    }
+
+    const handlePrivacyPress = () => {
+        pushWebView({
+            url: config.privacyPolicyUrl,
+            id: 'privacy-policy',
+        })
+    }
 
     const doCreate = async () => {
         try {
@@ -70,7 +94,7 @@ export const OnboardingScreen = () => {
 
     return (
         <>
-            <PWView>
+            <PWView style={styles.rootContainer}>
                 <PWView style={styles.headerContainer}>
                     <PWText
                         style={styles.headerTitle}
@@ -111,6 +135,26 @@ export const OnboardingScreen = () => {
                         leftIcon={'key'}
                         rightIcon={'chevron-right'}
                     />
+                </PWView>
+
+                <PWView style={styles.footerContainer}>
+                    <PWText style={styles.termsAndPrivacyText}>
+                        <Trans
+                            i18nKey='onboarding.main_screen.terms_and_privacy'
+                            components={[
+                                <PWText
+                                    key='terms'
+                                    style={styles.linkText}
+                                    onPress={handleTermsPress}
+                                />,
+                                <PWText
+                                    key='privacy'
+                                    style={styles.linkText}
+                                    onPress={handlePrivacyPress}
+                                />,
+                            ]}
+                        />
+                    </PWText>
                 </PWView>
             </PWView>
             <PWOverlay

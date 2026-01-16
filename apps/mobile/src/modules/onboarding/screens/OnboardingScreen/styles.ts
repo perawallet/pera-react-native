@@ -14,11 +14,10 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
     return {
-        mainContainer: {
-            backgroundColor: theme.colors.background,
-            color: theme.colors.white,
+        rootContainer: {
+            flex: 1,
             flexDirection: 'column',
-            paddingHorizontal: theme.spacing.xl,
+            gap: theme.spacing['3xl'],
         },
         headerContainer: {
             flexDirection: 'row',
@@ -38,6 +37,25 @@ export const useStyles = makeStyles(theme => {
             marginTop: theme.spacing.xl,
             marginBottom: theme.spacing.sm,
             color: theme.colors.textGray,
+        },
+        mainContainer: {
+            backgroundColor: theme.colors.background,
+            color: theme.colors.white,
+            paddingHorizontal: theme.spacing.xl,
+            flexDirection: 'column',
+        },
+        footerContainer: {
+            flex: 1,
+            justifyContent: 'flex-end',
+            alignItems: 'center',
+            padding: theme.spacing['3xl'],
+        },
+        termsAndPrivacyText: {
+            textAlign: 'center',
+            color: theme.colors.textGray,
+        },
+        linkText: {
+            color: theme.colors.linkPrimary,
         },
         overlayBackdrop: {
             backgroundColor: 'rgba(52, 52, 52, 0.8)',
