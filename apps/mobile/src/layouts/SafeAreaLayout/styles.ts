@@ -12,7 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles((theme) => {
+export const useStyles = makeStyles(() => {
     return {
         contentContainer: {
             flex: 1,
