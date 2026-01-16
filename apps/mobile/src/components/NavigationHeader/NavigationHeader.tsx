@@ -24,12 +24,17 @@ export const NavigationHeader = (props: NavigationHeaderProps) => {
     const { t } = useLanguage()
 
     const title = useMemo(() => {
-        const title = props.options.title || props.route.name
+        const headerTitle =
+            typeof props.options.headerTitle === 'string'
+                ? props.options.headerTitle
+                : undefined
+        const title = headerTitle ?? props.options.title ?? props.route.name
+
         if (title.includes('.') && !title.includes(' ')) {
             return t(title)
         }
         return title
-    }, [props.options.title, props.route.name])
+    }, [props.options.headerTitle, props.options.title, props.route.name, t])
 
     return (
         <PWView style={styles.container}>

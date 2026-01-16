@@ -80,7 +80,7 @@ export const OnboardingStackNavigator = () => {
                 name='NameAccount'
                 options={{
                     headerShown: true,
-                    headerTitle: 'Name your account',
+                    headerTitle: '',
                 }}
                 component={NameAccountScreenWithErrorBoundary}
             />

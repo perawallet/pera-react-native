@@ -29,8 +29,35 @@ const mockProps = {
 } as unknown as NativeStackHeaderProps
 
 describe('NavigationHeader', () => {
-    it('renders title', () => {
+    it('renders title from options', () => {
         render(<NavigationHeader {...mockProps} />)
         expect(screen.getByText('Test Title')).toBeTruthy()
+    })
+
+    it('prioritizes headerTitle over title', () => {
+        const props = {
+            ...mockProps,
+            options: {
+                title: 'Ignored Title',
+                headerTitle: 'Priority Title',
+            },
+        } as unknown as NativeStackHeaderProps
+        render(<NavigationHeader {...props} />)
+        expect(screen.getByText('Priority Title')).toBeTruthy()
+        expect(screen.queryByText('Ignored Title')).toBeNull()
+    })
+
+    it('renders empty title when headerTitle is empty string', () => {
+        const props = {
+            ...mockProps,
+            options: {
+                title: 'Ignored Title',
+                headerTitle: '',
+            },
+        } as unknown as NativeStackHeaderProps
+        render(<NavigationHeader {...props} />)
+        // Should not render "Ignored Title" or "Test Screen"
+        expect(screen.queryByText('Ignored Title')).toBeNull()
+        expect(screen.queryByText('Test Screen')).toBeNull()
     })
 })
