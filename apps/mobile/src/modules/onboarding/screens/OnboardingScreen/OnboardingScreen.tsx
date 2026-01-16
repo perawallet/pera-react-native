@@ -10,17 +10,17 @@
  limitations under the License
  */
 
+import React, { useState } from 'react'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useStyles } from './styles'
 import { useTheme } from '@rneui/themed'
-import { PWOverlay, PWText, PWView } from '@components/core'
+import { PWImage, PWOverlay, PWText, PWView } from '@components/core'
 import { PanelButton } from '@components/PanelButton'
 
-import WelcomeImage from '@assets/images/welcome-background.svg'
+import welcomeBackground from '@assets/images/welcome-background.webp'
 import { ActivityIndicator } from 'react-native'
 import { useCreateAccount } from '@perawallet/wallet-core-accounts'
-import { useState } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { usePreferences } from '@perawallet/wallet-core-settings'
@@ -78,7 +78,10 @@ export const OnboardingScreen = () => {
                     >
                         {t('onboarding.main_screen.welcome')}
                     </PWText>
-                    <WelcomeImage style={styles.headerImage} />
+                    <PWImage
+                        source={welcomeBackground}
+                        style={styles.headerImage}
+                    />
                 </PWView>
                 <PWView style={styles.mainContainer}>
                     <PWText

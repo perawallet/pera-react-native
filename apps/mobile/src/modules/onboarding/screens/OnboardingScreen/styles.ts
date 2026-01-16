@@ -22,19 +22,17 @@ export const useStyles = makeStyles(theme => {
         },
         headerContainer: {
             flexDirection: 'row',
-            marginBottom: theme.spacing.lg * 3,
-            justifyContent: 'space-between',
-            borderWidth: 0,
-        },
-        headerImage: {
-            width: 172,
-            borderWidth: 0,
+            alignItems: 'center',
         },
         headerTitle: {
-            paddingTop: theme.spacing.xl,
-            paddingStart: theme.spacing.lg,
-            borderWidth: 0,
-            verticalAlign: 'bottom',
+            fontWeight: '600',
+            paddingLeft: theme.spacing.xl,
+            alignSelf: 'flex-end',
+        },
+        headerImage: {
+            width: 267,
+            height: 307,
+            resizeMode: 'contain',
         },
         buttonTitle: {
             marginTop: theme.spacing.xl,
