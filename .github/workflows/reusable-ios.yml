@@ -12,6 +12,10 @@ on:
       notification_title_prefix:
         required: true
         type: string
+      use_cache:
+        required: false
+        type: boolean
+        default: false
     secrets:
       # We use 'secrets: inherit' in the caller, but we can list required ones here for documentation or specific passing
       MAINNET_BACKEND_URL:
@@ -109,10 +113,28 @@ jobs:
         working-directory: apps/mobile
         run: bundle install
 
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: apps/mobile/ios/Pods
+          key: ios-pods-${{ runner.os }}-${{ hashFiles('apps/mobile/ios/Podfile.lock') }}
+          restore-keys: |
+            ios-pods-${{ runner.os }}-
+
       - name: Install CocoaPods
         run: |
           cd apps/mobile/ios
           bundle exec pod install
+
+
+      - name: Cache Derived Data
+        if: ${{ inputs.use_cache }}
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: ios-derived-data-${{ runner.os }}-${{ hashFiles('apps/mobile/ios/Podfile.lock') }}
+          restore-keys: |
+            ios-derived-data-${{ runner.os }}-
 
       - name: Setup MacOS Keychain & Signing
         env:
@@ -154,7 +176,13 @@ jobs:
           echo "${{ secrets.APP_STORE_CONNECT_API_KEY_CONTENT_BASE64 }}" | base64 --decode > api_key.p8
           export APP_STORE_CONNECT_API_KEY_CONTENT=$(cat api_key.p8)
           
-          bundle exec fastlane ios deploy_testflight scheme:${{ inputs.scheme }}
+          # Use clean=true if caching is NOT enabled
+          CLEAN="true"
+          if [ "${{ inputs.use_cache }}" == "true" ]; then
+            CLEAN="false"
+          fi
+          
+          bundle exec fastlane ios deploy_testflight scheme:${{ inputs.scheme }} clean:$CLEAN
           
           # Extract Version
           VERSION=$(agvtool what-marketing-version -terse1)

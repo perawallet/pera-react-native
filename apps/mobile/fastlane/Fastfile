@@ -27,7 +27,8 @@ platform :ios do
     build_ios(
       scheme: "Pera-Staging",
       configuration: "Release",
-      export_method: "ad-hoc"
+      export_method: "ad-hoc",
+      clean: false
     )
   end
 
@@ -42,6 +43,9 @@ platform :ios do
 
   desc "Build iOS for specific scheme"
   private_lane :build_ios do |options|
+    clean = options[:clean]
+    clean = true if clean.nil?
+
     gym(
       scheme: options[:scheme],
       configuration: options[:configuration],
@@ -49,9 +53,7 @@ platform :ios do
       workspace: "./ios/pera.xcworkspace",
       output_directory: "./build/ios",
       output_name: "#{options[:scheme]}.ipa",
-      clean: true,
-      output_name: "#{options[:scheme]}.ipa",
-      clean: true
+      clean: clean
     )
   end
 
@@ -67,10 +69,14 @@ platform :ios do
       )
     end
 
+    clean = options[:clean]
+    clean = true if clean.nil?
+
     build_ios(
       scheme: scheme,
       configuration: "Release",
-      export_method: "app-store"
+      export_method: "app-store",
+      clean: clean
     )
 
     upload_to_testflight(
@@ -118,8 +124,13 @@ platform :android do
 
   desc "Build Android for specific flavor and build type"
   private_lane :build_android do |options|
+    clean = options[:clean]
+    clean = true if clean.nil?
+    
+    task = clean ? "clean bundle" : "bundle"
+
     gradle(
-      task: "assemble",
+      task: task,
       flavor: options[:flavor],
       build_type: options[:build_type],
       project_dir: "android/",
@@ -135,9 +146,13 @@ platform :android do
     # Helper to convert flavor to camelCase for AAB path (e.g., production -> productionRelease)
     flavor_release = "#{flavor}Release"
     
+    clean = options[:clean]
+    clean = true if clean.nil?
+
     build_android(
       flavor: flavor,
-      build_type: "Release"
+      build_type: "Release",
+      clean: clean
     )
 
     upload_to_play_store(

@@ -15,6 +15,7 @@ jobs:
   #     environment: staging
   #     scheme: Pera-Staging
   #     notification_title_prefix: "QA Build"
+  #     use_cache: true
   #   secrets: inherit
 
   # ios-production:
@@ -24,6 +25,7 @@ jobs:
   #     environment: production
   #     scheme: Pera-Production
   #     notification_title_prefix: "QA Build"
+  #     use_cache: true
   #   secrets: inherit
 
   android-staging:
@@ -33,6 +35,7 @@ jobs:
       environment: staging
       flavor: staging
       notification_title_prefix: "QA Build"
+      use_cache: true
     secrets: inherit
 
   # android-production:
@@ -42,4 +45,5 @@ jobs:
   #     environment: production
   #     flavor: production
   #     notification_title_prefix: "QA Build"
+  #     use_cache: true
   #   secrets: inherit

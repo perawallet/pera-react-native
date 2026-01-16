@@ -8,6 +8,12 @@ require Pod::Executable.execute_command('node', ['-p',
 platform :ios, '16.0'
 prepare_react_native_project!
 
+# Map custom project configurations to Pods standard configurations
+project 'pera.xcodeproj',
+  'Dev' => :debug,
+  'Staging' => :release,
+  'Production' => :release
+
 
 ENV['RCT_NEW_ARCH_ENABLED'] = '1'
 linkage = ENV['USE_FRAMEWORKS']

@@ -12,6 +12,10 @@ on:
       notification_title_prefix:
         required: true
         type: string
+      use_cache:
+        required: false
+        type: boolean
+        default: false
     secrets:
       MAINNET_BACKEND_URL:
         required: true
@@ -55,7 +59,7 @@ on:
 jobs:
   build:
     name: Build & Deploy
-    runs-on: ubuntu-latest-m
+    runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.set_outputs.outputs.version }}
       build_number: ${{ steps.set_outputs.outputs.build_number }}
@@ -104,20 +108,29 @@ jobs:
           java-version-file: '.tool-versions'
           cache: 'gradle'
 
+      - name: Cache Android C++ Build
+        if: ${{ inputs.use_cache }}
+        uses: actions/cache@v4
+        with:
+          path: |
+            apps/mobile/android/app/.cxx
+            apps/mobile/android/app/build/intermediates/cxx
+          key: android-cxx-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'apps/mobile/android/build.gradle', 'apps/mobile/android/app/build.gradle', 'apps/mobile/android/gradle.properties') }}
+          restore-keys: |
+            android-cxx-${{ runner.os }}-
+
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
-            accept-android-sdk-licenses: true
-            log-accepted-android-sdk-licenses: false
+          accept-android-sdk-licenses: true
+          log-accepted-android-sdk-licenses: false
 
       - name: Setup Ruby
+        env:
+          BUNDLE_GEMFILE: apps/mobile/Gemfile
         uses: ruby/setup-ruby@v1
         with:
           bundler-cache: true
-
-      - name: Install Bundler
-        working-directory: apps/mobile
-        run: bundle install
 
       - name: Decode Android keystore
         env:
@@ -148,7 +161,14 @@ jobs:
         working-directory: apps/mobile
         run: |
           echo "$ANDROID_JSON_KEY_FILE" > android/api-key.json
-          bundle exec fastlane android deploy_internal flavor:${{ inputs.flavor }}
+          
+          # Use clean=true if caching is NOT enabled
+          CLEAN="true"
+          if [ "${{ inputs.use_cache }}" == "true" ]; then
+            CLEAN="false"
+          fi
+
+          bundle exec fastlane android deploy_internal flavor:${{ inputs.flavor }} clean:$CLEAN
           
           # Extract Version
           VERSION=$(grep 'versionName' android/app/build.gradle | cut -d '"' -f2)
@@ -185,17 +205,17 @@ jobs:
           echo "build_number=${{ env.BUILD }}" >> $GITHUB_OUTPUT
           echo "jira_issue=${{ steps.find_issue.outputs.issue }}" >> $GITHUB_OUTPUT
         id: set_outputs
-  notify:
-    needs: build
-    if: always()
-    uses: ./.github/workflows/reusable-slack-notify.yml
-    with:
-      status: ${{ needs.build.result }}
-      platform: "Android"
-      environment: ${{ inputs.environment }}
-      # Check if outputs are available, fallback to 'N/A' if empty (e.g. build failed early)
-      version: ${{ needs.build.outputs.version || 'N/A' }}
-      build_number: ${{ needs.build.outputs.build_number || 'N/A' }}
-      jira_issue: ${{ needs.build.outputs.jira_issue }}
-      notification_title_prefix: ${{ inputs.notification_title_prefix }}
-    secrets: inherit
+#   notify:
+#     needs: build
+#     if: always()
+#     uses: ./.github/workflows/reusable-slack-notify.yml
+#     with:
+#       status: ${{ needs.build.result }}
+#       platform: "Android"
+#       environment: ${{ inputs.environment }}
+#       # Check if outputs are available, fallback to 'N/A' if empty (e.g. build failed early)
+#       version: ${{ needs.build.outputs.version || 'N/A' }}
+#       build_number: ${{ needs.build.outputs.build_number || 'N/A' }}
+#       jira_issue: ${{ needs.build.outputs.jira_issue }}
+#       notification_title_prefix: ${{ inputs.notification_title_prefix }}
+#     secrets: inherit

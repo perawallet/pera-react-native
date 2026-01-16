@@ -46,16 +46,6 @@ jobs:
       - name: Test
         run: pnpm run test
 
-  ios-staging:
-    name: iOS Staging (RC)
-    needs: test
-    uses: ./.github/workflows/reusable-ios.yml
-    with:
-      environment: staging
-      scheme: Pera-Staging
-      notification_title_prefix: "Release Candidate"
-    secrets: inherit
-
   ios-production:
     name: iOS Production (RC)
     needs: test
@@ -64,16 +54,7 @@ jobs:
       environment: production
       scheme: Pera-Production
       notification_title_prefix: "Release Candidate"
-    secrets: inherit
-
-  android-staging:
-    name: Android Staging (RC)
-    needs: test
-    uses: ./.github/workflows/reusable-android.yml
-    with:
-      environment: staging
-      flavor: staging
-      notification_title_prefix: "Release Candidate"
+      use_cache: false
     secrets: inherit
 
   android-production:
@@ -84,4 +65,5 @@ jobs:
       environment: production
       flavor: production
       notification_title_prefix: "Release Candidate"
+      use_cache: false
     secrets: inherit
