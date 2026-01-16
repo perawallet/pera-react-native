@@ -159,9 +159,16 @@ jobs:
           # Install Profile (must be named with UUID for Xcode to find it)
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           echo "$PROFILE_BASE64" | base64 --decode > profile.mobileprovision
-          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(security cms -D -i profile.mobileprovision))
+          
+          # Extract UUID and Name
+          PROFILE_CONTENT=$(security cms -D -i profile.mobileprovision)
+          PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< "$PROFILE_CONTENT")
+          PROFILE_NAME=$(/usr/libexec/PlistBuddy -c "Print Name" /dev/stdin <<< "$PROFILE_CONTENT")
+          
           cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/${PROFILE_UUID}.mobileprovision
           echo "Installed profile with UUID: ${PROFILE_UUID}"
+          echo "Profile Name: ${PROFILE_NAME}"
+          echo "IOS_PROFILE_NAME=${PROFILE_NAME}" >> $GITHUB_ENV
           
           # Set keychain as default search list
           security list-keychain -d user -s $KEYCHAIN_PATH

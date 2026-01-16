@@ -46,6 +46,19 @@ platform :ios do
     clean = options[:clean]
     clean = true if clean.nil?
 
+    # Determine Bundle ID for export options
+    bundle_id = case options[:scheme]
+    when "Pera-Production" then "com.algorandllc.perarn"
+    else "com.algorandllc.perarn.staging"
+    end
+
+    export_options = {}
+    if ENV["IOS_PROFILE_NAME"]
+      export_options[:provisioningProfiles] = {
+        bundle_id => ENV["IOS_PROFILE_NAME"]
+      }
+    end
+
     gym(
       scheme: options[:scheme],
       configuration: options[:configuration],
@@ -53,7 +66,8 @@ platform :ios do
       workspace: "./ios/pera.xcworkspace",
       output_directory: "./build/ios",
       output_name: "#{options[:scheme]}.ipa",
-      clean: clean
+      clean: clean,
+      export_options: export_options
     )
   end
 
