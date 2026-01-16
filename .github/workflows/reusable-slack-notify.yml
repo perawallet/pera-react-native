@@ -41,6 +41,7 @@ jobs:
   notify:
     name: Slack Notification
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
     steps:
       - name: Send Slack Notification
         uses: rtCamp/action-slack-notify@v2
