@@ -65,7 +65,7 @@ jobs:
       build_number: ${{ steps.set_outputs.outputs.build_number }}
       jira_issue: ${{ steps.set_outputs.outputs.jira_issue }}
     environment: ${{ inputs.environment }}
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
