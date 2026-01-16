@@ -163,9 +163,13 @@ platform :android do
       clean: clean
     )
 
+    package_name = flavor == "production" ? "com.algorand.perarn" : "com.algorand.perarn.staging"
+
     upload_to_play_store(
       track: "internal",
+      package_name: package_name,
       aab: "android/app/build/outputs/bundle/#{flavor_release}/app-#{flavor}-release.aab",
+      version_code: ENV["BUILD_NUMBER"],
       skip_upload_metadata: true,
       skip_upload_images: true,
       skip_upload_screenshots: true,
