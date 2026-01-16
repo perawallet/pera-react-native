@@ -8,15 +8,15 @@ on:
   workflow_dispatch:
 
 jobs:
-  # ios-staging:
-  #   name: iOS Staging (QA)
-  #   uses: ./.github/workflows/reusable-ios.yml
-  #   with:
-  #     environment: staging
-  #     scheme: Pera-Staging
-  #     notification_title_prefix: "QA Build"
-  #     use_cache: true
-  #   secrets: inherit
+  ios-staging:
+    name: iOS Staging (QA)
+    uses: ./.github/workflows/reusable-ios.yml
+    with:
+      environment: staging
+      scheme: Pera-Staging
+      notification_title_prefix: "QA Build"
+      use_cache: true
+    secrets: inherit
 
   # ios-production:
   #   name: iOS Production (QA)
