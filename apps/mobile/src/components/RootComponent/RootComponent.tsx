@@ -41,13 +41,19 @@ type RootComponentProps = {
     fcmToken: string | null
 }
 
-const RootContentContainer = () => {
+const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const { hasInternet } = useNetworkStatus()
     const { network } = useNetwork()
     const { showToast } = useToast()
     const { t } = useLanguage()
+
+    // Initialize network status listener (replaces NetworkStatusProvider)
+    useNetworkStatusListener()
+
+    // Initialize FCM token (replaces TokenInitializer)
+    useTokenListener(fcmToken)
 
     const showError = (error: string | Error) => {
         showToast({
@@ -92,12 +98,6 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
 
     const appState = useRef(AppState.currentState)
 
-    // Initialize network status listener (replaces NetworkStatusProvider)
-    useNetworkStatusListener()
-
-    // Initialize FCM token (replaces TokenInitializer)
-    useTokenListener(fcmToken)
-
     useEffect(() => {
         //TODO we should move the registerDevice stuff into the wallet-core somewhere somehow - maybe in setAccounts or something
         registerDevice(accounts?.map(account => account.address) ?? [])
@@ -133,7 +133,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
         <ThemeProvider theme={theme}>
             <SigningProvider>
                 <WalletConnectProvider>
-                    <RootContentContainer />
+                    <RootContentContainer fcmToken={fcmToken} />
                     <WebViewOverlay />
                 </WalletConnectProvider>
             </SigningProvider>
