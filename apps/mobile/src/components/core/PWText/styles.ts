@@ -11,16 +11,12 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { getTypography, TypographyVariant } from '@theme/typography'
 
 type PWTextStyleProps = {
-    variant: 'h1' | 'h2' | 'h3' | 'h4' | 'body' | 'caption' | 'link'
+    variant: TypographyVariant
 }
 
 export const useStyles = makeStyles((theme, { variant }: PWTextStyleProps) => ({
-    text: {
-        color:
-            variant === 'link'
-                ? theme.colors.linkPrimary
-                : theme.colors.textMain,
-    },
+    text: getTypography(theme, variant),
 }))

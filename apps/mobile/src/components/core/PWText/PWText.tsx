@@ -13,11 +13,12 @@
 import { Text as RNEText } from '@rneui/themed'
 import { useStyles } from './styles'
 import { StyleProp, TextStyle, TextProps } from 'react-native'
+import { TypographyVariant } from '@theme/typography'
 
 export type PWTextProps = {
     children?: React.ReactNode
     style?: StyleProp<TextStyle>
-    variant?: 'h1' | 'h2' | 'h3' | 'h4' | 'body' | 'caption' | 'link'
+    variant?: TypographyVariant
     numberOfLines?: number
     ellipsizeMode?: TextProps['ellipsizeMode']
     onPress?: () => void

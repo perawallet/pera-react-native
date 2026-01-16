@@ -62,4 +62,20 @@ declare module '@rneui/themed' {
         //Backgrounds
         testnetBackground: string
     }
+
+    export interface Theme {
+        colors: Colors
+        mode: 'light' | 'dark'
+        spacing: {
+            xs: number
+            sm: number
+            md: number
+            lg: number
+            xl: number
+            xxl: number
+            '3xl': number
+            '4xl': number
+            '5xl': number
+        }
+    }
 }
