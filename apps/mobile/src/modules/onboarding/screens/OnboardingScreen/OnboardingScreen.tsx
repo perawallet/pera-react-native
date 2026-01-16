@@ -10,7 +10,9 @@
  limitations under the License
  */
 
-import React from 'react'
+import React, { useCallback } from 'react'
+import { usePreferences } from '@perawallet/wallet-core-settings'
+import { UserPreferences } from '@constants/user-preferences'
 import { useStyles } from './styles'
 import { PWImage, PWText, PWView } from '@components/core'
 import { PanelButton } from '@components/PanelButton'
@@ -27,6 +29,7 @@ export const OnboardingScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
+    const { setPreference } = usePreferences()
 
     const handleTermsPress = () => {
         pushWebView({
@@ -42,13 +45,15 @@ export const OnboardingScreen = () => {
         })
     }
 
-    const handleCreateAccount = () => {
+    const handleCreateAccount = useCallback(() => {
+        setPreference(UserPreferences.isCreatingAccount, true)
         navigation.push('NameAccount')
-    }
+    }, [navigation, setPreference])
 
-    const handleImportAccount = () => {
+    const handleImportAccount = useCallback(() => {
+        setPreference(UserPreferences.isCreatingAccount, true)
         navigation.push('ImportAccount')
-    }
+    }, [navigation, setPreference])
 
     return (
         <>

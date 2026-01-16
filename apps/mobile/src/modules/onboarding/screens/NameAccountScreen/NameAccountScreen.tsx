@@ -24,19 +24,17 @@ import { ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNameAccountScreen } from './useNameAccountScreen'
 
-
-
 export const NameAccountScreen = () => {
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
-    
+
     const {
         walletDisplay,
         isCreating,
         handleNameChange,
         handleFinish,
-        numWallets
+        numWallets,
     } = useNameAccountScreen()
 
     return (

@@ -14,7 +14,15 @@ import { render, fireEvent, screen } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { OnboardingScreen } from '../OnboardingScreen'
 import { config } from '@perawallet/wallet-core-config'
-import React from 'react'
+import { UserPreferences } from '@constants/user-preferences'
+
+// Mock preferences
+const mockSetPreference = vi.fn()
+vi.mock('@perawallet/wallet-core-settings', () => ({
+    usePreferences: () => ({
+        setPreference: mockSetPreference,
+    }),
+}))
 
 // Mock navigation
 const mockSetOptions = vi.fn()
@@ -153,6 +161,10 @@ describe('OnboardingScreen', () => {
         fireEvent.click(createButton)
 
         expect(mockPush).toHaveBeenCalledWith('NameAccount')
+        expect(mockSetPreference).toHaveBeenCalledWith(
+            UserPreferences.isCreatingAccount,
+            true,
+        )
     })
 
     it('navigates to ImportAccount when Import Account is pressed', () => {
@@ -164,5 +176,9 @@ describe('OnboardingScreen', () => {
         fireEvent.click(importButton)
 
         expect(mockPush).toHaveBeenCalledWith('ImportAccount')
+        expect(mockSetPreference).toHaveBeenCalledWith(
+            UserPreferences.isCreatingAccount,
+            true,
+        )
     })
 })

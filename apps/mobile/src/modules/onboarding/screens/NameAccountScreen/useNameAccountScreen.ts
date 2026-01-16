@@ -1,10 +1,22 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
 import { useState } from 'react'
 import {
-  useAllAccounts,
-  getAccountDisplayName,
-  WalletAccount,
-  useUpdateAccount,
-  useCreateAccount,
+    useAllAccounts,
+    getAccountDisplayName,
+    WalletAccount,
+    useUpdateAccount,
+    useCreateAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -14,80 +26,71 @@ import { useRoute, RouteProp } from '@react-navigation/native'
 import { OnboardingStackParamList } from '../../routes'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 
-
-type NameAccountScreenRouteProp = RouteProp<OnboardingStackParamList, 'NameAccount'>
+type NameAccountScreenRouteProp = RouteProp<
+    OnboardingStackParamList,
+    'NameAccount'
+>
 
 export const useNameAccountScreen = () => {
-  const navigation = useAppNavigation()
-  const route = useRoute<NameAccountScreenRouteProp>()
+    const navigation = useAppNavigation()
+    const route = useRoute<NameAccountScreenRouteProp>()
 
-  const accounts = useAllAccounts()
-  const updateAccount = useUpdateAccount()
-  const createAccount = useCreateAccount()
-  const { t } = useLanguage()
-  const { showToast } = useToast()
-  const { deletePreference } = usePreferences()
+    const accounts = useAllAccounts()
+    const updateAccount = useUpdateAccount()
+    const createAccount = useCreateAccount()
+    const { t } = useLanguage()
+    const { showToast } = useToast()
+    const { deletePreference } = usePreferences()
 
-  const routeAccount = route.params?.account
+    const routeAccount = route.params?.account
 
-  const [account] = useState<WalletAccount | undefined>(routeAccount)
-  const numWallets = accounts.length
+    const [account] = useState<WalletAccount | undefined>(routeAccount)
+    const numWallets = accounts.length
 
-  const initialWalletName = account
-    ? getAccountDisplayName(account)
-    : t('onboarding.name_account.wallet_label', { count: numWallets + 1 })
+    const initialWalletName = account
+        ? getAccountDisplayName(account)
+        : t('onboarding.name_account.wallet_label', { count: numWallets + 1 })
 
-  const [walletDisplay, setWalletDisplay] = useState<string>(initialWalletName)
-  const [isCreating, setIsCreating] = useState(false)
+    const [walletDisplay, setWalletDisplay] =
+        useState<string>(initialWalletName)
+    const [isCreating, setIsCreating] = useState(false)
 
-  const handleNameChange = (value: string) => {
-    setWalletDisplay(value)
-  }
-
-  const handleFinish = async () => {
-    if (isCreating) return
-
-    try {
-      setIsCreating(true)
-
-      let targetAccount: WalletAccount
-
-      if (account) {
-        targetAccount = account
-      } else {
-        targetAccount = await createAccount({ account: 0, keyIndex: 0 })
-      }
-
-      targetAccount.name = walletDisplay
-      updateAccount(targetAccount)
-
-      deletePreference(UserPreferences.isCreatingAccount)
-      navigation.replace('TabBar', {
-        screen: 'Home',
-        params: {
-          screen: 'AccountDetails',
-          params: { playConfetti: true },
-        },
-      })
-
-    } catch (error) {
-      showToast({
-        title: t('onboarding.create_account.error_title'),
-        body: t('onboarding.create_account.error_message', {
-          error: `${error}`,
-        }),
-        type: 'error',
-      })
-    } finally {
-      setIsCreating(false)
+    const handleNameChange = (value: string) => {
+        setWalletDisplay(value)
     }
-  }
 
-  return {
-    walletDisplay,
-    isCreating,
-    handleNameChange,
-    handleFinish,
-    numWallets
-  }
+    const handleFinish = async () => {
+        if (isCreating) return
+
+        try {
+            setIsCreating(true)
+
+            const targetAccount: WalletAccount =
+                account || (await createAccount({ account: 0, keyIndex: 0 }))
+
+            targetAccount.name = walletDisplay
+            updateAccount(targetAccount)
+
+            deletePreference(UserPreferences.isCreatingAccount)
+            navigation.replace('AccountDetails', { playConfetti: true })
+        } catch (error) {
+            showToast({
+                title: t('onboarding.create_account.error_title'),
+                body: t('onboarding.create_account.error_message', {
+                    error: `${error}`,
+                }),
+                type: 'error',
+            })
+        } finally {
+            setIsCreating(false)
+        }
+    }
+
+    return {
+        walletDisplay,
+        isCreating,
+        handleNameChange,
+        handleFinish,
+        numWallets,
+    }
 }

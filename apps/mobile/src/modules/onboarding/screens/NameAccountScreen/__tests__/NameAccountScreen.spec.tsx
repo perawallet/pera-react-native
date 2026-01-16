@@ -14,8 +14,7 @@ import { render, fireEvent, screen } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NameAccountScreen } from '../NameAccountScreen'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
-import { OnboardingStackParamList } from '../../routes'
-
+import { OnboardingStackParamList } from '@modules/onboarding/routes'
 
 // Mock useNavigation
 const mockReplace = vi.fn()
@@ -29,13 +28,22 @@ vi.mock('@react-navigation/native', async () => {
             navigate: mockNavigate,
             replace: mockReplace,
         }),
+        useRoute: () => mockRoute,
     }
 })
+
+vi.mock('@hooks/useAppNavigation', () => ({
+    useAppNavigation: () => ({
+        navigate: mockNavigate,
+        replace: mockReplace,
+    }),
+}))
 
 // Mock hooks
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => [],
     useUpdateAccount: () => vi.fn(),
+    useCreateAccount: () => vi.fn().mockResolvedValue({}),
     getAccountDisplayName: () => 'Account 1',
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     WalletAccount: {} as any,
@@ -56,15 +64,10 @@ const mockRoute = {
     },
     key: 'NameAccount',
     name: 'NameAccount',
-} as unknown as NativeStackScreenProps<OnboardingStackParamList, 'NameAccount'>['route']
-
-const mockProps = {
-    route: mockRoute,
-    navigation: {
-        replace: mockReplace,
-        navigate: mockNavigate,
-    } as any,
-}
+} as unknown as NativeStackScreenProps<
+    OnboardingStackParamList,
+    'NameAccount'
+>['route']
 
 describe('NameAccountScreen', () => {
     beforeEach(() => {
@@ -72,31 +75,29 @@ describe('NameAccountScreen', () => {
     })
 
     it('renders correctly', () => {
-        render(<NameAccountScreen {...mockProps} />)
+        render(<NameAccountScreen />)
         expect(screen.getByText('onboarding.name_account.title')).toBeTruthy()
-        expect(screen.getByText('onboarding.name_account.description')).toBeTruthy()
+        expect(
+            screen.getByText('onboarding.name_account.description'),
+        ).toBeTruthy()
         expect(
             screen.getByText('onboarding.name_account.finish_button'),
         ).toBeTruthy()
     })
 
     it('updates name input', () => {
-        render(<NameAccountScreen {...mockProps} />)
+        render(<NameAccountScreen />)
         const input = screen.getByRole('textbox') as HTMLInputElement
         fireEvent.change(input, { target: { value: 'New Name' } })
         expect(input.value).toBe('New Name')
     })
 
     it('navigates to Home on finish', () => {
-        render(<NameAccountScreen {...mockProps} />)
+        render(<NameAccountScreen />)
         const button = screen.getByText('onboarding.name_account.finish_button')
         fireEvent.click(button)
-        expect(mockReplace).toHaveBeenCalledWith('TabBar', {
-            screen: 'Home',
-            params: {
-                screen: 'AccountDetails',
-                params: { playConfetti: true },
-            },
+        expect(mockReplace).toHaveBeenCalledWith('AccountDetails', {
+            playConfetti: true,
         })
     })
 })

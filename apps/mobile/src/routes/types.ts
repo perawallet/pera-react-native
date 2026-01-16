@@ -15,6 +15,7 @@ import { OnboardingStackParamList } from '@modules/onboarding/routes/types'
 import { TabBarStackParamList } from '@routes/tabbar'
 import { SettingsStackParamsList } from '@modules/settings/routes'
 import { ContactsStackParamsList } from '@modules/contacts/routes'
+import { AccountStackParamsList } from '@modules/accounts/routes/types'
 
 export type RootStackParamList = {
     Onboarding: NavigatorScreenParams<OnboardingStackParamList>
@@ -29,4 +30,5 @@ export type AppStackParamList = RootStackParamList &
     OnboardingStackParamList &
     TabBarStackParamList &
     SettingsStackParamsList &
-    ContactsStackParamsList
+    ContactsStackParamsList &
+    AccountStackParamsList
