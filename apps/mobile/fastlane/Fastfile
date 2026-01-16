@@ -62,6 +62,14 @@ platform :ios do
   lane :deploy_testflight do |options|
     scheme = options[:scheme] || "Pera-Staging"
 
+    # Map scheme to configuration
+    configuration = case scheme
+    when "Pera-Staging" then "Staging"
+    when "Pera-Production" then "Production"
+    when "Pera-Dev" then "Dev"
+    else "Staging"
+    end
+
     if ENV['BUILD_NUMBER']
       increment_build_number(
         build_number: ENV['BUILD_NUMBER'],
@@ -74,7 +82,7 @@ platform :ios do
 
     build_ios(
       scheme: scheme,
-      configuration: "Release",
+      configuration: configuration,
       export_method: "app-store",
       clean: clean
     )
