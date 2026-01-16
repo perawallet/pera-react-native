@@ -24,7 +24,8 @@ export const useAppNavigation = () => {
             screen: RouteName,
             ...args: undefined extends AppStackParamList[RouteName]
                 ? [params?: AppStackParamList[RouteName]]
-                : {} extends AppStackParamList[RouteName]
+                : // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+                  {} extends AppStackParamList[RouteName]
                   ? [params?: AppStackParamList[RouteName]]
                   : [params: AppStackParamList[RouteName]]
         ) => {
@@ -35,7 +36,8 @@ export const useAppNavigation = () => {
             screen: RouteName,
             ...args: undefined extends AppStackParamList[RouteName]
                 ? [params?: AppStackParamList[RouteName]]
-                : {} extends AppStackParamList[RouteName]
+                : // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+                  {} extends AppStackParamList[RouteName]
                   ? [params?: AppStackParamList[RouteName]]
                   : [params: AppStackParamList[RouteName]]
         ) => {
@@ -46,7 +48,8 @@ export const useAppNavigation = () => {
             screen: RouteName,
             ...args: undefined extends AppStackParamList[RouteName]
                 ? [params?: AppStackParamList[RouteName]]
-                : {} extends AppStackParamList[RouteName]
+                : // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+                  {} extends AppStackParamList[RouteName]
                   ? [params?: AppStackParamList[RouteName]]
                   : [params: AppStackParamList[RouteName]]
         ) => {
