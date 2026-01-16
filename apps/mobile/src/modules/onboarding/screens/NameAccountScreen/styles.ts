@@ -18,12 +18,12 @@ export const useStyles = makeStyles(theme => {
             flex: 1,
             paddingHorizontal: theme.spacing.xl,
         },
-        title: {
-            paddingBottom: theme.spacing.sm,
+        headerContainer: {
+            gap: theme.spacing.md,
+            paddingBottom: theme.spacing['3xl'],
         },
         helperText: {
             color: theme.colors.textGray,
-            paddingBottom: theme.spacing['3xl'],
         },
         walletNameContainer: {
             backgroundColor: theme.colors.layerGrayLighter,
@@ -41,6 +41,7 @@ export const useStyles = makeStyles(theme => {
         },
         finishButton: {
             marginHorizontal: theme.spacing.xl,
+            marginBottom: theme.spacing.sm,
         },
         input: {
             marginTop: theme.spacing.sm,

@@ -78,18 +78,17 @@ export const NameAccountScreen = ({ route }: NameAccountScreenProps) => {
             style={styles.mainContainer}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-            <PWText
-                variant='h1'
-                style={styles.title}
-            >
-                {t('onboarding.name_account.title')}
-            </PWText>
-            <PWText
-                variant='h4'
-                style={styles.helperText}
-            >
-                {t('onboarding.name_account.description')}
-            </PWText>
+            <PWView style={styles.headerContainer}>
+                <PWText variant='h1'>
+                    {t('onboarding.name_account.title')}
+                </PWText>
+                <PWText
+                    variant='h4'
+                    style={styles.helperText}
+                >
+                    {t('onboarding.name_account.description')}
+                </PWText>
+            </PWView>
             <PWView style={styles.walletNameContainer}>
                 <PWIcon
                     name='wallet'
