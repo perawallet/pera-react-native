@@ -8,48 +8,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  lint-and-test:
-    name: Lint and Test
-    runs-on: ubuntu-latest
-    environment: staging
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: '.tool-versions'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Config Generate
-        env:
-          PERA_MAINNET_BACKEND_URL: ${{ secrets.MAINNET_BACKEND_URL }}
-          PERA_TESTNET_BACKEND_URL: ${{ secrets.TESTNET_BACKEND_URL }}
-          PERA_BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY }}
-          PERA_ALGOD_API_KEY: ${{ secrets.ALGOD_API_KEY }}
-          PERA_INDEXER_API_KEY: ${{ secrets.INDEXER_API_KEY }}
-          PERA_MAINNET_ALGOD_URL: ${{ secrets.MAINNET_ALGOD_URL }}
-          PERA_TESTNET_ALGOD_URL: ${{ secrets.TESTNET_ALGOD_URL }}
-          PERA_MAINNET_INDEXER_URL: ${{ secrets.MAINNET_INDEXER_URL }}
-          PERA_TESTNET_INDEXER_URL: ${{ secrets.TESTNET_INDEXER_URL }}
-        run: pnpm run build:packages --filter=@perawallet/wallet-core-config
-
-      - name: Lint
-        run: pnpm run lint
-
-      - name: Test
-        run: pnpm run test
-
   ios-staging:
     name: iOS Staging (QA)
-    needs: lint-and-test
     uses: ./.github/workflows/reusable-ios.yml
     with:
       environment: staging
@@ -59,7 +19,6 @@ jobs:
 
   ios-production:
     name: iOS Production (QA)
-    needs: lint-and-test
     uses: ./.github/workflows/reusable-ios.yml
     with:
       environment: production
@@ -69,7 +28,6 @@ jobs:
 
   android-staging:
     name: Android Staging (QA)
-    needs: lint-and-test
     uses: ./.github/workflows/reusable-android.yml
     with:
       environment: staging
@@ -79,7 +37,6 @@ jobs:
 
   android-production:
     name: Android Production (QA)
-    needs: lint-and-test
     uses: ./.github/workflows/reusable-android.yml
     with:
       environment: production

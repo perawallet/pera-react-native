@@ -55,20 +55,25 @@ on:
 jobs:
   build:
     name: Build & Deploy
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-m
+    outputs:
+      version: ${{ steps.set_outputs.outputs.version }}
+      build_number: ${{ steps.set_outputs.outputs.build_number }}
+      jira_issue: ${{ steps.set_outputs.outputs.jira_issue }}
     environment: ${{ inputs.environment }}
     timeout-minutes: 45
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: '.tool-versions'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -172,11 +177,27 @@ jobs:
           issue: ${{ steps.find_issue.outputs.issue }}
           comment: "${{ inputs.notification_title_prefix }}: Android ${{ inputs.flavor }} Available! Version: ${{ env.VERSION }} (${{ env.BUILD }}) - View build: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
-      - name: Slack Notification
+      - name: Set outputs
         if: always()
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
-          SLACK_TITLE: "${{ inputs.notification_title_prefix }}: Android ${{ inputs.flavor }} ${{ job.status }}"
-          SLACK_MESSAGE: "Version: ${{ env.VERSION }} (${{ env.BUILD }})\nDetails: ${{ job.status }}\n\n@qateam"
+        run: |
+          echo "version=${{ env.VERSION }}" >> $GITHUB_OUTPUT
+          echo "build_number=${{ env.BUILD }}" >> $GITHUB_OUTPUT
+          echo "jira_issue=${{ steps.find_issue.outputs.issue }}" >> $GITHUB_OUTPUT
+        id: set_outputs
+
+  notify:
+    needs: build
+    if: always()
+    uses: ./.github/workflows/reusable-slack-notify.yml
+    with:
+      status: ${{ needs.build.result }}
+      platform: "Android"
+      environment: ${{ inputs.environment }}
+      # Check if outputs are available, fallback to 'N/A' if empty (e.g. build failed early)
+      version: ${{ needs.build.outputs.version || 'N/A' }}
+      build_number: ${{ needs.build.outputs.build_number || 'N/A' }}
+      jira_issue: ${{ needs.build.outputs.jira_issue }}
+      notification_title_prefix: ${{ inputs.notification_title_prefix }}
+    secrets:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
