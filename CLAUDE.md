@@ -7,6 +7,7 @@ React Native monorepo for Pera Wallet. **Always use `pnpm`** for all commands.
 Before writing any code, read the relevant files in `.agent/`:
 
 ### Rules (Always Active)
+
 - `.agent/rules/running-commands.md` - Project commands and standards
 - `.agent/rules/component-patterns.md` - UI components and styling
 - `.agent/rules/hook-patterns.md` - Custom hooks
@@ -17,6 +18,7 @@ Before writing any code, read the relevant files in `.agent/`:
 - `.agent/rules/work-completion.md` - Definition of done
 
 ### Workflows
+
 - `.agent/workflows/create-component.md` - Creating new components
 - `.agent/workflows/create-hook.md` - Creating new hooks
 - `.agent/workflows/create-module.md` - Creating feature modules
@@ -24,6 +26,7 @@ Before writing any code, read the relevant files in `.agent/`:
 - `.agent/workflows/verify-work.md` - Pre-completion verification
 
 ### Architecture Docs
+
 - `docs/ARCHITECTURE.md` - System architecture
 - `docs/FOLDER_STRUCTURE.md` - Where files go
 - `docs/NAMING_CONVENTIONS.md` - Naming rules
