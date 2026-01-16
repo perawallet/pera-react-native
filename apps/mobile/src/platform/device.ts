@@ -22,12 +22,12 @@ const findDeviceLocale = () => {
     const deviceLanguage =
         Platform.OS === 'ios'
             ? NativeModules.SettingsManager.getConstants().settings
-                  .AppleLocale ||
-              NativeModules.SettingsManager.getConstants().settings
-                  .AppleLanguages[0]
+                .AppleLocale ||
+            NativeModules.SettingsManager.getConstants().settings
+                .AppleLanguages[0]
             : NativeModules.I18nManager.getConstants().localeIdentifier
 
-    return deviceLanguage.replaceAll('_', '-')
+    return deviceLanguage.split('@')[0].replaceAll('_', '-')
 }
 
 const buildUserAgent = () => {
