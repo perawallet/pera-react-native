@@ -46,6 +46,14 @@ import { useQuery } from '@tanstack/react-query'
 import { fetchAccounts } from '../api'
 import { accountQueryKeys } from '../queryKeys'
 
+/**
+ * Fetches all accounts for the current wallet.
+ *
+ * @returns Account list data and loading state
+ *
+ * @example
+ * const { accounts, isLoading } = useAccountsQuery()
+ */
 export const useAccountsQuery = () => {
     return useQuery({
         queryKey: accountQueryKeys.all,
@@ -76,10 +84,23 @@ Location: `modules/[moduleName]/hooks/use[Name]Store.ts`
 // useAccountsStore.ts
 import { useAccountsStore as useStore } from '../store'
 
+/**
+ * Accesses the currently selected account from the accounts store.
+ *
+ * @returns The currently selected account, or null if none selected
+ *
+ * @example
+ * const selectedAccount = useSelectedAccount()
+ */
 export const useSelectedAccount = () => {
     return useStore(state => state.selectedAccount)
 }
 
+/**
+ * Provides full access to the accounts store.
+ *
+ * @returns The accounts store with all state and actions
+ */
 export const useAccountsStore = () => useStore()
 ```
 
@@ -102,6 +123,16 @@ Location: Same folder as component/screen
 
 ```typescript
 // useAccountCard.ts
+
+/**
+ * Manages the state and logic for the AccountCard component.
+ *
+ * @param account - The account to display in the card
+ * @returns Card state and handlers
+ *
+ * @example
+ * const { isExpanded, isLoading, handleToggle } = useAccountCard(account)
+ */
 export const useAccountCard = (account: Account) => {
     const [isExpanded, setIsExpanded] = useState(false)
     const { data, isLoading } = useAccountBalanceQuery(account.address)
@@ -161,3 +192,10 @@ pnpm lint
 - [ ] Return type does NOT use dependency types (UseQueryResult, UseMutationResult, StoreApi)
 - [ ] Only expose necessary properties to consumers
 - [ ] Hook provides a stable API contract independent of underlying library
+
+## JSDoc Checklist
+
+- [ ] Hook has a JSDoc comment describing its purpose
+- [ ] All parameters are documented with `@param`
+- [ ] Return value is documented with `@returns`
+- [ ] An `@example` is provided for non-trivial usage

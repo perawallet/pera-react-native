@@ -313,3 +313,47 @@ const MyScreen = () => (
 - PW wrappers provide a stable, project-specific API
 - Centralized customization (default styles, behaviors)
 - Easier to migrate to different libraries in the future
+
+## ❌ Missing or Poor JSDoc
+
+```typescript
+// ❌ BAD: Exported function without JSDoc
+export const formatAddress = (address: string, length = 6): string => { ... }
+
+// ❌ BAD: Redundant JSDoc that just repeats the code
+/**
+ * Returns the account.
+ * @returns The account
+ */
+export const getAccount = (): Account => account
+
+// ❌ BAD: JSDoc on simple internal functions (unnecessary)
+/** Increments count by one */
+const increment = () => setCount(c => c + 1)
+
+// ❌ BAD: Missing @param or @returns on complex function
+/**
+ * Validates the transaction.
+ */
+export const validateTransaction = (tx: Transaction, rules: Rule[]): ValidationResult => { ... }
+
+// ✅ GOOD: Descriptive JSDoc on exported functions
+/**
+ * Formats an Algorand address for display.
+ *
+ * @param address - Full Algorand address
+ * @param length - Number of characters to show at start/end
+ * @returns Truncated address (e.g., "ALGO...XYZ")
+ *
+ * @example
+ * formatAddress('ALGORAND123...XYZ789', 4) // Returns 'ALGO...Z789'
+ */
+export const formatAddress = (address: string, length = 6): string => { ... }
+```
+
+**Why this matters:**
+
+- Public APIs need documentation for IDE intellisense
+- JSDoc provides context that types alone cannot convey
+- Examples help consumers understand usage patterns
+- Overly verbose or redundant docs add noise without value

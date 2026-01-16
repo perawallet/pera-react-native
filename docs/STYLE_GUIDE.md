@@ -109,6 +109,26 @@ pnpm lint:fix   # Auto-fix lint issues
 pnpm format     # Auto-fix formatting
 ```
 
+## JSDoc Documentation
+
+JSDoc comments are **required** for all public APIs to provide IDE intellisense and documentation.
+
+**What to document:**
+
+- Exported functions, hooks, components, types, and interfaces
+- Complex internal logic (when non-obvious)
+- Do NOT document simple, self-explanatory private functions
+
+**Key rules:**
+
+- Document the "why", not the "what" — code shows what, docs explain why
+- Use `@param` for all function parameters
+- Use `@returns` when the return value isn't obvious from the type
+- Use `@example` for non-trivial usage patterns
+- Use inline comments (`/** */`) for type properties
+
+For detailed patterns and examples, see `.agent/rules/jsdoc-patterns.md`.
+
 ## Key Principles
 
 1. **Self-documenting code** — minimize comments

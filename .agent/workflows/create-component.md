@@ -55,6 +55,7 @@ Create `[ComponentName].tsx` following the pattern in `.agent/rules/component-pa
 - No prefix for module-specific components
 - Define props type at the top
 - Use functional component with explicit return type
+- Add JSDoc comment describing the component purpose and usage (see `.agent/rules/jsdoc-patterns.md`)
 - Export as default
 
 ### 5. Create Styles File
@@ -113,3 +114,9 @@ pnpm --filter mobile lint
 ```sh
 pnpm --filter mobile test
 ```
+
+## JSDoc Checklist
+
+- [ ] Component has a JSDoc comment describing its purpose
+- [ ] Props type has JSDoc comments for non-obvious properties
+- [ ] An `@example` is provided showing typical usage
