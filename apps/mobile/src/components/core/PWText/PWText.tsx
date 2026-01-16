@@ -14,15 +14,30 @@ import { Text as RNEText } from '@rneui/themed'
 import { useStyles } from './styles'
 import { StyleProp, TextStyle, TextProps } from 'react-native'
 
+/**
+ * Props for the PWText component.
+ */
 export type PWTextProps = {
+    /** Content of the text component */
     children?: React.ReactNode
+    /** Optional style overrides for the text */
     style?: StyleProp<TextStyle>
+    /** Text style variant defining size and weight */
     variant?: 'h1' | 'h2' | 'h3' | 'h4' | 'body' | 'caption'
+    /** Maximum number of lines for the text */
     numberOfLines?: number
+    /** How text overflows when numberOfLines is set */
     ellipsizeMode?: TextProps['ellipsizeMode']
+    /** Callback when text is pressed */
     onPress?: () => void
 }
 
+/**
+ * A themed text component wrapping RNE Text with predefined variants.
+ *
+ * @example
+ * <PWText variant="h1">Header Text</PWText>
+ */
 export const PWText = ({
     children,
     style,

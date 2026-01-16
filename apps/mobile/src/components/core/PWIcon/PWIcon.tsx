@@ -197,12 +197,24 @@ export type PWIconVariant =
     | 'error'
     | 'positive'
 
+/**
+ * Props for the PWIcon component.
+ */
 export type PWIconProps = {
+    /** Name of the icon to display from the internal library */
     name: IconName
+    /** Size variant for the icon */
     size?: PWIconSize
+    /** Color variant for the icon */
     variant?: PWIconVariant
 } & Omit<SvgProps, 'color' | 'width' | 'height'>
 
+/**
+ * A themed icon component that renders SVG icons from the internal library.
+ *
+ * @example
+ * <PWIcon name="algo" size="md" variant="primary" />
+ */
 export const PWIcon = ({
     name,
     size = 'md',

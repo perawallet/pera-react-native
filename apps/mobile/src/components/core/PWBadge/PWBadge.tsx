@@ -13,10 +13,20 @@
 import { Badge, BadgeProps } from '@rneui/themed'
 import { useStyles } from './styles'
 
+/**
+ * Props for the PWBadge component.
+ */
 export type PWBadgeProps = {
+    /** Badge style variant */
     variant?: 'primary' | 'testnet' | 'secondary' | 'positive'
 } & BadgeProps
 
+/**
+ * A themed badge component wrapping RNE Badge with predefined variants.
+ *
+ * @example
+ * <PWBadge value="12" variant="primary" />
+ */
 export const PWBadge = ({
     variant = 'primary',
     badgeStyle,

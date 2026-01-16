@@ -22,6 +22,17 @@ import {
 } from '../models'
 import { encodeSignedTransactions } from '@algorandfoundation/algokit-utils/transact'
 
+/**
+ * A hook for accessing and configuring the AlgorandClient based on the current network.
+ * Optionally configures a default signer for the client.
+ *
+ * @param signer - Optional transaction signer to set as the default signer
+ * @returns Configured AlgorandClient instance
+ *
+ * @example
+ * const algokit = useAlgorandClient()
+ * const info = await algokit.account.getInformation(address)
+ */
 export const useAlgorandClient = (signer?: PeraTransactionSigner) => {
     const { network } = useNetwork()
 

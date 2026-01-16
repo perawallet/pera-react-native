@@ -15,6 +15,15 @@ import { useLanguage } from '@hooks/useLanguage'
 import Clipboard from '@react-native-clipboard/clipboard'
 import { useCallback } from 'react'
 
+/**
+ * A hook for interacting with the system clipboard with toast feedback.
+ *
+ * @returns Methods for clipboard interaction
+ *
+ * @example
+ * const { copyToClipboard } = useClipboard()
+ * copyToClipboard('Hello World')
+ */
 export const useClipboard = () => {
     const { showToast } = useToast()
     const { t } = useLanguage()

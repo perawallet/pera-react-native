@@ -30,6 +30,15 @@ const triggerWCRefresh = () => {
         (walletConnectRefreshCounter.current ?? 0) + 1
 }
 
+/**
+ * A hook for managing WalletConnect v1 connections and session requests.
+ * Handles initialization, connecting, disconnecting, and session approval/rejection.
+ *
+ * @returns WalletConnect state and management methods
+ *
+ * @example
+ * const { connect, connections, approveSession } = useWalletConnect()
+ */
 export const useWalletConnect = () => {
     const connections = useWalletConnectStore(
         state => state.walletConnectConnections,

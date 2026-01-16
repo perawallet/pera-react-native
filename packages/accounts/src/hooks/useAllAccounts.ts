@@ -12,6 +12,14 @@
 
 import { useAccountsStore } from '../store'
 
+/**
+ * Accesses all wallet accounts from the accounts store.
+ *
+ * @returns An array of all wallet accounts
+ *
+ * @example
+ * const accounts = useAllAccounts()
+ */
 export const useAllAccounts = () => {
     const accounts = useAccountsStore(state => state.accounts)
     return accounts

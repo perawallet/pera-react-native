@@ -15,10 +15,18 @@ import type { WalletAccount } from './accounts'
 export * from './accounts'
 export * from './balances'
 
+/**
+ * Represents the state and actions of the accounts store.
+ */
 export type AccountsState = {
+    /** List of all wallet accounts */
     accounts: WalletAccount[]
+    /** The address of the currently selected account */
     selectedAccountAddress: string | null
+    /** Helper to get the full account object for the selected address */
     getSelectedAccount: () => WalletAccount | null
+    /** Action to update the list of accounts */
     setAccounts: (accounts: WalletAccount[]) => void
+    /** Action to update the selected account address */
     setSelectedAccountAddress: (address: string | null) => void
 }

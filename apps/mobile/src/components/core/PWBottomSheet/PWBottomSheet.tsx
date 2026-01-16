@@ -19,12 +19,25 @@ import { NotifierRoot, NotifierWrapper } from 'react-native-notifier'
 
 export const bottomSheetNotifier = createRef<NotifierRoot | null>()
 
+/**
+ * Props for the PWBottomSheet component.
+ */
 export type PWBottomSheetProps = {
+    /** Optional style overrides for the inner container */
     innerContainerStyle?: StyleProp<ViewStyle>
+    /** Whether the bottom sheet is scrollable */
     scrollEnabled?: boolean
 } & BottomSheetProps &
     PropsWithChildren
 
+/**
+ * A themed bottom sheet component wrapping RNE BottomSheet with standard padding and styling.
+ *
+ * @example
+ * <PWBottomSheet isVisible={isVisible} onBackdropPress={() => setIsVisible(false)}>
+ *   <PWText>Sheet Content</PWText>
+ * </PWBottomSheet>
+ */
 export const PWBottomSheet = ({
     innerContainerStyle,
     scrollEnabled,

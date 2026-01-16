@@ -12,8 +12,19 @@
 
 import { ScrollView, ScrollViewProps } from 'react-native'
 
+/**
+ * Props for the PWScrollView component.
+ */
 export type PWScrollViewProps = ScrollViewProps
 
+/**
+ * A themed ScrollView component that wraps the standard React Native ScrollView.
+ *
+ * @example
+ * <PWScrollView>
+ *   <PWText>Scrollable Content</PWText>
+ * </PWScrollView>
+ */
 export const PWScrollView = (props: PWScrollViewProps) => {
     return <ScrollView {...props} />
 }

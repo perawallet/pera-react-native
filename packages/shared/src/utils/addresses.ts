@@ -12,6 +12,16 @@
 
 const MAX_ADDRESS_DISPLAY = 11
 
+/**
+ * Truncates an Algorand address for display by showing a prefix and suffix with ellipses in between.
+ *
+ * @param address - Full Algorand address
+ * @param maxLength - Maximum number of characters to show (including ellipses)
+ * @returns Truncated address (e.g., "ALGO...XYZ")
+ *
+ * @example
+ * truncateAlgorandAddress('ALGORAND123...XYZ789', 11) // Returns 'ALGO...Z789'
+ */
 export const truncateAlgorandAddress = (
     address: string,
     maxLength: number = MAX_ADDRESS_DISPLAY,

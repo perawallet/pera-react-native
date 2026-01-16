@@ -19,11 +19,27 @@ import { PWText } from '@components/core/PWText'
 import { useStyles } from './styles'
 import { PWView } from '@components/core/PWView'
 
+/**
+ * Props for the PWListItem component.
+ */
 type PWListItemProps = PWTouchableOpacityProps & {
+    /** Name of the icon to display on the left */
     icon: IconName
+    /** Title text to display */
     title: string
 }
 
+/**
+ * A themed list item component for navigation or simple actions.
+ * Displays an icon, title, and a chevron indicating interactivity.
+ *
+ * @example
+ * <PWListItem
+ *   title="Account Details"
+ *   icon="person"
+ *   onPress={handlePress}
+ * />
+ */
 export const PWListItem = ({
     icon,
     title,

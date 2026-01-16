@@ -13,10 +13,22 @@
 import { PWIcon } from '@components/core/PWIcon'
 import { CheckBox, CheckBoxProps } from '@rneui/themed'
 
+/**
+ * Props for the PWCheckbox component.
+ */
 type PWCheckboxProps = {
+    /** Optional children to display as a label */
     children?: React.ReactNode
 } & CheckBoxProps
 
+/**
+ * A themed checkbox component wrapping RNE CheckBox with a custom check icon.
+ *
+ * @example
+ * <PWCheckbox checked={checked} onPress={() => setChecked(!checked)}>
+ *   <PWText>Accept Terms</PWText>
+ * </PWCheckbox>
+ */
 export const PWCheckbox = ({ children, ...props }: PWCheckboxProps) => {
     return (
         <CheckBox

@@ -13,8 +13,19 @@
 import { useStyles } from './styles'
 import { View, ViewProps } from 'react-native'
 
+/**
+ * Props for the PWView component.
+ */
 export type PWViewProps = ViewProps
 
+/**
+ * A themed View component that applies standard background styles.
+ *
+ * @example
+ * <PWView style={styles.container}>
+ *   <PWText>Hello World</PWText>
+ * </PWView>
+ */
 export const PWView = ({ children, style, ...props }: PWViewProps) => {
     const styles = useStyles(props)
 

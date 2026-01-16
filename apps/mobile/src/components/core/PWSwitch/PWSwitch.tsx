@@ -14,14 +14,29 @@ import { Switch as RNESwitch } from '@rneui/themed'
 
 import { StyleProp, ViewStyle } from 'react-native'
 
+/**
+ * Props for the PWSwitch component.
+ */
 export type PWSwitchProps = {
+    /** Current boolean value of the switch */
     value: boolean
+    /** Callback when the switch value changes */
     onValueChange: (value: boolean) => void
+    /** Whether the switch is disabled */
     disabled?: boolean
+    /** Optional style overrides for the switch */
     style?: StyleProp<ViewStyle>
+    /** Optional color override for the switch when active */
     color?: string
 }
 
+/**
+ * A themed switch component for toggling boolean settings.
+ * Wraps RNE Switch with standard styling.
+ *
+ * @example
+ * <PWSwitch value={isEnabled} onValueChange={setIsEnabled} />
+ */
 export const PWSwitch = ({
     value,
     onValueChange,

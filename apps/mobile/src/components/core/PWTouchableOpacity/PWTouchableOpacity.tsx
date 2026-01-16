@@ -12,10 +12,21 @@
 
 import { TouchableOpacity, TouchableOpacityProps } from 'react-native'
 
+/**
+ * Props for the PWTouchableOpacity component.
+ */
 export type PWTouchableOpacityProps = {} & TouchableOpacityProps
 
 const DEFAULT_ACTIVE_OPACITY = 0.8
 
+/**
+ * A themed TouchableOpacity component with a consistent default active opacity.
+ *
+ * @example
+ * <PWTouchableOpacity onPress={handlePress}>
+ *   <PWText>Tap Me</PWText>
+ * </PWTouchableOpacity>
+ */
 export const PWTouchableOpacity = ({
     children,
     activeOpacity,

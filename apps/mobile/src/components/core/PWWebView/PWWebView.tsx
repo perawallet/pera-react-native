@@ -45,12 +45,21 @@ import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
 import { bottomSheetNotifier } from '@components/core/PWBottomSheet'
 
+/**
+ * Props for the PWWebView component.
+ */
 export type PWWebViewProps = {
+    /** URL to load in the webview */
     url: string
+    /** Whether to enable Pera Connect bridge */
     enablePeraConnect: boolean
+    /** Optional request ID for state management */
     requestId?: string
+    /** Whether to show navigation and title bar controls */
     showControls?: boolean
+    /** Callback when the close button is pressed */
     onClose?: () => void
+    /** Callback when the back button is pressed */
     onBack?: () => void
 } & WebViewProps
 
@@ -59,6 +68,13 @@ const updateTheme = (mode: 'light' | 'dark') => {
     return `updateTheme?.('${jsTheme}');`
 }
 
+/**
+ * A highly customized WebView component for Pera Wallet with internal bridge support.
+ * Handles theme synchronization, Pera Connect messaging, and navigation controls.
+ *
+ * @example
+ * <PWWebView url="https://perawallet.app" enablePeraConnect showControls />
+ */
 export const PWWebView = (props: PWWebViewProps) => {
     const styles = useStyles()
     const {

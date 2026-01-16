@@ -31,6 +31,16 @@ import { getAccountBalancesQueryKey } from './querykeys'
 import { useAlgorandClient } from '@perawallet/wallet-core-blockchain'
 
 //TODO we may not need this query - maybe we should just fetch each account separately
+/**
+ * Fetches balances and portfolio values for multiple accounts.
+ *
+ * @param accounts - List of accounts to fetch balances for
+ * @param enabled - Whether the query is enabled
+ * @returns Account balances mapping and portfolio totals
+ *
+ * @example
+ * const { accountBalances, portfolioAlgoValue } = useAccountBalancesQuery(accounts)
+ */
 export const useAccountBalancesQuery = (
     accounts: WalletAccount[],
     enabled?: boolean,
@@ -173,6 +183,16 @@ export const useAccountBalancesQuery = (
     }
 }
 
+/**
+ * Fetches the balance of a specific asset for a specific account.
+ *
+ * @param account - The account to fetch the balance for
+ * @param assetId - The ID of the asset to fetch the balance for
+ * @returns The asset balance data and query status
+ *
+ * @example
+ * const { data: balance, isLoading } = useAccountAssetBalanceQuery(account, "31566704")
+ */
 export const useAccountAssetBalanceQuery = (
     account?: WalletAccount,
     assetId?: string,

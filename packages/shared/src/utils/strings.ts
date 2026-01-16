@@ -15,10 +15,22 @@ import { Decimal } from 'decimal.js'
 
 Decimal.set({ precision: 18, crypto: true, rounding: Decimal.ROUND_HALF_UP })
 
+/**
+ * Encodes a byte array to a Base64 string.
+ *
+ * @param bytes - The byte array to encode
+ * @returns Base64 encoded string
+ */
 export const encodeToBase64 = (bytes: Uint8Array) => {
     return fromByteArray(bytes)
 }
 
+/**
+ * Decodes a Base64 string to a byte array.
+ *
+ * @param base64 - The Base64 string to decode
+ * @returns Decoded byte array
+ */
 export const decodeFromBase64 = (base64: string) => {
     return toByteArray(base64)
 }
@@ -33,6 +45,15 @@ const currencySymbols: Record<string, string> = {
     GBP: '£',
 }
 
+/**
+ * Formats a number with locale-specific grouping and precision.
+ *
+ * @param amount - The number to format
+ * @param precision - Maximum decimal places
+ * @param locale - Locale for formatting
+ * @param minPrecision - Minimum decimal places
+ * @returns Formatted sign, integer, and fraction parts
+ */
 export const formatNumber = (
     amount: Decimal,
     precision: number,
@@ -104,6 +125,21 @@ export const formatWithUnits = (
     return { amount: resultAmount, unit: resultUnit ?? '' }
 }
 
+/**
+ * Formats a numeric value as a currency string.
+ *
+ * @param value - The value to format
+ * @param precision - Maximum decimal places
+ * @param currency - Currency code (e.g., "USD", "ALGO")
+ * @param locale - Locale for formatting
+ * @param showSymbol - Whether to include the currency symbol
+ * @param truncateToUnits - Whether to use K/M/B/T suffixes for large values
+ * @param minPrecision - Minimum decimal places
+ * @returns Formatted currency string
+ *
+ * @example
+ * formatCurrency(1234.56, 2, "USD") // Returns "$1,234.56"
+ */
 export const formatCurrency = (
     value: Decimal | string | number,
     precision: number,
@@ -132,6 +168,14 @@ export const formatCurrency = (
     return `${sign}${currencySymbol}${integer}${fraction}${unit}`
 }
 
+/**
+ * Formats a date or datetime string into a localized format.
+ *
+ * @param datetime - The date or ISO string to format
+ * @param locale - Locale for formatting
+ * @param style - Formatting style (short, medium, long)
+ * @returns Formatted datetime string
+ */
 export const formatDatetime = (
     datetime: string | Date,
     locale: string = 'en-US',
@@ -166,6 +210,13 @@ const pluralize = (label: string, time: number) => {
 }
 
 //TODO this is a pretty janky implementation = Intl.RelativeTimeFormat wasn't working and I didn't want to import moment just for this
+/**
+ * Formats a date relative to the current time (e.g., "just now", "5 minutes ago").
+ *
+ * @param datetime - The date or ISO string to format
+ * @param now - Reference timestamp for "now"
+ * @returns Formatted relative time string
+ */
 export const formatRelativeTime = (
     datetime: string | Date,
     now: number = Date.now(),

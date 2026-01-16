@@ -18,9 +18,15 @@ import {
     ShowNotificationParams,
 } from 'react-native-notifier'
 
+/**
+ * Represents a message to be displayed in a toast notification.
+ */
 export interface ToastMessage {
+    /** Title of the toast */
     title: string
+    /** Detailed description or body of the toast */
     body: string
+    /** Type of toast defining its visual style */
     type: 'error' | 'warning' | 'info' | 'success'
 }
 
@@ -58,6 +64,15 @@ const useStyles = makeStyles(theme => {
     }
 })
 
+/**
+ * A hook for displaying toast notifications across the application.
+ *
+ * @returns Methods for displaying toasts
+ *
+ * @example
+ * const { showToast } = useToast()
+ * showToast({ title: 'Success', body: 'Operation completed', type: 'success' })
+ */
 export const useToast = () => {
     const styles = useStyles()
 

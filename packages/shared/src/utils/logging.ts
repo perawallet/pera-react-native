@@ -41,6 +41,10 @@ export interface LogContext {
     [key: string]: unknown
 }
 
+/**
+ * A logger utility that supports structured context and severity levels.
+ * Filtered by the minimum log level defined in the application config.
+ */
 class Logger {
     private level: LogLevel = LogLevel.ERROR // Default safe level
 
@@ -59,22 +63,47 @@ class Logger {
         this.level = level
     }
 
+    /**
+     * Logs a message at the DEBUG level.
+     * @param message - The log message
+     * @param context - Structured context to include with the log
+     */
     public debug(message: string, context?: LogContext) {
         this.log(LogLevel.DEBUG, message, context)
     }
 
+    /**
+     * Logs a message at the INFO level.
+     * @param message - The log message
+     * @param context - Structured context to include with the log
+     */
     public info(message: string, context?: LogContext) {
         this.log(LogLevel.INFO, message, context)
     }
 
+    /**
+     * Logs a message at the WARN level.
+     * @param message - The log message
+     * @param context - Structured context to include with the log
+     */
     public warn(message: string, context?: LogContext) {
         this.log(LogLevel.WARN, message, context)
     }
 
+    /**
+     * Logs an error at the ERROR level.
+     * @param error - The error object or message
+     * @param context - Structured context to include with the log
+     */
     public error(error: Error | string, context?: LogContext) {
         this.log(LogLevel.ERROR, error, context)
     }
 
+    /**
+     * Logs a critical error at the CRITICAL level.
+     * @param error - The error object or message
+     * @param context - Structured context to include with the log
+     */
     public critical(error: Error | string, context?: LogContext) {
         this.log(LogLevel.CRITICAL, error, context)
     }

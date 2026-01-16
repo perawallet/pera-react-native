@@ -14,6 +14,12 @@ import { useMemo } from 'react'
 import { useColorScheme } from 'react-native'
 import { useSettings } from '@perawallet/wallet-core-settings'
 
+/**
+ * A hook for determining if the application is currently in dark mode.
+ * Considers both user settings and system color scheme.
+ *
+ * @returns True if dark mode is active
+ */
 export const useIsDarkMode = () => {
     const { theme: themeMode } = useSettings()
     const scheme = useColorScheme()

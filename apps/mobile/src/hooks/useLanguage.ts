@@ -13,6 +13,15 @@
 import { useTranslation } from 'react-i18next'
 import { useCallback } from 'react'
 
+/**
+ * A hook for managing application language and translation.
+ *
+ * @returns Translation function and language management methods
+ *
+ * @example
+ * const { t, changeLanguage } = useLanguage()
+ * const text = t('common.save')
+ */
 export const useLanguage = () => {
     const { t, i18n } = useTranslation()
 

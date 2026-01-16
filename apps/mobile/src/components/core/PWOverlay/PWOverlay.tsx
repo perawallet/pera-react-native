@@ -16,15 +16,33 @@ import {
 } from '@rneui/themed'
 import { useStyles } from './styles'
 
+/**
+ * Props for the PWOverlay component.
+ */
 export type PWOverlayProps = {
+    /** Whether the overlay is visible */
     isVisible: boolean
+    /** Callback when the backdrop is pressed */
     onBackdropPress?: () => void
+    /** Content to display inside the overlay */
     children: React.ReactNode
+    /** Style overrides for the overlay container */
     overlayStyle?: RNEOverlayProps['overlayStyle']
+    /** Style overrides for the backdrop */
     backdropStyle?: RNEOverlayProps['backdropStyle']
+    /** Whether to display the overlay in full screen */
     fullScreen?: boolean
 }
 
+/**
+ * A themed overlay component for displaying modal content.
+ * Wraps RNE Overlay with project styling.
+ *
+ * @example
+ * <PWOverlay isVisible={isVisible} onBackdropPress={closeModal}>
+ *   <PWText>Overlay Content</PWText>
+ * </PWOverlay>
+ */
 export const PWOverlay = ({
     isVisible,
     onBackdropPress,

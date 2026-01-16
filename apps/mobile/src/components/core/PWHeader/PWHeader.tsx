@@ -16,14 +16,32 @@ import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles'
 import { PropsWithChildren } from 'react'
 
+/**
+ * Props for the PWHeader component.
+ */
 export type PWHeaderProps = {
+    /** Header title text */
     title?: string
+    /** Name of the icon to display on the left side */
     leftIcon?: IconName
+    /** Name of the icon to display on the right side */
     rightIcon?: IconName
+    /** Callback when the left icon is pressed */
     onLeftPress?: () => void
+    /** Callback when the right icon is pressed */
     onRightPress?: () => void
 } & PropsWithChildren
 
+/**
+ * A shared header component with support for title and side icons.
+ *
+ * @example
+ * <PWHeader
+ *   title="Settings"
+ *   leftIcon="chevron-left"
+ *   onLeftPress={handleBack}
+ * />
+ */
 export const PWHeader = ({
     title,
     leftIcon,

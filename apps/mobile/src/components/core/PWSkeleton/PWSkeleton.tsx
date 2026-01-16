@@ -14,14 +14,29 @@ import { Skeleton as RNESkeleton } from '@rneui/themed'
 import { useStyles } from './styles'
 import { StyleProp, ViewStyle } from 'react-native'
 
+/**
+ * Props for the PWSkeleton component.
+ */
 export type PWSkeletonProps = {
+    /** Animation variant for the skeleton */
     animation?: 'none' | 'pulse' | 'wave'
+    /** Explicit height for the skeleton */
     height?: number
+    /** Explicit width for the skeleton */
     width?: number
+    /** Optional style overrides */
     style?: StyleProp<ViewStyle>
+    /** Whether to render the skeleton as a circle */
     circle?: boolean
 }
 
+/**
+ * A themed skeleton loader component used as a placeholder while content is loading.
+ * Wraps RNE Skeleton with project styling.
+ *
+ * @example
+ * <PWSkeleton width={200} height={20} />
+ */
 export const PWSkeleton = ({
     animation = 'pulse',
     height,

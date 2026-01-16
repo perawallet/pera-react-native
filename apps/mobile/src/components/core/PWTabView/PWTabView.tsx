@@ -14,17 +14,36 @@ import { TabView as RNETabView } from '@rneui/themed'
 import { StyleProp, ViewStyle, Animated } from 'react-native'
 import { ReactNode } from 'react'
 
+/**
+ * Props for the PWTabView component.
+ */
 export type PWTabViewProps = {
+    /** Current active index of the tab view */
     value?: number
+    /** Callback when the tab index changes */
     onChange?: (value: number) => void
+    /** Type of animation when switching tabs */
     animationType?: 'spring' | 'timing'
+    /** Configuration for the switch animation */
     animationConfig?: Omit<
         Animated.SpringAnimationConfig & Animated.TimingAnimationConfig,
         'toValue'
     >
+    /** Tab view items */
     children?: ReactNode
 }
 
+/**
+ * A themed tab view component for managing multiple screens or views with animations.
+ * Supports {@link PWTabView.Item} as children.
+ *
+ * @example
+ * <PWTabView value={index} onChange={setIndex}>
+ *   <PWTabView.Item>
+ *     <PWText>Screen 1</PWText>
+ *   </PWTabView.Item>
+ * </PWTabView>
+ */
 const PWTabViewComponent = ({
     value,
     onChange,
@@ -46,11 +65,24 @@ const PWTabViewComponent = ({
     )
 }
 
+/**
+ * Props for the PWTabView.Item component.
+ */
 export type PWTabViewItemProps = {
+    /** Content for the tab view item */
     children?: ReactNode
+    /** Style overrides for the tab view item */
     style?: StyleProp<ViewStyle>
 }
 
+/**
+ * Individual tab view item for the PWTabView container.
+ *
+ * @example
+ * <PWTabView.Item>
+ *   <PWText>Tab Content</PWText>
+ * </PWTabView.Item>
+ */
 const PWTabViewItem = ({ children, style, ...props }: PWTabViewItemProps) => {
     return (
         <RNETabView.Item

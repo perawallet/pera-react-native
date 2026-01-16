@@ -14,19 +14,42 @@ import { Tab as RNETab, IconProps } from '@rneui/themed'
 import { StyleProp, ViewStyle, TextStyle } from 'react-native'
 import { ReactElement, ReactNode } from 'react'
 
+/**
+ * Props for the PWTab component.
+ */
 export type PWTabProps = {
+    /** Current active index of the tab */
     value?: number
+    /** Callback when the active tab index changes */
     onChange?: (value: number) => void
+    /** Whether to hide the active tab indicator */
     disableIndicator?: boolean
+    /** Style overrides for the active tab indicator */
     indicatorStyle?: StyleProp<ViewStyle>
+    /** Style overrides for the tab container */
     containerStyle?: StyleProp<ViewStyle>
+    /** Style overrides for individual tab buttons */
     buttonStyle?: StyleProp<ViewStyle>
+    /** Style overrides for tab titles */
     titleStyle?: StyleProp<TextStyle>
+    /** Tab style variant */
     variant?: 'primary' | 'default'
+    /** Whether to use dense styling (smaller height) */
     dense?: boolean
+    /** Tab items */
     children?: ReactNode
 }
 
+/**
+ * A themed tab container for switching between views.
+ * Supports {@link PWTab.Item} as children.
+ *
+ * @example
+ * <PWTab value={index} onChange={setIndex}>
+ *   <PWTab.Item title="Account" />
+ *   <PWTab.Item title="Settings" />
+ * </PWTab>
+ */
 const PWTabComponent = ({
     value,
     onChange,
@@ -58,14 +81,28 @@ const PWTabComponent = ({
     )
 }
 
+/**
+ * Props for the PWTab.Item component.
+ */
 export type PWTabItemProps = {
+    /** Tab item title text */
     title?: string
+    /** Style overrides for the tab item title text */
     titleStyle?: StyleProp<TextStyle>
+    /** Optional icon for the tab item */
     icon?: IconProps | ReactElement
+    /** Style overrides for the tab item button */
     buttonStyle?: StyleProp<ViewStyle>
+    /** Style overrides for the tab item container */
     containerStyle?: StyleProp<ViewStyle>
 }
 
+/**
+ * Individual tab item for the PWTab container.
+ *
+ * @example
+ * <PWTab.Item title="Account" icon={<PWIcon name="person" />} />
+ */
 const PWTabItem = ({
     title,
     titleStyle,

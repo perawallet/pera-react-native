@@ -16,15 +16,27 @@ import { PWIcon, IconName, PWIconVariant } from '@components/core/PWIcon'
 import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import { ActivityIndicator, StyleProp, ViewStyle } from 'react-native'
 
+/**
+ * Props for the PWButton component.
+ */
 export type PWButtonProps = {
+    /** Button style variant */
     variant: 'primary' | 'secondary' | 'helper' | 'link' | 'destructive'
+    /** Button text title */
     title?: string
+    /** Optional icon to display alongside the title */
     icon?: IconName
+    /** Callback when button is pressed */
     onPress?: () => void
+    /** Minimum width for the button */
     minWidth?: number
+    /** Optional style overrides for the button container */
     style?: StyleProp<ViewStyle>
+    /** Whether the button is disabled */
     isDisabled?: boolean
+    /** Whether the button is in a loading state */
     isLoading?: boolean
+    /** Padding style variant for the button */
     paddingStyle?: 'none' | 'dense' | 'normal'
 }
 
@@ -36,6 +48,18 @@ const ICON_VARIANT_MAP: Record<string, PWIconVariant> = {
     destructive: 'white',
 }
 
+/**
+ * A themed button component with loading and disabled states.
+ * Wraps {@link PWTouchableOpacity} and supports multiple variants.
+ *
+ * @example
+ * <PWButton
+ *   variant="primary"
+ *   title="Submit"
+ *   onPress={handleSubmit}
+ *   isLoading={isSubmitting}
+ * />
+ */
 export const PWButton = ({
     variant,
     title,

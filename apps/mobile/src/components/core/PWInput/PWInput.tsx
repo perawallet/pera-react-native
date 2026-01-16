@@ -13,31 +13,67 @@
 import { Input as RNEInput, InputProps as RNEInputProps } from '@rneui/themed'
 import { useStyles } from './styles'
 
+/**
+ * Props for the PWInput component.
+ */
 export type PWInputProps = {
+    /** Current value of the input */
     value?: string
+    /** Callback when the text changes */
     onChangeText?: (text: string) => void
+    /** Placeholder text displayed when empty */
     placeholder?: string
+    /** Error message to display below the input */
     errorMessage?: string
+    /** Whether to render the error message space */
     renderErrorMessage?: boolean
+    /** Whether to mask the input for passwords */
     secureTextEntry?: boolean
+    /** Type of keyboard to display */
     keyboardType?: RNEInputProps['keyboardType']
+    /** Auto-capitalization behavior */
     autoCapitalize?: RNEInputProps['autoCapitalize']
+    /** Whether to enable auto-correction */
     autoCorrect?: boolean
+    /** Whether the input should auto-focus */
     autoFocus?: boolean
+    /** Callback when the input is focused */
     onFocus?: () => void
+    /** Callback when the input is blurred */
     onBlur?: () => void
+    /** Style overrides for the outer container */
     containerStyle?: RNEInputProps['containerStyle']
+    /** Style overrides for the input container */
     inputContainerStyle?: RNEInputProps['inputContainerStyle']
+    /** Style overrides for the text input itself */
     inputStyle?: RNEInputProps['inputStyle']
+    /** Color of the insertion cursor */
     cursorColor?: string
+    /** Icon to display on the right side */
     rightIcon?: RNEInputProps['rightIcon']
+    /** Icon to display on the left side */
     leftIcon?: RNEInputProps['leftIcon']
+    /** Callback when the submit button is pressed */
     onSubmitEditing?: () => void
+    /** Whether to blur on submit */
     blurOnSubmit?: boolean
+    /** Label text to display above the input */
     label?: string
+    /** Style overrides for the label */
     labelStyle?: RNEInputProps['labelStyle']
 }
 
+/**
+ * A themed text input component wrapping RNE Input with standard styling.
+ *
+ * @example
+ * <PWInput
+ *   label="Address"
+ *   placeholder="Enter address"
+ *   value={address}
+ *   onChangeText={setAddress}
+ * />
+ */
 export const PWInput = ({
     containerStyle,
     inputContainerStyle,

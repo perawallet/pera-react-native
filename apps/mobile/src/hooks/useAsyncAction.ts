@@ -12,6 +12,16 @@
 
 import { useState, useCallback } from 'react'
 
+/**
+ * A hook for managing asynchronous actions with loading and error states.
+ *
+ * @param action - The asynchronous function to execute
+ * @returns State and methods for managing the async action
+ *
+ * @example
+ * const { execute, isProcessing, error } = useAsyncAction(fetchData)
+ * execute(params)
+ */
 export function useAsyncAction<TArgs extends unknown[], TReturn>(
     action: (...args: TArgs) => Promise<TReturn>,
 ) {
