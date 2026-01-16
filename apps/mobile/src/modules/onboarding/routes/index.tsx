@@ -68,7 +68,6 @@ export const OnboardingStackNavigator = () => {
                 ),
                 ...SCREEN_ANIMATION_CONFIG,
             }}
-            layout={safeAreaLayout}
             screenListeners={screenListeners}
         >
             <OnboardingStack.Screen
@@ -82,6 +81,7 @@ export const OnboardingStackNavigator = () => {
                     headerShown: true,
                     headerTitle: '',
                 }}
+                layout={safeAreaLayout}
                 component={NameAccountScreenWithErrorBoundary}
             />
             <OnboardingStack.Screen
@@ -90,6 +90,7 @@ export const OnboardingStackNavigator = () => {
                     headerShown: true,
                     headerTitle: 'Enter your Recovery Passphrase',
                 }}
+                layout={safeAreaLayout}
                 component={ImportAccountScreenWithErrorBoundary}
             />
         </OnboardingStack.Navigator>
