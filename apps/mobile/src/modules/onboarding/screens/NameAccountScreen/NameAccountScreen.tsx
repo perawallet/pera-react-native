@@ -31,7 +31,6 @@ import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { OnboardingStackParamList } from '../../routes'
 import { RootStackParamList } from '@routes/index'
-import { SafeAreaView } from 'react-native-safe-area-context'
 
 type NameAccountScreenProps = NativeStackScreenProps<
     OnboardingStackParamList,
