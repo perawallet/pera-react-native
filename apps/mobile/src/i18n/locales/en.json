@@ -283,7 +283,8 @@
             "new_to_algo": "New to Algorand?",
             "create_wallet": "Create a new wallet",
             "already_have_account": "Already have an account?",
-            "import_account": "Import an account"
+            "import_account": "Import an account",
+            "terms_and_privacy": "By creating a wallet, you agree to Pera Wallet's <0>Terms and Conditions</0> and <1>Privacy Policy</1>"
         },
         "name_account": {
             "description": "Name your account to easily identify it while using the Pera Wallet. These names are stored locally, and can only be seen by you.",

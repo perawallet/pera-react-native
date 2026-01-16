@@ -11,9 +11,12 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { getTypography, TypographyVariant } from '@theme/typography'
 
-export const useStyles = makeStyles(theme => ({
-    text: {
-        color: theme.colors.textMain,
-    },
+type PWTextStyleProps = {
+    variant: TypographyVariant
+}
+
+export const useStyles = makeStyles((theme, { variant }: PWTextStyleProps) => ({
+    text: getTypography(theme, variant),
 }))

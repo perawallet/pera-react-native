@@ -14,31 +14,44 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
     return {
-        mainContainer: {
-            backgroundColor: theme.colors.background,
-            color: theme.colors.white,
+        rootContainer: {
+            flex: 1,
             flexDirection: 'column',
-            paddingHorizontal: theme.spacing.xl,
+            gap: theme.spacing['3xl'],
         },
         headerContainer: {
             flexDirection: 'row',
-            marginBottom: theme.spacing.lg * 3,
-            justifyContent: 'space-between',
-            borderWidth: 0,
-        },
-        headerImage: {
-            width: 172,
-            borderWidth: 0,
+            alignItems: 'center',
         },
         headerTitle: {
-            paddingTop: theme.spacing.xl,
-            paddingStart: theme.spacing.lg,
-            borderWidth: 0,
-            verticalAlign: 'bottom',
+            fontWeight: '600',
+            paddingLeft: theme.spacing.xl,
+            alignSelf: 'flex-end',
+        },
+        headerImage: {
+            width: 267,
+            height: 307,
+            resizeMode: 'contain',
         },
         buttonTitle: {
             marginTop: theme.spacing.xl,
             marginBottom: theme.spacing.sm,
+            color: theme.colors.textGray,
+        },
+        mainContainer: {
+            backgroundColor: theme.colors.background,
+            color: theme.colors.white,
+            paddingHorizontal: theme.spacing.xl,
+            flexDirection: 'column',
+        },
+        footerContainer: {
+            flex: 1,
+            justifyContent: 'flex-end',
+            alignItems: 'center',
+            padding: theme.spacing['3xl'],
+        },
+        termsAndPrivacyText: {
+            textAlign: 'center',
             color: theme.colors.textGray,
         },
         overlayBackdrop: {

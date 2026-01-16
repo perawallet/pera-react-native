@@ -22,7 +22,7 @@ import { ImportAccountScreen } from '@modules/onboarding/screens/ImportAccountSc
 import { AccountErrorBoundary } from '@modules/accounts/components/AccountErrorBoundary/AccountErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
 import { screenListeners } from '@routes/listeners'
-import { safeAreaLayout } from '@layouts/index'
+import { fullScreenLayout, safeAreaLayout } from '@layouts/index'
 import type React from 'react'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 
@@ -73,6 +73,7 @@ export const OnboardingStackNavigator = () => {
         >
             <OnboardingStack.Screen
                 name='OnboardingHome'
+                layout={fullScreenLayout}
                 component={OnboardingScreenWithErrorBoundary}
             />
             <OnboardingStack.Screen
