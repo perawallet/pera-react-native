@@ -117,16 +117,22 @@ jobs:
           restore-keys: |
             android-gradle-${{ runner.os }}-
 
-      - name: Cache Android C++ Build
-        if: ${{ inputs.use_cache }}
+
+      - name: Install Ccache
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ccache
+          echo "NDK_CCACHE=ccache" >> $GITHUB_ENV
+          echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+          echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+
+      - name: Cache Ccache
         uses: actions/cache@v4
         with:
-          path: |
-            apps/mobile/android/app/.cxx
-            apps/mobile/android/app/build/intermediates/cxx
-          key: android-cxx-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'apps/mobile/android/build.gradle', 'apps/mobile/android/app/build.gradle', 'apps/mobile/android/gradle.properties') }}
+          path: ~/.ccache
+          key: android-ccache-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'apps/mobile/android/**/*.gradle*', 'apps/mobile/android/**/gradle-wrapper.properties') }}
           restore-keys: |
-            android-cxx-${{ runner.os }}-
+            android-ccache-${{ runner.os }}-
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -175,6 +181,8 @@ jobs:
           CLEAN="true"
           if [ "${{ inputs.use_cache }}" == "true" ]; then
             CLEAN="false"
+            # For QA/Cached builds, limit to ARM architectures to speed up build
+            echo "ORG_GRADLE_PROJECT_reactNativeArchitectures=armeabi-v7a,arm64-v8a" >> $GITHUB_ENV
           fi
 
           bundle exec fastlane android deploy_internal flavor:${{ inputs.flavor }} clean:$CLEAN
