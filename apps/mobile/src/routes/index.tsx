@@ -10,9 +10,7 @@
  limitations under the License
  */
 
-import {
-    NavigationContainer,
-} from '@react-navigation/native'
+import { NavigationContainer } from '@react-navigation/native'
 import {
     createNativeStackNavigator,
     NativeStackHeaderProps,
@@ -20,17 +18,11 @@ import {
 import { StakingScreen } from '@modules/staking/screens/StakingScreen'
 import { NotificationsScreen } from '@modules/notifications/screens/NotificationsScreen'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
-import {
-    OnboardingStackNavigator,
-} from '@modules/onboarding/routes'
+import { OnboardingStackNavigator } from '@modules/onboarding/routes'
 import { screenListeners } from './listeners'
 import { TabBarStackNavigator } from './tabbar'
-import {
-    ContactsStackNavigator,
-} from '@modules/contacts/routes'
-import {
-    SettingsStackNavigator,
-} from '@modules/settings/routes'
+import { ContactsStackNavigator } from '@modules/contacts/routes'
+import { SettingsStackNavigator } from '@modules/settings/routes'
 import { useShowOnboarding } from '@hooks/useShowOnboarding'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { getNavigationTheme } from '@theme/theme'

@@ -24,7 +24,6 @@ import { useLanguage } from '@hooks/useLanguage'
 import { screenListeners } from '@routes/listeners'
 import { fullScreenLayout, safeAreaLayout } from '@layouts/index'
 import type React from 'react'
-import { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 // Wrap screens with AccountErrorBoundary to catch account-related errors
 const withAccountErrorBoundary = <P extends object>(

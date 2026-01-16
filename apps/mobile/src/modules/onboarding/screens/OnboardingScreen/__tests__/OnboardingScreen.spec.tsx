@@ -21,18 +21,13 @@ const mockSetOptions = vi.fn()
 const mockNavigate = vi.fn()
 const mockPush = vi.fn()
 
-vi.mock('@react-navigation/native', async () => {
-    const actual = await vi.importActual<object>('@react-navigation/native')
-    return {
-        ...actual,
-        useNavigation: () => ({
-            setOptions: mockSetOptions,
-            navigate: mockNavigate,
-            push: mockPush,
-        }),
-    }
-})
-
+vi.mock('@hooks/useAppNavigation', () => ({
+    useAppNavigation: () => ({
+        setOptions: mockSetOptions,
+        navigate: mockNavigate,
+        push: mockPush,
+    }),
+}))
 
 // Mock webview
 const mockPushWebView = vi.fn()
@@ -157,8 +152,17 @@ describe('OnboardingScreen', () => {
         // The PanelButton likely renders text.
         fireEvent.click(createButton)
 
-        expect(mockPush).toHaveBeenCalledWith('Onboarding', {
-            screen: 'NameAccount',
-        })
+        expect(mockPush).toHaveBeenCalledWith('NameAccount')
+    })
+
+    it('navigates to ImportAccount when Import Account is pressed', () => {
+        render(<OnboardingScreen />)
+
+        const importButton = screen.getByText(
+            'onboarding.main_screen.import_account',
+        )
+        fireEvent.click(importButton)
+
+        expect(mockPush).toHaveBeenCalledWith('ImportAccount')
     })
 })

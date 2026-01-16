@@ -11,11 +11,10 @@
  */
 
 import React from 'react'
-import { ParamListBase, useNavigation } from '@react-navigation/native'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useStyles } from './styles'
 import { PWImage, PWText, PWView } from '@components/core'
 import { PanelButton } from '@components/PanelButton'
+import { useAppNavigation } from '@hooks/useAppNavigation'
 
 import welcomeBackground from '@assets/images/welcome-background.webp'
 import { useLanguage } from '@hooks/useLanguage'
@@ -24,7 +23,7 @@ import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
 
 export const OnboardingScreen = () => {
-    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
+    const navigation = useAppNavigation()
     const styles = useStyles()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
@@ -44,9 +43,7 @@ export const OnboardingScreen = () => {
     }
 
     const handleCreateAccount = () => {
-        navigation.push('Onboarding', {
-            screen: 'NameAccount',
-        })
+        navigation.push('NameAccount')
     }
 
     const handleImportAccount = () => {
