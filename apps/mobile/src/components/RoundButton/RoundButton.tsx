@@ -20,13 +20,32 @@ import {
     PWText,
 } from '@components/core'
 
+/**
+ * Props for the RoundButton component.
+ */
 export type RoundButtonProps = {
+    /** Name of the icon to display in the center */
     icon: IconName
+    /** Optional label text to display underneath the button */
     title?: string
+    /** Size variant of the button */
     size?: 'sm' | 'lg'
+    /** Color variant of the button */
     variant?: 'primary' | 'secondary'
 } & PWTouchableOpacityProps
 
+/**
+ * A circular action button containing an icon and an optional label.
+ *
+ * @param props - Component props
+ * @example
+ * <RoundButton
+ *   icon="send"
+ *   title="Send"
+ *   onPress={handleSend}
+ *   variant="primary"
+ * />
+ */
 export const RoundButton = (props: RoundButtonProps) => {
     const style = useStyles(props)
     const {

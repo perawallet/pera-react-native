@@ -18,12 +18,26 @@ import { useStyles } from './styles'
 import { EXPANDABLE_PANEL_ANIMATION_DURATION } from '@constants/ui'
 import { ExpandablePanel } from './ExpandablePanel'
 
+/**
+ * Props for the TitledExpandablePanel component.
+ */
 type TitledExpandablePanelProps = {
+    /** The header content, can be a string or custom React nodes */
     title: React.ReactNode | string
+    /** Optional callback when the header icon is pressed specifically */
     iconPressed?: () => void
+    /** Custom styles for the outer container */
     containerStyle?: StyleProp<ViewStyle>
 } & PropsWithChildren
 
+/**
+ * A layout component consisting of a clickable header and an expandable body using ExpandablePanel.
+ *
+ * @example
+ * <TitledExpandablePanel title="Details">
+ *   <PWText>More info...</PWText>
+ * </TitledExpandablePanel>
+ */
 export const TitledExpandablePanel = ({
     title,
     containerStyle,

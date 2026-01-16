@@ -13,13 +13,32 @@
 import { IconName, PWIcon, PWText, PWView, PWViewProps } from '@components/core'
 import { useStyles } from './styles'
 
+/**
+ * Props for the EmptyView component.
+ */
 export type EmptyViewProps = {
+    /** Optional title for the empty state */
     title?: string
+    /** Descriptive text about the empty state */
     body: string
+    /** Icon to display above the text */
     icon?: IconName
+    /** Optional action button to display at the bottom */
     button?: React.ReactElement<unknown>
 } & PWViewProps
 
+/**
+ * A standard layout for "empty states" (e.g., no results, empty list).
+ * Displays an icon, title, body text, and an optional action.
+ *
+ * @example
+ * <EmptyView
+ *   icon="info"
+ *   title="No Results"
+ *   body="Try adjusting your filters."
+ *   button={<PWButton title="Reset" onPress={handleReset} />}
+ * />
+ */
 export const EmptyView = (props: EmptyViewProps) => {
     const styles = useStyles()
     const { title, body, icon, style, button, ...rest } = props

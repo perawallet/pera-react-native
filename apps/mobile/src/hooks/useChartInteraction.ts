@@ -13,9 +13,25 @@
 import { useState, useCallback } from 'react'
 import { HistoryPeriod } from '@perawallet/wallet-core-shared'
 
+/**
+ * A hook for managing chart interaction state including the time period and selected data point.
+ *
+ * @template TDataPoint The type of data point in the chart
+ * @param initialPeriod The initial history period to display
+ * @returns Chart interaction state and management methods
+ *
+ * @example
+ * const { period, setPeriod, selectedPoint, setSelectedPoint } = useChartInteraction()
+ */
 export function useChartInteraction<TDataPoint = unknown>(
     initialPeriod: HistoryPeriod = 'one-week',
-) {
+): {
+    period: HistoryPeriod
+    setPeriod: (period: HistoryPeriod) => void
+    selectedPoint: TDataPoint | null
+    setSelectedPoint: (point: TDataPoint | null) => void
+    clearSelection: () => void
+} {
     const [period, setPeriod] = useState<HistoryPeriod>(initialPeriod)
     const [selectedPoint, setSelectedPoint] = useState<TDataPoint | null>(null)
 

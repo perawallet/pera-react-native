@@ -8,14 +8,14 @@ JSDoc comments are **REQUIRED** for public APIs. They provide IDE intellisense, 
 
 ## When to Use JSDoc
 
-| Element               | JSDoc Required | Example Use Case                          |
-| --------------------- | -------------- | ----------------------------------------- |
-| Exported functions    | ✅ Yes         | Utility functions, API calls              |
-| Exported hooks        | ✅ Yes         | Custom hooks                              |
-| Exported components   | ✅ Yes         | Component purpose and props               |
-| Exported types/interfaces | ✅ Yes     | Data models, prop types                   |
-| Complex internal logic | ⚠️ When needed | Non-obvious algorithms                   |
-| Simple internal code  | ❌ No          | Self-explanatory private functions        |
+| Element                   | JSDoc Required | Example Use Case                   |
+| ------------------------- | -------------- | ---------------------------------- |
+| Exported functions        | ✅ Yes         | Utility functions, API calls       |
+| Exported hooks            | ✅ Yes         | Custom hooks                       |
+| Exported components       | ✅ Yes         | Component purpose and props        |
+| Exported types/interfaces | ✅ Yes         | Data models, prop types            |
+| Complex internal logic    | ⚠️ When needed | Non-obvious algorithms             |
+| Simple internal code      | ❌ No          | Self-explanatory private functions |
 
 ## Component JSDoc
 
@@ -55,7 +55,7 @@ export const PWButton = ({
  * const { balances, isLoading } = useAccountBalancesQuery('ALGO...')
  */
 export const useAccountBalancesQuery = (
-    address: string
+    address: string,
 ): UseAccountBalancesQueryResult => {
     // ...
 }
@@ -184,11 +184,11 @@ export const validateTransaction = (tx: Transaction, rules: Rule[]): ValidationR
 
 ## Common Tags Reference
 
-| Tag        | Usage                                       |
-| ---------- | ------------------------------------------- |
-| `@param`   | Document function parameters                |
-| `@returns` | Document return value                       |
-| `@example` | Show usage examples                         |
-| `@throws`  | Document exceptions that may be thrown      |
-| `@see`     | Reference related functions/docs            |
-| `@deprecated` | Mark as deprecated with migration path   |
+| Tag           | Usage                                  |
+| ------------- | -------------------------------------- |
+| `@param`      | Document function parameters           |
+| `@returns`    | Document return value                  |
+| `@example`    | Show usage examples                    |
+| `@throws`     | Document exceptions that may be thrown |
+| `@see`        | Reference related functions/docs       |
+| `@deprecated` | Mark as deprecated with migration path |

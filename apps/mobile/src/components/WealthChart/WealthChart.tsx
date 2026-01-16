@@ -32,12 +32,28 @@ import {
     CHART_HEIGHT,
 } from '@constants/ui'
 
+/**
+ * Props for the WealthChart component.
+ */
 export type WealthChartProps = {
+    /** Optional specific account to chart. If omitted, charts the aggregate of all accounts. */
     account?: WalletAccount
+    /** The history period to display on the X-axis */
     period: HistoryPeriod
+    /** Callback triggered when the user scrubs/focuses a specific data point */
     onSelectionChanged: (item: AccountBalanceHistoryItem | null) => void
 }
 
+/**
+ * A sophisticated chart component for visualizing wealth history.
+ * Fetches its own data based on the provided account(s) and period.
+ *
+ * @example
+ * <WealthChart
+ *   period="one-month"
+ *   onSelectionChanged={(dataPoint) => handleFocus(dataPoint)}
+ * />
+ */
 export const WealthChart = ({
     onSelectionChanged,
     account,

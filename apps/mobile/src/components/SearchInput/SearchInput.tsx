@@ -15,11 +15,24 @@ import { InputProps } from '@rneui/base'
 import { PWIcon, PWInput } from '@components/core'
 import { useStyles } from './styles'
 
+/**
+ * Props for the SearchInput component.
+ */
 export type SearchInputProps = {} & Omit<
     InputProps,
     'leftIcon' | 'rightIcon' | 'ref'
 >
 
+/**
+ * A specialized version of PWInput pre-configured for search scenarios.
+ * Includes a magnifying glass icon and standard search input behaviors.
+ *
+ * @example
+ * <SearchInput
+ *   placeholder="Search assets..."
+ *   onChangeText={(text) => handleSearch(text)}
+ * />
+ */
 export const SearchInput = (props: SearchInputProps) => {
     const styles = useStyles()
 

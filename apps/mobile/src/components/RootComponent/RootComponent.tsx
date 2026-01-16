@@ -37,7 +37,11 @@ import { useLanguage } from '@hooks/useLanguage'
 import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
 import { useTokenListener } from '@modules/token'
 
+/**
+ * Props for the RootComponent.
+ */
 type RootComponentProps = {
+    /** FCM token for push notifications, passed from native side */
     fcmToken: string | null
 }
 
@@ -82,6 +86,14 @@ const RootContentContainer = () => {
     )
 }
 
+/**
+ * The ultimate root component of the application.
+ * Responsibility: Setup all global providers (Theme, Signing, WalletConnect) and global listeners.
+ *
+ * @param props - Component props
+ * @example
+ * <RootComponent fcmToken="token123" />
+ */
 export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     const isDarkMode = useIsDarkMode()
     const theme = getTheme(isDarkMode ? 'dark' : 'light')

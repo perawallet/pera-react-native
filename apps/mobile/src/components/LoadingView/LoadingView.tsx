@@ -15,12 +15,25 @@ import { PWSkeleton, PWView } from '@components/core'
 import { useTheme } from '@rneui/themed'
 import { useStyles } from './styles'
 
+/**
+ * Props for the LoadingView component.
+ */
 export type LoadingViewProps = {
+    /** Type of loading indicator to show */
     variant: 'circle' | 'skeleton'
+    /** Size of the spinner or height of the skeletons */
     size?: 'sm' | 'lg'
+    /** Number of skeleton lines to show (only for variant='skeleton') */
     count?: number
 }
 
+/**
+ * A reusable loading utility component that can show an activity spinner OR skeleton placeholders.
+ *
+ * @example
+ * <LoadingView variant="circle" size="lg" />
+ * <LoadingView variant="skeleton" count={3} />
+ */
 export const LoadingView = ({
     variant,
     size = 'sm',

@@ -15,11 +15,19 @@ import { AppError, ErrorCategory, logger } from '@perawallet/wallet-core-shared'
 import crashlytics from '@react-native-firebase/crashlytics'
 import { EmptyView } from '@components/EmptyView'
 
+/**
+ * Props for the BaseErrorBoundary component.
+ */
 export interface BaseErrorBoundaryProps {
+    /** The content to protect from crashes */
     children: ReactNode
+    /** Optional custom fallback UI factory */
     fallback?: (error: AppError | Error, reset: () => void) => ReactNode
+    /** Optional callback triggered when an error occurs */
     onError?: (error: AppError | Error, errorInfo: ErrorInfo) => void
+    /** Categorization for the error for logging purposes */
     category?: ErrorCategory
+    /** Translation function */
     t: (key: string, options?: Record<string, unknown>) => string
 }
 
@@ -29,8 +37,17 @@ interface BaseErrorBoundaryState {
 }
 
 /**
- * Base error boundary component with typed error handling
- * Provides automatic Crashlytics reporting and customizable fallback UI
+ * Base error boundary component with typed error handling.
+ * Provides automatic Crashlytics reporting and customizable fallback UI.
+ *
+ * @example
+ * <BaseErrorBoundary
+ *   category="accounts"
+ *   t={t}
+ *   onError={(error) => logError(error)}
+ * >
+ *   <MyCriticalComponent />
+ * </BaseErrorBoundary>
  */
 export class BaseErrorBoundary extends Component<
     BaseErrorBoundaryProps,

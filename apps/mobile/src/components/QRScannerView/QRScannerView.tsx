@@ -26,14 +26,34 @@ import { EmptyView } from '@components/EmptyView'
 import { logger } from '@perawallet/wallet-core-shared'
 import { PWButton, PWIcon, PWText, PWTouchableOpacity } from '@components/core'
 
+/**
+ * Props for the QRScannerView component.
+ */
 export type QRScannerViewProps = {
+    /** Optional title to display above the scanner */
     title?: string
+    /** Whether the scanner modal is visible */
     isVisible: boolean
+    /** Type of entry animation for the modal */
     animationType: 'slide' | 'fade' | 'none'
+    /** Callback triggered when the scanner is closed without success */
     onClose: () => void
+    /** Callback triggered when a code is successfully scanned */
     onSuccess: (url: string, restartScanning: () => void) => void
 }
 
+/**
+ * A modal view that provides QR code scanning functionality using the device camera.
+ *
+ * @param props - Component props
+ * @example
+ * <QRScannerView
+ *   isVisible={isScannerVisible}
+ *   onSuccess={(url) => handleScannedUrl(url)}
+ *   onClose={() => setScannerVisible(false)}
+ *   animationType="slide"
+ * />
+ */
 export const QRScannerView = (props: QRScannerViewProps) => {
     const styles = useStyles()
     const device = useCameraDevice('back')

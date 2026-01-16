@@ -18,6 +18,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMemo } from 'react'
 export type NavigationHeaderProps = NativeStackHeaderProps
 
+/**
+ * A custom header component for native stack navigators.
+ * Manages the transition between screens by showing titles and back buttons.
+ *
+ * @example
+ * // In Stack.Navigator screen options:
+ * header: (props) => <NavigationHeader {...props} />
+ */
 export const NavigationHeader = (props: NavigationHeaderProps) => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)

@@ -16,11 +16,26 @@ import {
     MaskedTextInputProps,
 } from 'react-native-advanced-input-mask'
 
+/**
+ * Props for the CurrencyInput component.
+ */
 type CurrencyInputProps = {
+    /** Minimum number of decimal places required */
     minPrecision: number
+    /** Maximum number of decimal places allowed */
     maxPrecision: number
 } & Omit<MaskedTextInputProps, 'mask' | 'autocomplete' | 'allowedKeys'>
 
+/**
+ * A masked text input dedicated to numeric currency entry.
+ *
+ * @example
+ * <CurrencyInput
+ *   minPrecision={2}
+ *   maxPrecision={6}
+ *   onChangeText={(text) => setAmount(text)}
+ * />
+ */
 export const CurrencyInput = (props: CurrencyInputProps) => {
     const { minPrecision, maxPrecision, ...rest } = props
 

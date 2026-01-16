@@ -24,12 +24,26 @@ import { PropsWithChildren } from 'react'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 
+/**
+ * Props for the InfoButton component.
+ */
 export type InfoButtonProps = {
+    /** Color variant for the info icon */
     variant?: 'primary' | 'secondary'
+    /** Size of the info icon */
     size?: PWIconSize
+    /** Optional title for the bottom sheet that opens */
     title?: string
 } & PropsWithChildren
 
+/**
+ * An information icon button that opens a bottom sheet containing supplemental content.
+ *
+ * @example
+ * <InfoButton title="Help">
+ *   <PWText>Helpful information goes here.</PWText>
+ * </InfoButton>
+ */
 export const InfoButton = ({
     variant = 'secondary',
     size = 'sm',

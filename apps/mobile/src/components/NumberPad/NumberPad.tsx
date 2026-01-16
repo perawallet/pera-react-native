@@ -13,7 +13,11 @@
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useStyles } from './styles'
 
+/**
+ * Props for the NumberPad component.
+ */
 export type NumberPadProps = {
+    /** Callback triggered when a key is pressed. undefined for the delete key. */
     onPress: (key?: string) => void
 }
 
@@ -24,6 +28,12 @@ const padArrangment = [
     ['.', '0', undefined],
 ]
 
+/**
+ * A custom numeric keypad for secure pin entry or amount inputs.
+ *
+ * @example
+ * <NumberPad onPress={(key) => handleKeyPress(key)} />
+ */
 export const NumberPad = ({ onPress }: NumberPadProps) => {
     const styles = useStyles()
     return (

@@ -14,11 +14,25 @@ import { PWText } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
+/**
+ * Props for the TabLabel component.
+ */
 export type TabLabelProps = {
+    /** Translation key for the label text */
     i18nKey: string
+    /** Whether the tab associated with this label is currently active */
     active: boolean
 }
 
+/**
+ * A localized text component styled specifically for tab bar labels.
+ *
+ * @example
+ * <TabLabel
+ *   i18nKey="tabs.accounts"
+ *   active={true}
+ * />
+ */
 export const TabLabel = ({ i18nKey, active }: TabLabelProps) => {
     const { t } = useLanguage()
     const styles = useStyles()

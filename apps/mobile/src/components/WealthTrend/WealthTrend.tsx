@@ -23,11 +23,23 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
+/**
+ * Props for the WealthTrend component.
+ */
 export type WealthTrendProps = {
+    /** Optional specific account to analyze. If omitted, analyzes the aggregate of all accounts. */
     account?: WalletAccount
+    /** The history period the trend analysis should cover */
     period: HistoryPeriod
 }
 
+/**
+ * A component that displays wealth performance (gains/losses) as absolute value and percentage.
+ * Integrated with privacy mode and currency settings.
+ *
+ * @example
+ * <WealthTrend period="one-week" />
+ */
 export const WealthTrend = ({ account, period }: WealthTrendProps) => {
     const styles = useStyles()
     const { preferredCurrency } = useCurrency()

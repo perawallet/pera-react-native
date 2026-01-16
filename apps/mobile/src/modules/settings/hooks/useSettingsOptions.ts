@@ -14,6 +14,15 @@ import { useMemo } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
 import { config } from '@perawallet/wallet-core-config'
 
+/**
+ * A hook that provides the structured configuration for the main settings screen.
+ * Groups settings into logical sections like "Account", "Preferences", and "Support".
+ *
+ * @returns An object containing the settings options array.
+ *
+ * @example
+ * const { settingsOptions } = useSettingsOptions()
+ */
 export const useSettingsOptions = () => {
     const { t } = useLanguage()
 

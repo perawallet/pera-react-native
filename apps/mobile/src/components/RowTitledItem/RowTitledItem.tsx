@@ -13,11 +13,25 @@
 import { PWText, PWView, PWViewProps } from '@components/core'
 import { useStyles } from './styles'
 
+/**
+ * Props for the RowTitledItem component.
+ */
 export type RowTitledItemProps = {
+    /** Title label to display on the left */
     title: string
+    /** Vertical alignment of the title and content */
     verticalAlignment?: 'center' | 'top'
 } & PWViewProps
 
+/**
+ * A horizontal layout component typically used in lists.
+ * Shows a title label on the left and wraps its children on the right.
+ *
+ * @example
+ * <RowTitledItem title="Asset Name">
+ *   <PWText>Algorand</PWText>
+ * </RowTitledItem>
+ */
 export const RowTitledItem = (props: RowTitledItemProps) => {
     const { title, children, ...rest } = props
     const styles = useStyles(props)

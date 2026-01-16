@@ -30,10 +30,22 @@ import { EmptyView } from '@components/EmptyView'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useLanguage } from '@hooks/useLanguage'
 
+/**
+ * Props for the AddressSearchView component.
+ */
 type AddressSearchViewProps = {
+    /** Callback triggered when an address is selected */
     onSelected: (address: string) => void
 }
 
+/**
+ * A searchable view that displays matching accounts and contacts for a given address or name.
+ *
+ * @example
+ * <AddressSearchView
+ *   onSelected={(address) => handleAddressSelection(address)}
+ * />
+ */
 export const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
     const styles = useStyles()
     const [value, setValue] = useState('')

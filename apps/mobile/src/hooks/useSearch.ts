@@ -12,10 +12,28 @@
 
 import { useState, useMemo, useCallback } from 'react'
 
+/**
+ * A hook for filtering a list of items based on a search term.
+ *
+ * @template T The type of items in the list
+ * @param items The array of items to filter
+ * @param filterFn Logic to determine if an item matches the search term
+ * @returns Filtered items, current search term, and search management methods
+ *
+ * @example
+ * const { filteredItems, searchTerm, setSearchTerm } = useSearch(accounts, (account, term) =>
+ *   account.name.toLowerCase().includes(term.toLowerCase())
+ * )
+ */
 export function useSearch<T>(
     items: T[],
     filterFn: (item: T, searchTerm: string) => boolean,
-) {
+): {
+    searchTerm: string
+    setSearchTerm: (term: string) => void
+    filteredItems: T[]
+    clearSearch: () => void
+} {
     const [searchTerm, setSearchTerm] = useState('')
 
     const filteredItems = useMemo(() => {

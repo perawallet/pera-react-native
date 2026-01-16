@@ -13,6 +13,12 @@
 import { useCallback } from 'react'
 import { useContactsStore } from '../store'
 
+/**
+ * A hook for managing and searching contacts in the user's address book.
+ * Provides methods for CRUD operations and advanced searching.
+ *
+ * @returns An object containing contacts state and management methods.
+ */
 export const useContacts = () => {
     const {
         contacts,
@@ -22,6 +28,16 @@ export const useContacts = () => {
         setSelectedContact,
     } = useContactsStore()
 
+    /**
+     * Searches for contacts matching a keyword across multiple fields.
+     *
+     * @param params - Search parameters
+     * @param params.keyword - The search term (address, name, or NFD)
+     * @param params.matchAddress - Whether to search in the address field
+     * @param params.matchName - Whether to search in the name field
+     * @param params.matchNFD - Whether to search in the NFD field
+     * @returns A filtered array of contacts that match the criteria.
+     */
     const findContacts = useCallback(
         ({
             keyword,

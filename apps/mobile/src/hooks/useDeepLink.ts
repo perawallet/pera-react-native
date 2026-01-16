@@ -30,6 +30,16 @@ import { ALGORAND_SCHEME } from './deeplink/arc90-parser'
 
 type LinkSource = 'qr' | 'deeplink'
 
+/**
+ * A hook for handling and validating Pera Wallet deep links and QR codes.
+ * Supports various actions like adding contacts, asset transfers, and WalletConnect sessions.
+ *
+ * @returns Deep linking state and handling methods
+ *
+ * @example
+ * const { handleDeepLink } = useDeepLink()
+ * handleDeepLink(url, false, 'deeplink')
+ */
 export const useDeepLink = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { showToast } = useToast()
@@ -296,6 +306,14 @@ export const useDeepLink = () => {
     }
 }
 
+/**
+ * A listener hook that monitors the system for incoming deep links.
+ * Handles both cold starts (initial URL) and warm starts (URL events).
+ *
+ * @example
+ * // In RootComponent
+ * useDeeplinkListener()
+ */
 export const useDeeplinkListener = () => {
     const { handleDeepLink, isValidDeepLink } = useDeepLink()
     const hasHandledInitialUrl = useRef(false)

@@ -41,6 +41,10 @@ const initialState: SendFundsState = {
     destination: undefined,
 }
 
+/**
+ * Internal Zustand store for managing the state of a "Send Funds" transaction flow.
+ * Use useSendFunds hook for component access.
+ */
 export const useSendFundsStore = create<SendFundsStore>()(set => ({
     ...initialState,
     setSelectedAsset: asset => set({ selectedAsset: asset }),
@@ -53,20 +57,42 @@ export const useSendFundsStore = create<SendFundsStore>()(set => ({
 
 // Explicit return types for decoupled access
 
+/**
+ * Result of the useSendFunds hook.
+ */
 type UseSendFundsResult = {
+    /** The asset being sent */
     selectedAsset?: AssetWithAccountBalance
+    /** Whether the user is allowed to change the selected asset */
     canSelectAsset: boolean
+    /** Amount to send */
     amount?: Decimal
+    /** Optional transaction note */
     note?: string
+    /** Destination wallet address */
     destination?: string
+    /** Updates the selected asset */
     setSelectedAsset: (asset?: AssetWithAccountBalance) => void
+    /** Toggles asset selection ability */
     setCanSelectAsset: (canSelect: boolean) => void
+    /** Updates the amount */
     setAmount: (amount?: Decimal) => void
+    /** Updates the note */
     setNote: (note?: string) => void
+    /** Updates the destination address */
     setDestination: (address?: string) => void
+    /** Resets the entire store to initial state */
     reset: () => void
 }
 
+/**
+ * A hook for accessing and managing the state of the funds transfer flow.
+ *
+ * @returns State and setter methods for the transfer process
+ *
+ * @example
+ * const { amount, setAmount, destination, setDestination } = useSendFunds()
+ */
 export const useSendFunds = (): UseSendFundsResult => {
     const selectedAsset = useSendFundsStore(state => state.selectedAsset)
     const canSelectAsset = useSendFundsStore(state => state.canSelectAsset)

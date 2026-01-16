@@ -16,11 +16,25 @@ import { PWIcon, PWImage, PWView } from '@components/core'
 import { SvgProps } from 'react-native-svg'
 import { useStyles } from './styles'
 
+/**
+ * Props for the ContactAvatar component.
+ */
 type ContactAvatarProps = {
+    /** Size variant for the avatar */
     size: 'small' | 'large'
+    /** The contact whose avatar to display */
     contact?: Contact
 } & SvgProps
 
+/**
+ * A component that displays a contact's profile image or a placeholder icon.
+ *
+ * @example
+ * <ContactAvatar
+ *   size="large"
+ *   contact={myContact}
+ * />
+ */
 export const ContactAvatar = ({
     size,
     contact,

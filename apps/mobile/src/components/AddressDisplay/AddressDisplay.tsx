@@ -29,18 +29,38 @@ import { useMemo } from 'react'
 import { ContactAvatar } from '@components/ContactAvatar'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 
+/**
+ * Props for the AddressDisplay component.
+ */
 type AddressDisplayProps = {
+    /** The Algorand address to display */
     address: string
+    /** Format of the address display (short: "ALGO...XYZ", long: "ALGORAND...XYZ", full: no truncation) */
     addressFormat?: 'short' | 'long' | 'full'
+    /** If true, shows raw address instead of resolving to account/contact names */
     rawDisplay?: boolean
+    /** Whether to show a copy button next to the address */
     showCopy?: boolean
+    /** Custom props for the text component */
     textProps?: PWTextProps
+    /** Custom props for the copy icon */
     iconProps?: SvgProps
 } & PWViewProps
 
 const LONG_ADDRESS_FORMAT = 20
 
 //TODO add support for NFDs
+/**
+ * A component that displays an Algorand address.
+ * It automatically attempts to resolve the address to a local account name or contact name.
+ *
+ * @example
+ * <AddressDisplay
+ *   address="ALGORAND..."
+ *   addressFormat="short"
+ *   showCopy={true}
+ * />
+ */
 export const AddressDisplay = ({
     address,
     addressFormat = 'short',

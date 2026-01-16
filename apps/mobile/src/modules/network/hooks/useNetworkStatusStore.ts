@@ -26,16 +26,31 @@ const initialState: NetworkStatusState = {
     hasInternet: true,
 }
 
+/**
+ * Internal Zustand store for tracking the current network connectivity status.
+ * Use useNetworkStatus hook for component access.
+ */
 export const useNetworkStatusStore = create<NetworkStatusStore>()(set => ({
     ...initialState,
     setHasInternet: (hasInternet: boolean) => set({ hasInternet }),
 }))
 
-// Explicit return types for decoupled access
+/**
+ * Result of the useNetworkStatus hook.
+ */
 type UseNetworkStatusResult = {
+    /** Whether the device currently has an active internet connection */
     hasInternet: boolean
 }
 
+/**
+ * A hook for accessing the current network connectivity status.
+ *
+ * @returns An object containing the current connectivity state.
+ *
+ * @example
+ * const { hasInternet } = useNetworkStatus()
+ */
 export const useNetworkStatus = (): UseNetworkStatusResult => {
     const hasInternet = useNetworkStatusStore(state => state.hasInternet)
     return { hasInternet }

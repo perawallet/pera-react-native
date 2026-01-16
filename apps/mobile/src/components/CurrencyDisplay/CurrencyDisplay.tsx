@@ -20,22 +20,50 @@ import AlgoIcon from '@assets/icons/algo.svg'
 import { useDeviceInfoService } from '@perawallet/wallet-core-platform-integration'
 import { useSettings } from '@perawallet/wallet-core-settings'
 
+/**
+ * Props for the CurrencyDisplay component.
+ */
 export type CurrencyDisplayProps = {
+    /** Currency code (e.g., "USD", "ALGO") */
     currency: string
+    /** Numeric value to display */
     value: Decimal | null | undefined
+    /** Maximum number of decimal places to show */
     precision: number
+    /** Minimum number of decimal places to show */
     minPrecision?: number
+    /** Text string to prepend to the formatted value */
     prefix?: string
+    /** Whether to right-align the content */
     alignRight?: boolean
+    /** Whether to show the currency symbol or ticker */
     showSymbol?: boolean
+    /** Whether to show a skeleton loader instead of the value */
     isLoading?: boolean
+    /** Whether to use unit suffixes (K, M, B, T) for large values */
     truncateToUnits?: boolean
+    /** Use h1 typography variant */
     h1?: boolean
+    /** Use h2 typography variant */
     h2?: boolean
+    /** Use h3 typography variant */
     h3?: boolean
+    /** Use h4 typography variant */
     h4?: boolean
 } & Omit<PWTextProps, 'children' | 'variant'>
 
+/**
+ * A comprehensive component for displaying formatted currency values.
+ * Supports privacy mode (masking values), skeleton loaders, and localized formatting.
+ *
+ * @example
+ * <CurrencyDisplay
+ *   currency="ALGO"
+ *   value={new Decimal(100)}
+ *   precision={6}
+ *   h2
+ * />
+ */
 export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
     const themeStyle = useStyles(props)
     const { theme } = useTheme()

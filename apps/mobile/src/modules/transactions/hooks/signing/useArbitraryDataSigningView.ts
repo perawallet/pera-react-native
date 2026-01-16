@@ -22,9 +22,23 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCallback, useState } from 'react'
 
+/**
+ * A hook for managing the UI logic of an arbitrary data signing request.
+ * Handles account resolution, signing, success/error notifications, and request lifecycle.
+ *
+ * @param request The arbitrary data signing request to process
+ * @returns View state and control methods (approve, reject)
+ *
+ * @example
+ * const { approveRequest, isPending } = useArbitraryDataSigningView(signRequest)
+ */
 export const useArbitraryDataSigningView = (
     request: ArbitraryDataSignRequest,
-) => {
+): {
+    approveRequest: () => Promise<void>
+    rejectRequest: () => void
+    isPending: boolean
+} => {
     const { t } = useLanguage()
     const { removeSignRequest } = useSigningRequest()
     const { showToast } = useToast()

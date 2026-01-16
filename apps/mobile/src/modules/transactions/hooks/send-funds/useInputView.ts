@@ -33,7 +33,17 @@ import {
 import { logger } from '@perawallet/wallet-core-shared'
 import { bottomSheetNotifier } from '@components/core'
 
-//business logic for the SendFundsInputView component - factored out for maintainability
+/**
+ * A complex logic hook for the SendFundsInputView component.
+ * Manages the multi-step form state for entering transaction amount and notes,
+ * including validation against account balances and network fees.
+ *
+ * @param onNext Callback to move to the next screen in the flow
+ * @returns State and handlers for the amount input view
+ *
+ * @example
+ * const { handleNext, cryptoValue } = useInputView(() => navigate('Confirm'))
+ */
 export const useInputView = (onNext: () => void) => {
     const selectedAccount = useSelectedAccount()
     const { selectedAsset, note, setNote, setAmount } = useSendFunds()

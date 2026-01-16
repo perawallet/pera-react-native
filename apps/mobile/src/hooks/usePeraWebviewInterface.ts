@@ -72,12 +72,31 @@ export type JsonRpcErrorCode =
 
 export { useWebView } from '@modules/webview'
 
+/**
+ * A complex hook that provides an interface for Pera Webview communication.
+ * Handles various JSON-RPC methods called from the webview context.
+ *
+ * @param webview - The WebView reference
+ * @param securedConnection - Whether the current connection is considered secure
+ * @param onCloseRequested - Callback triggered when the webview requests to close
+ * @param onBackRequested - Callback triggered when the webview requests to go back
+ * @returns Webview interface methods including message handler
+ *
+ * @example
+ * const { handleMessage } = usePeraWebviewInterface(
+ *   webviewRef.current,
+ *   true,
+ *   () => navigation.goBack()
+ * )
+ */
 export const usePeraWebviewInterface = (
     webview: WebView | null,
     securedConnection: boolean,
     onCloseRequested?: () => void,
     onBackRequested?: () => void,
-) => {
+): {
+    handleMessage: (message: WebviewMessage | WebviewMessage[]) => void
+} => {
     const { showToast } = useToast()
     const accounts = useAllAccounts()
     const { network } = useNetwork()

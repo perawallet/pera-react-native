@@ -18,6 +18,16 @@ import { useContacts } from '@perawallet/wallet-core-contacts'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { useQueryClient } from '@tanstack/react-query'
 
+/**
+ * A hook that returns a function to wipe all application data.
+ * This includes all accounts, contacts, preferences, and cached queries.
+ *
+ * @returns A function that performs the data wipe when called.
+ *
+ * @example
+ * const deleteData = useDeleteAllData()
+ * const handleWipe = () => deleteData()
+ */
 export const useDeleteAllData = () => {
     const accounts = useAllAccounts()
     const removeAccountById = useRemoveAccountById()

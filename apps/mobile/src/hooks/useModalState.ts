@@ -12,7 +12,21 @@
 
 import { useState, useCallback } from 'react'
 
-export function useModalState(initialOpen = false) {
+/**
+ * A simple hook for managing the open/closed state of a modal.
+ *
+ * @param initialOpen Initial visibility state of the modal
+ * @returns Modal visibility state and control methods
+ *
+ * @example
+ * const { isOpen, open, close, toggle } = useModalState()
+ */
+export function useModalState(initialOpen = false): {
+    isOpen: boolean
+    open: () => void
+    close: () => void
+    toggle: () => void
+} {
     const [isOpen, setIsOpen] = useState(initialOpen)
 
     const open = useCallback(() => {

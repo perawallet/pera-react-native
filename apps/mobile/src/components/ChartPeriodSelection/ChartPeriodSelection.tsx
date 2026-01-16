@@ -16,11 +16,25 @@ import { useCallback, useState } from 'react'
 import { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 
+/**
+ * Props for the ChartPeriodSelection component.
+ */
 type ChartPeriodSelectionProps = {
+    /** The currently selected period */
     value: HistoryPeriod
+    /** Callback triggered when the period is changed */
     onChange: (val: HistoryPeriod) => void
 }
 
+/**
+ * A selector component for switching between different chart history periods (1W, 1M, 1Y).
+ *
+ * @example
+ * <ChartPeriodSelection
+ *   value="one-week"
+ *   onChange={(period) => setPeriod(period)}
+ * />
+ */
 export const ChartPeriodSelection = ({
     value,
     onChange,

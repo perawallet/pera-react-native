@@ -21,12 +21,27 @@ import Animated, {
 import { useStyles } from './styles'
 import { EXPANDABLE_PANEL_ANIMATION_DURATION } from '@constants/ui'
 
+/**
+ * Props for the ExpandablePanel component.
+ */
 type ExpandablePanelProps = {
+    /** Whether the panel is currently expanded */
     isExpanded: boolean
+    /** Custom styles for the animated container */
     containerStyle?: StyleProp<ViewStyle>
+    /** Callback triggered when the expand/collapse animation completes */
     onStateChangeEnd?: (isExpanded: boolean) => void
 } & PropsWithChildren
 
+/**
+ * A low-level animated container that leverages Reanimated to smoothly expand/collapse its children.
+ * It measures its content height automatically.
+ *
+ * @example
+ * <ExpandablePanel isExpanded={isExpanded}>
+ *   <PWText>Hidden Content</PWText>
+ * </ExpandablePanel>
+ */
 export const ExpandablePanel = ({
     children,
     isExpanded,

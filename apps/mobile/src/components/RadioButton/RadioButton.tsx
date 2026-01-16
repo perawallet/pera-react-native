@@ -13,11 +13,27 @@
 import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useStyles } from './styles'
 
+/**
+ * Props for the RadioButton component.
+ */
 export type RadioButtonProps = {
+    /** Callback triggered when the radio button is pressed */
     onPress: () => void
+    /** Label text to display next to the radio button */
     title: string
+    /** Whether this button is currently selected */
     isSelected: boolean
 }
+/**
+ * A component representing a single choice in a list of options.
+ *
+ * @example
+ * <RadioButton
+ *   title="Dark Mode"
+ *   isSelected={isDarkMode}
+ *   onPress={toggleDarkMode}
+ * />
+ */
 export const RadioButton = ({
     onPress,
     title,

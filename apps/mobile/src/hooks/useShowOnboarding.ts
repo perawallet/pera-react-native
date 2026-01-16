@@ -16,7 +16,18 @@ import { logger } from '@perawallet/wallet-core-shared'
 import { UserPreferences } from '@constants/user-preferences'
 import { useMemo } from 'react'
 
-export const useShowOnboarding = () => {
+/**
+ * A hook that determines whether the onboarding flow should be displayed.
+ * Onboarding is shown if there are no accounts or if an account is currently being created.
+ *
+ * @returns Boolean flag indicating if onboarding should be shown
+ * @example
+ * const showOnboarding = useShowOnboarding()
+ * if (showOnboarding) {
+ *   return <OnboardingFlow />
+ * }
+ */
+export const useShowOnboarding = (): boolean => {
     const { getPreference } = usePreferences()
     const noAccounts = useHasNoAccounts()
 

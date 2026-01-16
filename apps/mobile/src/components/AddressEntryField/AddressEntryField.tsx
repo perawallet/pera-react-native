@@ -16,10 +16,25 @@ import { QRScannerView } from '@components/QRScannerView'
 import { useState } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
 
+/**
+ * Props for the AddressEntryField component.
+ */
 export type AddressEntryFieldProps = {
+    /** Whether to allow scanning a QR code to enter the address */
     allowQRCode?: boolean
 } & PWInputProps
 
+/**
+ * An input field tailored for Algorand address entry.
+ * It optionally includes a QR code scanner as a right icon.
+ *
+ * @example
+ * <AddressEntryField
+ *   label="Recipient Address"
+ *   allowQRCode={true}
+ *   onChangeText={(text) => setAddress(text)}
+ * />
+ */
 export const AddressEntryField = ({
     allowQRCode,
     ...rest

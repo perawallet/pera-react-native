@@ -20,14 +20,34 @@ import {
     PWText,
 } from '@components/core'
 
+/**
+ * Props for the PanelButton component.
+ */
 export type PanelButtonProps = {
+    /** Name of the icon to display on the left side */
     leftIcon?: IconName
+    /** Name of the icon to display on the right side */
     rightIcon?: IconName
+    /** Text to display in the button */
     title: string
+    /** Typography variant/weight for the title */
     titleWeight: 'h3' | 'h4'
+    /** Callback triggered when the button is pressed */
     onPress: () => void
 } & PWTouchableOpacityProps
 
+/**
+ * A wide button component that fills its container, often used for menu items or primary actions.
+ *
+ * @param props - Component props
+ * @example
+ * <PanelButton
+ *   title="Add Account"
+ *   leftIcon="plus"
+ *   onPress={handleAddAccount}
+ *   titleWeight="h3"
+ * />
+ */
 export const PanelButton = (props: PanelButtonProps) => {
     const themeStyle = useStyles(props)
     const { style, leftIcon, rightIcon, title, titleWeight, onPress, ...rest } =

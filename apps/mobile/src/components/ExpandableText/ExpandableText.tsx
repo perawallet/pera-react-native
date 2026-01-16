@@ -14,13 +14,29 @@ import { TextStyle, StyleProp } from 'react-native'
 import { useState } from 'react'
 import { PWButton, PWText } from '@components/core'
 
+/**
+ * Props for the ExpandableText component.
+ */
 export type ExpandableTextProps = {
+    /** The full text to potentially truncate */
     text: string
+    /** Character limit before truncation occurs */
     limit?: number
+    /** Styles for the main text component */
     textStyle?: StyleProp<TextStyle>
+    /** Styles for the "Read more" link (optional) */
     readMoreStyle?: StyleProp<TextStyle>
 }
 
+/**
+ * A component that displays text and provides an expandable "Show more" link if the text exceeds a height/length limit.
+ *
+ * @example
+ * <ExpandableText
+ *   text="Long description here..."
+ *   limit={100}
+ * />
+ */
 export const ExpandableText = ({
     text,
     limit = 150,
