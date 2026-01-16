@@ -193,6 +193,14 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "BUILD=$BUILD" >> $GITHUB_ENV
 
+      - name: Upload AAB Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-${{ inputs.flavor }}-aab
+          path: apps/mobile/android/app/build/outputs/bundle/**/*.aab
+          if-no-files-found: warn
+
       - name: Jira Login
         if: success()
         uses: atlassian/gajira-login@v3
