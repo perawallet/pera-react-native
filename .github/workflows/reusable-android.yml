@@ -188,18 +188,8 @@ jobs:
           bundle exec fastlane android deploy_internal flavor:${{ inputs.flavor }} clean:$CLEAN
           
           # Extract Version
-          VERSION=$(grep 'versionName' android/app/build.gradle | cut -d '"' -f2)
-          BUILD=$(grep 'versionCode' android/app/build.gradle | awk '{print $2}')
+          VERSION=$(grep 'versionName ' android/app/build.gradle | cut -d '"' -f2)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "BUILD=$BUILD" >> $GITHUB_ENV
-
-      - name: Upload AAB Artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: android-${{ inputs.flavor }}-aab
-          path: apps/mobile/android/app/build/outputs/bundle/**/*.aab
-          if-no-files-found: warn
 
       - name: Jira Login
         if: success()
@@ -221,26 +211,26 @@ jobs:
         uses: atlassian/gajira-comment@v3
         with:
           issue: ${{ steps.find_issue.outputs.issue }}
-          comment: "${{ inputs.notification_title_prefix }}: Android ${{ inputs.flavor }} Available! Version: ${{ env.VERSION }} (${{ env.BUILD }}) - View build: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          comment: "${{ inputs.notification_title_prefix }}: Android ${{ inputs.flavor }} Available! Version: ${{ env.VERSION }} (${{ env.BUILD_NUMBER }}) - View build: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
       - name: Set outputs
         if: always()
         run: |
           echo "version=${{ env.VERSION }}" >> $GITHUB_OUTPUT
-          echo "build_number=${{ env.BUILD }}" >> $GITHUB_OUTPUT
+          echo "build_number=${{ env.BUILD_NUMBER }}" >> $GITHUB_OUTPUT
           echo "jira_issue=${{ steps.find_issue.outputs.issue }}" >> $GITHUB_OUTPUT
         id: set_outputs
-#   notify:
-#     needs: build
-#     if: always()
-#     uses: ./.github/workflows/reusable-slack-notify.yml
-#     with:
-#       status: ${{ needs.build.result }}
-#       platform: "Android"
-#       environment: ${{ inputs.environment }}
-#       # Check if outputs are available, fallback to 'N/A' if empty (e.g. build failed early)
-#       version: ${{ needs.build.outputs.version || 'N/A' }}
-#       build_number: ${{ needs.build.outputs.build_number || 'N/A' }}
-#       jira_issue: ${{ needs.build.outputs.jira_issue }}
-#       notification_title_prefix: ${{ inputs.notification_title_prefix }}
-#     secrets: inherit
+  notify:
+    needs: build
+    if: always()
+    uses: ./.github/workflows/reusable-slack-notify.yml
+    with:
+      status: ${{ needs.build.result }}
+      platform: "Android"
+      environment: ${{ inputs.environment }}
+      # Check if outputs are available, fallback to 'N/A' if empty (e.g. build failed early)
+      version: ${{ needs.build.outputs.version || 'N/A' }}
+      build_number: ${{ needs.build.outputs.build_number || 'N/A' }}
+      jira_issue: ${{ needs.build.outputs.jira_issue }}
+      notification_title_prefix: ${{ inputs.notification_title_prefix }}
+    secrets: inherit
