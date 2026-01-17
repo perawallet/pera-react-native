@@ -23,10 +23,6 @@ on:
         required: false
         type: string
         default: "N/A"
-      jira_issue:
-        required: false
-        type: string
-        default: ""
       notification_title_prefix:
         required: true
         type: string
@@ -51,18 +47,20 @@ jobs:
             {
               "username": "GitHub Actions",
               "icon_emoji": ":octocat:",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "${{ inputs.notification_title_prefix }}: ${{ inputs.platform }} ${{ inputs.environment }} ${{ inputs.status == 'success' && 'Available on TestFlight/Play Store' || '' }} - ${{ inputs.status }}",
+                    "emoji": true
+                  }
+                ]
+              },
               "attachments": [
                 {
                   "color": "${{ inputs.status == 'success' && 'good' || 'danger' }}",
                   "blocks": [
-                    {
-                      "type": "header",
-                      "text": {
-                        "type": "plain_text",
-                        "text": "${{ inputs.notification_title_prefix }}: ${{ inputs.platform }} ${{ inputs.environment }} - ${{ inputs.status }}",
-                        "emoji": true
-                      }
-                    },
                     {
                       "type": "section",
                       "fields": [
@@ -83,13 +81,6 @@ jobs:
                           "text": "*PR/Commit:*\n<${{ github.event.pull_request.html_url || github.event.head_commit.url }}|${{ github.event.pull_request.title || github.event.head_commit.message }}>"
                         }
                       ]
-                    },
-                    {
-                      "type": "section",
-                      "text": {
-                        "type": "mrkdwn",
-                        "text": "*Jira Ticket:*\n${{ inputs.jira_issue != '' && format('<{0}/browse/{1}|{1}>', secrets.JIRA_BASE_URL, inputs.jira_issue) || 'N/A' }}"
-                      }
                     },
                     {
                       "type": "context",
