@@ -63,7 +63,6 @@ jobs:
     outputs:
       version: ${{ steps.set_outputs.outputs.version }}
       build_number: ${{ steps.set_outputs.outputs.build_number }}
-      jira_issue: ${{ steps.set_outputs.outputs.jira_issue }}
     environment: ${{ inputs.environment }}
     timeout-minutes: 120
     steps:
@@ -197,6 +196,7 @@ jobs:
           echo "build_number=${{ github.run_number }}" >> $GITHUB_OUTPUT
         id: set_outputs
   jira-update:
+    needs: build
     runs-on: ubuntu-latest
     if: success()
     environment: ${{ inputs.environment }}
@@ -210,7 +210,6 @@ jobs:
           ref: ${{ github.event.pull_request.title }}
           transition: "Ready for QA"
           issue_pattern: "(PERA-[1-9][0-9]*)"
-          markdown: true
           comment: |
             ${{inputs.notification_title_prefix}} iOS ${{inputs.environment}} build is ready for testing on TestFlight.  Version: ${{needs.build.outputs.version}} (${{needs.build.outputs.build_number}})
   notify:
