@@ -31,7 +31,6 @@ jobs:
   #   secrets: inherit
 
   android-staging:
-    needs: ios-staging
     if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
     name: Android Staging (QA)
     uses: ./.github/workflows/reusable-android.yml
