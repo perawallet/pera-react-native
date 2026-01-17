@@ -1,14 +1,15 @@
 name: QA Build
 
 on:
-# TODO: Re-enable this when we're ready to automate QA builds
-#   push:
-#     branches:
-#       - main
+  pull_request:
+    branches:
+      - main
+    types: [closed]
   workflow_dispatch:
 
 jobs:
   ios-staging:
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
     name: iOS Staging (QA)
     uses: ./.github/workflows/reusable-ios.yml
     with:
@@ -20,6 +21,7 @@ jobs:
 
   # ios-production:
   #   name: iOS Production (QA)
+  #   if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
   #   uses: ./.github/workflows/reusable-ios.yml
   #   with:
   #     environment: production
@@ -29,6 +31,8 @@ jobs:
   #   secrets: inherit
 
   android-staging:
+    needs: ios-staging
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
     name: Android Staging (QA)
     uses: ./.github/workflows/reusable-android.yml
     with:
@@ -40,6 +44,7 @@ jobs:
 
   # android-production:
   #   name: Android Production (QA)
+  #   if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
   #   uses: ./.github/workflows/reusable-android.yml
   #   with:
   #     environment: production

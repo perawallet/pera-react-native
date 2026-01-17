@@ -60,6 +60,13 @@ platform :ios do
       xcodeproj: "./ios/pera.xcodeproj"
     )
 
+    if ENV['BUILD_NUMBER']
+      increment_build_number(
+        build_number: ENV['BUILD_NUMBER'],
+        xcodeproj: "./ios/pera.xcodeproj"
+      )
+    end
+
     # Determine Bundle ID for export options
     bundle_id = case options[:scheme]
     when "Pera-Production" then "com.algorandllc.perarn"
@@ -96,13 +103,6 @@ platform :ios do
     when "Pera-Production" then "Production"
     when "Pera-Dev" then "Dev"
     else "Staging"
-    end
-
-    if ENV['BUILD_NUMBER']
-      increment_build_number(
-        build_number: ENV['BUILD_NUMBER'],
-        xcodeproj: "./ios/pera.xcodeproj"
-      )
     end
 
     clean = options[:clean]
@@ -163,12 +163,8 @@ platform :android do
     clean = options[:clean]
     clean = true if clean.nil?
     
-    # Inject version from package.json
+    # Get version from package.json
     version = get_package_version
-    increment_version_name(
-      version_name: version,
-      gradle_file_path: "android/app/build.gradle"
-    )
 
     task = clean ? "clean bundle" : "bundle"
 
@@ -178,7 +174,8 @@ platform :android do
       build_type: options[:build_type],
       project_dir: "android/",
       properties: {
-        "android.injected.version.code" => ENV["BUILD_NUMBER"]
+        "android.injected.version.code" => ENV["BUILD_NUMBER"],
+        "android.injected.version.name" => version
       }
     )
   end
