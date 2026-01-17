@@ -169,6 +169,9 @@ jobs:
       - name: Create local.properties
         run: echo "sdk.dir=$ANDROID_HOME" > apps/mobile/android/local.properties
 
+      - name: Get version from package.json
+        run: echo "VERSION=$(jq -r '.version | split("-")[0]' apps/mobile/package.json)" >> $GITHUB_ENV
+
       - name: Build & Deploy Android
         env:
           ANDROID_JSON_KEY_FILE: ${{ secrets.ANDROID_JSON_KEY_FILE }}
@@ -186,40 +189,30 @@ jobs:
           fi
 
           bundle exec fastlane android deploy_internal flavor:${{ inputs.flavor }} clean:$CLEAN
-          
-          # Extract Version
-          VERSION=$(grep 'versionName ' android/app/build.gradle | cut -d '"' -f2)
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-
-      - name: Jira Login
-        if: success()
-        uses: atlassian/gajira-login@v3
-        env:
-          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
-          JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
-          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
-
-      - name: Jira Find Issue
-        if: success()
-        id: find_issue
-        uses: atlassian/gajira-find-issue-key@v3
-        with:
-          string: "${{ github.head_ref || github.ref_name }} ${{ github.event.head_commit.message }} ${{ github.event.pull_request.body }}"
-
-      - name: Jira Comment
-        if: success() && steps.find_issue.outputs.issue
-        uses: atlassian/gajira-comment@v3
-        with:
-          issue: ${{ steps.find_issue.outputs.issue }}
-          comment: "${{ inputs.notification_title_prefix }}: Android ${{ inputs.flavor }} Available! Version: ${{ env.VERSION }} (${{ env.BUILD_NUMBER }}) - View build: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
       - name: Set outputs
         if: always()
         run: |
           echo "version=${{ env.VERSION }}" >> $GITHUB_OUTPUT
-          echo "build_number=${{ env.BUILD_NUMBER }}" >> $GITHUB_OUTPUT
-          echo "jira_issue=${{ steps.find_issue.outputs.issue }}" >> $GITHUB_OUTPUT
+          echo "build_number=${{ github.run_number }}" >> $GITHUB_OUTPUT
         id: set_outputs
+  jira-update:
+    runs-on: ubuntu-latest
+    if: success()
+    environment: ${{ inputs.environment }}
+    name: Update JIRA tcket
+    steps:
+      - name: Update JIRA ticket
+        uses: appleboy/jira-action@v0.2.0
+        with:
+          base_url: ${{ secrets.JIRA_BASE_URL }}
+          token: ${{ secrets.JIRA_API_TOKEN }}
+          ref: ${{ github.event.pull_request.title }}
+          transition: "Ready for QA"
+          issue_pattern: "(PERA-[1-9][0-9]*)"
+          markdown: true
+          comment: |
+            ${{inputs.notification_title_prefix}} iOS ${{inputs.environment}} build is ready for testing on TestFlight.  Version: ${{needs.build.outputs.version}} (${{needs.build.outputs.build_number}})
   notify:
     needs: build
     if: always()
@@ -231,6 +224,5 @@ jobs:
       # Check if outputs are available, fallback to 'N/A' if empty (e.g. build failed early)
       version: ${{ needs.build.outputs.version || 'N/A' }}
       build_number: ${{ needs.build.outputs.build_number || 'N/A' }}
-      jira_issue: ${{ needs.build.outputs.jira_issue }}
       notification_title_prefix: ${{ inputs.notification_title_prefix }}
     secrets: inherit

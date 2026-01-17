@@ -3,6 +3,13 @@
 # This Fastfile contains lanes for building iOS and Android versions
 # of Pera Wallet across different environments (dev, staging, production)
 
+# Helper to get version from package.json (strips suffixes like -alpha)
+def get_package_version
+  require 'json'
+  package_data = JSON.parse(File.read("../package.json"))
+  package_data["version"].split("-").first
+end
+
 default_platform(:ios)
 
 # ============================================================================
@@ -45,6 +52,13 @@ platform :ios do
   private_lane :build_ios do |options|
     clean = options[:clean]
     clean = true if clean.nil?
+
+    # Inject version from package.json
+    version = get_package_version
+    increment_version_number(
+      version_number: version,
+      xcodeproj: "./ios/pera.xcodeproj"
+    )
 
     # Determine Bundle ID for export options
     bundle_id = case options[:scheme]
@@ -101,10 +115,10 @@ platform :ios do
       clean: clean
     )
 
-    upload_to_testflight(
-      skip_waiting_for_build_processing: true,
-      ipa: "./build/ios/#{scheme}.ipa"
-    )
+      upload_to_testflight(
+        skip_waiting_for_build_processing: true,
+        ipa: "./build/ios/#{scheme}.ipa"
+      )
   end
 
   desc "Increment build number"
@@ -149,6 +163,13 @@ platform :android do
     clean = options[:clean]
     clean = true if clean.nil?
     
+    # Inject version from package.json
+    version = get_package_version
+    increment_version_name(
+      version_name: version,
+      gradle_file_path: "android/app/build.gradle"
+    )
+
     task = clean ? "clean bundle" : "bundle"
 
     gradle(
