@@ -195,25 +195,6 @@ jobs:
           echo "version=${{ env.VERSION }}" >> $GITHUB_OUTPUT
           echo "build_number=${{ github.run_number }}" >> $GITHUB_OUTPUT
         id: set_outputs
-  jira-update:
-    needs: build
-    runs-on: ubuntu-latest
-    if: success()
-    environment: ${{ inputs.environment }}
-    name: Update JIRA tcket
-    steps:
-      - name: Update JIRA ticket
-        uses: appleboy/jira-action@v0.2.0
-        with:
-          base_url: ${{ secrets.JIRA_BASE_URL }}
-          token: ${{ secrets.JIRA_API_TOKEN }}
-          ref: "${{ github.event.pull_request.title }} ${{ github.event.pull_request.body }}"
-          transition: "Ready for QA"
-          issue_pattern: "(PERA-[1-9][0-9]*)"
-          comment: |
-            ${{ inputs.notification_title_prefix }} Android ${{ inputs.flavor }} build is ready for testing.
-            Version: ${{ needs.build.outputs.version }} (${{ needs.build.outputs.build_number }})
-            View build: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
   notify:
     needs: build
     if: always()
