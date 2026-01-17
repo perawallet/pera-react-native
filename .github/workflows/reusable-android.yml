@@ -121,6 +121,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ccache
+          mkdir -p $HOME/.ccache
           echo "NDK_CCACHE=ccache" >> $GITHUB_ENV
           echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
           echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
