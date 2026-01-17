@@ -52,14 +52,14 @@ jobs:
                   "type": "header",
                   "text": {
                     "type": "plain_text",
-                    "text": "${{ inputs.notification_title_prefix }}: ${{ inputs.platform }} ${{ inputs.environment }} ${{ inputs.status == 'success' && 'Available on TestFlight/Play Store' || '' }} - ${{ inputs.status }}",
+                    "text": "${{ inputs.status == 'success' && '✅' || '❌' }} ${{ inputs.notification_title_prefix }}: ${{ inputs.platform }} ${{ inputs.environment }}${{ inputs.status == 'success' && ' Available on TestFlight/Play Store' || ' Failed' }}",
                     "emoji": true
                   }
-                ]
-              },
+                }
+              ],
               "attachments": [
                 {
-                  "color": "${{ inputs.status == 'success' && 'good' || 'danger' }}",
+                  "color": "${{ inputs.status == 'success' && '#36a64f' || '#ec0000' }}",
                   "blocks": [
                     {
                       "type": "section",
