@@ -10,16 +10,9 @@
  limitations under the License
  */
 
-export * from './analytics'
-export * from './biometrics'
-export * from './device'
-export * from './push-notifications'
-export * from './remote-config'
-export * from './reporting'
-export * from './storage'
-export * from './models'
-export * from './test-utils'
-export * from './platform'
+import { container } from 'tsyringe'
+import type { BiometricsService } from '../models'
 
-export { initDeviceStore } from './device/store'
-export { initRemoteConfigStore } from './remote-config/store'
+export const BiometricsServiceContainerKey = 'BiometricsService'
+export const useBiometricsService = () =>
+    container.resolve<BiometricsService>(BiometricsServiceContainerKey)

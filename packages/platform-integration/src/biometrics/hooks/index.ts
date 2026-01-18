@@ -10,16 +10,7 @@
  limitations under the License
  */
 
-export * from './analytics'
-export * from './biometrics'
-export * from './device'
-export * from './push-notifications'
-export * from './remote-config'
-export * from './reporting'
-export * from './storage'
-export * from './models'
-export * from './test-utils'
-export * from './platform'
-
-export { initDeviceStore } from './device/store'
-export { initRemoteConfigStore } from './remote-config/store'
+export {
+    useBiometricsService,
+    BiometricsServiceContainerKey,
+} from './useBiometricsService'

@@ -11,7 +11,10 @@
  */
 
 import { useCallback } from 'react'
-import { useSecureStorageService } from '@perawallet/wallet-core-platform-integration'
+import {
+    useSecureStorageService,
+    useBiometricsService,
+} from '@perawallet/wallet-core-platform-integration'
 import { useSecurityStore } from '../store'
 import {
     PIN_STORAGE_KEY,
@@ -21,6 +24,7 @@ import {
 
 type UseBiometricsResult = {
     isBiometricEnabled: boolean
+    isBiometricAvailable: () => Promise<boolean>
     enableBiometrics: () => Promise<boolean>
     disableBiometrics: () => Promise<void>
     authenticateWithBiometrics: () => Promise<boolean>
@@ -28,6 +32,7 @@ type UseBiometricsResult = {
 
 export const useBiometrics = (): UseBiometricsResult => {
     const secureStorage = useSecureStorageService()
+    const biometricsService = useBiometricsService()
     const isBiometricEnabled = useSecurityStore(
         state => state.isBiometricEnabled,
     )
@@ -36,12 +41,32 @@ export const useBiometrics = (): UseBiometricsResult => {
     )
     const isPinEnabled = useSecurityStore(state => state.isPinEnabled)
 
+    const isBiometricAvailable = useCallback(async (): Promise<boolean> => {
+        return biometricsService.isBiometricAvailable()
+    }, [biometricsService])
+
     const enableBiometrics = useCallback(async (): Promise<boolean> => {
         if (!isPinEnabled) {
             return false
         }
 
         try {
+            // First check if biometrics are available
+            const available = await biometricsService.isBiometricAvailable()
+            if (!available) {
+                return false
+            }
+
+            // Prompt for biometric authentication to confirm user can authenticate
+            const authenticated = await biometricsService.authenticate(
+                'Enable Biometrics',
+                'Authenticate to enable biometric login',
+            )
+            if (!authenticated) {
+                return false
+            }
+
+            // Store the PIN under the biometric key
             const pinData = await secureStorage.getItem(PIN_STORAGE_KEY)
             if (!pinData) {
                 return false
@@ -53,7 +78,7 @@ export const useBiometrics = (): UseBiometricsResult => {
         } catch {
             return false
         }
-    }, [isPinEnabled, secureStorage, setIsBiometricEnabled])
+    }, [isPinEnabled, biometricsService, secureStorage, setIsBiometricEnabled])
 
     const disableBiometrics = useCallback(async () => {
         await secureStorage.removeItem(BIOMETRIC_STORAGE_KEY)
@@ -67,6 +92,16 @@ export const useBiometrics = (): UseBiometricsResult => {
             }
 
             try {
+                // Prompt for biometric authentication
+                const authenticated = await biometricsService.authenticate(
+                    'Authenticate',
+                    'Use biometrics to unlock',
+                )
+                if (!authenticated) {
+                    return false
+                }
+
+                // Verify the stored biometric PIN matches the current PIN
                 const pinData = await secureStorage.getItem(PIN_STORAGE_KEY)
                 const biometricPinData = await secureStorage.getItem(
                     BIOMETRIC_STORAGE_KEY,
@@ -83,10 +118,11 @@ export const useBiometrics = (): UseBiometricsResult => {
             } catch {
                 return false
             }
-        }, [isBiometricEnabled, secureStorage])
+        }, [isBiometricEnabled, biometricsService, secureStorage])
 
     return {
         isBiometricEnabled,
+        isBiometricAvailable,
         enableBiometrics,
         disableBiometrics,
         authenticateWithBiometrics,

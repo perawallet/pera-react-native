@@ -11,6 +11,7 @@
  */
 
 import { initAccountsStore } from '@perawallet/wallet-core-accounts'
+import { RNBiometricsService } from '../platform/biometrics'
 import { RNDeviceInfoStorageService } from '../platform/device'
 import { RNFirebaseService } from '../platform/firebase'
 import { RNKeyValueStorageService } from '../platform/key-value-storage'
@@ -36,6 +37,7 @@ import { useCallback } from 'react'
 const firebaseService = new RNFirebaseService()
 const platformServices = {
     analytics: firebaseService,
+    biometrics: new RNBiometricsService(),
     crashReporting: firebaseService,
     notification: firebaseService,
     remoteConfig: firebaseService,

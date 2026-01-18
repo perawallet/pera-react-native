@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { usePinCode, useBiometrics } from '@perawallet/wallet-core-security'
@@ -26,7 +26,7 @@ type UseSettingsSecurityScreenResult = {
     isBiometricEnabled: boolean
     isBiometricAvailable: boolean
     handlePinToggle: (value: boolean) => void
-    handleBiometricToggle: (value: boolean) => void
+    handleBiometricToggle: (value: boolean) => Promise<boolean>
     handleChangePinPress: () => void
 }
 
@@ -34,10 +34,18 @@ export const useSettingsSecurityScreen =
     (): UseSettingsSecurityScreenResult => {
         const navigation = useNavigation<SettingsSecurityNavigationProp>()
         const { isPinEnabled, deletePin } = usePinCode()
-        const { isBiometricEnabled, enableBiometrics, disableBiometrics } =
-            useBiometrics()
+        const {
+            isBiometricEnabled,
+            isBiometricAvailable: checkBiometricAvailable,
+            enableBiometrics,
+            disableBiometrics,
+        } = useBiometrics()
 
-        const isBiometricAvailable = true
+        const [isBiometricAvailable, setIsBiometricAvailable] = useState(false)
+
+        useEffect(() => {
+            checkBiometricAvailable().then(setIsBiometricAvailable)
+        }, [checkBiometricAvailable])
 
         const handlePinToggle = useCallback(
             async (value: boolean) => {
@@ -54,11 +62,13 @@ export const useSettingsSecurityScreen =
         )
 
         const handleBiometricToggle = useCallback(
-            async (value: boolean) => {
+            async (value: boolean): Promise<boolean> => {
                 if (value) {
-                    await enableBiometrics()
+                    const success = await enableBiometrics()
+                    return success
                 } else {
                     await disableBiometrics()
+                    return true
                 }
             },
             [enableBiometrics, disableBiometrics],

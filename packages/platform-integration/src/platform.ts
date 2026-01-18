@@ -30,6 +30,10 @@ import {
     type SecureStorageService,
 } from './storage'
 import {
+    BiometricsServiceContainerKey,
+    type BiometricsService,
+} from './biometrics'
+import {
     NotificationServiceContainerKey,
     type NotificationService,
 } from './push-notifications'
@@ -43,6 +47,9 @@ export const registerPlatformServices = async (platform: PlatformServices) => {
     )
     container.register<SecureStorageService>(SecureStorageServiceContainerKey, {
         useValue: platform.secureStorage,
+    })
+    container.register<BiometricsService>(BiometricsServiceContainerKey, {
+        useValue: platform.biometrics,
     })
     container.register<RemoteConfigService>(RemoteConfigServiceContainerKey, {
         useValue: platform.remoteConfig,

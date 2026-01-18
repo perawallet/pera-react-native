@@ -52,6 +52,7 @@ export const PinEntryScreen = () => {
     return (
         <View style={styles.container}>
             <PinEntry
+                key={currentMode}
                 mode={currentMode}
                 title={title}
                 subtitle={subtitle}
