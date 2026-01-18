@@ -11,8 +11,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react'
-import type { NumpadKey } from '@components/core'
-import type { PinCircleState } from '@components/core'
+import type { NumpadKey, PinCircleState } from '@components/core'
 
 type UsePinEntryParams = {
     pinLength: number

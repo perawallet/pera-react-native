@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { View } from 'react-native'
 import {
     PWSwitch,
     PWText,
@@ -39,7 +38,10 @@ export const SettingsSecurityScreen = () => {
         <PWView style={styles.container}>
             {/* Security Settings Section */}
             <PWView style={styles.section}>
-                <PWText variant="body" style={styles.sectionTitle}>
+                <PWText
+                    variant='body'
+                    style={styles.sectionTitle}
+                >
                     {t('settings.security.security_settings_section')}
                 </PWText>
 
@@ -71,7 +73,10 @@ export const SettingsSecurityScreen = () => {
                             <PWText style={styles.listItemTitle}>
                                 {t('settings.security.change_pin')}
                             </PWText>
-                            <PWIcon name="chevron-right" size="sm" />
+                            <PWIcon
+                                name='chevron-right'
+                                size='sm'
+                            />
                         </PWTouchableOpacity>
 
                         {/* Enable Biometrics */}
@@ -79,7 +84,9 @@ export const SettingsSecurityScreen = () => {
                             <PWView style={styles.listItem}>
                                 <PWView style={styles.listItemContent}>
                                     <PWText style={styles.listItemTitle}>
-                                        {t('settings.security.enable_biometrics')}
+                                        {t(
+                                            'settings.security.enable_biometrics',
+                                        )}
                                     </PWText>
                                     <PWText style={styles.listItemSubtitle}>
                                         {t(
@@ -99,7 +106,10 @@ export const SettingsSecurityScreen = () => {
 
             {/* Anti-spam Protection Section */}
             <PWView style={styles.section}>
-                <PWText variant="body" style={styles.sectionTitle}>
+                <PWText
+                    variant='body'
+                    style={styles.sectionTitle}
+                >
                     {t('settings.security.antispam_section')}
                 </PWText>
 

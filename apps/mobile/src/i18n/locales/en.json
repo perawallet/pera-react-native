@@ -341,8 +341,7 @@
             "unlock_title": "Enter your PIN",
             "change_old_title": "Enter current PIN",
             "change_new_title": "Enter new PIN",
-            "change_confirm_title": "Confirm new PIN",
-            "incorrect": "Incorrect PIN. Please try again."
+            "change_confirm_title": "Confirm new PIN"
         },
         "lockout": {
             "title": "Wallet Locked",
@@ -440,14 +439,15 @@
             "developer_menu_enabled": "Developer menu enabled"
         },
         "security": {
-            "pin_section": "PIN Code",
-            "pin_code": "PIN Code",
-            "pin_code_description": "Require a PIN to access your wallet",
+            "security_settings_section": "Security Settings",
+            "enable_pin_security": "Enable PIN Security",
+            "enable_pin_security_description": "Require a PIN to access your wallet",
             "change_pin": "Change PIN",
-            "biometric": "Face ID / Touch ID",
-            "biometric_description": "Use biometrics to unlock your wallet",
-            "delete_pin_title": "Remove PIN",
-            "delete_pin_message": "Are you sure you want to remove your PIN? This will also disable biometric authentication."
+            "enable_biometrics": "Enable Biometrics",
+            "enable_biometrics_description": "Use Face ID or Touch ID to unlock your wallet",
+            "antispam_section": "Anti-spam Protection",
+            "enable_rekey_support": "Enable Re-key Support",
+            "enable_rekey_support_description": "Allow accounts to be rekeyed to this wallet"
         }
     },
     "signing": {

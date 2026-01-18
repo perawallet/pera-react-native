@@ -37,13 +37,23 @@ function getFiles(dir, exts) {
     let results = [];
     const list = fs.readdirSync(dir);
     list.forEach(file => {
-        file = path.join(dir, file);
-        const stat = fs.statSync(file);
+        const filePath = path.join(dir, file);
+        const stat = fs.statSync(filePath);
+
+        // Skip __tests__ directories
+        if (file === '__tests__') {
+            return;
+        }
+
         if (stat && stat.isDirectory()) {
-            results = results.concat(getFiles(file, exts));
+            results = results.concat(getFiles(filePath, exts));
         } else {
-            if (exts.includes(path.extname(file))) {
-                results.push(file);
+            // Check if it's a test file (.spec.ts, .test.ts, etc.)
+            const isTestFile =
+                file.includes('.spec.') || file.includes('.test.');
+
+            if (exts.includes(path.extname(filePath)) && !isTestFile) {
+                results.push(filePath);
             }
         }
     });

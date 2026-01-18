@@ -13,10 +13,9 @@
 import { View } from 'react-native'
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { PinEntry, PinEntryMode } from '@modules/security/components/PinEntry'
+import { PinEntry } from '@modules/security/components/PinEntry'
 import { usePinEntryScreen } from './usePinEntryScreen'
 import { useStyles } from './styles'
-import { useLanguage } from '@hooks/useLanguage'
 import type { SecurityStackParamsList } from '@modules/security/routes'
 
 type PinEntryScreenRouteProp = RouteProp<SecurityStackParamsList, 'PinEntry'>
@@ -27,7 +26,6 @@ type PinEntryScreenNavigationProp = NativeStackNavigationProp<
 
 export const PinEntryScreen = () => {
     const styles = useStyles()
-    const { t } = useLanguage()
     const navigation = useNavigation<PinEntryScreenNavigationProp>()
     const route = useRoute<PinEntryScreenRouteProp>()
 
