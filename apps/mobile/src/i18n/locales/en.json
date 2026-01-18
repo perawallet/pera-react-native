@@ -328,7 +328,27 @@
         "node_settings": "Node Settings",
         "feature_flags": "Feature Flags",
         "dispenser": "Dispenser",
-        "developer_menu": "Developer Menu"
+        "developer_menu": "Developer Menu",
+        "pin_entry": "PIN Code"
+    },
+    "security": {
+        "pin": {
+            "setup_title": "Create a PIN",
+            "setup_subtitle": "Enter a 6-digit PIN to secure your wallet",
+            "confirm_title": "Confirm your PIN",
+            "confirm_subtitle": "Re-enter your PIN to confirm",
+            "verify_title": "Enter your PIN",
+            "unlock_title": "Enter your PIN",
+            "change_old_title": "Enter current PIN",
+            "change_new_title": "Enter new PIN",
+            "change_confirm_title": "Confirm new PIN",
+            "incorrect": "Incorrect PIN. Please try again."
+        },
+        "lockout": {
+            "title": "Wallet Locked",
+            "subtitle": "Too many incorrect PIN attempts",
+            "reset_button": "Reset All Data"
+        }
     },
     "send_funds": {
         "input_view": {
@@ -418,6 +438,16 @@
             "debug_dapp": "Test Dapp",
             "taps_to_notify": "Developer menu will enable in {{remaining}} taps",
             "developer_menu_enabled": "Developer menu enabled"
+        },
+        "security": {
+            "pin_section": "PIN Code",
+            "pin_code": "PIN Code",
+            "pin_code_description": "Require a PIN to access your wallet",
+            "change_pin": "Change PIN",
+            "biometric": "Face ID / Touch ID",
+            "biometric_description": "Use biometrics to unlock your wallet",
+            "delete_pin_title": "Remove PIN",
+            "delete_pin_message": "Are you sure you want to remove your PIN? This will also disable biometric authentication."
         }
     },
     "signing": {
