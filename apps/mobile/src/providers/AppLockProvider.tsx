@@ -32,18 +32,14 @@ type AppLockContextType = {
 
 const AppLockContext = createContext<AppLockContextType>({
     isLocked: false,
-    unlock: () => { },
-    lock: () => { },
+    unlock: () => {},
+    lock: () => {},
 })
 
 export const useAppLockContext = () => useContext(AppLockContext)
 
 export const AppLockProvider = ({ children }: PropsWithChildren) => {
-    const {
-        isPinEnabled,
-        recordBackground,
-        recordForeground,
-    } = useAppLock()
+    const { isPinEnabled, recordBackground, recordForeground } = useAppLock()
     const deleteAllData = useDeleteAllData()
 
     const [isLocked, setIsLocked] = useState(false)

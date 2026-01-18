@@ -11,10 +11,7 @@
  */
 
 import { useState, useCallback } from 'react'
-import {
-    usePinCode,
-    useBiometrics,
-} from '@perawallet/wallet-core-security'
+import { usePinCode, useBiometrics } from '@perawallet/wallet-core-security'
 import type { PinEntryMode } from '@modules/security/components/PinEntry'
 import { useLanguage } from '@hooks/useLanguage'
 
