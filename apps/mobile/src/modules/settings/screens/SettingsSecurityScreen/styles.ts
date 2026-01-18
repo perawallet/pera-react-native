@@ -27,16 +27,27 @@ export const useStyles = makeStyles(theme => ({
         textTransform: 'uppercase',
         fontSize: 12,
     },
-    dialogText: {
-        color: theme.colors.textMain,
-        marginBottom: theme.spacing.lg,
-    },
-    dialogActions: {
+    listItem: {
         flexDirection: 'row',
-        justifyContent: 'flex-end',
-        gap: theme.spacing.sm,
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: theme.spacing.lg,
+        paddingVertical: theme.spacing.md,
+        backgroundColor: theme.colors.layerGrayLightest,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.colors.layerGrayLighter,
     },
-    dialogButton: {
-        minWidth: 80,
+    listItemContent: {
+        flex: 1,
+        marginRight: theme.spacing.md,
+    },
+    listItemTitle: {
+        fontSize: 16,
+        color: theme.colors.textMain,
+        marginBottom: theme.spacing.xs,
+    },
+    listItemSubtitle: {
+        fontSize: 14,
+        color: theme.colors.textGray,
     },
 }))

@@ -12,11 +12,11 @@
 
 import { View } from 'react-native'
 import {
-    PWListItem,
     PWSwitch,
-    PWDialog,
-    PWButton,
     PWText,
+    PWView,
+    PWTouchableOpacity,
+    PWIcon,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSettingsSecurityScreen } from './useSettingsSecurityScreen'
@@ -30,81 +30,100 @@ export const SettingsSecurityScreen = () => {
         isPinEnabled,
         isBiometricEnabled,
         isBiometricAvailable,
-        showDeletePinDialog,
         handlePinToggle,
         handleBiometricToggle,
         handleChangePinPress,
-        handleDeletePinConfirm,
-        handleDeletePinCancel,
     } = useSettingsSecurityScreen()
 
     return (
-        <View style={styles.container}>
-            <View style={styles.section}>
-                <PWText
-                    variant='body'
-                    style={styles.sectionTitle}
-                >
-                    {t('settings.security.pin_section')}
+        <PWView style={styles.container}>
+            {/* Security Settings Section */}
+            <PWView style={styles.section}>
+                <PWText variant="body" style={styles.sectionTitle}>
+                    {t('settings.security.security_settings_section')}
                 </PWText>
-                <PWListItem
-                    title={t('settings.security.pin_code')}
-                    subtitle={t('settings.security.pin_code_description')}
-                    rightElement={
-                        <PWSwitch
-                            value={isPinEnabled}
-                            onValueChange={handlePinToggle}
-                        />
-                    }
-                />
+
+                {/* Enable PIN Security */}
+                <PWView style={styles.listItem}>
+                    <PWView style={styles.listItemContent}>
+                        <PWText style={styles.listItemTitle}>
+                            {t('settings.security.enable_pin_security')}
+                        </PWText>
+                        <PWText style={styles.listItemSubtitle}>
+                            {t(
+                                'settings.security.enable_pin_security_description',
+                            )}
+                        </PWText>
+                    </PWView>
+                    <PWSwitch
+                        value={isPinEnabled}
+                        onValueChange={handlePinToggle}
+                    />
+                </PWView>
+
                 {isPinEnabled && (
                     <>
-                        <PWListItem
-                            title={t('settings.security.change_pin')}
+                        {/* Change PIN */}
+                        <PWTouchableOpacity
+                            style={styles.listItem}
                             onPress={handleChangePinPress}
-                            showChevron
-                        />
+                        >
+                            <PWText style={styles.listItemTitle}>
+                                {t('settings.security.change_pin')}
+                            </PWText>
+                            <PWIcon name="chevron-right" size="sm" />
+                        </PWTouchableOpacity>
+
+                        {/* Enable Biometrics */}
                         {isBiometricAvailable && (
-                            <PWListItem
-                                title={t('settings.security.biometric')}
-                                subtitle={t(
-                                    'settings.security.biometric_description',
-                                )}
-                                rightElement={
-                                    <PWSwitch
-                                        value={isBiometricEnabled}
-                                        onValueChange={handleBiometricToggle}
-                                    />
-                                }
-                            />
+                            <PWView style={styles.listItem}>
+                                <PWView style={styles.listItemContent}>
+                                    <PWText style={styles.listItemTitle}>
+                                        {t('settings.security.enable_biometrics')}
+                                    </PWText>
+                                    <PWText style={styles.listItemSubtitle}>
+                                        {t(
+                                            'settings.security.enable_biometrics_description',
+                                        )}
+                                    </PWText>
+                                </PWView>
+                                <PWSwitch
+                                    value={isBiometricEnabled}
+                                    onValueChange={handleBiometricToggle}
+                                />
+                            </PWView>
                         )}
                     </>
                 )}
-            </View>
+            </PWView>
 
-            <PWDialog
-                isVisible={showDeletePinDialog}
-                title={t('settings.security.delete_pin_title')}
-                onBackdropPress={handleDeletePinCancel}
-            >
-                <PWText style={styles.dialogText}>
-                    {t('settings.security.delete_pin_message')}
+            {/* Anti-spam Protection Section */}
+            <PWView style={styles.section}>
+                <PWText variant="body" style={styles.sectionTitle}>
+                    {t('settings.security.antispam_section')}
                 </PWText>
-                <View style={styles.dialogActions}>
-                    <PWButton
-                        variant='secondary'
-                        title={t('common.cancel.label')}
-                        onPress={handleDeletePinCancel}
-                        style={styles.dialogButton}
+
+                {/* Enable Re-key Support */}
+                <PWView style={styles.listItem}>
+                    <PWView style={styles.listItemContent}>
+                        <PWText style={styles.listItemTitle}>
+                            {t('settings.security.enable_rekey_support')}
+                        </PWText>
+                        <PWText style={styles.listItemSubtitle}>
+                            {t(
+                                'settings.security.enable_rekey_support_description',
+                            )}
+                        </PWText>
+                    </PWView>
+                    <PWSwitch
+                        value={false}
+                        onValueChange={() => {
+                            // TODO: Implement re-key support
+                        }}
+                        disabled
                     />
-                    <PWButton
-                        variant='destructive'
-                        title={t('common.delete.label')}
-                        onPress={handleDeletePinConfirm}
-                        style={styles.dialogButton}
-                    />
-                </View>
-            </PWDialog>
-        </View>
+                </PWView>
+            </PWView>
+        </PWView>
     )
 }

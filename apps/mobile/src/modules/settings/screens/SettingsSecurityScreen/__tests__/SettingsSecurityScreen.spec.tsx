@@ -11,14 +11,40 @@
  */
 
 import { render } from '@test-utils/render'
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { SettingsSecurityScreen } from '../SettingsSecurityScreen'
+
+vi.mock('@perawallet/wallet-core-security', () => ({
+    usePinCode: vi.fn(() => ({
+        isPinEnabled: false,
+        failedAttempts: 0,
+        lockoutEndTime: null,
+        isLockedOut: false,
+        remainingLockoutSeconds: 0,
+        savePin: vi.fn(),
+        verifyPin: vi.fn(),
+        deletePin: vi.fn(),
+        changePin: vi.fn(),
+        handleFailedAttempt: vi.fn(),
+        resetFailedAttempts: vi.fn(),
+        getLockoutDuration: vi.fn(),
+    })),
+    useBiometrics: vi.fn(() => ({
+        isBiometricEnabled: false,
+        enableBiometrics: vi.fn(),
+        disableBiometrics: vi.fn(),
+        authenticateWithBiometrics: vi.fn(),
+    })),
+}))
 
 describe('SettingsSecurityScreen', () => {
     it('renders correctly', () => {
-        const { getAllByText } = render(<SettingsSecurityScreen />)
-        expect(getAllByText(/common.not_implemented/i).length).toBeGreaterThan(
-            0,
-        )
+        const { getByText } = render(<SettingsSecurityScreen />)
+        expect(
+            getByText('settings.security.security_settings_section'),
+        ).toBeTruthy()
+        expect(getByText('settings.security.enable_pin_security')).toBeTruthy()
+        expect(getByText('settings.security.antispam_section')).toBeTruthy()
+        expect(getByText('settings.security.enable_rekey_support')).toBeTruthy()
     })
 })
