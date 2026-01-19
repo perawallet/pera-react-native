@@ -77,17 +77,7 @@ const mockRoute = {
 
 describe('AccountScreen', () => {
     it('renders correctly with account', () => {
-        render(
-            <AccountScreen
-                route={mockRoute}
-                navigation={
-                    null as unknown as NativeStackNavigationProp<
-                        AccountStackParamsList,
-                        'AccountDetails'
-                    >
-                }
-            />,
-        )
+        render(<AccountScreen route={mockRoute} navigation={undefined as any} />)
         // Tab and TabView should render inside the screen
         expect(screen.getByTestId('Tab')).toBeTruthy()
         expect(screen.getByTestId('TabView')).toBeTruthy()

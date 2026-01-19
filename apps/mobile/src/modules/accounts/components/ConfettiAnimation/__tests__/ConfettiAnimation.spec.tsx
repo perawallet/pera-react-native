@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { render, screen } from '@test-utils/render'
+import { render, screen, act } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { ConfettiAnimation } from '../ConfettiAnimation'
 
@@ -19,9 +19,20 @@ vi.mock('lottie-react-native', () => ({
 }))
 
 describe('ConfettiAnimation', () => {
-    it('renders lottie view when playing', () => {
+    it('renders lottie view after delay when playing', () => {
+        vi.useFakeTimers()
         render(<ConfettiAnimation play={true} />)
+
+        // Initially should be null due to delay
+        expect(screen.queryByTestId('lottie-view')).toBeNull()
+
+        // Fast-forward 500ms
+        act(() => {
+            vi.advanceTimersByTime(500)
+        })
+
         expect(screen.getByTestId('lottie-view')).toBeTruthy()
+        vi.useRealTimers()
     })
 
     it('returns null when not visible', () => {

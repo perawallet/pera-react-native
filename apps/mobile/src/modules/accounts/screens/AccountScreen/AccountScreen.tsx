@@ -56,19 +56,9 @@ export const AccountScreen = ({ route }: AccountScreenProps) => {
     const drawerState = useModalState()
     const [tabIndex, setTabIndex] = useState(0)
     const { t } = useLanguage()
-    const [playConfetti, setPlayConfetti] = useState(
-        route.params?.playConfetti ?? false,
-    )
 
     const { shouldPlayConfetti, setShouldPlayConfetti } =
         useShouldPlayConfetti()
-
-    useEffect(() => {
-        if (shouldPlayConfetti) {
-            setPlayConfetti(true)
-            setShouldPlayConfetti(false)
-        }
-    }, [shouldPlayConfetti, setShouldPlayConfetti])
 
     const toggleAccountSelectorVisible = () => {
         drawerState.open()
@@ -98,7 +88,10 @@ export const AccountScreen = ({ route }: AccountScreenProps) => {
                 />
             )}
         >
-            <ConfettiAnimation play={playConfetti} />
+            <ConfettiAnimation
+                play={shouldPlayConfetti}
+                onFinish={() => setShouldPlayConfetti(false)}
+            />
             <PWView style={styles.iconBar}>
                 <PWView style={styles.iconBarSection}>
                     {/* TODO we may want to add support for pending inbox items here too
