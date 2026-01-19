@@ -15,17 +15,9 @@ import { EdgeInsets } from 'react-native-safe-area-context'
 
 export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     container: {
-        flexDirection: 'row',
-        padding: theme.spacing.md,
-        alignItems: 'center',
         marginTop: insets.top,
     },
     title: {
         textAlign: 'center',
-        flexGrow: 1,
-    },
-    backIconContainer: {
-        paddingHorizontal: theme.spacing.sm,
-        width: theme.spacing['3xl'],
     },
 }))
