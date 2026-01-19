@@ -11,8 +11,7 @@
  */
 
 import React, { useCallback } from 'react'
-import { usePreferences } from '@perawallet/wallet-core-settings'
-import { UserPreferences } from '@constants/user-preferences'
+import { useIsCreatingAccount } from '@modules/onboarding/hooks'
 import { useStyles } from './styles'
 import { PWImage, PWText, PWView } from '@components/core'
 import { PanelButton } from '@components/PanelButton'
@@ -29,7 +28,7 @@ export const OnboardingScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
-    const { setPreference } = usePreferences()
+    const { setIsCreatingAccount } = useIsCreatingAccount()
 
     const handleTermsPress = () => {
         pushWebView({
@@ -46,14 +45,14 @@ export const OnboardingScreen = () => {
     }
 
     const handleCreateAccount = useCallback(() => {
-        setPreference(UserPreferences.isCreatingAccount, true)
+        setIsCreatingAccount(true)
         navigation.push('NameAccount')
-    }, [navigation, setPreference])
+    }, [navigation, setIsCreatingAccount])
 
     const handleImportAccount = useCallback(() => {
-        setPreference(UserPreferences.isCreatingAccount, true)
+        setIsCreatingAccount(true)
         navigation.push('ImportAccount')
-    }, [navigation, setPreference])
+    }, [navigation, setIsCreatingAccount])
 
     return (
         <>

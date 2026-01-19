@@ -18,8 +18,7 @@ import {
     PWView,
 } from '@components/core'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import { usePreferences } from '@perawallet/wallet-core-settings'
-import { UserPreferences } from '@constants/user-preferences'
+import { useShouldPlayConfetti } from '@modules/onboarding/hooks'
 
 import { useStyles } from './styles'
 import { useState, useEffect } from 'react'
@@ -61,15 +60,15 @@ export const AccountScreen = ({ route }: AccountScreenProps) => {
         route.params?.playConfetti ?? false,
     )
 
-    const { getPreference, deletePreference } = usePreferences()
+    const { shouldPlayConfetti, setShouldPlayConfetti } =
+        useShouldPlayConfetti()
 
     useEffect(() => {
-        const shouldPlay = getPreference(UserPreferences.shouldPlayConfetti)
-        if (shouldPlay) {
+        if (shouldPlayConfetti) {
             setPlayConfetti(true)
-            deletePreference(UserPreferences.shouldPlayConfetti)
+            setShouldPlayConfetti(false)
         }
-    }, [getPreference, deletePreference])
+    }, [shouldPlayConfetti, setShouldPlayConfetti])
 
     const toggleAccountSelectorVisible = () => {
         drawerState.open()

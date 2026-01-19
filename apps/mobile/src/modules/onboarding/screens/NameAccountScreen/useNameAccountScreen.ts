@@ -20,10 +20,12 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import { usePreferences } from '@perawallet/wallet-core-settings'
-import { UserPreferences } from '@constants/user-preferences'
 import { useRoute, RouteProp } from '@react-navigation/native'
 import { OnboardingStackParamList } from '../../routes'
+import {
+    useIsCreatingAccount,
+    useShouldPlayConfetti,
+} from '@modules/onboarding/hooks'
 
 type NameAccountScreenRouteProp = RouteProp<
     OnboardingStackParamList,
@@ -38,7 +40,8 @@ export const useNameAccountScreen = () => {
     const createAccount = useCreateAccount()
     const { t } = useLanguage()
     const { showToast } = useToast()
-    const { setPreference, deletePreference } = usePreferences()
+    const { setIsCreatingAccount } = useIsCreatingAccount()
+    const { setShouldPlayConfetti } = useShouldPlayConfetti()
 
     const routeAccount = route.params?.account
 
@@ -72,15 +75,15 @@ export const useNameAccountScreen = () => {
             targetAccount.name = walletDisplay
             updateAccount(targetAccount)
 
-            // Set confetti preference before triggering navigation
-            // AccountScreen will read this preference and play the animation
-            setPreference(UserPreferences.shouldPlayConfetti, true)
+            // Set confetti state before triggering navigation
+            // AccountScreen will read this state and play the animation
+            setShouldPlayConfetti(true)
 
-            // Deleting isCreatingAccount triggers automatic navigation:
+            // Setting isCreatingAccount to false triggers automatic navigation:
             // 1. useShowOnboarding() returns false (no longer creating + has accounts)
             // 2. React Navigation unmounts Onboarding stack, mounts TabBar
-            // 3. AccountScreen renders and plays confetti from preference
-            deletePreference(UserPreferences.isCreatingAccount)
+            // 3. AccountScreen renders and plays confetti from store
+            setIsCreatingAccount(false)
         } catch (error) {
             showToast({
                 title: t('onboarding.create_account.error_title'),

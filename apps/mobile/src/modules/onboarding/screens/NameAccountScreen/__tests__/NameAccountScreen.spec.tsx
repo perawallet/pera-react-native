@@ -14,14 +14,13 @@ import { render, fireEvent, screen, waitFor } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { NameAccountScreen } from '../NameAccountScreen'
 
-// Mock UserPreferences
-import { UserPreferences } from '@constants/user-preferences'
+// Mock store functions
+const mockSetIsCreatingAccount = vi.fn()
+const mockSetShouldPlayConfetti = vi.fn()
 
 // Mock useNavigation
 const mockReplace = vi.fn()
 const mockNavigate = vi.fn()
-const mockSetPreference = vi.fn()
-const mockDeletePreference = vi.fn()
 
 // Mock useRoute
 vi.mock('@react-navigation/native', async () => {
@@ -49,10 +48,14 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     WalletAccount: {} as any,
 }))
 
-vi.mock('@perawallet/wallet-core-settings', () => ({
-    usePreferences: () => ({
-        deletePreference: mockDeletePreference,
-        setPreference: mockSetPreference,
+vi.mock('@modules/onboarding/hooks', () => ({
+    useIsCreatingAccount: () => ({
+        isCreatingAccount: true,
+        setIsCreatingAccount: mockSetIsCreatingAccount,
+    }),
+    useShouldPlayConfetti: () => ({
+        shouldPlayConfetti: false,
+        setShouldPlayConfetti: mockSetShouldPlayConfetti,
     }),
 }))
 
@@ -64,13 +67,8 @@ describe('NameAccountScreen', () => {
         const button = screen.getByText('onboarding.name_account.finish_button')
         fireEvent.click(button)
         await waitFor(() => {
-            expect(mockSetPreference).toHaveBeenCalledWith(
-                UserPreferences.shouldPlayConfetti,
-                true,
-            )
-            expect(mockDeletePreference).toHaveBeenCalledWith(
-                UserPreferences.isCreatingAccount,
-            )
+            expect(mockSetShouldPlayConfetti).toHaveBeenCalledWith(true)
+            expect(mockSetIsCreatingAccount).toHaveBeenCalledWith(false)
         })
     })
 })

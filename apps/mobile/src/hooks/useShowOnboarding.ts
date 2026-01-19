@@ -10,19 +10,14 @@
  limitations under the License
  */
 
-import { usePreferences } from '@perawallet/wallet-core-settings'
 import { useHasNoAccounts } from '@perawallet/wallet-core-accounts'
 import { logger } from '@perawallet/wallet-core-shared'
-import { UserPreferences } from '@constants/user-preferences'
+import { useIsCreatingAccount } from '@modules/onboarding/hooks'
 import { useMemo } from 'react'
 
 export const useShowOnboarding = () => {
-    const { hasPreference } = usePreferences()
+    const { isCreatingAccount } = useIsCreatingAccount()
     const noAccounts = useHasNoAccounts()
-
-    // Subscribe to the actual preference value to ensure reactivity
-    // hasPreference internally depends on the preferences state, triggering re-renders
-    const isCreatingAccount = hasPreference(UserPreferences.isCreatingAccount)
 
     const showOnboarding = useMemo(() => {
         logger.debug('useShowOnboarding', {

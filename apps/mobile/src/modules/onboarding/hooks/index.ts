@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-export const UserPreferences = {
-    spendAgreed: 'send-fund-agreed',
-    chartVisible: 'chart-visible',
-    developerMenuEnabled: 'developer-menu-enabled',
-} as const
+export {
+    useOnboardingStore,
+    useIsCreatingAccount,
+    useShouldPlayConfetti,
+} from './useOnboardingStore'

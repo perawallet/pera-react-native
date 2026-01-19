@@ -13,11 +13,11 @@
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useShowOnboarding } from '../useShowOnboarding'
-import { usePreferences } from '@perawallet/wallet-core-settings'
+import { useIsCreatingAccount } from '@modules/onboarding/hooks'
 import { useHasNoAccounts } from '@perawallet/wallet-core-accounts'
 
-vi.mock('@perawallet/wallet-core-settings', () => ({
-    usePreferences: vi.fn(),
+vi.mock('@modules/onboarding/hooks', () => ({
+    useIsCreatingAccount: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -31,17 +31,15 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 }))
 
 describe('useShowOnboarding', () => {
-    const mockHasPreference = vi.fn()
-
     beforeEach(() => {
         vi.clearAllMocks()
-        ;(usePreferences as Mock).mockReturnValue({
-            hasPreference: mockHasPreference,
-        })
     })
 
     it('should return true if no accounts exist', () => {
-        mockHasPreference.mockReturnValue(false)
+        ;(useIsCreatingAccount as Mock).mockReturnValue({
+            isCreatingAccount: false,
+            setIsCreatingAccount: vi.fn(),
+        })
         ;(useHasNoAccounts as Mock).mockReturnValue(true)
 
         const { result } = renderHook(() => useShowOnboarding())
@@ -49,7 +47,10 @@ describe('useShowOnboarding', () => {
     })
 
     it('should return true if user is creating an account', () => {
-        mockHasPreference.mockReturnValue(true)
+        ;(useIsCreatingAccount as Mock).mockReturnValue({
+            isCreatingAccount: true,
+            setIsCreatingAccount: vi.fn(),
+        })
         ;(useHasNoAccounts as Mock).mockReturnValue(false)
 
         const { result } = renderHook(() => useShowOnboarding())
@@ -57,7 +58,10 @@ describe('useShowOnboarding', () => {
     })
 
     it('should return false if accounts exist and user is not creating an account', () => {
-        mockHasPreference.mockReturnValue(false)
+        ;(useIsCreatingAccount as Mock).mockReturnValue({
+            isCreatingAccount: false,
+            setIsCreatingAccount: vi.fn(),
+        })
         ;(useHasNoAccounts as Mock).mockReturnValue(false)
 
         const { result } = renderHook(() => useShowOnboarding())
