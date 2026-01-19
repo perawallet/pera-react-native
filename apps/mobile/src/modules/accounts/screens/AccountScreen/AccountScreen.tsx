@@ -14,6 +14,7 @@ import {
     PWIcon,
     PWTab,
     PWTabView,
+    PWToolbar,
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
@@ -86,19 +87,22 @@ export const AccountScreen = () => {
                 play={shouldPlayConfetti}
                 onFinish={() => setShouldPlayConfetti(false)}
             />
-            <PWView style={styles.iconBar}>
-                <PWView style={styles.iconBarSection}>
-                    {/* TODO we may want to add support for pending inbox items here too
-            (like the current inbox since we're using the same screen real estate) */}
+            <PWToolbar
+                style={styles.iconBar}
+                left={
+                    // TODO we may want to add support for pending inbox items here too
+                    // (like the current inbox since we're using the same screen real estate)
                     <AccountSelection onPress={toggleAccountSelectorVisible} />
-                </PWView>
-                <PWView style={styles.iconBarSection}>
-                    <PWTouchableOpacity onPress={scannerState.open}>
-                        <PWIcon name='camera' />
-                    </PWTouchableOpacity>
-                    <NotificationsIcon />
-                </PWView>
-            </PWView>
+                }
+                right={
+                    <PWView style={styles.iconBarSection}>
+                        <PWTouchableOpacity onPress={scannerState.open}>
+                            <PWIcon name='camera' />
+                        </PWTouchableOpacity>
+                        <NotificationsIcon />
+                    </PWView>
+                }
+            />
             <PWTab
                 value={tabIndex}
                 onChange={e => setTabIndex(e)}

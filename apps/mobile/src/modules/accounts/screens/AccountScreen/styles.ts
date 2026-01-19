@@ -23,10 +23,6 @@ export const useStyles = makeStyles(theme => {
         },
         iconBar: {
             paddingVertical: 0,
-            paddingHorizontal: theme.spacing.md,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
         },
         iconBarSection: {
             flexDirection: 'row',
