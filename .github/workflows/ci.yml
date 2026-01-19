@@ -3,10 +3,6 @@ name: CI
 on:
   pull_request:
 
-env:
-  NODE_VERSION: 22
-  PNPM_VERSION: 10.26.2
-
 jobs:
   setup:
     name: Setup
@@ -17,13 +13,11 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v3
-        with:
-          version: ${{ env.PNPM_VERSION }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: '.tool-versions'
           cache: "pnpm"
 
       - name: Install dependencies
@@ -48,13 +42,11 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v3
-        with:
-          version: ${{ env.PNPM_VERSION }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: '.tool-versions'
 
       - name: Restore node_modules
         uses: actions/cache/restore@v4
@@ -87,13 +79,11 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v3
-        with:
-          version: ${{ env.PNPM_VERSION }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: '.tool-versions'
 
       - name: Restore node_modules
         uses: actions/cache/restore@v4
@@ -123,13 +113,11 @@ jobs:
 
       - name: Install pnpm
         uses: pnpm/action-setup@v3
-        with:
-          version: ${{ env.PNPM_VERSION }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: '.tool-versions'
 
       - name: Restore node_modules
         uses: actions/cache/restore@v4

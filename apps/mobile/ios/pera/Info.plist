@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleIconName</key>
+	<string>AppIcon</string>
 	<key>AppEnvironment</key>
 	<string>$(APP_ENV)</string>
 	<key>CFBundleDevelopmentRegion</key>
@@ -86,8 +88,6 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
-	<key>AppEnvironment</key>
-	<string>$(APP_ENV)</string>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
 		<string>applinks:perawallet.app</string>

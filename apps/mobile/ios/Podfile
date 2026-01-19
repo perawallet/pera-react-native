@@ -8,6 +8,12 @@ require Pod::Executable.execute_command('node', ['-p',
 platform :ios, '16.0'
 prepare_react_native_project!
 
+# Map custom project configurations to Pods standard configurations
+project 'pera.xcodeproj',
+  'Dev' => :debug,
+  'Staging' => :release,
+  'Production' => :release
+
 
 ENV['RCT_NEW_ARCH_ENABLED'] = '1'
 linkage = ENV['USE_FRAMEWORKS']
@@ -47,10 +53,20 @@ target 'pera' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
-    
+
+    # Fix for custom build configurations (Dev, Staging, Production)
+    # CocoaPods only generates xcconfig files for Debug/Release configurations.
+    # For custom configurations, we need to ensure all required build variables are set.
+    # We force-set these values (not using ||=) because the xcconfig might set them to empty.
     installer.pods_project.targets.each do |target|
-      target.build_configurations.each do |config|
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
+      target.build_configurations.each do |build_config|
+        build_config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
+
+        # Force set all the required Pods build variables
+        build_config.build_settings['PODS_ROOT'] = '${SRCROOT}'
+        build_config.build_settings['PODS_BUILD_DIR'] = '${BUILD_DIR}'
+        build_config.build_settings['PODS_CONFIGURATION_BUILD_DIR'] = '${PODS_BUILD_DIR}/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)'
+        build_config.build_settings['PODS_XCFRAMEWORKS_BUILD_DIR'] = '$(PODS_CONFIGURATION_BUILD_DIR)/XCFrameworkIntermediates'
       end
     end
   end

@@ -12,6 +12,10 @@ on:
       notification_title_prefix:
         required: true
         type: string
+      use_cache:
+        required: false
+        type: boolean
+        default: false
     secrets:
       MAINNET_BACKEND_URL:
         required: true
@@ -55,22 +59,24 @@ on:
 jobs:
   build:
     name: Build & Deploy
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest-m
+    outputs:
+      version: ${{ steps.set_outputs.outputs.version }}
+      build_number: ${{ steps.set_outputs.outputs.build_number }}
     environment: ${{ inputs.environment }}
-    timeout-minutes: 45
+    timeout-minutes: 120
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.26.2
+          node-version-file: '.tool-versions'
+          cache: 'pnpm'
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -98,12 +104,47 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version-file: '.tool-versions'
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: android-gradle-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'apps/mobile/android/**/*.gradle*', 'apps/mobile/android/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            android-gradle-${{ runner.os }}-
+
+
+      - name: Install Ccache
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ccache
+          mkdir -p $HOME/.ccache
+          echo "NDK_CCACHE=ccache" >> $GITHUB_ENV
+          echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+          echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+
+      - name: Cache Ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: android-ccache-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml', 'apps/mobile/android/**/*.gradle*', 'apps/mobile/android/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            android-ccache-${{ runner.os }}-
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          accept-android-sdk-licenses: true
+          log-accepted-android-sdk-licenses: false
 
       - name: Setup Ruby
+        env:
+          BUNDLE_GEMFILE: apps/mobile/Gemfile
         uses: ruby/setup-ruby@v1
         with:
-          working-directory: apps/mobile
           bundler-cache: true
 
       - name: Decode Android keystore
@@ -119,54 +160,52 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           cat > apps/mobile/android/keystore.properties << EOF
-          storeFile=app/release.keystore
+          storeFile=release.keystore
           storePassword=$ANDROID_KEYSTORE_PASSWORD
           keyAlias=$ANDROID_KEY_ALIAS
           keyPassword=$ANDROID_KEY_PASSWORD
           EOF
 
+      - name: Create local.properties
+        run: echo "sdk.dir=$ANDROID_HOME" > apps/mobile/android/local.properties
+
+      - name: Get version from package.json
+        run: echo "VERSION=$(jq -r '.version | split("-")[0]' apps/mobile/package.json)" >> $GITHUB_ENV
+
       - name: Build & Deploy Android
         env:
           ANDROID_JSON_KEY_FILE: ${{ secrets.ANDROID_JSON_KEY_FILE }}
           BUILD_NUMBER: ${{ github.run_number }}
-          SUPPLY_JSON_KEY: apps/mobile/android/api-key.json
+        working-directory: apps/mobile
         run: |
-          echo "$ANDROID_JSON_KEY_FILE" > apps/mobile/android/api-key.json
-          bundle exec fastlane android deploy_internal flavor:${{ inputs.flavor }}
+          echo "$ANDROID_JSON_KEY_FILE" > android/api-key.json
           
-          # Extract Version
-          VERSION=$(grep 'versionName' apps/mobile/android/app/build.gradle | cut -d '"' -f2)
-          BUILD=$(grep 'versionCode' apps/mobile/android/app/build.gradle | awk '{print $2}')
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          echo "BUILD=$BUILD" >> $GITHUB_ENV
+          # Use clean=true if caching is NOT enabled
+          CLEAN="true"
+          if [ "${{ inputs.use_cache }}" == "true" ]; then
+            CLEAN="false"
+            # For QA/Cached builds, limit to ARM architectures to speed up build
+            export ORG_GRADLE_PROJECT_reactNativeArchitectures="armeabi-v7a,arm64-v8a"
+          fi
 
-      - name: Jira Login
-        if: success()
-        uses: atlassian/gajira-login@v3
-        env:
-          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
-          JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
-          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          bundle exec fastlane android deploy_internal flavor:${{ inputs.flavor }} clean:$CLEAN
 
-      - name: Jira Find Issue
-        if: success()
-        id: find_issue
-        uses: atlassian/gajira-find-issue-key@v3
-        with:
-          string: "${{ github.head_ref || github.ref_name }} ${{ github.event.head_commit.message }} ${{ github.event.pull_request.body }}"
-
-      - name: Jira Comment
-        if: success() && steps.find_issue.outputs.issue
-        uses: atlassian/gajira-comment@v3
-        with:
-          issue: ${{ steps.find_issue.outputs.issue }}
-          comment: "${{ inputs.notification_title_prefix }}: Android ${{ inputs.flavor }} Available! Version: ${{ env.VERSION }} (${{ env.BUILD }}) - View build: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
-      - name: Slack Notification
+      - name: Set outputs
         if: always()
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_COLOR: ${{ job.status == 'success' && 'good' || 'danger' }}
-          SLACK_TITLE: "${{ inputs.notification_title_prefix }}: Android ${{ inputs.flavor }} ${{ job.status }}"
-          SLACK_MESSAGE: "Version: ${{ env.VERSION }} (${{ env.BUILD }})\nDetails: ${{ job.status }}\n\n@qateam"
+        run: |
+          echo "version=${{ env.VERSION }}" >> $GITHUB_OUTPUT
+          echo "build_number=${{ github.run_number }}" >> $GITHUB_OUTPUT
+        id: set_outputs
+  notify:
+    needs: build
+    if: always()
+    uses: ./.github/workflows/reusable-slack-notify.yml
+    with:
+      status: ${{ needs.build.result }}
+      platform: "Android"
+      environment: ${{ inputs.environment }}
+      # Check if outputs are available, fallback to 'N/A' if empty (e.g. build failed early)
+      version: ${{ needs.build.outputs.version || 'N/A' }}
+      build_number: ${{ needs.build.outputs.build_number || 'N/A' }}
+      notification_title_prefix: ${{ inputs.notification_title_prefix }}
+    secrets: inherit

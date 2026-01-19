@@ -1,90 +1,53 @@
 name: QA Build
 
 on:
-# TODO: Re-enable this when we're ready to automate QA builds
-#   push:
-#     branches:
-#       - main
+  pull_request:
+    branches:
+      - main
+    types: [closed]
   workflow_dispatch:
 
 jobs:
-  lint-and-test:
-    name: Lint and Test
-    runs-on: ubuntu-latest
-    environment: staging
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.26.2
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Config Generate
-        env:
-          PERA_MAINNET_BACKEND_URL: ${{ secrets.MAINNET_BACKEND_URL }}
-          PERA_TESTNET_BACKEND_URL: ${{ secrets.TESTNET_BACKEND_URL }}
-          PERA_BACKEND_API_KEY: ${{ secrets.BACKEND_API_KEY }}
-          PERA_ALGOD_API_KEY: ${{ secrets.ALGOD_API_KEY }}
-          PERA_INDEXER_API_KEY: ${{ secrets.INDEXER_API_KEY }}
-          PERA_MAINNET_ALGOD_URL: ${{ secrets.MAINNET_ALGOD_URL }}
-          PERA_TESTNET_ALGOD_URL: ${{ secrets.TESTNET_ALGOD_URL }}
-          PERA_MAINNET_INDEXER_URL: ${{ secrets.MAINNET_INDEXER_URL }}
-          PERA_TESTNET_INDEXER_URL: ${{ secrets.TESTNET_INDEXER_URL }}
-        run: pnpm run build:packages --filter=@perawallet/wallet-core-config
-
-      - name: Lint
-        run: pnpm run lint
-
-      - name: Test
-        run: pnpm run test
-
   ios-staging:
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
     name: iOS Staging (QA)
-    needs: lint-and-test
     uses: ./.github/workflows/reusable-ios.yml
     with:
       environment: staging
       scheme: Pera-Staging
       notification_title_prefix: "QA Build"
+      use_cache: true
     secrets: inherit
 
-  ios-production:
-    name: iOS Production (QA)
-    needs: lint-and-test
-    uses: ./.github/workflows/reusable-ios.yml
-    with:
-      environment: production
-      scheme: Pera-Production
-      notification_title_prefix: "QA Build"
-    secrets: inherit
+  # ios-production:
+  #   name: iOS Production (QA)
+  #   if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
+  #   uses: ./.github/workflows/reusable-ios.yml
+  #   with:
+  #     environment: production
+  #     scheme: Pera-Production
+  #     notification_title_prefix: "QA Build"
+  #     use_cache: true
+  #   secrets: inherit
 
   android-staging:
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
     name: Android Staging (QA)
-    needs: lint-and-test
     uses: ./.github/workflows/reusable-android.yml
     with:
       environment: staging
       flavor: staging
       notification_title_prefix: "QA Build"
+      use_cache: true
     secrets: inherit
 
-  android-production:
-    name: Android Production (QA)
-    needs: lint-and-test
-    uses: ./.github/workflows/reusable-android.yml
-    with:
-      environment: production
-      flavor: production
-      notification_title_prefix: "QA Build"
-    secrets: inherit
+  # android-production:
+  #   name: Android Production (QA)
+  #   if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
+  #   uses: ./.github/workflows/reusable-android.yml
+  #   with:
+  #     environment: production
+  #     flavor: production
+  #     notification_title_prefix: "QA Build"
+  #     use_cache: true
+  #   secrets: inherit

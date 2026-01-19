@@ -2,7 +2,7 @@
 // Production environment configuration
 
 #include "Shared.xcconfig"
-#include "Pods/Target Support Files/Pods-pera/Pods-pera.production.xcconfig"
+#include "../Pods/Target Support Files/Pods-pera/Pods-pera.production.xcconfig"
 
 // App Identity
 PRODUCT_BUNDLE_IDENTIFIER = com.algorandllc.perarn
