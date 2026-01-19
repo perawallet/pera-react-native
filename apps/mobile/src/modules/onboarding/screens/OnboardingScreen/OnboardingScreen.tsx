@@ -10,45 +10,25 @@
  limitations under the License
  */
 
-import React, { useCallback } from 'react'
+import React from 'react'
 import { useStyles } from './styles'
 import { PWImage, PWText, PWView } from '@components/core'
 import { PanelButton } from '@components/PanelButton'
-import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useOnboardingScreen } from './useOnboardingScreen'
 
 import welcomeBackground from '@assets/images/welcome-background.webp'
 import { useLanguage } from '@hooks/useLanguage'
 import { Trans } from 'react-i18next'
-import { useWebView } from '@modules/webview'
-import { config } from '@perawallet/wallet-core-config'
 
 export const OnboardingScreen = () => {
-    const navigation = useAppNavigation()
     const styles = useStyles()
     const { t } = useLanguage()
-    const { pushWebView } = useWebView()
-
-    const handleTermsPress = () => {
-        pushWebView({
-            url: config.termsOfServiceUrl,
-            id: 'terms-of-service',
-        })
-    }
-
-    const handlePrivacyPress = () => {
-        pushWebView({
-            url: config.privacyPolicyUrl,
-            id: 'privacy-policy',
-        })
-    }
-
-    const handleCreateAccount = useCallback(() => {
-        navigation.push('NameAccount')
-    }, [navigation])
-
-    const handleImportAccount = useCallback(() => {
-        navigation.push('ImportAccount')
-    }, [navigation])
+    const {
+        handleTermsPress,
+        handlePrivacyPress,
+        handleCreateAccount,
+        handleImportAccount,
+    } = useOnboardingScreen()
 
     return (
         <>
