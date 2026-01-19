@@ -21,7 +21,7 @@ import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useShouldPlayConfetti } from '@modules/onboarding/hooks'
 
 import { useStyles } from './styles'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useModalState } from '@hooks/useModalState'
 import { NotificationsIcon } from '@modules/notifications/components/NotificationsIcon'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
@@ -34,8 +34,6 @@ import { AccountNfts } from '@modules/accounts/components/AccountNfts'
 import { AccountHistory } from '@modules/accounts/components/AccountHistory'
 import { TAB_ANIMATION_CONFIG } from '@constants/ui'
 import { useLanguage } from '@hooks/useLanguage'
-import { AccountStackParamsList } from '@modules/accounts/routes'
-import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { ConfettiAnimation } from '@modules/accounts/components/ConfettiAnimation'
 
 //TODO hook up all the button panel buttons correctly
@@ -44,12 +42,8 @@ import { ConfettiAnimation } from '@modules/accounts/components/ConfettiAnimatio
 //TODO implement nft and history tabs
 //TODO implement account info screen somewhere (see old app top right corner)
 //TODO implement rekey information && multisig information
-type AccountScreenProps = NativeStackScreenProps<
-    AccountStackParamsList,
-    'AccountDetails'
->
 
-export const AccountScreen = ({ route }: AccountScreenProps) => {
+export const AccountScreen = () => {
     const styles = useStyles()
     const account = useSelectedAccount()
     const scannerState = useModalState()

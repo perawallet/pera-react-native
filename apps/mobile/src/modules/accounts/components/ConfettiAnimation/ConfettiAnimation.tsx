@@ -20,7 +20,10 @@ export type ConfettiAnimationProps = {
     onFinish?: () => void
 }
 
-export const ConfettiAnimation = ({ play, onFinish }: ConfettiAnimationProps) => {
+export const ConfettiAnimation = ({
+    play,
+    onFinish,
+}: ConfettiAnimationProps) => {
     const styles = useStyles()
     const [visible, setVisible] = useState(false)
 
