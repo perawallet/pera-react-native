@@ -47,6 +47,7 @@ export const useNameAccountScreen = () => {
     const [account] = useState<WalletAccount | undefined>(routeAccount)
 
     const numWallets = useMemo(() => {
+        // TODO: making sure this is ordered might be important. Come back at this once integrating multiple wallets.
         const hdWalletIds = new Set<string>()
         let otherAccountsCount = 0
 
@@ -58,6 +59,7 @@ export const useNameAccountScreen = () => {
             }
         })
 
+        // TODO: otherAccountsCount might not be necessary here. Come back at this once integrating multiple wallets.
         return hdWalletIds.size + otherAccountsCount
     }, [accounts])
 
