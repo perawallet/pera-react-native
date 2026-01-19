@@ -79,17 +79,5 @@ export const useStyles = makeStyles(theme => {
             alignItems: 'center',
             justifyContent: 'center',
         },
-        tabs: {
-            paddingTop: theme.spacing.sm,
-        },
-        fullWidth: {
-            width: '100%',
-        },
-        tabItem: {
-            color: theme.colors.textMain,
-        },
-        indicator: {
-            backgroundColor: theme.colors.textMain,
-        },
     }
 })
