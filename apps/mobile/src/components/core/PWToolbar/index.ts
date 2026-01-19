@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { PWToolbar } from './PWToolbar';
-export type { PWToolbarProps } from './PWToolbar';
+export { PWToolbar } from './PWToolbar'
+export type { PWToolbarProps } from './PWToolbar'

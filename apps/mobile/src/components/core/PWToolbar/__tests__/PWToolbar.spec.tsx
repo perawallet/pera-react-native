@@ -10,48 +10,46 @@
  limitations under the License
  */
 
-import React from 'react';
-import {render, screen} from '@test-utils/render';
-import {PWText} from '../../PWText';
-import {PWToolbar} from '../PWToolbar';
+import React from 'react'
+import { render, screen } from '@test-utils/render'
+import { PWText } from '../../PWText'
+import { PWToolbar } from '../PWToolbar'
 
 describe('PWToolbar', () => {
-  it('renders left, center and right content', () => {
-    render(
-      <PWToolbar
-        left={<PWText>Left</PWText>}
-        center={<PWText>Center</PWText>}
-        right={<PWText>Right</PWText>}
-      />
-    );
+    it('renders left, center and right content', () => {
+        render(
+            <PWToolbar
+                left={<PWText>Left</PWText>}
+                center={<PWText>Center</PWText>}
+                right={<PWText>Right</PWText>}
+            />,
+        )
 
-    expect(screen.getByText('Left')).toBeTruthy();
-    expect(screen.getByText('Center')).toBeTruthy();
-    expect(screen.getByText('Right')).toBeTruthy();
-  });
+        expect(screen.getByText('Left')).toBeTruthy()
+        expect(screen.getByText('Center')).toBeTruthy()
+        expect(screen.getByText('Right')).toBeTruthy()
+    })
 
-  it('always renders three child containers even if props are missing', () => {
-    const {container} = render(
-      <PWToolbar
-        testID="toolbar"
-      />
-    );
+    it('always renders three child containers even if props are missing', () => {
+        const { container } = render(<PWToolbar testID='toolbar' />)
 
-    expect(container.querySelector('[testid="toolbar-left"]')).toBeTruthy();
-    expect(container.querySelector('[testid="toolbar-center"]')).toBeTruthy();
-    expect(container.querySelector('[testid="toolbar-right"]')).toBeTruthy();
-  });
+        expect(container.querySelector('[testid="toolbar-left"]')).toBeTruthy()
+        expect(
+            container.querySelector('[testid="toolbar-center"]'),
+        ).toBeTruthy()
+        expect(container.querySelector('[testid="toolbar-right"]')).toBeTruthy()
+    })
 
-  it('renders correctly with only center prop', () => {
-    const {container} = render(
-      <PWToolbar
-        center={<PWText>Center Only</PWText>}
-        testID="toolbar"
-      />
-    );
+    it('renders correctly with only center prop', () => {
+        const { container } = render(
+            <PWToolbar
+                center={<PWText>Center Only</PWText>}
+                testID='toolbar'
+            />,
+        )
 
-    expect(screen.getByText('Center Only')).toBeTruthy();
-    expect(container.querySelector('[testid="toolbar-left"]')).toBeTruthy();
-    expect(container.querySelector('[testid="toolbar-right"]')).toBeTruthy();
-  });
-});
+        expect(screen.getByText('Center Only')).toBeTruthy()
+        expect(container.querySelector('[testid="toolbar-left"]')).toBeTruthy()
+        expect(container.querySelector('[testid="toolbar-right"]')).toBeTruthy()
+    })
+})

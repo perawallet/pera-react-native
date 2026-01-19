@@ -10,26 +10,26 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed';
+import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: theme.spacing.md,
-    minHeight: theme.spacing['4xl'],
-  },
-  slotContainer: {
-    flex: 1,
-  },
-  leftSlotContainer: {
-    alignItems: 'flex-start',
-  },
-  centerSlotContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  rightSlotContainer: {
-    alignItems: 'flex-end',
-  },
-}));
+    container: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: theme.spacing.md,
+        minHeight: theme.spacing['4xl'],
+    },
+    slotContainer: {
+        flex: 1,
+    },
+    leftSlotContainer: {
+        alignItems: 'flex-start',
+    },
+    centerSlotContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    rightSlotContainer: {
+        alignItems: 'flex-end',
+    },
+}))

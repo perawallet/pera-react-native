@@ -10,47 +10,53 @@
  limitations under the License
  */
 
-import React from 'react';
-import {StyleProp, ViewStyle} from 'react-native';
-import {PWView} from '../PWView';
-import {useStyles} from './styles';
+import React from 'react'
+import { StyleProp, ViewStyle } from 'react-native'
+import { PWView } from '../PWView'
+import { useStyles } from './styles'
 
 export type PWToolbarProps = {
-  left?: React.ReactNode;
-  center?: React.ReactNode;
-  right?: React.ReactNode;
-  style?: StyleProp<ViewStyle>;
-  testID?: string;
-};
+    left?: React.ReactNode
+    center?: React.ReactNode
+    right?: React.ReactNode
+    style?: StyleProp<ViewStyle>
+    testID?: string
+}
 
-export const PWToolbar = ({left, center, right, style, testID}: PWToolbarProps) => {
-  const styles = useStyles();
+export const PWToolbar = ({
+    left,
+    center,
+    right,
+    style,
+    testID,
+}: PWToolbarProps) => {
+    const styles = useStyles()
 
-  return (
-    <PWView
-      style={[styles.container, style]}
-      testID={testID}
-    >
-      <PWView
-        style={[styles.slotContainer, styles.leftSlotContainer]}
-        testID={testID ? `${testID}-left` : undefined}
-      >
-        {left}
-      </PWView>
+    return (
+        <PWView
+            style={[styles.container, style]}
+            testID={testID}
+        >
+            <PWView
+                style={[styles.slotContainer, styles.leftSlotContainer]}
+                testID={testID ? `${testID}-left` : undefined}
+            >
+                {left}
+            </PWView>
 
-      <PWView
-        style={[styles.slotContainer, styles.centerSlotContainer]}
-        testID={testID ? `${testID}-center` : undefined}
-      >
-        {center}
-      </PWView>
+            <PWView
+                style={[styles.slotContainer, styles.centerSlotContainer]}
+                testID={testID ? `${testID}-center` : undefined}
+            >
+                {center}
+            </PWView>
 
-      <PWView
-        style={[styles.slotContainer, styles.rightSlotContainer]}
-        testID={testID ? `${testID}-right` : undefined}
-      >
-        {right}
-      </PWView>
-    </PWView>
-  );
-};
+            <PWView
+                style={[styles.slotContainer, styles.rightSlotContainer]}
+                testID={testID ? `${testID}-right` : undefined}
+            >
+                {right}
+            </PWView>
+        </PWView>
+    )
+}

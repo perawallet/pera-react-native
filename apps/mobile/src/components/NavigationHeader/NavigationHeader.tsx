@@ -48,14 +48,14 @@ export const NavigationHeader = (props: NavigationHeaderProps) => {
                     />
                 )
             }
-            center={(
+            center={
                 <PWText
                     variant='h4'
                     style={styles.title}
                 >
                     {title}
                 </PWText>
-            )}
+            }
             right={props.options?.headerRight?.({})}
         />
     )
