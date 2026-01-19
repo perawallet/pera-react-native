@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
     useAllAccounts,
     getAccountDisplayName,
@@ -18,6 +18,7 @@ import {
     useUpdateAccount,
     useCreateAccount,
     useSelectedAccountAddress,
+    isHDWalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -44,7 +45,21 @@ export const useNameAccountScreen = () => {
     const routeAccount = route.params?.account
 
     const [account] = useState<WalletAccount | undefined>(routeAccount)
-    const numWallets = accounts.length
+
+    const numWallets = useMemo(() => {
+        const hdWalletIds = new Set<string>()
+        let otherAccountsCount = 0
+
+        accounts.forEach(acc => {
+            if (isHDWalletAccount(acc)) {
+                hdWalletIds.add(acc.hdWalletDetails.walletId)
+            } else {
+                otherAccountsCount++
+            }
+        })
+
+        return hdWalletIds.size + otherAccountsCount
+    }, [accounts])
 
     const initialWalletName = account
         ? getAccountDisplayName(account)
