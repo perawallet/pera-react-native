@@ -18,7 +18,6 @@ import {
     useAccountBalancesQuery,
 } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
-import { Text } from 'react-native'
 
 const mockAccount = {
     address: 'test-address',
@@ -43,16 +42,13 @@ vi.mock('@shopify/flash-list', () => ({
     FlashList: ({
         ListHeaderComponent,
         ListEmptyComponent,
-        children,
     }: {
         ListHeaderComponent?: React.ReactNode
         ListEmptyComponent?: React.ReactNode
-        children?: React.ReactNode
     }) => (
         <div data-testid='flash-list'>
             {ListHeaderComponent}
             {ListEmptyComponent}
-            {children}
         </div>
     ),
 }))
@@ -63,13 +59,9 @@ vi.mock('@perawallet/wallet-core-assets', async () => ({
 }))
 
 describe('AccountAssetList', () => {
-    it('renders children content correctly', () => {
-        const { container } = render(
-            <AccountAssetList account={mockAccount}>
-                <Text>Child Content</Text>
-            </AccountAssetList>,
-        )
-        expect(container.textContent).toContain('Child Content')
+    it('renders correctly', () => {
+        const { container } = render(<AccountAssetList account={mockAccount} />)
+        expect(container).toBeTruthy()
     })
 
     it('renders empty state when no assets are present', () => {
@@ -78,9 +70,7 @@ describe('AccountAssetList', () => {
             isPending: false,
         } as unknown as ReturnType<typeof useAccountBalancesQuery>)
 
-        const { container } = render(
-            <AccountAssetList account={mockAccount}>Content</AccountAssetList>,
-        )
+        const { container } = render(<AccountAssetList account={mockAccount} />)
         expect(container).toBeTruthy()
     })
 
@@ -90,9 +80,7 @@ describe('AccountAssetList', () => {
             isPending: true,
         } as ReturnType<typeof useAccountBalancesQuery>)
 
-        const { container } = render(
-            <AccountAssetList account={mockAccount}>Content</AccountAssetList>,
-        )
+        const { container } = render(<AccountAssetList account={mockAccount} />)
         expect(container).toBeTruthy()
     })
 
@@ -101,9 +89,7 @@ describe('AccountAssetList', () => {
             <AccountAssetList
                 account={mockAccount}
                 scrollEnabled={false}
-            >
-                Content
-            </AccountAssetList>,
+            />,
         )
         expect(container).toBeTruthy()
     })
@@ -132,9 +118,8 @@ describe('AccountAssetList', () => {
             ]),
         } as unknown as ReturnType<typeof useAssetsQuery>)
 
-        const { container } = render(
-            <AccountAssetList account={mockAccount}>Content</AccountAssetList>,
-        )
+        const { container } = render(<AccountAssetList account={mockAccount} />)
         expect(container).toBeTruthy()
     })
 })
+

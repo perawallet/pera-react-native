@@ -12,7 +12,7 @@
 
 import { PWButton, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
-import { PropsWithChildren, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useStyles } from './styles'
 
 import { SearchInput } from '@components/SearchInput'
@@ -36,12 +36,11 @@ const TAB_AND_HEADER_HEIGHT = 100
 type AccountAssetListProps = {
     account: WalletAccount
     scrollEnabled?: boolean
-} & PropsWithChildren
+}
 
 //TODO implement links and buttons
 export const AccountAssetList = ({
     account,
-    children,
     scrollEnabled,
 }: AccountAssetListProps) => {
     const styles = useStyles()
@@ -117,7 +116,6 @@ export const AccountAssetList = ({
                     ListHeaderComponent={
                         <PWView style={styles.headerContainer}>
                             <ExpandablePanel isExpanded={headerState.isOpen}>
-                                {children}
                                 <PWView style={styles.titleBar}>
                                     <PWText
                                         style={styles.title}

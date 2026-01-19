@@ -14,6 +14,9 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
     return {
+        container: {
+            flex: 1,
+        },
         drawer: {
             width: '90%',
         },
@@ -50,12 +53,12 @@ export const useStyles = makeStyles(theme => {
         },
         valueBarContainer: {
             paddingVertical: theme.spacing.md,
+            paddingHorizontal: theme.spacing.md,
         },
         valueBar: {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
-            paddingRight: theme.spacing.md,
         },
         secondaryValueBar: {
             flexDirection: 'row',

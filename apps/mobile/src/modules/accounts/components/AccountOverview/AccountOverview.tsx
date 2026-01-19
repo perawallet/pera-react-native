@@ -74,10 +74,7 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
     )
 
     return (
-        <AccountAssetList
-            account={account}
-            scrollEnabled={scrollingEnabled}
-        >
+        <PWView style={styles.container}>
             <PWTouchableOpacity
                 onPress={togglePrivacyMode}
                 style={styles.valueBarContainer}
@@ -149,6 +146,11 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
             </ExpandablePanel>
 
             <ButtonPanel />
-        </AccountAssetList>
+
+            <AccountAssetList
+                account={account}
+                scrollEnabled={scrollingEnabled}
+            />
+        </PWView>
     )
 }
