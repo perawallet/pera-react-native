@@ -14,28 +14,18 @@ import { render, fireEvent, screen } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { OnboardingScreen } from '../OnboardingScreen'
 import { config } from '@perawallet/wallet-core-config'
-import React from 'react'
 
 // Mock navigation
 const mockSetOptions = vi.fn()
 const mockNavigate = vi.fn()
 const mockPush = vi.fn()
 
-vi.mock('@react-navigation/native', async () => {
-    const actual = await vi.importActual<object>('@react-navigation/native')
-    return {
-        ...actual,
-        useNavigation: () => ({
-            setOptions: mockSetOptions,
-            navigate: mockNavigate,
-            push: mockPush,
-        }),
-    }
-})
-
-// Mock wallets
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useCreateAccount: () => vi.fn(),
+vi.mock('@hooks/useAppNavigation', () => ({
+    useAppNavigation: () => ({
+        setOptions: mockSetOptions,
+        navigate: mockNavigate,
+        push: mockPush,
+    }),
 }))
 
 // Mock webview
@@ -150,5 +140,27 @@ describe('OnboardingScreen', () => {
             url: config.privacyPolicyUrl,
             id: 'privacy-policy',
         })
+    })
+
+    it('navigates to NameAccount when Create Wallet is pressed', () => {
+        render(<OnboardingScreen />)
+
+        const createButton = screen.getByText(
+            'onboarding.main_screen.create_wallet',
+        )
+        fireEvent.click(createButton)
+
+        expect(mockPush).toHaveBeenCalledWith('NameAccount')
+    })
+
+    it('navigates to ImportAccount when Import Account is pressed', () => {
+        render(<OnboardingScreen />)
+
+        const importButton = screen.getByText(
+            'onboarding.main_screen.import_account',
+        )
+        fireEvent.click(importButton)
+
+        expect(mockPush).toHaveBeenCalledWith('ImportAccount')
     })
 })

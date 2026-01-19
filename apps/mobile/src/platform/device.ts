@@ -27,7 +27,7 @@ const findDeviceLocale = () => {
                   .AppleLanguages[0]
             : NativeModules.I18nManager.getConstants().localeIdentifier
 
-    return deviceLanguage.replaceAll('_', '-')
+    return deviceLanguage.split('@')[0].replaceAll('_', '-')
 }
 
 const buildUserAgent = () => {

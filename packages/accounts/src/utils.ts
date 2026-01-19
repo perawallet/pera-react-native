@@ -14,6 +14,10 @@ import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import {
     AccountTypes,
     HardwareWalletAccount,
+    HDWalletAccount,
+    Algo25Account,
+    MultiSigAccount,
+    WatchAccount,
     type WalletAccount,
 } from './models'
 
@@ -24,15 +28,18 @@ export const getAccountDisplayName = (account: WalletAccount | null) => {
     return truncateAlgorandAddress(account.address)
 }
 
-export const isHDWalletAccount = (account: WalletAccount) => {
+export const isHDWalletAccount = (
+    account: WalletAccount,
+): account is HDWalletAccount => {
     return account.type === AccountTypes.hdWallet
 }
 
-export const isLedgerAccount = (account: WalletAccount) => {
+export const isLedgerAccount = (
+    account: WalletAccount,
+): account is HardwareWalletAccount => {
     return (
         account.type === AccountTypes.hardware &&
-        (account as HardwareWalletAccount).hardwareDetails?.manufacturer ===
-            'ledger'
+        account.hardwareDetails?.manufacturer === 'ledger'
     )
 }
 
@@ -40,15 +47,21 @@ export const isRekeyedAccount = (account: WalletAccount) => {
     return !!account.rekeyAddress
 }
 
-export const isAlgo25Account = (account: WalletAccount) => {
+export const isAlgo25Account = (
+    account: WalletAccount,
+): account is Algo25Account => {
     return account.type === AccountTypes.algo25
 }
 
-export const isWatchAccount = (account: WalletAccount) => {
+export const isWatchAccount = (
+    account: WalletAccount,
+): account is WatchAccount => {
     return account.type === AccountTypes.watch
 }
 
-export const isMultisigAccount = (account: WalletAccount) => {
+export const isMultisigAccount = (
+    account: WalletAccount,
+): account is MultiSigAccount => {
     return account.type === AccountTypes.multisig
 }
 

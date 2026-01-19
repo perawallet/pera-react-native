@@ -287,6 +287,7 @@
             "terms_and_privacy": "By creating a wallet, you agree to Pera Wallet's <0>Terms and Conditions</0> and <1>Privacy Policy</1>"
         },
         "name_account": {
+            "title": "Name your account",
             "description": "Name your account to easily identify it while using the Pera Wallet. These names are stored locally, and can only be seen by you.",
             "wallet_label": "Wallet #{{count}}",
             "input_label": "Account name",

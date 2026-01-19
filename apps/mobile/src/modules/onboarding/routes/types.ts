@@ -10,19 +10,14 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
+import { WalletAccount } from '@perawallet/wallet-core-accounts'
 
-export const useStyles = makeStyles(theme => ({
-    container: {
-        // Default container styles if needed
-    },
-    inputContainer: {
-        // Default input container styles if needed
-    },
-    input: {
-        paddingHorizontal: theme.spacing.sm,
-    },
-    label: {
-        // Default label styles if needed
-    },
-}))
+export type OnboardingStackParamList = {
+    OnboardingHome: undefined
+    NameAccount:
+        | {
+              account?: WalletAccount
+          }
+        | undefined
+    ImportAccount: undefined
+}

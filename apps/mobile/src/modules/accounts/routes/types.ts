@@ -10,19 +10,7 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    container: {
-        // Default container styles if needed
-    },
-    inputContainer: {
-        // Default input container styles if needed
-    },
-    input: {
-        paddingHorizontal: theme.spacing.sm,
-    },
-    label: {
-        // Default label styles if needed
-    },
-}))
+export type AccountStackParamsList = {
+    AccountDetails?: { playConfetti?: boolean }
+    AssetDetails?: { assetId: string }
+}

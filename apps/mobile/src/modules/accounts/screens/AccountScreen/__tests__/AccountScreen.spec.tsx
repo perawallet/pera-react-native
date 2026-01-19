@@ -13,11 +13,7 @@
 import React, { ReactNode } from 'react'
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import { RouteProp } from '@react-navigation/native'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { AccountStackParamsList } from '@modules/accounts/routes'
 import { AccountScreen } from '../AccountScreen'
-// import { mockedWalletAccount } from '@perawallet/wallet-core-accounts'
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -71,23 +67,9 @@ vi.mock('@modules/accounts/components/ConfettiAnimation', () => ({
     ConfettiAnimation: 'ConfettiAnimation',
 }))
 
-const mockRoute = {
-    params: {},
-} as unknown as RouteProp<AccountStackParamsList, 'AccountDetails'>
-
 describe('AccountScreen', () => {
     it('renders correctly with account', () => {
-        render(
-            <AccountScreen
-                route={mockRoute}
-                navigation={
-                    null as unknown as NativeStackNavigationProp<
-                        AccountStackParamsList,
-                        'AccountDetails'
-                    >
-                }
-            />,
-        )
+        render(<AccountScreen />)
         // Tab and TabView should render inside the screen
         expect(screen.getByTestId('Tab')).toBeTruthy()
         expect(screen.getByTestId('TabView')).toBeTruthy()
