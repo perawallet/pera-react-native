@@ -15,7 +15,6 @@ import { describe, it, expect, vi } from 'vitest'
 import { NameAccountScreen } from '../NameAccountScreen'
 
 // Mock store functions
-const mockSetIsCreatingAccount = vi.fn()
 const mockSetShouldPlayConfetti = vi.fn()
 
 // Mock useNavigation
@@ -39,20 +38,23 @@ vi.mock('@hooks/useAppNavigation', () => ({
 }))
 
 // Mock hooks
+const mockSetSelectedAccountAddress = vi.fn()
+
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => [],
     useUpdateAccount: () => vi.fn(),
-    useCreateAccount: () => vi.fn().mockResolvedValue({}),
+    useCreateAccount: () =>
+        vi.fn().mockResolvedValue({ address: 'test-address' }),
+    useSelectedAccountAddress: () => ({
+        selectedAccountAddress: null,
+        setSelectedAccountAddress: mockSetSelectedAccountAddress,
+    }),
     getAccountDisplayName: () => 'Account 1',
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     WalletAccount: {} as any,
 }))
 
 vi.mock('@modules/onboarding/hooks', () => ({
-    useIsCreatingAccount: () => ({
-        isCreatingAccount: true,
-        setIsCreatingAccount: mockSetIsCreatingAccount,
-    }),
     useShouldPlayConfetti: () => ({
         shouldPlayConfetti: false,
         setShouldPlayConfetti: mockSetShouldPlayConfetti,
@@ -60,15 +62,15 @@ vi.mock('@modules/onboarding/hooks', () => ({
 }))
 
 describe('NameAccountScreen', () => {
-    // ... (existing setup)
-
-    it('navigates to Home on finish', async () => {
+    it('sets confetti state and triggers navigation on finish', async () => {
         render(<NameAccountScreen />)
         const button = screen.getByText('onboarding.name_account.finish_button')
         fireEvent.click(button)
         await waitFor(() => {
             expect(mockSetShouldPlayConfetti).toHaveBeenCalledWith(true)
-            expect(mockSetIsCreatingAccount).toHaveBeenCalledWith(false)
+            expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(
+                'test-address',
+            )
         })
     })
 })

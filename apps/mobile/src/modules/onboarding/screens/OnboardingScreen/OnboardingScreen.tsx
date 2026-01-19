@@ -11,7 +11,6 @@
  */
 
 import React, { useCallback } from 'react'
-import { useIsCreatingAccount } from '@modules/onboarding/hooks'
 import { useStyles } from './styles'
 import { PWImage, PWText, PWView } from '@components/core'
 import { PanelButton } from '@components/PanelButton'
@@ -28,7 +27,6 @@ export const OnboardingScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
-    const { setIsCreatingAccount } = useIsCreatingAccount()
 
     const handleTermsPress = () => {
         pushWebView({
@@ -45,14 +43,12 @@ export const OnboardingScreen = () => {
     }
 
     const handleCreateAccount = useCallback(() => {
-        setIsCreatingAccount(true)
         navigation.push('NameAccount')
-    }, [navigation, setIsCreatingAccount])
+    }, [navigation])
 
     const handleImportAccount = useCallback(() => {
-        setIsCreatingAccount(true)
         navigation.push('ImportAccount')
-    }, [navigation, setIsCreatingAccount])
+    }, [navigation])
 
     return (
         <>

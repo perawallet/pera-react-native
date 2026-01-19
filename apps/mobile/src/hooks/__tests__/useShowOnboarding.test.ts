@@ -13,21 +13,14 @@
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useShowOnboarding } from '../useShowOnboarding'
-import { useIsCreatingAccount } from '@modules/onboarding/hooks'
-import { useHasNoAccounts } from '@perawallet/wallet-core-accounts'
-
-vi.mock('@modules/onboarding/hooks', () => ({
-    useIsCreatingAccount: vi.fn(),
-}))
+import {
+    useHasNoAccounts,
+    useSelectedAccountAddress,
+} from '@perawallet/wallet-core-accounts'
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useHasNoAccounts: vi.fn(),
-}))
-
-vi.mock('@perawallet/wallet-core-shared', () => ({
-    logger: {
-        debug: vi.fn(),
-    },
+    useSelectedAccountAddress: vi.fn(),
 }))
 
 describe('useShowOnboarding', () => {
@@ -36,33 +29,30 @@ describe('useShowOnboarding', () => {
     })
 
     it('should return true if no accounts exist', () => {
-        ;(useIsCreatingAccount as Mock).mockReturnValue({
-            isCreatingAccount: false,
-            setIsCreatingAccount: vi.fn(),
-        })
         ;(useHasNoAccounts as Mock).mockReturnValue(true)
+        ;(useSelectedAccountAddress as Mock).mockReturnValue({
+            selectedAccountAddress: null,
+        })
 
         const { result } = renderHook(() => useShowOnboarding())
         expect(result.current).toBe(true)
     })
 
-    it('should return true if user is creating an account', () => {
-        ;(useIsCreatingAccount as Mock).mockReturnValue({
-            isCreatingAccount: true,
-            setIsCreatingAccount: vi.fn(),
-        })
+    it('should return true if accounts exist but none is selected', () => {
         ;(useHasNoAccounts as Mock).mockReturnValue(false)
+        ;(useSelectedAccountAddress as Mock).mockReturnValue({
+            selectedAccountAddress: null,
+        })
 
         const { result } = renderHook(() => useShowOnboarding())
         expect(result.current).toBe(true)
     })
 
-    it('should return false if accounts exist and user is not creating an account', () => {
-        ;(useIsCreatingAccount as Mock).mockReturnValue({
-            isCreatingAccount: false,
-            setIsCreatingAccount: vi.fn(),
-        })
+    it('should return false if accounts exist and one is selected', () => {
         ;(useHasNoAccounts as Mock).mockReturnValue(false)
+        ;(useSelectedAccountAddress as Mock).mockReturnValue({
+            selectedAccountAddress: 'some-address',
+        })
 
         const { result } = renderHook(() => useShowOnboarding())
         expect(result.current).toBe(false)

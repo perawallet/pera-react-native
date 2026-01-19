@@ -13,12 +13,10 @@
 import { create } from 'zustand'
 
 type OnboardingState = {
-    isCreatingAccount: boolean
     shouldPlayConfetti: boolean
 }
 
 type OnboardingActions = {
-    setIsCreatingAccount: (value: boolean) => void
     setShouldPlayConfetti: (value: boolean) => void
     reset: () => void
 }
@@ -26,34 +24,17 @@ type OnboardingActions = {
 type OnboardingStore = OnboardingState & OnboardingActions
 
 const initialState: OnboardingState = {
-    isCreatingAccount: false,
     shouldPlayConfetti: false,
 }
 
 export const useOnboardingStore = create<OnboardingStore>()(set => ({
     ...initialState,
-    setIsCreatingAccount: (value: boolean) => set({ isCreatingAccount: value }),
     setShouldPlayConfetti: (value: boolean) =>
         set({ shouldPlayConfetti: value }),
     reset: () => set(initialState),
 }))
 
 // Explicit return types for decoupled access
-
-type UseIsCreatingAccountResult = {
-    isCreatingAccount: boolean
-    setIsCreatingAccount: (value: boolean) => void
-}
-
-export const useIsCreatingAccount = (): UseIsCreatingAccountResult => {
-    const isCreatingAccount = useOnboardingStore(
-        state => state.isCreatingAccount,
-    )
-    const setIsCreatingAccount = useOnboardingStore(
-        state => state.setIsCreatingAccount,
-    )
-    return { isCreatingAccount, setIsCreatingAccount }
-}
 
 type UseShouldPlayConfettiResult = {
     shouldPlayConfetti: boolean

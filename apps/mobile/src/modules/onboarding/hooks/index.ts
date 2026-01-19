@@ -10,8 +10,4 @@
  limitations under the License
  */
 
-export {
-    useOnboardingStore,
-    useIsCreatingAccount,
-    useShouldPlayConfetti,
-} from './useOnboardingStore'
+export { useOnboardingStore, useShouldPlayConfetti } from './useOnboardingStore'

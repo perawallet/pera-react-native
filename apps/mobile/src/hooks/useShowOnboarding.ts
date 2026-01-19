@@ -10,25 +10,14 @@
  limitations under the License
  */
 
-import { useHasNoAccounts } from '@perawallet/wallet-core-accounts'
-import { logger } from '@perawallet/wallet-core-shared'
-import { useIsCreatingAccount } from '@modules/onboarding/hooks'
-import { useMemo } from 'react'
+import {
+    useHasNoAccounts,
+    useSelectedAccountAddress,
+} from '@perawallet/wallet-core-accounts'
 
 export const useShowOnboarding = () => {
-    const { isCreatingAccount } = useIsCreatingAccount()
     const noAccounts = useHasNoAccounts()
+    const { selectedAccountAddress } = useSelectedAccountAddress()
 
-    const showOnboarding = useMemo(() => {
-        logger.debug('useShowOnboarding', {
-            onboardingData: {
-                isCreatingAccount,
-                noAccounts,
-                showOnboarding: isCreatingAccount || noAccounts,
-            },
-        })
-        return isCreatingAccount || noAccounts
-    }, [isCreatingAccount, noAccounts])
-
-    return showOnboarding
+    return noAccounts || !selectedAccountAddress
 }

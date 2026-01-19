@@ -15,16 +15,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { OnboardingScreen } from '../OnboardingScreen'
 import { config } from '@perawallet/wallet-core-config'
 
-// Mock store functions
-const mockSetIsCreatingAccount = vi.fn()
-
-vi.mock('@modules/onboarding/hooks', () => ({
-    useIsCreatingAccount: () => ({
-        isCreatingAccount: false,
-        setIsCreatingAccount: mockSetIsCreatingAccount,
-    }),
-}))
-
 // Mock navigation
 const mockSetOptions = vi.fn()
 const mockNavigate = vi.fn()
@@ -151,18 +141,16 @@ describe('OnboardingScreen', () => {
             id: 'privacy-policy',
         })
     })
+
     it('navigates to NameAccount when Create Wallet is pressed', () => {
         render(<OnboardingScreen />)
 
         const createButton = screen.getByText(
             'onboarding.main_screen.create_wallet',
         )
-        // Buttons might fail to find by text if nested complex structure, but let's try
-        // The PanelButton likely renders text.
         fireEvent.click(createButton)
 
         expect(mockPush).toHaveBeenCalledWith('NameAccount')
-        expect(mockSetIsCreatingAccount).toHaveBeenCalledWith(true)
     })
 
     it('navigates to ImportAccount when Import Account is pressed', () => {
@@ -174,6 +162,5 @@ describe('OnboardingScreen', () => {
         fireEvent.click(importButton)
 
         expect(mockPush).toHaveBeenCalledWith('ImportAccount')
-        expect(mockSetIsCreatingAccount).toHaveBeenCalledWith(true)
     })
 })
