@@ -22,8 +22,7 @@ import { usePreferences, useSettings } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { useChartInteraction } from '@hooks/useChartInteraction'
 import { HistoryPeriod } from '@perawallet/wallet-core-shared'
-import { ParamListBase, useNavigation } from '@react-navigation/native'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 
@@ -88,7 +87,7 @@ export const useAccountOverview = (
         [setSelectedPoint],
     )
 
-    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
+    const navigation = useAppNavigation()
     const { t } = useLanguage()
     const { showToast } = useToast()
     const [isSendFundsVisible, setIsSendFundsVisible] = useState(false)
