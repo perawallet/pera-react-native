@@ -27,51 +27,31 @@ describe('services/security/store', () => {
 
         const { result } = renderHook(() => useSecurityStore())
 
-        expect(result.current.isPinEnabled).toBe(false)
-        expect(result.current.isBiometricEnabled).toBe(false)
         expect(result.current.failedAttempts).toBe(0)
         expect(result.current.lockoutEndTime).toBeNull()
-        expect(result.current.lastBackgroundTime).toBeNull()
+        expect(result.current.autoLockStartedAt).toBeNull()
     })
 
-    test('setIsPinEnabled updates PIN enabled state', async () => {
+    test('setAutoLockStartedAt updates auto lock time', async () => {
         const { initSecurityStore, useSecurityStore } = await import('../store')
 
         initSecurityStore()
 
         const { result } = renderHook(() => useSecurityStore())
 
-        act(() => {
-            result.current.setIsPinEnabled(true)
-        })
-
-        expect(result.current.isPinEnabled).toBe(true)
+        const lockTime = Date.now()
 
         act(() => {
-            result.current.setIsPinEnabled(false)
+            result.current.setAutoLockStartedAt(lockTime)
         })
 
-        expect(result.current.isPinEnabled).toBe(false)
-    })
-
-    test('setIsBiometricEnabled updates biometric enabled state', async () => {
-        const { initSecurityStore, useSecurityStore } = await import('../store')
-
-        initSecurityStore()
-
-        const { result } = renderHook(() => useSecurityStore())
+        expect(result.current.autoLockStartedAt).toBe(lockTime)
 
         act(() => {
-            result.current.setIsBiometricEnabled(true)
+            result.current.setAutoLockStartedAt(null)
         })
 
-        expect(result.current.isBiometricEnabled).toBe(true)
-
-        act(() => {
-            result.current.setIsBiometricEnabled(false)
-        })
-
-        expect(result.current.isBiometricEnabled).toBe(false)
+        expect(result.current.autoLockStartedAt).toBeNull()
     })
 
     test('incrementFailedAttempts increases the counter', async () => {
@@ -148,22 +128,19 @@ describe('services/security/store', () => {
         const { result } = renderHook(() => useSecurityStore())
 
         act(() => {
-            result.current.setIsPinEnabled(true)
-            result.current.setIsBiometricEnabled(true)
             result.current.incrementFailedAttempts()
             result.current.setLockoutEndTime(Date.now())
+            result.current.setAutoLockStartedAt(Date.now())
         })
 
-        expect(result.current.isPinEnabled).toBe(true)
-        expect(result.current.isBiometricEnabled).toBe(true)
+        expect(result.current.failedAttempts).toBe(1)
 
         act(() => {
             result.current.reset()
         })
 
-        expect(result.current.isPinEnabled).toBe(false)
-        expect(result.current.isBiometricEnabled).toBe(false)
         expect(result.current.failedAttempts).toBe(0)
         expect(result.current.lockoutEndTime).toBeNull()
+        expect(result.current.autoLockStartedAt).toBeNull()
     })
 })

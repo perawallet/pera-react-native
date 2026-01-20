@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, test, expect, beforeEach, vi } from 'vitest'
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { usePinCode } from '../usePinCode'
 import { useSecurityStore } from '../../store'
@@ -19,7 +19,7 @@ import {
     PIN_STORAGE_KEY,
     MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
     INITIAL_LOCKOUT_SECONDS,
-} from '../../models'
+} from '../../constants'
 
 vi.mock('../../store', () => ({
     useSecurityStore: vi.fn(),
@@ -29,12 +29,19 @@ vi.mock('@perawallet/wallet-core-platform-integration', () => ({
     useSecureStorageService: vi.fn(),
 }))
 
+vi.mock('../useBiometrics', () => ({
+    useBiometrics: vi.fn(() => ({
+        checkBiometricsEnabled: vi.fn().mockResolvedValue(false),
+        disableBiometrics: vi.fn(),
+        setBiometricsCode: vi.fn(),
+    })),
+}))
+
 describe('usePinCode', () => {
-    const mockSetIsPinEnabled = vi.fn()
-    const mockSetIsBiometricEnabled = vi.fn()
     const mockIncrementFailedAttempts = vi.fn()
     const mockResetFailedAttempts = vi.fn()
     const mockSetLockoutEndTime = vi.fn()
+    const mockSetAutoLockStartedAt = vi.fn()
     const mockGetItem = vi.fn()
     const mockSetItem = vi.fn()
     const mockRemoveItem = vi.fn()
@@ -55,22 +62,20 @@ describe('usePinCode', () => {
     })
 
     const setupMock = (state: {
-        isPinEnabled: boolean
         failedAttempts: number
         lockoutEndTime: number | null
+        autoLockStartedAt?: number | null
     }) => {
         vi.mocked(useSecurityStore).mockImplementation(
             (selector: (state: unknown) => unknown) => {
                 const fullState = {
-                    ...state,
-                    isBiometricEnabled: false,
-                    lastBackgroundTime: null,
-                    setIsPinEnabled: mockSetIsPinEnabled,
-                    setIsBiometricEnabled: mockSetIsBiometricEnabled,
+                    failedAttempts: state.failedAttempts,
+                    lockoutEndTime: state.lockoutEndTime,
+                    autoLockStartedAt: state.autoLockStartedAt ?? null,
                     incrementFailedAttempts: mockIncrementFailedAttempts,
                     resetFailedAttempts: mockResetFailedAttempts,
                     setLockoutEndTime: mockSetLockoutEndTime,
-                    setLastBackgroundTime: vi.fn(),
+                    setAutoLockStartedAt: mockSetAutoLockStartedAt,
                     reset: vi.fn(),
                 }
                 return selector(fullState)
@@ -78,23 +83,29 @@ describe('usePinCode', () => {
         )
     }
 
-    test('returns correct PIN enabled state', () => {
+    test('returns correct PIN enabled state', async () => {
         setupMock({
-            isPinEnabled: true,
             failedAttempts: 0,
             lockoutEndTime: null,
         })
 
+        const pinData = new TextEncoder().encode('123456')
+        mockGetItem.mockResolvedValue(pinData)
+
         const { result } = renderHook(() => usePinCode())
 
-        expect(result.current.isPinEnabled).toBe(true)
+        let isEnabled: boolean = false
+        await act(async () => {
+            isEnabled = await result.current.checkPinEnabled()
+        })
+
+        expect(isEnabled).toBe(true)
     })
 
     test('isLockedOut is true when lockout time is in future', () => {
         const futureTime = Date.now() + 30000
 
         setupMock({
-            isPinEnabled: true,
             failedAttempts: 5,
             lockoutEndTime: futureTime,
         })
@@ -108,7 +119,6 @@ describe('usePinCode', () => {
         const pastTime = Date.now() - 1000
 
         setupMock({
-            isPinEnabled: true,
             failedAttempts: 5,
             lockoutEndTime: pastTime,
         })
@@ -122,7 +132,6 @@ describe('usePinCode', () => {
         const futureTime = Date.now() + 45000 // 45 seconds
 
         setupMock({
-            isPinEnabled: true,
             failedAttempts: 5,
             lockoutEndTime: futureTime,
         })
@@ -134,7 +143,6 @@ describe('usePinCode', () => {
 
     test('remainingLockoutSeconds is 0 when not locked out', () => {
         setupMock({
-            isPinEnabled: true,
             failedAttempts: 0,
             lockoutEndTime: null,
         })
@@ -146,7 +154,6 @@ describe('usePinCode', () => {
 
     test('savePin stores PIN and enables PIN', async () => {
         setupMock({
-            isPinEnabled: false,
             failedAttempts: 0,
             lockoutEndTime: null,
         })
@@ -161,14 +168,12 @@ describe('usePinCode', () => {
             PIN_STORAGE_KEY,
             new TextEncoder().encode('123456'),
         )
-        expect(mockSetIsPinEnabled).toHaveBeenCalledWith(true)
         expect(mockResetFailedAttempts).toHaveBeenCalled()
         expect(mockSetLockoutEndTime).toHaveBeenCalledWith(null)
     })
 
     test('verifyPin returns true for correct PIN', async () => {
         setupMock({
-            isPinEnabled: true,
             failedAttempts: 0,
             lockoutEndTime: null,
         })
@@ -189,7 +194,6 @@ describe('usePinCode', () => {
 
     test('verifyPin returns false for incorrect PIN', async () => {
         setupMock({
-            isPinEnabled: true,
             failedAttempts: 0,
             lockoutEndTime: null,
         })
@@ -209,7 +213,6 @@ describe('usePinCode', () => {
 
     test('verifyPin returns false when no PIN stored', async () => {
         setupMock({
-            isPinEnabled: true,
             failedAttempts: 0,
             lockoutEndTime: null,
         })
@@ -226,74 +229,8 @@ describe('usePinCode', () => {
         expect(isValid).toBe(false)
     })
 
-    test('deletePin removes PIN and disables security', async () => {
-        setupMock({
-            isPinEnabled: true,
-            failedAttempts: 3,
-            lockoutEndTime: Date.now() + 30000,
-        })
-
-        const { result } = renderHook(() => usePinCode())
-
-        await act(async () => {
-            await result.current.deletePin()
-        })
-
-        expect(mockRemoveItem).toHaveBeenCalledWith(PIN_STORAGE_KEY)
-        expect(mockSetIsPinEnabled).toHaveBeenCalledWith(false)
-        expect(mockSetIsBiometricEnabled).toHaveBeenCalledWith(false)
-        expect(mockResetFailedAttempts).toHaveBeenCalled()
-        expect(mockSetLockoutEndTime).toHaveBeenCalledWith(null)
-    })
-
-    test('changePin returns false for incorrect old PIN', async () => {
-        setupMock({
-            isPinEnabled: true,
-            failedAttempts: 0,
-            lockoutEndTime: null,
-        })
-
-        const storedPin = new TextEncoder().encode('123456')
-        mockGetItem.mockResolvedValue(storedPin)
-
-        const { result } = renderHook(() => usePinCode())
-
-        let success: boolean = true
-        await act(async () => {
-            success = await result.current.changePin('wrong', '654321')
-        })
-
-        expect(success).toBe(false)
-        expect(mockSetItem).not.toHaveBeenCalled()
-    })
-
-    test('changePin successfully changes PIN with correct old PIN', async () => {
-        setupMock({
-            isPinEnabled: true,
-            failedAttempts: 0,
-            lockoutEndTime: null,
-        })
-
-        const storedPin = new TextEncoder().encode('123456')
-        mockGetItem.mockResolvedValue(storedPin)
-
-        const { result } = renderHook(() => usePinCode())
-
-        let success: boolean = false
-        await act(async () => {
-            success = await result.current.changePin('123456', '654321')
-        })
-
-        expect(success).toBe(true)
-        expect(mockSetItem).toHaveBeenCalledWith(
-            PIN_STORAGE_KEY,
-            new TextEncoder().encode('654321'),
-        )
-    })
-
     test('handleFailedAttempt increments attempts', () => {
         setupMock({
-            isPinEnabled: true,
             failedAttempts: 2,
             lockoutEndTime: null,
         })
@@ -312,7 +249,6 @@ describe('usePinCode', () => {
         vi.setSystemTime(now)
 
         setupMock({
-            isPinEnabled: true,
             failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT - 1,
             lockoutEndTime: null,
         })
@@ -334,7 +270,6 @@ describe('usePinCode', () => {
         vi.setSystemTime(now)
 
         setupMock({
-            isPinEnabled: true,
             failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT * 2 - 1,
             lockoutEndTime: null,
         })
@@ -352,7 +287,6 @@ describe('usePinCode', () => {
 
     test('getLockoutDuration returns 0 when no lockout', () => {
         setupMock({
-            isPinEnabled: true,
             failedAttempts: 3,
             lockoutEndTime: null,
         })
@@ -364,7 +298,6 @@ describe('usePinCode', () => {
 
     test('getLockoutDuration calculates exponential backoff correctly', () => {
         setupMock({
-            isPinEnabled: true,
             failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
             lockoutEndTime: Date.now() + 30000,
         })
@@ -378,7 +311,6 @@ describe('usePinCode', () => {
 
     test('getLockoutDuration doubles for second lockout block', () => {
         setupMock({
-            isPinEnabled: true,
             failedAttempts: MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT * 2,
             lockoutEndTime: Date.now() + 60000,
         })
@@ -392,7 +324,6 @@ describe('usePinCode', () => {
 
     test('resetFailedAttempts calls store action', () => {
         setupMock({
-            isPinEnabled: true,
             failedAttempts: 5,
             lockoutEndTime: null,
         })
@@ -404,5 +335,90 @@ describe('usePinCode', () => {
         })
 
         expect(mockResetFailedAttempts).toHaveBeenCalled()
+        expect(mockSetLockoutEndTime).toHaveBeenCalledWith(null)
+    })
+
+    test('checkAutoLock returns false when PIN is not enabled', async () => {
+        setupMock({
+            failedAttempts: 0,
+            lockoutEndTime: null,
+        })
+
+        mockGetItem.mockResolvedValue(null)
+
+        const { result } = renderHook(() => usePinCode())
+
+        let shouldLock: boolean = true
+        await act(async () => {
+            shouldLock = await result.current.checkAutoLock()
+        })
+
+        expect(shouldLock).toBe(false)
+    })
+
+    test('checkAutoLock returns false when autoLockStartedAt is null', async () => {
+        setupMock({
+            failedAttempts: 0,
+            lockoutEndTime: null,
+            autoLockStartedAt: null,
+        })
+
+        const pinData = new TextEncoder().encode('123456')
+        mockGetItem.mockResolvedValue(pinData)
+
+        const { result } = renderHook(() => usePinCode())
+
+        let shouldLock: boolean = true
+        await act(async () => {
+            shouldLock = await result.current.checkAutoLock()
+        })
+
+        expect(shouldLock).toBe(false)
+    })
+
+    test('checkAutoLock returns true when timeout exceeded', async () => {
+        const now = Date.now()
+        vi.setSystemTime(now)
+
+        setupMock({
+            failedAttempts: 0,
+            lockoutEndTime: null,
+            autoLockStartedAt: now - 15000, // 15 seconds ago (timeout is 10s)
+        })
+
+        const pinData = new TextEncoder().encode('123456')
+        mockGetItem.mockResolvedValue(pinData)
+
+        const { result } = renderHook(() => usePinCode())
+
+        let shouldLock: boolean = false
+        await act(async () => {
+            shouldLock = await result.current.checkAutoLock()
+        })
+
+        expect(shouldLock).toBe(true)
+    })
+
+    test('checkAutoLock returns false when timeout not exceeded', async () => {
+        const now = Date.now()
+        vi.setSystemTime(now)
+
+        setupMock({
+            failedAttempts: 0,
+            lockoutEndTime: null,
+            autoLockStartedAt: now - 5000, // 5 seconds ago (timeout is 10s)
+        })
+
+        const pinData = new TextEncoder().encode('123456')
+        mockGetItem.mockResolvedValue(pinData)
+
+        const { result } = renderHook(() => usePinCode())
+
+        let shouldLock: boolean = true
+        await act(async () => {
+            shouldLock = await result.current.checkAutoLock()
+        })
+
+        expect(shouldLock).toBe(false)
     })
 })

@@ -16,21 +16,24 @@ import { SettingsSecurityScreen } from '../SettingsSecurityScreen'
 
 vi.mock('@perawallet/wallet-core-security', () => ({
     usePinCode: vi.fn(() => ({
-        isPinEnabled: false,
         failedAttempts: 0,
         lockoutEndTime: null,
         isLockedOut: false,
         remainingLockoutSeconds: 0,
+        checkPinEnabled: vi.fn().mockResolvedValue(false),
+        checkAutoLock: vi.fn().mockResolvedValue(false),
         savePin: vi.fn(),
         verifyPin: vi.fn(),
-        deletePin: vi.fn(),
-        changePin: vi.fn(),
         handleFailedAttempt: vi.fn(),
         resetFailedAttempts: vi.fn(),
         getLockoutDuration: vi.fn(),
+        setLockoutEndTime: vi.fn(),
+        setAutoLockStartedAt: vi.fn(),
     })),
     useBiometrics: vi.fn(() => ({
-        isBiometricEnabled: false,
+        checkBiometricsEnabled: vi.fn().mockResolvedValue(false),
+        checkBiometricsAvailable: vi.fn().mockResolvedValue(false),
+        setBiometricsCode: vi.fn(),
         enableBiometrics: vi.fn(),
         disableBiometrics: vi.fn(),
         authenticateWithBiometrics: vi.fn(),
