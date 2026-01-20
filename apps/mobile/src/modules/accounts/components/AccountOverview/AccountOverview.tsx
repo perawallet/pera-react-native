@@ -10,23 +10,14 @@
  limitations under the License
  */
 
-import { PWButton, PWText, PWTouchableOpacity, PWView } from '@components/core'
-import { formatDatetime } from '@perawallet/wallet-core-shared'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import Decimal from 'decimal.js'
-import { WealthChart } from '@components/WealthChart'
-import { ButtonPanel } from '../ButtonPanel'
-import { AccountAssetList } from '../AccountAssetList'
-import { useStyles } from './styles'
-import { WealthTrend } from '@components/WealthTrend'
-import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
-import { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { ExpandablePanel } from '@components/ExpandablePanel'
-import { useAccountOverview } from './useAccountOverview'
-
-import { useLanguage } from '@hooks/useLanguage'
-import { NoFundsButtonPanel } from '../NoFundsButtonPanel'
+import { AccountOverviewHeader } from './AccountOverviewHeader'
 import { SendFundsBottomSheet } from '@modules/transactions/components/SendFunds/PWBottomSheet/SendFundsBottomSheet'
+import { ReceiveFundsBottomSheet } from '@modules/transactions/components/ReceiveFunds/PWBottomSheet/ReceiveFundsBottomSheet'
+import { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { useStyles } from './styles'
+import { useAccountOverview } from './useAccountOverview'
+import { PWView } from '@components/core'
+import { AccountAssetList } from '../AccountAssetList'
 
 type AccountOverviewProps = {
     account: WalletAccount
@@ -57,122 +48,50 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
         handleStake,
         handleMore,
         handleBuyAlgo,
-        handleTransfer,
         handleReceive,
+        isReceiveFundsVisible,
+        handleCloseReceiveFunds,
     } = useAccountOverview(account)
-    const { t } = useLanguage()
 
     return (
         <PWView style={styles.container}>
-            {hasBalance ? (
-                <>
-                    <PWTouchableOpacity
-                        onPress={togglePrivacyMode}
-                        style={styles.valueBarContainer}
-                    >
-                        <PWView style={styles.valueBar}>
-                            <CurrencyDisplay
-                                h1
-                                value={
-                                    selectedPoint
-                                        ? Decimal(selectedPoint.algoValue)
-                                        : portfolioAlgoValue
-                                }
-                                currency='ALGO'
-                                precision={2}
-                                style={styles.primaryCurrency}
-                                isLoading={isPending}
-                            />
-                            <PWButton
-                                icon='chart'
-                                variant={chartVisible ? 'secondary' : 'helper'}
-                                paddingStyle='dense'
-                                onPress={toggleChartVisible}
-                            />
-                        </PWView>
-                        <PWView style={styles.secondaryValueBar}>
-                            <CurrencyDisplay
-                                h4
-                                style={styles.valueTitle}
-                                value={
-                                    selectedPoint
-                                        ? Decimal(selectedPoint.fiatValue)
-                                        : portfolioFiatValue
-                                }
-                                currency={preferredCurrency}
-                                prefix='≈ '
-                                precision={2}
-                                isLoading={isPending}
-                            />
-                            {!selectedPoint && (
-                                <WealthTrend
-                                    account={account}
-                                    period={period}
-                                />
-                            )}
-                            {selectedPoint && (
-                                <PWText
-                                    variant='h4'
-                                    style={styles.dateDisplay}
-                                >
-                                    {formatDatetime(selectedPoint.datetime)}
-                                </PWText>
-                            )}
-                        </PWView>
-                    </PWTouchableOpacity>
-
-                    <ExpandablePanel
-                        isExpanded={chartVisible}
-                        containerStyle={styles.chartContainer}
-                    >
-                        <WealthChart
-                            account={account}
-                            period={period}
-                            onSelectionChanged={handleChartSelectionChange}
-                        />
-                        <ChartPeriodSelection
-                            value={period}
-                            onChange={setPeriod}
-                        />
-                    </ExpandablePanel>
-
-                    <ButtonPanel
-                        onSwap={handleSwap}
-                        onStake={handleStake}
-                        onSend={handleOpenSendFunds}
-                        onMore={handleMore}
-                    />
-                </>
-            ) : (
-                <PWView style={styles.noBalanceContainer}>
-                    <PWText
-                        variant='body'
-                        style={styles.noBalanceWelcomeText}
-                    >
-                        {t('account_details.no_balance.welcome')}
-                    </PWText>
-                    <PWText
-                        variant='h1'
-                        style={styles.centeredText}
-                    >
-                        {t('account_details.no_balance.get_started')}
-                    </PWText>
-                    <NoFundsButtonPanel
-                        onBuyAlgo={handleBuyAlgo}
-                        onTransfer={handleTransfer}
-                        onReceive={handleReceive}
-                    />
-                </PWView>
-            )}
-
             <AccountAssetList
                 account={account}
                 scrollEnabled={scrollingEnabled}
+                header={
+                    <AccountOverviewHeader
+                        account={account}
+                        hasBalance={hasBalance}
+                        portfolioAlgoValue={portfolioAlgoValue}
+                        portfolioFiatValue={portfolioFiatValue}
+                        isPending={isPending}
+                        period={period}
+                        setPeriod={setPeriod}
+                        selectedPoint={selectedPoint}
+                        chartVisible={chartVisible}
+                        preferredCurrency={preferredCurrency}
+                        togglePrivacyMode={togglePrivacyMode}
+                        toggleChartVisible={toggleChartVisible}
+                        handleChartSelectionChange={handleChartSelectionChange}
+                        handleSwap={handleSwap}
+                        handleStake={handleStake}
+                        handleOpenSendFunds={handleOpenSendFunds}
+                        handleMore={handleMore}
+                        handleBuyAlgo={handleBuyAlgo}
+                        handleReceive={handleReceive}
+                    />
+                }
             />
 
             <SendFundsBottomSheet
                 isVisible={isSendFundsVisible}
                 onClose={handleCloseSendFunds}
+            />
+
+            <ReceiveFundsBottomSheet
+                isVisible={isReceiveFundsVisible}
+                onClose={handleCloseReceiveFunds}
+                account={account}
             />
         </PWView>
     )

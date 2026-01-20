@@ -121,4 +121,14 @@ describe('AccountAssetList', () => {
         const { container } = render(<AccountAssetList account={mockAccount} />)
         expect(container).toBeTruthy()
     })
+
+    it('renders header content when header prop is provided', () => {
+        const { getByText } = render(
+            <AccountAssetList
+                account={mockAccount}
+                header={<div>Header Content</div>}
+            />,
+        )
+        expect(getByText('Header Content')).toBeTruthy()
+    })
 })

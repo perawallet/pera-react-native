@@ -17,14 +17,14 @@ import { useLanguage } from '@hooks/useLanguage'
 
 export type NoFundsButtonPanelProps = {
     onBuyAlgo: () => void
-    onTransfer: () => void
     onReceive: () => void
+    onMore: () => void
 }
 
 export const NoFundsButtonPanel = ({
     onBuyAlgo,
-    onTransfer,
     onReceive,
+    onMore,
 }: NoFundsButtonPanelProps) => {
     const themeStyle = useStyles()
     const { t } = useLanguage()
@@ -38,16 +38,16 @@ export const NoFundsButtonPanel = ({
                 onPress={onBuyAlgo}
             />
             <RoundButton
-                title={t('account_details.no_balance.transfer')}
-                icon='switch'
-                variant='secondary'
-                onPress={onTransfer}
-            />
-            <RoundButton
                 title={t('account_details.no_balance.receive')}
                 icon='inflow'
                 variant='secondary'
                 onPress={onReceive}
+            />
+            <RoundButton
+                title={t('account_details.no_balance.more')}
+                icon='ellipsis'
+                variant='secondary'
+                onPress={onMore}
             />
         </PWView>
     )
