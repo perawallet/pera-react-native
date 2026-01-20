@@ -22,6 +22,10 @@ import { usePreferences, useSettings } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { useChartInteraction } from '@hooks/useChartInteraction'
 import { HistoryPeriod } from '@perawallet/wallet-core-shared'
+import { ParamListBase, useNavigation } from '@react-navigation/native'
+import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
 
 export type UseAccountOverviewResult = {
     portfolioAlgoValue: Decimal
@@ -39,6 +43,15 @@ export type UseAccountOverviewResult = {
     handleChartSelectionChange: (
         selected: AccountBalanceHistoryItem | null,
     ) => void
+    isSendFundsVisible: boolean
+    handleOpenSendFunds: () => void
+    handleCloseSendFunds: () => void
+    handleSwap: () => void
+    handleStake: () => void
+    handleMore: () => void
+    handleBuyAlgo: () => void
+    handleTransfer: () => void
+    handleReceive: () => void
 }
 
 export const useAccountOverview = (
@@ -75,6 +88,47 @@ export const useAccountOverview = (
         [setSelectedPoint],
     )
 
+    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
+    const { t } = useLanguage()
+    const { showToast } = useToast()
+    const [isSendFundsVisible, setIsSendFundsVisible] = useState(false)
+
+    const handleOpenSendFunds = useCallback(() => {
+        setIsSendFundsVisible(true)
+    }, [])
+
+    const handleCloseSendFunds = useCallback(() => {
+        setIsSendFundsVisible(false)
+    }, [])
+
+    const handleSwap = useCallback(() => {
+        navigation.replace('TabBar', { screen: 'Swap' })
+    }, [navigation])
+
+    const handleStake = useCallback(() => {
+        navigation.push('Staking')
+    }, [navigation])
+
+    const notImplemented = useCallback(() => {
+        showToast({
+            title: t('common.not_implemented.title'),
+            body: t('common.not_implemented.body'),
+            type: 'error',
+        })
+    }, [showToast, t])
+
+    const handleBuyAlgo = useCallback(() => {
+        notImplemented()
+    }, [notImplemented])
+
+    const handleTransfer = useCallback(() => {
+        notImplemented()
+    }, [notImplemented])
+
+    const handleReceive = useCallback(() => {
+        notImplemented()
+    }, [notImplemented])
+
     return {
         portfolioAlgoValue,
         portfolioFiatValue,
@@ -89,5 +143,14 @@ export const useAccountOverview = (
         togglePrivacyMode,
         toggleChartVisible,
         handleChartSelectionChange,
+        isSendFundsVisible,
+        handleOpenSendFunds,
+        handleCloseSendFunds,
+        handleSwap,
+        handleStake,
+        handleMore: notImplemented,
+        handleBuyAlgo,
+        handleTransfer,
+        handleReceive,
     }
 }

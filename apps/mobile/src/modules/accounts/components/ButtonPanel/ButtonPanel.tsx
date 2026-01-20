@@ -12,45 +12,24 @@
 
 import { useStyles } from './styles'
 import { PWView } from '@components/core'
-import { ParamListBase, useNavigation } from '@react-navigation/native'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { RoundButton } from '@components/RoundButton'
-
-import { useState } from 'react'
-import { SendFundsBottomSheet } from '@modules/transactions/components/SendFunds/PWBottomSheet/SendFundsBottomSheet'
 import { useLanguage } from '@hooks/useLanguage'
-import { useToast } from '@hooks/useToast'
 
-export const ButtonPanel = () => {
-    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
+export type ButtonPanelProps = {
+    onSwap: () => void
+    onStake: () => void
+    onSend: () => void
+    onMore: () => void
+}
+
+export const ButtonPanel = ({
+    onSwap,
+    onStake,
+    onSend,
+    onMore,
+}: ButtonPanelProps) => {
     const themeStyle = useStyles()
-    const [sendFundsOpen, setSendFundsOpen] = useState<boolean>(false)
     const { t } = useLanguage()
-    const { showToast } = useToast()
-
-    const goToTabBarPage = (name: string) => {
-        navigation.replace('TabBar', { screen: name })
-    }
-
-    const goToRootPage = (name: string) => {
-        navigation.push(name)
-    }
-
-    const notImplemented = () => {
-        showToast({
-            title: t('common.not_implemented.title'),
-            body: t('common.not_implemented.body'),
-            type: 'error',
-        })
-    }
-
-    const closeSendFunds = () => {
-        setSendFundsOpen(false)
-    }
-
-    const openSendFunds = () => {
-        setSendFundsOpen(true)
-    }
 
     return (
         <PWView style={themeStyle.container}>
@@ -58,29 +37,25 @@ export const ButtonPanel = () => {
                 title={t('account_details.button_panel.swap')}
                 icon='swap'
                 variant='primary'
-                onPress={() => goToTabBarPage('Swap')}
+                onPress={onSwap}
             />
             <RoundButton
                 title={t('account_details.button_panel.stake')}
                 icon='dot-stack'
                 variant='secondary'
-                onPress={() => goToRootPage('Staking')}
+                onPress={onStake}
             />
             <RoundButton
                 title={t('account_details.button_panel.send')}
                 icon='outflow'
                 variant='secondary'
-                onPress={openSendFunds}
+                onPress={onSend}
             />
             <RoundButton
                 title={t('account_details.button_panel.more')}
                 icon='ellipsis'
                 variant='secondary'
-                onPress={notImplemented}
-            />
-            <SendFundsBottomSheet
-                onClose={closeSendFunds}
-                isVisible={sendFundsOpen}
+                onPress={onMore}
             />
         </PWView>
     )

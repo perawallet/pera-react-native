@@ -26,6 +26,7 @@ import { useAccountOverview } from './useAccountOverview'
 
 import { useLanguage } from '@hooks/useLanguage'
 import { NoFundsButtonPanel } from '../NoFundsButtonPanel'
+import { SendFundsBottomSheet } from '@modules/transactions/components/SendFunds/PWBottomSheet/SendFundsBottomSheet'
 
 type AccountOverviewProps = {
     account: WalletAccount
@@ -49,6 +50,15 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
         togglePrivacyMode,
         toggleChartVisible,
         handleChartSelectionChange,
+        isSendFundsVisible,
+        handleOpenSendFunds,
+        handleCloseSendFunds,
+        handleSwap,
+        handleStake,
+        handleMore,
+        handleBuyAlgo,
+        handleTransfer,
+        handleReceive,
     } = useAccountOverview(account)
     const { t } = useLanguage()
 
@@ -126,7 +136,12 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
                         />
                     </ExpandablePanel>
 
-                    <ButtonPanel />
+                    <ButtonPanel
+                        onSwap={handleSwap}
+                        onStake={handleStake}
+                        onSend={handleOpenSendFunds}
+                        onMore={handleMore}
+                    />
                 </>
             ) : (
                 <PWView style={styles.noBalanceContainer}>
@@ -142,13 +157,22 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
                     >
                         {t('account_details.no_balance.get_started')}
                     </PWText>
-                    <NoFundsButtonPanel />
+                    <NoFundsButtonPanel
+                        onBuyAlgo={handleBuyAlgo}
+                        onTransfer={handleTransfer}
+                        onReceive={handleReceive}
+                    />
                 </PWView>
             )}
 
             <AccountAssetList
                 account={account}
                 scrollEnabled={scrollingEnabled}
+            />
+
+            <SendFundsBottomSheet
+                isVisible={isSendFundsVisible}
+                onClose={handleCloseSendFunds}
             />
         </PWView>
     )

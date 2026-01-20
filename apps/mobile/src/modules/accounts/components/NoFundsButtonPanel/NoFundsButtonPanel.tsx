@@ -14,20 +14,20 @@ import { useStyles } from './styles'
 import { PWView } from '@components/core'
 import { RoundButton } from '@components/RoundButton'
 import { useLanguage } from '@hooks/useLanguage'
-import { useToast } from '@hooks/useToast'
 
-export const NoFundsButtonPanel = () => {
+export type NoFundsButtonPanelProps = {
+    onBuyAlgo: () => void
+    onTransfer: () => void
+    onReceive: () => void
+}
+
+export const NoFundsButtonPanel = ({
+    onBuyAlgo,
+    onTransfer,
+    onReceive,
+}: NoFundsButtonPanelProps) => {
     const themeStyle = useStyles()
     const { t } = useLanguage()
-    const { showToast } = useToast()
-
-    const notImplemented = () => {
-        showToast({
-            title: t('common.not_implemented.title'),
-            body: t('common.not_implemented.body'),
-            type: 'error',
-        })
-    }
 
     return (
         <PWView style={themeStyle.container}>
@@ -35,19 +35,19 @@ export const NoFundsButtonPanel = () => {
                 title={t('account_details.no_balance.buy_algo')}
                 icon='algo'
                 variant='primary'
-                onPress={notImplemented}
+                onPress={onBuyAlgo}
             />
             <RoundButton
                 title={t('account_details.no_balance.transfer')}
                 icon='switch'
                 variant='secondary'
-                onPress={notImplemented}
+                onPress={onTransfer}
             />
             <RoundButton
                 title={t('account_details.no_balance.receive')}
                 icon='inflow'
                 variant='secondary'
-                onPress={notImplemented}
+                onPress={onReceive}
             />
         </PWView>
     )

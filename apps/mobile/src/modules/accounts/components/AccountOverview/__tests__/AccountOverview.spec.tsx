@@ -78,6 +78,9 @@ vi.mock('@components/ExpandablePanel', () => ({
 vi.mock('../../ButtonPanel', () => ({
     ButtonPanel: () => null,
 }))
+vi.mock('../NoFundsButtonPanel', () => ({
+    NoFundsButtonPanel: () => null,
+}))
 vi.mock('../../AccountAssetList', () => ({
     AccountAssetList: ({ children }: PropsWithChildren) => children,
 }))
