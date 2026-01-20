@@ -1,93 +1,51 @@
 {
-  "extends": "@react-native/typescript-config",
-  "compilerOptions": {
-    "types": ["vitest", "vitest/globals"],
-    "baseUrl": "src",
-    "paths": {
-      "@components/*": [
-        "components/*"
-      ],
-      "@providers/*": [
-        "providers/*"
-      ],
-      "@routes/*": [
-        "routes/*"
-      ],
-      "@hooks/*": [
-        "hooks/*"
-      ],
-      "@constants/*": [
-        "constants/*"
-      ],
-      "@modules/*": [
-        "modules/*"
-      ],
-      "@assets/*": [
-        "../assets/*"
-      ],
-      "@theme/*": [
-        "theme/*"
-      ],
-      "@layouts/*": [
-        "layouts/*"
-      ],
-      "@test-utils/*": [
-        "test-utils/*"
-      ],
-      "@perawallet/wallet-core-accounts": [
-        "../../../packages/accounts/src"
-      ],
-      "@perawallet/wallet-core-assets": [
-        "../../../packages/assets/src"
-      ],
-      "@perawallet/wallet-core-blockchain": [
-        "../../../packages/blockchain/src"
-      ],
-      "@perawallet/wallet-core-config": [
-        "../../../packages/config/src"
-      ],
-      "@perawallet/wallet-core-contacts": [
-        "../../../packages/contacts/src"
-      ],
-      "@perawallet/wallet-core-currencies": [
-        "../../../packages/currencies/src"
-      ],
-      "@perawallet/wallet-core-kms": [
-        "../../../packages/kms/src"
-      ],
-      "@perawallet/wallet-core-platform-integration": [
-        "../../../packages/platform-integration/src"
-      ],
-      "@perawallet/wallet-core-polling": [
-        "../../../packages/polling/src"
-      ],
-      "@perawallet/wallet-core-settings": [
-        "../../../packages/settings/src"
-      ],
-      "@perawallet/wallet-core-shared": [
-        "../../../packages/shared/src"
-      ],
-      "@perawallet/wallet-core-swaps": [
-        "../../../packages/swaps/src"
-      ],
-      "@perawallet/wallet-core-walletconnect": [
-        "../../../packages/walletconnect/src"
-      ]
+    "extends": "@react-native/typescript-config",
+    "compilerOptions": {
+        "types": ["vitest", "vitest/globals"],
+        "baseUrl": "src",
+        "paths": {
+            "@components/*": ["components/*"],
+            "@providers/*": ["providers/*"],
+            "@routes/*": ["routes/*"],
+            "@hooks/*": ["hooks/*"],
+            "@constants/*": ["constants/*"],
+            "@modules/*": ["modules/*"],
+            "@assets/*": ["../assets/*"],
+            "@theme/*": ["theme/*"],
+            "@layouts/*": ["layouts/*"],
+            "@test-utils/*": ["test-utils/*"],
+            "@perawallet/wallet-core-accounts": [
+                "../../../packages/accounts/src"
+            ],
+            "@perawallet/wallet-core-assets": ["../../../packages/assets/src"],
+            "@perawallet/wallet-core-blockchain": [
+                "../../../packages/blockchain/src"
+            ],
+            "@perawallet/wallet-core-config": ["../../../packages/config/src"],
+            "@perawallet/wallet-core-contacts": [
+                "../../../packages/contacts/src"
+            ],
+            "@perawallet/wallet-core-currencies": [
+                "../../../packages/currencies/src"
+            ],
+            "@perawallet/wallet-core-kms": ["../../../packages/kms/src"],
+            "@perawallet/wallet-core-platform-integration": [
+                "../../../packages/platform-integration/src"
+            ],
+            "@perawallet/wallet-core-polling": [
+                "../../../packages/polling/src"
+            ],
+            "@perawallet/wallet-core-settings": [
+                "../../../packages/settings/src"
+            ],
+            "@perawallet/wallet-core-shared": ["../../../packages/shared/src"],
+            "@perawallet/wallet-core-swaps": ["../../../packages/swaps/src"],
+            "@perawallet/wallet-core-walletconnect": [
+                "../../../packages/walletconnect/src"
+            ]
+        },
+        "lib": ["esnext", "dom"]
     },
-    "lib": [
-        "esnext",
-        "dom"
-    ]
-  },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    "**/*.svg",
-    "**/*.png"
-  ],
-  "exclude": [
-    "**/node_modules",
-    "**/Pods",
-    "**/coverage"
-  ]
+    "include": ["**/*.ts", "**/*.tsx", "**/*.svg", "**/*.png"],
+    "exclude": ["**/node_modules", "**/Pods", "**/coverage"]
 }
