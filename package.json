@@ -9,6 +9,7 @@
     "dev:packages": "turbo run dev --filter='./packages/*' --parallel",
     "android": "turbo run android --filter=mobile",
     "ios": "turbo run ios --filter=mobile",
+    "mobile:start": "turbo run start --filter=mobile",
     "pre-push": "./tools/pre-push",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint -- --fix",
