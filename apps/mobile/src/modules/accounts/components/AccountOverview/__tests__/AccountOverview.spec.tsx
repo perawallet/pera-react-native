@@ -105,7 +105,7 @@ vi.mock(
     () => ({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         SendFundsBottomSheet: ({ isVisible }: any) =>
-            isVisible ? <div data-testid="send-funds-sheet" /> : null,
+            isVisible ? <div data-testid='send-funds-sheet' /> : null,
     }),
 )
 vi.mock(
@@ -113,7 +113,7 @@ vi.mock(
     () => ({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ReceiveFundsBottomSheet: ({ isVisible }: any) =>
-            isVisible ? <div data-testid="receive-funds-sheet" /> : null,
+            isVisible ? <div data-testid='receive-funds-sheet' /> : null,
     }),
 )
 

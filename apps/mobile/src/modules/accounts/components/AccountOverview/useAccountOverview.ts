@@ -25,6 +25,7 @@ import { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { useModalState } from '@hooks/useModalState'
 
 export type UseAccountOverviewResult = {
     portfolioAlgoValue: Decimal
@@ -92,15 +93,11 @@ export const useAccountOverview = (
     const navigation = useAppNavigation()
     const { t } = useLanguage()
     const { showToast } = useToast()
-    const [isSendFundsVisible, setIsSendFundsVisible] = useState(false)
-
-    const handleOpenSendFunds = useCallback(() => {
-        setIsSendFundsVisible(true)
-    }, [])
-
-    const handleCloseSendFunds = useCallback(() => {
-        setIsSendFundsVisible(false)
-    }, [])
+    const {
+        isOpen: isSendFundsVisible,
+        open: handleOpenSendFunds,
+        close: handleCloseSendFunds,
+    } = useModalState()
 
     const handleSwap = useCallback(() => {
         navigation.replace('TabBar', { screen: 'Swap' })
@@ -126,15 +123,11 @@ export const useAccountOverview = (
         handleOpenSendFunds()
     }, [handleOpenSendFunds])
 
-    const [isReceiveFundsVisible, setIsReceiveFundsVisible] = useState(false)
-
-    const handleOpenReceiveFunds = useCallback(() => {
-        setIsReceiveFundsVisible(true)
-    }, [])
-
-    const handleCloseReceiveFunds = useCallback(() => {
-        setIsReceiveFundsVisible(false)
-    }, [])
+    const {
+        isOpen: isReceiveFundsVisible,
+        open: handleOpenReceiveFunds,
+        close: handleCloseReceiveFunds,
+    } = useModalState()
 
     const handleReceive = useCallback(() => {
         handleOpenReceiveFunds()
