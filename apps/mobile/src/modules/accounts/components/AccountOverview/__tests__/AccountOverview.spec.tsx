@@ -104,7 +104,7 @@ vi.mock('../../NoFundsButtonPanel', () => ({
         <div>
             <button onClick={props.onBuyAlgo}>Buy Algo</button>
             <button onClick={props.onReceive}>Receive</button>
-            <button onClick={props.onAssetInbox}>Asset Inbox</button>
+
             <button onClick={props.onMore}>More</button>
         </div>
     ),
@@ -196,11 +196,7 @@ describe('AccountOverview', () => {
             fireEvent.click(screen.getByText('Receive'))
             expect(screen.getByTestId('receive-funds-sheet')).toBeTruthy()
         })
-        it('navigates to Notifications screen when Asset Inbox is pressed', () => {
-            render(<AccountOverview account={mockAccount} />)
-            fireEvent.click(screen.getByText('Asset Inbox'))
-            expect(mockNavigate).toHaveBeenCalledWith('Notifications')
-        })
+
 
         it('shows not implemented toast when More is pressed', () => {
             render(<AccountOverview account={mockAccount} />)

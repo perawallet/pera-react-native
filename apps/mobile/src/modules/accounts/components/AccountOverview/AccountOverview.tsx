@@ -51,7 +51,7 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
         handleReceive,
         isReceiveFundsVisible,
         handleCloseReceiveFunds,
-        handleAssetInbox,
+
     } = useAccountOverview(account)
 
     return (
@@ -80,7 +80,7 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
                         handleMore={handleMore}
                         handleBuyAlgo={handleBuyAlgo}
                         handleReceive={handleReceive}
-                        handleAssetInbox={handleAssetInbox}
+
                     />
                 }
             />

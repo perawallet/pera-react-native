@@ -18,14 +18,12 @@ import { useLanguage } from '@hooks/useLanguage'
 export type NoFundsButtonPanelProps = {
     onBuyAlgo: () => void
     onReceive: () => void
-    onAssetInbox: () => void
     onMore: () => void
 }
 
 export const NoFundsButtonPanel = ({
     onBuyAlgo,
     onReceive,
-    onAssetInbox,
     onMore,
 }: NoFundsButtonPanelProps) => {
     const themeStyle = useStyles()
@@ -44,12 +42,6 @@ export const NoFundsButtonPanel = ({
                 icon='inflow'
                 variant='secondary'
                 onPress={onReceive}
-            />
-            <RoundButton
-                title={t('account_details.no_balance.asset_inbox')}
-                icon='bell'
-                variant='secondary'
-                onPress={onAssetInbox}
             />
             <RoundButton
                 title={t('account_details.no_balance.more')}

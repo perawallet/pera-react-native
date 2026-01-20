@@ -53,7 +53,7 @@ export type UseAccountOverviewResult = {
     handleReceive: () => void
     isReceiveFundsVisible: boolean
     handleCloseReceiveFunds: () => void
-    handleAssetInbox: () => void
+
 }
 
 export const useAccountOverview = (
@@ -129,9 +129,7 @@ export const useAccountOverview = (
         handleOpenReceiveFunds()
     }, [handleOpenReceiveFunds])
 
-    const handleAssetInbox = useCallback(() => {
-        navigation.navigate('Notifications')
-    }, [navigation])
+
 
     return {
         portfolioAlgoValue,
@@ -157,6 +155,6 @@ export const useAccountOverview = (
         handleReceive,
         isReceiveFundsVisible,
         handleCloseReceiveFunds,
-        handleAssetInbox,
+
     }
 }
