@@ -16,13 +16,11 @@ import { OnboardingScreen } from '../OnboardingScreen'
 import { config } from '@perawallet/wallet-core-config'
 
 // Mock navigation
-const mockSetOptions = vi.fn()
 const mockNavigate = vi.fn()
 const mockPush = vi.fn()
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({
-        setOptions: mockSetOptions,
         navigate: mockNavigate,
         push: mockPush,
     }),

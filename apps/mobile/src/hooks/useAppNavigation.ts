@@ -16,54 +16,35 @@ import { AppStackParamList } from '@routes/types'
 
 export type AppNavigationProp = NativeStackNavigationProp<AppStackParamList>
 
-export const useAppNavigation = () => {
+type NavigationArgs<RouteName extends keyof AppStackParamList> =
+    undefined extends AppStackParamList[RouteName]
+        ? [params?: AppStackParamList[RouteName]]
+        : // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+          {} extends AppStackParamList[RouteName]
+          ? [params?: AppStackParamList[RouteName]]
+          : [params: AppStackParamList[RouteName]]
+
+type NavigationMethod = <RouteName extends keyof AppStackParamList>(
+    screen: RouteName,
+    ...args: NavigationArgs<RouteName>
+) => void
+
+export type UseAppNavigation = {
+    navigate: NavigationMethod
+    push: NavigationMethod
+    replace: NavigationMethod
+    goBack: () => void
+    canGoBack: () => boolean
+}
+
+export function useAppNavigation(): UseAppNavigation {
     const navigation = useNavigation<AppNavigationProp>()
 
     return {
-        navigate: <RouteName extends keyof AppStackParamList>(
-            screen: RouteName,
-            ...args: undefined extends AppStackParamList[RouteName]
-                ? [params?: AppStackParamList[RouteName]]
-                : // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-                  {} extends AppStackParamList[RouteName]
-                  ? [params?: AppStackParamList[RouteName]]
-                  : [params: AppStackParamList[RouteName]]
-        ) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            ;(navigation.navigate as any)(screen, ...args)
-        },
-        push: <RouteName extends keyof AppStackParamList>(
-            screen: RouteName,
-            ...args: undefined extends AppStackParamList[RouteName]
-                ? [params?: AppStackParamList[RouteName]]
-                : // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-                  {} extends AppStackParamList[RouteName]
-                  ? [params?: AppStackParamList[RouteName]]
-                  : [params: AppStackParamList[RouteName]]
-        ) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            ;(navigation.push as any)(screen, ...args)
-        },
-        replace: <RouteName extends keyof AppStackParamList>(
-            screen: RouteName,
-            ...args: undefined extends AppStackParamList[RouteName]
-                ? [params?: AppStackParamList[RouteName]]
-                : // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-                  {} extends AppStackParamList[RouteName]
-                  ? [params?: AppStackParamList[RouteName]]
-                  : [params: AppStackParamList[RouteName]]
-        ) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            ;(navigation.replace as any)(screen, ...args)
-        },
-        goBack: () => navigation.goBack(),
-        setOptions: navigation.setOptions,
-        addListener: navigation.addListener,
+        navigate: navigation.navigate as NavigationMethod,
+        push: navigation.push as NavigationMethod,
+        replace: navigation.replace as NavigationMethod,
+        goBack: navigation.goBack,
         canGoBack: navigation.canGoBack,
-        getParent: navigation.getParent,
-        getState: navigation.getState,
-        dispatch: navigation.dispatch,
-        isFocused: navigation.isFocused,
-        reset: navigation.reset,
     }
 }
