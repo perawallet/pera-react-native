@@ -17,20 +17,12 @@ import Decimal from 'decimal.js'
 import { WealthChart } from '@components/WealthChart'
 import { ButtonPanel } from '../ButtonPanel'
 import { AccountAssetList } from '../AccountAssetList'
-import { useCallback, useState } from 'react'
-import { useChartInteraction } from '@hooks/useChartInteraction'
 import { useStyles } from './styles'
 import { WealthTrend } from '@components/WealthTrend'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
-import {
-    AccountBalanceHistoryItem,
-    useAccountBalancesQuery,
-    WalletAccount,
-} from '@perawallet/wallet-core-accounts'
-import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { usePreferences, useSettings } from '@perawallet/wallet-core-settings'
-import { UserPreferences } from '@constants/user-preferences'
+import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { ExpandablePanel } from '@components/ExpandablePanel'
+import { useAccountOverview } from './useAccountOverview'
 
 type AccountOverviewProps = {
     account: WalletAccount
@@ -39,39 +31,21 @@ type AccountOverviewProps = {
 //TODO implement min balance display and info icon
 //TODO layout and spacing needs a bit of clean up
 export const AccountOverview = ({ account }: AccountOverviewProps) => {
-    const { preferredCurrency } = useCurrency()
     const styles = useStyles()
-
-    const { portfolioAlgoValue, portfolioFiatValue, isPending } =
-        useAccountBalancesQuery(account ? [account] : [])
-    const { getPreference, setPreference } = usePreferences()
-
-    const { period, setPeriod, selectedPoint, setSelectedPoint } =
-        useChartInteraction<AccountBalanceHistoryItem>()
-    const [scrollingEnabled, setScrollingEnabled] = useState<boolean>(true)
-    const { privacyMode, setPrivacyMode } = useSettings()
-
-    const togglePrivacyMode = () => {
-        setPrivacyMode(!privacyMode)
-    }
-
-    const chartVisible = !!getPreference(UserPreferences.chartVisible)
-    const toggleChartVisible = useCallback(() => {
-        setPreference(UserPreferences.chartVisible, !chartVisible)
-    }, [chartVisible, setPreference])
-
-    const chartSelectionChanged = useCallback(
-        (selected: AccountBalanceHistoryItem | null) => {
-            setSelectedPoint(selected)
-
-            if (selected) {
-                setScrollingEnabled(false)
-            } else {
-                setScrollingEnabled(true)
-            }
-        },
-        [setSelectedPoint],
-    )
+    const {
+        portfolioAlgoValue,
+        portfolioFiatValue,
+        isPending,
+        period,
+        setPeriod,
+        selectedPoint,
+        chartVisible,
+        scrollingEnabled,
+        preferredCurrency,
+        togglePrivacyMode,
+        toggleChartVisible,
+        handleChartSelectionChange,
+    } = useAccountOverview(account)
 
     return (
         <PWView style={styles.container}>
@@ -89,7 +63,7 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
                         }
                         currency='ALGO'
                         precision={2}
-                        h1Style={styles.primaryCurrency}
+                        style={styles.primaryCurrency}
                         isLoading={isPending}
                     />
                     <PWButton
@@ -102,7 +76,7 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
                 <PWView style={styles.secondaryValueBar}>
                     <CurrencyDisplay
                         h4
-                        h4Style={styles.valueTitle}
+                        style={styles.valueTitle}
                         value={
                             selectedPoint
                                 ? Decimal(selectedPoint.fiatValue)
@@ -137,7 +111,7 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
                 <WealthChart
                     account={account}
                     period={period}
-                    onSelectionChanged={chartSelectionChanged}
+                    onSelectionChanged={handleChartSelectionChange}
                 />
                 <ChartPeriodSelection
                     value={period}

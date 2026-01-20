@@ -122,4 +122,3 @@ describe('AccountAssetList', () => {
         expect(container).toBeTruthy()
     })
 })
-
