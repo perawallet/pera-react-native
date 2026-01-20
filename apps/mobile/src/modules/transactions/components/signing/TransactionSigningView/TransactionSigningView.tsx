@@ -74,7 +74,7 @@ const SingleTransactionView = ({ request }: TransactionSigningViewProps) => {
                 value={Decimal(-5059.44)}
                 showSymbol
                 h1
-                style={styles.mainAmount}
+                h1Style={styles.mainAmount}
             />
             <CurrencyDisplay
                 currency='USD'
@@ -82,7 +82,7 @@ const SingleTransactionView = ({ request }: TransactionSigningViewProps) => {
                 value={Decimal(-5059.44 * 0.17)}
                 showSymbol
                 h3
-                style={styles.secondaryAmount}
+                h3Style={styles.secondaryAmount}
             />
         </PWView>
     )

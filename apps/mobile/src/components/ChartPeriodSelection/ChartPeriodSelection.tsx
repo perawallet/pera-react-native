@@ -16,7 +16,7 @@ import { useCallback, useState } from 'react'
 import { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 
-export type ChartPeriodSelectionProps = {
+type ChartPeriodSelectionProps = {
     value: HistoryPeriod
     onChange: (val: HistoryPeriod) => void
 }

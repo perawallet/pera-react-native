@@ -16,7 +16,7 @@ import { PWIcon, PWImage, PWView } from '@components/core'
 import { SvgProps } from 'react-native-svg'
 import { useStyles } from './styles'
 
-export type ContactAvatarProps = {
+type ContactAvatarProps = {
     size: 'small' | 'large'
     contact?: Contact
 } & SvgProps

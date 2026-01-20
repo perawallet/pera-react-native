@@ -17,7 +17,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { EmptyView } from '@components/EmptyView'
 import { PWButton } from '@components/core'
 
-export interface TransactionErrorBoundaryProps {
+interface TransactionErrorBoundaryProps {
     children: ReactNode
     t: (key: string, options?: Record<string, unknown>) => string
 }

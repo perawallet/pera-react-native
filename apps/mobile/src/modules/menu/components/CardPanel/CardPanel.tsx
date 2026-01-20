@@ -17,7 +17,6 @@ import { Image } from 'react-native'
 
 import CardBackground from '@assets/images/card-background.png'
 const BACKGROUND_URI = Image.resolveAssetSource(CardBackground).uri
-export type CardPanelProps = Record<string, never>
 
 export const CardPanel = () => {
     const styles = useStyles()

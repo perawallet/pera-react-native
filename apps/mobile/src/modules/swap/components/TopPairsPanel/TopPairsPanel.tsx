@@ -32,9 +32,7 @@ type SwapRecord = {
     volume: Decimal
 }
 
-// TODO this is a mock implementation - implement properly
-export type TopPairsPanelProps = Record<string, never>
-
+//TODO this iz a mock implementation - implement properly
 export const TopPairsPanel = () => {
     const themeStyle = useStyles()
     const { t } = useLanguage()
@@ -67,7 +65,7 @@ export const TopPairsPanel = () => {
                         value={item.volume}
                         truncateToUnits
                         h4
-                        style={themeStyle.headerText}
+                        h4Style={themeStyle.headerText}
                     />
                 </PWView>
             )
@@ -99,7 +97,7 @@ export const TopPairsPanel = () => {
                 <Text h4>{t('swaps.top_pairs.title')}</Text>
                 <Text
                     h4
-                    style={themeStyle.headerText}
+                    h4Style={themeStyle.headerText}
                 >
                     {t('swaps.top_pairs.volume')}
                 </Text>

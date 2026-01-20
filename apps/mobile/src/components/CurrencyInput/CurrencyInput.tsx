@@ -16,7 +16,7 @@ import {
     MaskedTextInputProps,
 } from 'react-native-advanced-input-mask'
 
-export type CurrencyInputProps = {
+type CurrencyInputProps = {
     minPrecision: number
     maxPrecision: number
 } & Omit<MaskedTextInputProps, 'mask' | 'autocomplete' | 'allowedKeys'>

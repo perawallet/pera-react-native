@@ -22,7 +22,7 @@ import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 
-export type AccountWithBalanceProps = {
+type AccountWithBalanceProps = {
     account: WalletAccount
 } & PWViewProps
 

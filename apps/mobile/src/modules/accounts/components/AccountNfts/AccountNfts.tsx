@@ -13,8 +13,6 @@
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 
-export type AccountNftsProps = Record<string, never>
-
 //TODO implement
 export const AccountNfts = () => {
     const { t } = useLanguage()

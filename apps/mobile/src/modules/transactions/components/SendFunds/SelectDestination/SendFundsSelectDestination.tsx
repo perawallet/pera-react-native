@@ -21,7 +21,7 @@ import { EmptyView } from '@components/EmptyView'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
 
-export type SendFundsSelectDestinationProps = {
+type SendFundsSelectDestinationProps = {
     onNext: () => void
     onBack: () => void
 }

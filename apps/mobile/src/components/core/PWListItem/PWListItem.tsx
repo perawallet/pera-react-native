@@ -19,7 +19,7 @@ import { PWText } from '@components/core/PWText'
 import { useStyles } from './styles'
 import { PWView } from '@components/core/PWView'
 
-export type PWListItemProps = PWTouchableOpacityProps & {
+type PWListItemProps = PWTouchableOpacityProps & {
     icon: IconName
     title: string
 }

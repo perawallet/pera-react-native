@@ -65,16 +65,16 @@ const config = {
             // Include both the Node.js module names AND the polyfill package names
             const polyfillMap = {
                 // Node.js core modules
-                'crypto': path.resolve(__dirname, '../../node_modules/react-native-quick-crypto'),
-                'buffer': path.resolve(__dirname, '../../node_modules/@craftzdog/react-native-buffer'),
-                'stream': path.resolve(__dirname, '../../node_modules/readable-stream'),
-                'base64-js': path.resolve(__dirname, '../../node_modules/react-native-quick-base64'),
-                'util': path.resolve(__dirname, '../../node_modules/util'),
+                'crypto': path.resolve(__dirname, 'node_modules/react-native-quick-crypto'),
+                'buffer': path.resolve(__dirname, 'node_modules/@craftzdog/react-native-buffer'),
+                'stream': path.resolve(__dirname, 'node_modules/readable-stream'),
+                'base64-js': path.resolve(__dirname, 'node_modules/react-native-quick-base64'),
+                'util': path.resolve(__dirname, 'node_modules/util'),
                 // Polyfill package names (for when Babel has already transformed the import)
-                'react-native-quick-crypto': path.resolve(__dirname, '../../node_modules/react-native-quick-crypto'),
-                '@craftzdog/react-native-buffer': path.resolve(__dirname, '../../node_modules/@craftzdog/react-native-buffer'),
-                'readable-stream': path.resolve(__dirname, '../../node_modules/readable-stream'),
-                'react-native-quick-base64': path.resolve(__dirname, '../../node_modules/react-native-quick-base64'),
+                'react-native-quick-crypto': path.resolve(__dirname, 'node_modules/react-native-quick-crypto'),
+                '@craftzdog/react-native-buffer': path.resolve(__dirname, 'node_modules/@craftzdog/react-native-buffer'),
+                'readable-stream': path.resolve(__dirname, 'node_modules/readable-stream'),
+                'react-native-quick-base64': path.resolve(__dirname, 'node_modules/react-native-quick-base64'),
             };
 
             if (polyfillMap[moduleName]) {

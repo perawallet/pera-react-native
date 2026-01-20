@@ -16,7 +16,7 @@ import { useStyles } from './styles'
 import { TouchableOpacity, TouchableOpacityProps } from 'react-native'
 import { AccountDisplay } from '../AccountDisplay'
 
-export type AccountSelectionProps = {} & TouchableOpacityProps
+type AccountSelectionProps = {} & TouchableOpacityProps
 
 export const AccountSelection = (props: AccountSelectionProps) => {
     const styles = useStyles()
