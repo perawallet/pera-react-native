@@ -71,4 +71,3 @@ export const getTypography = (
 
     return typography[variant]
 }
-

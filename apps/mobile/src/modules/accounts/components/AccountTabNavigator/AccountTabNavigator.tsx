@@ -85,4 +85,3 @@ export const AccountTabNavigator = ({ account }: AccountTabNavigatorProps) => {
         </Tab.Navigator>
     )
 }
-
