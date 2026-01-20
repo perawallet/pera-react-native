@@ -10,14 +10,5 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-import { EdgeInsets } from 'react-native-safe-area-context'
-
-export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
-    container: {
-        marginTop: insets.top,
-    },
-    title: {
-        textAlign: 'center',
-    },
-}))
+export { AccountTabNavigator } from './AccountTabNavigator'
+export type { AccountTabsParamsList } from './AccountTabNavigator'

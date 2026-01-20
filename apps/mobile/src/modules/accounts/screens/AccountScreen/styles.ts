@@ -23,10 +23,6 @@ export const useStyles = makeStyles(theme => {
         },
         iconBar: {
             paddingVertical: 0,
-            paddingHorizontal: theme.spacing.md,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
         },
         iconBarSection: {
             flexDirection: 'row',
@@ -82,18 +78,6 @@ export const useStyles = makeStyles(theme => {
             height: theme.spacing['3xl'],
             alignItems: 'center',
             justifyContent: 'center',
-        },
-        tabs: {
-            paddingTop: theme.spacing.sm,
-        },
-        fullWidth: {
-            width: '100%',
-        },
-        tabItem: {
-            color: theme.colors.textMain,
-        },
-        indicator: {
-            backgroundColor: theme.colors.textMain,
         },
     }
 })

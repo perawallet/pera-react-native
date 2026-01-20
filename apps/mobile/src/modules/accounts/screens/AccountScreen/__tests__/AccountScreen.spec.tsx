@@ -48,13 +48,10 @@ vi.mock('@modules/accounts/components/AccountMenu', () => ({
     AccountMenu: 'AccountMenu',
 }))
 vi.mock('@modules/accounts/components/AccountOverview', () => ({
-    AccountOverview: 'AccountOverview',
+    AccountOverview: () => <span data-testid='AccountOverview' />,
 }))
-vi.mock('@modules/accounts/components/AccountNfts', () => ({
-    AccountNfts: 'AccountNfts',
-}))
-vi.mock('@modules/accounts/components/AccountHistory', () => ({
-    AccountHistory: 'AccountHistory',
+vi.mock('@modules/accounts/components/AccountTabNavigator', () => ({
+    AccountTabNavigator: () => <span data-testid='AccountTabNavigator' />,
 }))
 vi.mock('@modules/accounts/components/AccountSelection', () => ({
     AccountSelection: 'AccountSelection',
@@ -68,10 +65,8 @@ vi.mock('@modules/accounts/components/ConfettiAnimation', () => ({
 }))
 
 describe('AccountScreen', () => {
-    it('renders correctly with account', () => {
+    it('renders AccountTabNavigator when account is selected', () => {
         render(<AccountScreen />)
-        // Tab and TabView should render inside the screen
-        expect(screen.getByTestId('Tab')).toBeTruthy()
-        expect(screen.getByTestId('TabView')).toBeTruthy()
+        expect(screen.getByTestId('AccountTabNavigator')).toBeTruthy()
     })
 })

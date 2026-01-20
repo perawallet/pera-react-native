@@ -15,44 +15,36 @@ import { PWView } from '@components/core'
 import { RoundButton } from '@components/RoundButton'
 import { useLanguage } from '@hooks/useLanguage'
 
-export type ButtonPanelProps = {
-    onSwap: () => void
-    onStake: () => void
-    onSend: () => void
+export type NoFundsButtonPanelProps = {
+    onBuyAlgo: () => void
+    onReceive: () => void
     onMore: () => void
 }
 
-export const ButtonPanel = ({
-    onSwap,
-    onStake,
-    onSend,
+export const NoFundsButtonPanel = ({
+    onBuyAlgo,
+    onReceive,
     onMore,
-}: ButtonPanelProps) => {
+}: NoFundsButtonPanelProps) => {
     const themeStyle = useStyles()
     const { t } = useLanguage()
 
     return (
         <PWView style={themeStyle.container}>
             <RoundButton
-                title={t('account_details.button_panel.swap')}
-                icon='swap'
+                title={t('account_details.no_balance.buy_algo')}
+                icon='algo'
                 variant='primary'
-                onPress={onSwap}
+                onPress={onBuyAlgo}
             />
             <RoundButton
-                title={t('account_details.button_panel.stake')}
-                icon='dot-stack'
+                title={t('account_details.no_balance.receive')}
+                icon='inflow'
                 variant='secondary'
-                onPress={onStake}
+                onPress={onReceive}
             />
             <RoundButton
-                title={t('account_details.button_panel.send')}
-                icon='outflow'
-                variant='secondary'
-                onPress={onSend}
-            />
-            <RoundButton
-                title={t('account_details.button_panel.more')}
+                title={t('account_details.no_balance.more')}
                 icon='ellipsis'
                 variant='secondary'
                 onPress={onMore}

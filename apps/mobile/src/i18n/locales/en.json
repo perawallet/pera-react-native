@@ -93,6 +93,14 @@
             "overview_tab": "Overview",
             "nfts_tab": "NFTs",
             "history_tab": "History"
+        },
+        "no_balance": {
+            "welcome": "Welcome to Pera!",
+            "get_started": "To get started, deposit ALGO",
+            "buy_algo": "Buy Algo",
+            "transfer": "Transfer",
+            "receive": "Receive",
+            "more": "More"
         }
     },
     "camera": {
