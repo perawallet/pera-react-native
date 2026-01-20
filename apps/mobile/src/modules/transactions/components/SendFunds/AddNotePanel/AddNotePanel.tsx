@@ -26,7 +26,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { noteSchema } from '@perawallet/wallet-core-blockchain'
 
-type AddNotePanelProps = {
+export type AddNotePanelProps = {
     onClose: () => void
 } & PWBottomSheetProps
 

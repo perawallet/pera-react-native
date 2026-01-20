@@ -17,6 +17,8 @@ import {
 } from '@perawallet/wallet-core-platform-integration'
 import { useStyles } from './styles'
 
+export type FeatureFlagOverridesProps = Record<string, never>
+
 export const FeatureFlagOverrides = () => {
     const styles = useStyles()
     const { configOverrides, setConfigOverride } = useRemoteConfigOverrides()

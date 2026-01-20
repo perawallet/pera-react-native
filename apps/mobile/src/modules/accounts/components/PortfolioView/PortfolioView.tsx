@@ -32,7 +32,7 @@ import { UserPreferences } from '@constants/user-preferences'
 import { InfoButton } from '@components/InfoButton'
 import { ExpandablePanel } from '@components/ExpandablePanel'
 
-type PortfolioViewProps = {
+export type PortfolioViewProps = {
     onDataSelected?: (selected: AccountBalanceHistoryItem | null) => void
 } & PWViewProps
 
@@ -88,7 +88,7 @@ export const PortfolioView = (props: PortfolioViewProps) => {
                     }
                     currency='ALGO'
                     precision={2}
-                    h1Style={styles.primaryCurrency}
+                    style={styles.primaryCurrency}
                     isLoading={isPending}
                 />
                 <PWButton
@@ -101,7 +101,7 @@ export const PortfolioView = (props: PortfolioViewProps) => {
             <PWView style={styles.secondaryValueBar}>
                 <CurrencyDisplay
                     h4
-                    h4Style={styles.valueTitle}
+                    style={styles.valueTitle}
                     value={
                         selectedPoint
                             ? selectedPoint.fiatValue

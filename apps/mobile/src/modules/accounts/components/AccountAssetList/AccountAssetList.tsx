@@ -33,7 +33,7 @@ import { useModalState } from '@hooks/useModalState'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 
 const TAB_AND_HEADER_HEIGHT = 100
-type AccountAssetListProps = {
+export type AccountAssetListProps = {
     account: WalletAccount
     scrollEnabled?: boolean
 }

@@ -13,7 +13,7 @@
 import { PWIcon } from '@components/core/PWIcon'
 import { CheckBox, CheckBoxProps } from '@rneui/themed'
 
-type PWCheckboxProps = {
+export type PWCheckboxProps = {
     children?: React.ReactNode
 } & CheckBoxProps
 

@@ -42,7 +42,7 @@ describe('AssetPriceChart', () => {
         vi.mocked(useAssetPriceHistoryQuery).mockReturnValue({
             data: undefined,
             isPending: true,
-        } as ReturnType<typeof useAssetPriceHistoryQuery>)
+        } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
 
         const { container } = render(
             <AssetPriceChart
@@ -58,7 +58,7 @@ describe('AssetPriceChart', () => {
         vi.mocked(useAssetPriceHistoryQuery).mockReturnValue({
             data: [],
             isPending: false,
-        } as ReturnType<typeof useAssetPriceHistoryQuery>)
+        } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
 
         const { container } = render(
             <AssetPriceChart
@@ -79,7 +79,7 @@ describe('AssetPriceChart', () => {
         vi.mocked(useAssetPriceHistoryQuery).mockReturnValue({
             data: mockData,
             isPending: false,
-        } as ReturnType<typeof useAssetPriceHistoryQuery>)
+        } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
 
         const { container } = render(
             <AssetPriceChart
@@ -97,7 +97,7 @@ describe('AssetPriceChart', () => {
         vi.mocked(useAssetPriceHistoryQuery).mockReturnValue({
             data: mockData,
             isPending: false,
-        } as ReturnType<typeof useAssetPriceHistoryQuery>)
+        } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
 
         const { container } = render(
             <AssetPriceChart

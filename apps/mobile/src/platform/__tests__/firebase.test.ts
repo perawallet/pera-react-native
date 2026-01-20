@@ -12,7 +12,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { vi } from 'vitest'
+import { vi, type Mock } from 'vitest'
 import { Platform } from 'react-native'
 import { RNFirebaseService } from '../firebase'
 
@@ -288,7 +288,7 @@ describe('RNFirebaseService', () => {
                     throw new Error('test error')
                 })
 
-                ;(service.remoteConfig!.getValue as vi.Mock) = mockGetValue
+                    ; (service.remoteConfig!.getValue as Mock) = mockGetValue
 
                 expect(
                     service.getStringValue('test_key' as any, 'fallback'),

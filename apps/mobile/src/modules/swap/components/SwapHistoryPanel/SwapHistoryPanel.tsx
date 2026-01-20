@@ -28,6 +28,7 @@ type SwapAssets = {
     fromAsset?: PeraAsset
     toAsset?: PeraAsset
 }
+export type SwapHistoryPanelProps = Record<string, never>
 
 export const SwapHistoryPanel = () => {
     const themeStyle = useStyles()

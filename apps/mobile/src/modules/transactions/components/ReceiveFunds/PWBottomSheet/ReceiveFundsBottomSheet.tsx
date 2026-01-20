@@ -22,7 +22,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { ReceiveFundsAccountSelectionView } from '../AccountSelection/ReceiveFundsAccountSelectionView'
 import { ReceiveFundsQRView } from '../QrView/ReceiveFundsQRView'
 
-type ReceiveFundsBottomSheetProps = {
+export type ReceiveFundsBottomSheetProps = {
     account?: WalletAccount
     isVisible: boolean
     onClose: () => void

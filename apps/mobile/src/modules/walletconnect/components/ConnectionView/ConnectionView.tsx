@@ -42,12 +42,12 @@ import { ScrollView } from 'react-native-gesture-handler'
 import { useToast } from '@hooks/useToast'
 import { PermissionItem } from '../PermissionItem'
 
-//TODO implement project validation using our backend to show a "verified" badge somewhere
-export const ConnectionView = ({
-    request,
-}: {
+export type ConnectionViewProps = {
     request: WalletConnectSessionRequest
-}) => {
+}
+
+//TODO implement project validation using our backend to show a "verified" badge somewhere
+export const ConnectionView = ({ request }: ConnectionViewProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()

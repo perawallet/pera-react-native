@@ -22,7 +22,7 @@ import { useStyles } from './styles'
 import { useCallback, useMemo } from 'react'
 import { PeraNotification } from '@perawallet/wallet-core-platform-integration'
 
-type NotificationItemProps = {
+export type NotificationItemProps = {
     item: PeraNotification
 }
 
