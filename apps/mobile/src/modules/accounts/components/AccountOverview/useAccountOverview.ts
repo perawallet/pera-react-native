@@ -50,10 +50,10 @@ export type UseAccountOverviewResult = {
     handleStake: () => void
     handleMore: () => void
     handleBuyAlgo: () => void
-    handleTransfer: () => void
     handleReceive: () => void
     isReceiveFundsVisible: boolean
     handleCloseReceiveFunds: () => void
+    handleAssetInbox: () => void
 }
 
 export const useAccountOverview = (
@@ -119,10 +119,6 @@ export const useAccountOverview = (
         navigation.navigate('TabBar', { screen: 'Fund' })
     }, [navigation])
 
-    const handleTransfer = useCallback(() => {
-        handleOpenSendFunds()
-    }, [handleOpenSendFunds])
-
     const {
         isOpen: isReceiveFundsVisible,
         open: handleOpenReceiveFunds,
@@ -132,6 +128,10 @@ export const useAccountOverview = (
     const handleReceive = useCallback(() => {
         handleOpenReceiveFunds()
     }, [handleOpenReceiveFunds])
+
+    const handleAssetInbox = useCallback(() => {
+        navigation.navigate('Notifications')
+    }, [navigation])
 
     return {
         portfolioAlgoValue,
@@ -154,9 +154,9 @@ export const useAccountOverview = (
         handleStake,
         handleMore: notImplemented,
         handleBuyAlgo,
-        handleTransfer,
         handleReceive,
         isReceiveFundsVisible,
         handleCloseReceiveFunds,
+        handleAssetInbox,
     }
 }

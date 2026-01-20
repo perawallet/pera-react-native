@@ -18,10 +18,22 @@ import { AccountOverview } from '../AccountOverview'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const { mockNavigate } = vi.hoisted(() => ({ mockNavigate: vi.fn() }))
+const { mockShowToast } = vi.hoisted(() => ({ mockShowToast: vi.fn() }))
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({
         navigate: mockNavigate,
+    }),
+}))
+
+vi.mock('@hooks/useToast', () => ({
+    useToast: () => ({
+        showToast: mockShowToast,
+    }),
+}))
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string) => key,
     }),
 }))
 
@@ -88,11 +100,12 @@ vi.mock('../../ButtonPanel', () => ({
 }))
 vi.mock('../../NoFundsButtonPanel', () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    NoFundsButtonPanel: ({ onBuyAlgo, onTransfer, onReceive }: any) => (
+    NoFundsButtonPanel: (props: any) => (
         <div>
-            <button onClick={onBuyAlgo}>Buy Algo</button>
-            <button onClick={onTransfer}>Transfer</button>
-            <button onClick={onReceive}>Receive</button>
+            <button onClick={props.onBuyAlgo}>Buy Algo</button>
+            <button onClick={props.onReceive}>Receive</button>
+            <button onClick={props.onAssetInbox}>Asset Inbox</button>
+            <button onClick={props.onMore}>More</button>
         </div>
     ),
 }))
@@ -177,16 +190,25 @@ describe('AccountOverview', () => {
             })
         })
 
-        it('opens Send Funds sheet when Transfer is pressed', () => {
-            render(<AccountOverview account={mockAccount} />)
-            fireEvent.click(screen.getByText('Transfer'))
-            expect(screen.getByTestId('send-funds-sheet')).toBeTruthy()
-        })
-
         it('opens Receive Funds sheet when Receive is pressed', () => {
             render(<AccountOverview account={mockAccount} />)
             fireEvent.click(screen.getByText('Receive'))
             expect(screen.getByTestId('receive-funds-sheet')).toBeTruthy()
+        })
+        it('navigates to Notifications screen when Asset Inbox is pressed', () => {
+            render(<AccountOverview account={mockAccount} />)
+            fireEvent.click(screen.getByText('Asset Inbox'))
+            expect(mockNavigate).toHaveBeenCalledWith('Notifications')
+        })
+
+        it('shows not implemented toast when More is pressed', () => {
+            render(<AccountOverview account={mockAccount} />)
+            fireEvent.click(screen.getByText('More'))
+            expect(mockShowToast).toHaveBeenCalledWith({
+                title: 'common.not_implemented.title',
+                body: 'common.not_implemented.body',
+                type: 'error',
+            })
         })
     })
 })

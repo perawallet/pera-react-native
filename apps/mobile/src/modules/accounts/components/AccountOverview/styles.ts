@@ -104,6 +104,7 @@ export const useStyles = makeStyles(theme => {
         },
         noBalanceContainer: {
             padding: theme.spacing['4xl'],
+            paddingBottom: theme.spacing.xl,
             alignItems: 'center',
             justifyContent: 'center',
             gap: theme.spacing.xl,

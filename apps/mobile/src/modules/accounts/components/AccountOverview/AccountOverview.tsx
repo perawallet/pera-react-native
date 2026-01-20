@@ -58,10 +58,10 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
         handleStake,
         handleMore,
         handleBuyAlgo,
-        handleTransfer,
         handleReceive,
         isReceiveFundsVisible,
         handleCloseReceiveFunds,
+        handleAssetInbox,
     } = useAccountOverview(account)
     const { t } = useLanguage()
 
@@ -147,25 +147,28 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
                     />
                 </>
             ) : (
-                <PWView style={styles.noBalanceContainer}>
-                    <PWText
-                        variant='body'
-                        style={styles.noBalanceWelcomeText}
-                    >
-                        {t('account_details.no_balance.welcome')}
-                    </PWText>
-                    <PWText
-                        variant='h1'
-                        style={styles.centeredText}
-                    >
-                        {t('account_details.no_balance.get_started')}
-                    </PWText>
+                <>
+                    <PWView style={styles.noBalanceContainer}>
+                        <PWText
+                            variant='body'
+                            style={styles.noBalanceWelcomeText}
+                        >
+                            {t('account_details.no_balance.welcome')}
+                        </PWText>
+                        <PWText
+                            variant='h1'
+                            style={styles.centeredText}
+                        >
+                            {t('account_details.no_balance.get_started')}
+                        </PWText>
+                    </PWView>
                     <NoFundsButtonPanel
                         onBuyAlgo={handleBuyAlgo}
-                        onTransfer={handleTransfer}
                         onReceive={handleReceive}
+                        onAssetInbox={handleAssetInbox}
+                        onMore={handleMore}
                     />
-                </PWView>
+                </>
             )}
 
             <AccountAssetList
