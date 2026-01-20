@@ -24,7 +24,7 @@ import { SendFundsBottomSheet } from '@modules/transactions/components/SendFunds
 import { ReceiveFundsBottomSheet } from '@modules/transactions/components/ReceiveFunds/PWBottomSheet/ReceiveFundsBottomSheet'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 
-type AssetActionButtonsProps = {
+export type AssetActionButtonsProps = {
     asset: PeraAsset
 }
 //TODO hook up missing actions

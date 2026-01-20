@@ -19,7 +19,8 @@
     "fastlane:ios:staging": "bundle exec fastlane ios build_staging",
     "fastlane:ios:production": "bundle exec fastlane ios build_production",
     "fastlane:android:staging": "bundle exec fastlane android build_staging",
-    "fastlane:android:production": "bundle exec fastlane android build_production"
+    "fastlane:android:production": "bundle exec fastlane android build_production",
+    "build": "tsc --noEmit"
   },
   "dependencies": {
     "@algorandfoundation/algokit-utils": "catalog:",

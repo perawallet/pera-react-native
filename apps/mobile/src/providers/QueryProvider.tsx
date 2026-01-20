@@ -39,7 +39,7 @@ const queryClient = new QueryClient({
     },
 })
 
-type QueryProviderProps = OmitKeyof<
+export type QueryProviderProps = OmitKeyof<
     PersistQueryClientRootOptions,
     'queryClient'
 > &

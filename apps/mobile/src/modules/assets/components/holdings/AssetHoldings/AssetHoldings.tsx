@@ -34,7 +34,7 @@ import { PeraAsset } from '@perawallet/wallet-core-assets'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 
-type AssetHoldingsProps = {
+export type AssetHoldingsProps = {
     account: WalletAccount
     asset: PeraAsset
 }

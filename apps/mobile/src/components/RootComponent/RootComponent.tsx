@@ -37,7 +37,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
 import { useTokenListener } from '@modules/token'
 
-type RootComponentProps = {
+export type RootComponentProps = {
     fcmToken: string | null
 }
 

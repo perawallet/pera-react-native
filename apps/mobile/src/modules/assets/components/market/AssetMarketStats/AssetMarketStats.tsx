@@ -24,7 +24,7 @@ import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useLanguage } from '@hooks/useLanguage'
 import { InfoButton } from '@components/InfoButton'
 
-type AssetMarketStatsProps = {
+export type AssetMarketStatsProps = {
     assetDetails: PeraAsset
 }
 

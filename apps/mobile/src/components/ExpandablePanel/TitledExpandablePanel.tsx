@@ -18,7 +18,7 @@ import { useStyles } from './styles'
 import { EXPANDABLE_PANEL_ANIMATION_DURATION } from '@constants/ui'
 import { ExpandablePanel } from './ExpandablePanel'
 
-type TitledExpandablePanelProps = {
+export type TitledExpandablePanelProps = {
     title: React.ReactNode | string
     iconPressed?: () => void
     containerStyle?: StyleProp<ViewStyle>

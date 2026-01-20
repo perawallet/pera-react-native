@@ -27,7 +27,7 @@ export type AccountTabsParamsList = {
 
 const Tab = createMaterialTopTabNavigator<AccountTabsParamsList>()
 
-type AccountTabNavigatorProps = {
+export type AccountTabNavigatorProps = {
     account: WalletAccount
 }
 

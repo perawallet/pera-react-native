@@ -24,7 +24,7 @@ import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import { ScrollView } from 'react-native-gesture-handler'
 
-type ArbitraryDataSigningDetailsViewProps = {
+export type ArbitraryDataSigningDetailsViewProps = {
     request: ArbitraryDataSignRequest
     dataMessage: PeraArbitraryDataMessage
     onBack: () => void

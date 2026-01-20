@@ -31,7 +31,7 @@ import { useToast } from '@hooks/useToast'
 import { useTransactionSigner } from '@perawallet/wallet-core-accounts'
 import { config } from '@perawallet/wallet-core-config'
 
-type TransactionSigningViewProps = {
+export type TransactionSigningViewProps = {
     request: TransactionSignRequest
 }
 
@@ -74,7 +74,7 @@ const SingleTransactionView = ({ request }: TransactionSigningViewProps) => {
                 value={Decimal(-5059.44)}
                 showSymbol
                 h1
-                h1Style={styles.mainAmount}
+                style={styles.mainAmount}
             />
             <CurrencyDisplay
                 currency='USD'
@@ -82,7 +82,7 @@ const SingleTransactionView = ({ request }: TransactionSigningViewProps) => {
                 value={Decimal(-5059.44 * 0.17)}
                 showSymbol
                 h3
-                h3Style={styles.secondaryAmount}
+                style={styles.secondaryAmount}
             />
         </PWView>
     )

@@ -18,7 +18,7 @@ import { EmptyView } from '@components/EmptyView'
 import { FlashList } from '@shopify/flash-list'
 import { useLanguage } from '@hooks/useLanguage'
 
-type AssetTransactionListProps = {
+export type AssetTransactionListProps = {
     account: WalletAccount
     asset: PeraAsset
     children?: React.ReactNode

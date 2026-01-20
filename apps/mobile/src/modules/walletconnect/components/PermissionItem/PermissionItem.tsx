@@ -15,11 +15,11 @@ import { useStyles } from './styles'
 import { AlgorandPermission } from '@perawallet/wallet-core-walletconnect'
 import { useLanguage } from '@hooks/useLanguage'
 
-export const PermissionItem = ({
-    permission,
-}: {
+export type PermissionItemProps = {
     permission: AlgorandPermission
-}) => {
+}
+
+export const PermissionItem = ({ permission }: PermissionItemProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
 

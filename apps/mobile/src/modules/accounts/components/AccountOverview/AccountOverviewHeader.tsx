@@ -28,7 +28,7 @@ import { ExpandablePanel } from '@components/ExpandablePanel'
 import { useLanguage } from '@hooks/useLanguage'
 import { NoFundsButtonPanel } from '../NoFundsButtonPanel'
 
-type AccountOverviewHeaderProps = {
+export type AccountOverviewHeaderProps = {
     account: WalletAccount
     hasBalance: boolean
     portfolioAlgoValue: Decimal

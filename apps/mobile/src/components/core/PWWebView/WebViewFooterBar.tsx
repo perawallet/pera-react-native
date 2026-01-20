@@ -23,7 +23,7 @@ import { PWIcon } from '@components/core/PWIcon'
 import WebView from 'react-native-webview'
 import { WebViewNativeEvent } from 'react-native-webview/lib/RNCWebViewNativeComponent'
 
-type WebViewFooterBarProps = {
+export type WebViewFooterBarProps = {
     webview: RefObject<WebView<unknown> | null>
     homeUrl?: string
     navigationState?: WebViewNativeEvent

@@ -11,4 +11,3 @@
  */
 
 export { AccountNfts } from './AccountNfts'
-export type { AccountNftsProps } from './AccountNfts'

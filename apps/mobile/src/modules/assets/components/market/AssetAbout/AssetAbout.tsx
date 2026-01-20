@@ -21,7 +21,7 @@ import { useWebView } from '@hooks/usePeraWebviewInterface'
 import { v7 as uuid } from 'uuid'
 import { useClipboard } from '@hooks/useClipboard'
 
-type AssetAboutProps = {
+export type AssetAboutProps = {
     assetDetails: PeraAsset
 }
 

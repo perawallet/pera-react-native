@@ -133,7 +133,7 @@ export const PairSelectionPanel = () => {
                 <PWView style={styles.inputContainer}>
                     <PWView style={styles.inputAmountsContainer}>
                         <CurrencyDisplay
-                            h2Style={styles.primaryAmountText}
+                            style={styles.primaryAmountText}
                             showSymbol={false}
                             precision={2}
                             currency='ALGO'

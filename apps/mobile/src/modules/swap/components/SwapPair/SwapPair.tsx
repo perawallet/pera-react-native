@@ -17,13 +17,13 @@ import { Text } from '@rneui/themed'
 import { AssetIcon } from '@modules/assets/components/AssetIcon'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 
-type SwapPairItemProps = {
+export type SwapPairProps = {
     fromAsset: PeraAsset
     toAsset: PeraAsset
     style: ViewStyle
 }
 
-export const SwapPair = (props: SwapPairItemProps) => {
+export const SwapPair = (props: SwapPairProps) => {
     const themeStyle = useStyles()
 
     return (

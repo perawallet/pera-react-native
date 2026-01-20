@@ -11,4 +11,3 @@
  */
 
 export { AccountHistory } from './AccountHistory'
-export type { AccountHistoryProps } from './AccountHistory'

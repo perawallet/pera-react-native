@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './WalletConnectErrorBoundary'
+export { WalletConnectErrorBoundary } from './WalletConnectErrorBoundary'
 export type { WalletConnectErrorBoundaryProps } from './WalletConnectErrorBoundary'

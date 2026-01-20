@@ -19,7 +19,7 @@ import { useAccountOverview } from './useAccountOverview'
 import { PWView } from '@components/core'
 import { AccountAssetList } from '../AccountAssetList'
 
-type AccountOverviewProps = {
+export type AccountOverviewProps = {
     account: WalletAccount
 }
 
