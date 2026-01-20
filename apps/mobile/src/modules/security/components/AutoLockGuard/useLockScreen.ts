@@ -13,37 +13,37 @@
 import { useState, useCallback, useEffect } from 'react'
 import { usePinCode, useBiometrics } from '@perawallet/wallet-core-security'
 
-type UsePinLockScreenParams = {
+type UseLockScreenParams = {
     onUnlock: () => void
 }
 
-type UsePinLockScreenResult = {
+type UseLockScreenResult = {
     hasError: boolean
     isLockedOut: boolean
     remainingSeconds: number
-    showBiometric: boolean
     handlePinComplete: (pin: string) => void
-    handleBiometricPress: () => void
     handleErrorAnimationComplete: () => void
 }
 
-export const usePinLockScreen = ({
+export const useLockScreen = ({
     onUnlock,
-}: UsePinLockScreenParams): UsePinLockScreenResult => {
+}: UseLockScreenParams): UseLockScreenResult => {
     const {
         verifyPin,
         handleFailedAttempt,
         resetFailedAttempts,
         isLockedOut,
         lockoutEndTime,
+        setLockoutEndTime,
     } = usePinCode()
-    const { isBiometricEnabled, authenticateWithBiometrics } = useBiometrics()
+    const { checkBiometricsEnabled, authenticateWithBiometrics } =
+        useBiometrics()
 
     const [hasError, setHasError] = useState(false)
     const [remainingSeconds, setRemainingSeconds] = useState(0)
 
     useEffect(() => {
-        if (!lockoutEndTime) {
+        if (!isLockedOut || !lockoutEndTime) {
             setRemainingSeconds(0)
             return
         }
@@ -55,6 +55,9 @@ export const usePinLockScreen = ({
                 Math.ceil((lockoutEndTime - now) / 1000),
             )
             setRemainingSeconds(remaining)
+            if (remaining === 0) {
+                setLockoutEndTime(null)
+            }
         }
 
         updateRemaining()
@@ -64,9 +67,15 @@ export const usePinLockScreen = ({
     }, [lockoutEndTime])
 
     useEffect(() => {
-        if (isBiometricEnabled) {
-            handleBiometricPress()
-        }
+        checkBiometricsEnabled().then(async enabled => {
+            if (enabled) {
+                const success = await authenticateWithBiometrics()
+                if (success) {
+                    resetFailedAttempts()
+                    onUnlock()
+                }
+            }
+        })
     }, [])
 
     const handlePinComplete = useCallback(
@@ -83,21 +92,6 @@ export const usePinLockScreen = ({
         [verifyPin, resetFailedAttempts, handleFailedAttempt, onUnlock],
     )
 
-    const handleBiometricPress = useCallback(async () => {
-        if (!isBiometricEnabled) return
-
-        const success = await authenticateWithBiometrics()
-        if (success) {
-            resetFailedAttempts()
-            onUnlock()
-        }
-    }, [
-        isBiometricEnabled,
-        authenticateWithBiometrics,
-        resetFailedAttempts,
-        onUnlock,
-    ])
-
     const handleErrorAnimationComplete = useCallback(() => {
         setHasError(false)
     }, [])
@@ -106,9 +100,7 @@ export const usePinLockScreen = ({
         hasError,
         isLockedOut,
         remainingSeconds,
-        showBiometric: isBiometricEnabled,
         handlePinComplete,
-        handleBiometricPress,
         handleErrorAnimationComplete,
     }
 }

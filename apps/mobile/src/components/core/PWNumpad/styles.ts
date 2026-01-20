@@ -27,12 +27,10 @@ export const useStyles = makeStyles(theme => ({
     },
     key: {
         width: KEY_SIZE,
-        height: KEY_SIZE,
-        borderRadius: KEY_SIZE / 2,
-        backgroundColor: theme.colors.layerGrayLighter,
+        height: KEY_SIZE * 0.8,
         justifyContent: 'center',
         alignItems: 'center',
-        marginHorizontal: KEY_SPACING / 2,
+        marginHorizontal: KEY_SPACING * 0.7,
     },
     keyDisabled: {
         opacity: 0.5,

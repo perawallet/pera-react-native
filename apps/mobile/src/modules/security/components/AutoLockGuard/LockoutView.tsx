@@ -10,25 +10,14 @@
  limitations under the License
  */
 
-import { View } from 'react-native'
-import { PWText, PWIcon, PWButton } from '@components/core'
-import { useStyles } from './styles'
+import { PWView, PWText, PWIcon, PWButton } from '@components/core'
+import { useStyles } from './LockoutView.style'
 import { useLanguage } from '@hooks/useLanguage'
+import { formatTime } from '@perawallet/wallet-core-shared'
 
 type LockoutViewProps = {
     remainingSeconds: number
     onResetData?: () => void
-}
-
-const formatTime = (totalSeconds: number): string => {
-    const hours = Math.floor(totalSeconds / 3600)
-    const minutes = Math.floor((totalSeconds % 3600) / 60)
-    const seconds = totalSeconds % 60
-
-    if (hours > 0) {
-        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-    }
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
 }
 
 export const LockoutView = ({
@@ -39,15 +28,15 @@ export const LockoutView = ({
     const { t } = useLanguage()
 
     return (
-        <View style={styles.lockoutContainer}>
-            <View style={styles.lockoutContent}>
-                <View style={styles.lockoutIconContainer}>
+        <PWView style={styles.lockoutContainer}>
+            <PWView style={styles.lockoutContent}>
+                <PWView style={styles.lockoutIconContainer}>
                     <PWIcon
-                        name='shield-check'
-                        size='xl'
-                        variant='error'
+                        name='locked'
+                        size='lg'
+                        variant='white'
                     />
-                </View>
+                </PWView>
                 <PWText
                     variant='h3'
                     style={styles.lockoutTitle}
@@ -56,29 +45,35 @@ export const LockoutView = ({
                 </PWText>
                 <PWText
                     variant='body'
-                    style={styles.lockoutSubtitle}
+                    style={[styles.lockoutSubtitle, styles.divider]}
                 >
                     {t('security.lockout.subtitle')}
                 </PWText>
-                <View style={styles.countdownContainer}>
+                <PWText
+                    variant='body'
+                    style={styles.lockoutSubtitle}
+                >
+                    {t('security.lockout.tryagain_in')}
+                </PWText>
+                <PWView style={styles.countdownContainer}>
                     <PWText
                         variant='h1'
                         style={styles.countdownText}
                     >
                         {formatTime(remainingSeconds)}
                     </PWText>
-                </View>
-            </View>
+                </PWView>
+            </PWView>
 
             {onResetData && (
-                <View style={styles.lockoutActions}>
+                <PWView style={styles.lockoutActions}>
                     <PWButton
-                        variant='destructive'
+                        variant='secondary'
                         title={t('security.lockout.reset_button')}
                         onPress={onResetData}
                     />
-                </View>
+                </PWView>
             )}
-        </View>
+        </PWView>
     )
 }

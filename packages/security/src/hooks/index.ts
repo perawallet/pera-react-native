@@ -12,5 +12,3 @@
 
 export { usePinCode } from './usePinCode'
 export { useBiometrics, type BiometricType } from './useBiometrics'
-export { useAppLock } from './useAppLock'
-export { useSecurity } from './useSecurity'

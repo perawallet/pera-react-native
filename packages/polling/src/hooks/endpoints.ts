@@ -14,7 +14,7 @@ import { queryClient, type Network } from '@perawallet/wallet-core-shared'
 import type { ShouldRefreshResponse } from '../models'
 
 export const getShouldRefreshEndpoint = () => {
-    return '/v1/should-refresh'
+    return '/v1/accounts/should-refresh/'
 }
 
 export const sendShouldRefreshRequest = async (

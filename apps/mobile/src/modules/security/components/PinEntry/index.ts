@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { PinEntry, type PinEntryProps, type PinEntryMode } from './PinEntry'
+export { PinEntry, type PinEntryProps } from './PinEntry'

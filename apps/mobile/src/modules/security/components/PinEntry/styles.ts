@@ -15,26 +15,20 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
-        justifyContent: 'space-between',
         paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing['3xl'],
-        paddingBottom: theme.spacing.xxl,
     },
     header: {
-        alignItems: 'center',
+        alignItems: 'flex-start',
     },
     title: {
         color: theme.colors.textMain,
-        textAlign: 'center',
+        textAlign: 'left',
         marginBottom: theme.spacing.sm,
-    },
-    subtitle: {
-        color: theme.colors.textGray,
-        textAlign: 'center',
     },
     circlesContainer: {
         alignItems: 'center',
         justifyContent: 'center',
+        flexGrow: 1,
     },
     numpadContainer: {
         alignItems: 'center',

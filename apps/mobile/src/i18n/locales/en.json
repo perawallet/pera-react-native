@@ -328,24 +328,20 @@
         "node_settings": "Node Settings",
         "feature_flags": "Feature Flags",
         "dispenser": "Dispenser",
-        "developer_menu": "Developer Menu",
-        "pin_entry": "PIN Code"
+        "developer_menu": "Developer Menu"
     },
     "security": {
         "pin": {
-            "setup_title": "Create a PIN",
-            "setup_subtitle": "Enter a 6-digit PIN to secure your wallet",
-            "confirm_title": "Confirm your PIN",
-            "confirm_subtitle": "Re-enter your PIN to confirm",
+            "setup_title": "Choose your\n6-digit PIN",
+            "confirm_title": "Re-enter your\n6-digit PIN",
             "verify_title": "Enter your PIN",
             "unlock_title": "Enter your PIN",
-            "change_old_title": "Enter current PIN",
-            "change_new_title": "Enter new PIN",
-            "change_confirm_title": "Confirm new PIN"
+            "change_old_title": "Enter your old\n6-digit PIN"
         },
         "lockout": {
-            "title": "Wallet Locked",
+            "title": "Pera Wallet app is locked",
             "subtitle": "Too many incorrect PIN attempts",
+            "tryagain_in": "Try again in",
             "reset_button": "Reset All Data"
         }
     },
@@ -440,14 +436,12 @@
         },
         "security": {
             "security_settings_section": "Security Settings",
-            "enable_pin_security": "Enable PIN Security",
-            "enable_pin_security_description": "Require a PIN to access your wallet",
-            "change_pin": "Change PIN",
+            "enable_pin_security": "Enable PIN Code",
+            "change_pin": "Set / Change PIN Code",
             "enable_biometrics": "Enable Biometrics",
-            "enable_biometrics_description": "Use Face ID or Touch ID to unlock your wallet",
             "antispam_section": "Anti-spam Protection",
             "enable_rekey_support": "Enable Re-key Support",
-            "enable_rekey_support_description": "Allow accounts to be rekeyed to this wallet"
+            "enable_rekey_support_description": "Once you enable this, you can confirm transaction requests to rekey your account. This will give control of your account to another address."
         }
     },
     "signing": {

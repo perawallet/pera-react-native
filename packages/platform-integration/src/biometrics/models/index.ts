@@ -13,22 +13,8 @@
 export type BiometricType = 'face' | 'fingerprint' | 'iris' | null
 
 export interface BiometricsService {
-    /**
-     * Get the supported biometric type on this device
-     */
     getSupportedBiometricType(): Promise<BiometricType>
-
-    /**
-     * Check if biometrics are available on this device
-     */
-    isBiometricAvailable(): Promise<boolean>
-
-    /**
-     * Prompt the user to authenticate with biometrics
-     * @param promptTitle The title to display in the biometric prompt
-     * @param promptDescription The description to display in the biometric prompt
-     * @returns true if authentication succeeded, false otherwise
-     */
+    checkBiometricsAvailable(): Promise<boolean>
     authenticate(
         promptTitle?: string,
         promptDescription?: string,

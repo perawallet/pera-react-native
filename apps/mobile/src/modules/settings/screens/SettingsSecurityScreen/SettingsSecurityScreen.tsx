@@ -20,23 +20,26 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import { useSettingsSecurityScreen } from './useSettingsSecurityScreen'
 import { useStyles } from './styles'
+import { PinEditView } from '@modules/security/components/PinEditView/PinEditView'
 
 export const SettingsSecurityScreen = () => {
     const { t } = useLanguage()
     const styles = useStyles()
 
     const {
+        pinViewMode,
         isPinEnabled,
         isBiometricEnabled,
-        isBiometricAvailable,
+        isBiometricsAvailable,
         handlePinToggle,
         handleBiometricToggle,
         handleChangePinPress,
+        pinSetSuccess,
+        clearPinViewMode,
     } = useSettingsSecurityScreen()
 
     return (
         <PWView style={styles.container}>
-            {/* Security Settings Section */}
             <PWView style={styles.section}>
                 <PWText
                     variant='body'
@@ -45,16 +48,11 @@ export const SettingsSecurityScreen = () => {
                     {t('settings.security.security_settings_section')}
                 </PWText>
 
-                {/* Enable PIN Security */}
                 <PWView style={styles.listItem}>
                     <PWView style={styles.listItemContent}>
+                        <PWIcon name='shield-check' />
                         <PWText style={styles.listItemTitle}>
                             {t('settings.security.enable_pin_security')}
-                        </PWText>
-                        <PWText style={styles.listItemSubtitle}>
-                            {t(
-                                'settings.security.enable_pin_security_description',
-                            )}
                         </PWText>
                     </PWView>
                     <PWSwitch
@@ -64,47 +62,36 @@ export const SettingsSecurityScreen = () => {
                 </PWView>
 
                 {isPinEnabled && (
-                    <>
-                        {/* Change PIN */}
-                        <PWTouchableOpacity
-                            style={styles.listItem}
-                            onPress={handleChangePinPress}
-                        >
+                    <PWTouchableOpacity
+                        style={styles.listItem}
+                        onPress={handleChangePinPress}
+                    >
+                        <PWView style={styles.listItemContent}>
+                            <PWIcon name='locked' />
                             <PWText style={styles.listItemTitle}>
                                 {t('settings.security.change_pin')}
                             </PWText>
-                            <PWIcon
-                                name='chevron-right'
-                                size='sm'
-                            />
-                        </PWTouchableOpacity>
+                        </PWView>
+                        <PWIcon name='chevron-right' />
+                    </PWTouchableOpacity>
+                )}
 
-                        {/* Enable Biometrics */}
-                        {isBiometricAvailable && (
-                            <PWView style={styles.listItem}>
-                                <PWView style={styles.listItemContent}>
-                                    <PWText style={styles.listItemTitle}>
-                                        {t(
-                                            'settings.security.enable_biometrics',
-                                        )}
-                                    </PWText>
-                                    <PWText style={styles.listItemSubtitle}>
-                                        {t(
-                                            'settings.security.enable_biometrics_description',
-                                        )}
-                                    </PWText>
-                                </PWView>
-                                <PWSwitch
-                                    value={isBiometricEnabled}
-                                    onValueChange={handleBiometricToggle}
-                                />
-                            </PWView>
-                        )}
-                    </>
+                {isPinEnabled && isBiometricsAvailable && (
+                    <PWView style={styles.listItem}>
+                        <PWView style={styles.listItemContent}>
+                            <PWIcon name='faceid' />
+                            <PWText style={styles.listItemTitle}>
+                                {t('settings.security.enable_biometrics')}
+                            </PWText>
+                        </PWView>
+                        <PWSwitch
+                            value={isBiometricEnabled}
+                            onValueChange={handleBiometricToggle}
+                        />
+                    </PWView>
                 )}
             </PWView>
 
-            {/* Anti-spam Protection Section */}
             <PWView style={styles.section}>
                 <PWText
                     variant='body'
@@ -113,16 +100,11 @@ export const SettingsSecurityScreen = () => {
                     {t('settings.security.antispam_section')}
                 </PWText>
 
-                {/* Enable Re-key Support */}
                 <PWView style={styles.listItem}>
                     <PWView style={styles.listItemContent}>
+                        <PWIcon name='rekey' />
                         <PWText style={styles.listItemTitle}>
                             {t('settings.security.enable_rekey_support')}
-                        </PWText>
-                        <PWText style={styles.listItemSubtitle}>
-                            {t(
-                                'settings.security.enable_rekey_support_description',
-                            )}
                         </PWText>
                     </PWView>
                     <PWSwitch
@@ -133,7 +115,16 @@ export const SettingsSecurityScreen = () => {
                         disabled
                     />
                 </PWView>
+                <PWText style={styles.listItemSubtitle}>
+                    {t('settings.security.enable_rekey_support_description')}
+                </PWText>
             </PWView>
+
+            <PinEditView
+                mode={pinViewMode}
+                onSuccess={pinSetSuccess}
+                onClose={clearPinViewMode}
+            />
         </PWView>
     )
 }

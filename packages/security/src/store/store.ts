@@ -27,11 +27,9 @@ export const useSecurityStore: UseBoundStore<
 > = lazy.useStore
 
 const initialState = {
-    isPinEnabled: false,
-    isBiometricEnabled: false,
     failedAttempts: 0,
     lockoutEndTime: null,
-    lastBackgroundTime: null,
+    autoLockStartedAt: null,
 }
 
 const createSecurityStore = (storage: KeyValueStorageService) =>
@@ -39,10 +37,6 @@ const createSecurityStore = (storage: KeyValueStorageService) =>
         persist(
             set => ({
                 ...initialState,
-                setIsPinEnabled: (enabled: boolean) =>
-                    set({ isPinEnabled: enabled }),
-                setIsBiometricEnabled: (enabled: boolean) =>
-                    set({ isBiometricEnabled: enabled }),
                 incrementFailedAttempts: () =>
                     set(state => ({
                         failedAttempts: state.failedAttempts + 1,
@@ -50,8 +44,8 @@ const createSecurityStore = (storage: KeyValueStorageService) =>
                 resetFailedAttempts: () => set({ failedAttempts: 0 }),
                 setLockoutEndTime: (time: number | null) =>
                     set({ lockoutEndTime: time }),
-                setLastBackgroundTime: (time: number | null) =>
-                    set({ lastBackgroundTime: time }),
+                setAutoLockStartedAt: (date: number | null) =>
+                    set({ autoLockStartedAt: date }),
                 reset: () => set(initialState),
             }),
             {
@@ -59,11 +53,9 @@ const createSecurityStore = (storage: KeyValueStorageService) =>
                 storage: createJSONStorage(() => storage),
                 version: 1,
                 partialize: state => ({
-                    isPinEnabled: state.isPinEnabled,
-                    isBiometricEnabled: state.isBiometricEnabled,
                     failedAttempts: state.failedAttempts,
                     lockoutEndTime: state.lockoutEndTime,
-                    lastBackgroundTime: state.lastBackgroundTime,
+                    autoLockStartedAt: state.autoLockStartedAt,
                 }),
             },
         ),

@@ -109,7 +109,7 @@ export const buildTestPlatform = (
         async getSupportedBiometricType() {
             return 'fingerprint'
         },
-        async isBiometricAvailable() {
+        async checkBiometricsAvailable() {
             return true
         },
         async authenticate() {

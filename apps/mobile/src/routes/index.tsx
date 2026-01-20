@@ -35,10 +35,6 @@ import {
     SettingsStackNavigator,
     SettingsStackParamsList,
 } from '@modules/settings/routes'
-import {
-    SecurityStackNavigator,
-    SecurityStackParamsList,
-} from '@modules/security/routes'
 import { useShowOnboarding } from '@hooks/useShowOnboarding'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { getNavigationTheme } from '@theme/theme'
@@ -51,7 +47,6 @@ export type RootStackParamList = {
     Notifications: undefined
     Settings: NavigatorScreenParams<SettingsStackParamsList>
     Contacts: NavigatorScreenParams<ContactsStackParamsList>
-    Security: NavigatorScreenParams<SecurityStackParamsList>
     Staking: undefined
 }
 
@@ -104,10 +99,6 @@ export const MainRoutes = () => {
                             <RootStack.Screen
                                 name='Contacts'
                                 component={ContactsStackNavigator}
-                            />
-                            <RootStack.Screen
-                                name='Security'
-                                component={SecurityStackNavigator}
                             />
                             <RootStack.Screen
                                 name='Staking'

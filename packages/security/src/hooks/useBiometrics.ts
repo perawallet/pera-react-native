@@ -10,98 +10,104 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useRef } from 'react'
 import {
     useSecureStorageService,
     useBiometricsService,
 } from '@perawallet/wallet-core-platform-integration'
-import { useSecurityStore } from '../store'
-import {
-    PIN_STORAGE_KEY,
-    BIOMETRIC_STORAGE_KEY,
-    type BiometricType,
-} from '../models'
+import { type BiometricType } from '../models'
+import { BIOMETRIC_STORAGE_KEY, PIN_STORAGE_KEY } from '../constants'
 
 type UseBiometricsResult = {
-    isBiometricEnabled: boolean
-    isBiometricAvailable: () => Promise<boolean>
+    checkBiometricsEnabled: () => Promise<boolean>
+    checkBiometricsAvailable: () => Promise<boolean>
+    setBiometricsCode: (code: Uint8Array) => Promise<void>
     enableBiometrics: () => Promise<boolean>
     disableBiometrics: () => Promise<void>
     authenticateWithBiometrics: () => Promise<boolean>
 }
 
 export const useBiometrics = (): UseBiometricsResult => {
+    const forceRefresh = useRef(0)
     const secureStorage = useSecureStorageService()
     const biometricsService = useBiometricsService()
-    const isBiometricEnabled = useSecurityStore(
-        state => state.isBiometricEnabled,
+
+    const checkBiometricsEnabled = useCallback(async (): Promise<boolean> => {
+        const biometricPinData = await secureStorage.getItem(
+            BIOMETRIC_STORAGE_KEY,
+        )
+        return !!biometricPinData
+    }, [secureStorage, forceRefresh.current])
+
+    const checkBiometricsAvailable = useCallback(async (): Promise<boolean> => {
+        return biometricsService.checkBiometricsAvailable()
+    }, [biometricsService, forceRefresh.current])
+
+    const setBiometricsCode = useCallback(
+        async (code: Uint8Array): Promise<void> => {
+            await secureStorage.setItem(BIOMETRIC_STORAGE_KEY, code)
+            forceRefresh.current += 1
+        },
+        [secureStorage, forceRefresh.current],
     )
-    const setIsBiometricEnabled = useSecurityStore(
-        state => state.setIsBiometricEnabled,
-    )
-    const isPinEnabled = useSecurityStore(state => state.isPinEnabled)
 
-    const isBiometricAvailable = useCallback(async (): Promise<boolean> => {
-        return biometricsService.isBiometricAvailable()
-    }, [biometricsService])
-
-    const enableBiometrics = useCallback(async (): Promise<boolean> => {
-        if (!isPinEnabled) {
-            return false
-        }
-
-        try {
-            // First check if biometrics are available
-            const available = await biometricsService.isBiometricAvailable()
-            if (!available) {
-                return false
-            }
-
-            // Prompt for biometric authentication to confirm user can authenticate
-            const authenticated = await biometricsService.authenticate(
-                'Enable Biometrics',
-                'Authenticate to enable biometric login',
-            )
-            if (!authenticated) {
-                return false
-            }
-
-            // Store the PIN under the biometric key
+    const enableBiometrics = useCallback(
+        async (
+            promptTitle?: string,
+            promptDescription?: string,
+        ): Promise<boolean> => {
             const pinData = await secureStorage.getItem(PIN_STORAGE_KEY)
             if (!pinData) {
                 return false
             }
 
-            await secureStorage.setItem(BIOMETRIC_STORAGE_KEY, pinData)
-            setIsBiometricEnabled(true)
-            return true
-        } catch {
-            return false
-        }
-    }, [isPinEnabled, biometricsService, secureStorage, setIsBiometricEnabled])
-
-    const disableBiometrics = useCallback(async () => {
-        await secureStorage.removeItem(BIOMETRIC_STORAGE_KEY)
-        setIsBiometricEnabled(false)
-    }, [secureStorage, setIsBiometricEnabled])
-
-    const authenticateWithBiometrics =
-        useCallback(async (): Promise<boolean> => {
-            if (!isBiometricEnabled) {
-                return false
-            }
-
             try {
-                // Prompt for biometric authentication
+                const available =
+                    await biometricsService.checkBiometricsAvailable()
+                if (!available) {
+                    return false
+                }
+
                 const authenticated = await biometricsService.authenticate(
-                    'Authenticate',
-                    'Use biometrics to unlock',
+                    promptTitle,
+                    promptDescription,
                 )
                 if (!authenticated) {
                     return false
                 }
 
-                // Verify the stored biometric PIN matches the current PIN
+                await setBiometricsCode(pinData)
+                return true
+            } catch {
+                return false
+            }
+        },
+        [biometricsService, setBiometricsCode],
+    )
+
+    const disableBiometrics = useCallback(async () => {
+        await secureStorage.removeItem(BIOMETRIC_STORAGE_KEY)
+        forceRefresh.current += 1
+    }, [secureStorage, forceRefresh.current])
+
+    const authenticateWithBiometrics = useCallback(
+        async (
+            promptTitle?: string,
+            promptDescription?: string,
+        ): Promise<boolean> => {
+            if (!(await checkBiometricsEnabled())) {
+                return false
+            }
+
+            try {
+                const authenticated = await biometricsService.authenticate(
+                    promptTitle,
+                    promptDescription,
+                )
+                if (!authenticated) {
+                    return false
+                }
+
                 const pinData = await secureStorage.getItem(PIN_STORAGE_KEY)
                 const biometricPinData = await secureStorage.getItem(
                     BIOMETRIC_STORAGE_KEY,
@@ -118,11 +124,14 @@ export const useBiometrics = (): UseBiometricsResult => {
             } catch {
                 return false
             }
-        }, [isBiometricEnabled, biometricsService, secureStorage])
+        },
+        [checkBiometricsEnabled, biometricsService, secureStorage],
+    )
 
     return {
-        isBiometricEnabled,
-        isBiometricAvailable,
+        checkBiometricsEnabled,
+        checkBiometricsAvailable,
+        setBiometricsCode,
         enableBiometrics,
         disableBiometrics,
         authenticateWithBiometrics,

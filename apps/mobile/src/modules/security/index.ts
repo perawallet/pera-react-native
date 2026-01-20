@@ -15,6 +15,6 @@ export {
     type PinEntryProps,
     type PinEntryMode,
 } from './components/PinEntry'
-export { PinEntryScreen } from './screens/PinEntryScreen'
+export { PinEntryScreen } from './components/PinEditView'
 export { PinLockScreen, type PinLockScreenProps } from './screens/PinLockScreen'
 export { SecurityStackNavigator, type SecurityStackParamsList } from './routes'

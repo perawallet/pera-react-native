@@ -11,54 +11,58 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
-import { useNavigation } from '@react-navigation/native'
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { usePinCode, useBiometrics } from '@perawallet/wallet-core-security'
-import type { SettingsStackParamsList } from '@modules/settings/routes'
-
-type SettingsSecurityNavigationProp = NativeStackNavigationProp<
-    SettingsStackParamsList,
-    'SecuritySettings'
->
+import { PinEntryMode } from '@modules/security/components/PinEditView/usePinEditView'
 
 type UseSettingsSecurityScreenResult = {
     isPinEnabled: boolean
     isBiometricEnabled: boolean
-    isBiometricAvailable: boolean
+    isBiometricsAvailable: boolean
+    pinViewMode: PinEntryMode | null
     handlePinToggle: (value: boolean) => void
     handleBiometricToggle: (value: boolean) => Promise<boolean>
     handleChangePinPress: () => void
+    pinSetSuccess: () => void
+    clearPinViewMode: () => void
 }
 
 export const useSettingsSecurityScreen =
     (): UseSettingsSecurityScreenResult => {
-        const navigation = useNavigation<SettingsSecurityNavigationProp>()
-        const { isPinEnabled, deletePin } = usePinCode()
+        const { checkPinEnabled, savePin } = usePinCode()
         const {
-            isBiometricEnabled,
-            isBiometricAvailable: checkBiometricAvailable,
+            checkBiometricsEnabled,
+            checkBiometricsAvailable,
             enableBiometrics,
             disableBiometrics,
         } = useBiometrics()
 
-        const [isBiometricAvailable, setIsBiometricAvailable] = useState(false)
+        const [isPinEnabled, setIsPinEnabled] = useState(false)
+        const [isBiometricEnabled, setIsBiometricEnabled] = useState(false)
+        const [isBiometricsAvailable, setIsBiometricsAvailable] =
+            useState(false)
+        const [pinViewMode, setPinViewMode] = useState<PinEntryMode | null>(
+            null,
+        )
+
+        const updateSettings = useCallback(() => {
+            checkBiometricsAvailable().then(setIsBiometricsAvailable)
+            checkPinEnabled().then(setIsPinEnabled)
+            checkBiometricsEnabled().then(setIsBiometricEnabled)
+        }, [checkBiometricsAvailable, checkPinEnabled, checkBiometricsEnabled])
 
         useEffect(() => {
-            checkBiometricAvailable().then(setIsBiometricAvailable)
-        }, [checkBiometricAvailable])
+            updateSettings()
+        }, [updateSettings])
 
         const handlePinToggle = useCallback(
             async (value: boolean) => {
                 if (value) {
-                    navigation.getParent()?.navigate('Security', {
-                        screen: 'PinEntry',
-                        params: { mode: 'setup' },
-                    })
+                    setPinViewMode('setup')
                 } else {
-                    await deletePin()
+                    setPinViewMode('verify')
                 }
             },
-            [navigation, deletePin],
+            [savePin, updateSettings],
         )
 
         const handleBiometricToggle = useCallback(
@@ -68,25 +72,38 @@ export const useSettingsSecurityScreen =
                     return success
                 } else {
                     await disableBiometrics()
+                    updateSettings()
                     return true
                 }
             },
-            [enableBiometrics, disableBiometrics],
+            [enableBiometrics, disableBiometrics, updateSettings],
         )
 
         const handleChangePinPress = useCallback(() => {
-            navigation.getParent()?.navigate('Security', {
-                screen: 'PinEntry',
-                params: { mode: 'change_old' },
-            })
-        }, [navigation])
+            setPinViewMode('change_old')
+        }, [])
+
+        const pinSetSuccess = useCallback(() => {
+            if (pinViewMode === 'verify') {
+                savePin(null)
+            }
+            updateSettings()
+            setPinViewMode(null)
+        }, [pinViewMode, savePin, updateSettings])
+
+        const clearPinViewMode = useCallback(() => {
+            setPinViewMode(null)
+        }, [])
 
         return {
             isPinEnabled,
             isBiometricEnabled,
-            isBiometricAvailable,
+            isBiometricsAvailable,
+            pinViewMode,
             handlePinToggle,
             handleBiometricToggle,
             handleChangePinPress,
+            clearPinViewMode,
+            pinSetSuccess,
         }
     }

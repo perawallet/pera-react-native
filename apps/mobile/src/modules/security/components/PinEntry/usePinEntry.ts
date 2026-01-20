@@ -10,51 +10,36 @@
  limitations under the License
  */
 
-import { useState, useCallback, useEffect } from 'react'
-import type { NumpadKey, PinCircleState } from '@components/core'
+import { useState, useCallback } from 'react'
+import type { NumpadKey } from '@components/core'
+import { PIN_LENGTH } from '@perawallet/wallet-core-security'
+
+const COMPLETION_DELAY = 100
 
 type UsePinEntryParams = {
-    pinLength: number
     onPinComplete: (pin: string) => void
     onPinChange?: (pin: string) => void
-    hasError?: boolean
     onErrorAnimationComplete?: () => void
 }
 
 type UsePinEntryResult = {
     pin: string
-    circleState: PinCircleState
     handleKeyPress: (key: NumpadKey) => void
     clearPin: () => void
 }
 
 export const usePinEntry = ({
-    pinLength,
     onPinComplete,
     onPinChange,
-    hasError = false,
 }: UsePinEntryParams): UsePinEntryResult => {
     const [pin, setPin] = useState('')
-    const [circleState, setCircleState] = useState<PinCircleState>('empty')
 
-    useEffect(() => {
-        if (hasError) {
-            setCircleState('error')
-        }
-    }, [hasError])
-
-    useEffect(() => {
-        if (pin.length > 0 && circleState !== 'error') {
-            setCircleState('filled')
-        } else if (pin.length === 0 && circleState !== 'error') {
-            setCircleState('empty')
-        }
-    }, [pin, circleState])
+    const clearPin = useCallback(() => {
+        setPin('')
+    }, [])
 
     const handleKeyPress = useCallback(
         (key: NumpadKey) => {
-            if (key === 'biometric') return
-
             if (key === 'delete') {
                 setPin(prev => {
                     const newPin = prev.slice(0, -1)
@@ -65,31 +50,25 @@ export const usePinEntry = ({
             }
 
             setPin(prev => {
-                if (prev.length >= pinLength) return prev
+                if (prev.length >= PIN_LENGTH) return prev
 
                 const newPin = prev + key
                 onPinChange?.(newPin)
 
-                if (newPin.length === pinLength) {
+                if (newPin.length === PIN_LENGTH) {
                     setTimeout(() => {
                         onPinComplete(newPin)
-                    }, 100)
+                    }, COMPLETION_DELAY)
                 }
 
                 return newPin
             })
         },
-        [pinLength, onPinComplete, onPinChange],
+        [onPinComplete, onPinChange],
     )
-
-    const clearPin = useCallback(() => {
-        setPin('')
-        setCircleState('empty')
-    }, [])
 
     return {
         pin,
-        circleState,
         handleKeyPress,
         clearPin,
     }

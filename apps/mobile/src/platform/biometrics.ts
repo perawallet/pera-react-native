@@ -28,6 +28,7 @@ export class RNBiometricsService implements BiometricsService {
                 return 'face'
             case Keychain.BIOMETRY_TYPE.TOUCH_ID:
             case Keychain.BIOMETRY_TYPE.FINGERPRINT:
+            case Keychain.BIOMETRY_TYPE.OPTIC_ID:
                 return 'fingerprint'
             case Keychain.BIOMETRY_TYPE.IRIS:
                 return 'iris'
@@ -36,7 +37,7 @@ export class RNBiometricsService implements BiometricsService {
         }
     }
 
-    async isBiometricAvailable(): Promise<boolean> {
+    async checkBiometricsAvailable(): Promise<boolean> {
         const biometryType = await this.getSupportedBiometricType()
         return biometryType !== null
     }

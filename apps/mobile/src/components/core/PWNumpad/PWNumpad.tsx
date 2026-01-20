@@ -13,7 +13,7 @@
 import { View } from 'react-native'
 import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import { PWText } from '@components/core/PWText'
-import { PWIcon, IconName } from '@components/core/PWIcon'
+import { PWIcon } from '@components/core/PWIcon'
 import { useStyles } from './styles'
 
 export type NumpadKey =
@@ -28,33 +28,37 @@ export type NumpadKey =
     | '8'
     | '9'
     | 'delete'
-    | 'biometric'
+    | '.'
 
 export type PWNumpadProps = {
+    mode: 'number' | 'pin'
     onKeyPress: (key: NumpadKey) => void
     isDisabled?: boolean
-    showBiometric?: boolean
-    biometricIcon?: IconName
 }
 
-const NUMPAD_LAYOUT: (NumpadKey | null)[][] = [
+const NUMBER_NUMPAD_LAYOUT: (NumpadKey | null)[][] = [
     ['1', '2', '3'],
     ['4', '5', '6'],
     ['7', '8', '9'],
-    ['biometric', '0', 'delete'],
+    ['.', '0', 'delete'],
+]
+
+const PIN_NUMPAD_LAYOUT: (NumpadKey | null)[][] = [
+    ['1', '2', '3'],
+    ['4', '5', '6'],
+    ['7', '8', '9'],
+    [null, '0', 'delete'],
 ]
 
 export const PWNumpad = ({
     onKeyPress,
     isDisabled = false,
-    showBiometric = false,
-    biometricIcon = 'person',
+    mode = 'number',
 }: PWNumpadProps) => {
     const styles = useStyles()
 
     const handleKeyPress = (key: NumpadKey | null) => {
         if (!key || isDisabled) return
-        if (key === 'biometric' && !showBiometric) return
         onKeyPress(key)
     }
 
@@ -68,18 +72,7 @@ export const PWNumpad = ({
             )
         }
 
-        if (key === 'biometric' && !showBiometric) {
-            return (
-                <View
-                    key={index}
-                    style={styles.keyPlaceholder}
-                />
-            )
-        }
-
         const isDeleteKey = key === 'delete'
-        const isBiometricKey = key === 'biometric'
-        const isSpecialKey = isDeleteKey || isBiometricKey
 
         return (
             <PWTouchableOpacity
@@ -88,9 +81,9 @@ export const PWNumpad = ({
                 onPress={() => handleKeyPress(key)}
                 disabled={isDisabled}
             >
-                {isSpecialKey ? (
+                {isDeleteKey ? (
                     <PWIcon
-                        name={isDeleteKey ? 'delete' : biometricIcon}
+                        name='delete'
                         size='md'
                         variant={isDisabled ? 'secondary' : 'primary'}
                     />
@@ -111,14 +104,16 @@ export const PWNumpad = ({
 
     return (
         <View style={styles.container}>
-            {NUMPAD_LAYOUT.map((row, rowIndex) => (
-                <View
-                    key={rowIndex}
-                    style={styles.row}
-                >
-                    {row.map((key, keyIndex) => renderKey(key, keyIndex))}
-                </View>
-            ))}
+            {(mode === 'number' ? NUMBER_NUMPAD_LAYOUT : PIN_NUMPAD_LAYOUT).map(
+                (row, rowIndex) => (
+                    <View
+                        key={rowIndex}
+                        style={styles.row}
+                    >
+                        {row.map((key, keyIndex) => renderKey(key, keyIndex))}
+                    </View>
+                ),
+            )}
         </View>
     )
 }

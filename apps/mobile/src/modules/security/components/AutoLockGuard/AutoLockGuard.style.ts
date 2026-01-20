@@ -10,4 +10,20 @@
  limitations under the License
  */
 
-export { PinLockScreen, type PinLockScreenProps } from './PinLockScreen'
+import { makeStyles } from '@rneui/themed'
+import { EdgeInsets } from 'react-native-safe-area-context'
+
+export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
+    container: {
+        paddingTop: insets.top + theme.spacing.xxl,
+        paddingBottom: insets.bottom,
+        paddingLeft: insets.left,
+        paddingRight: insets.right,
+        position: 'absolute',
+        top: 0,
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1000,
+    },
+}))

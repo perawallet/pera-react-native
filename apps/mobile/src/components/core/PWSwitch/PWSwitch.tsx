@@ -30,8 +30,6 @@ export const PWSwitch = ({
     color,
     ...props
 }: PWSwitchProps) => {
-    // const styles = useStyles()
-
     return (
         <RNESwitch
             value={value}

@@ -10,85 +10,93 @@
  limitations under the License
  */
 
-import { View, Animated } from 'react-native'
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withSequence,
+    withTiming,
+    useAnimatedReaction,
+} from 'react-native-reanimated'
 import { useStyles } from './styles'
-
-export type PinCircleState = 'empty' | 'filled' | 'error'
+import { PWView } from '../PWView'
 
 export type PWPinCirclesProps = {
     length: number
     filledCount: number
-    state?: PinCircleState
+    hasError?: boolean
     onShakeComplete?: () => void
 }
 
 export const PWPinCircles = ({
     length,
     filledCount,
-    state = filledCount > 0 ? 'filled' : 'empty',
+    hasError = false,
     onShakeComplete,
 }: PWPinCirclesProps) => {
     const styles = useStyles()
-    const shakeAnimation = useRef(new Animated.Value(0)).current
+    const translateX = useSharedValue(0)
+    const isShaking = useSharedValue(false)
+    const onShakeCompleteRef = useRef(onShakeComplete)
+    onShakeCompleteRef.current = onShakeComplete
+
+    // Detect when shake animation completes (translateX returns to 0 after shaking)
+    useAnimatedReaction(
+        () => ({ x: translateX.value, shaking: isShaking.value }),
+        () => {},
+    )
 
     useEffect(() => {
-        if (state === 'error') {
-            Animated.sequence([
-                Animated.timing(shakeAnimation, {
-                    toValue: 10,
-                    duration: 50,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(shakeAnimation, {
-                    toValue: -10,
-                    duration: 50,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(shakeAnimation, {
-                    toValue: 10,
-                    duration: 50,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(shakeAnimation, {
-                    toValue: -10,
-                    duration: 50,
-                    useNativeDriver: true,
-                }),
-                Animated.timing(shakeAnimation, {
-                    toValue: 0,
-                    duration: 50,
-                    useNativeDriver: true,
-                }),
-            ]).start(() => {
-                onShakeComplete?.()
-            })
+        if (hasError) {
+            isShaking.value = true
+            translateX.value = withSequence(
+                withTiming(10, { duration: 50 }),
+                withTiming(-10, { duration: 50 }),
+                withTiming(10, { duration: 50 }),
+                withTiming(-10, { duration: 50 }),
+                withTiming(0, { duration: 50 }),
+            )
+            // Use a timeout matching the animation duration to trigger callback
+            const timeout = setTimeout(() => {
+                isShaking.value = false
+                onShakeCompleteRef.current?.()
+            }, 250)
+            return () => clearTimeout(timeout)
         }
-    }, [state, shakeAnimation, onShakeComplete])
+    }, [hasError, translateX, isShaking])
 
-    const circles = Array.from({ length }, (_, index) => {
-        const isFilled = index < filledCount
-        const isError = state === 'error'
+    const animatedStyle = useAnimatedStyle(() => ({
+        transform: [{ translateX: translateX.value }],
+    }))
 
-        return (
-            <View
-                key={index}
-                style={[
-                    styles.circle,
-                    isFilled && styles.circleFilled,
-                    isError && styles.circleError,
-                ]}
-            />
-        )
-    })
+    const circles = useMemo(
+        () =>
+            Array.from({ length }, (_, index) => {
+                const isFilled = index < filledCount
+
+                return (
+                    <PWView
+                        key={index}
+                        style={[
+                            styles.circle,
+                            isFilled && styles.circleFilled,
+                            hasError && styles.circleError,
+                        ]}
+                    />
+                )
+            }),
+        [
+            length,
+            filledCount,
+            hasError,
+            styles.circle,
+            styles.circleFilled,
+            styles.circleError,
+        ],
+    )
 
     return (
-        <Animated.View
-            style={[
-                styles.container,
-                { transform: [{ translateX: shakeAnimation }] },
-            ]}
-        >
+        <Animated.View style={[styles.container, animatedStyle]}>
             {circles}
         </Animated.View>
     )

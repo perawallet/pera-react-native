@@ -10,8 +10,9 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(() => ({
-    // Default styles
-}))
+export const PIN_LENGTH = 6
+export const MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT = 5
+export const INITIAL_LOCKOUT_SECONDS = 30
+export const AUTO_LOCK_TIMEOUT_MS = 10 * 1000
+export const PIN_STORAGE_KEY = 'pera.pinCode'
+export const BIOMETRIC_STORAGE_KEY = 'pera.biometricPinCode'

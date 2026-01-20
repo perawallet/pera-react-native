@@ -32,11 +32,11 @@ export const useStyles = makeStyles(theme => ({
     lockoutIconContainer: {
         width: 80,
         height: 80,
-        borderRadius: 40,
-        backgroundColor: theme.colors.asaSuspiciousBg,
+        borderRadius: theme.spacing.sm,
+        backgroundColor: theme.colors.error,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: theme.spacing.xl,
+        marginBottom: theme.spacing['4xl'],
     },
     lockoutTitle: {
         color: theme.colors.textMain,
@@ -48,17 +48,17 @@ export const useStyles = makeStyles(theme => ({
         textAlign: 'center',
         marginBottom: theme.spacing.xxl,
     },
-    countdownContainer: {
-        paddingHorizontal: theme.spacing.xxl,
-        paddingVertical: theme.spacing.lg,
-        borderRadius: theme.spacing.sm,
-        backgroundColor: theme.colors.layerGrayLighter,
-    },
+    countdownContainer: {},
     countdownText: {
         color: theme.colors.textMain,
-        fontVariant: ['tabular-nums'],
     },
     lockoutActions: {
         paddingTop: theme.spacing.lg,
+    },
+    divider: {
+        paddingBottom: theme.spacing.xxl,
+        marginBottom: theme.spacing.xxl,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.colors.layerGrayLighter,
     },
 }))

@@ -16,38 +16,30 @@ export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
         backgroundColor: theme.colors.background,
+        gap: theme.spacing.xl,
+        padding: theme.spacing.xl,
     },
     section: {
-        paddingTop: theme.spacing.lg,
+        gap: theme.spacing.xl,
     },
     sectionTitle: {
         color: theme.colors.textGray,
-        paddingHorizontal: theme.spacing.lg,
-        paddingBottom: theme.spacing.sm,
-        textTransform: 'uppercase',
-        fontSize: 12,
     },
     listItem: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: theme.spacing.lg,
-        paddingVertical: theme.spacing.md,
-        backgroundColor: theme.colors.layerGrayLightest,
-        borderBottomWidth: 1,
-        borderBottomColor: theme.colors.layerGrayLighter,
     },
     listItemContent: {
         flex: 1,
-        marginRight: theme.spacing.md,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.md,
     },
     listItemTitle: {
-        fontSize: 16,
         color: theme.colors.textMain,
-        marginBottom: theme.spacing.xs,
     },
     listItemSubtitle: {
-        fontSize: 14,
         color: theme.colors.textGray,
     },
 }))

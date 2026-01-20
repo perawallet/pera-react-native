@@ -10,25 +10,15 @@
  limitations under the License
  */
 
-export const PIN_LENGTH = 6
-export const MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT = 5
-export const INITIAL_LOCKOUT_SECONDS = 30
-export const PIN_STORAGE_KEY = 'pera.pinCode'
-export const BIOMETRIC_STORAGE_KEY = 'pera.biometricPinCode'
-
 export type SecurityState = {
-    isPinEnabled: boolean
-    isBiometricEnabled: boolean
     failedAttempts: number
     lockoutEndTime: number | null
-    lastBackgroundTime: number | null
+    autoLockStartedAt: number | null
 
-    setIsPinEnabled: (enabled: boolean) => void
-    setIsBiometricEnabled: (enabled: boolean) => void
     incrementFailedAttempts: () => void
     resetFailedAttempts: () => void
     setLockoutEndTime: (time: number | null) => void
-    setLastBackgroundTime: (time: number | null) => void
+    setAutoLockStartedAt: (time: number | null) => void
     reset: () => void
 }
 

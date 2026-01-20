@@ -14,20 +14,11 @@ import { View } from 'react-native'
 import { PWText, PWNumpad, PWPinCircles, NumpadKey } from '@components/core'
 import { usePinEntry } from './usePinEntry'
 import { useStyles } from './styles'
-
-export type PinEntryMode =
-    | 'setup'
-    | 'confirm'
-    | 'verify'
-    | 'change_old'
-    | 'change_new'
-    | 'change_confirm'
+import { PIN_LENGTH } from '@perawallet/wallet-core-security'
+import { useCallback, useEffect } from 'react'
 
 export type PinEntryProps = {
-    mode: PinEntryMode
     title: string
-    subtitle?: string
-    pinLength?: number
     onPinComplete: (pin: string) => void
     onPinChange?: (pin: string) => void
     isDisabled?: boolean
@@ -38,59 +29,48 @@ export type PinEntryProps = {
 }
 
 export const PinEntry = ({
-    mode,
     title,
-    subtitle,
-    pinLength = 6,
     onPinComplete,
     onPinChange,
     isDisabled = false,
-    showBiometric = false,
-    onBiometricPress,
     hasError = false,
     onErrorAnimationComplete,
 }: PinEntryProps) => {
     const styles = useStyles()
-    const { pin, circleState, handleKeyPress, clearPin } = usePinEntry({
-        pinLength,
+
+    const { pin, handleKeyPress, clearPin } = usePinEntry({
         onPinComplete,
         onPinChange,
-        hasError,
         onErrorAnimationComplete,
     })
 
-    const handleNumpadKeyPress = (key: NumpadKey) => {
-        if (key === 'biometric') {
-            onBiometricPress?.()
-            return
-        }
-        handleKeyPress(key)
-    }
+    const handleNumpadKeyPress = useCallback(
+        (key: NumpadKey) => {
+            handleKeyPress(key)
+        },
+        [handleKeyPress],
+    )
+
+    useEffect(() => {
+        clearPin()
+    }, [title])
 
     return (
         <View style={styles.container}>
             <View style={styles.header}>
                 <PWText
-                    variant='h3'
+                    variant='h1'
                     style={styles.title}
                 >
                     {title}
                 </PWText>
-                {subtitle && (
-                    <PWText
-                        variant='body'
-                        style={styles.subtitle}
-                    >
-                        {subtitle}
-                    </PWText>
-                )}
             </View>
 
             <View style={styles.circlesContainer}>
                 <PWPinCircles
-                    length={pinLength}
+                    length={PIN_LENGTH}
                     filledCount={pin.length}
-                    state={circleState}
+                    hasError={hasError}
                     onShakeComplete={() => {
                         clearPin()
                         onErrorAnimationComplete?.()
@@ -102,7 +82,7 @@ export const PinEntry = ({
                 <PWNumpad
                     onKeyPress={handleNumpadKeyPress}
                     isDisabled={isDisabled}
-                    showBiometric={showBiometric && mode === 'verify'}
+                    mode='pin'
                 />
             </View>
         </View>
