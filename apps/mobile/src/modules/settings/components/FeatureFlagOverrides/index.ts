@@ -11,4 +11,3 @@
  */
 
 export { FeatureFlagOverrides } from './FeatureFlagOverrides'
-export type { FeatureFlagOverridesProps } from './FeatureFlagOverrides'

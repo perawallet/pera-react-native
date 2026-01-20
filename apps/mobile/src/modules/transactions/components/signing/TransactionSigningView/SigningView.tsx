@@ -22,7 +22,7 @@ import { ArbitraryDataSigningView } from '../ArbitraryDataSigningView'
 import { Arc60SigningView } from './Arc60SigningView'
 import { useLanguage } from '@hooks/useLanguage'
 
-type SigningViewProps = {
+export type SigningViewProps = {
     request: SignRequest
 }
 

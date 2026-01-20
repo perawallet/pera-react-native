@@ -26,7 +26,7 @@ import { useStyles } from './styles'
 
 import { AccountIcon, AccountIconProps } from '../AccountIcon'
 
-type AccountDisplayProps = {
+export type AccountDisplayProps = {
     account?: WalletAccount
     iconProps?: Omit<AccountIconProps, 'account'>
     textProps?: PWTextProps

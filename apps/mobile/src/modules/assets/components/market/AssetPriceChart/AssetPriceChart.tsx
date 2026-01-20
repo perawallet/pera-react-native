@@ -31,7 +31,7 @@ import {
 } from '@constants/ui'
 import { useLanguage } from '@hooks/useLanguage'
 
-type AssetPriceChartProps = {
+export type AssetPriceChartProps = {
     asset: PeraAsset
     period: HistoryPeriod
     onSelectionChanged: (item: AssetPriceHistoryItem | null) => void

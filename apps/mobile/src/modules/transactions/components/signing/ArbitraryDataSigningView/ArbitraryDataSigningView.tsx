@@ -36,7 +36,7 @@ import { useArbitraryDataSigningView } from '@modules/transactions/hooks/signing
 import { ArbitraryDataSigningDetailsView } from './ArbitraryDataSigningDetailsView'
 import { useState } from 'react'
 
-type ArbitraryDataSigningViewProps = {
+export type ArbitraryDataSigningViewProps = {
     request: ArbitraryDataSignRequest
 }
 

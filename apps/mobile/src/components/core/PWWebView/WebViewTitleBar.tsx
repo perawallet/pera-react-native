@@ -16,7 +16,7 @@ import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles'
 import { PWText } from '@components/core/PWText'
 
-type WebViewTitleBarProps = {
+export type WebViewTitleBarProps = {
     title: string
     url: string
     onCloseRequested?: () => void

@@ -20,7 +20,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { AccountWithBalance } from '../AccountWithBalance'
 
-type AccountsTabProps = {
+export type AccountsTabProps = {
     onSelected: (account: WalletAccount) => void
 }
 export const AccountsTab = (props: AccountsTabProps) => {

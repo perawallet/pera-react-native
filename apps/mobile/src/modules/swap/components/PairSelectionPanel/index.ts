@@ -11,4 +11,3 @@
  */
 
 export { PairSelectionPanel } from './PairSelectionPanel'
-export type { PairSelectionPanelProps } from './PairSelectionPanel'

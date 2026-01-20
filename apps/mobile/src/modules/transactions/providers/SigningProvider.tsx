@@ -16,7 +16,7 @@ import { SigningView } from '@modules/transactions/components/signing/Transactio
 import { useWindowDimensions } from 'react-native'
 import { useSigningRequest } from '@perawallet/wallet-core-blockchain'
 
-type SigningProviderProps = {} & PropsWithChildren
+export type SigningProviderProps = {} & PropsWithChildren
 
 export function SigningProvider({ children }: SigningProviderProps) {
     const { pendingSignRequests } = useSigningRequest()

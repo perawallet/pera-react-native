@@ -21,14 +21,16 @@ describe('webview/utils - getAccountType', () => {
         type: 'hdWallet',
         address: 'ADDR1',
         canSign: true,
-    }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any as WalletAccount
 
     it('returns HdKey if hdWalletDetails is present', () => {
         expect(
             getAccountType({
                 ...baseAccount,
                 hdWalletDetails: {} as HDWalletDetails,
-            }),
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any),
         ).toBe('HdKey')
     })
 
@@ -85,7 +87,8 @@ describe('webview/utils - getAccountType', () => {
             getAccountType({
                 ...baseAccount,
                 type: 'multisig',
-            }),
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any),
         ).toBe('Multisig')
     })
 

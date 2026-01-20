@@ -29,7 +29,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { AccountStackParamsList } from '@modules/accounts/routes'
 
-type AssetDetailsScreenProps = NativeStackScreenProps<
+export type AssetDetailsScreenProps = NativeStackScreenProps<
     AccountStackParamsList,
     'AssetDetails'
 >

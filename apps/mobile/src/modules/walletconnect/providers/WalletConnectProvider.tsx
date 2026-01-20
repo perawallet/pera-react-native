@@ -21,7 +21,7 @@ import {
 import { WalletConnectErrorBoundary } from '@modules/walletconnect/components/BaseErrorBoundary/WalletConnectErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
 
-type WalletConnectProviderProps = {} & PropsWithChildren
+export type WalletConnectProviderProps = {} & PropsWithChildren
 
 export function WalletConnectProvider({
     children,

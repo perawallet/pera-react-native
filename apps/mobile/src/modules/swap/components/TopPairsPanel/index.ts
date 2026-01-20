@@ -11,4 +11,3 @@
  */
 
 export { TopPairsPanel } from './TopPairsPanel'
-export type { TopPairsPanelProps } from './TopPairsPanel'

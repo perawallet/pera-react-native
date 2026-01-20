@@ -22,7 +22,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 
-type PriceTrendProps = {
+export type PriceTrendProps = {
     assetId: string
     period: HistoryPeriod
     selectedDataPoint?: AssetPriceHistoryItem | null
