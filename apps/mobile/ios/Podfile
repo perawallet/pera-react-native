@@ -38,7 +38,7 @@ target 'pera' do
   pod 'FirebaseAnalytics', :modular_headers => true # Add missing package
   pod 'FirebaseRemoteConfig', :modular_headers => true # Add missing package
   pod 'FirebaseMessaging', :modular_headers => true # Add missing package
-  pod 'RNFBApp', :path => '../node_modules/@react-native-firebase/app' # Firebase manual setup
+  pod 'RNFBApp', :path => '../../../node_modules/@react-native-firebase/app' # Firebase manual setup
 
 
   use_react_native!(

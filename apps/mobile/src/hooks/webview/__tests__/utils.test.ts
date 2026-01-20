@@ -11,14 +11,11 @@
  */
 
 import { getAccountType } from '../utils'
-import {
-    HDWalletDetails,
-    WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { HDWalletDetails } from '@perawallet/wallet-core-accounts'
 
 describe('webview/utils - getAccountType', () => {
-    const baseAccount: WalletAccount = {
-        type: 'hdWallet',
+    const baseAccount = {
+        type: 'hdWallet' as any, // eslint-disable-line @typescript-eslint/no-explicit-any
         address: 'ADDR1',
         canSign: true,
     }
@@ -28,7 +25,7 @@ describe('webview/utils - getAccountType', () => {
             getAccountType({
                 ...baseAccount,
                 hdWalletDetails: {} as HDWalletDetails,
-            }),
+            } as any), // eslint-disable-line @typescript-eslint/no-explicit-any
         ).toBe('HdKey')
     })
 
@@ -38,7 +35,7 @@ describe('webview/utils - getAccountType', () => {
                 ...baseAccount,
                 type: 'hardware',
                 hardwareDetails: { manufacturer: 'ledger' },
-            }),
+            } as any), // eslint-disable-line @typescript-eslint/no-explicit-any
         ).toBe('LedgerBle')
     })
 
@@ -48,7 +45,7 @@ describe('webview/utils - getAccountType', () => {
                 ...baseAccount,
                 rekeyAddress: 'ADDR2',
                 canSign: true,
-            }),
+            } as any), // eslint-disable-line @typescript-eslint/no-explicit-any
         ).toBe('RekeyedAuth')
     })
 
@@ -58,7 +55,7 @@ describe('webview/utils - getAccountType', () => {
                 ...baseAccount,
                 rekeyAddress: 'ADDR2',
                 canSign: false,
-            }),
+            } as any), // eslint-disable-line @typescript-eslint/no-explicit-any
         ).toBe('Rekeyed')
     })
 
@@ -67,7 +64,7 @@ describe('webview/utils - getAccountType', () => {
             getAccountType({
                 ...baseAccount,
                 type: 'algo25',
-            }),
+            } as any), // eslint-disable-line @typescript-eslint/no-explicit-any
         ).toBe('Algo25')
     })
 
@@ -76,7 +73,7 @@ describe('webview/utils - getAccountType', () => {
             getAccountType({
                 ...baseAccount,
                 type: 'watch',
-            }),
+            } as any), // eslint-disable-line @typescript-eslint/no-explicit-any
         ).toBe('NoAuth')
     })
 
@@ -85,7 +82,7 @@ describe('webview/utils - getAccountType', () => {
             getAccountType({
                 ...baseAccount,
                 type: 'multisig',
-            }),
+            } as any), // eslint-disable-line @typescript-eslint/no-explicit-any
         ).toBe('Multisig')
     })
 
@@ -96,9 +93,8 @@ describe('webview/utils - getAccountType', () => {
             getAccountType({
                 ...baseAccount,
                 type: 'hardware',
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                hardwareDetails: { manufacturer: 'other' as any },
-            }),
+                hardwareDetails: { manufacturer: 'other' as any }, // eslint-disable-line @typescript-eslint/no-explicit-any
+            } as any), // eslint-disable-line @typescript-eslint/no-explicit-any
         ).toBe('Unknown')
     })
 })

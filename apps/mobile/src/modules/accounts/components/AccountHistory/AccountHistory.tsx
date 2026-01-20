@@ -13,6 +13,8 @@
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 
+export type AccountHistoryProps = Record<string, never>
+
 //TODO implement
 export const AccountHistory = () => {
     const { t } = useLanguage()
