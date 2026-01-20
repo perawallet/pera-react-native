@@ -51,6 +51,8 @@ export type UseAccountOverviewResult = {
     handleBuyAlgo: () => void
     handleTransfer: () => void
     handleReceive: () => void
+    isReceiveFundsVisible: boolean
+    handleCloseReceiveFunds: () => void
 }
 
 export const useAccountOverview = (
@@ -117,16 +119,26 @@ export const useAccountOverview = (
     }, [showToast, t])
 
     const handleBuyAlgo = useCallback(() => {
-        notImplemented()
-    }, [notImplemented])
+        navigation.navigate('TabBar', { screen: 'Fund' })
+    }, [navigation])
 
     const handleTransfer = useCallback(() => {
-        notImplemented()
-    }, [notImplemented])
+        handleOpenSendFunds()
+    }, [handleOpenSendFunds])
+
+    const [isReceiveFundsVisible, setIsReceiveFundsVisible] = useState(false)
+
+    const handleOpenReceiveFunds = useCallback(() => {
+        setIsReceiveFundsVisible(true)
+    }, [])
+
+    const handleCloseReceiveFunds = useCallback(() => {
+        setIsReceiveFundsVisible(false)
+    }, [])
 
     const handleReceive = useCallback(() => {
-        notImplemented()
-    }, [notImplemented])
+        handleOpenReceiveFunds()
+    }, [handleOpenReceiveFunds])
 
     return {
         portfolioAlgoValue,
@@ -151,5 +163,7 @@ export const useAccountOverview = (
         handleBuyAlgo,
         handleTransfer,
         handleReceive,
+        isReceiveFundsVisible,
+        handleCloseReceiveFunds,
     }
 }

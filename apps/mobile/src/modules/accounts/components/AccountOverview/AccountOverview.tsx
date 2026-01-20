@@ -27,6 +27,7 @@ import { useAccountOverview } from './useAccountOverview'
 import { useLanguage } from '@hooks/useLanguage'
 import { NoFundsButtonPanel } from '../NoFundsButtonPanel'
 import { SendFundsBottomSheet } from '@modules/transactions/components/SendFunds/PWBottomSheet/SendFundsBottomSheet'
+import { ReceiveFundsBottomSheet } from '@modules/transactions/components/ReceiveFunds/PWBottomSheet/ReceiveFundsBottomSheet'
 
 type AccountOverviewProps = {
     account: WalletAccount
@@ -59,6 +60,8 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
         handleBuyAlgo,
         handleTransfer,
         handleReceive,
+        isReceiveFundsVisible,
+        handleCloseReceiveFunds,
     } = useAccountOverview(account)
     const { t } = useLanguage()
 
@@ -173,6 +176,12 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
             <SendFundsBottomSheet
                 isVisible={isSendFundsVisible}
                 onClose={handleCloseSendFunds}
+            />
+
+            <ReceiveFundsBottomSheet
+                isVisible={isReceiveFundsVisible}
+                onClose={handleCloseReceiveFunds}
+                account={account}
             />
         </PWView>
     )
