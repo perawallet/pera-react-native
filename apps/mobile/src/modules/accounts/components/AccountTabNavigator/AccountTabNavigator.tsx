@@ -37,6 +37,7 @@ export const AccountTabNavigator = ({ account }: AccountTabNavigatorProps) => {
     const bodyTypography = getTypography(theme, 'body')
 
     return (
+        // TODO: refactor that into the PWTab/PWTabView component so it can be reused generically
         <Tab.Navigator
             screenOptions={{
                 tabBarActiveTintColor: theme.colors.textMain,
