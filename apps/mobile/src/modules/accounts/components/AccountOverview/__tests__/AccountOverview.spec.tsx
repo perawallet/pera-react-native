@@ -129,6 +129,8 @@ describe('AccountOverview', () => {
         })
 
         render(<AccountOverview account={mockAccount} />)
-        expect(screen.getByText('no balance')).toBeTruthy()
+        expect(
+            screen.getByText('account_details.no_balance.welcome'),
+        ).toBeTruthy()
     })
 })

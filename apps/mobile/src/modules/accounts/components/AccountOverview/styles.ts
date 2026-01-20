@@ -103,12 +103,13 @@ export const useStyles = makeStyles(theme => {
             maxWidth: '100%',
         },
         noBalanceContainer: {
-            padding: theme.spacing.xl,
+            padding: theme.spacing['4xl'],
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: theme.colors.layerGrayLighter,
-            margin: theme.spacing.md,
-            borderRadius: theme.spacing.md,
+            gap: theme.spacing.xl,
+        },
+        centeredText: {
+            textAlign: 'center',
         },
     }
 })

@@ -24,6 +24,9 @@ import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { ExpandablePanel } from '@components/ExpandablePanel'
 import { useAccountOverview } from './useAccountOverview'
 
+import { useLanguage } from '@hooks/useLanguage'
+import { NoFundsButtonPanel } from '../NoFundsButtonPanel'
+
 type AccountOverviewProps = {
     account: WalletAccount
 }
@@ -47,6 +50,7 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
         toggleChartVisible,
         handleChartSelectionChange,
     } = useAccountOverview(account)
+    const { t } = useLanguage()
 
     return (
         <PWView style={styles.container}>
@@ -126,7 +130,19 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
                 </>
             ) : (
                 <PWView style={styles.noBalanceContainer}>
-                    <PWText variant='body'>no balance</PWText>
+                    <PWText
+                        variant='body'
+                        style={styles.centeredText}
+                    >
+                        {t('account_details.no_balance.welcome')}
+                    </PWText>
+                    <PWText
+                        variant='h1'
+                        style={styles.centeredText}
+                    >
+                        {t('account_details.no_balance.get_started')}
+                    </PWText>
+                    <NoFundsButtonPanel />
                 </PWView>
             )}
 
