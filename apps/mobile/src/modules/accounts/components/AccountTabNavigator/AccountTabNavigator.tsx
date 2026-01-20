@@ -17,7 +17,7 @@ import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { AccountOverview } from '../AccountOverview'
 import { AccountNfts } from '../AccountNfts'
 import { AccountHistory } from '../AccountHistory'
-import { getFontFamily } from '@theme/theme'
+import { getTypography } from '@theme/typography'
 
 export type AccountTabsParamsList = {
     Overview: undefined
@@ -34,6 +34,7 @@ type AccountTabNavigatorProps = {
 export const AccountTabNavigator = ({ account }: AccountTabNavigatorProps) => {
     const { theme } = useTheme()
     const { t } = useLanguage()
+    const bodyTypography = getTypography(theme, 'body')
 
     return (
         <Tab.Navigator
@@ -52,8 +53,8 @@ export const AccountTabNavigator = ({ account }: AccountTabNavigatorProps) => {
                     borderBottomColor: theme.colors.layerGrayLight,
                 },
                 tabBarLabelStyle: {
-                    fontFamily: getFontFamily(false, 500),
-                    fontSize: 13,
+                    fontFamily: bodyTypography.fontFamily,
+                    fontSize: bodyTypography.fontSize,
                     textTransform: 'none',
                 },
                 tabBarPressColor: theme.colors.layerGrayLighter,
@@ -84,3 +85,4 @@ export const AccountTabNavigator = ({ account }: AccountTabNavigatorProps) => {
         </Tab.Navigator>
     )
 }
+

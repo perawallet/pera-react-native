@@ -12,6 +12,7 @@
 
 import { Theme } from '@rneui/themed'
 import { TextStyle } from 'react-native'
+import { getFontFamily } from './theme'
 
 export type TypographyVariant =
     | 'h1'
@@ -28,27 +29,46 @@ export const getTypography = (
 ): TextStyle => {
     const typography: Record<TypographyVariant, TextStyle> = {
         h1: {
+            fontFamily: getFontFamily(false, 500),
+            fontSize: 32,
+            lineHeight: 40,
             color: theme.colors.textMain,
         },
         h2: {
+            fontFamily: getFontFamily(false, 500),
+            fontSize: 25,
+            lineHeight: 24,
             color: theme.colors.textMain,
         },
         h3: {
+            fontFamily: getFontFamily(false, 500),
+            fontSize: 19,
+            lineHeight: 24,
             color: theme.colors.textMain,
         },
         h4: {
+            fontFamily: getFontFamily(false, 500),
+            fontSize: 15,
+            lineHeight: 24,
             color: theme.colors.textMain,
         },
         body: {
+            fontFamily: getFontFamily(false, 400),
+            fontSize: 13,
             color: theme.colors.textMain,
         },
         caption: {
+            fontFamily: getFontFamily(false, 400),
+            fontSize: 11,
             color: theme.colors.textMain,
         },
         link: {
+            fontFamily: getFontFamily(false, 400),
+            fontSize: 13,
             color: theme.colors.linkPrimary,
         },
     }
 
     return typography[variant]
 }
+
