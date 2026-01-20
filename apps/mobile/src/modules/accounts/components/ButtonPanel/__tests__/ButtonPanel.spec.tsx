@@ -28,14 +28,7 @@ vi.mock('@react-navigation/native', async importOriginal => {
 
 describe('ButtonPanel', () => {
     it('renders correctly', () => {
-        render(
-            <ButtonPanel
-                onSwap={vi.fn()}
-                onStake={vi.fn()}
-                onSend={vi.fn()}
-                onMore={vi.fn()}
-            />,
-        )
+        render(<ButtonPanel />)
         expect(
             screen.getByText('account_details.button_panel.swap'),
         ).toBeTruthy()

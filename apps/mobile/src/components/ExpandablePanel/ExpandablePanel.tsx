@@ -21,7 +21,7 @@ import Animated, {
 import { useStyles } from './styles'
 import { EXPANDABLE_PANEL_ANIMATION_DURATION } from '@constants/ui'
 
-export type ExpandablePanelProps = {
+type ExpandablePanelProps = {
     isExpanded: boolean
     containerStyle?: StyleProp<ViewStyle>
     onStateChangeEnd?: (isExpanded: boolean) => void

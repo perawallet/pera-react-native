@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { TransactionErrorBoundary } from './TransactionErrorBoundary'
+export { default } from './TransactionErrorBoundary'
 export type { TransactionErrorBoundaryProps } from './TransactionErrorBoundary'

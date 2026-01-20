@@ -24,7 +24,6 @@ import { ALGO_ASSET_ID, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
 
 //TODO this iz a mock implementation - implement properly
-export type PairSelectionPanelProps = Record<string, never>
 export const PairSelectionPanel = () => {
     const styles = useStyles()
     const { theme } = useTheme()
@@ -134,7 +133,7 @@ export const PairSelectionPanel = () => {
                 <PWView style={styles.inputContainer}>
                     <PWView style={styles.inputAmountsContainer}>
                         <CurrencyDisplay
-                            style={styles.primaryAmountText}
+                            h2Style={styles.primaryAmountText}
                             showSymbol={false}
                             precision={2}
                             currency='ALGO'

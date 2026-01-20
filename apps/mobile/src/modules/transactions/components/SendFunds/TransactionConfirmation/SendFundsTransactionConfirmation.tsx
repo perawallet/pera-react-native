@@ -56,7 +56,7 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { LoadingView } from '@components/LoadingView'
 
-export type SendFundsTransactionConfirmationProps = {
+type SendFundsTransactionConfirmationProps = {
     onNext: () => void
     onBack: () => void
 }

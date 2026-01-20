@@ -19,7 +19,7 @@ import { PWButton, bottomSheetNotifier } from '@components/core'
 import { useToast } from '@hooks/useToast'
 import { WalletConnectError } from '@perawallet/wallet-core-walletconnect'
 
-export interface WalletConnectErrorBoundaryProps {
+interface WalletConnectErrorBoundaryProps {
     children: ReactNode
     t: (key: string, options?: Record<string, unknown>) => string
 }

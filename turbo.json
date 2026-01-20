@@ -84,9 +84,6 @@
       "dependsOn": [
         "generate:config"
       ]
-    },
-    "mobile#build": {
-      "outputs": []
     }
   }
 }

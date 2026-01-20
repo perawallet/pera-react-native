@@ -10,7 +10,6 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
-    "build": "tsc --noEmit",
     "build:ios:dev": "APP_ENV=development react-native run-ios --scheme Pera-Dev --configuration Debug",
     "build:ios:staging": "APP_ENV=development react-native run-ios --scheme Pera-Staging --configuration Debug",
     "build:ios:production": "APP_ENV=development react-native run-ios --scheme Pera-Production --configuration Debug",

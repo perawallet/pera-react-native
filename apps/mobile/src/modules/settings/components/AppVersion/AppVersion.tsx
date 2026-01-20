@@ -40,11 +40,11 @@ const Version = () => {
     )
 }
 
-export type AppVersionProps = {
+export const AppVersion = ({
+    enableSecretTaps,
+}: {
     enableSecretTaps?: boolean
-}
-
-export const AppVersion = ({ enableSecretTaps }: AppVersionProps) => {
+}) => {
     const { setPreference } = usePreferences()
     const { showToast } = useToast()
     const { t } = useLanguage()

@@ -20,7 +20,7 @@ import { useStyles } from './styles'
 import { useMemo } from 'react'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 
-export type AccountAssetItemViewProps = {
+type AccountAssetItemViewProps = {
     accountBalance: AssetWithAccountBalance
     iconSize?: number
 } & PWViewProps

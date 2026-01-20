@@ -29,7 +29,7 @@ import { useMemo } from 'react'
 import { ContactAvatar } from '@components/ContactAvatar'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 
-export type AddressDisplayProps = {
+type AddressDisplayProps = {
     address: string
     addressFormat?: 'short' | 'long' | 'full'
     rawDisplay?: boolean

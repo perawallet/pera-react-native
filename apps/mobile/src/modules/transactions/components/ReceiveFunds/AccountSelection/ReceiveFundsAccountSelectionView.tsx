@@ -17,7 +17,7 @@ import { Text } from '@rneui/themed'
 import { useStyles } from './styles'
 import { AccountWithBalance } from '@modules/accounts/components/AccountWithBalance'
 
-export type ReceiveFundsAccountSelectionViewProps = {
+type ReceiveFundsAccountSelectionViewProps = {
     onSelected: (account: WalletAccount) => void
     onClose: () => void
 }

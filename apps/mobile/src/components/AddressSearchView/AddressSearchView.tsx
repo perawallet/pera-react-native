@@ -30,7 +30,7 @@ import { EmptyView } from '@components/EmptyView'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useLanguage } from '@hooks/useLanguage'
 
-export type AddressSearchViewProps = {
+type AddressSearchViewProps = {
     onSelected: (address: string) => void
 }
 
