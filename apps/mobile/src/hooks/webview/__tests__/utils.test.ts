@@ -11,9 +11,7 @@
  */
 
 import { getAccountType } from '../utils'
-import {
-    HDWalletDetails,
-} from '@perawallet/wallet-core-accounts'
+import { HDWalletDetails } from '@perawallet/wallet-core-accounts'
 
 describe('webview/utils - getAccountType', () => {
     const baseAccount = {
