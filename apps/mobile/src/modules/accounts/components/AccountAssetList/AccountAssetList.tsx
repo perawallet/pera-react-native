@@ -12,7 +12,7 @@
 
 import { PWButton, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
-import { useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useStyles } from './styles'
 
 import { SearchInput } from '@components/SearchInput'
@@ -36,12 +36,14 @@ const TAB_AND_HEADER_HEIGHT = 100
 type AccountAssetListProps = {
     account: WalletAccount
     scrollEnabled?: boolean
+    header?: React.ReactNode
 }
 
 //TODO implement links and buttons
 export const AccountAssetList = ({
     account,
     scrollEnabled,
+    header,
 }: AccountAssetListProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -115,6 +117,7 @@ export const AccountAssetList = ({
                     contentContainerStyle={styles.rootContainer}
                     ListHeaderComponent={
                         <PWView style={styles.headerContainer}>
+                            {header}
                             <ExpandablePanel isExpanded={headerState.isOpen}>
                                 <PWView style={styles.titleBar}>
                                     <PWText

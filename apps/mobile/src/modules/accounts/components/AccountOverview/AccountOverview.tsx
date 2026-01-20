@@ -9,6 +9,7 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
+
 import { AccountOverviewHeader } from './AccountOverviewHeader'
 import { SendFundsBottomSheet } from '@modules/transactions/components/SendFunds/PWBottomSheet/SendFundsBottomSheet'
 import { ReceiveFundsBottomSheet } from '@modules/transactions/components/ReceiveFunds/PWBottomSheet/ReceiveFundsBottomSheet'
@@ -55,32 +56,33 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
 
     return (
         <PWView style={styles.container}>
-            <AccountOverviewHeader
-                account={account}
-                hasBalance={hasBalance}
-                portfolioAlgoValue={portfolioAlgoValue}
-                portfolioFiatValue={portfolioFiatValue}
-                isPending={isPending}
-                period={period}
-                setPeriod={setPeriod}
-                selectedPoint={selectedPoint}
-                chartVisible={chartVisible}
-                preferredCurrency={preferredCurrency}
-                togglePrivacyMode={togglePrivacyMode}
-                toggleChartVisible={toggleChartVisible}
-                handleChartSelectionChange={handleChartSelectionChange}
-                handleSwap={handleSwap}
-                handleStake={handleStake}
-                handleOpenSendFunds={handleOpenSendFunds}
-                handleMore={handleMore}
-                handleBuyAlgo={handleBuyAlgo}
-                handleReceive={handleReceive}
-                handleAssetInbox={handleAssetInbox}
-            />
-
             <AccountAssetList
                 account={account}
                 scrollEnabled={scrollingEnabled}
+                header={
+                    <AccountOverviewHeader
+                        account={account}
+                        hasBalance={hasBalance}
+                        portfolioAlgoValue={portfolioAlgoValue}
+                        portfolioFiatValue={portfolioFiatValue}
+                        isPending={isPending}
+                        period={period}
+                        setPeriod={setPeriod}
+                        selectedPoint={selectedPoint}
+                        chartVisible={chartVisible}
+                        preferredCurrency={preferredCurrency}
+                        togglePrivacyMode={togglePrivacyMode}
+                        toggleChartVisible={toggleChartVisible}
+                        handleChartSelectionChange={handleChartSelectionChange}
+                        handleSwap={handleSwap}
+                        handleStake={handleStake}
+                        handleOpenSendFunds={handleOpenSendFunds}
+                        handleMore={handleMore}
+                        handleBuyAlgo={handleBuyAlgo}
+                        handleReceive={handleReceive}
+                        handleAssetInbox={handleAssetInbox}
+                    />
+                }
             />
 
             <SendFundsBottomSheet

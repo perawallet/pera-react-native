@@ -110,7 +110,8 @@ vi.mock('../../NoFundsButtonPanel', () => ({
     ),
 }))
 vi.mock('../../AccountAssetList', () => ({
-    AccountAssetList: ({ children }: PropsWithChildren) => children,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    AccountAssetList: ({ header }: any) => <div>{header}</div>,
 }))
 
 vi.mock(
