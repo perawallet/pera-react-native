@@ -53,7 +53,6 @@ export type UseAccountOverviewResult = {
     handleReceive: () => void
     isReceiveFundsVisible: boolean
     handleCloseReceiveFunds: () => void
-
 }
 
 export const useAccountOverview = (
@@ -129,8 +128,6 @@ export const useAccountOverview = (
         handleOpenReceiveFunds()
     }, [handleOpenReceiveFunds])
 
-
-
     return {
         portfolioAlgoValue,
         portfolioFiatValue,
@@ -155,6 +152,5 @@ export const useAccountOverview = (
         handleReceive,
         isReceiveFundsVisible,
         handleCloseReceiveFunds,
-
     }
 }

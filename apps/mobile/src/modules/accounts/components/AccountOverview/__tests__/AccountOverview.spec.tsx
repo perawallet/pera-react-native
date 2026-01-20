@@ -197,7 +197,6 @@ describe('AccountOverview', () => {
             expect(screen.getByTestId('receive-funds-sheet')).toBeTruthy()
         })
 
-
         it('shows not implemented toast when More is pressed', () => {
             render(<AccountOverview account={mockAccount} />)
             fireEvent.click(screen.getByText('More'))

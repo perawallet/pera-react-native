@@ -50,6 +50,9 @@ vi.mock('@modules/accounts/components/AccountMenu', () => ({
 vi.mock('@modules/accounts/components/AccountOverview', () => ({
     AccountOverview: () => <span data-testid='AccountOverview' />,
 }))
+vi.mock('@modules/accounts/components/AccountTabNavigator', () => ({
+    AccountTabNavigator: () => <span data-testid='AccountTabNavigator' />,
+}))
 vi.mock('@modules/accounts/components/AccountSelection', () => ({
     AccountSelection: 'AccountSelection',
 }))
@@ -62,8 +65,8 @@ vi.mock('@modules/accounts/components/ConfettiAnimation', () => ({
 }))
 
 describe('AccountScreen', () => {
-    it('renders AccountOverview when account is selected', () => {
+    it('renders AccountTabNavigator when account is selected', () => {
         render(<AccountScreen />)
-        expect(screen.getByTestId('AccountOverview')).toBeTruthy()
+        expect(screen.getByTestId('AccountTabNavigator')).toBeTruthy()
     })
 })

@@ -22,9 +22,9 @@ import { AccountMenu } from '@modules/accounts/components/AccountMenu'
 import { Drawer } from 'react-native-drawer-layout'
 import { QRScannerView } from '@components/QRScannerView'
 import { EmptyView } from '@components/EmptyView'
-import { AccountOverview } from '@modules/accounts/components/AccountOverview'
 import { useLanguage } from '@hooks/useLanguage'
 import { ConfettiAnimation } from '@modules/accounts/components/ConfettiAnimation'
+import { AccountTabNavigator } from '@modules/accounts/components/AccountTabNavigator'
 
 //TODO hook up all the button panel buttons correctly
 //TODO implement more menu
@@ -90,7 +90,7 @@ export const AccountScreen = () => {
                     </PWView>
                 }
             />
-            <AccountOverview account={account} />
+            <AccountTabNavigator account={account} />
             <QRScannerView
                 isVisible={scannerState.isOpen}
                 onSuccess={scannerState.close}

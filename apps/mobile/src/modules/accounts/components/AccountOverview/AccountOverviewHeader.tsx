@@ -50,7 +50,6 @@ type AccountOverviewHeaderProps = {
     handleMore: () => void
     handleBuyAlgo: () => void
     handleReceive: () => void
-
 }
 
 export const AccountOverviewHeader = ({
@@ -73,7 +72,6 @@ export const AccountOverviewHeader = ({
     handleMore,
     handleBuyAlgo,
     handleReceive,
-
 }: AccountOverviewHeaderProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -176,7 +174,6 @@ export const AccountOverviewHeader = ({
             <NoFundsButtonPanel
                 onBuyAlgo={handleBuyAlgo}
                 onReceive={handleReceive}
-
                 onMore={handleMore}
             />
         </>
