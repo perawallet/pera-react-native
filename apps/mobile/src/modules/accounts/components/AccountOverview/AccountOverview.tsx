@@ -147,7 +147,7 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
                 <PWView style={styles.noBalanceContainer}>
                     <PWText
                         variant='body'
-                        style={styles.centeredText}
+                        style={styles.noBalanceWelcomeText}
                     >
                         {t('account_details.no_balance.welcome')}
                     </PWText>

@@ -111,5 +111,9 @@ export const useStyles = makeStyles(theme => {
         centeredText: {
             textAlign: 'center',
         },
+        noBalanceWelcomeText: {
+            color: theme.colors.textGray,
+            textAlign: 'center',
+        },
     }
 })
