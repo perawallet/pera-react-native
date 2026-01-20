@@ -33,6 +33,7 @@ export type UseAccountOverviewResult = {
     chartVisible: boolean
     scrollingEnabled: boolean
     preferredCurrency: string
+    hasBalance: boolean
     togglePrivacyMode: () => void
     toggleChartVisible: () => void
     handleChartSelectionChange: (
@@ -84,6 +85,7 @@ export const useAccountOverview = (
         chartVisible,
         scrollingEnabled,
         preferredCurrency,
+        hasBalance: portfolioAlgoValue.gt(0),
         togglePrivacyMode,
         toggleChartVisible,
         handleChartSelectionChange,

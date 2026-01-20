@@ -13,14 +13,19 @@
 import { describe, it, expect, vi } from 'vitest'
 import React, { PropsWithChildren } from 'react'
 import { render, screen, fireEvent } from '@test-utils/render'
+import Decimal from 'decimal.js'
 import { AccountOverview } from '../AccountOverview'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountBalancesQuery: vi.fn(() => ({
-        portfolioAlgoValue: '100',
-        portfolioFiatValue: '200',
+        portfolioAlgoValue: new Decimal('100'),
+        portfolioFiatValue: new Decimal('200'),
         isPending: false,
+        accountBalances: new Map(),
+        isFetched: true,
+        isRefetching: false,
+        isError: false,
     })),
 }))
 
@@ -107,5 +112,23 @@ describe('AccountOverview', () => {
         fireEvent.click(screen.getByText('100'))
 
         expect(setPrivacyMode).toHaveBeenCalledWith(true)
+    })
+
+    it('renders "no balance" when account has zero balance', async () => {
+        const { useAccountBalancesQuery } = await import(
+            '@perawallet/wallet-core-accounts'
+        )
+        vi.mocked(useAccountBalancesQuery).mockReturnValue({
+            portfolioAlgoValue: new Decimal('0'),
+            portfolioFiatValue: new Decimal('0'),
+            isPending: false,
+            accountBalances: new Map(),
+            isFetched: true,
+            isRefetching: false,
+            isError: false,
+        })
+
+        render(<AccountOverview account={mockAccount} />)
+        expect(screen.getByText('no balance')).toBeTruthy()
     })
 })

@@ -42,6 +42,7 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
         chartVisible,
         scrollingEnabled,
         preferredCurrency,
+        hasBalance,
         togglePrivacyMode,
         toggleChartVisible,
         handleChartSelectionChange,
@@ -49,77 +50,85 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
 
     return (
         <PWView style={styles.container}>
-            <PWTouchableOpacity
-                onPress={togglePrivacyMode}
-                style={styles.valueBarContainer}
-            >
-                <PWView style={styles.valueBar}>
-                    <CurrencyDisplay
-                        h1
-                        value={
-                            selectedPoint
-                                ? Decimal(selectedPoint.algoValue)
-                                : portfolioAlgoValue
-                        }
-                        currency='ALGO'
-                        precision={2}
-                        style={styles.primaryCurrency}
-                        isLoading={isPending}
-                    />
-                    <PWButton
-                        icon='chart'
-                        variant={chartVisible ? 'secondary' : 'helper'}
-                        paddingStyle='dense'
-                        onPress={toggleChartVisible}
-                    />
-                </PWView>
-                <PWView style={styles.secondaryValueBar}>
-                    <CurrencyDisplay
-                        h4
-                        style={styles.valueTitle}
-                        value={
-                            selectedPoint
-                                ? Decimal(selectedPoint.fiatValue)
-                                : portfolioFiatValue
-                        }
-                        currency={preferredCurrency}
-                        prefix='≈ '
-                        precision={2}
-                        isLoading={isPending}
-                    />
-                    {!selectedPoint && (
-                        <WealthTrend
+            {hasBalance ? (
+                <>
+                    <PWTouchableOpacity
+                        onPress={togglePrivacyMode}
+                        style={styles.valueBarContainer}
+                    >
+                        <PWView style={styles.valueBar}>
+                            <CurrencyDisplay
+                                h1
+                                value={
+                                    selectedPoint
+                                        ? Decimal(selectedPoint.algoValue)
+                                        : portfolioAlgoValue
+                                }
+                                currency='ALGO'
+                                precision={2}
+                                style={styles.primaryCurrency}
+                                isLoading={isPending}
+                            />
+                            <PWButton
+                                icon='chart'
+                                variant={chartVisible ? 'secondary' : 'helper'}
+                                paddingStyle='dense'
+                                onPress={toggleChartVisible}
+                            />
+                        </PWView>
+                        <PWView style={styles.secondaryValueBar}>
+                            <CurrencyDisplay
+                                h4
+                                style={styles.valueTitle}
+                                value={
+                                    selectedPoint
+                                        ? Decimal(selectedPoint.fiatValue)
+                                        : portfolioFiatValue
+                                }
+                                currency={preferredCurrency}
+                                prefix='≈ '
+                                precision={2}
+                                isLoading={isPending}
+                            />
+                            {!selectedPoint && (
+                                <WealthTrend
+                                    account={account}
+                                    period={period}
+                                />
+                            )}
+                            {selectedPoint && (
+                                <PWText
+                                    variant='h4'
+                                    style={styles.dateDisplay}
+                                >
+                                    {formatDatetime(selectedPoint.datetime)}
+                                </PWText>
+                            )}
+                        </PWView>
+                    </PWTouchableOpacity>
+
+                    <ExpandablePanel
+                        isExpanded={chartVisible}
+                        containerStyle={styles.chartContainer}
+                    >
+                        <WealthChart
                             account={account}
                             period={period}
+                            onSelectionChanged={handleChartSelectionChange}
                         />
-                    )}
-                    {selectedPoint && (
-                        <PWText
-                            variant='h4'
-                            style={styles.dateDisplay}
-                        >
-                            {formatDatetime(selectedPoint.datetime)}
-                        </PWText>
-                    )}
+                        <ChartPeriodSelection
+                            value={period}
+                            onChange={setPeriod}
+                        />
+                    </ExpandablePanel>
+
+                    <ButtonPanel />
+                </>
+            ) : (
+                <PWView style={styles.noBalanceContainer}>
+                    <PWText variant='body'>no balance</PWText>
                 </PWView>
-            </PWTouchableOpacity>
-
-            <ExpandablePanel
-                isExpanded={chartVisible}
-                containerStyle={styles.chartContainer}
-            >
-                <WealthChart
-                    account={account}
-                    period={period}
-                    onSelectionChanged={handleChartSelectionChange}
-                />
-                <ChartPeriodSelection
-                    value={period}
-                    onChange={setPeriod}
-                />
-            </ExpandablePanel>
-
-            <ButtonPanel />
+            )}
 
             <AccountAssetList
                 account={account}
