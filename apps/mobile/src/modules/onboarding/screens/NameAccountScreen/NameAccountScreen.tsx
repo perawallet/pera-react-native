@@ -10,79 +10,49 @@
  limitations under the License
  */
 
-import { useNavigation } from '@react-navigation/native'
-import {
-    NativeStackNavigationProp,
-    NativeStackScreenProps,
-} from '@react-navigation/native-stack'
 import { useStyles } from './styles'
-import { PWButton, PWIcon, PWInput, PWText, PWView } from '@components/core'
-
 import {
-    useAllAccounts,
-    getAccountDisplayName,
-    WalletAccount,
-    useUpdateAccount,
-} from '@perawallet/wallet-core-accounts'
-import { useState } from 'react'
-import { KeyboardAvoidingView, Platform } from 'react-native'
+    PWButton,
+    PWIcon,
+    PWInput,
+    PWOverlay,
+    PWText,
+    PWView,
+} from '@components/core'
+import { useTheme } from '@rneui/themed'
+import { ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native'
 import { useLanguage } from '@hooks/useLanguage'
-import { usePreferences } from '@perawallet/wallet-core-settings'
-import { UserPreferences } from '@constants/user-preferences'
-import { OnboardingStackParamList } from '../../routes'
-import { RootStackParamList } from '@routes/index'
+import { useNameAccountScreen } from './useNameAccountScreen'
 
-type NameAccountScreenProps = NativeStackScreenProps<
-    OnboardingStackParamList,
-    'NameAccount'
->
-
-export const NameAccountScreen = ({ route }: NameAccountScreenProps) => {
-    const navigation =
-        useNavigation<NativeStackNavigationProp<RootStackParamList>>()
+export const NameAccountScreen = () => {
     const styles = useStyles()
-    const accounts = useAllAccounts()
-    const updateAccount = useUpdateAccount()
+    const { theme } = useTheme()
     const { t } = useLanguage()
-    const { deletePreference } = usePreferences()
 
-    const routeAccount = route.params?.account
-
-    const [account, setAccount] = useState<WalletAccount>(routeAccount)
-    const numWallets = accounts.length
-    const initialWalletName = getAccountDisplayName(account)
-    const [walletDisplay, setWalletDisplay] =
-        useState<string>(initialWalletName)
-
-    const saveName = (value: string) => {
-        account.name = value
-        setAccount(account)
-        setWalletDisplay(value)
-        updateAccount(account)
-    }
-
-    const goToHome = () => {
-        deletePreference(UserPreferences.isCreatingAccount)
-        navigation.replace('TabBar', {
-            screen: 'Home',
-            params: {
-                screen: 'AccountDetails',
-                params: { playConfetti: true },
-            },
-        })
-    }
+    const {
+        walletDisplay,
+        isCreating,
+        handleNameChange,
+        handleFinish,
+        numWallets,
+    } = useNameAccountScreen()
 
     return (
         <KeyboardAvoidingView
             style={styles.mainContainer}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-            <PWText
-                variant='h4'
-                style={styles.helperText}
-            >
-                {t('onboarding.name_account.description')}
-            </PWText>
+            <PWView style={styles.headerContainer}>
+                <PWText variant='h1'>
+                    {t('onboarding.name_account.title')}
+                </PWText>
+                <PWText
+                    variant='h4'
+                    style={styles.helperText}
+                >
+                    {t('onboarding.name_account.description')}
+                </PWText>
+            </PWView>
             <PWView style={styles.walletNameContainer}>
                 <PWIcon
                     name='wallet'
@@ -101,7 +71,7 @@ export const NameAccountScreen = ({ route }: NameAccountScreenProps) => {
                 label={t('onboarding.name_account.input_label')}
                 containerStyle={styles.input}
                 value={walletDisplay}
-                onChangeText={saveName}
+                onChangeText={handleNameChange}
                 autoFocus
             />
             <PWView style={styles.spacer} />
@@ -109,8 +79,21 @@ export const NameAccountScreen = ({ route }: NameAccountScreenProps) => {
                 style={styles.finishButton}
                 variant='primary'
                 title={t('onboarding.name_account.finish_button')}
-                onPress={goToHome}
+                onPress={handleFinish}
+                isLoading={isCreating}
+                isDisabled={isCreating}
             />
+            <PWOverlay
+                isVisible={isCreating}
+                overlayStyle={styles.overlay}
+                backdropStyle={styles.overlayBackdrop}
+            >
+                <ActivityIndicator
+                    size='large'
+                    color={theme.colors.linkPrimary}
+                />
+                <PWText>{t('onboarding.create_account.processing')}</PWText>
+            </PWOverlay>
         </KeyboardAvoidingView>
     )
 }

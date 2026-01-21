@@ -12,7 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(() => ({
+export const useStyles = makeStyles(theme => ({
     container: {
         // Default container styles if needed
     },
@@ -20,7 +20,7 @@ export const useStyles = makeStyles(() => ({
         // Default input container styles if needed
     },
     input: {
-        // Default input styles if needed
+        paddingHorizontal: theme.spacing.sm,
     },
     label: {
         // Default label styles if needed

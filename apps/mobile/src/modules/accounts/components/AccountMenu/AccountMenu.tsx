@@ -20,7 +20,7 @@ import { InboxTab } from './InboxTab'
 import { AccountsTab } from './AccountsTab'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 
-type AccountMenuProps = {
+export type AccountMenuProps = {
     onSelected: (account: WalletAccount) => void
     showInbox?: boolean
 }

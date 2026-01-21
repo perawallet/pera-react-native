@@ -38,7 +38,7 @@ type DataPoint = {
     value: number
 }
 
-type AssetWealthChartProps = {
+export type AssetWealthChartProps = {
     account: WalletAccount
     asset: PeraAsset
     period: HistoryPeriod

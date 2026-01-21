@@ -11,4 +11,3 @@
  */
 
 export { CardPanel } from './CardPanel'
-export type { CardPanelProps } from './CardPanel'

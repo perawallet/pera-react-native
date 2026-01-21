@@ -6,6 +6,8 @@
 	<string>${PRODUCT_NAME} uses Face ID to secure access to your wallet.</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.finance</string>
+	<key>CFBundleIconName</key>
+	<string>AppIcon</string>
 	<key>AppEnvironment</key>
 	<string>$(APP_ENV)</string>
 	<key>CFBundleDevelopmentRegion</key>
@@ -88,8 +90,6 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
-	<key>AppEnvironment</key>
-	<string>$(APP_ENV)</string>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
 		<string>applinks:perawallet.app</string>

@@ -87,8 +87,8 @@ android {
         applicationId "com.algorand.perarn"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode System.getenv("BUILD_NUMBER") ? System.getenv("BUILD_NUMBER").toInteger() : 1
-        versionName "7.0.0"
+        versionCode project.hasProperty('android.injected.version.code') ? project.property('android.injected.version.code').toInteger() : (System.getenv("BUILD_NUMBER") ? System.getenv("BUILD_NUMBER").toInteger() : 1)
+        versionName project.hasProperty('android.injected.version.name') ? project.property('android.injected.version.name') : "7.0.0"
 
         // Make APP_ENV available to React Native at build time
         resValue "string", "build_config_package", "com.algorand.perarn"

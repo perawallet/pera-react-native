@@ -23,7 +23,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@hooks/usePeraWebviewInterface'
 import { v7 as uuid } from 'uuid'
 
-type AssetSocialMediaProps = {
+export type AssetSocialMediaProps = {
     assetDetails: PeraAsset
 }
 

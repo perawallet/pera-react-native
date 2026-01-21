@@ -20,6 +20,10 @@ import { useTransactionEncoder } from '../useTransactionEncoder'
 vi.mock('@algorandfoundation/algokit-utils/transact', () => ({
     encodeTransaction: vi.fn(() => new Uint8Array([0])),
     decodeTransaction: vi.fn(() => ({})),
+    encodeSignedTransaction: vi.fn(() => new Uint8Array([1])),
+    encodeSignedTransactions: vi.fn(() => [new Uint8Array([1])]),
+    decodeSignedTransaction: vi.fn(() => ({})),
+    decodeSignedTransactions: vi.fn(() => [{}]),
 }))
 
 describe('useTransactionEncoder', () => {
@@ -54,6 +58,31 @@ describe('useTransactionEncoder', () => {
         expect(encoded).toEqual(Uint8Array.from([0]))
     })
 
+    test('encodeSignedTransaction returns a Uint8Array', () => {
+        const { result } = renderHook(() => useTransactionEncoder(), {
+            wrapper,
+        })
+
+        const mockSignedTx = {} as any
+        const encoded = result.current.encodeSignedTransaction(mockSignedTx)
+
+        expect(encoded).toBeInstanceOf(Uint8Array)
+        expect(encoded).toEqual(Uint8Array.from([1]))
+    })
+
+    test('encodeSignedTransactions returns array of Uint8Arrays', () => {
+        const { result } = renderHook(() => useTransactionEncoder(), {
+            wrapper,
+        })
+
+        const mockSignedTxs = [{}] as any[]
+        const encoded = result.current.encodeSignedTransactions(mockSignedTxs)
+
+        expect(Array.isArray(encoded)).toBe(true)
+        expect(encoded[0]).toBeInstanceOf(Uint8Array)
+        expect(encoded[0]).toEqual(Uint8Array.from([1]))
+    })
+
     test('decodeTransaction returns a transaction object', () => {
         const { result } = renderHook(() => useTransactionEncoder(), {
             wrapper,
@@ -64,5 +93,30 @@ describe('useTransactionEncoder', () => {
 
         expect(decoded).toBeDefined()
         expect(typeof decoded).toBe('object')
+    })
+
+    test('decodeSignedTransaction returns a signed transaction object', () => {
+        const { result } = renderHook(() => useTransactionEncoder(), {
+            wrapper,
+        })
+
+        const mockEncoded = Uint8Array.from([1])
+        const decoded = result.current.decodeSignedTransaction(mockEncoded)
+
+        expect(decoded).toBeDefined()
+        expect(typeof decoded).toBe('object')
+    })
+
+    test('decodeSignedTransactions returns array of signed transaction objects', () => {
+        const { result } = renderHook(() => useTransactionEncoder(), {
+            wrapper,
+        })
+
+        const mockEncodedTxs = [Uint8Array.from([1])]
+        const decoded = result.current.decodeSignedTransactions(mockEncodedTxs)
+
+        expect(Array.isArray(decoded)).toBe(true)
+        expect(decoded[0]).toBeDefined()
+        expect(typeof decoded[0]).toBe('object')
     })
 })

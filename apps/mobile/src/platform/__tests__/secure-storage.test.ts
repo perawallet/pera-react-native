@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { vi, Mocked } from 'vitest'
 import { RNSecureStorageService } from '../secure-storage'
 
 vi.mock('react-native-keychain', () => ({
@@ -28,7 +29,7 @@ vi.mock('react-native-keychain', () => ({
 }))
 
 import * as Keychain from 'react-native-keychain'
-const mockKeychain = Keychain as vi.Mocked<typeof Keychain>
+const mockKeychain = Keychain as Mocked<typeof Keychain>
 
 describe('RNSecureStorageService', () => {
     let service: RNSecureStorageService
@@ -112,7 +113,8 @@ describe('RNSecureStorageService', () => {
                 service: 'com.algorand.android.my-key',
                 username: 'user',
                 password: 'stored-value',
-                storage: 'KC',
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                storage: 'KC' as any,
             })
 
             const result = await service.getItem('my-key')
@@ -159,7 +161,8 @@ describe('RNSecureStorageService', () => {
                 service: 'com.algorand.android.auth_probe',
                 username: 'user',
                 password: '1',
-                storage: 'KC',
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                storage: 'KC' as any,
             })
 
             const result = await service.authenticate()

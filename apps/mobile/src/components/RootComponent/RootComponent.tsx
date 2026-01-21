@@ -38,7 +38,7 @@ import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletCo
 import { useTokenListener } from '@modules/token'
 import { AutoLockGuard } from '@modules/security/components/AutoLockGuard/AutoLockGuard'
 
-type RootComponentProps = {
+export type RootComponentProps = {
     fcmToken: string | null
 }
 

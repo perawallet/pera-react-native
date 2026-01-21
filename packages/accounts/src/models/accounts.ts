@@ -51,6 +51,7 @@ export type WalletAccount =
     | HDWalletAccount
     | MultiSigAccount
     | HardwareWalletAccount
+    | WatchAccount
 
 export type BaseWalletAccount = {
     id?: string
@@ -62,18 +63,27 @@ export type BaseWalletAccount = {
     rekeyAddress?: string
 }
 
-export type Algo25Account = BaseWalletAccount
+export type Algo25Account = BaseWalletAccount & {
+    type: typeof AccountTypes.algo25
+}
 
 export type HDWalletAccount = BaseWalletAccount & {
+    type: typeof AccountTypes.hdWallet
     hdWalletDetails: HDWalletDetails
 }
 
 export type MultiSigAccount = BaseWalletAccount & {
+    type: typeof AccountTypes.multisig
     multisigDetails: MultiSigDetails
 }
 
 export type HardwareWalletAccount = BaseWalletAccount & {
+    type: typeof AccountTypes.hardware
     hardwareDetails: HardwareWalletDetails
+}
+
+export type WatchAccount = BaseWalletAccount & {
+    type: typeof AccountTypes.watch
 }
 
 export type AccountAddress = string

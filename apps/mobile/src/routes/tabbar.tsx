@@ -19,10 +19,8 @@ import { SwapScreen } from '@modules/swap/screens/SwapScreen'
 import { MenuScreen } from '@modules/menu/screens/MenuScreen'
 import { headeredLayout, safeAreaLayout } from '@layouts/index'
 import { TabLabel } from '@components/TabLabel'
-import {
-    AccountStackNavigator,
-    AccountStackParamsList,
-} from '@modules/accounts/routes'
+import { AccountStackNavigator } from '@modules/accounts/routes'
+import { AccountStackParamsList } from '@modules/accounts/routes/types'
 import { NavigatorScreenParams } from '@react-navigation/native'
 
 export type TabBarStackParamList = {

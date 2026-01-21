@@ -11,4 +11,3 @@
  */
 
 export { SwapHistoryPanel } from './SwapHistoryPanel'
-export type { SwapHistoryPanelProps } from './SwapHistoryPanel'

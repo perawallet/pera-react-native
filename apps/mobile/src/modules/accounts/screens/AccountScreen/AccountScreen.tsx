@@ -10,17 +10,11 @@
  limitations under the License
  */
 
-import {
-    PWIcon,
-    PWTab,
-    PWTabView,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { PWIcon, PWToolbar, PWTouchableOpacity, PWView } from '@components/core'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import { useShouldPlayConfetti } from '@modules/onboarding/hooks'
 
 import { useStyles } from './styles'
-import { useState } from 'react'
 import { useModalState } from '@hooks/useModalState'
 import { NotificationsIcon } from '@modules/notifications/components/NotificationsIcon'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
@@ -28,35 +22,26 @@ import { AccountMenu } from '@modules/accounts/components/AccountMenu'
 import { Drawer } from 'react-native-drawer-layout'
 import { QRScannerView } from '@components/QRScannerView'
 import { EmptyView } from '@components/EmptyView'
-import { AccountOverview } from '@modules/accounts/components/AccountOverview'
-import { AccountNfts } from '@modules/accounts/components/AccountNfts'
-import { AccountHistory } from '@modules/accounts/components/AccountHistory'
-import { TAB_ANIMATION_CONFIG } from '@constants/ui'
 import { useLanguage } from '@hooks/useLanguage'
-import { AccountStackParamsList } from '@modules/accounts/routes'
-import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { ConfettiAnimation } from '@modules/accounts/components/ConfettiAnimation'
 import { PromptContainer } from '@modules/prompts'
+import { AccountTabNavigator } from '@modules/accounts/components/AccountTabNavigator'
 
 //TODO hook up all the button panel buttons correctly
 //TODO implement more menu
 //TODO figure out and implement banners/spot banners
-//TODO implement nft and history tabs
 //TODO implement account info screen somewhere (see old app top right corner)
 //TODO implement rekey information && multisig information
-type AccountScreenProps = NativeStackScreenProps<
-    AccountStackParamsList,
-    'AccountDetails'
->
 
-export const AccountScreen = ({ route }: AccountScreenProps) => {
+export const AccountScreen = () => {
     const styles = useStyles()
     const account = useSelectedAccount()
     const scannerState = useModalState()
     const drawerState = useModalState()
-    const [tabIndex, setTabIndex] = useState(0)
     const { t } = useLanguage()
-    const playConfetti = route.params?.playConfetti ?? false
+
+    const { shouldPlayConfetti, setShouldPlayConfetti } =
+        useShouldPlayConfetti()
 
     const toggleAccountSelectorVisible = () => {
         drawerState.open()
@@ -86,52 +71,27 @@ export const AccountScreen = ({ route }: AccountScreenProps) => {
                 />
             )}
         >
-            <ConfettiAnimation play={playConfetti} />
-            <PWView style={styles.iconBar}>
-                <PWView style={styles.iconBarSection}>
-                    {/* TODO we may want to add support for pending inbox items here too
-            (like the current inbox since we're using the same screen real estate) */}
+            <ConfettiAnimation
+                play={shouldPlayConfetti}
+                onFinish={() => setShouldPlayConfetti(false)}
+            />
+            <PWToolbar
+                style={styles.iconBar}
+                left={
+                    // TODO we may want to add support for pending inbox items here too
+                    // (like the current inbox since we're using the same screen real estate)
                     <AccountSelection onPress={toggleAccountSelectorVisible} />
-                </PWView>
-                <PWView style={styles.iconBarSection}>
-                    <PWTouchableOpacity onPress={scannerState.open}>
-                        <PWIcon name='camera' />
-                    </PWTouchableOpacity>
-                    <NotificationsIcon />
-                </PWView>
-            </PWView>
-            <PWTab
-                value={tabIndex}
-                onChange={e => setTabIndex(e)}
-                containerStyle={styles.tabs}
-                indicatorStyle={styles.indicator}
-                titleStyle={styles.tabItem}
-                dense
-            >
-                <PWTab.Item
-                    title={t('account_details.main_screen.overview_tab')}
-                />
-                <PWTab.Item title={t('account_details.main_screen.nfts_tab')} />
-                <PWTab.Item
-                    title={t('account_details.main_screen.history_tab')}
-                />
-            </PWTab>
-            <PWTabView
-                value={tabIndex}
-                onChange={setTabIndex}
-                animationType='spring'
-                animationConfig={TAB_ANIMATION_CONFIG}
-            >
-                <PWTabView.Item style={styles.fullWidth}>
-                    <AccountOverview account={account} />
-                </PWTabView.Item>
-                <PWTabView.Item style={styles.fullWidth}>
-                    <AccountNfts />
-                </PWTabView.Item>
-                <PWTabView.Item style={styles.fullWidth}>
-                    <AccountHistory />
-                </PWTabView.Item>
-            </PWTabView>
+                }
+                right={
+                    <PWView style={styles.iconBarSection}>
+                        <PWTouchableOpacity onPress={scannerState.open}>
+                            <PWIcon name='camera' />
+                        </PWTouchableOpacity>
+                        <NotificationsIcon />
+                    </PWView>
+                }
+            />
+            <AccountTabNavigator account={account} />
             <QRScannerView
                 isVisible={scannerState.isOpen}
                 onSuccess={scannerState.close}

@@ -2223,6 +2223,35 @@ PODS:
     - Yoga
   - react-native-netinfo (11.4.1):
     - React-Core
+  - react-native-pager-view (8.0.0):
+    - boost
+    - DoubleConversion
+    - fast_float
+    - fmt
+    - glog
+    - hermes-engine
+    - RCT-Folly
+    - RCT-Folly/Fabric
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - SocketRocket
+    - SwiftUIIntrospect (~> 1.0)
+    - Yoga
   - react-native-quick-base64 (2.2.2):
     - React-Core
   - react-native-safe-area-context (5.6.2):
@@ -3399,6 +3428,7 @@ PODS:
     - SocketRocket
     - Yoga
   - SocketRocket (0.7.1)
+  - SwiftUIIntrospect (1.3.0)
   - VisionCamera (4.7.3):
     - VisionCamera/Core (= 4.7.3)
     - VisionCamera/React (= 4.7.3)
@@ -3470,6 +3500,7 @@ DEPENDENCIES:
   - react-native-advanced-input-mask (from `../node_modules/react-native-advanced-input-mask`)
   - react-native-mmkv (from `../node_modules/react-native-mmkv`)
   - "react-native-netinfo (from `../node_modules/@react-native-community/netinfo`)"
+  - react-native-pager-view (from `../node_modules/react-native-pager-view`)
   - react-native-quick-base64 (from `../node_modules/react-native-quick-base64`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - react-native-webassembly (from `../node_modules/react-native-webassembly`)
@@ -3555,6 +3586,7 @@ SPEC REPOS:
     - PromisesSwift
     - React-Codegen
     - SocketRocket
+    - SwiftUIIntrospect
 
 EXTERNAL SOURCES:
   boost:
@@ -3658,6 +3690,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-mmkv"
   react-native-netinfo:
     :path: "../node_modules/@react-native-community/netinfo"
+  react-native-pager-view:
+    :path: "../node_modules/react-native-pager-view"
   react-native-quick-base64:
     :path: "../node_modules/react-native-quick-base64"
   react-native-safe-area-context:
@@ -3846,6 +3880,7 @@ SPEC CHECKSUMS:
   react-native-advanced-input-mask: ae44ca9383e3310c6d82219255fbaec74940b445
   react-native-mmkv: ac7507625cd74bac0eb5333604a7cd7b08fe9e3e
   react-native-netinfo: cec9c4e86083cb5b6aba0e0711f563e2fbbff187
+  react-native-pager-view: d7d2aa47f54343bf55fdcee3973503dd27c2bd37
   react-native-quick-base64: 6568199bb2ac8e72ecdfdc73a230fbc5c1d3aac4
   react-native-safe-area-context: c00143b4823773bba23f2f19f85663ae89ceb460
   react-native-webassembly: b6201eba01d1396ee54196497da11e115fd6fbe3
@@ -3901,9 +3936,10 @@ SPEC CHECKSUMS:
   RNVectorIcons: 791f13226ec4a3fd13062eda9e892159f0981fae
   RNWorklets: 1377e54af040e76b85e031c9805af8bbc3a9c846
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
+  SwiftUIIntrospect: fee9aa07293ee280373a591e1824e8ddc869ba5d
   VisionCamera: 7187b3dac1ff3071234ead959ce311875748e14f
   Yoga: 6ca93c8c13f56baeec55eb608577619b17a4d64e
 
-PODFILE CHECKSUM: 31eb42b000ede075e04d02b9050b63451efff6bf
+PODFILE CHECKSUM: f8175fd2f0a1ebad4218ad393842b4d06245a8e2
 
 COCOAPODS: 1.16.2

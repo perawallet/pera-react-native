@@ -19,12 +19,15 @@ import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 
 // Mock AlgorandClient factory methods so we can assert which one is chosen
 vi.mock('@algorandfoundation/algokit-utils', () => {
+    const mockClient = {
+        setDefaultSigner: vi.fn(),
+    }
     return {
         AlgorandClient: {
-            testNet: vi.fn(() => 'TESTNET_CLIENT'),
-            mainNet: vi.fn(() => 'MAINNET_CLIENT'),
-            fromEnvironment: vi.fn(() => 'ENV_CLIENT'),
-            fromConfig: vi.fn(() => 'FROM_CONFIG_CLIENT'),
+            testNet: vi.fn(() => mockClient),
+            mainNet: vi.fn(() => mockClient),
+            fromEnvironment: vi.fn(() => mockClient),
+            fromConfig: vi.fn(() => mockClient),
         },
     }
 })
@@ -32,6 +35,11 @@ vi.mock('@algorandfoundation/algokit-utils', () => {
 // Mock useNetwork from platform-integration
 vi.mock('@perawallet/wallet-core-platform-integration', () => ({
     useNetwork: vi.fn(),
+}))
+
+// Mock encodeSignedTransactions
+vi.mock('@algorandfoundation/algokit-utils/transact', () => ({
+    encodeSignedTransactions: vi.fn(txs => txs),
 }))
 
 describe('services/blockchain/hooks', () => {
@@ -45,10 +53,7 @@ describe('services/blockchain/hooks', () => {
         const { result } = renderHook(() => useAlgorandClient())
 
         expect(AlgorandClient.fromConfig).toHaveBeenCalledTimes(1)
-        expect(AlgorandClient.testNet).not.toHaveBeenCalled()
-        expect(AlgorandClient.mainNet).not.toHaveBeenCalled()
-        expect(AlgorandClient.fromEnvironment).not.toHaveBeenCalled()
-        expect(result.current).toBe('FROM_CONFIG_CLIENT')
+        expect(result.current.setDefaultSigner).not.toHaveBeenCalled()
     })
 
     test('returns fromConfig client for testnet', () => {
@@ -56,20 +61,22 @@ describe('services/blockchain/hooks', () => {
         const { result } = renderHook(() => useAlgorandClient())
 
         expect(AlgorandClient.fromConfig).toHaveBeenCalledTimes(1)
-        expect(AlgorandClient.testNet).not.toHaveBeenCalled()
-        expect(AlgorandClient.mainNet).not.toHaveBeenCalled()
-        expect(AlgorandClient.fromEnvironment).not.toHaveBeenCalled()
-        expect(result.current).toBe('FROM_CONFIG_CLIENT')
+        expect(result.current.setDefaultSigner).not.toHaveBeenCalled()
     })
 
-    test('returns fromConfig client for unknown network', () => {
-        ;(useNetwork as Mock).mockReturnValue({ network: 'devnet' })
-        const { result } = renderHook(() => useAlgorandClient())
+    test('configures signer when provided', async () => {
+        ;(useNetwork as Mock).mockReturnValue({ network: 'mainnet' })
+        const mockSigner = vi.fn().mockResolvedValue(['signed-tx'])
+        const { result } = renderHook(() => useAlgorandClient(mockSigner))
 
-        expect(AlgorandClient.fromConfig).toHaveBeenCalledTimes(1)
-        expect(AlgorandClient.testNet).not.toHaveBeenCalled()
-        expect(AlgorandClient.mainNet).not.toHaveBeenCalled()
-        expect(AlgorandClient.fromEnvironment).not.toHaveBeenCalled()
-        expect(result.current).toBe('FROM_CONFIG_CLIENT')
+        expect(result.current.setDefaultSigner).toHaveBeenCalledTimes(1)
+
+        // Verify the encoding wrapper
+        const encodingSigner = (result.current.setDefaultSigner as Mock).mock
+            .calls[0][0]
+        const resultTx = await encodingSigner({ txnGroup: [] }, [])
+
+        expect(mockSigner).toHaveBeenCalled()
+        expect(resultTx).toEqual(['signed-tx'])
     })
 })

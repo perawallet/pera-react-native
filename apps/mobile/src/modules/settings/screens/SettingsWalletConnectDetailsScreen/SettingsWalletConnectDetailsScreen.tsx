@@ -40,7 +40,7 @@ import { PermissionItem } from '@modules/walletconnect/components/PermissionItem
 import { useNavigation } from '@react-navigation/native'
 import { InfoButton } from '@components/InfoButton'
 
-type SettingsWalletConnectDetailsScreenProps = NativeStackScreenProps<
+export type SettingsWalletConnectDetailsScreenProps = NativeStackScreenProps<
     WalletConnectSettingsStackParamsList,
     'WalletConnectSettingsDetails'
 >

@@ -1,0 +1,123 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { render, fireEvent, screen } from '@test-utils/render'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { ImportInfoScreen } from '../ImportInfoScreen'
+
+// Mock navigation
+const mockGoBack = vi.fn()
+const mockPush = vi.fn()
+
+vi.mock('@hooks/useAppNavigation', () => ({
+    useAppNavigation: () => ({
+        goBack: mockGoBack,
+        push: mockPush,
+    }),
+}))
+
+// Mock react-i18next
+vi.mock('react-i18next', async () => {
+    const actual = await vi.importActual<object>('react-i18next')
+    return {
+        ...actual,
+        useTranslation: () => ({
+            t: (key: string) => key,
+            i18n: {
+                changeLanguage: vi.fn(),
+                language: 'en',
+            },
+        }),
+    }
+})
+
+vi.mock('@components/core', async () => {
+    const actual =
+        await vi.importActual<typeof import('@components/core')>(
+            '@components/core',
+        )
+    const React = await import('react')
+    return {
+        ...actual,
+        PWTouchableOpacity: ({
+            children,
+            onPress,
+            testID,
+            ...props
+        }: {
+            children?: React.ReactNode
+            onPress?: () => void
+            testID?: string
+        }) => {
+            return React.createElement(
+                'div',
+                { ...props, onClick: onPress, 'data-testid': testID },
+                children,
+            )
+        },
+        PWText: ({
+            children,
+            onPress,
+            ...props
+        }: {
+            children?: React.ReactNode
+            onPress?: () => void
+        }) => {
+            return React.createElement(
+                'span',
+                { ...props, onClick: onPress },
+                children,
+            )
+        },
+    }
+})
+
+describe('ImportInfoScreen', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    it('renders correctly', () => {
+        render(<ImportInfoScreen />)
+
+        expect(screen.getByText('onboarding.import_info.title')).toBeTruthy()
+        expect(screen.getByText('onboarding.import_info.body')).toBeTruthy()
+        expect(screen.getByText('onboarding.import_info.button')).toBeTruthy()
+    })
+
+    it('navigates back when back button is pressed', () => {
+        render(<ImportInfoScreen />)
+
+        const backButton = screen.getByTestId('back-button')
+        fireEvent.click(backButton)
+
+        expect(mockGoBack).toHaveBeenCalled()
+    })
+
+    it('navigates to ImportAccount when recover button is pressed', () => {
+        render(<ImportInfoScreen />)
+
+        const recoverButton = screen.getByText('onboarding.import_info.button')
+        fireEvent.click(recoverButton)
+
+        expect(mockPush).toHaveBeenCalledWith('ImportAccount')
+    })
+
+    it('handles info button press', () => {
+        render(<ImportInfoScreen />)
+
+        const infoButton = screen.getByTestId('info-button')
+        fireEvent.click(infoButton)
+
+        // Currently handleInfoPress is empty, but we verify it doesn't crash
+    })
+})

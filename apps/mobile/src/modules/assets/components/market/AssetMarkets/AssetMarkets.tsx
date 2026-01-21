@@ -50,7 +50,7 @@ import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 
-type AssetMarketsProps = {
+export type AssetMarketsProps = {
     asset: PeraAsset
 }
 

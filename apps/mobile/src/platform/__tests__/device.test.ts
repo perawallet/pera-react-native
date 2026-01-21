@@ -284,5 +284,18 @@ describe('RNDeviceInfoStorageService', () => {
 
             expect(locale).toBe('zh-Hans-CN')
         })
+        it('removes extra information starting with @', async () => {
+            vi.mocked(RN).Platform.OS = 'ios'
+            vi.mocked(RN).NativeModules.SettingsManager.getConstants = vi.fn(
+                () => ({
+                    settings: {
+                        AppleLocale: 'en-US@rg=ptzzzz',
+                        AppleLanguages: ['en_US', 'fr_FR'],
+                    },
+                }),
+            )
+            const locale = service.getDeviceLocale()
+            expect(locale).toBe('en-US')
+        })
     })
 })

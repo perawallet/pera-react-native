@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { default } from './AccountErrorBoundary'
+export { AccountErrorBoundary } from './AccountErrorBoundary'
 export type { AccountErrorBoundaryProps } from './AccountErrorBoundary'

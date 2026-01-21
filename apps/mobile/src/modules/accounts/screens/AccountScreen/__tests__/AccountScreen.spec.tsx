@@ -13,11 +13,7 @@
 import React, { ReactNode } from 'react'
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import { RouteProp } from '@react-navigation/native'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { AccountStackParamsList } from '@modules/accounts/routes'
 import { AccountScreen } from '../AccountScreen'
-// import { mockedWalletAccount } from '@perawallet/wallet-core-accounts'
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -52,13 +48,10 @@ vi.mock('@modules/accounts/components/AccountMenu', () => ({
     AccountMenu: 'AccountMenu',
 }))
 vi.mock('@modules/accounts/components/AccountOverview', () => ({
-    AccountOverview: 'AccountOverview',
+    AccountOverview: () => <span data-testid='AccountOverview' />,
 }))
-vi.mock('@modules/accounts/components/AccountNfts', () => ({
-    AccountNfts: 'AccountNfts',
-}))
-vi.mock('@modules/accounts/components/AccountHistory', () => ({
-    AccountHistory: 'AccountHistory',
+vi.mock('@modules/accounts/components/AccountTabNavigator', () => ({
+    AccountTabNavigator: () => <span data-testid='AccountTabNavigator' />,
 }))
 vi.mock('@modules/accounts/components/AccountSelection', () => ({
     AccountSelection: 'AccountSelection',
@@ -71,25 +64,9 @@ vi.mock('@modules/accounts/components/ConfettiAnimation', () => ({
     ConfettiAnimation: 'ConfettiAnimation',
 }))
 
-const mockRoute = {
-    params: {},
-} as unknown as RouteProp<AccountStackParamsList, 'AccountDetails'>
-
 describe('AccountScreen', () => {
-    it('renders correctly with account', () => {
-        render(
-            <AccountScreen
-                route={mockRoute}
-                navigation={
-                    null as unknown as NativeStackNavigationProp<
-                        AccountStackParamsList,
-                        'AccountDetails'
-                    >
-                }
-            />,
-        )
-        // Tab and TabView should render inside the screen
-        expect(screen.getByTestId('Tab')).toBeTruthy()
-        expect(screen.getByTestId('TabView')).toBeTruthy()
+    it('renders AccountTabNavigator when account is selected', () => {
+        render(<AccountScreen />)
+        expect(screen.getByTestId('AccountTabNavigator')).toBeTruthy()
     })
 })

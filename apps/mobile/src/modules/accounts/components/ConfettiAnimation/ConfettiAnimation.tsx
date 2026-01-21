@@ -15,16 +15,35 @@ import LottieView from 'lottie-react-native'
 import confettiAnimation from '@assets/animations/confetti.json'
 import { useStyles } from './styles'
 
-export const ConfettiAnimation = ({ play }: { play: boolean }) => {
+export type ConfettiAnimationProps = {
+    play: boolean
+    onFinish?: () => void
+}
+
+export const ConfettiAnimation = ({
+    play,
+    onFinish,
+}: ConfettiAnimationProps) => {
     const styles = useStyles()
-    const [visible, setVisible] = useState<boolean>(play)
+    const [visible, setVisible] = useState(false)
 
     useEffect(() => {
-        setVisible(play)
+        if (play) {
+            // Delay confetti slightly to ensure it plays after the page is fully rendered
+            const timeout = setTimeout(() => {
+                setVisible(true)
+            }, 500)
+
+            return () => clearTimeout(timeout)
+        }
+
+        setVisible(false)
+        return undefined
     }, [play])
 
-    const hideAnimation = () => {
+    const handleAnimationFinish = () => {
         setVisible(false)
+        onFinish?.()
     }
 
     if (!visible) {
@@ -35,7 +54,7 @@ export const ConfettiAnimation = ({ play }: { play: boolean }) => {
         <LottieView
             autoPlay={true}
             loop={false}
-            onAnimationFinish={hideAnimation}
+            onAnimationFinish={handleAnimationFinish}
             source={confettiAnimation}
             style={styles.container}
         />

@@ -19,12 +19,12 @@ import {
 import { OnboardingScreen } from '@modules/onboarding/screens/OnboardingScreen'
 import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen'
 import { ImportAccountScreen } from '@modules/onboarding/screens/ImportAccountScreen'
+import { ImportInfoScreen } from '@modules/onboarding/screens/ImportInfoScreen'
 import { AccountErrorBoundary } from '@modules/accounts/components/AccountErrorBoundary/AccountErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
 import { screenListeners } from '@routes/listeners'
 import { fullScreenLayout, safeAreaLayout } from '@layouts/index'
 import type React from 'react'
-import { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 // Wrap screens with AccountErrorBoundary to catch account-related errors
 const withAccountErrorBoundary = <P extends object>(
@@ -46,14 +46,11 @@ const NameAccountScreenWithErrorBoundary =
     withAccountErrorBoundary(NameAccountScreen)
 const ImportAccountScreenWithErrorBoundary =
     withAccountErrorBoundary(ImportAccountScreen)
+const ImportInfoScreenWithErrorBoundary =
+    withAccountErrorBoundary(ImportInfoScreen)
 
-export type OnboardingStackParamList = {
-    OnboardingHome: undefined
-    NameAccount: {
-        account: WalletAccount
-    }
-    ImportAccount: undefined
-}
+import { OnboardingStackParamList } from './types'
+export type { OnboardingStackParamList } from './types'
 
 const OnboardingStack = createNativeStackNavigator<OnboardingStackParamList>()
 
@@ -68,7 +65,6 @@ export const OnboardingStackNavigator = () => {
                 ),
                 ...SCREEN_ANIMATION_CONFIG,
             }}
-            layout={safeAreaLayout}
             screenListeners={screenListeners}
         >
             <OnboardingStack.Screen
@@ -77,11 +73,20 @@ export const OnboardingStackNavigator = () => {
                 component={OnboardingScreenWithErrorBoundary}
             />
             <OnboardingStack.Screen
+                name='ImportInfo'
+                options={{
+                    headerShown: false,
+                }}
+                layout={safeAreaLayout}
+                component={ImportInfoScreenWithErrorBoundary}
+            />
+            <OnboardingStack.Screen
                 name='NameAccount'
                 options={{
                     headerShown: true,
-                    headerTitle: 'Name your account',
+                    headerTitle: '',
                 }}
+                layout={safeAreaLayout}
                 component={NameAccountScreenWithErrorBoundary}
             />
             <OnboardingStack.Screen
@@ -90,6 +95,7 @@ export const OnboardingStackNavigator = () => {
                     headerShown: true,
                     headerTitle: 'Enter your Recovery Passphrase',
                 }}
+                layout={safeAreaLayout}
                 component={ImportAccountScreenWithErrorBoundary}
             />
         </OnboardingStack.Navigator>

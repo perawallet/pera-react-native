@@ -15,7 +15,7 @@ import { ExpandableText } from '@components/ExpandableText'
 import { PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 
-type AssetDescriptionProps = {
+export type AssetDescriptionProps = {
     description?: string
 }
 

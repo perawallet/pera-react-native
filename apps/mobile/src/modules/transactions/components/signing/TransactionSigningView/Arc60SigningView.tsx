@@ -20,7 +20,7 @@ import { logger } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 
-type Arc60SigningViewProps = {
+export type Arc60SigningViewProps = {
     request: Arc60SignRequest
 }
 

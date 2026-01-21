@@ -13,7 +13,6 @@
 export const UserPreferences = {
     spendAgreed: 'send-fund-agreed',
     chartVisible: 'chart-visible',
-    isCreatingAccount: 'is-creating-account',
     developerMenuEnabled: 'developer-menu-enabled',
 
     //prompts (don't set these directly, they are set by the prompts module but held here to avoid accidental name collisions)

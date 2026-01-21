@@ -33,7 +33,7 @@ import { useDeepLink } from '@hooks/useDeepLink'
 import { useMemo } from 'react'
 import QRCode from 'react-native-qrcode-svg'
 
-type ReceiveFundsQRViewProps = {
+export type ReceiveFundsQRViewProps = {
     account?: WalletAccount
     onBack?: () => void
     onClose: () => void

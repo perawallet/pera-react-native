@@ -66,7 +66,7 @@ const createTestQueryClient = () => {
     })
 }
 
-interface TestProvidersProps {
+export interface TestProvidersProps {
     children: React.ReactNode
     queryClient?: QueryClient
     theme?: typeof testTheme

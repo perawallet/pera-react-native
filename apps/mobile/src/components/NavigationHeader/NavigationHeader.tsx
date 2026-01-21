@@ -11,11 +11,12 @@
  */
 
 import { NativeStackHeaderProps } from '@react-navigation/native-stack'
-import { PWIcon, PWText, PWView } from '@components/core'
+import { PWToolbar, PWText, PWIcon } from '@components/core'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMemo } from 'react'
+
 export type NavigationHeaderProps = NativeStackHeaderProps
 
 export const NavigationHeader = (props: NavigationHeaderProps) => {
@@ -24,32 +25,38 @@ export const NavigationHeader = (props: NavigationHeaderProps) => {
     const { t } = useLanguage()
 
     const title = useMemo(() => {
-        const title = props.options.title || props.route.name
+        const headerTitle =
+            typeof props.options.headerTitle === 'string'
+                ? props.options.headerTitle
+                : undefined
+        const title = headerTitle ?? props.options.title ?? props.route.name
+
         if (title.includes('.') && !title.includes(' ')) {
             return t(title)
         }
         return title
-    }, [props.options.title, props.route.name])
+    }, [props.options.headerTitle, props.options.title, props.route.name, t])
 
     return (
-        <PWView style={styles.container}>
-            <PWView style={styles.backIconContainer}>
-                {!!props.navigation.canGoBack() && (
+        <PWToolbar
+            style={styles.container}
+            left={
+                !!props.navigation.canGoBack() && (
                     <PWIcon
                         name='chevron-left'
                         onPress={props.navigation.goBack}
                     />
-                )}
-            </PWView>
-            <PWText
-                variant='h4'
-                style={styles.title}
-            >
-                {title}
-            </PWText>
-            <PWView style={styles.backIconContainer}>
-                {props.options?.headerRight?.({})}
-            </PWView>
-        </PWView>
+                )
+            }
+            center={
+                <PWText
+                    variant='h4'
+                    style={styles.title}
+                >
+                    {title}
+                </PWText>
+            }
+            right={props.options?.headerRight?.({})}
+        />
     )
 }

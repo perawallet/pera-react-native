@@ -16,11 +16,14 @@ export const useStyles = makeStyles(theme => {
     return {
         mainContainer: {
             flex: 1,
-            padding: theme.spacing.xl,
+            paddingHorizontal: theme.spacing.xl,
+        },
+        headerContainer: {
+            gap: theme.spacing.md,
+            paddingBottom: theme.spacing['3xl'],
         },
         helperText: {
             color: theme.colors.textGray,
-            paddingBottom: theme.spacing['3xl'],
         },
         walletNameContainer: {
             backgroundColor: theme.colors.layerGrayLighter,
@@ -38,12 +41,24 @@ export const useStyles = makeStyles(theme => {
         },
         finishButton: {
             marginHorizontal: theme.spacing.xl,
+            marginBottom: theme.spacing.sm,
         },
         input: {
             marginTop: theme.spacing.sm,
         },
         spacer: {
             flexGrow: 1,
+        },
+        overlayBackdrop: {
+            backgroundColor: 'rgba(52, 52, 52, 0.8)',
+        },
+        overlay: {
+            padding: theme.spacing.xl,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: theme.colors.layerGray,
+            borderRadius: theme.spacing.lg,
+            gap: theme.spacing.md,
         },
     }
 })

@@ -17,7 +17,7 @@ import { IconName, PWButton, PWIcon, PWText, PWView } from '@components/core'
 import { useMemo } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
 
-type AssetVerificationCardProps = {
+export type AssetVerificationCardProps = {
     assetDetails: PeraAsset
 }
 

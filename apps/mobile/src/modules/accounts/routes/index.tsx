@@ -21,10 +21,8 @@ import { AssetDetailsScreen } from '@modules/assets/screens/AssetDetailsScreen'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { fullScreenLayout, safeAreaLayout } from '@layouts/index'
 
-export type AccountStackParamsList = {
-    AccountDetails?: { playConfetti?: boolean }
-    AssetDetails?: { assetId: string }
-}
+import { AccountStackParamsList } from './types'
+export type { AccountStackParamsList } from './types'
 
 const AccountStack = createNativeStackNavigator<AccountStackParamsList>()
 
