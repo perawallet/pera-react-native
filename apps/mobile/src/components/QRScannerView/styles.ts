@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { ZINDEX_ORDER } from '@constants/ui'
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
@@ -30,7 +29,7 @@ export const useStyles = makeStyles(theme => {
         },
         overlay: {
             alignItems: 'center',
-            zIndex: ZINDEX_ORDER.layer1,
+            zIndex: theme.zIndex.layer1,
             position: 'absolute',
             top: -100,
             bottom: 0,
@@ -42,13 +41,13 @@ export const useStyles = makeStyles(theme => {
             textAlign: 'center',
             marginTop: theme.spacing.xxl,
             marginBottom: theme.spacing.xl,
-            zIndex: ZINDEX_ORDER.layer2,
+            zIndex: theme.zIndex.layer2,
         },
         icon: {
             color: theme.colors.textWhite,
             marginTop: theme.spacing.xxl,
             marginLeft: theme.spacing.xl,
-            zIndex: ZINDEX_ORDER.layer2,
+            zIndex: theme.zIndex.layer2,
         },
         emptyView: {
             flex: 1,

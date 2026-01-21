@@ -27,9 +27,9 @@ describe('usePinSecurityPrompt', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        ;(useNavigation as Mock).mockReturnValue({
-            navigate: mockNavigate,
-        })
+            ; (useNavigation as Mock).mockReturnValue({
+                navigate: mockNavigate,
+            })
     })
 
     it('should return handler functions', () => {
@@ -58,7 +58,7 @@ describe('usePinSecurityPrompt', () => {
         })
 
         expect(mockOnHide).toHaveBeenCalledWith(
-            UserPreferences.securityPinSetupPrompt,
+            UserPreferences._securityPinSetupPrompt,
         )
         expect(mockNavigate).toHaveBeenCalledWith('Settings', {
             screen: 'SecuritySettings',
@@ -78,7 +78,7 @@ describe('usePinSecurityPrompt', () => {
         })
 
         expect(mockOnHide).toHaveBeenCalledWith(
-            UserPreferences.securityPinSetupPrompt,
+            UserPreferences._securityPinSetupPrompt,
         )
         expect(mockNavigate).not.toHaveBeenCalled()
     })
@@ -96,7 +96,7 @@ describe('usePinSecurityPrompt', () => {
         })
 
         expect(mockOnDismiss).toHaveBeenCalledWith(
-            UserPreferences.securityPinSetupPrompt,
+            UserPreferences._securityPinSetupPrompt,
         )
         expect(mockOnHide).not.toHaveBeenCalled()
     })

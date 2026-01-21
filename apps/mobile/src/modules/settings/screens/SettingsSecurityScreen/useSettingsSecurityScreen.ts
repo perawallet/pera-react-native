@@ -104,7 +104,7 @@ export const useSettingsSecurityScreen =
             if (pinViewMode === 'verify') {
                 savePin(null)
             }
-            setPreference(UserPreferences.securityPinSetupPrompt, true)
+            setPreference(UserPreferences._securityPinSetupPrompt, true)
             updateSettings()
             setPinViewMode(null)
         }, [pinViewMode, savePin, updateSettings])

@@ -189,6 +189,13 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             '4xl': 72,
             '5xl': 96,
         },
+        zIndex: {
+            base: 0,
+            layer1: 10,
+            layer2: 20,
+            overlay1: 1000,
+            max: 9999,
+        },
         components: {
             Button: (_, theme) => ({
                 containerStyle: {

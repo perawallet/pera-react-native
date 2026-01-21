@@ -23,18 +23,18 @@ export const usePinSecurityPrompt = ({
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
 
     const handleSetPinCode = useCallback(() => {
-        onHide(UserPreferences.securityPinSetupPrompt)
+        onHide(UserPreferences._securityPinSetupPrompt)
         navigation.navigate('Settings', {
             screen: 'SecuritySettings',
         })
     }, [onHide, navigation])
 
     const handleNotNow = useCallback(() => {
-        onHide(UserPreferences.securityPinSetupPrompt)
+        onHide(UserPreferences._securityPinSetupPrompt)
     }, [onHide])
 
     const handleDontAskAgain = useCallback(() => {
-        onDismiss(UserPreferences.securityPinSetupPrompt)
+        onDismiss(UserPreferences._securityPinSetupPrompt)
     }, [onDismiss])
 
     return {

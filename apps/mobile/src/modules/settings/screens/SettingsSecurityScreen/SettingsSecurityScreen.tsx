@@ -51,7 +51,7 @@ export const SettingsSecurityScreen = () => {
                 <PWView style={styles.listItem}>
                     <PWView style={styles.listItemContent}>
                         <PWIcon name='shield-check' />
-                        <PWText style={styles.listItemTitle}>
+                        <PWText>
                             {t('settings.security.enable_pin_security')}
                         </PWText>
                     </PWView>
@@ -68,7 +68,7 @@ export const SettingsSecurityScreen = () => {
                     >
                         <PWView style={styles.listItemContent}>
                             <PWIcon name='locked' />
-                            <PWText style={styles.listItemTitle}>
+                            <PWText>
                                 {t('settings.security.change_pin')}
                             </PWText>
                         </PWView>
@@ -80,7 +80,7 @@ export const SettingsSecurityScreen = () => {
                     <PWView style={styles.listItem}>
                         <PWView style={styles.listItemContent}>
                             <PWIcon name='faceid' />
-                            <PWText style={styles.listItemTitle}>
+                            <PWText>
                                 {t('settings.security.enable_biometrics')}
                             </PWText>
                         </PWView>

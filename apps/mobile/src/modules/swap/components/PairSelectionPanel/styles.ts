@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { ZINDEX_ORDER } from '@constants/ui'
 import { makeStyles } from '@rneui/themed'
 import { getFontFamily } from '@theme/theme'
 
@@ -46,7 +45,7 @@ export const useStyles = makeStyles(theme => ({
         borderWidth: 1,
         borderColor: theme.colors.layerGrayLighter,
         boxShadow: '0px 0px 0px 1px #0000000D',
-        zIndex: ZINDEX_ORDER.layer1,
+        zIndex: theme.zIndex.layer1,
         textAlign: 'center',
         verticalAlign: 'middle',
         color: theme.colors.helperPositive,
@@ -64,7 +63,7 @@ export const useStyles = makeStyles(theme => ({
         borderWidth: 1,
         borderColor: theme.colors.layerGrayLighter,
         boxShadow: '0px 0px 0px 1px #0000000D',
-        zIndex: ZINDEX_ORDER.layer1,
+        zIndex: theme.zIndex.layer1,
         textAlign: 'center',
         verticalAlign: 'middle',
         color: theme.colors.helperPositive,

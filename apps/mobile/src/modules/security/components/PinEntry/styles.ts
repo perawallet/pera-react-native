@@ -21,7 +21,6 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'flex-start',
     },
     title: {
-        color: theme.colors.textMain,
         textAlign: 'left',
         marginBottom: theme.spacing.sm,
     },

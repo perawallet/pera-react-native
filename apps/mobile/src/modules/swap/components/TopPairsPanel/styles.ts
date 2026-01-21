@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { ZINDEX_ORDER } from '@constants/ui'
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
@@ -25,7 +24,7 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         justifyContent: 'space-between',
         backgroundColor: theme.colors.background,
-        zIndex: ZINDEX_ORDER.layer2,
+        zIndex: theme.zIndex.layer2,
     },
     headerText: {
         color: theme.colors.textGray,

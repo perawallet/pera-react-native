@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { ZINDEX_ORDER } from '@constants/ui'
 import { makeStyles } from '@rneui/themed'
 import { EdgeInsets } from 'react-native-safe-area-context'
 
@@ -29,6 +28,6 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
         left: 0,
         right: 0,
         bottom: 0,
-        zIndex: ZINDEX_ORDER.max,
+        zIndex: theme.zIndex.max,
     },
 }))

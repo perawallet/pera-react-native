@@ -64,6 +64,7 @@ export const usePinEditView = ({
         }
     }, [currentMode, t])
 
+    // TODO: revisit this: it's a little clunky to be managing the state internally and externally
     useEffect(() => {
         setCurrentMode(mode)
     }, [mode])

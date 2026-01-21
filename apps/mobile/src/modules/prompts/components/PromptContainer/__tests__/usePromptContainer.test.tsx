@@ -37,11 +37,11 @@ describe('usePromptContainer', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         vi.useFakeTimers()
-        ;(usePreferences as Mock).mockReturnValue({
-            getPreference: mockGetPreference,
-            setPreference: mockSetPreference,
-        })
-        ;(useHasAccounts as Mock).mockReturnValue(true)
+            ; (usePreferences as Mock).mockReturnValue({
+                getPreference: mockGetPreference,
+                setPreference: mockSetPreference,
+            })
+            ; (useHasAccounts as Mock).mockReturnValue(true)
     })
 
     afterEach(() => {
@@ -56,7 +56,7 @@ describe('usePromptContainer', () => {
     })
 
     it('should return undefined nextPrompt when user has no accounts', () => {
-        ;(useHasAccounts as Mock).mockReturnValue(false)
+        ; (useHasAccounts as Mock).mockReturnValue(false)
         mockGetPreference.mockReturnValue(false)
 
         const { result } = renderHook(() => usePromptContainer())
@@ -81,7 +81,7 @@ describe('usePromptContainer', () => {
 
         expect(result.current.nextPrompt).toBeDefined()
         expect(result.current.nextPrompt?.id).toBe(
-            UserPreferences.securityPinSetupPrompt,
+            UserPreferences._securityPinSetupPrompt,
         )
     })
 
@@ -109,7 +109,7 @@ describe('usePromptContainer', () => {
         expect(result.current.nextPrompt).toBeDefined()
 
         act(() => {
-            result.current.hidePrompt(UserPreferences.securityPinSetupPrompt)
+            result.current.hidePrompt(UserPreferences._securityPinSetupPrompt)
         })
 
         // After hiding, need to wait for the effect to clear the prompt
@@ -132,11 +132,11 @@ describe('usePromptContainer', () => {
         expect(result.current.nextPrompt).toBeDefined()
 
         act(() => {
-            result.current.dismissPrompt(UserPreferences.securityPinSetupPrompt)
+            result.current.dismissPrompt(UserPreferences._securityPinSetupPrompt)
         })
 
         expect(mockSetPreference).toHaveBeenCalledWith(
-            UserPreferences.securityPinSetupPrompt,
+            UserPreferences._securityPinSetupPrompt,
             true,
         )
 
@@ -165,8 +165,8 @@ describe('usePromptContainer', () => {
             vi.advanceTimersByTime(PROMPT_DISPLAY_DELAY / 2)
         })
 
-        // Change to no accounts (which should clear the timeout)
-        ;(useHasAccounts as Mock).mockReturnValue(false)
+            // Change to no accounts (which should clear the timeout)
+            ; (useHasAccounts as Mock).mockReturnValue(false)
         rerender()
 
         act(() => {

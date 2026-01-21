@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { ZINDEX_ORDER } from '@constants/ui'
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(() => ({
@@ -20,6 +19,6 @@ export const useStyles = makeStyles(() => ({
         left: 0,
         right: 0,
         bottom: 0,
-        zIndex: ZINDEX_ORDER.overlay,
+        zIndex: theme.zIndex.overlay,
     },
 }))

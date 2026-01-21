@@ -19,7 +19,7 @@ import { UserPreferences } from '@constants/user-preferences'
 import { PROMPT_DISPLAY_DELAY } from '@constants/ui'
 
 const PROMPT_SEQUENCE = {
-    [UserPreferences.securityPinSetupPrompt]: PinSecurityPrompt,
+    [UserPreferences._securityPinSetupPrompt]: PinSecurityPrompt,
 }
 
 type Prompt = {

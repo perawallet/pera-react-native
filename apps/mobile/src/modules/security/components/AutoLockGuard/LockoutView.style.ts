@@ -39,7 +39,6 @@ export const useStyles = makeStyles(theme => ({
         marginBottom: theme.spacing['4xl'],
     },
     lockoutTitle: {
-        color: theme.colors.textMain,
         textAlign: 'center',
         marginBottom: theme.spacing.sm,
     },
@@ -47,10 +46,6 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGray,
         textAlign: 'center',
         marginBottom: theme.spacing.xxl,
-    },
-    countdownContainer: {},
-    countdownText: {
-        color: theme.colors.textMain,
     },
     lockoutActions: {
         paddingTop: theme.spacing.lg,

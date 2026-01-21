@@ -33,7 +33,6 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
     const appState = useRef(AppState.currentState)
 
     const recordBackground = useCallback(() => {
-        setIsChecking(true)
         setAutoLockStartedAt(Date.now())
     }, [setAutoLockStartedAt])
 

@@ -36,9 +36,6 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         gap: theme.spacing.md,
     },
-    listItemTitle: {
-        color: theme.colors.textMain,
-    },
     listItemSubtitle: {
         color: theme.colors.textGray,
     },
