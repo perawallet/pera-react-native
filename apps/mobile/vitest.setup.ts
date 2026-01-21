@@ -610,6 +610,13 @@ vi.mock('@rneui/themed', () => {
             '3xl': 48,
             '4xl': 56,
         },
+        zIndex: {
+            base: 0,
+            layer1: 10,
+            layer2: 20,
+            overlay1: 100,
+            max: 10000,
+        },
         mode: 'light',
     }
 

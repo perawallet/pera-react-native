@@ -12,39 +12,41 @@
 
 import { makeStyles } from '@rneui/themed'
 
-const KEY_SIZE = theme.spacing['4xl']
-const KEY_SPACING = theme.spacing.xl
+export const useStyles = makeStyles(theme => {
+    const KEY_SIZE = theme.spacing['4xl']
+    const KEY_SPACING = theme.spacing.xl
 
-export const useStyles = makeStyles(theme => ({
-    container: {
-        width: '100%',
-        alignItems: 'center',
-    },
-    row: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        marginBottom: KEY_SPACING,
-    },
-    key: {
-        width: KEY_SIZE,
-        height: KEY_SIZE * 0.8,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginHorizontal: KEY_SPACING * 0.7,
-    },
-    keyDisabled: {
-        opacity: 0.5,
-    },
-    keyPlaceholder: {
-        width: KEY_SIZE,
-        height: KEY_SIZE,
-        marginHorizontal: KEY_SPACING / 2,
-        backgroundColor: 'transparent',
-    },
-    keyText: {
-        color: theme.colors.textMain,
-    },
-    keyTextDisabled: {
-        color: theme.colors.textGray,
-    },
-}))
+    return {
+        container: {
+            width: '100%',
+            alignItems: 'center',
+        },
+        row: {
+            flexDirection: 'row',
+            justifyContent: 'center',
+            marginBottom: KEY_SPACING,
+        },
+        key: {
+            width: KEY_SIZE,
+            height: KEY_SIZE * 0.8,
+            justifyContent: 'center',
+            alignItems: 'center',
+            marginHorizontal: KEY_SPACING * 0.7,
+        },
+        keyDisabled: {
+            opacity: 0.5,
+        },
+        keyPlaceholder: {
+            width: KEY_SIZE,
+            height: KEY_SIZE,
+            marginHorizontal: KEY_SPACING / 2,
+            backgroundColor: 'transparent',
+        },
+        keyText: {
+            color: theme.colors.textMain,
+        },
+        keyTextDisabled: {
+            color: theme.colors.textGray,
+        },
+    }
+})
