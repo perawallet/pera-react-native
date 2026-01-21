@@ -10,15 +10,4 @@
  limitations under the License
  */
 
-import { WalletAccount } from '@perawallet/wallet-core-accounts'
-
-export type OnboardingStackParamList = {
-    OnboardingHome: undefined
-    NameAccount:
-        | {
-              account?: WalletAccount
-          }
-        | undefined
-    ImportInfo: undefined
-    ImportAccount: undefined
-}
+export { ImportInfoScreen } from './ImportInfoScreen'

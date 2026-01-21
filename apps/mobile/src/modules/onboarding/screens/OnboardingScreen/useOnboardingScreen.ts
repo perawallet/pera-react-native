@@ -38,7 +38,7 @@ export const useOnboardingScreen = () => {
     }, [navigation])
 
     const handleImportAccount = useCallback(() => {
-        navigation.push('ImportAccount')
+        navigation.push('ImportInfo')
     }, [navigation])
 
     return {

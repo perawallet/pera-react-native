@@ -151,7 +151,7 @@ describe('OnboardingScreen', () => {
         expect(mockPush).toHaveBeenCalledWith('NameAccount')
     })
 
-    it('navigates to ImportAccount when Import Account is pressed', () => {
+    it('navigates to ImportInfo when Import Account is pressed', () => {
         render(<OnboardingScreen />)
 
         const importButton = screen.getByText(
@@ -159,6 +159,6 @@ describe('OnboardingScreen', () => {
         )
         fireEvent.click(importButton)
 
-        expect(mockPush).toHaveBeenCalledWith('ImportAccount')
+        expect(mockPush).toHaveBeenCalledWith('ImportInfo')
     })
 })
