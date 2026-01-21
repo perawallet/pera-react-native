@@ -44,7 +44,7 @@ export const useStyles = makeStyles(theme => {
             marginLeft: theme.spacing.lg,
             width: theme.spacing['3xl'],
             height: theme.spacing['3xl'],
-            zIndex: 2,
+            zIndex: theme.zIndex.layer2,
         },
     }
 })

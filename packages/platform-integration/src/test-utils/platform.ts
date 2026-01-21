@@ -15,6 +15,7 @@ import {
     type PlatformServices,
     KeyValueStorageService,
     SecureStorageService,
+    BiometricsService,
     RemoteConfigService,
     NotificationService,
     CrashReportingService,
@@ -28,6 +29,7 @@ type Overrides = Partial<{
     analytics: AnalyticsService
     keyValueStorage: KeyValueStorageService
     secureStorage: SecureStorageService
+    biometrics: BiometricsService
     remoteConfig: RemoteConfigService
     notification: NotificationService
     crashReporting: CrashReportingService
@@ -103,11 +105,24 @@ export const buildTestPlatform = (
         },
     }
 
+    const defaultBiometrics: BiometricsService = {
+        async getSupportedBiometricType() {
+            return 'fingerprint'
+        },
+        async checkBiometricsAvailable() {
+            return true
+        },
+        async authenticate() {
+            return true
+        },
+    }
+
     return {
         analytics: overrides.analytics ?? defaultAnalytics,
         keyValueStorage:
             overrides.keyValueStorage ?? new MemoryKeyValueStorage(),
         secureStorage: overrides.secureStorage ?? defaultSecure,
+        biometrics: overrides.biometrics ?? defaultBiometrics,
         remoteConfig: overrides.remoteConfig ?? defaultRemote,
         notification: overrides.notification ?? defaultNotification,
         crashReporting: overrides.crashReporting ?? defaultCrash,

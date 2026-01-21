@@ -24,7 +24,7 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         justifyContent: 'space-between',
         backgroundColor: theme.colors.background,
-        zIndex: 2,
+        zIndex: theme.zIndex.layer2,
     },
     headerText: {
         color: theme.colors.textGray,

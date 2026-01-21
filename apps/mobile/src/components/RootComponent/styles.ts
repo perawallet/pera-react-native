@@ -22,7 +22,7 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
         testnetBar: {
             backgroundColor: theme.colors.testnetBackground,
             height: insets.top,
-            zIndex: 1,
+            zIndex: theme.zIndex.layer1,
             position: 'absolute',
             top: 0,
             left: 0,
@@ -31,14 +31,14 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
         mainnetBar: {
             backgroundColor: theme.colors.background,
             height: insets.top + theme.spacing.sm,
-            zIndex: 1,
+            zIndex: theme.zIndex.layer1,
         },
         offlineTextContainer: {
             alignItems: 'center',
             justifyContent: 'center',
             backgroundColor: theme.colors.layerGray,
             marginHorizontal: theme.spacing.lg,
-            zIndex: 1,
+            zIndex: theme.zIndex.layer1,
             borderRadius: theme.spacing.md,
             paddingHorizontal: theme.spacing.md,
         },

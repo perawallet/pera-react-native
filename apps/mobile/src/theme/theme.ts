@@ -189,6 +189,13 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             '4xl': 72,
             '5xl': 96,
         },
+        zIndex: {
+            base: 0,
+            layer1: 10,
+            layer2: 20,
+            overlay1: 1000,
+            max: 9999,
+        },
         components: {
             Button: (_, theme) => ({
                 containerStyle: {
@@ -306,14 +313,12 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
                     presentationStyle: 'overFullScreen',
                 },
             }),
-            Switch: (props, theme) => ({
+            Switch: (_, theme) => ({
                 trackColor: {
                     false: theme.colors.layerGray,
-                    true: theme.colors.layerGray,
+                    true: theme.colors.helperPositive,
                 },
-                thumbColor: props.value
-                    ? theme.colors.helperPositive
-                    : theme.colors.textGray,
+                thumbColor: theme.colors.textWhite,
             }),
             Text: () => ({
                 //TODO: It seems to be selecting the wrong font at larger sizes - we may need additional font files

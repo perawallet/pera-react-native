@@ -11,6 +11,7 @@
  */
 
 export * from './analytics'
+export * from './biometrics'
 export * from './device'
 export * from './push-notifications'
 export * from './remote-config'

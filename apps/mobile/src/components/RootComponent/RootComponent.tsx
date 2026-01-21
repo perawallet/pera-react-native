@@ -36,6 +36,7 @@ import { WebViewOverlay } from '@modules/webview'
 import { useLanguage } from '@hooks/useLanguage'
 import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
 import { useTokenListener } from '@modules/token'
+import { AutoLockGuard } from '@modules/security/components/AutoLockGuard/AutoLockGuard'
 
 export type RootComponentProps = {
     fcmToken: string | null
@@ -131,12 +132,14 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
 
     return (
         <ThemeProvider theme={theme}>
-            <SigningProvider>
-                <WalletConnectProvider>
-                    <RootContentContainer fcmToken={fcmToken} />
-                    <WebViewOverlay />
-                </WalletConnectProvider>
-            </SigningProvider>
+            <AutoLockGuard>
+                <SigningProvider>
+                    <WalletConnectProvider>
+                        <RootContentContainer fcmToken={fcmToken} />
+                        <WebViewOverlay />
+                    </WalletConnectProvider>
+                </SigningProvider>
+            </AutoLockGuard>
         </ThemeProvider>
     )
 }

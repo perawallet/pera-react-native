@@ -14,4 +14,10 @@ export const UserPreferences = {
     spendAgreed: 'send-fund-agreed',
     chartVisible: 'chart-visible',
     developerMenuEnabled: 'developer-menu-enabled',
+
+    //prompts (don't set these directly, they are set by the prompts module but held here to avoid accidental name collisions)
+    _securityPinSetupPrompt: 'security_pin_setup_prompt',
 } as const
+
+export type UserPreferences =
+    (typeof UserPreferences)[keyof typeof UserPreferences]

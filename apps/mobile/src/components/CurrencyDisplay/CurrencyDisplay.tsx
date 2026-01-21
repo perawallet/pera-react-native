@@ -19,6 +19,7 @@ import { Decimal } from 'decimal.js'
 import AlgoIcon from '@assets/icons/algo.svg'
 import { useDeviceInfoService } from '@perawallet/wallet-core-platform-integration'
 import { useSettings } from '@perawallet/wallet-core-settings'
+import { StyleProp, TextStyle } from 'react-native'
 
 export type CurrencyDisplayProps = {
     currency: string
@@ -34,6 +35,7 @@ export type CurrencyDisplayProps = {
     h2?: boolean
     h3?: boolean
     h4?: boolean
+    style?: StyleProp<TextStyle>
 } & Omit<PWTextProps, 'children' | 'variant'>
 
 export const CurrencyDisplay = (props: CurrencyDisplayProps) => {

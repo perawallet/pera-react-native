@@ -24,6 +24,7 @@ import { QRScannerView } from '@components/QRScannerView'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { ConfettiAnimation } from '@modules/accounts/components/ConfettiAnimation'
+import { PromptContainer } from '@modules/prompts'
 import { AccountTabNavigator } from '@modules/accounts/components/AccountTabNavigator'
 
 //TODO hook up all the button panel buttons correctly
@@ -97,6 +98,7 @@ export const AccountScreen = () => {
                 onClose={scannerState.close}
                 animationType='slide'
             />
+            <PromptContainer />
         </Drawer>
     )
 }

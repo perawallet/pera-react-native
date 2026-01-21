@@ -39,6 +39,13 @@ const testTheme = createTheme({
         background: '#000000',
         disabled: '#48484A',
     },
+    zIndex: {
+        base: 0,
+        layer1: 10,
+        layer2: 20,
+        overlay1: 100,
+        max: 10000,
+    },
 })
 
 // Extend theme with custom colors after creation

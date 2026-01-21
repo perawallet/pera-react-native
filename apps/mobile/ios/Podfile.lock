@@ -3831,7 +3831,7 @@ SPEC CHECKSUMS:
   GoogleAppMeasurement: 3bf40aff49a601af5da1c3345702fcb4991d35ee
   GoogleDataTransport: aae35b7ea0c09004c3797d53c8c41f66f219d6a7
   GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
-  hermes-engine: c3de7a5fb8b174d0371f1dd0bb649d3ac1a4df4e
+  hermes-engine: 617e25b15d2a434c37e627dfb6dff32a86fea6c2
   lottie-ios: a881093fab623c467d3bce374367755c272bdd59
   lottie-react-native: 86fa7488b1476563f41071244aa73d5b738faf19
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
@@ -3942,4 +3942,4 @@ SPEC CHECKSUMS:
 
 PODFILE CHECKSUM: f8175fd2f0a1ebad4218ad393842b4d06245a8e2
 
-COCOAPODS: 1.15.2
+COCOAPODS: 1.16.2

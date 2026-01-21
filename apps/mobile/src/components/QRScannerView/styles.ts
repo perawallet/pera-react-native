@@ -29,7 +29,7 @@ export const useStyles = makeStyles(theme => {
         },
         overlay: {
             alignItems: 'center',
-            zIndex: 1,
+            zIndex: theme.zIndex.layer1,
             position: 'absolute',
             top: -100,
             bottom: 0,
@@ -41,13 +41,13 @@ export const useStyles = makeStyles(theme => {
             textAlign: 'center',
             marginTop: theme.spacing.xxl,
             marginBottom: theme.spacing.xl,
-            zIndex: 2,
+            zIndex: theme.zIndex.layer2,
         },
         icon: {
             color: theme.colors.textWhite,
             marginTop: theme.spacing.xxl,
             marginLeft: theme.spacing.xl,
-            zIndex: 2,
+            zIndex: theme.zIndex.layer2,
         },
         emptyView: {
             flex: 1,

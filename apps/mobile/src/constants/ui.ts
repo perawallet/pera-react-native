@@ -32,3 +32,5 @@ export const SCREEN_ANIMATION_CONFIG: NativeStackNavigationOptions = {
 
 export const EXPANDABLE_PANEL_ANIMATION_DURATION = 200
 export const LONG_NOTIFICATION_DURATION = 5000
+
+export const PROMPT_DISPLAY_DELAY = 3000

@@ -23,7 +23,7 @@ vi.mock('react-native-notifier', () => ({
 
 vi.mock('@rneui/themed', () => ({
     makeStyles: () => () => ({
-        baseStyle: { zIndex: 10000 },
+        baseStyle: { zIndex: 1000 },
         successStyle: { backgroundColor: 'green' },
         successStyleText: { color: 'white' },
         errorStyle: { backgroundColor: 'red' },

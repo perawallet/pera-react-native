@@ -39,6 +39,7 @@ import EditPenIcon from '@assets/icons/edit-pen.svg'
 import EllipsisIcon from '@assets/icons/ellipsis.svg'
 import EnvelopeLetterIcon from '@assets/icons/envelope-letter.svg'
 import EyeIcon from '@assets/icons/eye.svg'
+import FaceIdIcon from '@assets/icons/faceid.svg'
 import FeedbackIcon from '@assets/icons/feedback.svg'
 import FundIcon from '@assets/icons/fund.svg'
 import GearIcon from '@assets/icons/gear.svg'
@@ -50,6 +51,7 @@ import InflowIcon from '@assets/icons/inflow.svg'
 import InfoIcon from '@assets/icons/info.svg'
 import KeyIcon from '@assets/icons/key.svg'
 import ListArrowDownIcon from '@assets/icons/list-arrow-down.svg'
+import LockedIcon from '@assets/icons/locked.svg'
 import MagnifyingGlassIcon from '@assets/icons/magnifying-glass.svg'
 import MoonIcon from '@assets/icons/moon.svg'
 import OutflowIcon from '@assets/icons/outflow.svg'
@@ -59,6 +61,7 @@ import PersonIcon from '@assets/icons/person.svg'
 import PlusWithBorderIcon from '@assets/icons/plus-with-border.svg'
 import PlusIcon from '@assets/icons/plus.svg'
 import QuestionMarkIcon from '@assets/icons/question-mark.svg'
+import RekeyIcon from '@assets/icons/rekey.svg'
 import ReloadIcon from '@assets/icons/reload.svg'
 import ShareIcon from '@assets/icons/share.svg'
 import ShieldCheckIcon from '@assets/icons/shield-check.svg'
@@ -125,6 +128,7 @@ const ICON_LIBRARY = {
     ellipsis: EllipsisIcon,
     'envelope-letter': EnvelopeLetterIcon,
     eye: EyeIcon,
+    faceid: FaceIdIcon,
     feedback: FeedbackIcon,
     fund: FundIcon,
     gear: GearIcon,
@@ -136,6 +140,7 @@ const ICON_LIBRARY = {
     info: InfoIcon,
     key: KeyIcon,
     'list-arrow-down': ListArrowDownIcon,
+    locked: LockedIcon,
     'magnifying-glass': MagnifyingGlassIcon,
     moon: MoonIcon,
     outflow: OutflowIcon,
@@ -145,6 +150,7 @@ const ICON_LIBRARY = {
     'plus-with-border': PlusWithBorderIcon,
     plus: PlusIcon,
     'question-mark': QuestionMarkIcon,
+    rekey: RekeyIcon,
     reload: ReloadIcon,
     share: ShareIcon,
     'shield-check': ShieldCheckIcon,

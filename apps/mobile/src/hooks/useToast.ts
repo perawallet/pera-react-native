@@ -27,7 +27,7 @@ export interface ToastMessage {
 const useStyles = makeStyles(theme => {
     return {
         baseStyle: {
-            zIndex: 10000,
+            zIndex: theme.zIndex.max,
             marginTop: theme.spacing.xl,
             borderWidth: 0,
         },

@@ -11,6 +11,7 @@
  */
 
 import { initAccountsStore } from '@perawallet/wallet-core-accounts'
+import { RNBiometricsService } from '../platform/biometrics'
 import { RNDeviceInfoStorageService } from '../platform/device'
 import { RNFirebaseService } from '../platform/firebase'
 import { RNKeyValueStorageService } from '../platform/key-value-storage'
@@ -30,11 +31,13 @@ import { initSettingsStore } from '@perawallet/wallet-core-settings'
 import { initSwapsStore } from '@perawallet/wallet-core-swaps'
 import { initKeyManagerStore } from '@perawallet/wallet-core-kms'
 import { initWalletConnectStore } from '@perawallet/wallet-core-walletconnect'
+import { initSecurityStore } from '@perawallet/wallet-core-security'
 import { useCallback } from 'react'
 
 const firebaseService = new RNFirebaseService()
 const platformServices = {
     analytics: firebaseService,
+    biometrics: new RNBiometricsService(),
     crashReporting: firebaseService,
     notification: firebaseService,
     remoteConfig: firebaseService,
@@ -43,28 +46,33 @@ const platformServices = {
     deviceInfo: new RNDeviceInfoStorageService(),
 }
 
+const setupPlatformServices = async () => {
+    //Important - this has to happen first so all subsequent services can use the platform services
+    await registerPlatformServices(platformServices)
+
+    // Initialize the data stores.  The issue is that the underlying persistence layer is configured
+    // in the platform services, so we have to initialize the data stores after that.
+    const inits = []
+    inits.push(initDeviceStore())
+    inits.push(initAccountsStore())
+    inits.push(initAssetsStore())
+    inits.push(initBlockchainStore())
+    inits.push(initContactsStore())
+    inits.push(initCurrenciesStore())
+    inits.push(initPollingStore())
+    inits.push(initSettingsStore())
+    inits.push(initSwapsStore())
+    inits.push(initKeyManagerStore())
+    inits.push(initWalletConnectStore())
+    inits.push(initSecurityStore())
+    inits.push(initRemoteConfigStore())
+    await Promise.allSettled(inits)
+}
+
 export const useBootstrapper = () => {
     return useCallback(async () => {
         logger.debug('Bootstrapping')
-        //Important - this has to happen first so all subsequent services can use the platform services
-        await registerPlatformServices(platformServices)
-
-        // Initialize the data stores.  The issue is that the underlying persistence layer is configured
-        // in the platform services, so we have to initialize the data stores after that.
-        const inits = []
-        inits.push(initDeviceStore())
-        inits.push(initAccountsStore())
-        inits.push(initAssetsStore())
-        inits.push(initBlockchainStore())
-        inits.push(initContactsStore())
-        inits.push(initCurrenciesStore())
-        inits.push(initPollingStore())
-        inits.push(initSettingsStore())
-        inits.push(initSwapsStore())
-        inits.push(initKeyManagerStore())
-        inits.push(initWalletConnectStore())
-        inits.push(initRemoteConfigStore())
-        await Promise.allSettled(inits)
+        await setupPlatformServices()
 
         const crashlyticsInit =
             platformServices.crashReporting.initializeCrashReporting()

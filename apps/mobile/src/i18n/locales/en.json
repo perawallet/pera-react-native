@@ -98,7 +98,6 @@
             "welcome": "Welcome to Pera!",
             "get_started": "To get started, deposit ALGO",
             "buy_algo": "Buy Algo",
-            "transfer": "Transfer",
             "receive": "Receive",
             "more": "More"
         }
@@ -328,6 +327,15 @@
             "body": "The Total Portfolio Value is calculated by adding up the value of all asset values and Algo available in your accounts, excluding Watch Accounts.\n\nAsset values are calculated based on daily values fetched from several ecosystem partners.  Since some asset values are not available, the Total Portfolio Value should be considered an estimation."
         }
     },
+    "prompts": {
+        "security": {
+            "pin_dont_ask_again": "Don't ask again",
+            "pin_title": "Increase your security with a PIN",
+            "pin_description": "This 6-digit PIN will be required to use the Pera Wallet. We highly recommend creating a PIN to help increase wallet security in the event your phone is stolen.",
+            "pin_setpin": "Set PIN Code",
+            "pin_notnow": "Not now"
+        }
+    },
     "receive_funds": {
         "account_selection": {
             "title": "Select Account"
@@ -357,6 +365,21 @@
         "feature_flags": "Feature Flags",
         "dispenser": "Dispenser",
         "developer_menu": "Developer Menu"
+    },
+    "security": {
+        "pin": {
+            "setup_title": "Choose your\n6-digit PIN",
+            "confirm_title": "Re-enter your\n6-digit PIN",
+            "verify_title": "Enter your PIN",
+            "unlock_title": "Enter your PIN",
+            "change_old_title": "Enter your old\n6-digit PIN"
+        },
+        "lockout": {
+            "title": "Pera Wallet app is locked",
+            "subtitle": "Too many incorrect PIN attempts",
+            "tryagain_in": "Try again in",
+            "reset_button": "Reset All Data"
+        }
     },
     "send_funds": {
         "input_view": {
@@ -446,6 +469,17 @@
             "debug_dapp": "Test Dapp",
             "taps_to_notify": "Developer menu will enable in {{remaining}} taps",
             "developer_menu_enabled": "Developer menu enabled"
+        },
+        "security": {
+            "security_settings_section": "Security Settings",
+            "enable_pin_security": "Enable PIN Code",
+            "change_pin": "Set / Change PIN Code",
+            "enable_biometrics": "Enable Biometrics",
+            "antispam_section": "Anti-spam Protection",
+            "enable_rekey_support": "Enable Re-key Support",
+            "enable_rekey_support_description": "Once you enable this, you can confirm transaction requests to rekey your account. This will give control of your account to another address.",
+            "biometric_error_title": "Failed to authenticate.",
+            "biometric_error_message": "We were unable to authenticate you.  Please try again."
         }
     },
     "signing": {

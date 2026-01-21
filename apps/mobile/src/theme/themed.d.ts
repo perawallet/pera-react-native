@@ -19,4 +19,14 @@ declare module '@rneui/themed' {
         '4xl': number
         '5xl': number
     }
+
+    export interface Theme {
+        zIndex: {
+            base: number
+            layer1: number
+            layer2: number
+            overlay1: number
+            max: number
+        }
+    }
 }
