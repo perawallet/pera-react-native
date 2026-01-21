@@ -55,10 +55,7 @@ export const ImportOptionsBottomSheet = ({
                         />
                     </PWTouchableOpacity>
 
-                    <PWText
-                        variant='h4'
-                        style={styles.title}
-                    >
+                    <PWText variant='h4'>
                         {t('onboarding.import_options.title')}
                     </PWText>
                 </PWView>
@@ -71,10 +68,7 @@ export const ImportOptionsBottomSheet = ({
                         <PWView style={styles.optionContent}>
                             <PWView style={styles.optionTopContent}>
                                 <PWView style={styles.optionHeader}>
-                                    <PWText
-                                        variant='h3'
-                                        style={styles.optionTitle}
-                                    >
+                                    <PWText variant='h4'>
                                         {t(
                                             'onboarding.import_options.universal_wallet.title',
                                         )}
@@ -88,7 +82,7 @@ export const ImportOptionsBottomSheet = ({
                                 </PWView>
                                 <PWText
                                     variant='body'
-                                    style={styles.optionCaption}
+                                    style={styles.optionBody}
                                 >
                                     {t(
                                         'onboarding.import_options.universal_wallet.description',
@@ -119,10 +113,7 @@ export const ImportOptionsBottomSheet = ({
                         <PWView style={styles.optionContent}>
                             <PWView style={styles.optionTopContent}>
                                 <PWView style={styles.optionHeader}>
-                                    <PWText
-                                        variant='h3'
-                                        style={styles.optionTitle}
-                                    >
+                                    <PWText variant='h4'>
                                         {t(
                                             'onboarding.import_options.algo25.title',
                                         )}
@@ -135,7 +126,7 @@ export const ImportOptionsBottomSheet = ({
                                 </PWView>
                                 <PWText
                                     variant='body'
-                                    style={styles.optionCaption}
+                                    style={styles.optionBody}
                                 >
                                     {t(
                                         'onboarding.import_options.algo25.description',

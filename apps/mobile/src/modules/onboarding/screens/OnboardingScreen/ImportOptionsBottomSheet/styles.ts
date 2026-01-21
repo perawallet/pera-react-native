@@ -27,9 +27,6 @@ export const useStyles = makeStyles(theme => ({
         position: 'absolute',
         left: 0,
     },
-    title: {
-        fontWeight: '600',
-    },
     optionsContainer: {
         gap: theme.spacing.md,
         marginTop: theme.spacing.lg,
@@ -58,16 +55,11 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         gap: theme.spacing.md,
     },
-    optionTitle: {
-        color: theme.colors.textMain,
-        fontWeight: '700',
-    },
-    optionCaption: {
+    optionBody: {
         color: theme.colors.textGray,
     },
     optionLink: {
         color: theme.colors.linkPrimary,
-        marginTop: theme.spacing.sm,
     },
     rightIconContainer: {
         width: 32,
