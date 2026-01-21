@@ -1,0 +1,45 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { makeStyles } from '@rneui/themed'
+
+export type PWChipVariant = 'primary' | 'neutral'
+
+type Props = {
+  variant: PWChipVariant
+}
+
+export const useStyles = makeStyles((theme, { variant }: Props) => {
+  let backgroundColor = theme.colors.layerGrayLighter
+  let color = theme.colors.textGray
+
+  if (variant === 'primary') {
+    backgroundColor = theme.colors.asaTrustedBg
+    color = theme.colors.asaTrustedText
+  }
+
+  return {
+    container: {
+      backgroundColor,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+      borderRadius: theme.spacing.sm,
+      alignSelf: 'flex-start',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    text: {
+      color,
+      fontSize: 13,
+    },
+  }
+})
