@@ -62,9 +62,9 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.linkPrimary,
     },
     rightIconContainer: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
+        width: theme.spacing.xxl,
+        height: theme.spacing.xxl,
+        borderRadius: theme.spacing.lg,
         backgroundColor: theme.colors.layerGrayLighter,
         alignItems: 'center',
         justifyContent: 'center',
