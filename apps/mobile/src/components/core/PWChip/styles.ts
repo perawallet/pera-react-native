@@ -19,13 +19,18 @@ type Props = {
 }
 
 export const useStyles = makeStyles((theme, { variant }: Props) => {
-    let backgroundColor = theme.colors.layerGrayLighter
-    let color = theme.colors.textGray
-
-    if (variant === 'primary') {
-        backgroundColor = theme.colors.asaTrustedBg
-        color = theme.colors.asaTrustedText
+    const variantStyles = {
+        primary: {
+            backgroundColor: theme.colors.asaTrustedBg,
+            color: theme.colors.asaTrustedText,
+        },
+        neutral: {
+            backgroundColor: theme.colors.layerGrayLighter,
+            color: theme.colors.textGray,
+        },
     }
+
+    const { backgroundColor, color } = variantStyles[variant]
 
     return {
         container: {
@@ -39,7 +44,6 @@ export const useStyles = makeStyles((theme, { variant }: Props) => {
         },
         text: {
             color,
-            fontSize: 13,
         },
     }
 })

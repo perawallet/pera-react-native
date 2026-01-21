@@ -27,7 +27,7 @@ export const PWChip = ({ title, variant = 'neutral', style }: PWChipProps) => {
     return (
         <PWView style={[styles.container, style]}>
             <PWText
-                variant='caption'
+                variant='body'
                 style={styles.text}
             >
                 {title.toUpperCase()}
