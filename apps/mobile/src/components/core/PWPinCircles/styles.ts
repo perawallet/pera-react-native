@@ -23,9 +23,9 @@ export const useStyles = makeStyles(theme => ({
         gap: CIRCLE_SPACING,
     },
     circle: {
-        width: CIRCLE_SIZE,
-        height: CIRCLE_SIZE,
-        borderRadius: CIRCLE_SIZE / 2,
+        width: theme.spacing.lg,
+        height: theme.spacing.lg,
+        borderRadius: theme.spacing.sm,
         borderWidth: 2,
         borderColor: theme.colors.layerGray,
         backgroundColor: 'transparent',
