@@ -340,6 +340,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
                 style: {
                     fontFamily: getFontFamily(false, 400),
                     fontSize: 13,
+                    lineHeight: 24,
                 },
             }),
         },

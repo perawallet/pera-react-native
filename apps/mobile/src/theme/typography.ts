@@ -55,16 +55,19 @@ export const getTypography = (
         body: {
             fontFamily: getFontFamily(false, 400),
             fontSize: 13,
+            lineHeight: 24,
             color: theme.colors.textMain,
         },
         caption: {
             fontFamily: getFontFamily(false, 400),
             fontSize: 11,
+            lineHeight: 24,
             color: theme.colors.textMain,
         },
         link: {
             fontFamily: getFontFamily(false, 400),
             fontSize: 13,
+            lineHeight: 24,
             color: theme.colors.linkPrimary,
         },
     }
