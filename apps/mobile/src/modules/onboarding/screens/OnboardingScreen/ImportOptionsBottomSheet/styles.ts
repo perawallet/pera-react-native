@@ -38,11 +38,11 @@ export const useStyles = makeStyles(theme => ({
         borderWidth: 1,
         borderColor: theme.colors.layerGray,
         borderRadius: theme.spacing.lg,
-        padding: theme.spacing.xl,
+        paddingHorizontal: theme.spacing.xl,
+        paddingVertical: theme.spacing.md,
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.md,
-        minHeight: 140,
     },
     optionContent: {
         flex: 1,
@@ -52,6 +52,11 @@ export const useStyles = makeStyles(theme => ({
     optionTopContent: {
         gap: theme.spacing.xs,
         maxWidth: '80%',
+    },
+    optionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.md,
     },
     optionTitle: {
         color: theme.colors.textMain,

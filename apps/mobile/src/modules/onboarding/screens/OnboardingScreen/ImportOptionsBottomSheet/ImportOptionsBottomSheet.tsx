@@ -13,6 +13,7 @@
 import React from 'react'
 import {
     PWBottomSheet,
+    PWChip,
     PWIcon,
     PWText,
     PWTouchableOpacity,
@@ -67,12 +68,18 @@ export const ImportOptionsBottomSheet = ({
                     >
                         <PWView style={styles.optionContent}>
                             <PWView style={styles.optionTopContent}>
-                                <PWText
-                                    variant='h3'
-                                    style={styles.optionTitle}
-                                >
-                                    Universal Wallet
-                                </PWText>
+                                <PWView style={styles.optionHeader}>
+                                    <PWText
+                                        variant='h3'
+                                        style={styles.optionTitle}
+                                    >
+                                        Universal Wallet
+                                    </PWText>
+                                    <PWChip
+                                        title='new'
+                                        variant='primary'
+                                    />
+                                </PWView>
                                 <PWText
                                     variant='body'
                                     style={styles.optionCaption}
@@ -104,12 +111,15 @@ export const ImportOptionsBottomSheet = ({
                     >
                         <PWView style={styles.optionContent}>
                             <PWView style={styles.optionTopContent}>
-                                <PWText
-                                    variant='h3'
-                                    style={styles.optionTitle}
-                                >
-                                    ALGO25
-                                </PWText>
+                                <PWView style={styles.optionHeader}>
+                                    <PWText
+                                        variant='h3'
+                                        style={styles.optionTitle}
+                                    >
+                                        ALGO25
+                                    </PWText>
+                                    <PWChip title='legacy' />
+                                </PWView>
                                 <PWText
                                     variant='body'
                                     style={styles.optionCaption}
