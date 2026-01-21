@@ -43,14 +43,6 @@ export const useOnboardingScreen = () => {
         navigation.push('NameAccount')
     }, [navigation])
 
-    const handleImportAccount = useCallback(() => {
-        openImportOptions()
-    }, [openImportOptions])
-
-    const handleCloseImportOptions = useCallback(() => {
-        closeImportOptions()
-    }, [closeImportOptions])
-
     const handleUniversalWalletPress = useCallback(() => {
         closeImportOptions()
         navigation.push('ImportInfo')
@@ -66,8 +58,8 @@ export const useOnboardingScreen = () => {
         handleTermsPress,
         handlePrivacyPress,
         handleCreateAccount,
-        handleImportAccount,
-        handleCloseImportOptions,
+        handleImportAccount: openImportOptions,
+        handleCloseImportOptions: closeImportOptions,
         handleUniversalWalletPress,
         handleAlgo25Press,
     }
