@@ -328,7 +328,7 @@ describe('usePinEditView', () => {
             const { result, rerender } = renderHook(
                 ({ mode }) =>
                     usePinEditView({ mode, onSuccess: mockOnSuccess }),
-                { initialProps: { mode: 'setup' as const } },
+                { initialProps: { mode: 'setup' as 'setup' | 'verify' } },
             )
 
             expect(result.current.title).toBe('security.pin.setup_title')

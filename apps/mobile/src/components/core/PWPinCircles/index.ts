@@ -10,8 +10,4 @@
  limitations under the License
  */
 
-export {
-    PWPinCircles,
-    type PWPinCirclesProps,
-    type PinCircleState,
-} from './PWPinCircles'
+export { PWPinCircles, type PWPinCirclesProps } from './PWPinCircles'

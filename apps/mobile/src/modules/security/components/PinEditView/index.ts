@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { PinEntryScreen } from './PinEntryScreen'
+export { PinEditView } from './PinEditView'

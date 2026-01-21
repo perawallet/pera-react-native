@@ -101,7 +101,7 @@ export const SettingsSecurityScreen = () => {
                 <PWView style={styles.listItem}>
                     <PWView style={styles.listItemContent}>
                         <PWIcon name='rekey' />
-                        <PWText style={styles.listItemTitle}>
+                        <PWText>
                             {t('settings.security.enable_rekey_support')}
                         </PWText>
                     </PWView>
