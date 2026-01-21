@@ -20,11 +20,15 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
         paddingBottom: insets.bottom,
         paddingLeft: insets.left,
         paddingRight: insets.right,
+        flex: 1,
+        backgroundColor: theme.colors.background,
+    },
+    overlayContainer: {
         position: 'absolute',
         top: 0,
-        bottom: 0,
         left: 0,
         right: 0,
+        bottom: 0,
         zIndex: ZINDEX_ORDER.max,
-    },
+    }
 }))

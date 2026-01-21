@@ -20,6 +20,7 @@ import { LockoutView } from './LockoutView'
 import { useLockScreen } from './useLockScreen'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { LoadingView } from '@components/LoadingView'
+import { Modal } from 'react-native'
 
 export const AutoLockGuard = ({ children }: PropsWithChildren) => {
     const { isLocked, isChecking, unlock, handleResetData } =
@@ -39,11 +40,13 @@ export const AutoLockGuard = ({ children }: PropsWithChildren) => {
     // main screen to pre-load
     return (
         <>
-            {(isLocked || isChecking) && (
+            {isChecking && <PWView style={styles.overlayContainer}>
+                <LoadingView variant='circle' />
+            </PWView>}
+            {isLocked && (<Modal visible={true} animationType='slide'>
+
                 <PWView style={styles.container}>
-                    {isChecking ? (
-                        <LoadingView variant='circle' />
-                    ) : isLockedOut ? (
+                    {isLockedOut ? (
                         <PWView style={styles.container}>
                             <LockoutView
                                 remainingSeconds={remainingSeconds}
@@ -63,7 +66,7 @@ export const AutoLockGuard = ({ children }: PropsWithChildren) => {
                         </PWView>
                     )}
                 </PWView>
-            )}
+            </Modal>)}
             {children}
         </>
     )
