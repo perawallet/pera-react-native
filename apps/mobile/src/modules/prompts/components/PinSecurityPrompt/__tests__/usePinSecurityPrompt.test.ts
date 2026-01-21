@@ -27,9 +27,9 @@ describe('usePinSecurityPrompt', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-            ; (useNavigation as Mock).mockReturnValue({
-                navigate: mockNavigate,
-            })
+        ;(useNavigation as Mock).mockReturnValue({
+            navigate: mockNavigate,
+        })
     })
 
     it('should return handler functions', () => {

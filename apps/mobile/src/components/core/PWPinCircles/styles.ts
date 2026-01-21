@@ -12,15 +12,12 @@
 
 import { makeStyles } from '@rneui/themed'
 
-const CIRCLE_SIZE = 16
-const CIRCLE_SPACING = 16
-
 export const useStyles = makeStyles(theme => ({
     container: {
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        gap: CIRCLE_SPACING,
+        gap: theme.spacing.lg,
     },
     circle: {
         width: theme.spacing.lg,

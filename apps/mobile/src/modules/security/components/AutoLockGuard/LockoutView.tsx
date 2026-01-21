@@ -55,9 +55,7 @@ export const LockoutView = ({
                 >
                     {t('security.lockout.tryagain_in')}
                 </PWText>
-                <PWText variant='h1'>
-                    {formatTime(remainingSeconds)}
-                </PWText>
+                <PWText variant='h1'>{formatTime(remainingSeconds)}</PWText>
             </PWView>
 
             {onResetData && (

@@ -68,9 +68,7 @@ export const SettingsSecurityScreen = () => {
                     >
                         <PWView style={styles.listItemContent}>
                             <PWIcon name='locked' />
-                            <PWText>
-                                {t('settings.security.change_pin')}
-                            </PWText>
+                            <PWText>{t('settings.security.change_pin')}</PWText>
                         </PWView>
                         <PWIcon name='chevron-right' />
                     </PWTouchableOpacity>
