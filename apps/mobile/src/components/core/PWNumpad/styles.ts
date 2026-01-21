@@ -12,8 +12,8 @@
 
 import { makeStyles } from '@rneui/themed'
 
-const KEY_SIZE = 72
-const KEY_SPACING = 24
+const KEY_SIZE = theme.spacing['4xl']
+const KEY_SPACING = theme.spacing.xl
 
 export const useStyles = makeStyles(theme => ({
     container: {
