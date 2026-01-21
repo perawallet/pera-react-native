@@ -275,6 +275,20 @@
         "empty_body": "Your recent transactions, asset requests and other transactions will appear here"
     },
     "onboarding": {
+        "import_options": {
+            "title": "Select your Mnemonic type",
+            "universal_wallet": {
+                "title": "Universal Wallet",
+                "description": "Wallet that lets you derive new accounts, all using the same mnemonic",
+                "chip": "new"
+            },
+            "algo25": {
+                "title": "ALGO25",
+                "description": "Legacy format that is specific to Algorand ecosystem",
+                "chip": "legacy"
+            },
+            "mnemonic_info": "24 words mnemonic keys"
+        },
         "import_info": {
             "title": "Recover an Algorand Wallet",
             "body": "In the following steps, you'll enter your recovery passphrase to recover an Algorand wallet. Have your recovery phrase handy before you begin.",

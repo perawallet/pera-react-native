@@ -151,13 +151,22 @@ describe('OnboardingScreen', () => {
         expect(mockPush).toHaveBeenCalledWith('NameAccount')
     })
 
-    it('navigates to ImportInfo when Import Account is pressed', () => {
+    it('opens ImportOptionsBottomSheet and navigates to ImportInfo when an option is selected', () => {
         render(<OnboardingScreen />)
 
         const importButton = screen.getByText(
             'onboarding.main_screen.import_account',
         )
         fireEvent.click(importButton)
+
+        // Bottom sheet should be visible now
+        expect(screen.getByText('onboarding.import_options.title')).toBeTruthy()
+
+        // Click one of the options
+        const universalWalletOption = screen.getByText(
+            'onboarding.import_options.universal_wallet.title',
+        )
+        fireEvent.click(universalWalletOption)
 
         expect(mockPush).toHaveBeenCalledWith('ImportInfo')
     })

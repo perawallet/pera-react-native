@@ -14,10 +14,16 @@ import { useCallback } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
+import { useModalState } from '@hooks/useModalState'
 
 export const useOnboardingScreen = () => {
     const navigation = useAppNavigation()
     const { pushWebView } = useWebView()
+    const {
+        isOpen: isImportOptionsVisible,
+        open: openImportOptions,
+        close: closeImportOptions,
+    } = useModalState()
 
     const handleTermsPress = useCallback(() => {
         pushWebView({
@@ -37,14 +43,24 @@ export const useOnboardingScreen = () => {
         navigation.push('NameAccount')
     }, [navigation])
 
-    const handleImportAccount = useCallback(() => {
+    const handleUniversalWalletPress = useCallback(() => {
+        closeImportOptions()
         navigation.push('ImportInfo')
-    }, [navigation])
+    }, [closeImportOptions, navigation])
+
+    const handleAlgo25Press = useCallback(() => {
+        closeImportOptions()
+        navigation.push('ImportInfo')
+    }, [closeImportOptions, navigation])
 
     return {
+        isImportOptionsVisible,
         handleTermsPress,
         handlePrivacyPress,
         handleCreateAccount,
-        handleImportAccount,
+        handleImportAccount: openImportOptions,
+        handleCloseImportOptions: closeImportOptions,
+        handleUniversalWalletPress,
+        handleAlgo25Press,
     }
 }
