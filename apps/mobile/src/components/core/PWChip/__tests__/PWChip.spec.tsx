@@ -21,7 +21,7 @@ describe('PWChip', () => {
         expect(screen.getByText('NEW')).toBeTruthy()
     })
 
-    it('renders correctly with neutral variant by default', () => {
+    it('renders correctly with secondary variant by default', () => {
         render(<PWChip title='legacy' />)
         expect(screen.getByText('LEGACY')).toBeTruthy()
     })

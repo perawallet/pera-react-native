@@ -83,7 +83,7 @@ export const ImportOptionsBottomSheet = ({
                                         title={t(
                                             'onboarding.import_options.universal_wallet.chip',
                                         )}
-                                        variant='primary'
+                                        variant='helper'
                                     />
                                 </PWView>
                                 <PWText

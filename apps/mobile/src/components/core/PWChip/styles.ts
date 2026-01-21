@@ -12,7 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export type PWChipVariant = 'primary' | 'neutral'
+export type PWChipVariant = 'helper' | 'secondary'
 
 type Props = {
     variant: PWChipVariant
@@ -20,11 +20,11 @@ type Props = {
 
 export const useStyles = makeStyles((theme, { variant }: Props) => {
     const variantStyles = {
-        primary: {
+        helper: {
             backgroundColor: theme.colors.asaTrustedBg,
             color: theme.colors.asaTrustedText,
         },
-        neutral: {
+        secondary: {
             backgroundColor: theme.colors.layerGrayLighter,
             color: theme.colors.textGray,
         },
@@ -33,7 +33,7 @@ export const useStyles = makeStyles((theme, { variant }: Props) => {
     const { backgroundColor, color } = variantStyles[variant]
 
     return {
-        container: {
+        chipStyle: {
             backgroundColor,
             paddingHorizontal: theme.spacing.sm,
             paddingVertical: theme.spacing.xs,
@@ -42,7 +42,7 @@ export const useStyles = makeStyles((theme, { variant }: Props) => {
             justifyContent: 'center',
             alignItems: 'center',
         },
-        text: {
+        titleStyle: {
             color,
         },
     }
