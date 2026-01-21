@@ -26,9 +26,7 @@ describe('ERROR_I18N_KEYS', () => {
         expect(ERROR_I18N_KEYS.API_GENERIC).toBe('errors.api.generic')
         expect(ERROR_I18N_KEYS.API_NOT_FOUND).toBe('errors.api.not_found')
         expect(ERROR_I18N_KEYS.API_UNAUTHORIZED).toBe('errors.api.unauthorized')
-        expect(ERROR_I18N_KEYS.API_SERVER_ERROR).toBe(
-            'errors.api.server_error',
-        )
+        expect(ERROR_I18N_KEYS.API_SERVER_ERROR).toBe('errors.api.server_error')
     })
 
     test('has blockchain error keys', () => {

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { ZINDEX_ORDER } from '@constants/ui'
 import { makeStyles } from '@rneui/themed'
 import { useCallback } from 'react'
 import {
@@ -27,7 +28,7 @@ export interface ToastMessage {
 const useStyles = makeStyles(theme => {
     return {
         baseStyle: {
-            zIndex: 10000,
+            zIndex: ZINDEX_ORDER.max,
             marginTop: theme.spacing.xl,
             borderWidth: 0,
         },

@@ -32,3 +32,15 @@ export const SCREEN_ANIMATION_CONFIG: NativeStackNavigationOptions = {
 
 export const EXPANDABLE_PANEL_ANIMATION_DURATION = 200
 export const LONG_NOTIFICATION_DURATION = 5000
+
+export const PROMPT_DISPLAY_DELAY = 3000
+
+export const ZINDEX_ORDER = {
+    normal: 0,
+    layer1: 1,
+    layer2: 2,
+    overlay: 100,
+
+    /** Only use this for toasts and security screens to ensure they layer at the very top */
+    max: 1000,
+} as const

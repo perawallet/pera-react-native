@@ -15,4 +15,10 @@ export const UserPreferences = {
     chartVisible: 'chart-visible',
     isCreatingAccount: 'is-creating-account',
     developerMenuEnabled: 'developer-menu-enabled',
+
+    //prompts (don't set these directly, they are set by the prompts module but held here to avoid accidental name collisions)
+    securityPinSetupPrompt: 'security_pin_setup_prompt',
 } as const
+
+export type UserPreferences =
+    (typeof UserPreferences)[keyof typeof UserPreferences]

@@ -10,44 +10,37 @@
  limitations under the License
  */
 
-import { ZINDEX_ORDER } from '@constants/ui'
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        paddingHorizontal: theme.spacing.lg,
-        flexShrink: 1,
+        flex: 1,
         backgroundColor: theme.colors.background,
+        gap: theme.spacing.lg,
     },
-    headerContainer: {
-        gap: theme.spacing.md,
+    header: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: theme.colors.background,
-        zIndex: ZINDEX_ORDER.layer2,
     },
-    headerText: {
-        color: theme.colors.textGray,
+    dontAskButton: {
+        padding: theme.spacing.sm,
+        alignItems: 'flex-end',
+        justifyContent: 'flex-end',
+        width: '100%',
     },
-    itemRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-    },
-    itemScrollContainer: {
-        gap: theme.spacing.md,
-        marginTop: theme.spacing.xs,
-        paddingBottom: theme.spacing.md,
-    },
-    scrollContainer: {
+    content: {
         flexGrow: 1,
+        marginTop: theme.spacing.xxl,
+        gap: theme.spacing.lg,
     },
-    itemContainer: {
-        paddingVertical: theme.spacing.xs,
-        paddingHorizontal: theme.spacing.lg,
-        backgroundColor: theme.colors.background,
-        flexDirection: 'row',
-        alignItems: 'center',
+    title: {
+        textAlign: 'left',
+    },
+    description: {
+        textAlign: 'left',
+    },
+    buttonContainer: {
         gap: theme.spacing.lg,
     },
 }))

@@ -300,6 +300,15 @@
             "body": "The Total Portfolio Value is calculated by adding up the value of all asset values and Algo available in your accounts, excluding Watch Accounts.\n\nAsset values are calculated based on daily values fetched from several ecosystem partners.  Since some asset values are not available, the Total Portfolio Value should be considered an estimation."
         }
     },
+    "prompts": {
+        "security": {
+            "pin_dont_ask_again": "Don't ask again",
+            "pin_title": "Increase your security with a PIN",
+            "pin_description": "This 6-digit PIN will be required to use the Pera Wallet. We highly recommend creating a PIN to help increase wallet security in the event your phone is stolen.",
+            "pin_setpin": "Set PIN Code",
+            "pin_notnow": "Not now"
+        }
+    },
     "receive_funds": {
         "account_selection": {
             "title": "Select Account"

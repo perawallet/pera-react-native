@@ -81,7 +81,7 @@ describe('HistoryPeriod type', () => {
             'one-day',
         ]
 
-        periods.forEach((period) => {
+        periods.forEach(period => {
             expect(typeof period).toBe('string')
             expect(period).toMatch(/^one-(year|month|week|day)$/)
         })

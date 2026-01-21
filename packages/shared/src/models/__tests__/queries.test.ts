@@ -63,7 +63,7 @@ describe('RequestConfiguration', () => {
             'DELETE',
         ]
 
-        methods.forEach((method) => {
+        methods.forEach(method => {
             const config: RequestConfiguration = {
                 backend: 'algod',
                 network: Networks.mainnet,
@@ -131,7 +131,7 @@ describe('RequestConfiguration', () => {
             'stream',
         ]
 
-        responseTypes.forEach((responseType) => {
+        responseTypes.forEach(responseType => {
             const config: RequestConfiguration = {
                 backend: 'algod',
                 network: Networks.mainnet,

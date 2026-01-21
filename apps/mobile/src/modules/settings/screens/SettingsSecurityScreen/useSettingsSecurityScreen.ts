@@ -13,6 +13,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { usePinCode, useBiometrics } from '@perawallet/wallet-core-security'
 import { PinEntryMode } from '@modules/security/components/PinEditView/usePinEditView'
+import { usePreferences } from '@perawallet/wallet-core-settings'
+import { UserPreferences } from '@constants/user-preferences'
 
 type UseSettingsSecurityScreenResult = {
     isPinEnabled: boolean
@@ -29,6 +31,7 @@ type UseSettingsSecurityScreenResult = {
 export const useSettingsSecurityScreen =
     (): UseSettingsSecurityScreenResult => {
         const { checkPinEnabled, savePin } = usePinCode()
+        const { setPreference } = usePreferences()
         const {
             checkBiometricsEnabled,
             checkBiometricsAvailable,
@@ -87,6 +90,7 @@ export const useSettingsSecurityScreen =
             if (pinViewMode === 'verify') {
                 savePin(null)
             }
+            setPreference(UserPreferences.securityPinSetupPrompt, true)
             updateSettings()
             setPinViewMode(null)
         }, [pinViewMode, savePin, updateSettings])

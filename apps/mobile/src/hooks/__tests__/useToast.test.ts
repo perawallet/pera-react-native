@@ -14,6 +14,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useToast } from '../useToast'
 import { Notifier } from 'react-native-notifier'
+import { ZINDEX_ORDER } from '@constants/ui'
 
 vi.mock('react-native-notifier', () => ({
     Notifier: {
@@ -23,7 +24,7 @@ vi.mock('react-native-notifier', () => ({
 
 vi.mock('@rneui/themed', () => ({
     makeStyles: () => () => ({
-        baseStyle: { zIndex: 10000 },
+        baseStyle: { zIndex: ZINDEX_ORDER.max },
         successStyle: { backgroundColor: 'green' },
         successStyleText: { color: 'white' },
         errorStyle: { backgroundColor: 'red' },

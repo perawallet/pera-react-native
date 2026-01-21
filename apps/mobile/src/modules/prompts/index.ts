@@ -10,21 +10,4 @@
  limitations under the License
  */
 
-import { ZINDEX_ORDER } from '@constants/ui'
-import { makeStyles } from '@rneui/themed'
-import { EdgeInsets } from 'react-native-safe-area-context'
-
-export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
-    container: {
-        paddingTop: insets.top + theme.spacing.xxl,
-        paddingBottom: insets.bottom,
-        paddingLeft: insets.left,
-        paddingRight: insets.right,
-        position: 'absolute',
-        top: 0,
-        bottom: 0,
-        left: 0,
-        right: 0,
-        zIndex: ZINDEX_ORDER.max,
-    },
-}))
+export * from './components/PromptContainer'

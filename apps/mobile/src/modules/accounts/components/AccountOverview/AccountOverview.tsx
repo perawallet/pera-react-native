@@ -92,7 +92,6 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
                         }
                         currency='ALGO'
                         precision={2}
-                        h1Style={styles.primaryCurrency}
                         isLoading={isPending}
                     />
                     <PWButton
@@ -105,7 +104,7 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
                 <PWView style={styles.secondaryValueBar}>
                     <CurrencyDisplay
                         h4
-                        h4Style={styles.valueTitle}
+                        style={styles.valueTitle}
                         value={
                             selectedPoint
                                 ? Decimal(selectedPoint.fiatValue)

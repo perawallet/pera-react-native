@@ -20,7 +20,7 @@ describe('env-loader', () => {
     beforeEach(() => {
         originalEnv = { ...process.env }
         // Clear all PERA_ env variables before each test
-        Object.keys(process.env).forEach((key) => {
+        Object.keys(process.env).forEach(key => {
             if (key.startsWith('PERA_')) {
                 delete process.env[key]
             }

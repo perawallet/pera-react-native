@@ -36,6 +36,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { AccountStackParamsList } from '@modules/accounts/routes'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { ConfettiAnimation } from '@modules/accounts/components/ConfettiAnimation'
+import { PromptContainer } from '@modules/prompts'
 
 //TODO hook up all the button panel buttons correctly
 //TODO implement more menu
@@ -137,6 +138,7 @@ export const AccountScreen = ({ route }: AccountScreenProps) => {
                 onClose={scannerState.close}
                 animationType='slide'
             />
+            <PromptContainer />
         </Drawer>
     )
 }

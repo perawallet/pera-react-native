@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { ZINDEX_ORDER } from '@constants/ui'
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
@@ -92,7 +93,7 @@ export const useStyles = makeStyles(theme => {
             marginLeft: theme.spacing.lg,
             width: theme.spacing['3xl'],
             height: theme.spacing['3xl'],
-            zIndex: 2,
+            zIndex: ZINDEX_ORDER.layer2,
         },
         chartContainer: {
             gap: theme.spacing.md,

@@ -92,11 +92,7 @@ describe('AppError', () => {
 
     test('stores original error when provided', () => {
         const originalError = new Error('Original error')
-        const error = new AppError(
-            ERROR_I18N_KEYS.UNKNOWN,
-            {},
-            originalError,
-        )
+        const error = new AppError(ERROR_I18N_KEYS.UNKNOWN, {}, originalError)
 
         expect(error.originalError).toBe(originalError)
     })
