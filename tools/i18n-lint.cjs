@@ -186,9 +186,9 @@ function main() {
     // 3. Missing Keys Check (Keys used in code but missing in en.json)
     log('\n--- Checking for Missing Keys in Code ---', colors.blue);
     let missingKeysCount = 0;
-    // Regex to find t('key') or t("key") or t(`key`)
+    // Regex to find t('key') or t("key") or t(`key`) or t(\n\n`key`\n\n)
     // We want to capture the content inside the quotes
-    const tCallRegex = /\bt\s*\(\s*(['"`])(.*?)\1\s*\)/g;
+    const tCallRegex = /\bt\s*\(\s*(['"`])([^]*?)\1\s*[,)]/g;
 
     srcFiles.forEach(file => {
         const content = fs.readFileSync(file, 'utf8');
@@ -196,6 +196,11 @@ function main() {
         let match;
         while ((match = tCallRegex.exec(content)) !== null) {
             const key = match[2];
+            // Skip dynamic keys that use template literal expressions (${...})
+            // These cannot be validated statically
+            if (key.includes('${')) {
+                continue;
+            }
             if (!baseKeys.has(key)) {
                 warn(`Missing key used in ${relativePath}: ${key}`);
                 missingKeysCount++;

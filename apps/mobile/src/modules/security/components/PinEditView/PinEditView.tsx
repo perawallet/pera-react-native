@@ -55,6 +55,7 @@ export const PinEditView = ({ mode, onSuccess, onClose }: PinEditViewProps) => {
                 <PWTouchableOpacity
                     style={styles.closeButton}
                     onPress={onClose}
+                    testID='close-button'
                 >
                     <PWIcon name='cross' />
                 </PWTouchableOpacity>

@@ -450,7 +450,9 @@
             "enable_biometrics": "Enable Biometrics",
             "antispam_section": "Anti-spam Protection",
             "enable_rekey_support": "Enable Re-key Support",
-            "enable_rekey_support_description": "Once you enable this, you can confirm transaction requests to rekey your account. This will give control of your account to another address."
+            "enable_rekey_support_description": "Once you enable this, you can confirm transaction requests to rekey your account. This will give control of your account to another address.",
+            "biometric_error_title": "Failed to authenticate.",
+            "biometric_error_message": "We were unable to authenticate you.  Please try again."
         }
     },
     "signing": {

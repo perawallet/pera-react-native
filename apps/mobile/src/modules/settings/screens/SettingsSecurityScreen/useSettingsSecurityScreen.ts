@@ -79,11 +79,9 @@ export const useSettingsSecurityScreen =
 
                     if (!success) {
                         showToast({
-                            title: t(
-                                'settings.security_screen.biometric_error_title',
-                            ),
+                            title: t('settings.security.biometric_error_title'),
                             body: t(
-                                'settings.security_screen.biometric_error_message',
+                                'settings.security.biometric_error_message',
                             ),
                             type: 'error',
                         })
