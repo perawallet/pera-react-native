@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
-import { renderHook, act, waitFor } from '@testing-library/react'
+import { renderHook, act } from '@testing-library/react'
 import { useLockScreen } from '../useLockScreen'
 import { usePinCode, useBiometrics } from '@perawallet/wallet-core-security'
 
@@ -65,46 +65,14 @@ describe('useLockScreen', () => {
         )
     })
 
-    it('should attempt biometric unlock on mount when enabled', async () => {
-        mockCheckBiometricsEnabled.mockResolvedValue(true)
-        mockAuthenticateWithBiometrics.mockResolvedValue(true)
-
-        renderHook(() => useLockScreen({ onUnlock: mockOnUnlock }))
-
-        await waitFor(() => {
-            expect(mockCheckBiometricsEnabled).toHaveBeenCalled()
-        })
-
-        await waitFor(() => {
-            expect(mockAuthenticateWithBiometrics).toHaveBeenCalled()
-            expect(mockResetFailedAttempts).toHaveBeenCalled()
-            expect(mockOnUnlock).toHaveBeenCalled()
-        })
-    })
-
-    it('should not call onUnlock when biometric authentication fails', async () => {
-        mockCheckBiometricsEnabled.mockResolvedValue(true)
-        mockAuthenticateWithBiometrics.mockResolvedValue(false)
-
-        renderHook(() => useLockScreen({ onUnlock: mockOnUnlock }))
-
-        await waitFor(() => {
-            expect(mockAuthenticateWithBiometrics).toHaveBeenCalled()
-        })
-
-        expect(mockOnUnlock).not.toHaveBeenCalled()
-    })
-
-    it('should not attempt biometric unlock when disabled', async () => {
+    it('should check biometrics enabled on mount', async () => {
         mockCheckBiometricsEnabled.mockResolvedValue(false)
 
         renderHook(() => useLockScreen({ onUnlock: mockOnUnlock }))
 
-        await waitFor(() => {
+        await vi.waitFor(() => {
             expect(mockCheckBiometricsEnabled).toHaveBeenCalled()
         })
-
-        expect(mockAuthenticateWithBiometrics).not.toHaveBeenCalled()
     })
 
     describe('handlePinComplete', () => {

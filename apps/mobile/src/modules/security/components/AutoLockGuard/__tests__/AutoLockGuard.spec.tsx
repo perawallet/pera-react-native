@@ -16,7 +16,6 @@ import { AutoLockGuard } from '../AutoLockGuard'
 import { Text } from 'react-native'
 import { usePinCode, useBiometrics } from '@perawallet/wallet-core-security'
 import { useDeleteAllData } from '@modules/settings/hooks/useDeleteAllData'
-import { AppState } from 'react-native'
 
 vi.mock('@perawallet/wallet-core-security', () => ({
     usePinCode: vi.fn(),

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { render, fireEvent, waitFor } from '@test-utils/render'
+import { render, waitFor } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest'
 import { SettingsSecurityScreen } from '../SettingsSecurityScreen'
 import { usePinCode, useBiometrics } from '@perawallet/wallet-core-security'
