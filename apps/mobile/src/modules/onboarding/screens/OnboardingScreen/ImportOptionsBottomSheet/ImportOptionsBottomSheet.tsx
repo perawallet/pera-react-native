@@ -20,6 +20,7 @@ import {
     PWView,
 } from '@components/core'
 import { useStyles } from './styles'
+import { useTranslation } from 'react-i18next'
 
 export type ImportOptionsBottomSheetProps = {
     isVisible: boolean
@@ -35,6 +36,7 @@ export const ImportOptionsBottomSheet = ({
     onAlgo25Press,
 }: ImportOptionsBottomSheetProps) => {
     const styles = useStyles()
+    const { t } = useTranslation()
 
     return (
         <PWBottomSheet
@@ -57,7 +59,7 @@ export const ImportOptionsBottomSheet = ({
                         variant='h4'
                         style={styles.title}
                     >
-                        Select your Mnemonic type
+                        {t('onboarding.import_options.title')}
                     </PWText>
                 </PWView>
 
@@ -73,10 +75,14 @@ export const ImportOptionsBottomSheet = ({
                                         variant='h3'
                                         style={styles.optionTitle}
                                     >
-                                        Universal Wallet
+                                        {t(
+                                            'onboarding.import_options.universal_wallet.title',
+                                        )}
                                     </PWText>
                                     <PWChip
-                                        title='new'
+                                        title={t(
+                                            'onboarding.import_options.universal_wallet.chip',
+                                        )}
                                         variant='primary'
                                     />
                                 </PWView>
@@ -84,15 +90,16 @@ export const ImportOptionsBottomSheet = ({
                                     variant='body'
                                     style={styles.optionCaption}
                                 >
-                                    Wallet that lets you derive new accounts,
-                                    all using the same mnemonic
+                                    {t(
+                                        'onboarding.import_options.universal_wallet.description',
+                                    )}
                                 </PWText>
                             </PWView>
                             <PWText
                                 variant='link'
                                 style={styles.optionLink}
                             >
-                                24 words mnemonic keys
+                                {t('onboarding.import_options.mnemonic_info')}
                             </PWText>
                         </PWView>
 
@@ -116,23 +123,30 @@ export const ImportOptionsBottomSheet = ({
                                         variant='h3'
                                         style={styles.optionTitle}
                                     >
-                                        ALGO25
+                                        {t(
+                                            'onboarding.import_options.algo25.title',
+                                        )}
                                     </PWText>
-                                    <PWChip title='legacy' />
+                                    <PWChip
+                                        title={t(
+                                            'onboarding.import_options.algo25.chip',
+                                        )}
+                                    />
                                 </PWView>
                                 <PWText
                                     variant='body'
                                     style={styles.optionCaption}
                                 >
-                                    Legacy format that is specific to Algorand
-                                    ecosystem
+                                    {t(
+                                        'onboarding.import_options.algo25.description',
+                                    )}
                                 </PWText>
                             </PWView>
                             <PWText
                                 variant='link'
                                 style={styles.optionLink}
                             >
-                                24 words mnemonic keys
+                                {t('onboarding.import_options.mnemonic_info')}
                             </PWText>
                         </PWView>
 

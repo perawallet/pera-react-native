@@ -15,6 +15,12 @@ import React from 'react'
 import { render, fireEvent, screen } from '@test-utils/render'
 import { ImportOptionsBottomSheet } from '../ImportOptionsBottomSheet'
 
+vi.mock('react-i18next', () => ({
+    useTranslation: () => ({
+        t: (key: string) => key,
+    }),
+}))
+
 describe('ImportOptionsBottomSheet', () => {
     const defaultProps = {
         isVisible: true,
@@ -26,20 +32,26 @@ describe('ImportOptionsBottomSheet', () => {
     it('renders correctly when visible', () => {
         render(<ImportOptionsBottomSheet {...defaultProps} />)
 
-        expect(screen.getByText('Select your Mnemonic type')).toBeTruthy()
-        expect(screen.getByText('Universal Wallet')).toBeTruthy()
-        expect(screen.getByText('ALGO25')).toBeTruthy()
+        expect(screen.getByText('onboarding.import_options.title')).toBeTruthy()
         expect(
             screen.getByText(
-                'Wallet that lets you derive new accounts, all using the same mnemonic',
+                'onboarding.import_options.universal_wallet.title',
             ),
         ).toBeTruthy()
         expect(
+            screen.getByText('onboarding.import_options.algo25.title'),
+        ).toBeTruthy()
+        expect(
             screen.getByText(
-                'Legacy format that is specific to Algorand ecosystem',
+                'onboarding.import_options.universal_wallet.description',
             ),
         ).toBeTruthy()
-        expect(screen.getAllByText('24 words mnemonic keys')).toHaveLength(2)
+        expect(
+            screen.getByText('onboarding.import_options.algo25.description'),
+        ).toBeTruthy()
+        expect(
+            screen.getAllByText('onboarding.import_options.mnemonic_info'),
+        ).toHaveLength(2)
     })
 
     it('does not render content when not visible', () => {
@@ -50,7 +62,7 @@ describe('ImportOptionsBottomSheet', () => {
             />,
         )
 
-        expect(screen.queryByText('Select your Mnemonic type')).toBeNull()
+        expect(screen.queryByText('onboarding.import_options.title')).toBeNull()
     })
 
     it('calls onClose when close button is pressed', () => {
@@ -75,7 +87,11 @@ describe('ImportOptionsBottomSheet', () => {
             />,
         )
 
-        fireEvent.click(screen.getByText('Universal Wallet'))
+        fireEvent.click(
+            screen.getByText(
+                'onboarding.import_options.universal_wallet.title',
+            ),
+        )
         expect(onUniversalWalletPress).toHaveBeenCalledTimes(1)
     })
 
@@ -88,7 +104,9 @@ describe('ImportOptionsBottomSheet', () => {
             />,
         )
 
-        fireEvent.click(screen.getByText('ALGO25'))
+        fireEvent.click(
+            screen.getByText('onboarding.import_options.algo25.title'),
+        )
         expect(onAlgo25Press).toHaveBeenCalledTimes(1)
     })
 })

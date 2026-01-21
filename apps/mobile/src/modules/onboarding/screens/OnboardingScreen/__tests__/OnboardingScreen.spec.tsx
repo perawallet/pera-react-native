@@ -160,10 +160,12 @@ describe('OnboardingScreen', () => {
         fireEvent.click(importButton)
 
         // Bottom sheet should be visible now
-        expect(screen.getByText('Select your Mnemonic type')).toBeTruthy()
+        expect(screen.getByText('onboarding.import_options.title')).toBeTruthy()
 
         // Click one of the options
-        const universalWalletOption = screen.getByText('Universal Wallet')
+        const universalWalletOption = screen.getByText(
+            'onboarding.import_options.universal_wallet.title',
+        )
         fireEvent.click(universalWalletOption)
 
         expect(mockPush).toHaveBeenCalledWith('ImportInfo')
