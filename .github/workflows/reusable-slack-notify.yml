@@ -1,101 +1,101 @@
 name: Reusable Slack Notification
 
 on:
-  workflow_call:
-    inputs:
-      status:
-        required: true
-        type: string
-        description: "Job status (success, failure, cancelled)"
-      platform:
-        required: true
-        type: string
-        description: "Platform name (iOS, Android)"
-      environment:
-        required: true
-        type: string
-        description: "Environment (staging, production)"
-      version:
-        required: false
-        type: string
-        default: "N/A"
-      build_number:
-        required: false
-        type: string
-        default: "N/A"
-      notification_title_prefix:
-        required: true
-        type: string
+    workflow_call:
+        inputs:
+            status:
+                required: true
+                type: string
+                description: 'Job status (success, failure, cancelled)'
+            platform:
+                required: true
+                type: string
+                description: 'Platform name (iOS, Android)'
+            environment:
+                required: true
+                type: string
+                description: 'Environment (staging, production)'
+            version:
+                required: false
+                type: string
+                default: 'N/A'
+            build_number:
+                required: false
+                type: string
+                default: 'N/A'
+            notification_title_prefix:
+                required: true
+                type: string
 
-    secrets:
-      SLACK_WEBHOOK_URL:
-        required: true
-      JIRA_BASE_URL:
-        required: true
+        secrets:
+            SLACK_WEBHOOK_URL:
+                required: true
+            JIRA_BASE_URL:
+                required: true
 
 jobs:
-  notify:
-    name: Slack Notification
-    runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
-    steps:
-      - name: Send Slack Notification
-        uses: rtCamp/action-slack-notify@v2
-        env:
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
-          SLACK_CUSTOM_PAYLOAD: |
-            {
-              "username": "GitHub Actions",
-              "icon_emoji": ":octocat:",
-              "blocks": [
-                {
-                  "type": "header",
-                  "text": {
-                    "type": "plain_text",
-                    "text": "${{ inputs.status == 'success' && '✅' || '❌' }} ${{ inputs.notification_title_prefix }}: ${{ inputs.platform }} ${{ inputs.environment }}${{ inputs.status == 'success' && ' Available on TestFlight/Play Store' || ' Failed' }}",
-                    "emoji": true
-                  }
-                }
-              ],
-              "attachments": [
-                {
-                  "color": "${{ inputs.status == 'success' && '#36a64f' || '#ec0000' }}",
-                  "blocks": [
-                    {
-                      "type": "section",
-                      "fields": [
-                        {
-                          "type": "mrkdwn",
-                          "text": "*Platform:*\n${{ inputs.platform }}"
-                        },
-                        {
-                          "type": "mrkdwn",
-                          "text": "*Version:*\n${{ inputs.version }} (${{ inputs.build_number }})"
-                        },
-                        {
-                          "type": "mrkdwn",
-                          "text": "*Status:*\n${{ inputs.status }}"
-                        },
-                        {
-                          "type": "mrkdwn",
-                          "text": "*PR/Commit:*\n<${{ github.event.pull_request.html_url || github.event.head_commit.url }}|${{ github.event.pull_request.title || github.event.head_commit.message }}>"
-                        }
-                      ]
-                    },
-                    {
-                      "type": "context",
-                      "elements": [
-                        {
-                          "type": "mrkdwn",
-                          "text": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Action Run>"
-                        },
-                        {
-                          "type": "mrkdwn",
-                          "text": "<!subteam^S09454M32LT>"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            }
+    notify:
+        name: Slack Notification
+        runs-on: ubuntu-latest
+        environment: ${{ inputs.environment }}
+        steps:
+            - name: Send Slack Notification
+              uses: rtCamp/action-slack-notify@v2
+              env:
+                  SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+                  SLACK_CUSTOM_PAYLOAD: |
+                      {
+                        "username": "GitHub Actions",
+                        "icon_emoji": ":octocat:",
+                        "blocks": [
+                          {
+                            "type": "header",
+                            "text": {
+                              "type": "plain_text",
+                              "text": "${{ inputs.status == 'success' && '✅' || '❌' }} RN ${{ inputs.notification_title_prefix }}: ${{ inputs.platform }} ${{ inputs.environment }}${{ inputs.status == 'success' && ' Available on TestFlight/Play Store' || ' Failed' }}",
+                              "emoji": true
+                            }
+                          }
+                        ],
+                        "attachments": [
+                          {
+                            "color": "${{ inputs.status == 'success' && '#36a64f' || '#ec0000' }}",
+                            "blocks": [
+                              {
+                                "type": "section",
+                                "fields": [
+                                  {
+                                    "type": "mrkdwn",
+                                    "text": "*Platform:*\n${{ inputs.platform }}"
+                                  },
+                                  {
+                                    "type": "mrkdwn",
+                                    "text": "*Version:*\n${{ inputs.version }} (${{ inputs.build_number }})"
+                                  },
+                                  {
+                                    "type": "mrkdwn",
+                                    "text": "*Status:*\n${{ inputs.status }}"
+                                  },
+                                  {
+                                    "type": "mrkdwn",
+                                    "text": "*PR/Commit:*\n<${{ github.event.pull_request.html_url || github.event.head_commit.url }}|${{ github.event.pull_request.title || github.event.head_commit.message }}>"
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "context",
+                                "elements": [
+                                  {
+                                    "type": "mrkdwn",
+                                    "text": "<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Action Run>"
+                                  },
+                                  {
+                                    "type": "mrkdwn",
+                                    "text": "<!subteam^S09454M32LT>"
+                                  }
+                                ]
+                              }
+                            ]
+                          }
+                        ]
+                      }

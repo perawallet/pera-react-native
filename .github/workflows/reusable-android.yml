@@ -184,8 +184,6 @@ jobs:
           CLEAN="true"
           if [ "${{ inputs.use_cache }}" == "true" ]; then
             CLEAN="false"
-            # For QA/Cached builds, limit to ARM architectures to speed up build
-            export ORG_GRADLE_PROJECT_reactNativeArchitectures="armeabi-v7a,arm64-v8a"
           fi
 
           bundle exec fastlane android deploy_internal flavor:${{ inputs.flavor }} clean:$CLEAN
