@@ -40,33 +40,40 @@ export const AutoLockGuard = ({ children }: PropsWithChildren) => {
     // main screen to pre-load
     return (
         <>
-            {isChecking && <PWView style={styles.overlayContainer}>
-                <LoadingView variant='circle' />
-            </PWView>}
-            {isLocked && (<Modal visible={true} animationType='slide'>
-
-                <PWView style={styles.container}>
-                    {isLockedOut ? (
-                        <PWView style={styles.container}>
-                            <LockoutView
-                                remainingSeconds={remainingSeconds}
-                                onResetData={handleResetData}
-                            />
-                        </PWView>
-                    ) : (
-                        <PWView style={styles.container}>
-                            <PinEntry
-                                title={t('security.pin.unlock_title')}
-                                onPinComplete={handlePinComplete}
-                                hasError={hasError}
-                                onErrorAnimationComplete={
-                                    handleErrorAnimationComplete
-                                }
-                            />
-                        </PWView>
-                    )}
+            {isChecking && (
+                <PWView style={styles.overlayContainer}>
+                    <LoadingView variant='circle' />
                 </PWView>
-            </Modal>)}
+            )}
+            {isLocked && (
+                <Modal
+                    visible={true}
+                    animationType='slide'
+                    allowSwipeDismissal={false}
+                >
+                    <PWView style={styles.container}>
+                        {isLockedOut ? (
+                            <PWView style={styles.container}>
+                                <LockoutView
+                                    remainingSeconds={remainingSeconds}
+                                    onResetData={handleResetData}
+                                />
+                            </PWView>
+                        ) : (
+                            <PWView style={styles.container}>
+                                <PinEntry
+                                    title={t('security.pin.unlock_title')}
+                                    onPinComplete={handlePinComplete}
+                                    hasError={hasError}
+                                    onErrorAnimationComplete={
+                                        handleErrorAnimationComplete
+                                    }
+                                />
+                            </PWView>
+                        )}
+                    </PWView>
+                </Modal>
+            )}
             {children}
         </>
     )
