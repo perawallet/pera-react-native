@@ -26,11 +26,11 @@ describe('PWChip', () => {
         expect(screen.getByText('LEGACY')).toBeTruthy()
     })
 
-    it('renders correctly with primary variant', () => {
+    it('renders correctly with helper variant', () => {
         render(
             <PWChip
                 title='new'
-                variant='primary'
+                variant='helper'
             />,
         )
         expect(screen.getByText('NEW')).toBeTruthy()
