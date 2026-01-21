@@ -100,32 +100,15 @@ export const useBiometrics = (): UseBiometricsResult => {
             }
 
             try {
-                const authenticated = await biometricsService.authenticate(
+                return await biometricsService.authenticate(
                     promptTitle,
                     promptDescription,
                 )
-                if (!authenticated) {
-                    return false
-                }
-
-                const pinData = await secureStorage.getItem(PIN_STORAGE_KEY)
-                const biometricPinData = await secureStorage.getItem(
-                    BIOMETRIC_STORAGE_KEY,
-                )
-
-                if (!pinData || !biometricPinData) {
-                    return false
-                }
-
-                const pin = new TextDecoder().decode(pinData)
-                const biometricPin = new TextDecoder().decode(biometricPinData)
-
-                return pin === biometricPin
             } catch {
                 return false
             }
         },
-        [checkBiometricsEnabled, biometricsService, secureStorage],
+        [checkBiometricsEnabled, biometricsService],
     )
 
     return {

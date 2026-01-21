@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-export type BiometricType = 'face' | 'fingerprint' | 'iris' | null
+export type BiometricType = 'face' | 'fingerprint' | 'biometrics' | null
 
 export interface BiometricsService {
     getSupportedBiometricType(): Promise<BiometricType>

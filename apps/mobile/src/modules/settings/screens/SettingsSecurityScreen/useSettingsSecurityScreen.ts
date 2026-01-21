@@ -15,6 +15,8 @@ import { usePinCode, useBiometrics } from '@perawallet/wallet-core-security'
 import { PinEntryMode } from '@modules/security/components/PinEditView/usePinEditView'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
+import { useToast } from '@hooks/useToast'
+import { useLanguage } from '@hooks/useLanguage'
 
 type UseSettingsSecurityScreenResult = {
     isPinEnabled: boolean
@@ -32,6 +34,8 @@ export const useSettingsSecurityScreen =
     (): UseSettingsSecurityScreenResult => {
         const { checkPinEnabled, savePin } = usePinCode()
         const { setPreference } = usePreferences()
+        const { showToast } = useToast()
+        const { t } = useLanguage()
         const {
             checkBiometricsEnabled,
             checkBiometricsAvailable,
@@ -72,6 +76,18 @@ export const useSettingsSecurityScreen =
             async (value: boolean): Promise<boolean> => {
                 if (value) {
                     const success = await enableBiometrics()
+
+                    if (!success) {
+                        showToast({
+                            title: t(
+                                'settings.security_screen.biometric_error_title',
+                            ),
+                            body: t(
+                                'settings.security_screen.biometric_error_message',
+                            ),
+                            type: 'error',
+                        })
+                    }
                     return success
                 } else {
                     await disableBiometrics()

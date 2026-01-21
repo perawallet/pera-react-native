@@ -22,8 +22,6 @@ export type PinEntryProps = {
     onPinComplete: (pin: string) => void
     onPinChange?: (pin: string) => void
     isDisabled?: boolean
-    showBiometric?: boolean
-    onBiometricPress?: () => void
     hasError?: boolean
     onErrorAnimationComplete?: () => void
 }

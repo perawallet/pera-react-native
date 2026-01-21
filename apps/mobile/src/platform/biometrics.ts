@@ -10,28 +10,31 @@
  limitations under the License
  */
 
-import * as Keychain from 'react-native-keychain'
+import {
+    isSensorAvailable,
+    authenticateWithOptions,
+    BiometricStrength,
+} from '@sbaiahmed1/react-native-biometrics'
 import type {
     BiometricsService,
     BiometricType,
 } from '@perawallet/wallet-core-platform-integration'
 
-const BIOMETRIC_TEST_SERVICE = 'com.algorand.android.biometric.test'
-
 export class RNBiometricsService implements BiometricsService {
     async getSupportedBiometricType(): Promise<BiometricType> {
-        const biometryType = await Keychain.getSupportedBiometryType()
+        const { available, biometryType } = await isSensorAvailable()
+
+        if (!available) {
+            return null
+        }
 
         switch (biometryType) {
-            case Keychain.BIOMETRY_TYPE.FACE_ID:
-            case Keychain.BIOMETRY_TYPE.FACE:
+            case 'FaceID':
                 return 'face'
-            case Keychain.BIOMETRY_TYPE.TOUCH_ID:
-            case Keychain.BIOMETRY_TYPE.FINGERPRINT:
-            case Keychain.BIOMETRY_TYPE.OPTIC_ID:
+            case 'TouchID':
                 return 'fingerprint'
-            case Keychain.BIOMETRY_TYPE.IRIS:
-                return 'iris'
+            case 'Biometrics':
+                return 'biometrics'
             default:
                 return null
         }
@@ -47,33 +50,13 @@ export class RNBiometricsService implements BiometricsService {
         promptDescription: string = 'Use biometrics to authenticate',
     ): Promise<boolean> {
         try {
-            // Store a test value with biometric access control
-            await Keychain.setGenericPassword('biometric', 'test', {
-                service: BIOMETRIC_TEST_SERVICE,
-                accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
-                accessControl: Keychain.ACCESS_CONTROL.BIOMETRY_CURRENT_SET,
-                authenticationPrompt: {
-                    title: promptTitle,
-                    description: promptDescription,
-                },
-                securityLevel: Keychain.SECURITY_LEVEL.SECURE_HARDWARE,
+            const result = await authenticateWithOptions({
+                title: promptTitle,
+                description: promptDescription,
+                biometricStrength: BiometricStrength.Strong,
             })
 
-            // Try to read it back - this will trigger the biometric prompt
-            const result = await Keychain.getGenericPassword({
-                service: BIOMETRIC_TEST_SERVICE,
-                authenticationPrompt: {
-                    title: promptTitle,
-                    description: promptDescription,
-                },
-            })
-
-            // Clean up the test value
-            await Keychain.resetGenericPassword({
-                service: BIOMETRIC_TEST_SERVICE,
-            })
-
-            return result !== false
+            return result.success
         } catch {
             return false
         }
