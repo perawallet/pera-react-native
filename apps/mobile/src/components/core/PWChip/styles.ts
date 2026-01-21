@@ -15,31 +15,31 @@ import { makeStyles } from '@rneui/themed'
 export type PWChipVariant = 'primary' | 'neutral'
 
 type Props = {
-  variant: PWChipVariant
+    variant: PWChipVariant
 }
 
 export const useStyles = makeStyles((theme, { variant }: Props) => {
-  let backgroundColor = theme.colors.layerGrayLighter
-  let color = theme.colors.textGray
+    let backgroundColor = theme.colors.layerGrayLighter
+    let color = theme.colors.textGray
 
-  if (variant === 'primary') {
-    backgroundColor = theme.colors.asaTrustedBg
-    color = theme.colors.asaTrustedText
-  }
+    if (variant === 'primary') {
+        backgroundColor = theme.colors.asaTrustedBg
+        color = theme.colors.asaTrustedText
+    }
 
-  return {
-    container: {
-      backgroundColor,
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: theme.spacing.xs,
-      borderRadius: theme.spacing.sm,
-      alignSelf: 'flex-start',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    text: {
-      color,
-      fontSize: 13,
-    },
-  }
+    return {
+        container: {
+            backgroundColor,
+            paddingHorizontal: theme.spacing.sm,
+            paddingVertical: theme.spacing.xs,
+            borderRadius: theme.spacing.sm,
+            alignSelf: 'flex-start',
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        text: {
+            color,
+            fontSize: 13,
+        },
+    }
 })

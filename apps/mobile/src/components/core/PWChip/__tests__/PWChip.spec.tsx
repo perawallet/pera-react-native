@@ -17,17 +17,22 @@ import { PWChip } from '../PWChip'
 
 describe('PWChip', () => {
     it('renders the title in uppercase', () => {
-        render(<PWChip title="new" />)
+        render(<PWChip title='new' />)
         expect(screen.getByText('NEW')).toBeTruthy()
     })
 
     it('renders correctly with neutral variant by default', () => {
-        render(<PWChip title="legacy" />)
+        render(<PWChip title='legacy' />)
         expect(screen.getByText('LEGACY')).toBeTruthy()
     })
 
     it('renders correctly with primary variant', () => {
-        render(<PWChip title="new" variant="primary" />)
+        render(
+            <PWChip
+                title='new'
+                variant='primary'
+            />,
+        )
         expect(screen.getByText('NEW')).toBeTruthy()
     })
 })
