@@ -33,8 +33,8 @@ describe('constants', () => {
         expect(INITIAL_LOCKOUT_SECONDS).toBe(30)
     })
 
-    test('AUTO_LOCK_TIMEOUT_MS is 10 seconds', () => {
-        expect(AUTO_LOCK_TIMEOUT_MS).toBe(10000)
+    test('AUTO_LOCK_TIMEOUT_MS is 5 minutes', () => {
+        expect(AUTO_LOCK_TIMEOUT_MS).toBe(5 * 60 * 1000)
     })
 
     test('PIN_STORAGE_KEY is correct', () => {

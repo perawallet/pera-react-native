@@ -203,48 +203,9 @@ describe('useBiometrics', () => {
         expect(mockAuthenticate).not.toHaveBeenCalled()
     })
 
-    test('authenticateWithBiometrics returns false when PIN data missing', async () => {
+    test('authenticateWithBiometrics returns true when biometrics enabled and auth succeeds', async () => {
         const biometricData = new TextEncoder().encode('123456')
-        mockGetItem
-            .mockResolvedValueOnce(biometricData) // checkBiometricsEnabled
-            .mockResolvedValueOnce(null) // PIN_STORAGE_KEY
-            .mockResolvedValueOnce(biometricData) // BIOMETRIC_STORAGE_KEY
-        mockAuthenticate.mockResolvedValue(true)
-
-        const { result } = renderHook(() => useBiometrics())
-
-        let authenticated: boolean = true
-        await act(async () => {
-            authenticated = await result.current.authenticateWithBiometrics()
-        })
-
-        expect(authenticated).toBe(false)
-    })
-
-    test('authenticateWithBiometrics returns false when biometric data missing', async () => {
-        const pinData = new TextEncoder().encode('123456')
-        mockGetItem
-            .mockResolvedValueOnce(pinData) // checkBiometricsEnabled
-            .mockResolvedValueOnce(pinData) // PIN_STORAGE_KEY
-            .mockResolvedValueOnce(null) // BIOMETRIC_STORAGE_KEY
-        mockAuthenticate.mockResolvedValue(true)
-
-        const { result } = renderHook(() => useBiometrics())
-
-        let authenticated: boolean = true
-        await act(async () => {
-            authenticated = await result.current.authenticateWithBiometrics()
-        })
-
-        expect(authenticated).toBe(false)
-    })
-
-    test('authenticateWithBiometrics returns true when PINs match', async () => {
-        const pinData = new TextEncoder().encode('123456')
-        mockGetItem
-            .mockResolvedValueOnce(pinData) // checkBiometricsEnabled
-            .mockResolvedValueOnce(pinData) // PIN_STORAGE_KEY
-            .mockResolvedValueOnce(pinData) // BIOMETRIC_STORAGE_KEY
+        mockGetItem.mockResolvedValueOnce(biometricData) // checkBiometricsEnabled
         mockAuthenticate.mockResolvedValue(true)
 
         const { result } = renderHook(() => useBiometrics())
@@ -258,14 +219,25 @@ describe('useBiometrics', () => {
         expect(mockAuthenticate).toHaveBeenCalled()
     })
 
-    test('authenticateWithBiometrics returns false when PINs do not match', async () => {
-        const pinData = new TextEncoder().encode('123456')
-        const wrongPinData = new TextEncoder().encode('654321')
-        mockGetItem
-            .mockResolvedValueOnce(pinData) // checkBiometricsEnabled
-            .mockResolvedValueOnce(pinData) // PIN_STORAGE_KEY
-            .mockResolvedValueOnce(wrongPinData) // BIOMETRIC_STORAGE_KEY
+    test('authenticateWithBiometrics returns false when biometric data missing', async () => {
+        mockGetItem.mockResolvedValueOnce(null) // checkBiometricsEnabled returns false
         mockAuthenticate.mockResolvedValue(true)
+
+        const { result } = renderHook(() => useBiometrics())
+
+        let authenticated: boolean = true
+        await act(async () => {
+            authenticated = await result.current.authenticateWithBiometrics()
+        })
+
+        expect(authenticated).toBe(false)
+        expect(mockAuthenticate).not.toHaveBeenCalled()
+    })
+
+    test('authenticateWithBiometrics returns false when biometrics auth fails', async () => {
+        const biometricData = new TextEncoder().encode('123456')
+        mockGetItem.mockResolvedValueOnce(biometricData) // checkBiometricsEnabled
+        mockAuthenticate.mockResolvedValue(false)
 
         const { result } = renderHook(() => useBiometrics())
 

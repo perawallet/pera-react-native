@@ -383,7 +383,7 @@ describe('usePinCode', () => {
         setupMock({
             failedAttempts: 0,
             lockoutEndTime: null,
-            autoLockStartedAt: now - 15000, // 15 seconds ago (timeout is 10s)
+            autoLockStartedAt: now - 6 * 60 * 1000, // 6 minutes ago (timeout is 5 min)
         })
 
         const pinData = new TextEncoder().encode('123456')
@@ -406,7 +406,7 @@ describe('usePinCode', () => {
         setupMock({
             failedAttempts: 0,
             lockoutEndTime: null,
-            autoLockStartedAt: now - 5000, // 5 seconds ago (timeout is 10s)
+            autoLockStartedAt: now - 2 * 60 * 1000, // 2 minutes ago (timeout is 5 min)
         })
 
         const pinData = new TextEncoder().encode('123456')
