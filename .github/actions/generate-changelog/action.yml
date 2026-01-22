@@ -43,15 +43,19 @@ runs:
         format_section() {
           local title="$1"
           local content="$2"
-          if [ -n "$content" ]; then
+          
+          # Convert JIRA PERA-??? to Slack links
+          local linked_content=$(echo "$content" | sed -E 's/(PERA-[0-9]+)/<https:\/\/algorandfoundation.atlassian.net\/browse\/\1|\1>/g')
+
+          if [ -n "$linked_content" ]; then
             echo "$title"
             local count=$(echo "$content" | grep -c "^")
             if [ "$count" -gt 7 ]; then
-              echo "$content" | head -n 7 | while IFS= read -r line; do echo "• $line"; done
+              echo "$linked_content" | head -n 7 | while IFS= read -r line; do echo "• $line"; done
               local more=$((count - 7))
               echo "• ...and $more more"
             else
-              echo "$content" | while IFS= read -r line; do echo "• $line"; done
+              echo "$linked_content" | while IFS= read -r line; do echo "• $line"; done
             fi
             echo ""
           fi
