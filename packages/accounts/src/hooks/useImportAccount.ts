@@ -17,7 +17,7 @@ import { useKMS, KeyType } from '@perawallet/wallet-core-kms'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import { useCreateAccount } from './useCreateAccount'
 import { ImportAccountType } from '../models'
-import { createHDWalletFromMnemonic } from '../utils'
+import { createHDWalletKeyDataFromMnemonic } from '../utils'
 
 export const useImportAccount = () => {
     const { saveKey } = useKMS()
@@ -36,7 +36,7 @@ export const useImportAccount = () => {
 
         if (type === 'hdWallet') {
             const hdWalletKeyPair =
-                await createHDWalletFromMnemonic(mnemonic)
+                await createHDWalletKeyDataFromMnemonic(mnemonic)
             const stringifiedObj = JSON.stringify({
                 seed: hdWalletKeyPair.seed.toString('base64'),
                 entropy: hdWalletKeyPair.entropy,

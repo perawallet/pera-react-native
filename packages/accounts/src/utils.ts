@@ -88,7 +88,7 @@ export const getSeedFromMasterKey = (keyData: Uint8Array) => {
     }
 }
 
-export const createHDWalletFromMnemonic = async (
+export const createHDWalletKeyDataFromMnemonic = async (
     mnemonic: string,
 ): Promise<HDWalletKeyPair> => {
     const seed = await bip39.mnemonicToSeed(mnemonic)
