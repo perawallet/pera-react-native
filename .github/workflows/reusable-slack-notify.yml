@@ -26,6 +26,11 @@ on:
             notification_title_prefix:
                 required: true
                 type: string
+            changelog:
+                required: false
+                type: string
+                default: 'No changes detected'
+                description: 'Changelog since last build'
 
         secrets:
             SLACK_WEBHOOK_URL:
@@ -75,12 +80,28 @@ jobs:
                                   {
                                     "type": "mrkdwn",
                                     "text": "*Status:*\n${{ inputs.status }}"
-                                  },
-                                  {
-                                    "type": "mrkdwn",
-                                    "text": "*PR/Commit:*\n<${{ github.event.pull_request.html_url || github.event.head_commit.url }}|${{ github.event.pull_request.title || github.event.head_commit.message }}>"
                                   }
                                 ]
+                              },
+                              {
+                                "type": "divider"
+                              },
+                              {
+                                "type": "section",
+                                "text": {
+                                  "type": "mrkdwn",
+                                  "text": "*Changes since last build:*"
+                                }
+                              },
+                              {
+                                "type": "section",
+                                "text": {
+                                  "type": "mrkdwn",
+                                  "text": "${{ inputs.changelog }}"
+                                }
+                              },
+                              {
+                                "type": "divider"
                               },
                               {
                                 "type": "context",

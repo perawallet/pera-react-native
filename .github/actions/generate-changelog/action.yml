@@ -1,0 +1,67 @@
+name: 'Generate Changelog'
+description: 'Generates a changelog from conventional commits since the last tag'
+
+outputs:
+  changelog:
+    description: 'The generated changelog formatted for Slack'
+    value: ${{ steps.changelog.outputs.changelog }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Generate Changelog
+      id: changelog
+      shell: bash
+      run: |
+        # Get the last tag, or use initial commit if no tags exist
+        LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || git rev-list --max-parents=0 HEAD)
+        echo "Last tag/ref: $LAST_TAG"
+
+        # Generate changelog from conventional commits
+        CHANGELOG=""
+
+        # Features
+        FEATURES=$(git log ${LAST_TAG}..HEAD --pretty=format:"%s" --grep="^feat" | sed 's/^feat[:(]//' | sed 's/):/:/g' | head -10)
+        if [ -n "$FEATURES" ]; then
+          CHANGELOG="${CHANGELOG}*Features:*\n"
+          while IFS= read -r line; do
+            [ -n "$line" ] && CHANGELOG="${CHANGELOG}• ${line}\n"
+          done <<< "$FEATURES"
+          CHANGELOG="${CHANGELOG}\n"
+        fi
+
+        # Bug fixes
+        FIXES=$(git log ${LAST_TAG}..HEAD --pretty=format:"%s" --grep="^fix" | sed 's/^fix[:(]//' | sed 's/):/:/g' | head -10)
+        if [ -n "$FIXES" ]; then
+          CHANGELOG="${CHANGELOG}*Bug Fixes:*\n"
+          while IFS= read -r line; do
+            [ -n "$line" ] && CHANGELOG="${CHANGELOG}• ${line}\n"
+          done <<< "$FIXES"
+          CHANGELOG="${CHANGELOG}\n"
+        fi
+
+        # Other changes (chore, refactor, perf, test, docs, build)
+        OTHER=$(git log ${LAST_TAG}..HEAD --pretty=format:"%s" --grep="^\(chore\|refactor\|perf\|test\|docs\|build\)" | sed 's/^\(chore\|refactor\|perf\|test\|docs\|build\)[:(]//' | sed 's/):/:/g' | head -5)
+        if [ -n "$OTHER" ]; then
+          CHANGELOG="${CHANGELOG}*Other:*\n"
+          while IFS= read -r line; do
+            [ -n "$line" ] && CHANGELOG="${CHANGELOG}• ${line}\n"
+          done <<< "$OTHER"
+        fi
+
+        # If no conventional commits found, show recent commits
+        if [ -z "$CHANGELOG" ]; then
+          RECENT=$(git log ${LAST_TAG}..HEAD --pretty=format:"• %s" --no-merges | head -10)
+          if [ -n "$RECENT" ]; then
+            CHANGELOG="*Recent commits:*\n${RECENT}"
+          else
+            CHANGELOG="No changes since last tag"
+          fi
+        fi
+
+        # Escape for GitHub Actions output
+        CHANGELOG="${CHANGELOG//'%'/'%25'}"
+        CHANGELOG="${CHANGELOG//$'\n'/'%0A'}"
+        CHANGELOG="${CHANGELOG//$'\r'/'%0D'}"
+
+        echo "changelog=$CHANGELOG" >> $GITHUB_OUTPUT

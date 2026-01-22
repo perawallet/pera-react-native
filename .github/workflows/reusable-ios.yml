@@ -66,11 +66,19 @@ jobs:
     outputs:
       version: ${{ steps.set_outputs.outputs.version }}
       build_number: ${{ steps.set_outputs.outputs.build_number }}
+      changelog: ${{ steps.changelog.outputs.changelog }}
     environment: ${{ inputs.environment }}
     timeout-minutes: 120
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Generate Changelog
+        id: changelog
+        uses: ./.github/actions/generate-changelog
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -239,4 +247,5 @@ jobs:
       version: ${{ needs.build.outputs.version || 'N/A' }}
       build_number: ${{ needs.build.outputs.build_number || 'N/A' }}
       notification_title_prefix: ${{ inputs.notification_title_prefix }}
+      changelog: ${{ needs.build.outputs.changelog || 'Unable to generate changelog' }}
     secrets: inherit
