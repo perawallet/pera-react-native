@@ -294,6 +294,7 @@
             "button": "Recover an Algorand Wallet"
         },
         "import_account": {
+            "title": "Enter your Recovery Passphrase",
             "importing": "Importing wallet...",
             "button": "Import Wallet",
             "failed_title": "Import failed",

@@ -50,6 +50,7 @@ export const useStyles = makeStyles(theme => {
             width: '47%',
         },
         scrollView: {
+            paddingHorizontal: theme.spacing.xl,
             paddingBottom: theme.spacing.lg,
         },
         inputContainerRow: {

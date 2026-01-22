@@ -76,6 +76,7 @@ export const OnboardingStackNavigator = () => {
                 name='ImportInfo'
                 options={{
                     headerShown: false,
+                    title: '',
                 }}
                 layout={safeAreaLayout}
                 component={ImportInfoScreenWithErrorBoundary}
@@ -84,6 +85,7 @@ export const OnboardingStackNavigator = () => {
                 name='NameAccount'
                 options={{
                     headerShown: true,
+                    title: '',
                 }}
                 layout={safeAreaLayout}
                 component={NameAccountScreenWithErrorBoundary}
@@ -92,6 +94,7 @@ export const OnboardingStackNavigator = () => {
                 name='ImportAccount'
                 options={{
                     headerShown: true,
+                    title: '',
                 }}
                 layout={safeAreaLayout}
                 component={ImportAccountScreenWithErrorBoundary}

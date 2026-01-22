@@ -46,6 +46,9 @@ export const ImportAccountScreen = () => {
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             >
                 <ScrollView contentContainerStyle={styles.scrollView}>
+                    <PWText variant='h1'>
+                        {t('onboarding.import_account.title')}
+                    </PWText>
                     <PWView style={styles.wordContainer}>
                         {[0, 1].map(column => {
                             const columnOffset = wordsPerColumn * column
