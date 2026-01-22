@@ -168,6 +168,8 @@ describe('OnboardingScreen', () => {
         )
         fireEvent.click(universalWalletOption)
 
-        expect(mockPush).toHaveBeenCalledWith('ImportInfo')
+        expect(mockPush).toHaveBeenCalledWith('ImportInfo', {
+            accountType: 'universal',
+        })
     })
 })

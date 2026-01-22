@@ -10,78 +10,34 @@
  limitations under the License
  */
 
-import { ParamListBase, useNavigation } from '@react-navigation/native'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useStyles } from './styles'
 import { useTheme } from '@rneui/themed'
 import { PWButton, PWInput, PWOverlay, PWText, PWView } from '@components/core'
 
-import { useImportAccount } from '@perawallet/wallet-core-accounts'
-import { useState } from 'react'
 import {
     ActivityIndicator,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
 } from 'react-native'
-import { useToast } from '@hooks/useToast'
-import { useLanguage } from '@hooks/useLanguage'
-
-const NUM_WORDS = 24 //TODO: we'll add legacy 25 word accounts later
+import { useImportAccountScreen } from './useImportAccountScreen'
 
 export const ImportAccountScreen = () => {
     const { theme } = useTheme()
-    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const styles = useStyles()
-    const importAccount = useImportAccount()
-    const { showToast } = useToast()
+    const {
+        words,
+        focused,
+        setFocused,
+        canImport,
+        processing,
+        updateWord,
+        handleImportAccount,
+        mnemonicLength,
+        t,
+    } = useImportAccountScreen()
 
-    const [words, setWords] = useState<string[]>(new Array(NUM_WORDS).fill(''))
-    const [focused, setFocused] = useState(0)
-    const [canImport, setCanImport] = useState(false)
-    const [processing, setProcessing] = useState(false)
-    const { t } = useLanguage()
-
-    const updateWord = (word: string, index: number) => {
-        const splitWords = word.split('\n')
-
-        if (splitWords.length === NUM_WORDS) {
-            setWords(splitWords)
-        } else {
-            setWords(prev => {
-                prev[index] = word.trim()
-                return [...prev]
-            })
-        }
-
-        if (words.every(w => w.length)) {
-            setCanImport(true)
-        }
-    }
-
-    const handleImportAccount = () => {
-        setProcessing(true)
-        setTimeout(async () => {
-            try {
-                await importAccount({ mnemonic: words.join(' ') })
-                goToHome()
-            } catch {
-                showToast({
-                    title: t('onboarding.import_account.failed_title'),
-                    body: t('onboarding.import_account.failed_body'),
-                    type: 'error',
-                })
-            } finally {
-                setProcessing(false)
-            }
-        }, 0)
-    }
-
-    const goToHome = () => {
-        navigation.replace('TabBar', {
-            screen: 'Home',
-        })
-    }
+    const wordsPerColumn = Math.ceil(mnemonicLength / 2)
 
     return (
         <>
@@ -92,14 +48,17 @@ export const ImportAccountScreen = () => {
                 <ScrollView contentContainerStyle={styles.scrollView}>
                     <PWView style={styles.wordContainer}>
                         {[0, 1].map(column => {
-                            const columnOffset = 12 * column
+                            const columnOffset = wordsPerColumn * column
                             return (
                                 <PWView
                                     style={styles.column}
                                     key={`column-${columnOffset}`}
                                 >
                                     {words
-                                        .slice(columnOffset, columnOffset + 12)
+                                        .slice(
+                                            columnOffset,
+                                            columnOffset + wordsPerColumn,
+                                        )
                                         .map((word, index) => {
                                             const offsetIndex =
                                                 index + columnOffset

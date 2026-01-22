@@ -12,6 +12,8 @@
 
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 
+export type ImportAccountType = 'universal' | 'algo25'
+
 export type OnboardingStackParamList = {
     OnboardingHome: undefined
     NameAccount:
@@ -19,6 +21,10 @@ export type OnboardingStackParamList = {
               account?: WalletAccount
           }
         | undefined
-    ImportInfo: undefined
-    ImportAccount: undefined
+    ImportInfo: {
+        accountType: ImportAccountType
+    }
+    ImportAccount: {
+        accountType: ImportAccountType
+    }
 }

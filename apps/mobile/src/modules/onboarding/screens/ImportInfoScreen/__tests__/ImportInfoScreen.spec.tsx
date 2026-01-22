@@ -81,6 +81,17 @@ vi.mock('@components/core', async () => {
     }
 })
 
+// Mock react-navigation
+vi.mock('@react-navigation/native', async () => {
+    const actual = await vi.importActual<object>('@react-navigation/native')
+    return {
+        ...actual,
+        useRoute: () => ({
+            params: { accountType: 'universal' },
+        }),
+    }
+})
+
 describe('ImportInfoScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -109,7 +120,9 @@ describe('ImportInfoScreen', () => {
         const recoverButton = screen.getByText('onboarding.import_info.button')
         fireEvent.click(recoverButton)
 
-        expect(mockPush).toHaveBeenCalledWith('ImportAccount')
+        expect(mockPush).toHaveBeenCalledWith('ImportAccount', {
+            accountType: 'universal',
+        })
     })
 
     it('handles info button press', () => {

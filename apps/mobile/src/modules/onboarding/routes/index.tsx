@@ -84,7 +84,6 @@ export const OnboardingStackNavigator = () => {
                 name='NameAccount'
                 options={{
                     headerShown: true,
-                    headerTitle: '',
                 }}
                 layout={safeAreaLayout}
                 component={NameAccountScreenWithErrorBoundary}
@@ -93,7 +92,6 @@ export const OnboardingStackNavigator = () => {
                 name='ImportAccount'
                 options={{
                     headerShown: true,
-                    headerTitle: 'Enter your Recovery Passphrase',
                 }}
                 layout={safeAreaLayout}
                 component={ImportAccountScreenWithErrorBoundary}

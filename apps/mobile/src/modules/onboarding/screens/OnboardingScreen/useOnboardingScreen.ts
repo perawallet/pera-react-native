@@ -45,12 +45,12 @@ export const useOnboardingScreen = () => {
 
     const handleUniversalWalletPress = useCallback(() => {
         closeImportOptions()
-        navigation.push('ImportInfo')
+        navigation.push('ImportInfo', { accountType: 'universal' })
     }, [closeImportOptions, navigation])
 
     const handleAlgo25Press = useCallback(() => {
         closeImportOptions()
-        navigation.push('ImportInfo')
+        navigation.push('ImportInfo', { accountType: 'algo25' })
     }, [closeImportOptions, navigation])
 
     return {
