@@ -1,0 +1,42 @@
+name: 'Generate Changelog'
+description: 'Generates a changelog from conventional commits since the last successful build'
+
+inputs:
+  workflow:
+    description: 'The workflow file name to check for last successful run (e.g., qa.yml)'
+    required: true
+
+outputs:
+  changelog:
+    description: 'The generated changelog formatted for Slack'
+    value: ${{ steps.changelog.outputs.changelog }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Get last successful run
+      id: last_run
+      uses: ./.github/actions/get-last-successful-run
+      with:
+        workflow: ${{ inputs.workflow }}
+
+    - name: Generate Changelog
+      id: changelog
+      shell: bash
+      run: |
+        LAST_SHA="${{ steps.last_run.outputs.sha }}"
+
+        if [ -n "$LAST_SHA" ] && git cat-file -t "$LAST_SHA" >/dev/null 2>&1; then
+          echo "Found last successful build at commit: $LAST_SHA"
+          LAST_REF="$LAST_SHA"
+        else
+          echo "No previous successful build found, using initial commit"
+          LAST_REF=$(git rev-list --max-parents=0 HEAD)
+        fi
+
+        EOF=$(dd if=/dev/urandom bs=15 count=1 2>/dev/null | base64)
+        {
+          echo "changelog<<$EOF"
+          ./tools/generate_changelog.sh "$LAST_REF"
+          echo "$EOF"
+        } >> "$GITHUB_OUTPUT"

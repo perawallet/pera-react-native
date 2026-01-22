@@ -137,7 +137,6 @@
     "eslint-plugin-testing-library": "^7.13.3",
     "eslint-plugin-unused-imports": "catalog:",
     "globals": "catalog:",
-    "hermes-compiler": "^250829098.0.2",
     "jsdom": "^27.4.0",
     "prettier": "catalog:",
     "react-native-svg-transformer": "^1.5.2",

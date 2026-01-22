@@ -1,12 +1,11 @@
 name: Release Build
 
 on:
-# TODO: Re-enable when we're ready to start releasing
-#   push:
-#     branches:
-#       - 'release/**'
-#     tags:
-#       - 'v*'
+  push:
+    branches:
+      - 'release/**'
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 jobs:
@@ -55,6 +54,7 @@ jobs:
       scheme: Pera-Production
       notification_title_prefix: "Release Candidate"
       use_cache: false
+      parent_workflow: release.yml
     secrets: inherit
 
   android-production:
@@ -66,4 +66,6 @@ jobs:
       flavor: production
       notification_title_prefix: "Release Candidate"
       use_cache: false
+      parent_workflow: release.yml
+      distribution: playstore
     secrets: inherit

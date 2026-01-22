@@ -23,6 +23,7 @@ if linkage != nil
 end
 
 target 'pera' do
+  $VCEnableLocation = false
   config = use_native_modules!
   
   $RNFirebaseAsStaticFramework = true

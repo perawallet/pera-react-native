@@ -16,6 +16,10 @@ on:
         required: false
         type: boolean
         default: false
+      parent_workflow:
+        required: true
+        type: string
+        description: 'The parent workflow file name (e.g., qa.yml or release.yml) for changelog generation'
     secrets:
       # We use 'secrets: inherit' in the caller, but we can list required ones here for documentation or specific passing
       MAINNET_BACKEND_URL:
@@ -62,15 +66,25 @@ on:
 jobs:
   build:
     name: Build & Deploy
-    runs-on: macos-15
+    runs-on: macos-26
     outputs:
       version: ${{ steps.set_outputs.outputs.version }}
       build_number: ${{ steps.set_outputs.outputs.build_number }}
+      changelog: ${{ steps.changelog.outputs.changelog }}
     environment: ${{ inputs.environment }}
     timeout-minutes: 120
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Generate Changelog
+        id: changelog
+        uses: ./.github/actions/generate-changelog
+        with:
+          workflow: ${{ inputs.parent_workflow }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -81,8 +95,17 @@ jobs:
           node-version-file: '.tool-versions'
           cache: 'pnpm'
 
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            packages/*/node_modules
+          key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Config Generate
         env:
@@ -106,13 +129,12 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
+          ruby-version: '3.2'
           bundler-cache: true
-
-      - name: Install Bundler
-        working-directory: apps/mobile
-        run: bundle install
+          working-directory: apps/mobile
 
       - name: Cache CocoaPods
+        id: pods-cache
         uses: actions/cache@v4
         with:
           path: apps/mobile/ios/Pods
@@ -131,8 +153,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/Library/Developer/Xcode/DerivedData
-          key: ios-derived-data-${{ runner.os }}-${{ hashFiles('apps/mobile/ios/Podfile.lock') }}
+          key: ios-derived-data-${{ runner.os }}-${{ inputs.scheme }}-${{ hashFiles('apps/mobile/ios/Podfile.lock', 'pnpm-lock.yaml') }}
           restore-keys: |
+            ios-derived-data-${{ runner.os }}-${{ inputs.scheme }}-
             ios-derived-data-${{ runner.os }}-
 
       - name: Setup MacOS Keychain & Signing
@@ -213,4 +236,5 @@ jobs:
       version: ${{ needs.build.outputs.version || 'N/A' }}
       build_number: ${{ needs.build.outputs.build_number || 'N/A' }}
       notification_title_prefix: ${{ inputs.notification_title_prefix }}
+      changelog: ${{ needs.build.outputs.changelog || 'Unable to generate changelog' }}
     secrets: inherit

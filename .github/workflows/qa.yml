@@ -12,51 +12,27 @@ jobs:
     name: Check for changes
     runs-on: ubuntu-latest
     outputs:
-      has_changes: ${{ steps.check.outputs.has_changes }}
+      has_changes: ${{ steps.manual.outputs.has_changes || steps.scheduled.outputs.has_changes }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Check for changes since last successful build
-        id: check
-        env:
-          GH_TOKEN: ${{ github.token }}
+      # For manual triggers, always run
+      - name: Manual trigger check
+        id: manual
+        if: github.event_name == 'workflow_dispatch'
         run: |
-          # For manual triggers, always run
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "Manual trigger - will build"
-            echo "has_changes=true" >> $GITHUB_OUTPUT
-            exit 0
-          fi
+          echo "Manual trigger - will build"
+          echo "has_changes=true" >> $GITHUB_OUTPUT
 
-          # Get the SHA of the last successful scheduled run
-          LAST_SUCCESS_SHA=$(gh run list \
-            --workflow="qa.yml" \
-            --status=success \
-            --event=schedule \
-            --json headSha \
-            --jq '.[0].headSha // empty' \
-            2>/dev/null || echo "")
-
-          CURRENT_SHA="${{ github.sha }}"
-
-          echo "Last successful build SHA: ${LAST_SUCCESS_SHA:-none}"
-          echo "Current SHA: $CURRENT_SHA"
-
-          if [ -z "$LAST_SUCCESS_SHA" ]; then
-            echo "No previous successful build found - will build"
-            echo "has_changes=true" >> $GITHUB_OUTPUT
-          elif [ "$LAST_SUCCESS_SHA" = "$CURRENT_SHA" ]; then
-            echo "No changes since last successful build - skipping"
-            echo "has_changes=false" >> $GITHUB_OUTPUT
-          else
-            # Count commits between last success and now
-            COMMIT_COUNT=$(git rev-list --count ${LAST_SUCCESS_SHA}..${CURRENT_SHA} 2>/dev/null || echo "unknown")
-            echo "Found $COMMIT_COUNT new commit(s) since last successful build - will build"
-            echo "has_changes=true" >> $GITHUB_OUTPUT
-          fi
+      # For scheduled triggers, check if there are changes since last scheduled run
+      - name: Check for changes since last scheduled build
+        id: scheduled
+        if: github.event_name == 'schedule'
+        uses: ./.github/actions/get-last-successful-run
+        with:
+          workflow: qa.yml
+          event: schedule
 
   ios-staging:
     name: iOS Staging (QA)
@@ -68,6 +44,7 @@ jobs:
       scheme: Pera-Staging
       notification_title_prefix: "QA Build (Nightly)"
       use_cache: true
+      parent_workflow: qa.yml
     secrets: inherit
 
   # ios-production:
@@ -80,6 +57,7 @@ jobs:
   #     scheme: Pera-Production
   #     notification_title_prefix: "QA Build (Nightly)"
   #     use_cache: true
+  #     parent_workflow: qa.yml
   #   secrets: inherit
 
   android-staging:
@@ -92,6 +70,8 @@ jobs:
       flavor: staging
       notification_title_prefix: "QA Build (Nightly)"
       use_cache: true
+      parent_workflow: qa.yml
+      distribution: firebase
     secrets: inherit
 
   # android-production:
@@ -104,4 +84,5 @@ jobs:
   #     flavor: production
   #     notification_title_prefix: "QA Build (Nightly)"
   #     use_cache: true
+  #     parent_workflow: qa.yml
   #   secrets: inherit

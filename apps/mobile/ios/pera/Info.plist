@@ -2,8 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>NSFaceIDUsageDescription</key>
-	<string>${PRODUCT_NAME} uses Face ID to secure access to your wallet.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.finance</string>
 	<key>CFBundleIconName</key>
@@ -55,6 +55,14 @@
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>$(PRODUCT_NAME) needs access to your Camera.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Pera will use Bluetooth to communicate with Ledger X.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>Pera will use Bluetooth to communicate with Ledger X.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>${PRODUCT_NAME} uses Face ID to secure access to your wallet.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Pera will save QR codes to your photo library.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>UIAppFonts</key>
