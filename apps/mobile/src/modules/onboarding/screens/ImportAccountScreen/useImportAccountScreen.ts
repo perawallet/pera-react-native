@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
+import { Keyboard, Platform } from 'react-native'
 import { RouteProp, useRoute } from '@react-navigation/native'
 import { OnboardingStackParamList } from '../../routes/types'
 import {
@@ -36,6 +37,7 @@ export type UseImportAccountScreenResult = {
     handleImportAccount: () => void
     mnemonicLength: number
     t: (key: string) => string
+    isKeyboardVisible: boolean
 }
 
 export function useImportAccountScreen(): UseImportAccountScreenResult {
@@ -46,6 +48,27 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     const importAccount = useImportAccount()
     const { showToast } = useToast()
     const { t } = useLanguage()
+
+    const [isKeyboardVisible, setIsKeyboardVisible] = useState(false)
+
+    useEffect(() => {
+        const showEvent =
+            Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow'
+        const hideEvent =
+            Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide'
+
+        const showSubscription = Keyboard.addListener(showEvent, () =>
+            setIsKeyboardVisible(true),
+        )
+        const hideSubscription = Keyboard.addListener(hideEvent, () =>
+            setIsKeyboardVisible(false),
+        )
+
+        return () => {
+            showSubscription.remove()
+            hideSubscription.remove()
+        }
+    }, [])
 
     const mnemonicLength = MNEMONIC_LENGTH_MAP[accountType]
 
@@ -111,5 +134,6 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         handleImportAccount,
         mnemonicLength,
         t,
+        isKeyboardVisible,
     }
 }

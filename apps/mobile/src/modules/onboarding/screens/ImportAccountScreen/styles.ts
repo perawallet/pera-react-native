@@ -11,89 +11,108 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { EdgeInsets } from 'react-native-safe-area-context'
 
-export const useStyles = makeStyles(theme => {
-    return {
-        mainContainer: {
-            flex: 1,
-        },
-        helperText: {
-            color: theme.colors.textGray,
-            paddingBottom: theme.spacing['3xl'],
-        },
-        walletNameContainer: {
-            backgroundColor: theme.colors.layerGrayLighter,
-            borderRadius: theme.spacing.sm,
-            paddingVertical: theme.spacing.md,
-            flexDirection: 'row',
-            flexWrap: 'nowrap',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: theme.spacing.sm,
-        },
-        nameText: {
-            color: theme.colors.textGray,
-            alignSelf: 'center',
-        },
-        finishButton: {
-            marginHorizontal: theme.spacing.xl,
-        },
-        spacer: {
-            flexGrow: 1,
-        },
-        wordContainer: {
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            marginBottom: theme.spacing.lg,
-        },
-        column: {
-            width: '47%',
-        },
-        scrollView: {
-            paddingHorizontal: theme.spacing.xl,
-            paddingBottom: theme.spacing.lg,
-        },
-        inputContainerRow: {
-            marginTop: theme.spacing.sm,
-            flexDirection: 'row',
-            gap: theme.spacing.sm,
-            alignItems: 'center',
-        },
-        label: {
-            color: theme.colors.textGray,
-        },
-        focusedLabel: {
-            color: theme.colors.textMain,
-        },
-        inputOuterContainer: {
-            flexShrink: 1,
-        },
-        inputContainer: {
-            backgroundColor: theme.colors.background,
-            borderBottomWidth: 1,
-            borderBottomColor: theme.colors.layerGray,
-            flexShrink: 1,
-        },
-        focusedInputContainer: {
-            backgroundColor: theme.colors.background,
-            borderBottomWidth: 1,
-            borderBottomColor: theme.colors.textMain,
-            flexShrink: 1,
-        },
-        input: {
-            flexShrink: 1,
-            backgroundColor: 'transparent',
-        },
-        overlayBackdrop: {
-            backgroundColor: 'rgba(52, 52, 52, 0.8)',
-        },
-        overlay: {
-            padding: theme.spacing.xl,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: theme.colors.layerGray,
-            borderRadius: theme.spacing.lg,
-            gap: theme.spacing.lg,
-        },
-    }
-})
+type StyleProps = {
+    insets: EdgeInsets
+    isKeyboardVisible: boolean
+}
+
+export const useStyles = makeStyles(
+    (theme, { insets, isKeyboardVisible }: StyleProps) => {
+        return {
+            mainContainer: {
+                flex: 1,
+                backgroundColor: theme.colors.background,
+            },
+            helperText: {
+                color: theme.colors.textGray,
+                paddingBottom: theme.spacing['3xl'],
+            },
+            walletNameContainer: {
+                backgroundColor: theme.colors.layerGrayLighter,
+                borderRadius: theme.spacing.sm,
+                paddingVertical: theme.spacing.md,
+                flexDirection: 'row',
+                flexWrap: 'nowrap',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: theme.spacing.sm,
+            },
+            nameText: {
+                color: theme.colors.textGray,
+                alignSelf: 'center',
+            },
+            finishButton: {
+                marginHorizontal: 0, // Footers padding handles this
+            },
+            spacer: {
+                flexGrow: 1,
+            },
+            wordContainer: {
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                marginBottom: theme.spacing.lg,
+            },
+            column: {
+                width: '47%',
+            },
+            scrollView: {
+                paddingHorizontal: theme.spacing.xl,
+            },
+            footer: {
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                paddingHorizontal: theme.spacing.xl,
+                paddingBottom: isKeyboardVisible
+                    ? theme.spacing.lg
+                    : Math.max(insets.bottom, theme.spacing.lg),
+                backgroundColor: 'transparent',
+            },
+            inputContainerRow: {
+                marginTop: theme.spacing.sm,
+                flexDirection: 'row',
+                gap: theme.spacing.sm,
+                alignItems: 'center',
+            },
+            label: {
+                color: theme.colors.textGray,
+            },
+            focusedLabel: {
+                color: theme.colors.textMain,
+            },
+            inputOuterContainer: {
+                flexShrink: 1,
+            },
+            inputContainer: {
+                backgroundColor: theme.colors.background,
+                borderBottomWidth: 1,
+                borderBottomColor: theme.colors.layerGray,
+                flexShrink: 1,
+            },
+            focusedInputContainer: {
+                backgroundColor: theme.colors.background,
+                borderBottomWidth: 1,
+                borderBottomColor: theme.colors.textMain,
+                flexShrink: 1,
+            },
+            input: {
+                flexShrink: 1,
+                backgroundColor: 'transparent',
+            },
+            overlayBackdrop: {
+                backgroundColor: 'rgba(52, 52, 52, 0.8)',
+            },
+            overlay: {
+                padding: theme.spacing.xl,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: theme.colors.layerGray,
+                borderRadius: theme.spacing.lg,
+                gap: theme.spacing.lg,
+            },
+        }
+    },
+)

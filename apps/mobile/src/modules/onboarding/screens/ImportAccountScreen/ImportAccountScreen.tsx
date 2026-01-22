@@ -12,7 +12,16 @@
 
 import { useStyles } from './styles'
 import { useTheme } from '@rneui/themed'
-import { PWButton, PWInput, PWOverlay, PWText, PWView } from '@components/core'
+import {
+    PWButton,
+    PWIcon,
+    PWInput,
+    PWOverlay,
+    PWText,
+    PWToolbar,
+    PWView,
+} from '@components/core'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import {
     ActivityIndicator,
@@ -21,10 +30,12 @@ import {
     ScrollView,
 } from 'react-native'
 import { useImportAccountScreen } from './useImportAccountScreen'
+import { useAppNavigation } from '@hooks/useAppNavigation'
 
 export const ImportAccountScreen = () => {
     const { theme } = useTheme()
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const navigation = useAppNavigation()
     const {
         words,
         focused,
@@ -35,16 +46,28 @@ export const ImportAccountScreen = () => {
         handleImportAccount,
         mnemonicLength,
         t,
+        isKeyboardVisible,
     } = useImportAccountScreen()
+    const styles = useStyles({ insets, isKeyboardVisible })
 
     const wordsPerColumn = Math.ceil(mnemonicLength / 2)
 
     return (
-        <>
+        <PWView style={styles.mainContainer}>
             <KeyboardAvoidingView
                 style={styles.mainContainer}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
             >
+                <PWToolbar
+                    left={
+                        <PWIcon
+                            name='chevron-left'
+                            onPress={navigation.goBack}
+                        />
+                    }
+                />
+
                 <ScrollView contentContainerStyle={styles.scrollView}>
                     <PWText variant='h1'>
                         {t('onboarding.import_account.title')}
@@ -130,15 +153,18 @@ export const ImportAccountScreen = () => {
                             )
                         })}
                     </PWView>
+                </ScrollView>
+
+                <PWView style={styles.footer}>
                     <PWButton
-                        style={styles.finishButton}
                         variant='primary'
                         title={t('onboarding.import_account.button')}
                         onPress={handleImportAccount}
                         isDisabled={!canImport}
                     />
-                </ScrollView>
+                </PWView>
             </KeyboardAvoidingView>
+
             <PWOverlay
                 isVisible={processing}
                 overlayStyle={styles.overlay}
@@ -150,6 +176,6 @@ export const ImportAccountScreen = () => {
                     color={theme.colors.linkPrimary}
                 />
             </PWOverlay>
-        </>
+        </PWView>
     )
 }
