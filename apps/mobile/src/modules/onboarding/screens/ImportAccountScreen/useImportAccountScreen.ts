@@ -38,6 +38,7 @@ export type UseImportAccountScreenResult = {
     mnemonicLength: number
     t: (key: string) => string
     isKeyboardVisible: boolean
+    keyboardHeight: number
 }
 
 export function useImportAccountScreen(): UseImportAccountScreenResult {
@@ -50,6 +51,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     const { t } = useLanguage()
 
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false)
+    const [keyboardHeight, setKeyboardHeight] = useState(0)
 
     useEffect(() => {
         const showEvent =
@@ -57,12 +59,14 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         const hideEvent =
             Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide'
 
-        const showSubscription = Keyboard.addListener(showEvent, () =>
-            setIsKeyboardVisible(true),
-        )
-        const hideSubscription = Keyboard.addListener(hideEvent, () =>
-            setIsKeyboardVisible(false),
-        )
+        const showSubscription = Keyboard.addListener(showEvent, e => {
+            setIsKeyboardVisible(true)
+            setKeyboardHeight(e.endCoordinates.height)
+        })
+        const hideSubscription = Keyboard.addListener(hideEvent, () => {
+            setIsKeyboardVisible(false)
+            setKeyboardHeight(0)
+        })
 
         return () => {
             showSubscription.remove()
@@ -135,5 +139,6 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         mnemonicLength,
         t,
         isKeyboardVisible,
+        keyboardHeight,
     }
 }

@@ -26,7 +26,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
     ActivityIndicator,
     KeyboardAvoidingView,
-    Platform,
     ScrollView,
 } from 'react-native'
 import { useImportAccountScreen } from './useImportAccountScreen'
@@ -47,8 +46,9 @@ export const ImportAccountScreen = () => {
         mnemonicLength,
         t,
         isKeyboardVisible,
+        keyboardHeight,
     } = useImportAccountScreen()
-    const styles = useStyles({ insets, isKeyboardVisible })
+    const styles = useStyles({ insets, isKeyboardVisible, keyboardHeight })
 
     const wordsPerColumn = Math.ceil(mnemonicLength / 2)
 
@@ -56,8 +56,6 @@ export const ImportAccountScreen = () => {
         <PWView style={styles.mainContainer}>
             <KeyboardAvoidingView
                 style={styles.mainContainer}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
             >
                 <PWToolbar
                     left={
@@ -68,7 +66,10 @@ export const ImportAccountScreen = () => {
                     }
                 />
 
-                <ScrollView contentContainerStyle={styles.scrollView}>
+                <ScrollView
+                    style={styles.scrollContainer}
+                    contentContainerStyle={styles.scrollView}
+                >
                     <PWText variant='h1'>
                         {t('onboarding.import_account.title')}
                     </PWText>

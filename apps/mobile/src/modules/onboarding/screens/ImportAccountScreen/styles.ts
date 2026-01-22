@@ -16,10 +16,11 @@ import { EdgeInsets } from 'react-native-safe-area-context'
 type StyleProps = {
     insets: EdgeInsets
     isKeyboardVisible: boolean
+    keyboardHeight: number
 }
 
 export const useStyles = makeStyles(
-    (theme, { insets, isKeyboardVisible }: StyleProps) => {
+    (theme, { insets, isKeyboardVisible, keyboardHeight }: StyleProps) => {
         return {
             mainContainer: {
                 flex: 1,
@@ -57,19 +58,19 @@ export const useStyles = makeStyles(
             column: {
                 width: '47%',
             },
+            scrollContainer: {
+                flex: 1,
+            },
             scrollView: {
                 paddingHorizontal: theme.spacing.xl,
             },
             footer: {
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
+                backgroundColor: theme.colors.background,
                 paddingHorizontal: theme.spacing.xl,
+                paddingTop: theme.spacing.md,
                 paddingBottom: isKeyboardVisible
-                    ? theme.spacing.lg
-                    : Math.max(insets.bottom, theme.spacing.lg),
-                backgroundColor: 'transparent',
+                    ? keyboardHeight + theme.spacing.lg - insets.bottom
+                    : theme.spacing.lg,
             },
             inputContainerRow: {
                 marginTop: theme.spacing.sm,
