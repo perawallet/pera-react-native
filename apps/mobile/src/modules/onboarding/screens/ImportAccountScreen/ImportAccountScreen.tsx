@@ -54,9 +54,7 @@ export const ImportAccountScreen = () => {
 
     return (
         <PWView style={styles.mainContainer}>
-            <KeyboardAvoidingView
-                style={styles.mainContainer}
-            >
+            <KeyboardAvoidingView style={styles.mainContainer}>
                 <PWToolbar
                     left={
                         <PWIcon
