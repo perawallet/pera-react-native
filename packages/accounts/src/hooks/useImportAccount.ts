@@ -10,13 +10,12 @@
  limitations under the License
  */
 
-import { useHDWallet } from './useHDWallet'
 import { v7 as uuidv7 } from 'uuid'
-import { KeyType, useKMS } from '@perawallet/wallet-core-kms'
+import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCreateAccount } from './useCreateAccount'
+import { createUniversalWalletFromMnemonic } from '../utils'
 
 export const useImportAccount = () => {
-    const { generateMasterKey } = useHDWallet()
     const { saveKey } = useKMS()
     const createAccount = useCreateAccount()
 
@@ -28,17 +27,18 @@ export const useImportAccount = () => {
         mnemonic: string
     }) => {
         const rootWalletId = walletId ?? uuidv7()
-        const masterKey = await generateMasterKey(mnemonic)
+        const universalKeyPair =
+            await createUniversalWalletFromMnemonic(mnemonic)
         const stringifiedObj = JSON.stringify({
-            seed: masterKey.seed.toString('base64'),
-            entropy: masterKey.entropy,
+            seed: universalKeyPair.seed.toString('base64'),
+            entropy: universalKeyPair.entropy,
         })
         const rootKeyPair = {
             id: rootWalletId,
             publicKey: '',
             privateDataStorageKey: rootWalletId,
             createdAt: new Date(),
-            type: KeyType.HDWalletRootKey,
+            type: universalKeyPair.type,
         }
         await saveKey(rootKeyPair, Buffer.from(stringifiedObj))
 

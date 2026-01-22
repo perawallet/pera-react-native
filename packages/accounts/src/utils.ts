@@ -20,6 +20,14 @@ import {
     WatchAccount,
     type WalletAccount,
 } from './models'
+import { KeyType } from '@perawallet/wallet-core-kms'
+import * as bip39 from 'bip39'
+
+export type UniversalKeyPair = {
+    seed: Buffer
+    entropy: string
+    type: typeof KeyType.HDWalletRootKey
+}
 
 export const getAccountDisplayName = (account: WalletAccount | null) => {
     if (!account) return 'No Account'
@@ -77,5 +85,18 @@ export const getSeedFromMasterKey = (keyData: Uint8Array) => {
     } catch {
         // Fall back to treating it as raw seed data (old format or tests)
         return Buffer.from(keyData)
+    }
+}
+
+export const createUniversalWalletFromMnemonic = async (
+    mnemonic: string,
+): Promise<UniversalKeyPair> => {
+    const seed = await bip39.mnemonicToSeed(mnemonic)
+    const entropy = await bip39.mnemonicToEntropy(mnemonic)
+
+    return {
+        seed,
+        entropy,
+        type: KeyType.HDWalletRootKey,
     }
 }
