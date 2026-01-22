@@ -11,13 +11,13 @@
  */
 
 import { v7 as uuidv7 } from 'uuid'
-import { seedFromMnemonic } from '@algorandfoundation/algokit-utils/algo25'
-import nacl from 'tweetnacl'
-import { useKMS, KeyType } from '@perawallet/wallet-core-kms'
-import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCreateAccount } from './useCreateAccount'
 import { ImportAccountType } from '../models'
-import { createHDWalletKeyDataFromMnemonic } from '../utils'
+import {
+    createHDWalletKeyDataFromMnemonic,
+    createAlgo25WalletKeyDataFromMnemonic,
+} from '../utils'
 
 export const useImportAccount = () => {
     const { saveKey } = useKMS()
@@ -52,16 +52,20 @@ export const useImportAccount = () => {
         }
 
         if (type === 'algo25') {
-            const seed = seedFromMnemonic(mnemonic)
-            const keyPair = nacl.sign.keyPair.fromSeed(seed)
+            const algo25KeyPair =
+                await createAlgo25WalletKeyDataFromMnemonic(mnemonic)
+            const stringifiedObj = JSON.stringify({
+                seed: algo25KeyPair.seed.toString('base64'),
+                entropy: algo25KeyPair.entropy,
+            })
             const rootKeyPair = {
                 id: rootWalletId,
-                publicKey: encodeAlgorandAddress(keyPair.publicKey),
+                publicKey: algo25KeyPair.publicKey!,
                 privateDataStorageKey: rootWalletId,
                 createdAt: new Date(),
-                type: KeyType.Algo25Key,
+                type: algo25KeyPair.type,
             }
-            await saveKey(rootKeyPair, seed)
+            await saveKey(rootKeyPair, Buffer.from(stringifiedObj))
         }
 
         //TODO: we currently just create the 0/0 account but we really should scan the blockchain
