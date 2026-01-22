@@ -34,4 +34,9 @@ runs:
           LAST_REF=$(git rev-list --max-parents=0 HEAD)
         fi
 
-        ./tools/generate_changelog.sh "$LAST_REF" >> "$GITHUB_OUTPUT"
+        EOF=$(dd if=/dev/urandom bs=15 count=1 2>/dev/null | base64)
+        {
+          echo "changelog<<$EOF"
+          ./tools/generate_changelog.sh "$LAST_REF"
+          echo "$EOF"
+        } >> "$GITHUB_OUTPUT"

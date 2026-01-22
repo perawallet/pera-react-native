@@ -1,21 +1,21 @@
 #!/bin/bash
 
 if [ -z "$1" ]; then
-  echo "Usage: $0 <last_sha>"
+  echo "Usage: $0 <last_sha>" >&2
   exit 1
 fi
 
 LAST_SHA=$1
 
 if [ -n "$LAST_SHA" ] && git cat-file -t "$LAST_SHA" >/dev/null 2>&1; then
-  echo "Found last successful build at commit: $LAST_SHA"
+  echo "Found last successful build at commit: $LAST_SHA" >&2
   LAST_REF="$LAST_SHA"
 else
-  echo "No previous successful build found, using initial commit"
+  echo "No previous successful build found, using initial commit" >&2
   LAST_REF=$(git rev-list --max-parents=0 HEAD)
 fi
 
-echo "Generating changelog from $LAST_REF to HEAD"
+echo "Generating changelog from $LAST_REF to HEAD" >&2
 
 # Generate changelog from conventional commits
 CHANGELOG=""
