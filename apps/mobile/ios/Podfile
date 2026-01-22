@@ -23,6 +23,7 @@ if linkage != nil
 end
 
 target 'pera' do
+  $VCEnableLocation = false
   config = use_native_modules!
   
   $RNFirebaseAsStaticFramework = true
@@ -51,7 +52,7 @@ target 'pera' do
       installer,
       config[:reactNativePath],
       :mac_catalyst_enabled => false,
-      :ccache_enabled => true
+      # :ccache_enabled => true
     )
 
     # Fix for custom build configurations (Dev, Staging, Production)

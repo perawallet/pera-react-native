@@ -143,7 +143,6 @@ jobs:
             ios-pods-${{ runner.os }}-
 
       - name: Install CocoaPods
-        if: steps.pods-cache.outputs.cache-hit != 'true'
         run: |
           cd apps/mobile/ios
           bundle exec pod install
