@@ -66,7 +66,7 @@ on:
 jobs:
   build:
     name: Build & Deploy
-    runs-on: macos-15
+    runs-on: macos-26
     outputs:
       version: ${{ steps.set_outputs.outputs.version }}
       build_number: ${{ steps.set_outputs.outputs.build_number }}
