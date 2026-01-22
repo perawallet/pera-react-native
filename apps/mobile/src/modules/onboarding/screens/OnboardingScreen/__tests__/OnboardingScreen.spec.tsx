@@ -164,7 +164,7 @@ describe('OnboardingScreen', () => {
 
         // Click one of the options
         const universalWalletOption = screen.getByText(
-            'onboarding.import_options.universal_wallet.title',
+            'onboarding.import_options.hd_wallet.title',
         )
         fireEvent.click(universalWalletOption)
 

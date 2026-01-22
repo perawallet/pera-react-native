@@ -35,7 +35,7 @@ describe('ImportOptionsBottomSheet', () => {
         expect(screen.getByText('onboarding.import_options.title')).toBeTruthy()
         expect(
             screen.getByText(
-                'onboarding.import_options.universal_wallet.title',
+                'onboarding.import_options.hd_wallet.title',
             ),
         ).toBeTruthy()
         expect(
@@ -43,7 +43,7 @@ describe('ImportOptionsBottomSheet', () => {
         ).toBeTruthy()
         expect(
             screen.getByText(
-                'onboarding.import_options.universal_wallet.description',
+                'onboarding.import_options.hd_wallet.description',
             ),
         ).toBeTruthy()
         expect(
@@ -89,7 +89,7 @@ describe('ImportOptionsBottomSheet', () => {
 
         fireEvent.click(
             screen.getByText(
-                'onboarding.import_options.universal_wallet.title',
+                'onboarding.import_options.hd_wallet.title',
             ),
         )
         expect(onHDWalletPress).toHaveBeenCalledTimes(1)
