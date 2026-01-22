@@ -162,6 +162,12 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
     }
+
+    packaging {
+        jniLibs {
+            pickFirst '**/libc++_shared.so'
+        }
+    }
 }
 
 dependencies {

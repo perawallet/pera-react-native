@@ -115,6 +115,11 @@ platform :ios do
       clean: clean
     )
 
+    upload_symbols_to_crashlytics(
+      gsp_path: "./ios/GoogleService-Info.plist",
+      binary_path: "./build/ios/#{scheme}.ipa"
+    )
+
       upload_to_testflight(
         skip_waiting_for_build_processing: true,
         ipa: "./build/ios/#{scheme}.ipa"
