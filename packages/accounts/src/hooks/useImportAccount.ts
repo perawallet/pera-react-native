@@ -34,39 +34,23 @@ export const useImportAccount = () => {
     }) => {
         const rootWalletId = walletId ?? uuidv7()
 
-        if (type === 'hdWallet') {
-            const hdWalletKeyPair =
-                await createHDWalletKeyDataFromMnemonic(mnemonic)
-            const stringifiedObj = JSON.stringify({
-                seed: hdWalletKeyPair.seed.toString('base64'),
-                entropy: hdWalletKeyPair.entropy,
-            })
-            const rootKeyPair = {
-                id: rootWalletId,
-                publicKey: '',
-                privateDataStorageKey: rootWalletId,
-                createdAt: new Date(),
-                type: hdWalletKeyPair.type,
-            }
-            await saveKey(rootKeyPair, Buffer.from(stringifiedObj))
+        const keyData = await (type === 'hdWallet'
+            ? createHDWalletKeyDataFromMnemonic(mnemonic)
+            : createAlgo25WalletKeyDataFromMnemonic(mnemonic))
+
+        const stringifiedObj = JSON.stringify({
+            seed: keyData.seed.toString('base64'),
+            entropy: keyData.entropy,
+        })
+        const rootKeyPair = {
+            id: rootWalletId,
+            publicKey: keyData.publicKey ?? '',
+            privateDataStorageKey: rootWalletId,
+            createdAt: new Date(),
+            type: keyData.type,
         }
 
-        if (type === 'algo25') {
-            const algo25KeyPair =
-                await createAlgo25WalletKeyDataFromMnemonic(mnemonic)
-            const stringifiedObj = JSON.stringify({
-                seed: algo25KeyPair.seed.toString('base64'),
-                entropy: algo25KeyPair.entropy,
-            })
-            const rootKeyPair = {
-                id: rootWalletId,
-                publicKey: algo25KeyPair.publicKey!,
-                privateDataStorageKey: rootWalletId,
-                createdAt: new Date(),
-                type: algo25KeyPair.type,
-            }
-            await saveKey(rootKeyPair, Buffer.from(stringifiedObj))
-        }
+        await saveKey(rootKeyPair, Buffer.from(stringifiedObj))
 
         //TODO: we currently just create the 0/0 account but we really should scan the blockchain
         //and look for accounts that might match (see old app logic - we want to scan iteratively
