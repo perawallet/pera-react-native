@@ -71,6 +71,7 @@ jobs:
       notification_title_prefix: "QA Build (Nightly)"
       use_cache: true
       parent_workflow: qa.yml
+      distribution: firebase
     secrets: inherit
 
   # android-production:

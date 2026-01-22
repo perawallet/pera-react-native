@@ -67,4 +67,5 @@ jobs:
       notification_title_prefix: "Release Candidate"
       use_cache: false
       parent_workflow: release.yml
+      distribution: playstore
     secrets: inherit

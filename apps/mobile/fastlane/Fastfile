@@ -164,14 +164,18 @@ platform :android do
   end
 
   desc "Build Android for specific flavor and build type"
+  # Options:
+  #   flavor: "staging" | "production"
+  #   build_type: "Release" | "Debug"
+  #   clean: true | false (default: true)
+  #   artifact_type: "aab" | "apk" (default: "aab")
   private_lane :build_android do |options|
-    clean = options[:clean]
-    clean = true if clean.nil?
-    
-    # Get version from package.json
-    version = get_package_version
+    clean = options[:clean].nil? ? true : options[:clean]
+    artifact_type = options[:artifact_type] || "aab"
 
-    task = clean ? "clean bundle" : "bundle"
+    version = get_package_version
+    gradle_task = artifact_type == "apk" ? "assemble" : "bundle"
+    task = clean ? "clean #{gradle_task}" : gradle_task
 
     gradle(
       task: task,
@@ -185,19 +189,25 @@ platform :android do
     )
   end
 
-  desc "Build and publish to Play Store Internal Track"
+  # Returns the artifact path for a given flavor and type
+  def android_artifact_path(flavor, artifact_type)
+    if artifact_type == "apk"
+      "android/app/build/outputs/apk/#{flavor}/release/app-#{flavor}-release.apk"
+    else
+      "android/app/build/outputs/bundle/#{flavor}Release/app-#{flavor}-release.aab"
+    end
+  end
+
+  desc "Build and publish to Play Store"
   lane :deploy_internal do |options|
     flavor = options[:flavor] || "staging"
-    # Helper to convert flavor to camelCase for AAB path (e.g., production -> productionRelease)
-    flavor_release = "#{flavor}Release"
-    
-    clean = options[:clean]
-    clean = true if clean.nil?
+    clean = options[:clean].nil? ? true : options[:clean]
 
     build_android(
       flavor: flavor,
       build_type: "Release",
-      clean: clean
+      clean: clean,
+      artifact_type: "aab"
     )
 
     package_name = flavor == "production" ? "com.algorand.perarn" : "com.algorand.perarn.staging"
@@ -205,12 +215,36 @@ platform :android do
     upload_to_play_store(
       track: "internal",
       package_name: package_name,
-      aab: "android/app/build/outputs/bundle/#{flavor_release}/app-#{flavor}-release.aab",
+      aab: android_artifact_path(flavor, "aab"),
       version_code: ENV["BUILD_NUMBER"],
       skip_upload_metadata: true,
       skip_upload_images: true,
       skip_upload_screenshots: true,
       json_key: "android/api-key.json"
+    )
+  end
+
+  desc "Build and publish to Firebase App Distribution (for QA)"
+  lane :deploy_firebase do |options|
+    flavor = options[:flavor] || "staging"
+    clean = options[:clean].nil? ? true : options[:clean]
+
+    build_android(
+      flavor: flavor,
+      build_type: "Release",
+      clean: clean,
+      artifact_type: "apk"
+    )
+
+    notes = ENV["RELEASE_NOTES"] || "Build #{ENV['BUILD_NUMBER'] || 'dev'}"
+
+    firebase_app_distribution(
+      app: ENV["FIREBASE_APP_ID_ANDROID"],
+      groups: ENV["FIREBASE_TESTER_GROUPS"] || "qa-testers",
+      release_notes: notes,
+      android_artifact_type: "APK",
+      android_artifact_path: android_artifact_path(flavor, "apk"),
+      service_credentials_file: "android/firebase-service-account.json"
     )
   end
 
