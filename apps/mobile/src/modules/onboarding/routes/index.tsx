@@ -84,8 +84,7 @@ export const OnboardingStackNavigator = () => {
             <OnboardingStack.Screen
                 name='NameAccount'
                 options={{
-                    headerShown: true,
-                    title: '',
+                    headerShown: false,
                 }}
                 layout={safeAreaLayout}
                 component={NameAccountScreenWithErrorBoundary}

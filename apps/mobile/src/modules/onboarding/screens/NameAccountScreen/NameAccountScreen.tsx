@@ -17,17 +17,21 @@ import {
     PWInput,
     PWOverlay,
     PWText,
+    PWToolbar,
+    PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import { useTheme } from '@rneui/themed'
 import { ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNameAccountScreen } from './useNameAccountScreen'
+import { useAppNavigation } from '@hooks/useAppNavigation'
 
 export const NameAccountScreen = () => {
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
+    const navigation = useAppNavigation()
 
     const {
         walletDisplay,
@@ -42,47 +46,58 @@ export const NameAccountScreen = () => {
             style={styles.mainContainer}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-            <PWView style={styles.headerContainer}>
-                <PWText variant='h1'>
-                    {t('onboarding.name_account.title')}
-                </PWText>
-                <PWText
-                    variant='h4'
-                    style={styles.helperText}
-                >
-                    {t('onboarding.name_account.description')}
-                </PWText>
-            </PWView>
-            <PWView style={styles.walletNameContainer}>
-                <PWIcon
-                    name='wallet'
-                    variant='secondary'
+            <PWToolbar
+                left={
+                    <PWTouchableOpacity onPress={navigation.goBack}>
+                        <PWIcon name='chevron-left' />
+                    </PWTouchableOpacity>
+                }
+            />
+
+            <PWView style={styles.content}>
+                <PWView style={styles.headerContainer}>
+                    <PWText variant='h1'>
+                        {t('onboarding.name_account.title')}
+                    </PWText>
+                    <PWText
+                        variant='h4'
+                        style={styles.helperText}
+                    >
+                        {t('onboarding.name_account.description')}
+                    </PWText>
+                </PWView>
+                <PWView style={styles.walletNameContainer}>
+                    <PWIcon
+                        name='wallet'
+                        variant='secondary'
+                    />
+                    <PWText
+                        variant='h4'
+                        style={styles.nameText}
+                    >
+                        {t('onboarding.name_account.wallet_label', {
+                            count: numWallets + 1,
+                        })}
+                    </PWText>
+                </PWView>
+                <PWInput
+                    label={t('onboarding.name_account.input_label')}
+                    containerStyle={styles.input}
+                    value={walletDisplay}
+                    onChangeText={handleNameChange}
+                    autoFocus
                 />
-                <PWText
-                    variant='h4'
-                    style={styles.nameText}
-                >
-                    {t('onboarding.name_account.wallet_label', {
-                        count: numWallets + 1,
-                    })}
-                </PWText>
+                <PWView style={styles.spacer} />
+                <PWButton
+                    style={styles.finishButton}
+                    variant='primary'
+                    title={t('onboarding.name_account.finish_button')}
+                    onPress={handleFinish}
+                    isLoading={isCreating}
+                    isDisabled={isCreating}
+                />
             </PWView>
-            <PWInput
-                label={t('onboarding.name_account.input_label')}
-                containerStyle={styles.input}
-                value={walletDisplay}
-                onChangeText={handleNameChange}
-                autoFocus
-            />
-            <PWView style={styles.spacer} />
-            <PWButton
-                style={styles.finishButton}
-                variant='primary'
-                title={t('onboarding.name_account.finish_button')}
-                onPress={handleFinish}
-                isLoading={isCreating}
-                isDisabled={isCreating}
-            />
+
             <PWOverlay
                 isVisible={isCreating}
                 overlayStyle={styles.overlay}

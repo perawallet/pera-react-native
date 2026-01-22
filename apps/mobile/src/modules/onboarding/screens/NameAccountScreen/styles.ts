@@ -16,6 +16,10 @@ export const useStyles = makeStyles(theme => {
     return {
         mainContainer: {
             flex: 1,
+            backgroundColor: theme.colors.background,
+        },
+        content: {
+            flex: 1,
             paddingHorizontal: theme.spacing.xl,
         },
         headerContainer: {
