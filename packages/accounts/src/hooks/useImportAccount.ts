@@ -11,7 +11,10 @@
  */
 
 import { v7 as uuidv7 } from 'uuid'
-import { useKMS } from '@perawallet/wallet-core-kms'
+import { seedFromMnemonic } from '@algorandfoundation/algokit-utils/algo25'
+import nacl from 'tweetnacl'
+import { useKMS, KeyType } from '@perawallet/wallet-core-kms'
+import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import { useCreateAccount } from './useCreateAccount'
 import { ImportAccountType } from '../models'
 import { createUniversalWalletFromMnemonic } from '../utils'
@@ -48,6 +51,19 @@ export const useImportAccount = () => {
             await saveKey(rootKeyPair, Buffer.from(stringifiedObj))
         }
 
+        if (type === 'algo25') {
+            const seed = seedFromMnemonic(mnemonic)
+            const keyPair = nacl.sign.keyPair.fromSeed(seed)
+            const rootKeyPair = {
+                id: rootWalletId,
+                publicKey: encodeAlgorandAddress(keyPair.publicKey),
+                privateDataStorageKey: rootWalletId,
+                createdAt: new Date(),
+                type: KeyType.Algo25Key,
+            }
+            await saveKey(rootKeyPair, seed)
+        }
+
         //TODO: we currently just create the 0/0 account but we really should scan the blockchain
         //and look for accounts that might match (see old app logic - we want to scan iteratively
         //until we find 5 empty keyindexes and 5 empty accounts (I think)
@@ -55,6 +71,7 @@ export const useImportAccount = () => {
             walletId: rootWalletId,
             account: 0,
             keyIndex: 0,
+            type,
         })
         return newAccount
     }
