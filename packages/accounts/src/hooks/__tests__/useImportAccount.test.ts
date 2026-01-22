@@ -228,9 +228,9 @@ describe('useImportAccount', () => {
 
     test('throws error when generateMasterKey fails with invalid mnemonic', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -258,9 +258,9 @@ describe('useImportAccount', () => {
 
     test('throws error when secure storage setItem fails for root key', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -286,9 +286,9 @@ describe('useImportAccount', () => {
 
     test('throws error when mnemonicToEntropy fails', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
