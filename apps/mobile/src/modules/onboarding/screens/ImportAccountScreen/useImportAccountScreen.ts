@@ -13,7 +13,10 @@
 import { useState, useCallback, useMemo } from 'react'
 import { RouteProp, useRoute } from '@react-navigation/native'
 import { OnboardingStackParamList } from '../../routes/types'
-import { useImportAccount, ImportAccountType } from '@perawallet/wallet-core-accounts'
+import {
+    useImportAccount,
+    ImportAccountType,
+} from '@perawallet/wallet-core-accounts'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'

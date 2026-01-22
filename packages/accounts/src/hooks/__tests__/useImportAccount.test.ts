@@ -121,13 +121,15 @@ const kmsSpies = vi.hoisted(() => {
             return key
         }),
         getKey: vi.fn((id: string) => keys.get(id) || null),
-        executeWithKey: vi.fn(async (_id: string, _domain: string, handler: any) => {
-            const dummyData = JSON.stringify({
-                seed: Buffer.from('seed').toString('base64'),
-                entropy: 'entropy',
-            })
-            return handler(new TextEncoder().encode(dummyData))
-        }),
+        executeWithKey: vi.fn(
+            async (_id: string, _domain: string, handler: any) => {
+                const dummyData = JSON.stringify({
+                    seed: Buffer.from('seed').toString('base64'),
+                    entropy: 'entropy',
+                })
+                return handler(new TextEncoder().encode(dummyData))
+            },
+        ),
     }
 })
 
@@ -226,9 +228,9 @@ describe('useImportAccount', () => {
 
     test('throws error when generateMasterKey fails with invalid mnemonic', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -246,16 +248,19 @@ describe('useImportAccount', () => {
 
         await act(async () => {
             await expect(
-                result.current({ mnemonic: 'invalid mnemonic', type: 'universal' }),
+                result.current({
+                    mnemonic: 'invalid mnemonic',
+                    type: 'universal',
+                }),
             ).rejects.toThrow('Invalid mnemonic')
         })
     })
 
     test('throws error when secure storage setItem fails for root key', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -271,16 +276,19 @@ describe('useImportAccount', () => {
 
         await act(async () => {
             await expect(
-                result.current({ mnemonic: 'test mnemonic', type: 'universal' }),
+                result.current({
+                    mnemonic: 'test mnemonic',
+                    type: 'universal',
+                }),
             ).rejects.toThrow('Storage full')
         })
     })
 
     test('throws error when mnemonicToEntropy fails', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -298,7 +306,10 @@ describe('useImportAccount', () => {
 
         await act(async () => {
             await expect(
-                result.current({ mnemonic: 'test mnemonic', type: 'universal' }),
+                result.current({
+                    mnemonic: 'test mnemonic',
+                    type: 'universal',
+                }),
             ).rejects.toThrow('Invalid entropy')
         })
     })
@@ -384,7 +395,10 @@ describe('useImportAccount', () => {
 
         await act(async () => {
             await expect(
-                result.current({ mnemonic: 'test mnemonic', type: 'universal' }),
+                result.current({
+                    mnemonic: 'test mnemonic',
+                    type: 'universal',
+                }),
             ).rejects.toThrow('Address generation failed')
         })
     })
