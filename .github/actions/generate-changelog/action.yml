@@ -40,7 +40,7 @@ runs:
         CHANGELOG=""
 
         # Features
-        FEATURES=$(git log ${LAST_REF}..HEAD --pretty=format:"%s" --grep="^feat" | sed -E 's/^feat(\([^)]*\))?[:]? *//' | head -10)
+        FEATURES=$(git log ${LAST_REF}..HEAD --pretty=format:"%s" --grep="^feat" | sed -E 's/^feat(\([^)]*\))?[:]? *//')
         if [ -n "$FEATURES" ]; then
           CHANGELOG="${CHANGELOG}*Features:*\n"
           while IFS= read -r line; do
@@ -50,7 +50,7 @@ runs:
         fi
 
         # Bug fixes
-        FIXES=$(git log ${LAST_REF}..HEAD --pretty=format:"%s" --grep="^fix" | sed -E 's/^fix(\([^)]*\))?[:]? *//' | head -10)
+        FIXES=$(git log ${LAST_REF}..HEAD --pretty=format:"%s" --grep="^fix" | sed -E 's/^fix(\([^)]*\))?[:]? *//')
         if [ -n "$FIXES" ]; then
           CHANGELOG="${CHANGELOG}*Bug Fixes:*\n"
           while IFS= read -r line; do
@@ -60,7 +60,7 @@ runs:
         fi
 
         # Other changes (chore, refactor, perf, test, docs, build)
-        OTHER=$(git log ${LAST_REF}..HEAD --pretty=format:"%s" --grep="^\(chore\|refactor\|perf\|test\|docs\|build\)" | sed -E 's/^(chore|refactor|perf|test|docs|build)(\([^)]*\))?[:]? *//' | head -5)
+        OTHER=$(git log ${LAST_REF}..HEAD --pretty=format:"%s" --grep="^\(chore\|refactor\|perf\|test\|docs\|build\)" | sed -E 's/^(chore|refactor|perf|test|docs|build)(\([^)]*\))?[:]? *//')
         if [ -n "$OTHER" ]; then
           CHANGELOG="${CHANGELOG}*Other:*\n"
           while IFS= read -r line; do
