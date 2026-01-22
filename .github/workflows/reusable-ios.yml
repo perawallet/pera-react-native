@@ -133,14 +133,14 @@ jobs:
           bundler-cache: true
           working-directory: apps/mobile
 
-      - name: Cache CocoaPods
-        id: pods-cache
-        uses: actions/cache@v4
-        with:
-          path: apps/mobile/ios/Pods
-          key: ios-pods-${{ runner.os }}-${{ hashFiles('apps/mobile/ios/Podfile.lock') }}
-          restore-keys: |
-            ios-pods-${{ runner.os }}-
+      # - name: Cache CocoaPods
+      #   id: pods-cache
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: apps/mobile/ios/Pods
+      #     key: ios-pods-${{ runner.os }}-${{ hashFiles('apps/mobile/ios/Podfile.lock') }}
+      #     restore-keys: |
+      #       ios-pods-${{ runner.os }}-
 
       - name: Install CocoaPods
         run: |
