@@ -10,17 +10,15 @@
  limitations under the License
  */
 
-import { WalletAccount } from '@perawallet/wallet-core-accounts'
-
-export type ImportAccountType = 'universal' | 'algo25'
+import { WalletAccount, ImportAccountType } from '@perawallet/wallet-core-accounts'
 
 export type OnboardingStackParamList = {
     OnboardingHome: undefined
     NameAccount:
-        | {
-              account?: WalletAccount
-          }
-        | undefined
+    | {
+        account?: WalletAccount
+    }
+    | undefined
     ImportInfo: {
         accountType: ImportAccountType
     }

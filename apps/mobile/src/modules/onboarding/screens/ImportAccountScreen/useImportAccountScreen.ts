@@ -12,8 +12,8 @@
 
 import { useState, useCallback, useMemo } from 'react'
 import { RouteProp, useRoute } from '@react-navigation/native'
-import { OnboardingStackParamList, ImportAccountType } from '../../routes/types'
-import { useImportAccount } from '@perawallet/wallet-core-accounts'
+import { OnboardingStackParamList } from '../../routes/types'
+import { useImportAccount, ImportAccountType } from '@perawallet/wallet-core-accounts'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -81,7 +81,10 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         setProcessing(true)
         setTimeout(async () => {
             try {
-                await importAccount({ mnemonic: words.join(' ') })
+                await importAccount({
+                    mnemonic: words.join(' '),
+                    type: accountType,
+                })
                 goToHome()
             } catch {
                 showToast({

@@ -13,6 +13,7 @@
 import { v7 as uuidv7 } from 'uuid'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCreateAccount } from './useCreateAccount'
+import { ImportAccountType } from '../models'
 import { createUniversalWalletFromMnemonic } from '../utils'
 
 export const useImportAccount = () => {
@@ -22,25 +23,30 @@ export const useImportAccount = () => {
     return async ({
         walletId,
         mnemonic,
+        type,
     }: {
         walletId?: string
         mnemonic: string
+        type: ImportAccountType
     }) => {
         const rootWalletId = walletId ?? uuidv7()
-        const universalKeyPair =
-            await createUniversalWalletFromMnemonic(mnemonic)
-        const stringifiedObj = JSON.stringify({
-            seed: universalKeyPair.seed.toString('base64'),
-            entropy: universalKeyPair.entropy,
-        })
-        const rootKeyPair = {
-            id: rootWalletId,
-            publicKey: '',
-            privateDataStorageKey: rootWalletId,
-            createdAt: new Date(),
-            type: universalKeyPair.type,
+
+        if (type === 'universal') {
+            const universalKeyPair =
+                await createUniversalWalletFromMnemonic(mnemonic)
+            const stringifiedObj = JSON.stringify({
+                seed: universalKeyPair.seed.toString('base64'),
+                entropy: universalKeyPair.entropy,
+            })
+            const rootKeyPair = {
+                id: rootWalletId,
+                publicKey: '',
+                privateDataStorageKey: rootWalletId,
+                createdAt: new Date(),
+                type: universalKeyPair.type,
+            }
+            await saveKey(rootKeyPair, Buffer.from(stringifiedObj))
         }
-        await saveKey(rootKeyPair, Buffer.from(stringifiedObj))
 
         //TODO: we currently just create the 0/0 account but we really should scan the blockchain
         //and look for accounts that might match (see old app logic - we want to scan iteratively
