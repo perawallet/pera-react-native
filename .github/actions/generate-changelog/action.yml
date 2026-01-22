@@ -39,33 +39,43 @@ runs:
         # Generate changelog from conventional commits
         CHANGELOG=""
 
+        # Helper function to format sections
+        format_section() {
+          local title="$1"
+          local content="$2"
+          if [ -n "$content" ]; then
+            echo "$title"
+            local count=$(echo "$content" | grep -c "^")
+            if [ "$count" -gt 7 ]; then
+              echo "$content" | head -n 7 | while IFS= read -r line; do echo "• $line"; done
+              local more=$((count - 7))
+              echo "• ...and $more more"
+            else
+              echo "$content" | while IFS= read -r line; do echo "• $line"; done
+            fi
+            echo ""
+          fi
+        }
+
         # Features
         FEATURES=$(git log ${LAST_REF}..HEAD --pretty=format:"%s" --grep="^feat" | sed -E 's/^feat(\([^)]*\))?[:]? *//')
         if [ -n "$FEATURES" ]; then
-          CHANGELOG="${CHANGELOG}*Features:*\n"
-          while IFS= read -r line; do
-            [ -n "$line" ] && CHANGELOG="${CHANGELOG}• ${line}\n"
-          done <<< "$FEATURES"
-          CHANGELOG="${CHANGELOG}\n"
+          SECTION=$(format_section "*Features:*" "$FEATURES")
+          CHANGELOG="${CHANGELOG}${SECTION}"$'\n'
         fi
 
         # Bug fixes
         FIXES=$(git log ${LAST_REF}..HEAD --pretty=format:"%s" --grep="^fix" | sed -E 's/^fix(\([^)]*\))?[:]? *//')
         if [ -n "$FIXES" ]; then
-          CHANGELOG="${CHANGELOG}*Bug Fixes:*\n"
-          while IFS= read -r line; do
-            [ -n "$line" ] && CHANGELOG="${CHANGELOG}• ${line}\n"
-          done <<< "$FIXES"
-          CHANGELOG="${CHANGELOG}\n"
+          SECTION=$(format_section "*Bug Fixes:*" "$FIXES")
+          CHANGELOG="${CHANGELOG}${SECTION}"$'\n'
         fi
 
         # Other changes (chore, refactor, perf, test, docs, build)
         OTHER=$(git log ${LAST_REF}..HEAD --pretty=format:"%s" --grep="^\(chore\|refactor\|perf\|test\|docs\|build\)" | sed -E 's/^(chore|refactor|perf|test|docs|build)(\([^)]*\))?[:]? *//')
         if [ -n "$OTHER" ]; then
-          CHANGELOG="${CHANGELOG}*Other:*\n"
-          while IFS= read -r line; do
-            [ -n "$line" ] && CHANGELOG="${CHANGELOG}• ${line}\n"
-          done <<< "$OTHER"
+          SECTION=$(format_section "*Other:*" "$OTHER")
+          CHANGELOG="${CHANGELOG}${SECTION}"$'\n'
         fi
 
         # If no conventional commits found, show recent commits
