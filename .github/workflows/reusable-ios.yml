@@ -16,6 +16,10 @@ on:
         required: false
         type: boolean
         default: false
+      parent_workflow:
+        required: true
+        type: string
+        description: 'The parent workflow file name (e.g., qa.yml or release.yml) for changelog generation'
     secrets:
       # We use 'secrets: inherit' in the caller, but we can list required ones here for documentation or specific passing
       MAINNET_BACKEND_URL:
@@ -79,6 +83,8 @@ jobs:
       - name: Generate Changelog
         id: changelog
         uses: ./.github/actions/generate-changelog
+        with:
+          workflow: ${{ inputs.parent_workflow }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -123,6 +129,7 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
+          ruby-version: '3.2'
           bundler-cache: true
           working-directory: apps/mobile
 

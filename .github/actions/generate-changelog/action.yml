@@ -1,5 +1,10 @@
 name: 'Generate Changelog'
-description: 'Generates a changelog from conventional commits since the last tag'
+description: 'Generates a changelog from conventional commits since the last successful build'
+
+inputs:
+  workflow:
+    description: 'The workflow file name to check for last successful run (e.g., qa.yml)'
+    required: true
 
 outputs:
   changelog:
@@ -9,19 +14,33 @@ outputs:
 runs:
   using: 'composite'
   steps:
+    - name: Get last successful run
+      id: last_run
+      uses: ./.github/actions/get-last-successful-run
+      with:
+        workflow: ${{ inputs.workflow }}
+
     - name: Generate Changelog
       id: changelog
       shell: bash
       run: |
-        # Get the last tag, or use initial commit if no tags exist
-        LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || git rev-list --max-parents=0 HEAD)
-        echo "Last tag/ref: $LAST_TAG"
+        LAST_SHA="${{ steps.last_run.outputs.sha }}"
+
+        if [ -n "$LAST_SHA" ] && git cat-file -t "$LAST_SHA" >/dev/null 2>&1; then
+          echo "Found last successful build at commit: $LAST_SHA"
+          LAST_REF="$LAST_SHA"
+        else
+          echo "No previous successful build found, using initial commit"
+          LAST_REF=$(git rev-list --max-parents=0 HEAD)
+        fi
+
+        echo "Generating changelog from $LAST_REF to HEAD"
 
         # Generate changelog from conventional commits
         CHANGELOG=""
 
         # Features
-        FEATURES=$(git log ${LAST_TAG}..HEAD --pretty=format:"%s" --grep="^feat" | sed 's/^feat[:(]//' | sed 's/):/:/g' | head -10)
+        FEATURES=$(git log ${LAST_REF}..HEAD --pretty=format:"%s" --grep="^feat" | sed -E 's/^feat(\([^)]*\))?[:]? *//' | head -10)
         if [ -n "$FEATURES" ]; then
           CHANGELOG="${CHANGELOG}*Features:*\n"
           while IFS= read -r line; do
@@ -31,7 +50,7 @@ runs:
         fi
 
         # Bug fixes
-        FIXES=$(git log ${LAST_TAG}..HEAD --pretty=format:"%s" --grep="^fix" | sed 's/^fix[:(]//' | sed 's/):/:/g' | head -10)
+        FIXES=$(git log ${LAST_REF}..HEAD --pretty=format:"%s" --grep="^fix" | sed -E 's/^fix(\([^)]*\))?[:]? *//' | head -10)
         if [ -n "$FIXES" ]; then
           CHANGELOG="${CHANGELOG}*Bug Fixes:*\n"
           while IFS= read -r line; do
@@ -41,7 +60,7 @@ runs:
         fi
 
         # Other changes (chore, refactor, perf, test, docs, build)
-        OTHER=$(git log ${LAST_TAG}..HEAD --pretty=format:"%s" --grep="^\(chore\|refactor\|perf\|test\|docs\|build\)" | sed 's/^\(chore\|refactor\|perf\|test\|docs\|build\)[:(]//' | sed 's/):/:/g' | head -5)
+        OTHER=$(git log ${LAST_REF}..HEAD --pretty=format:"%s" --grep="^\(chore\|refactor\|perf\|test\|docs\|build\)" | sed -E 's/^(chore|refactor|perf|test|docs|build)(\([^)]*\))?[:]? *//' | head -5)
         if [ -n "$OTHER" ]; then
           CHANGELOG="${CHANGELOG}*Other:*\n"
           while IFS= read -r line; do
@@ -51,11 +70,11 @@ runs:
 
         # If no conventional commits found, show recent commits
         if [ -z "$CHANGELOG" ]; then
-          RECENT=$(git log ${LAST_TAG}..HEAD --pretty=format:"• %s" --no-merges | head -10)
+          RECENT=$(git log ${LAST_REF}..HEAD --pretty=format:"• %s" --no-merges | head -10)
           if [ -n "$RECENT" ]; then
             CHANGELOG="*Recent commits:*\n${RECENT}"
           else
-            CHANGELOG="No changes since last tag"
+            CHANGELOG="No changes since last build"
           fi
         fi
 

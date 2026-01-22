@@ -16,6 +16,10 @@ on:
         required: false
         type: boolean
         default: false
+      parent_workflow:
+        required: true
+        type: string
+        description: 'The parent workflow file name (e.g., qa.yml or release.yml) for changelog generation'
     secrets:
       MAINNET_BACKEND_URL:
         required: true
@@ -76,6 +80,8 @@ jobs:
       - name: Generate Changelog
         id: changelog
         uses: ./.github/actions/generate-changelog
+        with:
+          workflow: ${{ inputs.parent_workflow }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -153,6 +159,7 @@ jobs:
           BUNDLE_GEMFILE: apps/mobile/Gemfile
         uses: ruby/setup-ruby@v1
         with:
+          ruby-version: '3.2'
           bundler-cache: true
 
       - name: Decode Android keystore
