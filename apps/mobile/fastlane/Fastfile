@@ -236,11 +236,11 @@ platform :android do
       artifact_type: "apk"
     )
 
-    notes = ENV["RELEASE_NOTES"] || "Build #{ENV['BUILD_NUMBER'] || 'dev'}"
+    notes = (ENV["RELEASE_NOTES"] || "Build #{ENV['BUILD_NUMBER'] || 'dev'}").strip
 
     firebase_app_distribution(
-      app: ENV["FIREBASE_APP_ID_ANDROID"],
-      groups: ENV["FIREBASE_TESTER_GROUPS"] || "qa-testers",
+      app: ENV["FIREBASE_APP_ID_ANDROID"]&.strip,
+      groups: (ENV["FIREBASE_TESTER_GROUPS"] || "qa-testers").strip,
       release_notes: notes,
       android_artifact_type: "APK",
       android_artifact_path: android_artifact_path(flavor, "apk"),
