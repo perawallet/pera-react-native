@@ -10,36 +10,46 @@
  limitations under the License
  */
 
-import { useHDWallet } from './useHDWallet'
 import { v7 as uuidv7 } from 'uuid'
-import { KeyType, useKMS } from '@perawallet/wallet-core-kms'
+import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCreateAccount } from './useCreateAccount'
+import { ImportAccountType } from '../models'
+import {
+    createHDWalletKeyDataFromMnemonic,
+    createAlgo25WalletKeyDataFromMnemonic,
+} from '../utils'
 
 export const useImportAccount = () => {
-    const { generateMasterKey } = useHDWallet()
     const { saveKey } = useKMS()
     const createAccount = useCreateAccount()
 
     return async ({
         walletId,
         mnemonic,
+        type,
     }: {
         walletId?: string
         mnemonic: string
+        type: ImportAccountType
     }) => {
         const rootWalletId = walletId ?? uuidv7()
-        const masterKey = await generateMasterKey(mnemonic)
+
+        const keyData = await (type === 'hdWallet'
+            ? createHDWalletKeyDataFromMnemonic(mnemonic)
+            : createAlgo25WalletKeyDataFromMnemonic(mnemonic))
+
         const stringifiedObj = JSON.stringify({
-            seed: masterKey.seed.toString('base64'),
-            entropy: masterKey.entropy,
+            seed: keyData.seed.toString('base64'),
+            entropy: keyData.entropy,
         })
         const rootKeyPair = {
             id: rootWalletId,
-            publicKey: '',
+            publicKey: keyData.publicKey ?? '',
             privateDataStorageKey: rootWalletId,
             createdAt: new Date(),
-            type: KeyType.HDWalletRootKey,
+            type: keyData.type,
         }
+
         await saveKey(rootKeyPair, Buffer.from(stringifiedObj))
 
         //TODO: we currently just create the 0/0 account but we really should scan the blockchain
@@ -49,6 +59,7 @@ export const useImportAccount = () => {
             walletId: rootWalletId,
             account: 0,
             keyIndex: 0,
+            type,
         })
         return newAccount
     }

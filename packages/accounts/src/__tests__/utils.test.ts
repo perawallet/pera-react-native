@@ -11,7 +11,6 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import type { WalletAccount } from '../models'
 import {
     canSignWithAccount,
     getAccountDisplayName,
@@ -21,63 +20,92 @@ import {
     isMultisigAccount,
     isRekeyedAccount,
     isWatchAccount,
+    createHDWalletKeyDataFromMnemonic,
+    createAlgo25WalletKeyDataFromMnemonic,
+    getSeedFromMasterKey,
 } from '../utils'
+import { vi } from 'vitest'
+
+vi.mock('@algorandfoundation/algokit-utils/algo25', () => ({
+    seedFromMnemonic: vi.fn(() => new Uint8Array(32).fill(1)),
+}))
+
+vi.mock('bip39', () => ({
+    mnemonicToSeed: vi.fn(async () => Buffer.from(new Uint8Array(64).fill(2))),
+    mnemonicToEntropy: vi.fn(async () => 'test-entropy'),
+}))
+
+vi.mock('tweetnacl', () => ({
+    default: {
+        sign: {
+            keyPair: {
+                fromSeed: vi.fn(() => ({
+                    publicKey: new Uint8Array(32).fill(3),
+                })),
+            },
+        },
+    },
+}))
+
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    encodeAlgorandAddress: vi.fn(() => 'TEST_ADDRESS'),
+}))
 
 describe('services/accounts/utils - getAccountDisplayName', () => {
     test('returns account name when present', () => {
-        const acc: WalletAccount = {
+        const acc = {
             id: '1',
             type: 'hdWallet',
             address: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
             name: 'Named',
             canSign: true,
-        }
+        } as any
         expect(getAccountDisplayName(acc)).toEqual('Named')
     })
 
     test('returns "No Address Found" when address is missing or empty', () => {
-        const acc: WalletAccount = {
+        const acc = {
             id: '2',
             type: 'hdWallet',
             address: '',
             canSign: false,
-        }
+        } as any
         expect(getAccountDisplayName(acc)).toEqual('No Address Found')
     })
 
     test('returns address unchanged when length <= 11', () => {
-        const acc1: WalletAccount = {
+        const acc1 = {
             id: '3',
             type: 'hdWallet',
             address: 'SHORT',
             canSign: true,
-        }
+        } as any
         expect(getAccountDisplayName(acc1)).toEqual('SHORT')
 
-        const acc2: WalletAccount = {
+        const acc2 = {
             id: '4',
             type: 'hdWallet',
             address: 'ABCDEFGHIJK',
             canSign: true,
-        }
+        } as any
         expect(getAccountDisplayName(acc2)).toEqual('ABCDEFGHIJK')
     })
 
     test('truncates long addresses to 5 prefix and suffix characters', () => {
-        const acc1: WalletAccount = {
+        const acc1 = {
             id: '5',
             type: 'hdWallet',
             address: 'ABCDEFGHIJKL',
             canSign: true,
-        }
+        } as any
         expect(getAccountDisplayName(acc1)).toEqual('ABCDE...HIJKL')
 
-        const acc2: WalletAccount = {
+        const acc2 = {
             id: '6',
             type: 'hdWallet',
             address: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
             canSign: true,
-        }
+        } as any
         expect(getAccountDisplayName(acc2)).toEqual('ABCDE...VWXYZ')
     })
 
@@ -87,12 +115,12 @@ describe('services/accounts/utils - getAccountDisplayName', () => {
 })
 
 describe('services/accounts/utils - account type checks', () => {
-    const baseAccount: WalletAccount = {
+    const baseAccount = {
         id: '1',
         type: 'hdWallet',
         address: 'ADDR1',
         canSign: true,
-    }
+    } as any
 
     test('isHDWalletAccount returns true if type is hdWallet', () => {
         expect(isHDWalletAccount(baseAccount)).toBe(true)
@@ -100,7 +128,7 @@ describe('services/accounts/utils - account type checks', () => {
             isHDWalletAccount({
                 ...baseAccount,
                 type: 'algo25',
-            }),
+            } as any),
         ).toBe(false)
     })
 
@@ -111,14 +139,14 @@ describe('services/accounts/utils - account type checks', () => {
                 ...baseAccount,
                 type: 'hardware',
                 hardwareDetails: { manufacturer: 'ledger' },
-            }),
+            } as any),
         ).toBe(true)
         expect(
             isLedgerAccount({
                 ...baseAccount,
                 type: 'hardware',
                 hardwareDetails: { manufacturer: 'other' as any },
-            }),
+            } as any),
         ).toBe(false)
     })
 
@@ -128,7 +156,7 @@ describe('services/accounts/utils - account type checks', () => {
             isRekeyedAccount({
                 ...baseAccount,
                 rekeyAddress: 'ADDR2',
-            }),
+            } as any),
         ).toBe(true)
     })
 
@@ -138,19 +166,19 @@ describe('services/accounts/utils - account type checks', () => {
             isAlgo25Account({
                 ...baseAccount,
                 type: 'algo25',
-            }),
+            } as any),
         ).toBe(true)
         expect(
             isAlgo25Account({
                 ...baseAccount,
                 type: 'hdWallet',
-            }),
+            } as any),
         ).toBe(false)
         expect(
             isAlgo25Account({
                 ...baseAccount,
                 type: 'watch',
-            }),
+            } as any),
         ).toBe(false)
     })
 
@@ -160,7 +188,7 @@ describe('services/accounts/utils - account type checks', () => {
             isWatchAccount({
                 ...baseAccount,
                 type: 'watch',
-            }),
+            } as any),
         ).toBe(true)
     })
 
@@ -170,7 +198,7 @@ describe('services/accounts/utils - account type checks', () => {
             isMultisigAccount({
                 ...baseAccount,
                 type: 'multisig',
-            }),
+            } as any),
         ).toBe(true)
     })
 
@@ -180,7 +208,54 @@ describe('services/accounts/utils - account type checks', () => {
             canSignWithAccount({
                 ...baseAccount,
                 canSign: false,
-            }),
+            } as any),
         ).toBe(false)
+    })
+})
+
+describe('services/accounts/utils - createHDWalletKeyDataFromMnemonic', () => {
+    test('creates key pair from valid mnemonic', async () => {
+        const mnemonic =
+            'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art'
+        const result = await createHDWalletKeyDataFromMnemonic(mnemonic)
+
+        expect(result.seed).toBeInstanceOf(Buffer)
+        expect(result.seed.length).toBe(64) // BIP39 seed is 512 bits
+        expect(result.entropy).toBeDefined()
+        expect(result.type).toBe('hdwallet-root-key')
+    })
+})
+
+describe('services/accounts/utils - createAlgo25WalletKeyDataFromMnemonic', () => {
+    test('creates key pair from valid mnemonic', async () => {
+        const mnemonic =
+            'since theory average article fly finger table squirrel music degree arrest shallow unit medal update elevator snap code tip body switch mirror page able total'
+        const result = await createAlgo25WalletKeyDataFromMnemonic(mnemonic)
+
+        expect(result.seed).toBeInstanceOf(Buffer)
+        expect(result.seed.length).toBe(32) // Algo25 seed is 256 bits
+        expect(result.entropy).toBeDefined()
+        expect(result.publicKey).toBeDefined()
+        expect(result.type).toBe('algo25-key')
+    })
+})
+
+describe('services/accounts/utils - getSeedFromMasterKey', () => {
+    test('obtains seed from JSON stringified master key data', () => {
+        const masterKey = {
+            seed: Buffer.from('test-seed').toString('base64'),
+            entropy: 'test-entropy',
+        }
+        const keyData = new TextEncoder().encode(JSON.stringify(masterKey))
+        const seed = getSeedFromMasterKey(keyData)
+
+        expect(seed).toEqual(Buffer.from('test-seed'))
+    })
+
+    test('obtains seed from raw master key data', () => {
+        const keyData = new Uint8Array([1, 2, 3, 4])
+        const seed = getSeedFromMasterKey(keyData)
+
+        expect(seed).toEqual(Buffer.from([1, 2, 3, 4]))
     })
 })

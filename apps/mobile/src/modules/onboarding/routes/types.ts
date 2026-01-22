@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    WalletAccount,
+    ImportAccountType,
+} from '@perawallet/wallet-core-accounts'
 
 export type OnboardingStackParamList = {
     OnboardingHome: undefined
@@ -19,6 +22,10 @@ export type OnboardingStackParamList = {
               account?: WalletAccount
           }
         | undefined
-    ImportInfo: undefined
-    ImportAccount: undefined
+    ImportInfo: {
+        accountType: ImportAccountType
+    }
+    ImportAccount: {
+        accountType: ImportAccountType
+    }
 }

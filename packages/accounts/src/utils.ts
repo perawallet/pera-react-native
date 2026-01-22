@@ -20,6 +20,18 @@ import {
     WatchAccount,
     type WalletAccount,
 } from './models'
+import { KeyType } from '@perawallet/wallet-core-kms'
+import * as bip39 from 'bip39'
+import { seedFromMnemonic } from '@algorandfoundation/algokit-utils/algo25'
+import nacl from 'tweetnacl'
+import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+
+export type MnemonicKeyData = {
+    seed: Buffer
+    entropy?: string
+    publicKey?: string
+    type: KeyType
+}
 
 export const getAccountDisplayName = (account: WalletAccount | null) => {
     if (!account) return 'No Account'
@@ -77,5 +89,32 @@ export const getSeedFromMasterKey = (keyData: Uint8Array) => {
     } catch {
         // Fall back to treating it as raw seed data (old format or tests)
         return Buffer.from(keyData)
+    }
+}
+
+export const createHDWalletKeyDataFromMnemonic = async (
+    mnemonic: string,
+): Promise<MnemonicKeyData> => {
+    const seed = await bip39.mnemonicToSeed(mnemonic)
+    const entropy = await bip39.mnemonicToEntropy(mnemonic)
+
+    return {
+        seed,
+        entropy,
+        type: KeyType.HDWalletRootKey,
+    }
+}
+
+export const createAlgo25WalletKeyDataFromMnemonic = async (
+    mnemonic: string,
+): Promise<MnemonicKeyData> => {
+    const seed = seedFromMnemonic(mnemonic)
+    const keyPair = nacl.sign.keyPair.fromSeed(seed)
+
+    return {
+        seed: Buffer.from(seed),
+        entropy: Buffer.from(seed).toString('hex'),
+        publicKey: encodeAlgorandAddress(keyPair.publicKey),
+        type: KeyType.Algo25Key,
     }
 }

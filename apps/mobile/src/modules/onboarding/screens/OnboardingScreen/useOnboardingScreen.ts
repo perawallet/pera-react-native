@@ -43,14 +43,14 @@ export const useOnboardingScreen = () => {
         navigation.push('NameAccount')
     }, [navigation])
 
-    const handleUniversalWalletPress = useCallback(() => {
+    const handleHDWalletPress = useCallback(() => {
         closeImportOptions()
-        navigation.push('ImportInfo')
+        navigation.push('ImportInfo', { accountType: 'hdWallet' })
     }, [closeImportOptions, navigation])
 
     const handleAlgo25Press = useCallback(() => {
         closeImportOptions()
-        navigation.push('ImportInfo')
+        navigation.push('ImportInfo', { accountType: 'algo25' })
     }, [closeImportOptions, navigation])
 
     return {
@@ -60,7 +60,7 @@ export const useOnboardingScreen = () => {
         handleCreateAccount,
         handleImportAccount: openImportOptions,
         handleCloseImportOptions: closeImportOptions,
-        handleUniversalWalletPress,
+        handleHDWalletPress,
         handleAlgo25Press,
     }
 }

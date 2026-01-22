@@ -25,14 +25,14 @@ import { useTranslation } from 'react-i18next'
 export type ImportOptionsBottomSheetProps = {
     isVisible: boolean
     onClose: () => void
-    onUniversalWalletPress: () => void
+    onHDWalletPress: () => void
     onAlgo25Press: () => void
 }
 
 export const ImportOptionsBottomSheet = ({
     isVisible,
     onClose,
-    onUniversalWalletPress,
+    onHDWalletPress,
     onAlgo25Press,
 }: ImportOptionsBottomSheetProps) => {
     const styles = useStyles()
@@ -62,7 +62,7 @@ export const ImportOptionsBottomSheet = ({
 
                 <PWView style={styles.optionsContainer}>
                     <PWTouchableOpacity
-                        onPress={onUniversalWalletPress}
+                        onPress={onHDWalletPress}
                         style={styles.optionBox}
                     >
                         <PWView style={styles.optionContent}>
@@ -70,12 +70,12 @@ export const ImportOptionsBottomSheet = ({
                                 <PWView style={styles.optionHeader}>
                                     <PWText variant='h4'>
                                         {t(
-                                            'onboarding.import_options.universal_wallet.title',
+                                            'onboarding.import_options.hd_wallet.title',
                                         )}
                                     </PWText>
                                     <PWChip
                                         title={t(
-                                            'onboarding.import_options.universal_wallet.chip',
+                                            'onboarding.import_options.hd_wallet.chip',
                                         )}
                                         variant='helper'
                                     />
@@ -85,7 +85,7 @@ export const ImportOptionsBottomSheet = ({
                                     style={styles.optionBody}
                                 >
                                     {t(
-                                        'onboarding.import_options.universal_wallet.description',
+                                        'onboarding.import_options.hd_wallet.description',
                                     )}
                                 </PWText>
                             </PWView>

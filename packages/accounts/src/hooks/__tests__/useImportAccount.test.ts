@@ -50,6 +50,38 @@ const bip39Spies = vi.hoisted(() => ({
 }))
 vi.mock('bip39', () => bip39Spies)
 
+const algo25Spies = vi.hoisted(() => ({
+    seedFromMnemonic: vi.fn(() => new Uint8Array(32).fill(3)),
+}))
+vi.mock('@algorandfoundation/algokit-utils/algo25', () => ({
+    seedFromMnemonic: algo25Spies.seedFromMnemonic,
+}))
+
+const naclSpies = vi.hoisted(() => ({
+    sign: {
+        keyPair: {
+            fromSeed: vi.fn(() => ({
+                publicKey: new Uint8Array(32).fill(4),
+                secretKey: new Uint8Array(64).fill(5),
+            })),
+        },
+    },
+}))
+vi.mock('tweetnacl', () => ({
+    default: naclSpies,
+}))
+
+vi.mock('@perawallet/wallet-core-blockchain', async () => {
+    return {
+        encodeAlgorandAddress: vi.fn((address: Uint8Array) =>
+            Buffer.from(address).toString('base64'),
+        ),
+        useTransactionEncoder: vi.fn(() => ({
+            encodeTransaction: vi.fn(),
+        })),
+    }
+})
+
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const actual = await vi.importActual<
         typeof import('@perawallet/wallet-core-shared')
@@ -78,6 +110,45 @@ vi.mock('@perawallet/wallet-core-platform-integration', async () => {
         })),
         useNetwork: vi.fn(() => ({ network: 'mainnet' })),
         useDeviceID: vi.fn(() => 'device-id'),
+    }
+})
+
+const kmsSpies = vi.hoisted(() => {
+    const keys = new Map<string, any>()
+    return {
+        saveKey: vi.fn(async (key: any) => {
+            keys.set(key.id, key)
+            return key
+        }),
+        getKey: vi.fn((id: string) => keys.get(id) || null),
+        executeWithKey: vi.fn(
+            async (_id: string, _domain: string, handler: any) => {
+                const dummyData = JSON.stringify({
+                    seed: Buffer.from('seed').toString('base64'),
+                    entropy: 'entropy',
+                })
+                return handler(new TextEncoder().encode(dummyData))
+            },
+        ),
+    }
+})
+
+vi.mock('@perawallet/wallet-core-kms', async () => {
+    const actual = await vi.importActual<
+        typeof import('@perawallet/wallet-core-kms')
+    >('@perawallet/wallet-core-kms')
+    return {
+        ...actual,
+        useKMS: vi.fn(() => ({
+            saveKey: kmsSpies.saveKey,
+            getKey: kmsSpies.getKey,
+            deleteKey: vi.fn(),
+            getPrivateData: vi.fn(),
+            keys: new Map(),
+        })),
+        useWithKey: vi.fn(() => ({
+            executeWithKey: kmsSpies.executeWithKey,
+        })),
     }
 })
 
@@ -133,18 +204,24 @@ describe('useImportAccount', () => {
 
         let imported: any
         await act(async () => {
-            imported = await result.current({ mnemonic: 'test mnemonic' })
+            imported = await result.current({
+                mnemonic: 'test mnemonic',
+                type: 'hdWallet',
+            })
         })
 
         expect(imported.address).toBeTruthy()
         expect(imported.id).toBeTruthy()
 
-        // Verify storage calls - only root key saved
-        expect(dummySecure.setItem).toHaveBeenCalledTimes(1)
-        expect(dummySecure.setItem).toHaveBeenNthCalledWith(
+        // Verify kms calls
+        expect(kmsSpies.saveKey).toHaveBeenCalledTimes(1)
+        expect(kmsSpies.saveKey).toHaveBeenNthCalledWith(
             1,
-            'WALLET1',
-            expect.anything(), // Root key data (JSON string as Uint8Array)
+            expect.objectContaining({
+                id: 'WALLET1',
+                type: 'hdwallet-root-key',
+            }),
+            expect.anything(),
         )
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
     })
@@ -171,14 +248,17 @@ describe('useImportAccount', () => {
 
         await act(async () => {
             await expect(
-                result.current({ mnemonic: 'invalid mnemonic' }),
+                result.current({
+                    mnemonic: 'invalid mnemonic',
+                    type: 'hdWallet',
+                }),
             ).rejects.toThrow('Invalid mnemonic')
         })
     })
 
     test('throws error when secure storage setItem fails for root key', async () => {
         const dummySecure = {
-            setItem: vi.fn().mockRejectedValueOnce(new Error('Storage full')), // First call for root key fails
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => null),
             removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
@@ -190,12 +270,16 @@ describe('useImportAccount', () => {
         })
 
         uuidSpies.v7.mockImplementationOnce(() => 'WALLET1')
+        kmsSpies.saveKey.mockRejectedValueOnce(new Error('Storage full'))
 
         const { result } = renderHook(() => useImportAccount())
 
         await act(async () => {
             await expect(
-                result.current({ mnemonic: 'test mnemonic' }),
+                result.current({
+                    mnemonic: 'test mnemonic',
+                    type: 'hdWallet',
+                }),
             ).rejects.toThrow('Storage full')
         })
     })
@@ -222,7 +306,10 @@ describe('useImportAccount', () => {
 
         await act(async () => {
             await expect(
-                result.current({ mnemonic: 'test mnemonic' }),
+                result.current({
+                    mnemonic: 'test mnemonic',
+                    type: 'hdWallet',
+                }),
             ).rejects.toThrow('Invalid entropy')
         })
     })
@@ -261,16 +348,19 @@ describe('useImportAccount', () => {
             imported = await result.current({
                 walletId: 'CUSTOM_WALLET',
                 mnemonic: 'test mnemonic',
+                type: 'hdWallet',
             })
         })
 
         expect(imported).toBeTruthy()
         expect(imported.hdWalletDetails?.walletId).toBe('CUSTOM_WALLET')
-        // Verify storage calls - only root key saved
-        expect(dummySecure.setItem).toHaveBeenCalledTimes(1)
-        expect(dummySecure.setItem).toHaveBeenNthCalledWith(
+        // Verify kms calls
+        expect(kmsSpies.saveKey).toHaveBeenCalledTimes(1)
+        expect(kmsSpies.saveKey).toHaveBeenNthCalledWith(
             1,
-            'CUSTOM_WALLET',
+            expect.objectContaining({
+                id: 'CUSTOM_WALLET',
+            }),
             expect.anything(),
         )
     })
@@ -305,8 +395,61 @@ describe('useImportAccount', () => {
 
         await act(async () => {
             await expect(
-                result.current({ mnemonic: 'test mnemonic' }),
+                result.current({
+                    mnemonic: 'test mnemonic',
+                    type: 'hdWallet',
+                }),
             ).rejects.toThrow('Address generation failed')
         })
+    })
+
+    test('imports algo25 account and persists keys', async () => {
+        const storage = new Map<string, any>()
+        const dummySecure = {
+            setItem: vi.fn(async (key, value) => {
+                storage.set(key, value)
+            }),
+            getItem: vi.fn(async key => storage.get(key) ?? null),
+            removeItem: vi.fn(async key => {
+                storage.delete(key)
+            }),
+            authenticate: vi.fn(async () => true),
+        }
+
+        registerTestPlatform({
+            keyValueStorage: new MemoryKeyValueStorage() as any,
+            secureStorage: dummySecure as any,
+        })
+
+        uuidSpies.v7
+            .mockImplementationOnce(() => 'WALLET1')
+            .mockImplementationOnce(() => 'ACC1')
+
+        const { result } = renderHook(() => useImportAccount())
+
+        let imported: any
+        await act(async () => {
+            imported = await result.current({
+                mnemonic: 'test mnemonic',
+                type: 'algo25',
+            })
+        })
+
+        expect(imported.address).toBeTruthy()
+        expect(imported.id).toBeTruthy()
+        expect(imported.type).toBe('algo25')
+
+        // Verify kms calls
+        expect(kmsSpies.saveKey).toHaveBeenCalledTimes(1)
+        expect(kmsSpies.saveKey).toHaveBeenNthCalledWith(
+            1,
+            expect.objectContaining({
+                id: 'WALLET1',
+                type: 'algo25-key',
+                publicKey: 'BAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQ=', // base64(fill(4))
+            }),
+            expect.anything(),
+        )
+        expect(useAccountsStore.getState().accounts).toHaveLength(1)
     })
 })

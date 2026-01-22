@@ -14,6 +14,7 @@ export const KeyType = {
     HDWalletRootKey: 'hdwallet-root-key',
     HDWalletDerivedKey: 'hdwallet-derived-key',
     DeterministicP256Key: 'deterministic-p256-key',
+    Algo25Key: 'algo25-key',
 }
 
 export type KeyType = (typeof KeyType)[keyof typeof KeyType]

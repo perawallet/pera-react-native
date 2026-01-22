@@ -25,7 +25,7 @@ describe('ImportOptionsBottomSheet', () => {
     const defaultProps = {
         isVisible: true,
         onClose: vi.fn(),
-        onUniversalWalletPress: vi.fn(),
+        onHDWalletPress: vi.fn(),
         onAlgo25Press: vi.fn(),
     }
 
@@ -34,17 +34,13 @@ describe('ImportOptionsBottomSheet', () => {
 
         expect(screen.getByText('onboarding.import_options.title')).toBeTruthy()
         expect(
-            screen.getByText(
-                'onboarding.import_options.universal_wallet.title',
-            ),
+            screen.getByText('onboarding.import_options.hd_wallet.title'),
         ).toBeTruthy()
         expect(
             screen.getByText('onboarding.import_options.algo25.title'),
         ).toBeTruthy()
         expect(
-            screen.getByText(
-                'onboarding.import_options.universal_wallet.description',
-            ),
+            screen.getByText('onboarding.import_options.hd_wallet.description'),
         ).toBeTruthy()
         expect(
             screen.getByText('onboarding.import_options.algo25.description'),
@@ -78,21 +74,19 @@ describe('ImportOptionsBottomSheet', () => {
         expect(onClose).toHaveBeenCalledTimes(1)
     })
 
-    it('calls onUniversalWalletPress when Universal Wallet option is pressed', () => {
-        const onUniversalWalletPress = vi.fn()
+    it('calls onHDWalletPress when Universal Wallet option is pressed', () => {
+        const onHDWalletPress = vi.fn()
         render(
             <ImportOptionsBottomSheet
                 {...defaultProps}
-                onUniversalWalletPress={onUniversalWalletPress}
+                onHDWalletPress={onHDWalletPress}
             />,
         )
 
         fireEvent.click(
-            screen.getByText(
-                'onboarding.import_options.universal_wallet.title',
-            ),
+            screen.getByText('onboarding.import_options.hd_wallet.title'),
         )
-        expect(onUniversalWalletPress).toHaveBeenCalledTimes(1)
+        expect(onHDWalletPress).toHaveBeenCalledTimes(1)
     })
 
     it('calls onAlgo25Press when ALGO25 option is pressed', () => {

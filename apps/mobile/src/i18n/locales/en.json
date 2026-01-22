@@ -276,7 +276,7 @@
     "onboarding": {
         "import_options": {
             "title": "Select your Mnemonic type",
-            "universal_wallet": {
+            "hd_wallet": {
                 "title": "Universal Wallet",
                 "description": "Wallet that lets you derive new accounts, all using the same mnemonic",
                 "chip": "new"
@@ -294,6 +294,7 @@
             "button": "Recover an Algorand Wallet"
         },
         "import_account": {
+            "title": "Enter your Recovery Passphrase",
             "importing": "Importing wallet...",
             "button": "Import Wallet",
             "failed_title": "Import failed",

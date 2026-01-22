@@ -12,17 +12,22 @@
 
 import { useCallback } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { RouteProp, useRoute } from '@react-navigation/native'
+import { OnboardingStackParamList } from '../../routes/types'
 
 export const useImportInfoScreen = () => {
     const navigation = useAppNavigation()
+    const {
+        params: { accountType },
+    } = useRoute<RouteProp<OnboardingStackParamList, 'ImportInfo'>>()
 
     const handleBackPress = useCallback(() => {
         navigation.goBack()
     }, [navigation])
 
     const handleRecoverPress = useCallback(() => {
-        navigation.push('ImportAccount')
-    }, [navigation])
+        navigation.push('ImportAccount', { accountType })
+    }, [navigation, accountType])
 
     const handleInfoPress = useCallback(() => {
         // Requirements don't specify what this does, but it's an icon in the right

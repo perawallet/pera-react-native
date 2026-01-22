@@ -19,7 +19,7 @@ import {
 import { useAccountsStore } from '../store'
 import { useHDWallet } from './useHDWallet'
 import { v7 as uuidv7 } from 'uuid'
-import { AccountTypes, WalletAccount } from '../models'
+import { AccountTypes, WalletAccount, ImportAccountType } from '../models'
 import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import {
@@ -46,14 +46,17 @@ export const useCreateAccount = () => {
         walletId,
         account,
         keyIndex,
+        type = 'hdWallet',
     }: {
         walletId?: string
         account: number
         keyIndex: number
+        type?: ImportAccountType
     }) => {
         const rootWalletId = walletId ?? uuidv7()
         //TODO dry this code - maybe create a useHDWalletKey hook and share with useImportAccount
         let rootKey = getKey(rootWalletId)
+
         if (!rootKey) {
             const masterKey = await generateMasterKey()
             const keyData = {
@@ -67,7 +70,10 @@ export const useCreateAccount = () => {
                 privateDataStorageKey: '',
                 domain: KEY_DOMAIN,
                 createdAt: new Date(),
-                type: KeyType.HDWalletRootKey,
+                type:
+                    type === 'hdWallet'
+                        ? KeyType.HDWalletRootKey
+                        : KeyType.Algo25Key,
             } as KeyPair
 
             rootKey = await saveKey(
@@ -75,6 +81,30 @@ export const useCreateAccount = () => {
                 new TextEncoder().encode(stringifiedObj),
             )
             masterKey.seed.fill(0)
+        }
+
+        if (rootKey && rootKey.type === KeyType.Algo25Key) {
+            const newAccount: WalletAccount = {
+                id: uuidv7(),
+                address: rootKey.publicKey,
+                type: AccountTypes.algo25,
+                canSign: true,
+                keyPairId: rootKey.id,
+            }
+
+            accounts.push(newAccount)
+            setAccounts([...accounts])
+
+            if (deviceID) {
+                updateDeviceOnBackend({
+                    deviceId: deviceID,
+                    data: {
+                        platform: deviceInfo.getDevicePlatform(),
+                        accounts: accounts.map(a => a.address),
+                    },
+                })
+            }
+            return newAccount
         }
 
         if (!rootKey?.id) {
