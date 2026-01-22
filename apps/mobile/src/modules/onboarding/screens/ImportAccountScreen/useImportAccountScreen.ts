@@ -23,7 +23,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 
 const MNEMONIC_LENGTH_MAP: Record<ImportAccountType, number> = {
-    universal: 24,
+    hdWallet: 24,
     algo25: 25,
 }
 

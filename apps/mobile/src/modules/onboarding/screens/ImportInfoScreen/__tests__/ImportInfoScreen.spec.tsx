@@ -87,7 +87,7 @@ vi.mock('@react-navigation/native', async () => {
     return {
         ...actual,
         useRoute: () => ({
-            params: { accountType: 'universal' },
+            params: { accountType: 'hdWallet' },
         }),
     }
 })
@@ -121,7 +121,7 @@ describe('ImportInfoScreen', () => {
         fireEvent.click(recoverButton)
 
         expect(mockPush).toHaveBeenCalledWith('ImportAccount', {
-            accountType: 'universal',
+            accountType: 'hdWallet',
         })
     })
 

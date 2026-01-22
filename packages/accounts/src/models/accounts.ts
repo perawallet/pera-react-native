@@ -28,7 +28,7 @@ export const AccountTypes = {
 
 export type AccountType = (typeof AccountTypes)[keyof typeof AccountTypes]
 
-export type ImportAccountType = 'universal' | 'algo25'
+export type ImportAccountType = 'hdWallet' | 'algo25'
 
 export type HDWalletDetails = {
     walletId: string

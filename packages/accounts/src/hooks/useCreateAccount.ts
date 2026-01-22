@@ -46,7 +46,7 @@ export const useCreateAccount = () => {
         walletId,
         account,
         keyIndex,
-        type = 'universal',
+        type = 'hdWallet',
     }: {
         walletId?: string
         account: number
@@ -71,7 +71,7 @@ export const useCreateAccount = () => {
                 domain: KEY_DOMAIN,
                 createdAt: new Date(),
                 type:
-                    type === 'universal'
+                    type === 'hdWallet'
                         ? KeyType.HDWalletRootKey
                         : KeyType.Algo25Key,
             } as KeyPair

@@ -23,7 +23,7 @@ import {
 import { KeyType } from '@perawallet/wallet-core-kms'
 import * as bip39 from 'bip39'
 
-export type UniversalKeyPair = {
+export type HDWalletKeyPair = {
     seed: Buffer
     entropy: string
     type: typeof KeyType.HDWalletRootKey
@@ -88,9 +88,9 @@ export const getSeedFromMasterKey = (keyData: Uint8Array) => {
     }
 }
 
-export const createUniversalWalletFromMnemonic = async (
+export const createHDWalletFromMnemonic = async (
     mnemonic: string,
-): Promise<UniversalKeyPair> => {
+): Promise<HDWalletKeyPair> => {
     const seed = await bip39.mnemonicToSeed(mnemonic)
     const entropy = await bip39.mnemonicToEntropy(mnemonic)
 

@@ -32,7 +32,7 @@ export const OnboardingScreen = () => {
         handleCreateAccount,
         handleImportAccount,
         handleCloseImportOptions,
-        handleUniversalWalletPress,
+        handleHDWalletPress,
         handleAlgo25Press,
     } = useOnboardingScreen()
 
@@ -105,7 +105,7 @@ export const OnboardingScreen = () => {
             <ImportOptionsBottomSheet
                 isVisible={isImportOptionsVisible}
                 onClose={handleCloseImportOptions}
-                onUniversalWalletPress={handleUniversalWalletPress}
+                onHDWalletPress={handleHDWalletPress}
                 onAlgo25Press={handleAlgo25Press}
             />
         </>

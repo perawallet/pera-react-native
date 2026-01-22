@@ -17,7 +17,7 @@ import { useKMS, KeyType } from '@perawallet/wallet-core-kms'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import { useCreateAccount } from './useCreateAccount'
 import { ImportAccountType } from '../models'
-import { createUniversalWalletFromMnemonic } from '../utils'
+import { createHDWalletFromMnemonic } from '../utils'
 
 export const useImportAccount = () => {
     const { saveKey } = useKMS()
@@ -34,19 +34,19 @@ export const useImportAccount = () => {
     }) => {
         const rootWalletId = walletId ?? uuidv7()
 
-        if (type === 'universal') {
-            const universalKeyPair =
-                await createUniversalWalletFromMnemonic(mnemonic)
+        if (type === 'hdWallet') {
+            const hdWalletKeyPair =
+                await createHDWalletFromMnemonic(mnemonic)
             const stringifiedObj = JSON.stringify({
-                seed: universalKeyPair.seed.toString('base64'),
-                entropy: universalKeyPair.entropy,
+                seed: hdWalletKeyPair.seed.toString('base64'),
+                entropy: hdWalletKeyPair.entropy,
             })
             const rootKeyPair = {
                 id: rootWalletId,
                 publicKey: '',
                 privateDataStorageKey: rootWalletId,
                 createdAt: new Date(),
-                type: universalKeyPair.type,
+                type: hdWalletKeyPair.type,
             }
             await saveKey(rootKeyPair, Buffer.from(stringifiedObj))
         }

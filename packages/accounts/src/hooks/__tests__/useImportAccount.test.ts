@@ -206,7 +206,7 @@ describe('useImportAccount', () => {
         await act(async () => {
             imported = await result.current({
                 mnemonic: 'test mnemonic',
-                type: 'universal',
+                type: 'hdWallet',
             })
         })
 
@@ -228,9 +228,9 @@ describe('useImportAccount', () => {
 
     test('throws error when generateMasterKey fails with invalid mnemonic', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => {}),
+            setItem: vi.fn(async () => { }),
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => {}),
+            removeItem: vi.fn(async () => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -250,7 +250,7 @@ describe('useImportAccount', () => {
             await expect(
                 result.current({
                     mnemonic: 'invalid mnemonic',
-                    type: 'universal',
+                    type: 'hdWallet',
                 }),
             ).rejects.toThrow('Invalid mnemonic')
         })
@@ -258,9 +258,9 @@ describe('useImportAccount', () => {
 
     test('throws error when secure storage setItem fails for root key', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => {}),
+            setItem: vi.fn(async () => { }),
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => {}),
+            removeItem: vi.fn(async () => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -278,7 +278,7 @@ describe('useImportAccount', () => {
             await expect(
                 result.current({
                     mnemonic: 'test mnemonic',
-                    type: 'universal',
+                    type: 'hdWallet',
                 }),
             ).rejects.toThrow('Storage full')
         })
@@ -286,9 +286,9 @@ describe('useImportAccount', () => {
 
     test('throws error when mnemonicToEntropy fails', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => {}),
+            setItem: vi.fn(async () => { }),
             getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => {}),
+            removeItem: vi.fn(async () => { }),
             authenticate: vi.fn(async () => true),
         }
 
@@ -308,7 +308,7 @@ describe('useImportAccount', () => {
             await expect(
                 result.current({
                     mnemonic: 'test mnemonic',
-                    type: 'universal',
+                    type: 'hdWallet',
                 }),
             ).rejects.toThrow('Invalid entropy')
         })
@@ -348,7 +348,7 @@ describe('useImportAccount', () => {
             imported = await result.current({
                 walletId: 'CUSTOM_WALLET',
                 mnemonic: 'test mnemonic',
-                type: 'universal',
+                type: 'hdWallet',
             })
         })
 
@@ -397,7 +397,7 @@ describe('useImportAccount', () => {
             await expect(
                 result.current({
                     mnemonic: 'test mnemonic',
-                    type: 'universal',
+                    type: 'hdWallet',
                 }),
             ).rejects.toThrow('Address generation failed')
         })
