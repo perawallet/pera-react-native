@@ -24,7 +24,10 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useRoute, RouteProp } from '@react-navigation/native'
 import { OnboardingStackParamList } from '../../routes'
-import { useShouldPlayConfetti } from '@modules/onboarding/hooks'
+import {
+    useShouldPlayConfetti,
+    useIsOnboarding,
+} from '@modules/onboarding/hooks'
 
 type NameAccountScreenRouteProp = RouteProp<
     OnboardingStackParamList,
@@ -41,6 +44,7 @@ export const useNameAccountScreen = () => {
     const { t } = useLanguage()
     const { showToast } = useToast()
     const { setShouldPlayConfetti } = useShouldPlayConfetti()
+    const { setIsOnboarding } = useIsOnboarding()
 
     const routeAccount = route.params?.account
 
@@ -96,6 +100,8 @@ export const useNameAccountScreen = () => {
 
             // Set confetti state - AccountScreen will read this and play the animation
             setShouldPlayConfetti(true)
+
+            setIsOnboarding(false)
         } catch (error) {
             showToast({
                 title: t('onboarding.create_account.error_title'),

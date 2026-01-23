@@ -14,10 +14,12 @@ import {
     useHasNoAccounts,
     useSelectedAccountAddress,
 } from '@perawallet/wallet-core-accounts'
+import { useIsOnboarding } from '@modules/onboarding/hooks'
 
 export const useShowOnboarding = () => {
     const noAccounts = useHasNoAccounts()
     const { selectedAccountAddress } = useSelectedAccountAddress()
+    const { isOnboarding } = useIsOnboarding()
 
-    return noAccounts || !selectedAccountAddress
+    return noAccounts || !selectedAccountAddress || isOnboarding
 }

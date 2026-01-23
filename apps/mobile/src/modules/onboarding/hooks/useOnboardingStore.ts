@@ -14,10 +14,12 @@ import { create } from 'zustand'
 
 type OnboardingState = {
     shouldPlayConfetti: boolean
+    isOnboarding: boolean
 }
 
 type OnboardingActions = {
     setShouldPlayConfetti: (value: boolean) => void
+    setIsOnboarding: (value: boolean) => void
     reset: () => void
 }
 
@@ -25,12 +27,14 @@ type OnboardingStore = OnboardingState & OnboardingActions
 
 const initialState: OnboardingState = {
     shouldPlayConfetti: false,
+    isOnboarding: false,
 }
 
 export const useOnboardingStore = create<OnboardingStore>()(set => ({
     ...initialState,
     setShouldPlayConfetti: (value: boolean) =>
         set({ shouldPlayConfetti: value }),
+    setIsOnboarding: (value: boolean) => set({ isOnboarding: value }),
     reset: () => set(initialState),
 }))
 
@@ -49,4 +53,15 @@ export const useShouldPlayConfetti = (): UseShouldPlayConfettiResult => {
         state => state.setShouldPlayConfetti,
     )
     return { shouldPlayConfetti, setShouldPlayConfetti }
+}
+
+type UseIsOnboardingResult = {
+    isOnboarding: boolean
+    setIsOnboarding: (value: boolean) => void
+}
+
+export const useIsOnboarding = (): UseIsOnboardingResult => {
+    const isOnboarding = useOnboardingStore(state => state.isOnboarding)
+    const setIsOnboarding = useOnboardingStore(state => state.setIsOnboarding)
+    return { isOnboarding, setIsOnboarding }
 }
