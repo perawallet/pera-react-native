@@ -11,7 +11,7 @@
  */
 
 export {
-  useOnboardingStore,
-  useShouldPlayConfetti,
-  useIsOnboarding,
+    useOnboardingStore,
+    useShouldPlayConfetti,
+    useIsOnboarding,
 } from './useOnboardingStore'

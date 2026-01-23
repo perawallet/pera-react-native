@@ -10,16 +10,59 @@
  limitations under the License
  */
 
+import { useEffect, useRef } from 'react'
+import { Animated } from 'react-native'
 import { useLanguage } from '@hooks/useLanguage'
 
 export type UseSearchAccountsScreenResult = {
     t: (key: string) => string
+    dotOpacities: Animated.Value[]
 }
+
+const DOT_COUNT = 4
+const ANIMATION_DURATION = 400
+const STEP_DURATION = 500
+const TRANSPARENT_OPACITY = 0.3
+const FULL_OPACITY = 1
 
 export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const { t } = useLanguage()
+    const dotOpacities = useRef(
+        Array.from(
+            { length: DOT_COUNT },
+            () => new Animated.Value(FULL_OPACITY),
+        ),
+    ).current
+
+    useEffect(() => {
+        let currentIndex = 0
+
+        // Initialize first dot as transparent
+        dotOpacities[0].setValue(TRANSPARENT_OPACITY)
+
+        const interval = setInterval(() => {
+            const prevIndex = currentIndex
+            currentIndex = (currentIndex + 1) % DOT_COUNT
+
+            Animated.parallel([
+                Animated.timing(dotOpacities[prevIndex], {
+                    toValue: FULL_OPACITY,
+                    duration: ANIMATION_DURATION,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(dotOpacities[currentIndex], {
+                    toValue: TRANSPARENT_OPACITY,
+                    duration: ANIMATION_DURATION,
+                    useNativeDriver: true,
+                }),
+            ]).start()
+        }, STEP_DURATION)
+
+        return () => clearInterval(interval)
+    }, [dotOpacities])
 
     return {
         t,
+        dotOpacities,
     }
 }

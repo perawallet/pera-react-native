@@ -10,14 +10,15 @@
  limitations under the License
  */
 
+import { Animated } from 'react-native'
 import { PWText, PWView } from '@components/core'
 import { RoundButton } from '@components/RoundButton/RoundButton'
 import { useStyles } from './styles'
 import { useSearchAccountsScreen } from './useSearchAccountsScreen'
 
 export const SearchAccountsScreen = () => {
+    const { t, dotOpacities } = useSearchAccountsScreen()
     const styles = useStyles()
-    const { t } = useSearchAccountsScreen()
 
     return (
         <PWView style={styles.container}>
@@ -28,10 +29,34 @@ export const SearchAccountsScreen = () => {
                 />
 
                 <PWView style={styles.dotsContainer}>
-                    <PWView style={[styles.dot, styles.dot1]} />
-                    <PWView style={[styles.dot, styles.dot2]} />
-                    <PWView style={[styles.dot, styles.dot3]} />
-                    <PWView style={[styles.dot, styles.dot4]} />
+                    <Animated.View
+                        style={[
+                            styles.dot,
+                            styles.dot1,
+                            { opacity: dotOpacities[0] },
+                        ]}
+                    />
+                    <Animated.View
+                        style={[
+                            styles.dot,
+                            styles.dot2,
+                            { opacity: dotOpacities[1] },
+                        ]}
+                    />
+                    <Animated.View
+                        style={[
+                            styles.dot,
+                            styles.dot3,
+                            { opacity: dotOpacities[2] },
+                        ]}
+                    />
+                    <Animated.View
+                        style={[
+                            styles.dot,
+                            styles.dot4,
+                            { opacity: dotOpacities[3] },
+                        ]}
+                    />
                 </PWView>
 
                 <RoundButton
