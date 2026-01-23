@@ -326,6 +326,9 @@
             "wallet_label": "Wallet #{{count}}",
             "input_label": "Account name",
             "finish_button": "Finish Account Creation"
+        },
+        "import_select_addresses": {
+            "title": "Select your accounts"
         }
     },
     "portfolio": {

@@ -20,6 +20,7 @@ import { OnboardingScreen } from '@modules/onboarding/screens/OnboardingScreen'
 import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen'
 import { ImportAccountScreen } from '@modules/onboarding/screens/ImportAccountScreen'
 import { ImportInfoScreen } from '@modules/onboarding/screens/ImportInfoScreen'
+import { ImportSelectAddressesScreen } from '@modules/onboarding/screens/ImportSelectAddressesScreen'
 import { AccountErrorBoundary } from '@modules/accounts/components/AccountErrorBoundary/AccountErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
 import { screenListeners } from '@routes/listeners'
@@ -52,6 +53,8 @@ const ImportInfoScreenWithErrorBoundary =
     withAccountErrorBoundary(ImportInfoScreen)
 const SearchAccountsScreenWithErrorBoundary =
     withAccountErrorBoundary(SearchAccountsScreen)
+const ImportSelectAddressesScreenWithErrorBoundary =
+    withAccountErrorBoundary(ImportSelectAddressesScreen)
 
 import { OnboardingStackParamList } from './types'
 export type { OnboardingStackParamList } from './types'
@@ -108,6 +111,14 @@ export const OnboardingStackNavigator = () => {
                 }}
                 layout={fullScreenLayout}
                 component={SearchAccountsScreenWithErrorBoundary}
+            />
+            <OnboardingStack.Screen
+                name='ImportSelectAddresses'
+                options={{
+                    headerShown: false,
+                }}
+                layout={safeAreaLayout}
+                component={ImportSelectAddressesScreenWithErrorBoundary}
             />
         </OnboardingStack.Navigator>
     )

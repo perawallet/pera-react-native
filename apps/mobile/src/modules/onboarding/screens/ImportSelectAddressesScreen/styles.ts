@@ -10,31 +10,16 @@
  limitations under the License
  */
 
-import {
-    WalletAccount,
-    HDWalletAccount,
-    ImportAccountType,
-} from '@perawallet/wallet-core-accounts'
+import { makeStyles } from '@rneui/themed'
 
-export type OnboardingStackParamList = {
-    OnboardingHome: undefined
-    NameAccount:
-    | {
-        account?: WalletAccount
-    }
-    | undefined
-    ImportSelectAddresses: {
-        accounts: HDWalletAccount[]
-    }
-
-    ImportInfo: {
-        accountType: ImportAccountType
-    }
-    ImportAccount: {
-        accountType: ImportAccountType
-    }
-    SearchAccounts: {
-        account: HDWalletAccount
-    }
-}
-
+export const useStyles = makeStyles(theme => ({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: theme.spacing.xl,
+    paddingTop: theme.spacing.xl,
+  },
+}))

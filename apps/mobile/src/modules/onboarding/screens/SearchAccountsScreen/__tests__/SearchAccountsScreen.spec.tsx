@@ -11,9 +11,59 @@
  */
 
 import { render, screen } from '@test-utils/render'
+import { vi } from 'vitest'
+import { useRoute } from '@react-navigation/native'
 import { SearchAccountsScreen } from '../SearchAccountsScreen'
+import { AccountTypes } from '@perawallet/wallet-core-accounts'
+
+// Mock the hooks to avoid actual blockchain/KMS calls during tests
+vi.mock('@perawallet/wallet-core-accounts', async (importOriginal) => ({
+    ...(await importOriginal<any>()),
+    useHDWallet: () => ({
+        deriveAccountAddress: vi.fn(),
+    }),
+    useCreateAccount: () => vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-kms', () => ({
+    useKMS: () => ({
+        getPrivateData: vi.fn(),
+    }),
+}))
+
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useAlgorandClient: () => ({
+        client: {
+            algod: {
+                accountInformation: vi.fn(() => ({})),
+
+            },
+        },
+    }),
+    encodeAlgorandAddress: vi.fn(() => 'MOCK_ADDRESS'),
+}))
 
 describe('SearchAccountsScreen', () => {
+    beforeEach(() => {
+        vi.mocked(useRoute).mockReturnValue({
+            params: {
+                account: {
+                    id: '1',
+                    address: 'MOCK_ADDRESS',
+                    type: AccountTypes.hdWallet,
+                    canSign: true,
+                    hdWalletDetails: {
+                        walletId: '1',
+                        account: 0,
+                        change: 0,
+                        keyIndex: 0,
+                        derivationType: 9,
+                    },
+                },
+            },
+        } as any)
+    })
+
     it('renders searching accounts title', () => {
         render(<SearchAccountsScreen />)
         expect(
@@ -30,3 +80,4 @@ describe('SearchAccountsScreen', () => {
         expect(screen.getByTestId('icon-phone')).toBeTruthy()
     })
 })
+
