@@ -24,20 +24,17 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
         },
         sectionTitle: {
             color: theme.colors.textGray,
-            paddingBottom: theme.spacing.lg,
+            paddingBottom: theme.spacing.md,
         },
         sectionRow: {
-            flexDirection: 'row',
-            gap: theme.spacing.lg,
-            paddingVertical: theme.spacing.lg,
-            alignItems: 'center',
+            paddingHorizontal: theme.spacing.xs,
         },
         sectionRowTitle: {
             flexGrow: 1,
         },
         scrollView: {
             flex: 1,
-            marginHorizontal: theme.spacing.xl,
+            marginHorizontal: theme.spacing.lg,
             marginBottom: insets.bottom,
         },
         scrollViewContainer: {},

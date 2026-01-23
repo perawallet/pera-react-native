@@ -38,21 +38,21 @@ export const PWToolbar = ({
             testID={testID}
         >
             <PWView
-                style={[styles.slotContainer, styles.leftSlotContainer]}
+                style={styles.leftSlotContainer}
                 testID={testID ? `${testID}-left` : undefined}
             >
                 {left}
             </PWView>
 
             <PWView
-                style={[styles.slotContainer, styles.centerSlotContainer]}
+                style={styles.centerSlotContainer}
                 testID={testID ? `${testID}-center` : undefined}
             >
                 {center}
             </PWView>
 
             <PWView
-                style={[styles.slotContainer, styles.rightSlotContainer]}
+                style={styles.rightSlotContainer}
                 testID={testID ? `${testID}-right` : undefined}
             >
                 {right}
