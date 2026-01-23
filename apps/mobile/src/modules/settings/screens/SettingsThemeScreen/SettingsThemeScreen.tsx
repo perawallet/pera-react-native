@@ -11,9 +11,8 @@
  */
 
 import { useStyles } from './styles'
-import { PWView } from '@components/core'
+import { PWView, PWRadioButton } from '@components/core'
 import { useSettings } from '@perawallet/wallet-core-settings'
-import { RadioButton } from '@components/RadioButton'
 import { useLanguage } from '@hooks/useLanguage'
 
 export const SettingsThemeScreen = () => {
@@ -23,17 +22,17 @@ export const SettingsThemeScreen = () => {
 
     return (
         <PWView style={styles.container}>
-            <RadioButton
+            <PWRadioButton
                 title={t('settings.theme.system_label')}
                 onPress={() => setTheme('system')}
                 isSelected={!theme || theme === 'system'}
             />
-            <RadioButton
+            <PWRadioButton
                 title={t('settings.theme.light_label')}
                 onPress={() => setTheme('light')}
                 isSelected={theme === 'light'}
             />
-            <RadioButton
+            <PWRadioButton
                 title={t('settings.theme.dark_label')}
                 onPress={() => setTheme('dark')}
                 isSelected={theme === 'dark'}

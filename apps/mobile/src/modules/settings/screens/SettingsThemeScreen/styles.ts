@@ -18,6 +18,7 @@ export const useStyles = makeStyles(theme => {
             flex: 1,
             flexDirection: 'column',
             gap: theme.spacing.md,
+            padding: theme.spacing.md,
         },
         row: {
             flexDirection: 'row',

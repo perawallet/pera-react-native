@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { RadioButton } from './RadioButton'
-export type { RadioButtonProps } from './RadioButton'
+export { PWRadioButton } from './PWRadioButton'
+export type { PWRadioButtonProps } from './PWRadioButton'

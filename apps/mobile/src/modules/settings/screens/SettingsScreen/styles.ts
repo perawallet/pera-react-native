@@ -41,12 +41,5 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
             marginBottom: insets.bottom,
         },
         scrollViewContainer: {},
-        versionText: {
-            color: theme.colors.textGrayLighter,
-            paddingVertical: theme.spacing.sm,
-            textAlign: 'center',
-            width: '100%',
-            fontSize: 11,
-        },
     }
 })

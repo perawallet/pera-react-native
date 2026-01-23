@@ -13,7 +13,7 @@
 import { Text } from '@rneui/themed'
 
 import { useStyles } from './styles'
-import { PWView } from '@components/core'
+import { PWView, PWRadioButton } from '@components/core'
 import {
     Currency,
     useCurrenciesQuery,
@@ -22,7 +22,6 @@ import {
 import { useEffect, useState } from 'react'
 import { FlatList } from 'react-native'
 
-import { RadioButton } from '@components/RadioButton'
 import { SearchInput } from '@components/SearchInput'
 import { useInvalidateAssetPrices } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
@@ -59,7 +58,7 @@ export const SettingsCurrencyScreen = () => {
 
     const renderItem = ({ item }: { item: Currency }) => {
         return (
-            <RadioButton
+            <PWRadioButton
                 title={`${item.name} (${item.id})`}
                 onPress={() => setCurrency(item)}
                 isSelected={preferredCurrency === item.id}

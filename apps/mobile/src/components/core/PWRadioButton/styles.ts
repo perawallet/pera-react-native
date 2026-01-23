@@ -30,10 +30,13 @@ export const useStyles = makeStyles(theme => {
             justifyContent: 'center',
             alignItems: 'center',
         },
+        selectedBorder: {
+            borderColor: theme.colors.helperPositive,
+        },
         selectedRadio: {
             borderRadius: theme.spacing.lg,
-            width: theme.spacing.lg,
-            height: theme.spacing.lg,
+            width: theme.spacing.md,
+            height: theme.spacing.md,
             backgroundColor: theme.colors.helperPositive,
         },
         input: {
