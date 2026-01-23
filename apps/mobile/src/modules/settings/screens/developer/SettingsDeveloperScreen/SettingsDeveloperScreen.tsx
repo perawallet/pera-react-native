@@ -19,6 +19,9 @@ import { Networks } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
+import { useWebView } from '@modules/webview'
+import { config } from '@perawallet/wallet-core-config'
+import { v4 as uuid } from 'uuid'
 
 export const SettingsDeveloperScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
@@ -26,9 +29,18 @@ export const SettingsDeveloperScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const { getPreference } = usePreferences()
+    const { pushWebView } = useWebView()
 
     const handleTapEvent = (page: string) => {
         navigation.push(page)
+    }
+
+    const openDispenser = () => {
+        pushWebView({
+            url: config.dispenserUrl,
+            id: uuid(),
+            enablePeraConnect: true,
+        })
     }
 
     return (
@@ -40,7 +52,7 @@ export const SettingsDeveloperScreen = () => {
             />
             {network === Networks.testnet && (
                 <PWListItem
-                    onPress={() => handleTapEvent('DispenserSettings')}
+                    onPress={openDispenser}
                     icon='algo'
                     title={t('settings.developer.dispenser_title')}
                 />
@@ -48,7 +60,7 @@ export const SettingsDeveloperScreen = () => {
             {getPreference(UserPreferences.developerMenuEnabled) && (
                 <PWListItem
                     onPress={() => handleTapEvent('DevMenu')}
-                    icon='globe'
+                    icon='sliders'
                     title={t('screens.developer_menu')}
                 />
             )}

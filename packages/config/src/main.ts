@@ -51,6 +51,7 @@ export const configSchema = z.object({
     termsOfServiceUrl: z.string().url(),
     privacyPolicyUrl: z.string().url(),
     peraDemoDappUrl: z.string().url(),
+    dispenserUrl: z.string().url(),
 
     sendFundsFaqUrl: z.string().url(),
     swapSupportUrl: z.string().url(),
@@ -90,6 +91,7 @@ const productionConfig = {
         'https://support.perawallet.app/en/category/transactions-1tq8s9h/',
     swapSupportUrl:
         'https://support.perawallet.app/en/article/pera-swap-swapping-with-pera-1ep84ky/',
+    dispenserUrl: 'https://lora.algokit.io/testnet/fund/',
     notificationRefreshTime: THIRTY_SECONDS,
     remoteConfigRefreshTime: ONE_HOUR,
     reactQueryDefaultGCTime: ONE_HOUR,

@@ -469,7 +469,10 @@
             "debug_webview": "Test Webview API",
             "debug_dapp": "Test Dapp",
             "taps_to_notify": "Developer menu will enable in {{remaining}} taps",
-            "developer_menu_enabled": "Developer menu enabled"
+            "developer_menu_enabled": "Developer menu enabled",
+            "overridden": "Overridden",
+            "enabled": "Enabled",
+            "disabled": "Disabled"
         },
         "security": {
             "security_settings_section": "Security Settings",

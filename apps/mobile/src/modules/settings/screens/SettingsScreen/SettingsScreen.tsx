@@ -101,6 +101,7 @@ export const SettingsScreen = () => {
                                 onPress={() => handleTapEvent(page)}
                                 icon={page.icon as IconName}
                                 title={page.title}
+                                style={styles.sectionRow}
                             />
                         ))}
                     </PWView>

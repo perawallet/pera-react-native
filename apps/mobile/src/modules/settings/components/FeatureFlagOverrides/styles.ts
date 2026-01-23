@@ -15,12 +15,29 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => {
     return {
         container: {
-            padding: theme.spacing.xl,
+            paddingHorizontal: theme.spacing.lg,
+            gap: theme.spacing.lg,
+        },
+        flagContainer: {
+            gap: theme.spacing.md,
+            borderBottomWidth: 1,
+            borderBottomColor: theme.colors.layerGrayLighter,
+            paddingVertical: theme.spacing.md,
         },
         row: {
             flexDirection: 'row',
             justifyContent: 'space-between',
             alignItems: 'center',
+        },
+        flagTitle: {
+            margin: 0,
+            padding: 0,
+            lineHeight: theme.spacing.md,
+        },
+        flagCaption: {
+            margin: 0,
+            padding: 0,
+            lineHeight: theme.spacing.md,
         },
     }
 })
