@@ -22,7 +22,7 @@ import {
 import { useEffect, useState } from 'react'
 import { FlatList } from 'react-native'
 
-import { PWRadioButton } from '@components/core/PWRadioButton'
+import { PWRadioButton } from '@components/core'
 import { SearchInput } from '@components/SearchInput'
 import { useInvalidateAssetPrices } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
