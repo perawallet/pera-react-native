@@ -455,7 +455,7 @@
             "version_footer": "Pera Wallet Version {{version}}"
         },
         "theme": {
-            "system_label": "System",
+            "system_label": "System Default",
             "light_label": "Light",
             "dark_label": "Dark"
         },

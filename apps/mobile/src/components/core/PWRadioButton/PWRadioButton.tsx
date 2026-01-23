@@ -13,16 +13,16 @@
 import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useStyles } from './styles'
 
-export type RadioButtonProps = {
+export type PWRadioButtonProps = {
     onPress: () => void
     title: string
     isSelected: boolean
 }
-export const RadioButton = ({
+export const PWRadioButton = ({
     onPress,
     title,
     isSelected,
-}: RadioButtonProps) => {
+}: PWRadioButtonProps) => {
     const styles = useStyles()
 
     return (
@@ -31,7 +31,12 @@ export const RadioButton = ({
             style={styles.row}
         >
             <PWText>{title}</PWText>
-            <PWView style={styles.radioContainer}>
+            <PWView
+                style={[
+                    styles.radioContainer,
+                    isSelected && styles.selectedBorder,
+                ]}
+            >
                 {isSelected && <PWView style={styles.selectedRadio} />}
             </PWView>
         </PWTouchableOpacity>
