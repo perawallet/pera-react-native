@@ -298,7 +298,11 @@
             "importing": "Importing wallet...",
             "button": "Import Wallet",
             "failed_title": "Import failed",
-            "failed_body": "There was an error trying to import your wallet"
+            "failed_body": "There was an error trying to import your wallet",
+            "invalid_mnemonic_title": "Invalid Passphrase",
+            "invalid_mnemonic_body": "The passphrase you pasted contains too many words.",
+            "insufficient_slots_title": "Invalid Passphrase",
+            "insufficient_slots_body": "The passphrase you pasted does not fit in the remaining slots."
         },
         "searching_accounts": {
             "title": "Searching your accounts"
