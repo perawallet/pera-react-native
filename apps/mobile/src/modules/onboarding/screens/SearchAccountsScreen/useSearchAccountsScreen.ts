@@ -205,7 +205,6 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     return {
         t,
         dotOpacities,
-        isSearching,
     }
 }
 
