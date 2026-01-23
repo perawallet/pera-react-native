@@ -19,6 +19,7 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'center',
         alignItems: 'center',
         padding: theme.spacing.xl,
+        gap: theme.spacing.xl,
     },
     topRow: {
         flexDirection: 'row',
@@ -29,12 +30,12 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         marginHorizontal: theme.spacing.xl,
-        gap: theme.spacing.sm,
+        gap: theme.spacing.md,
     },
     dot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
+        width: theme.spacing.xs,
+        height: theme.spacing.xs,
+        borderRadius: theme.spacing.xs,
     },
     dot1: {
         backgroundColor: theme.colors.grey2, // Gray 200
@@ -50,6 +51,5 @@ export const useStyles = makeStyles(theme => ({
     },
     title: {
         textAlign: 'center',
-        marginTop: theme.spacing.md,
     },
 }))
