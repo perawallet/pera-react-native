@@ -11,15 +11,74 @@
  */
 
 import React from 'react'
-import { PWView, PWText, PWToolbar, PWIcon, PWTouchableOpacity } from '@components/core'
+import { FlatList } from 'react-native'
+import {
+    PWView,
+    PWText,
+    PWToolbar,
+    PWIcon,
+    PWTouchableOpacity,
+    PWButton,
+    PWCheckbox,
+    PWChip,
+} from '@components/core'
+
 import { useStyles } from './styles'
 import { useImportSelectAddressesScreen } from './useImportSelectAddressesScreen'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import {
+    getAccountDisplayName,
+    HDWalletAccount,
+} from '@perawallet/wallet-core-accounts'
 
 export const ImportSelectAddressesScreen = () => {
     const styles = useStyles()
-    const { accounts, t } = useImportSelectAddressesScreen()
+    const {
+        accounts,
+        selectedAddresses,
+        isAllSelected,
+        alreadyImportedAddresses,
+        toggleSelection,
+        toggleSelectAll,
+        handleContinue,
+        t,
+    } = useImportSelectAddressesScreen()
     const navigation = useAppNavigation()
+
+    const renderItem = ({ item }: { item: HDWalletAccount }) => {
+        const isImported = alreadyImportedAddresses.has(item.address)
+        const isSelected = selectedAddresses.has(item.address)
+        const displayName = getAccountDisplayName(item)
+
+        return (
+            <PWTouchableOpacity
+                style={styles.itemContainer}
+                onPress={() => toggleSelection(item.address)}
+                disabled={isImported}
+            >
+
+                <PWView style={styles.itemTextContainer}>
+                    <PWText variant="body" style={styles.itemTitle}>
+                        {displayName}
+                    </PWText>
+
+                </PWView>
+
+                {isImported ? (
+                    <PWChip
+                        title={t('onboarding.import_select_addresses.already_imported')}
+                        variant="secondary"
+                    />
+                ) : (
+                    <PWCheckbox
+                        checked={isSelected}
+                        onPress={() => toggleSelection(item.address)}
+                        containerStyle={styles.checkboxContainer}
+                    />
+                )}
+            </PWTouchableOpacity>
+        )
+    }
 
     return (
         <PWView style={styles.container}>
@@ -30,9 +89,55 @@ export const ImportSelectAddressesScreen = () => {
                     </PWTouchableOpacity>
                 }
             />
+
             <PWView style={styles.content}>
-                <PWText variant="h1">{t('onboarding.import_select_addresses.title')}</PWText>
-                {/* List of accounts will be implemented here */}
+                <PWText variant="h1" style={styles.title}>
+                    {t('onboarding.import_select_addresses.title')}
+                </PWText>
+                <PWText variant="h4" style={styles.description}>
+                    {t('onboarding.import_select_addresses.description', {
+                        count: accounts.length,
+                    })}
+                </PWText>
+
+                <PWView style={styles.headerRow}>
+                    <PWText variant="body" style={styles.headerCount}>
+                        {t('onboarding.import_select_addresses.addresses_count', {
+                            count: accounts.length,
+                        })}
+                    </PWText>
+
+                    <PWTouchableOpacity
+                        onPress={toggleSelectAll}
+                        style={styles.selectAllContainer}
+                    >
+                        <PWText variant="body" style={styles.selectAllText}>
+                            {t('onboarding.import_select_addresses.select_all')}
+                        </PWText>
+                        <PWCheckbox
+                            checked={isAllSelected}
+                            onPress={toggleSelectAll}
+                            containerStyle={styles.checkboxContainer}
+                        />
+                    </PWTouchableOpacity>
+                </PWView>
+
+                <FlatList
+                    data={accounts}
+                    renderItem={renderItem}
+                    keyExtractor={item => item.address}
+                    contentContainerStyle={styles.listContent}
+                    showsVerticalScrollIndicator={false}
+                />
+            </PWView>
+
+            <PWView style={styles.footer}>
+                <PWButton
+                    title={t('onboarding.import_select_addresses.continue')}
+                    onPress={handleContinue}
+                    variant="primary"
+                    isDisabled={selectedAddresses.size === 0}
+                />
             </PWView>
         </PWView>
     )

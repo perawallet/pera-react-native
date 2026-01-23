@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { Animated } from 'react-native'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -23,7 +23,6 @@ import {
     type WalletAccount,
     type HDWalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import {
     useAlgorandClient,
@@ -101,6 +100,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
             }
 
             const seed = getSeedFromMasterKey(privateData)
+            const derivationType = account.hdWalletDetails.derivationType
             const foundAccounts: HDWalletAccount[] = [account]
 
             let accountGap = 0
@@ -136,6 +136,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                         seed,
                         account: accountIndex,
                         keyIndex,
+                        derivationType,
                     })
 
                     const encodedAddress = encodeAlgorandAddress(address)
@@ -165,9 +166,10 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                                 account: accountIndex,
                                 change: 0,
                                 keyIndex,
-                                derivationType: BIP32DerivationType.Peikert,
+                                derivationType,
                             },
                         }
+
 
                         foundAccounts.push(newAccount)
                     } else {

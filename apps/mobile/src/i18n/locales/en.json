@@ -328,7 +328,12 @@
             "finish_button": "Finish Account Creation"
         },
         "import_select_addresses": {
-            "title": "Select your accounts"
+            "title": "Select addresses to add",
+            "description": "We found that there are {{count}} addresses registered to this wallet",
+            "addresses_count": "{{count}} addresses",
+            "select_all": "Select all",
+            "already_imported": "already imported",
+            "continue": "Continue"
         }
     },
     "portfolio": {

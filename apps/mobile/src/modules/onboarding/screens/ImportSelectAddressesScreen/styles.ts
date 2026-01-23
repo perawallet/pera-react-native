@@ -20,6 +20,70 @@ export const useStyles = makeStyles(theme => ({
   content: {
     flex: 1,
     paddingHorizontal: theme.spacing.xl,
-    paddingTop: theme.spacing.xl,
+  },
+  title: {
+    marginBottom: theme.spacing.sm,
+    marginTop: theme.spacing.sm,
+  },
+  description: {
+    marginBottom: theme.spacing.xl,
+    color: theme.colors.textGray,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: theme.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.layerGrayLighter,
+  },
+  headerCount: {
+    color: theme.colors.textGray,
+    fontWeight: '600',
+  },
+  selectAllContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  selectAllText: {
+    color: theme.colors.linkPrimary,
+    marginRight: theme.spacing.xs,
+  },
+  checkboxContainer: {
+    padding: 0,
+    margin: 0,
+    marginLeft: 0,
+    marginRight: 0,
+    backgroundColor: 'transparent',
+  },
+  listContent: {
+    paddingBottom: theme.spacing.xl,
+  },
+  itemContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: theme.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.layerGrayLighter,
+  },
+  itemTextContainer: {
+    flex: 1,
+    paddingRight: theme.spacing.md,
+  },
+  itemTitle: {
+    color: theme.colors.textMain,
+    marginBottom: 2,
+  },
+  itemSubtitle: {
+    color: theme.colors.textGray,
+    fontSize: 12,
+  },
+  footer: {
+    padding: theme.spacing.xl,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.layerGrayLighter,
+    backgroundColor: theme.colors.background,
+    paddingBottom: theme.spacing.xl + 20, // Extra padding for safe area logic usually handled by SafeAreaView but good to have buffer
   },
 }))

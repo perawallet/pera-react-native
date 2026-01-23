@@ -284,11 +284,22 @@ vi.mock('react-native', () => {
             .mockImplementation(props =>
                 require('react').createElement('div', props, props.children),
             ),
+        FlatList: vi.fn().mockImplementation(({ data, renderItem, ...props }) => {
+            const React = require('react')
+            return React.createElement(
+                'div',
+                { ...props, 'data-testid': 'FlatList' },
+                data?.map((item: any, index: number) =>
+                    renderItem({ item, index }),
+                ),
+            )
+        }),
         TextInput: vi
             .fn()
             .mockImplementation(props =>
                 require('react').createElement('input', props, props.children),
             ),
+
         Modal: vi
             .fn()
             .mockImplementation(props =>

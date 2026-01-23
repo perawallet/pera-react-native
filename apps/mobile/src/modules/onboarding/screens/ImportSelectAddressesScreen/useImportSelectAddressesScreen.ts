@@ -10,11 +10,17 @@
  limitations under the License
  */
 
+import { useState, useMemo, useCallback } from 'react'
 import { RouteProp, useRoute } from '@react-navigation/native'
 import { OnboardingStackParamList } from '../../routes/types'
-import { HDWalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+  useAllAccounts,
+  useAccountsStore,
+  HDWalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
-import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useIsOnboarding } from '@modules/onboarding/hooks'
+
 
 type ImportSelectAddressesRouteProp = RouteProp<
   OnboardingStackParamList,
@@ -23,18 +29,81 @@ type ImportSelectAddressesRouteProp = RouteProp<
 
 export type UseImportSelectAddressesScreenResult = {
   accounts: HDWalletAccount[]
-  t: (key: string) => string
+  selectedAddresses: Set<string>
+  isAllSelected: boolean
+  alreadyImportedAddresses: Set<string>
+  toggleSelection: (address: string) => void
+  toggleSelectAll: () => void
+  handleContinue: () => void
+  t: (key: string, options?: any) => string
 }
+
 
 export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreenResult {
   const {
     params: { accounts },
   } = useRoute<ImportSelectAddressesRouteProp>()
   const { t } = useLanguage()
-  const navigation = useAppNavigation()
+  const allAccounts = useAllAccounts()
+
+  const { setIsOnboarding } = useIsOnboarding()
+
+  const alreadyImportedAddresses = useMemo(() => {
+    return new Set(allAccounts.map(acc => acc.address))
+  }, [allAccounts])
+
+  const selectableAccounts = useMemo(() => {
+    return accounts.filter(acc => !alreadyImportedAddresses.has(acc.address))
+  }, [accounts, alreadyImportedAddresses])
+
+  const [selectedAddresses, setSelectedAddresses] = useState<Set<string>>(
+    new Set(selectableAccounts.map(acc => acc.address)),
+  )
+
+  const isAllSelected = selectableAccounts.length > 0 && selectedAddresses.size === selectableAccounts.length
+
+  const toggleSelection = useCallback((address: string) => {
+    if (alreadyImportedAddresses.has(address)) return
+
+    setSelectedAddresses(prev => {
+      const next = new Set(prev)
+      if (next.has(address)) {
+        next.delete(address)
+      } else {
+        next.add(address)
+      }
+      return next
+    })
+  }, [alreadyImportedAddresses])
+
+  const toggleSelectAll = useCallback(() => {
+    if (isAllSelected) {
+      setSelectedAddresses(new Set())
+    } else {
+      setSelectedAddresses(new Set(selectableAccounts.map(acc => acc.address)))
+    }
+  }, [isAllSelected, selectableAccounts])
+
+  const handleContinue = useCallback(() => {
+    const accountsToAdd = accounts.filter(acc => selectedAddresses.has(acc.address))
+
+    if (accountsToAdd.length > 0) {
+      const { setAccounts } = useAccountsStore.getState()
+      setAccounts([...allAccounts, ...accountsToAdd])
+    }
+
+    setIsOnboarding(false)
+  }, [accounts, selectedAddresses, allAccounts, setIsOnboarding])
 
   return {
     accounts,
+    selectedAddresses,
+    isAllSelected,
+    alreadyImportedAddresses,
+    toggleSelection,
+    toggleSelectAll,
+    handleContinue,
     t,
   }
 }
+
