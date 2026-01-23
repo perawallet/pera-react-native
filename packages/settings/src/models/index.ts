@@ -10,9 +10,11 @@
  limitations under the License
  */
 
+import type { BaseStoreState } from '@perawallet/wallet-core-shared'
+
 export type ThemeMode = 'light' | 'dark' | 'system'
 
-export type SettingsState = {
+export type SettingsState = BaseStoreState & {
     preferences: Record<string, string | boolean | number>
     theme: ThemeMode
     privacyMode: boolean

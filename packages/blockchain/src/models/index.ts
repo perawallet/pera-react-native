@@ -14,6 +14,7 @@ import type {
     SignedTransaction,
     Transaction,
 } from '@algorandfoundation/algokit-utils/transact'
+import { BaseStoreState } from '@perawallet/wallet-core-shared'
 
 export const MAX_TX_NOTE_BYTES = 1024
 
@@ -72,7 +73,7 @@ export type SignRequest =
     | ArbitraryDataSignRequest
     | Arc60SignRequest
 
-export type BlockchainStore = {
+export type BlockchainStore = BaseStoreState & {
     pendingSignRequests: SignRequest[]
     addSignRequest: (request: SignRequest) => boolean
     removeSignRequest: (request: SignRequest) => boolean

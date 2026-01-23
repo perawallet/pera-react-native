@@ -163,4 +163,20 @@ describe('BlockchainStore', () => {
         expect(storedValue.state.pendingSignRequests).toHaveLength(1)
         expect(storedValue.state.pendingSignRequests[0].id).toBe('1')
     })
+
+    test('should reset state to initial values', () => {
+        const { result } = renderHook(() => useBlockchainStore())
+
+        act(() => {
+            result.current.addSignRequest({ id: '1' } as any)
+        })
+
+        expect(result.current.pendingSignRequests).toHaveLength(1)
+
+        act(() => {
+            result.current.resetState()
+        })
+
+        expect(result.current.pendingSignRequests).toEqual([])
+    })
 })

@@ -18,22 +18,32 @@ import {
     KeyValueStorageService,
     useKeyValueStorageService,
 } from '@perawallet/wallet-core-platform-integration'
-import { createLazyStore, logger } from '@perawallet/wallet-core-shared'
+import {
+    createLazyStore,
+    DataStoreRegistry,
+    logger,
+} from '@perawallet/wallet-core-shared'
 
+const STORE_NAME = 'swaps-store'
 const lazy = createLazyStore<WithPersist<StoreApi<SwapsState>, unknown>>()
 
 export const useSwapsStore: UseBoundStore<
     WithPersist<StoreApi<SwapsState>, unknown>
 > = lazy.useStore
 
+const initialState = {
+    fromAsset: '0',
+    toAsset: '1001',
+}
+
 const createSwapsStore = (storage: KeyValueStorageService) =>
     create<SwapsState>()(
         persist(
             set => ({
-                fromAsset: '0',
-                toAsset: '1001',
+                ...initialState,
                 setFromAsset: (fromAsset: string) => set({ fromAsset }),
                 setToAsset: (toAsset: string) => set({ toAsset }),
+                resetState: () => set(initialState),
             }),
             {
                 name: 'swaps-store',
@@ -51,6 +61,14 @@ export const initSwapsStore = () => {
     logger.debug('Initializing swaps store')
     const storage = useKeyValueStorageService()
     const realStore = createSwapsStore(storage)
-    lazy.init(realStore)
+    lazy.init(realStore, () => realStore.getState().resetState())
     logger.debug('Swaps store initialized')
 }
+
+export const clearSwapsStore = () => lazy.clear()
+
+DataStoreRegistry.register({
+    name: STORE_NAME,
+    init: initSwapsStore,
+    clear: clearSwapsStore,
+})

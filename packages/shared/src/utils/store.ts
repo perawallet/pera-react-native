@@ -14,12 +14,21 @@ import { UseBoundStore, StoreApi, ExtractState } from 'zustand'
 
 export interface LazyStore<T extends StoreApi<unknown>> {
     useStore: UseBoundStore<T>
-    init: (realStore: UseBoundStore<T>) => void
+    init: (realStore: UseBoundStore<T>, resetState: () => void) => void
+    clear: () => void
+    getStore: () => UseBoundStore<T> | null
     _internal: { store: UseBoundStore<T> | null }
+}
+
+interface PersistApi {
+    persist?: {
+        clearStorage: () => void
+    }
 }
 
 export function createLazyStore<T extends StoreApi<unknown>>(): LazyStore<T> {
     let store: UseBoundStore<T> | null = null
+    let resetStateFn: (() => void) | null = null
 
     const useStore: UseBoundStore<T> = ((
         selector: (state: ExtractState<T>) => unknown,
@@ -32,8 +41,19 @@ export function createLazyStore<T extends StoreApi<unknown>>(): LazyStore<T> {
 
     return {
         useStore,
-        init(realStore) {
+        init(realStore, resetState) {
             store = realStore
+            resetStateFn = resetState
+        },
+        clear() {
+            if (store) {
+                const persistStore = store as unknown as PersistApi
+                persistStore.persist?.clearStorage()
+                resetStateFn?.()
+            }
+        },
+        getStore() {
+            return store
         },
         _internal: { store },
     }

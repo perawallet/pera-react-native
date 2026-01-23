@@ -13,25 +13,18 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useDeleteAllData } from '../useDeleteAllData'
-import {
-    useAllAccounts,
-    useRemoveAccountById,
-} from '@perawallet/wallet-core-accounts'
-import { useContacts } from '@perawallet/wallet-core-contacts'
-import { usePreferences } from '@perawallet/wallet-core-settings'
+import { useKMS } from '@perawallet/wallet-core-kms'
+import { DataStoreRegistry } from '@perawallet/wallet-core-shared'
 import { useQueryClient } from '@tanstack/react-query'
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAllAccounts: vi.fn(),
-    useRemoveAccountById: vi.fn(),
+vi.mock('@perawallet/wallet-core-kms', () => ({
+    useKMS: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-contacts', () => ({
-    useContacts: vi.fn(),
-}))
-
-vi.mock('@perawallet/wallet-core-settings', () => ({
-    usePreferences: vi.fn(),
+vi.mock('@perawallet/wallet-core-shared', () => ({
+    DataStoreRegistry: {
+        clearAll: vi.fn().mockResolvedValue(undefined),
+    },
 }))
 
 vi.mock('@tanstack/react-query', () => ({
@@ -39,58 +32,47 @@ vi.mock('@tanstack/react-query', () => ({
 }))
 
 describe('useDeleteAllData', () => {
-    const mockRemoveAccountById = vi.fn()
-    const mockDeleteContact = vi.fn()
-    const mockClearAllPreferences = vi.fn()
+    const mockDeleteKey = vi.fn()
     const mockRemoveQueries = vi.fn()
 
     beforeEach(() => {
         vi.clearAllMocks()
-        ;(useAllAccounts as Mock).mockReturnValue([
-            { id: 'account-1' },
-            { id: 'account-2' },
-        ])
-        ;(useRemoveAccountById as Mock).mockReturnValue(mockRemoveAccountById)
-        ;(useContacts as Mock).mockReturnValue({
-            contacts: ['contact-1', 'contact-2'],
-            deleteContact: mockDeleteContact,
-        })
-        ;(usePreferences as Mock).mockReturnValue({
-            clearAllPreferences: mockClearAllPreferences,
+        ;(useKMS as Mock).mockReturnValue({
+            keys: [{ id: 'key-1' }, { id: 'key-2' }],
+            deleteKey: mockDeleteKey,
         })
         ;(useQueryClient as Mock).mockReturnValue({
             removeQueries: mockRemoveQueries,
         })
     })
 
-    it('should delete all accounts, contacts, preferences and queries', () => {
+    it('should clear all data stores and delete keys', async () => {
         const { result } = renderHook(() => useDeleteAllData())
 
-        act(() => {
-            result.current()
+        await act(async () => {
+            await result.current()
         })
-
-        expect(mockRemoveAccountById).toHaveBeenCalledTimes(2)
-        expect(mockRemoveAccountById).toHaveBeenCalledWith('account-1')
-        expect(mockRemoveAccountById).toHaveBeenCalledWith('account-2')
-
-        expect(mockDeleteContact).toHaveBeenCalledTimes(2)
-        expect(mockDeleteContact).toHaveBeenCalledWith('contact-1')
-        expect(mockDeleteContact).toHaveBeenCalledWith('contact-2')
 
         expect(mockRemoveQueries).toHaveBeenCalledTimes(1)
-        expect(mockClearAllPreferences).toHaveBeenCalledTimes(1)
+        expect(mockDeleteKey).toHaveBeenCalledTimes(2)
+        expect(mockDeleteKey).toHaveBeenCalledWith('key-1')
+        expect(mockDeleteKey).toHaveBeenCalledWith('key-2')
+        expect(DataStoreRegistry.clearAll).toHaveBeenCalledTimes(1)
     })
 
-    it('should not call removeAccountById if account id is missing', () => {
-        ;(useAllAccounts as Mock).mockReturnValue([{ id: undefined }])
+    it('should not delete keys if id is missing', async () => {
+        ;(useKMS as Mock).mockReturnValue({
+            keys: [{ id: undefined }, { id: 'key-1' }],
+            deleteKey: mockDeleteKey,
+        })
 
         const { result } = renderHook(() => useDeleteAllData())
 
-        act(() => {
-            result.current()
+        await act(async () => {
+            await result.current()
         })
 
-        expect(mockRemoveAccountById).not.toHaveBeenCalled()
+        expect(mockDeleteKey).toHaveBeenCalledTimes(1)
+        expect(mockDeleteKey).toHaveBeenCalledWith('key-1')
     })
 })

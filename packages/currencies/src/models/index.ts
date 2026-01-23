@@ -11,6 +11,7 @@
  */
 
 import type Decimal from 'decimal.js'
+import type { BaseStoreState } from '@perawallet/wallet-core-shared'
 
 export type Currency = {
     id: string
@@ -37,7 +38,7 @@ export type CurrencyResponse = {
     readonly usd_value?: string
 }
 
-export type CurrenciesStore = {
+export type CurrenciesStore = BaseStoreState & {
     preferredCurrency: string
     setPreferredCurrency: (currency: string) => void
 }

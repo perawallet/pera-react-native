@@ -22,8 +22,13 @@ import {
     KeyValueStorageService,
     useKeyValueStorageService,
 } from '@perawallet/wallet-core-platform-integration'
-import { createLazyStore, logger } from '@perawallet/wallet-core-shared'
+import {
+    createLazyStore,
+    DataStoreRegistry,
+    logger,
+} from '@perawallet/wallet-core-shared'
 
+const STORE_NAME = 'wallet-connect-store'
 const lazy =
     createLazyStore<WithPersist<StoreApi<WalletConnectStore>, unknown>>()
 
@@ -31,18 +36,23 @@ export const useWalletConnectStore: UseBoundStore<
     WithPersist<StoreApi<WalletConnectStore>, unknown>
 > = lazy.useStore
 
+const initialState = {
+    walletConnectConnections: [] as WalletConnectConnection[],
+    sessionRequests: [] as WalletConnectSessionRequest[],
+}
+
 const createWalletConnectStore = (storage: KeyValueStorageService) =>
     create<WalletConnectStore>()(
         persist(
             set => ({
-                walletConnectConnections: [],
-                sessionRequests: [],
+                ...initialState,
                 setWalletConnectConnections: (
                     walletConnectConnections: WalletConnectConnection[],
                 ) => set({ walletConnectConnections }),
                 setSessionRequests: (
                     sessionRequests: WalletConnectSessionRequest[],
                 ) => set({ sessionRequests }),
+                resetState: () => set(initialState),
             }),
             {
                 name: 'wallet-connect-store',
@@ -59,6 +69,14 @@ export const initWalletConnectStore = () => {
     logger.debug('Initializing wallet connect store')
     const storage = useKeyValueStorageService()
     const realStore = createWalletConnectStore(storage)
-    lazy.init(realStore)
+    lazy.init(realStore, () => realStore.getState().resetState())
     logger.debug('Wallet connect store initialized')
 }
+
+export const clearWalletConnectStore = () => lazy.clear()
+
+DataStoreRegistry.register({
+    name: STORE_NAME,
+    init: initWalletConnectStore,
+    clear: clearWalletConnectStore,
+})

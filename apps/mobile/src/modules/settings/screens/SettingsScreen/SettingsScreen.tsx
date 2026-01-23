@@ -10,11 +10,11 @@
  limitations under the License
  */
 
-import { useTheme } from '@rneui/themed'
 import {
     IconName,
+    PWBottomSheet,
     PWButton,
-    PWDialog,
+    PWIcon,
     PWListItem,
     PWText,
     PWView,
@@ -22,68 +22,31 @@ import {
 
 import { useStyles } from './styles'
 import { ScrollView } from 'react-native'
-import { ParamListBase, useNavigation } from '@react-navigation/native'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useWebView } from '@modules/webview'
-import { useLanguage } from '@hooks/useLanguage'
-import { useModalState } from '@hooks/useModalState'
-import { useDeleteAllData } from '@modules/settings/hooks/useDeleteAllData'
 import { AppVersion } from '@modules/settings/components/AppVersion'
-import { useSettingsOptions } from '@modules/settings/hooks/useSettingsOptions'
+import { useSettingsScreen } from './useSettingsScreen'
+import { useLanguage } from '@hooks/useLanguage'
+import { SettingsStackParamsList } from '@modules/settings/routes'
 
 //TODO: add ratings view handling
+export type SettingsRouteName = keyof SettingsStackParamsList
 
 export const SettingsScreen = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
-    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-    const { pushWebView } = useWebView()
     const { t } = useLanguage()
-    const { isOpen, open, close } = useModalState()
-    const { theme } = useTheme()
-    const clearAllData = useDeleteAllData()
-    const { settingsOptions } = useSettingsOptions()
-
-    const handleDeleteAllAccounts = () => {
-        clearAllData()
-        close()
-    }
-
-    const goToSettingsPage = (route: string, title: string) => {
-        navigation.push(route, { title })
-    }
-
-    const openRating = () => {
-        //TODO open ratings view here somehow
-    }
-
-    const openWebView = (url: string) => {
-        pushWebView({
-            url,
-            id: '',
-        })
-    }
-
-    const handleTapEvent = (page: {
-        title: string
-        icon: string
-        url?: string
-        route?: string
-    }) => {
-        if (page.route) {
-            goToSettingsPage(page.route, page.title)
-        } else if (page.url) {
-            openWebView(page.url)
-        } else {
-            openRating()
-        }
-    }
+    const {
+        settingsOptions,
+        handleTapEvent,
+        handleDeleteAllAccounts,
+        isDeleteModalOpen,
+        openDeleteModal,
+        closeDeleteModal,
+    } = useSettingsScreen()
 
     return (
         <ScrollView
             style={styles.scrollView}
-            contentContainerStyle={styles.scrollViewContainer}
             showsVerticalScrollIndicator={false}
         >
             <PWView style={styles.sectionContainer}>
@@ -110,27 +73,39 @@ export const SettingsScreen = () => {
             <PWButton
                 variant='secondary'
                 title={t('settings.main.remove_all_accounts')}
-                onPress={open}
+                onPress={openDeleteModal}
             />
             <AppVersion enableSecretTaps />
-            <PWDialog
-                isVisible={isOpen}
-                onBackdropPress={close}
+            <PWBottomSheet
+                isVisible={isDeleteModalOpen}
+                onBackdropPress={closeDeleteModal}
+                innerContainerStyle={styles.bottomSheetContainer}
             >
-                <PWDialog.Title title={t('settings.main.remove_title')} />
-                <PWText>{t('settings.main.remove_message')}</PWText>
-                <PWDialog.Actions>
-                    <PWDialog.Button
-                        title={t('common.delete.label')}
-                        titleStyle={{ color: theme.colors.error }}
+                <PWIcon
+                    name='trash'
+                    variant='error'
+                    size='xl'
+                    style={styles.bottomSheetIcon}
+                />
+                <PWText variant='h3'>{t('settings.main.remove_title')}</PWText>
+                <PWText style={styles.bottomSheetMessage}>
+                    {t('settings.main.remove_message')}
+                </PWText>
+                <PWView style={styles.bottomSheetActions}>
+                    <PWButton
+                        variant='primary'
+                        title={t('settings.main.remove_confirm')}
                         onPress={handleDeleteAllAccounts}
+                        paddingStyle='dense'
                     />
-                    <PWDialog.Button
-                        title={t('common.cancel.label')}
-                        onPress={close}
+                    <PWButton
+                        variant='secondary'
+                        title={t('settings.main.remove_cancel')}
+                        onPress={closeDeleteModal}
+                        paddingStyle='dense'
                     />
-                </PWDialog.Actions>
-            </PWDialog>
+                </PWView>
+            </PWBottomSheet>
         </ScrollView>
     )
 }

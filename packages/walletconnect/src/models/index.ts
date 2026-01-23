@@ -11,6 +11,7 @@
  */
 
 import { IClientMeta, IWalletConnectSession } from '@walletconnect/types'
+import { BaseStoreState } from '@perawallet/wallet-core-shared'
 
 export type AlgorandChainId = 416001 | 416002 | 416003 | 4160
 
@@ -59,7 +60,7 @@ export type WalletConnectSessionRequest = {
     clientId: string
 }
 
-export type WalletConnectStore = {
+export type WalletConnectStore = BaseStoreState & {
     walletConnectConnections: WalletConnectConnection[]
     sessionRequests: WalletConnectSessionRequest[]
     setWalletConnectConnections: (
