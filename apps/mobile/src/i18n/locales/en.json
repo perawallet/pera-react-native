@@ -300,6 +300,9 @@
             "failed_title": "Import failed",
             "failed_body": "There was an error trying to import your wallet"
         },
+        "searching_accounts": {
+            "title": "Searching your accounts"
+        },
         "create_account": {
             "processing": "Setting up your wallet...",
             "error_title": "Failed to create account",

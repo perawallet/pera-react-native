@@ -101,10 +101,8 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         [mnemonicLength],
     )
 
-    const goToHome = useCallback(() => {
-        navigation.replace('TabBar', {
-            screen: 'Home',
-        })
+    const goToSearchAccounts = useCallback(() => {
+        navigation.replace('SearchAccounts')
     }, [navigation])
 
     const handleImportAccount = useCallback(() => {
@@ -115,7 +113,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
                     mnemonic: words.join(' '),
                     type: accountType,
                 })
-                goToHome()
+                goToSearchAccounts()
             } catch {
                 showToast({
                     title: t('onboarding.import_account.failed_title'),
@@ -126,7 +124,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
                 setProcessing(false)
             }
         }, 0)
-    }, [importAccount, words, goToHome, showToast, t])
+    }, [importAccount, words, goToSearchAccounts, showToast, t])
 
     return {
         words,

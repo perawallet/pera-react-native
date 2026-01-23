@@ -10,23 +10,16 @@
  limitations under the License
  */
 
-import {
-    WalletAccount,
-    ImportAccountType,
-} from '@perawallet/wallet-core-accounts'
+import { useLanguage } from '@hooks/useLanguage'
 
-export type OnboardingStackParamList = {
-    OnboardingHome: undefined
-    NameAccount:
-        | {
-              account?: WalletAccount
-          }
-        | undefined
-    ImportInfo: {
-        accountType: ImportAccountType
+export type UseSearchAccountsScreenResult = {
+    t: (key: string) => string
+}
+
+export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
+    const { t } = useLanguage()
+
+    return {
+        t,
     }
-    ImportAccount: {
-        accountType: ImportAccountType
-    }
-    SearchAccounts: undefined
 }
