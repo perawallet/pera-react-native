@@ -12,9 +12,7 @@
 
 import {
     IconName,
-    PWBottomSheet,
     PWButton,
-    PWIcon,
     PWListItem,
     PWText,
     PWView,
@@ -27,8 +25,9 @@ import { AppVersion } from '@modules/settings/components/AppVersion'
 import { useSettingsScreen } from './useSettingsScreen'
 import { useLanguage } from '@hooks/useLanguage'
 import { SettingsStackParamsList } from '@modules/settings/routes'
+import { RatingsBottomSheet } from '@modules/settings/components/RatingsBottomSheet/RatingsBottomSheet'
+import { DeleteAllConfirmBottomSheet } from '@modules/settings/components/DeleteAllConfirmBottomSheet/DeleteAllConfirmBottomSheet'
 
-//TODO: add ratings view handling
 export type SettingsRouteName = keyof SettingsStackParamsList
 
 export const SettingsScreen = () => {
@@ -38,10 +37,11 @@ export const SettingsScreen = () => {
     const {
         settingsOptions,
         handleTapEvent,
-        handleDeleteAllAccounts,
         isDeleteModalOpen,
         openDeleteModal,
         closeDeleteModal,
+        isRatingModalOpen,
+        closeRatingModal,
     } = useSettingsScreen()
 
     return (
@@ -76,36 +76,14 @@ export const SettingsScreen = () => {
                 onPress={openDeleteModal}
             />
             <AppVersion enableSecretTaps />
-            <PWBottomSheet
-                isVisible={isDeleteModalOpen}
-                onBackdropPress={closeDeleteModal}
-                innerContainerStyle={styles.bottomSheetContainer}
-            >
-                <PWIcon
-                    name='trash'
-                    variant='error'
-                    size='xl'
-                    style={styles.bottomSheetIcon}
-                />
-                <PWText variant='h3'>{t('settings.main.remove_title')}</PWText>
-                <PWText style={styles.bottomSheetMessage}>
-                    {t('settings.main.remove_message')}
-                </PWText>
-                <PWView style={styles.bottomSheetActions}>
-                    <PWButton
-                        variant='primary'
-                        title={t('settings.main.remove_confirm')}
-                        onPress={handleDeleteAllAccounts}
-                        paddingStyle='dense'
-                    />
-                    <PWButton
-                        variant='secondary'
-                        title={t('settings.main.remove_cancel')}
-                        onPress={closeDeleteModal}
-                        paddingStyle='dense'
-                    />
-                </PWView>
-            </PWBottomSheet>
+            <DeleteAllConfirmBottomSheet
+                isOpen={isDeleteModalOpen}
+                onClose={closeDeleteModal}
+            />
+            <RatingsBottomSheet
+                isOpen={isRatingModalOpen}
+                onClose={closeRatingModal}
+            />
         </ScrollView>
     )
 }

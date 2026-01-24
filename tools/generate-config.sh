@@ -51,35 +51,38 @@ append_config() {
 }
 
 # Algorand Node URLs
-append_config "PERA_MAINNET_ALGOD_URL" "mainnetAlgodUrl" "string"
-append_config "PERA_TESTNET_ALGOD_URL" "testnetAlgodUrl" "string"
-append_config "PERA_MAINNET_INDEXER_URL" "mainnetIndexerUrl" "string"
-append_config "PERA_TESTNET_INDEXER_URL" "testnetIndexerUrl" "string"
+append_config "MAINNET_ALGOD_URL" "mainnetAlgodUrl" "string"
+append_config "TESTNET_ALGOD_URL" "testnetAlgodUrl" "string"
+append_config "MAINNET_INDEXER_URL" "mainnetIndexerUrl" "string"
+append_config "TESTNET_INDEXER_URL" "testnetIndexerUrl" "string"
 
 # Backend URLs and API Keys
-append_config "PERA_MAINNET_BACKEND_URL" "mainnetBackendUrl" "string"
-append_config "PERA_TESTNET_BACKEND_URL" "testnetBackendUrl" "string"
-append_config "PERA_BACKEND_API_KEY" "backendAPIKey" "string"
-append_config "PERA_ALGOD_API_KEY" "algodApiKey" "string"
-append_config "PERA_INDEXER_API_KEY" "indexerApiKey" "string"
+append_config "MAINNET_BACKEND_URL" "mainnetBackendUrl" "string"
+append_config "TESTNET_BACKEND_URL" "testnetBackendUrl" "string"
+append_config "BACKEND_API_KEY" "backendAPIKey" "string"
+append_config "ALGOD_API_KEY" "algodApiKey" "string"
+append_config "INDEXER_API_KEY" "indexerApiKey" "string"
+
+# App Store ID
+append_config "APP_STORE_APP_ID" "appStoreAppID" "string"
 
 # Explorer URLs
-append_config "PERA_MAINNET_EXPLORER_URL" "mainnetExplorerUrl" "string"
-append_config "PERA_TESTNET_EXPLORER_URL" "testnetExplorerUrl" "string"
+append_config "MAINNET_EXPLORER_URL" "mainnetExplorerUrl" "string"
+append_config "TESTNET_EXPLORER_URL" "testnetExplorerUrl" "string"
 
 # Base URLs
-append_config "PERA_DISCOVER_BASE_URL" "discoverBaseUrl" "string"
-append_config "PERA_STAKING_BASE_URL" "stakingBaseUrl" "string"
-append_config "PERA_ONRAMP_BASE_URL" "onrampBaseUrl" "string"
-append_config "PERA_SUPPORT_BASE_URL" "supportBaseUrl" "string"
-append_config "PERA_TOS_URL" "termsOfServiceUrl" "string"
-append_config "PERA_PRIVACY_POLICY_URL" "privacyPolicyUrl" "string"
-append_config "PERA_DEMO_DAPP_URL" "peraDemoDappUrl" "string"
+append_config "DISCOVER_BASE_URL" "discoverBaseUrl" "string"
+append_config "STAKING_BASE_URL" "stakingBaseUrl" "string"
+append_config "ONRAMP_BASE_URL" "onrampBaseUrl" "string"
+append_config "SUPPORT_BASE_URL" "supportBaseUrl" "string"
+append_config "TOS_URL" "termsOfServiceUrl" "string"
+append_config "PRIVACY_POLICY_URL" "privacyPolicyUrl" "string"
+append_config "DEMO_DAPP_URL" "peraDemoDappUrl" "string"
 
 # Feature Flags and Debugging
-append_config "PERA_DEBUG_ENABLED" "debugEnabled" "boolean"
-append_config "PERA_PROFILING_ENABLED" "profilingEnabled" "boolean"
-append_config "PERA_POLLING_ENABLED" "pollingEnabled" "boolean"
+append_config "DEBUG_ENABLED" "debugEnabled" "boolean"
+append_config "PROFILING_ENABLED" "profilingEnabled" "boolean"
+append_config "POLLING_ENABLED" "pollingEnabled" "boolean"
 
 # Close the object
 echo "} as const;" >> "$OUTPUT_FILE"

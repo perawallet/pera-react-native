@@ -36,6 +36,12 @@ vi.mock('react-native-device-info', () => ({
     },
 }))
 
+// Mock react-native-localize
+vi.mock('react-native-localize', () => ({
+    getLocales: vi.fn(() => [{ languageTag: 'en-US' }]),
+    getCountry: vi.fn(() => 'US'),
+}))
+
 // Mock react-native Platform and NativeModules
 vi.mock('react-native', () => ({
     Platform: {
@@ -61,6 +67,7 @@ describe('RNDeviceInfoStorageService', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        RN.Platform.OS = 'ios'
         service = new RNDeviceInfoStorageService()
     })
 
@@ -163,15 +170,24 @@ describe('RNDeviceInfoStorageService', () => {
     })
 
     describe('getDeviceLocale', () => {
-        it('returns formatted locale for iOS', () => {
-            const mockNativeModules = vi.mocked(RN)
-            mockNativeModules.NativeModules.SettingsManager.getConstants =
-                vi.fn(() => ({
-                    settings: {
-                        AppleLocale: 'en-US',
-                        AppleLanguages: ['en_US', 'fr_FR'],
-                    },
-                }))
+        it('returns formatted locale correctly', async () => {
+            const { getLocales } = await import('react-native-localize')
+            vi.mocked(getLocales).mockReturnValue([
+                {
+                    languageTag: 'en-US',
+                    languageCode: 'en',
+                    isRTL: false,
+                    countryCode: 'US',
+                },
+            ])
+            const locale = service.getDeviceLocale()
+
+            expect(locale).toBe('en-US')
+        })
+
+        it('returns default locale when no locales available', async () => {
+            const { getLocales } = await import('react-native-localize')
+            vi.mocked(getLocales).mockReturnValue([])
             const locale = service.getDeviceLocale()
 
             expect(locale).toBe('en-US')
@@ -193,23 +209,17 @@ describe('RNDeviceInfoStorageService', () => {
             expect(locale).toBe('en-US')
         })
 
-        it('returns formatted locale for Android', () => {
+        it('returns formatted locale for Android', async () => {
             vi.mocked(RN).Platform.OS = 'android'
-            vi.mocked(RN).NativeModules.SettingsManager.getConstants = vi.fn(
-                () => ({
-                    settings: {
-                        AppleLocale: 'en_US',
-                        AppleLanguages: ['en_US', 'fr_FR'],
-                    },
-                }),
-            )
-            vi.mocked(RN).NativeModules.I18nManager.getConstants = vi.fn(
-                () => ({
+            const { getLocales } = await import('react-native-localize')
+            vi.mocked(getLocales).mockReturnValue([
+                {
+                    languageTag: 'en-GB',
+                    languageCode: 'en',
                     isRTL: false,
-                    doLeftAndRightSwapInRTL: false,
-                    localeIdentifier: 'en_GB',
-                }),
-            )
+                    countryCode: 'GB',
+                },
+            ])
 
             const androidService = new RNDeviceInfoStorageService()
             const locale = androidService.getDeviceLocale()
@@ -217,28 +227,20 @@ describe('RNDeviceInfoStorageService', () => {
             expect(locale).toBe('en-GB')
         })
 
-        it('converts underscores to hyphens in locale', async () => {
-            // Spy on the NativeModules to override the AppleLocale value
-            vi.mocked(RN).Platform.OS = 'ios'
-            vi.mocked(RN).NativeModules.SettingsManager.getConstants = vi.fn(
-                () => ({
-                    settings: {
-                        AppleLocale: 'fr_CA',
-                        AppleLanguages: ['en_US', 'fr_FR'],
-                    },
-                }),
-            )
-            vi.mocked(RN).NativeModules.I18nManager.getConstants = vi.fn(
-                () => ({
+        it('does not convert underscores to hyphens in locale', async () => {
+            const { getLocales } = await import('react-native-localize')
+            vi.mocked(getLocales).mockReturnValue([
+                {
+                    languageTag: 'fr_CA',
+                    languageCode: 'fr',
                     isRTL: false,
-                    doLeftAndRightSwapInRTL: false,
-                    localeIdentifier: 'en_GB',
-                }),
-            )
+                    countryCode: 'CA',
+                },
+            ])
 
             const locale = service.getDeviceLocale()
 
-            expect(locale).toBe('fr-CA')
+            expect(locale).toBe('fr_CA')
         })
     })
 
@@ -261,41 +263,33 @@ describe('RNDeviceInfoStorageService', () => {
     })
 
     describe('locale formatting', () => {
-        it('replaces all underscores with hyphens', async () => {
-            // Spy on the NativeModules to override the AppleLocale value
-            vi.mocked(RN).Platform.OS = 'ios'
-            vi.mocked(RN).NativeModules.SettingsManager.getConstants = vi.fn(
-                () => ({
-                    settings: {
-                        AppleLocale: 'zh_Hans_CN',
-                        AppleLanguages: ['en_US', 'fr_FR'],
-                    },
-                }),
-            )
-            vi.mocked(RN).NativeModules.I18nManager.getConstants = vi.fn(
-                () => ({
+        it('does not replace underscores with hyphens', async () => {
+            const { getLocales } = await import('react-native-localize')
+            vi.mocked(getLocales).mockReturnValue([
+                {
+                    languageTag: 'zh_Hans_CN',
+                    languageCode: 'zh',
                     isRTL: false,
-                    doLeftAndRightSwapInRTL: false,
-                    localeIdentifier: 'en_GB',
-                }),
-            )
+                    countryCode: 'CN',
+                },
+            ])
 
             const locale = service.getDeviceLocale()
 
-            expect(locale).toBe('zh-Hans-CN')
+            expect(locale).toBe('zh_Hans_CN')
         })
         it('removes extra information starting with @', async () => {
-            vi.mocked(RN).Platform.OS = 'ios'
-            vi.mocked(RN).NativeModules.SettingsManager.getConstants = vi.fn(
-                () => ({
-                    settings: {
-                        AppleLocale: 'en-US@rg=ptzzzz',
-                        AppleLanguages: ['en_US', 'fr_FR'],
-                    },
-                }),
-            )
+            const { getLocales } = await import('react-native-localize')
+            vi.mocked(getLocales).mockReturnValue([
+                {
+                    languageTag: 'en-US@rg=ptzzzz',
+                    languageCode: 'en',
+                    isRTL: false,
+                    countryCode: 'US',
+                },
+            ])
             const locale = service.getDeviceLocale()
-            expect(locale).toBe('en-US')
+            expect(locale).toBe('en-US@rg=ptzzzz')
         })
     })
 })

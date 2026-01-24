@@ -103,6 +103,21 @@ export const buildTestPlatform = (
         getUserAgent() {
             return 'testUserAgent'
         },
+        getAppId() {
+            return 'testAppId'
+        },
+        getAppPackage() {
+            return 'testPackage'
+        },
+        getAppBuild() {
+            return 'testBuild'
+        },
+        getAppName() {
+            return 'testAppName'
+        },
+        getDeviceCountry() {
+            return 'testCountry'
+        },
     }
 
     const defaultBiometrics: BiometricsService = {

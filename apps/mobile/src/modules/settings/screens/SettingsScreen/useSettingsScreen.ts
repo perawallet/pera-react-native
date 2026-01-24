@@ -13,40 +13,34 @@
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useWebView } from '@modules/webview'
 import { useModalState } from '@hooks/useModalState'
-import { useDeleteAllData } from '@modules/settings/hooks/useDeleteAllData'
-import { useSettingsOptions } from '@modules/settings/hooks/useSettingsOptions'
+import { useSettingsOptions } from './useSettingsOptions'
 import { SettingsStackParamsList } from '@modules/settings/routes'
+import { v4 as uuid } from 'uuid'
 
 export const useSettingsScreen = () => {
     const navigation = useAppNavigation()
     const { pushWebView } = useWebView()
-    const { isOpen, open, close } = useModalState()
-    const clearAllData = useDeleteAllData()
+    const {
+        isOpen: isDeleteModalOpen,
+        open: openDeleteModal,
+        close: closeDeleteModal,
+    } = useModalState()
+    const {
+        isOpen: isRatingModalOpen,
+        open: openRatingModal,
+        close: closeRatingModal,
+    } = useModalState()
     const { settingsOptions } = useSettingsOptions()
-
-    const handleDeleteAllAccounts = () => {
-        clearAllData()
-        close()
-
-        //we need to defer this so that the navigation stack has time to
-        //update it's conditions on the next render
-        setTimeout(() => {
-            navigation.replace('Onboarding', { screen: 'OnboardingHome' })
-        }, 0)
-    }
 
     const goToSettingsPage = (route: keyof SettingsStackParamsList) => {
         navigation.push(route)
     }
 
-    const openRating = () => {
-        //TODO open ratings view here somehow
-    }
-
     const openWebView = (url: string) => {
+        const id = uuid()
         pushWebView({
             url,
-            id: '',
+            id,
         })
     }
 
@@ -61,16 +55,17 @@ export const useSettingsScreen = () => {
         } else if (page.url) {
             openWebView(page.url)
         } else {
-            openRating()
+            openRatingModal()
         }
     }
 
     return {
-        isDeleteModalOpen: isOpen,
-        openDeleteModal: open,
-        closeDeleteModal: close,
+        isDeleteModalOpen,
+        openDeleteModal,
+        closeDeleteModal,
+        isRatingModalOpen,
+        closeRatingModal,
         settingsOptions,
         handleTapEvent,
-        handleDeleteAllAccounts,
     }
 }

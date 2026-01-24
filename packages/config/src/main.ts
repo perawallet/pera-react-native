@@ -22,18 +22,20 @@ import {
 import { generatedEnv } from './generated-env'
 
 export const configSchema = z.object({
-    mainnetBackendUrl: z.string().url(),
-    testnetBackendUrl: z.string().url(),
-    mainnetAlgodUrl: z.string().url(),
-    testnetAlgodUrl: z.string().url(),
-    mainnetIndexerUrl: z.string().url(),
-    testnetIndexerUrl: z.string().url(),
+    mainnetBackendUrl: z.url(),
+    testnetBackendUrl: z.url(),
+    mainnetAlgodUrl: z.url(),
+    testnetAlgodUrl: z.url(),
+    mainnetIndexerUrl: z.url(),
+    testnetIndexerUrl: z.url(),
     backendAPIKey: z.string(),
     algodApiKey: z.string(),
     indexerApiKey: z.string(),
 
-    mainnetExplorerUrl: z.string().url(),
-    testnetExplorerUrl: z.string().url(),
+    mainnetExplorerUrl: z.url(),
+    testnetExplorerUrl: z.url(),
+
+    appStoreAppID: z.string(),
 
     notificationRefreshTime: z.number().int(),
     remoteConfigRefreshTime: z.number().int(),
@@ -44,17 +46,17 @@ export const configSchema = z.object({
     reactQueryShortLivedStaleTime: z.number().int(),
     reactQueryPersistenceAge: z.number().int(),
 
-    discoverBaseUrl: z.string().url(),
-    stakingBaseUrl: z.string().url(),
-    onrampBaseUrl: z.string().url(),
-    supportBaseUrl: z.string().url(),
-    termsOfServiceUrl: z.string().url(),
-    privacyPolicyUrl: z.string().url(),
-    peraDemoDappUrl: z.string().url(),
-    dispenserUrl: z.string().url(),
+    discoverBaseUrl: z.url(),
+    stakingBaseUrl: z.url(),
+    onrampBaseUrl: z.url(),
+    supportBaseUrl: z.url(),
+    termsOfServiceUrl: z.url(),
+    privacyPolicyUrl: z.url(),
+    peraDemoDappUrl: z.url(),
+    dispenserUrl: z.url(),
 
-    sendFundsFaqUrl: z.string().url(),
-    swapSupportUrl: z.string().url(),
+    sendFundsFaqUrl: z.url(),
+    swapSupportUrl: z.url(),
 
     debugEnabled: z.boolean(),
     profilingEnabled: z.boolean(),
@@ -78,6 +80,9 @@ const productionConfig = {
         'development-purposes-only-dc98f2c7-908f-4f74-81ef-9f5464213f99',
     algodApiKey: '',
     indexerApiKey: '',
+
+    appStoreAppID: '',
+
     mainnetExplorerUrl: 'https://explorer.perawallet.app',
     testnetExplorerUrl: 'https://testnet.explorer.perawallet.app',
     discoverBaseUrl: 'https://discover-mobile.perawallet.app/',
@@ -92,6 +97,7 @@ const productionConfig = {
     swapSupportUrl:
         'https://support.perawallet.app/en/article/pera-swap-swapping-with-pera-1ep84ky/',
     dispenserUrl: 'https://lora.algokit.io/testnet/fund/',
+
     notificationRefreshTime: THIRTY_SECONDS,
     remoteConfigRefreshTime: ONE_HOUR,
     reactQueryDefaultGCTime: ONE_HOUR,
@@ -99,9 +105,44 @@ const productionConfig = {
     reactQueryShortLivedGCTime: 60 * ONE_DAY,
     reactQueryShortLivedStaleTime: 30 * ONE_SECOND,
     reactQueryPersistenceAge: 60 * ONE_DAY,
+
     debugEnabled: false,
     profilingEnabled: false,
     pollingEnabled: true,
+}
+
+// A map of which environment variable (if any) to read config overrides from
+export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
+    mainnetAlgodUrl: 'MAINNET_ALGOD_URL',
+    testnetAlgodUrl: 'TESTNET_ALGOD_URL',
+    mainnetIndexerUrl: 'MAINNET_INDEXER_URL',
+    testnetIndexerUrl: 'TESTNET_INDEXER_URL',
+    mainnetBackendUrl: 'MAINNET_BACKEND_URL',
+    testnetBackendUrl: 'TESTNET_BACKEND_URL',
+
+    //Dev API Key only - not suitable for production use
+    backendAPIKey: 'BACKEND_API_KEY',
+    algodApiKey: 'ALGOD_API_KEY',
+    indexerApiKey: 'INDEXER_API_KEY',
+
+    appStoreAppID: 'APP_STORE_APP_ID',
+
+    mainnetExplorerUrl: 'MAINNET_EXPLORER_URL',
+    testnetExplorerUrl: 'TESTNET_EXPLORER_URL',
+    discoverBaseUrl: 'DISCOVER_BASE_URL',
+    stakingBaseUrl: 'STAKING_BASE_URL',
+    onrampBaseUrl: 'ONRAMP_BASE_URL',
+    supportBaseUrl: 'SUPPORT_BASE_URL',
+    termsOfServiceUrl: 'TERMS_OF_SERVICE_URL',
+    privacyPolicyUrl: 'PRIVACY_POLICY_URL',
+    peraDemoDappUrl: 'PERA_DEMO_DAPP_URL',
+    sendFundsFaqUrl: 'SEND_FUNDS_FAQ_URL',
+    swapSupportUrl: 'SWAP_SUPPORT_URL',
+    dispenserUrl: 'DISPENSER_URL',
+
+    debugEnabled: 'DEBUG_ENABLED',
+    profilingEnabled: 'PROFILING_ENABLED',
+    pollingEnabled: 'POLLING_ENABLED',
 }
 
 /**

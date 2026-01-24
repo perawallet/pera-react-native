@@ -461,6 +461,10 @@
             "light_label": "Light",
             "dark_label": "Dark"
         },
+        "rating": {
+            "title": "Rate your experience",
+            "body": "Tell us how your experience has been?"
+        },
         "developer": {
             "node_settings_title": "Node Settings",
             "dispenser_title": "Algorand Dispenser",
