@@ -120,6 +120,8 @@
     },
     "common": {
         "offline_mode": "Offline Mode",
+        "yes": "Yes",
+        "no": "No",
         "go_back": {
             "label": "Go Back"
         },
@@ -560,7 +562,7 @@
         },
         "transaction_view": {
             "invalid_title": "Invalid Transaction",
-            "invalid_body": "There does not appear to be a receiver for this transaction",
+            "invalid_body": "There does not appear to be a valid transaction",
             "transaction_failed_title": "Signing Failed",
             "transaction_failed_body": "The transaction failed to send. Please try again.",
             "success_title": "Transaction signed",
@@ -569,6 +571,88 @@
         "unknown_request_type": {
             "title": "Unknown Request Type",
             "body": "The request type is unknown."
+        },
+        "tx_display": {
+            "common": {
+                "to": "To",
+                "amount": "Amount",
+                "asset_id": "Asset ID"
+            },
+            "unknown": {
+                "title": "Unknown Transaction",
+                "body": "This transaction type is not supported."
+            },
+            "payment": {
+                "title": "Payment Transaction",
+                "close_warning": "This transaction will close the account and send remaining funds to:"
+            },
+            "asset_transfer": {
+                "title": "Asset Transfer",
+                "opt_in_title": "Asset Opt-In",
+                "opt_out_title": "Asset Opt-Out",
+                "clawback_title": "Asset Clawback",
+                "clawback_from": "Clawback From",
+                "close_warning": "This will close out the asset and send remaining balance to:"
+            },
+            "asset_config": {
+                "create_title": "Create Asset",
+                "update_title": "Update Asset",
+                "destroy_title": "Destroy Asset",
+                "name": "Name",
+                "unit": "Unit Name",
+                "total": "Total Supply",
+                "decimals": "Decimals",
+                "default_frozen": "Default Frozen",
+                "manager": "Manager",
+                "reserve": "Reserve",
+                "freeze_addr": "Freeze Address",
+                "clawback": "Clawback Address",
+                "destroy_warning": "This will permanently destroy the asset. This action cannot be undone."
+            },
+            "asset_freeze": {
+                "freeze_title": "Freeze Asset",
+                "unfreeze_title": "Unfreeze Asset",
+                "target": "Target Account",
+                "status": "Status",
+                "frozen": "Frozen",
+                "unfrozen": "Unfrozen",
+                "freeze_warning": "This will prevent the target account from transferring this asset."
+            },
+            "key_reg": {
+                "online_title": "Go Online",
+                "offline_title": "Go Offline",
+                "nonparticipating_title": "Non-Participating",
+                "online_description": "This transaction will register your account to participate in Algorand consensus.",
+                "offline_description": "This transaction will remove your account from participating in Algorand consensus.",
+                "nonparticipating_description": "This transaction will mark your account as non-participating and non-reward-earning.",
+                "valid_rounds": "Valid Rounds",
+                "key_dilution": "Key Dilution",
+                "nonparticipating_warning": "This action is permanent and cannot be undone. The account will no longer earn rewards."
+            },
+            "app_call": {
+                "title": "Application Call",
+                "create_title": "Create Application",
+                "update_title": "Update Application",
+                "delete_title": "Delete Application",
+                "app_id": "App ID",
+                "action": "Action",
+                "args_count": "Arguments",
+                "accounts": "Account References",
+                "foreign_apps": "Foreign Apps",
+                "foreign_assets": "Foreign Assets",
+                "boxes": "Box References",
+                "inner_transactions": "{{count}} Inner Transaction(s)",
+                "delete_warning": "This will permanently delete the application.",
+                "update_warning": "This will update the application code. Review carefully before approving."
+            },
+            "group": {
+                "single_group_title": "Transaction Group",
+                "multiple_groups_title": "Multiple Transaction Groups",
+                "transactions_count": "{{count}} Transaction(s)"
+            },
+            "inner_preview": {
+                "inner_count": "{{count}} inner txn(s)"
+            }
         }
     },
     "swaps": {

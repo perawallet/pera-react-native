@@ -10,8 +10,5 @@
  limitations under the License
  */
 
-export { TransactionIcon } from './TransactionIcon'
-export type {
-    TransactionIconProps,
-    TransactionIconType,
-} from './TransactionIcon'
+export { AssetFreezeDisplay } from './AssetFreezeDisplay'
+export type { AssetFreezeDisplayProps } from './AssetFreezeDisplay'

@@ -10,22 +10,59 @@
  limitations under the License
  */
 
-import { PWIcon, PWView } from '@components/core'
+import { PWIcon, PWView, type IconName } from '@components/core'
 
-import { SvgProps } from 'react-native-svg'
+import type { SvgProps } from 'react-native-svg'
 import { useStyles } from './styles'
+import type { PeraTransactionType } from '@perawallet/wallet-core-blockchain'
 
-//TODO support all tx types
+export type TransactionIconType =
+    | PeraTransactionType
+    | 'group'
+    | 'opt-in'
+    | 'opt-out'
+    | 'clawback'
+    | 'close'
+
 export type TransactionIconProps = {
-    type: 'pay' | 'group'
+    type: TransactionIconType
     size?: 'small' | 'large'
 } & SvgProps
+
+const getIconName = (type: TransactionIconType): IconName => {
+    switch (type) {
+        case 'payment':
+            return 'transactions/payment'
+        case 'asset-transfer':
+            return 'swap'
+        case 'asset-config':
+            return 'gear'
+        case 'asset-freeze':
+            return 'snowflake'
+        case 'key-registration':
+            return 'key'
+        case 'app-call':
+            return 'code'
+        case 'opt-in':
+            return 'plus'
+        case 'opt-out':
+            return 'cross'
+        case 'clawback':
+            return 'undo'
+        case 'close':
+            return 'cross'
+        case 'group':
+            return 'transactions/group'
+        default:
+            return 'transactions/payment'
+    }
+}
 
 export const TransactionIcon = (props: TransactionIconProps) => {
     const { type, style, size = 'small', ...rest } = props
     const styles = useStyles(props)
     const iconSize = size === 'small' ? 'md' : 'lg'
-    const name = type === 'pay' ? 'transactions/payment' : 'transactions/group'
+    const name = getIconName(type)
 
     return (
         <PWView style={[styles.container, style]}>

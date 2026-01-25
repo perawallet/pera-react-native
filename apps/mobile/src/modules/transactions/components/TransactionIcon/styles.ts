@@ -11,9 +11,11 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { TransactionIconProps } from './TransactionIcon'
+import type { TransactionIconProps } from './TransactionIcon'
 
-export const useStyles = makeStyles((theme, props: TransactionIconProps) => {
+type StyleProps = Pick<TransactionIconProps, 'size'>
+
+export const useStyles = makeStyles((theme, props: StyleProps) => {
     const padding = theme.spacing.lg
     const size =
         (props.size === 'small' ? theme.spacing.xl : theme.spacing['3xl']) +

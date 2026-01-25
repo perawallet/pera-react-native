@@ -10,8 +10,5 @@
  limitations under the License
  */
 
-export { TransactionIcon } from './TransactionIcon'
-export type {
-    TransactionIconProps,
-    TransactionIconType,
-} from './TransactionIcon'
+export { KeyRegistrationDisplay } from './KeyRegistrationDisplay'
+export type { KeyRegistrationDisplayProps } from './KeyRegistrationDisplay'

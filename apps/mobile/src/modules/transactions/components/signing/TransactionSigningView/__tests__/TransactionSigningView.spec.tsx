@@ -110,15 +110,29 @@ describe('TransactionSigningView', () => {
         expect(text).toContain('confirm')
     })
 
-    it('displays empty view when no receiver is present', () => {
+    it('displays empty view when transaction has no valid type', () => {
         const invalidRequest = {
             type: 'transactions',
             transport: 'callback',
-            txs: [[{}]], // No receiver
+            txs: [[{}]], // No transaction type fields
         } as unknown as TransactionSignRequest
 
         const { container } = render(
             <TransactionSigningView request={invalidRequest} />,
+        )
+        // Unknown transaction types show the unknown transaction display
+        expect(container.textContent?.toLowerCase()).toContain('unknown')
+    })
+
+    it('displays empty view when no transaction is present', () => {
+        const emptyRequest = {
+            type: 'transactions',
+            transport: 'callback',
+            txs: [[]], // Empty transaction array
+        } as unknown as TransactionSignRequest
+
+        const { container } = render(
+            <TransactionSigningView request={emptyRequest} />,
         )
         expect(container.textContent?.toLowerCase()).toContain('invalid')
     })

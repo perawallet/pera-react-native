@@ -10,44 +10,44 @@
  limitations under the License
  */
 
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { EmptyView } from '@components/EmptyView'
-import { TransactionIcon } from '@modules/transactions/components/TransactionIcon/TransactionIcon'
+import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
 import { PWButton, PWText, PWView, bottomSheetNotifier } from '@components/core'
 import {
-    encodeAlgorandAddress,
-    TransactionSignRequest,
+    type TransactionSignRequest,
     useAlgorandClient,
     useSigningRequest,
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import Decimal from 'decimal.js'
 import { ScrollView } from 'react-native-gesture-handler'
 import { useStyles } from './styles'
 import { BalanceImpactView } from '../BalanceImpactView/BalanceImpactView'
+import { TransactionDisplay } from '../../TransactionDisplay'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useTransactionSigner } from '@perawallet/wallet-core-accounts'
 import { config } from '@perawallet/wallet-core-config'
+import { useSingleTransactionView } from './useSingleTransactionView'
+import { useGroupTransactionView } from './useGroupTransactionView'
 
 export type TransactionSigningViewProps = {
     request: TransactionSignRequest
 }
 
-//TODO: we need to support all tx types here
-//TODO: use real data from the TXs
-//TODO: convert usd amounts to preferred currency
 const SingleTransactionView = ({ request }: TransactionSigningViewProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
 
-    const tx = request.txs?.at(0)?.at(0)
-    const receiver = tx?.assetTransfer?.receiver ?? tx?.payment?.receiver
+    const {
+        rootTx,
+        currentTx,
+        innerTransactions,
+        isViewingInnerTransaction,
+        handleNavigateToInner,
+        handleNavigateBack,
+    } = useSingleTransactionView({ request })
 
-    //TODO this isn't really a valid error since it might be an app call or something but that
-    //will get fixed when we implement all tx types
-    if (!receiver) {
+    if (!rootTx || !currentTx) {
         return (
             <EmptyView
                 title={t('signing.transaction_view.invalid_title')}
@@ -58,31 +58,18 @@ const SingleTransactionView = ({ request }: TransactionSigningViewProps) => {
 
     return (
         <PWView style={styles.body}>
-            <TransactionIcon
-                type='pay'
-                size='large'
-            />
-            <PWText variant='h4'>
-                Transfer to{' '}
-                {truncateAlgorandAddress(
-                    encodeAlgorandAddress(receiver.publicKey),
-                )}
-            </PWText>
-            <CurrencyDisplay
-                currency='ALGO'
-                precision={3}
-                value={Decimal(-5059.44)}
-                showSymbol
-                h1
-                style={styles.mainAmount}
-            />
-            <CurrencyDisplay
-                currency='USD'
-                precision={3}
-                value={Decimal(-5059.44 * 0.17)}
-                showSymbol
-                h3
-                style={styles.secondaryAmount}
+            {isViewingInnerTransaction && (
+                <PWButton
+                    title={t('common.go_back.label')}
+                    variant='secondary'
+                    onPress={handleNavigateBack}
+                    style={styles.backButton}
+                />
+            )}
+            <TransactionDisplay
+                transaction={currentTx}
+                innerTransactions={innerTransactions}
+                onInnerTransactionPress={handleNavigateToInner}
             />
         </PWView>
     )
@@ -90,7 +77,37 @@ const SingleTransactionView = ({ request }: TransactionSigningViewProps) => {
 
 const GroupTransactionView = ({ request }: TransactionSigningViewProps) => {
     const styles = useStyles()
-    const isMultipleGroups = request.txs?.length > 1
+    const { t } = useLanguage()
+
+    const {
+        isMultipleGroups,
+        allTransactions,
+        currentTx,
+        innerTransactions,
+        isViewingTransaction,
+        handleSelectTransaction,
+        handleNavigateToInner,
+        handleNavigateBack,
+    } = useGroupTransactionView({ request })
+
+    if (isViewingTransaction && currentTx) {
+        return (
+            <ScrollView contentContainerStyle={styles.body}>
+                <PWButton
+                    title={t('common.go_back.label')}
+                    variant='secondary'
+                    onPress={handleNavigateBack}
+                    style={styles.backButton}
+                />
+                <TransactionDisplay
+                    transaction={currentTx}
+                    innerTransactions={innerTransactions}
+                    onInnerTransactionPress={handleNavigateToInner}
+                />
+            </ScrollView>
+        )
+    }
+
     return (
         <ScrollView contentContainerStyle={styles.body}>
             <TransactionIcon
@@ -99,16 +116,29 @@ const GroupTransactionView = ({ request }: TransactionSigningViewProps) => {
             />
             <PWText variant='h4'>
                 {isMultipleGroups
-                    ? 'Transaction Groups'
-                    : `Group ID: ${truncateAlgorandAddress('SomeIDForAGroup')}`}
+                    ? t('signing.tx_display.group.multiple_groups_title')
+                    : t('signing.tx_display.group.single_group_title')}
             </PWText>
-            {isMultipleGroups ? (
-                <PWView>
-                    <PWText>This is where we{"'"}ll show the groups</PWText>
-                </PWView>
-            ) : (
-                <BalanceImpactView />
-            )}
+
+            <PWView style={styles.transactionListContainer}>
+                <PWText style={styles.transactionListHeader}>
+                    {t('signing.tx_display.group.transactions_count', {
+                        count: allTransactions.length,
+                    })}
+                </PWText>
+
+                {allTransactions.map((tx, index) => (
+                    <PWButton
+                        key={`tx-${index}`}
+                        title={`${index + 1}. ${tx.type}`}
+                        variant='secondary'
+                        onPress={() => handleSelectTransaction(index)}
+                        style={styles.transactionListItem}
+                    />
+                ))}
+            </PWView>
+
+            <BalanceImpactView />
         </ScrollView>
     )
 }

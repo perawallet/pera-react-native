@@ -10,8 +10,5 @@
  limitations under the License
  */
 
-export { TransactionIcon } from './TransactionIcon'
-export type {
-    TransactionIconProps,
-    TransactionIconType,
-} from './TransactionIcon'
+export { AppCallTransactionDisplay } from './AppCallTransactionDisplay'
+export type { AppCallTransactionDisplayProps } from './AppCallTransactionDisplay'

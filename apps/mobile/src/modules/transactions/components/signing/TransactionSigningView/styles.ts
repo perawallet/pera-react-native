@@ -71,5 +71,21 @@ export const useStyles = makeStyles(theme => {
         },
         mainAmount: {},
         secondaryAmount: {},
+        backButton: {
+            alignSelf: 'flex-start',
+            marginBottom: theme.spacing.md,
+        },
+        transactionListContainer: {
+            width: '100%',
+            gap: theme.spacing.sm,
+            marginVertical: theme.spacing.md,
+        },
+        transactionListHeader: {
+            color: theme.colors.textGray,
+            marginBottom: theme.spacing.xs,
+        },
+        transactionListItem: {
+            width: '100%',
+        },
     }
 })
