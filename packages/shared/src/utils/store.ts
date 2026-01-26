@@ -30,9 +30,7 @@ export function createLazyStore<T extends StoreApi<unknown>>(): LazyStore<T> {
     let store: UseBoundStore<T> | null = null
     let resetStateFn: (() => void) | null = null
 
-    const useStore = ((
-        selector: (state: ExtractState<T>) => unknown,
-    ) => {
+    const useStore = ((selector: (state: ExtractState<T>) => unknown) => {
         if (!store) {
             throw new Error('Zustand store used before initialization')
         }

@@ -21,18 +21,18 @@ import { useDeviceStore } from '@perawallet/wallet-core-platform-integration'
  * @returns {AlgorandClient}
  */
 export const getAlgorandClient = (): AlgorandClient => {
-  const network = useDeviceStore.getState().network
-  const isMainnet = network === Networks.mainnet
+    const network = useDeviceStore.getState().network
+    const isMainnet = network === Networks.mainnet
 
-  const algodConfig = {
-    server: isMainnet ? config.mainnetAlgodUrl : config.testnetAlgodUrl,
-    token: config.algodApiKey,
-  }
+    const algodConfig = {
+        server: isMainnet ? config.mainnetAlgodUrl : config.testnetAlgodUrl,
+        token: config.algodApiKey,
+    }
 
-  const indexerConfig = {
-    server: isMainnet ? config.mainnetIndexerUrl : config.testnetIndexerUrl,
-    token: config.algodApiKey,
-  }
+    const indexerConfig = {
+        server: isMainnet ? config.mainnetIndexerUrl : config.testnetIndexerUrl,
+        token: config.algodApiKey,
+    }
 
-  return AlgorandClient.fromConfig({ algodConfig, indexerConfig })
+    return AlgorandClient.fromConfig({ algodConfig, indexerConfig })
 }

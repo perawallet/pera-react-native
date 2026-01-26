@@ -32,7 +32,7 @@ vi.mock('@algorandfoundation/xhd-wallet-api', () => {
 })
 
 // Mock encodeAlgorandAddress to return string representation of bytes
-const mockGetAlgorandClient = vi.fn();
+const mockGetAlgorandClient = vi.fn()
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     encodeAlgorandAddress: vi.fn(
@@ -45,32 +45,41 @@ describe('discoverAccounts', () => {
     const seed = Buffer.from('test-seed')
     const derivationType = BIP32DerivationType.Peikert
 
-    const createMockAlgorandClient = (checkActivity: (address: string) => boolean) => {
+    const createMockAlgorandClient = (
+        checkActivity: (address: string) => boolean,
+    ) => {
         return {
             client: {
                 algod: {
-                    accountInformation: vi.fn().mockImplementation(async (address: string) => {
-                        const hasActivity = checkActivity(address);
-                        if (!hasActivity) {
-                            throw new Error('404');
-                        }
-                        return {
-                            amount: 1000,
-                            assets: [],
-                            appsLocalState: [],
-                            appsTotalSchema: { numUints: 0, numByteSlices: 0 },
-                        };
-                    }),
+                    accountInformation: vi
+                        .fn()
+                        .mockImplementation(async (address: string) => {
+                            const hasActivity = checkActivity(address)
+                            if (!hasActivity) {
+                                throw new Error('404')
+                            }
+                            return {
+                                amount: 1000,
+                                assets: [],
+                                appsLocalState: [],
+                                appsTotalSchema: {
+                                    numUints: 0,
+                                    numByteSlices: 0,
+                                },
+                            }
+                        }),
                 },
             },
-        } as any;
-    };
+        } as any
+    }
 
     it('should find accounts with activity', async () => {
-        mockGetAlgorandClient.mockReturnValue(createMockAlgorandClient(address => {
-            // Simulate activity for 0/0 and 0/2
-            return address === 'ADDRESS_0_0' || address === 'ADDRESS_0_2'
-        }))
+        mockGetAlgorandClient.mockReturnValue(
+            createMockAlgorandClient(address => {
+                // Simulate activity for 0/0 and 0/2
+                return address === 'ADDRESS_0_0' || address === 'ADDRESS_0_2'
+            }),
+        )
 
         const accounts = await discoverAccounts({
             seed,
@@ -93,10 +102,12 @@ describe('discoverAccounts', () => {
     })
 
     it('should stop after account gap limit', async () => {
-        mockGetAlgorandClient.mockReturnValue(createMockAlgorandClient(address => {
-            // Activity on 0/0 and 2/0 (skipping account 1)
-            return address === 'ADDRESS_0_0' || address === 'ADDRESS_2_0'
-        }))
+        mockGetAlgorandClient.mockReturnValue(
+            createMockAlgorandClient(address => {
+                // Activity on 0/0 and 2/0 (skipping account 1)
+                return address === 'ADDRESS_0_0' || address === 'ADDRESS_2_0'
+            }),
+        )
 
         // 0/0 Active. Found. Gap 0.
         // Account 1 inactive -> gap 1.
@@ -116,15 +127,17 @@ describe('discoverAccounts', () => {
     })
 
     it('should find all active accounts', async () => {
-        mockGetAlgorandClient.mockReturnValue(createMockAlgorandClient(address => {
-            // Simulate activity for first 6 accounts (0..5) keys 0
-            // address format is ADDRESS_accountIndex_keyIndex
-            const parts = address.split('_')
-            const account = parseInt(parts[1])
-            const key = parseInt(parts[2])
-            // Only key 0 active for accounts
-            return key === 0 && account <= 10
-        }))
+        mockGetAlgorandClient.mockReturnValue(
+            createMockAlgorandClient(address => {
+                // Simulate activity for first 6 accounts (0..5) keys 0
+                // address format is ADDRESS_accountIndex_keyIndex
+                const parts = address.split('_')
+                const account = parseInt(parts[1])
+                const key = parseInt(parts[2])
+                // Only key 0 active for accounts
+                return key === 0 && account <= 10
+            }),
+        )
 
         const accounts = await discoverAccounts({
             seed,
@@ -143,7 +156,9 @@ describe('discoverAccounts', () => {
     })
 
     it('should return first account if no activity found', async () => {
-        mockGetAlgorandClient.mockReturnValue(createMockAlgorandClient(() => false))
+        mockGetAlgorandClient.mockReturnValue(
+            createMockAlgorandClient(() => false),
+        )
 
         const accounts = await discoverAccounts({
             seed,
