@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, test, expect, beforeEach } from 'vitest'
+import { vi, describe, test, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { registerTestPlatform } from '../../../test-utils'
 
@@ -31,7 +31,7 @@ describe('device/store', () => {
 
         expect(result.current.deviceIDs).toBeInstanceOf(Map)
         expect(result.current.deviceIDs.size).toBe(0)
-        expect(result.current.fcmToken).toBeNull()
+        expect(result.current.pushToken).toBeNull()
         expect(result.current.network).toBe('mainnet')
     })
 
@@ -45,10 +45,10 @@ describe('device/store', () => {
         const { result } = renderHook(() => useDeviceStore())
 
         act(() => {
-            result.current.setFcmToken('test-token-123')
+            result.current.setPushToken('test-token-123')
         })
 
-        expect(result.current.fcmToken).toBe('test-token-123')
+        expect(result.current.pushToken).toBe('test-token-123')
     })
 
     test('should set device ID for network', async () => {

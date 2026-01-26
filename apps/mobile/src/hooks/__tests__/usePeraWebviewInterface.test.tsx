@@ -48,9 +48,13 @@ vi.mock('@perawallet/wallet-core-platform-integration', () => ({
     })),
     useDeviceID: vi.fn(() => 'device-id'),
     useDeviceInfoService: vi.fn(() => ({
+        getAppName: vi.fn(() => 'Pera Wallet'),
+        getAppPackage: vi.fn(() => 'com.algorand.perarn'),
         getAppVersion: vi.fn(() => '1.0.0'),
         getDevicePlatform: vi.fn(() => 'ios'),
         getDeviceModel: vi.fn(() => 'iPhone'),
+        getDeviceCountry: vi.fn(() => 'US'),
+        getDeviceLocale: vi.fn(() => 'en-US'),
     })),
     useNetwork: vi.fn(() => ({
         network: 'mainnet',
@@ -257,6 +261,9 @@ describe('usePeraWebviewInterface', () => {
         )
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
             expect.stringContaining('"appName":"Pera Wallet"'),
+        )
+        expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+            expect.stringContaining('"appPackageName":"com.algorand.perarn"'),
         )
     })
 

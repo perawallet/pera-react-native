@@ -21,6 +21,7 @@
 		59B140C32F16A5B600282240 /* Production.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 59B140BF2F16A5B600282240 /* Production.xcconfig */; };
 		59B140C42F16A5B600282240 /* Staging.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 59B140C12F16A5B600282240 /* Staging.xcconfig */; };
 		59B140C52F16A5B600282240 /* Shared.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 59B140C02F16A5B600282240 /* Shared.xcconfig */; };
+		59E085432F23E2AA000DB506 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 59E085422F23E2AA000DB506 /* StoreKit.framework */; };
 		5C6166B81EE047F9B81B9BF4 /* DMSansExtraLight.ttf in Resources */ = {isa = PBXBuildFile; fileRef = BF7FDD972E7B47C8A1F40714 /* DMSansExtraLight.ttf */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
@@ -55,6 +56,7 @@
 		59B140C82F17801400282240 /* dev.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = dev.entitlements; path = pera/dev.entitlements; sourceTree = "<group>"; };
 		59B140C92F17802B00282240 /* production.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = production.entitlements; path = pera/production.entitlements; sourceTree = "<group>"; };
 		59B140CB2F17818E00282240 /* staging.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = staging.entitlements; path = pera/staging.entitlements; sourceTree = "<group>"; };
+		59E085422F23E2AA000DB506 /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
 		756DEB473739420CAC360BA1 /* DMMonoRegular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = DMMonoRegular.ttf; path = ../assets/fonts/DMMonoRegular.ttf; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = pera/AppDelegate.swift; sourceTree = "<group>"; };
 		81495CD2062D4908A7642D8D /* DMSansThin.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = DMSansThin.ttf; path = ../assets/fonts/DMSansThin.ttf; sourceTree = "<group>"; };
@@ -74,6 +76,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				59E085432F23E2AA000DB506 /* StoreKit.framework in Frameworks */,
 				3409F8CAC07640767534B242 /* libPods-pera.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -102,6 +105,7 @@
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				59E085422F23E2AA000DB506 /* StoreKit.framework */,
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
 				179C8C1EFE4C57AA9537DF71 /* libPods-pera.a */,
 			);

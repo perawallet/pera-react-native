@@ -22,19 +22,19 @@ export const useDeviceID = (network: Network) => {
     return deviceIDs?.get(network) ?? null
 }
 
-export const useFcmToken = () => {
-    const fcmToken = useDeviceStore(state => state.fcmToken)
-    const setFcmToken = useDeviceStore(state => state.setFcmToken)
+export const usePushToken = () => {
+    const pushToken = useDeviceStore(state => state.pushToken)
+    const setPushToken = useDeviceStore(state => state.setPushToken)
     return {
-        fcmToken,
-        setFcmToken,
+        pushToken,
+        setPushToken,
     }
 }
 
 export const useDevice = (network: Network) => {
     const deviceIDs = useDeviceStore(state => state.deviceIDs)
     const deviceId = useDeviceID(network)
-    const fcmToken = useDeviceStore(state => state.fcmToken)
+    const { pushToken } = usePushToken()
     const setDeviceID = useDeviceStore(state => state.setDeviceID)
     const deviceInfoService = useDeviceInfoService()
 
@@ -48,7 +48,7 @@ export const useDevice = (network: Network) => {
                     data: {
                         accounts: addresses,
                         platform: await deviceInfoService.getDevicePlatform(),
-                        push_token: fcmToken ?? undefined,
+                        push_token: pushToken ?? undefined,
                         model: deviceInfoService.getDeviceModel(),
                         application: 'pera',
                         locale: deviceInfoService.getDeviceLocale(),
@@ -61,14 +61,14 @@ export const useDevice = (network: Network) => {
                     data: {
                         accounts: addresses,
                         platform: await deviceInfoService.getDevicePlatform(),
-                        push_token: fcmToken ?? undefined,
+                        push_token: pushToken ?? undefined,
                         model: deviceInfoService.getDeviceModel(),
                         locale: deviceInfoService.getDeviceLocale(),
                     },
                 })
             }
         },
-        [deviceId, deviceInfoService, fcmToken, network, setDeviceID],
+        [deviceId, deviceInfoService, pushToken, network, setDeviceID],
     )
 
     return {

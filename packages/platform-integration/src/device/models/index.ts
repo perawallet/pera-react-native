@@ -45,19 +45,24 @@ export type DevicePlatform =
 
 export interface DeviceInfoService {
     initializeDeviceInfo(): void
+    getAppName(): string
+    getAppId(): string
+    getAppPackage(): string
+    getAppBuild(): string
+    getAppVersion(): string
     getDeviceID(): Promise<string>
     getDeviceModel(): string
     getDevicePlatform(): DevicePlatform
     getDeviceLocale(): string
+    getDeviceCountry(): string
     getUserAgent(): string
-    getAppVersion(): string
 }
 
 export type DeviceState = BaseStoreState & {
-    fcmToken: string | null
+    pushToken: string | null
     deviceIDs: Map<Network, string | null>
     network: Network
-    setFcmToken: (token: string | null) => void
+    setPushToken: (token: string | null) => void
     setDeviceID: (network: Network, id: string | null) => void
     setNetwork: (network: Network) => void
 }

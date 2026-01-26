@@ -16,18 +16,13 @@ import {
 } from '@perawallet/wallet-core-platform-integration'
 import { updateBackendHeaders } from '@perawallet/wallet-core-shared'
 import DeviceInfo from 'react-native-device-info'
-import { Platform, NativeModules } from 'react-native'
+import { Platform } from 'react-native'
+import { getCountry, getLocales } from 'react-native-localize'
+import { config } from '@perawallet/wallet-core-config'
 
 const findDeviceLocale = () => {
-    const deviceLanguage =
-        Platform.OS === 'ios'
-            ? NativeModules.SettingsManager.getConstants().settings
-                  .AppleLocale ||
-              NativeModules.SettingsManager.getConstants().settings
-                  .AppleLanguages[0]
-            : NativeModules.I18nManager.getConstants().localeIdentifier
-
-    return deviceLanguage.split('@')[0].replaceAll('_', '-')
+    const locales = getLocales()
+    return locales.map(l => l.languageTag).at(0) ?? 'en-US'
 }
 
 const buildUserAgent = () => {
@@ -67,5 +62,20 @@ export class RNDeviceInfoStorageService implements DeviceInfoService {
     }
     getAppVersion(): string {
         return DeviceInfo.getVersion()
+    }
+    getAppBuild(): string {
+        return DeviceInfo.getBuildNumber()
+    }
+    getAppId(): string {
+        return config.appStoreAppID
+    }
+    getAppPackage(): string {
+        return DeviceInfo.getBundleId()
+    }
+    getAppName(): string {
+        return DeviceInfo.getApplicationName()
+    }
+    getDeviceCountry(): string {
+        return getCountry()
     }
 }

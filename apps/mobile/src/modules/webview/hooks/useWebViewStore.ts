@@ -61,11 +61,13 @@ export const useWebViewStore = create<WebViewStore>()(set => ({
 // Explicit return types for decoupled access
 type UseWebViewResult = {
     pushWebView: (view: Omit<WebViewRequest, 'id'> & { id?: string }) => void
+    removeWebView: (id: string) => void
 }
 
 export const useWebView = (): UseWebViewResult => {
     const pushWebView = useWebViewStore(state => state.pushWebView)
-    return { pushWebView }
+    const removeWebView = useWebViewStore(state => state.removeWebView)
+    return { pushWebView, removeWebView }
 }
 
 type UseWebViewStackResult = {

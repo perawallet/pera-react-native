@@ -27,15 +27,22 @@ const TAP_TIMEOUT = 1000
 const Version = () => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { getAppVersion } = useDeviceInfoService()
+    const { getAppVersion, getAppBuild } = useDeviceInfoService()
 
     const appVersion = useMemo(() => {
         return getAppVersion()
     }, [getAppVersion])
 
+    const appBuild = useMemo(() => {
+        return getAppBuild()
+    }, [getAppBuild])
+
     return (
         <PWText style={styles.versionText}>
-            {t('settings.main.version_footer', { version: appVersion })}
+            {t('settings.main.version_footer', {
+                version: appVersion,
+                build: appBuild,
+            })}
         </PWText>
     )
 }

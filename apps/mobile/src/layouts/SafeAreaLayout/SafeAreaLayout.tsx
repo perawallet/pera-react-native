@@ -15,7 +15,9 @@ import { useStyles } from './styles'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useDeeplinkListener } from '@hooks/useDeepLink'
 
-export type SafeAreaLayoutProps = ViewProps
+export type SafeAreaLayoutProps = ViewProps & {
+    isTabBarVisible?: boolean
+}
 
 export const SafeAreaLayout = (props: SafeAreaLayoutProps) => {
     const styles = useStyles()
@@ -26,6 +28,11 @@ export const SafeAreaLayout = (props: SafeAreaLayoutProps) => {
     return (
         <SafeAreaView
             style={styles.contentContainer}
+            edges={
+                props.isTabBarVisible
+                    ? ['top', 'left', 'right']
+                    : ['top', 'left', 'right', 'bottom']
+            }
             {...props}
         />
     )

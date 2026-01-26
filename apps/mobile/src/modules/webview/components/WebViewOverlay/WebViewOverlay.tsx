@@ -29,9 +29,17 @@ const flexStyle = { flex: 1 }
  * <WebViewOverlay />
  */
 export const WebViewOverlay = () => {
-    const { openWebViews } = useWebViewStack()
+    const { openWebViews, removeWebView } = useWebViewStack()
     const { height } = useWindowDimensions()
     const insets = useSafeAreaInsets()
+
+    const onCloseRequested = (view: WebViewRequest) => {
+        if (view.onCloseRequested) {
+            view.onCloseRequested()
+        } else {
+            removeWebView(view.id)
+        }
+    }
 
     return (
         <>
@@ -51,7 +59,7 @@ export const WebViewOverlay = () => {
                             enablePeraConnect={view.enablePeraConnect ?? false}
                             showControls
                             onBack={view.onBackRequested}
-                            onClose={view.onCloseRequested}
+                            onClose={() => onCloseRequested(view)}
                         />
                     </PWView>
                 </PWBottomSheet>

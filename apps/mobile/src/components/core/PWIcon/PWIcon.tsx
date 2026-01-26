@@ -72,6 +72,8 @@ import StarIcon from '@assets/icons/star.svg'
 import SwapIcon from '@assets/icons/swap.svg'
 import SwitchIcon from '@assets/icons/switch.svg'
 import TextDocumentIcon from '@assets/icons/text-document.svg'
+import ThumbDownIcon from '@assets/icons/thumb-down.svg'
+import ThumbUpIcon from '@assets/icons/thumb-up.svg'
 import TrashIcon from '@assets/icons/trash.svg'
 import TreeIcon from '@assets/icons/tree.svg'
 import WalletConnectIcon from '@assets/icons/wallet-connect.svg'
@@ -163,6 +165,8 @@ const ICON_LIBRARY = {
     swap: SwapIcon,
     switch: SwitchIcon,
     'text-document': TextDocumentIcon,
+    thumb_down: ThumbDownIcon,
+    thumb_up: ThumbUpIcon,
     trash: TrashIcon,
     tree: TreeIcon,
     undo: UndoIcon,
