@@ -16,6 +16,7 @@ import RateApp, { AndroidMarket } from 'react-native-rate-app'
 import { RoundButton } from '@components/RoundButton'
 import { useLanguage } from '@hooks/useLanguage'
 import { useDeviceInfoService } from '@perawallet/wallet-core-platform-integration'
+import { useToast } from '@hooks/useToast'
 
 type RatingsBottomSheetProps = {
     isOpen: boolean
@@ -27,14 +28,27 @@ export const RatingsBottomSheet = (props: RatingsBottomSheetProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const deviceInfoService = useDeviceInfoService()
+    const { showToast } = useToast()
 
     const handleRatingClick = async () => {
-        await RateApp.openStoreForReview({
-            androidPackageName: deviceInfoService.getAppPackage(),
-            iOSAppId: deviceInfoService.getAppId(),
-            androidMarket: AndroidMarket.GOOGLE,
-        })
         onClose()
+        try {
+            const success = await RateApp.openStoreForReview({
+                androidPackageName: deviceInfoService.getAppPackage(),
+                iOSAppId: deviceInfoService.getAppId(),
+                androidMarket: AndroidMarket.GOOGLE,
+            })
+
+            if (!success) {
+                throw new Error('Failed to open store for review')
+            }
+        } catch {
+            showToast({
+                title: t('common.error.title'),
+                body: t('common.error.body'),
+                type: 'error',
+            })
+        }
     }
 
     return (
