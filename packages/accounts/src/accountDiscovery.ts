@@ -22,6 +22,7 @@ import {
     getAlgorandClient,
 } from '@perawallet/wallet-core-blockchain'
 import { AccountTypes, HDWalletAccount } from './models/accounts'
+import { AlgorandClient } from '@algorandfoundation/algokit-utils'
 
 const ACCOUNT_GAP_LIMIT = 5
 const KEY_INDEX_GAP_LIMIT = 5
@@ -36,6 +37,119 @@ type DiscoverAccountsParams = {
     keyIndexGapLimit?: number
 }
 
+async function checkActivity(
+    algorandClient: AlgorandClient,
+    address: string,
+): Promise<boolean> {
+    try {
+        const accountInfo =
+            await algorandClient.client.algod.accountInformation(address)
+
+        return (
+            accountInfo.amount > 0 ||
+            accountInfo.totalAppsOptedIn > 0 ||
+            accountInfo.totalAssetsOptedIn > 0 ||
+            accountInfo.totalCreatedApps > 0 ||
+            accountInfo.totalCreatedAssets > 0
+        )
+    } catch {
+        // Algod returns 404 for empty accounts
+        return false
+    }
+}
+
+type ScanAccountKeysParams = {
+    accountIdx: number
+    keyIndexGapLimit: number
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rootKey: any
+    walletId: string
+    derivationType: BIP32DerivationType
+    algorandClient: AlgorandClient
+}
+
+type ScanResult = {
+    activeAccounts: HDWalletAccount[]
+    zeroAccount: HDWalletAccount | null
+}
+
+async function scanAccountKeys({
+    accountIdx,
+    keyIndexGapLimit,
+    rootKey,
+    walletId,
+    derivationType,
+    algorandClient,
+}: ScanAccountKeysParams): Promise<ScanResult> {
+    const activeAccounts: HDWalletAccount[] = []
+    let zeroAccount: HDWalletAccount | null = null
+    let keyGap = 0
+    let keyIdx = 0
+
+    while (keyGap < keyIndexGapLimit) {
+        const batchSize = keyIndexGapLimit
+        const tasks = []
+
+        for (let i = 0; i < batchSize; i++) {
+            const currentKeyIdx = keyIdx + i
+            tasks.push(async () => {
+                const addressBytes = await api.keyGen(
+                    rootKey,
+                    KeyContext.Address,
+                    accountIdx,
+                    currentKeyIdx,
+                    derivationType,
+                )
+                const address = encodeAlgorandAddress(addressBytes)
+
+                const accountData: HDWalletAccount = {
+                    id: uuidv7(),
+                    address,
+                    type: AccountTypes.hdWallet,
+                    canSign: true,
+                    hdWalletDetails: {
+                        walletId,
+                        account: accountIdx,
+                        change: 0,
+                        keyIndex: currentKeyIdx,
+                        derivationType,
+                    },
+                }
+
+                let isZeroAccount = false
+                if (accountIdx === 0 && currentKeyIdx === 0) {
+                    isZeroAccount = true
+                }
+
+                const isActive = await checkActivity(algorandClient, address)
+                return { isActive, data: accountData, isZeroAccount }
+            })
+        }
+
+        const results = await Promise.all(tasks.map(t => t()))
+
+        for (const res of results) {
+            if (res.isZeroAccount) {
+                zeroAccount = res.data
+            }
+
+            if (res.isActive) {
+                activeAccounts.push(res.data)
+                keyGap = 0
+            } else {
+                keyGap++
+            }
+
+            if (keyGap >= keyIndexGapLimit) break
+        }
+
+        if (keyGap >= keyIndexGapLimit) break
+        keyIdx += batchSize
+    }
+
+    return { activeAccounts, zeroAccount }
+}
+
 export const discoverAccounts = async ({
     seed,
     derivationType,
@@ -44,23 +158,6 @@ export const discoverAccounts = async ({
     keyIndexGapLimit = KEY_INDEX_GAP_LIMIT,
 }: DiscoverAccountsParams): Promise<HDWalletAccount[]> => {
     const algorandClient = getAlgorandClient()
-    const checkActivity = async (address: string) => {
-        try {
-            const accountInfo =
-                await algorandClient.client.algod.accountInformation(address)
-
-            return (
-                accountInfo.amount > 0 ||
-                (accountInfo.assets?.length ?? 0) > 0 ||
-                (accountInfo.appsLocalState?.length ?? 0) > 0 ||
-                (accountInfo.appsTotalSchema?.numUints ?? 0) > 0 ||
-                (accountInfo.appsTotalSchema?.numByteSlices ?? 0) > 0
-            )
-        } catch {
-            // Algod returns 404 for empty accounts
-            return false
-        }
-    }
     const rootKey = fromSeed(seed)
     const foundAccounts: HDWalletAccount[] = []
     let firstAccount: HDWalletAccount | null = null
@@ -69,53 +166,41 @@ export const discoverAccounts = async ({
     let accountIndex = 0
 
     while (accountGap < accountGapLimit) {
-        let keyIndexGap = 0
-        let keyIndex = 0
+        const batchSize = accountGapLimit
+        const tasks = []
 
-        while (keyIndexGap < keyIndexGapLimit) {
-            const addressBytes = await api.keyGen(
-                rootKey,
-                KeyContext.Address,
-                accountIndex,
-                keyIndex,
-                derivationType,
-            )
-            const address = encodeAlgorandAddress(addressBytes)
-
-            // Create potential account object
-            const accountData: HDWalletAccount = {
-                id: uuidv7(),
-                address,
-                type: AccountTypes.hdWallet,
-                canSign: true,
-                hdWalletDetails: {
+        for (let i = 0; i < batchSize; i++) {
+            tasks.push(
+                scanAccountKeys({
+                    accountIdx: accountIndex + i,
+                    keyIndexGapLimit,
+                    rootKey,
                     walletId,
-                    account: accountIndex,
-                    change: 0,
-                    keyIndex,
                     derivationType,
-                },
-            }
-
-            if (accountIndex === 0 && keyIndex === 0) {
-                firstAccount = accountData
-            }
-
-            const hasActivity = await checkActivity(address)
-
-            if (hasActivity) {
-                foundAccounts.push(accountData)
-                keyIndexGap = 0
-                accountGap = 0
-            } else {
-                keyIndexGap++
-            }
-
-            keyIndex++
+                    algorandClient,
+                }),
+            )
         }
 
-        accountGap++
-        accountIndex++
+        const results = await Promise.all(tasks)
+
+        for (const { activeAccounts, zeroAccount } of results) {
+            if (zeroAccount) {
+                firstAccount = zeroAccount
+            }
+
+            if (activeAccounts.length > 0) {
+                foundAccounts.push(...activeAccounts)
+                accountGap = 0
+            } else {
+                accountGap++
+            }
+
+            if (accountGap >= accountGapLimit) break
+        }
+
+        if (accountGap >= accountGapLimit) break
+        accountIndex += batchSize
     }
 
     if (foundAccounts.length === 0 && firstAccount) {
