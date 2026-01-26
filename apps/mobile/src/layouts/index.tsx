@@ -22,6 +22,14 @@ const safeAreaLayout = ({ children }: { children: React.ReactNode }) => {
     return <SafeAreaLayout>{children}</SafeAreaLayout>
 }
 
+const safeAreaLayoutWithTabBar = ({
+    children,
+}: {
+    children: React.ReactNode
+}) => {
+    return <SafeAreaLayout isTabBarVisible>{children}</SafeAreaLayout>
+}
+
 const fullScreenLayout = ({ children }: { children: React.ReactNode }) => {
     return <FullScreenLayout>{children}</FullScreenLayout>
 }
@@ -29,6 +37,7 @@ const fullScreenLayout = ({ children }: { children: React.ReactNode }) => {
 export {
     headeredLayout,
     safeAreaLayout,
+    safeAreaLayoutWithTabBar,
     fullScreenLayout,
     FullScreenLayout,
     HeaderedLayout,
