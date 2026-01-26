@@ -34,7 +34,7 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingVertical: theme.spacing.md,
-        borderBottomWidth: 1,
+        borderBottomWidth: theme.borders.sm,
         borderBottomColor: theme.colors.layerGrayLighter,
     },
     headerCount: {
@@ -64,7 +64,7 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingVertical: theme.spacing.md,
-        borderBottomWidth: 1,
+        borderBottomWidth: theme.borders.sm,
         borderBottomColor: theme.colors.layerGrayLighter,
     },
     itemTextContainer: {
@@ -81,7 +81,7 @@ export const useStyles = makeStyles(theme => ({
     },
     footer: {
         padding: theme.spacing.xl,
-        borderTopWidth: 1,
+        borderTopWidth: theme.borders.sm,
         borderTopColor: theme.colors.layerGrayLighter,
         backgroundColor: theme.colors.background,
         paddingBottom: theme.spacing.xl + 20, // Extra padding for safe area logic usually handled by SafeAreaView but good to have buffer

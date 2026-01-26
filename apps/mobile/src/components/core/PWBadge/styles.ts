@@ -34,7 +34,7 @@ export const useStyles = makeStyles((theme, props: PWBadgeProps) => {
             paddingHorizontal: theme.spacing.sm,
             height: theme.spacing.xl,
             backgroundColor,
-            borderWidth: 0,
+            borderWidth: theme.borders.none,
             borderRadius: theme.spacing['3xl'],
         },
         text: {

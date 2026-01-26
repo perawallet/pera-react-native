@@ -22,7 +22,7 @@ export const useStyles = makeStyles(theme => {
             alignItems: 'center',
         },
         radioContainer: {
-            borderWidth: 1,
+            borderWidth: theme.borders.sm,
             borderRadius: theme.spacing.xl,
             borderColor: theme.colors.layerGrayLight,
             width: theme.spacing.xl,

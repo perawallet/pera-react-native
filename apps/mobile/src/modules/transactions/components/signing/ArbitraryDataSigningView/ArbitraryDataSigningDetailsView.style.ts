@@ -41,7 +41,7 @@ export const useStyles = makeStyles(theme => {
             backgroundColor: theme.colors.layerGrayLighter,
         },
         section: {
-            borderBottomWidth: 1,
+            borderBottomWidth: theme.borders.sm,
             borderBottomColor: theme.colors.layerGrayLightest,
             paddingVertical: theme.spacing.lg,
             gap: theme.spacing.md,

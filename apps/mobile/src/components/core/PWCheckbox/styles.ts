@@ -16,8 +16,8 @@ export const useStyles = makeStyles(theme => ({
     uncheckedIcon: {
         width: theme.spacing.xl,
         height: theme.spacing.xl,
-        borderWidth: 2,
-        borderColor: theme.colors.helperPositive,
+        borderWidth: theme.borders.md,
+        borderColor: theme.colors.layerGray,
         borderRadius: theme.spacing.xs,
         backgroundColor: 'transparent',
     },

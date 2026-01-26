@@ -44,7 +44,7 @@ export const useStyles = makeStyles(theme => {
         },
         assetDisplay: {
             borderColor: theme.colors.layerGrayLighter,
-            borderWidth: 1,
+            borderWidth: theme.borders.sm,
             borderRadius: theme.spacing.xs,
             padding: theme.spacing.md,
         },
@@ -54,7 +54,7 @@ export const useStyles = makeStyles(theme => {
         secondaryButton: {
             paddingVertical: theme.spacing.xs,
             backgroundColor: theme.colors.background,
-            borderWidth: 1,
+            borderWidth: theme.borders.sm,
             borderColor: theme.colors.layerGrayLighter,
             borderRadius: theme.spacing.xs,
         },

@@ -649,6 +649,11 @@ vi.mock('@rneui/themed', () => {
             overlay1: 100,
             max: 10000,
         },
+        borders: {
+            none: 0,
+            sm: 1,
+            md: 2,
+        },
         mode: 'light',
     }
 

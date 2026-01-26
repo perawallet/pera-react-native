@@ -33,7 +33,7 @@ export const useStyles = makeStyles(theme => {
         },
         footer: {
             padding: theme.spacing.lg,
-            borderTopWidth: 1,
+            borderTopWidth: theme.borders.sm,
             borderTopColor: theme.colors.layerGrayLighter,
             gap: theme.spacing.sm,
             boxShadow: '0px 14px 60px 0px #00000029',
@@ -43,7 +43,7 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.lg,
             alignItems: 'center',
             justifyContent: 'center',
-            borderTopWidth: 1,
+            borderTopWidth: theme.borders.sm,
             borderTopColor: theme.colors.layerGrayLightest,
             paddingVertical: theme.spacing.sm,
         },

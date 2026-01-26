@@ -35,7 +35,7 @@ export const useStyles = makeStyles(theme => {
             width: theme.spacing.xl * 1.65,
             height: theme.spacing.xl * 1.65,
             borderRadius: theme.spacing.xl,
-            borderWidth: 1,
+            borderWidth: theme.borders.sm,
             borderColor: theme.colors.layerGrayLighter,
             alignItems: 'center',
             justifyContent: 'center',

@@ -141,9 +141,6 @@ export const ImportSelectAddressesScreen = () => {
                                 checked={isAllSelected}
                                 onPress={toggleSelectAll}
                                 containerStyle={styles.checkboxContainer}
-                                uncheckedColor={
-                                    styles.selectAllText.color as string
-                                }
                             />
                         </PWTouchableOpacity>
                     )}

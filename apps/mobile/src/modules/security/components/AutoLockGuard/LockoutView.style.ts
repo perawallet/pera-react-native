@@ -53,7 +53,7 @@ export const useStyles = makeStyles(theme => ({
     divider: {
         paddingBottom: theme.spacing.xxl,
         marginBottom: theme.spacing.xxl,
-        borderBottomWidth: 1,
+        borderBottomWidth: theme.borders.sm,
         borderBottomColor: theme.colors.layerGrayLighter,
     },
 }))
