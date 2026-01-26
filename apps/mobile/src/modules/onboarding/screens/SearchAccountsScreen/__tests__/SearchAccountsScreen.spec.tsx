@@ -12,17 +12,19 @@
 
 import { render, screen } from '@test-utils/render'
 import { vi } from 'vitest'
-import { useRoute } from '@react-navigation/native'
+import { RouteProp, useRoute } from '@react-navigation/native'
 import { SearchAccountsScreen } from '../SearchAccountsScreen'
 import { AccountTypes } from '@perawallet/wallet-core-accounts'
+import { OnboardingStackParamList } from '../../../routes/types'
 
 // Mock the hooks to avoid actual blockchain/KMS calls during tests
 vi.mock('@perawallet/wallet-core-accounts', async (importOriginal) => ({
-    ...(await importOriginal<any>()),
+    ...(await importOriginal<typeof import('@perawallet/wallet-core-accounts')>()),
     useHDWallet: () => ({
         deriveAccountAddress: vi.fn(),
     }),
     useCreateAccount: () => vi.fn(),
+    discoverAccounts: vi.fn(() => Promise.resolve([])),
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
@@ -46,6 +48,9 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 describe('SearchAccountsScreen', () => {
     beforeEach(() => {
         vi.mocked(useRoute).mockReturnValue({
+            key: 'mock-key',
+            name: 'SearchAccounts',
+            path: undefined,
             params: {
                 account: {
                     id: '1',
@@ -61,7 +66,7 @@ describe('SearchAccountsScreen', () => {
                     },
                 },
             },
-        } as any)
+        } as RouteProp<OnboardingStackParamList, 'SearchAccounts'>)
     })
 
     it('renders searching accounts title', () => {

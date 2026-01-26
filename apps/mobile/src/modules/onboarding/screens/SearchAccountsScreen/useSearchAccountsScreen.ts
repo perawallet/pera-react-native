@@ -17,16 +17,14 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { RouteProp, useRoute } from '@react-navigation/native'
 import { v7 as uuidv7 } from 'uuid'
 import {
-    useHDWallet,
     getSeedFromMasterKey,
     AccountTypes,
-    type WalletAccount,
     type HDWalletAccount,
+    discoverAccounts,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import {
     useAlgorandClient,
-    encodeAlgorandAddress,
 } from '@perawallet/wallet-core-blockchain'
 import { OnboardingStackParamList } from '../../routes/types'
 
@@ -41,10 +39,6 @@ const STEP_DURATION = 500
 const TRANSPARENT_OPACITY = 0.3
 const FULL_OPACITY = 1
 
-const MAX_ACCOUNT_GAP = 5
-const MAX_KEY_INDEX_GAP = 5
-const MAX_SEARCH_DEPTH = 20
-
 export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const {
         params: { account },
@@ -52,7 +46,6 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const { t } = useLanguage()
     const navigation = useAppNavigation()
     const { getPrivateData } = useKMS()
-    const { deriveAccountAddress } = useHDWallet()
     const algorandClient = useAlgorandClient()
 
     const onboardingWalletId = account.hdWalletDetails.walletId;
@@ -101,92 +94,50 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
 
             const seed = getSeedFromMasterKey(privateData)
             const derivationType = account.hdWalletDetails.derivationType
-            const foundAccounts: HDWalletAccount[] = [account]
 
-            let accountGap = 0
+            const discoveredAccounts = await discoverAccounts({
+                seed,
+                derivationType,
+                accountGapLimit: 5,
+                keyIndexGapLimit: 5,
+                async checkActivity(address) {
+                    try {
+                        const accountInfo = await algorandClient.client.algod.accountInformation(address)
+                        return (
+                            accountInfo.amount > 0 ||
+                            ((accountInfo.assets?.length ?? 0) > 0) ||
+                            ((accountInfo.appsLocalState?.length ?? 0) > 0) ||
+                            ((accountInfo.appsTotalSchema?.numUints ?? 0) > 0 ||
+                                (accountInfo.appsTotalSchema?.numByteSlices ?? 0) > 0)
+                        )
 
-            for (
-                let accountIndex = 0;
-                accountIndex < MAX_SEARCH_DEPTH;
-                accountIndex++
-            ) {
-                if (accountGap >= MAX_ACCOUNT_GAP) {
-                    break
-                }
-
-                let keyIndexGap = 0
-                let accountHasActivity = false
-
-                for (
-                    let keyIndex = 0;
-                    keyIndex < MAX_SEARCH_DEPTH;
-                    keyIndex++
-                ) {
-                    if (keyIndexGap >= MAX_KEY_INDEX_GAP) {
-                        break
+                    } catch {
+                        // Algod returns 404 for empty accounts
+                        return false
                     }
+                },
+                // Using defaults for max limits
+            })
 
-                    // Skip 0/0 as it was already imported in the previous step
-                    if (accountIndex === 0 && keyIndex === 0) {
-                        keyIndexGap = 0
-                        continue
-                    }
-
-                    const { address } = await deriveAccountAddress({
-                        seed,
+            const foundAccounts: HDWalletAccount[] = discoveredAccounts.map(
+                ({ accountIndex, keyIndex, address }) => ({
+                    id: uuidv7(),
+                    address,
+                    type: AccountTypes.hdWallet,
+                    canSign: true,
+                    hdWalletDetails: {
+                        walletId: onboardingWalletId!,
                         account: accountIndex,
+                        change: 0,
                         keyIndex,
                         derivationType,
-                    })
+                    },
+                }),
+            )
 
-                    const encodedAddress = encodeAlgorandAddress(address)
-                    const accountInfo =
-                        await algorandClient.client.algod.accountInformation(encodedAddress)
+            const finalAccounts = [account, ...foundAccounts]
 
-                    const hasActivity =
-                        accountInfo.amount > 0 ||
-                        (accountInfo.assets && accountInfo.assets.length > 0) ||
-                        (accountInfo.appsLocalState &&
-                            accountInfo.appsLocalState.length > 0) ||
-                        (accountInfo.appsTotalSchema &&
-                            ((accountInfo.appsTotalSchema.numUints ?? 0) > 0 ||
-                                (accountInfo.appsTotalSchema.numByteSlices ?? 0) > 0))
-
-                    if (hasActivity) {
-                        accountHasActivity = true
-                        keyIndexGap = 0
-
-                        const newAccount: WalletAccount = {
-                            id: uuidv7(),
-                            address: encodedAddress,
-                            type: AccountTypes.hdWallet,
-                            canSign: true,
-                            hdWalletDetails: {
-                                walletId: onboardingWalletId!,
-                                account: accountIndex,
-                                change: 0,
-                                keyIndex,
-                                derivationType,
-                            },
-                        }
-
-
-                        foundAccounts.push(newAccount)
-                    } else {
-                        keyIndexGap++
-                    }
-                }
-
-                if (accountHasActivity) {
-                    accountGap = 0
-                } else {
-                    // We only count an account as "empty" if even its 0th key index is empty
-                    // This matches the typical discovery logic
-                    accountGap++
-                }
-            }
-
-            navigation.replace('ImportSelectAddresses', { accounts: foundAccounts })
+            navigation.replace('ImportSelectAddresses', { accounts: finalAccounts })
         } catch {
             // Error handling could be added here (e.g. show toast)
             // For now we just stop searching
@@ -194,7 +145,6 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     }, [
         onboardingWalletId,
         getPrivateData,
-        deriveAccountAddress,
         algorandClient,
         navigation,
         account,

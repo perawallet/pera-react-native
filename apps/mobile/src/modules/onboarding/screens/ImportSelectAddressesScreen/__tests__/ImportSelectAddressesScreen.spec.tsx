@@ -12,13 +12,17 @@
 
 import { render, screen } from '@test-utils/render'
 import { vi } from 'vitest'
-import { useRoute } from '@react-navigation/native'
+import { RouteProp, useRoute } from '@react-navigation/native'
 import { ImportSelectAddressesScreen } from '../ImportSelectAddressesScreen'
 import { AccountTypes } from '@perawallet/wallet-core-accounts'
+import { OnboardingStackParamList } from '../../../routes/types'
 
 describe('ImportSelectAddressesScreen', () => {
     beforeEach(() => {
         vi.mocked(useRoute).mockReturnValue({
+            key: 'mock-key',
+            name: 'ImportSelectAddresses',
+            path: undefined,
             params: {
                 accounts: [
                     {
@@ -36,7 +40,7 @@ describe('ImportSelectAddressesScreen', () => {
                     },
                 ],
             },
-        } as any)
+        } as RouteProp<OnboardingStackParamList, 'ImportSelectAddresses'>)
     })
 
     it('renders the select addresses title', () => {

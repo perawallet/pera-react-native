@@ -35,9 +35,8 @@ export type UseImportSelectAddressesScreenResult = {
   toggleSelection: (address: string) => void
   toggleSelectAll: () => void
   handleContinue: () => void
-  t: (key: string, options?: any) => string
+  t: (key: string, options?: Record<string, unknown>) => string
 }
-
 
 export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreenResult {
   const {
@@ -52,15 +51,15 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     return new Set(allAccounts.map(acc => acc.address))
   }, [allAccounts])
 
-  const selectableAccounts = useMemo(() => {
+  const newAccounts = useMemo(() => {
     return accounts.filter(acc => !alreadyImportedAddresses.has(acc.address))
   }, [accounts, alreadyImportedAddresses])
 
-  const [selectedAddresses, setSelectedAddresses] = useState<Set<string>>(
-    new Set(selectableAccounts.map(acc => acc.address)),
+  const [selectedAddresses, setSelectedAddresses] = useState<Set<string>>(() =>
+    new Set(newAccounts.map(acc => acc.address))
   )
 
-  const isAllSelected = selectableAccounts.length > 0 && selectedAddresses.size === selectableAccounts.length
+  const isAllSelected = newAccounts.length > 0 && selectedAddresses.size === newAccounts.length
 
   const toggleSelection = useCallback((address: string) => {
     if (alreadyImportedAddresses.has(address)) return
@@ -80,9 +79,9 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     if (isAllSelected) {
       setSelectedAddresses(new Set())
     } else {
-      setSelectedAddresses(new Set(selectableAccounts.map(acc => acc.address)))
+      setSelectedAddresses(new Set(newAccounts.map(acc => acc.address)))
     }
-  }, [isAllSelected, selectableAccounts])
+  }, [isAllSelected, newAccounts])
 
   const handleContinue = useCallback(() => {
     const accountsToAdd = accounts.filter(acc => selectedAddresses.has(acc.address))
