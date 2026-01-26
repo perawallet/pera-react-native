@@ -69,8 +69,6 @@ export const discoverAccounts = async ({
             )
             const address = encodeAlgorandAddress(addressBytes)
 
-            // If this is 0/0, it's the root account. We consider it "active" usually if it exists?
-            // Actually, we should check activity for all.
             const hasActivity = await checkActivity(address)
 
             if (hasActivity) {
@@ -92,8 +90,6 @@ export const discoverAccounts = async ({
             accountGap = 0
             activeAccountCount++
         } else {
-            // If checking account 0 and it has no active keys, is it a gap?
-            // Yes.
             accountGap++
         }
 

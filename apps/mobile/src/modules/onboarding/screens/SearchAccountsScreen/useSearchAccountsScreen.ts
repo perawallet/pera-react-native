@@ -14,6 +14,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import { Animated } from 'react-native'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useToast } from '@hooks/useToast'
 import { RouteProp, useRoute } from '@react-navigation/native'
 import { v7 as uuidv7 } from 'uuid'
 import {
@@ -42,6 +43,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
         params: { account },
     } = useRoute<RouteProp<OnboardingStackParamList, 'SearchAccounts'>>()
     const { t } = useLanguage()
+    const { showToast } = useToast()
     const navigation = useAppNavigation()
     const { getPrivateData } = useKMS()
     const algorandClient = useAlgorandClient()
@@ -145,8 +147,12 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                 accounts: finalAccounts,
             })
         } catch {
-            // Error handling could be added here (e.g. show toast)
-            // For now we just stop searching
+            showToast({
+                type: 'error',
+                title: t('onboarding.import_account.failed_title'),
+                body: t('onboarding.import_account.failed_body'),
+            })
+            navigation.goBack()
         }
     }, [
         onboardingWalletId,
