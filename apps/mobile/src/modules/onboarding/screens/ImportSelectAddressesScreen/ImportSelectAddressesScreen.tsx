@@ -127,7 +127,7 @@ export const ImportSelectAddressesScreen = () => {
                         style={styles.selectAllContainer}
                     >
                         <PWText
-                            variant='body'
+                            variant='link'
                             style={styles.selectAllText}
                         >
                             {t('onboarding.import_select_addresses.select_all')}
@@ -136,6 +136,9 @@ export const ImportSelectAddressesScreen = () => {
                             checked={isAllSelected}
                             onPress={toggleSelectAll}
                             containerStyle={styles.checkboxContainer}
+                            uncheckedColor={
+                                styles.selectAllText.color as string
+                            }
                         />
                     </PWTouchableOpacity>
                 </PWView>

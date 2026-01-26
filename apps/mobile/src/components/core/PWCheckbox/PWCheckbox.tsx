@@ -9,15 +9,18 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
-
+import { View } from 'react-native'
 import { PWIcon } from '@components/core/PWIcon'
 import { CheckBox, CheckBoxProps } from '@rneui/themed'
+import { useStyles } from './styles'
 
 export type PWCheckboxProps = {
     children?: React.ReactNode
 } & CheckBoxProps
 
 export const PWCheckbox = ({ children, ...props }: PWCheckboxProps) => {
+    const styles = useStyles()
+
     return (
         <CheckBox
             {...props}
@@ -27,6 +30,7 @@ export const PWCheckbox = ({ children, ...props }: PWCheckboxProps) => {
                     variant='positive'
                 />
             }
+            uncheckedIcon={<View style={styles.uncheckedIcon} />}
         >
             {children}
         </CheckBox>
