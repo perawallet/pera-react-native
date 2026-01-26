@@ -30,6 +30,8 @@ export type UseImportSelectAddressesScreenResult = {
     accounts: HDWalletAccount[]
     selectedAddresses: Set<string>
     isAllSelected: boolean
+    areAllImported: boolean
+    canContinue: boolean
     alreadyImportedAddresses: Set<string>
     toggleSelection: (address: string) => void
     toggleSelectAll: () => void
@@ -101,10 +103,15 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         setIsOnboarding(false)
     }, [accounts, selectedAddresses, allAccounts, setIsOnboarding])
 
+    const areAllImported = newAccounts.length === 0
+    const canContinue = areAllImported || selectedAddresses.size > 0
+
     return {
         accounts,
         selectedAddresses,
         isAllSelected,
+        areAllImported,
+        canContinue,
         alreadyImportedAddresses,
         toggleSelection,
         toggleSelectAll,
