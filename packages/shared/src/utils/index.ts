@@ -13,6 +13,7 @@
 export * from './addresses'
 export * from './arrays'
 export * from './store'
+export * from './store-registry'
 export * from './strings'
 export * from './logging'
 export * from './objects'

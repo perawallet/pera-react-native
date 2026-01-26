@@ -10,10 +10,12 @@
  limitations under the License
  */
 
+import { BaseStoreState } from '@perawallet/wallet-core-shared'
+
 export * from './assets'
 export * from './price-history'
 
-export type AssetsState = {
+export type AssetsState = BaseStoreState & {
     assetIDs: string[]
     setAssetIDs: (ids: string[]) => void
 }

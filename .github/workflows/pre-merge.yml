@@ -1,4 +1,4 @@
-name: CI
+name: Pre-Merge
 
 on:
   pull_request:

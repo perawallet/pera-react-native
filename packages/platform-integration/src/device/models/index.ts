@@ -11,6 +11,7 @@
  */
 
 import type { Network } from '@perawallet/wallet-core-shared'
+import type { BaseStoreState } from '@perawallet/wallet-core-shared'
 
 export type DeviceApplication = 'pera' | 'pera-beta' | 'fifa'
 
@@ -52,7 +53,7 @@ export interface DeviceInfoService {
     getAppVersion(): string
 }
 
-export type DeviceState = {
+export type DeviceState = BaseStoreState & {
     fcmToken: string | null
     deviceIDs: Map<Network, string | null>
     network: Network

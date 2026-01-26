@@ -10,7 +10,9 @@
  limitations under the License
  */
 
-export type SwapsState = {
+import type { BaseStoreState } from '@perawallet/wallet-core-shared'
+
+export type SwapsState = BaseStoreState & {
     fromAsset: string
     toAsset: string
     setFromAsset: (fromAsset: string) => void

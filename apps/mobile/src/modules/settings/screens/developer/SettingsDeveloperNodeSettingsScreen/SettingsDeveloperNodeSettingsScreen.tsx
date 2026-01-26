@@ -12,7 +12,7 @@
 
 import { useStyles } from './styles'
 import { PWView } from '@components/core'
-import { RadioButton } from '@components/RadioButton'
+import { PWRadioButton } from '@components/core/PWRadioButton'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import { Networks } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
@@ -24,12 +24,12 @@ export const SettingsDeveloperNodeSettingsScreen = () => {
 
     return (
         <PWView style={styles.container}>
-            <RadioButton
+            <PWRadioButton
                 title={t('settings.developer.node_settings.mainnet_label')}
                 onPress={() => setNetwork(Networks.mainnet)}
                 isSelected={network === Networks.mainnet}
             />
-            <RadioButton
+            <PWRadioButton
                 title={t('settings.developer.node_settings.testnet_label')}
                 onPress={() => setNetwork(Networks.testnet)}
                 isSelected={network === Networks.testnet}

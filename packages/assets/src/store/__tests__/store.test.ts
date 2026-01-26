@@ -11,7 +11,35 @@
  */
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
-import { createAssetsStore } from '../index'
+import { clearAssetsStore, createAssetsStore, initAssetsStore } from '../store'
+import { useKeyValueStorageService } from '@perawallet/wallet-core-platform-integration'
+const { mockLazy, mockRegistry } = vi.hoisted(() => ({
+    mockLazy: {
+        useStore: vi.fn(),
+        init: vi.fn(),
+        clear: vi.fn(),
+    },
+    mockRegistry: {
+        register: vi.fn(),
+    },
+}))
+
+// Mock dependencies
+vi.mock('@perawallet/wallet-core-platform-integration', () => ({
+    useKeyValueStorageService: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-shared', async () => {
+    const actual = await vi.importActual('@perawallet/wallet-core-shared')
+    return {
+        ...actual,
+        createLazyStore: vi.fn(() => mockLazy),
+        DataStoreRegistry: mockRegistry,
+        logger: {
+            debug: vi.fn(),
+        },
+    }
+})
 
 describe('services/assets/store', () => {
     let store: any
@@ -31,7 +59,39 @@ describe('services/assets/store', () => {
     })
 
     test('setAssetIDs updates assetIDs', () => {
-        store.getState().setAssetIDs([1, 2, 3])
-        expect(store.getState().assetIDs).toEqual([1, 2, 3])
+        store.getState().setAssetIDs(['1', '2', '3'])
+        expect(store.getState().assetIDs).toEqual(['1', '2', '3'])
+    })
+
+    test('resetState reverts to initial state', () => {
+        store.getState().setAssetIDs(['1', '2', '3'])
+        expect(store.getState().assetIDs).toHaveLength(3)
+
+        store.getState().resetState()
+        expect(store.getState().assetIDs).toEqual([])
+    })
+
+    describe('initialization and registration', () => {
+        test('initAssetsStore initializes the lazy store', () => {
+            ;(useKeyValueStorageService as any).mockReturnValue(mockStorage)
+
+            initAssetsStore()
+
+            expect(mockLazy.init).toHaveBeenCalled()
+        })
+
+        test('clearAssetsStore clears the lazy store', () => {
+            clearAssetsStore()
+
+            expect(mockLazy.clear).toHaveBeenCalled()
+        })
+    })
+
+    describe('persistence', () => {
+        test('store configuration', () => {
+            expect(store.getState()).toHaveProperty('assetIDs')
+            expect(store.getState()).toHaveProperty('setAssetIDs')
+            expect(store.getState()).toHaveProperty('resetState')
+        })
     })
 })

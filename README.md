@@ -81,7 +81,7 @@ pera-react-native/
 │   ├── devtools/            # Development tools
 │   │   ├── eslint/          # Shared ESLint configuration
 │   │   └── tsconfig/        # Shared TypeScript configuration
-│   ├── kmd/                 # Key Management Daemon integration
+│   ├── kms/                 # Key Management System integration
 │   ├── platform-integration/# Platform abstraction layer
 │   ├── polling/             # Background polling logic
 │   ├── settings/            # User settings and preferences

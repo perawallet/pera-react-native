@@ -11,37 +11,67 @@
  */
 
 import { PWSwitch, PWText, PWView } from '@components/core'
-import {
-    RemoteConfigKeys,
-    useRemoteConfigOverrides,
-} from '@perawallet/wallet-core-platform-integration'
+import { RemoteConfigKeys } from '@perawallet/wallet-core-platform-integration'
 import { useStyles } from './styles'
+import { useFeatureFlagOverrides } from './useFeatureFlagOverrides'
+import { useLanguage } from '@hooks/useLanguage'
 
 export const FeatureFlagOverrides = () => {
     const styles = useStyles()
-    const { configOverrides, setConfigOverride } = useRemoteConfigOverrides()
-
-    const toggleOverride = (key: string) => {
-        const value = configOverrides[key]
-        if (value === undefined) {
-            setConfigOverride(key, true)
-        } else {
-            setConfigOverride(key, null)
-        }
-    }
+    const { t } = useLanguage()
+    const {
+        configOverrides,
+        expanded,
+        toggleExpand,
+        toggleOverride,
+        prettifyKey,
+    } = useFeatureFlagOverrides()
 
     return (
         <PWView style={styles.container}>
-            {Object.values(RemoteConfigKeys).map(key => (
+            {Object.keys(RemoteConfigKeys).map(key => (
                 <PWView
                     key={key}
-                    style={styles.row}
+                    style={styles.flagContainer}
                 >
-                    <PWText>{key}</PWText>
-                    <PWSwitch
-                        value={configOverrides[key] === true}
-                        onValueChange={() => toggleOverride(key)}
-                    />
+                    <PWView style={styles.row}>
+                        <PWView>
+                            <PWText
+                                variant='h4'
+                                style={styles.flagTitle}
+                            >
+                                {prettifyKey(key)}
+                            </PWText>
+                            <PWText
+                                variant='caption'
+                                style={styles.flagCaption}
+                            >
+                                {configOverrides[key]
+                                    ? t('settings.developer.enabled')
+                                    : t('settings.developer.disabled')}
+                                : {key}
+                            </PWText>
+                        </PWView>
+                        <PWSwitch
+                            value={expanded.includes(key)}
+                            onValueChange={() => toggleExpand(key)}
+                        />
+                    </PWView>
+
+                    {expanded.includes(key) && (
+                        <PWView style={styles.row}>
+                            <PWText>
+                                {t('settings.developer.overridden')}:{' '}
+                                {configOverrides[key]
+                                    ? t('settings.developer.enabled')
+                                    : t('settings.developer.disabled')}
+                            </PWText>
+                            <PWSwitch
+                                value={configOverrides[key] === true}
+                                onValueChange={() => toggleOverride(key)}
+                            />
+                        </PWView>
+                    )}
                 </PWView>
             ))}
         </PWView>

@@ -39,3 +39,7 @@ export type StorePersist<S, Ps, Pr> = S extends {
 export type Write<T, U> = Omit<T, keyof U> & U
 
 export type WithPersist<S, A> = Write<S, StorePersist<S, A, unknown>>
+
+export type BaseStoreState = {
+    resetState: () => void
+}

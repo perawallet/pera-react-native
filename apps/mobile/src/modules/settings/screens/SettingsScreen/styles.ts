@@ -24,29 +24,34 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
         },
         sectionTitle: {
             color: theme.colors.textGray,
-            paddingBottom: theme.spacing.lg,
+            paddingBottom: theme.spacing.md,
         },
         sectionRow: {
-            flexDirection: 'row',
-            gap: theme.spacing.lg,
-            paddingVertical: theme.spacing.lg,
-            alignItems: 'center',
+            paddingHorizontal: theme.spacing.xs,
         },
         sectionRowTitle: {
             flexGrow: 1,
         },
         scrollView: {
             flex: 1,
-            marginHorizontal: theme.spacing.xl,
+            marginHorizontal: theme.spacing.lg,
             marginBottom: insets.bottom,
         },
-        scrollViewContainer: {},
-        versionText: {
-            color: theme.colors.textGrayLighter,
-            paddingVertical: theme.spacing.sm,
-            textAlign: 'center',
+        bottomSheetActions: {
+            gap: theme.spacing.md,
             width: '100%',
-            fontSize: 11,
+        },
+        bottomSheetMessage: {
+            textAlign: 'center',
+            marginBottom: theme.spacing.md,
+        },
+        bottomSheetIcon: {
+            marginVertical: theme.spacing.md,
+        },
+        bottomSheetContainer: {
+            padding: theme.spacing.xl,
+            gap: theme.spacing.lg,
+            alignItems: 'center',
         },
     }
 })

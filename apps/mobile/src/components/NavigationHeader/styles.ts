@@ -20,4 +20,7 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     title: {
         textAlign: 'center',
     },
+    backButton: {
+        marginLeft: theme.spacing.md,
+    },
 }))

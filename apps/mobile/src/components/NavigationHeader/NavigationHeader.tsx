@@ -43,6 +43,7 @@ export const NavigationHeader = (props: NavigationHeaderProps) => {
             left={
                 !!props.navigation.canGoBack() && (
                     <PWIcon
+                        style={styles.backButton}
                         name='chevron-left'
                         onPress={props.navigation.goBack}
                     />

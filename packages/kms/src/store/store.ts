@@ -19,10 +19,12 @@ import {
 import type { KeyManagerState, KeyPair } from '../models'
 import {
     createLazyStore,
+    DataStoreRegistry,
     logger,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
 
+const STORE_NAME = 'key-manager-store'
 const lazy = createLazyStore<WithPersist<StoreApi<KeyManagerState>, unknown>>()
 
 export const useKeyManagerStore: UseBoundStore<
@@ -51,11 +53,15 @@ const rehydrateKeyManagerSlice = (
     return persistedState
 }
 
+const initialState = {
+    keys: new Map<string, KeyPair>(),
+}
+
 export const createKeyManagerStore = (storage: KeyValueStorageService) =>
     create<KeyManagerState>()(
         persist(
             (set, get) => ({
-                keys: new Map(),
+                ...initialState,
                 getKey: (id: string) => {
                     const key = get().keys.get(id)
                     if (!key) {
@@ -79,6 +85,7 @@ export const createKeyManagerStore = (storage: KeyValueStorageService) =>
                     keys.delete(id)
                     set({ keys })
                 },
+                resetState: () => set({ keys: new Map<string, KeyPair>() }),
             }),
             {
                 name: 'key-manager-store',
@@ -102,6 +109,14 @@ export const initKeyManagerStore = () => {
     logger.debug('Initializing key manager store')
     const storage = useKeyValueStorageService()
     const realStore = createKeyManagerStore(storage)
-    lazy.init(realStore)
+    lazy.init(realStore, () => realStore.getState().resetState())
     logger.debug('Key manager store initialized')
 }
+
+export const clearKeyManagerStore = () => lazy.clear()
+
+DataStoreRegistry.register({
+    name: STORE_NAME,
+    init: initKeyManagerStore,
+    clear: clearKeyManagerStore,
+})

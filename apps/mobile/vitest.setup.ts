@@ -883,10 +883,21 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
         WALLETCONNECT_PERMISSION: 'walletconnect_permission',
         WALLETCONNECT_INVALID_NETWORK: 'walletconnect_invalid_network',
     },
-    createLazyStore: vi.fn(createStore => ({
+    createLazyStore: vi.fn(() => ({
         useStore: vi.fn(),
-        initStore: vi.fn(() => createStore()),
+        init: vi.fn(),
+        clear: vi.fn(),
+        getStore: vi.fn(),
     })),
+    DataStoreRegistry: {
+        register: vi.fn(),
+        initializeAll: vi.fn().mockResolvedValue(undefined),
+        clearAll: vi.fn().mockResolvedValue(undefined),
+        getRegisteredStores: vi.fn(() => []),
+        reset: vi.fn(),
+        isInitialized: vi.fn(() => false),
+    },
+    useClearAllData: vi.fn(() => vi.fn().mockResolvedValue(undefined)),
 }))
 
 // Mock @perawallet/wallet-core-walletconnect

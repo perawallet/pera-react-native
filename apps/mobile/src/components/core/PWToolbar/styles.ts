@@ -19,17 +19,19 @@ export const useStyles = makeStyles(theme => ({
         padding: theme.spacing.md,
         minHeight: theme.spacing['4xl'],
     },
-    slotContainer: {
-        flex: 1,
-    },
     leftSlotContainer: {
         alignItems: 'flex-start',
+        flexShrink: 1,
+        minWidth: theme.spacing.xxl,
     },
     centerSlotContainer: {
         alignItems: 'center',
         justifyContent: 'center',
+        flexGrow: 1,
     },
     rightSlotContainer: {
         alignItems: 'flex-end',
+        flexShrink: 1,
+        minWidth: theme.spacing.xxl,
     },
 }))

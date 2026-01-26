@@ -13,13 +13,13 @@
 import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
 import { render, fireEvent, screen } from '@test-utils/render'
-import { RadioButton } from '../RadioButton'
+import { PWRadioButton } from '../PWRadioButton'
 
-describe('RadioButton', () => {
+describe('PWRadioButton', () => {
     it('calls onPress when clicked', () => {
         const onPress = vi.fn()
         render(
-            <RadioButton
+            <PWRadioButton
                 title='Option 1'
                 isSelected={false}
                 onPress={onPress}

@@ -18,8 +18,13 @@ import {
     type KeyValueStorageService,
     useKeyValueStorageService,
 } from '@perawallet/wallet-core-platform-integration'
-import { createLazyStore, logger } from '@perawallet/wallet-core-shared'
+import {
+    createLazyStore,
+    DataStoreRegistry,
+    logger,
+} from '@perawallet/wallet-core-shared'
 
+const STORE_NAME = 'security-store'
 const lazy = createLazyStore<WithPersist<StoreApi<SecurityState>, unknown>>()
 
 export const useSecurityStore: UseBoundStore<
@@ -46,7 +51,7 @@ const createSecurityStore = (storage: KeyValueStorageService) =>
                     set({ lockoutEndTime: time }),
                 setAutoLockStartedAt: (date: number | null) =>
                     set({ autoLockStartedAt: date }),
-                reset: () => set(initialState),
+                resetState: () => set(initialState),
             }),
             {
                 name: 'security-store',
@@ -65,6 +70,14 @@ export const initSecurityStore = () => {
     logger.debug('Initializing security store')
     const storage = useKeyValueStorageService()
     const realStore = createSecurityStore(storage)
-    lazy.init(realStore)
+    lazy.init(realStore, () => realStore.getState().resetState())
     logger.debug('Security store initialized')
 }
+
+export const clearSecurityStore = () => lazy.clear()
+
+DataStoreRegistry.register({
+    name: STORE_NAME,
+    init: initSecurityStore,
+    clear: clearSecurityStore,
+})

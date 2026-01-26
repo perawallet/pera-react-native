@@ -11,11 +11,12 @@
  */
 
 import type { WalletAccount } from './accounts'
+import type { BaseStoreState } from '@perawallet/wallet-core-shared'
 
 export * from './accounts'
 export * from './balances'
 
-export type AccountsState = {
+export type AccountsState = BaseStoreState & {
     accounts: WalletAccount[]
     selectedAccountAddress: string | null
     getSelectedAccount: () => WalletAccount | null
