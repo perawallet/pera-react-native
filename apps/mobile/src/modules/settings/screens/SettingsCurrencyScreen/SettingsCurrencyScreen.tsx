@@ -13,14 +13,13 @@
 import { Text } from '@rneui/themed'
 
 import { useStyles } from './styles'
-import { PWView, PWRadioButton } from '@components/core'
+import { PWView, PWRadioButton, PWFlatList } from '@components/core'
 import {
     Currency,
     useCurrenciesQuery,
     useCurrency,
 } from '@perawallet/wallet-core-currencies'
 import { useEffect, useState } from 'react'
-import { FlatList } from 'react-native'
 
 import { SearchInput } from '@components/SearchInput'
 import { useInvalidateAssetPrices } from '@perawallet/wallet-core-assets'
@@ -75,7 +74,7 @@ export const SettingsCurrencyScreen = () => {
                 value={search}
                 onChangeText={setSearch}
             />
-            <FlatList
+            <PWFlatList
                 data={filteredData}
                 renderItem={renderItem}
             />

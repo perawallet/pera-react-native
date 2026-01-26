@@ -11,7 +11,6 @@
  */
 
 import React from 'react'
-import { FlatList } from 'react-native'
 import {
     PWView,
     PWText,
@@ -21,6 +20,7 @@ import {
     PWButton,
     PWCheckbox,
     PWChip,
+    PWFlatList,
 } from '@components/core'
 
 import { useStyles } from './styles'
@@ -146,7 +146,7 @@ export const ImportSelectAddressesScreen = () => {
                     )}
                 </PWView>
 
-                <FlatList
+                <PWFlatList
                     data={accounts}
                     renderItem={renderItem}
                     keyExtractor={item => item.address}

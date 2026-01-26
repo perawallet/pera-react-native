@@ -11,7 +11,7 @@
  */
 
 import { useStyles } from './styles'
-import { PWView } from '@components/core'
+import { PWFlatList, PWView } from '@components/core'
 import { Text } from '@rneui/themed'
 import { useCallback } from 'react'
 
@@ -23,7 +23,6 @@ import {
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
 import Decimal from 'decimal.js'
-import { FlashList } from '@shopify/flash-list'
 import { useLanguage } from '@hooks/useLanguage'
 
 type SwapRecord = {
@@ -102,7 +101,7 @@ export const TopPairsPanel = () => {
                     {t('swaps.top_pairs.volume')}
                 </Text>
             </PWView>
-            <FlashList
+            <PWFlatList
                 style={themeStyle.scrollContainer}
                 contentContainerStyle={themeStyle.itemScrollContainer}
                 data={pairs}
