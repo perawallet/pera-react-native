@@ -148,6 +148,10 @@
             "title": "Copied to clipboard",
             "body": ""
         },
+        "error": {
+            "title": "An error has occurred",
+            "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists."
+        },
         "not_implemented": {
             "title": "Not Implemented",
             "body": "This screen has not yet been implemented"
@@ -460,6 +464,10 @@
             "system_label": "System Default",
             "light_label": "Light",
             "dark_label": "Dark"
+        },
+        "rating": {
+            "title": "Rate your experience",
+            "body": "Tell us how your experience has been?"
         },
         "developer": {
             "node_settings_title": "Node Settings",

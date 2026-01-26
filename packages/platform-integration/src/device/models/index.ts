@@ -45,12 +45,17 @@ export type DevicePlatform =
 
 export interface DeviceInfoService {
     initializeDeviceInfo(): void
+    getAppName(): string
+    getAppId(): string
+    getAppPackage(): string
+    getAppBuild(): string
+    getAppVersion(): string
     getDeviceID(): Promise<string>
     getDeviceModel(): string
     getDevicePlatform(): DevicePlatform
     getDeviceLocale(): string
+    getDeviceCountry(): string
     getUserAgent(): string
-    getAppVersion(): string
 }
 
 export type DeviceState = BaseStoreState & {

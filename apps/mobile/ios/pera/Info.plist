@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleGetInfoString</key>
+	<string></string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSApplicationCategoryType</key>
@@ -101,6 +103,10 @@
 	<key>com.apple.developer.associated-domains</key>
 	<array>
 		<string>applinks:perawallet.app</string>
+	</array>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>itms-apps</string>
 	</array>
 </dict>
 </plist>

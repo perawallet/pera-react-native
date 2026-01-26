@@ -360,6 +360,9 @@ importers:
       react-native-linear-gradient:
         specifier: ^2.8.3
         version: 2.8.3(react-native@0.83.0(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.2.7)(react@19.2.0))(react@19.2.0)
+      react-native-localize:
+        specifier: ^3.6.1
+        version: 3.6.1(@expo/config-plugins@10.1.2)(react-native@0.83.0(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.2.7)(react@19.2.0))(react@19.2.0)
       react-native-mmkv:
         specifier: ^3.3.3
         version: 3.3.3(react-native@0.83.0(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.2.7)(react@19.2.0))(react@19.2.0)
@@ -381,6 +384,9 @@ importers:
       react-native-quick-crypto:
         specifier: 1.0.0-beta.20
         version: 1.0.0-beta.20(react-native-nitro-modules@0.29.8(react-native@0.83.0(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.2.7)(react@19.2.0))(react@19.2.0))(react-native@0.83.0(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.2.7)(react@19.2.0))(react@19.2.0)
+      react-native-rate-app:
+        specifier: ^1.4.7
+        version: 1.4.7(react-native@0.83.0(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.2.7)(react@19.2.0))(react@19.2.0)
       react-native-reanimated:
         specifier: ^4.2.0
         version: 4.2.1(react-native-worklets@0.7.1(@babel/core@7.28.5)(react-native@0.83.0(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.2.7)(react@19.2.0))(react@19.2.0))(react-native@0.83.0(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.2.7)(react@19.2.0))(react@19.2.0)
@@ -7279,6 +7285,19 @@ packages:
       react: '*'
       react-native: '*'
 
+  react-native-localize@3.6.1:
+    resolution: {integrity: sha512-0kVFUh8TWeh+8p13yVIDjbcdxR2ZOfPBFNcY/VBh/3/g8KfvXywY/XJkCuCVrX5dCLumMi3aXmy+MmJNy4IaYQ==}
+    peerDependencies:
+      '@expo/config-plugins': '*'
+      react: '*'
+      react-native: '*'
+      react-native-macos: '*'
+    peerDependenciesMeta:
+      '@expo/config-plugins':
+        optional: true
+      react-native-macos:
+        optional: true
+
   react-native-mmkv@3.3.3:
     resolution: {integrity: sha512-GMsfOmNzx0p5+CtrCFRVtpOOMYNJXuksBVARSQrCFaZwjUyHJdQzcN900GGaFFNTxw2fs8s5Xje//RDKj9+PZA==}
     peerDependencies:
@@ -7330,6 +7349,16 @@ packages:
       react: '*'
       react-native: '*'
       react-native-nitro-modules: '*'
+    peerDependenciesMeta:
+      expo:
+        optional: true
+
+  react-native-rate-app@1.4.7:
+    resolution: {integrity: sha512-zY+sITK3VZEFnFtGUSdZQIqQileABM9BARPlnR08Rm0bIrKEnO9nlIcBh0p8oH5RwAU6C0wyvVHHjiR8o65MhQ==}
+    peerDependencies:
+      expo: '*'
+      react: '*'
+      react-native: '>=0.76'
     peerDependenciesMeta:
       expo:
         optional: true
@@ -16132,6 +16161,13 @@ snapshots:
       react: 19.2.0
       react-native: 0.83.0(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.2.7)(react@19.2.0)
 
+  react-native-localize@3.6.1(@expo/config-plugins@10.1.2)(react-native@0.83.0(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.2.7)(react@19.2.0))(react@19.2.0):
+    dependencies:
+      react: 19.2.0
+      react-native: 0.83.0(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.2.7)(react@19.2.0)
+    optionalDependencies:
+      '@expo/config-plugins': 10.1.2
+
   react-native-mmkv@3.3.3(react-native@0.83.0(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.2.7)(react@19.2.0))(react@19.2.0):
     dependencies:
       react: 19.2.0
@@ -16182,6 +16218,11 @@ snapshots:
       react-native-quick-base64: 2.2.0(react-native@0.83.0(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.2.7)(react@19.2.0))(react@19.2.0)
       readable-stream: 4.5.2
       util: 0.12.5
+
+  react-native-rate-app@1.4.7(react-native@0.83.0(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.2.7)(react@19.2.0))(react@19.2.0):
+    dependencies:
+      react: 19.2.0
+      react-native: 0.83.0(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.2.7)(react@19.2.0)
 
   react-native-ratings@8.1.0(react-native@0.83.0(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.2.7)(react@19.2.0))(react@19.2.0):
     dependencies:

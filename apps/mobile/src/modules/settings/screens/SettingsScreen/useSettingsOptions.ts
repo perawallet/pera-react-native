@@ -13,7 +13,7 @@
 import { useMemo } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
 import { config } from '@perawallet/wallet-core-config'
-import { SettingsStackParamsList } from '../routes'
+import { SettingsStackParamsList } from '../../routes'
 
 export const useSettingsOptions = () => {
     const { t } = useLanguage()

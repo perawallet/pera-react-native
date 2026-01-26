@@ -233,9 +233,8 @@ export const usePeraWebviewInterface = (
         (message: WebviewMessage) => {
             requireSecure(securedConnection, () => {
                 const payload = {
-                    //TODO make some more of this configurable and/or add to deviceInfo
-                    appName: 'Pera Wallet',
-                    appPackageName: 'pera-rn',
+                    appName: deviceInfo.getAppName(),
+                    appPackageName: deviceInfo.getAppPackage(),
                     appVersion: deviceInfo.getAppVersion(),
                     clientType: deviceInfo.getDevicePlatform(),
                     deviceId: deviceID,
@@ -245,8 +244,8 @@ export const usePeraWebviewInterface = (
                     theme,
                     network,
                     currency: preferredCurrency,
-                    region: 'en-US', //TODO pull from state eventually (or device location or something)
-                    language: 'en-US', //TODO pull from app locale
+                    region: deviceInfo.getDeviceCountry(),
+                    language: deviceInfo.getDeviceLocale(),
                 }
                 sendMessageToWebview(message.id, payload, webview)
             })
