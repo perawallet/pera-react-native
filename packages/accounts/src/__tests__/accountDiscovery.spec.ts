@@ -32,10 +32,13 @@ vi.mock('@algorandfoundation/xhd-wallet-api', () => {
 })
 
 // Mock encodeAlgorandAddress to return string representation of bytes
+const mockGetAlgorandClient = vi.fn();
+
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     encodeAlgorandAddress: vi.fn(
         (bytes: Uint8Array) => `ADDRESS_${bytes[0]}_${bytes[1]}`,
     ),
+    getAlgorandClient: () => mockGetAlgorandClient(),
 }))
 
 describe('discoverAccounts', () => {
@@ -64,15 +67,14 @@ describe('discoverAccounts', () => {
     };
 
     it('should find accounts with activity', async () => {
-        const algorandClient = createMockAlgorandClient(address => {
+        mockGetAlgorandClient.mockReturnValue(createMockAlgorandClient(address => {
             // Simulate activity for 0/0 and 0/2
             return address === 'ADDRESS_0_0' || address === 'ADDRESS_0_2'
-        })
+        }))
 
         const accounts = await discoverAccounts({
             seed,
             derivationType,
-            algorandClient,
             walletId: 'test-wallet',
             keyIndexGapLimit: 2,
             accountGapLimit: 1,
@@ -102,10 +104,10 @@ describe('discoverAccounts', () => {
     })
 
     it('should stop after account gap limit', async () => {
-        const algorandClient = createMockAlgorandClient(address => {
+        mockGetAlgorandClient.mockReturnValue(createMockAlgorandClient(address => {
             // Activity on 0/0 and 2/0 (skipping account 1)
             return address === 'ADDRESS_0_0' || address === 'ADDRESS_2_0'
-        })
+        }))
 
         // 0/0 skipped. Account 0 has no other activity -> considered inactive (gap 1).
         // Account 1 inactive -> gap 2.
@@ -115,7 +117,6 @@ describe('discoverAccounts', () => {
         const accounts = await discoverAccounts({
             seed,
             derivationType,
-            algorandClient,
             walletId: 'test-wallet',
             accountGapLimit: 5,
             keyIndexGapLimit: 1,
@@ -127,7 +128,7 @@ describe('discoverAccounts', () => {
     })
 
     it('should find at most 5 active accounts', async () => {
-        const algorandClient = createMockAlgorandClient(address => {
+        mockGetAlgorandClient.mockReturnValue(createMockAlgorandClient(address => {
             // Simulate activity for first 6 accounts (0..5) keys 0
             // address format is ADDRESS_accountIndex_keyIndex
             const parts = address.split('_')
@@ -135,12 +136,11 @@ describe('discoverAccounts', () => {
             const key = parseInt(parts[2])
             // Only key 0 active for accounts
             return key === 0 && account <= 10
-        })
+        }))
 
         const accounts = await discoverAccounts({
             seed,
             derivationType,
-            algorandClient,
             walletId: 'test-wallet',
             accountGapLimit: 5,
             keyIndexGapLimit: 1,

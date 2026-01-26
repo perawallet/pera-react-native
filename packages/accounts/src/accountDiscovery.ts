@@ -17,8 +17,10 @@ import {
     XHDWalletAPI,
     KeyContext,
 } from '@algorandfoundation/xhd-wallet-api'
-import { AlgorandClient } from '@algorandfoundation/algokit-utils'
-import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import {
+    encodeAlgorandAddress,
+    getAlgorandClient,
+} from '@perawallet/wallet-core-blockchain'
 import { AccountTypes, HDWalletAccount } from './models/accounts'
 
 const ACCOUNT_GAP_LIMIT = 5
@@ -29,7 +31,6 @@ const api = new XHDWalletAPI()
 type DiscoverAccountsParams = {
     seed: Buffer
     derivationType: BIP32DerivationType
-    algorandClient: AlgorandClient
     walletId: string
     accountGapLimit?: number
     keyIndexGapLimit?: number
@@ -38,11 +39,11 @@ type DiscoverAccountsParams = {
 export const discoverAccounts = async ({
     seed,
     derivationType,
-    algorandClient,
     walletId,
     accountGapLimit = ACCOUNT_GAP_LIMIT,
     keyIndexGapLimit = KEY_INDEX_GAP_LIMIT,
 }: DiscoverAccountsParams): Promise<HDWalletAccount[]> => {
+    const algorandClient = getAlgorandClient()
     const checkActivity = async (address: string) => {
         try {
             const accountInfo =

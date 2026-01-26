@@ -21,7 +21,6 @@ import {
     discoverAccounts,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
-import { useAlgorandClient } from '@perawallet/wallet-core-blockchain'
 import { OnboardingStackParamList } from '../../routes/types'
 
 export type UseSearchAccountsScreenResult = {
@@ -43,7 +42,6 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const { showToast } = useToast()
     const navigation = useAppNavigation()
     const { getPrivateData } = useKMS()
-    const algorandClient = useAlgorandClient()
 
     const onboardingWalletId = account.hdWalletDetails.walletId
 
@@ -98,7 +96,6 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
             const discoveredAccounts = await discoverAccounts({
                 seed,
                 derivationType,
-                algorandClient,
                 walletId: onboardingWalletId!,
             })
 
@@ -113,13 +110,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
             })
             navigation.goBack()
         }
-    }, [
-        onboardingWalletId,
-        getPrivateData,
-        algorandClient,
-        navigation,
-        account,
-    ])
+    }, [onboardingWalletId, getPrivateData, navigation, account, t, showToast])
 
     useEffect(() => {
         searchAccounts()
