@@ -103,7 +103,7 @@ export const useStyles = makeStyles(theme => {
             maxWidth: '100%',
         },
         noBalanceContainer: {
-            paddingHorizontal: theme.spacing['4xl'],
+            paddingHorizontal: theme.spacing.xxl,
             paddingVertical: theme.spacing.xl,
             alignItems: 'center',
             justifyContent: 'center',
