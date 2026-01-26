@@ -55,23 +55,23 @@ describe('services/device/hooks', () => {
         registerTestPlatform()
 
         const { initDeviceStore } = await import('../../store')
-        const { useFcmToken } = await import('../../hooks')
+        const { usePushToken } = await import('../../hooks')
 
         initDeviceStore()
 
-        const { result } = renderHook(() => useFcmToken())
+        const { result } = renderHook(() => usePushToken())
 
         act(() => {
-            result.current.setFcmToken('OLD_TOKEN')
+            result.current.setPushToken('OLD_TOKEN')
         })
 
-        expect(result.current.fcmToken).toBe('OLD_TOKEN')
+        expect(result.current.pushToken).toBe('OLD_TOKEN')
 
         act(() => {
-            result.current.setFcmToken('NEW_TOKEN')
+            result.current.setPushToken('NEW_TOKEN')
         })
 
-        expect(result.current.fcmToken).toBe('NEW_TOKEN')
+        expect(result.current.pushToken).toBe('NEW_TOKEN')
     })
 
     test('useDeviceID returns correct device ID for network', async () => {
@@ -116,7 +116,7 @@ describe('services/device/hooks', () => {
         // Ensure no device ID
         act(() => {
             store.current.setDeviceID('mainnet', null)
-            store.current.setFcmToken('test-fcm-token')
+            store.current.setPushToken('test-fcm-token')
         })
 
         const { result } = renderHook(() => useDevice('mainnet'), {
@@ -155,7 +155,7 @@ describe('services/device/hooks', () => {
         // Set existing device ID
         act(() => {
             store.current.setDeviceID('mainnet', 'existing-id')
-            store.current.setFcmToken('test-fcm-token')
+            store.current.setPushToken('test-fcm-token')
         })
 
         const { result } = renderHook(() => useDevice('mainnet'), {
