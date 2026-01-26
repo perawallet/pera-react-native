@@ -18,8 +18,10 @@ import { AccountTypes } from '@perawallet/wallet-core-accounts'
 import { OnboardingStackParamList } from '../../../routes/types'
 
 // Mock the hooks to avoid actual blockchain/KMS calls during tests
-vi.mock('@perawallet/wallet-core-accounts', async (importOriginal) => ({
-    ...(await importOriginal<typeof import('@perawallet/wallet-core-accounts')>()),
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
+    ...(await importOriginal<
+        typeof import('@perawallet/wallet-core-accounts')
+    >()),
     useHDWallet: () => ({
         deriveAccountAddress: vi.fn(),
     }),
@@ -38,7 +40,6 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         client: {
             algod: {
                 accountInformation: vi.fn(() => ({})),
-
             },
         },
     }),
@@ -85,4 +86,3 @@ describe('SearchAccountsScreen', () => {
         expect(screen.getByTestId('icon-phone')).toBeTruthy()
     })
 })
-

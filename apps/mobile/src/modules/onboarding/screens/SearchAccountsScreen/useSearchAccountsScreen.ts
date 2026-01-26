@@ -23,9 +23,7 @@ import {
     discoverAccounts,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
-import {
-    useAlgorandClient,
-} from '@perawallet/wallet-core-blockchain'
+import { useAlgorandClient } from '@perawallet/wallet-core-blockchain'
 import { OnboardingStackParamList } from '../../routes/types'
 
 export type UseSearchAccountsScreenResult = {
@@ -48,10 +46,13 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const { getPrivateData } = useKMS()
     const algorandClient = useAlgorandClient()
 
-    const onboardingWalletId = account.hdWalletDetails.walletId;
+    const onboardingWalletId = account.hdWalletDetails.walletId
 
     const dotOpacities = useRef(
-        Array.from({ length: DOT_COUNT }, () => new Animated.Value(FULL_OPACITY)),
+        Array.from(
+            { length: DOT_COUNT },
+            () => new Animated.Value(FULL_OPACITY),
+        ),
     ).current
 
     useEffect(() => {
@@ -102,15 +103,18 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                 keyIndexGapLimit: 5,
                 async checkActivity(address) {
                     try {
-                        const accountInfo = await algorandClient.client.algod.accountInformation(address)
+                        const accountInfo =
+                            await algorandClient.client.algod.accountInformation(
+                                address,
+                            )
                         return (
                             accountInfo.amount > 0 ||
-                            ((accountInfo.assets?.length ?? 0) > 0) ||
-                            ((accountInfo.appsLocalState?.length ?? 0) > 0) ||
-                            ((accountInfo.appsTotalSchema?.numUints ?? 0) > 0 ||
-                                (accountInfo.appsTotalSchema?.numByteSlices ?? 0) > 0)
+                            (accountInfo.assets?.length ?? 0) > 0 ||
+                            (accountInfo.appsLocalState?.length ?? 0) > 0 ||
+                            (accountInfo.appsTotalSchema?.numUints ?? 0) > 0 ||
+                            (accountInfo.appsTotalSchema?.numByteSlices ?? 0) >
+                                0
                         )
-
                     } catch {
                         // Algod returns 404 for empty accounts
                         return false
@@ -137,7 +141,9 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
 
             const finalAccounts = [account, ...foundAccounts]
 
-            navigation.replace('ImportSelectAddresses', { accounts: finalAccounts })
+            navigation.replace('ImportSelectAddresses', {
+                accounts: finalAccounts,
+            })
         } catch {
             // Error handling could be added here (e.g. show toast)
             // For now we just stop searching
@@ -159,4 +165,3 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
         dotOpacities,
     }
 }
-

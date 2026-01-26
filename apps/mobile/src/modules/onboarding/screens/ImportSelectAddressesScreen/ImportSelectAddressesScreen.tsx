@@ -56,18 +56,21 @@ export const ImportSelectAddressesScreen = () => {
                 onPress={() => toggleSelection(item.address)}
                 disabled={isImported}
             >
-
                 <PWView style={styles.itemTextContainer}>
-                    <PWText variant="body" style={styles.itemTitle}>
+                    <PWText
+                        variant='body'
+                        style={styles.itemTitle}
+                    >
                         {displayName}
                     </PWText>
-
                 </PWView>
 
                 {isImported ? (
                     <PWChip
-                        title={t('onboarding.import_select_addresses.already_imported')}
-                        variant="secondary"
+                        title={t(
+                            'onboarding.import_select_addresses.already_imported',
+                        )}
+                        variant='secondary'
                     />
                 ) : (
                     <PWCheckbox
@@ -85,33 +88,48 @@ export const ImportSelectAddressesScreen = () => {
             <PWToolbar
                 left={
                     <PWTouchableOpacity onPress={navigation.goBack}>
-                        <PWIcon name="chevron-left" />
+                        <PWIcon name='chevron-left' />
                     </PWTouchableOpacity>
                 }
             />
 
             <PWView style={styles.content}>
-                <PWText variant="h1" style={styles.title}>
+                <PWText
+                    variant='h1'
+                    style={styles.title}
+                >
                     {t('onboarding.import_select_addresses.title')}
                 </PWText>
-                <PWText variant="h4" style={styles.description}>
+                <PWText
+                    variant='h4'
+                    style={styles.description}
+                >
                     {t('onboarding.import_select_addresses.description', {
                         count: accounts.length,
                     })}
                 </PWText>
 
                 <PWView style={styles.headerRow}>
-                    <PWText variant="body" style={styles.headerCount}>
-                        {t('onboarding.import_select_addresses.addresses_count', {
-                            count: accounts.length,
-                        })}
+                    <PWText
+                        variant='body'
+                        style={styles.headerCount}
+                    >
+                        {t(
+                            'onboarding.import_select_addresses.addresses_count',
+                            {
+                                count: accounts.length,
+                            },
+                        )}
                     </PWText>
 
                     <PWTouchableOpacity
                         onPress={toggleSelectAll}
                         style={styles.selectAllContainer}
                     >
-                        <PWText variant="body" style={styles.selectAllText}>
+                        <PWText
+                            variant='body'
+                            style={styles.selectAllText}
+                        >
                             {t('onboarding.import_select_addresses.select_all')}
                         </PWText>
                         <PWCheckbox
@@ -135,7 +153,7 @@ export const ImportSelectAddressesScreen = () => {
                 <PWButton
                     title={t('onboarding.import_select_addresses.continue')}
                     onPress={handleContinue}
-                    variant="primary"
+                    variant='primary'
                     isDisabled={selectedAddresses.size === 0}
                 />
             </PWView>

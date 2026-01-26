@@ -19,4 +19,3 @@ export * from './utils'
 export * from './accountDiscovery'
 
 export { initAccountsStore, useAccountsStore } from './store'
-

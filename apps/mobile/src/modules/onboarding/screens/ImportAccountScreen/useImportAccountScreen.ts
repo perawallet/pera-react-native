@@ -160,7 +160,9 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
                 })
 
                 if (importedAccount.type === AccountTypes.hdWallet) {
-                    navigation.push('SearchAccounts', { account: importedAccount })
+                    navigation.push('SearchAccounts', {
+                        account: importedAccount,
+                    })
                 }
                 // TODO: Algo25 will come later
             } catch {
@@ -173,16 +175,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
                 setProcessing(false)
             }
         }, 0)
-    }, [
-        importAccount,
-        words,
-        accountType,
-        navigation,
-        showToast,
-        t,
-    ])
-
-
+    }, [importAccount, words, accountType, navigation, showToast, t])
 
     return {
         words,

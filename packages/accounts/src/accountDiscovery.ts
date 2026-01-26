@@ -10,90 +10,95 @@
  limitations under the License
  */
 
-import { BIP32DerivationType, fromSeed, XHDWalletAPI, KeyContext } from '@algorandfoundation/xhd-wallet-api'
+import {
+    BIP32DerivationType,
+    fromSeed,
+    XHDWalletAPI,
+    KeyContext,
+} from '@algorandfoundation/xhd-wallet-api'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 
 const api = new XHDWalletAPI()
 
 export type DiscoveredAccount = {
-  accountIndex: number
-  keyIndex: number
-  address: string
+    accountIndex: number
+    keyIndex: number
+    address: string
 }
 
 export type CheckActivityFn = (address: string) => Promise<boolean>
 
 type DiscoverAccountsParams = {
-  seed: Buffer
-  derivationType: BIP32DerivationType
-  checkActivity: CheckActivityFn
-  accountGapLimit?: number
-  keyIndexGapLimit?: number
+    seed: Buffer
+    derivationType: BIP32DerivationType
+    checkActivity: CheckActivityFn
+    accountGapLimit?: number
+    keyIndexGapLimit?: number
 }
 
 export const discoverAccounts = async ({
-  seed,
-  derivationType,
-  checkActivity,
-  accountGapLimit = 5,
-  keyIndexGapLimit = 5,
+    seed,
+    derivationType,
+    checkActivity,
+    accountGapLimit = 5,
+    keyIndexGapLimit = 5,
 }: DiscoverAccountsParams): Promise<DiscoveredAccount[]> => {
-  const rootKey = fromSeed(seed)
-  const foundAccounts: DiscoveredAccount[] = []
-  let accountGap = 0
-  let accountIndex = 0
-  let activeAccountCount = 0
+    const rootKey = fromSeed(seed)
+    const foundAccounts: DiscoveredAccount[] = []
+    let accountGap = 0
+    let accountIndex = 0
+    let activeAccountCount = 0
 
-  while (accountGap < accountGapLimit && activeAccountCount < 5) {
-    let keyIndexGap = 0
-    let keyIndex = 0
-    let isAccountActive = false
+    while (accountGap < accountGapLimit && activeAccountCount < 5) {
+        let keyIndexGap = 0
+        let keyIndex = 0
+        let isAccountActive = false
 
-    while (keyIndexGap < keyIndexGapLimit) {
-      if (accountIndex === 0 && keyIndex === 0) {
-        keyIndex++
-        continue
-      }
+        while (keyIndexGap < keyIndexGapLimit) {
+            if (accountIndex === 0 && keyIndex === 0) {
+                keyIndex++
+                continue
+            }
 
-      const addressBytes = await api.keyGen(
-        rootKey,
-        KeyContext.Address,
-        accountIndex,
-        keyIndex,
-        derivationType
-      )
-      const address = encodeAlgorandAddress(addressBytes)
+            const addressBytes = await api.keyGen(
+                rootKey,
+                KeyContext.Address,
+                accountIndex,
+                keyIndex,
+                derivationType,
+            )
+            const address = encodeAlgorandAddress(addressBytes)
 
-      // If this is 0/0, it's the root account. We consider it "active" usually if it exists?
-      // Actually, we should check activity for all.
-      const hasActivity = await checkActivity(address)
+            // If this is 0/0, it's the root account. We consider it "active" usually if it exists?
+            // Actually, we should check activity for all.
+            const hasActivity = await checkActivity(address)
 
-      if (hasActivity) {
-        isAccountActive = true
-        keyIndexGap = 0
-        foundAccounts.push({
-          accountIndex,
-          keyIndex,
-          address,
-        })
-      } else {
-        keyIndexGap++
-      }
+            if (hasActivity) {
+                isAccountActive = true
+                keyIndexGap = 0
+                foundAccounts.push({
+                    accountIndex,
+                    keyIndex,
+                    address,
+                })
+            } else {
+                keyIndexGap++
+            }
 
-      keyIndex++
+            keyIndex++
+        }
+
+        if (isAccountActive) {
+            accountGap = 0
+            activeAccountCount++
+        } else {
+            // If checking account 0 and it has no active keys, is it a gap?
+            // Yes.
+            accountGap++
+        }
+
+        accountIndex++
     }
 
-    if (isAccountActive) {
-      accountGap = 0
-      activeAccountCount++
-    } else {
-      // If checking account 0 and it has no active keys, is it a gap?
-      // Yes.
-      accountGap++
-    }
-
-    accountIndex++
-  }
-
-  return foundAccounts
+    return foundAccounts
 }

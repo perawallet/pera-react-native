@@ -19,10 +19,10 @@ import {
 export type OnboardingStackParamList = {
     OnboardingHome: undefined
     NameAccount:
-    | {
-        account?: WalletAccount
-    }
-    | undefined
+        | {
+              account?: WalletAccount
+          }
+        | undefined
     ImportSelectAddresses: {
         accounts: HDWalletAccount[]
     }
@@ -37,4 +37,3 @@ export type OnboardingStackParamList = {
         account: HDWalletAccount
     }
 }
-

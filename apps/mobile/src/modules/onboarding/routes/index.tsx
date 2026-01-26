@@ -53,8 +53,9 @@ const ImportInfoScreenWithErrorBoundary =
     withAccountErrorBoundary(ImportInfoScreen)
 const SearchAccountsScreenWithErrorBoundary =
     withAccountErrorBoundary(SearchAccountsScreen)
-const ImportSelectAddressesScreenWithErrorBoundary =
-    withAccountErrorBoundary(ImportSelectAddressesScreen)
+const ImportSelectAddressesScreenWithErrorBoundary = withAccountErrorBoundary(
+    ImportSelectAddressesScreen,
+)
 
 import { OnboardingStackParamList } from './types'
 export type { OnboardingStackParamList } from './types'
