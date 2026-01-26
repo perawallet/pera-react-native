@@ -10,28 +10,27 @@
  limitations under the License
  */
 
+import { v7 as uuidv7 } from 'uuid'
 import {
     BIP32DerivationType,
     fromSeed,
     XHDWalletAPI,
     KeyContext,
 } from '@algorandfoundation/xhd-wallet-api'
+import { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { AccountTypes, HDWalletAccount } from './models/accounts'
+
+const ACCOUNT_GAP_LIMIT = 5
+const KEY_INDEX_GAP_LIMIT = 5
 
 const api = new XHDWalletAPI()
-
-export type DiscoveredAccount = {
-    accountIndex: number
-    keyIndex: number
-    address: string
-}
-
-export type CheckActivityFn = (address: string) => Promise<boolean>
 
 type DiscoverAccountsParams = {
     seed: Buffer
     derivationType: BIP32DerivationType
-    checkActivity: CheckActivityFn
+    algorandClient: AlgorandClient
+    walletId: string
     accountGapLimit?: number
     keyIndexGapLimit?: number
 }
@@ -39,12 +38,30 @@ type DiscoverAccountsParams = {
 export const discoverAccounts = async ({
     seed,
     derivationType,
-    checkActivity,
-    accountGapLimit = 5,
-    keyIndexGapLimit = 5,
-}: DiscoverAccountsParams): Promise<DiscoveredAccount[]> => {
+    algorandClient,
+    walletId,
+    accountGapLimit = ACCOUNT_GAP_LIMIT,
+    keyIndexGapLimit = KEY_INDEX_GAP_LIMIT,
+}: DiscoverAccountsParams): Promise<HDWalletAccount[]> => {
+    const checkActivity = async (address: string) => {
+        try {
+            const accountInfo =
+                await algorandClient.client.algod.accountInformation(address)
+
+            return (
+                accountInfo.amount > 0 ||
+                (accountInfo.assets?.length ?? 0) > 0 ||
+                (accountInfo.appsLocalState?.length ?? 0) > 0 ||
+                (accountInfo.appsTotalSchema?.numUints ?? 0) > 0 ||
+                (accountInfo.appsTotalSchema?.numByteSlices ?? 0) > 0
+            )
+        } catch {
+            // Algod returns 404 for empty accounts
+            return false
+        }
+    }
     const rootKey = fromSeed(seed)
-    const foundAccounts: DiscoveredAccount[] = []
+    const foundAccounts: HDWalletAccount[] = []
     let accountGap = 0
     let accountIndex = 0
     let activeAccountCount = 0
@@ -75,9 +92,17 @@ export const discoverAccounts = async ({
                 isAccountActive = true
                 keyIndexGap = 0
                 foundAccounts.push({
-                    accountIndex,
-                    keyIndex,
+                    id: uuidv7(),
                     address,
+                    type: AccountTypes.hdWallet,
+                    canSign: true,
+                    hdWalletDetails: {
+                        walletId,
+                        account: accountIndex,
+                        change: 0,
+                        keyIndex,
+                        derivationType,
+                    },
                 })
             } else {
                 keyIndexGap++

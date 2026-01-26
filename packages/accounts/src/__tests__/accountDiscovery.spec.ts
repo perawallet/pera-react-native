@@ -42,8 +42,29 @@ describe('discoverAccounts', () => {
     const seed = Buffer.from('test-seed')
     const derivationType = BIP32DerivationType.Peikert
 
+    const createMockAlgorandClient = (checkActivity: (address: string) => boolean) => {
+        return {
+            client: {
+                algod: {
+                    accountInformation: vi.fn().mockImplementation(async (address: string) => {
+                        const hasActivity = checkActivity(address);
+                        if (!hasActivity) {
+                            throw new Error('404');
+                        }
+                        return {
+                            amount: 1000,
+                            assets: [],
+                            appsLocalState: [],
+                            appsTotalSchema: { numUints: 0, numByteSlices: 0 },
+                        };
+                    }),
+                },
+            },
+        } as any;
+    };
+
     it('should find accounts with activity', async () => {
-        const checkActivity = vi.fn().mockImplementation(async address => {
+        const algorandClient = createMockAlgorandClient(address => {
             // Simulate activity for 0/0 and 0/2
             return address === 'ADDRESS_0_0' || address === 'ADDRESS_0_2'
         })
@@ -51,7 +72,8 @@ describe('discoverAccounts', () => {
         const accounts = await discoverAccounts({
             seed,
             derivationType,
-            checkActivity,
+            algorandClient,
+            walletId: 'test-wallet',
             keyIndexGapLimit: 2,
             accountGapLimit: 1,
         })
@@ -65,14 +87,22 @@ describe('discoverAccounts', () => {
         // We expect only 0/2 because 0/0 is skipped
         expect(accounts).toHaveLength(1)
         expect(accounts[0]).toEqual({
-            accountIndex: 0,
-            keyIndex: 2,
+            id: expect.any(String),
             address: 'ADDRESS_0_2',
+            type: 'hdWallet',
+            canSign: true,
+            hdWalletDetails: {
+                walletId: 'test-wallet',
+                account: 0,
+                change: 0,
+                keyIndex: 2,
+                derivationType,
+            },
         })
     })
 
     it('should stop after account gap limit', async () => {
-        const checkActivity = vi.fn().mockImplementation(async address => {
+        const algorandClient = createMockAlgorandClient(address => {
             // Activity on 0/0 and 2/0 (skipping account 1)
             return address === 'ADDRESS_0_0' || address === 'ADDRESS_2_0'
         })
@@ -85,17 +115,19 @@ describe('discoverAccounts', () => {
         const accounts = await discoverAccounts({
             seed,
             derivationType,
-            checkActivity,
+            algorandClient,
+            walletId: 'test-wallet',
             accountGapLimit: 5,
             keyIndexGapLimit: 1,
         })
 
         expect(accounts).toHaveLength(1)
         expect(accounts[0].address).toBe('ADDRESS_2_0')
+        expect(accounts[0].hdWalletDetails.account).toBe(2)
     })
 
     it('should find at most 5 active accounts', async () => {
-        const checkActivity = vi.fn().mockImplementation(async address => {
+        const algorandClient = createMockAlgorandClient(address => {
             // Simulate activity for first 6 accounts (0..5) keys 0
             // address format is ADDRESS_accountIndex_keyIndex
             const parts = address.split('_')
@@ -108,7 +140,8 @@ describe('discoverAccounts', () => {
         const accounts = await discoverAccounts({
             seed,
             derivationType,
-            checkActivity,
+            algorandClient,
+            walletId: 'test-wallet',
             accountGapLimit: 5,
             keyIndexGapLimit: 1,
         })
@@ -117,7 +150,7 @@ describe('discoverAccounts', () => {
         // Accounts 1, 2, 3, 4, 5 are found (key 0 active).
         // Total 5 accounts found.
         expect(accounts).toHaveLength(5)
-        expect(accounts[0].accountIndex).toBe(1)
-        expect(accounts[4].accountIndex).toBe(5)
+        expect(accounts[0].hdWalletDetails.account).toBe(1)
+        expect(accounts[4].hdWalletDetails.account).toBe(5)
     })
 })

@@ -16,11 +16,8 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { RouteProp, useRoute } from '@react-navigation/native'
-import { v7 as uuidv7 } from 'uuid'
 import {
     getSeedFromMasterKey,
-    AccountTypes,
-    type HDWalletAccount,
     discoverAccounts,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
@@ -37,8 +34,6 @@ const ANIMATION_DURATION = 400
 const STEP_DURATION = 500
 const TRANSPARENT_OPACITY = 0.3
 const FULL_OPACITY = 1
-const ACCOUNT_GAP_LIMIT = 5
-const KEY_INDEX_GAP_LIMIT = 5
 
 export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const {
@@ -103,50 +98,12 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
             const discoveredAccounts = await discoverAccounts({
                 seed,
                 derivationType,
-                accountGapLimit: ACCOUNT_GAP_LIMIT,
-                keyIndexGapLimit: KEY_INDEX_GAP_LIMIT,
-                async checkActivity(address) {
-                    try {
-                        const accountInfo =
-                            await algorandClient.client.algod.accountInformation(
-                                address,
-                            )
-                        return (
-                            accountInfo.amount > 0 ||
-                            (accountInfo.assets?.length ?? 0) > 0 ||
-                            (accountInfo.appsLocalState?.length ?? 0) > 0 ||
-                            (accountInfo.appsTotalSchema?.numUints ?? 0) > 0 ||
-                            (accountInfo.appsTotalSchema?.numByteSlices ?? 0) >
-                                0
-                        )
-                    } catch {
-                        // Algod returns 404 for empty accounts
-                        return false
-                    }
-                },
-                // Using defaults for max limits
+                algorandClient,
+                walletId: onboardingWalletId!,
             })
 
-            const foundAccounts: HDWalletAccount[] = discoveredAccounts.map(
-                ({ accountIndex, keyIndex, address }) => ({
-                    id: uuidv7(),
-                    address,
-                    type: AccountTypes.hdWallet,
-                    canSign: true,
-                    hdWalletDetails: {
-                        walletId: onboardingWalletId!,
-                        account: accountIndex,
-                        change: 0,
-                        keyIndex,
-                        derivationType,
-                    },
-                }),
-            )
-
-            const finalAccounts = [account, ...foundAccounts]
-
             navigation.replace('ImportSelectAddresses', {
-                accounts: finalAccounts,
+                accounts: discoveredAccounts,
             })
         } catch {
             showToast({
