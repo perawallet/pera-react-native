@@ -9,6 +9,7 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
+
 import { View } from 'react-native'
 import { PWIcon } from '@components/core/PWIcon'
 import { CheckBox, CheckBoxProps } from '@rneui/themed'
