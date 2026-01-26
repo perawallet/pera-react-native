@@ -32,7 +32,7 @@ describe('device/store', () => {
         expect(result.current.deviceIDs).toBeInstanceOf(Map)
         expect(result.current.deviceIDs.size).toBe(0)
         expect(result.current.pushToken).toBeNull()
-        expect(result.current.network).toBe('testnet')
+        expect(result.current.network).toBe('mainnet')
     })
 
     test('should set FCM token', async () => {

@@ -61,7 +61,7 @@ export const useDeviceStore: UseBoundStore<
 const initialState = {
     deviceIDs: new Map<Network, string | null>(),
     pushToken: null as string | null,
-    network: Networks.testnet as Network,
+    network: Networks.mainnet as Network,
 }
 
 export const createDeviceStore = (storage: KeyValueStorageService) =>
