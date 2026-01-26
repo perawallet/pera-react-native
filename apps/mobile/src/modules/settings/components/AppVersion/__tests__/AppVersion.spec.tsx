@@ -20,7 +20,8 @@ import { UserPreferences } from '@constants/user-preferences'
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
         t: (key: string, params?: Record<string, string>) => {
-            if (params?.version) return `Version ${params.version}`
+            if (params?.version && params?.build)
+                return `Version ${params.version} (${params.build})`
             if (params?.remaining !== undefined)
                 return `${params.remaining} taps remaining`
             return key
@@ -31,6 +32,7 @@ vi.mock('@hooks/useLanguage', () => ({
 vi.mock('@perawallet/wallet-core-platform-integration', () => ({
     useDeviceInfoService: () => ({
         getAppVersion: () => '1.0.0',
+        getAppBuild: () => '1',
     }),
 }))
 
@@ -59,13 +61,13 @@ describe('AppVersion', () => {
     it('renders version text', () => {
         render(<AppVersion />)
 
-        expect(screen.getByText('Version 1.0.0')).toBeTruthy()
+        expect(screen.getByText('Version 1.0.0 (1)')).toBeTruthy()
     })
 
     it('does not respond to taps when enableSecretTaps is false', () => {
         render(<AppVersion enableSecretTaps={false} />)
 
-        const versionText = screen.getByText('Version 1.0.0')
+        const versionText = screen.getByText('Version 1.0.0 (1)')
 
         // Try tapping multiple times
         for (let i = 0; i < 15; i++) {
@@ -80,7 +82,7 @@ describe('AppVersion', () => {
         vi.useFakeTimers()
         render(<AppVersion enableSecretTaps={true} />)
 
-        const versionText = screen.getByText('Version 1.0.0')
+        const versionText = screen.getByText('Version 1.0.0 (1)')
 
         // Tap 7 times rapidly
         for (let i = 0; i < 7; i++) {
@@ -103,7 +105,7 @@ describe('AppVersion', () => {
         vi.useFakeTimers()
         render(<AppVersion enableSecretTaps={true} />)
 
-        const versionText = screen.getByText('Version 1.0.0')
+        const versionText = screen.getByText('Version 1.0.0 (1)')
 
         // Tap 10 times rapidly
         for (let i = 0; i < 10; i++) {
@@ -132,7 +134,7 @@ describe('AppVersion', () => {
         vi.useFakeTimers()
         render(<AppVersion enableSecretTaps={true} />)
 
-        const versionText = screen.getByText('Version 1.0.0')
+        const versionText = screen.getByText('Version 1.0.0 (1)')
 
         // Tap 5 times rapidly
         for (let i = 0; i < 5; i++) {

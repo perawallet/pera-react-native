@@ -59,10 +59,10 @@ export interface DeviceInfoService {
 }
 
 export type DeviceState = BaseStoreState & {
-    fcmToken: string | null
+    pushToken: string | null
     deviceIDs: Map<Network, string | null>
     network: Network
-    setFcmToken: (token: string | null) => void
+    setPushToken: (token: string | null) => void
     setDeviceID: (network: Network, id: string | null) => void
     setNetwork: (network: Network) => void
 }

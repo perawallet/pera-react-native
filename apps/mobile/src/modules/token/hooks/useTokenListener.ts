@@ -11,7 +11,7 @@
  */
 
 import { useEffect } from 'react'
-import { useFcmToken } from '@perawallet/wallet-core-platform-integration'
+import { usePushToken } from '@perawallet/wallet-core-platform-integration'
 
 /**
  * Hook that initializes the FCM token after bootstrap.
@@ -27,9 +27,9 @@ import { useFcmToken } from '@perawallet/wallet-core-platform-integration'
  * useTokenListener(fcmToken)
  */
 export const useTokenListener = (token: string | null): void => {
-    const { setFcmToken } = useFcmToken()
+    const { setPushToken } = usePushToken()
 
     useEffect(() => {
-        setFcmToken(token)
-    }, [token, setFcmToken])
+        setPushToken(token)
+    }, [token, setPushToken])
 }

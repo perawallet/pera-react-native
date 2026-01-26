@@ -59,7 +59,7 @@ export const useDeviceStore: UseBoundStore<
 
 const initialState = {
     deviceIDs: new Map<Network, string | null>(),
-    fcmToken: null as string | null,
+    pushToken: null as string | null,
     network: 'mainnet' as Network,
 }
 
@@ -68,8 +68,8 @@ export const createDeviceStore = (storage: KeyValueStorageService) =>
         persist(
             (set, get) => ({
                 ...initialState,
-                setFcmToken: (token: string | null) => {
-                    set({ fcmToken: token })
+                setPushToken: (token: string | null) => {
+                    set({ pushToken: token })
                 },
                 setDeviceID: (network: Network, id: string | null) => {
                     const deviceIDs = get().deviceIDs
@@ -82,7 +82,7 @@ export const createDeviceStore = (storage: KeyValueStorageService) =>
                 resetState: () =>
                     set({
                         deviceIDs: new Map<Network, string | null>(),
-                        fcmToken: null,
+                        pushToken: null,
                         network: 'mainnet',
                     }),
             }),
@@ -92,7 +92,7 @@ export const createDeviceStore = (storage: KeyValueStorageService) =>
                 version: 1,
                 partialize: state => ({
                     deviceIDs: state.deviceIDs,
-                    fcmToken: state.fcmToken,
+                    pushToken: state.pushToken,
                     network: state.network,
                 }),
                 onRehydrateStorage: () => state => {

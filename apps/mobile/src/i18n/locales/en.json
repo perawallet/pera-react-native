@@ -458,7 +458,7 @@
             "remove_message": "You are about to delete all data in the wallet, including your stored accounts.  Make sure to have your account passphrases stored elsewhere before confirming.  You will not be able to restore your accounts otherwise.  Are you sure you would like to proceed?",
             "remove_confirm": "Yes, Remove All Accounts and Logout",
             "remove_cancel": "Keep it",
-            "version_footer": "Pera Wallet Version {{version}}"
+            "version_footer": "Pera Wallet Version {{version}} ({{build}})"
         },
         "theme": {
             "system_label": "System Default",
