@@ -63,21 +63,16 @@ export const discoverAccounts = async ({
     }
     const rootKey = fromSeed(seed)
     const foundAccounts: HDWalletAccount[] = []
+    let firstAccount: HDWalletAccount | null = null
+
     let accountGap = 0
     let accountIndex = 0
-    let activeAccountCount = 0
 
-    while (accountGap < accountGapLimit && activeAccountCount < 5) {
+    while (accountGap < accountGapLimit) {
         let keyIndexGap = 0
         let keyIndex = 0
-        let isAccountActive = false
 
         while (keyIndexGap < keyIndexGapLimit) {
-            if (accountIndex === 0 && keyIndex === 0) {
-                keyIndex++
-                continue
-            }
-
             const addressBytes = await api.keyGen(
                 rootKey,
                 KeyContext.Address,
@@ -87,24 +82,31 @@ export const discoverAccounts = async ({
             )
             const address = encodeAlgorandAddress(addressBytes)
 
+            // Create potential account object
+            const accountData: HDWalletAccount = {
+                id: uuidv7(),
+                address,
+                type: AccountTypes.hdWallet,
+                canSign: true,
+                hdWalletDetails: {
+                    walletId,
+                    account: accountIndex,
+                    change: 0,
+                    keyIndex,
+                    derivationType,
+                },
+            }
+
+            if (accountIndex === 0 && keyIndex === 0) {
+                firstAccount = accountData
+            }
+
             const hasActivity = await checkActivity(address)
 
             if (hasActivity) {
-                isAccountActive = true
+                foundAccounts.push(accountData)
                 keyIndexGap = 0
-                foundAccounts.push({
-                    id: uuidv7(),
-                    address,
-                    type: AccountTypes.hdWallet,
-                    canSign: true,
-                    hdWalletDetails: {
-                        walletId,
-                        account: accountIndex,
-                        change: 0,
-                        keyIndex,
-                        derivationType,
-                    },
-                })
+                accountGap = 0
             } else {
                 keyIndexGap++
             }
@@ -112,14 +114,12 @@ export const discoverAccounts = async ({
             keyIndex++
         }
 
-        if (isAccountActive) {
-            accountGap = 0
-            activeAccountCount++
-        } else {
-            accountGap++
-        }
-
+        accountGap++
         accountIndex++
+    }
+
+    if (foundAccounts.length === 0 && firstAccount) {
+        return [firstAccount]
     }
 
     return foundAccounts

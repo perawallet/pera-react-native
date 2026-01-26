@@ -86,21 +86,10 @@ describe('discoverAccounts', () => {
         // 0/2: Active. Gap=0. Found.
         // ...
 
-        // We expect only 0/2 because 0/0 is skipped
-        expect(accounts).toHaveLength(1)
-        expect(accounts[0]).toEqual({
-            id: expect.any(String),
-            address: 'ADDRESS_0_2',
-            type: 'hdWallet',
-            canSign: true,
-            hdWalletDetails: {
-                walletId: 'test-wallet',
-                account: 0,
-                change: 0,
-                keyIndex: 2,
-                derivationType,
-            },
-        })
+        // We expect 0/0 and 0/2
+        expect(accounts).toHaveLength(2)
+        expect(accounts[0].address).toBe('ADDRESS_0_0')
+        expect(accounts[1].address).toBe('ADDRESS_0_2')
     })
 
     it('should stop after account gap limit', async () => {
@@ -109,10 +98,9 @@ describe('discoverAccounts', () => {
             return address === 'ADDRESS_0_0' || address === 'ADDRESS_2_0'
         }))
 
-        // 0/0 skipped. Account 0 has no other activity -> considered inactive (gap 1).
-        // Account 1 inactive -> gap 2.
+        // 0/0 Active. Found. Gap 0.
+        // Account 1 inactive -> gap 1.
         // Account 2/0 active -> Found. Gap 0.
-        // ...
 
         const accounts = await discoverAccounts({
             seed,
@@ -122,12 +110,12 @@ describe('discoverAccounts', () => {
             keyIndexGapLimit: 1,
         })
 
-        expect(accounts).toHaveLength(1)
-        expect(accounts[0].address).toBe('ADDRESS_2_0')
-        expect(accounts[0].hdWalletDetails.account).toBe(2)
+        expect(accounts).toHaveLength(2)
+        expect(accounts[0].address).toBe('ADDRESS_0_0')
+        expect(accounts[1].address).toBe('ADDRESS_2_0')
     })
 
-    it('should find at most 5 active accounts', async () => {
+    it('should find all active accounts', async () => {
         mockGetAlgorandClient.mockReturnValue(createMockAlgorandClient(address => {
             // Simulate activity for first 6 accounts (0..5) keys 0
             // address format is ADDRESS_accountIndex_keyIndex
@@ -146,11 +134,28 @@ describe('discoverAccounts', () => {
             keyIndexGapLimit: 1,
         })
 
-        // Account 0/0 skipped. Account 0 has no other activity -> Gap 1.
-        // Accounts 1, 2, 3, 4, 5 are found (key 0 active).
-        // Total 5 accounts found.
-        expect(accounts).toHaveLength(5)
-        expect(accounts[0].hdWalletDetails.account).toBe(1)
-        expect(accounts[4].hdWalletDetails.account).toBe(5)
+        // Accounts 0..10 are found.
+        // Total 11 accounts found.
+        expect(accounts).toHaveLength(11)
+        expect(accounts[0].hdWalletDetails.account).toBe(0)
+        expect(accounts[10].hdWalletDetails.account).toBe(10)
+        expect(accounts[10].hdWalletDetails.account).toBe(10)
+    })
+
+    it('should return first account if no activity found', async () => {
+        mockGetAlgorandClient.mockReturnValue(createMockAlgorandClient(() => false))
+
+        const accounts = await discoverAccounts({
+            seed,
+            derivationType,
+            walletId: 'test-wallet',
+            accountGapLimit: 2,
+            keyIndexGapLimit: 2,
+        })
+
+        expect(accounts).toHaveLength(1)
+        expect(accounts[0].address).toBe('ADDRESS_0_0')
+        expect(accounts[0].hdWalletDetails.account).toBe(0)
+        expect(accounts[0].hdWalletDetails.keyIndex).toBe(0)
     })
 })
