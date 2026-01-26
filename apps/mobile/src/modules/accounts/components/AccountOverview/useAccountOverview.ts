@@ -36,7 +36,7 @@ export type UseAccountOverviewResult = {
     selectedPoint: AccountBalanceHistoryItem | null
     chartVisible: boolean
     scrollingEnabled: boolean
-    preferredCurrency: string
+    preferredFiatCurrency: string
     hasBalance: boolean
     togglePrivacyMode: () => void
     toggleChartVisible: () => void
@@ -58,7 +58,7 @@ export type UseAccountOverviewResult = {
 export const useAccountOverview = (
     account: WalletAccount,
 ): UseAccountOverviewResult => {
-    const { preferredCurrency } = useCurrency()
+    const { preferredFiatCurrency } = useCurrency()
     const { portfolioAlgoValue, portfolioFiatValue, isPending } =
         useAccountBalancesQuery(account ? [account] : [])
     const { getPreference, setPreference } = usePreferences()
@@ -137,7 +137,7 @@ export const useAccountOverview = (
         selectedPoint,
         chartVisible,
         scrollingEnabled,
-        preferredCurrency,
+        preferredFiatCurrency,
         hasBalance: portfolioAlgoValue.gt(0),
         togglePrivacyMode,
         toggleChartVisible,

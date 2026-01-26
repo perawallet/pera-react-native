@@ -38,7 +38,7 @@ export type AccountOverviewHeaderProps = {
     setPeriod: (period: HistoryPeriod) => void
     selectedPoint: AccountBalanceHistoryItem | null
     chartVisible: boolean
-    preferredCurrency: string
+    preferredFiatCurrency: string
     togglePrivacyMode: () => void
     toggleChartVisible: () => void
     handleChartSelectionChange: (
@@ -62,7 +62,7 @@ export const AccountOverviewHeader = ({
     setPeriod,
     selectedPoint,
     chartVisible,
-    preferredCurrency,
+    preferredFiatCurrency,
     togglePrivacyMode,
     toggleChartVisible,
     handleChartSelectionChange,
@@ -111,7 +111,7 @@ export const AccountOverviewHeader = ({
                                 ? Decimal(selectedPoint.fiatValue)
                                 : portfolioFiatValue
                         }
-                        currency={preferredCurrency}
+                        currency={preferredFiatCurrency}
                         prefix='≈ '
                         precision={2}
                         isLoading={isPending}

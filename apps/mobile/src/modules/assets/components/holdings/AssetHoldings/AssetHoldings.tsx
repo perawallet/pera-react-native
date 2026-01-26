@@ -41,7 +41,7 @@ export type AssetHoldingsProps = {
 
 export const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
     const styles = useStyles()
-    const { preferredCurrency } = useCurrency()
+    const { preferredFiatCurrency } = useCurrency()
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
         useChartInteraction<AccountBalanceHistoryItem>()
 
@@ -112,7 +112,7 @@ export const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
                     <PWView style={styles.secondaryValueContainer}>
                         <CurrencyDisplay
                             value={fiatAmount}
-                            currency={preferredCurrency}
+                            currency={preferredFiatCurrency}
                             precision={2}
                             minPrecision={2}
                         />

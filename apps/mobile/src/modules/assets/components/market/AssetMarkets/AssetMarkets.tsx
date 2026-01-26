@@ -67,7 +67,7 @@ const Loading = () => {
 
 export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
     const styles = useStyles()
-    const { preferredCurrency } = useCurrency()
+    const { preferredFiatCurrency } = useCurrency()
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
         useChartInteraction<AssetPriceHistoryItem>()
     const { showToast } = useToast()
@@ -163,7 +163,7 @@ export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
                         <CurrencyDisplay
                             h1
                             value={currentPrice}
-                            currency={preferredCurrency}
+                            currency={preferredFiatCurrency}
                             precision={6}
                             minPrecision={2}
                         />

@@ -21,5 +21,5 @@ export const getCurrenciesQueryKey = (network: Network) => [
 
 export const getPreferredCurrencyPriceQueryKey = (
     network: Network,
-    preferredCurrency: string,
-) => [MODULE_PREFIX, { network, preferredCurrency }]
+    preferredFiatCurrency: string,
+) => [MODULE_PREFIX, { network, preferredFiatCurrency }]

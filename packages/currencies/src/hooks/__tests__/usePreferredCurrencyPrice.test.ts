@@ -18,7 +18,7 @@ describe('getPreferredCurrencyPriceQueryKey', () => {
         const keys = getPreferredCurrencyPriceQueryKey('mainnet', 'USD')
         expect(keys).toEqual([
             'currencies',
-            { network: 'mainnet', preferredCurrency: 'USD' },
+            { network: 'mainnet', preferredFiatCurrency: 'USD' },
         ])
     })
 
@@ -26,7 +26,7 @@ describe('getPreferredCurrencyPriceQueryKey', () => {
         const keys = getPreferredCurrencyPriceQueryKey('testnet', 'EUR')
         expect(keys).toEqual([
             'currencies',
-            { network: 'testnet', preferredCurrency: 'EUR' },
+            { network: 'testnet', preferredFiatCurrency: 'EUR' },
         ])
     })
 })

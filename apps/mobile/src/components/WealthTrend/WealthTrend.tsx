@@ -30,7 +30,7 @@ export type WealthTrendProps = {
 
 export const WealthTrend = ({ account, period }: WealthTrendProps) => {
     const styles = useStyles()
-    const { preferredCurrency } = useCurrency()
+    const { preferredFiatCurrency } = useCurrency()
     const { privacyMode } = useSettings()
 
     const accounts = useAllAccounts()
@@ -80,7 +80,7 @@ export const WealthTrend = ({ account, period }: WealthTrendProps) => {
                 {formatCurrency(
                     absolute,
                     2,
-                    preferredCurrency,
+                    preferredFiatCurrency,
                     undefined,
                     true,
                 )}

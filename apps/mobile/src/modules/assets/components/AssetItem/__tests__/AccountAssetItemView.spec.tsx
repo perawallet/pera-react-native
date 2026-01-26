@@ -34,7 +34,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-currencies', () => ({
-    useCurrency: vi.fn(() => ({ preferredCurrency: 'USD' })),
+    useCurrency: vi.fn(() => ({ preferredFiatCurrency: 'USD' })),
 }))
 
 vi.mock('@hooks/useIsDarkMode', () => ({

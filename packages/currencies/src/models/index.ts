@@ -39,6 +39,8 @@ export type CurrencyResponse = {
 }
 
 export type CurrenciesStore = BaseStoreState & {
-    preferredCurrency: string
-    setPreferredCurrency: (currency: string) => void
+    preferredFiatCurrency: string
+    showAlgoAsPrimaryCurrency: boolean
+    setPreferredFiatCurrency: (currency: string) => void
+    setShowAlgoAsPrimaryCurrency: (showAlgoAsPrimaryCurrency: boolean) => void
 }
