@@ -37,6 +37,8 @@ const ANIMATION_DURATION = 400
 const STEP_DURATION = 500
 const TRANSPARENT_OPACITY = 0.3
 const FULL_OPACITY = 1
+const ACCOUNT_GAP_LIMIT = 5
+const KEY_INDEX_GAP_LIMIT = 5
 
 export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const {
@@ -101,8 +103,8 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
             const discoveredAccounts = await discoverAccounts({
                 seed,
                 derivationType,
-                accountGapLimit: 5,
-                keyIndexGapLimit: 5,
+                accountGapLimit: ACCOUNT_GAP_LIMIT,
+                keyIndexGapLimit: KEY_INDEX_GAP_LIMIT,
                 async checkActivity(address) {
                     try {
                         const accountInfo =
