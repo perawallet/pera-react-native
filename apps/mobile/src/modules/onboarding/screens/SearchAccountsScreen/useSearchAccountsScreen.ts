@@ -78,10 +78,14 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
         return () => clearInterval(interval)
     }, [dotOpacities])
 
+    const hasSearched = useRef(false)
+
     const searchAccounts = useCallback(async () => {
-        if (!onboardingWalletId) {
+        if (!onboardingWalletId || hasSearched.current) {
             return
         }
+
+        hasSearched.current = true
 
         try {
             const privateData = await getPrivateData(onboardingWalletId)
