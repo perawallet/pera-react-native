@@ -13,6 +13,7 @@
 import { useMemo } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
 import { config } from '@perawallet/wallet-core-config'
+import { SettingsStackParamsList } from '../routes'
 
 export const useSettingsOptions = () => {
     const { t } = useLanguage()
@@ -23,22 +24,22 @@ export const useSettingsOptions = () => {
                 title: t('settings.main.account_section'),
                 items: [
                     {
-                        route: 'SecuritySettings',
+                        route: 'SecuritySettings' as keyof SettingsStackParamsList,
                         icon: 'shield-check',
                         title: t('settings.main.security_title'),
                     },
                     {
-                        route: 'NotificationsSettings',
+                        route: 'NotificationsSettings' as keyof SettingsStackParamsList,
                         icon: 'bell',
                         title: t('settings.main.notifications_title'),
                     },
                     {
-                        route: 'WalletConnectSettings',
+                        route: 'WalletConnectSettings' as keyof SettingsStackParamsList,
                         icon: 'wallet-connect',
                         title: t('settings.main.wallet_connect_title'),
                     },
                     {
-                        route: 'PasskeysSettings',
+                        route: 'PasskeysSettings' as keyof SettingsStackParamsList,
                         icon: 'person-key',
                         title: t('settings.main.passkeys_title'),
                     },
@@ -48,12 +49,12 @@ export const useSettingsOptions = () => {
                 title: t('settings.main.app_preferences_section'),
                 items: [
                     {
-                        route: 'CurrencySettings',
+                        route: 'CurrencySettings' as keyof SettingsStackParamsList,
                         icon: 'dollar',
                         title: t('settings.main.currency_title'),
                     },
                     {
-                        route: 'ThemeSettings',
+                        route: 'ThemeSettings' as keyof SettingsStackParamsList,
                         icon: 'moon',
                         title: t('settings.main.theme_title'),
                     },
@@ -82,7 +83,7 @@ export const useSettingsOptions = () => {
                         url: config.privacyPolicyUrl,
                     },
                     {
-                        route: 'DeveloperSettings',
+                        route: 'DeveloperSettings' as keyof SettingsStackParamsList,
                         icon: 'code',
                         title: t('settings.main.developer_title'),
                     },

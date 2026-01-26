@@ -10,7 +10,9 @@
  limitations under the License
  */
 
-export type PollingState = {
+import { BaseStoreState } from '@perawallet/wallet-core-shared'
+
+export type PollingState = BaseStoreState & {
     lastRefreshedRound: number | null
     setLastRefreshedRound: (round: number | null) => void
 }

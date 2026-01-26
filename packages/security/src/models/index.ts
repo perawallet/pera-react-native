@@ -10,7 +10,9 @@
  limitations under the License
  */
 
-export type SecurityState = {
+import { BaseStoreState } from '@perawallet/wallet-core-shared'
+
+export type SecurityState = BaseStoreState & {
     failedAttempts: number
     lockoutEndTime: number | null
     autoLockStartedAt: number | null
@@ -19,7 +21,6 @@ export type SecurityState = {
     resetFailedAttempts: () => void
     setLockoutEndTime: (time: number | null) => void
     setAutoLockStartedAt: (time: number | null) => void
-    reset: () => void
 }
 
 export type PinEntryMode =

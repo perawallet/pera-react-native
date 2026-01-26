@@ -37,7 +37,21 @@ describe('utils/store', () => {
             }))
 
             // Should not throw
-            expect(() => lazy.init(testStore)).not.toThrow()
+            expect(() => lazy.init(testStore, vi.fn())).not.toThrow()
+        })
+
+        test('calls resetState when cleared', () => {
+            const lazy = createLazyStore<StoreApi<TestState>>()
+            const resetState = vi.fn()
+            const testStore = create<TestState>(set => ({
+                count: 0,
+                increment: () => set(state => ({ count: state.count + 1 })),
+            }))
+
+            lazy.init(testStore, resetState)
+            lazy.clear()
+
+            expect(resetState).toHaveBeenCalledTimes(1)
         })
     })
 })

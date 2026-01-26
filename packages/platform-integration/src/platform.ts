@@ -11,6 +11,7 @@
  */
 
 import { container } from 'tsyringe'
+import { DataStoreRegistry } from '@perawallet/wallet-core-shared'
 import {
     CrashReportingServiceContainerKey,
     type CrashReportingService,
@@ -41,6 +42,7 @@ import { DeviceInfoServiceContainerKey, type DeviceInfoService } from './device'
 import type { PlatformServices } from './models'
 
 export const registerPlatformServices = async (platform: PlatformServices) => {
+    // Register platform services in the DI container
     container.register<KeyValueStorageService>(
         KeyValueStorageServiceContainerKey,
         { useValue: platform.keyValueStorage },
@@ -69,4 +71,7 @@ export const registerPlatformServices = async (platform: PlatformServices) => {
     container.register<DeviceInfoService>(DeviceInfoServiceContainerKey, {
         useValue: platform.deviceInfo,
     })
+
+    // Initialize all registered data stores now that platform services are available
+    await DataStoreRegistry.initializeAll()
 }

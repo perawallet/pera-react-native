@@ -30,6 +30,7 @@ export type RemoteConfigStore = {
         key: string,
         value: string | boolean | number | null,
     ) => void
+    resetState: () => void
 }
 
 export interface RemoteConfigService {

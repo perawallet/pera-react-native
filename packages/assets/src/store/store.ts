@@ -19,24 +19,31 @@ import {
 import type { AssetsState } from '../models'
 import {
     createLazyStore,
+    DataStoreRegistry,
     logger,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
 
+const STORE_NAME = 'assets-store'
 const lazy = createLazyStore<WithPersist<StoreApi<AssetsState>, unknown>>()
 
 export const useAssetsStore: UseBoundStore<
     WithPersist<StoreApi<AssetsState>, unknown>
 > = lazy.useStore
 
+const initialState = {
+    assetIDs: [] as string[],
+}
+
 const createAssetsStore = (storage: KeyValueStorageService) =>
     create<AssetsState>()(
         persist(
             set => ({
-                assetIDs: [],
+                ...initialState,
                 setAssetIDs: (assetIDs: string[]) => {
                     set({ assetIDs })
                 },
+                resetState: () => set(initialState),
             }),
             {
                 name: 'assets-store',
@@ -53,8 +60,16 @@ export const initAssetsStore = () => {
     logger.debug('Initializing assets store')
     const storage = useKeyValueStorageService()
     const realStore = createAssetsStore(storage)
-    lazy.init(realStore)
+    lazy.init(realStore, () => realStore.getState().resetState())
     logger.debug('Assets store initialized')
 }
+
+export const clearAssetsStore = () => lazy.clear()
+
+DataStoreRegistry.register({
+    name: STORE_NAME,
+    init: initAssetsStore,
+    clear: clearAssetsStore,
+})
 
 export { createAssetsStore }

@@ -67,7 +67,11 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     createLazyStore: vi.fn().mockReturnValue({
         useStore: vi.fn(),
         init: vi.fn(),
+        clear: vi.fn(),
     }),
+    DataStoreRegistry: {
+        register: vi.fn(),
+    },
     logger: {
         debug: vi.fn(),
         error: vi.fn(),
@@ -127,5 +131,23 @@ describe('WalletConnectStore', () => {
         }
         const persisted = options.partialize(fullState)
         expect(persisted).toEqual({ walletConnectConnections: ['s1'] })
+    })
+
+    it('should define resetState action correctly', () => {
+        initWalletConnectStore()
+
+        const set = vi.fn()
+        const get = vi.fn()
+        const storeState = stateCreator(set, get, {
+            getState: get,
+            setState: set,
+        })
+
+        storeState.resetState()
+
+        expect(set).toHaveBeenCalledWith({
+            walletConnectConnections: [],
+            sessionRequests: [],
+        })
     })
 })

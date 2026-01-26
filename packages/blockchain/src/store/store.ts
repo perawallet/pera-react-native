@@ -19,22 +19,28 @@ import {
 import type { BlockchainStore, SignRequest } from '../models'
 import {
     createLazyStore,
+    DataStoreRegistry,
     logger,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
 import { v7 as uuidv7 } from 'uuid'
 
+const STORE_NAME = 'blockchain-store'
 const lazy = createLazyStore<WithPersist<StoreApi<BlockchainStore>, unknown>>()
 
 export const useBlockchainStore: UseBoundStore<
     WithPersist<StoreApi<BlockchainStore>, unknown>
 > = lazy.useStore
 
+const initialState = {
+    pendingSignRequests: [] as SignRequest[],
+}
+
 const createBlockchainStore = (storage: KeyValueStorageService) =>
     create<BlockchainStore>()(
         persist(
             (set, get) => ({
-                pendingSignRequests: [],
+                ...initialState,
                 addSignRequest: (request: SignRequest) => {
                     const existing = get().pendingSignRequests ?? []
                     const newRequest = {
@@ -56,6 +62,7 @@ const createBlockchainStore = (storage: KeyValueStorageService) =>
                     }
                     return remaining.length != existing.length
                 },
+                resetState: () => set(initialState),
             }),
             {
                 name: 'blockchain-store',
@@ -75,6 +82,14 @@ export const initBlockchainStore = () => {
     logger.debug('Initializing blockchain store')
     const storage = useKeyValueStorageService()
     const realStore = createBlockchainStore(storage)
-    lazy.init(realStore)
+    lazy.init(realStore, () => realStore.getState().resetState())
     logger.debug('Blockchain store initialized')
 }
+
+export const clearBlockchainStore = () => lazy.clear()
+
+DataStoreRegistry.register({
+    name: STORE_NAME,
+    init: initBlockchainStore,
+    clear: clearBlockchainStore,
+})

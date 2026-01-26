@@ -37,6 +37,21 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
             marginHorizontal: theme.spacing.lg,
             marginBottom: insets.bottom,
         },
-        scrollViewContainer: {},
+        bottomSheetActions: {
+            gap: theme.spacing.md,
+            width: '100%',
+        },
+        bottomSheetMessage: {
+            textAlign: 'center',
+            marginBottom: theme.spacing.md,
+        },
+        bottomSheetIcon: {
+            marginVertical: theme.spacing.md,
+        },
+        bottomSheetContainer: {
+            padding: theme.spacing.xl,
+            gap: theme.spacing.lg,
+            alignItems: 'center',
+        },
     }
 })

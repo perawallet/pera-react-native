@@ -12,7 +12,7 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { registerTestPlatform } from '@test-utils'
+import { registerTestPlatform } from '@perawallet/wallet-core-platform-integration'
 
 describe('services/security/store', () => {
     beforeEach(() => {
@@ -136,7 +136,7 @@ describe('services/security/store', () => {
         expect(result.current.failedAttempts).toBe(1)
 
         act(() => {
-            result.current.reset()
+            result.current.resetState()
         })
 
         expect(result.current.failedAttempts).toBe(0)

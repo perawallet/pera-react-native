@@ -59,6 +59,10 @@ We use two patterns:
 | **Zustand**        | Client-side state | User settings, wallet accounts        |
 | **TanStack Query** | Server state      | Account balances, transaction history |
 
+Zustand stores are auto-initialized when they are imported, after the platform services are initialized. Thus when the client app calls registerPlatformServices(), the system will automatically initialize all the zustand state stores that were imported in the app (see apps/mobile/src/bootstrap/bootstrap.ts for an example).
+
+Note that any Zustand store state must include a resetState() method, so that it can be reset to its initial state when the app is reinitialized (see BaseStoreState for a type).
+
 ## Key Packages
 
 | Package                | Purpose                            |

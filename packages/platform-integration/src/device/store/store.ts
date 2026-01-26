@@ -19,10 +19,13 @@ import {
 import type { DeviceState } from '../models'
 import {
     createLazyStore,
+    DataStoreRegistry,
     logger,
     type Network,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
+
+const STORE_NAME = 'device-store'
 
 const objectToDeviceIDs = (
     object: Record<string, string | null>,
@@ -54,13 +57,17 @@ export const useDeviceStore: UseBoundStore<
     WithPersist<StoreApi<DeviceState>, unknown>
 > = lazy.useStore
 
+const initialState = {
+    deviceIDs: new Map<Network, string | null>(),
+    fcmToken: null as string | null,
+    network: 'mainnet' as Network,
+}
+
 export const createDeviceStore = (storage: KeyValueStorageService) =>
     create<DeviceState>()(
         persist(
             (set, get) => ({
-                deviceIDs: new Map(),
-                fcmToken: null,
-                network: 'mainnet',
+                ...initialState,
                 setFcmToken: (token: string | null) => {
                     set({ fcmToken: token })
                 },
@@ -72,6 +79,12 @@ export const createDeviceStore = (storage: KeyValueStorageService) =>
                 setNetwork: (network: Network) => {
                     set({ network })
                 },
+                resetState: () =>
+                    set({
+                        deviceIDs: new Map<Network, string | null>(),
+                        fcmToken: null,
+                        network: 'mainnet',
+                    }),
             }),
             {
                 name: 'device-store',
@@ -97,6 +110,14 @@ export const initDeviceStore = () => {
     logger.debug('Initializing device store')
     const storage = useKeyValueStorageService()
     const realStore = createDeviceStore(storage)
-    lazy.init(realStore)
+    lazy.init(realStore, () => realStore.getState().resetState())
     logger.debug('Device store initialized')
 }
+
+export const clearDeviceStore = () => lazy.clear()
+
+DataStoreRegistry.register({
+    name: STORE_NAME,
+    init: initDeviceStore,
+    clear: clearDeviceStore,
+})

@@ -10,34 +10,28 @@
  limitations under the License
  */
 
-import {
-    useAllAccounts,
-    useRemoveAccountById,
-} from '@perawallet/wallet-core-accounts'
-import { useContacts } from '@perawallet/wallet-core-contacts'
-import { usePreferences } from '@perawallet/wallet-core-settings'
+import { useKMS } from '@perawallet/wallet-core-kms'
+import { DataStoreRegistry } from '@perawallet/wallet-core-shared'
 import { useQueryClient } from '@tanstack/react-query'
+import { useCallback } from 'react'
 
 export const useDeleteAllData = () => {
-    const accounts = useAllAccounts()
-    const removeAccountById = useRemoveAccountById()
-    const { contacts, deleteContact } = useContacts()
-    const { clearAllPreferences } = usePreferences()
+    const { keys, deleteKey } = useKMS()
     const queryClient = useQueryClient()
 
-    return () => {
-        accounts.forEach(account => {
-            if (account.id) {
-                removeAccountById(account.id)
-            }
-        })
+    return useCallback(async () => {
+        if (queryClient) {
+            queryClient.removeQueries()
+        }
 
-        contacts.forEach(contact => {
-            deleteContact(contact)
-        })
+        if (keys) {
+            await keys.forEach(async k => {
+                if (k.id) {
+                    await deleteKey(k.id)
+                }
+            })
+        }
 
-        queryClient.removeQueries()
-
-        clearAllPreferences()
-    }
+        await DataStoreRegistry.clearAll()
+    }, [queryClient, keys, deleteKey])
 }

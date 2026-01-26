@@ -450,8 +450,10 @@
             "privacy_title": "Privacy Policy",
             "developer_title": "Developer Settings",
             "remove_all_accounts": "Remove All Data and Logout",
-            "remove_title": "Are you sure you want to remove all data?",
-            "remove_message": "This will remove all your accounts, contacts, passkeys, and settings from your device. Make sure you have your seed phrases securely backed up before proceeding.",
+            "remove_title": "Delete All Data",
+            "remove_message": "You are about to delete all data in the wallet, including your stored accounts.  Make sure to have your account passphrases stored elsewhere before confirming.  You will not be able to restore your accounts otherwise.  Are you sure you would like to proceed?",
+            "remove_confirm": "Yes, Remove All Accounts and Logout",
+            "remove_cancel": "Keep it",
             "version_footer": "Pera Wallet Version {{version}}"
         },
         "theme": {

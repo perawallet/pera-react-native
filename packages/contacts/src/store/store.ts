@@ -19,24 +19,29 @@ import {
 import type { Contact, ContactsState } from '../models'
 import {
     createLazyStore,
+    DataStoreRegistry,
     logger,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
 import { v7 as uuidv7 } from 'uuid'
 
+const STORE_NAME = 'contacts-store'
 const lazy = createLazyStore<WithPersist<StoreApi<ContactsState>, unknown>>()
 
 export const useContactsStore: UseBoundStore<
     WithPersist<StoreApi<ContactsState>, unknown>
 > = lazy.useStore
 
+const initialState = {
+    contacts: [] as Contact[],
+    selectedContact: null as Contact | null,
+}
+
 const createContactsStore = (storage: KeyValueStorageService) =>
     create<ContactsState>()(
         persist(
             (set, get) => ({
-                contacts: [],
-
-                selectedContact: null,
+                ...initialState,
                 setSelectedContact: (contact: Contact | null) =>
                     set({ selectedContact: contact }),
                 setContacts: (contacts: Contact[]) => set({ contacts }),
@@ -62,6 +67,7 @@ const createContactsStore = (storage: KeyValueStorageService) =>
 
                     return remaining.length != existing.length
                 },
+                resetState: () => set(initialState),
             }),
             {
                 name: 'contacts-store',
@@ -78,6 +84,14 @@ export const initContactsStore = () => {
     logger.debug('Initializing contacts store')
     const storage = useKeyValueStorageService()
     const realStore = createContactsStore(storage)
-    lazy.init(realStore)
+    lazy.init(realStore, () => realStore.getState().resetState())
     logger.debug('Contacts store initialized')
 }
+
+export const clearContactsStore = () => lazy.clear()
+
+DataStoreRegistry.register({
+    name: STORE_NAME,
+    init: initContactsStore,
+    clear: clearContactsStore,
+})

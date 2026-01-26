@@ -18,21 +18,30 @@ import {
     KeyValueStorageService,
     useKeyValueStorageService,
 } from '@perawallet/wallet-core-platform-integration'
-import { createLazyStore, logger } from '@perawallet/wallet-core-shared'
+import {
+    createLazyStore,
+    DataStoreRegistry,
+    logger,
+} from '@perawallet/wallet-core-shared'
 
+const STORE_NAME = 'settings-store'
 const lazy = createLazyStore<WithPersist<StoreApi<SettingsState>, unknown>>()
 
 export const useSettingsStore: UseBoundStore<
     WithPersist<StoreApi<SettingsState>, unknown>
 > = lazy.useStore
 
+const initialState = {
+    theme: 'system' as ThemeMode,
+    privacyMode: false,
+    preferences: {} as Record<string, string | boolean | number>,
+}
+
 const createSettingsStore = (storage: KeyValueStorageService) =>
     create<SettingsState>()(
         persist(
             (set, get) => ({
-                theme: 'system',
-                privacyMode: false,
-                preferences: {},
+                ...initialState,
                 setTheme: (theme: ThemeMode) => set({ theme }),
                 setPrivacyMode: (privacyMode: boolean) => set({ privacyMode }),
                 setPreference: (
@@ -56,6 +65,7 @@ const createSettingsStore = (storage: KeyValueStorageService) =>
                 clearAllPreferences: () => {
                     set({ preferences: {} })
                 },
+                resetState: () => set(initialState),
             }),
             {
                 name: 'settings-store',
@@ -74,6 +84,14 @@ export const initSettingsStore = () => {
     logger.debug('Initializing settings store')
     const storage = useKeyValueStorageService()
     const realStore = createSettingsStore(storage)
-    lazy.init(realStore)
+    lazy.init(realStore, () => realStore.getState().resetState())
     logger.debug('Settings store initialized')
 }
+
+export const clearSettingsStore = () => lazy.clear()
+
+DataStoreRegistry.register({
+    name: STORE_NAME,
+    init: initSettingsStore,
+    clear: clearSettingsStore,
+})

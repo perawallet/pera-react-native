@@ -120,4 +120,26 @@ describe('services/settings/store', () => {
 
         expect(result.current.preferences.testKey).toBeUndefined()
     })
+
+    test('resetState reverts to initial values', async () => {
+        const { initSettingsStore, useSettingsStore } = await import('../store')
+
+        initSettingsStore()
+
+        const { result } = renderHook(() => useSettingsStore())
+
+        act(() => {
+            result.current.setTheme('dark')
+            result.current.setPrivacyMode(true)
+            result.current.setPreference('test', 'value')
+        })
+
+        act(() => {
+            result.current.resetState()
+        })
+
+        expect(result.current.theme).toBe('system')
+        expect(result.current.privacyMode).toBe(false)
+        expect(result.current.preferences).toEqual({})
+    })
 })

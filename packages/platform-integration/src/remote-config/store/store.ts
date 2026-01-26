@@ -19,9 +19,12 @@ import {
 import type { RemoteConfigStore } from '../models'
 import {
     createLazyStore,
+    DataStoreRegistry,
     logger,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
+
+const STORE_NAME = 'remote-config-store'
 
 const lazy =
     createLazyStore<WithPersist<StoreApi<RemoteConfigStore>, unknown>>()
@@ -30,11 +33,15 @@ export const useRemoteConfigStore: UseBoundStore<
     WithPersist<StoreApi<RemoteConfigStore>, unknown>
 > = lazy.useStore
 
+const initialState = {
+    configOverrides: {} as Record<string, string | boolean | number>,
+}
+
 export const createRemoteConfigStore = (storage: KeyValueStorageService) =>
     create<RemoteConfigStore>()(
         persist(
             (set, get) => ({
-                configOverrides: {},
+                ...initialState,
                 setConfigOverride: (
                     key: string,
                     value: string | boolean | number | null,
@@ -47,6 +54,7 @@ export const createRemoteConfigStore = (storage: KeyValueStorageService) =>
                     }
                     set({ configOverrides: { ...configOverrides } })
                 },
+                resetState: () => set(initialState),
             }),
             {
                 name: 'remote-config-store',
@@ -63,6 +71,14 @@ export const initRemoteConfigStore = () => {
     logger.debug('Initializing remote config store')
     const storage = useKeyValueStorageService()
     const realStore = createRemoteConfigStore(storage)
-    lazy.init(realStore)
+    lazy.init(realStore, () => realStore.getState().resetState())
     logger.debug('Remote config store initialized')
 }
+
+export const clearRemoteConfigStore = () => lazy.clear()
+
+DataStoreRegistry.register({
+    name: STORE_NAME,
+    init: initRemoteConfigStore,
+    clear: clearRemoteConfigStore,
+})

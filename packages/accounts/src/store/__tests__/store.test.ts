@@ -11,6 +11,7 @@
  */
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
+import { act } from '@testing-library/react'
 import { createAccountsStore } from '../index'
 import type { WalletAccount } from '../../models'
 import type { KeyValueStorageService } from '@perawallet/wallet-core-platform-integration'
@@ -35,14 +36,14 @@ describe('services/accounts/store', () => {
         const a1: WalletAccount = {
             id: '1',
             name: 'Alice',
-            type: 'standard',
+            type: 'algo25',
             address: 'ALICE-ADDR',
             canSign: true,
         }
         const a2: WalletAccount = {
             id: '2',
             name: 'Bob',
-            type: 'standard',
+            type: 'algo25',
             address: 'BOB-ADDR',
             canSign: true,
         }
@@ -53,7 +54,7 @@ describe('services/accounts/store', () => {
         const a3: WalletAccount = {
             id: '3',
             name: 'Carol',
-            type: 'standard',
+            type: 'algo25',
             address: 'CAROL-ADDR',
             canSign: true,
         }
@@ -65,14 +66,14 @@ describe('services/accounts/store', () => {
         const a1: WalletAccount = {
             id: '1',
             name: 'Alice',
-            type: 'standard',
+            type: 'algo25',
             address: 'ALICE-ADDR',
             canSign: true,
         }
         const a2: WalletAccount = {
             id: '2',
             name: 'Bob',
-            type: 'standard',
+            type: 'algo25',
             address: 'BOB-ADDR',
             canSign: true,
         }
@@ -101,14 +102,14 @@ describe('services/accounts/store', () => {
         const a1: WalletAccount = {
             id: '1',
             name: 'Alice',
-            type: 'standard',
+            type: 'algo25',
             address: 'ALICE-ADDR',
             canSign: true,
         }
         const a2: WalletAccount = {
             id: '2',
             name: 'Bob',
-            type: 'standard',
+            type: 'algo25',
             address: 'BOB-ADDR',
             canSign: true,
         }
@@ -129,7 +130,7 @@ describe('services/accounts/store', () => {
         const a1: WalletAccount = {
             id: '1',
             name: 'Alice',
-            type: 'standard',
+            type: 'algo25',
             address: 'ALICE-ADDR',
             canSign: true,
         }
@@ -148,21 +149,21 @@ describe('services/accounts/store', () => {
         const a1: WalletAccount = {
             id: '1',
             name: 'Alice',
-            type: 'standard',
+            type: 'algo25',
             address: 'ALICE-ADDR',
             canSign: true,
         }
         const a2: WalletAccount = {
             id: '2',
             name: 'Bob',
-            type: 'standard',
+            type: 'algo25',
             address: 'BOB-ADDR',
             canSign: true,
         }
         const a3: WalletAccount = {
             id: '3',
             name: 'Carol',
-            type: 'standard',
+            type: 'algo25',
             address: 'CAROL-ADDR',
             canSign: true,
         }
@@ -181,7 +182,7 @@ describe('services/accounts/store', () => {
         const a1: WalletAccount = {
             id: '1',
             name: 'Alice',
-            type: 'standard',
+            type: 'algo25',
             address: 'ALICE-ADDR',
             canSign: true,
         }
@@ -208,5 +209,27 @@ describe('services/accounts/store', () => {
     test('getSelectedAccount returns null when accounts is empty', () => {
         useAccountsStore.getState().setSelectedAccountAddress('NON-EXISTENT')
         expect(useAccountsStore.getState().getSelectedAccount()).toBeNull()
+    })
+
+    test('resetState reverts state to initial values', () => {
+        const a1: WalletAccount = {
+            id: '1',
+            name: 'Alice',
+            type: 'algo25',
+            address: 'ALICE-ADDR',
+            canSign: true,
+        }
+        useAccountsStore.getState().setAccounts([a1])
+        expect(useAccountsStore.getState().accounts).toHaveLength(1)
+        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
+            a1.address,
+        )
+
+        act(() => {
+            useAccountsStore.getState().resetState()
+        })
+
+        expect(useAccountsStore.getState().accounts).toEqual([])
+        expect(useAccountsStore.getState().selectedAccountAddress).toBeNull()
     })
 })
