@@ -27,7 +27,9 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
 })
 
 vi.mock('@perawallet/wallet-core-currencies', () => ({
-    useCurrency: () => ({ preferredCurrency: { symbol: '$', code: 'USD' } }),
+    useCurrency: () => ({
+        preferredFiatCurrency: { symbol: '$', code: 'USD' },
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {

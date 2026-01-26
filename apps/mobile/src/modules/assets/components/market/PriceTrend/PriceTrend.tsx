@@ -36,7 +36,7 @@ export const PriceTrend = ({
     showAbsolute = false,
 }: PriceTrendProps) => {
     const styles = useStyles()
-    const { preferredCurrency } = useCurrency()
+    const { preferredFiatCurrency } = useCurrency()
 
     const { data: chartData } = useAssetPriceHistoryQuery(
         assetId,
@@ -74,7 +74,7 @@ export const PriceTrend = ({
                     {formatCurrency(
                         changeValue.abs(),
                         2,
-                        preferredCurrency,
+                        preferredFiatCurrency,
                         undefined,
                         true,
                     )}

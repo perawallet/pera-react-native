@@ -80,7 +80,7 @@ export const SendFundsTransactionConfirmation = ({
     const selectedAccount = useSelectedAccount()
     const { showToast } = useToast()
     const [noteOpen, setNoteOpen] = useState(false)
-    const { preferredCurrency } = useCurrency()
+    const { preferredFiatCurrency } = useCurrency()
     const { t } = useLanguage()
     const { data: fiatPrices } = useAssetFiatPricesQuery()
     const fiatPrice = useMemo<Decimal | null>(() => {
@@ -207,7 +207,7 @@ export const SendFundsTransactionConfirmation = ({
                 />
                 <CurrencyDisplay
                     style={styles.secondaryAmount}
-                    currency={preferredCurrency}
+                    currency={preferredFiatCurrency}
                     precision={asset?.decimals ?? DEFAULT_PRECISION}
                     minPrecision={DEFAULT_PRECISION}
                     showSymbol
@@ -263,7 +263,7 @@ export const SendFundsTransactionConfirmation = ({
                         isLoading={currentBalancePending}
                     />
                     <CurrencyDisplay
-                        currency={preferredCurrency}
+                        currency={preferredFiatCurrency}
                         precision={asset?.decimals ?? DEFAULT_PRECISION}
                         minPrecision={DEFAULT_PRECISION}
                         showSymbol

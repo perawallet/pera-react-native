@@ -51,7 +51,7 @@ export const SendFundsInputView = ({
         handleKey,
         handleNext,
     } = useInputView(onNext)
-    const { preferredCurrency } = useCurrency()
+    const { preferredFiatCurrency } = useCurrency()
     const selectedAccount = useSelectedAccount()
     const { canSelectAsset, note } = useSendFunds()
     const { t } = useLanguage()
@@ -94,7 +94,7 @@ export const SendFundsInputView = ({
             />
             {fiatValue ? (
                 <CurrencyDisplay
-                    currency={preferredCurrency}
+                    currency={preferredFiatCurrency}
                     precision={6}
                     value={fiatValue}
                     style={styles.amountPlaceholder}

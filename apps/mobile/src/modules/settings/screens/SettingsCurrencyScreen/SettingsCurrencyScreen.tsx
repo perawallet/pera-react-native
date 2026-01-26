@@ -14,54 +14,31 @@ import { Text } from '@rneui/themed'
 
 import { useStyles } from './styles'
 import { PWView, PWRadioButton } from '@components/core'
-import {
-    Currency,
-    useCurrenciesQuery,
-    useCurrency,
-} from '@perawallet/wallet-core-currencies'
-import { useEffect, useState } from 'react'
-import { FlatList } from 'react-native'
+import { Currency } from '@perawallet/wallet-core-currencies'
 
 import { SearchInput } from '@components/SearchInput'
-import { useInvalidateAssetPrices } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
+import { FlashList } from '@shopify/flash-list'
+import { useSettingsCurrencyScreen } from './useSettingsCurrencyScreen'
 
 export const SettingsCurrencyScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { preferredCurrency, setPreferredCurrency } = useCurrency()
-    const [search, setSearch] = useState<string>()
-    const [filteredData, setFilteredData] = useState<Currency[]>([])
-
-    const { data } = useCurrenciesQuery()
-    const { invalidateAssetPrices } = useInvalidateAssetPrices()
-
-    useEffect(() => {
-        if (!search?.length) {
-            setFilteredData(data ?? [])
-        } else {
-            const lowercaseSearch = search.toLowerCase()
-            setFilteredData(
-                (data ?? []).filter(
-                    d =>
-                        d.name.toLowerCase().includes(lowercaseSearch) ||
-                        d.id.toLowerCase().includes(lowercaseSearch),
-                ),
-            )
-        }
-    }, [data, search])
-
-    const setCurrency = (currency: Currency) => {
-        setPreferredCurrency(currency.id)
-        invalidateAssetPrices()
-    }
+    const {
+        primaryCurrency,
+        secondaryCurrency,
+        setCurrency,
+        search,
+        setSearch,
+        filteredData,
+    } = useSettingsCurrencyScreen()
 
     const renderItem = ({ item }: { item: Currency }) => {
         return (
             <PWRadioButton
                 title={`${item.name} (${item.id})`}
                 onPress={() => setCurrency(item)}
-                isSelected={preferredCurrency === item.id}
+                isSelected={primaryCurrency === item.id}
             />
         )
     }
@@ -69,13 +46,18 @@ export const SettingsCurrencyScreen = () => {
     return (
         <PWView style={styles.container}>
             <Text h3>{t('settings.currency.title')}</Text>
-            <Text>{t('settings.currency.description')}</Text>
+            <Text>
+                {t('settings.currency.description', {
+                    primaryCurrency,
+                    secondaryCurrency,
+                })}
+            </Text>
             <SearchInput
                 placeholder={t('settings.currency.search_placeholder')}
                 value={search}
                 onChangeText={setSearch}
             />
-            <FlatList
+            <FlashList
                 data={filteredData}
                 renderItem={renderItem}
             />

@@ -36,14 +36,14 @@ describe('services/currencies/hooks', () => {
     })
 
     describe('useCurrency', () => {
-        it('returns preferredCurrency and setPreferredCurrency from store', () => {
+        it('returns preferredFiatCurrency and setPreferredFiatCurrency from store', () => {
             const mockPreferredCurrency = 'EUR'
             const mockSetPreferredCurrency = vi.fn()
 
             mockUseAppStore.mockImplementation((selector: any) =>
                 selector({
-                    preferredCurrency: mockPreferredCurrency,
-                    setPreferredCurrency: mockSetPreferredCurrency,
+                    preferredFiatCurrency: mockPreferredCurrency,
+                    setPreferredFiatCurrency: mockSetPreferredCurrency,
                 }),
             )
 
@@ -54,19 +54,21 @@ describe('services/currencies/hooks', () => {
 
             const { result } = renderHook(() => useCurrency())
 
-            expect(result.current.preferredCurrency).toBe(mockPreferredCurrency)
-            expect(result.current.setPreferredCurrency).toBe(
+            expect(result.current.preferredFiatCurrency).toBe(
+                mockPreferredCurrency,
+            )
+            expect(result.current.setPreferredFiatCurrency).toBe(
                 mockSetPreferredCurrency,
             )
         })
 
-        it('calls setPreferredCurrency when updating currency', () => {
+        it('calls setPreferredFiatCurrency when updating currency', () => {
             const mockSetPreferredCurrency = vi.fn()
 
             mockUseAppStore.mockImplementation((selector: any) =>
                 selector({
-                    preferredCurrency: 'USD',
-                    setPreferredCurrency: mockSetPreferredCurrency,
+                    preferredFiatCurrency: 'USD',
+                    setPreferredFiatCurrency: mockSetPreferredCurrency,
                 }),
             )
 
@@ -78,7 +80,7 @@ describe('services/currencies/hooks', () => {
             const { result } = renderHook(() => useCurrency())
 
             act(() => {
-                result.current.setPreferredCurrency('GBP')
+                result.current.setPreferredFiatCurrency('GBP')
             })
 
             expect(mockSetPreferredCurrency).toHaveBeenCalledWith('GBP')
@@ -87,7 +89,7 @@ describe('services/currencies/hooks', () => {
         it('returns usdToPreferred function', () => {
             mockUseAppStore.mockImplementation((selector: any) =>
                 selector({
-                    preferredCurrency: 'USD',
+                    preferredFiatCurrency: 'USD',
                 }),
             )
 
@@ -104,7 +106,7 @@ describe('services/currencies/hooks', () => {
         it('converts USD to preferred currency correctly', () => {
             mockUseAppStore.mockImplementation((selector: any) =>
                 selector({
-                    preferredCurrency: 'EUR',
+                    preferredFiatCurrency: 'EUR',
                 }),
             )
 
@@ -124,7 +126,7 @@ describe('services/currencies/hooks', () => {
         it('returns 0 when data is pending', () => {
             mockUseAppStore.mockImplementation((selector: any) =>
                 selector({
-                    preferredCurrency: 'EUR',
+                    preferredFiatCurrency: 'EUR',
                 }),
             )
 
@@ -144,7 +146,7 @@ describe('services/currencies/hooks', () => {
         it('handles undefined usdPrice gracefully', () => {
             mockUseAppStore.mockImplementation((selector: any) =>
                 selector({
-                    preferredCurrency: 'EUR',
+                    preferredFiatCurrency: 'EUR',
                 }),
             )
 
@@ -164,7 +166,7 @@ describe('services/currencies/hooks', () => {
         it('handles empty usdPrice string gracefully', () => {
             mockUseAppStore.mockImplementation((selector: any) =>
                 selector({
-                    preferredCurrency: 'EUR',
+                    preferredFiatCurrency: 'EUR',
                 }),
             )
 
@@ -184,7 +186,7 @@ describe('services/currencies/hooks', () => {
         it('converts with decimal precision', () => {
             mockUseAppStore.mockImplementation((selector: any) =>
                 selector({
-                    preferredCurrency: 'JPY',
+                    preferredFiatCurrency: 'JPY',
                 }),
             )
 
@@ -203,7 +205,7 @@ describe('services/currencies/hooks', () => {
 
         it('returns USD amount unchanged when preferred currency is USD', () => {
             mockUseAppStore.mockImplementation((selector: any) =>
-                selector({ preferredCurrency: 'USD' }),
+                selector({ preferredFiatCurrency: 'USD' }),
             )
             mockUsePreferredCurrencyPriceQuery.mockReturnValue({
                 data: { usdPrice: Decimal('1.0') },

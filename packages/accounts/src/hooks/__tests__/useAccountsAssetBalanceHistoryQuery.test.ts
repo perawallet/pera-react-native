@@ -39,7 +39,7 @@ const mockPreferredCurrency = 'USD'
 vi.mock('@perawallet/wallet-core-currencies', () => ({
     useCurrency: () => ({
         usdToPreferred: mockUsdToPreferred,
-        preferredCurrency: mockPreferredCurrency,
+        preferredFiatCurrency: mockPreferredCurrency,
     }),
 }))
 

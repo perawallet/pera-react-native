@@ -39,7 +39,7 @@ export type PortfolioViewProps = {
 //TODO layout and spacing needs a bit of clean up
 export const PortfolioView = (props: PortfolioViewProps) => {
     const styles = useStyles()
-    const { preferredCurrency } = useCurrency()
+    const { preferredFiatCurrency } = useCurrency()
     const { t } = useLanguage()
 
     const accounts = useAllAccounts()
@@ -107,7 +107,7 @@ export const PortfolioView = (props: PortfolioViewProps) => {
                             ? selectedPoint.fiatValue
                             : portfolioFiatValue
                     }
-                    currency={preferredCurrency}
+                    currency={preferredFiatCurrency}
                     prefix='≈ '
                     precision={2}
                     isLoading={isPending}

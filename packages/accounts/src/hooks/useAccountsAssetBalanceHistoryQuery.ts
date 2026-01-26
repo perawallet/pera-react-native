@@ -25,7 +25,7 @@ export const useAccountsAssetsBalanceHistoryQuery = (
     period: HistoryPeriod,
 ) => {
     const { network } = useNetwork()
-    const { preferredCurrency, usdToPreferred } = useCurrency()
+    const { preferredFiatCurrency, usdToPreferred } = useCurrency()
 
     return useQuery({
         queryKey: getAccountAssetBalanceHistoryQueryKey(
@@ -33,14 +33,14 @@ export const useAccountsAssetsBalanceHistoryQuery = (
             account.address,
             assetId,
             period,
-            preferredCurrency,
+            preferredFiatCurrency,
         ),
         queryFn: () =>
             fetchAccountAssetBalanceHistory(
                 account.address,
                 assetId,
                 period,
-                preferredCurrency,
+                preferredFiatCurrency,
                 network,
             ),
         select: data => {

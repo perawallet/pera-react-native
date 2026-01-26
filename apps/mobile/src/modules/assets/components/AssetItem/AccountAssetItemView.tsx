@@ -33,7 +33,7 @@ export const AccountAssetItemView = ({
     const { theme } = useTheme()
     const styles = useStyles()
 
-    const { preferredCurrency } = useCurrency()
+    const { preferredFiatCurrency } = useCurrency()
     const { data: assets } = useAssetsQuery([accountBalance.assetId])
 
     const asset = useMemo(() => {
@@ -110,7 +110,7 @@ export const AccountAssetItemView = ({
                         style={styles.primaryAmount}
                     />
                     <CurrencyDisplay
-                        currency={preferredCurrency}
+                        currency={preferredFiatCurrency}
                         value={accountBalance.fiatValue}
                         precision={2}
                         minPrecision={2}

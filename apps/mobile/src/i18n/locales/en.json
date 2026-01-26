@@ -431,7 +431,7 @@
     "settings": {
         "currency": {
             "title": "Main Currency",
-            "description": "Select a currency as your main local currency for displaying asset values.",
+            "description": "Your main currency is {{primaryCurrency}}, and secondary currency is {{secondaryCurrency}}.",
             "search_placeholder": "Search"
         },
         "main": {
