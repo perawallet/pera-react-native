@@ -182,7 +182,7 @@ export const discoverAccounts = async ({
             )
         }
 
-        const results = await Promise.all(tasks)
+        const results = await Promise.allSettled(tasks)
 
         for (const { activeAccounts, zeroAccount } of results) {
             if (zeroAccount) {
