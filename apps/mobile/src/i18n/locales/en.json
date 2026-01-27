@@ -338,6 +338,14 @@
             "select_all": "Select all",
             "already_imported": "already imported",
             "continue": "Continue"
+        },
+        "import_rekeyed_addresses": {
+            "title": "Select rekeyed addresses",
+            "description": "We found that there are {{count}} rekeyed addresses registered to this wallet",
+            "addresses_count": "{{count}} addresses",
+            "select_all": "Select all",
+            "already_imported": "already imported",
+            "continue": "Continue"
         }
     },
     "portfolio": {

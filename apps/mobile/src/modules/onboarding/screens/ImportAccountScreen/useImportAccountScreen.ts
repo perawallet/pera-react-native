@@ -17,7 +17,6 @@ import { OnboardingStackParamList } from '../../routes/types'
 import {
     useImportAccount,
     ImportAccountType,
-    AccountTypes,
 } from '@perawallet/wallet-core-accounts'
 
 import { useToast } from '@hooks/useToast'
@@ -158,13 +157,9 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
                     mnemonic,
                     type: accountType,
                 })
-
-                if (importedAccount.type === AccountTypes.hdWallet) {
-                    navigation.push('SearchAccounts', {
-                        account: importedAccount,
-                    })
-                }
-                // TODO: Algo25 will come later
+                navigation.push('SearchAccounts', {
+                    account: importedAccount,
+                })
             } catch {
                 showToast({
                     title: t('onboarding.import_account.failed_title'),

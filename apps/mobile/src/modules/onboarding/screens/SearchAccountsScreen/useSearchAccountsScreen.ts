@@ -19,9 +19,14 @@ import { RouteProp, useRoute } from '@react-navigation/native'
 import {
     getSeedFromMasterKey,
     discoverAccounts,
+    discoverRekeyedAccounts,
+    AccountTypes,
+    isHDWalletAccount,
+    DerivationTypes,
 } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { OnboardingStackParamList } from '../../routes/types'
+import { useIsOnboarding } from '../../hooks'
 
 export type UseSearchAccountsScreenResult = {
     t: (key: string) => string
@@ -42,8 +47,11 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const { showToast } = useToast()
     const navigation = useAppNavigation()
     const { getPrivateData } = useKMS()
+    const { setIsOnboarding } = useIsOnboarding()
 
-    const onboardingWalletId = account.hdWalletDetails.walletId
+    const walletId = isHDWalletAccount(account)
+        ? account.hdWalletDetails.walletId
+        : account.keyPairId
 
     const dotOpacities = useRef(
         Array.from(
@@ -81,31 +89,50 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const hasSearched = useRef(false)
 
     const searchAccounts = useCallback(async () => {
-        if (!onboardingWalletId || hasSearched.current) {
+        if (!walletId || hasSearched.current) {
             return
         }
 
         hasSearched.current = true
 
         try {
-            const privateData = await getPrivateData(onboardingWalletId)
+            const privateData = await getPrivateData(walletId)
 
             if (!privateData) {
                 return
             }
 
             const seed = getSeedFromMasterKey(privateData)
-            const derivationType = account.hdWalletDetails.derivationType
 
-            const discoveredAccounts = await discoverAccounts({
-                seed,
-                derivationType,
-                walletId: onboardingWalletId,
-            })
+            if (account.type === AccountTypes.hdWallet) {
+                const derivationType = account.hdWalletDetails.derivationType
 
-            navigation.replace('ImportSelectAddresses', {
-                accounts: discoveredAccounts,
-            })
+                const discoveredAccounts = await discoverAccounts({
+                    seed,
+                    derivationType,
+                    walletId,
+                })
+
+                navigation.replace('ImportSelectAddresses', {
+                    accounts: discoveredAccounts,
+                })
+            } else if (account.type === AccountTypes.algo25) {
+                const discoveredRekeyedAccounts = await discoverRekeyedAccounts(
+                    {
+                        seed,
+                        derivationType: DerivationTypes.Peikert,
+                        walletId,
+                    },
+                )
+
+                if (discoveredRekeyedAccounts.length === 0) {
+                    setIsOnboarding(false)
+                } else {
+                    navigation.replace('ImportRekeyedAddresses', {
+                        accounts: discoveredRekeyedAccounts,
+                    })
+                }
+            }
         } catch {
             showToast({
                 type: 'error',
@@ -114,7 +141,15 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
             })
             navigation.goBack()
         }
-    }, [onboardingWalletId, getPrivateData, navigation, account, t, showToast])
+    }, [
+        walletId,
+        getPrivateData,
+        navigation,
+        account,
+        t,
+        showToast,
+        setIsOnboarding,
+    ])
 
     useEffect(() => {
         searchAccounts()
