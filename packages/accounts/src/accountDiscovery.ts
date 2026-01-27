@@ -184,7 +184,13 @@ export const discoverAccounts = async ({
 
         const results = await Promise.allSettled(tasks)
 
-        for (const { activeAccounts, zeroAccount } of results) {
+        for (const result of results) {
+            if (result.status === 'rejected') {
+                continue
+            }
+
+            const { activeAccounts, zeroAccount } = result.value
+
             if (zeroAccount) {
                 firstAccount = zeroAccount
             }
