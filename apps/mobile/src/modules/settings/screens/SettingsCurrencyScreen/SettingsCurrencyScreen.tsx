@@ -13,12 +13,10 @@
 import { Text } from '@rneui/themed'
 
 import { useStyles } from './styles'
-import { PWView, PWRadioButton } from '@components/core'
+import { PWView, PWRadioButton, PWFlatList } from '@components/core'
 import { Currency } from '@perawallet/wallet-core-currencies'
-
 import { SearchInput } from '@components/SearchInput'
 import { useLanguage } from '@hooks/useLanguage'
-import { FlashList } from '@shopify/flash-list'
 import { useSettingsCurrencyScreen } from './useSettingsCurrencyScreen'
 
 export const SettingsCurrencyScreen = () => {
@@ -57,7 +55,7 @@ export const SettingsCurrencyScreen = () => {
                 value={search}
                 onChangeText={setSearch}
             />
-            <FlashList
+            <PWFlatList
                 data={filteredData}
                 renderItem={renderItem}
             />

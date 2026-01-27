@@ -196,6 +196,11 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             overlay1: 1000,
             max: 9999,
         },
+        borders: {
+            none: 0,
+            sm: 1,
+            md: 2,
+        },
         components: {
             Button: (_, theme) => ({
                 containerStyle: {
@@ -220,7 +225,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
                         : theme.colors.textMain,
                     paddingHorizontal: 0,
                     borderColor: theme.colors.helperPositive,
-                    borderWidth: 2,
+                    borderWidth: theme.borders.md,
                     borderRadius: theme.spacing.xs,
                     height: theme.spacing.xl,
                     width: theme.spacing.xl,
@@ -268,7 +273,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
                         theme.mode === 'dark'
                             ? theme.colors.layerGrayLightest
                             : theme.colors.layerGrayLighter,
-                    borderBottomWidth: 0,
+                    borderBottomWidth: theme.borders.none,
                 },
                 rightIconContainerStyle: {
                     marginVertical: 0,
@@ -289,7 +294,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
                 },
                 style: {
                     backgroundColor: theme.colors.layerGrayLight,
-                    borderWidth: 2,
+                    borderWidth: theme.borders.md,
                     borderColor: theme.colors.background,
                 },
                 animation: 'pulse',

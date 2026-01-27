@@ -32,7 +32,7 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.lg,
         },
         accountSelection: {
-            borderWidth: 1,
+            borderWidth: theme.borders.sm,
             borderColor: theme.colors.layerGrayLight,
             borderRadius: theme.spacing.xl,
             paddingVertical: theme.spacing.xs,

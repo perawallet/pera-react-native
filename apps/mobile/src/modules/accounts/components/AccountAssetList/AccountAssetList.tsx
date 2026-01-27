@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import { PWButton, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import {
+    PWButton,
+    PWFlatList,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
 import React, { useMemo, useState } from 'react'
 import { useStyles } from './styles'
@@ -23,7 +29,6 @@ import {
     WalletAccount,
     AssetWithAccountBalance,
 } from '@perawallet/wallet-core-accounts'
-import { FlashList } from '@shopify/flash-list'
 import { EmptyView } from '@components/EmptyView'
 import { LoadingView } from '@components/LoadingView'
 import { useLanguage } from '@hooks/useLanguage'
@@ -107,7 +112,7 @@ export const AccountAssetList = ({
                 style={styles.keyboardAvoidingViewContainer}
                 onPress={headerState.open}
             >
-                <FlashList
+                <PWFlatList
                     data={balances}
                     renderItem={renderItem}
                     scrollEnabled={scrollEnabled}

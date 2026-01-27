@@ -20,11 +20,14 @@ import { OnboardingScreen } from '@modules/onboarding/screens/OnboardingScreen'
 import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen'
 import { ImportAccountScreen } from '@modules/onboarding/screens/ImportAccountScreen'
 import { ImportInfoScreen } from '@modules/onboarding/screens/ImportInfoScreen'
+import { ImportSelectAddressesScreen } from '@modules/onboarding/screens/ImportSelectAddressesScreen'
 import { AccountErrorBoundary } from '@modules/accounts/components/AccountErrorBoundary/AccountErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
 import { screenListeners } from '@routes/listeners'
 import { fullScreenLayout, safeAreaLayout } from '@layouts/index'
 import type React from 'react'
+
+import { SearchAccountsScreen } from '@modules/onboarding/screens/SearchAccountsScreen'
 
 // Wrap screens with AccountErrorBoundary to catch account-related errors
 const withAccountErrorBoundary = <P extends object>(
@@ -48,6 +51,11 @@ const ImportAccountScreenWithErrorBoundary =
     withAccountErrorBoundary(ImportAccountScreen)
 const ImportInfoScreenWithErrorBoundary =
     withAccountErrorBoundary(ImportInfoScreen)
+const SearchAccountsScreenWithErrorBoundary =
+    withAccountErrorBoundary(SearchAccountsScreen)
+const ImportSelectAddressesScreenWithErrorBoundary = withAccountErrorBoundary(
+    ImportSelectAddressesScreen,
+)
 
 import { OnboardingStackParamList } from './types'
 export type { OnboardingStackParamList } from './types'
@@ -96,6 +104,22 @@ export const OnboardingStackNavigator = () => {
                 }}
                 layout={safeAreaLayout}
                 component={ImportAccountScreenWithErrorBoundary}
+            />
+            <OnboardingStack.Screen
+                name='SearchAccounts'
+                options={{
+                    headerShown: false,
+                }}
+                layout={fullScreenLayout}
+                component={SearchAccountsScreenWithErrorBoundary}
+            />
+            <OnboardingStack.Screen
+                name='ImportSelectAddresses'
+                options={{
+                    headerShown: false,
+                }}
+                layout={safeAreaLayout}
+                component={ImportSelectAddressesScreenWithErrorBoundary}
             />
         </OnboardingStack.Navigator>
     )

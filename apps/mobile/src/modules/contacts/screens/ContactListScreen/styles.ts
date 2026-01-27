@@ -23,7 +23,7 @@ export const useStyles = makeStyles(theme => {
         sectionHeader: {
             color: theme.colors.textGray,
             borderBottomColor: theme.colors.layerGrayLighter,
-            borderBottomWidth: 1,
+            borderBottomWidth: theme.borders.sm,
             paddingTop: theme.spacing.lg,
             paddingBottom: theme.spacing.sm,
             marginBottom: theme.spacing.xs,

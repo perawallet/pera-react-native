@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWButton, PWIcon, PWView } from '@components/core'
+import { PWButton, PWFlatList, PWIcon, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { QRScannerView } from '@components/QRScannerView'
 import { useLanguage } from '@hooks/useLanguage'
@@ -19,7 +19,6 @@ import {
     useWalletConnect,
     WalletConnectConnection,
 } from '@perawallet/wallet-core-walletconnect'
-import { FlashList } from '@shopify/flash-list'
 import { useStyles } from './styles'
 import { WalletConnectSessionItem } from '@modules/settings/components/WalletConnect/WalletConnectSessionItem'
 import { Dialog, Text, useTheme } from '@rneui/themed'
@@ -67,7 +66,7 @@ export const SettingsWalletConnectScreen = () => {
 
     return (
         <PWView style={styles.container}>
-            <FlashList
+            <PWFlatList
                 contentContainerStyle={styles.listContainer}
                 data={connections}
                 renderItem={renderItem}

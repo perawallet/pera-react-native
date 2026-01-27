@@ -20,7 +20,7 @@ import { EmptyView } from '@components/EmptyView'
 import { useStyles } from './styles'
 import { NotificationItem } from '@modules/notifications/components/NotificationItem/NotificationItem'
 import { LoadingView } from '@components/LoadingView'
-import { FlashList } from '@shopify/flash-list'
+import { PWFlatList } from '@components/core'
 import { RefreshControl } from 'react-native-gesture-handler'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -70,7 +70,7 @@ export const NotificationsScreen = () => {
     }
 
     return (
-        <FlashList
+        <PWFlatList
             data={notifications}
             renderItem={renderItem}
             style={styles.container}

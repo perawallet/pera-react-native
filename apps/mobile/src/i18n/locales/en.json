@@ -302,7 +302,14 @@
             "importing": "Importing wallet...",
             "button": "Import Wallet",
             "failed_title": "Import failed",
-            "failed_body": "There was an error trying to import your wallet"
+            "failed_body": "There was an error trying to import your wallet",
+            "invalid_mnemonic_title": "Invalid Passphrase",
+            "invalid_mnemonic_body": "The passphrase you pasted contains too many words.",
+            "insufficient_slots_title": "Invalid Passphrase",
+            "insufficient_slots_body": "The passphrase you pasted does not fit in the remaining slots."
+        },
+        "searching_accounts": {
+            "title": "Searching your accounts"
         },
         "create_account": {
             "processing": "Setting up your wallet...",
@@ -323,6 +330,14 @@
             "wallet_label": "Wallet #{{count}}",
             "input_label": "Account name",
             "finish_button": "Finish Account Creation"
+        },
+        "import_select_addresses": {
+            "title": "Select addresses to add",
+            "description": "We found that there are {{count}} addresses registered to this wallet",
+            "addresses_count": "{{count}} addresses",
+            "select_all": "Select all",
+            "already_imported": "already imported",
+            "continue": "Continue"
         }
     },
     "portfolio": {
@@ -369,7 +384,7 @@
         "node_settings": "Node Settings",
         "feature_flags": "Feature Flags",
         "dispenser": "Dispenser",
-        "developer_menu": "Developer Menu"
+        "developer_menu": "Developer Options"
     },
     "security": {
         "pin": {

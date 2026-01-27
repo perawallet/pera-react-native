@@ -38,7 +38,7 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.lg,
             alignItems: 'center',
             justifyContent: 'center',
-            borderTopWidth: 1,
+            borderTopWidth: theme.borders.sm,
             borderTopColor: theme.colors.layerGrayLightest,
             paddingVertical: theme.spacing.sm,
         },
@@ -97,7 +97,7 @@ export const useStyles = makeStyles(theme => {
         },
         requestContainer: {
             borderColor: theme.colors.layerGrayLightest,
-            borderWidth: 1,
+            borderWidth: theme.borders.sm,
             borderRadius: theme.spacing.md,
             padding: theme.spacing.lg,
             alignItems: 'flex-start',

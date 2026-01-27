@@ -24,14 +24,14 @@ export const useStyles = makeStyles(theme => {
         },
         selectedButtonContainer: {
             backgroundColor: theme.colors.layerGrayLighter,
-            borderWidth: 0,
+            borderWidth: theme.borders.none,
             borderRadius: theme.spacing.sm,
             paddingVertical: theme.spacing.xs,
             paddingHorizontal: theme.spacing.md,
         },
         unselectedButtonContainer: {
             backgroundColor: theme.colors.background,
-            borderWidth: 0,
+            borderWidth: theme.borders.none,
             borderRadius: theme.spacing.sm,
             paddingVertical: theme.spacing.xs,
             paddingHorizontal: theme.spacing.md,

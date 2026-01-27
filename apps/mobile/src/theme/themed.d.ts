@@ -28,5 +28,10 @@ declare module '@rneui/themed' {
             overlay1: number
             max: number
         }
+        borders: {
+            none: number
+            sm: number
+            md: number
+        }
     }
 }

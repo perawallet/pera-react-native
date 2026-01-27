@@ -22,6 +22,7 @@ import {
     DataStoreRegistry,
     logger,
     type Network,
+    Networks,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
 
@@ -60,7 +61,7 @@ export const useDeviceStore: UseBoundStore<
 const initialState = {
     deviceIDs: new Map<Network, string | null>(),
     pushToken: null as string | null,
-    network: 'mainnet' as Network,
+    network: Networks.mainnet as Network,
 }
 
 export const createDeviceStore = (storage: KeyValueStorageService) =>
@@ -81,9 +82,8 @@ export const createDeviceStore = (storage: KeyValueStorageService) =>
                 },
                 resetState: () =>
                     set({
-                        deviceIDs: new Map<Network, string | null>(),
-                        pushToken: null,
-                        network: 'mainnet',
+                        ...initialState,
+                        deviceIDs: new Map(),
                     }),
             }),
             {

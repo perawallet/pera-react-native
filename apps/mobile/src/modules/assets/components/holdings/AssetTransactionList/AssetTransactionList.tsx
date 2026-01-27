@@ -11,11 +11,10 @@
  */
 
 import { useStyles } from './styles'
-import { PWButton, PWText, PWView } from '@components/core'
+import { PWButton, PWFlatList, PWText, PWView } from '@components/core'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { EmptyView } from '@components/EmptyView'
-import { FlashList } from '@shopify/flash-list'
 import { useLanguage } from '@hooks/useLanguage'
 
 export type AssetTransactionListProps = {
@@ -42,7 +41,7 @@ export const AssetTransactionList = ({
     }
 
     return (
-        <FlashList
+        <PWFlatList
             contentContainerStyle={styles.container}
             data={transactions}
             renderItem={renderItem}

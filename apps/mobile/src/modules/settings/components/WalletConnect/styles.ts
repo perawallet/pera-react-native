@@ -21,7 +21,7 @@ export const useStyles = makeStyles(theme => {
             paddingTop: theme.spacing.lg,
             paddingBottom: theme.spacing.xl,
             marginBottom: theme.spacing.md,
-            borderBottomWidth: 1,
+            borderBottomWidth: theme.borders.sm,
             borderBottomColor: theme.colors.layerGray,
         },
         sessionInfo: {

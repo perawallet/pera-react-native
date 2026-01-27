@@ -32,7 +32,7 @@ export const useStyles = makeStyles(theme => ({
         marginTop: theme.spacing.lg,
     },
     optionBox: {
-        borderWidth: 1,
+        borderWidth: theme.borders.sm,
         borderColor: theme.colors.layerGray,
         borderRadius: theme.spacing.lg,
         paddingHorizontal: theme.spacing.xl,

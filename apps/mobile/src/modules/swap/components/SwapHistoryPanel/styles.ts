@@ -37,7 +37,7 @@ export const useStyles = makeStyles(theme => ({
         borderRadius: theme.spacing.lg,
         backgroundColor: theme.colors.background,
         boxShadow: '0px 2px 4px -1px #00000014',
-        borderWidth: 1,
+        borderWidth: theme.borders.sm,
         borderColor: theme.colors.layerGrayLighter,
         flexDirection: 'row',
         alignItems: 'center',

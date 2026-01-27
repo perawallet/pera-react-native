@@ -63,6 +63,7 @@ import PlusIcon from '@assets/icons/plus.svg'
 import QuestionMarkIcon from '@assets/icons/question-mark.svg'
 import RekeyIcon from '@assets/icons/rekey.svg'
 import ReloadIcon from '@assets/icons/reload.svg'
+import PhoneIcon from '@assets/icons/phone.svg'
 import ShareIcon from '@assets/icons/share.svg'
 import ShieldCheckIcon from '@assets/icons/shield-check.svg'
 import SlidersIcon from '@assets/icons/sliders.svg'
@@ -155,6 +156,7 @@ const ICON_LIBRARY = {
     'question-mark': QuestionMarkIcon,
     rekey: RekeyIcon,
     reload: ReloadIcon,
+    phone: PhoneIcon,
     share: ShareIcon,
     'shield-check': ShieldCheckIcon,
     sliders: SlidersIcon,

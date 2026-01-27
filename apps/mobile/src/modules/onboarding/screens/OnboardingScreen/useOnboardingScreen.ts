@@ -15,6 +15,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
 import { useModalState } from '@hooks/useModalState'
+import { useIsOnboarding } from '@modules/onboarding/hooks'
 
 export const useOnboardingScreen = () => {
     const navigation = useAppNavigation()
@@ -24,6 +25,7 @@ export const useOnboardingScreen = () => {
         open: openImportOptions,
         close: closeImportOptions,
     } = useModalState()
+    const { setIsOnboarding } = useIsOnboarding()
 
     const handleTermsPress = useCallback(() => {
         pushWebView({
@@ -45,13 +47,15 @@ export const useOnboardingScreen = () => {
 
     const handleHDWalletPress = useCallback(() => {
         closeImportOptions()
+        setIsOnboarding(true)
         navigation.push('ImportInfo', { accountType: 'hdWallet' })
-    }, [closeImportOptions, navigation])
+    }, [closeImportOptions, navigation, setIsOnboarding])
 
     const handleAlgo25Press = useCallback(() => {
         closeImportOptions()
+        setIsOnboarding(true)
         navigation.push('ImportInfo', { accountType: 'algo25' })
-    }, [closeImportOptions, navigation])
+    }, [closeImportOptions, navigation, setIsOnboarding])
 
     return {
         isImportOptionsVisible,

@@ -93,7 +93,7 @@ export const useStyles = makeStyles(theme => {
             paddingHorizontal: 0,
             paddingBottom: theme.spacing.sm,
             margin: 0,
-            borderWidth: 1,
+            borderWidth: theme.borders.sm,
             borderColor: 'transparent',
         },
         activeTab: {
