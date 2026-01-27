@@ -21,8 +21,9 @@ import {
     encodeAlgorandAddress,
     getAlgorandClient,
 } from '@perawallet/wallet-core-blockchain'
-import { AccountTypes, HDWalletAccount } from './models/accounts'
+import { Account } from '@algorandfoundation/algokit-utils/indexer-client'
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
+import { AccountTypes, Algo25Account, HDWalletAccount } from './models/accounts'
 
 const ACCOUNT_GAP_LIMIT = 5
 const KEY_INDEX_GAP_LIMIT = 5
@@ -150,13 +151,13 @@ async function scanAccountKeys({
     return { activeAccounts, zeroAccount }
 }
 
-export const discoverAccounts = async ({
+export async function discoverAccounts({
     seed,
     derivationType,
     walletId,
     accountGapLimit = ACCOUNT_GAP_LIMIT,
     keyIndexGapLimit = KEY_INDEX_GAP_LIMIT,
-}: DiscoverAccountsParams): Promise<HDWalletAccount[]> => {
+}: DiscoverAccountsParams): Promise<HDWalletAccount[]> {
     const algorandClient = getAlgorandClient()
     const rootKey = fromSeed(seed)
     const foundAccounts: HDWalletAccount[] = []
@@ -205,6 +206,141 @@ export const discoverAccounts = async ({
 
     if (foundAccounts.length === 0 && firstAccount) {
         return [firstAccount]
+    }
+
+    return foundAccounts
+}
+
+async function checkRekeyed(
+    algorandClient: AlgorandClient,
+    address: string,
+): Promise<Account[]> {
+    try {
+        const result = await algorandClient.client.indexer.searchForAccounts({
+            authAddr: address,
+        })
+
+        return result.accounts
+    } catch {
+        return []
+    }
+}
+
+type ScanRekeyedKeysParams = {
+    accountIdx: number
+    keyIndexGapLimit: number
+    rootKey: Uint8Array
+    derivationType: BIP32DerivationType
+    algorandClient: AlgorandClient
+}
+
+async function scanRekeyedKeys({
+    accountIdx,
+    keyIndexGapLimit,
+    rootKey,
+    derivationType,
+    algorandClient,
+}: ScanRekeyedKeysParams): Promise<Algo25Account[]> {
+    const foundAccounts: Algo25Account[] = []
+    let keyGap = 0
+    let keyIdx = 0
+
+    while (keyGap < keyIndexGapLimit) {
+        const batchSize = keyIndexGapLimit
+        const tasks = []
+
+        for (let i = 0; i < batchSize; i++) {
+            const currentKeyIdx = keyIdx + i
+            tasks.push(async () => {
+                const addressBytes = await api.keyGen(
+                    rootKey,
+                    KeyContext.Address,
+                    accountIdx,
+                    currentKeyIdx,
+                    derivationType,
+                )
+                const address = encodeAlgorandAddress(addressBytes)
+                const rekeyedAccounts = await checkRekeyed(
+                    algorandClient,
+                    address,
+                )
+
+                return rekeyedAccounts.map(
+                    (account: { address: string }): Algo25Account => ({
+                        id: uuidv7(),
+                        address: account.address,
+                        type: AccountTypes.algo25,
+                        canSign: true,
+                        rekeyAddress: address,
+                    }),
+                )
+            })
+        }
+
+        const results = await Promise.all(tasks.map(t => t()))
+
+        for (const accounts of results) {
+            if (accounts.length > 0) {
+                foundAccounts.push(...accounts)
+                keyGap = 0
+            } else {
+                keyGap++
+            }
+
+            if (keyGap >= keyIndexGapLimit) break
+        }
+
+        if (keyGap >= keyIndexGapLimit) break
+        keyIdx += batchSize
+    }
+
+    return foundAccounts
+}
+
+export async function discoverRekeyedAccounts({
+    seed,
+    derivationType,
+    accountGapLimit = ACCOUNT_GAP_LIMIT,
+    keyIndexGapLimit = KEY_INDEX_GAP_LIMIT,
+}: DiscoverAccountsParams): Promise<Algo25Account[]> {
+    const algorandClient = getAlgorandClient()
+    const rootKey = fromSeed(seed)
+    const foundAccounts: Algo25Account[] = []
+
+    let accountGap = 0
+    let accountIndex = 0
+
+    while (accountGap < accountGapLimit) {
+        const batchSize = accountGapLimit
+        const tasks = []
+
+        for (let i = 0; i < batchSize; i++) {
+            tasks.push(
+                scanRekeyedKeys({
+                    accountIdx: accountIndex + i,
+                    keyIndexGapLimit,
+                    rootKey,
+                    derivationType,
+                    algorandClient,
+                }),
+            )
+        }
+
+        const results = await Promise.all(tasks)
+
+        for (const accounts of results) {
+            if (accounts.length > 0) {
+                foundAccounts.push(...accounts)
+                accountGap = 0
+            } else {
+                accountGap++
+            }
+
+            if (accountGap >= accountGapLimit) break
+        }
+
+        if (accountGap >= accountGapLimit) break
+        accountIndex += batchSize
     }
 
     return foundAccounts
