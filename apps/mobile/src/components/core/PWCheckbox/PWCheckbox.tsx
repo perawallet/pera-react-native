@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { View } from 'react-native'
-import { PWIcon } from '@components/core/PWIcon'
+import { PWIcon, PWView } from '@components/core'
 import { CheckBox, CheckBoxProps } from '@rneui/themed'
 import { useStyles } from './styles'
 
@@ -31,7 +30,7 @@ export const PWCheckbox = ({ children, ...props }: PWCheckboxProps) => {
                     variant='positive'
                 />
             }
-            uncheckedIcon={<View style={styles.uncheckedIcon} />}
+            uncheckedIcon={<PWView style={styles.uncheckedIcon} />}
         >
             {children}
         </CheckBox>
