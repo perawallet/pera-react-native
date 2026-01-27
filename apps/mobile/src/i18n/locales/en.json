@@ -384,7 +384,7 @@
         "node_settings": "Node Settings",
         "feature_flags": "Feature Flags",
         "dispenser": "Dispenser",
-        "developer_menu": "Developer Menu"
+        "developer_menu": "Developer Options"
     },
     "security": {
         "pin": {
