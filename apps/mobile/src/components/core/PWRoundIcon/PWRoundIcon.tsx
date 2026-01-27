@@ -53,7 +53,7 @@ export const PWRoundIcon = (props: PWRoundIconProps) => {
             <PWIcon
                 name={icon}
                 size={iconSizeMap[size]}
-                variant={variant}
+                variant={variant === 'primary' ? 'white' : variant}
             />
         </PWView>
     )

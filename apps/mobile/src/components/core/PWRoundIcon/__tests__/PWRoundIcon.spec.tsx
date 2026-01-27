@@ -70,11 +70,12 @@ describe('PWRoundIcon', () => {
         expect(screen.getByTestId('round-icon-custom')).toBeTruthy()
 
         // PWRoundIcon maps 'md' -> 'sm'
+        // PWRoundIcon maps 'primary' variant -> 'white' icon variant
         expect(PWIcon).toHaveBeenCalledWith(
             expect.objectContaining({
                 name: 'check',
                 size: 'sm',
-                variant: 'primary',
+                variant: 'white',
             }),
             undefined,
         )
