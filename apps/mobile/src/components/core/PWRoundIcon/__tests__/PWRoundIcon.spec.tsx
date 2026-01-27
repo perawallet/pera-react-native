@@ -34,7 +34,7 @@ describe('PWRoundIcon', () => {
         vi.clearAllMocks()
     })
 
-    it('renders PWIcon with default props (secondary/lg)', () => {
+    it('renders PWIcon with default props (secondary/md)', () => {
         render(
             <PWRoundIcon
                 icon='globe'
@@ -46,10 +46,11 @@ describe('PWRoundIcon', () => {
         expect(screen.getByTestId('round-icon')).toBeTruthy()
 
         // Verify props passed to PWIcon
+        // PWRoundIcon maps 'md' -> 'sm'
         expect(PWIcon).toHaveBeenCalledWith(
             expect.objectContaining({
                 name: 'globe',
-                size: 'lg',
+                size: 'sm',
                 variant: 'secondary',
             }),
             undefined, // context is typically undefined for FC
@@ -68,10 +69,11 @@ describe('PWRoundIcon', () => {
 
         expect(screen.getByTestId('round-icon-custom')).toBeTruthy()
 
+        // PWRoundIcon maps 'md' -> 'sm'
         expect(PWIcon).toHaveBeenCalledWith(
             expect.objectContaining({
                 name: 'check',
-                size: 'md',
+                size: 'sm',
                 variant: 'primary',
             }),
             undefined,

@@ -15,8 +15,18 @@ import { makeStyles } from '@rneui/themed'
 import { PWRoundIconProps } from './PWRoundIcon'
 
 export const useStyles = makeStyles((theme, props: PWRoundIconProps) => {
-    const { variant = 'secondary' } = props
-    const buttonSize = theme.spacing.xl * 1.2
+    const { variant = 'secondary', size = 'lg' } = props
+
+    const sizeMap: Record<string, number> = {
+        xs: theme.spacing.xl,
+        sm: theme.spacing.xxl,
+        md: theme.spacing['3xl'],
+        lg: theme.spacing['4xl'],
+        xl: theme.spacing['5xl'],
+    }
+
+    const buttonSize = sizeMap[size] || theme.spacing['3xl']
+
     const backgroundColor =
         variant === 'primary'
             ? theme.colors.buttonPrimaryBg
