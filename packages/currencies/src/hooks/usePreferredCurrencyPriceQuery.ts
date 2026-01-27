@@ -25,12 +25,16 @@ const mapCurrencyToPrice = (data: CurrencyResponse): CurrencyPrice => {
     }
 }
 
-//TODO include ALGO?
-export const usePreferredCurrencyPriceQuery = (preferredCurrency: string) => {
+export const usePreferredCurrencyPriceQuery = (
+    preferredFiatCurrency: string,
+) => {
     const { network } = useNetwork()
     return useQuery({
-        queryKey: getPreferredCurrencyPriceQueryKey(network, preferredCurrency),
-        queryFn: () => fetchCurrency(network, preferredCurrency),
+        queryKey: getPreferredCurrencyPriceQueryKey(
+            network,
+            preferredFiatCurrency,
+        ),
+        queryFn: () => fetchCurrency(network, preferredFiatCurrency),
         select: useCallback(
             (data: CurrencyResponse) => mapCurrencyToPrice(data),
             [],

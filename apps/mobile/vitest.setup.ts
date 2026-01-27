@@ -1048,7 +1048,7 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
 // Mock @perawallet/wallet-core-currencies
 vi.mock('@perawallet/wallet-core-currencies', () => ({
     useCurrency: vi.fn(() => ({
-        preferredCurrency: 'USD',
+        preferredFiatCurrency: 'USD',
         portfolioFiatValue: '0',
     })),
 }))

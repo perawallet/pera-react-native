@@ -30,7 +30,7 @@ export type AssetMarketStatsProps = {
 
 export const AssetMarketStats = ({ assetDetails }: AssetMarketStatsProps) => {
     const styles = useStyles()
-    const { preferredCurrency } = useCurrency()
+    const { preferredFiatCurrency } = useCurrency()
     const { t } = useLanguage()
 
     const supply = useMemo(() => {
@@ -71,7 +71,7 @@ export const AssetMarketStats = ({ assetDetails }: AssetMarketStatsProps) => {
                     <CurrencyDisplay
                         h2
                         value={price}
-                        currency={preferredCurrency}
+                        currency={preferredFiatCurrency}
                         precision={6}
                         minPrecision={2}
                     />

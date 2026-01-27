@@ -63,6 +63,7 @@ describe('useCurrenciesQuery', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
         expect(result.current.data).toEqual([
+            { id: 'ALGO', name: 'Algorand', symbol: 'ALGO' },
             { id: 'USD', name: 'US Dollar', symbol: '$' },
             { id: 'EUR', name: 'Euro', symbol: '€' },
         ])
@@ -86,7 +87,9 @@ describe('useCurrenciesQuery', () => {
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
-        expect(result.current.data).toEqual([])
+        expect(result.current.data).toEqual([
+            { id: 'ALGO', name: 'Algorand', symbol: 'ALGO' },
+        ])
     })
 
     it('handles loading state', () => {

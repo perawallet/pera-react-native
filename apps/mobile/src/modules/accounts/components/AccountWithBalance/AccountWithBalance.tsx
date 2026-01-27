@@ -31,7 +31,7 @@ export const AccountWithBalance = ({
     ...rest
 }: AccountWithBalanceProps) => {
     const styles = useStyles()
-    const { preferredCurrency } = useCurrency()
+    const { preferredFiatCurrency } = useCurrency()
     const { accountBalances } = useAccountBalancesQuery([account], true)
 
     return (
@@ -53,7 +53,7 @@ export const AccountWithBalance = ({
                 />
 
                 <CurrencyDisplay
-                    currency={preferredCurrency}
+                    currency={preferredFiatCurrency}
                     value={accountBalances.get(account.address)?.fiatValue}
                     precision={2}
                     minPrecision={2}

@@ -36,7 +36,7 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
         selectedPoint,
         chartVisible,
         scrollingEnabled,
-        preferredCurrency,
+        preferredFiatCurrency,
         hasBalance,
         togglePrivacyMode,
         toggleChartVisible,
@@ -69,7 +69,7 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
                         setPeriod={setPeriod}
                         selectedPoint={selectedPoint}
                         chartVisible={chartVisible}
-                        preferredCurrency={preferredCurrency}
+                        preferredFiatCurrency={preferredFiatCurrency}
                         togglePrivacyMode={togglePrivacyMode}
                         toggleChartVisible={toggleChartVisible}
                         handleChartSelectionChange={handleChartSelectionChange}
