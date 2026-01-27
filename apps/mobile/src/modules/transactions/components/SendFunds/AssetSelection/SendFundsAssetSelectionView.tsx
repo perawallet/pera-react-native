@@ -11,6 +11,7 @@
  */
 
 import {
+    PWFlatList,
     PWHeader,
     PWSkeleton,
     PWTouchableOpacity,
@@ -26,7 +27,6 @@ import { AccountAssetItemView } from '@modules/assets/components/AssetItem/Accou
 import { useStyles } from './styles'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useLanguage } from '@hooks/useLanguage'
-import { FlashList } from '@shopify/flash-list'
 
 export type SendFundsAssetSelectionViewProps = {
     onSelected: () => void
@@ -87,7 +87,7 @@ export const SendFundsAssetSelectionView = ({
     )
 
     return (
-        <FlashList
+        <PWFlatList
             data={balanceData}
             renderItem={renderItem}
             keyExtractor={item => item.assetId}

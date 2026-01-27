@@ -64,7 +64,7 @@ export const useStyles = makeStyles(theme => {
             paddingVertical: theme.spacing.xs,
             paddingHorizontal: theme.spacing.md,
             borderRadius: theme.spacing.md,
-            borderWidth: 1,
+            borderWidth: theme.borders.sm,
             borderColor: theme.colors.layerGrayLight,
         },
         chartContainer: {

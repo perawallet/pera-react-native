@@ -284,11 +284,24 @@ vi.mock('react-native', () => {
             .mockImplementation(props =>
                 require('react').createElement('div', props, props.children),
             ),
+        FlatList: vi
+            .fn()
+            .mockImplementation(({ data, renderItem, ...props }) => {
+                const React = require('react')
+                return React.createElement(
+                    'div',
+                    { ...props, 'data-testid': 'FlatList' },
+                    data?.map((item: any, index: number) =>
+                        renderItem({ item, index }),
+                    ),
+                )
+            }),
         TextInput: vi
             .fn()
             .mockImplementation(props =>
                 require('react').createElement('input', props, props.children),
             ),
+
         Modal: vi
             .fn()
             .mockImplementation(props =>
@@ -344,17 +357,36 @@ vi.mock('react-native', () => {
             quad: vi.fn(),
         },
         Animated: {
-            timing: vi.fn(() => ({ start: vi.fn() })),
-            spring: vi.fn(() => ({ start: vi.fn() })),
-            event: vi.fn(),
-            Value: vi.fn(() => ({
-                setValue: vi.fn(),
-                interpolate: vi.fn(() => '0px'),
+            timing: vi.fn(() => ({ start: vi.fn(cb => cb?.()) })),
+            spring: vi.fn(() => ({ start: vi.fn(cb => cb?.()) })),
+            parallel: vi.fn(animations => ({
+                start: vi.fn(cb => {
+                    animations.forEach((a: any) => a.start())
+                    cb?.()
+                }),
             })),
+            event: vi.fn(),
+            Value: vi.fn(function (this: any) {
+                this.setValue = vi.fn()
+                this.interpolate = vi.fn(() => '0px')
+            }),
             createAnimatedComponent: vi.fn(c => c),
-            View: vi.fn(({ children }) => children),
-            Text: vi.fn(({ children }) => children),
+            View: vi.fn(({ children, style, ...props }) =>
+                require('react').createElement(
+                    'div',
+                    { ...props, style },
+                    children,
+                ),
+            ),
+            Text: vi.fn(({ children, style, ...props }) =>
+                require('react').createElement(
+                    'span',
+                    { ...props, style },
+                    children,
+                ),
+            ),
         },
+
         PixelRatio: {
             get: vi.fn(() => 1),
             getFontScale: vi.fn(() => 1),
@@ -410,9 +442,9 @@ vi.mock('@react-navigation/native', () => ({
         reset: vi.fn(),
         setOptions: vi.fn(),
     }),
-    useRoute: () => ({
+    useRoute: vi.fn(() => ({
         params: {},
-    }),
+    })),
     useFocusEffect: vi.fn(),
     NavigationContainer: ({ children }: any) => children,
     DefaultTheme: {
@@ -616,6 +648,11 @@ vi.mock('@rneui/themed', () => {
             layer2: 20,
             overlay1: 100,
             max: 10000,
+        },
+        borders: {
+            none: 0,
+            sm: 1,
+            md: 2,
         },
         mode: 'light',
     }
@@ -980,6 +1017,13 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             isPending: false,
         })),
         ALGO_ASSET_ID: '0',
+        AccountTypes: {
+            algo25: 'algo25',
+            hdWallet: 'hdWallet',
+            hardware: 'hardware',
+            multisig: 'multisig',
+            watch: 'watch',
+        },
     }
 })
 

@@ -20,7 +20,7 @@ import { EmptyView } from '@components/EmptyView'
 import { useStyles } from './styles'
 import { NotificationItem } from '@modules/notifications/components/NotificationItem/NotificationItem'
 import { LoadingView } from '@components/LoadingView'
-import { FlashList } from '@shopify/flash-list'
+import { PWFlatList } from '@components/core'
 import { RefreshControl } from 'react-native-gesture-handler'
 import { useLanguage } from '@hooks/useLanguage'
 
@@ -57,7 +57,7 @@ export const NotificationsScreen = () => {
     }
 
     return (
-        <FlashList
+        <PWFlatList
             data={data}
             renderItem={renderItem}
             contentContainerStyle={styles.messageContainer}

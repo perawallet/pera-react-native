@@ -16,5 +16,6 @@ export * from './models'
 export * from './hooks'
 export * from './errors'
 export * from './utils'
+export * from './accountDiscovery'
 
-export { initAccountsStore } from './store'
+export { initAccountsStore, useAccountsStore } from './store'

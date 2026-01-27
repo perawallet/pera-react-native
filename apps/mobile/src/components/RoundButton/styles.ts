@@ -11,27 +11,11 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { RoundButtonProps } from './RoundButton'
 
-export const useStyles = makeStyles((theme, props: RoundButtonProps) => {
-    const { size = 'lg', variant = 'secondary' } = props
-    const buttonSize =
-        size === 'lg' ? theme.spacing['4xl'] : theme.spacing.xl * 1.2
-    const backgroundColor =
-        variant === 'primary'
-            ? theme.colors.buttonPrimaryBg
-            : theme.colors.layerGrayLighter
-
+export const useStyles = makeStyles(theme => {
     return {
-        buttonStyle: {
-            backgroundColor,
+        buttonWrapper: {
             marginBottom: theme.spacing.sm,
-            width: buttonSize,
-            height: buttonSize,
-            alignContent: 'center',
-            justifyContent: 'center',
-            alignItems: 'center',
-            borderRadius: buttonSize / 2,
         },
         titleStyle: {
             alignItems: 'center',

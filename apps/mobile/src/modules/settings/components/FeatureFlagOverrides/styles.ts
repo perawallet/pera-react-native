@@ -20,7 +20,7 @@ export const useStyles = makeStyles(theme => {
         },
         flagContainer: {
             gap: theme.spacing.md,
-            borderBottomWidth: 1,
+            borderBottomWidth: theme.borders.sm,
             borderBottomColor: theme.colors.layerGrayLighter,
             paddingVertical: theme.spacing.md,
         },

@@ -53,7 +53,7 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
             borderRadius: theme.spacing['3xl'],
             borderColor: theme.colors.layerGrayLight,
             boxShadow: '1px 1px 1px 0px #00000015',
-            borderWidth: 1,
+            borderWidth: theme.borders.sm,
             alignItems: 'center',
             justifyContent: 'center',
             width: theme.spacing['3xl'],

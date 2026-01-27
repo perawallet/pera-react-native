@@ -23,7 +23,7 @@ export const useStyles = makeStyles(theme => ({
         width: theme.spacing.lg,
         height: theme.spacing.lg,
         borderRadius: theme.spacing.sm,
-        borderWidth: 2,
+        borderWidth: theme.borders.md,
         borderColor: theme.colors.layerGray,
         backgroundColor: 'transparent',
     },

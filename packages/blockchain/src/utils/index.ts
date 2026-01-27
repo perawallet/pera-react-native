@@ -22,3 +22,4 @@ export const isValidAlgorandAddress = (address?: string) => {
     }
     return new RegExp('^[0-9a-zA-Z]{58}$').test(address)
 }
+export * from './algorandClient'

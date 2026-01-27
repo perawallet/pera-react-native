@@ -50,7 +50,7 @@ export const AccountTabNavigator = ({ account }: AccountTabNavigatorProps) => {
                     backgroundColor: theme.colors.background,
                     elevation: 0,
                     shadowOpacity: 0,
-                    borderBottomWidth: 1,
+                    borderBottomWidth: theme.borders.sm,
                     borderBottomColor: theme.colors.layerGrayLight,
                 },
                 tabBarLabelStyle: {

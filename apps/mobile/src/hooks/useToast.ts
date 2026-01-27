@@ -29,7 +29,7 @@ const useStyles = makeStyles(theme => {
         baseStyle: {
             zIndex: theme.zIndex.max,
             marginTop: theme.spacing.xl,
-            borderWidth: 0,
+            borderWidth: theme.borders.none,
         },
         successStyle: {
             backgroundColor: theme.colors.success,

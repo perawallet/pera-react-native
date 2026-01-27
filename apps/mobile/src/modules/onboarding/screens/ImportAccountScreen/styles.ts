@@ -89,13 +89,13 @@ export const useStyles = makeStyles(
             },
             inputContainer: {
                 backgroundColor: theme.colors.background,
-                borderBottomWidth: 1,
+                borderBottomWidth: theme.borders.sm,
                 borderBottomColor: theme.colors.layerGray,
                 flexShrink: 1,
             },
             focusedInputContainer: {
                 backgroundColor: theme.colors.background,
-                borderBottomWidth: 1,
+                borderBottomWidth: theme.borders.sm,
                 borderBottomColor: theme.colors.textMain,
                 flexShrink: 1,
             },

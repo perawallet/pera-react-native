@@ -12,6 +12,7 @@
 
 import { IconName, PWIcon } from '@components/core'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
+import { useTheme } from '@rneui/themed'
 import { screenListeners } from './listeners'
 import { DiscoverScreen } from '@modules/discover/screens/DiscoverScreen'
 import { FundScreen } from '@modules/fund/screens/FundScreen'
@@ -34,14 +35,16 @@ export type TabBarStackParamList = {
 const TabBarStack = createBottomTabNavigator<TabBarStackParamList>()
 
 export const TabBarStackNavigator = () => {
+    const { theme } = useTheme()
+
     return (
         <TabBarStack.Navigator
             initialRouteName='Home'
-            screenOptions={({ route, theme }) => ({
+            screenOptions={({ route }) => ({
                 headerShown: false,
                 tabBarStyle: {
                     backgroundColor: theme.colors.background,
-                    borderTopWidth: 0,
+                    borderTopWidth: theme.borders.none,
                 },
                 tabBarIcon: ({ focused }) => {
                     const style = focused ? 'primary' : 'secondary'
