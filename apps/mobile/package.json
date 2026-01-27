@@ -35,6 +35,7 @@
     "@perawallet/wallet-core-contacts": "workspace:*",
     "@perawallet/wallet-core-currencies": "workspace:*",
     "@perawallet/wallet-core-kms": "workspace:*",
+    "@perawallet/wallet-core-notifications": "workspace:*",
     "@perawallet/wallet-core-platform-integration": "workspace:*",
     "@perawallet/wallet-core-polling": "workspace:*",
     "@perawallet/wallet-core-security": "workspace:*",

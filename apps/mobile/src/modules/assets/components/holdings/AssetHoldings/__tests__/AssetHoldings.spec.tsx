@@ -45,15 +45,15 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 })
 
 // Mock complex children
-vi.mock('../AssetTransactionList/AssetTransactionList', () => ({
+vi.mock('../../AssetTransactionList/AssetTransactionList', () => ({
     AssetTransactionList: ({ children }: { children: React.ReactNode }) => (
         <div>{children}</div>
     ),
 }))
-vi.mock('../AssetWealthChart/AssetWealthChart', () => ({
+vi.mock('../../AssetWealthChart/AssetWealthChart', () => ({
     AssetWealthChart: () => <div data-testid='wealth-chart'>WealthChart</div>,
 }))
-vi.mock('../AssetActionButtons/AssetActionButtons', () => ({
+vi.mock('../../AssetActionButtons/AssetActionButtons', () => ({
     AssetActionButtons: () => (
         <div data-testid='action-buttons'>ActionButtons</div>
     ),

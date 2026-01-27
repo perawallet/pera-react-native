@@ -198,7 +198,7 @@ const ICON_LIBRARY = {
 
 export type IconName = keyof typeof ICON_LIBRARY
 
-export type PWIconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
+export type PWIconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl'
 export type PWIconVariant =
     | 'primary'
     | 'buttonPrimary'
@@ -229,8 +229,9 @@ export const PWIcon = ({
             xs: theme.spacing.md,
             sm: theme.spacing.lg,
             md: theme.spacing.xl,
-            lg: theme.spacing['3xl'],
-            xl: theme.spacing['4xl'],
+            lg: theme.spacing.xxl,
+            xl: theme.spacing['3xl'],
+            xxl: theme.spacing['4xl'],
         }),
         [theme],
     )

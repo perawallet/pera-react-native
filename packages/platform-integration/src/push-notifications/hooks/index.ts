@@ -10,6 +10,4 @@
  limitations under the License
  */
 
-export * from './useNotificationService'
-export * from './useNotificationStatusQuery'
-export * from './useNotificationsListQuery'
+export * from './usePushNotificationService'

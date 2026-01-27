@@ -21,6 +21,14 @@ pnpm run setup
 
 > **Note:** The `pnpm run setup` command installs Git hooks that automatically run linting, formatting, copyright checks before commits, and tests before pushes.
 
+## Build the packages
+
+```sh
+pnpm build
+```
+
+This will build all packages in the monorepo and write out any generated configuration.
+
 ## Run the mobile app
 
 In one terminal start Metro:

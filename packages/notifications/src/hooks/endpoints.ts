@@ -35,6 +35,33 @@ export const fetchNotificationStatus = async (
     return response.data
 }
 
+export const updateNotificationEnabledEndpoint = (
+    deviceID: string,
+    accountID: string,
+) => {
+    return `/v1/devices/${deviceID}/accounts/${accountID}/`
+}
+
+export const updateNotificationEnabled = async (
+    network: Network,
+    deviceID: string,
+    accountID: string,
+    status: boolean,
+) => {
+    const endpoint = updateNotificationEnabledEndpoint(deviceID, accountID)
+    const response = await queryClient<NotificationStatusResponse>({
+        backend: 'pera',
+        network,
+        method: 'PATCH',
+        url: endpoint,
+        data: {
+            receive_notifications: status,
+        },
+    })
+
+    return response.data
+}
+
 export const getNotificationListEndpoint = (deviceID: string) => {
     return `/v1/devices/${deviceID}/notifications/`
 }

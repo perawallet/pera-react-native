@@ -1,0 +1,97 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { create, type StoreApi, type UseBoundStore } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
+import type { NotificationsState } from '../models'
+import type { WithPersist } from '@perawallet/wallet-core-shared'
+import {
+    KeyValueStorageService,
+    useKeyValueStorageService,
+} from '@perawallet/wallet-core-platform-integration'
+import {
+    createLazyStore,
+    DataStoreRegistry,
+    logger,
+} from '@perawallet/wallet-core-shared'
+
+const STORE_NAME = 'notifications-store'
+const lazy =
+    createLazyStore<WithPersist<StoreApi<NotificationsState>, unknown>>()
+
+export const useNotificationsStore: UseBoundStore<
+    WithPersist<StoreApi<NotificationsState>, unknown>
+> = lazy.useStore
+
+const initialState = {
+    notificationDisabledAccounts: [] as string[],
+}
+
+const createNotificationsStore = (storage: KeyValueStorageService) =>
+    create<NotificationsState>()(
+        persist(
+            (set, get) => ({
+                ...initialState,
+                setAccountNotificationEnabled: (
+                    address: string,
+                    enabled: boolean,
+                ) => {
+                    const current = get().notificationDisabledAccounts
+                    if (enabled) {
+                        set({
+                            notificationDisabledAccounts: current.filter(
+                                a => a !== address,
+                            ),
+                        })
+                    } else {
+                        if (!current.includes(address)) {
+                            set({
+                                notificationDisabledAccounts: [
+                                    ...current,
+                                    address,
+                                ],
+                            })
+                        }
+                    }
+                },
+                isAccountNotificationEnabled: (address: string) => {
+                    return !get().notificationDisabledAccounts.includes(address)
+                },
+                resetState: () => set(initialState),
+            }),
+            {
+                name: 'notifications-store',
+                storage: createJSONStorage(() => storage),
+                version: 1,
+                partialize: state => ({
+                    notificationDisabledAccounts:
+                        state.notificationDisabledAccounts,
+                }),
+            },
+        ),
+    )
+
+export const initNotificationsStore = () => {
+    logger.debug('Initializing notifications store')
+    const storage = useKeyValueStorageService()
+    const realStore = createNotificationsStore(storage)
+    lazy.init(realStore, () => realStore.getState().resetState())
+    logger.debug('Notifications store initialized')
+}
+
+export const clearNotificationsStore = () => lazy.clear()
+
+DataStoreRegistry.register({
+    name: STORE_NAME,
+    init: initNotificationsStore,
+    clear: clearNotificationsStore,
+})

@@ -42,7 +42,7 @@ import notifee, {
 } from '@notifee/react-native'
 import {
     CrashReportingService,
-    NotificationsInitResult,
+    PushNotificationInitResult,
     RemoteConfigDefaults,
     RemoteConfigKey,
     RemoteConfigService,
@@ -104,7 +104,7 @@ export class RNFirebaseService
         }
     }
 
-    async initializeNotifications(): Promise<NotificationsInitResult> {
+    async initializeNotifications(): Promise<PushNotificationInitResult> {
         // Allow user to opt into notifications
         const settings = await notifee.requestPermission()
 

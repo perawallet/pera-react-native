@@ -102,7 +102,7 @@ vi.mock('@components/core/PWIcon', () => {
         PWIcon: ({ onPress, name, testID }: any) =>
             React.createElement('div', {
                 onClick: onPress,
-                role: 'button',
+                role: onPress ? 'button' : undefined,
                 'data-testid': testID || `icon-${name}`,
             }),
     }
@@ -113,7 +113,7 @@ vi.mock('@components/core/PWIcon/PWIcon', () => {
         PWIcon: ({ onPress, name, testID }: any) =>
             React.createElement('div', {
                 onClick: onPress,
-                role: 'button',
+                role: onPress ? 'button' : undefined,
                 'data-testid': testID || `icon-${name}`,
             }),
     }
@@ -549,6 +549,7 @@ vi.mock('react-native-gesture-handler', () => {
         FlatList: MockView,
         gestureHandlerRootHOC: vi.fn(),
         Directions: {},
+        RefreshControl: MockView,
     }
 })
 
@@ -834,6 +835,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     ALGO_EXPLORER_URL: 'https://explorer.perawallet.app',
     Networks: { mainnet: 'mainnet', testnet: 'testnet' },
     formatDatetime: vi.fn(d => String(d)),
+    formatRelativeTime: vi.fn(d => String(d)),
     formatCurrency: vi.fn(
         (value, _decimals, currency) => `${currency || '$'}${value}`,
     ),
@@ -939,6 +941,11 @@ vi.mock('@perawallet/wallet-core-settings', () => {
             getPreference: vi.fn(),
             setPreference: vi.fn(),
         })),
+        useNotificationPreferences: vi.fn(() => ({
+            disabledAccounts: [],
+            setAccountEnabled: vi.fn(),
+            isAccountEnabled: vi.fn(() => true),
+        })),
     }
 })
 
@@ -1043,6 +1050,22 @@ vi.mock('@perawallet/wallet-core-platform-integration', () => ({
         welcome_message: 'Hello',
     },
     AnalyticsServiceContainerKey: 'AnalyticsService',
+    useNotificationsListQuery: vi.fn(() => ({
+        data: [],
+        isPending: false,
+        fetchNextPage: vi.fn(),
+        isFetchingNextPage: false,
+        isRefetching: false,
+        refetch: vi.fn(),
+    })),
+    useFilteredNotificationsQuery: vi.fn(() => ({
+        notifications: [],
+        isPending: false,
+        fetchNextPage: vi.fn(),
+        isFetchingNextPage: false,
+        isRefetching: false,
+        refetch: vi.fn(),
+    })),
 }))
 
 // Mock react-native-advanced-input-mask
@@ -1118,13 +1141,45 @@ vi.mock('react-native-qrcode-svg', () => {
 vi.mock('@shopify/flash-list', () => {
     const React = require('react')
     return {
-        FlashList: ({ data, renderItem }: any) => {
+        FlashList: ({
+            data,
+            renderItem,
+            ListHeaderComponent,
+            ListFooterComponent,
+            ListEmptyComponent,
+        }: any) => {
+            const header = ListHeaderComponent
+                ? React.isValidElement(ListHeaderComponent)
+                    ? ListHeaderComponent
+                    : typeof ListHeaderComponent === 'function'
+                      ? React.createElement(ListHeaderComponent)
+                      : null
+                : null
+            const footer = ListFooterComponent
+                ? React.isValidElement(ListFooterComponent)
+                    ? ListFooterComponent
+                    : typeof ListFooterComponent === 'function'
+                      ? React.createElement(ListFooterComponent)
+                      : null
+                : null
+            const empty = ListEmptyComponent
+                ? React.isValidElement(ListEmptyComponent)
+                    ? ListEmptyComponent
+                    : typeof ListEmptyComponent === 'function'
+                      ? React.createElement(ListEmptyComponent)
+                      : null
+                : null
+
             return React.createElement(
                 'div',
                 { 'data-testid': 'FlashList' },
-                data?.map((item: any, index: number) =>
-                    renderItem({ item, index }),
-                ),
+                header,
+                data && data.length > 0
+                    ? data.map((item: any, index: number) =>
+                          renderItem({ item, index }),
+                      )
+                    : empty,
+                footer,
             )
         },
     }
