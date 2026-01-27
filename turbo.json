@@ -74,16 +74,6 @@
     "start": {
       "cache": false,
       "persistent": true
-    },
-    "@perawallet/wallet-core-config#build": {
-      "dependsOn": [
-        "generate:config"
-      ]
-    },
-    "@perawallet/wallet-core-config#test": {
-      "dependsOn": [
-        "generate:config"
-      ]
     }
   }
 }
