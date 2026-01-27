@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { discoverAccounts } from '../accountDiscovery'
+import { discoverAccounts } from '../account-discovery'
 import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 
 // Mock the API to avoid actual key generation which might be slow or require wasm
