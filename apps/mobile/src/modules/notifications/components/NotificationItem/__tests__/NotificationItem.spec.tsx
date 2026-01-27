@@ -16,7 +16,7 @@ import { NotificationItem } from '../NotificationItem'
 import { PeraNotification } from '@perawallet/wallet-core-notifications'
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
-    formatRelativeTime: vi.fn(date => `formatted-${date}`),
+    formatRelativeTime: vi.fn(date => `formatted-${date.toISOString()}`),
 }))
 
 describe('NotificationItem', () => {
@@ -34,7 +34,7 @@ describe('NotificationItem', () => {
         )
 
         expect(getByText('Test message')).toBeTruthy()
-        expect(getByText('formatted-2025-01-27T12:00:00Z')).toBeTruthy()
+        expect(getByText('formatted-2025-01-27T12:00:00.000Z')).toBeTruthy()
     })
 
     it('renders default bell icon when no image url is provided', () => {

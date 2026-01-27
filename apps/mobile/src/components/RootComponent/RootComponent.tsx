@@ -101,9 +101,12 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
 
     useEffect(() => {
         //TODO we should move the registerDevice stuff into the wallet-core somewhere somehow - maybe in setAccounts or something
-        registerDevice(accounts?.map(account => account.address) ?? [])
+        const addresses = accounts?.map(account => account.address) ?? []
+        registerDevice(addresses)
 
-        if (config.pollingEnabled) {
+        if (!addresses.length) {
+            stopPolling()
+        } else if (config.pollingEnabled) {
             const subscription = AppState.addEventListener(
                 'change',
                 nextAppState => {

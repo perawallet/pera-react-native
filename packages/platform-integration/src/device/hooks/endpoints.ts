@@ -44,3 +44,15 @@ export const updateDevice = async (
 
     return response.data
 }
+
+export const deleteDevice = async (network: Network, data: DeviceRequest) => {
+    const response = await queryClient<DeviceResponse, DeviceRequest>({
+        backend: 'pera',
+        network,
+        method: 'DELETE',
+        url: getUpdateEndpointPath(data.id ?? ''),
+        data,
+    })
+
+    return response.data
+}
