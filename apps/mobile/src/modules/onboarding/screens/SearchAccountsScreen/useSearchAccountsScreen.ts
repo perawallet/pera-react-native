@@ -100,7 +100,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
             const discoveredAccounts = await discoverAccounts({
                 seed,
                 derivationType,
-                walletId: onboardingWalletId!,
+                walletId: onboardingWalletId,
             })
 
             navigation.replace('ImportSelectAddresses', {
