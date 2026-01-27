@@ -12,15 +12,25 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => {
+import { PWRoundIconProps } from './PWRoundIcon'
+
+export const useStyles = makeStyles((theme, props: PWRoundIconProps) => {
+    const { variant = 'secondary' } = props
+    const buttonSize = theme.spacing.xl * 1.2
+    const backgroundColor =
+        variant === 'primary'
+            ? theme.colors.buttonPrimaryBg
+            : theme.colors.layerGrayLighter
+
     return {
-        buttonWrapper: {
-            marginBottom: theme.spacing.sm,
-        },
-        titleStyle: {
-            alignItems: 'center',
+        container: {
+            backgroundColor,
+            width: buttonSize,
+            height: buttonSize,
+            alignContent: 'center',
             justifyContent: 'center',
-            textAlign: 'center',
+            alignItems: 'center',
+            borderRadius: buttonSize / 2,
         },
     }
 })

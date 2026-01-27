@@ -11,8 +11,7 @@
  */
 
 import { Animated } from 'react-native'
-import { PWText, PWView } from '@components/core'
-import { RoundButton } from '@components/RoundButton/RoundButton'
+import { PWRoundIcon, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 import { useSearchAccountsScreen } from './useSearchAccountsScreen'
 
@@ -23,10 +22,7 @@ export const SearchAccountsScreen = () => {
     return (
         <PWView style={styles.container}>
             <PWView style={styles.topRow}>
-                <RoundButton
-                    icon='globe'
-                    disabled
-                />
+                <PWRoundIcon icon='globe' />
 
                 <PWView style={styles.dotsContainer}>
                     <Animated.View
@@ -59,10 +55,7 @@ export const SearchAccountsScreen = () => {
                     />
                 </PWView>
 
-                <RoundButton
-                    icon='phone'
-                    disabled
-                />
+                <PWRoundIcon icon='phone' />
             </PWView>
 
             <PWText

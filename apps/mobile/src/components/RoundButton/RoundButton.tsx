@@ -13,11 +13,11 @@
 import { useStyles } from './styles'
 import {
     IconName,
-    PWIcon,
     PWView,
     PWTouchableOpacity,
     type PWTouchableOpacityProps,
     PWText,
+    PWRoundIcon,
 } from '@components/core'
 
 export type RoundButtonProps = {
@@ -28,7 +28,7 @@ export type RoundButtonProps = {
 } & PWTouchableOpacityProps
 
 export const RoundButton = (props: RoundButtonProps) => {
-    const style = useStyles(props)
+    const styles = useStyles()
     const {
         icon,
         title,
@@ -38,22 +38,19 @@ export const RoundButton = (props: RoundButtonProps) => {
         ...rest
     } = props
 
-    const iconSize = size === 'lg' ? 'md' : 'sm'
-    const iconVariant = variant === 'primary' ? 'buttonPrimary' : 'primary'
-
     return (
         <PWView style={propStyle}>
             <PWTouchableOpacity
-                style={style.buttonStyle}
+                style={styles.buttonWrapper}
                 {...rest}
             >
-                <PWIcon
-                    name={icon}
-                    size={iconSize}
-                    variant={iconVariant}
+                <PWRoundIcon
+                    icon={icon}
+                    size={size}
+                    variant={variant}
                 />
             </PWTouchableOpacity>
-            {!!title && <PWText style={style.titleStyle}>{title}</PWText>}
+            {!!title && <PWText style={styles.titleStyle}>{title}</PWText>}
         </PWView>
     )
 }

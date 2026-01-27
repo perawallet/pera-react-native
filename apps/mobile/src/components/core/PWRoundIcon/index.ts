@@ -10,17 +10,5 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => {
-    return {
-        buttonWrapper: {
-            marginBottom: theme.spacing.sm,
-        },
-        titleStyle: {
-            alignItems: 'center',
-            justifyContent: 'center',
-            textAlign: 'center',
-        },
-    }
-})
+export { PWRoundIcon } from './PWRoundIcon'
+export type { PWRoundIconProps } from './PWRoundIcon'
