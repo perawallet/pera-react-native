@@ -150,7 +150,7 @@ export const ImportRekeyedAddressesScreen = () => {
             <PWButton
                 title={t('onboarding.import_rekeyed_addresses.continue')}
                 onPress={handleContinue}
-                variant='primary'
+                variant={canContinue ? 'primary' : 'secondary'}
                 isDisabled={!canContinue}
                 style={styles.continueButton}
             />
@@ -159,7 +159,6 @@ export const ImportRekeyedAddressesScreen = () => {
                 title={t('onboarding.import_rekeyed_addresses.skip')}
                 onPress={handleSkip}
                 variant='secondary'
-                style={styles.skipButton}
             />
         </PWView>
     )

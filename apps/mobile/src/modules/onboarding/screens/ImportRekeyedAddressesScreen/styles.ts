@@ -98,10 +98,6 @@ export const useStyles = makeStyles(theme => ({
     continueButton: {
         marginBottom: theme.spacing.md,
     },
-    skipButton: {
-        backgroundColor: 'transparent',
-        borderWidth: 0,
-    },
     list: {
         flex: 1,
     },
