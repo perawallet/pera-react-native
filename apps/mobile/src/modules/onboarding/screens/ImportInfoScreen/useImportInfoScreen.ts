@@ -13,9 +13,14 @@
 import { useCallback } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { RouteProp, useRoute } from '@react-navigation/native'
+import { useTheme } from '@rneui/themed'
 import { OnboardingStackParamList } from '../../routes/types'
 
+import KeyImage from '@assets/images/key.svg'
+import KeyInvertedImage from '@assets/images/key-inverted.svg'
+
 export const useImportInfoScreen = () => {
+    const { theme } = useTheme()
     const navigation = useAppNavigation()
     const {
         params: { accountType },
@@ -33,9 +38,13 @@ export const useImportInfoScreen = () => {
         // Requirements don't specify what this does, but it's an icon in the right
     }, [])
 
+    const KeyImageComponent =
+        theme.mode === 'dark' ? KeyInvertedImage : KeyImage
+
     return {
         handleBackPress,
         handleRecoverPress,
         handleInfoPress,
+        KeyImageComponent,
     }
 }

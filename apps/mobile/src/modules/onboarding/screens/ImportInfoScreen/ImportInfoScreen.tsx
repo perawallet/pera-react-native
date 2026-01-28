@@ -14,7 +14,6 @@ import React from 'react'
 import {
     PWButton,
     PWIcon,
-    PWImage,
     PWText,
     PWToolbar,
     PWTouchableOpacity,
@@ -24,13 +23,15 @@ import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useImportInfoScreen } from './useImportInfoScreen'
 
-import keyImage from '@assets/images/key.webp'
-
 export const ImportInfoScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { handleBackPress, handleRecoverPress, handleInfoPress } =
-        useImportInfoScreen()
+    const {
+        handleBackPress,
+        handleRecoverPress,
+        handleInfoPress,
+        KeyImageComponent,
+    } = useImportInfoScreen()
 
     return (
         <PWView style={styles.root}>
@@ -55,10 +56,10 @@ export const ImportInfoScreen = () => {
             />
 
             <PWView style={styles.content}>
-                <PWImage
-                    source={keyImage}
+                <KeyImageComponent
                     style={styles.image}
-                    resizeMode='contain'
+                    width={160}
+                    height={160}
                 />
                 <PWText
                     variant='h1'

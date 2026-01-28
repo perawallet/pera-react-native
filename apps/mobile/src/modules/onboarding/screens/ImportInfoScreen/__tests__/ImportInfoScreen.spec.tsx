@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import React from 'react'
 import { render, fireEvent, screen } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ImportInfoScreen } from '../ImportInfoScreen'
@@ -23,6 +24,21 @@ vi.mock('@hooks/useAppNavigation', () => ({
         goBack: mockGoBack,
         push: mockPush,
     }),
+}))
+
+vi.mock('@assets/images/key.svg', () => ({
+    default: (props: React.SVGProps<SVGSVGElement>) => {
+        return React.createElement('div', { ...props, 'data-testid': 'key-svg' })
+    },
+}))
+
+vi.mock('@assets/images/key-inverted.svg', () => ({
+    default: (props: React.SVGProps<SVGSVGElement>) => {
+        return React.createElement('div', {
+            ...props,
+            'data-testid': 'key-inverted-svg',
+        })
+    },
 }))
 
 // Mock react-i18next
