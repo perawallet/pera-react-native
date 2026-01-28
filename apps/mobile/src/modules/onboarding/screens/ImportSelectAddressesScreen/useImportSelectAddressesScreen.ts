@@ -17,9 +17,14 @@ import {
     useAllAccounts,
     useAccountsStore,
     HDWalletAccount,
+    discoverRekeyedAccounts,
+    getSeedFromMasterKey,
+    DerivationTypes,
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsOnboarding } from '@modules/onboarding/hooks'
+import { useKMS } from '@perawallet/wallet-core-kms'
+import { useAppNavigation } from '@hooks/useAppNavigation'
 
 type ImportSelectAddressesRouteProp = RouteProp<
     OnboardingStackParamList,
@@ -32,6 +37,7 @@ export type UseImportSelectAddressesScreenResult = {
     isAllSelected: boolean
     areAllImported: boolean
     canContinue: boolean
+    isProcessing: boolean
     alreadyImportedAddresses: Set<string>
     toggleSelection: (address: string) => void
     toggleSelectAll: () => void
@@ -45,6 +51,8 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     } = useRoute<ImportSelectAddressesRouteProp>()
     const { t } = useLanguage()
     const allAccounts = useAllAccounts()
+    const { getPrivateData } = useKMS()
+    const navigation = useAppNavigation()
 
     const { setIsOnboarding } = useIsOnboarding()
 
@@ -61,6 +69,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     const [selectedAddresses, setSelectedAddresses] = useState<Set<string>>(
         () => new Set(newAccounts.map(acc => acc.address)),
     )
+    const [isProcessing, setIsProcessing] = useState(false)
 
     const isAllSelected =
         newAccounts.length > 0 && selectedAddresses.size === newAccounts.length
@@ -90,18 +99,58 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         }
     }, [isAllSelected, newAccounts])
 
-    const handleContinue = useCallback(() => {
-        const accountsToAdd = accounts.filter(acc =>
-            selectedAddresses.has(acc.address),
-        )
+    const handleContinue = useCallback(async () => {
+        setIsProcessing(true)
 
-        if (accountsToAdd.length > 0) {
-            const { setAccounts } = useAccountsStore.getState()
-            setAccounts([...allAccounts, ...accountsToAdd])
-        }
+        setTimeout(async () => {
+            const accountsToAdd = accounts.filter(acc =>
+                selectedAddresses.has(acc.address),
+            )
 
-        setIsOnboarding(false)
-    }, [accounts, selectedAddresses, allAccounts, setIsOnboarding])
+            if (accountsToAdd.length > 0) {
+                const { setAccounts } = useAccountsStore.getState()
+                setAccounts([...allAccounts, ...accountsToAdd])
+            }
+
+            try {
+                const walletId = accounts[0].hdWalletDetails.walletId
+                const privateData = await getPrivateData(walletId)
+
+                if (!privateData) {
+                    setIsOnboarding(false)
+                    setIsProcessing(false)
+                    return
+                }
+
+                const seed = getSeedFromMasterKey(privateData)
+                const discoveredRekeyedAccounts = await discoverRekeyedAccounts({
+                    seed,
+                    derivationType: DerivationTypes.Peikert,
+                    walletId,
+                })
+
+                if (discoveredRekeyedAccounts.length === 0) {
+                    setIsOnboarding(false)
+                } else {
+                    navigation.replace('ImportRekeyedAddresses', {
+                        accounts: discoveredRekeyedAccounts,
+                    })
+                }
+            } catch {
+                setIsOnboarding(false)
+            } finally {
+                setIsProcessing(false)
+            }
+        }, 0)
+
+    }, [
+        accounts,
+        selectedAddresses,
+        allAccounts,
+        getPrivateData,
+        setIsOnboarding,
+        navigation,
+    ])
 
     const areAllImported = newAccounts.length === 0
     const canContinue = areAllImported || selectedAddresses.size > 0
@@ -112,6 +161,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         isAllSelected,
         areAllImported,
         canContinue,
+        isProcessing,
         alreadyImportedAddresses,
         toggleSelection,
         toggleSelectAll,

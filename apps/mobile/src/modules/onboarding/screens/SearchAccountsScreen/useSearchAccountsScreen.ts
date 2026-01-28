@@ -113,9 +113,14 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                     walletId,
                 })
 
-                navigation.replace('ImportSelectAddresses', {
-                    accounts: discoveredAccounts,
-                })
+                // Only the master account was found, skip the selection screen
+                if (discoveredAccounts.length === 1) {
+                    setIsOnboarding(false)
+                } else {
+                    navigation.replace('ImportSelectAddresses', {
+                        accounts: discoveredAccounts,
+                    })
+                }
             } else if (account.type === AccountTypes.algo25) {
                 const discoveredRekeyedAccounts = await discoverRekeyedAccounts(
                     {

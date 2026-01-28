@@ -345,7 +345,8 @@
             "addresses_count": "{{count}} addresses",
             "select_all": "Select all",
             "already_imported": "already imported",
-            "continue": "Continue"
+            "continue": "Continue",
+            "fetching": "Fetching rekeyed accounts..."
         }
     },
     "portfolio": {

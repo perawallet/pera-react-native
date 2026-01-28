@@ -16,6 +16,13 @@ import { RouteProp, useRoute } from '@react-navigation/native'
 import { ImportSelectAddressesScreen } from '../ImportSelectAddressesScreen'
 import { AccountTypes } from '@perawallet/wallet-core-accounts'
 import { OnboardingStackParamList } from '../../../routes/types'
+import { useKMS } from '@perawallet/wallet-core-kms'
+
+vi.mock('@perawallet/wallet-core-kms', () => ({
+    useKMS: vi.fn().mockReturnValue({
+        getPrivateData: vi.fn(),
+    }),
+}))
 
 describe('ImportSelectAddressesScreen', () => {
     beforeEach(() => {
