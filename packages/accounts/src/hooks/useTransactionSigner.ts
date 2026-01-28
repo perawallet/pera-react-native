@@ -92,13 +92,13 @@ export const useTransactionSigner = () => {
                 KEY_DOMAIN,
                 async keyData => {
                     if (!keyData) {
-                        return Promise.reject(
+                        throw new Error(
                             `No signing keys found for ${account.address}`,
                         )
                     }
 
                     //TODO: implement this once we can find algo25 signing in algokit-utils somewhere
-                    throw new Error('Not implemented')
+                    throw new Error('Algo25 signing not implemented')
                 },
             )
         },

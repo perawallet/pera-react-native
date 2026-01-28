@@ -14,6 +14,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useKMS } from '../useKMS'
 import { KeyPair, KeyType } from '../../models'
+import { useWithKey } from '../useWithKey'
+import { getSeedFromMasterKey } from '../../utils'
 
 // Mocks
 const mockSetItem = vi.fn()
@@ -48,6 +50,17 @@ vi.mock('../../store', () => ({
 
 vi.mock('uuid', () => ({
     v7: vi.fn(() => 'mock-uuid'),
+}))
+
+vi.mock('../useWithKey', () => ({
+    useWithKey: vi.fn().mockReturnValue({
+        executeWithKey: vi.fn(),
+    }),
+}))
+
+vi.mock('../../utils', () => ({
+    getSeedFromMasterKey: vi.fn(),
+    decodeFromBase64: vi.fn(),
 }))
 
 describe('useKMS', () => {
@@ -165,40 +178,68 @@ describe('useKMS', () => {
         expect(mockRemoveKey).not.toHaveBeenCalled()
     })
 
-    it('should get private data', async () => {
-        const { result } = renderHook(() => useKMS())
+    it('should execute with key', async () => {
         const keyId = 'test-id'
-        const key: KeyPair = {
-            id: keyId,
-            privateDataStorageKey: 'path/to/private',
-            publicKey: 'pub',
-            type: KeyType.HDWalletDerivedKey,
-        }
         const privateData = new Uint8Array([1, 2, 3])
 
-        mockGetKey.mockReturnValue(key)
-        mockGetItem.mockResolvedValue(privateData)
-
-        let data
-        await act(async () => {
-            data = await result.current.getPrivateData(keyId)
+        vi.mocked(useWithKey).mockReturnValue({
+            executeWithKey: vi.fn(async (id, _, handler) => {
+                if (id === keyId) {
+                    return handler(privateData)
+                }
+                return null
+            }),
         })
 
-        expect(mockGetKey).toHaveBeenCalledWith(keyId)
-        expect(mockGetItem).toHaveBeenCalledWith('path/to/private')
-        expect(data).toBe(privateData)
+        const { result } = renderHook(() => useKMS())
+
+        let executionResult
+        await act(async () => {
+            executionResult = await result.current.executeWithKey(
+                keyId,
+                'test-domain',
+                async data => {
+                    expect(data).toBe(privateData)
+                    return 'success'
+                },
+            )
+        })
+
+        expect(executionResult).toBe('success')
     })
 
-    it('should return null when getting private data for non-existent key', async () => {
-        const { result } = renderHook(() => useKMS())
-        mockGetKey.mockReturnValue(undefined)
+    it('should execute with seed', async () => {
+        const keyId = 'test-id'
+        const privateData = new Uint8Array([1, 2, 3])
+        const expectedSeed = new Uint8Array([4, 5, 6])
 
-        let data
-        await act(async () => {
-            data = await result.current.getPrivateData('missing')
+        // Mock getSeedFromMasterKey to return a specific seed
+        vi.mocked(getSeedFromMasterKey).mockReturnValue(expectedSeed)
+
+        vi.mocked(useWithKey).mockReturnValue({
+            executeWithKey: vi.fn(async (id, _, handler) => {
+                if (id === keyId) {
+                    return handler(privateData)
+                }
+                return null
+            }),
         })
 
-        expect(mockGetItem).not.toHaveBeenCalled()
-        expect(data).toBeNull()
+        const { result } = renderHook(() => useKMS())
+
+        let executionResult
+        await act(async () => {
+            executionResult = await result.current.executeWithSeed(
+                keyId,
+                'test-domain',
+                async seed => {
+                    expect(seed).toBe(expectedSeed)
+                    return 'seed-success'
+                },
+            )
+        })
+
+        expect(executionResult).toBe('seed-success')
+        expect(getSeedFromMasterKey).toHaveBeenCalledWith(privateData)
     })
 })

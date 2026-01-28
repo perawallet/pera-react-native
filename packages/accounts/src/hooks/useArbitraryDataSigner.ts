@@ -81,13 +81,15 @@ export const useArbitraryDataSigner = () => {
                 KEY_DOMAIN,
                 async keyData => {
                     if (!keyData) {
-                        return Promise.reject(
+                        throw new Error(
                             `No signing keys found for ${account.address}`,
                         )
                     }
 
                     //TODO implement this properly - this is not signing anything!
-                    throw new Error('Not implemented')
+                    throw new Error(
+                        'Algo25 arbitrary data signing not implemented',
+                    )
                 },
             )
         },

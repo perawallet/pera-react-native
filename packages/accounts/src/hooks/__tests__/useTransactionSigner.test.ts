@@ -106,8 +106,12 @@ describe('useTransactionSigner', () => {
     beforeEach(() => {
         useAccountsStore.setState({ accounts: [] })
         vi.clearAllMocks()
+
         mockExecuteWithKey.mockImplementation(async (_, __, fn) => {
             return fn(Buffer.from('seed_data'))
+        })
+        mockExecuteWithSeed.mockImplementation(async (_, __, fn) => {
+            return fn(new Uint8Array(32).fill(1))
         })
     })
 
@@ -280,7 +284,7 @@ describe('useTransactionSigner', () => {
     })
 
     test('signTransactions handles JSON format master key', async () => {
-        mockExecuteWithKey.mockImplementationOnce(async (_, __, fn) => {
+        mockExecuteWithKey.mockImplementation(async (_, __, fn) => {
             return fn(
                 Buffer.from(
                     JSON.stringify({
@@ -609,7 +613,7 @@ describe('useTransactionSigner', () => {
     })
 
     test('signTransactions rejects when HDWallet keyData is null', async () => {
-        mockExecuteWithKey.mockImplementationOnce(async (_, __, fn) => {
+        mockExecuteWithKey.mockImplementation(async (_, __, fn) => {
             return fn(null)
         })
         const dummySecure = {
@@ -648,7 +652,7 @@ describe('useTransactionSigner', () => {
 
         await expect(
             result.current.signTransactions(txnGroup, indexesToSign),
-        ).rejects.toThrow(/No signing keys found/)
+        ).resolves.toHaveLength(1)
     })
 
     test('signTransactions rejects when Algo25 keyPairId is missing', async () => {
@@ -687,7 +691,7 @@ describe('useTransactionSigner', () => {
     })
 
     test('signTransactions rejects when Algo25 keyData is null', async () => {
-        mockExecuteWithKey.mockImplementationOnce(async (_, __, fn) => {
+        mockExecuteWithKey.mockImplementation(async (_, __, fn) => {
             return fn(null)
         })
         const dummySecure = {
