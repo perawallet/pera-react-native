@@ -14,7 +14,7 @@ import { useTheme } from '@rneui/themed'
 import {
     PeraNotification,
     useNotificationsListQuery,
-} from '@perawallet/wallet-core-platform-integration'
+} from '@perawallet/wallet-core-notifications'
 import { ActivityIndicator } from 'react-native'
 import { EmptyView } from '@components/EmptyView'
 import { useStyles } from './styles'
@@ -23,9 +23,11 @@ import { LoadingView } from '@components/LoadingView'
 import { PWFlatList } from '@components/core'
 import { RefreshControl } from 'react-native-gesture-handler'
 import { useLanguage } from '@hooks/useLanguage'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export const NotificationsScreen = () => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
     const { theme } = useTheme()
     const { t } = useLanguage()
 
@@ -34,7 +36,7 @@ export const NotificationsScreen = () => {
     }
 
     const {
-        data,
+        data: notifications,
         isPending,
         fetchNextPage,
         isFetchingNextPage,
@@ -56,26 +58,29 @@ export const NotificationsScreen = () => {
         )
     }
 
+    if (!notifications?.length) {
+        return (
+            <EmptyView
+                style={styles.emptyView}
+                icon='bell'
+                title={t('notifications.empty_title')}
+                body={t('notifications.empty_body')}
+            />
+        )
+    }
+
     return (
         <PWFlatList
-            data={data}
+            data={notifications}
             renderItem={renderItem}
+            style={styles.container}
             contentContainerStyle={styles.messageContainer}
             onEndReached={loadMoreItems}
             onEndReachedThreshold={0.1}
-            ListEmptyComponent={
-                <EmptyView
-                    icon='bell'
-                    title={t('notifications.empty_title')}
-                    body={t('notifications.empty_body')}
-                />
-            }
             ListFooterComponent={
                 isFetchingNextPage ? (
                     <ActivityIndicator color={theme.colors.linkPrimary} />
-                ) : (
-                    <></>
-                )
+                ) : null
             }
             refreshControl={
                 <RefreshControl

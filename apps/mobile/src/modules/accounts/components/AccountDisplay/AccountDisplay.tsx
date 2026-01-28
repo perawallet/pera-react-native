@@ -58,7 +58,7 @@ export const AccountDisplay = ({
             )}
             <PWText
                 style={textProps?.style ?? styles.text}
-                variant={textProps ? undefined : 'h4'}
+                variant={textProps?.variant ?? 'h4'}
             >
                 {displayName}
             </PWText>

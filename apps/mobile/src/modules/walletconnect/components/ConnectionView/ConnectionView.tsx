@@ -156,7 +156,7 @@ export const ConnectionView = ({ request }: ConnectionViewProps) => {
                         <PWIcon
                             name='wallet-connect'
                             variant='secondary'
-                            size='lg'
+                            size='xl'
                         />
                     </PWView>
                 )}

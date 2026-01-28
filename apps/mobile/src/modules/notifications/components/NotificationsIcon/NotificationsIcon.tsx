@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useNotificationStatus } from '@perawallet/wallet-core-platform-integration'
+import { useNotificationStatus } from '@perawallet/wallet-core-notifications'
 import { SvgProps } from 'react-native-svg'
 import { PWIcon, PWTouchableOpacity } from '@components/core'
 import { ParamListBase, useNavigation } from '@react-navigation/native'

@@ -43,6 +43,7 @@ export const PWRoundIcon = (props: PWRoundIconProps) => {
         md: 'sm',
         lg: 'md',
         xl: 'lg',
+        xxl: 'xl',
     }
 
     return (

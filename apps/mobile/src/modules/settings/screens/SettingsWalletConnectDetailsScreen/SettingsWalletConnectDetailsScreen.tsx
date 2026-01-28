@@ -130,7 +130,7 @@ export const SettingsWalletConnectDetailsScreen = ({
             {!preferredIcon && (
                 <PWIcon
                     name='wallet-connect'
-                    size='lg'
+                    size='xl'
                 />
             )}
             <Text h4>{peerMeta?.name ?? 'Unknown'}</Text>

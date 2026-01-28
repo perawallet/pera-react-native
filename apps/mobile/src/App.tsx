@@ -42,10 +42,10 @@ export const App = () => {
                 })
 
                 setPersister(reactQueryPersistor)
-                setBootstrapped(true)
 
                 //we defer the hiding so the initial layout can happen
                 setTimeout(() => {
+                    setBootstrapped(true)
                     BootSplash.hide({ fade: true })
                 }, 200)
             })

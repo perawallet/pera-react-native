@@ -13,7 +13,7 @@
 import type { AnalyticsService } from './analytics'
 import type { BiometricsService } from './biometrics'
 import type { DeviceInfoService } from './device'
-import type { NotificationService } from './push-notifications'
+import type { PushNotificationService } from './push-notifications'
 import type { RemoteConfigService } from './remote-config'
 import type { CrashReportingService } from './reporting'
 import type { KeyValueStorageService, SecureStorageService } from './storage'
@@ -22,7 +22,7 @@ export interface PlatformServices {
     keyValueStorage: KeyValueStorageService
     secureStorage: SecureStorageService
     biometrics: BiometricsService
-    notification: NotificationService
+    pushNotification: PushNotificationService
     remoteConfig: RemoteConfigService
     analytics: AnalyticsService
     crashReporting: CrashReportingService

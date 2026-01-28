@@ -13,7 +13,6 @@
 import { IconName, PWIcon } from '@components/core'
 
 import { useMemo } from 'react'
-import { SvgProps } from 'react-native-svg'
 import {
     isAlgo25Account,
     isHDWalletAccount,
@@ -23,14 +22,15 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import { SvgProps } from 'react-native-svg'
 
 export type AccountIconProps = {
     account?: WalletAccount
+    size?: 'sm' | 'md' | 'lg' | 'xl'
 } & SvgProps
 
-// TODO: Add governor badges (if needed - see Figma)
 export const AccountIcon = (props: AccountIconProps) => {
-    const { account, ...rest } = props
+    const { account, size = 'md', ...rest } = props
     const darkmode = useIsDarkMode()
 
     const icon = useMemo(() => {
@@ -53,6 +53,7 @@ export const AccountIcon = (props: AccountIconProps) => {
             <PWIcon
                 {...rest}
                 name={iconName}
+                size={size}
             />
         )
     }, [account, rest])

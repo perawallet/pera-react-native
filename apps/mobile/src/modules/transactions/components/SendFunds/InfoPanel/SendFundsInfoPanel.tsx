@@ -73,7 +73,7 @@ export const SendFundsInfoPanel = ({
         >
             <PWIcon
                 name='info'
-                size='xl'
+                size='xxl'
                 variant='helper'
             />
             <PWView style={styles.bodyContainer}>

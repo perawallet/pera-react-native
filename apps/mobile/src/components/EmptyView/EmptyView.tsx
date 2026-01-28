@@ -34,7 +34,7 @@ export const EmptyView = (props: EmptyViewProps) => {
                     <PWIcon
                         name={icon}
                         variant='secondary'
-                        size='lg'
+                        size='xl'
                     />
                 </PWView>
             )}

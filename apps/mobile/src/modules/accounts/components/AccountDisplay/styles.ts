@@ -17,7 +17,7 @@ export const useStyles = makeStyles(theme => {
         container: {
             flexDirection: 'row',
             alignItems: 'center',
-            gap: theme.spacing.sm,
+            gap: theme.spacing.md,
         },
         text: {
             color: theme.colors.textGray,

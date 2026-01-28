@@ -18,6 +18,7 @@ import '@perawallet/wallet-core-contacts'
 import '@perawallet/wallet-core-currencies'
 import '@perawallet/wallet-core-kms'
 import '@perawallet/wallet-core-polling'
+import '@perawallet/wallet-core-notifications'
 import '@perawallet/wallet-core-security'
 import '@perawallet/wallet-core-settings'
 import '@perawallet/wallet-core-swaps'
@@ -28,16 +29,19 @@ import { RNDeviceInfoStorageService } from '../platform/device'
 import { RNFirebaseService } from '../platform/firebase'
 import { RNKeyValueStorageService } from '../platform/key-value-storage'
 import { RNSecureStorageService } from '../platform/secure-storage'
-import { registerPlatformServices } from '@perawallet/wallet-core-platform-integration'
+import {
+    PlatformServices,
+    registerPlatformServices,
+} from '@perawallet/wallet-core-platform-integration'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useCallback } from 'react'
 
 const firebaseService = new RNFirebaseService()
-const platformServices = {
+const platformServices: PlatformServices = {
     analytics: firebaseService,
     biometrics: new RNBiometricsService(),
     crashReporting: firebaseService,
-    notification: firebaseService,
+    pushNotification: firebaseService,
     remoteConfig: firebaseService,
     secureStorage: new RNSecureStorageService(),
     keyValueStorage: new RNKeyValueStorageService(),
@@ -63,7 +67,7 @@ export const useBootstrapper = () => {
         ])
 
         const notificationResults =
-            await platformServices.notification.initializeNotifications()
+            await platformServices.pushNotification.initializeNotifications()
 
         logger.debug('Bootstrapping completed')
 

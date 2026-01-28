@@ -17,7 +17,7 @@ import {
     SecureStorageService,
     BiometricsService,
     RemoteConfigService,
-    NotificationService,
+    PushNotificationService,
     CrashReportingService,
     DeviceInfoService,
     DevicePlatforms,
@@ -31,7 +31,7 @@ type Overrides = Partial<{
     secureStorage: SecureStorageService
     biometrics: BiometricsService
     remoteConfig: RemoteConfigService
-    notification: NotificationService
+    pushNotification: PushNotificationService
     crashReporting: CrashReportingService
     deviceInfo: DeviceInfoService
 }>
@@ -72,7 +72,7 @@ export const buildTestPlatform = (
         },
     }
 
-    const defaultNotification: NotificationService = {
+    const defaultPushNotification: PushNotificationService = {
         async initializeNotifications() {
             return { unsubscribe: () => {} }
         },
@@ -139,7 +139,7 @@ export const buildTestPlatform = (
         secureStorage: overrides.secureStorage ?? defaultSecure,
         biometrics: overrides.biometrics ?? defaultBiometrics,
         remoteConfig: overrides.remoteConfig ?? defaultRemote,
-        notification: overrides.notification ?? defaultNotification,
+        pushNotification: overrides.pushNotification ?? defaultPushNotification,
         crashReporting: overrides.crashReporting ?? defaultCrash,
         deviceInfo: overrides.deviceInfo ?? deviceInfo,
     }

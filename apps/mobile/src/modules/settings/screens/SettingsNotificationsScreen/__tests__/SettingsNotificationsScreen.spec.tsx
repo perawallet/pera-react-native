@@ -10,16 +10,90 @@
  limitations under the License
  */
 
-import { render } from '@test-utils/render'
-import { describe, it, expect } from 'vitest'
+import { render, fireEvent } from '@test-utils/render'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { SettingsNotificationsScreen } from '../SettingsNotificationsScreen'
+import { useSettingsNotificationsScreen } from '../useSettingsNotificationsScreen'
+
+vi.mock('../useSettingsNotificationsScreen', () => ({
+    useSettingsNotificationsScreen: vi.fn(() => ({
+        isSystemNotificationEnabled: true,
+        isSystemNotificationLoading: false,
+        accounts: [],
+        handleSystemNotificationToggle: vi.fn(),
+        handleAccountNotificationToggle: vi.fn(),
+        isAccountNotificationEnabled: vi.fn(() => true),
+    })),
+}))
 
 describe('SettingsNotificationsScreen', () => {
-    it('renders correctly', () => {
-        const { getAllByText } = render(<SettingsNotificationsScreen />)
-        // i18n mocked returns the key - multiple elements contain this
-        expect(getAllByText(/common.not_implemented/i).length).toBeGreaterThan(
-            0,
-        )
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    it('renders system notifications section', () => {
+        const { getByText } = render(<SettingsNotificationsScreen />)
+
+        expect(
+            getByText('settings.notifications.push_notifications'),
+        ).toBeTruthy()
+    })
+
+    it('renders account notifications section', () => {
+        const { getByText } = render(<SettingsNotificationsScreen />)
+
+        expect(
+            getByText('settings.notifications.account_notifications'),
+        ).toBeTruthy()
+    })
+
+    it('shows empty state when no accounts', () => {
+        const { getByText } = render(<SettingsNotificationsScreen />)
+
+        expect(getByText('settings.notifications.no_accounts')).toBeTruthy()
+        expect(
+            getByText('settings.notifications.no_accounts_body'),
+        ).toBeTruthy()
+    })
+
+    it('renders accounts when available', () => {
+        const mockAccount = {
+            address: 'ADDRESS1',
+            name: 'Account 1',
+        }
+
+        vi.mocked(useSettingsNotificationsScreen).mockReturnValueOnce({
+            isSystemNotificationEnabled: true,
+            isSystemNotificationLoading: false,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            accounts: [mockAccount] as any,
+            handleSystemNotificationToggle: vi.fn(),
+            handleAccountNotificationToggle: vi.fn(),
+            isAccountNotificationEnabled: vi.fn(() => true),
+        })
+
+        const { getByText } = render(<SettingsNotificationsScreen />)
+
+        expect(getByText('Account 1')).toBeTruthy()
+    })
+
+    it('calls handleSystemNotificationToggle when system switch is toggled', () => {
+        const handleSystemNotificationToggle = vi.fn()
+
+        vi.mocked(useSettingsNotificationsScreen).mockReturnValueOnce({
+            isSystemNotificationEnabled: true,
+            isSystemNotificationLoading: false,
+            accounts: [],
+            handleSystemNotificationToggle,
+            handleAccountNotificationToggle: vi.fn(),
+            isAccountNotificationEnabled: vi.fn(() => true),
+        })
+
+        const { getByTestId } = render(<SettingsNotificationsScreen />)
+        const switchBtn = getByTestId('RNESwitch')
+
+        fireEvent.click(switchBtn)
+
+        expect(handleSystemNotificationToggle).toHaveBeenCalled()
     })
 })
