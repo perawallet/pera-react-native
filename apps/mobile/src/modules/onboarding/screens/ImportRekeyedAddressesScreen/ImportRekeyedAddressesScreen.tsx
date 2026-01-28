@@ -13,22 +13,19 @@
 import React from 'react'
 import {
     PWView,
-    PWText,
     PWToolbar,
     PWIcon,
     PWTouchableOpacity,
-    PWButton,
-    PWCheckbox,
-    PWChip,
     PWFlatList,
-    PWRoundIcon,
     PWLoadingOverlay,
 } from '@components/core'
 
 import { useStyles } from './styles'
 import { useImportRekeyedAddressesScreen } from './useImportRekeyedAddressesScreen'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { Algo25Account } from '@perawallet/wallet-core-accounts'
+import { ImportRekeyedAddressesItem } from './ImportRekeyedAddressesItem'
+import { ImportRekeyedAddressesHeader } from './ImportRekeyedAddressesHeader'
+import { ImportRekeyedAddressesFooter } from './ImportRekeyedAddressesFooter'
 
 export const ImportRekeyedAddressesScreen = () => {
     const styles = useStyles()
@@ -45,126 +42,6 @@ export const ImportRekeyedAddressesScreen = () => {
     } = useImportRekeyedAddressesScreen()
     const navigation = useAppNavigation()
 
-    const renderItem = ({ item }: { item: Algo25Account }) => {
-        const isImported = alreadyImportedAddresses.has(item.address)
-        const isSelected = selectedAddresses.has(item.address)
-
-        return (
-            <PWTouchableOpacity
-                style={styles.itemContainer}
-                onPress={() => toggleSelection(item.address)}
-                disabled={isImported}
-            >
-                {!isImported && (
-                    <PWView style={styles.checkboxWrapper}>
-                        <PWCheckbox
-                            checked={isSelected}
-                            onPress={() => toggleSelection(item.address)}
-                            containerStyle={styles.checkboxContainer}
-                        />
-                    </PWView>
-                )}
-
-                <PWView style={styles.itemContent}>
-                    <PWView style={styles.iconContainer}>
-                        <PWRoundIcon
-                            icon='account-rekeyed'
-                            variant='helper'
-                            size='md'
-                        />
-                    </PWView>
-
-                    <PWView style={styles.itemTextContainer}>
-                        <PWText
-                            variant='body'
-                            style={styles.itemTitle}
-                            numberOfLines={1}
-                            ellipsizeMode='middle'
-                        >
-                            {item.address}
-                        </PWText>
-                        <PWText
-                            variant='caption'
-                            style={styles.itemSubtitle}
-                        >
-                            {t(
-                                'onboarding.import_rekeyed_addresses.rekeyed_account_subtitle',
-                            )}
-                        </PWText>
-                    </PWView>
-
-                    <PWView style={styles.infoIconContainer}>
-                        <PWIcon
-                            name='info'
-                            size='md'
-                            variant='secondary'
-                        />
-                    </PWView>
-                </PWView>
-
-                {isImported && (
-                    <PWChip
-                        title={t(
-                            'onboarding.import_rekeyed_addresses.already_imported',
-                        )}
-                        variant='secondary'
-                    />
-                )}
-            </PWTouchableOpacity>
-        )
-    }
-
-    const renderHeader = () => (
-        <PWView style={styles.headerContainer}>
-            <PWView style={styles.headerIconContainer}>
-                <PWIcon
-                    name='wallet'
-                    size='lg'
-                />
-            </PWView>
-            <PWText
-                variant='h3'
-                style={styles.title}
-            >
-                {t('onboarding.import_rekeyed_addresses.title', {
-                    count: accounts.length,
-                })}
-            </PWText>
-            <PWText
-                variant='h4'
-                style={styles.description}
-            >
-                {t('onboarding.import_rekeyed_addresses.description_line_1', {
-                    count: accounts.length,
-                })}
-            </PWText>
-            <PWText
-                variant='h4'
-                style={styles.description}
-            >
-                {t('onboarding.import_rekeyed_addresses.description_line_2')}
-            </PWText>
-        </PWView>
-    )
-
-    const renderFooter = () => (
-        <PWView style={styles.footer}>
-            <PWButton
-                title={t('onboarding.import_rekeyed_addresses.continue')}
-                onPress={handleContinue}
-                variant={canContinue ? 'primary' : 'secondary'}
-                isDisabled={!canContinue}
-                style={styles.continueButton}
-            />
-
-            <PWButton
-                title={t('onboarding.import_rekeyed_addresses.skip')}
-                onPress={handleSkip}
-                variant='secondary'
-            />
-        </PWView>
-    )
-
     return (
         <PWView style={styles.container}>
             <PWToolbar
@@ -176,15 +53,30 @@ export const ImportRekeyedAddressesScreen = () => {
             />
 
             <PWFlatList
-                data={accounts}
-                renderItem={renderItem}
-                keyExtractor={item => item.address}
+                style={styles.list}
                 contentContainerStyle={styles.listContent}
                 showsVerticalScrollIndicator={false}
-                ListHeaderComponent={renderHeader}
-                style={styles.list}
+                ListHeaderComponent={() => (
+                    <ImportRekeyedAddressesHeader
+                        accountsCount={accounts.length}
+                    />
+                )}
+                data={accounts}
+                keyExtractor={item => item.address}
+                renderItem={({ item }) => (
+                    <ImportRekeyedAddressesItem
+                        account={item}
+                        isImported={alreadyImportedAddresses.has(item.address)}
+                        isSelected={selectedAddresses.has(item.address)}
+                        onToggle={toggleSelection}
+                    />
+                )}
             />
-            {renderFooter()}
+            <ImportRekeyedAddressesFooter
+                onContinue={handleContinue}
+                onSkip={handleSkip}
+                canContinue={canContinue}
+            />
             <PWLoadingOverlay
                 isVisible={isImporting}
                 title={t(
