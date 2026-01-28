@@ -22,6 +22,7 @@ import {
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 
 const MNEMONIC_LENGTH_MAP: Record<ImportAccountType, number> = {
     hdWallet: 24,
@@ -149,7 +150,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
 
     const handleImportAccount = useCallback(() => {
         setProcessing(true)
-        setTimeout(async () => {
+        deferToNextCycle(async () => {
             const mnemonic = words.join(' ')
 
             try {
@@ -169,7 +170,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
             } finally {
                 setProcessing(false)
             }
-        }, 0)
+        })
     }, [importAccount, words, accountType, navigation, showToast, t])
 
     return {

@@ -25,6 +25,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useIsOnboarding } from '@modules/onboarding/hooks'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 
 type ImportSelectAddressesRouteProp = RouteProp<
     OnboardingStackParamList,
@@ -102,7 +103,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     const handleContinue = useCallback(async () => {
         setIsProcessing(true)
 
-        setTimeout(async () => {
+        deferToNextCycle(async () => {
             const accountsToAdd = accounts.filter(acc =>
                 selectedAddresses.has(acc.address),
             )
@@ -141,7 +142,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
             } finally {
                 setIsProcessing(false)
             }
-        }, 0)
+        })
 
     }, [
         accounts,
