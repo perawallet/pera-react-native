@@ -15,13 +15,18 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { RouteProp, useRoute } from '@react-navigation/native'
 import { useTheme } from '@rneui/themed'
 import { OnboardingStackParamList } from '../../routes/types'
+import { useWebView } from '@modules/webview'
 
 import KeyImage from '@assets/images/key.svg'
 import KeyInvertedImage from '@assets/images/key-inverted.svg'
 
+const RECOVERY_SUPPORT_URL =
+    'https://support.perawallet.app/en/article/recover-or-import-an-algorand-account-with-recovery-passphrase-11gdh1y/'
+
 export const useImportInfoScreen = () => {
     const { theme } = useTheme()
     const navigation = useAppNavigation()
+    const { pushWebView } = useWebView()
     const {
         params: { accountType },
     } = useRoute<RouteProp<OnboardingStackParamList, 'ImportInfo'>>()
@@ -35,8 +40,8 @@ export const useImportInfoScreen = () => {
     }, [navigation, accountType])
 
     const handleInfoPress = useCallback(() => {
-        // Requirements don't specify what this does, but it's an icon in the right
-    }, [])
+        pushWebView({ url: RECOVERY_SUPPORT_URL })
+    }, [pushWebView])
 
     const KeyImageComponent =
         theme.mode === 'dark' ? KeyInvertedImage : KeyImage

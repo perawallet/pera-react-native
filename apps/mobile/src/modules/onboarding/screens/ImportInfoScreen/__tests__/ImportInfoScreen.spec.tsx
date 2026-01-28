@@ -111,6 +111,14 @@ vi.mock('@react-navigation/native', async () => {
     }
 })
 
+// Mock webview
+const mockPushWebView = vi.fn()
+vi.mock('@modules/webview', () => ({
+    useWebView: () => ({
+        pushWebView: mockPushWebView,
+    }),
+}))
+
 describe('ImportInfoScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -150,6 +158,8 @@ describe('ImportInfoScreen', () => {
         const infoButton = screen.getByTestId('info-button')
         fireEvent.click(infoButton)
 
-        // Currently handleInfoPress is empty, but we verify it doesn't crash
+        expect(mockPushWebView).toHaveBeenCalledWith({
+            url: 'https://support.perawallet.app/en/article/recover-or-import-an-algorand-account-with-recovery-passphrase-11gdh1y/',
+        })
     })
 })
