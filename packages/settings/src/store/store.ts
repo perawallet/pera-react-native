@@ -90,8 +90,9 @@ export const initSettingsStore = () => {
 
 export const clearSettingsStore = () => lazy.clear()
 
-DataStoreRegistry.register({
-    name: STORE_NAME,
-    init: initSettingsStore,
-    clear: clearSettingsStore,
-})
+export const registerSettingsStore = () =>
+    DataStoreRegistry.register({
+        name: STORE_NAME,
+        init: initSettingsStore,
+        clear: clearSettingsStore,
+    })

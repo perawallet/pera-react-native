@@ -115,8 +115,9 @@ export const initKeyManagerStore = () => {
 
 export const clearKeyManagerStore = () => lazy.clear()
 
-DataStoreRegistry.register({
-    name: STORE_NAME,
-    init: initKeyManagerStore,
-    clear: clearKeyManagerStore,
-})
+export const registerKeyManagerStore = () =>
+    DataStoreRegistry.register({
+        name: STORE_NAME,
+        init: initKeyManagerStore,
+        clear: clearKeyManagerStore,
+    })

@@ -10,23 +10,6 @@
  limitations under the License
  */
 
-import { BaseStoreState } from '@perawallet/wallet-core-shared'
+export const name = '@perawallet/wallet-core-initializer'
 
-export type SecurityState = BaseStoreState & {
-    failedAttempts: number
-    lockoutEndTime: number | null
-    autoLockStartedAt: number | null
-
-    incrementFailedAttempts: () => void
-    resetFailedAttempts: () => void
-    setLockoutEndTime: (time: number | null) => void
-    setAutoLockStartedAt: (time: number | null) => void
-}
-
-export type PinEntryMode =
-    | 'setup'
-    | 'confirm'
-    | 'verify'
-    | 'change_old'
-    | 'change_new'
-    | 'change_confirm'
+export * from './initialize'

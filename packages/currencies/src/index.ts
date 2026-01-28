@@ -15,4 +15,4 @@ export const name = '@perawallet/currencies'
 export * from './hooks'
 export * from './models'
 
-export { initCurrenciesStore } from './store'
+export { initCurrenciesStore, registerCurrenciesStore } from './store'
