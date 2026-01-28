@@ -33,7 +33,7 @@ export const LockoutView = ({
                 <PWView style={styles.lockoutIconContainer}>
                     <PWIcon
                         name='locked'
-                        size='lg'
+                        size='xl'
                         variant='white'
                     />
                 </PWView>

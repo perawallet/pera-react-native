@@ -13,22 +13,24 @@
 import { describe, test, expect } from 'vitest'
 import { container } from 'tsyringe'
 import {
-    NotificationServiceContainerKey,
-    useNotificationService,
+    PushNotificationServiceContainerKey,
+    usePushNotificationService,
 } from '../index'
-import { type NotificationService } from '../../models'
+import { type PushNotificationService } from '../../models'
 
-describe('services/notifications/platform-service', () => {
-    test('useNotificationService resolves the registered NotificationService from the container', async () => {
-        const dummy: NotificationService = {
+describe('services/push-notifications/hooks/usePushNotificationService', () => {
+    test('usePushNotificationService resolves the registered PushNotificationService from the container', async () => {
+        const dummy: PushNotificationService = {
             async initializeNotifications() {
                 return { unsubscribe: () => {} }
             },
         }
 
-        container.register(NotificationServiceContainerKey, { useValue: dummy })
+        container.register(PushNotificationServiceContainerKey, {
+            useValue: dummy,
+        })
 
-        const svc = useNotificationService()
+        const svc = usePushNotificationService()
         expect(svc).toBe(dummy)
 
         const init = await svc.initializeNotifications()

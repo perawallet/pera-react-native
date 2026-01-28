@@ -31,14 +31,16 @@ import {
     type SecureStorageService,
 } from '../storage'
 import {
-    NotificationServiceContainerKey,
-    type NotificationService,
+    PushNotificationServiceContainerKey,
+    type PushNotificationService,
 } from '../push-notifications'
 import {
     DeviceInfoServiceContainerKey,
     type DeviceInfoService,
 } from '../device'
 import type { PlatformServices } from '../models'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { BiometricsService, BiometricsServiceContainerKey } from '../biometrics'
 
 vi.mock('tsyringe', () => ({
     container: {
@@ -56,18 +58,20 @@ describe('platform', () => {
         const mockKeyValueStorage = {} as KeyValueStorageService
         const mockSecureStorage = {} as SecureStorageService
         const mockRemoteConfig = {} as RemoteConfigService
-        const mockNotification = {} as NotificationService
+        const mockNotification = {} as PushNotificationService
         const mockCrashReporting = {} as CrashReportingService
         const mockDeviceInfo = {} as DeviceInfoService
+        const mockBiometrics = {} as BiometricsService
 
         const mockPlatform: PlatformServices = {
             analytics: mockAnalytics,
             keyValueStorage: mockKeyValueStorage,
             secureStorage: mockSecureStorage,
             remoteConfig: mockRemoteConfig,
-            notification: mockNotification,
+            pushNotification: mockNotification,
             crashReporting: mockCrashReporting,
             deviceInfo: mockDeviceInfo,
+            biometrics: mockBiometrics,
         }
 
         await registerPlatformServices(mockPlatform)
@@ -89,7 +93,7 @@ describe('platform', () => {
             { useValue: mockAnalytics },
         )
         expect(container.register).toHaveBeenCalledWith(
-            NotificationServiceContainerKey,
+            PushNotificationServiceContainerKey,
             { useValue: mockNotification },
         )
         expect(container.register).toHaveBeenCalledWith(
@@ -99,6 +103,10 @@ describe('platform', () => {
         expect(container.register).toHaveBeenCalledWith(
             DeviceInfoServiceContainerKey,
             { useValue: mockDeviceInfo },
+        )
+        expect(container.register).toHaveBeenCalledWith(
+            BiometricsServiceContainerKey,
+            { useValue: mockBiometrics },
         )
     })
 })

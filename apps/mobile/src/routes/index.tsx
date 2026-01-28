@@ -30,6 +30,7 @@ import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
 
 import { RootStackParamList } from './types'
+import { fullScreenLayout } from '@layouts/index'
 export type { RootStackParamList } from './types'
 
 const RootStack = createNativeStackNavigator<RootStackParamList>()
@@ -72,6 +73,7 @@ export const MainRoutes = () => {
                                         <NavigationHeader {...props} />
                                     ),
                                 }}
+                                layout={fullScreenLayout}
                                 component={NotificationsScreen}
                             />
                             <RootStack.Screen

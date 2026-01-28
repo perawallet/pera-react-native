@@ -16,6 +16,7 @@ import { useDeleteAllData } from '../useDeleteAllData'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { DataStoreRegistry } from '@perawallet/wallet-core-shared'
 import { useQueryClient } from '@tanstack/react-query'
+import { useDeleteDeviceMutation } from '@perawallet/wallet-core-platform-integration'
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMS: vi.fn(),
@@ -31,22 +32,33 @@ vi.mock('@tanstack/react-query', () => ({
     useQueryClient: vi.fn(),
 }))
 
+vi.mock('@perawallet/wallet-core-platform-integration', () => ({
+    useDeleteDeviceMutation: vi.fn(),
+}))
+
 describe('useDeleteAllData', () => {
     const mockDeleteKey = vi.fn()
     const mockRemoveQueries = vi.fn()
+    const mockDeleteDevices = vi.fn()
 
     beforeEach(() => {
         vi.clearAllMocks()
         ;(useKMS as Mock).mockReturnValue({
-            keys: [{ id: 'key-1' }, { id: 'key-2' }],
+            keys: new Map([
+                ['key-1', { id: 'key-1' }],
+                ['key-2', { id: 'key-2' }],
+            ]),
             deleteKey: mockDeleteKey,
         })
         ;(useQueryClient as Mock).mockReturnValue({
             removeQueries: mockRemoveQueries,
         })
+        ;(useDeleteDeviceMutation as Mock).mockReturnValue({
+            mutateAsync: mockDeleteDevices.mockResolvedValue([]),
+        })
     })
 
-    it('should clear all data stores and delete keys', async () => {
+    it('should clear all data stores, delete keys, and delete devices', async () => {
         const { result } = renderHook(() => useDeleteAllData())
 
         await act(async () => {
@@ -57,12 +69,16 @@ describe('useDeleteAllData', () => {
         expect(mockDeleteKey).toHaveBeenCalledTimes(2)
         expect(mockDeleteKey).toHaveBeenCalledWith('key-1')
         expect(mockDeleteKey).toHaveBeenCalledWith('key-2')
+        expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
         expect(DataStoreRegistry.clearAll).toHaveBeenCalledTimes(1)
     })
 
     it('should not delete keys if id is missing', async () => {
         ;(useKMS as Mock).mockReturnValue({
-            keys: [{ id: undefined }, { id: 'key-1' }],
+            keys: new Map([
+                ['undefined-key', { id: undefined }],
+                ['key-1', { id: 'key-1' }],
+            ]),
             deleteKey: mockDeleteKey,
         })
 
@@ -74,5 +90,63 @@ describe('useDeleteAllData', () => {
 
         expect(mockDeleteKey).toHaveBeenCalledTimes(1)
         expect(mockDeleteKey).toHaveBeenCalledWith('key-1')
+    })
+
+    it('should continue if deleteDevices fails', async () => {
+        mockDeleteDevices.mockRejectedValue(new Error('Network error'))
+
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await result.current()
+        })
+
+        expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
+        expect(DataStoreRegistry.clearAll).toHaveBeenCalledTimes(1)
+    })
+
+    it('should continue if deleteKey fails', async () => {
+        mockDeleteKey.mockRejectedValue(new Error('Key deletion error'))
+
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await result.current()
+        })
+
+        expect(mockDeleteKey).toHaveBeenCalled()
+        expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
+        expect(DataStoreRegistry.clearAll).toHaveBeenCalledTimes(1)
+    })
+
+    it('should handle missing queryClient gracefully', async () => {
+        ;(useQueryClient as Mock).mockReturnValue(null)
+
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await result.current()
+        })
+
+        expect(mockRemoveQueries).not.toHaveBeenCalled()
+        expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
+        expect(DataStoreRegistry.clearAll).toHaveBeenCalledTimes(1)
+    })
+
+    it('should handle missing keys gracefully', async () => {
+        ;(useKMS as Mock).mockReturnValue({
+            keys: null,
+            deleteKey: mockDeleteKey,
+        })
+
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await result.current()
+        })
+
+        expect(mockDeleteKey).not.toHaveBeenCalled()
+        expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
+        expect(DataStoreRegistry.clearAll).toHaveBeenCalledTimes(1)
     })
 })

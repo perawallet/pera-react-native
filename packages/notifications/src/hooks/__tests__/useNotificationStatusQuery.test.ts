@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
-import { createWrapper } from '../../../test-utils'
+import { createWrapper } from '@perawallet/wallet-core-platform-integration'
 import { useNotificationStatus } from '../useNotificationStatusQuery'
 import { fetchNotificationStatus } from '../endpoints'
 
@@ -20,10 +20,20 @@ vi.mock('../endpoints', () => ({
     fetchNotificationStatus: vi.fn(),
 }))
 
-vi.mock('../../../device', () => ({
-    useDeviceID: vi.fn().mockReturnValue('test-device-id'),
-    useNetwork: vi.fn().mockReturnValue({ network: 'test-network' }),
-}))
+vi.mock(
+    '@perawallet/wallet-core-platform-integration',
+    async importOriginal => {
+        const actual =
+            await importOriginal<
+                typeof import('@perawallet/wallet-core-platform-integration')
+            >()
+        return {
+            ...actual,
+            useDeviceID: vi.fn().mockReturnValue('test-device-id'),
+            useNetwork: vi.fn().mockReturnValue({ network: 'test-network' }),
+        }
+    },
+)
 
 describe('useNotificationStatus', () => {
     it('should fetch notification status and return hasNewNotification', async () => {

@@ -509,6 +509,12 @@
             "enable_rekey_support_description": "Once you enable this, you can confirm transaction requests to rekey your account. This will give control of your account to another address.",
             "biometric_error_title": "Failed to authenticate.",
             "biometric_error_message": "We were unable to authenticate you.  Please try again."
+        },
+        "notifications": {
+            "push_notifications": "Push Notifications",
+            "account_notifications": "Show notifications for",
+            "no_accounts": "No accounts found.",
+            "no_accounts_body": "No accounts found. Add an account to manage notification preferences."
         }
     },
     "signing": {

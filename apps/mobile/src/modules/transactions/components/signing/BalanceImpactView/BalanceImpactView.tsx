@@ -22,7 +22,7 @@ const AssetImpact = () => {
     return (
         <PWView style={styles.itemContainer}>
             <PWIcon
-                size='lg'
+                size='xl'
                 name='assets/algo'
             />
             <PWView style={styles.amounts}>

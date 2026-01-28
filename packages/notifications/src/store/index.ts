@@ -10,10 +10,4 @@
  limitations under the License
  */
 
-import { container } from 'tsyringe'
-import type { NotificationService } from '../models'
-
-export const NotificationServiceContainerKey = 'NotificationService'
-
-export const useNotificationService = () =>
-    container.resolve<NotificationService>(NotificationServiceContainerKey)
+export * from './store'

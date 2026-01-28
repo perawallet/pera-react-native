@@ -35,8 +35,8 @@ import {
     type BiometricsService,
 } from './biometrics'
 import {
-    NotificationServiceContainerKey,
-    type NotificationService,
+    PushNotificationServiceContainerKey,
+    type PushNotificationService,
 } from './push-notifications'
 import { DeviceInfoServiceContainerKey, type DeviceInfoService } from './device'
 import type { PlatformServices } from './models'
@@ -50,18 +50,18 @@ export const registerPlatformServices = async (platform: PlatformServices) => {
     container.register<SecureStorageService>(SecureStorageServiceContainerKey, {
         useValue: platform.secureStorage,
     })
-    container.register<BiometricsService>(BiometricsServiceContainerKey, {
-        useValue: platform.biometrics,
-    })
     container.register<RemoteConfigService>(RemoteConfigServiceContainerKey, {
         useValue: platform.remoteConfig,
     })
     container.register<AnalyticsService>(AnalyticsServiceContainerKey, {
         useValue: platform.analytics,
     })
-    container.register<NotificationService>(NotificationServiceContainerKey, {
-        useValue: platform.notification,
-    })
+    container.register<PushNotificationService>(
+        PushNotificationServiceContainerKey,
+        {
+            useValue: platform.pushNotification,
+        },
+    )
     container.register<CrashReportingService>(
         CrashReportingServiceContainerKey,
         {
@@ -70,6 +70,9 @@ export const registerPlatformServices = async (platform: PlatformServices) => {
     )
     container.register<DeviceInfoService>(DeviceInfoServiceContainerKey, {
         useValue: platform.deviceInfo,
+    })
+    container.register<BiometricsService>(BiometricsServiceContainerKey, {
+        useValue: platform.biometrics,
     })
 
     // Initialize all registered data stores now that platform services are available

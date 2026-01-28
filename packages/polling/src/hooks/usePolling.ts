@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { usePollingStore } from '../store'
 import { useShouldRefreshMutation } from './useShouldRefreshMutation'
 
@@ -25,7 +25,7 @@ export const usePolling = () => {
         typeof setInterval
     > | null>(null)
 
-    const doCheck = async () => {
+    const doCheck = useCallback(async () => {
         try {
             const response = await mutateAsync()
 
@@ -38,19 +38,20 @@ export const usePolling = () => {
             console.log('Polling failed:')
             console.log(error)
         }
-    }
+    }, [mutateAsync])
 
-    const startPolling = async () => {
-        const timer = setInterval(doCheck, CACHE_CHECK_INTERVAL)
-        setPolling(timer)
-    }
-
-    const stopPolling = async () => {
+    const stopPolling = useCallback(async () => {
         if (polling) {
             clearTimeout(polling)
             setPolling(null)
         }
-    }
+    }, [polling])
+
+    const startPolling = useCallback(async () => {
+        stopPolling()
+        const timer = setInterval(doCheck, CACHE_CHECK_INTERVAL)
+        setPolling(timer)
+    }, [doCheck, stopPolling])
 
     return {
         startPolling,
