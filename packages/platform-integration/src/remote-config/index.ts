@@ -12,3 +12,5 @@
 
 export * from './models'
 export * from './hooks'
+
+export { initRemoteConfigStore } from './store'
