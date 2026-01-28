@@ -28,7 +28,10 @@ vi.mock('@hooks/useAppNavigation', () => ({
 
 vi.mock('@assets/images/key.svg', () => ({
     default: (props: React.SVGProps<SVGSVGElement>) => {
-        return React.createElement('div', { ...props, 'data-testid': 'key-svg' })
+        return React.createElement('div', {
+            ...props,
+            'data-testid': 'key-svg',
+        })
     },
 }))
 
