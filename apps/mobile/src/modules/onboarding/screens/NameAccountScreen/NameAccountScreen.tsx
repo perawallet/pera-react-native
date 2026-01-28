@@ -15,21 +15,19 @@ import {
     PWButton,
     PWIcon,
     PWInput,
-    PWOverlay,
+    PWLoadingOverlay,
     PWText,
     PWToolbar,
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { useTheme } from '@rneui/themed'
-import { ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native'
+import { KeyboardAvoidingView, Platform } from 'react-native'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNameAccountScreen } from './useNameAccountScreen'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 
 export const NameAccountScreen = () => {
     const styles = useStyles()
-    const { theme } = useTheme()
     const { t } = useLanguage()
     const navigation = useAppNavigation()
 
@@ -98,17 +96,10 @@ export const NameAccountScreen = () => {
                 />
             </PWView>
 
-            <PWOverlay
+            <PWLoadingOverlay
                 isVisible={isCreating}
-                overlayStyle={styles.overlay}
-                backdropStyle={styles.overlayBackdrop}
-            >
-                <ActivityIndicator
-                    size='large'
-                    color={theme.colors.linkPrimary}
-                />
-                <PWText>{t('onboarding.create_account.processing')}</PWText>
-            </PWOverlay>
+                title={t('onboarding.create_account.processing')}
+            />
         </KeyboardAvoidingView>
     )
 }

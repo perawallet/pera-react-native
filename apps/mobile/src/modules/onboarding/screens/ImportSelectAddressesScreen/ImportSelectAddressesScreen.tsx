@@ -21,7 +21,7 @@ import {
     PWCheckbox,
     PWChip,
     PWFlatList,
-    PWOverlay,
+    PWLoadingOverlay,
 } from '@components/core'
 
 import { useStyles } from './styles'
@@ -31,12 +31,9 @@ import {
     getAccountDisplayName,
     HDWalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { ActivityIndicator } from 'react-native'
-import { useTheme } from '@rneui/themed'
 
 export const ImportSelectAddressesScreen = () => {
     const styles = useStyles()
-    const { theme } = useTheme()
     const {
         accounts,
         selectedAddresses,
@@ -169,17 +166,10 @@ export const ImportSelectAddressesScreen = () => {
                 />
             </PWView>
 
-            <PWOverlay
+            <PWLoadingOverlay
                 isVisible={isProcessing}
-                overlayStyle={styles.overlay}
-                backdropStyle={styles.overlayBackdrop}
-            >
-                <PWText>{t('onboarding.import_rekeyed_addresses.fetching')}</PWText>
-                <ActivityIndicator
-                    size='large'
-                    color={theme.colors.linkPrimary}
-                />
-            </PWOverlay>
+                title={t('onboarding.import_rekeyed_addresses.fetching')}
+            />
         </PWView>
     )
 }

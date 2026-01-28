@@ -86,15 +86,4 @@ export const useStyles = makeStyles(theme => ({
         backgroundColor: theme.colors.background,
         paddingBottom: theme.spacing.xl + 20, // Extra padding for safe area logic usually handled by SafeAreaView but good to have buffer
     },
-    overlayBackdrop: {
-        backgroundColor: 'rgba(52, 52, 52, 0.8)',
-    },
-    overlay: {
-        padding: theme.spacing.xl,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: theme.colors.layerGray,
-        borderRadius: theme.spacing.lg,
-        gap: theme.spacing.lg,
-    },
 }))

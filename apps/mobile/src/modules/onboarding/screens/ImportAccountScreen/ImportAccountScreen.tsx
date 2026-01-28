@@ -16,7 +16,7 @@ import {
     PWButton,
     PWIcon,
     PWInput,
-    PWOverlay,
+    PWLoadingOverlay,
     PWText,
     PWToolbar,
     PWView,
@@ -24,7 +24,6 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import {
-    ActivityIndicator,
     KeyboardAvoidingView,
     ScrollView,
 } from 'react-native'
@@ -164,17 +163,10 @@ export const ImportAccountScreen = () => {
                 </PWView>
             </KeyboardAvoidingView>
 
-            <PWOverlay
+            <PWLoadingOverlay
                 isVisible={processing}
-                overlayStyle={styles.overlay}
-                backdropStyle={styles.overlayBackdrop}
-            >
-                <PWText>{t('onboarding.import_account.importing')}</PWText>
-                <ActivityIndicator
-                    size='large'
-                    color={theme.colors.linkPrimary}
-                />
-            </PWOverlay>
+                title={t('onboarding.import_account.importing')}
+            />
         </PWView>
     )
 }
