@@ -9,6 +9,7 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
+
 export const name = '@perawallet/wallet-core-initializer'
 
 export * from './initialize'
