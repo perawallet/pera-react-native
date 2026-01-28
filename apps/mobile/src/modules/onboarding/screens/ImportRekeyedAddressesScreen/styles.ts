@@ -21,33 +21,19 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
         paddingHorizontal: theme.spacing.xl,
     },
+    headerContainer: {
+        marginVertical: theme.spacing.xl,
+        gap: theme.spacing.lg,
+    },
+    headerIconContainer: {
+        marginBottom: theme.spacing.md,
+    },
     title: {
         marginBottom: theme.spacing.sm,
-        marginTop: theme.spacing.sm,
     },
     description: {
-        marginBottom: theme.spacing.xl,
+        marginBottom: theme.spacing.xs,
         color: theme.colors.textGray,
-    },
-    headerRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingVertical: theme.spacing.md,
-        borderBottomWidth: theme.borders.sm,
-        borderBottomColor: theme.colors.layerGrayLighter,
-    },
-    headerCount: {
-        color: theme.colors.textGray,
-        fontWeight: '600',
-    },
-    selectAllContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    selectAllText: {
-        color: theme.colors.linkPrimary,
-        marginRight: theme.spacing.xs,
     },
     checkboxContainer: {
         padding: 0,
@@ -56,16 +42,40 @@ export const useStyles = makeStyles(theme => ({
         marginRight: 0,
         backgroundColor: 'transparent',
     },
+    checkboxWrapper: {
+        marginRight: theme.spacing.md,
+    },
     listContent: {
         paddingBottom: theme.spacing.xl,
+        paddingHorizontal: theme.spacing.xl,
     },
     itemContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: theme.spacing.md,
-        borderBottomWidth: theme.borders.sm,
-        borderBottomColor: theme.colors.layerGrayLighter,
+        padding: theme.spacing.lg,
+        marginBottom: theme.spacing.sm,
+        backgroundColor: theme.colors.background,
+        borderRadius: theme.spacing.lg,
+        borderWidth: theme.borders.sm,
+        borderColor: theme.colors.layerGray,
+        shadowColor: '#000000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    itemContent: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    iconContainer: {
+        marginRight: theme.spacing.md,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     itemTextContainer: {
         flex: 1,
@@ -79,11 +89,27 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGray,
         fontSize: 12,
     },
+    infoIconContainer: {
+        marginLeft: theme.spacing.sm,
+    },
+    infoIcon: {
+        color: theme.colors.textGray,
+    },
     footer: {
-        padding: theme.spacing.xl,
+        paddingTop: theme.spacing.xl,
+        paddingHorizontal: theme.spacing.xl,
         borderTopWidth: theme.borders.sm,
         borderTopColor: theme.colors.layerGrayLighter,
         backgroundColor: theme.colors.background,
-        paddingBottom: theme.spacing.xl + 20,
+    },
+    continueButton: {
+        marginBottom: theme.spacing.md,
+    },
+    skipButton: {
+        backgroundColor: 'transparent',
+        borderWidth: 0,
+    },
+    list: {
+        flex: 1,
     },
 }))

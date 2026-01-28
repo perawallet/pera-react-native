@@ -17,6 +17,31 @@ import { ImportRekeyedAddressesScreen } from '../ImportRekeyedAddressesScreen'
 import { AccountTypes } from '@perawallet/wallet-core-accounts'
 import { OnboardingStackParamList } from '../../../routes/types'
 
+vi.mock('@components/core', async () => {
+    const actual = await vi.importActual<object>('@components/core')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { View } = await vi.importActual<any>('react-native')
+    return {
+        ...actual,
+        PWFlatList: ({
+            ListHeaderComponent,
+            ListFooterComponent,
+            data,
+            renderItem,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        }: any) => (
+            <View>
+                {ListHeaderComponent && <ListHeaderComponent />}
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                {data.map((item: any) => (
+                    <View key={item.address}>{renderItem({ item })}</View>
+                ))}
+                {ListFooterComponent && <ListFooterComponent />}
+            </View>
+        ),
+    }
+})
+
 describe('ImportRekeyedAddressesScreen', () => {
     beforeEach(() => {
         vi.mocked(useRoute).mockReturnValue({
@@ -41,6 +66,27 @@ describe('ImportRekeyedAddressesScreen', () => {
         render(<ImportRekeyedAddressesScreen />)
         expect(
             screen.getByText('onboarding.import_rekeyed_addresses.title'),
+        ).toBeTruthy()
+        expect(
+            screen.getByText('onboarding.import_rekeyed_addresses.continue'),
+        ).toBeTruthy()
+        expect(
+            screen.getByText('onboarding.import_rekeyed_addresses.skip'),
+        ).toBeTruthy()
+        expect(
+            screen.getByText(
+                'onboarding.import_rekeyed_addresses.rekeyed_account_subtitle',
+            ),
+        ).toBeTruthy()
+        expect(
+            screen.getByText(
+                'onboarding.import_rekeyed_addresses.description_line_1',
+            ),
+        ).toBeTruthy()
+        expect(
+            screen.getByText(
+                'onboarding.import_rekeyed_addresses.description_line_2',
+            ),
         ).toBeTruthy()
     })
 })

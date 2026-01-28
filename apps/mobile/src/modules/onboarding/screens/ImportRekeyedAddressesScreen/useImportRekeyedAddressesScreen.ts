@@ -36,6 +36,7 @@ export type UseImportRekeyedAddressesScreenResult = {
     toggleSelection: (address: string) => void
     toggleSelectAll: () => void
     handleContinue: () => void
+    handleSkip: () => void
     t: (key: string, options?: Record<string, unknown>) => string
 }
 
@@ -103,6 +104,10 @@ export function useImportRekeyedAddressesScreen(): UseImportRekeyedAddressesScre
         setIsOnboarding(false)
     }, [accounts, selectedAddresses, allAccounts, setIsOnboarding])
 
+    const handleSkip = useCallback(() => {
+        setIsOnboarding(false)
+    }, [setIsOnboarding])
+
     const areAllImported = newAccounts.length === 0
     const canContinue = areAllImported || selectedAddresses.size > 0
 
@@ -116,6 +121,7 @@ export function useImportRekeyedAddressesScreen(): UseImportRekeyedAddressesScre
         toggleSelection,
         toggleSelectAll,
         handleContinue,
+        handleSkip,
         t,
     }
 }

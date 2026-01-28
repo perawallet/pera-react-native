@@ -16,7 +16,12 @@ import { PWLoadingOverlay } from '../PWLoadingOverlay'
 
 describe('PWLoadingOverlay', () => {
     it('renders the title when provided and visible', () => {
-        render(<PWLoadingOverlay isVisible={true} title="Processing..." />)
+        render(
+            <PWLoadingOverlay
+                isVisible={true}
+                title='Processing...'
+            />,
+        )
         expect(screen.getByText('Processing...')).toBeTruthy()
     })
 
@@ -26,7 +31,12 @@ describe('PWLoadingOverlay', () => {
     })
 
     it('does not render content when not visible', () => {
-        render(<PWLoadingOverlay isVisible={false} title="Processing..." />)
+        render(
+            <PWLoadingOverlay
+                isVisible={false}
+                title='Processing...'
+            />,
+        )
         expect(screen.queryByText('Processing...')).toBeNull()
         expect(screen.queryByTestId('activity-indicator')).toBeNull()
     })

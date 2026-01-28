@@ -124,12 +124,14 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                 }
 
                 const seed = getSeedFromMasterKey(privateData)
-                const discoveredRekeyedAccounts = await discoverRekeyedAccounts({
-                    seed,
-                    derivationType: DerivationTypes.Peikert,
-                    walletId,
-                    accountAddresses: accounts.map(a => a.address),
-                })
+                const discoveredRekeyedAccounts = await discoverRekeyedAccounts(
+                    {
+                        seed,
+                        derivationType: DerivationTypes.Peikert,
+                        walletId,
+                        accountAddresses: accounts.map(a => a.address),
+                    },
+                )
 
                 if (discoveredRekeyedAccounts.length === 0) {
                     setIsOnboarding(false)
@@ -144,7 +146,6 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                 setIsProcessing(false)
             }
         })
-
     }, [
         accounts,
         selectedAddresses,

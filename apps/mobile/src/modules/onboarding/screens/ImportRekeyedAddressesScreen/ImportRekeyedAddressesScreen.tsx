@@ -21,28 +21,24 @@ import {
     PWCheckbox,
     PWChip,
     PWFlatList,
+    PWRoundIcon,
 } from '@components/core'
 
 import { useStyles } from './styles'
 import { useImportRekeyedAddressesScreen } from './useImportRekeyedAddressesScreen'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import {
-    getAccountDisplayName,
-    Algo25Account,
-} from '@perawallet/wallet-core-accounts'
+import { Algo25Account } from '@perawallet/wallet-core-accounts'
 
 export const ImportRekeyedAddressesScreen = () => {
     const styles = useStyles()
     const {
         accounts,
         selectedAddresses,
-        isAllSelected,
-        areAllImported,
         canContinue,
         alreadyImportedAddresses,
         toggleSelection,
-        toggleSelectAll,
         handleContinue,
+        handleSkip,
         t,
     } = useImportRekeyedAddressesScreen()
     const navigation = useAppNavigation()
@@ -50,7 +46,6 @@ export const ImportRekeyedAddressesScreen = () => {
     const renderItem = ({ item }: { item: Algo25Account }) => {
         const isImported = alreadyImportedAddresses.has(item.address)
         const isSelected = selectedAddresses.has(item.address)
-        const displayName = getAccountDisplayName(item)
 
         return (
             <PWTouchableOpacity
@@ -58,38 +53,116 @@ export const ImportRekeyedAddressesScreen = () => {
                 onPress={() => toggleSelection(item.address)}
                 disabled={isImported}
             >
-                <PWView style={styles.itemTextContainer}>
-                    <PWText
-                        variant='body'
-                        style={styles.itemTitle}
-                    >
-                        {displayName}
-                    </PWText>
-                    <PWText
-                        variant='caption'
-                        style={styles.itemSubtitle}
-                    >
-                        {item.address}
-                    </PWText>
+                {!isImported && (
+                    <PWView style={styles.checkboxWrapper}>
+                        <PWCheckbox
+                            checked={isSelected}
+                            onPress={() => toggleSelection(item.address)}
+                            containerStyle={styles.checkboxContainer}
+                        />
+                    </PWView>
+                )}
+
+                <PWView style={styles.itemContent}>
+                    <PWView style={styles.iconContainer}>
+                        <PWRoundIcon
+                            icon='rekey'
+                            variant='helper'
+                            size='md'
+                        />
+                    </PWView>
+
+                    <PWView style={styles.itemTextContainer}>
+                        <PWText
+                            variant='body'
+                            style={styles.itemTitle}
+                            numberOfLines={1}
+                            ellipsizeMode='middle'
+                        >
+                            {item.address}
+                        </PWText>
+                        <PWText
+                            variant='caption'
+                            style={styles.itemSubtitle}
+                        >
+                            {t(
+                                'onboarding.import_rekeyed_addresses.rekeyed_account_subtitle',
+                            )}
+                        </PWText>
+                    </PWView>
+
+                    <PWView style={styles.infoIconContainer}>
+                        <PWIcon
+                            name='info'
+                            size='md'
+                            variant='secondary'
+                        />
+                    </PWView>
                 </PWView>
 
-                {isImported ? (
+                {isImported && (
                     <PWChip
                         title={t(
                             'onboarding.import_rekeyed_addresses.already_imported',
                         )}
                         variant='secondary'
                     />
-                ) : (
-                    <PWCheckbox
-                        checked={isSelected}
-                        onPress={() => toggleSelection(item.address)}
-                        containerStyle={styles.checkboxContainer}
-                    />
                 )}
             </PWTouchableOpacity>
         )
     }
+
+    const renderHeader = () => (
+        <PWView style={styles.headerContainer}>
+            <PWView style={styles.headerIconContainer}>
+                <PWIcon
+                    name='wallet'
+                    size='lg'
+                />
+            </PWView>
+            <PWText
+                variant='h3'
+                style={styles.title}
+            >
+                {t('onboarding.import_rekeyed_addresses.title', {
+                    count: accounts.length,
+                })}
+            </PWText>
+            <PWText
+                variant='h4'
+                style={styles.description}
+            >
+                {t('onboarding.import_rekeyed_addresses.description_line_1', {
+                    count: accounts.length,
+                })}
+            </PWText>
+            <PWText
+                variant='h4'
+                style={styles.description}
+            >
+                {t('onboarding.import_rekeyed_addresses.description_line_2')}
+            </PWText>
+        </PWView>
+    )
+
+    const renderFooter = () => (
+        <PWView style={styles.footer}>
+            <PWButton
+                title={t('onboarding.import_rekeyed_addresses.continue')}
+                onPress={handleContinue}
+                variant='primary'
+                isDisabled={!canContinue}
+                style={styles.continueButton}
+            />
+
+            <PWButton
+                title={t('onboarding.import_rekeyed_addresses.skip')}
+                onPress={handleSkip}
+                variant='secondary'
+                style={styles.skipButton}
+            />
+        </PWView>
+    )
 
     return (
         <PWView style={styles.container}>
@@ -101,74 +174,16 @@ export const ImportRekeyedAddressesScreen = () => {
                 }
             />
 
-            <PWView style={styles.content}>
-                <PWText
-                    variant='h1'
-                    style={styles.title}
-                >
-                    {t('onboarding.import_rekeyed_addresses.title')}
-                </PWText>
-                <PWText
-                    variant='h4'
-                    style={styles.description}
-                >
-                    {t('onboarding.import_rekeyed_addresses.description', {
-                        count: accounts.length,
-                    })}
-                </PWText>
-
-                <PWView style={styles.headerRow}>
-                    <PWText
-                        variant='body'
-                        style={styles.headerCount}
-                    >
-                        {t(
-                            'onboarding.import_rekeyed_addresses.addresses_count',
-                            {
-                                count: accounts.length,
-                            },
-                        )}
-                    </PWText>
-
-                    {!areAllImported && (
-                        <PWTouchableOpacity
-                            onPress={toggleSelectAll}
-                            style={styles.selectAllContainer}
-                        >
-                            <PWText
-                                variant='link'
-                                style={styles.selectAllText}
-                            >
-                                {t(
-                                    'onboarding.import_rekeyed_addresses.select_all',
-                                )}
-                            </PWText>
-                            <PWCheckbox
-                                checked={isAllSelected}
-                                onPress={toggleSelectAll}
-                                containerStyle={styles.checkboxContainer}
-                            />
-                        </PWTouchableOpacity>
-                    )}
-                </PWView>
-
-                <PWFlatList
-                    data={accounts}
-                    renderItem={renderItem}
-                    keyExtractor={item => item.address}
-                    contentContainerStyle={styles.listContent}
-                    showsVerticalScrollIndicator={false}
-                />
-            </PWView>
-
-            <PWView style={styles.footer}>
-                <PWButton
-                    title={t('onboarding.import_rekeyed_addresses.continue')}
-                    onPress={handleContinue}
-                    variant='primary'
-                    isDisabled={!canContinue}
-                />
-            </PWView>
+            <PWFlatList
+                data={accounts}
+                renderItem={renderItem}
+                keyExtractor={item => item.address}
+                contentContainerStyle={styles.listContent}
+                showsVerticalScrollIndicator={false}
+                ListHeaderComponent={renderHeader}
+                style={styles.list}
+            />
+            {renderFooter()}
         </PWView>
     )
 }

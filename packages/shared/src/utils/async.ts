@@ -19,8 +19,8 @@
  * @returns A Promise that resolves with the callback result.
  */
 export function deferToNextCycle<T>(
-  callback: () => T | Promise<T>,
-  delay?: number,
+    callback: () => T | Promise<T>,
+    delay?: number,
 ): Promise<T>
 /**
  * Defers execution to a future event loop cycle and returns a Promise that resolves after the delay.
@@ -30,27 +30,27 @@ export function deferToNextCycle<T>(
  */
 export function deferToNextCycle(delay?: number): Promise<void>
 export function deferToNextCycle<T>(
-  callbackOrDelay?: (() => T | Promise<T>) | number,
-  delay: number = 0,
+    callbackOrDelay?: (() => T | Promise<T>) | number,
+    delay: number = 0,
 ): Promise<T | void> {
-  const callback =
-    typeof callbackOrDelay === 'function' ? callbackOrDelay : undefined
-  const finalDelay =
-    typeof callbackOrDelay === 'number' ? callbackOrDelay : delay
+    const callback =
+        typeof callbackOrDelay === 'function' ? callbackOrDelay : undefined
+    const finalDelay =
+        typeof callbackOrDelay === 'number' ? callbackOrDelay : delay
 
-  return new Promise((resolve, reject) => {
-    setTimeout(async () => {
-      try {
-        if (callback) {
-          const result = await callback()
+    return new Promise((resolve, reject) => {
+        setTimeout(async () => {
+            try {
+                if (callback) {
+                    const result = await callback()
 
-          resolve(result)
-        } else {
-          resolve()
-        }
-      } catch (error) {
-        reject(error)
-      }
-    }, finalDelay)
-  })
+                    resolve(result)
+                } else {
+                    resolve()
+                }
+            } catch (error) {
+                reject(error)
+            }
+        }, finalDelay)
+    })
 }

@@ -23,10 +23,7 @@ import {
 } from '@components/core'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import {
-    KeyboardAvoidingView,
-    ScrollView,
-} from 'react-native'
+import { KeyboardAvoidingView, ScrollView } from 'react-native'
 import { useImportAccountScreen } from './useImportAccountScreen'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 
