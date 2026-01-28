@@ -21,14 +21,14 @@ const mockAccounts: WalletAccount[] = [
         address: 'ADDR1',
         id: 'id1',
         name: 'Account 1',
-        type: 'standard',
+        type: 'algo25',
         canSign: true,
     },
     {
         address: 'ADDR2',
         id: 'id2',
         name: 'Account 2',
-        type: 'standard',
+        type: 'algo25',
         canSign: true,
     },
 ]
@@ -71,14 +71,14 @@ describe('useUpdateAccount', () => {
                 address: 'ADDR1',
                 id: 'id1',
                 name: 'Account 1',
-                type: 'standard',
+                type: 'algo25',
                 canSign: true,
             },
             {
                 address: 'ADDR2',
                 id: 'id2',
                 name: 'Account 2',
-                type: 'standard',
+                type: 'algo25',
                 canSign: true,
             },
         )
@@ -91,7 +91,7 @@ describe('useUpdateAccount', () => {
             address: 'ADDR1',
             id: 'id1',
             name: 'Updated Account 1',
-            type: 'standard',
+            type: 'algo25',
             canSign: true,
         }
 
@@ -102,14 +102,14 @@ describe('useUpdateAccount', () => {
                 address: 'ADDR1',
                 id: 'id1',
                 name: 'Updated Account 1',
-                type: 'standard',
+                type: 'algo25',
                 canSign: true,
             },
             {
                 address: 'ADDR2',
                 id: 'id2',
                 name: 'Account 2',
-                type: 'standard',
+                type: 'algo25',
                 canSign: true,
             },
         ])
@@ -122,7 +122,7 @@ describe('useUpdateAccount', () => {
             address: 'ADDR2',
             id: 'id2',
             name: 'Updated Account 2',
-            type: 'standard',
+            type: 'algo25',
             canSign: true,
         }
 
@@ -133,14 +133,14 @@ describe('useUpdateAccount', () => {
                 address: 'ADDR1',
                 id: 'id1',
                 name: 'Account 1',
-                type: 'standard',
+                type: 'algo25',
                 canSign: true,
             },
             {
                 address: 'ADDR2',
                 id: 'id2',
                 name: 'Updated Account 2',
-                type: 'standard',
+                type: 'algo25',
                 canSign: true,
             },
         ])
@@ -153,7 +153,7 @@ describe('useUpdateAccount', () => {
             address: 'ADDR1',
             id: 'id1',
             name: 'Updated',
-            type: 'standard',
+            type: 'algo25',
             canSign: true,
         }
 
@@ -175,7 +175,7 @@ describe('useUpdateAccount', () => {
             address: 'ADDR_NOT_FOUND',
             id: 'id-not-found',
             name: 'Non-existent',
-            type: 'standard',
+            type: 'algo25',
             canSign: true,
         }
 

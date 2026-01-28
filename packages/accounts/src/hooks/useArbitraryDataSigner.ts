@@ -12,11 +12,10 @@
 
 import { useAccountsStore } from '../store'
 import { useHDWallet } from './useHDWallet'
-import { useWithKey } from '@perawallet/wallet-core-kms'
+import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCallback } from 'react'
 import { KEY_DOMAIN } from '../constants'
 import {
-    getSeedFromMasterKey,
     isAlgo25Account,
     isHDWalletAccount,
 } from '../utils'
@@ -25,7 +24,7 @@ import { Algo25Account, HDWalletAccount, WalletAccount } from '../models'
 export const useArbitraryDataSigner = () => {
     const accounts = useAccountsStore(state => state.accounts)
     const { signTransaction } = useHDWallet()
-    const { executeWithKey } = useWithKey()
+    const { executeWithKey, executeWithSeed } = useKMS()
 
     const signHDWalletArbitraryData = useCallback(
         async (
@@ -35,18 +34,11 @@ export const useArbitraryDataSigner = () => {
             const hdWalletDetails = account.hdWalletDetails
             const storageKey = hdWalletDetails.walletId
 
-            return await executeWithKey(
+            return await executeWithSeed(
                 storageKey,
                 KEY_DOMAIN,
-                async keyData => {
-                    if (!keyData) {
-                        return Promise.reject(
-                            `No signing keys found for ${account.address}`,
-                        )
-                    }
-
-                    const seed: Buffer = getSeedFromMasterKey(keyData)
-
+                async (seed: Uint8Array) => {
+                    const seedBuffer = Buffer.from(seed)
                     const toSign = typeof data === 'string' ? [data] : data
 
                     const signatures = await Promise.all(
@@ -59,7 +51,7 @@ export const useArbitraryDataSigner = () => {
                                 ]),
                             )
                             const signature = await signTransaction(
-                                seed,
+                                seedBuffer,
                                 hdWalletDetails,
                                 prefixedData,
                             )
@@ -71,7 +63,7 @@ export const useArbitraryDataSigner = () => {
                 },
             )
         },
-        [executeWithKey, signTransaction],
+        [executeWithSeed, signTransaction],
     )
 
     const signAlgo25ArbitraryData = useCallback(
@@ -137,7 +129,7 @@ export const useArbitraryDataSigner = () => {
                 `Unsupported account type ${account.type} for ${account.address}`,
             )
         },
-        [signHDWalletArbitraryData, signAlgo25ArbitraryData],
+        [accounts, signHDWalletArbitraryData, signAlgo25ArbitraryData],
     )
 
     return {

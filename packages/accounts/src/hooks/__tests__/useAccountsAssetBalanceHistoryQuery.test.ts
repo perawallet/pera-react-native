@@ -64,7 +64,7 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
         address: 'TEST_ADDRESS_123',
         id: 'test-id',
         name: 'Test Account',
-        type: 'standard',
+        type: 'algo25',
         canSign: true,
     }
 

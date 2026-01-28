@@ -22,7 +22,6 @@ import {
     isWatchAccount,
     createHDWalletKeyDataFromMnemonic,
     createAlgo25WalletKeyDataFromMnemonic,
-    getSeedFromMasterKey,
 } from '../utils'
 import { vi } from 'vitest'
 
@@ -237,25 +236,5 @@ describe('services/accounts/utils - createAlgo25WalletKeyDataFromMnemonic', () =
         expect(result.entropy).toBeDefined()
         expect(result.publicKey).toBeDefined()
         expect(result.type).toBe('algo25-key')
-    })
-})
-
-describe('services/accounts/utils - getSeedFromMasterKey', () => {
-    test('obtains seed from JSON stringified master key data', () => {
-        const masterKey = {
-            seed: Buffer.from('test-seed').toString('base64'),
-            entropy: 'test-entropy',
-        }
-        const keyData = new TextEncoder().encode(JSON.stringify(masterKey))
-        const seed = getSeedFromMasterKey(keyData)
-
-        expect(seed).toEqual(Buffer.from('test-seed'))
-    })
-
-    test('obtains seed from raw master key data', () => {
-        const keyData = new Uint8Array([1, 2, 3, 4])
-        const seed = getSeedFromMasterKey(keyData)
-
-        expect(seed).toEqual(Buffer.from([1, 2, 3, 4]))
     })
 })

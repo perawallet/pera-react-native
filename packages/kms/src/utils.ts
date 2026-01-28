@@ -10,12 +10,16 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-kms'
+import { decodeFromBase64 } from '@perawallet/wallet-core-shared';
 
-export * from './hooks/useKMS'
-export * from './hooks/useWithKey'
-export * from './models'
-export * from './errors'
-export * from './utils'
+export const getSeedFromMasterKey = (keyData: Uint8Array): Uint8Array => {
+  try {
+    // Try to parse as JSON first (new format)
+    const masterKey = JSON.parse(new TextDecoder().decode(keyData));
 
-export { initKeyManagerStore } from './store'
+    return decodeFromBase64(masterKey.seed);
+  } catch {
+    // Fall back to treating it as raw seed data (old format or tests)
+    return keyData;
+  }
+};

@@ -17,13 +17,11 @@ import {
     useAllAccounts,
     useAccountsStore,
     HDWalletAccount,
-    discoverRekeyedAccounts,
-    getSeedFromMasterKey,
+    useAccountDiscovery,
     DerivationTypes,
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsOnboarding } from '@modules/onboarding/hooks'
-import { useKMS } from '@perawallet/wallet-core-kms'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 
@@ -52,7 +50,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     } = useRoute<ImportSelectAddressesRouteProp>()
     const { t } = useLanguage()
     const allAccounts = useAllAccounts()
-    const { getPrivateData } = useKMS()
+    const { discoverRekeyedAccounts } = useAccountDiscovery()
     const navigation = useAppNavigation()
 
     const { setIsOnboarding } = useIsOnboarding()
@@ -115,23 +113,19 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
 
             try {
                 const walletId = accounts[0].hdWalletDetails.walletId
-                const privateData = await getPrivateData(walletId)
+                const discoveredRekeyedAccounts = await discoverRekeyedAccounts(
+                    {
+                        walletId,
+                        derivationType: DerivationTypes.Peikert,
+                        accountAddresses: accounts.map(a => a.address),
+                    },
+                )
 
-                if (!privateData) {
+                if (!discoveredRekeyedAccounts) {
                     setIsOnboarding(false)
                     setIsProcessing(false)
                     return
                 }
-
-                const seed = getSeedFromMasterKey(privateData)
-                const discoveredRekeyedAccounts = await discoverRekeyedAccounts(
-                    {
-                        seed,
-                        derivationType: DerivationTypes.Peikert,
-                        walletId,
-                        accountAddresses: accounts.map(a => a.address),
-                    },
-                )
 
                 if (discoveredRekeyedAccounts.length === 0) {
                     setIsOnboarding(false)
@@ -150,7 +144,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         accounts,
         selectedAddresses,
         allAccounts,
-        getPrivateData,
+        discoverRekeyedAccounts,
         setIsOnboarding,
         navigation,
     ])

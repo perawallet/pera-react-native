@@ -20,7 +20,7 @@ import {
     WatchAccount,
     type WalletAccount,
 } from './models'
-import { KeyType } from '@perawallet/wallet-core-kms'
+import { KeyType, getSeedFromMasterKey as getSeedFromKMS } from '@perawallet/wallet-core-kms'
 import * as bip39 from 'bip39'
 import { seedFromMnemonic } from '@algorandfoundation/algokit-utils/algo25'
 import nacl from 'tweetnacl'
@@ -82,14 +82,7 @@ export const canSignWithAccount = (account: WalletAccount) => {
 }
 
 export const getSeedFromMasterKey = (keyData: Uint8Array) => {
-    try {
-        // Try to parse as JSON first (new format)
-        const masterKey = JSON.parse(new TextDecoder().decode(keyData))
-        return Buffer.from(masterKey.seed, 'base64')
-    } catch {
-        // Fall back to treating it as raw seed data (old format or tests)
-        return Buffer.from(keyData)
-    }
+    return Buffer.from(getSeedFromKMS(keyData))
 }
 
 export const createHDWalletKeyDataFromMnemonic = async (

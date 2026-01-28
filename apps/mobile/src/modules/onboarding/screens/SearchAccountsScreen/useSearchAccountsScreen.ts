@@ -17,14 +17,11 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { RouteProp, useRoute } from '@react-navigation/native'
 import {
-    getSeedFromMasterKey,
-    discoverAccounts,
-    discoverRekeyedAccounts,
+    useAccountDiscovery,
     AccountTypes,
     isHDWalletAccount,
     DerivationTypes,
 } from '@perawallet/wallet-core-accounts'
-import { useKMS } from '@perawallet/wallet-core-kms'
 import { OnboardingStackParamList } from '../../routes/types'
 import { useIsOnboarding } from '../../hooks'
 
@@ -46,7 +43,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const { t } = useLanguage()
     const { showToast } = useToast()
     const navigation = useAppNavigation()
-    const { getPrivateData } = useKMS()
+    const { discoverAccounts, discoverRekeyedAccounts } = useAccountDiscovery()
     const { setIsOnboarding } = useIsOnboarding()
 
     const walletId = isHDWalletAccount(account)
@@ -96,22 +93,15 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
         hasSearched.current = true
 
         try {
-            const privateData = await getPrivateData(walletId)
-
-            if (!privateData) {
-                return
-            }
-
-            const seed = getSeedFromMasterKey(privateData)
-
             if (account.type === AccountTypes.hdWallet) {
                 const derivationType = account.hdWalletDetails.derivationType
 
                 const discoveredAccounts = await discoverAccounts({
-                    seed,
-                    derivationType,
                     walletId,
+                    derivationType,
                 })
+
+                if (!discoveredAccounts) return
 
                 // Only the master account was found, skip the selection screen
                 if (discoveredAccounts.length === 1) {
@@ -122,14 +112,13 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                     })
                 }
             } else if (account.type === AccountTypes.algo25) {
-                const discoveredRekeyedAccounts = await discoverRekeyedAccounts(
-                    {
-                        seed,
-                        derivationType: DerivationTypes.Peikert,
-                        walletId,
-                        accountAddresses: [account.address],
-                    },
-                )
+                const discoveredRekeyedAccounts = await discoverRekeyedAccounts({
+                    walletId,
+                    derivationType: DerivationTypes.Peikert,
+                    accountAddresses: [account.address],
+                })
+
+                if (!discoveredRekeyedAccounts) return
 
                 if (discoveredRekeyedAccounts.length === 0) {
                     setIsOnboarding(false)
@@ -149,7 +138,8 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
         }
     }, [
         walletId,
-        getPrivateData,
+        discoverAccounts,
+        discoverRekeyedAccounts,
         navigation,
         account,
         t,

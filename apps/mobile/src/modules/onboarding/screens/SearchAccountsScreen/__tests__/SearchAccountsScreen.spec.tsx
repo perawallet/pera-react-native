@@ -31,7 +31,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMS: () => ({
-        getPrivateData: vi.fn(),
+        executeWithSeed: vi.fn((_, __, fn) => fn(new Uint8Array(32))),
+        executeWithKey: vi.fn((_, __, fn) => fn(new Uint8Array(32))),
     }),
 }))
 
