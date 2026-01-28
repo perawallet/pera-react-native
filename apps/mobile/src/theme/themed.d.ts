@@ -33,5 +33,21 @@ declare module '@rneui/themed' {
             sm: number
             md: number
         }
+        shadows: {
+            sm: {
+                shadowColor: string
+                shadowOffset: { width: number; height: number }
+                shadowOpacity: number
+                shadowRadius: number
+                elevation: number
+            }
+            md: {
+                shadowColor: string
+                shadowOffset: { width: number; height: number }
+                shadowOpacity: number
+                shadowRadius: number
+                elevation: number
+            }
+        }
     }
 }

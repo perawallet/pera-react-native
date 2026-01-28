@@ -58,14 +58,7 @@ export const useStyles = makeStyles(theme => ({
         borderRadius: theme.spacing.lg,
         borderWidth: theme.borders.sm,
         borderColor: theme.colors.layerGray,
-        shadowColor: '#000000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-        elevation: 4,
+        ...theme.shadows.md,
     },
     itemContent: {
         flex: 1,
