@@ -13,61 +13,61 @@
 import { useCallback } from 'react'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import {
-  discoverAccounts as baseDiscoverAccounts,
-  discoverRekeyedAccounts as baseDiscoverRekeyedAccounts,
+    discoverAccounts as baseDiscoverAccounts,
+    discoverRekeyedAccounts as baseDiscoverRekeyedAccounts,
 } from '../account-discovery'
 import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 
 const KEY_DOMAIN = 'account-discovery'
 
 export const useAccountDiscovery = () => {
-  const { executeWithSeed } = useKMS()
+    const { executeWithSeed } = useKMS()
 
-  const discoverAccounts = useCallback(
-    async (params: {
-      walletId: string
-      derivationType: BIP32DerivationType
-      accountGapLimit?: number
-      keyIndexGapLimit?: number
-    }) => {
-      return executeWithSeed(
-        params.walletId,
-        KEY_DOMAIN,
-        async (seed: Uint8Array) => {
-          return baseDiscoverAccounts({
-            ...params,
-            seed: Buffer.from(seed),
-          })
+    const discoverAccounts = useCallback(
+        async (params: {
+            walletId: string
+            derivationType: BIP32DerivationType
+            accountGapLimit?: number
+            keyIndexGapLimit?: number
+        }) => {
+            return executeWithSeed(
+                params.walletId,
+                KEY_DOMAIN,
+                async (seed: Uint8Array) => {
+                    return baseDiscoverAccounts({
+                        ...params,
+                        seed: Buffer.from(seed),
+                    })
+                },
+            )
         },
-      )
-    },
-    [executeWithSeed],
-  )
+        [executeWithSeed],
+    )
 
-  const discoverRekeyedAccounts = useCallback(
-    async (params: {
-      walletId: string
-      derivationType: BIP32DerivationType
-      accountGapLimit?: number
-      keyIndexGapLimit?: number
-      accountAddresses?: string[]
-    }) => {
-      return executeWithSeed(
-        params.walletId,
-        KEY_DOMAIN,
-        async (seed: Uint8Array) => {
-          return baseDiscoverRekeyedAccounts({
-            ...params,
-            seed: Buffer.from(seed),
-          })
+    const discoverRekeyedAccounts = useCallback(
+        async (params: {
+            walletId: string
+            derivationType: BIP32DerivationType
+            accountGapLimit?: number
+            keyIndexGapLimit?: number
+            accountAddresses?: string[]
+        }) => {
+            return executeWithSeed(
+                params.walletId,
+                KEY_DOMAIN,
+                async (seed: Uint8Array) => {
+                    return baseDiscoverRekeyedAccounts({
+                        ...params,
+                        seed: Buffer.from(seed),
+                    })
+                },
+            )
         },
-      )
-    },
-    [executeWithSeed],
-  )
+        [executeWithSeed],
+    )
 
-  return {
-    discoverAccounts,
-    discoverRekeyedAccounts,
-  }
+    return {
+        discoverAccounts,
+        discoverRekeyedAccounts,
+    }
 }

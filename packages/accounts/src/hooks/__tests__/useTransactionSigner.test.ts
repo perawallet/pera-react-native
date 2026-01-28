@@ -119,9 +119,9 @@ describe('useTransactionSigner', () => {
 
     test('signTransactions signs transactions when accounts exist', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => Buffer.from('seed_data')),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -166,9 +166,9 @@ describe('useTransactionSigner', () => {
 
     test('signTransactions skips transactions not in indexesToSign', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => Buffer.from('seed_data')),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -218,7 +218,7 @@ describe('useTransactionSigner', () => {
         const dummySecure = {
             setItem: vi.fn(async () => Buffer.from('seed_data')),
             getItem: vi.fn(async () => Buffer.from('seed_data')),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -292,7 +292,7 @@ describe('useTransactionSigner', () => {
         })
 
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () =>
                 Buffer.from(
                     JSON.stringify({
@@ -301,7 +301,7 @@ describe('useTransactionSigner', () => {
                     }),
                 ),
             ),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -359,9 +359,9 @@ describe('useTransactionSigner', () => {
 
     test('signTransactions skips transactions from unknown accounts', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => Buffer.from('seed_data')),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -390,9 +390,9 @@ describe('useTransactionSigner', () => {
 
     test('signTransactions handles rekeyed accounts by using the rekey authority', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => Buffer.from('seed_data')),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -450,9 +450,9 @@ describe('useTransactionSigner', () => {
 
     test.skip('signTransactions handles Algo25 account type', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => Buffer.from('keypair_data')),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -489,9 +489,9 @@ describe('useTransactionSigner', () => {
 
     test('signTransactions batches transactions by account for efficiency', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => Buffer.from('seed_data')),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -542,9 +542,9 @@ describe('useTransactionSigner', () => {
 
     test('signTransactions preserves original array order with mixed accounts', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => Buffer.from('seed_data')),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -613,9 +613,9 @@ describe('useTransactionSigner', () => {
             return fn(null)
         })
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => null), // Return null keyData
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -653,9 +653,9 @@ describe('useTransactionSigner', () => {
 
     test('signTransactions rejects when Algo25 keyPairId is missing', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => Buffer.from('keypair_data')),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -691,9 +691,9 @@ describe('useTransactionSigner', () => {
             return fn(null)
         })
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => null), // Return null keyData
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -727,9 +727,9 @@ describe('useTransactionSigner', () => {
 
     test('signTransactions rejects when rekeyed authority account is not found', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => Buffer.from('seed_data')),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -763,9 +763,9 @@ describe('useTransactionSigner', () => {
 
     test('signTransactions rejects for unsupported account types like hardware', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => Buffer.from('seed_data')),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 
@@ -801,9 +801,9 @@ describe('useTransactionSigner', () => {
 
     test('signTransactions sets authAddress when signing for a different sender (rekeyed)', async () => {
         const dummySecure = {
-            setItem: vi.fn(async () => { }),
+            setItem: vi.fn(async () => {}),
             getItem: vi.fn(async () => Buffer.from('seed_data')),
-            removeItem: vi.fn(async () => { }),
+            removeItem: vi.fn(async () => {}),
             authenticate: vi.fn(async () => true),
         }
 

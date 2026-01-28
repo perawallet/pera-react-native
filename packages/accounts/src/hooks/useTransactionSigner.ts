@@ -23,10 +23,7 @@ import {
     PeraTransactionGroup,
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
-import {
-    isAlgo25Account,
-    isHDWalletAccount,
-} from '../utils'
+import { isAlgo25Account, isHDWalletAccount } from '../utils'
 import { Algo25Account, HDWalletAccount, WalletAccount } from '../models'
 
 export const useTransactionSigner = () => {
@@ -174,7 +171,9 @@ export const useTransactionSigner = () => {
             )
 
             // sign each group of transactions for the same account
-            const result = txnGroup.map(txn => ({ txn })) as PeraSignedTransaction[]
+            const result = txnGroup.map(txn => ({
+                txn,
+            })) as PeraSignedTransaction[]
             await Promise.all(
                 Array.from(groupedByAccount.entries()).map(async entry => {
                     const accountAddress = entry[0]

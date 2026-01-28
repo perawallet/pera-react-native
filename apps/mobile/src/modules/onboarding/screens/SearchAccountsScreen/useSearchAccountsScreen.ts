@@ -112,11 +112,13 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                     })
                 }
             } else if (account.type === AccountTypes.algo25) {
-                const discoveredRekeyedAccounts = await discoverRekeyedAccounts({
-                    walletId,
-                    derivationType: DerivationTypes.Peikert,
-                    accountAddresses: [account.address],
-                })
+                const discoveredRekeyedAccounts = await discoverRekeyedAccounts(
+                    {
+                        walletId,
+                        derivationType: DerivationTypes.Peikert,
+                        accountAddresses: [account.address],
+                    },
+                )
 
                 if (!discoveredRekeyedAccounts) return
 

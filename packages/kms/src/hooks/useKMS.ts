@@ -68,7 +68,6 @@ export const useKMS = () => {
         [getKey, removeKey, secureStorage],
     )
 
-
     const { executeWithKey } = useWithKey()
 
     const executeWithSeed = useCallback(

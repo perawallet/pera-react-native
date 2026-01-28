@@ -14,32 +14,34 @@ import { describe, test, expect, vi } from 'vitest'
 import { getSeedFromMasterKey } from '../utils'
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
-  decodeFromBase64: vi.fn((base64: string) => {
-    const binaryString = atob(base64);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    return bytes;
-  })
+    decodeFromBase64: vi.fn((base64: string) => {
+        const binaryString = atob(base64)
+        const bytes = new Uint8Array(binaryString.length)
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i)
+        }
+        return bytes
+    }),
 }))
 
 describe('kms/utils - getSeedFromMasterKey', () => {
-  test('obtains seed from JSON stringified master key data', () => {
-    const masterKey = {
-      seed: btoa('test-seed'),
-      entropy: 'test-entropy',
-    }
-    const keyData = new TextEncoder().encode(JSON.stringify(masterKey))
-    const seed = getSeedFromMasterKey(keyData)
+    test('obtains seed from JSON stringified master key data', () => {
+        const masterKey = {
+            seed: btoa('test-seed'),
+            entropy: 'test-entropy',
+        }
+        const keyData = new TextEncoder().encode(JSON.stringify(masterKey))
+        const seed = getSeedFromMasterKey(keyData)
 
-    expect(seed).toEqual(new Uint8Array(new TextEncoder().encode('test-seed')))
-  })
+        expect(seed).toEqual(
+            new Uint8Array(new TextEncoder().encode('test-seed')),
+        )
+    })
 
-  test('obtains seed from raw master key data', () => {
-    const keyData = new Uint8Array([1, 2, 3, 4])
-    const seed = getSeedFromMasterKey(keyData)
+    test('obtains seed from raw master key data', () => {
+        const keyData = new Uint8Array([1, 2, 3, 4])
+        const seed = getSeedFromMasterKey(keyData)
 
-    expect(seed).toEqual(new Uint8Array([1, 2, 3, 4]))
-  })
+        expect(seed).toEqual(new Uint8Array([1, 2, 3, 4]))
+    })
 })

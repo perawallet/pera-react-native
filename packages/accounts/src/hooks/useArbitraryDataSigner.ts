@@ -15,10 +15,7 @@ import { useHDWallet } from './useHDWallet'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCallback } from 'react'
 import { KEY_DOMAIN } from '../constants'
-import {
-    isAlgo25Account,
-    isHDWalletAccount,
-} from '../utils'
+import { isAlgo25Account, isHDWalletAccount } from '../utils'
 import { Algo25Account, HDWalletAccount, WalletAccount } from '../models'
 
 export const useArbitraryDataSigner = () => {

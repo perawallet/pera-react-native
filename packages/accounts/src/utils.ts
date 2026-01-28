@@ -20,7 +20,10 @@ import {
     WatchAccount,
     type WalletAccount,
 } from './models'
-import { KeyType, getSeedFromMasterKey as getSeedFromKMS } from '@perawallet/wallet-core-kms'
+import {
+    KeyType,
+    getSeedFromMasterKey as getSeedFromKMS,
+} from '@perawallet/wallet-core-kms'
 import * as bip39 from 'bip39'
 import { seedFromMnemonic } from '@algorandfoundation/algokit-utils/algo25'
 import nacl from 'tweetnacl'
