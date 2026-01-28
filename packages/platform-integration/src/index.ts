@@ -21,5 +21,5 @@ export * from './models'
 export * from './test-utils'
 export * from './platform'
 
-export { initDeviceStore } from './device/store'
-export { initRemoteConfigStore } from './remote-config/store'
+export { initDeviceStore, registerDeviceStore } from './device/store'
+export { initRemoteConfigStore, registerRemoteConfigStore } from './remote-config/store'

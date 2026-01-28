@@ -88,8 +88,9 @@ export const initBlockchainStore = () => {
 
 export const clearBlockchainStore = () => lazy.clear()
 
-DataStoreRegistry.register({
-    name: STORE_NAME,
-    init: initBlockchainStore,
-    clear: clearBlockchainStore,
-})
+export const registerBlockchainStore = () =>
+    DataStoreRegistry.register({
+        name: STORE_NAME,
+        init: initBlockchainStore,
+        clear: clearBlockchainStore,
+    })

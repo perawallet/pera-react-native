@@ -90,8 +90,9 @@ export const initContactsStore = () => {
 
 export const clearContactsStore = () => lazy.clear()
 
-DataStoreRegistry.register({
-    name: STORE_NAME,
-    init: initContactsStore,
-    clear: clearContactsStore,
-})
+export const registerContactsStore = () =>
+    DataStoreRegistry.register({
+        name: STORE_NAME,
+        init: initContactsStore,
+        clear: clearContactsStore,
+    })

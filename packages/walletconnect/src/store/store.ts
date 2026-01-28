@@ -75,8 +75,9 @@ export const initWalletConnectStore = () => {
 
 export const clearWalletConnectStore = () => lazy.clear()
 
-DataStoreRegistry.register({
-    name: STORE_NAME,
-    init: initWalletConnectStore,
-    clear: clearWalletConnectStore,
-})
+export const registerWalletConnectStore = () =>
+    DataStoreRegistry.register({
+        name: STORE_NAME,
+        init: initWalletConnectStore,
+        clear: clearWalletConnectStore,
+    })

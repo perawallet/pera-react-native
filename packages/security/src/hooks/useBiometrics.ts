@@ -14,8 +14,8 @@ import { useCallback, useRef } from 'react'
 import {
     useSecureStorageService,
     useBiometricsService,
+    type BiometricType
 } from '@perawallet/wallet-core-platform-integration'
-import { type BiometricType } from '../models'
 import { BIOMETRIC_STORAGE_KEY, PIN_STORAGE_KEY } from '../constants'
 
 type UseBiometricsResult = {

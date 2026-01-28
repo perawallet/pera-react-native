@@ -10,20 +10,7 @@
  limitations under the License
  */
 
-// Import store packages to trigger self-registration with DataStoreRegistry
-import '@perawallet/wallet-core-accounts'
-import '@perawallet/wallet-core-assets'
-import '@perawallet/wallet-core-blockchain'
-import '@perawallet/wallet-core-contacts'
-import '@perawallet/wallet-core-currencies'
-import '@perawallet/wallet-core-kms'
-import '@perawallet/wallet-core-polling'
-import '@perawallet/wallet-core-notifications'
-import '@perawallet/wallet-core-security'
-import '@perawallet/wallet-core-settings'
-import '@perawallet/wallet-core-swaps'
-import '@perawallet/wallet-core-walletconnect'
-
+import { registerDataStores } from '@perawallet/wallet-core'
 import { RNBiometricsService } from '../platform/biometrics'
 import { RNDeviceInfoStorageService } from '../platform/device'
 import { RNFirebaseService } from '../platform/firebase'
@@ -51,6 +38,8 @@ const platformServices: PlatformServices = {
 export const useBootstrapper = () => {
     return useCallback(async () => {
         logger.debug('Bootstrapping')
+        // Register all data stores with DataStoreRegistry
+        registerDataStores()
         // Register platform services and initialize data stores
         await registerPlatformServices(platformServices)
 

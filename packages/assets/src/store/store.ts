@@ -66,10 +66,11 @@ export const initAssetsStore = () => {
 
 export const clearAssetsStore = () => lazy.clear()
 
-DataStoreRegistry.register({
-    name: STORE_NAME,
-    init: initAssetsStore,
-    clear: clearAssetsStore,
-})
+export const registerAssetsStore = () =>
+    DataStoreRegistry.register({
+        name: STORE_NAME,
+        init: initAssetsStore,
+        clear: clearAssetsStore,
+    })
 
 export { createAssetsStore }

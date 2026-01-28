@@ -10,23 +10,23 @@
  limitations under the License
  */
 
-import { BaseStoreState } from '@perawallet/wallet-core-shared'
+import devtools from "@perawallet/wallet-core-devtools/eslint";
+import tseslint from "typescript-eslint";
+import globals from "globals";
 
-export type SecurityState = BaseStoreState & {
-    failedAttempts: number
-    lockoutEndTime: number | null
-    autoLockStartedAt: number | null
-
-    incrementFailedAttempts: () => void
-    resetFailedAttempts: () => void
-    setLockoutEndTime: (time: number | null) => void
-    setAutoLockStartedAt: (time: number | null) => void
-}
-
-export type PinEntryMode =
-    | 'setup'
-    | 'confirm'
-    | 'verify'
-    | 'change_old'
-    | 'change_new'
-    | 'change_confirm'
+/** @type {import("eslint").Linter.Config} */
+export default tseslint.config(
+  ...devtools,
+  {
+    languageOptions: {
+      parserOptions: {
+        project: "./tsconfig.json",
+        tsconfigRootDir: import.meta.dirname,
+      },
+      globals: {
+        ...globals.node,
+        ...globals.browser,
+      },
+    },
+  }
+);

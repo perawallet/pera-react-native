@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { useSecurityStore, initSecurityStore } from './store'
+export { useSecurityStore, initSecurityStore, registerSecurityStore } from './store'

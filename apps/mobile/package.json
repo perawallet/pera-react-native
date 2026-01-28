@@ -43,6 +43,7 @@
     "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-core-swaps": "workspace:*",
     "@perawallet/wallet-core-walletconnect": "workspace:*",
+    "@perawallet/wallet-core": "workspace:*",
     "@react-native-clipboard/clipboard": "^1.16.3",
     "@react-native-community/netinfo": "^11.4.1",
     "@react-native-firebase/analytics": "^23.5.0",

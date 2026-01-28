@@ -16,4 +16,4 @@ export * from './models'
 export * from './hooks'
 export * from './utils'
 
-export { initAssetsStore } from './store'
+export { initAssetsStore, registerAssetsStore } from './store'
