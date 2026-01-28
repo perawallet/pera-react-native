@@ -22,6 +22,7 @@ import {
     PWChip,
     PWFlatList,
     PWRoundIcon,
+    PWLoadingOverlay,
 } from '@components/core'
 
 import { useStyles } from './styles'
@@ -35,6 +36,7 @@ export const ImportRekeyedAddressesScreen = () => {
         accounts,
         selectedAddresses,
         canContinue,
+        isImporting,
         alreadyImportedAddresses,
         toggleSelection,
         handleContinue,
@@ -183,6 +185,12 @@ export const ImportRekeyedAddressesScreen = () => {
                 style={styles.list}
             />
             {renderFooter()}
+            <PWLoadingOverlay
+                isVisible={isImporting}
+                title={t(
+                    'onboarding.import_rekeyed_addresses.importing_accounts',
+                )}
+            />
         </PWView>
     )
 }

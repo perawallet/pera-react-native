@@ -20,6 +20,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsOnboarding } from '@modules/onboarding/hooks'
+import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 
 type ImportRekeyedAddressesRouteProp = RouteProp<
     OnboardingStackParamList,
@@ -32,6 +33,7 @@ export type UseImportRekeyedAddressesScreenResult = {
     isAllSelected: boolean
     areAllImported: boolean
     canContinue: boolean
+    isImporting: boolean
     alreadyImportedAddresses: Set<string>
     toggleSelection: (address: string) => void
     toggleSelectAll: () => void
@@ -91,17 +93,25 @@ export function useImportRekeyedAddressesScreen(): UseImportRekeyedAddressesScre
         }
     }, [isAllSelected, newAccounts])
 
+    const [isImporting, setIsImporting] = useState(false)
+
     const handleContinue = useCallback(() => {
         const accountsToAdd = accounts.filter(acc =>
             selectedAddresses.has(acc.address),
         )
 
-        if (accountsToAdd.length > 0) {
-            const { setAccounts } = useAccountsStore.getState()
-            setAccounts([...allAccounts, ...accountsToAdd])
+        if (accountsToAdd.length === 0) {
+            setIsOnboarding(false)
+            return
         }
 
-        setIsOnboarding(false)
+        setIsImporting(true)
+        deferToNextCycle(() => {
+            const { setAccounts } = useAccountsStore.getState()
+            setAccounts([...allAccounts, ...accountsToAdd])
+            setIsOnboarding(false)
+            setIsImporting(false)
+        })
     }, [accounts, selectedAddresses, allAccounts, setIsOnboarding])
 
     const handleSkip = useCallback(() => {
@@ -117,6 +127,7 @@ export function useImportRekeyedAddressesScreen(): UseImportRekeyedAddressesScre
         isAllSelected,
         areAllImported,
         canContinue,
+        isImporting,
         alreadyImportedAddresses,
         toggleSelection,
         toggleSelectAll,

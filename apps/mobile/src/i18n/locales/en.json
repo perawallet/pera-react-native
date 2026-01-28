@@ -349,7 +349,8 @@
             "continue": "Choose accounts to add",
             "skip": "Skip for now",
             "fetching": "Fetching rekeyed accounts...",
-            "rekeyed_account_subtitle": "Rekeyed account"
+            "rekeyed_account_subtitle": "Rekeyed account",
+            "importing_accounts": "Importing accounts..."
         }
     },
     "portfolio": {
