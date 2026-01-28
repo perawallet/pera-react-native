@@ -36,6 +36,7 @@ type DiscoverAccountsParams = {
     walletId: string
     accountGapLimit?: number
     keyIndexGapLimit?: number
+    accountAddresses?: string[]
 }
 
 async function checkActivity(
@@ -227,7 +228,8 @@ async function checkRekeyed(
         })
 
         return result.accounts
-    } catch {
+    } catch (error) {
+        console.error('Failed to check rekeyed accounts', error)
         return []
     }
 }
@@ -308,8 +310,29 @@ export async function discoverRekeyedAccounts({
     derivationType,
     accountGapLimit = ACCOUNT_GAP_LIMIT,
     keyIndexGapLimit = KEY_INDEX_GAP_LIMIT,
+    accountAddresses,
 }: DiscoverAccountsParams): Promise<Algo25Account[]> {
     const algorandClient = getAlgorandClient()
+
+    if (accountAddresses && accountAddresses.length > 0) {
+        const tasks = accountAddresses.map(async address => {
+            const rekeyedAccounts = await checkRekeyed(algorandClient, address)
+
+            return rekeyedAccounts.map(
+                (account: { address: string }): Algo25Account => ({
+                    id: uuidv7(),
+                    address: account.address,
+                    type: AccountTypes.algo25,
+                    canSign: true,
+                    rekeyAddress: address,
+                }),
+            )
+        })
+
+        const results = await Promise.all(tasks)
+        return results.flat()
+    }
+
     const rootKey = fromSeed(seed)
     const foundAccounts: Algo25Account[] = []
 

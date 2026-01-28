@@ -128,6 +128,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                     seed,
                     derivationType: DerivationTypes.Peikert,
                     walletId,
+                    accountAddresses: accounts.map(a => a.address),
                 })
 
                 if (discoveredRekeyedAccounts.length === 0) {

@@ -207,8 +207,40 @@ describe('discoverRekeyedAccounts', () => {
             accountGapLimit: 1,
         })
 
-        expect(accounts).toHaveLength(1)
         expect(accounts[0].address).toBe('REKEYED_ACC_1')
         expect(accounts[0].rekeyAddress).toBe('ADDRESS_0_0')
+    })
+
+    it('should use provided accountAddresses instead of HD derivation', async () => {
+        const mockSearchForAccounts = vi
+            .fn()
+            .mockImplementation(async params => {
+                // Mock indexer check for explicit address
+                if (params && params.authAddr === 'EXPLICIT_ADDRESS') {
+                    return {
+                        accounts: [{ address: 'REKEYED_FROM_EXPLICIT' }],
+                    }
+                }
+                return { accounts: [] }
+            })
+
+        mockGetAlgorandClient.mockReturnValue({
+            client: {
+                indexer: {
+                    searchForAccounts: mockSearchForAccounts,
+                },
+            },
+        })
+
+        const accounts = await discoverRekeyedAccounts({
+            seed,
+            derivationType,
+            walletId: 'test-wallet',
+            accountAddresses: ['EXPLICIT_ADDRESS', 'OTHER_ADDRESS'],
+        })
+
+        expect(accounts).toHaveLength(1)
+        expect(accounts[0].address).toBe('REKEYED_FROM_EXPLICIT')
+        expect(accounts[0].rekeyAddress).toBe('EXPLICIT_ADDRESS')
     })
 })

@@ -127,6 +127,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                         seed,
                         derivationType: DerivationTypes.Peikert,
                         walletId,
+                        accountAddresses: [account.address],
                     },
                 )
 
