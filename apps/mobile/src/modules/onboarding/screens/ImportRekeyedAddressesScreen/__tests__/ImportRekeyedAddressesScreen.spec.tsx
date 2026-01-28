@@ -43,8 +43,13 @@ vi.mock('@components/core', async () => {
                 {ListFooterComponent && <ListFooterComponent />}
             </View>
         ),
-        PWLoadingOverlay: ({ isVisible, title }: any) =>
-            isVisible ? <Text>{title}</Text> : null,
+        PWLoadingOverlay: ({
+            isVisible,
+            title,
+        }: {
+            isVisible: boolean
+            title: string
+        }) => (isVisible ? <Text>{title}</Text> : null),
     }
 })
 

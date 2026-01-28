@@ -74,17 +74,17 @@ describe('useImportRekeyedAddressesScreen', () => {
 
     vi.mocked(useRoute).mockReturnValue({
       params: { accounts: MOCK_ACCOUNTS },
-    } as any)
+    } as unknown as ReturnType<typeof useRoute>)
 
     vi.mocked(useAllAccounts).mockReturnValue([])
 
     vi.mocked(useAccountsStore.getState).mockReturnValue({
       setAccounts: mockSetAccounts,
-    } as any)
+    } as unknown as ReturnType<typeof useAccountsStore.getState>)
 
     vi.mocked(useIsOnboarding).mockReturnValue({
       setIsOnboarding: mockSetIsOnboarding,
-    } as any)
+    } as unknown as ReturnType<typeof useIsOnboarding>)
   })
 
   afterEach(() => {
