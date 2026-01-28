@@ -68,7 +68,7 @@ export const ImportRekeyedAddressesScreen = () => {
                 <PWView style={styles.itemContent}>
                     <PWView style={styles.iconContainer}>
                         <PWRoundIcon
-                            icon='rekey'
+                            icon='account-rekeyed'
                             variant='helper'
                             size='md'
                         />
