@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { registerDataStores } from '@perawallet/wallet-core'
 import { RNBiometricsService } from '../platform/biometrics'
 import { RNDeviceInfoStorageService } from '../platform/device'
 import { RNFirebaseService } from '../platform/firebase'
@@ -21,6 +20,7 @@ import {
     registerPlatformServices,
 } from '@perawallet/wallet-core-platform-integration'
 import { logger } from '@perawallet/wallet-core-shared'
+import { registerDataStores } from '@perawallet/wallet-core-initializer'
 import { useCallback } from 'react'
 
 const firebaseService = new RNFirebaseService()

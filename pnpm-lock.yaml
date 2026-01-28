@@ -201,9 +201,6 @@ importers:
       '@notifee/react-native':
         specifier: ^9.1.8
         version: 9.1.8(react-native@0.83.0(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.2.7)(react@19.2.0))
-      '@perawallet/wallet-core':
-        specifier: workspace:*
-        version: link:../../packages/core
       '@perawallet/wallet-core-accounts':
         specifier: workspace:*
         version: link:../../packages/accounts
@@ -222,6 +219,9 @@ importers:
       '@perawallet/wallet-core-currencies':
         specifier: workspace:*
         version: link:../../packages/currencies
+      '@perawallet/wallet-core-initializer':
+        specifier: workspace:*
+        version: link:../../packages/initializer
       '@perawallet/wallet-core-kms':
         specifier: workspace:*
         version: link:../../packages/kms
@@ -898,85 +898,6 @@ importers:
         specifier: 'catalog:'
         version: 4.0.16(@types/node@25.0.3)(jiti@2.6.1)(jsdom@27.4.0)(msw@2.12.7(@types/node@25.0.3)(typescript@5.9.3))(terser@5.44.1)(yaml@2.8.2)
 
-  packages/core:
-    dependencies:
-      '@babel/runtime':
-        specifier: 'catalog:'
-        version: 7.28.4
-      '@perawallet/wallet-core-accounts':
-        specifier: workspace:*
-        version: link:../accounts
-      '@perawallet/wallet-core-assets':
-        specifier: workspace:*
-        version: link:../assets
-      '@perawallet/wallet-core-blockchain':
-        specifier: workspace:*
-        version: link:../blockchain
-      '@perawallet/wallet-core-config':
-        specifier: workspace:*
-        version: link:../config
-      '@perawallet/wallet-core-contacts':
-        specifier: workspace:*
-        version: link:../contacts
-      '@perawallet/wallet-core-currencies':
-        specifier: workspace:*
-        version: link:../currencies
-      '@perawallet/wallet-core-kms':
-        specifier: workspace:*
-        version: link:../kms
-      '@perawallet/wallet-core-platform-integration':
-        specifier: workspace:*
-        version: link:../platform-integration
-      '@perawallet/wallet-core-polling':
-        specifier: workspace:*
-        version: link:../polling
-      '@perawallet/wallet-core-security':
-        specifier: workspace:*
-        version: link:../security
-      '@perawallet/wallet-core-settings':
-        specifier: workspace:*
-        version: link:../settings
-      '@perawallet/wallet-core-shared':
-        specifier: workspace:*
-        version: link:../shared
-      '@perawallet/wallet-core-swaps':
-        specifier: workspace:*
-        version: link:../swaps
-      '@perawallet/wallet-core-walletconnect':
-        specifier: workspace:*
-        version: link:../walletconnect
-    devDependencies:
-      '@perawallet/wallet-core-devtools':
-        specifier: workspace:*
-        version: link:../devtools
-      '@testing-library/react':
-        specifier: 'catalog:'
-        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.2.7)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      '@types/react':
-        specifier: 'catalog:'
-        version: 19.2.7
-      globals:
-        specifier: 'catalog:'
-        version: 15.15.0
-      reflect-metadata:
-        specifier: 'catalog:'
-        version: 0.2.2
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.3
-      typescript-eslint:
-        specifier: 'catalog:'
-        version: 8.48.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      vite:
-        specifier: 'catalog:'
-        version: 7.3.0(@types/node@25.0.3)(jiti@2.6.1)(terser@5.44.1)(yaml@2.8.2)
-      vite-plugin-dts:
-        specifier: ^4.5.4
-        version: 4.5.4(@types/node@25.0.3)(rollup@4.54.0)(typescript@5.9.3)(vite@7.3.0(@types/node@25.0.3)(jiti@2.6.1)(terser@5.44.1)(yaml@2.8.2))
-      vitest:
-        specifier: 'catalog:'
-        version: 4.0.16(@types/node@25.0.3)(jiti@2.6.1)(jsdom@27.4.0)(msw@2.12.7(@types/node@25.0.3)(typescript@5.9.3))(terser@5.44.1)(yaml@2.8.2)
-
   packages/currencies:
     dependencies:
       '@babel/runtime':
@@ -1055,6 +976,85 @@ importers:
       typescript-eslint:
         specifier: 'catalog:'
         version: 8.48.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
+
+  packages/initializer:
+    dependencies:
+      '@babel/runtime':
+        specifier: 'catalog:'
+        version: 7.28.4
+      '@perawallet/wallet-core-accounts':
+        specifier: workspace:*
+        version: link:../accounts
+      '@perawallet/wallet-core-assets':
+        specifier: workspace:*
+        version: link:../assets
+      '@perawallet/wallet-core-blockchain':
+        specifier: workspace:*
+        version: link:../blockchain
+      '@perawallet/wallet-core-config':
+        specifier: workspace:*
+        version: link:../config
+      '@perawallet/wallet-core-contacts':
+        specifier: workspace:*
+        version: link:../contacts
+      '@perawallet/wallet-core-currencies':
+        specifier: workspace:*
+        version: link:../currencies
+      '@perawallet/wallet-core-kms':
+        specifier: workspace:*
+        version: link:../kms
+      '@perawallet/wallet-core-platform-integration':
+        specifier: workspace:*
+        version: link:../platform-integration
+      '@perawallet/wallet-core-polling':
+        specifier: workspace:*
+        version: link:../polling
+      '@perawallet/wallet-core-security':
+        specifier: workspace:*
+        version: link:../security
+      '@perawallet/wallet-core-settings':
+        specifier: workspace:*
+        version: link:../settings
+      '@perawallet/wallet-core-shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@perawallet/wallet-core-swaps':
+        specifier: workspace:*
+        version: link:../swaps
+      '@perawallet/wallet-core-walletconnect':
+        specifier: workspace:*
+        version: link:../walletconnect
+    devDependencies:
+      '@perawallet/wallet-core-devtools':
+        specifier: workspace:*
+        version: link:../devtools
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.2.7)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.7
+      globals:
+        specifier: 'catalog:'
+        version: 15.15.0
+      reflect-metadata:
+        specifier: 'catalog:'
+        version: 0.2.2
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      typescript-eslint:
+        specifier: 'catalog:'
+        version: 8.48.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
+      vite:
+        specifier: 'catalog:'
+        version: 7.3.0(@types/node@25.0.3)(jiti@2.6.1)(terser@5.44.1)(yaml@2.8.2)
+      vite-plugin-dts:
+        specifier: ^4.5.4
+        version: 4.5.4(@types/node@25.0.3)(rollup@4.54.0)(typescript@5.9.3)(vite@7.3.0(@types/node@25.0.3)(jiti@2.6.1)(terser@5.44.1)(yaml@2.8.2))
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.16(@types/node@25.0.3)(jiti@2.6.1)(jsdom@27.4.0)(msw@2.12.7(@types/node@25.0.3)(typescript@5.9.3))(terser@5.44.1)(yaml@2.8.2)
 
   packages/kms:
     dependencies:
