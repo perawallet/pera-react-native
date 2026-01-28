@@ -72,13 +72,13 @@ describe('ImportRekeyedAddressesItem', () => {
                 /onboarding.import_rekeyed_addresses.already_imported/i,
             ),
         ).toBeTruthy()
-        // Ensure checkbox is likely not present or indicating disabled state if verified via specific props/styles, 
+        // Ensure checkbox is likely not present or indicating disabled state if verified via specific props/styles,
         // but checking the chip is the main visual indicator here.
     })
 
     it('renders selected state correctly', () => {
-        // Since PWCheckbox is wrapped, we might verify it via props mocking if we deeply tested, 
-        // but for now we trust the component passes the prop. 
+        // Since PWCheckbox is wrapped, we might verify it via props mocking if we deeply tested,
+        // but for now we trust the component passes the prop.
         // We can check if it renders without error.
         render(
             <ImportRekeyedAddressesItem

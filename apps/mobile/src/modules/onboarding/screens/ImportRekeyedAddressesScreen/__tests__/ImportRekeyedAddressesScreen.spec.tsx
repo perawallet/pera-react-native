@@ -117,7 +117,7 @@ describe('ImportRekeyedAddressesScreen', () => {
             screen.getByText('onboarding.import_rekeyed_addresses.skip'),
         )
         expect(mockHandleSkip).toHaveBeenCalled()
-        
+
         // Test continue (disabled by default in mock, verify it's disabled or enabled logic in hook tests)
     })
 })

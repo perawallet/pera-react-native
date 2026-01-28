@@ -50,10 +50,6 @@ describe('ImportRekeyedAddressesFooter', () => {
 
     it('calls onContinue when continue button is pressed and enabled', () => {
         const onContinue = vi.fn()
-        // Note: PWButton might behave differently regarding touch events depending on mock, 
-        // but typically fireEvent.press on the text or button works if not disabled.
-        // If disabled prop is handled by native Button or opacity, fireEvent might still simulate it if only prop is checked,
-        // but typically we check logic.
         render(
             <ImportRekeyedAddressesFooter
                 onContinue={onContinue}
