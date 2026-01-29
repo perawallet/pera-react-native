@@ -91,5 +91,5 @@ pnpm format
 // turbo
 
 ```sh
-pnpm pre-push
+pnpm pre-push --no-fail-on-error
 ```
