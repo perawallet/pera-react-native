@@ -21,6 +21,7 @@ import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen
 import { ImportAccountScreen } from '@modules/onboarding/screens/ImportAccountScreen'
 import { ImportInfoScreen } from '@modules/onboarding/screens/ImportInfoScreen'
 import { ImportSelectAddressesScreen } from '@modules/onboarding/screens/ImportSelectAddressesScreen'
+import { ImportRekeyedAddressesScreen } from '@modules/onboarding/screens/ImportRekeyedAddressesScreen'
 import { AccountErrorBoundary } from '@modules/accounts/components/AccountErrorBoundary/AccountErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
 import { screenListeners } from '@routes/listeners'
@@ -55,6 +56,9 @@ const SearchAccountsScreenWithErrorBoundary =
     withAccountErrorBoundary(SearchAccountsScreen)
 const ImportSelectAddressesScreenWithErrorBoundary = withAccountErrorBoundary(
     ImportSelectAddressesScreen,
+)
+const ImportRekeyedAddressesScreenWithErrorBoundary = withAccountErrorBoundary(
+    ImportRekeyedAddressesScreen,
 )
 
 import { OnboardingStackParamList } from './types'
@@ -120,6 +124,14 @@ export const OnboardingStackNavigator = () => {
                 }}
                 layout={safeAreaLayout}
                 component={ImportSelectAddressesScreenWithErrorBoundary}
+            />
+            <OnboardingStack.Screen
+                name='ImportRekeyedAddresses'
+                options={{
+                    headerShown: false,
+                }}
+                layout={safeAreaLayout}
+                component={ImportRekeyedAddressesScreenWithErrorBoundary}
             />
         </OnboardingStack.Navigator>
     )

@@ -10,11 +10,16 @@
  limitations under the License
  */
 
-export * from './addresses'
-export * from './arrays'
-export * from './store'
-export * from './store-registry'
-export * from './strings'
-export * from './logging'
-export * from './objects'
-export * from './async'
+import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
+
+export const getSeedFromMasterKey = (keyData: Uint8Array): Uint8Array => {
+    try {
+        // Try to parse as JSON first (new format)
+        const masterKey = JSON.parse(new TextDecoder().decode(keyData))
+
+        return decodeFromBase64(masterKey.seed)
+    } catch {
+        // Fall back to treating it as raw seed data (old format or tests)
+        return keyData
+    }
+}

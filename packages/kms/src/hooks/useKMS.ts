@@ -16,6 +16,8 @@ import { KeyPair } from '../models'
 import { v7 as uuidv7 } from 'uuid'
 import { useCallback } from 'react'
 import { logger } from '@perawallet/wallet-core-shared'
+import { useWithKey } from './useWithKey'
+import { getSeedFromMasterKey } from '../utils'
 
 export const useKMS = () => {
     const keys = useKeyManagerStore(state => state.keys)
@@ -66,18 +68,20 @@ export const useKMS = () => {
         [getKey, removeKey, secureStorage],
     )
 
-    const getPrivateData = useCallback(
-        async (id: string) => {
-            const key = getKey(id)
-            if (!key) {
-                return null
-            }
-            if (key.privateDataStorageKey) {
-                return await secureStorage.getItem(key.privateDataStorageKey)
-            }
-            return null
+    const { executeWithKey } = useWithKey()
+
+    const executeWithSeed = useCallback(
+        async <T>(
+            id: string,
+            domain: string,
+            handler: (seed: Uint8Array) => Promise<T>,
+        ) => {
+            return executeWithKey(id, domain, async privateData => {
+                const seed = getSeedFromMasterKey(privateData)
+                return handler(seed)
+            })
         },
-        [getKey, secureStorage],
+        [executeWithKey],
     )
 
     return {
@@ -85,6 +89,7 @@ export const useKMS = () => {
         deleteKey,
         saveKey,
         getKey,
-        getPrivateData,
+        executeWithKey,
+        executeWithSeed,
     }
 }

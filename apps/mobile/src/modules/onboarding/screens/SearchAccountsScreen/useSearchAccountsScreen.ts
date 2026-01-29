@@ -17,11 +17,13 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { RouteProp, useRoute } from '@react-navigation/native'
 import {
-    getSeedFromMasterKey,
-    discoverAccounts,
+    useAccountDiscovery,
+    AccountTypes,
+    isHDWalletAccount,
+    DerivationTypes,
 } from '@perawallet/wallet-core-accounts'
-import { useKMS } from '@perawallet/wallet-core-kms'
 import { OnboardingStackParamList } from '../../routes/types'
+import { useIsOnboarding } from '../../hooks'
 
 export type UseSearchAccountsScreenResult = {
     t: (key: string) => string
@@ -41,9 +43,12 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const { t } = useLanguage()
     const { showToast } = useToast()
     const navigation = useAppNavigation()
-    const { getPrivateData } = useKMS()
+    const { discoverAccounts, discoverRekeyedAccounts } = useAccountDiscovery()
+    const { setIsOnboarding } = useIsOnboarding()
 
-    const onboardingWalletId = account.hdWalletDetails.walletId
+    const walletId = isHDWalletAccount(account)
+        ? account.hdWalletDetails.walletId
+        : account.keyPairId
 
     const dotOpacities = useRef(
         Array.from(
@@ -81,31 +86,50 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const hasSearched = useRef(false)
 
     const searchAccounts = useCallback(async () => {
-        if (!onboardingWalletId || hasSearched.current) {
+        if (!walletId || hasSearched.current) {
             return
         }
 
         hasSearched.current = true
 
         try {
-            const privateData = await getPrivateData(onboardingWalletId)
+            if (account.type === AccountTypes.hdWallet) {
+                const derivationType = account.hdWalletDetails.derivationType
 
-            if (!privateData) {
-                return
+                const discoveredAccounts = await discoverAccounts({
+                    walletId,
+                    derivationType,
+                })
+
+                if (!discoveredAccounts) return
+
+                // Only the master account was found, skip the selection screen
+                if (discoveredAccounts.length === 1) {
+                    setIsOnboarding(false)
+                } else {
+                    navigation.replace('ImportSelectAddresses', {
+                        accounts: discoveredAccounts,
+                    })
+                }
+            } else if (account.type === AccountTypes.algo25) {
+                const discoveredRekeyedAccounts = await discoverRekeyedAccounts(
+                    {
+                        walletId,
+                        derivationType: DerivationTypes.Peikert,
+                        accountAddresses: [account.address],
+                    },
+                )
+
+                if (!discoveredRekeyedAccounts) return
+
+                if (discoveredRekeyedAccounts.length === 0) {
+                    setIsOnboarding(false)
+                } else {
+                    navigation.replace('ImportRekeyedAddresses', {
+                        accounts: discoveredRekeyedAccounts,
+                    })
+                }
             }
-
-            const seed = getSeedFromMasterKey(privateData)
-            const derivationType = account.hdWalletDetails.derivationType
-
-            const discoveredAccounts = await discoverAccounts({
-                seed,
-                derivationType,
-                walletId: onboardingWalletId,
-            })
-
-            navigation.replace('ImportSelectAddresses', {
-                accounts: discoveredAccounts,
-            })
         } catch {
             showToast({
                 type: 'error',
@@ -114,7 +138,16 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
             })
             navigation.goBack()
         }
-    }, [onboardingWalletId, getPrivateData, navigation, account, t, showToast])
+    }, [
+        walletId,
+        discoverAccounts,
+        discoverRekeyedAccounts,
+        navigation,
+        account,
+        t,
+        showToast,
+        setIsOnboarding,
+    ])
 
     useEffect(() => {
         searchAccounts()

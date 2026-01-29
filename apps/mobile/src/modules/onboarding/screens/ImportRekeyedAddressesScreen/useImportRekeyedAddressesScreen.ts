@@ -16,42 +16,38 @@ import { OnboardingStackParamList } from '../../routes/types'
 import {
     useAllAccounts,
     useAccountsStore,
-    HDWalletAccount,
-    useAccountDiscovery,
-    DerivationTypes,
+    Algo25Account,
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsOnboarding } from '@modules/onboarding/hooks'
-import { useAppNavigation } from '@hooks/useAppNavigation'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 
-type ImportSelectAddressesRouteProp = RouteProp<
+type ImportRekeyedAddressesRouteProp = RouteProp<
     OnboardingStackParamList,
-    'ImportSelectAddresses'
+    'ImportRekeyedAddresses'
 >
 
-export type UseImportSelectAddressesScreenResult = {
-    accounts: HDWalletAccount[]
+export type UseImportRekeyedAddressesScreenResult = {
+    accounts: Algo25Account[]
     selectedAddresses: Set<string>
     isAllSelected: boolean
     areAllImported: boolean
     canContinue: boolean
-    isProcessing: boolean
+    isImporting: boolean
     alreadyImportedAddresses: Set<string>
     toggleSelection: (address: string) => void
     toggleSelectAll: () => void
     handleContinue: () => void
+    handleSkip: () => void
     t: (key: string, options?: Record<string, unknown>) => string
 }
 
-export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreenResult {
+export function useImportRekeyedAddressesScreen(): UseImportRekeyedAddressesScreenResult {
     const {
         params: { accounts },
-    } = useRoute<ImportSelectAddressesRouteProp>()
+    } = useRoute<ImportRekeyedAddressesRouteProp>()
     const { t } = useLanguage()
     const allAccounts = useAllAccounts()
-    const { discoverRekeyedAccounts } = useAccountDiscovery()
-    const navigation = useAppNavigation()
 
     const { setIsOnboarding } = useIsOnboarding()
 
@@ -68,7 +64,6 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     const [selectedAddresses, setSelectedAddresses] = useState<Set<string>>(
         () => new Set(newAccounts.map(acc => acc.address)),
     )
-    const [isProcessing, setIsProcessing] = useState(false)
 
     const isAllSelected =
         newAccounts.length > 0 && selectedAddresses.size === newAccounts.length
@@ -98,56 +93,30 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         }
     }, [isAllSelected, newAccounts])
 
-    const handleContinue = useCallback(async () => {
-        setIsProcessing(true)
+    const [isImporting, setIsImporting] = useState(false)
 
-        deferToNextCycle(async () => {
-            const accountsToAdd = accounts.filter(acc =>
-                selectedAddresses.has(acc.address),
-            )
+    const handleContinue = useCallback(() => {
+        const accountsToAdd = accounts.filter(acc =>
+            selectedAddresses.has(acc.address),
+        )
 
-            if (accountsToAdd.length > 0) {
-                const { setAccounts } = useAccountsStore.getState()
-                setAccounts([...allAccounts, ...accountsToAdd])
-            }
+        if (accountsToAdd.length === 0) {
+            setIsOnboarding(false)
+            return
+        }
 
-            try {
-                const walletId = accounts[0].hdWalletDetails.walletId
-                const discoveredRekeyedAccounts = await discoverRekeyedAccounts(
-                    {
-                        walletId,
-                        derivationType: DerivationTypes.Peikert,
-                        accountAddresses: accounts.map(a => a.address),
-                    },
-                )
-
-                if (!discoveredRekeyedAccounts) {
-                    setIsOnboarding(false)
-                    setIsProcessing(false)
-                    return
-                }
-
-                if (discoveredRekeyedAccounts.length === 0) {
-                    setIsOnboarding(false)
-                } else {
-                    navigation.replace('ImportRekeyedAddresses', {
-                        accounts: discoveredRekeyedAccounts,
-                    })
-                }
-            } catch {
-                setIsOnboarding(false)
-            } finally {
-                setIsProcessing(false)
-            }
+        setIsImporting(true)
+        deferToNextCycle(() => {
+            const { setAccounts } = useAccountsStore.getState()
+            setAccounts([...allAccounts, ...accountsToAdd])
+            setIsOnboarding(false)
+            setIsImporting(false)
         })
-    }, [
-        accounts,
-        selectedAddresses,
-        allAccounts,
-        discoverRekeyedAccounts,
-        setIsOnboarding,
-        navigation,
-    ])
+    }, [accounts, selectedAddresses, allAccounts, setIsOnboarding])
+
+    const handleSkip = useCallback(() => {
+        setIsOnboarding(false)
+    }, [setIsOnboarding])
 
     const areAllImported = newAccounts.length === 0
     const canContinue = areAllImported || selectedAddresses.size > 0
@@ -158,11 +127,12 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         isAllSelected,
         areAllImported,
         canContinue,
-        isProcessing,
+        isImporting,
         alreadyImportedAddresses,
         toggleSelection,
         toggleSelectAll,
         handleContinue,
+        handleSkip,
         t,
     }
 }

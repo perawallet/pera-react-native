@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { discoverAccounts } from '../accountDiscovery'
+import { discoverAccounts, discoverRekeyedAccounts } from '../account-discovery'
 import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 
 // Mock the API to avoid actual key generation which might be slow or require wasm
@@ -172,5 +172,75 @@ describe('discoverAccounts', () => {
         expect(accounts[0].address).toBe('ADDRESS_0_0')
         expect(accounts[0].hdWalletDetails.account).toBe(0)
         expect(accounts[0].hdWalletDetails.keyIndex).toBe(0)
+    })
+})
+
+describe('discoverRekeyedAccounts', () => {
+    const seed = Buffer.from('test-seed')
+    const derivationType = BIP32DerivationType.Peikert
+
+    it('should find rekeyed accounts', async () => {
+        const mockSearchForAccounts = vi
+            .fn()
+            .mockImplementation(async params => {
+                if (params && params.authAddr === 'ADDRESS_0_0') {
+                    return {
+                        accounts: [{ address: 'REKEYED_ACC_1' }],
+                    }
+                }
+                return { accounts: [] }
+            })
+
+        mockGetAlgorandClient.mockReturnValue({
+            client: {
+                indexer: {
+                    searchForAccounts: mockSearchForAccounts,
+                },
+            },
+        })
+
+        const accounts = await discoverRekeyedAccounts({
+            seed,
+            derivationType,
+            walletId: 'test-wallet',
+            keyIndexGapLimit: 1,
+            accountGapLimit: 1,
+        })
+
+        expect(accounts[0].address).toBe('REKEYED_ACC_1')
+        expect(accounts[0].rekeyAddress).toBe('ADDRESS_0_0')
+    })
+
+    it('should use provided accountAddresses instead of HD derivation', async () => {
+        const mockSearchForAccounts = vi
+            .fn()
+            .mockImplementation(async params => {
+                // Mock indexer check for explicit address
+                if (params && params.authAddr === 'EXPLICIT_ADDRESS') {
+                    return {
+                        accounts: [{ address: 'REKEYED_FROM_EXPLICIT' }],
+                    }
+                }
+                return { accounts: [] }
+            })
+
+        mockGetAlgorandClient.mockReturnValue({
+            client: {
+                indexer: {
+                    searchForAccounts: mockSearchForAccounts,
+                },
+            },
+        })
+
+        const accounts = await discoverRekeyedAccounts({
+            seed,
+            derivationType,
+            walletId: 'test-wallet',
+            accountAddresses: ['EXPLICIT_ADDRESS', 'OTHER_ADDRESS'],
+        })
+
+        expect(accounts).toHaveLength(1)
+        expect(accounts[0].address).toBe('REKEYED_FROM_EXPLICIT')
+        expect(accounts[0].rekeyAddress).toBe('EXPLICIT_ADDRESS')
     })
 })

@@ -656,6 +656,22 @@ vi.mock('@rneui/themed', () => {
             md: 2,
         },
         mode: 'light',
+        shadows: {
+            sm: {
+                shadowColor: '#000000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.05,
+                shadowRadius: 4,
+                elevation: 2,
+            },
+            md: {
+                shadowColor: '#000000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.08,
+                shadowRadius: 8,
+                elevation: 4,
+            },
+        },
     }
 
     // Tab mock component with Item subcomponent
@@ -990,6 +1006,9 @@ vi.mock('@perawallet/wallet-core-settings', () => {
 vi.mock('@perawallet/wallet-core-accounts', () => {
     return {
         useAllAccounts: vi.fn(() => []),
+        useAccountDiscovery: vi.fn(() => ({
+            discoverRekeyedAccounts: vi.fn(),
+        })),
         useAccountBalancesQuery: vi.fn(() => ({ data: [], isPending: false })),
         useSelectedAccount: vi.fn(() => null),
         useSelectedAccountAddress: vi.fn(() => ({

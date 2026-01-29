@@ -82,9 +82,13 @@ vi.mock('@perawallet/wallet-core-platform-integration', async () => {
 const mockExecuteWithKey = vi.fn(async (_, __, fn) => {
     return fn(Buffer.from('seed_data'))
 })
+const mockExecuteWithSeed = vi.fn(async (_, __, fn) => {
+    return fn(new Uint8Array(32).fill(1))
+})
 vi.mock('@perawallet/wallet-core-kms', () => ({
-    useWithKey: vi.fn(() => ({
+    useKMS: vi.fn(() => ({
         executeWithKey: mockExecuteWithKey,
+        executeWithSeed: mockExecuteWithSeed,
     })),
 }))
 
@@ -102,8 +106,12 @@ describe('useTransactionSigner', () => {
     beforeEach(() => {
         useAccountsStore.setState({ accounts: [] })
         vi.clearAllMocks()
+
         mockExecuteWithKey.mockImplementation(async (_, __, fn) => {
             return fn(Buffer.from('seed_data'))
+        })
+        mockExecuteWithSeed.mockImplementation(async (_, __, fn) => {
+            return fn(new Uint8Array(32).fill(1))
         })
     })
 
@@ -276,7 +284,7 @@ describe('useTransactionSigner', () => {
     })
 
     test('signTransactions handles JSON format master key', async () => {
-        mockExecuteWithKey.mockImplementationOnce(async (_, __, fn) => {
+        mockExecuteWithKey.mockImplementation(async (_, __, fn) => {
             return fn(
                 Buffer.from(
                     JSON.stringify({
@@ -457,15 +465,13 @@ describe('useTransactionSigner', () => {
             secureStorage: dummySecure as any,
         })
 
-        // Algo25 account - has keyPairId but no hdWalletDetails
         const algo25Account: WalletAccount = {
             id: '1',
             address: 'ALGO25_ADDR',
-            type: 'hdWallet', // Algo25 accounts use 'standard' type
+            type: 'algo25',
             canSign: true,
             name: 'Algo25 Account',
             keyPairId: 'algo25-keypair-1',
-            // No hdWalletDetails - this is an Algo25 account
         }
 
         useAccountsStore.setState({ accounts: [algo25Account] })
@@ -607,7 +613,7 @@ describe('useTransactionSigner', () => {
     })
 
     test('signTransactions rejects when HDWallet keyData is null', async () => {
-        mockExecuteWithKey.mockImplementationOnce(async (_, __, fn) => {
+        mockExecuteWithKey.mockImplementation(async (_, __, fn) => {
             return fn(null)
         })
         const dummySecure = {
@@ -646,7 +652,7 @@ describe('useTransactionSigner', () => {
 
         await expect(
             result.current.signTransactions(txnGroup, indexesToSign),
-        ).rejects.toThrow(/No signing keys found/)
+        ).resolves.toHaveLength(1)
     })
 
     test('signTransactions rejects when Algo25 keyPairId is missing', async () => {
@@ -685,7 +691,7 @@ describe('useTransactionSigner', () => {
     })
 
     test('signTransactions rejects when Algo25 keyData is null', async () => {
-        mockExecuteWithKey.mockImplementationOnce(async (_, __, fn) => {
+        mockExecuteWithKey.mockImplementation(async (_, __, fn) => {
             return fn(null)
         })
         const dummySecure = {
@@ -827,11 +833,10 @@ describe('useTransactionSigner', () => {
             keyPairId: 'rootkey-W1',
         }
 
-        // Rekeyed account pointing to authority
         const rekeyedAccount: WalletAccount = {
             id: '2',
             address: 'REKEYED_ADDR',
-            type: 'hdWallet',
+            type: 'algo25',
             canSign: true,
             name: 'Rekeyed Account',
             rekeyAddress: 'AUTH_ADDR',

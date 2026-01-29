@@ -15,6 +15,7 @@ import { PWBottomSheet } from '@components/core'
 import { SigningView } from '@modules/transactions/components/signing/TransactionSigningView/SigningView'
 import { useWindowDimensions } from 'react-native'
 import { useSigningRequest } from '@perawallet/wallet-core-blockchain'
+import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 
 export type SigningProviderProps = {} & PropsWithChildren
 
@@ -27,9 +28,9 @@ export function SigningProvider({ children }: SigningProviderProps) {
     useEffect(() => {
         setIsVisible(false)
         if (nextRequest) {
-            setTimeout(() => {
+            deferToNextCycle(() => {
                 setIsVisible(true)
-            }, 0)
+            })
         }
     }, [pendingSignRequests])
 

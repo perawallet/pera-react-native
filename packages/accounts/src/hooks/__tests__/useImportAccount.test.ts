@@ -435,7 +435,9 @@ describe('useImportAccount', () => {
             })
         })
 
-        expect(imported.address).toBeTruthy()
+        expect(imported.address).toBe(
+            'BAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQ=',
+        )
         expect(imported.id).toBeTruthy()
         expect(imported.type).toBe('algo25')
 
