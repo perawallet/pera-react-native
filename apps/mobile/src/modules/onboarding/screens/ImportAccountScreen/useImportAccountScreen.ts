@@ -26,6 +26,8 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 import { useModalState } from '@hooks/useModalState'
+import { useDeepLink } from '@hooks/useDeepLink'
+import { DeeplinkType } from '@hooks/deeplink/types'
 
 const MNEMONIC_LENGTH_MAP: Record<ImportAccountType, number> = {
     hdWallet: 24,
@@ -66,6 +68,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     const importAccount = useImportAccount()
     const { showToast } = useToast()
     const { t } = useLanguage()
+    const { parseDeeplink } = useDeepLink()
 
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false)
     const [keyboardHeight, setKeyboardHeight] = useState(0)
@@ -219,9 +222,21 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     const handleQRScannerSuccess = useCallback(
         (url: string) => {
             handleCloseQRScanner()
-            updateWord(url, 0)
+
+            const parsedDeeplink = parseDeeplink(url)
+
+            if (parsedDeeplink?.type === DeeplinkType.RECOVER_ADDRESS) {
+                updateWord(parsedDeeplink.mnemonic, 0)
+                return
+            }
+
+            showToast({
+                title: t('onboarding.import_account.invalid_mnemonic_title'),
+                body: t('onboarding.import_account.invalid_mnemonic_body'),
+                type: 'error',
+            })
         },
-        [handleCloseQRScanner, updateWord],
+        [handleCloseQRScanner, parseDeeplink, showToast, t, updateWord],
     )
 
     const handleLearnMore = useCallback(() => {
