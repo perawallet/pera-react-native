@@ -306,7 +306,13 @@
             "invalid_mnemonic_title": "Invalid Passphrase",
             "invalid_mnemonic_body": "The passphrase you pasted contains too many words.",
             "insufficient_slots_title": "Invalid Passphrase",
-            "insufficient_slots_body": "The passphrase you pasted does not fit in the remaining slots."
+            "insufficient_slots_body": "The passphrase you pasted does not fit in the remaining slots.",
+            "support_options": {
+                "title": "Support Options",
+                "paste_passphrase": "Paste Full Passphrase",
+                "scan_qr": "Scan QR Code",
+                "learn_more": "Learn More"
+            }
         },
         "searching_accounts": {
             "title": "Searching your accounts"
@@ -343,8 +349,6 @@
             "title": "{{count}} rekeyed accounts found",
             "description_line_1": "You have {{count}} rekeyed accounts. This means that you can sign the transactions of the rekeyed accounts with the account you just added",
             "description_line_2": "Select the rekeyed accounts you want to add to your wallet:",
-            "addresses_count": "{{count}} addresses",
-            "select_all": "Select all",
             "already_imported": "already imported",
             "continue": "Choose accounts to add",
             "skip": "Skip for now",

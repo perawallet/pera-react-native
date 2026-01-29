@@ -58,6 +58,12 @@ vi.mock('@hooks/useLanguage', () => ({
     })),
 }))
 
+vi.mock('@hooks/useDeepLink', () => ({
+    useDeepLink: vi.fn(() => ({
+        parseDeeplink: vi.fn(),
+    })),
+}))
+
 describe('useImportAccountScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -145,5 +151,19 @@ describe('useImportAccountScreen', () => {
 
         expect(result.current.words[0]).toBe('apple')
         expect(result.current.words[1]).toBe('')
+    })
+
+    it('shows error toast when handleQRScannerSuccess is called with invalid QR content', () => {
+        const { result } = renderHook(() => useImportAccountScreen())
+
+        act(() => {
+            result.current.handleQRScannerSuccess('invalid-url')
+        })
+
+        expect(mockShowToast).toHaveBeenCalledWith({
+            title: 'onboarding.import_account.invalid_mnemonic_title',
+            body: 'onboarding.import_account.invalid_mnemonic_body',
+            type: 'error',
+        })
     })
 })
