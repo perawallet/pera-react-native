@@ -14,6 +14,7 @@ import React from 'react'
 import { render, fireEvent, screen } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ImportInfoScreen } from '../ImportInfoScreen'
+import { RECOVERY_PASSPHRASE_SUPPORT_URL } from '@perawallet/wallet-core-config'
 
 // Mock navigation
 const mockGoBack = vi.fn()
@@ -159,7 +160,7 @@ describe('ImportInfoScreen', () => {
         fireEvent.click(infoButton)
 
         expect(mockPushWebView).toHaveBeenCalledWith({
-            url: 'https://support.perawallet.app/en/article/recover-or-import-an-algorand-account-with-recovery-passphrase-11gdh1y/',
+            url: RECOVERY_PASSPHRASE_SUPPORT_URL,
         })
     })
 })

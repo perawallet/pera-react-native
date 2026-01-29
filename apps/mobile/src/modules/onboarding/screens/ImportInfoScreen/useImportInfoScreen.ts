@@ -16,12 +16,11 @@ import { RouteProp, useRoute } from '@react-navigation/native'
 import { useTheme } from '@rneui/themed'
 import { OnboardingStackParamList } from '../../routes/types'
 import { useWebView } from '@modules/webview'
+import { RECOVERY_PASSPHRASE_SUPPORT_URL } from '@perawallet/wallet-core-config'
 
 import KeyImage from '@assets/images/key.svg'
 import KeyInvertedImage from '@assets/images/key-inverted.svg'
 
-const RECOVERY_SUPPORT_URL =
-    'https://support.perawallet.app/en/article/recover-or-import-an-algorand-account-with-recovery-passphrase-11gdh1y/'
 
 export const useImportInfoScreen = () => {
     const { theme } = useTheme()
@@ -40,7 +39,7 @@ export const useImportInfoScreen = () => {
     }, [navigation, accountType])
 
     const handleInfoPress = useCallback(() => {
-        pushWebView({ url: RECOVERY_SUPPORT_URL })
+        pushWebView({ url: RECOVERY_PASSPHRASE_SUPPORT_URL })
     }, [pushWebView])
 
     const KeyImageComponent =

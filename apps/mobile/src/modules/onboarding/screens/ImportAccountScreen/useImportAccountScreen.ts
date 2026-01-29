@@ -20,6 +20,7 @@ import {
     useImportAccount,
     ImportAccountType,
 } from '@perawallet/wallet-core-accounts'
+import { RECOVERY_PASSPHRASE_SUPPORT_URL } from '@perawallet/wallet-core-config'
 
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -34,8 +35,6 @@ const MNEMONIC_LENGTH_MAP: Record<ImportAccountType, number> = {
     algo25: 25,
 }
 
-const IMPORT_ACCOUNT_SUPPORT_URL =
-    'https://support.perawallet.app/en/article/recover-or-import-an-algorand-account-with-recovery-passphrase-11gdh1y/'
 
 export type UseImportAccountScreenResult = {
     words: string[]
@@ -240,7 +239,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     )
 
     const handleLearnMore = useCallback(() => {
-        Linking.openURL(IMPORT_ACCOUNT_SUPPORT_URL)
+        Linking.openURL(RECOVERY_PASSPHRASE_SUPPORT_URL)
         handleCloseSupportOptions()
     }, [handleCloseSupportOptions])
 
