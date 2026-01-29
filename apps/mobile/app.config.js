@@ -91,6 +91,7 @@ module.exports = {
       NSPhotoLibraryAddUsageDescription: 'Pera will save QR codes to your photo library.',
       LSApplicationQueriesSchemes: ['itms-apps'],
       UIRequiredDeviceCapabilities: ['arm64'],
+      UIViewControllerBasedStatusBarAppearance: true,
       // Custom fonts
       UIAppFonts: [
         'DMSansRegular.ttf',
@@ -207,13 +208,15 @@ module.exports = {
         },
       },
     ],
+    // Localization
+    'expo-localization',
+
     // Build properties for native compilation
     [
       'expo-build-properties',
       {
         ios: {
           deploymentTarget: '16.0',
-          newArchEnabled: true,
           flipper: false,
         },
         android: {
@@ -221,7 +224,6 @@ module.exports = {
           targetSdkVersion: 35,
           compileSdkVersion: 35,
           buildToolsVersion: '35.0.0',
-          newArchEnabled: true,
           enableProguardInReleaseBuilds: false,
           kotlinVersion: '2.0.21',
         },

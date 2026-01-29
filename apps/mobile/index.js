@@ -15,9 +15,7 @@
  * Entry point for Expo-based React Native app
  */
 
-// WebAssembly polyfill must be set up first
-import * as WebAssembly from 'react-native-webassembly'
-global.WebAssembly = WebAssembly
+
 
 // Crypto and other polyfills
 import './shim'

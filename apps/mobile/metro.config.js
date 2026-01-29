@@ -102,6 +102,12 @@ const customResolveRequest = (context, moduleName, platform) => {
         }
     }
 
+    // Force resolution of critical packages to the mobile app's node_modules
+    if (moduleName === 'react' || moduleName === 'react-native' || moduleName === '@tanstack/react-query') {
+        const resolvedPath = path.resolve(projectRoot, 'node_modules', moduleName);
+        return context.resolveRequest(context, resolvedPath, platform);
+    }
+
     // Chain to the standard Metro resolver
     return context.resolveRequest(context, moduleName, platform);
 };
@@ -118,7 +124,6 @@ const config = {
         ...defaultConfig.resolver,
         nodeModulesPaths,
         unstable_enableSymlinks: true,
-        unstable_enablePackageExports: true,
         assetExts: assetExts.filter((ext) => ext !== 'svg'),
         sourceExts: [...sourceExts, 'svg'],
         resolveRequest: customResolveRequest,
