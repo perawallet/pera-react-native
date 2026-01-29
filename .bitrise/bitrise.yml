@@ -1,0 +1,1014 @@
+---
+format_version: '13'
+default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
+project_type: react-native
+app:
+  envs:
+  - BITRISE_PROJECT_PATH: apps/mobile/ios/pera.xcworkspace
+  - BITRISE_SCHEME_STAGING: Pera-Staging
+  - BITRISE_SCHEME_PRODUCTION: Pera-Production
+  - BITRISE_EXPORT_METHOD_STAGING: app-store
+  - BITRISE_EXPORT_METHOD_PRODUCTION: app-store
+  - ANDROID_MODULE: app
+  - ANDROID_BUILD_TYPE: Release
+  - GRADLE_BUILD_FILE_PATH: apps/mobile/android/build.gradle
+  - JIRA_BASE_URL: https://algorandfoundation.atlassian.net
+pipelines:
+  qa-builds:
+    stages:
+    - check-changes-stage: {}
+    - qa-build-stage:
+        abort_on_fail: true
+  release-builds:
+    stages:
+    - test-stage: {}
+    - release-build-stage:
+        abort_on_fail: true
+    triggers:
+      tag:
+      - name:
+          regex: v.*
+stages:
+  check-changes-stage:
+    workflows:
+    - check-changes: {}
+  qa-build-stage:
+    workflows:
+    - ios-staging: {}
+    - android-staging: {}
+  test-stage:
+    workflows:
+    - test: {}
+  release-build-stage:
+    workflows:
+    - ios-production: {}
+    - android-production: {}
+workflows:
+  check-changes:
+    description: Check if there are changes since the last successful build
+    meta:
+      bitrise.io:
+        stack: linux-docker-android-22.04
+    steps:
+    - git-clone@8:
+        inputs:
+        - fetch_tags: 'yes'
+        - clone_depth: -1
+    - script@1:
+        title: Check for changes
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+
+            LAST_BUILD_TIME=""
+
+            if [ -n "$BITRISE_API_TOKEN" ]; then
+              # Get last successful iOS build
+              IOS_RESPONSE=$(curl -s -H "Authorization: $BITRISE_API_TOKEN" \
+                "https://api.bitrise.io/v0.1/apps/$BITRISE_APP_SLUG/builds?workflow=ios-staging&status=1&limit=1")
+              IOS_FINISHED_AT=$(echo "$IOS_RESPONSE" | jq -r '.data[0].finished_at // empty' 2>/dev/null || echo "")
+
+              # Get last successful Android build
+              ANDROID_RESPONSE=$(curl -s -H "Authorization: $BITRISE_API_TOKEN" \
+                "https://api.bitrise.io/v0.1/apps/$BITRISE_APP_SLUG/builds?workflow=android-staging&status=1&limit=1")
+              ANDROID_FINISHED_AT=$(echo "$ANDROID_RESPONSE" | jq -r '.data[0].finished_at // empty' 2>/dev/null || echo "")
+
+              echo "Last successful iOS build: ${IOS_FINISHED_AT:-none}"
+              echo "Last successful Android build: ${ANDROID_FINISHED_AT:-none}"
+
+              # Use the earlier timestamp (so changelog includes all changes since both platforms last succeeded)
+              if [ -n "$IOS_FINISHED_AT" ] && [ -n "$ANDROID_FINISHED_AT" ]; then
+                if [[ "$IOS_FINISHED_AT" < "$ANDROID_FINISHED_AT" ]]; then
+                  LAST_BUILD_TIME="$IOS_FINISHED_AT"
+                  echo "Using iOS timestamp (earlier)"
+                else
+                  LAST_BUILD_TIME="$ANDROID_FINISHED_AT"
+                  echo "Using Android timestamp (earlier)"
+                fi
+              elif [ -n "$IOS_FINISHED_AT" ]; then
+                LAST_BUILD_TIME="$IOS_FINISHED_AT"
+                echo "Using iOS timestamp (only one available)"
+              elif [ -n "$ANDROID_FINISHED_AT" ]; then
+                LAST_BUILD_TIME="$ANDROID_FINISHED_AT"
+                echo "Using Android timestamp (only one available)"
+              fi
+            fi
+
+            if [ -z "$LAST_BUILD_TIME" ]; then
+              echo "No previous successful build found, treating as having changes"
+              HAS_CHANGES="true"
+              CHANGELOG_REF_SHA=""
+            else
+              # Check if there are commits since the last successful build
+              COMMITS_SINCE=$(git log --since="$LAST_BUILD_TIME" --oneline 2>/dev/null || echo "")
+              if [ -z "$COMMITS_SINCE" ]; then
+                echo "No commits since last successful build at $LAST_BUILD_TIME"
+                HAS_CHANGES="false"
+                CHANGELOG_REF_SHA=""
+              else
+                echo "Commits since $LAST_BUILD_TIME:"
+                echo "$COMMITS_SINCE"
+                HAS_CHANGES="true"
+
+                # Get the oldest commit since the last build and find its parent for changelog reference
+                OLDEST_NEW_SHA=$(git log --since="$LAST_BUILD_TIME" --format="%H" --reverse | head -1)
+                if [ -n "$OLDEST_NEW_SHA" ]; then
+                  # Use git log %P to get parent SHA - returns empty if commit is root (no parent)
+                  CHANGELOG_REF_SHA=$(git log --pretty=%P -n 1 "$OLDEST_NEW_SHA" | awk '{print $1}')
+                  echo "Changelog reference SHA (parent of oldest new commit): ${CHANGELOG_REF_SHA:-none (root commit)}"
+                else
+                  CHANGELOG_REF_SHA=""
+                fi
+              fi
+            fi
+
+            envman add --key HAS_CHANGES --value "$HAS_CHANGES"
+            envman add --key LAST_BUILD_TIME --value "${LAST_BUILD_TIME:-}"
+            envman add --key CHANGELOG_REF_SHA --value "${CHANGELOG_REF_SHA:-}"
+
+            if [ "$HAS_CHANGES" == "false" ]; then
+              echo "No changes detected - subsequent build stages will be skipped"
+            fi
+    - script@1:
+        title: Generate Changelog
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+
+            # Generate changelog using the reference SHA found in check-changes step
+            if [ -n "$CHANGELOG_REF_SHA" ]; then
+              echo "Generating changelog from reference SHA: $CHANGELOG_REF_SHA"
+              CHANGELOG=$(./tools/generate_changelog.sh "$CHANGELOG_REF_SHA")
+            elif [ "$HAS_CHANGES" == "true" ]; then
+              echo "No reference SHA but changes detected, generating full changelog"
+              CHANGELOG=$(./tools/generate_changelog.sh "")
+            else
+              echo "No changes detected"
+              CHANGELOG="No changes since last build"
+            fi
+
+            envman add --key CHANGELOG --value "$CHANGELOG"
+    - share-pipeline-variable@1:
+        inputs:
+        - variables: |-
+            HAS_CHANGES=$HAS_CHANGES
+            LAST_BUILD_TIME=$LAST_BUILD_TIME
+            CHANGELOG_REF_SHA=$CHANGELOG_REF_SHA
+            CHANGELOG=$CHANGELOG
+  test:
+    description: Run tests before release
+    meta:
+      bitrise.io:
+        stack: linux-docker-android-22.04
+    envs:
+    - ENVIRONMENT: production
+    steps:
+    - git-clone@8: {}
+    - restore-cache@2:
+        inputs:
+        - key: node-modules-{{ checksum "pnpm-lock.yaml" }}
+    - nvm@1:
+        inputs:
+        - node_version_file: ".tool-versions"
+    - script@1:
+        title: Install pnpm
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            npm install -g pnpm
+    - script@1:
+        title: Install dependencies
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            pnpm install --frozen-lockfile --prefer-offline
+    - save-cache@1:
+        inputs:
+        - key: node-modules-{{ checksum "pnpm-lock.yaml" }}
+        - paths: |-
+            node_modules
+            apps/mobile/node_modules
+            packages/*/node_modules
+    - script@1:
+        title: Generate Config
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            pnpm run generate:config
+    - script@1:
+        title: Run Tests
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            pnpm run test
+  ios-staging:
+    description: Build and deploy iOS Staging to TestFlight
+    envs:
+    - ENVIRONMENT: staging
+    - BITRISE_SCHEME: "$BITRISE_SCHEME_STAGING"
+    - IOS_PROFILE_NAME: Pera React Native Staging
+    - NOTIFICATION_TITLE_PREFIX: QA Build (Nightly)
+    - USE_CACHE: 'true'
+    - PARENT_WORKFLOW: qa-build
+    steps:
+    - script@1:
+        title: Check pipeline outputs
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            # Get HAS_CHANGES from pipeline outputs (from check-changes workflow)
+            # In Bitrise pipelines, outputs from previous stages are available via env vars
+            if [ "${HAS_CHANGES:-true}" == "false" ]; then
+              echo "No changes detected in check-changes stage, skipping build"
+              envman add --key SKIP_BUILD --value "true"
+            else
+              envman add --key SKIP_BUILD --value "false"
+            fi
+    after_run:
+    - _ios-build
+    - _slack-notify-ios
+    meta:
+      bitrise.io:
+        stack: osx-xcode-26.2.x-edge
+        machine_type_id: g2.mac.large
+  ios-production:
+    description: Build and deploy iOS Production to TestFlight
+    envs:
+    - ENVIRONMENT: production
+    - BITRISE_SCHEME: "$BITRISE_SCHEME_PRODUCTION"
+    - IOS_PROFILE_NAME: Pera React Native Prod
+    - NOTIFICATION_TITLE_PREFIX: Release Candidate
+    - USE_CACHE: 'false'
+    - PARENT_WORKFLOW: release
+    - SKIP_BUILD: 'false'
+    after_run:
+    - _ios-build
+    - _slack-notify-ios
+    meta:
+      bitrise.io:
+        stack: osx-xcode-26.2.x-edge
+        machine_type_id: g2.mac.large
+  _ios-build:
+    steps:
+    - git-clone@8:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        inputs:
+        - fetch_tags: 'yes'
+        - clone_depth: 0
+    - script@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        title: Setup Environment Secrets
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+
+            echo "Setting up secrets for environment: $ENVIRONMENT"
+
+            if [ "$ENVIRONMENT" == "production" ]; then
+              PREFIX="PRODUCTION_"
+            else
+              PREFIX="STAGING_"
+            fi
+
+            # List of secrets to alias
+            SECRETS=(
+              "MAINNET_BACKEND_URL"
+              "TESTNET_BACKEND_URL"
+              "BACKEND_API_KEY"
+              "IOS_GOOGLE_SERVICE_INFO_BASE64"
+              "DISCOVER_BASE_URL"
+              "STAKING_BASE_URL"
+              "ONRAMP_BASE_URL"
+            )
+
+            for SECRET in "${SECRETS[@]}"; do
+              SOURCE_VAR="${PREFIX}${SECRET}"
+              # Use indirect expansion to get the value of the source variable
+              VALUE="${!SOURCE_VAR}"
+
+              if [ -n "$VALUE" ]; then
+                echo "Aliasing $SOURCE_VAR to $SECRET"
+                envman add --key "$SECRET" --value "$VALUE" --sensitive
+              else
+                echo "Warning: $SOURCE_VAR is not set or empty"
+              fi
+            done
+    - script@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        title: Generate Changelog (if not from pipeline)
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+
+            # Skip if CHANGELOG was already set by check-changes stage
+            if [ -n "$CHANGELOG" ]; then
+              echo "Changelog already set from pipeline, skipping generation"
+              exit 0
+            fi
+
+            echo "Generating changelog (not available from pipeline)"
+
+            # For production builds, generate changelog from the last tag
+            LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+            if [ -n "$LAST_TAG" ]; then
+              echo "Generating changelog since tag: $LAST_TAG"
+              CHANGELOG=$(./tools/generate_changelog.sh "$LAST_TAG")
+            else
+              echo "No previous tag found"
+              CHANGELOG="Release build - see git history for changes"
+            fi
+
+            envman add --key CHANGELOG --value "$CHANGELOG"
+    - restore-cache@2:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        inputs:
+        - key: node-modules-{{ checksum "pnpm-lock.yaml" }}
+    - nvm@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        inputs:
+        - node_version_file: ".tool-versions"
+    - script@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        title: Install pnpm
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            npm install -g pnpm
+    - script@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        title: Install dependencies
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            pnpm install --frozen-lockfile --prefer-offline
+    - save-cache@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        inputs:
+        - key: node-modules-{{ checksum "pnpm-lock.yaml" }}
+        - paths: |-
+            node_modules
+            apps/mobile/node_modules
+            packages/*/node_modules
+    - script@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        title: Build packages
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            pnpm run build:packages
+    - script@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        title: Inject Google Service Info
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            echo "$IOS_GOOGLE_SERVICE_INFO_BASE64" | base64 --decode > apps/mobile/ios/GoogleService-Info.plist
+    - script@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        title: Install Ruby via asdf
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            asdf plugin add ruby || true
+            asdf install ruby
+    - restore-cache@2:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        inputs:
+        - key: bundler-{{ checksum "apps/mobile/Gemfile.lock" }}
+    - script@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        title: Install Bundler gems
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            cd apps/mobile
+            bundle install
+    - save-cache@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        inputs:
+        - key: bundler-{{ checksum "apps/mobile/Gemfile.lock" }}
+        - paths: apps/mobile/vendor/bundle
+    - restore-cache@2:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        inputs:
+        - key: ios-pods-{{ checksum "apps/mobile/ios/Podfile.lock" }}
+        - keys: ios-pods-
+    - cocoapods-install@2:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        inputs:
+        - source_root_path: apps/mobile/ios
+        - podfile_path: apps/mobile/ios/Podfile
+    - save-cache@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        inputs:
+        - key: ios-pods-{{ checksum "apps/mobile/ios/Podfile.lock" }}
+        - paths: apps/mobile/ios/Pods
+    - restore-cache@2:
+        run_if: '{{and (enveq "SKIP_BUILD" "false") (enveq "USE_CACHE" "true")}}'
+        inputs:
+        - key: ios-derived-data-$BITRISE_SCHEME-{{ checksum "apps/mobile/ios/Podfile.lock"
+            }}-{{ checksum "pnpm-lock.yaml" }}
+        - keys: |-
+            ios-derived-data-$BITRISE_SCHEME-
+            ios-derived-data-
+    - script@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        title: Get version from package.json
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            VERSION=$(jq -r '.version | split("-")[0]' apps/mobile/package.json)
+            envman add --key APP_VERSION --value "$VERSION"
+            envman add --key BUILD_NUMBER --value "$BITRISE_BUILD_NUMBER"
+    - certificate-and-profile-installer@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+    - script@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        title: Build & Deploy iOS
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            cd apps/mobile
+
+            # Write API key to file
+            echo "$APP_STORE_CONNECT_API_KEY_CONTENT" > api_key.p8
+            export APP_STORE_CONNECT_API_KEY_CONTENT=$(cat api_key.p8)
+
+            # Determine if we should clean
+            CLEAN="true"
+            if [ "$USE_CACHE" == "true" ]; then
+              CLEAN="false"
+            fi
+
+            bundle exec fastlane ios deploy_testflight scheme:$BITRISE_SCHEME clean:$CLEAN
+    - save-cache@1:
+        run_if: '{{and (enveq "SKIP_BUILD" "false") (enveq "USE_CACHE" "true")}}'
+        inputs:
+        - key: ios-derived-data-$BITRISE_SCHEME-{{ checksum "apps/mobile/ios/Podfile.lock"
+            }}-{{ checksum "pnpm-lock.yaml" }}
+        - paths: "~/Library/Developer/Xcode/DerivedData"
+    - deploy-to-bitrise-io@2:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        inputs:
+        - notify_user_groups: none
+        - is_enable_public_page: 'true'
+    - script@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        title: Capture artifact URLs
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            # BITRISE_PUBLIC_INSTALL_PAGE_URL is set by deploy-to-bitrise-io
+            envman add --key INSTALL_PAGE_URL --value "${BITRISE_PUBLIC_INSTALL_PAGE_URL:-}"
+  android-staging:
+    description: Build and deploy Android Staging to Firebase App Distribution
+    envs:
+    - ENVIRONMENT: staging
+    - ANDROID_FLAVOR: staging
+    - ANDROID_PACKAGE_NAME: com.algorand.perarn.staging
+    - NOTIFICATION_TITLE_PREFIX: QA Build (Nightly)
+    - USE_CACHE: 'true'
+    - PARENT_WORKFLOW: qa-build
+    - DISTRIBUTION: firebase
+    steps:
+    - script@1:
+        title: Check pipeline outputs
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            # Get HAS_CHANGES from pipeline outputs (from check-changes workflow)
+            if [ "${HAS_CHANGES:-true}" == "false" ]; then
+              echo "No changes detected in check-changes stage, skipping build"
+              envman add --key SKIP_BUILD --value "true"
+            else
+              envman add --key SKIP_BUILD --value "false"
+            fi
+    after_run:
+    - _android-build
+    - _slack-notify-android
+    meta:
+      bitrise.io:
+        stack: linux-docker-android-22.04
+  android-production:
+    description: Build and deploy Android Production to Play Store Internal
+    envs:
+    - ENVIRONMENT: production
+    - ANDROID_FLAVOR: production
+    - ANDROID_PACKAGE_NAME: com.algorand.perarn
+    - NOTIFICATION_TITLE_PREFIX: Release Candidate
+    - USE_CACHE: 'false'
+    - PARENT_WORKFLOW: release
+    - DISTRIBUTION: playstore
+    - SKIP_BUILD: 'false'
+    after_run:
+    - _android-build
+    - _slack-notify-android
+    meta:
+      bitrise.io:
+        stack: linux-docker-android-22.04
+  _android-build:
+    steps:
+    - git-clone@8:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        inputs:
+        - fetch_tags: 'yes'
+        - clone_depth: 0
+    - script@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        title: Setup Environment Secrets
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+
+            echo "Setting up secrets for environment: $ENVIRONMENT"
+
+            if [ "$ENVIRONMENT" == "production" ]; then
+              PREFIX="PRODUCTION_"
+            else
+              PREFIX="STAGING_"
+            fi
+
+            # List of secrets to alias
+            SECRETS=(
+              "MAINNET_BACKEND_URL"
+              "TESTNET_BACKEND_URL"
+              "BACKEND_API_KEY"
+              "ANDROID_GOOGLE_SERVICES_BASE64"
+              "FIREBASE_APP_ID_ANDROID"
+              "DISCOVER_BASE_URL"
+              "STAKING_BASE_URL"
+              "ONRAMP_BASE_URL"
+            )
+
+            for SECRET in "${SECRETS[@]}"; do
+              SOURCE_VAR="${PREFIX}${SECRET}"
+              # Use indirect expansion to get the value of the source variable
+              VALUE="${!SOURCE_VAR}"
+
+              if [ -n "$VALUE" ]; then
+                echo "Aliasing $SOURCE_VAR to $SECRET"
+                envman add --key "$SECRET" --value "$VALUE" --sensitive
+              else
+                echo "Warning: $SOURCE_VAR is not set or empty"
+              fi
+            done
+    - script@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        title: Generate Changelog (if not from pipeline)
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+
+            # Skip if CHANGELOG was already set by check-changes stage
+            if [ -n "$CHANGELOG" ]; then
+              echo "Changelog already set from pipeline, skipping generation"
+              exit 0
+            fi
+
+            echo "Generating changelog (not available from pipeline)"
+
+            # For production builds, generate changelog from the last tag
+            LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+            if [ -n "$LAST_TAG" ]; then
+              echo "Generating changelog since tag: $LAST_TAG"
+              CHANGELOG=$(./tools/generate_changelog.sh "$LAST_TAG")
+            else
+              echo "No previous tag found"
+              CHANGELOG="Release build - see git history for changes"
+            fi
+
+            envman add --key CHANGELOG --value "$CHANGELOG"
+    - restore-cache@2:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        inputs:
+        - key: node-modules-{{ checksum "pnpm-lock.yaml" }}
+    - nvm@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        inputs:
+        - node_version_file: ".tool-versions"
+    - script@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        title: Install pnpm
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            npm install -g pnpm
+    - script@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        title: Install dependencies
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            pnpm install --frozen-lockfile --prefer-offline
+    - save-cache@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        inputs:
+        - key: node-modules-{{ checksum "pnpm-lock.yaml" }}
+        - paths: |-
+            node_modules
+            apps/mobile/node_modules
+            packages/*/node_modules
+    - script@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        title: Build packages
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            pnpm run build:packages
+    - script@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        title: Inject Google Services JSON
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            echo "$ANDROID_GOOGLE_SERVICES_BASE64" | base64 --decode > apps/mobile/android/app/google-services.json
+    - set-java-version@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        inputs:
+        - java_version: '17'
+    - script@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        title: Install Java via asdf
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            asdf plugin add java || true
+            asdf install java
+            # Set JAVA_HOME for Gradle
+            JAVA_HOME=$(asdf where java)
+            envman add --key JAVA_HOME --value "$JAVA_HOME"
+    - restore-cache@2:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        inputs:
+        - key: android-gradle-{{ checksum "pnpm-lock.yaml" }}-{{ checksum
+            "apps/mobile/android/build.gradle" }}
+        - keys: android-gradle-
+    - script@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        title: Install and configure ccache
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            sudo apt-get update
+            sudo apt-get install -y ccache
+            mkdir -p $HOME/.ccache
+            ccache --set-config=max_size=2G
+            ccache --set-config=compression=true
+            echo "NDK_CCACHE=ccache" >> $BITRISE_SOURCE_DIR/.env
+            echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $BITRISE_SOURCE_DIR/.env
+            echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $BITRISE_SOURCE_DIR/.env
+    - restore-cache@2:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        inputs:
+        - key: android-ccache-{{ checksum "pnpm-lock.yaml" }}
+        - keys: android-ccache-
+    - script@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        title: Install Ruby via asdf
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            asdf plugin add ruby || true
+            asdf install ruby
+    - restore-cache@2:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        inputs:
+        - key: bundler-{{ checksum "apps/mobile/Gemfile.lock" }}
+    - script@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        title: Install Bundler gems
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            cd apps/mobile
+            bundle install
+    - save-cache@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        inputs:
+        - key: bundler-{{ checksum "apps/mobile/Gemfile.lock" }}
+        - paths: apps/mobile/vendor/bundle
+    - script@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        title: Setup Android Keystore
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > apps/mobile/android/app/release.keystore
+
+            cat > apps/mobile/android/keystore.properties << EOF
+            storeFile=release.keystore
+            storePassword=$ANDROID_KEYSTORE_PASSWORD
+            keyAlias=$ANDROID_KEY_ALIAS
+            keyPassword=$ANDROID_KEY_PASSWORD
+            EOF
+
+            echo "sdk.dir=$ANDROID_HOME" > apps/mobile/android/local.properties
+    - script@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        title: Get version from package.json
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            VERSION=$(jq -r '.version | split("-")[0]' apps/mobile/package.json)
+            envman add --key APP_VERSION --value "$VERSION"
+            envman add --key BUILD_NUMBER --value "$BITRISE_BUILD_NUMBER"
+    - script@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        title: Setup distribution credentials
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+
+            if [ "$DISTRIBUTION" == "firebase" ]; then
+              echo "$FIREBASE_SERVICE_ACCOUNT_BASE64" | base64 --decode > apps/mobile/android/firebase-service-account.json
+            else
+              echo "$ANDROID_JSON_KEY_FILE" > apps/mobile/android/api-key.json
+            fi
+    - script@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        title: Build & Deploy Android
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            cd apps/mobile
+
+            # Set release notes from changelog
+            export RELEASE_NOTES="$CHANGELOG"
+
+            # Determine if we should clean
+            CLEAN="true"
+            if [ "$USE_CACHE" == "true" ]; then
+              CLEAN="false"
+            fi
+
+            if [ "$DISTRIBUTION" == "firebase" ]; then
+              bundle exec fastlane android deploy_firebase flavor:$ANDROID_FLAVOR clean:$CLEAN
+            else
+              bundle exec fastlane android deploy_internal flavor:$ANDROID_FLAVOR clean:$CLEAN
+            fi
+    - save-cache@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        inputs:
+        - key: android-gradle-{{ checksum "pnpm-lock.yaml" }}-{{ checksum
+            "apps/mobile/android/build.gradle" }}
+        - paths: |-
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+    - save-cache@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        inputs:
+        - key: android-ccache-{{ checksum "pnpm-lock.yaml" }}
+        - paths: "~/.ccache"
+    - deploy-to-bitrise-io@2:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        inputs:
+        - notify_user_groups: none
+        - is_enable_public_page: 'true'
+    - script@1:
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        title: Capture artifact URLs
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+            # BITRISE_PUBLIC_INSTALL_PAGE_URL is set by deploy-to-bitrise-io
+            envman add --key INSTALL_PAGE_URL --value "${BITRISE_PUBLIC_INSTALL_PAGE_URL:-}"
+  _slack-notify-ios:
+    steps:
+    - script@1:
+        title: Send Slack Notification
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        is_always_run: true
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+
+            if [ "$BITRISE_BUILD_STATUS" == "0" ]; then
+              STATUS_EMOJI="✅"
+              STATUS_TEXT="Available on TestFlight"
+              COLOR="#36a64f"
+              STATUS="success"
+            else
+              STATUS_EMOJI="❌"
+              STATUS_TEXT="Failed"
+              COLOR="#ec0000"
+              STATUS="failure"
+            fi
+
+            # Escape changelog for JSON using jq for proper escaping
+            ESCAPED_CHANGELOG=$(printf '%s' "$CHANGELOG" | jq -Rs . | sed 's/^"//;s/"$//')
+
+            # Build context elements with optional install page link
+            CONTEXT_ELEMENTS="[{\"type\": \"mrkdwn\", \"text\": \"<${BITRISE_BUILD_URL}|View Build>\"}"
+            if [ -n "$INSTALL_PAGE_URL" ]; then
+              CONTEXT_ELEMENTS="${CONTEXT_ELEMENTS}, {\"type\": \"mrkdwn\", \"text\": \"<${INSTALL_PAGE_URL}|Download IPA>\"}"
+            fi
+            CONTEXT_ELEMENTS="${CONTEXT_ELEMENTS}]"
+
+            curl -X POST "$SLACK_WEBHOOK_URL" \
+              -H "Content-Type: application/json" \
+              -d @- << EOF
+            {
+              "username": "Bitrise",
+              "icon_emoji": ":bitrise:",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "${STATUS_EMOJI} RN ${NOTIFICATION_TITLE_PREFIX}: iOS ${ENVIRONMENT} ${STATUS_TEXT}",
+                    "emoji": true
+                  }
+                }
+              ],
+              "attachments": [
+                {
+                  "color": "${COLOR}",
+                  "blocks": [
+                    {
+                      "type": "section",
+                      "fields": [
+                        {
+                          "type": "mrkdwn",
+                          "text": "*Platform:*\niOS"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "*Version:*\n${APP_VERSION} (${BUILD_NUMBER})"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "*Status:*\n${STATUS}"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "divider"
+                    },
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "*Changes since last build:*"
+                      }
+                    },
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "${ESCAPED_CHANGELOG}"
+                      }
+                    },
+                    {
+                      "type": "divider"
+                    },
+                    {
+                      "type": "context",
+                      "elements": ${CONTEXT_ELEMENTS}
+                    }
+                  ]
+                }
+              ]
+            }
+            EOF
+  _slack-notify-android:
+    steps:
+    - script@1:
+        title: Send Slack Notification
+        run_if: '{{enveq "SKIP_BUILD" "false"}}'
+        is_always_run: true
+        inputs:
+        - content: |
+            #!/usr/bin/env bash
+            set -ex
+
+            if [ "$BITRISE_BUILD_STATUS" == "0" ]; then
+              STATUS_EMOJI="✅"
+              if [ "$DISTRIBUTION" == "firebase" ]; then
+                STATUS_TEXT="Available on Firebase App Distribution"
+              else
+                STATUS_TEXT="Available on Play Store"
+              fi
+              COLOR="#36a64f"
+              STATUS="success"
+            else
+              STATUS_EMOJI="❌"
+              STATUS_TEXT="Failed"
+              COLOR="#ec0000"
+              STATUS="failure"
+            fi
+
+            # Escape changelog for JSON using jq for proper escaping
+            ESCAPED_CHANGELOG=$(printf '%s' "$CHANGELOG" | jq -Rs . | sed 's/^"//;s/"$//')
+
+            # Build context elements with optional install page link
+            CONTEXT_ELEMENTS="[{\"type\": \"mrkdwn\", \"text\": \"<${BITRISE_BUILD_URL}|View Build>\"}"
+            if [ -n "$INSTALL_PAGE_URL" ]; then
+              CONTEXT_ELEMENTS="${CONTEXT_ELEMENTS}, {\"type\": \"mrkdwn\", \"text\": \"<${INSTALL_PAGE_URL}|Download APK>\"}"
+            fi
+            CONTEXT_ELEMENTS="${CONTEXT_ELEMENTS}]"
+
+            curl -X POST "$SLACK_WEBHOOK_URL" \
+              -H "Content-Type: application/json" \
+              -d @- << EOF
+            {
+              "username": "Bitrise",
+              "icon_emoji": ":bitrise:",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "${STATUS_EMOJI} RN ${NOTIFICATION_TITLE_PREFIX}: Android ${ENVIRONMENT} ${STATUS_TEXT}",
+                    "emoji": true
+                  }
+                }
+              ],
+              "attachments": [
+                {
+                  "color": "${COLOR}",
+                  "blocks": [
+                    {
+                      "type": "section",
+                      "fields": [
+                        {
+                          "type": "mrkdwn",
+                          "text": "*Platform:*\nAndroid"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "*Version:*\n${APP_VERSION} (${BUILD_NUMBER})"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "*Status:*\n${STATUS}"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "divider"
+                    },
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "*Changes since last build:*"
+                      }
+                    },
+                    {
+                      "type": "section",
+                      "text": {
+                        "type": "mrkdwn",
+                        "text": "${ESCAPED_CHANGELOG}"
+                      }
+                    },
+                    {
+                      "type": "divider"
+                    },
+                    {
+                      "type": "context",
+                      "elements": ${CONTEXT_ELEMENTS}
+                    }
+                  ]
+                }
+              ]
+            }
+            EOF
+meta:
+  bitrise.io:
+    stack: linux-docker-android-22.04
+    machine_type_id: g2.linux.large
