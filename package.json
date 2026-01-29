@@ -41,6 +41,11 @@
     "util": "catalog:",
     "vitest": "catalog:"
   },
+  "pnpm": {
+    "patchedDependencies": {
+      "react-native-webassembly@0.3.3": "patches/react-native-webassembly@0.3.3.patch"
+    }
+  },
   "packageManager": "pnpm@10.28.1",
   "name": "with-vite"
 }

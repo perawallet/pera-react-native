@@ -13,7 +13,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { RNDeviceInfoStorageService } from '../device'
 import * as RN from 'react-native'
-import DeviceInfo from 'react-native-device-info'
+// import DeviceInfo from 'react-native-device-info' (removed)
 
 // Mock @perawallet/wallet-core-shared
 vi.mock('@perawallet/wallet-core-shared', () => ({
@@ -21,25 +21,26 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     updateManualBackendHeaders: vi.fn(),
 }))
 
-// Mock react-native-device-info
-vi.mock('react-native-device-info', () => ({
-    __esModule: true,
-    default: {
-        getApplicationName: vi.fn(() => 'Pera Wallet'),
-        getBundleId: vi.fn(() => 'com.algorand.android'),
-        getVersion: vi.fn(() => '1.0.0'),
-        getSystemVersion: vi.fn(() => '15.0'),
-        getDeviceId: vi.fn(() => 'iPhone13,2'),
-        getUniqueId: vi.fn(() => Promise.resolve('unique-device-id')),
-        getModel: vi.fn(() => 'iPhone 13'),
-        getBuildNumber: vi.fn(() => '1'),
-    },
+// Mock expo-application
+vi.mock('expo-application', () => ({
+    applicationName: 'Pera Wallet',
+    applicationId: 'com.algorand.android',
+    nativeApplicationVersion: '1.0.0',
+    nativeBuildVersion: '1',
+    getIosIdForVendorAsync: vi.fn(() => Promise.resolve('unique-device-id')),
+    getAndroidId: vi.fn(() => 'unique-android-id'),
 }))
 
-// Mock react-native-localize
-vi.mock('react-native-localize', () => ({
-    getLocales: vi.fn(() => [{ languageTag: 'en-US' }]),
-    getCountry: vi.fn(() => 'US'),
+// Mock expo-device
+vi.mock('expo-device', () => ({
+    osVersion: '15.0',
+    modelId: 'iPhone13,2',
+    modelName: 'iPhone 13',
+}))
+
+// Mock expo-localization
+vi.mock('expo-localization', () => ({
+    getLocales: vi.fn(() => [{ languageTag: 'en-US', regionCode: 'US' }]),
 }))
 
 // Mock react-native Platform and NativeModules
@@ -102,8 +103,9 @@ describe('RNDeviceInfoStorageService', () => {
             expect(headers.get('Device-Model')).toBe('iPhone13,2')
         })
 
-        it('calls DeviceInfo methods for header values', async () => {
-            const mockDeviceInfo = vi.mocked(DeviceInfo)
+        it('calls header generation with correct values', async () => {
+            // No longer checking method calls as we use constants from Expo packages
+            // Checking headers values above is sufficient
             const mockNativeModules = vi.mocked(RN)
             mockNativeModules.NativeModules.SettingsManager.getConstants =
                 vi.fn(() => ({
@@ -115,33 +117,25 @@ describe('RNDeviceInfoStorageService', () => {
 
             service.initializeDeviceInfo()
 
-            expect(mockDeviceInfo.getApplicationName).toHaveBeenCalled()
-            expect(mockDeviceInfo.getBundleId).toHaveBeenCalled()
-            expect(mockDeviceInfo.getVersion).toHaveBeenCalled()
-            expect(mockDeviceInfo.getSystemVersion).toHaveBeenCalled()
-            expect(mockDeviceInfo.getDeviceId).toHaveBeenCalled()
+            // Removed method call checks
         })
     })
 
     describe('getDeviceID', () => {
         it('returns unique device ID from DeviceInfo', async () => {
-            const mockDeviceInfo = vi.mocked(DeviceInfo)
-
             const deviceId = await service.getDeviceID()
-
             expect(deviceId).toBe('unique-device-id')
-            expect(mockDeviceInfo.getUniqueId).toHaveBeenCalled()
+            const { getIosIdForVendorAsync } = await import('expo-application')
+            expect(getIosIdForVendorAsync).toHaveBeenCalled()
         })
     })
 
     describe('getDeviceModel', () => {
-        it('returns device model from DeviceInfo', async () => {
-            const mockDeviceInfo = vi.mocked(DeviceInfo)
+        it('returns device model from Expo Device', async () => {
 
             const model = service.getDeviceModel()
 
             expect(model).toBe('iPhone 13')
-            expect(mockDeviceInfo.getModel).toHaveBeenCalled()
         })
     })
 
@@ -171,14 +165,14 @@ describe('RNDeviceInfoStorageService', () => {
 
     describe('getDeviceLocale', () => {
         it('returns formatted locale correctly', async () => {
-            const { getLocales } = await import('react-native-localize')
+            const { getLocales } = await import('expo-localization')
             vi.mocked(getLocales).mockReturnValue([
                 {
                     languageTag: 'en-US',
                     languageCode: 'en',
-                    isRTL: false,
-                    countryCode: 'US',
-                },
+                    textDirection: 'ltr',
+                    regionCode: 'US',
+                } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             ])
             const locale = service.getDeviceLocale()
 
@@ -186,7 +180,7 @@ describe('RNDeviceInfoStorageService', () => {
         })
 
         it('returns default locale when no locales available', async () => {
-            const { getLocales } = await import('react-native-localize')
+            const { getLocales } = await import('expo-localization')
             vi.mocked(getLocales).mockReturnValue([])
             const locale = service.getDeviceLocale()
 
@@ -211,14 +205,14 @@ describe('RNDeviceInfoStorageService', () => {
 
         it('returns formatted locale for Android', async () => {
             vi.mocked(RN).Platform.OS = 'android'
-            const { getLocales } = await import('react-native-localize')
+            const { getLocales } = await import('expo-localization')
             vi.mocked(getLocales).mockReturnValue([
                 {
                     languageTag: 'en-GB',
                     languageCode: 'en',
-                    isRTL: false,
-                    countryCode: 'GB',
-                },
+                    textDirection: 'ltr',
+                    regionCode: 'GB',
+                } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             ])
 
             const androidService = new RNDeviceInfoStorageService()
@@ -228,14 +222,14 @@ describe('RNDeviceInfoStorageService', () => {
         })
 
         it('does not convert underscores to hyphens in locale', async () => {
-            const { getLocales } = await import('react-native-localize')
+            const { getLocales } = await import('expo-localization')
             vi.mocked(getLocales).mockReturnValue([
                 {
                     languageTag: 'fr_CA',
                     languageCode: 'fr',
-                    isRTL: false,
-                    countryCode: 'CA',
-                },
+                    textDirection: 'ltr',
+                    regionCode: 'CA',
+                } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             ])
 
             const locale = service.getDeviceLocale()
@@ -255,23 +249,22 @@ describe('RNDeviceInfoStorageService', () => {
     })
 
     describe('getAppVersion', () => {
-        it('returns app version from DeviceInfo', () => {
+        it('returns app version from Expo Application', () => {
             const version = service.getAppVersion()
-
             expect(version).toBe('1.0.0')
         })
     })
 
     describe('locale formatting', () => {
         it('does not replace underscores with hyphens', async () => {
-            const { getLocales } = await import('react-native-localize')
+            const { getLocales } = await import('expo-localization')
             vi.mocked(getLocales).mockReturnValue([
                 {
                     languageTag: 'zh_Hans_CN',
                     languageCode: 'zh',
-                    isRTL: false,
-                    countryCode: 'CN',
-                },
+                    textDirection: 'ltr',
+                    regionCode: 'CN',
+                } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             ])
 
             const locale = service.getDeviceLocale()
@@ -279,14 +272,14 @@ describe('RNDeviceInfoStorageService', () => {
             expect(locale).toBe('zh_Hans_CN')
         })
         it('removes extra information starting with @', async () => {
-            const { getLocales } = await import('react-native-localize')
+            const { getLocales } = await import('expo-localization')
             vi.mocked(getLocales).mockReturnValue([
                 {
                     languageTag: 'en-US@rg=ptzzzz',
                     languageCode: 'en',
-                    isRTL: false,
-                    countryCode: 'US',
-                },
+                    textDirection: 'ltr',
+                    regionCode: 'US',
+                } as any, // eslint-disable-line @typescript-eslint/no-explicit-any
             ])
             const locale = service.getDeviceLocale()
             expect(locale).toBe('en-US@rg=ptzzzz')

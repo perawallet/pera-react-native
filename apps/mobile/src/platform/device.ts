@@ -15,9 +15,10 @@ import {
     type DevicePlatform,
 } from '@perawallet/wallet-core-platform-integration'
 import { updateBackendHeaders } from '@perawallet/wallet-core-shared'
-import DeviceInfo from 'react-native-device-info'
+import * as Application from 'expo-application'
+import * as Device from 'expo-device'
 import { Platform } from 'react-native'
-import { getCountry, getLocales } from 'react-native-localize'
+import { getLocales } from 'expo-localization'
 import { config } from '@perawallet/wallet-core-config'
 
 const findDeviceLocale = () => {
@@ -26,30 +27,33 @@ const findDeviceLocale = () => {
 }
 
 const buildUserAgent = () => {
-    return `${DeviceInfo.getApplicationName()}/${DeviceInfo.getVersion()}.${DeviceInfo.getBuildNumber()} \
-  (${Platform.OS}; ${DeviceInfo.getModel()}; ${DeviceInfo.getSystemVersion()}) \
-  pera_${Platform.OS}_${DeviceInfo.getVersion()}`
+    return `${Application.applicationName}/${Application.nativeApplicationVersion}.${Application.nativeBuildVersion} \
+  (${Platform.OS}; ${Device.modelName}; ${Device.osVersion}) \
+  pera_${Platform.OS}_${Application.nativeApplicationVersion}`
 }
 
 export class RNDeviceInfoStorageService implements DeviceInfoService {
     initializeDeviceInfo(): void {
         const headers = new Map<string, string>()
-        headers.set('App-Name', DeviceInfo.getApplicationName())
-        headers.set('App-Package-Name', DeviceInfo.getBundleId())
-        headers.set('App-Version', DeviceInfo.getVersion())
+        headers.set('App-Name', Application.applicationName ?? '')
+        headers.set('App-Package-Name', Application.applicationId ?? '')
+        headers.set('App-Version', Application.nativeApplicationVersion ?? '')
         headers.set('Client-Type', Platform.OS)
         headers.set('Device-Version', findDeviceLocale())
-        headers.set('Device-OS-Version', DeviceInfo.getSystemVersion())
-        headers.set('Device-Model', DeviceInfo.getDeviceId())
+        headers.set('Device-OS-Version', Device.osVersion ?? '')
+        headers.set('Device-Model', Device.modelId ?? '')
         headers.set('User-Agent', buildUserAgent())
 
         updateBackendHeaders(headers)
     }
-    getDeviceID(): Promise<string> {
-        return DeviceInfo.getUniqueId()
+    async getDeviceID(): Promise<string> {
+        if (Platform.OS === 'ios') {
+            return (await Application.getIosIdForVendorAsync()) ?? ''
+        }
+        return Application.getAndroidId() ?? ''
     }
     getDeviceModel(): string {
-        return DeviceInfo.getModel()
+        return Device.modelName ?? ''
     }
     getDevicePlatform(): DevicePlatform {
         return Platform.OS as DevicePlatform
@@ -61,21 +65,22 @@ export class RNDeviceInfoStorageService implements DeviceInfoService {
         return buildUserAgent()
     }
     getAppVersion(): string {
-        return DeviceInfo.getVersion()
+        return Application.nativeApplicationVersion ?? ''
     }
     getAppBuild(): string {
-        return DeviceInfo.getBuildNumber()
+        return Application.nativeBuildVersion ?? ''
     }
     getAppId(): string {
         return config.appStoreAppID
     }
     getAppPackage(): string {
-        return DeviceInfo.getBundleId()
+        return Application.applicationId ?? ''
     }
     getAppName(): string {
-        return DeviceInfo.getApplicationName()
+        return Application.applicationName ?? ''
     }
     getDeviceCountry(): string {
-        return getCountry()
+        const locales = getLocales()
+        return locales[0]?.regionCode ?? 'US'
     }
 }

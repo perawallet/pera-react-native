@@ -12,7 +12,7 @@
 
 import { useToast } from './useToast'
 import { useLanguage } from '@hooks/useLanguage'
-import Clipboard from '@react-native-clipboard/clipboard'
+import * as Clipboard from 'expo-clipboard'
 import { useCallback } from 'react'
 
 export const useClipboard = () => {
@@ -20,8 +20,8 @@ export const useClipboard = () => {
     const { t } = useLanguage()
 
     const copyToClipboard = useCallback(
-        (text: string) => {
-            Clipboard.setString(text)
+        async (text: string) => {
+            await Clipboard.setStringAsync(text)
             showToast({
                 title: t('common.copied_to_clipboard.title'),
                 body: t('common.copied_to_clipboard.body'),

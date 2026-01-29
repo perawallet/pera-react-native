@@ -13,13 +13,11 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useClipboard } from '../useClipboard'
-import Clipboard from '@react-native-clipboard/clipboard'
+import * as Clipboard from 'expo-clipboard'
 import { useToast } from '../useToast'
 
-vi.mock('@react-native-clipboard/clipboard', () => ({
-    default: {
-        setString: vi.fn(),
-    },
+vi.mock('expo-clipboard', () => ({
+    setStringAsync: vi.fn(),
 }))
 
 vi.mock('../useToast', () => ({
@@ -37,19 +35,19 @@ describe('useClipboard', () => {
         vi.clearAllMocks()
     })
 
-    it('should copy text to clipboard and show toast', () => {
+    it('should copy text to clipboard and show toast', async () => {
         const mockShowToast = vi.fn()
-        ;(useToast as Mock).mockReturnValue({
-            showToast: mockShowToast,
-        })
+            ; (useToast as Mock).mockReturnValue({
+                showToast: mockShowToast,
+            })
 
         const { result } = renderHook(() => useClipboard())
 
-        act(() => {
-            result.current.copyToClipboard('test text')
+        await act(async () => {
+            await result.current.copyToClipboard('test text')
         })
 
-        expect(Clipboard.setString).toHaveBeenCalledWith('test text')
+        expect(Clipboard.setStringAsync).toHaveBeenCalledWith('test text')
         expect(mockShowToast).toHaveBeenCalledWith({
             title: 'common.copied_to_clipboard.title',
             body: 'common.copied_to_clipboard.body',

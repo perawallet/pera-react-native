@@ -40,6 +40,7 @@ export const useDeleteAllData = () => {
         try {
             await deleteDevices()
         } catch (e) {
+            // eslint-disable-next-line no-console
             console.error(e)
         }
 

@@ -19,7 +19,10 @@ import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persi
 import { Persister } from '@tanstack/react-query-persist-client'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { RootComponent } from '@components/RootComponent'
-import BootSplash from 'react-native-bootsplash'
+import * as SplashScreen from 'expo-splash-screen'
+
+// Keep the splash screen visible while we fetch resources
+SplashScreen.preventAutoHideAsync()
 import { NotifierWrapper } from 'react-native-notifier'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useLanguage } from '@hooks/useLanguage'
@@ -46,7 +49,7 @@ export const App = () => {
                 //we defer the hiding so the initial layout can happen
                 setTimeout(() => {
                     setBootstrapped(true)
-                    BootSplash.hide({ fade: true })
+                    SplashScreen.hideAsync()
                 }, 200)
             })
         }

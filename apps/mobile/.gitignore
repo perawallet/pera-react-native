@@ -73,3 +73,17 @@ yarn-error.log
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# Expo - Native folders are generated via `expo prebuild`
+# Keep these ignored since they can be regenerated on demand
+ios/
+android/
+
+# Expo cache and logs
+.expo/
+*.expo/
+web-build/
+dist/
+
+# EAS
+.eas/
