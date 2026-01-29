@@ -30,5 +30,3 @@ export type PinEntryMode =
     | 'change_old'
     | 'change_new'
     | 'change_confirm'
-
-export type BiometricType = 'face' | 'fingerprint' | 'iris' | 'none'

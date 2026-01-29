@@ -67,8 +67,9 @@ export const initSwapsStore = () => {
 
 export const clearSwapsStore = () => lazy.clear()
 
-DataStoreRegistry.register({
-    name: STORE_NAME,
-    init: initSwapsStore,
-    clear: clearSwapsStore,
-})
+export const registerSwapsStore = () =>
+    DataStoreRegistry.register({
+        name: STORE_NAME,
+        init: initSwapsStore,
+        clear: clearSwapsStore,
+    })

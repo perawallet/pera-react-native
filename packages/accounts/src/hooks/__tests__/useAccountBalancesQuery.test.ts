@@ -100,7 +100,7 @@ describe('useAccountBalances', () => {
             address: 'ADDR1',
             name: 'Account 1',
             id: '1',
-            type: 'standard',
+            type: 'algo25',
             canSign: true,
         }
 
@@ -140,7 +140,7 @@ describe('useAccountBalances', () => {
             address: 'ADDR1',
             name: 'Account 1',
             id: '1',
-            type: 'standard',
+            type: 'algo25',
             canSign: true,
         }
 
@@ -161,7 +161,7 @@ describe('useAccountBalances', () => {
             address: 'ADDR1',
             name: 'Account 1',
             id: '1',
-            type: 'standard',
+            type: 'algo25',
             canSign: true,
         }
 
@@ -185,7 +185,7 @@ describe('useAccountBalances', () => {
             address: 'ADDR1',
             name: 'Account 1',
             id: '1',
-            type: 'standard',
+            type: 'algo25',
             canSign: true,
         }
 
@@ -249,7 +249,7 @@ describe('useAccountBalances', () => {
             address: 'ADDR1',
             name: 'Account 1',
             id: '1',
-            type: 'standard',
+            type: 'algo25',
             canSign: true,
         }
 
@@ -304,7 +304,7 @@ describe('useAccountAssetBalanceQuery', () => {
             address: 'ADDR1',
             name: 'Account 1',
             id: '1',
-            type: 'standard',
+            type: 'algo25',
             canSign: true,
         }
 
@@ -347,7 +347,7 @@ describe('useAccountAssetBalanceQuery', () => {
             address: 'ADDR1',
             name: 'Account 1',
             id: '1',
-            type: 'standard',
+            type: 'algo25',
             canSign: true,
         }
 

@@ -18,4 +18,4 @@ export * from './hooks/useWalletConnectSessionRequests'
 export * from './hooks/useWalletConnect'
 export * from './constants'
 
-export { initWalletConnectStore } from './store'
+export { initWalletConnectStore, registerWalletConnectStore } from './store'

@@ -16,4 +16,4 @@ export * from './models'
 export * from './schema'
 export * from './hooks'
 
-export { initContactsStore } from './store'
+export { initContactsStore, registerContactsStore } from './store'

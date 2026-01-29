@@ -17,6 +17,12 @@ import { ImportSelectAddressesScreen } from '../ImportSelectAddressesScreen'
 import { AccountTypes } from '@perawallet/wallet-core-accounts'
 import { OnboardingStackParamList } from '../../../routes/types'
 
+vi.mock('@perawallet/wallet-core-kms', () => ({
+    useKMS: vi.fn().mockReturnValue({
+        executeWithSeed: vi.fn((_, __, fn) => fn(new Uint8Array(32))),
+    }),
+}))
+
 describe('ImportSelectAddressesScreen', () => {
     beforeEach(() => {
         vi.mocked(useRoute).mockReturnValue({

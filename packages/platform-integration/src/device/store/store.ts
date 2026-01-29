@@ -116,8 +116,9 @@ export const initDeviceStore = () => {
 
 export const clearDeviceStore = () => lazy.clear()
 
-DataStoreRegistry.register({
-    name: STORE_NAME,
-    init: initDeviceStore,
-    clear: clearDeviceStore,
-})
+export const registerDeviceStore = () =>
+    DataStoreRegistry.register({
+        name: STORE_NAME,
+        init: initDeviceStore,
+        clear: clearDeviceStore,
+    })

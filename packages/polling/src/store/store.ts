@@ -67,8 +67,9 @@ export const initPollingStore = () => {
 
 export const clearPollingStore = () => lazy.clear()
 
-DataStoreRegistry.register({
-    name: STORE_NAME,
-    init: initPollingStore,
-    clear: clearPollingStore,
-})
+export const registerPollingStore = () =>
+    DataStoreRegistry.register({
+        name: STORE_NAME,
+        init: initPollingStore,
+        clear: clearPollingStore,
+    })

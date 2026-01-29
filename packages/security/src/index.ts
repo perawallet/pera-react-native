@@ -16,4 +16,4 @@ export * from './constants'
 export * from './models'
 export * from './hooks'
 
-export { initSecurityStore } from './store'
+export { initSecurityStore, registerSecurityStore } from './store'

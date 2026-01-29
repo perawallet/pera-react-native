@@ -76,8 +76,9 @@ export const initSecurityStore = () => {
 
 export const clearSecurityStore = () => lazy.clear()
 
-DataStoreRegistry.register({
-    name: STORE_NAME,
-    init: initSecurityStore,
-    clear: clearSecurityStore,
-})
+export const registerSecurityStore = () =>
+    DataStoreRegistry.register({
+        name: STORE_NAME,
+        init: initSecurityStore,
+        clear: clearSecurityStore,
+    })

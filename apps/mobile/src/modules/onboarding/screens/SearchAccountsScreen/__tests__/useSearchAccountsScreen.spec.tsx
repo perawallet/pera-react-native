@@ -19,14 +19,14 @@ const {
     mockShowToast,
     mockGoBack,
     mockReplace,
-    mockGetPrivateData,
     mockDiscoverAccounts,
+    mockDiscoverRekeyedAccounts,
 } = vi.hoisted(() => ({
     mockShowToast: vi.fn(),
     mockGoBack: vi.fn(),
     mockReplace: vi.fn(),
-    mockGetPrivateData: vi.fn(),
     mockDiscoverAccounts: vi.fn(),
+    mockDiscoverRekeyedAccounts: vi.fn(),
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -48,7 +48,7 @@ vi.mock('@hooks/useToast', () => ({
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMS: () => ({
-        getPrivateData: mockGetPrivateData,
+        executeWithSeed: vi.fn((_, __, fn) => fn(new Uint8Array(32))),
     }),
 }))
 
@@ -56,8 +56,10 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     ...(await importOriginal<
         typeof import('@perawallet/wallet-core-accounts')
     >()),
-    discoverAccounts: mockDiscoverAccounts,
-    getSeedFromMasterKey: vi.fn(),
+    useAccountDiscovery: () => ({
+        discoverAccounts: mockDiscoverAccounts,
+        discoverRekeyedAccounts: mockDiscoverRekeyedAccounts,
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -94,8 +96,8 @@ describe('useSearchAccountsScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         // Default success mocks
-        mockGetPrivateData.mockResolvedValue(new Uint8Array(32))
         mockDiscoverAccounts.mockResolvedValue([])
+        mockDiscoverRekeyedAccounts.mockResolvedValue([])
     })
 
     it('navigates back and shows toast on error', async () => {

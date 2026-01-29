@@ -16,5 +16,6 @@ export * from './hooks/useKMS'
 export * from './hooks/useWithKey'
 export * from './models'
 export * from './errors'
+export * from './utils'
 
-export { initKeyManagerStore } from './store'
+export { initKeyManagerStore, registerKeyManagerStore } from './store'

@@ -77,8 +77,9 @@ export const initRemoteConfigStore = () => {
 
 export const clearRemoteConfigStore = () => lazy.clear()
 
-DataStoreRegistry.register({
-    name: STORE_NAME,
-    init: initRemoteConfigStore,
-    clear: clearRemoteConfigStore,
-})
+export const registerRemoteConfigStore = () =>
+    DataStoreRegistry.register({
+        name: STORE_NAME,
+        init: initRemoteConfigStore,
+        clear: clearRemoteConfigStore,
+    })

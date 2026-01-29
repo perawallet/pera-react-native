@@ -21,6 +21,7 @@ import {
     PWCheckbox,
     PWChip,
     PWFlatList,
+    PWLoadingOverlay,
 } from '@components/core'
 
 import { useStyles } from './styles'
@@ -39,6 +40,7 @@ export const ImportSelectAddressesScreen = () => {
         isAllSelected,
         areAllImported,
         canContinue,
+        isProcessing,
         alreadyImportedAddresses,
         toggleSelection,
         toggleSelectAll,
@@ -163,6 +165,11 @@ export const ImportSelectAddressesScreen = () => {
                     isDisabled={!canContinue}
                 />
             </PWView>
+
+            <PWLoadingOverlay
+                isVisible={isProcessing}
+                title={t('onboarding.import_rekeyed_addresses.fetching')}
+            />
         </PWView>
     )
 }

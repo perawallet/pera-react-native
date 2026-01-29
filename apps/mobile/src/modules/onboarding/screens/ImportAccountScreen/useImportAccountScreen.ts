@@ -17,12 +17,12 @@ import { OnboardingStackParamList } from '../../routes/types'
 import {
     useImportAccount,
     ImportAccountType,
-    AccountTypes,
 } from '@perawallet/wallet-core-accounts'
 
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 
 const MNEMONIC_LENGTH_MAP: Record<ImportAccountType, number> = {
     hdWallet: 24,
@@ -150,7 +150,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
 
     const handleImportAccount = useCallback(() => {
         setProcessing(true)
-        setTimeout(async () => {
+        deferToNextCycle(async () => {
             const mnemonic = words.join(' ')
 
             try {
@@ -158,13 +158,9 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
                     mnemonic,
                     type: accountType,
                 })
-
-                if (importedAccount.type === AccountTypes.hdWallet) {
-                    navigation.push('SearchAccounts', {
-                        account: importedAccount,
-                    })
-                }
-                // TODO: Algo25 will come later
+                navigation.push('SearchAccounts', {
+                    account: importedAccount,
+                })
             } catch {
                 showToast({
                     title: t('onboarding.import_account.failed_title'),
@@ -174,7 +170,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
             } finally {
                 setProcessing(false)
             }
-        }, 0)
+        })
     }, [importAccount, words, accountType, navigation, showToast, t])
 
     return {

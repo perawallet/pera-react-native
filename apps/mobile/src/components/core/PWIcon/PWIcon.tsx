@@ -14,6 +14,7 @@ import { SvgProps } from 'react-native-svg'
 import { useTheme } from '@rneui/themed'
 
 import AlgoIcon from '@assets/icons/algo.svg'
+import AccountRekeyedIcon from '@assets/icons/account-rekeyed.svg'
 import AppLogo from '@assets/icons/app_logo.svg'
 import ArrowUpIcon from '@assets/icons/arrow-up.svg'
 import ArrowUpRightIcon from '@assets/icons/arrow-up-right.svg'
@@ -111,6 +112,7 @@ const ICON_LIBRARY = {
     'arrow-up': ArrowUpIcon,
     'arrow-up-right': ArrowUpRightIcon,
     'arrow-down': ArrowDownIcon,
+    'account-rekeyed': AccountRekeyedIcon,
     bell: BellIcon,
     'bell-with-badge': BellWithBadgeIcon,
     buy: BuyIcon,

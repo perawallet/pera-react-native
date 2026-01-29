@@ -70,8 +70,9 @@ export const initCurrenciesStore = () => {
 
 export const clearCurrenciesStore = () => lazy.clear()
 
-DataStoreRegistry.register({
-    name: STORE_NAME,
-    init: initCurrenciesStore,
-    clear: clearCurrenciesStore,
-})
+export const registerCurrenciesStore = () =>
+    DataStoreRegistry.register({
+        name: STORE_NAME,
+        init: initCurrenciesStore,
+        clear: clearCurrenciesStore,
+    })

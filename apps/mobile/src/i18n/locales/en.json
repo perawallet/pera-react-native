@@ -338,6 +338,19 @@
             "select_all": "Select all",
             "already_imported": "already imported",
             "continue": "Continue"
+        },
+        "import_rekeyed_addresses": {
+            "title": "{{count}} rekeyed accounts found",
+            "description_line_1": "You have {{count}} rekeyed accounts. This means that you can sign the transactions of the rekeyed accounts with the account you just added",
+            "description_line_2": "Select the rekeyed accounts you want to add to your wallet:",
+            "addresses_count": "{{count}} addresses",
+            "select_all": "Select all",
+            "already_imported": "already imported",
+            "continue": "Choose accounts to add",
+            "skip": "Skip for now",
+            "fetching": "Fetching rekeyed accounts...",
+            "rekeyed_account_subtitle": "Rekeyed account",
+            "importing_accounts": "Importing accounts..."
         }
     },
     "portfolio": {
