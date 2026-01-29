@@ -25,6 +25,14 @@ export default defineConfig({
                 replacement: 'react-native-web',
             },
             {
+                find: 'react',
+                replacement: path.resolve(__dirname, './node_modules/react'),
+            },
+            {
+                find: 'react-dom',
+                replacement: path.resolve(__dirname, './node_modules/react-dom'),
+            },
+            {
                 find: '@components',
                 replacement: path.resolve(__dirname, './src/components'),
             },
@@ -161,6 +169,13 @@ export default defineConfig({
                 replacement: path.resolve(
                     __dirname,
                     '../../packages/devtools/src/index.ts',
+                ),
+            },
+            {
+                find: '@tanstack/react-query',
+                replacement: path.resolve(
+                    __dirname,
+                    './node_modules/@tanstack/react-query',
                 ),
             },
             {

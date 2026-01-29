@@ -148,6 +148,7 @@
     "globals": "catalog:",
     "jsdom": "^27.4.0",
     "prettier": "catalog:",
+    "react-dom": "19.1.0",
     "react-native-svg-transformer": "^1.5.2",
     "react-native-web": "^0.21.2",
     "stacktrace-js": "^2.0.2",
