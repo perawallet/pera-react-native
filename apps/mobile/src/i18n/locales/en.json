@@ -300,7 +300,7 @@
         "import_account": {
             "title": "Enter your Recovery Passphrase",
             "importing": "Importing wallet...",
-            "button": "Import Wallet",
+            "button": "Recover",
             "failed_title": "Import failed",
             "failed_body": "There was an error trying to import your wallet",
             "invalid_mnemonic_title": "Invalid Passphrase",
