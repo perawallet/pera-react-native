@@ -248,6 +248,12 @@ module.exports = {
     // - react-native-screens
     // - react-native-safe-area-context
 
+    // Custom plugin for Notifee local Maven repository (pnpm/monorepo fix)
+    './plugins/withNotifeeMavenRepo',
+
+    // Custom plugin for local.properties SDK path (machine-specific fix)
+    './plugins/withAndroidLocalProperties',
+
     // Custom plugin for Podfile modifications (RCT-Folly fix for webassembly)
     './plugins/withPodfileModifications.js',
   ],
