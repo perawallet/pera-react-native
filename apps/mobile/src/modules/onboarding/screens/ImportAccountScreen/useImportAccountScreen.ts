@@ -11,7 +11,9 @@
  */
 
 import { useState, useCallback, useMemo, useEffect } from 'react'
-import { Keyboard, Platform } from 'react-native'
+import { Keyboard, Platform, Linking } from 'react-native'
+import Clipboard from '@react-native-clipboard/clipboard'
+
 import { RouteProp, useRoute } from '@react-navigation/native'
 import { OnboardingStackParamList } from '../../routes/types'
 import {
@@ -23,6 +25,7 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
+import { useModalState } from '@hooks/useModalState'
 
 const MNEMONIC_LENGTH_MAP: Record<ImportAccountType, number> = {
     hdWallet: 24,
@@ -41,6 +44,15 @@ export type UseImportAccountScreenResult = {
     t: (key: string) => string
     isKeyboardVisible: boolean
     keyboardHeight: number
+    isSupportOptionsVisible: boolean
+    handleOpenSupportOptions: () => void
+    handleCloseSupportOptions: () => void
+    handlePastePassphrase: () => void
+    handleScanQRCode: () => void
+    handleLearnMore: () => void
+    isQRScannerVisible: boolean
+    handleCloseQRScanner: () => void
+    handleQRScannerSuccess: (url: string) => void
 }
 
 export function useImportAccountScreen(): UseImportAccountScreenResult {
@@ -83,6 +95,16 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     )
     const [focused, setFocused] = useState(0)
     const [processing, setProcessing] = useState(false)
+    const {
+        isOpen: isSupportOptionsVisible,
+        open: openSupportOptions,
+        close: handleCloseSupportOptions,
+    } = useModalState()
+    const {
+        isOpen: isQRScannerVisible,
+        open: openQRScanner,
+        close: handleCloseQRScanner,
+    } = useModalState()
 
     const canImport = useMemo(() => words.every(w => w.length > 0), [words])
 
@@ -173,6 +195,39 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         })
     }, [importAccount, words, accountType, navigation, showToast, t])
 
+    const handleOpenSupportOptions = useCallback(() => {
+        openSupportOptions()
+    }, [openSupportOptions])
+
+    const handlePastePassphrase = useCallback(async () => {
+        const content = await Clipboard.getString()
+
+        if (content) {
+            updateWord(content, 0)
+        }
+        handleCloseSupportOptions()
+    }, [updateWord, handleCloseSupportOptions])
+
+    const handleScanQRCode = useCallback(() => {
+        openQRScanner()
+        handleCloseSupportOptions()
+    }, [openQRScanner, handleCloseSupportOptions])
+
+    const handleQRScannerSuccess = useCallback(
+        (url: string) => {
+            handleCloseQRScanner()
+            updateWord(url, 0)
+        },
+        [handleCloseQRScanner, updateWord],
+    )
+
+    const handleLearnMore = useCallback(() => {
+        Linking.openURL(
+            'https://support.perawallet.app/en/article/recover-or-import-an-algorand-account-with-recovery-passphrase-11gdh1y/',
+        )
+        handleCloseSupportOptions()
+    }, [handleCloseSupportOptions])
+
     return {
         words,
         focused,
@@ -185,5 +240,14 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         t,
         isKeyboardVisible,
         keyboardHeight,
+        isSupportOptionsVisible,
+        handleOpenSupportOptions,
+        handleCloseSupportOptions,
+        handlePastePassphrase,
+        handleScanQRCode,
+        handleLearnMore,
+        isQRScannerVisible,
+        handleCloseQRScanner,
+        handleQRScannerSuccess,
     }
 }

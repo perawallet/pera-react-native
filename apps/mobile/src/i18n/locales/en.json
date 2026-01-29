@@ -306,7 +306,13 @@
             "invalid_mnemonic_title": "Invalid Passphrase",
             "invalid_mnemonic_body": "The passphrase you pasted contains too many words.",
             "insufficient_slots_title": "Invalid Passphrase",
-            "insufficient_slots_body": "The passphrase you pasted does not fit in the remaining slots."
+            "insufficient_slots_body": "The passphrase you pasted does not fit in the remaining slots.",
+            "support_options": {
+                "title": "Support Options",
+                "paste_passphrase": "Paste Full Passphrase",
+                "scan_qr": "Scan QR Code",
+                "learn_more": "Learn More"
+            }
         },
         "searching_accounts": {
             "title": "Searching your accounts"
