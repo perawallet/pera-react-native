@@ -32,6 +32,9 @@ const MNEMONIC_LENGTH_MAP: Record<ImportAccountType, number> = {
     algo25: 25,
 }
 
+const IMPORT_ACCOUNT_SUPPORT_URL =
+    'https://support.perawallet.app/en/article/recover-or-import-an-algorand-account-with-recovery-passphrase-11gdh1y/'
+
 export type UseImportAccountScreenResult = {
     words: string[]
     focused: number
@@ -222,9 +225,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     )
 
     const handleLearnMore = useCallback(() => {
-        Linking.openURL(
-            'https://support.perawallet.app/en/article/recover-or-import-an-algorand-account-with-recovery-passphrase-11gdh1y/',
-        )
+        Linking.openURL(IMPORT_ACCOUNT_SUPPORT_URL)
         handleCloseSupportOptions()
     }, [handleCloseSupportOptions])
 
