@@ -132,7 +132,6 @@ describe('RNDeviceInfoStorageService', () => {
 
     describe('getDeviceModel', () => {
         it('returns device model from Expo Device', async () => {
-
             const model = service.getDeviceModel()
 
             expect(model).toBe('iPhone 13')

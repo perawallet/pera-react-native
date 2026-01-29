@@ -17,4 +17,4 @@ export const ONE_HOUR = 60 * 60 * 1000
 export const ONE_DAY = 24 * 60 * 60 * 1000
 
 export const RECOVERY_PASSPHRASE_SUPPORT_URL =
-  'https://support.perawallet.app/en/article/recover-or-import-an-algorand-account-with-recovery-passphrase-11gdh1y/'
+    'https://support.perawallet.app/en/article/recover-or-import-an-algorand-account-with-recovery-passphrase-11gdh1y/'

@@ -37,9 +37,9 @@ describe('useClipboard', () => {
 
     it('should copy text to clipboard and show toast', async () => {
         const mockShowToast = vi.fn()
-            ; (useToast as Mock).mockReturnValue({
-                showToast: mockShowToast,
-            })
+        ;(useToast as Mock).mockReturnValue({
+            showToast: mockShowToast,
+        })
 
         const { result } = renderHook(() => useClipboard())
 

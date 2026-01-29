@@ -35,7 +35,6 @@ const MNEMONIC_LENGTH_MAP: Record<ImportAccountType, number> = {
     algo25: 25,
 }
 
-
 export type UseImportAccountScreenResult = {
     words: string[]
     focused: number

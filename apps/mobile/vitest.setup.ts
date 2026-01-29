@@ -22,7 +22,7 @@ vi.mock('react-native-reanimated', () => {
     const React = require('react')
     const Reanimated = {
         default: {
-            call: () => { },
+            call: () => {},
             createAnimatedComponent: (component: any) => component,
             View: (props: any) =>
                 React.createElement('div', props, props.children),
@@ -31,16 +31,16 @@ vi.mock('react-native-reanimated', () => {
             Image: (props: any) => React.createElement('img', props),
             ScrollView: (props: any) =>
                 React.createElement('div', props, props.children),
-            addWhitelistedNativeProps: () => { },
-            addWhitelistedUIProps: () => { },
+            addWhitelistedNativeProps: () => {},
+            addWhitelistedUIProps: () => {},
         },
         useSharedValue: (v: any) => ({ value: v }),
         useDerivedValue: (a: any) => ({ value: a() }),
         useAnimatedStyle: () => ({}),
         useAnimatedProps: () => ({}),
-        useAnimatedGestureHandler: () => { },
-        useAnimatedScrollHandler: () => { },
-        useAnimatedReaction: () => { },
+        useAnimatedGestureHandler: () => {},
+        useAnimatedScrollHandler: () => {},
+        useAnimatedReaction: () => {},
         withTiming: (toValue: any) => toValue,
         withSpring: (toValue: any) => toValue,
         withDecay: () => 0,
@@ -50,7 +50,7 @@ vi.mock('react-native-reanimated', () => {
         runOnJS: (fn: any) => fn,
         runOnUI: (fn: any) => fn,
         makeMutable: (v: any) => ({ value: v }),
-        cancelAnimation: () => { },
+        cancelAnimation: () => {},
         interpolate: () => 0,
         Extrapolate: { CLAMP: 'clamp' },
         Layout: {
@@ -318,13 +318,20 @@ vi.mock('react-native', () => {
                 require('react').createElement('input', props, props.children),
             ),
 
-        Modal: vi
-            .fn()
-            .mockImplementation((args: any) => {
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                const { visible, transparent, animationType, onRequestClose, onShow, ...props } = args
-                return visible ? require('react').createElement('div', props, props.children) : null
-            }),
+        Modal: vi.fn().mockImplementation((args: any) => {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const {
+                visible,
+                transparent,
+                animationType,
+                onRequestClose,
+                onShow,
+                ...props
+            } = args
+            return visible
+                ? require('react').createElement('div', props, props.children)
+                : null
+        }),
         ActivityIndicator: vi
             .fn()
             .mockImplementation(props =>
@@ -449,7 +456,7 @@ vi.mock('react-native-quick-crypto', () => ({
 
 // Basic NativeEventEmitter dependency to avoid errors when no native module is provided
 vi.mock('react-native/Libraries/EventEmitter/NativeEventEmitter', () => {
-    return class NativeEventEmitter { }
+    return class NativeEventEmitter {}
 })
 
 // Mock React Navigation
@@ -514,7 +521,7 @@ vi.mock('@react-native-firebase/messaging', () => ({
 
 vi.mock('@react-native-firebase/remote-config', () => ({
     getRemoteConfig: () => ({
-        setDefaults: vi.fn(async () => { }),
+        setDefaults: vi.fn(async () => {}),
         fetchAndActivate: vi.fn(async () => true),
         setConfigSettings: vi.fn(),
         getValue: vi.fn(() => ({
@@ -744,10 +751,10 @@ vi.mock('@rneui/themed', () => {
         ({ isVisible, children, ...props }: any) =>
             isVisible
                 ? React.createElement(
-                    MockView,
-                    { ...props, 'data-testid': 'Dialog' },
-                    children,
-                )
+                      MockView,
+                      { ...props, 'data-testid': 'Dialog' },
+                      children,
+                  )
                 : null,
         {
             Title: DialogTitle,
@@ -821,18 +828,18 @@ vi.mock('@rneui/themed', () => {
         BottomSheet: ({ isVisible, children, ...props }: any) =>
             isVisible
                 ? React.createElement(
-                    MockView,
-                    { ...props, 'data-testid': 'RNEBottomSheet' },
-                    children,
-                )
+                      MockView,
+                      { ...props, 'data-testid': 'RNEBottomSheet' },
+                      children,
+                  )
                 : null,
         Overlay: ({ isVisible, children, ...props }: any) =>
             isVisible
                 ? React.createElement(
-                    MockView,
-                    { ...props, 'data-testid': 'RNEOverlay' },
-                    children,
-                )
+                      MockView,
+                      { ...props, 'data-testid': 'RNEOverlay' },
+                      children,
+                  )
                 : null,
         Icon: (props: any) => React.createElement(MockView, props),
         Tab,
@@ -1233,22 +1240,22 @@ vi.mock('@shopify/flash-list', () => {
                 ? React.isValidElement(ListHeaderComponent)
                     ? ListHeaderComponent
                     : typeof ListHeaderComponent === 'function'
-                        ? React.createElement(ListHeaderComponent)
-                        : null
+                      ? React.createElement(ListHeaderComponent)
+                      : null
                 : null
             const footer = ListFooterComponent
                 ? React.isValidElement(ListFooterComponent)
                     ? ListFooterComponent
                     : typeof ListFooterComponent === 'function'
-                        ? React.createElement(ListFooterComponent)
-                        : null
+                      ? React.createElement(ListFooterComponent)
+                      : null
                 : null
             const empty = ListEmptyComponent
                 ? React.isValidElement(ListEmptyComponent)
                     ? ListEmptyComponent
                     : typeof ListEmptyComponent === 'function'
-                        ? React.createElement(ListEmptyComponent)
-                        : null
+                      ? React.createElement(ListEmptyComponent)
+                      : null
                 : null
 
             return React.createElement(
@@ -1257,8 +1264,8 @@ vi.mock('@shopify/flash-list', () => {
                 header,
                 data && data.length > 0
                     ? data.map((item: any, index: number) =>
-                        renderItem({ item, index }),
-                    )
+                          renderItem({ item, index }),
+                      )
                     : empty,
                 footer,
             )
