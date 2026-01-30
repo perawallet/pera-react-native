@@ -48,7 +48,6 @@ export const MainRoutes = () => {
                     screenOptions={{
                         headerShown: false,
                         statusBarStyle: isDarkMode ? 'light' : 'dark',
-                        statusBarTranslucent: true,
                         ...SCREEN_ANIMATION_CONFIG,
                     }}
                     screenListeners={screenListeners}

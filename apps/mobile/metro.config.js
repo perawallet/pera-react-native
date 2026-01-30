@@ -109,7 +109,21 @@ const customResolveRequest = (context, moduleName, platform) => {
     }
 
     // Chain to the standard Metro resolver
-    return context.resolveRequest(context, moduleName, platform);
+    try {
+        return context.resolveRequest(context, moduleName, platform);
+    } catch (error) {
+        // Fix for @noble/hashes exports issue - Metro sometimes appends .js to subpaths
+        // that are only exported without the extension in package.json
+        if (moduleName.includes('@noble/hashes') && moduleName.endsWith('.js')) {
+            const fixedModuleName = moduleName.substring(0, moduleName.length - 3);
+            try {
+                return context.resolveRequest(context, fixedModuleName, platform);
+            } catch {
+                // If it still fails, throw original error
+            }
+        }
+        throw error;
+    }
 };
 
 /** @type {import('expo/metro-config').MetroConfig} */

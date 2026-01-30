@@ -10,19 +10,17 @@
  limitations under the License
  */
 
-import {
-    registerPlatformServices,
-    type PlatformServices,
-    KeyValueStorageService,
-    SecureStorageService,
-    BiometricsService,
-    RemoteConfigService,
-    PushNotificationService,
-    CrashReportingService,
-    DeviceInfoService,
-    DevicePlatforms,
-    AnalyticsService,
-} from '../index'
+import { registerPlatformServices } from '../platform'
+import type { PlatformServices } from '../models'
+import type { AnalyticsService } from '../analytics'
+import type { KeyValueStorageService, SecureStorageService } from '../storage'
+import type { BiometricsService } from '../biometrics'
+import type { RemoteConfigService } from '../remote-config'
+import type { PushNotificationService } from '../push-notifications'
+import type { CrashReportingService } from '../reporting'
+import type { DeviceInfoService } from '../device'
+import { DevicePlatforms } from '../device'
+
 import { MemoryKeyValueStorage } from './storage'
 
 type Overrides = Partial<{
@@ -44,23 +42,23 @@ export const buildTestPlatform = (
     overrides: Overrides = {},
 ): PlatformServices => {
     const defaultAnalytics: AnalyticsService = {
-        initializeAnalytics() {},
-        logEvent(_event: string, _properties?: Record<string, unknown>) {},
+        initializeAnalytics() { },
+        logEvent(_event: string, _properties?: Record<string, unknown>) { },
     }
 
     const defaultSecure: SecureStorageService = {
-        async setItem(_: string, __: Uint8Array) {},
+        async setItem(_: string, __: Uint8Array) { },
         async getItem(_: string) {
             return null
         },
-        async removeItem(_: string) {},
+        async removeItem(_: string) { },
         async authenticate() {
             return true
         },
     }
 
     const defaultRemote: RemoteConfigService = {
-        initializeRemoteConfig() {},
+        initializeRemoteConfig() { },
         getStringValue(_, f) {
             return f ?? ''
         },
@@ -74,17 +72,17 @@ export const buildTestPlatform = (
 
     const defaultPushNotification: PushNotificationService = {
         async initializeNotifications() {
-            return { unsubscribe: () => {} }
+            return { unsubscribe: () => { } }
         },
     }
 
     const defaultCrash: CrashReportingService = {
-        initializeCrashReporting() {},
-        recordNonFatalError(_: unknown) {},
+        initializeCrashReporting() { },
+        recordNonFatalError(_: unknown) { },
     }
 
     const deviceInfo: DeviceInfoService = {
-        initializeDeviceInfo() {},
+        initializeDeviceInfo() { },
         getDeviceID() {
             return Promise.resolve('testID')
         },

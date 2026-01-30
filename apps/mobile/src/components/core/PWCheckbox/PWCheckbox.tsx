@@ -10,7 +10,9 @@
  limitations under the License
  */
 
-import { PWIcon, PWView } from '@components/core'
+import { PWIcon } from '../PWIcon'
+import { PWView } from '../PWView'
+
 import { CheckBox, CheckBoxProps } from '@rneui/themed'
 import { useStyles } from './styles'
 
