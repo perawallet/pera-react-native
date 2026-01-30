@@ -27,10 +27,7 @@ import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnin
 import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
-import {
-    formatNumber,
-    formatWithUnits,
-} from '@perawallet/wallet-core-shared'
+import { formatNumber, formatWithUnits } from '@perawallet/wallet-core-shared'
 import { useMemo } from 'react'
 
 export type AssetConfigDisplayProps = {

@@ -42,7 +42,15 @@ export const mapToDisplayableTransaction = (
         firstValid: tx.firstValid,
         lastValid: tx.lastValid,
         sender: encodeAlgorandAddress(tx.sender.publicKey),
-        txType: mapTransactionType(tx.type) as 'pay' | 'keyreg' | 'acfg' | 'axfer' | 'afrz' | 'appl' | 'stpf' | 'hb',
+        txType: mapTransactionType(tx.type) as
+            | 'pay'
+            | 'keyreg'
+            | 'acfg'
+            | 'axfer'
+            | 'afrz'
+            | 'appl'
+            | 'stpf'
+            | 'hb',
         genesisId: tx.genesisId,
         genesisHash: tx.genesisHash,
         group: tx.group,
@@ -64,8 +72,8 @@ export const mapToDisplayableTransaction = (
                 receiver: encodeAlgorandAddress(paymentTx.receiver.publicKey),
                 closeRemainderTo: paymentTx.closeRemainderTo
                     ? encodeAlgorandAddress(
-                        paymentTx.closeRemainderTo.publicKey,
-                    )
+                          paymentTx.closeRemainderTo.publicKey,
+                      )
                     : undefined,
             }
             break
@@ -142,10 +150,10 @@ export const mapToDisplayableTransaction = (
             const applTx = tx.appCall as AppCallTransactionFields
             displayTx.applicationTransaction = {
                 applicationId: applTx.appId,
-                onCompletion: mapOnCompletion(applTx.onComplete) as OnCompletion,
-                applicationArgs: applTx.args
-                    ? [...applTx.args]
-                    : [],
+                onCompletion: mapOnCompletion(
+                    applTx.onComplete,
+                ) as OnCompletion,
+                applicationArgs: applTx.args ? [...applTx.args] : [],
                 accounts: applTx.accountReferences
                     ? [...applTx.accountReferences]
                     : [],
@@ -159,19 +167,19 @@ export const mapToDisplayableTransaction = (
                 clearStateProgram: applTx.clearStateProgram,
                 globalStateSchema: applTx.globalStateSchema
                     ? {
-                        numByteSlices: Number(
-                            applTx.globalStateSchema.numByteSlices,
-                        ),
-                        numUints: Number(applTx.globalStateSchema.numUints),
-                    }
+                          numByteSlices: Number(
+                              applTx.globalStateSchema.numByteSlices,
+                          ),
+                          numUints: Number(applTx.globalStateSchema.numUints),
+                      }
                     : undefined,
                 localStateSchema: applTx.localStateSchema
                     ? {
-                        numByteSlices: Number(
-                            applTx.localStateSchema.numByteSlices,
-                        ),
-                        numUints: Number(applTx.localStateSchema.numUints),
-                    }
+                          numByteSlices: Number(
+                              applTx.localStateSchema.numByteSlices,
+                          ),
+                          numUints: Number(applTx.localStateSchema.numUints),
+                      }
                     : undefined,
             }
             break

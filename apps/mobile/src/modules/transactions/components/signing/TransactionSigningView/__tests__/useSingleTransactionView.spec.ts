@@ -45,8 +45,8 @@ describe('useSingleTransactionView', () => {
         type: 'transactions',
         transport: 'callback',
         txs: [[tx]],
-        approve: async () => { },
-        reject: async () => { },
+        approve: async () => {},
+        reject: async () => {},
     })
 
     beforeEach(() => {

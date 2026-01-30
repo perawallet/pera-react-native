@@ -65,7 +65,10 @@ const SingleTransactionView = ({ request }: TransactionSigningViewProps) => {
                     style={styles.backButton}
                 />
             )}
-            <TransactionDisplay transaction={currentTx} onInnerTransactionsPress={handleNavigateToInner} />
+            <TransactionDisplay
+                transaction={currentTx}
+                onInnerTransactionsPress={handleNavigateToInner}
+            />
         </PWView>
     )
 }
@@ -93,7 +96,10 @@ const GroupTransactionView = ({ request }: TransactionSigningViewProps) => {
                     onPress={handleNavigateBack}
                     style={styles.backButton}
                 />
-                <TransactionDisplay transaction={currentTx} onInnerTransactionsPress={handleNavigateToInner} />
+                <TransactionDisplay
+                    transaction={currentTx}
+                    onInnerTransactionsPress={handleNavigateToInner}
+                />
             </ScrollView>
         )
     }
@@ -181,8 +187,8 @@ export const TransactionSigningView = ({
                         body: config.debugEnabled
                             ? `${error}`
                             : t(
-                                'signing.transaction_view.transaction_failed_body',
-                            ),
+                                  'signing.transaction_view.transaction_failed_body',
+                              ),
                     },
                     {
                         notifier: bottomSheetNotifier.current ?? undefined,
