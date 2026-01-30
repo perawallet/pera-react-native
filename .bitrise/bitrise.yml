@@ -328,6 +328,33 @@ workflows:
                 fi
 
                 envman add --key CHANGELOG --value "$CHANGELOG"
+      - script@1:
+          run_if: '{{enveq "SKIP_BUILD" "false"}}'
+          title: Install Ruby via asdf
+          inputs:
+            - content: |
+                #!/usr/bin/env bash
+                set -ex
+                asdf plugin add ruby || true
+                asdf install ruby
+      - restore-cache@2:
+          run_if: '{{enveq "SKIP_BUILD" "false"}}'
+          inputs:
+            - key: bundler-{{ checksum "apps/mobile/Gemfile.lock" }}
+      - script@1:
+          run_if: '{{enveq "SKIP_BUILD" "false"}}'
+          title: Install Bundler gems
+          inputs:
+            - content: |
+                #!/usr/bin/env bash
+                set -ex
+                cd apps/mobile
+                bundle install
+      - save-cache@1:
+          run_if: '{{enveq "SKIP_BUILD" "false"}}'
+          inputs:
+            - key: bundler-{{ checksum "apps/mobile/Gemfile.lock" }}
+            - paths: apps/mobile/vendor/bundle
       - restore-cache@2:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
@@ -383,6 +410,7 @@ workflows:
             - content: |
                 #!/usr/bin/env bash
                 set -ex
+                export APP_ENV=$ENVIRONMENT
                 pnpm --filter mobile expo:prebuild
       - restore-cache@2:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
@@ -577,6 +605,33 @@ workflows:
                 fi
 
                 envman add --key CHANGELOG --value "$CHANGELOG"
+      - script@1:
+          run_if: '{{enveq "SKIP_BUILD" "false"}}'
+          title: Install Ruby via asdf
+          inputs:
+            - content: |
+                #!/usr/bin/env bash
+                set -ex
+                asdf plugin add ruby || true
+                asdf install ruby
+      - restore-cache@2:
+          run_if: '{{enveq "SKIP_BUILD" "false"}}'
+          inputs:
+            - key: bundler-{{ checksum "apps/mobile/Gemfile.lock" }}
+      - script@1:
+          run_if: '{{enveq "SKIP_BUILD" "false"}}'
+          title: Install Bundler gems
+          inputs:
+            - content: |
+                #!/usr/bin/env bash
+                set -ex
+                cd apps/mobile
+                bundle install
+      - save-cache@1:
+          run_if: '{{enveq "SKIP_BUILD" "false"}}'
+          inputs:
+            - key: bundler-{{ checksum "apps/mobile/Gemfile.lock" }}
+            - paths: apps/mobile/vendor/bundle
       - restore-cache@2:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
@@ -632,6 +687,7 @@ workflows:
             - content: |
                 #!/usr/bin/env bash
                 set -ex
+                export APP_ENV=$ENVIRONMENT
                 pnpm --filter mobile expo:prebuild
       - restore-cache@2:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
