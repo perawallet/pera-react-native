@@ -17,7 +17,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.tool-versions'
+          node-version-file: ".tool-versions"
           cache: "pnpm"
 
       - name: Install dependencies
@@ -46,7 +46,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.tool-versions'
+          node-version-file: ".tool-versions"
 
       - name: Restore node_modules
         uses: actions/cache/restore@v4
@@ -83,7 +83,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.tool-versions'
+          node-version-file: ".tool-versions"
 
       - name: Restore node_modules
         uses: actions/cache/restore@v4
@@ -96,6 +96,9 @@ jobs:
 
       - name: Build packages
         run: pnpm run build
+
+      - name: Expo Prebuild
+        run: pnpm --filter mobile expo:prebuild
 
       - name: Cache build artifacts
         uses: actions/cache/save@v4
@@ -117,7 +120,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.tool-versions'
+          node-version-file: ".tool-versions"
 
       - name: Restore node_modules
         uses: actions/cache/restore@v4
