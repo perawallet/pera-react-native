@@ -52,8 +52,8 @@ catalogs:
       specifier: 16.3.0
       version: 16.3.0
     '@types/react':
-      specifier: ^19.2.2
-      version: 19.2.7
+      specifier: ~19.1.17
+      version: 19.1.17
     '@vitejs/plugin-react':
       specifier: 5.1.0
       version: 5.1.0
@@ -79,11 +79,11 @@ catalogs:
       specifier: 3.6.2
       version: 3.6.2
     react:
-      specifier: 19.2.0
-      version: 19.2.0
+      specifier: 19.1.0
+      version: 19.1.0
     react-dom:
-      specifier: 19.2.0
-      version: 19.2.0
+      specifier: 19.1.0
+      version: 19.1.0
     reflect-metadata:
       specifier: 0.2.2
       version: 0.2.2
@@ -352,7 +352,7 @@ importers:
         specifier: ^7.3.4
         version: 7.3.4(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
       react:
-        specifier: 19.1.0
+        specifier: 'catalog:'
         version: 19.1.0
       react-hook-form:
         specifier: ^7.66.0
@@ -494,7 +494,7 @@ importers:
         specifier: 'catalog:'
         version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@types/react':
-        specifier: ~19.1.17
+        specifier: 'catalog:'
         version: 19.1.17
       '@types/react-native':
         specifier: ^0.73.0
@@ -539,7 +539,7 @@ importers:
         specifier: 'catalog:'
         version: 3.6.2
       react-dom:
-        specifier: 19.1.0
+        specifier: 'catalog:'
         version: 19.1.0(react@19.1.0)
       react-native-svg-transformer:
         specifier: ^1.5.2
@@ -603,7 +603,7 @@ importers:
         version: link:../shared
       '@tanstack/react-query':
         specifier: 'catalog:'
-        version: 5.90.14(react@19.2.0)
+        version: 5.90.14(react@19.1.0)
       bip39:
         specifier: 'catalog:'
         version: 3.1.0
@@ -612,7 +612,7 @@ importers:
         version: 10.6.0
       react:
         specifier: 'catalog:'
-        version: 19.2.0
+        version: 19.1.0
       tweetnacl:
         specifier: ^1.0.3
         version: 1.0.3
@@ -621,17 +621,17 @@ importers:
         version: 13.0.0
       zustand:
         specifier: 'catalog:'
-        version: 5.0.9(@types/react@19.2.7)(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))
+        version: 5.0.9(@types/react@19.1.17)(react@19.1.0)(use-sync-external-store@1.6.0(react@19.1.0))
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
       '@testing-library/react':
         specifier: 'catalog:'
-        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.2.7)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.1.0))(react@19.1.0)
       '@types/react':
         specifier: 'catalog:'
-        version: 19.2.7
+        version: 19.1.17
       globals:
         specifier: 'catalog:'
         version: 15.15.0
@@ -673,26 +673,26 @@ importers:
         version: link:../shared
       '@tanstack/react-query':
         specifier: 'catalog:'
-        version: 5.90.14(react@19.2.0)
+        version: 5.90.14(react@19.1.0)
       decimal.js:
         specifier: 'catalog:'
         version: 10.6.0
       react:
         specifier: 'catalog:'
-        version: 19.2.0
+        version: 19.1.0
       zustand:
         specifier: 'catalog:'
-        version: 5.0.9(@types/react@19.2.7)(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))
+        version: 5.0.9(@types/react@19.1.17)(react@19.1.0)(use-sync-external-store@1.6.0(react@19.1.0))
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
       '@testing-library/react':
         specifier: 'catalog:'
-        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.2.7)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.1.0))(react@19.1.0)
       '@types/react':
         specifier: 'catalog:'
-        version: 19.2.7
+        version: 19.1.17
       globals:
         specifier: 'catalog:'
         version: 15.15.0
@@ -734,10 +734,10 @@ importers:
         version: link:../shared
       '@tanstack/react-query':
         specifier: 'catalog:'
-        version: 5.90.14(react@19.2.0)
+        version: 5.90.14(react@19.1.0)
       react:
         specifier: 'catalog:'
-        version: 19.2.0
+        version: 19.1.0
       uuid:
         specifier: 'catalog:'
         version: 13.0.0
@@ -746,17 +746,17 @@ importers:
         version: 4.2.1
       zustand:
         specifier: 'catalog:'
-        version: 5.0.9(@types/react@19.2.7)(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))
+        version: 5.0.9(@types/react@19.1.17)(react@19.1.0)(use-sync-external-store@1.6.0(react@19.1.0))
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
       '@testing-library/react':
         specifier: 'catalog:'
-        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.2.7)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.1.0))(react@19.1.0)
       '@types/react':
         specifier: 'catalog:'
-        version: 19.2.7
+        version: 19.1.17
       globals:
         specifier: 'catalog:'
         version: 15.15.0
@@ -853,10 +853,10 @@ importers:
         version: link:../shared
       '@tanstack/react-query':
         specifier: 'catalog:'
-        version: 5.90.14(react@19.2.0)
+        version: 5.90.14(react@19.1.0)
       react:
         specifier: 'catalog:'
-        version: 19.2.0
+        version: 19.1.0
       uuid:
         specifier: 'catalog:'
         version: 13.0.0
@@ -865,17 +865,17 @@ importers:
         version: 4.2.1
       zustand:
         specifier: 'catalog:'
-        version: 5.0.9(@types/react@19.2.7)(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))
+        version: 5.0.9(@types/react@19.1.17)(react@19.1.0)(use-sync-external-store@1.6.0(react@19.1.0))
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
       '@testing-library/react':
         specifier: 'catalog:'
-        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.2.7)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.1.0))(react@19.1.0)
       '@types/react':
         specifier: 'catalog:'
-        version: 19.2.7
+        version: 19.1.17
       globals:
         specifier: 'catalog:'
         version: 15.15.0
@@ -911,26 +911,26 @@ importers:
         version: link:../shared
       '@tanstack/react-query':
         specifier: 'catalog:'
-        version: 5.90.14(react@19.2.0)
+        version: 5.90.14(react@19.1.0)
       decimal.js:
         specifier: 'catalog:'
         version: 10.6.0
       react:
         specifier: 'catalog:'
-        version: 19.2.0
+        version: 19.1.0
       zustand:
         specifier: 'catalog:'
-        version: 5.0.9(@types/react@19.2.7)(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))
+        version: 5.0.9(@types/react@19.1.17)(react@19.1.0)(use-sync-external-store@1.6.0(react@19.1.0))
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
       '@testing-library/react':
         specifier: 'catalog:'
-        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.2.7)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.1.0))(react@19.1.0)
       '@types/react':
         specifier: 'catalog:'
-        version: 19.2.7
+        version: 19.1.17
       globals:
         specifier: 'catalog:'
         version: 15.15.0
@@ -1030,10 +1030,10 @@ importers:
         version: link:../devtools
       '@testing-library/react':
         specifier: 'catalog:'
-        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.2.7)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@types/react':
         specifier: 'catalog:'
-        version: 19.2.7
+        version: 19.1.17
       globals:
         specifier: 'catalog:'
         version: 15.15.0
@@ -1072,29 +1072,29 @@ importers:
         version: link:../shared
       react:
         specifier: 'catalog:'
-        version: 19.2.0
+        version: 19.1.0
       uuid:
         specifier: 'catalog:'
         version: 13.0.0
       zustand:
         specifier: 'catalog:'
-        version: 5.0.9(@types/react@19.2.7)(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))
+        version: 5.0.9(@types/react@19.1.17)(react@19.1.0)(use-sync-external-store@1.6.0(react@19.1.0))
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
       '@testing-library/react':
         specifier: 'catalog:'
-        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.2.7)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@types/react':
         specifier: 'catalog:'
-        version: 19.2.7
+        version: 19.1.17
       globals:
         specifier: 'catalog:'
         version: 15.15.0
       react-dom:
         specifier: 'catalog:'
-        version: 19.2.0(react@19.2.0)
+        version: 19.1.0(react@19.1.0)
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
@@ -1130,26 +1130,26 @@ importers:
         version: link:../shared
       '@tanstack/react-query':
         specifier: 'catalog:'
-        version: 5.90.14(react@19.2.0)
+        version: 5.90.14(react@19.1.0)
       react:
         specifier: 'catalog:'
-        version: 19.2.0
+        version: 19.1.0
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
       zustand:
         specifier: 'catalog:'
-        version: 5.0.9(@types/react@19.2.7)(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))
+        version: 5.0.9(@types/react@19.1.17)(react@19.1.0)(use-sync-external-store@1.6.0(react@19.1.0))
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
       '@testing-library/react':
         specifier: 'catalog:'
-        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.2.7)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.1.0))(react@19.1.0)
       '@types/react':
         specifier: 'catalog:'
-        version: 19.2.7
+        version: 19.1.17
       globals:
         specifier: 'catalog:'
         version: 15.15.0
@@ -1182,10 +1182,10 @@ importers:
         version: link:../shared
       '@tanstack/react-query':
         specifier: 'catalog:'
-        version: 5.90.14(react@19.2.0)
+        version: 5.90.14(react@19.1.0)
       react:
         specifier: 'catalog:'
-        version: 19.2.0
+        version: 19.1.0
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
@@ -1197,17 +1197,17 @@ importers:
         version: 4.2.1
       zustand:
         specifier: 'catalog:'
-        version: 5.0.9(@types/react@19.2.7)(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))
+        version: 5.0.9(@types/react@19.1.17)(react@19.1.0)(use-sync-external-store@1.6.0(react@19.1.0))
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
       '@testing-library/react':
         specifier: 'catalog:'
-        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.2.7)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.1.0))(react@19.1.0)
       '@types/react':
         specifier: 'catalog:'
-        version: 19.2.7
+        version: 19.1.17
       globals:
         specifier: 'catalog:'
         version: 15.15.0
@@ -1243,26 +1243,26 @@ importers:
         version: link:../shared
       '@tanstack/react-query':
         specifier: 'catalog:'
-        version: 5.90.14(react@19.2.0)
+        version: 5.90.14(react@19.1.0)
       react:
         specifier: 'catalog:'
-        version: 19.2.0
+        version: 19.1.0
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
       zustand:
         specifier: 'catalog:'
-        version: 5.0.9(@types/react@19.2.7)(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))
+        version: 5.0.9(@types/react@19.1.17)(react@19.1.0)(use-sync-external-store@1.6.0(react@19.1.0))
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
       '@testing-library/react':
         specifier: 'catalog:'
-        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.2.7)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.1.0))(react@19.1.0)
       '@types/react':
         specifier: 'catalog:'
-        version: 19.2.7
+        version: 19.1.17
       globals:
         specifier: 'catalog:'
         version: 15.15.0
@@ -1295,23 +1295,23 @@ importers:
         version: link:../shared
       react:
         specifier: 'catalog:'
-        version: 19.2.0
+        version: 19.1.0
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
       zustand:
         specifier: 'catalog:'
-        version: 5.0.9(@types/react@19.2.7)(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))
+        version: 5.0.9(@types/react@19.1.17)(react@19.1.0)(use-sync-external-store@1.6.0(react@19.1.0))
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
       '@testing-library/react':
         specifier: 'catalog:'
-        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.2.7)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.1.0))(react@19.1.0)
       '@types/react':
         specifier: 'catalog:'
-        version: 19.2.7
+        version: 19.1.17
       globals:
         specifier: 'catalog:'
         version: 15.15.0
@@ -1347,26 +1347,26 @@ importers:
         version: link:../shared
       '@tanstack/react-query':
         specifier: 'catalog:'
-        version: 5.90.14(react@19.2.0)
+        version: 5.90.14(react@19.1.0)
       react:
         specifier: 'catalog:'
-        version: 19.2.0
+        version: 19.1.0
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
       zustand:
         specifier: 'catalog:'
-        version: 5.0.9(@types/react@19.2.7)(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))
+        version: 5.0.9(@types/react@19.1.17)(react@19.1.0)(use-sync-external-store@1.6.0(react@19.1.0))
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
       '@testing-library/react':
         specifier: 'catalog:'
-        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.2.7)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.1.0))(react@19.1.0)
       '@types/react':
         specifier: 'catalog:'
-        version: 19.2.7
+        version: 19.1.17
       globals:
         specifier: 'catalog:'
         version: 15.15.0
@@ -1408,10 +1408,10 @@ importers:
         version: link:../config
       '@tanstack/react-query':
         specifier: 'catalog:'
-        version: 5.90.14(react@19.2.0)
+        version: 5.90.14(react@19.1.0)
       '@tanstack/react-query-persist-client':
         specifier: 'catalog:'
-        version: 5.90.16(@tanstack/react-query@5.90.14(react@19.2.0))(react@19.2.0)
+        version: 5.90.16(@tanstack/react-query@5.90.14(react@19.1.0))(react@19.1.0)
       base32-encode:
         specifier: ^2.0.0
         version: 2.0.0
@@ -1429,10 +1429,10 @@ importers:
         version: 1.14.2
       react:
         specifier: 'catalog:'
-        version: 19.2.0
+        version: 19.1.0
       react-native-quick-base64:
         specifier: ^2.2.2
-        version: 2.2.2(react-native@0.83.1(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.2.7)(react@19.2.0))(react@19.2.0)
+        version: 2.2.2(react-native@0.83.1(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
@@ -1450,17 +1450,17 @@ importers:
         version: 4.2.1
       zustand:
         specifier: 'catalog:'
-        version: 5.0.9(@types/react@19.2.7)(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))
+        version: 5.0.9(@types/react@19.1.17)(react@19.1.0)(use-sync-external-store@1.6.0(react@19.1.0))
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
       '@testing-library/react':
         specifier: ^16.3.0
-        version: 16.3.1(@testing-library/dom@10.4.1)(@types/react@19.2.7)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        version: 16.3.1(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@types/react':
         specifier: 'catalog:'
-        version: 19.2.7
+        version: 19.1.17
       '@vitejs/plugin-react':
         specifier: 'catalog:'
         version: 5.1.0(vite@7.3.0(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.44.1)(yaml@2.8.2))
@@ -1487,7 +1487,7 @@ importers:
         version: 3.6.2
       react-dom:
         specifier: 'catalog:'
-        version: 19.2.0(react@19.2.0)
+        version: 19.1.0(react@19.1.0)
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -1517,26 +1517,26 @@ importers:
         version: link:../shared
       '@tanstack/react-query':
         specifier: 'catalog:'
-        version: 5.90.14(react@19.2.0)
+        version: 5.90.14(react@19.1.0)
       react:
         specifier: 'catalog:'
-        version: 19.2.0
+        version: 19.1.0
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
       zustand:
         specifier: 'catalog:'
-        version: 5.0.9(@types/react@19.2.7)(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))
+        version: 5.0.9(@types/react@19.1.17)(react@19.1.0)(use-sync-external-store@1.6.0(react@19.1.0))
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
       '@testing-library/react':
         specifier: 'catalog:'
-        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.2.7)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.1.0))(react@19.1.0)
       '@types/react':
         specifier: 'catalog:'
-        version: 19.2.7
+        version: 19.1.17
       globals:
         specifier: 'catalog:'
         version: 15.15.0
@@ -1584,29 +1584,29 @@ importers:
         version: 1.8.0
       react:
         specifier: 'catalog:'
-        version: 19.2.0
+        version: 19.1.0
       uuid:
         specifier: 'catalog:'
         version: 13.0.0
       zustand:
         specifier: 'catalog:'
-        version: 5.0.9(@types/react@19.2.7)(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))
+        version: 5.0.9(@types/react@19.1.17)(react@19.1.0)(use-sync-external-store@1.6.0(react@19.1.0))
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
       '@testing-library/react':
         specifier: 'catalog:'
-        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.2.7)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@types/react':
         specifier: 'catalog:'
-        version: 19.2.7
+        version: 19.1.17
       globals:
         specifier: 'catalog:'
         version: 15.15.0
       react-dom:
         specifier: 'catalog:'
-        version: 19.2.0(react@19.2.0)
+        version: 19.1.0(react@19.1.0)
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
@@ -13215,15 +13215,6 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.1.17
 
-  '@react-native/virtualized-lists@0.83.1(@types/react@19.2.7)(react-native@0.83.1(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.2.7)(react@19.2.0))(react@19.2.0)':
-    dependencies:
-      invariant: 2.2.4
-      nullthrows: 1.1.1
-      react: 19.2.0
-      react-native: 0.83.1(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.2.7)(react@19.2.0)
-    optionalDependencies:
-      '@types/react': 19.2.7
-
   '@react-navigation/bottom-tabs@7.9.0(@react-navigation/native@7.1.28(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native-safe-area-context@5.6.2(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native-screens@4.16.0(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)':
     dependencies:
       '@react-navigation/elements': 2.9.3(@react-navigation/native@7.1.28(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native-safe-area-context@5.6.2(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
@@ -13674,21 +13665,10 @@ snapshots:
       '@tanstack/react-query': 5.90.14(react@19.1.0)
       react: 19.1.0
 
-  '@tanstack/react-query-persist-client@5.90.16(@tanstack/react-query@5.90.14(react@19.2.0))(react@19.2.0)':
-    dependencies:
-      '@tanstack/query-persist-client-core': 5.91.13
-      '@tanstack/react-query': 5.90.14(react@19.2.0)
-      react: 19.2.0
-
   '@tanstack/react-query@5.90.14(react@19.1.0)':
     dependencies:
       '@tanstack/query-core': 5.90.14
       react: 19.1.0
-
-  '@tanstack/react-query@5.90.14(react@19.2.0)':
-    dependencies:
-      '@tanstack/query-core': 5.90.14
-      react: 19.2.0
 
   '@testing-library/dom@10.4.1':
     dependencies:
@@ -13710,6 +13690,24 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.1.17
 
+  '@testing-library/react@16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.1.0))(react@19.1.0)':
+    dependencies:
+      '@babel/runtime': 7.28.4
+      '@testing-library/dom': 10.4.1
+      react: 19.1.0
+      react-dom: 19.2.0(react@19.1.0)
+    optionalDependencies:
+      '@types/react': 19.1.17
+
+  '@testing-library/react@16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+    dependencies:
+      '@babel/runtime': 7.28.4
+      '@testing-library/dom': 10.4.1
+      react: 19.2.0
+      react-dom: 19.2.0(react@19.2.0)
+    optionalDependencies:
+      '@types/react': 19.1.17
+
   '@testing-library/react@16.3.0(@testing-library/dom@10.4.1)(@types/react@19.2.7)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
     dependencies:
       '@babel/runtime': 7.28.4
@@ -13719,14 +13717,14 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.7
 
-  '@testing-library/react@16.3.1(@testing-library/dom@10.4.1)(@types/react@19.2.7)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+  '@testing-library/react@16.3.1(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)':
     dependencies:
       '@babel/runtime': 7.28.4
       '@testing-library/dom': 10.4.1
-      react: 19.2.0
-      react-dom: 19.2.0(react@19.2.0)
+      react: 19.1.0
+      react-dom: 19.1.0(react@19.1.0)
     optionalDependencies:
-      '@types/react': 19.2.7
+      '@types/react': 19.1.17
 
   '@trysound/sax@0.2.0': {}
 
@@ -13805,12 +13803,12 @@ snapshots:
 
   '@types/react-native-vector-icons@6.4.18':
     dependencies:
-      '@types/react': 19.1.17
+      '@types/react': 19.2.7
       '@types/react-native': 0.70.19
 
   '@types/react-native@0.70.19':
     dependencies:
-      '@types/react': 19.1.17
+      '@types/react': 19.2.7
 
   '@types/react-native@0.73.0(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0)':
     dependencies:
@@ -18355,6 +18353,11 @@ snapshots:
       react: 19.1.0
       scheduler: 0.26.0
 
+  react-dom@19.2.0(react@19.1.0):
+    dependencies:
+      react: 19.1.0
+      scheduler: 0.27.0
+
   react-dom@19.2.0(react@19.2.0):
     dependencies:
       react: 19.2.0
@@ -18486,10 +18489,10 @@ snapshots:
       react: 19.1.0
       react-native: 0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0)
 
-  react-native-quick-base64@2.2.2(react-native@0.83.1(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.2.7)(react@19.2.0))(react@19.2.0):
+  react-native-quick-base64@2.2.2(react-native@0.83.1(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0):
     dependencies:
-      react: 19.2.0
-      react-native: 0.83.1(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.2.7)(react@19.2.0)
+      react: 19.1.0
+      react-native: 0.83.1(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0)
 
   react-native-quick-crypto@1.0.0-beta.20(expo@54.0.32)(react-native-nitro-modules@0.29.8(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0):
     dependencies:
@@ -18716,54 +18719,6 @@ snapshots:
       yargs: 17.7.2
     optionalDependencies:
       '@types/react': 19.1.17
-    transitivePeerDependencies:
-      - '@babel/core'
-      - '@react-native-community/cli'
-      - '@react-native/metro-config'
-      - bufferutil
-      - supports-color
-      - utf-8-validate
-
-  react-native@0.83.1(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.2.7)(react@19.2.0):
-    dependencies:
-      '@jest/create-cache-key-function': 29.7.0
-      '@react-native/assets-registry': 0.83.1
-      '@react-native/codegen': 0.83.1(@babel/core@7.28.5)
-      '@react-native/community-cli-plugin': 0.83.1(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))
-      '@react-native/gradle-plugin': 0.83.1
-      '@react-native/js-polyfills': 0.83.1
-      '@react-native/normalize-colors': 0.83.1
-      '@react-native/virtualized-lists': 0.83.1(@types/react@19.2.7)(react-native@0.83.1(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.2.7)(react@19.2.0))(react@19.2.0)
-      abort-controller: 3.0.0
-      anser: 1.4.10
-      ansi-regex: 5.0.1
-      babel-jest: 29.7.0(@babel/core@7.28.5)
-      babel-plugin-syntax-hermes-parser: 0.32.0
-      base64-js: 1.5.1
-      commander: 12.1.0
-      flow-enums-runtime: 0.0.6
-      glob: 7.2.3
-      hermes-compiler: 0.14.0
-      invariant: 2.2.4
-      jest-environment-node: 29.7.0
-      memoize-one: 5.2.1
-      metro-runtime: 0.83.3
-      metro-source-map: 0.83.3
-      nullthrows: 1.1.1
-      pretty-format: 29.7.0
-      promise: 8.3.0
-      react: 19.2.0
-      react-devtools-core: 6.1.5
-      react-refresh: 0.14.2
-      regenerator-runtime: 0.13.11
-      scheduler: 0.27.0
-      semver: 7.7.3
-      stacktrace-parser: 0.1.11
-      whatwg-fetch: 3.6.20
-      ws: 7.5.10
-      yargs: 17.7.2
-    optionalDependencies:
-      '@types/react': 19.2.7
     transitivePeerDependencies:
       - '@babel/core'
       - '@react-native-community/cli'
@@ -19834,11 +19789,6 @@ snapshots:
     dependencies:
       react: 19.1.0
 
-  use-sync-external-store@1.6.0(react@19.2.0):
-    dependencies:
-      react: 19.2.0
-    optional: true
-
   util-deprecate@1.0.2:
     optional: true
 
@@ -20338,9 +20288,3 @@ snapshots:
       '@types/react': 19.1.17
       react: 19.1.0
       use-sync-external-store: 1.6.0(react@19.1.0)
-
-  zustand@5.0.9(@types/react@19.2.7)(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0)):
-    optionalDependencies:
-      '@types/react': 19.2.7
-      react: 19.2.0
-      use-sync-external-store: 1.6.0(react@19.2.0)

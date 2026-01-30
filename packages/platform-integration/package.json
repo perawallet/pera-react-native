@@ -21,6 +21,7 @@
     "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "react": "catalog:",
+    "react-dom": "catalog:",
     "zustand": "catalog:",
     "tsyringe": "catalog:",
     "reflect-metadata": "catalog:",
