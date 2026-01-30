@@ -384,43 +384,11 @@ workflows:
                 #!/usr/bin/env bash
                 set -ex
                 pnpm --filter mobile expo:prebuild
-      - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
-          title: Install Ruby via asdf
-          inputs:
-            - content: |
-                #!/usr/bin/env bash
-                set -ex
-                asdf plugin add ruby || true
-                asdf install ruby
-      - restore-cache@2:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
-          inputs:
-            - key: bundler-{{ checksum "apps/mobile/Gemfile.lock" }}
-      - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
-          title: Install Bundler gems
-          inputs:
-            - content: |
-                #!/usr/bin/env bash
-                set -ex
-                cd apps/mobile
-                bundle install
-      - save-cache@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
-          inputs:
-            - key: bundler-{{ checksum "apps/mobile/Gemfile.lock" }}
-            - paths: apps/mobile/vendor/bundle
       - restore-cache@2:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
             - key: ios-pods-{{ checksum "apps/mobile/ios/Podfile.lock" }}
             - keys: ios-pods-
-      - cocoapods-install@2:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
-          inputs:
-            - source_root_path: apps/mobile/ios
-            - podfile_path: apps/mobile/ios/Podfile
       - save-cache@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
@@ -665,22 +633,6 @@ workflows:
                 #!/usr/bin/env bash
                 set -ex
                 pnpm --filter mobile expo:prebuild
-      - set-java-version@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
-          inputs:
-            - java_version: "17"
-      - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
-          title: Install Java via asdf
-          inputs:
-            - content: |
-                #!/usr/bin/env bash
-                set -ex
-                asdf plugin add java || true
-                asdf install java
-                # Set JAVA_HOME for Gradle
-                JAVA_HOME=$(asdf where java)
-                envman add --key JAVA_HOME --value "$JAVA_HOME"
       - restore-cache@2:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
@@ -707,60 +659,30 @@ workflows:
           inputs:
             - key: android-ccache-{{ checksum "pnpm-lock.yaml" }}
             - keys: android-ccache-
+      - set-java-version@1:
+          run_if: '{{enveq "SKIP_BUILD" "false"}}'
+          inputs:
+            - java_version: "17"
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
-          title: Install Ruby via asdf
+          title: Install Java via asdf
           inputs:
             - content: |
                 #!/usr/bin/env bash
                 set -ex
-                asdf plugin add ruby || true
-                asdf install ruby
-      - restore-cache@2:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
-          inputs:
-            - key: bundler-{{ checksum "apps/mobile/Gemfile.lock" }}
+                asdf plugin add java || true
+                asdf install java
+                # Set JAVA_HOME for Gradle
+                JAVA_HOME=$(asdf where java)
+                envman add --key JAVA_HOME --value "$JAVA_HOME"
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
-          title: Install Bundler gems
+          title: Android KeyStore
           inputs:
             - content: |
                 #!/usr/bin/env bash
                 set -ex
-                cd apps/mobile
-                bundle install
-      - save-cache@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
-          inputs:
-            - key: bundler-{{ checksum "apps/mobile/Gemfile.lock" }}
-            - paths: apps/mobile/vendor/bundle
-      - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
-          title: Setup Android Keystore
-          inputs:
-            - content: |
-                #!/usr/bin/env bash
-                set -ex
-                echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > apps/mobile/android/app/release.keystore
-
-                cat > apps/mobile/android/keystore.properties << EOF
-                storeFile=release.keystore
-                storePassword=$ANDROID_KEYSTORE_PASSWORD
-                keyAlias=$ANDROID_KEY_ALIAS
-                keyPassword=$ANDROID_KEY_PASSWORD
-                EOF
-
-                echo "sdk.dir=$ANDROID_HOME" > apps/mobile/android/local.properties
-      - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
-          title: Get version from package.json
-          inputs:
-            - content: |
-                #!/usr/bin/env bash
-                set -ex
-                VERSION=$(jq -r '.version | split("-")[0]' apps/mobile/package.json)
-                envman add --key APP_VERSION --value "$VERSION"
-                envman add --key BUILD_NUMBER --value "$BITRISE_BUILD_NUMBER"
+                echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > apps/mobile/config/release.keystore
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Setup distribution credentials
@@ -770,9 +692,9 @@ workflows:
                 set -ex
 
                 if [ "$DISTRIBUTION" == "firebase" ]; then
-                  echo "$FIREBASE_SERVICE_ACCOUNT_BASE64" | base64 --decode > apps/mobile/android/firebase-service-account.json
+                  echo "$FIREBASE_SERVICE_ACCOUNT_BASE64" | base64 --decode > apps/mobile/config/firebase-service-account.json
                 else
-                  echo "$ANDROID_JSON_KEY_FILE" > apps/mobile/android/api-key.json
+                  echo "$ANDROID_JSON_KEY_FILE" > apps/mobile/config/api-key.json
                 fi
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
