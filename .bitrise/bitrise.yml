@@ -706,7 +706,8 @@ workflows:
                 pnpm --filter mobile expo:prebuild
 
                 # Increase Gradle JVM memory to avoid OOM
-                echo "org.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1g" >> apps/mobile/android/gradle.properties
+                # We use envman to make sure it persists for the Fastlane step
+                envman add --key GRADLE_OPTS --value "-Dorg.gradle.jvmargs='-Xmx6g -XX:MaxMetaspaceSize=1g' -Dorg.gradle.daemon=false"
       - restore-cache@2:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
