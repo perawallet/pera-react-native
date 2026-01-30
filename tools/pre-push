@@ -15,78 +15,111 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# Initialize variables for error handling
+EXIT_STATUS=0
+ERROR_REPORT=$(mktemp)
+
+# Helper function to record failures
+record_failure() {
+    TITLE="$1"
+    LOG_FILE="$2"
+    EXTRA_MSG="$3"
+
+    echo "" >> "$ERROR_REPORT"
+    echo "${RED}========================================${NC}" >> "$ERROR_REPORT"
+    echo "${RED}FAILED: $TITLE${NC}" >> "$ERROR_REPORT"
+    echo "${RED}========================================${NC}" >> "$ERROR_REPORT"
+    
+    if [ ! -z "$EXTRA_MSG" ]; then
+        echo "$EXTRA_MSG" >> "$ERROR_REPORT"
+        echo "" >> "$ERROR_REPORT"
+    fi
+    
+    if [ -f "$LOG_FILE" ]; then
+        cat "$LOG_FILE" >> "$ERROR_REPORT"
+    fi
+    
+    EXIT_STATUS=1
+}
+
 # Run ESLint
 echo "\n${YELLOW}Running ESLint...${NC}"
-pnpm run lint
-
-if [ $? -ne 0 ]; then
-  echo "${RED}ESLint failed. Please fix the errors before pushing.${NC}"
-  echo "${YELLOW}You can run 'pnpm lint:fix' to auto-fix some issues.${NC}"
-  if [ $FAIL_ON_ERROR -ne 0 ]; then
-    exit 1
-  fi
+LINT_LOG=$(mktemp)
+if pnpm run lint > "$LINT_LOG" 2>&1; then
+    echo "${GREEN}✓ ESLint passed${NC}"
+else
+    echo "${RED}ESLint failed.${NC}"
+    record_failure "ESLint" "$LINT_LOG" "${YELLOW}You can run 'pnpm lint:fix' to auto-fix some issues.${NC}"
 fi
-
-echo "${GREEN}✓ ESLint passed${NC}"
+rm "$LINT_LOG"
 
 # Run formatter
 echo "\n${YELLOW}Running formatter...${NC}"
-pnpm run format
-
-if [ $? -ne 0 ]; then
-  echo "${RED}Formatting failed.${NC}"
-  if [ $FAIL_ON_ERROR -ne 0 ]; then
-    exit 1
-  fi
+FORMAT_LOG=$(mktemp)
+if pnpm run format > "$FORMAT_LOG" 2>&1; then
+    # Check for modified files after formatting
+    if ! git diff --quiet; then
+        echo "${RED}Formatting detected changes.${NC}"
+        DIFF_LOG=$(mktemp)
+        # Capture the names of changed files
+        echo "The following files were modified by the formatter:" > "$DIFF_LOG"
+        git diff --name-only >> "$DIFF_LOG"
+        
+        record_failure "Formatter (Uncommitted Changes)" "$DIFF_LOG" "${YELLOW}Please commit these changes before pushing.${NC}"
+        rm "$DIFF_LOG"
+    else
+        echo "${GREEN}✓ Formatting passed${NC}"
+    fi
+else
+    echo "${RED}Formatting execution failed.${NC}"
+    record_failure "Formatter Execution" "$FORMAT_LOG"
 fi
-
-# Check for modified files after formatting
-if ! git diff --quiet; then
-  echo "${RED}Formatting detected changes.${NC}"
-  echo "${YELLOW}Please commit these changes before pushing.${NC}"
-  if [ $FAIL_ON_ERROR -ne 0 ]; then
-    exit 1
-  fi
-fi
-
-echo "${GREEN}✓ Formatting complete${NC}"
+rm "$FORMAT_LOG"
 
 # Run copyright header check
 echo "\n${YELLOW}Checking copyright headers...${NC}"
-pnpm run lint:copyright
-
-if [ $? -ne 0 ]; then
-  echo "${RED}Copyright header check failed.${NC}"
-  echo "${YELLOW}Please ensure all files have the proper copyright header.${NC}"
-  if [ $FAIL_ON_ERROR -ne 0 ]; then
-    exit 1
-  fi
+COPYRIGHT_LOG=$(mktemp)
+if pnpm run lint:copyright > "$COPYRIGHT_LOG" 2>&1; then
+    # Check for modified files after copyright header check
+    if ! git diff --quiet; then
+        echo "${RED}Copyright header check detected changes.${NC}"
+        DIFF_LOG=$(mktemp)
+        echo "The following files had copyright headers updated:" > "$DIFF_LOG"
+        git diff --name-only >> "$DIFF_LOG"
+        
+        record_failure "Copyright Headers (Uncommitted Changes)" "$DIFF_LOG" "${YELLOW}Please commit these changes before pushing.${NC}"
+        rm "$DIFF_LOG"
+    else
+        echo "${GREEN}✓ Copyright headers valid${NC}"
+    fi
+else
+    echo "${RED}Copyright header check failed.${NC}"
+    record_failure "Copyright Check" "$COPYRIGHT_LOG" "${YELLOW}Please ensure all files have the proper copyright header.${NC}"
 fi
-
-# Check for modified files after copyright header check
-if ! git diff --quiet; then
-  echo "${RED}Copyright header check detected changes.${NC}"
-  echo "${YELLOW}Please commit these changes before pushing.${NC}"
-  if [ $FAIL_ON_ERROR -ne 0 ]; then
-    exit 1
-  fi
-fi
-
-echo "${GREEN}✓ Copyright headers valid${NC}"
+rm "$COPYRIGHT_LOG"
 
 # Run i18n check
 echo "\n${YELLOW}Checking i18n...${NC}"
-pnpm run lint:i18n
-
-if [ $? -ne 0 ]; then
-  echo "${RED}i18n check failed.${NC}"
-  echo "${YELLOW}Please ensure all files have the proper i18n.${NC}"
-  if [ $FAIL_ON_ERROR -ne 0 ]; then
-    exit 1
-  fi
+I18N_LOG=$(mktemp)
+if pnpm run lint:i18n > "$I18N_LOG" 2>&1; then
+    echo "${GREEN}✓ i18n valid${NC}"
+else
+    echo "${RED}i18n check failed.${NC}"
+    record_failure "i18n Check" "$I18N_LOG" "${YELLOW}Please ensure all files have the proper i18n.${NC}"
 fi
+rm "$I18N_LOG"
 
-echo "${GREEN}✓ i18n valid${NC}"
-
-echo "\n${GREEN}All pre-push checks passed!${NC}"
-exit 0
+# Final Report
+if [ $EXIT_STATUS -ne 0 ]; then
+    echo "\n${RED}Some pre-push checks failed:${NC}"
+    cat "$ERROR_REPORT"
+    rm "$ERROR_REPORT"
+    
+    if [ $FAIL_ON_ERROR -ne 0 ]; then
+        exit 1
+    fi
+else
+    echo "\n${GREEN}All pre-push checks passed!${NC}"
+    rm "$ERROR_REPORT"
+    exit 0
+fi
