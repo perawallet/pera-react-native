@@ -260,7 +260,6 @@ export const PWWebView = (props: PWWebViewProps) => {
                 forceDarkOn={isDarkMode}
                 onLoadStart={verifyLoad}
                 onLoad={loadCompleted}
-                onLoadSubResourceError={showLoadError}
                 onError={showLoadError}
                 onHttpError={showError}
                 dataDetectorTypes={[]}
