@@ -14,16 +14,32 @@ const withAndroidLocalProperties = (config) => {
       const projectRoot = config.modRequest.projectRoot;
       const localPropertiesPath = path.join(projectRoot, 'android', 'local.properties');
 
-      // Default to the standard macOS Android SDK location
-      const homeDir = process.env.HOME || '/Users/fred';
-      const sdkPath = path.join(homeDir, 'Library/Android/sdk');
+      const getSDKPath = () => {
+        if (process.env.ANDROID_HOME) return process.env.ANDROID_HOME;
+        if (process.env.ANDROID_SDK_ROOT) return process.env.ANDROID_SDK_ROOT;
 
-      if (fs.existsSync(sdkPath)) {
-        const content = `sdk.dir=${sdkPath}\n`;
+        const homeDir = require('os').homedir();
+
+        switch (process.platform) {
+          case 'darwin':
+            return path.join(homeDir, 'Library/Android/sdk');
+          case 'win32':
+            return path.join(process.env.LOCALAPPDATA || path.join(homeDir, 'AppData', 'Local'), 'Android', 'Sdk');
+          case 'linux':
+            return path.join(homeDir, 'Android', 'Sdk');
+          default:
+            return null;
+        }
+      };
+
+      const sdkPath = getSDKPath();
+
+      if (sdkPath && fs.existsSync(sdkPath)) {
+        const content = `sdk.dir=${sdkPath.replace(/\\/g, '/')}\n`;
         fs.writeFileSync(localPropertiesPath, content);
         console.log(`[withAndroidLocalProperties] Created local.properties with sdk.dir=${sdkPath}`);
       } else {
-        console.warn(`[withAndroidLocalProperties] Could not find Android SDK at ${sdkPath}`);
+        console.warn(`[withAndroidLocalProperties] Could not find Android SDK. Please set ANDROID_HOME environment variable.`);
       }
 
       return config;
