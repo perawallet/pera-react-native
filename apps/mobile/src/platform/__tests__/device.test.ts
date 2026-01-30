@@ -13,7 +13,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { RNDeviceInfoStorageService } from '../device'
 import * as RN from 'react-native'
-// import DeviceInfo from 'react-native-device-info' (removed)
 
 // Mock @perawallet/wallet-core-shared
 vi.mock('@perawallet/wallet-core-shared', () => ({
