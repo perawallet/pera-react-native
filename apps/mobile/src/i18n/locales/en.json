@@ -587,6 +587,7 @@
             "status": "Status",
             "amount": "Amount",
             "asset": "Asset",
+            "asset_id": "Asset ID",
             "date": "Date",
             "note": "Transaction Note",
             "view_in_explorer": "View in Pera Explorer",

@@ -112,13 +112,13 @@ const GroupTransactionView = ({ request }: TransactionSigningViewProps) => {
             />
             <PWText variant='h4'>
                 {isMultipleGroups
-                    ? t('signing.tx_display.group.multiple_groups_title')
-                    : t('signing.tx_display.group.single_group_title')}
+                    ? t('transactions.group.multiple_groups_title')
+                    : t('transactions.group.single_group_title')}
             </PWText>
 
             <PWView style={styles.transactionListContainer}>
                 <PWText style={styles.transactionListHeader}>
-                    {t('signing.tx_display.group.transactions_count', {
+                    {t('transactions.group.transactions_count', {
                         count: allTransactions.length,
                     })}
                 </PWText>
