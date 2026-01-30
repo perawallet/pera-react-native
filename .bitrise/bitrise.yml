@@ -689,6 +689,9 @@ workflows:
                 set -ex
                 export APP_ENV=$ENVIRONMENT
                 pnpm --filter mobile expo:prebuild
+
+                # Increase Gradle JVM memory to avoid OOM
+                echo "org.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1g" >> apps/mobile/android/gradle.properties
       - restore-cache@2:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
