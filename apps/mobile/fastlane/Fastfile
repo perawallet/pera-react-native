@@ -109,6 +109,13 @@ platform :ios do
       }
     end
 
+    # Construct xcargs for manual signing
+    xcargs_list = ["CODE_SIGN_STYLE='Manual'"]
+    if ENV["IOS_PROVISIONING_PROFILE_NAME"]
+      xcargs_list << "PROVISIONING_PROFILE_SPECIFIER='#{ENV["IOS_PROVISIONING_PROFILE_NAME"]}'"
+      xcargs_list << "CODE_SIGN_IDENTITY='Apple Distribution'"
+    end
+
     gym(
       scheme: options[:scheme],
       configuration: options[:configuration],
@@ -117,7 +124,8 @@ platform :ios do
       output_directory: "./build/ios",
       output_name: "#{options[:scheme]}.ipa",
       clean: clean,
-      export_options: export_options
+      export_options: export_options,
+      xcargs: xcargs_list.join(" ")
     )
   end
 
