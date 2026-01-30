@@ -40,7 +40,7 @@ export const useDeleteAllData = () => {
         try {
             await deleteDevices()
         } catch (e) {
-            logger.error(e)
+            logger.error('Failed to delete devices', { error: e })
         }
 
         await DataStoreRegistry.clearAll()

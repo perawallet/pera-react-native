@@ -345,8 +345,6 @@
             "title": "{{count}} rekeyed accounts found",
             "description_line_1": "You have {{count}} rekeyed accounts. This means that you can sign the transactions of the rekeyed accounts with the account you just added",
             "description_line_2": "Select the rekeyed accounts you want to add to your wallet:",
-            "addresses_count": "{{count}} addresses",
-            "select_all": "Select all",
             "already_imported": "already imported",
             "continue": "Choose accounts to add",
             "skip": "Skip for now",
@@ -579,12 +577,6 @@
             "to": "To",
             "fee": "Fee",
             "round": "Round",
-            "group": "Group",
-            "id": "Transaction ID",
-            "completed": "Completed",
-            "failed": "Failed",
-            "pending": "Pending",
-            "status": "Status",
             "amount": "Amount",
             "asset": "Asset",
             "asset_id": "Asset ID",
@@ -592,17 +584,6 @@
             "note": "Transaction Note",
             "view_in_explorer": "View in Pera Explorer",
             "view_note": "View Note"
-        },
-        "type": {
-            "pay": "Payment Transaction",
-            "keyreg": "Key Registration Transaction",
-            "acfg": "Asset Configuration Transaction",
-            "axfer": "Asset Transfer Transaction",
-            "afrz": "Asset Freeze Transaction",
-            "appl": "Application Transaction",
-            "stpf": "State Proof Transaction",
-            "hb": "Heartbeat Transaction",
-            "unknown": "Unknown Transaction"
         },
         "warning": {
             "title": "Warning",
@@ -617,17 +598,9 @@
             "body": "This transaction type is not supported."
         },
         "asset_transfer": {
-            "title": "Asset Transfer",
-            "opt_in_title": "Asset Opt-In",
-            "opt_out_title": "Asset Opt-Out",
-            "clawback_title": "Asset Clawback",
-            "clawback_from": "Clawback From",
-            "close_warning": "This will close out the asset and send remaining balance to:"
+            "clawback_from": "Clawback From"
         },
         "asset_config": {
-            "create_title": "Create Asset",
-            "update_title": "Update Asset",
-            "destroy_title": "Destroy Asset",
             "name": "Name",
             "unit": "Unit Name",
             "url": "URL",
@@ -637,33 +610,22 @@
             "manager": "Manager",
             "reserve": "Reserve",
             "freeze_addr": "Freeze Address",
-            "clawback": "Clawback Address",
-            "destroy_warning": "This will permanently destroy the asset. This action cannot be undone."
+            "clawback": "Clawback Address"
         },
         "asset_freeze": {
-            "freeze_title": "Freeze Asset",
-            "unfreeze_title": "Unfreeze Asset",
             "target": "Target Account",
             "status": "Status",
             "frozen": "Frozen",
-            "unfrozen": "Unfrozen",
-            "freeze_warning": "This will prevent the target account from transferring this asset."
+            "unfrozen": "Unfrozen"
         },
         "key_reg": {
-            "online_title": "Go Online",
-            "offline_title": "Go Offline",
             "valid_rounds": "Valid Rounds",
             "key_dilution": "Key Dilution",
             "participation_key": "Participation Key",
             "selection_key": "Selection Key",
-            "status": "Registration Status",
-            "online": "Online",
-            "offline": "Offline"
+            "status": "Registration Status"
         },
         "app_call": {
-            "create_title": "Create Application",
-            "update_title": "Update Application",
-            "delete_title": "Delete Application",
             "app_id": "Application ID",
             "details": "Advanced Application Details",
             "on_completion": "On Completion",
@@ -673,17 +635,12 @@
             "foreign_assets": "Foreign Assets",
             "boxes": "Box References",
             "inner_transactions_one": "{{count}} Inner Transaction",
-            "inner_transactions_other": "{{count}} Inner Transactions",
-            "delete_warning": "This will permanently delete the application.",
-            "update_warning": "This will update the application code. Review carefully before approving."
+            "inner_transactions_other": "{{count}} Inner Transactions"
         },
         "group": {
             "single_group_title": "Transaction Group",
             "multiple_groups_title": "Multiple Transaction Groups",
             "transactions_count": "{{count}} Transaction(s)"
-        },
-        "inner_preview": {
-            "inner_count": "{{count}} inner txn(s)"
         }
     },
     "swaps": {
