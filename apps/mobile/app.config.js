@@ -43,9 +43,9 @@ const bundleIdentifiers = {
 
 // App names per environment
 const appNames = {
-  dev: 'Pera Dev',
-  staging: 'Pera Staging',
-  production: 'Pera',
+  dev: 'Pera 7 Dev',
+  staging: 'Pera 7 Staging',
+  production: 'Pera 7',
 };
 
 // Expo project slugs
