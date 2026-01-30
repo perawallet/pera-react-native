@@ -258,7 +258,7 @@ platform :android do
       skip_upload_metadata: true,
       skip_upload_images: true,
       skip_upload_screenshots: true,
-      json_key: "android/api-key.json"
+      json_key: "config/api-key.json"
     )
   end
 
@@ -282,7 +282,7 @@ platform :android do
       release_notes: notes,
       android_artifact_type: "APK",
       android_artifact_path: android_artifact_path(flavor, "apk"),
-      service_credentials_file: "android/firebase-service-account.json"
+      service_credentials_file: "config/firebase-service-account.json"
     )
   end
 
