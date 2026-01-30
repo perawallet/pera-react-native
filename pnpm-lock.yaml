@@ -613,6 +613,9 @@ importers:
       react:
         specifier: 'catalog:'
         version: 19.1.0
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.1.0(react@19.1.0)
       tweetnacl:
         specifier: ^1.0.3
         version: 1.0.3
@@ -628,7 +631,7 @@ importers:
         version: link:../devtools
       '@testing-library/react':
         specifier: 'catalog:'
-        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.1.0))(react@19.1.0)
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@types/react':
         specifier: 'catalog:'
         version: 19.1.17
@@ -680,6 +683,9 @@ importers:
       react:
         specifier: 'catalog:'
         version: 19.1.0
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.1.0(react@19.1.0)
       zustand:
         specifier: 'catalog:'
         version: 5.0.9(@types/react@19.1.17)(react@19.1.0)(use-sync-external-store@1.6.0(react@19.1.0))
@@ -689,7 +695,7 @@ importers:
         version: link:../devtools
       '@testing-library/react':
         specifier: 'catalog:'
-        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.1.0))(react@19.1.0)
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@types/react':
         specifier: 'catalog:'
         version: 19.1.17
@@ -738,6 +744,9 @@ importers:
       react:
         specifier: 'catalog:'
         version: 19.1.0
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.1.0(react@19.1.0)
       uuid:
         specifier: 'catalog:'
         version: 13.0.0
@@ -753,7 +762,7 @@ importers:
         version: link:../devtools
       '@testing-library/react':
         specifier: 'catalog:'
-        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.1.0))(react@19.1.0)
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@types/react':
         specifier: 'catalog:'
         version: 19.1.17
@@ -857,6 +866,9 @@ importers:
       react:
         specifier: 'catalog:'
         version: 19.1.0
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.1.0(react@19.1.0)
       uuid:
         specifier: 'catalog:'
         version: 13.0.0
@@ -872,7 +884,7 @@ importers:
         version: link:../devtools
       '@testing-library/react':
         specifier: 'catalog:'
-        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.1.0))(react@19.1.0)
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@types/react':
         specifier: 'catalog:'
         version: 19.1.17
@@ -918,6 +930,9 @@ importers:
       react:
         specifier: 'catalog:'
         version: 19.1.0
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.1.0(react@19.1.0)
       zustand:
         specifier: 'catalog:'
         version: 5.0.9(@types/react@19.1.17)(react@19.1.0)(use-sync-external-store@1.6.0(react@19.1.0))
@@ -927,7 +942,7 @@ importers:
         version: link:../devtools
       '@testing-library/react':
         specifier: 'catalog:'
-        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.1.0))(react@19.1.0)
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@types/react':
         specifier: 'catalog:'
         version: 19.1.17
@@ -1134,6 +1149,9 @@ importers:
       react:
         specifier: 'catalog:'
         version: 19.1.0
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.1.0(react@19.1.0)
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
@@ -1146,7 +1164,7 @@ importers:
         version: link:../devtools
       '@testing-library/react':
         specifier: 'catalog:'
-        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.1.0))(react@19.1.0)
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@types/react':
         specifier: 'catalog:'
         version: 19.1.17
@@ -1186,6 +1204,9 @@ importers:
       react:
         specifier: 'catalog:'
         version: 19.1.0
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.1.0(react@19.1.0)
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
@@ -1204,7 +1225,7 @@ importers:
         version: link:../devtools
       '@testing-library/react':
         specifier: 'catalog:'
-        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.1.0))(react@19.1.0)
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@types/react':
         specifier: 'catalog:'
         version: 19.1.17
@@ -1247,6 +1268,9 @@ importers:
       react:
         specifier: 'catalog:'
         version: 19.1.0
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.1.0(react@19.1.0)
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
@@ -1259,7 +1283,7 @@ importers:
         version: link:../devtools
       '@testing-library/react':
         specifier: 'catalog:'
-        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.1.0))(react@19.1.0)
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@types/react':
         specifier: 'catalog:'
         version: 19.1.17
@@ -1296,6 +1320,9 @@ importers:
       react:
         specifier: 'catalog:'
         version: 19.1.0
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.1.0(react@19.1.0)
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
@@ -1308,7 +1335,7 @@ importers:
         version: link:../devtools
       '@testing-library/react':
         specifier: 'catalog:'
-        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.1.0))(react@19.1.0)
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@types/react':
         specifier: 'catalog:'
         version: 19.1.17
@@ -1351,6 +1378,9 @@ importers:
       react:
         specifier: 'catalog:'
         version: 19.1.0
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.1.0(react@19.1.0)
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
@@ -1363,7 +1393,7 @@ importers:
         version: link:../devtools
       '@testing-library/react':
         specifier: 'catalog:'
-        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.1.0))(react@19.1.0)
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@types/react':
         specifier: 'catalog:'
         version: 19.1.17
@@ -1521,6 +1551,9 @@ importers:
       react:
         specifier: 'catalog:'
         version: 19.1.0
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.1.0(react@19.1.0)
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
@@ -1533,7 +1566,7 @@ importers:
         version: link:../devtools
       '@testing-library/react':
         specifier: 'catalog:'
-        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.1.0))(react@19.1.0)
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@types/react':
         specifier: 'catalog:'
         version: 19.1.17
@@ -13690,15 +13723,6 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.1.17
 
-  '@testing-library/react@16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.1.0))(react@19.1.0)':
-    dependencies:
-      '@babel/runtime': 7.28.4
-      '@testing-library/dom': 10.4.1
-      react: 19.1.0
-      react-dom: 19.2.0(react@19.1.0)
-    optionalDependencies:
-      '@types/react': 19.1.17
-
   '@testing-library/react@16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
     dependencies:
       '@babel/runtime': 7.28.4
@@ -18352,11 +18376,6 @@ snapshots:
     dependencies:
       react: 19.1.0
       scheduler: 0.26.0
-
-  react-dom@19.2.0(react@19.1.0):
-    dependencies:
-      react: 19.1.0
-      scheduler: 0.27.0
 
   react-dom@19.2.0(react@19.2.0):
     dependencies:
