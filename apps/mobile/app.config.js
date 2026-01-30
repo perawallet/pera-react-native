@@ -56,6 +56,8 @@ const slugs = {
   production: 'pera',
 };
 
+const bootsplashManifest = require('./assets/bootsplash/manifest.json');
+
 module.exports = {
   name: appNames[variant],
   slug: slugs[variant],
@@ -70,7 +72,7 @@ module.exports = {
   splash: {
     image: './assets/bootsplash/logo@2x.png',
     resizeMode: 'contain',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: bootsplashManifest.background,
   },
 
   // iOS-specific configuration
@@ -115,7 +117,7 @@ module.exports = {
     versionCode: parseInt(process.env.BUILD_NUMBER || '1', 10),
     adaptiveIcon: {
       foregroundImage: './assets/bootsplash/logo@4x.png',
-      backgroundColor: '#FFFFFF',
+      backgroundColor: bootsplashManifest.background,
     },
     permissions: [
       'android.permission.INTERNET',
@@ -199,12 +201,13 @@ module.exports = {
       'expo-splash-screen',
       {
         image: './assets/bootsplash/logo@2x.png',
-        imageWidth: 200,
+        imageWidth: bootsplashManifest.logo.width * 2, // @2x
         resizeMode: 'contain',
-        backgroundColor: '#FFFFFF',
+        backgroundColor: bootsplashManifest.background,
+        statusBarTranslucent: true,
         dark: {
           image: './assets/bootsplash/logo@2x.png',
-          backgroundColor: '#1C1C1E',
+          backgroundColor: bootsplashManifest.background,
         },
       },
     ],
