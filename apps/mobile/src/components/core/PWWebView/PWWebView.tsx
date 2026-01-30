@@ -43,6 +43,7 @@ import { WebViewFooterBar } from './WebViewFooterBar'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
 import { bottomSheetNotifier } from '../PWBottomSheet'
+import { useWebViewStore } from '@modules/webview'
 
 export type PWWebViewProps = {
     url: string
@@ -70,6 +71,7 @@ export const PWWebView = (props: PWWebViewProps) => {
         ...rest
     } = props
     const { theme } = useTheme()
+    const removeWebView = useWebViewStore(state => state.removeWebView)
     const webview = useRef<WebView>(null)
     const { showToast } = useToast()
     const [title, setTitle] = useState('')
@@ -93,8 +95,12 @@ export const PWWebView = (props: PWWebViewProps) => {
     }, [deviceInfo])
 
     const onCloseRequested = useCallback(() => {
-        onClose?.()
-    }, [onClose])
+        if (!requestId) {
+            onClose?.()
+            return
+        }
+        removeWebView(requestId)
+    }, [onClose, requestId, removeWebView])
 
     const mobileInterface = usePeraWebviewInterface(
         webview.current,
