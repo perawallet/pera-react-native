@@ -30,7 +30,10 @@ export default defineConfig({
             },
             {
                 find: 'react-dom',
-                replacement: path.resolve(__dirname, './node_modules/react-dom'),
+                replacement: path.resolve(
+                    __dirname,
+                    './node_modules/react-dom',
+                ),
             },
             {
                 find: '@components',

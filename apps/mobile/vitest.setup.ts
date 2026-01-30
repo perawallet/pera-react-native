@@ -319,7 +319,6 @@ vi.mock('react-native', () => {
             ),
 
         Modal: vi.fn().mockImplementation((args: any) => {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const {
                 visible,
                 transparent,
@@ -328,6 +327,11 @@ vi.mock('react-native', () => {
                 onShow,
                 ...props
             } = args
+
+            void transparent
+            void animationType
+            void onRequestClose
+            void onShow
             return visible
                 ? require('react').createElement('div', props, props.children)
                 : null

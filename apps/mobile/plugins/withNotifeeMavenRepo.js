@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const { withProjectBuildGradle } = require('@expo/config-plugins');
 
 /**

@@ -43,6 +43,7 @@ pnpm test -- --watch        # Watch mode
 ## Troubleshooting
 
 ### Native Project Issues (iOS/Android)
+
 If you're having issues with native code or dependencies:
 
 ```sh

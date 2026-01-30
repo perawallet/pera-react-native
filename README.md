@@ -30,6 +30,7 @@ pnpm build
 This will build all packages in the monorepo and write out any generated configuration.
 
 ### 1. Start Metro
+
 In one terminal start Metro:
 
 ```sh
@@ -37,6 +38,7 @@ pnpm mobile:start
 ```
 
 ### 2. Run on device / simulator
+
 In another terminal run a platform target:
 
 ```sh
@@ -54,6 +56,7 @@ pnpm -C apps/mobile start|ios|android
 ```
 
 ### Clean Rebuilds
+
 If you need to regenerate native projects from scratch:
 
 ```sh

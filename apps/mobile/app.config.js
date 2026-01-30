@@ -55,6 +55,7 @@ const slugs = {
   production: 'pera',
 };
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const bootsplashManifest = require('./assets/bootsplash/manifest.json');
 
 module.exports = {
