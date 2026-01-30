@@ -26,6 +26,19 @@ def get_xcodeproj_path
   raise "Could not find any .xcodeproj file in ./ios/ or ../ios/. CWD: #{Dir.pwd}. Files: #{Dir['*']}"
 end
 
+# Helper to find the dynamic xcworkspace path
+def get_xcworkspace_path
+  # Try standard location
+  workspace = Dir["./ios/*.xcworkspace"].first
+  return File.expand_path(workspace) if workspace
+
+  # Try fallback relative to fastlane folder
+  workspace = Dir["../ios/*.xcworkspace"].first
+  return File.expand_path(workspace) if workspace
+
+  raise "Could not find any .xcworkspace file. CWD: #{Dir.pwd}"
+end
+
 default_platform(:ios)
 
 # ============================================================================
@@ -100,7 +113,7 @@ platform :ios do
       scheme: options[:scheme],
       configuration: options[:configuration],
       export_method: options[:export_method],
-      workspace: "./ios/pera.xcworkspace",
+      workspace: get_xcworkspace_path,
       output_directory: "./build/ios",
       output_name: "#{options[:scheme]}.ipa",
       clean: clean,
