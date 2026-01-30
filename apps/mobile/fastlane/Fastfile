@@ -153,7 +153,7 @@ platform :ios do
     )
 
     upload_symbols_to_crashlytics(
-      gsp_path: "./ios/GoogleService-Info.plist",
+      gsp_path: "./config/GoogleService-Info.plist",
       dsym_path: "./build/ios/#{scheme}.app.dSYM.zip",
       binary_path: "./ios/Pods/FirebaseCrashlytics/upload-symbols"
     )
