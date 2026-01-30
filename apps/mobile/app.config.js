@@ -63,7 +63,7 @@ module.exports = {
   slug: slugs[variant],
   version: '7.0.0',
   orientation: 'portrait',
-  icon: './assets/bootsplash/logo@4x.png',
+  icon: './assets/icon-beta.png',
   scheme: ['perawallet', 'algorand', 'wc', 'perawallet-wc'],
   userInterfaceStyle: 'automatic',
   newArchEnabled: true,
@@ -116,7 +116,7 @@ module.exports = {
     package: bundleIdentifiers[variant].android,
     versionCode: parseInt(process.env.BUILD_NUMBER || '1', 10),
     adaptiveIcon: {
-      foregroundImage: './assets/bootsplash/logo@4x.png',
+      foregroundImage: './assets/icon-beta.png',
       backgroundColor: bootsplashManifest.background,
     },
     permissions: [
@@ -162,7 +162,7 @@ module.exports = {
   web: {
     bundler: 'metro',
     output: 'single',
-    favicon: './assets/bootsplash/logo@2x.png',
+    favicon: './assets/icon-beta.png',
   },
 
   // Extra configuration accessible at runtime via Constants.expoConfig.extra
