@@ -103,9 +103,9 @@ platform :ios do
     end
 
     export_options = {}
-    if ENV["IOS_PROFILE_NAME"]
+    if ENV["IOS_PROVISIONING_PROFILE_NAME"]
       export_options[:provisioningProfiles] = {
-        bundle_id => ENV["IOS_PROFILE_NAME"]
+        bundle_id => ENV["IOS_PROVISIONING_PROFILE_NAME"]
       }
     end
 

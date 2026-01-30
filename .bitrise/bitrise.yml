@@ -301,6 +301,20 @@ workflows:
                     echo "Warning: $SOURCE_VAR is not set or empty"
                   fi
                 done
+
+                # Handle iOS Provisioning Profiles explicitly
+                if [ "$ENVIRONMENT" == "staging" ]; then
+                  echo "Setting IOS_PROVISIONING_PROFILE_NAME from STAGING_IOS_PROVISIONING_PROFILE_NAME"
+                  envman add --key "IOS_PROVISIONING_PROFILE_NAME" --value "$STAGING_IOS_PROVISIONING_PROFILE_NAME"
+                elif [ "$ENVIRONMENT" == "production" ]; then
+                  echo "Setting IOS_PROVISIONING_PROFILE_NAME from PRODUCTION_IOS_PROVISIONING_PROFILE_NAME"
+                  envman add --key "IOS_PROVISIONING_PROFILE_NAME" --value "$PRODUCTION_IOS_PROVISIONING_PROFILE_NAME"
+                fi
+
+                # IOS_TEAM_ID is expected to be a global secret, available as env var
+                if [ -z "$IOS_TEAM_ID" ]; then
+                  echo "Warning: IOS_TEAM_ID is not set"
+                fi
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Generate Changelog (if not from pipeline)
@@ -562,6 +576,7 @@ workflows:
                   "ANDROID_GOOGLE_SERVICES_BASE64"
                   "FIREBASE_APP_ID_ANDROID"
                   "DISCOVER_BASE_URL"
+                  "STAKING_BASE_URL"
                   "STAKING_BASE_URL"
                   "ONRAMP_BASE_URL"
                 )

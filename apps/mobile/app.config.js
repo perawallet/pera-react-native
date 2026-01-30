@@ -79,6 +79,7 @@ module.exports = {
   ios: {
     bundleIdentifier: bundleIdentifiers[variant].ios,
     buildNumber: process.env.BUILD_NUMBER || '1',
+    appleTeamId: process.env.IOS_TEAM_ID,
     supportsTablet: true,
     config: {
       usesNonExemptEncryption: false,
