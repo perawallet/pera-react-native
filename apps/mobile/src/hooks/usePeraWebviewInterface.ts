@@ -123,7 +123,14 @@ export const usePeraWebviewInterface = (
                 })
             })
         },
-        [pushWebViewContext, t, webview],
+        [
+            pushWebViewContext,
+            securedConnection,
+            onCloseRequested,
+            onBackRequested,
+            t,
+            webview,
+        ],
     )
 
     const openSystemBrowser = useCallback(
