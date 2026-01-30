@@ -14,15 +14,14 @@
 // This replaces app.json for more flexible configuration
 // All native configurations are defined here so ios/android folders can be generated on demand
 
-const IS_DEV = process.env.APP_ENV === 'development';
-const IS_STAGING = process.env.APP_ENV === 'staging';
-
 // Determine app variant based on environment
-const getAppVariant = () => {
-  if (IS_DEV) return 'dev';
-  if (IS_STAGING) return 'staging';
-  return 'production';
-};
+function getAppVariant() {
+  switch (process.env.APP_ENV) {
+    case 'staging': return 'staging';
+    case 'production': return 'production';
+    default: return 'dev';
+  }
+}
 
 const variant = getAppVariant();
 
