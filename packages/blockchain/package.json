@@ -23,6 +23,7 @@
     "@perawallet/wallet-core-shared": "workspace:*",
     "@algorandfoundation/algokit-utils": "catalog:",
     "react": "catalog:",
+    "react-dom": "catalog:",
     "uuid": "catalog:",
     "zod": "catalog:",
     "zustand": "catalog:",

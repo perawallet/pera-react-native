@@ -28,7 +28,7 @@ import {
 import { useSettings } from '@perawallet/wallet-core-settings'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useCallback } from 'react'
-import { useWebView } from '@modules/webview'
+import { useWebView } from '@modules/webview/hooks'
 import { useLanguage } from './useLanguage'
 import {
     ArbitraryDataSignRequest,
@@ -70,7 +70,7 @@ export const JsonRpcErrorCode = {
 export type JsonRpcErrorCode =
     (typeof JsonRpcErrorCode)[keyof typeof JsonRpcErrorCode]
 
-export { useWebView } from '@modules/webview'
+export { useWebView } from '@modules/webview/hooks'
 
 export const usePeraWebviewInterface = (
     webview: WebView | null,
@@ -123,7 +123,14 @@ export const usePeraWebviewInterface = (
                 })
             })
         },
-        [pushWebViewContext, t, webview],
+        [
+            pushWebViewContext,
+            securedConnection,
+            onCloseRequested,
+            onBackRequested,
+            t,
+            webview,
+        ],
     )
 
     const openSystemBrowser = useCallback(

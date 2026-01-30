@@ -11,7 +11,9 @@
  */
 
 import React from 'react'
-import { PWView, PWText } from '@components/core'
+import { PWView } from '../PWView'
+import { PWText } from '../PWText'
+
 import { useStyles, PWChipVariant } from './styles'
 import { StyleProp, ViewStyle } from 'react-native'
 

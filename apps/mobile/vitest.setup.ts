@@ -76,6 +76,12 @@ vi.mock('react-native-reanimated', () => {
     return Reanimated
 })
 
+// Mock expo-splash-screen
+vi.mock('expo-splash-screen', () => ({
+    preventAutoHideAsync: vi.fn().mockResolvedValue(true),
+    hideAsync: vi.fn().mockResolvedValue(true),
+}))
+
 // Mock react-native-vision-camera
 vi.mock('react-native-vision-camera', () => {
     return {
@@ -124,18 +130,28 @@ afterEach(() => {
     vi.clearAllMocks()
 })
 
-vi.mock('react-native-device-info', () => ({
-    default: {
-        getApplicationName: () => 'Pera Wallet',
-        getBundleId: () => 'com.test.app',
-        getVersion: () => '1.0.0',
-        getBuildNumber: () => '1',
-        getReadableVersion: () => '1.0.0.1',
-        getSystemVersion: () => '17.0',
-        getDeviceId: () => 'test-device',
-        getUniqueId: () => Promise.resolve('unique-id'),
-        getModel: () => 'iPhone',
-    },
+vi.mock('expo-clipboard', () => ({
+    setStringAsync: vi.fn(),
+    getStringAsync: vi.fn(),
+}))
+
+vi.mock('expo-localization', () => ({
+    getLocales: () => [{ languageTag: 'en-US', regionCode: 'US' }],
+}))
+
+vi.mock('expo-application', () => ({
+    applicationName: 'Pera Wallet',
+    applicationId: 'com.test.app',
+    nativeApplicationVersion: '1.0.0',
+    nativeBuildVersion: '1',
+    getIosIdForVendorAsync: vi.fn(() => Promise.resolve('unique-device-id')),
+    getAndroidId: vi.fn(() => 'unique-android-id'),
+}))
+
+vi.mock('expo-device', () => ({
+    osVersion: '17.0',
+    modelId: 'iPhone13,2',
+    modelName: 'iPhone 13',
 }))
 
 vi.mock('react-native-keychain', () => ({
@@ -302,11 +318,24 @@ vi.mock('react-native', () => {
                 require('react').createElement('input', props, props.children),
             ),
 
-        Modal: vi
-            .fn()
-            .mockImplementation(props =>
-                require('react').createElement('div', props, props.children),
-            ),
+        Modal: vi.fn().mockImplementation((args: any) => {
+            const {
+                visible,
+                transparent,
+                animationType,
+                onRequestClose,
+                onShow,
+                ...props
+            } = args
+
+            void transparent
+            void animationType
+            void onRequestClose
+            void onShow
+            return visible
+                ? require('react').createElement('div', props, props.children)
+                : null
+        }),
         ActivityIndicator: vi
             .fn()
             .mockImplementation(props =>

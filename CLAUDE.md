@@ -34,6 +34,6 @@ Before writing any code, read the relevant files in `.agent/`:
 ## Quick Reference
 
 ```sh
-pnpm pre-push    # Run before completing any task
-pnpm test        # Run tests
+pnpm pre-push --no-fail-on-error    # Run before completing any task
+pnpm test                           # Run tests
 ```

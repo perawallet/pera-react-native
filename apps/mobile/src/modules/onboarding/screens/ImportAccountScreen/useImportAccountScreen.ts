@@ -12,7 +12,7 @@
 
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { Keyboard, Platform, Linking } from 'react-native'
-import Clipboard from '@react-native-clipboard/clipboard'
+import * as Clipboard from 'expo-clipboard'
 
 import { RouteProp, useRoute } from '@react-navigation/native'
 import { OnboardingStackParamList } from '../../routes/types'
@@ -34,7 +34,6 @@ const MNEMONIC_LENGTH_MAP: Record<ImportAccountType, number> = {
     hdWallet: 24,
     algo25: 25,
 }
-
 
 export type UseImportAccountScreenResult = {
     words: string[]
@@ -205,7 +204,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     }, [openSupportOptions])
 
     const handlePastePassphrase = useCallback(async () => {
-        const content = await Clipboard.getString()
+        const content = await Clipboard.getStringAsync()
 
         if (content) {
             updateWord(content, 0)

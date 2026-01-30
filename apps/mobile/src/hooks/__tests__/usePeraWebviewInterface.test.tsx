@@ -116,7 +116,7 @@ vi.mock('../useLanguage', () => ({
 }))
 
 const mockPushWebView = vi.fn()
-vi.mock('@modules/webview', () => ({
+vi.mock('@modules/webview/hooks', () => ({
     useWebViewStore: vi.fn((selector?: (state: unknown) => unknown) => {
         const state = { pushWebView: mockPushWebView }
         return selector ? selector(state) : state

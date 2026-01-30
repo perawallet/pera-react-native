@@ -21,7 +21,6 @@ import { RECOVERY_PASSPHRASE_SUPPORT_URL } from '@perawallet/wallet-core-config'
 import KeyImage from '@assets/images/key.svg'
 import KeyInvertedImage from '@assets/images/key-inverted.svg'
 
-
 export const useImportInfoScreen = () => {
     const { theme } = useTheme()
     const navigation = useAppNavigation()
