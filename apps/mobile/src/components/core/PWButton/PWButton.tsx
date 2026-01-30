@@ -17,9 +17,16 @@ import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import { ActivityIndicator, StyleProp, ViewStyle } from 'react-native'
 
 export type PWButtonProps = {
-    variant: 'primary' | 'secondary' | 'helper' | 'link' | 'destructive'
+    variant:
+        | 'primary'
+        | 'secondary'
+        | 'helper'
+        | 'link'
+        | 'destructive'
+        | 'errorLink'
     title?: string
     icon?: IconName
+    iconRight?: IconName
     onPress?: () => void
     minWidth?: number
     style?: StyleProp<ViewStyle>
@@ -34,12 +41,14 @@ const ICON_VARIANT_MAP: Record<string, PWIconVariant> = {
     helper: 'helper',
     link: 'link',
     destructive: 'white',
+    errorLink: 'error',
 }
 
 export const PWButton = ({
     variant,
     title,
     icon,
+    iconRight,
     onPress,
     style,
     isDisabled,
@@ -80,6 +89,17 @@ export const PWButton = ({
             )}
             {!!title && !isLoading && (
                 <PWText style={styles.titleStyle}>{title}</PWText>
+            )}
+            {!!iconRight && !isLoading && (
+                <PWIcon
+                    name={iconRight}
+                    variant={iconVariant}
+                    size={
+                        paddingStyle === 'dense' || paddingStyle === 'none'
+                            ? 'sm'
+                            : 'md'
+                    }
+                />
             )}
 
             {isLoading && (

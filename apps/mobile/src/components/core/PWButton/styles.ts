@@ -30,6 +30,9 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
     } else if (props.variant === 'link') {
         backgroundColor = theme.colors.background
         color = theme.colors.linkPrimary
+    } else if (props.variant === 'errorLink') {
+        backgroundColor = theme.colors.background
+        color = theme.colors.error
     }
 
     let paddingHorizontal = theme.spacing.xxl

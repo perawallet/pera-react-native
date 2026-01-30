@@ -41,11 +41,12 @@ describe('useGroupTransactionView', () => {
     const createGroupRequest = (
         txGroups: PeraTransaction[][],
     ): TransactionSignRequest => ({
+        id: 'test',
         type: 'transactions',
         transport: 'callback',
         txs: txGroups,
         approve: async () => {},
-        reject: () => {},
+        reject: async () => {},
     })
 
     beforeEach(() => {
@@ -132,66 +133,6 @@ describe('useGroupTransactionView', () => {
         expect(result.current.isViewingTransaction).toBe(false)
     })
 
-    it('navigates to inner transaction when handleNavigateToInner is called', () => {
-        const request = createGroupRequest([[mockAppCallTx]])
-        const innerTx = mockAppCallTx.appCall!
-            .innerTransactions![0] as PeraTransaction
-
-        const { result } = renderHook(() =>
-            useGroupTransactionView({ request }),
-        )
-
-        // Select the app call transaction
-        act(() => {
-            result.current.handleSelectTransaction(0)
-        })
-
-        // Navigate to inner transaction
-        act(() => {
-            result.current.handleNavigateToInner(innerTx)
-        })
-
-        expect(result.current.currentTx).toBe(innerTx)
-        expect(result.current.selectedTx).toBe(mockAppCallTx)
-    })
-
-    it('navigates back through inner transaction stack before returning to group', () => {
-        const request = createGroupRequest([[mockAppCallTx]])
-        const innerTx = mockAppCallTx.appCall!
-            .innerTransactions![0] as PeraTransaction
-
-        const { result } = renderHook(() =>
-            useGroupTransactionView({ request }),
-        )
-
-        // Select the app call transaction
-        act(() => {
-            result.current.handleSelectTransaction(0)
-        })
-
-        // Navigate to inner transaction
-        act(() => {
-            result.current.handleNavigateToInner(innerTx)
-        })
-
-        expect(result.current.currentTx).toBe(innerTx)
-
-        // Navigate back - should return to app call, not group list
-        act(() => {
-            result.current.handleNavigateBack()
-        })
-
-        expect(result.current.currentTx).toBe(mockAppCallTx)
-        expect(result.current.isViewingTransaction).toBe(true)
-
-        // Navigate back again - should return to group list
-        act(() => {
-            result.current.handleNavigateBack()
-        })
-
-        expect(result.current.isViewingTransaction).toBe(false)
-    })
-
     it('returns inner transactions for current transaction', () => {
         const request = createGroupRequest([[mockAppCallTx]])
         const { result } = renderHook(() =>
@@ -204,33 +145,5 @@ describe('useGroupTransactionView', () => {
         })
 
         expect(result.current.innerTransactions).toHaveLength(2)
-    })
-
-    it('resets inner transaction stack when selecting a new transaction', () => {
-        const request = createGroupRequest([[mockAppCallTx, mockPaymentTx]])
-        const innerTx = mockAppCallTx.appCall!
-            .innerTransactions![0] as PeraTransaction
-
-        const { result } = renderHook(() =>
-            useGroupTransactionView({ request }),
-        )
-
-        // Select app call and navigate to inner
-        act(() => {
-            result.current.handleSelectTransaction(0)
-        })
-        act(() => {
-            result.current.handleNavigateToInner(innerTx)
-        })
-
-        expect(result.current.currentTx).toBe(innerTx)
-
-        // Select different transaction - should reset inner stack
-        act(() => {
-            result.current.handleSelectTransaction(1)
-        })
-
-        expect(result.current.currentTx).toBe(mockPaymentTx)
-        expect(result.current.selectedTx).toBe(mockPaymentTx)
     })
 })

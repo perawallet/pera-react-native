@@ -10,92 +10,106 @@
  limitations under the License
  */
 
-import { PWText, PWView } from '@components/core'
-import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
+import { PWDivider, PWText, PWView } from '@components/core'
+import { KeyValueRow } from '@components/KeyValueRow'
+import { AddressDisplay } from '@components/AddressDisplay'
 import {
-    encodeAlgorandAddress,
-    type PeraTransaction,
+    microAlgosToAlgos,
+    type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
+import { useTheme } from '@rneui/themed'
+import { TransactionHeader } from '../TransactionHeader/TransactionHeader'
+import { TransactionNoteRow } from '../TransactionNoteRow/TransactionNoteRow'
+import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnings'
+import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
+import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import Decimal from 'decimal.js'
 
 export type AssetFreezeDisplayProps = {
-    transaction: PeraTransaction
+    transaction: PeraDisplayableTransaction
+    isInnerTransaction?: boolean
 }
 
 export const AssetFreezeDisplay = ({
     transaction,
+    isInnerTransaction = false,
 }: AssetFreezeDisplayProps) => {
     const styles = useStyles()
+    const { theme } = useTheme()
     const { t } = useLanguage()
 
-    const assetFreeze = transaction.assetFreeze
+    const assetFreeze = transaction.assetFreezeTransaction
     if (!assetFreeze) {
         return null
     }
 
-    const isFreezing = assetFreeze.frozen
-    const targetAddress = encodeAlgorandAddress(
-        assetFreeze.freezeTarget.publicKey,
-    )
+    const isFreezing = assetFreeze.newFreezeStatus
+    const targetAddress = assetFreeze.address
     const assetId = assetFreeze.assetId.toString()
+    const showWarnings = !transaction?.id
 
     return (
         <PWView style={styles.container}>
-            <TransactionIcon
-                type='asset-freeze'
-                size='large'
+            <TransactionHeader
+                transaction={transaction}
+                isInnerTransaction={isInnerTransaction}
             />
-            <PWText variant='h4'>
-                {isFreezing
-                    ? t('signing.tx_display.asset_freeze.freeze_title')
-                    : t('signing.tx_display.asset_freeze.unfreeze_title')}
-            </PWText>
 
-            <PWView style={styles.detailsContainer}>
-                <PWView style={styles.detailRow}>
-                    <PWText style={styles.label}>
-                        {t('signing.tx_display.common.asset_id')}
-                    </PWText>
-                    <PWText style={styles.value}>{assetId}</PWText>
-                </PWView>
+            <PWDivider
+                style={styles.divider}
+                color={theme.colors.layerGray}
+            />
 
-                <PWView style={styles.detailRow}>
-                    <PWText style={styles.label}>
-                        {t('signing.tx_display.asset_freeze.target')}
-                    </PWText>
-                    <PWText style={styles.value}>
-                        {truncateAlgorandAddress(targetAddress)}
-                    </PWText>
-                </PWView>
+            <PWView style={styles.detailContainer}>
+                <KeyValueRow title={t('transactions.common.asset_id')}>
+                    <PWText>{assetId}</PWText>
+                </KeyValueRow>
 
-                <PWView style={styles.detailRow}>
-                    <PWText style={styles.label}>
-                        {t('signing.tx_display.asset_freeze.status')}
-                    </PWText>
+                <KeyValueRow title={t('transactions.asset_freeze.target')}>
+                    <PWView style={styles.detailRow}>
+                        <AddressDisplay address={targetAddress} />
+                    </PWView>
+                </KeyValueRow>
+
+                <KeyValueRow title={t('transactions.asset_freeze.status')}>
                     <PWText
-                        style={[
-                            styles.value,
+                        style={
                             isFreezing
                                 ? styles.frozenStatus
-                                : styles.unfrozenStatus,
-                        ]}
+                                : styles.unfrozenStatus
+                        }
                     >
                         {isFreezing
-                            ? t('signing.tx_display.asset_freeze.frozen')
-                            : t('signing.tx_display.asset_freeze.unfrozen')}
+                            ? t('transactions.asset_freeze.frozen')
+                            : t('transactions.asset_freeze.unfrozen')}
                     </PWText>
-                </PWView>
+                </KeyValueRow>
+
+                <KeyValueRow title={t('transactions.common.fee')}>
+                    <CurrencyDisplay
+                        currency='ALGO'
+                        precision={6}
+                        minPrecision={2}
+                        value={Decimal(
+                            microAlgosToAlgos(transaction.fee ?? 0n),
+                        )}
+                        showSymbol
+                    />
+                </KeyValueRow>
+
+                <TransactionNoteRow transaction={transaction} />
             </PWView>
 
-            {isFreezing && (
-                <PWView style={styles.warningContainer}>
-                    <PWText style={styles.warningText}>
-                        {t('signing.tx_display.asset_freeze.freeze_warning')}
-                    </PWText>
-                </PWView>
-            )}
+            {showWarnings && <TransactionWarnings transaction={transaction} />}
+
+            <PWDivider
+                style={styles.divider}
+                color={theme.colors.layerGray}
+            />
+
+            <TransactionFooter transaction={transaction} />
         </PWView>
     )
 }

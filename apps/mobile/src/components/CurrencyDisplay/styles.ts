@@ -16,11 +16,11 @@ import { CurrencyDisplayProps } from './CurrencyDisplay'
 export const useStyles = makeStyles((theme, props: CurrencyDisplayProps) => {
     let size = 16
 
-    if (props.h1) {
+    if (props.variant === 'h1') {
         size = 40
-    } else if (props.h2) {
+    } else if (props.variant === 'h2') {
         size = 36
-    } else if (props.h3) {
+    } else if (props.variant === 'h3') {
         size = 24
     }
 
@@ -29,6 +29,7 @@ export const useStyles = makeStyles((theme, props: CurrencyDisplayProps) => {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'flex-start',
+            backgroundColor: 'transparent',
         },
         skeleton: {
             maxWidth: 150,

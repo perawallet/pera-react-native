@@ -90,8 +90,8 @@ vi.mock('@components/core/PWTouchableOpacity', () => ({
     ),
 }))
 
-vi.mock('@components/RowTitledItem', () => ({
-    RowTitledItem: ({
+vi.mock('@components/KeyValueRow', () => ({
+    KeyValueRow: ({
         title,
         children,
     }: {

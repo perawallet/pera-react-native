@@ -11,14 +11,17 @@
  */
 
 import { useState, useCallback, useMemo } from 'react'
-import type {
-    TransactionSignRequest,
-    PeraTransaction,
+import {
+    type TransactionSignRequest,
+    mapToDisplayableTransaction,
+    PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
 
-const getInnerTransactions = (tx: PeraTransaction): PeraTransaction[] => {
-    if (tx.appCall?.innerTransactions) {
-        return tx.appCall.innerTransactions as PeraTransaction[]
+const getInnerTransactions = (
+    tx: PeraDisplayableTransaction,
+): PeraDisplayableTransaction[] => {
+    if (tx.innerTxns) {
+        return tx.innerTxns as PeraDisplayableTransaction[]
     }
     return []
 }
@@ -28,11 +31,11 @@ type UseSingleTransactionViewParams = {
 }
 
 type UseSingleTransactionViewResult = {
-    rootTx: PeraTransaction | undefined
-    currentTx: PeraTransaction | undefined
-    innerTransactions: PeraTransaction[]
+    rootTx: PeraDisplayableTransaction | null
+    currentTx: PeraDisplayableTransaction | null
+    innerTransactions: PeraDisplayableTransaction[]
     isViewingInnerTransaction: boolean
-    handleNavigateToInner: (tx: PeraTransaction) => void
+    handleNavigateToInner: (tx: PeraDisplayableTransaction) => void
     handleNavigateBack: () => void
 }
 
@@ -41,17 +44,27 @@ export const useSingleTransactionView = ({
 }: UseSingleTransactionViewParams): UseSingleTransactionViewResult => {
     // Stack-based navigation for recursive inner transaction drill-down
     // Stack[0] is the root transaction, subsequent entries are inner transactions
-    const [transactionStack, setTransactionStack] = useState<PeraTransaction[]>(
-        [],
-    )
+    const [transactionStack, setTransactionStack] = useState<
+        PeraDisplayableTransaction[]
+    >([])
 
-    const rootTx = request.txs?.at(0)?.at(0)
+    const rootTx = useMemo(() => {
+        const tx = request.txs?.at(0)?.at(0)
+        return tx ? mapToDisplayableTransaction(tx) : null
+    }, [request.txs])
 
     // Current transaction is the last in the stack, or root if stack is empty
     const currentTx = useMemo(() => {
-        return transactionStack.length > 0
-            ? transactionStack[transactionStack.length - 1]
-            : rootTx
+        const tx =
+            transactionStack.length > 0
+                ? transactionStack[transactionStack.length - 1]
+                : rootTx
+
+        if (!tx) {
+            return null
+        }
+
+        return tx
     }, [transactionStack, rootTx])
 
     // Get inner transactions for the current transaction
@@ -61,9 +74,12 @@ export const useSingleTransactionView = ({
 
     const isViewingInnerTransaction = transactionStack.length > 0
 
-    const handleNavigateToInner = useCallback((tx: PeraTransaction) => {
-        setTransactionStack(prev => [...prev, tx])
-    }, [])
+    const handleNavigateToInner = useCallback(
+        (tx: PeraDisplayableTransaction) => {
+            setTransactionStack(prev => [...prev, tx])
+        },
+        [],
+    )
 
     const handleNavigateBack = useCallback(() => {
         setTransactionStack(prev => prev.slice(0, -1))

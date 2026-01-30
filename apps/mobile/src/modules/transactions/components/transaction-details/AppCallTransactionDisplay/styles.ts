@@ -16,58 +16,35 @@ export const useStyles = makeStyles(theme => ({
     container: {
         alignItems: 'center',
         justifyContent: 'center',
-        gap: theme.spacing.md,
+        gap: theme.spacing.lg,
         paddingVertical: theme.spacing.lg,
-    },
-    detailsContainer: {
-        width: '100%',
-        gap: theme.spacing.md,
-        paddingHorizontal: theme.spacing.lg,
     },
     detailRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
+        gap: theme.spacing.md,
+        overflow: 'hidden',
+        flexWrap: 'nowrap',
+        flexShrink: 1,
     },
-    label: {
-        color: theme.colors.textGray,
-    },
-    value: {
-        color: theme.colors.textMain,
-        fontWeight: '500',
-    },
-    innerTransactionsContainer: {
+    detailContainer: {
+        gap: theme.spacing.lg,
+        paddingHorizontal: theme.spacing.sm,
         width: '100%',
+    },
+    divider: {
+        marginTop: theme.spacing.xs,
+        width: '100%',
+    },
+    expandablePanel: {
         marginTop: theme.spacing.md,
-        borderTopWidth: 1,
-        borderTopColor: theme.colors.layerGrayLighter,
-    },
-    innerTransactionsHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: theme.spacing.lg,
-        paddingVertical: theme.spacing.md,
-    },
-    innerTransactionsTitle: {
-        color: theme.colors.linkPrimary,
-        fontWeight: '600',
-    },
-    innerTransactionsList: {
-        paddingHorizontal: theme.spacing.lg,
+        marginLeft: theme.spacing.md,
         gap: theme.spacing.sm,
-        paddingBottom: theme.spacing.md,
+        flexShrink: 1,
+        flexWrap: 'nowrap',
+        overflow: 'hidden',
     },
-    warningContainer: {
-        backgroundColor: theme.colors.helperNegative + '20',
-        padding: theme.spacing.md,
-        borderRadius: theme.spacing.sm,
-        alignItems: 'center',
-        marginHorizontal: theme.spacing.lg,
-    },
-    warningText: {
-        color: theme.colors.helperNegative,
-        fontSize: 12,
-        textAlign: 'center',
+    detailText: {
+        marginLeft: theme.spacing.xl,
     },
 }))

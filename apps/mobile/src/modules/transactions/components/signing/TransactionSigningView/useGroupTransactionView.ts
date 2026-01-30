@@ -11,14 +11,17 @@
  */
 
 import { useState, useCallback, useMemo } from 'react'
-import type {
-    TransactionSignRequest,
-    PeraTransaction,
+import {
+    type TransactionSignRequest,
+    type PeraDisplayableTransaction,
+    mapToDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
 
-const getInnerTransactions = (tx: PeraTransaction): PeraTransaction[] => {
-    if (tx.appCall?.innerTransactions) {
-        return tx.appCall.innerTransactions as PeraTransaction[]
+const getInnerTransactions = (
+    tx: PeraDisplayableTransaction,
+): PeraDisplayableTransaction[] => {
+    if (tx.innerTxns) {
+        return tx.innerTxns as PeraDisplayableTransaction[]
     }
     return []
 }
@@ -29,13 +32,13 @@ type UseGroupTransactionViewParams = {
 
 type UseGroupTransactionViewResult = {
     isMultipleGroups: boolean
-    allTransactions: PeraTransaction[]
-    selectedTx: PeraTransaction | null
-    currentTx: PeraTransaction | null
-    innerTransactions: PeraTransaction[]
+    allTransactions: PeraDisplayableTransaction[]
+    selectedTx: PeraDisplayableTransaction | null
+    currentTx: PeraDisplayableTransaction | null
+    innerTransactions: PeraDisplayableTransaction[]
     isViewingTransaction: boolean
     handleSelectTransaction: (index: number) => void
-    handleNavigateToInner: (tx: PeraTransaction) => void
+    handleNavigateToInner: (tx: PeraDisplayableTransaction) => void
     handleNavigateBack: () => void
 }
 
@@ -46,11 +49,18 @@ export const useGroupTransactionView = ({
 
     // Stack-based navigation for recursive inner transaction drill-down
     const [innerTransactionStack, setInnerTransactionStack] = useState<
-        PeraTransaction[]
+        PeraDisplayableTransaction[]
     >([])
 
     const isMultipleGroups = request.txs?.length > 1
-    const allTransactions = useMemo(() => request.txs.flat(), [request.txs])
+    const allTransactions = useMemo(
+        () =>
+            request.txs
+                .flat()
+                .map(tx => mapToDisplayableTransaction(tx))
+                .filter(tx => !!tx),
+        [request.txs],
+    )
 
     const selectedTx = useMemo(() => {
         return selectedTxIndex !== null
@@ -87,9 +97,12 @@ export const useGroupTransactionView = ({
         }
     }, [innerTransactionStack.length])
 
-    const handleNavigateToInner = useCallback((tx: PeraTransaction) => {
-        setInnerTransactionStack(prev => [...prev, tx])
-    }, [])
+    const handleNavigateToInner = useCallback(
+        (tx: PeraDisplayableTransaction) => {
+            setInnerTransactionStack(prev => [...prev, tx])
+        },
+        [],
+    )
 
     return {
         isMultipleGroups,

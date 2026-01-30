@@ -84,7 +84,7 @@ export const AccountOverviewHeader = ({
             >
                 <PWView style={styles.valueBar}>
                     <CurrencyDisplay
-                        h1
+                        variant='h1'
                         value={
                             selectedPoint
                                 ? Decimal(selectedPoint.algoValue)
@@ -104,7 +104,7 @@ export const AccountOverviewHeader = ({
                 </PWView>
                 <PWView style={styles.secondaryValueBar}>
                     <CurrencyDisplay
-                        h4
+                        variant='h4'
                         style={styles.valueTitle}
                         value={
                             selectedPoint

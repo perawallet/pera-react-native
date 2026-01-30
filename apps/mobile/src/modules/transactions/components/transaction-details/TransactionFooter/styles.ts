@@ -11,24 +11,10 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { RowTitledItemProps } from './RowTitledItem'
 
-export const useStyles = makeStyles((theme, props: RowTitledItemProps) => {
-    return {
-        container: {
-            flexDirection: 'row',
-            alignItems:
-                props.verticalAlignment === 'top' ? 'flex-start' : 'center',
-            flexWrap: 'nowrap',
-        },
-        label: {
-            color: theme.colors.textGray,
-            width: '40%',
-        },
-        childContainer: {
-            alignItems: 'flex-start',
-            flexGrow: 1,
-            flexShrink: 1,
-        },
-    }
-})
+export const useStyles = makeStyles(theme => ({
+    container: {
+        alignItems: 'center',
+        marginTop: theme.spacing.md,
+    },
+}))

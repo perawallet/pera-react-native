@@ -31,10 +31,7 @@ export type CurrencyDisplayProps = {
     showSymbol?: boolean
     isLoading?: boolean
     truncateToUnits?: boolean
-    h1?: boolean
-    h2?: boolean
-    h3?: boolean
-    h4?: boolean
+    variant?: 'body' | 'h1' | 'h2' | 'h3' | 'h4' | 'caption'
     style?: StyleProp<TextStyle>
 } & Omit<PWTextProps, 'children' | 'variant'>
 
@@ -51,10 +48,7 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
         showSymbol = true,
         isLoading = false,
         minPrecision,
-        h1,
-        h2,
-        h3,
-        h4,
+        variant = 'body',
         ...rest
     } = props
 
@@ -87,8 +81,6 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
         minPrecision,
         privacyMode,
     ])
-
-    const variant = h1 ? 'h1' : h2 ? 'h2' : h3 ? 'h3' : h4 ? 'h4' : 'body'
 
     if (isLoading) {
         return (

@@ -63,7 +63,7 @@ export const TopPairsPanel = () => {
                         precision={2}
                         value={item.volume}
                         truncateToUnits
-                        h4
+                        variant='h4'
                         style={themeStyle.headerText}
                     />
                 </PWView>

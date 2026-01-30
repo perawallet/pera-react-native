@@ -10,77 +10,128 @@
  limitations under the License
  */
 
-import { PWText, PWView } from '@components/core'
+import { PWDivider, PWView } from '@components/core'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
 import {
-    encodeAlgorandAddress,
     microAlgosToAlgos,
-    type PeraTransaction,
+    type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import Decimal from 'decimal.js'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
+import { AddressDisplay } from '@components/AddressDisplay'
+import { KeyValueRow } from '@components/KeyValueRow'
+import { useMemo } from 'react'
+import { TransactionHeader } from '../TransactionHeader/TransactionHeader'
+import { useTheme } from '@rneui/themed'
+import { TransactionNoteRow } from '../TransactionNoteRow/TransactionNoteRow'
+import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnings'
+import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
+import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 
 export type PaymentTransactionDisplayProps = {
-    transaction: PeraTransaction
+    referenceAddress?: string
+    transaction: PeraDisplayableTransaction
+    isInnerTransaction?: boolean
 }
 
 export const PaymentTransactionDisplay = ({
+    referenceAddress,
     transaction,
+    isInnerTransaction = false,
 }: PaymentTransactionDisplayProps) => {
     const styles = useStyles()
+    const { theme } = useTheme()
     const { t } = useLanguage()
+    const payment = transaction.paymentTransaction
 
-    const payment = transaction.payment
+    const receiverAddress = payment?.receiver
+    const senderAddress = transaction.sender
+    const amount = useMemo(() => {
+        const algos = microAlgosToAlgos(payment?.amount ?? 0n)
+        if (senderAddress === referenceAddress) {
+            return -algos
+        }
+        return algos
+    }, [senderAddress, payment, receiverAddress])
+
+    const amountStyle = useMemo(() => {
+        if (senderAddress === referenceAddress) {
+            return styles.amountNegative
+        } else if (receiverAddress === referenceAddress) {
+            return styles.amountPositive
+        }
+        return undefined
+    }, [amount])
+
+    const showWarnings = useMemo(() => {
+        return !transaction?.confirmedRound
+    }, [transaction])
+
     if (!payment) {
         return null
     }
 
-    const receiverAddress = encodeAlgorandAddress(payment.receiver.publicKey)
-    const amount = microAlgosToAlgos(payment.amount)
-    const hasCloseRemainder = payment.closeRemainderTo !== undefined
-
     return (
         <PWView style={styles.container}>
-            <TransactionIcon
-                type='payment'
-                size='large'
+            <TransactionHeader
+                transaction={transaction}
+                isInnerTransaction={isInnerTransaction}
             />
-            <PWText variant='h4'>
-                {t('signing.tx_display.payment.title')}
-            </PWText>
-            <PWView style={styles.detailRow}>
-                <PWText style={styles.label}>
-                    {t('signing.tx_display.common.to')}
-                </PWText>
-                <PWText style={styles.value}>
-                    {truncateAlgorandAddress(receiverAddress)}
-                </PWText>
-            </PWView>
-            <CurrencyDisplay
-                currency='ALGO'
-                precision={6}
-                value={Decimal(-amount)}
-                showSymbol
-                h1
-                style={styles.amount}
+
+            <PWDivider
+                style={styles.divider}
+                color={theme.colors.layerGray}
             />
-            {hasCloseRemainder && payment.closeRemainderTo && (
-                <PWView style={styles.warningContainer}>
-                    <PWText style={styles.warningText}>
-                        {t('signing.tx_display.payment.close_warning')}
-                    </PWText>
-                    <PWText style={styles.warningAddress}>
-                        {truncateAlgorandAddress(
-                            encodeAlgorandAddress(
-                                payment.closeRemainderTo.publicKey,
-                            ),
+
+            <PWView style={styles.detailContainer}>
+                <KeyValueRow title={t('transactions.common.amount')}>
+                    <CurrencyDisplay
+                        currency='ALGO'
+                        precision={ALGO_ASSET.decimals}
+                        minPrecision={DEFAULT_PRECISION}
+                        value={Decimal(amount)}
+                        showSymbol
+                        style={amountStyle}
+                    />
+                </KeyValueRow>
+
+                <KeyValueRow title={t('transactions.common.from')}>
+                    <PWView style={styles.detailRow}>
+                        <AddressDisplay address={senderAddress} />
+                    </PWView>
+                </KeyValueRow>
+
+                <KeyValueRow title={t('transactions.common.to')}>
+                    <PWView style={styles.detailRow}>
+                        <AddressDisplay address={receiverAddress ?? ''} />
+                    </PWView>
+                </KeyValueRow>
+
+                <KeyValueRow title={t('transactions.common.fee')}>
+                    <CurrencyDisplay
+                        currency='ALGO'
+                        precision={ALGO_ASSET.decimals}
+                        minPrecision={DEFAULT_PRECISION}
+                        value={Decimal(
+                            microAlgosToAlgos(transaction.fee ?? 0n),
                         )}
-                    </PWText>
-                </PWView>
-            )}
+                        showSymbol
+                    />
+                </KeyValueRow>
+
+                <TransactionNoteRow transaction={transaction} />
+            </PWView>
+
+            {showWarnings && <TransactionWarnings transaction={transaction} />}
+
+            <PWDivider
+                style={styles.divider}
+                color={theme.colors.layerGray}
+            />
+
+            <TransactionFooter transaction={transaction} />
         </PWView>
     )
 }

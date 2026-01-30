@@ -41,7 +41,6 @@ const SingleTransactionView = ({ request }: TransactionSigningViewProps) => {
     const {
         rootTx,
         currentTx,
-        innerTransactions,
         isViewingInnerTransaction,
         handleNavigateToInner,
         handleNavigateBack,
@@ -66,11 +65,7 @@ const SingleTransactionView = ({ request }: TransactionSigningViewProps) => {
                     style={styles.backButton}
                 />
             )}
-            <TransactionDisplay
-                transaction={currentTx}
-                innerTransactions={innerTransactions}
-                onInnerTransactionPress={handleNavigateToInner}
-            />
+            <TransactionDisplay transaction={currentTx} onInnerTransactionsPress={handleNavigateToInner} />
         </PWView>
     )
 }
@@ -83,7 +78,6 @@ const GroupTransactionView = ({ request }: TransactionSigningViewProps) => {
         isMultipleGroups,
         allTransactions,
         currentTx,
-        innerTransactions,
         isViewingTransaction,
         handleSelectTransaction,
         handleNavigateToInner,
@@ -99,11 +93,7 @@ const GroupTransactionView = ({ request }: TransactionSigningViewProps) => {
                     onPress={handleNavigateBack}
                     style={styles.backButton}
                 />
-                <TransactionDisplay
-                    transaction={currentTx}
-                    innerTransactions={innerTransactions}
-                    onInnerTransactionPress={handleNavigateToInner}
-                />
+                <TransactionDisplay transaction={currentTx} onInnerTransactionsPress={handleNavigateToInner} />
             </ScrollView>
         )
     }
@@ -112,7 +102,7 @@ const GroupTransactionView = ({ request }: TransactionSigningViewProps) => {
         <ScrollView contentContainerStyle={styles.body}>
             <TransactionIcon
                 type='group'
-                size='large'
+                size='lg'
             />
             <PWText variant='h4'>
                 {isMultipleGroups
@@ -130,7 +120,7 @@ const GroupTransactionView = ({ request }: TransactionSigningViewProps) => {
                 {allTransactions.map((tx, index) => (
                     <PWButton
                         key={`tx-${index}`}
-                        title={`${index + 1}. ${tx.type}`}
+                        title={`${index + 1}. ${tx.txType}`}
                         variant='secondary'
                         onPress={() => handleSelectTransaction(index)}
                         style={styles.transactionListItem}
@@ -191,8 +181,8 @@ export const TransactionSigningView = ({
                         body: config.debugEnabled
                             ? `${error}`
                             : t(
-                                  'signing.transaction_view.transaction_failed_body',
-                              ),
+                                'signing.transaction_view.transaction_failed_body',
+                            ),
                     },
                     {
                         notifier: bottomSheetNotifier.current ?? undefined,

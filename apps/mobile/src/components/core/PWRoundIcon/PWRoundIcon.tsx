@@ -39,7 +39,7 @@ export const PWRoundIcon = (props: PWRoundIconProps) => {
 
     const iconSizeMap: Record<PWIconSize, PWIconSize> = {
         xs: 'xs',
-        sm: 'xs',
+        sm: 'sm',
         md: 'sm',
         lg: 'md',
         xl: 'lg',

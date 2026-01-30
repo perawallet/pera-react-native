@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { Transaction as IndexerTransaction } from '@algorandfoundation/algokit-utils/indexer-client'
 import type {
     SignedTransaction,
     Transaction,
@@ -81,6 +82,8 @@ export type BlockchainStore = BaseStoreState & {
 
 export { Address } from '@algorandfoundation/algokit-utils'
 
+export type PeraDisplayableTransaction = IndexerTransaction
+
 export type PeraTransaction = Transaction
 
 export type PeraTransactionGroup = PeraTransaction[]
@@ -88,6 +91,20 @@ export type PeraTransactionGroup = PeraTransaction[]
 export type PeraSignedTransaction = SignedTransaction
 
 export type PeraSignedTransactionGroup = PeraSignedTransaction[]
+
+export type PeraTransactionType =
+    | 'payment'
+    | 'asset-transfer'
+    | 'asset-opt-in'
+    | 'asset-opt-out'
+    | 'asset-clawback'
+    | 'asset-config'
+    | 'asset-freeze'
+    | 'key-registration'
+    | 'app-call'
+    | 'state-proof'
+    | 'heartbeat'
+    | 'unknown'
 
 export type PeraTransactionSigner = (
     txnGroup: PeraTransactionGroup,
@@ -98,3 +115,14 @@ export type PeraEncodedTransactionSigner = (
     txnGroup: PeraTransactionGroup,
     indexesToSign: number[],
 ) => Promise<Uint8Array[]>
+
+export type KeyRegType = 'online' | 'offline'
+
+export type AssetTransferType =
+    | 'transfer'
+    | 'opt-in'
+    | 'opt-out'
+    | 'clawback'
+    | 'unknown'
+
+export type AssetConfigType = 'create' | 'update' | 'destroy'

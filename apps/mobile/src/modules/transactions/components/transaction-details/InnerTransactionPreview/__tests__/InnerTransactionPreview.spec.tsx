@@ -13,7 +13,7 @@
 import { render, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { InnerTransactionPreview } from '../InnerTransactionPreview'
-import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 
 vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
     const actual =
@@ -37,7 +37,7 @@ describe('InnerTransactionPreview', () => {
             receiver: { publicKey: new Uint8Array(32) },
             amount: BigInt(1_000_000),
         },
-    } as unknown as PeraTransaction
+    } as unknown as PeraDisplayableTransaction
 
     const mockAppCallTransaction = {
         sender: { publicKey: new Uint8Array(32) },
@@ -48,7 +48,7 @@ describe('InnerTransactionPreview', () => {
                 { sender: { publicKey: new Uint8Array(32) } },
             ],
         },
-    } as unknown as PeraTransaction
+    } as unknown as PeraDisplayableTransaction
 
     it('renders payment transaction with sender address', () => {
         const { container } = render(

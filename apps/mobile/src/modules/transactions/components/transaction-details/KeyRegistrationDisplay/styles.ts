@@ -16,44 +16,23 @@ export const useStyles = makeStyles(theme => ({
     container: {
         alignItems: 'center',
         justifyContent: 'center',
-        gap: theme.spacing.md,
+        gap: theme.spacing.lg,
         paddingVertical: theme.spacing.lg,
-    },
-    descriptionContainer: {
-        paddingHorizontal: theme.spacing.xl,
-    },
-    description: {
-        color: theme.colors.textGray,
-        textAlign: 'center',
-        lineHeight: 20,
-    },
-    detailsContainer: {
-        width: '100%',
-        gap: theme.spacing.md,
-        paddingHorizontal: theme.spacing.lg,
     },
     detailRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
+        gap: theme.spacing.md,
+        overflow: 'hidden',
+        flexWrap: 'nowrap',
+        flexShrink: 1,
     },
-    label: {
-        color: theme.colors.textGray,
+    detailContainer: {
+        paddingHorizontal: theme.spacing.sm,
+        gap: theme.spacing.lg,
     },
-    value: {
-        color: theme.colors.textMain,
-        fontWeight: '500',
-    },
-    warningContainer: {
-        backgroundColor: theme.colors.helperNegative + '20',
-        padding: theme.spacing.md,
-        borderRadius: theme.spacing.sm,
-        alignItems: 'center',
-        marginHorizontal: theme.spacing.lg,
-    },
-    warningText: {
-        color: theme.colors.helperNegative,
-        fontSize: 12,
-        textAlign: 'center',
+    divider: {
+        marginTop: theme.spacing.xs,
+        width: '100%',
     },
 }))

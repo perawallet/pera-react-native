@@ -10,223 +10,209 @@
  limitations under the License
  */
 
-import { PWText, PWView } from '@components/core'
-import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
+import { PWDivider, PWText, PWView } from '@components/core'
+import { KeyValueRow } from '@components/KeyValueRow'
+import { AddressDisplay } from '@components/AddressDisplay'
 import {
-    encodeAlgorandAddress,
-    type PeraTransaction,
+    getAssetConfigType,
+    microAlgosToAlgos,
+    PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
+import { useTheme } from '@rneui/themed'
+import { TransactionHeader } from '../TransactionHeader/TransactionHeader'
+import { TransactionNoteRow } from '../TransactionNoteRow/TransactionNoteRow'
+import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnings'
+import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
+import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import Decimal from 'decimal.js'
+import {
+    formatNumber,
+    formatWithUnits,
+} from '@perawallet/wallet-core-shared'
+import { useMemo } from 'react'
 
 export type AssetConfigDisplayProps = {
-    transaction: PeraTransaction
-}
-
-type AssetConfigType = 'create' | 'update' | 'destroy'
-
-const getAssetConfigType = (tx: PeraTransaction): AssetConfigType => {
-    const assetConfig = tx.assetConfig
-    if (!assetConfig) {
-        return 'update'
-    }
-
-    if (assetConfig.assetId === BigInt(0)) {
-        return 'create'
-    }
-
-    const hasNoAddresses =
-        assetConfig.manager === undefined &&
-        assetConfig.reserve === undefined &&
-        assetConfig.freeze === undefined &&
-        assetConfig.clawback === undefined
-
-    if (hasNoAddresses) {
-        return 'destroy'
-    }
-
-    return 'update'
+    transaction: PeraDisplayableTransaction
+    isInnerTransaction?: boolean
 }
 
 export const AssetConfigDisplay = ({
     transaction,
+    isInnerTransaction = false,
 }: AssetConfigDisplayProps) => {
     const styles = useStyles()
+    const { theme } = useTheme()
     const { t } = useLanguage()
 
-    const assetConfig = transaction.assetConfig
+    const assetConfig = transaction.assetConfigTransaction
+
+    const configType = getAssetConfigType(transaction)
+    const assetId = assetConfig?.assetId
+    const showWarnings = !transaction?.id
+
+    const supply = useMemo(() => {
+        const { amount, unit } = assetConfig?.params?.total
+            ? formatWithUnits(Decimal(assetConfig?.params?.total.toString()))
+            : { amount: undefined, unit: undefined }
+
+        if (!amount) {
+            return undefined
+        }
+
+        const { integer, fraction } = formatNumber(amount, 2)
+        return `${integer}${fraction}${unit}`
+    }, [assetConfig?.params?.total])
+
     if (!assetConfig) {
         return null
     }
 
-    const configType = getAssetConfigType(transaction)
-    const assetId = assetConfig.assetId.toString()
-
-    const getTitleKey = () => {
-        switch (configType) {
-            case 'create':
-                return 'signing.tx_display.asset_config.create_title'
-            case 'destroy':
-                return 'signing.tx_display.asset_config.destroy_title'
-            default:
-                return 'signing.tx_display.asset_config.update_title'
-        }
-    }
-
     return (
         <PWView style={styles.container}>
-            <TransactionIcon
-                type='asset-config'
-                size='large'
+            <TransactionHeader
+                transaction={transaction}
+                isInnerTransaction={isInnerTransaction}
             />
-            <PWText variant='h4'>{t(getTitleKey())}</PWText>
 
-            <PWView style={styles.detailsContainer}>
-                {configType !== 'create' && (
-                    <PWView style={styles.detailRow}>
-                        <PWText style={styles.label}>
-                            {t('signing.tx_display.common.asset_id')}
-                        </PWText>
-                        <PWText style={styles.value}>{assetId}</PWText>
-                    </PWView>
+            <PWDivider
+                style={styles.divider}
+                color={theme.colors.layerGray}
+            />
+
+            <PWView style={styles.detailContainer}>
+                {configType !== 'create' && assetId !== undefined && (
+                    <KeyValueRow title={t('transactions.common.asset_id')}>
+                        <PWText>{assetId.toString()}</PWText>
+                    </KeyValueRow>
                 )}
 
                 {configType === 'create' && (
                     <>
-                        {assetConfig.assetName && (
-                            <PWView style={styles.detailRow}>
-                                <PWText style={styles.label}>
-                                    {t('signing.tx_display.asset_config.name')}
-                                </PWText>
-                                <PWText style={styles.value}>
-                                    {assetConfig.assetName}
-                                </PWText>
-                            </PWView>
+                        {assetConfig.params?.name && (
+                            <KeyValueRow
+                                title={t('transactions.asset_config.name')}
+                            >
+                                <PWText>{assetConfig.params.name}</PWText>
+                            </KeyValueRow>
                         )}
 
-                        {assetConfig.unitName && (
-                            <PWView style={styles.detailRow}>
-                                <PWText style={styles.label}>
-                                    {t('signing.tx_display.asset_config.unit')}
-                                </PWText>
-                                <PWText style={styles.value}>
-                                    {assetConfig.unitName}
-                                </PWText>
-                            </PWView>
+                        {assetConfig.params?.unitName && (
+                            <KeyValueRow
+                                title={t('transactions.asset_config.unit')}
+                            >
+                                <PWText>{assetConfig.params.unitName}</PWText>
+                            </KeyValueRow>
                         )}
 
-                        {assetConfig.total !== undefined && (
-                            <PWView style={styles.detailRow}>
-                                <PWText style={styles.label}>
-                                    {t('signing.tx_display.asset_config.total')}
-                                </PWText>
-                                <PWText style={styles.value}>
-                                    {assetConfig.total.toString()}
-                                </PWText>
-                            </PWView>
+                        {assetConfig.params?.url && (
+                            <KeyValueRow
+                                title={t('transactions.asset_config.url')}
+                            >
+                                <PWText>{assetConfig.params.url}</PWText>
+                            </KeyValueRow>
                         )}
 
-                        {assetConfig.decimals !== undefined && (
-                            <PWView style={styles.detailRow}>
-                                <PWText style={styles.label}>
-                                    {t(
-                                        'signing.tx_display.asset_config.decimals',
-                                    )}
-                                </PWText>
-                                <PWText style={styles.value}>
-                                    {assetConfig.decimals}
-                                </PWText>
-                            </PWView>
+                        {!!supply && (
+                            <KeyValueRow
+                                title={t('transactions.asset_config.total')}
+                            >
+                                <PWText>{supply}</PWText>
+                            </KeyValueRow>
                         )}
 
-                        {assetConfig.defaultFrozen !== undefined && (
-                            <PWView style={styles.detailRow}>
-                                <PWText style={styles.label}>
-                                    {t(
-                                        'signing.tx_display.asset_config.default_frozen',
-                                    )}
-                                </PWText>
-                                <PWText style={styles.value}>
-                                    {assetConfig.defaultFrozen
+                        {assetConfig.params?.decimals !== undefined && (
+                            <KeyValueRow
+                                title={t('transactions.asset_config.decimals')}
+                            >
+                                <PWText>{assetConfig.params.decimals}</PWText>
+                            </KeyValueRow>
+                        )}
+
+                        {assetConfig.params?.defaultFrozen !== undefined && (
+                            <KeyValueRow
+                                title={t(
+                                    'transactions.asset_config.default_frozen',
+                                )}
+                            >
+                                <PWText>
+                                    {assetConfig.params.defaultFrozen
                                         ? t('common.yes')
                                         : t('common.no')}
                                 </PWText>
-                            </PWView>
+                            </KeyValueRow>
                         )}
                     </>
                 )}
 
-                {assetConfig.manager && (
-                    <PWView style={styles.detailRow}>
-                        <PWText style={styles.label}>
-                            {t('signing.tx_display.asset_config.manager')}
-                        </PWText>
-                        <PWText style={styles.value}>
-                            {truncateAlgorandAddress(
-                                encodeAlgorandAddress(
-                                    assetConfig.manager.publicKey,
-                                ),
-                            )}
-                        </PWText>
-                    </PWView>
+                {assetConfig.params?.manager && (
+                    <KeyValueRow title={t('transactions.asset_config.manager')}>
+                        <PWView style={styles.detailRow}>
+                            <AddressDisplay
+                                address={assetConfig.params.manager}
+                            />
+                        </PWView>
+                    </KeyValueRow>
                 )}
 
-                {assetConfig.reserve && (
-                    <PWView style={styles.detailRow}>
-                        <PWText style={styles.label}>
-                            {t('signing.tx_display.asset_config.reserve')}
-                        </PWText>
-                        <PWText style={styles.value}>
-                            {truncateAlgorandAddress(
-                                encodeAlgorandAddress(
-                                    assetConfig.reserve.publicKey,
-                                ),
-                            )}
-                        </PWText>
-                    </PWView>
+                {assetConfig.params?.reserve && (
+                    <KeyValueRow title={t('transactions.asset_config.reserve')}>
+                        <PWView style={styles.detailRow}>
+                            <AddressDisplay
+                                address={assetConfig.params.reserve}
+                            />
+                        </PWView>
+                    </KeyValueRow>
                 )}
 
-                {assetConfig.freeze && (
-                    <PWView style={styles.detailRow}>
-                        <PWText style={styles.label}>
-                            {t('signing.tx_display.asset_config.freeze_addr')}
-                        </PWText>
-                        <PWText style={styles.value}>
-                            {truncateAlgorandAddress(
-                                encodeAlgorandAddress(
-                                    assetConfig.freeze.publicKey,
-                                ),
-                            )}
-                        </PWText>
-                    </PWView>
+                {assetConfig.params?.freeze && (
+                    <KeyValueRow
+                        title={t('transactions.asset_config.freeze_addr')}
+                    >
+                        <PWView style={styles.detailRow}>
+                            <AddressDisplay
+                                address={assetConfig.params.freeze}
+                            />
+                        </PWView>
+                    </KeyValueRow>
                 )}
 
-                {assetConfig.clawback && (
-                    <PWView style={styles.detailRow}>
-                        <PWText style={styles.label}>
-                            {t('signing.tx_display.asset_config.clawback')}
-                        </PWText>
-                        <PWText style={styles.value}>
-                            {truncateAlgorandAddress(
-                                encodeAlgorandAddress(
-                                    assetConfig.clawback.publicKey,
-                                ),
-                            )}
-                        </PWText>
-                    </PWView>
+                {assetConfig.params?.clawback && (
+                    <KeyValueRow
+                        title={t('transactions.asset_config.clawback')}
+                    >
+                        <PWView style={styles.detailRow}>
+                            <AddressDisplay
+                                address={assetConfig.params.clawback}
+                            />
+                        </PWView>
+                    </KeyValueRow>
                 )}
 
-                {configType === 'destroy' && (
-                    <PWView style={styles.warningContainer}>
-                        <PWText style={styles.warningText}>
-                            {t(
-                                'signing.tx_display.asset_config.destroy_warning',
-                            )}
-                        </PWText>
-                    </PWView>
-                )}
+                <KeyValueRow title={t('transactions.common.fee')}>
+                    <CurrencyDisplay
+                        currency='ALGO'
+                        precision={6}
+                        minPrecision={2}
+                        value={Decimal(
+                            microAlgosToAlgos(transaction.fee ?? 0n),
+                        )}
+                        showSymbol
+                    />
+                </KeyValueRow>
+
+                <TransactionNoteRow transaction={transaction} />
             </PWView>
+
+            {showWarnings && <TransactionWarnings transaction={transaction} />}
+
+            <PWDivider
+                style={styles.divider}
+                color={theme.colors.layerGray}
+            />
+
+            <TransactionFooter transaction={transaction} />
         </PWView>
     )
 }

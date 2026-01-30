@@ -16,36 +16,35 @@ export const useStyles = makeStyles(theme => ({
     container: {
         alignItems: 'center',
         justifyContent: 'center',
-        gap: theme.spacing.md,
+        gap: theme.spacing.lg,
         paddingVertical: theme.spacing.lg,
     },
     detailRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: theme.spacing.sm,
+        gap: theme.spacing.md,
+        overflow: 'hidden',
+        flexWrap: 'nowrap',
+        flexShrink: 1,
     },
-    label: {
-        color: theme.colors.textGray,
+    wrappedText: {
+        flexShrink: 1,
+        lineHeight: theme.spacing.lg,
     },
-    value: {
-        color: theme.colors.textMain,
-    },
-    amount: {
+    amountPositive: {
         marginVertical: theme.spacing.sm,
+        color: theme.colors.helperPositive,
     },
-    warningContainer: {
-        backgroundColor: theme.colors.helperNegative + '20',
-        padding: theme.spacing.md,
-        borderRadius: theme.spacing.sm,
-        alignItems: 'center',
-        gap: theme.spacing.xs,
-    },
-    warningText: {
+    amountNegative: {
+        marginVertical: theme.spacing.sm,
         color: theme.colors.helperNegative,
-        fontSize: 12,
     },
-    warningAddress: {
-        color: theme.colors.helperNegative,
-        fontWeight: '600',
+    detailContainer: {
+        paddingHorizontal: theme.spacing.sm,
+        gap: theme.spacing.lg,
+    },
+    divider: {
+        marginTop: theme.spacing.xs,
+        width: '100%',
     },
 }))

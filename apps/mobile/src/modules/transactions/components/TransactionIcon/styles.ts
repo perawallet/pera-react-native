@@ -16,9 +16,13 @@ import type { TransactionIconProps } from './TransactionIcon'
 type StyleProps = Pick<TransactionIconProps, 'size'>
 
 export const useStyles = makeStyles((theme, props: StyleProps) => {
-    const padding = theme.spacing.lg
+    const padding = props.size === 'sm' ? theme.spacing.md : theme.spacing.lg
     const size =
-        (props.size === 'small' ? theme.spacing.xl : theme.spacing['3xl']) +
+        (props.size === 'sm'
+            ? theme.spacing.xl
+            : props.size === 'md'
+              ? theme.spacing.xxl
+              : theme.spacing['4xl']) +
         2 * padding
     return {
         container: {

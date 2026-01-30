@@ -13,7 +13,7 @@
 import { EmptyView } from '@components/EmptyView'
 import {
     getTransactionType,
-    type PeraTransaction,
+    PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { useLanguage } from '@hooks/useLanguage'
 import {
@@ -26,41 +26,66 @@ import {
 } from '../transaction-details'
 
 export type TransactionDisplayProps = {
-    transaction: PeraTransaction
-    innerTransactions?: PeraTransaction[]
-    onInnerTransactionPress?: (tx: PeraTransaction, index: number) => void
+    transaction: PeraDisplayableTransaction
+    isInnerTransaction?: boolean
+    onInnerTransactionsPress?: (tx: PeraDisplayableTransaction) => void
 }
 
 export const TransactionDisplay = ({
     transaction,
-    innerTransactions,
-    onInnerTransactionPress,
+    isInnerTransaction = false,
+    onInnerTransactionsPress,
 }: TransactionDisplayProps) => {
     const { t } = useLanguage()
     const txType = getTransactionType(transaction)
 
     switch (txType) {
         case 'payment':
-            return <PaymentTransactionDisplay transaction={transaction} />
+            return (
+                <PaymentTransactionDisplay
+                    transaction={transaction}
+                    isInnerTransaction={isInnerTransaction}
+                />
+            )
 
         case 'asset-transfer':
-            return <AssetTransferDisplay transaction={transaction} />
+            return (
+                <AssetTransferDisplay
+                    transaction={transaction}
+                    isInnerTransaction={isInnerTransaction}
+                />
+            )
 
         case 'asset-config':
-            return <AssetConfigDisplay transaction={transaction} />
+            return (
+                <AssetConfigDisplay
+                    transaction={transaction}
+                    isInnerTransaction={isInnerTransaction}
+                />
+            )
 
         case 'asset-freeze':
-            return <AssetFreezeDisplay transaction={transaction} />
+            return (
+                <AssetFreezeDisplay
+                    transaction={transaction}
+                    isInnerTransaction={isInnerTransaction}
+                />
+            )
 
         case 'key-registration':
-            return <KeyRegistrationDisplay transaction={transaction} />
+            return (
+                <KeyRegistrationDisplay
+                    transaction={transaction}
+                    isInnerTransaction={isInnerTransaction}
+                />
+            )
 
         case 'app-call':
             return (
                 <AppCallTransactionDisplay
                     transaction={transaction}
-                    innerTransactions={innerTransactions}
-                    onInnerTransactionPress={onInnerTransactionPress}
+                    isInnerTransaction={isInnerTransaction}
+                    onInnerTransactionsPress={onInnerTransactionsPress}
                 />
             )
 
@@ -70,8 +95,8 @@ export const TransactionDisplay = ({
         default:
             return (
                 <EmptyView
-                    title={t('signing.tx_display.unknown.title')}
-                    body={t('signing.tx_display.unknown.body')}
+                    title={t('transactions.unknown.title')}
+                    body={t('transactions.unknown.body')}
                 />
             )
     }

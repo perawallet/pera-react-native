@@ -137,7 +137,7 @@ export const PairSelectionPanel = () => {
                             showSymbol={false}
                             precision={2}
                             currency='ALGO'
-                            h2
+                            variant='h2'
                             value={receiveAmount}
                         />
                         <CurrencyDisplay

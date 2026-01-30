@@ -11,7 +11,7 @@
  */
 
 import { useKMS } from '@perawallet/wallet-core-kms'
-import { DataStoreRegistry } from '@perawallet/wallet-core-shared'
+import { DataStoreRegistry, logger } from '@perawallet/wallet-core-shared'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 import { useDeleteDeviceMutation } from '@perawallet/wallet-core-platform-integration'
@@ -40,7 +40,7 @@ export const useDeleteAllData = () => {
         try {
             await deleteDevices()
         } catch (e) {
-            console.error(e)
+            logger.error(e)
         }
 
         await DataStoreRegistry.clearAll()

@@ -10,19 +10,21 @@
  limitations under the License
  */
 
-import { render, screen } from '@test-utils/render'
-import { describe, it, expect } from 'vitest'
-import { RowTitledItem } from '../RowTitledItem'
-import { Text } from 'react-native'
+import { makeStyles } from '@rneui/themed'
 
-describe('RowTitledItem', () => {
-    it('renders title and children', () => {
-        render(
-            <RowTitledItem title='My Row'>
-                <Text>Row Content</Text>
-            </RowTitledItem>,
-        )
-        expect(screen.getByText('My Row')).toBeTruthy()
-        expect(screen.getByText('Row Content')).toBeTruthy()
-    })
+export const useStyles = makeStyles(theme => {
+    return {
+        container: {
+            flex: 1,
+            paddingBottom: theme.spacing.xxl,
+            borderTopStartRadius: theme.spacing.sm,
+            borderTopEndRadius: theme.spacing.sm,
+            overflow: 'hidden',
+            gap: theme.spacing.xl,
+        },
+        noteText: {
+            marginBottom: theme.spacing.xl,
+            paddingHorizontal: theme.spacing.xl,
+        },
+    }
 })

@@ -13,68 +13,136 @@
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
 import {
-    encodeAlgorandAddress,
     getTransactionType,
     microAlgosToAlgos,
-    type PeraTransaction,
+    PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import {
+    DEFAULT_PRECISION,
+    truncateAlgorandAddress,
+} from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
-import type { TransactionIconType } from '@modules/transactions/components/TransactionIcon/TransactionIcon'
+import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import {
+    ALGO_ASSET,
+    useSingleAssetDetailsQuery,
+} from '@perawallet/wallet-core-assets'
+import Decimal from 'decimal.js'
+import { LONG_ADDRESS_FORMAT } from '@constants/ui'
 
 export type InnerTransactionPreviewProps = {
-    transaction: PeraTransaction
-    onPress?: () => void
+    transaction: PeraDisplayableTransaction
+    onPress?: (tx: PeraDisplayableTransaction) => void
 }
 
-const getTransactionIconType = (tx: PeraTransaction): TransactionIconType => {
+const getInnerTransactionCount = (tx: PeraDisplayableTransaction): number => {
+    return tx.innerTxns?.length ?? 0
+}
+
+const TxTypeDetails = ({ tx }: { tx: PeraDisplayableTransaction }) => {
     const txType = getTransactionType(tx)
-    return txType === 'unknown' ? 'payment' : txType
-}
+    const { t } = useLanguage()
+    const styles = useStyles()
+    const { data: asset } = useSingleAssetDetailsQuery(
+        tx.assetTransferTransaction?.assetId?.toString() ?? '',
+    )
 
-const getInnerTransactionCount = (tx: PeraTransaction): number => {
-    // Check if this transaction has nested inner transactions
-    // Inner transactions are typically found in app call results
-    if (tx.appCall?.innerTransactions) {
-        return tx.appCall.innerTransactions.length
-    }
-    return 0
-}
-
-const getAmountDisplay = (
-    tx: PeraTransaction,
-    t: (key: string, options?: Record<string, unknown>) => string,
-): string | null => {
-    const txType = getTransactionType(tx)
+    let secondary: React.ReactNode | null = null
 
     switch (txType) {
         case 'payment': {
-            if (tx.payment) {
-                const amount = microAlgosToAlgos(tx.payment.amount)
-                return `${amount} ALGO`
+            if (tx.paymentTransaction) {
+                const amount = microAlgosToAlgos(tx.paymentTransaction.amount)
+                secondary = (
+                    <CurrencyDisplay
+                        currency={'ALGO'}
+                        precision={ALGO_ASSET.decimals}
+                        minPrecision={DEFAULT_PRECISION}
+                        value={Decimal(amount)}
+                        showSymbol
+                        variant='caption'
+                        style={styles.secondaryText}
+                    />
+                )
             }
-            return null
+            break
         }
         case 'asset-transfer': {
-            if (tx.assetTransfer) {
+            if (tx.assetTransferTransaction) {
                 // Just show the raw amount for now - asset decimals would need asset lookup
-                return `${tx.assetTransfer.amount}`
+                secondary = (
+                    <CurrencyDisplay
+                        currency={asset?.unitName ?? ''}
+                        precision={asset?.decimals ?? 6}
+                        minPrecision={DEFAULT_PRECISION}
+                        value={Decimal(
+                            tx.assetTransferTransaction.amount,
+                        ).dividedBy(new Decimal(10 ** (asset?.decimals ?? 6)))}
+                        showSymbol
+                        variant='caption'
+                        style={styles.secondaryText}
+                    />
+                )
             }
-            return null
+            break
         }
         case 'app-call': {
             const innerCount = getInnerTransactionCount(tx)
             if (innerCount > 0) {
-                return t('signing.tx_display.inner_preview.inner_count', {
-                    count: innerCount,
-                })
+                secondary = (
+                    <PWText
+                        variant='caption'
+                        style={styles.secondaryText}
+                    >
+                        {t('transactions.app_call.inner_transactions', {
+                            count: innerCount,
+                        })}
+                    </PWText>
+                )
+            } else if (tx.applicationTransaction?.applicationId) {
+                secondary = (
+                    <PWText
+                        variant='caption'
+                        style={styles.secondaryText}
+                    >
+                        {tx.applicationTransaction?.applicationId?.toString()}
+                    </PWText>
+                )
+            } else {
+                secondary = (
+                    <PWText
+                        variant='caption'
+                        style={styles.secondaryText}
+                    >
+                        {truncateAlgorandAddress(
+                            tx.sender,
+                            LONG_ADDRESS_FORMAT,
+                        )}
+                    </PWText>
+                )
             }
-            return null
+            break
         }
         default:
-            return null
+            secondary = (
+                <PWText
+                    variant='caption'
+                    style={styles.secondaryText}
+                >
+                    {truncateAlgorandAddress(tx.sender, LONG_ADDRESS_FORMAT)}
+                </PWText>
+            )
     }
+
+    return (
+        <PWView style={styles.content}>
+            <PWText style={styles.primaryText}>
+                {t(`transactions.type.${tx.txType}`)}
+            </PWText>
+            {secondary}
+        </PWView>
+    )
 }
 
 export const InnerTransactionPreview = ({
@@ -82,32 +150,23 @@ export const InnerTransactionPreview = ({
     onPress,
 }: InnerTransactionPreviewProps) => {
     const styles = useStyles()
-    const { t } = useLanguage()
+    const type = getTransactionType(transaction)
 
-    const senderAddress = encodeAlgorandAddress(transaction.sender.publicKey)
-    const iconType = getTransactionIconType(transaction)
-    const amountDisplay = getAmountDisplay(transaction, t)
-    const txType = getTransactionType(transaction)
+    const handlePress = () => {
+        onPress?.(transaction)
+    }
 
     return (
         <PWTouchableOpacity
             style={styles.container}
-            onPress={onPress}
+            onPress={handlePress}
         >
             <TransactionIcon
-                type={iconType}
-                size='small'
+                type={type}
+                size='sm'
             />
-            <PWView style={styles.content}>
-                <PWText style={styles.typeLabel}>{txType}</PWText>
-                <PWText style={styles.address}>
-                    {truncateAlgorandAddress(senderAddress)}
-                </PWText>
-            </PWView>
+            <TxTypeDetails tx={transaction} />
             <PWView style={styles.rightContent}>
-                {amountDisplay && (
-                    <PWText style={styles.amount}>{amountDisplay}</PWText>
-                )}
                 <PWIcon
                     name='chevron-right'
                     size='sm'

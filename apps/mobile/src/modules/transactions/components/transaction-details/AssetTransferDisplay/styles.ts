@@ -16,41 +16,42 @@ export const useStyles = makeStyles(theme => ({
     container: {
         alignItems: 'center',
         justifyContent: 'center',
-        gap: theme.spacing.md,
+        gap: theme.spacing.lg,
         paddingVertical: theme.spacing.lg,
-    },
-    detailsContainer: {
-        width: '100%',
-        gap: theme.spacing.md,
-        paddingHorizontal: theme.spacing.lg,
     },
     detailRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
+        justifyContent: 'center',
+        gap: theme.spacing.md,
+        overflow: 'hidden',
+        flexWrap: 'nowrap',
+        flexShrink: 1,
     },
-    label: {
+    detailContainer: {
+        paddingHorizontal: theme.spacing.sm,
+        gap: theme.spacing.lg,
+    },
+    divider: {
+        marginTop: theme.spacing.xs,
+        width: '100%',
+    },
+    assetContainer: {
+        justifyContent: 'center',
+    },
+    assetIcon: {
+        backgroundColor: 'red',
+        borderWidth: 1,
+        borderColor: 'blue',
+    },
+    assetId: {
         color: theme.colors.textGray,
+        lineHeight: theme.spacing.md,
     },
-    value: {
-        color: theme.colors.textMain,
-        fontWeight: '500',
+    amountPositive: {
+        color: theme.colors.helperPositive,
     },
-    warningContainer: {
-        backgroundColor: theme.colors.helperNegative + '20',
-        padding: theme.spacing.md,
-        borderRadius: theme.spacing.sm,
-        alignItems: 'center',
-        gap: theme.spacing.xs,
-        marginTop: theme.spacing.sm,
-    },
-    warningText: {
+    amountNegative: {
         color: theme.colors.helperNegative,
-        fontSize: 12,
-        textAlign: 'center',
-    },
-    warningAddress: {
-        color: theme.colors.helperNegative,
-        fontWeight: '600',
     },
 }))

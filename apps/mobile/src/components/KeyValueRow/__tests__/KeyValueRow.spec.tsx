@@ -10,5 +10,19 @@
  limitations under the License
  */
 
-export { RowTitledItem } from './RowTitledItem'
-export type { RowTitledItemProps } from './RowTitledItem'
+import { render, screen } from '@test-utils/render'
+import { describe, it, expect } from 'vitest'
+import { KeyValueRow } from '../KeyValueRow'
+import { Text } from 'react-native'
+
+describe('KeyValueRow', () => {
+    it('renders title and children', () => {
+        render(
+            <KeyValueRow title='My Row'>
+                <Text>Row Content</Text>
+            </KeyValueRow>,
+        )
+        expect(screen.getByText('My Row')).toBeTruthy()
+        expect(screen.getByText('Row Content')).toBeTruthy()
+    })
+})

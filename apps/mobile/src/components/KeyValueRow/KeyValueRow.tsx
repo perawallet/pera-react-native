@@ -13,12 +13,12 @@
 import { PWText, PWView, PWViewProps } from '@components/core'
 import { useStyles } from './styles'
 
-export type RowTitledItemProps = {
+export type KeyValueRowProps = {
     title: string
     verticalAlignment?: 'center' | 'top'
 } & PWViewProps
 
-export const RowTitledItem = (props: RowTitledItemProps) => {
+export const KeyValueRow = (props: KeyValueRowProps) => {
     const { title, children, ...rest } = props
     const styles = useStyles(props)
     return (

@@ -26,7 +26,7 @@ import {
     formatCurrency,
 } from '@perawallet/wallet-core-shared'
 
-import { RowTitledItem } from '@components/RowTitledItem'
+import { KeyValueRow } from '@components/KeyValueRow'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
@@ -196,9 +196,9 @@ export const SendFundsTransactionConfirmation = ({
                 title={t('send_funds.confirmation.title')}
                 onLeftPress={onBack}
             />
-            <RowTitledItem title={t('send_funds.confirmation.amount')}>
+            <KeyValueRow title={t('send_funds.confirmation.amount')}>
                 <CurrencyDisplay
-                    h3
+                    variant='h3'
                     currency={asset?.unitName ?? ''}
                     precision={asset?.decimals ?? DEFAULT_PRECISION}
                     minPrecision={DEFAULT_PRECISION}
@@ -213,10 +213,10 @@ export const SendFundsTransactionConfirmation = ({
                     showSymbol
                     value={fiatPrice ? amount.mul(fiatPrice) : null}
                 />
-            </RowTitledItem>
+            </KeyValueRow>
             <Divider style={styles.divider} />
             {!!selectedAccount && (
-                <RowTitledItem title={t('send_funds.confirmation.account')}>
+                <KeyValueRow title={t('send_funds.confirmation.account')}>
                     <AccountDisplay
                         account={selectedAccount}
                         showChevron={false}
@@ -225,17 +225,17 @@ export const SendFundsTransactionConfirmation = ({
                             height: theme.spacing.xl,
                         }}
                     />
-                </RowTitledItem>
+                </KeyValueRow>
             )}
             {!!destination && (
-                <RowTitledItem title={t('send_funds.confirmation.to')}>
+                <KeyValueRow title={t('send_funds.confirmation.to')}>
                     <AddressDisplay
                         address={destination}
                         showCopy={false}
                     />
-                </RowTitledItem>
+                </KeyValueRow>
             )}
-            <RowTitledItem title={t('send_funds.confirmation.fee')}>
+            <KeyValueRow title={t('send_funds.confirmation.fee')}>
                 <CurrencyDisplay
                     currency='ALGO'
                     precision={ALGO_ASSET.decimals}
@@ -248,10 +248,10 @@ export const SendFundsTransactionConfirmation = ({
                     }
                     isLoading={paramsPending}
                 />
-            </RowTitledItem>
+            </KeyValueRow>
             <Divider style={styles.divider} />
             {currentBalance && (
-                <RowTitledItem
+                <KeyValueRow
                     title={t('send_funds.confirmation.current_balance')}
                 >
                     <CurrencyDisplay
@@ -269,10 +269,10 @@ export const SendFundsTransactionConfirmation = ({
                         showSymbol
                         value={currentBalance.fiatValue}
                     />
-                </RowTitledItem>
+                </KeyValueRow>
             )}
             <Divider style={styles.divider} />
-            <RowTitledItem title={t('send_funds.confirmation.note')}>
+            <KeyValueRow title={t('send_funds.confirmation.note')}>
                 {!!note && <PWText>{note}</PWText>}
                 {!!note && (
                     <PWTouchableOpacity
@@ -299,7 +299,7 @@ export const SendFundsTransactionConfirmation = ({
                         </PWText>
                     </PWTouchableOpacity>
                 )}
-            </RowTitledItem>
+            </KeyValueRow>
             <PWView style={styles.buttonContainer}>
                 <PWButton
                     title={t('send_funds.confirmation.confirm_button')}

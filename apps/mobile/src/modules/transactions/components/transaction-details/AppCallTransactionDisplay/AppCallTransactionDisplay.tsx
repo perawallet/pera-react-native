@@ -10,222 +10,230 @@
  limitations under the License
  */
 
-import { PWText, PWTouchableOpacity, PWView, PWIcon } from '@components/core'
-import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
-import { InnerTransactionPreview } from '../InnerTransactionPreview'
-import { type PeraTransaction } from '@perawallet/wallet-core-blockchain'
-import { OnApplicationComplete } from '@algorandfoundation/algokit-utils/transact'
+import { PWDivider, PWText, PWView } from '@components/core'
+import { KeyValueRow } from '@components/KeyValueRow'
+import {
+    microAlgosToAlgos,
+    PeraDisplayableTransaction,
+} from '@perawallet/wallet-core-blockchain'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
-import { useState } from 'react'
+import { useTheme } from '@rneui/themed'
+import { TransactionHeader } from '../TransactionHeader/TransactionHeader'
+import { TransactionNoteRow } from '../TransactionNoteRow/TransactionNoteRow'
+import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnings'
+import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
+import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import Decimal from 'decimal.js'
+import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
+import { InnerTransactionPreview } from '../InnerTransactionPreview'
 
 export type AppCallTransactionDisplayProps = {
-    transaction: PeraTransaction
-    innerTransactions?: PeraTransaction[]
-    onInnerTransactionPress?: (tx: PeraTransaction, index: number) => void
+    transaction: PeraDisplayableTransaction
+    isInnerTransaction?: boolean
+    onInnerTransactionsPress?: (tx: PeraDisplayableTransaction) => void
 }
 
-const getOnCompleteLabel = (onComplete: OnApplicationComplete): string => {
-    switch (onComplete) {
-        case OnApplicationComplete.NoOp:
-            return 'NoOp'
-        case OnApplicationComplete.OptIn:
-            return 'Opt-In'
-        case OnApplicationComplete.CloseOut:
-            return 'Close Out'
-        case OnApplicationComplete.ClearState:
-            return 'Clear State'
-        case OnApplicationComplete.UpdateApplication:
-            return 'Update'
-        case OnApplicationComplete.DeleteApplication:
-            return 'Delete'
-        default:
-            return 'Unknown'
-    }
-}
-
-const isAppCreation = (tx: PeraTransaction): boolean => {
-    return tx.appCall?.appId === BigInt(0)
-}
-
-const isAppDeletion = (tx: PeraTransaction): boolean => {
-    return tx.appCall?.onComplete === OnApplicationComplete.DeleteApplication
-}
-
-const isAppUpdate = (tx: PeraTransaction): boolean => {
-    return tx.appCall?.onComplete === OnApplicationComplete.UpdateApplication
+const isAppCreation = (tx: PeraDisplayableTransaction): boolean => {
+    return tx.applicationTransaction?.applicationId === BigInt(0)
 }
 
 export const AppCallTransactionDisplay = ({
     transaction,
-    innerTransactions = [],
-    onInnerTransactionPress,
+    isInnerTransaction = false,
+    onInnerTransactionsPress,
 }: AppCallTransactionDisplayProps) => {
     const styles = useStyles()
+    const { theme } = useTheme()
     const { t } = useLanguage()
-    const [isExpanded, setIsExpanded] = useState(false)
 
-    const appCall = transaction.appCall
+    const appCall = transaction.applicationTransaction
     if (!appCall) {
         return null
     }
 
-    const appId = appCall.appId.toString()
-    const onComplete = appCall.onComplete
-    const hasInnerTransactions = innerTransactions.length > 0
-
-    const getTitleKey = () => {
-        if (isAppCreation(transaction)) {
-            return 'signing.tx_display.app_call.create_title'
-        }
-        if (isAppDeletion(transaction)) {
-            return 'signing.tx_display.app_call.delete_title'
-        }
-        if (isAppUpdate(transaction)) {
-            return 'signing.tx_display.app_call.update_title'
-        }
-        return 'signing.tx_display.app_call.title'
-    }
-
-    const toggleExpanded = () => {
-        setIsExpanded(prev => !prev)
-    }
+    const appId = appCall.applicationId.toString()
+    const hasInnerTransactions = !!transaction.innerTxns?.length
+    const innerTransactionCount = transaction.innerTxns?.length ?? 0
+    const showWarnings = !transaction?.id
+    const hasAdvancedDetails =
+        !!appCall.applicationArgs?.length ||
+        !!appCall.accounts?.length ||
+        !!appCall.foreignApps?.length ||
+        !!appCall.foreignAssets?.length
 
     return (
         <PWView style={styles.container}>
-            <TransactionIcon
-                type='app-call'
-                size='large'
+            <TransactionHeader
+                transaction={transaction}
+                isInnerTransaction={isInnerTransaction}
             />
-            <PWText variant='h4'>{t(getTitleKey())}</PWText>
 
-            <PWView style={styles.detailsContainer}>
+            <PWDivider
+                style={styles.divider}
+                color={theme.colors.layerGray}
+            />
+
+            <PWView style={styles.detailContainer}>
                 {!isAppCreation(transaction) && (
-                    <PWView style={styles.detailRow}>
-                        <PWText style={styles.label}>
-                            {t('signing.tx_display.app_call.app_id')}
-                        </PWText>
-                        <PWText style={styles.value}>{appId}</PWText>
-                    </PWView>
+                    <KeyValueRow title={t('transactions.app_call.app_id')}>
+                        <PWText>#{appId}</PWText>
+                    </KeyValueRow>
                 )}
 
-                <PWView style={styles.detailRow}>
-                    <PWText style={styles.label}>
-                        {t('signing.tx_display.app_call.action')}
-                    </PWText>
-                    <PWText style={styles.value}>
-                        {getOnCompleteLabel(onComplete)}
-                    </PWText>
-                </PWView>
+                <KeyValueRow title={t('transactions.app_call.on_completion')}>
+                    <PWText>{appCall.onCompletion}</PWText>
+                </KeyValueRow>
 
-                {appCall.args && appCall.args.length > 0 && (
-                    <PWView style={styles.detailRow}>
-                        <PWText style={styles.label}>
-                            {t('signing.tx_display.app_call.args_count')}
-                        </PWText>
-                        <PWText style={styles.value}>
-                            {appCall.args.length}
-                        </PWText>
-                    </PWView>
-                )}
+                <KeyValueRow title={t('transactions.common.fee')}>
+                    <CurrencyDisplay
+                        currency='ALGO'
+                        precision={6}
+                        minPrecision={2}
+                        value={Decimal(
+                            microAlgosToAlgos(transaction.fee ?? 0n),
+                        )}
+                        showSymbol
+                    />
+                </KeyValueRow>
 
-                {appCall.accountReferences &&
-                    appCall.accountReferences.length > 0 && (
-                        <PWView style={styles.detailRow}>
-                            <PWText style={styles.label}>
-                                {t('signing.tx_display.app_call.accounts')}
-                            </PWText>
-                            <PWText style={styles.value}>
-                                {appCall.accountReferences.length}
-                            </PWText>
-                        </PWView>
-                    )}
+                <TransactionNoteRow transaction={transaction} />
 
-                {appCall.appReferences && appCall.appReferences.length > 0 && (
-                    <PWView style={styles.detailRow}>
-                        <PWText style={styles.label}>
-                            {t('signing.tx_display.app_call.foreign_apps')}
-                        </PWText>
-                        <PWText style={styles.value}>
-                            {appCall.appReferences.length}
-                        </PWText>
-                    </PWView>
-                )}
+                <PWDivider
+                    style={styles.divider}
+                    color={theme.colors.layerGray}
+                />
 
-                {appCall.assetReferences &&
-                    appCall.assetReferences.length > 0 && (
-                        <PWView style={styles.detailRow}>
-                            <PWText style={styles.label}>
-                                {t(
-                                    'signing.tx_display.app_call.foreign_assets',
-                                )}
-                            </PWText>
-                            <PWText style={styles.value}>
-                                {appCall.assetReferences.length}
-                            </PWText>
-                        </PWView>
-                    )}
-
-                {appCall.boxReferences && appCall.boxReferences.length > 0 && (
-                    <PWView style={styles.detailRow}>
-                        <PWText style={styles.label}>
-                            {t('signing.tx_display.app_call.boxes')}
-                        </PWText>
-                        <PWText style={styles.value}>
-                            {appCall.boxReferences.length}
-                        </PWText>
-                    </PWView>
-                )}
-            </PWView>
-
-            {hasInnerTransactions && (
-                <PWView style={styles.innerTransactionsContainer}>
-                    <PWTouchableOpacity
-                        style={styles.innerTransactionsHeader}
-                        onPress={toggleExpanded}
+                {hasInnerTransactions && (
+                    <TitledExpandablePanel
+                        title={t('transactions.app_call.inner_transactions', {
+                            count: innerTransactionCount,
+                        })}
                     >
-                        <PWText style={styles.innerTransactionsTitle}>
-                            {t(
-                                'signing.tx_display.app_call.inner_transactions',
-                                {
-                                    count: innerTransactions.length,
-                                },
-                            )}
-                        </PWText>
-                        <PWIcon
-                            name={isExpanded ? 'chevron-down' : 'chevron-right'}
-                            size='sm'
-                        />
-                    </PWTouchableOpacity>
-
-                    {isExpanded && (
-                        <PWView style={styles.innerTransactionsList}>
-                            {innerTransactions.map((innerTx, index) => (
+                        <PWView style={styles.expandablePanel}>
+                            {transaction.innerTxns?.map((tx, index) => (
                                 <InnerTransactionPreview
-                                    key={`inner-tx-${index}`}
-                                    transaction={innerTx}
-                                    onPress={() =>
-                                        onInnerTransactionPress?.(
-                                            innerTx,
-                                            index,
-                                        )
-                                    }
+                                    onPress={onInnerTransactionsPress}
+                                    key={tx.id ?? index}
+                                    transaction={tx}
                                 />
                             ))}
                         </PWView>
-                    )}
-                </PWView>
-            )}
+                    </TitledExpandablePanel>
+                )}
 
-            {(isAppDeletion(transaction) || isAppUpdate(transaction)) && (
-                <PWView style={styles.warningContainer}>
-                    <PWText style={styles.warningText}>
-                        {isAppDeletion(transaction)
-                            ? t('signing.tx_display.app_call.delete_warning')
-                            : t('signing.tx_display.app_call.update_warning')}
-                    </PWText>
-                </PWView>
-            )}
+                <PWDivider
+                    style={styles.divider}
+                    color={theme.colors.layerGray}
+                />
+
+                {hasAdvancedDetails && (
+                    <TitledExpandablePanel
+                        title={t('transactions.app_call.details')}
+                    >
+                        <PWView style={styles.expandablePanel}>
+                            {appCall.applicationArgs &&
+                                appCall.applicationArgs.length > 0 && (
+                                    <KeyValueRow
+                                        title={t(
+                                            'transactions.app_call.args_count',
+                                        )}
+                                    >
+                                        <PWText style={styles.detailText}>
+                                            {appCall.applicationArgs.length}
+                                        </PWText>
+                                    </KeyValueRow>
+                                )}
+
+                            {appCall.accounts &&
+                                appCall.accounts.length > 0 && (
+                                    <KeyValueRow
+                                        verticalAlignment='top'
+                                        title={t(
+                                            'transactions.app_call.accounts',
+                                        )}
+                                    >
+                                        {appCall.accounts.map(account => (
+                                            <PWText
+                                                key={
+                                                    'account-' +
+                                                    account.toString()
+                                                }
+                                                style={styles.detailText}
+                                            >
+                                                {account.toString()}
+                                            </PWText>
+                                        ))}
+                                    </KeyValueRow>
+                                )}
+
+                            {appCall.foreignApps &&
+                                appCall.foreignApps.length > 0 && (
+                                    <KeyValueRow
+                                        verticalAlignment='top'
+                                        title={t(
+                                            'transactions.app_call.foreign_apps',
+                                        )}
+                                    >
+                                        {appCall.foreignApps.map(appId => (
+                                            <PWText
+                                                key={
+                                                    'foreign-app-' +
+                                                    appId.toString()
+                                                }
+                                                style={styles.detailText}
+                                            >
+                                                {appId.toString()}
+                                            </PWText>
+                                        ))}
+                                    </KeyValueRow>
+                                )}
+
+                            {appCall.foreignAssets &&
+                                appCall.foreignAssets.length > 0 && (
+                                    <KeyValueRow
+                                        verticalAlignment='top'
+                                        title={t(
+                                            'transactions.app_call.foreign_assets',
+                                        )}
+                                    >
+                                        {appCall.foreignAssets.map(assetId => (
+                                            <PWText
+                                                key={
+                                                    'foreign-asset-' +
+                                                    assetId.toString()
+                                                }
+                                                style={styles.detailText}
+                                            >
+                                                {assetId.toString()}
+                                            </PWText>
+                                        ))}
+                                    </KeyValueRow>
+                                )}
+
+                            {appCall.boxReferences &&
+                                appCall.boxReferences.length > 0 && (
+                                    <KeyValueRow
+                                        title={t('transactions.app_call.boxes')}
+                                    >
+                                        <PWText style={styles.detailText}>
+                                            {appCall.boxReferences.length}
+                                        </PWText>
+                                    </KeyValueRow>
+                                )}
+                        </PWView>
+                    </TitledExpandablePanel>
+                )}
+            </PWView>
+
+            {showWarnings && <TransactionWarnings transaction={transaction} />}
+
+            <PWDivider
+                style={styles.divider}
+                color={theme.colors.layerGray}
+            />
+
+            <TransactionFooter transaction={transaction} />
         </PWView>
     )
 }

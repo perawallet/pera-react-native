@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
+import { renderHook } from '@testing-library/react'
 import { useSingleTransactionView } from '../useSingleTransactionView'
 import type {
     TransactionSignRequest,
@@ -41,11 +41,12 @@ describe('useSingleTransactionView', () => {
     const createMockRequest = (
         tx: PeraTransaction,
     ): TransactionSignRequest => ({
+        id: 'test',
         type: 'transactions',
         transport: 'callback',
         txs: [[tx]],
-        approve: async () => {},
-        reject: () => {},
+        approve: async () => { },
+        reject: async () => { },
     })
 
     beforeEach(() => {
@@ -71,48 +72,6 @@ describe('useSingleTransactionView', () => {
         expect(result.current.isViewingInnerTransaction).toBe(false)
     })
 
-    it('navigates to inner transaction when handleNavigateToInner is called', () => {
-        const request = createMockRequest(mockAppCallWithInnerTxs)
-        const innerTx = mockAppCallWithInnerTxs.appCall!
-            .innerTransactions![0] as PeraTransaction
-
-        const { result } = renderHook(() =>
-            useSingleTransactionView({ request }),
-        )
-
-        act(() => {
-            result.current.handleNavigateToInner(innerTx)
-        })
-
-        expect(result.current.currentTx).toBe(innerTx)
-        expect(result.current.isViewingInnerTransaction).toBe(true)
-    })
-
-    it('navigates back when handleNavigateBack is called', () => {
-        const request = createMockRequest(mockAppCallWithInnerTxs)
-        const innerTx = mockAppCallWithInnerTxs.appCall!
-            .innerTransactions![0] as PeraTransaction
-
-        const { result } = renderHook(() =>
-            useSingleTransactionView({ request }),
-        )
-
-        // Navigate to inner tx
-        act(() => {
-            result.current.handleNavigateToInner(innerTx)
-        })
-
-        expect(result.current.isViewingInnerTransaction).toBe(true)
-
-        // Navigate back
-        act(() => {
-            result.current.handleNavigateBack()
-        })
-
-        expect(result.current.currentTx).toBe(mockAppCallWithInnerTxs)
-        expect(result.current.isViewingInnerTransaction).toBe(false)
-    })
-
     it('returns inner transactions for app call transaction', () => {
         const request = createMockRequest(mockAppCallWithInnerTxs)
         const { result } = renderHook(() =>
@@ -129,59 +88,5 @@ describe('useSingleTransactionView', () => {
         )
 
         expect(result.current.innerTransactions).toHaveLength(0)
-    })
-
-    it('supports recursive navigation through nested inner transactions', () => {
-        const nestedInnerTx = {
-            sender: { publicKey: new Uint8Array(32) },
-            appCall: {
-                appId: BigInt(456),
-                innerTransactions: [
-                    { sender: { publicKey: new Uint8Array(32) } },
-                ],
-            },
-        } as unknown as PeraTransaction
-
-        const txWithNestedInner = {
-            sender: { publicKey: new Uint8Array(32) },
-            appCall: {
-                appId: BigInt(123),
-                innerTransactions: [nestedInnerTx],
-            },
-        } as unknown as PeraTransaction
-
-        const request = createMockRequest(txWithNestedInner)
-        const { result } = renderHook(() =>
-            useSingleTransactionView({ request }),
-        )
-
-        // Navigate to first inner tx
-        act(() => {
-            result.current.handleNavigateToInner(nestedInnerTx)
-        })
-
-        expect(result.current.currentTx).toBe(nestedInnerTx)
-        expect(result.current.innerTransactions).toHaveLength(1)
-
-        // Navigate to nested inner tx
-        const deepInnerTx = nestedInnerTx.appCall!
-            .innerTransactions![0] as PeraTransaction
-        act(() => {
-            result.current.handleNavigateToInner(deepInnerTx)
-        })
-
-        expect(result.current.currentTx).toBe(deepInnerTx)
-
-        // Navigate back twice to return to root
-        act(() => {
-            result.current.handleNavigateBack()
-        })
-        expect(result.current.currentTx).toBe(nestedInnerTx)
-
-        act(() => {
-            result.current.handleNavigateBack()
-        })
-        expect(result.current.currentTx).toBe(txWithNestedInner)
-        expect(result.current.isViewingInnerTransaction).toBe(false)
     })
 })

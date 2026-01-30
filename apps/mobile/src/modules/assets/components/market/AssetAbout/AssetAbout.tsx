@@ -14,7 +14,7 @@ import { View } from 'react-native'
 import { useStyles } from './styles'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { PWButton, PWText } from '@components/core'
-import { RowTitledItem } from '@components/RowTitledItem'
+import { KeyValueRow } from '@components/KeyValueRow'
 import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@hooks/usePeraWebviewInterface'
@@ -52,7 +52,7 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
     return (
         <View style={styles.container}>
             {!!assetDetails.peraMetadata?.description && (
-                <RowTitledItem
+                <KeyValueRow
                     title={t('asset_details.about.title', {
                         name: assetDetails.name,
                     })}
@@ -61,12 +61,12 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                     <PWText style={styles.description}>
                         {assetDetails.peraMetadata.description}
                     </PWText>
-                </RowTitledItem>
+                </KeyValueRow>
             )}
 
             {!!assetDetails.assetId &&
                 assetDetails.assetId !== ALGO_ASSET_ID && (
-                    <RowTitledItem
+                    <KeyValueRow
                         title={t('asset_details.about.asa_id')}
                         verticalAlignment='center'
                     >
@@ -78,11 +78,11 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                             variant='link'
                             paddingStyle='none'
                         />
-                    </RowTitledItem>
+                    </KeyValueRow>
                 )}
 
             {!!assetDetails.creator?.address && (
-                <RowTitledItem
+                <KeyValueRow
                     title={t('asset_details.about.creator')}
                     verticalAlignment='center'
                 >
@@ -96,11 +96,11 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                         variant='link'
                         paddingStyle='none'
                     />
-                </RowTitledItem>
+                </KeyValueRow>
             )}
 
             {!!assetDetails.url?.length && (
-                <RowTitledItem
+                <KeyValueRow
                     title={
                         assetDetails.assetId === ALGO_ASSET_ID
                             ? t('asset_details.about.url')
@@ -114,11 +114,11 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                         variant='link'
                         paddingStyle='none'
                     />
-                </RowTitledItem>
+                </KeyValueRow>
             )}
 
             {!!assetDetails.peraMetadata?.explorerUrl?.length && (
-                <RowTitledItem
+                <KeyValueRow
                     title={t('asset_details.about.show_on')}
                     verticalAlignment='center'
                 >
@@ -135,11 +135,11 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                         variant='link'
                         paddingStyle='none'
                     />
-                </RowTitledItem>
+                </KeyValueRow>
             )}
 
             {!!assetDetails.peraMetadata?.projectUrl?.length && (
-                <RowTitledItem
+                <KeyValueRow
                     title={t('asset_details.about.project_website')}
                     verticalAlignment='center'
                 >
@@ -152,7 +152,7 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                         }
                         variant='link'
                     />
-                </RowTitledItem>
+                </KeyValueRow>
             )}
         </View>
     )

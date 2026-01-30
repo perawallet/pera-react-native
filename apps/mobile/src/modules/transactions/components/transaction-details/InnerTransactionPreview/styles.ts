@@ -18,31 +18,25 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         gap: theme.spacing.md,
         paddingVertical: theme.spacing.sm,
-        paddingHorizontal: theme.spacing.md,
+        paddingHorizontal: theme.spacing.sm,
         backgroundColor: theme.colors.layerGrayLightest,
         borderRadius: theme.spacing.sm,
     },
     content: {
-        flex: 1,
-        gap: 2,
-    },
-    typeLabel: {
-        color: theme.colors.textMain,
-        fontWeight: '500',
-        textTransform: 'capitalize',
-        fontSize: 14,
-    },
-    address: {
-        color: theme.colors.textGray,
-        fontSize: 12,
+        flexGrow: 1,
+        backgroundColor: theme.colors.layerGrayLightest,
     },
     rightContent: {
+        backgroundColor: theme.colors.layerGrayLightest,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: theme.spacing.xs,
     },
-    amount: {
+    primaryText: {
+        color: theme.colors.textMain,
+    },
+    secondaryText: {
         color: theme.colors.textGray,
-        fontSize: 12,
+        lineHeight: theme.spacing.lg,
+        backgroundColor: theme.colors.layerGrayLightest,
     },
 }))

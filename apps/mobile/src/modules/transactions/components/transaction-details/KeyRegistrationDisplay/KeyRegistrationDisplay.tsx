@@ -10,116 +10,140 @@
  limitations under the License
  */
 
-import { PWText, PWView } from '@components/core'
-import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
-import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+import { PWDivider, PWText, PWView } from '@components/core'
+import { KeyValueRow } from '@components/KeyValueRow'
+import {
+    KeyRegType,
+    microAlgosToAlgos,
+    type PeraDisplayableTransaction,
+} from '@perawallet/wallet-core-blockchain'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
+import { useTheme } from '@rneui/themed'
+import { TransactionHeader } from '../TransactionHeader/TransactionHeader'
+import { TransactionNoteRow } from '../TransactionNoteRow/TransactionNoteRow'
+import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnings'
+import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
+import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import Decimal from 'decimal.js'
+import { AddressDisplay } from '@components/AddressDisplay'
+import { useMemo } from 'react'
 
 export type KeyRegistrationDisplayProps = {
-    transaction: PeraTransaction
+    transaction: PeraDisplayableTransaction
+    isInnerTransaction?: boolean
 }
 
-type KeyRegType = 'online' | 'offline' | 'nonparticipating'
-
-const getKeyRegType = (tx: PeraTransaction): KeyRegType => {
-    const keyReg = tx.keyRegistration
-
-    if (keyReg?.nonParticipation) {
-        return 'nonparticipating'
-    }
-
-    if (keyReg?.voteKey && keyReg?.selectionKey) {
-        return 'online'
-    }
-
-    return 'offline'
+const getKeyRegType = (tx: PeraDisplayableTransaction): KeyRegType => {
+    return tx.keyregTransaction?.nonParticipation ? 'offline' : 'online'
 }
 
 export const KeyRegistrationDisplay = ({
     transaction,
+    isInnerTransaction = false,
 }: KeyRegistrationDisplayProps) => {
     const styles = useStyles()
+    const { theme } = useTheme()
     const { t } = useLanguage()
 
-    const keyRegType = getKeyRegType(transaction)
-    const keyReg = transaction.keyRegistration
-
-    const getTitleKey = () => {
-        switch (keyRegType) {
-            case 'online':
-                return 'signing.tx_display.key_reg.online_title'
-            case 'nonparticipating':
-                return 'signing.tx_display.key_reg.nonparticipating_title'
-            default:
-                return 'signing.tx_display.key_reg.offline_title'
-        }
-    }
-
-    const getDescriptionKey = () => {
-        switch (keyRegType) {
-            case 'online':
-                return 'signing.tx_display.key_reg.online_description'
-            case 'nonparticipating':
-                return 'signing.tx_display.key_reg.nonparticipating_description'
-            default:
-                return 'signing.tx_display.key_reg.offline_description'
-        }
-    }
+    const keyRegType = useMemo(() => getKeyRegType(transaction), [transaction])
+    const showWarnings = useMemo(() => !transaction.id, [transaction])
+    const keyReg = transaction.keyregTransaction
 
     return (
         <PWView style={styles.container}>
-            <TransactionIcon
-                type='key-registration'
-                size='large'
+            <TransactionHeader
+                transaction={transaction}
+                isInnerTransaction={isInnerTransaction}
             />
-            <PWText variant='h4'>{t(getTitleKey())}</PWText>
 
-            <PWView style={styles.descriptionContainer}>
-                <PWText style={styles.description}>
-                    {t(getDescriptionKey())}
-                </PWText>
+            <PWDivider
+                style={styles.divider}
+                color={theme.colors.layerGray}
+            />
+
+            <PWView style={styles.detailContainer}>
+                <KeyValueRow title={t('transactions.key_reg.status')}>
+                    <PWText>{t(`transactions.key_reg.${keyRegType}`)}</PWText>
+                </KeyValueRow>
+
+                <KeyValueRow title={t('transactions.common.from')}>
+                    <AddressDisplay address={transaction.sender} />
+                </KeyValueRow>
+
+                {keyRegType === 'online' && keyReg && (
+                    <>
+                        {keyReg.voteFirstValid !== undefined &&
+                            keyReg.voteLastValid !== undefined && (
+                                <KeyValueRow
+                                    title={t(
+                                        'transactions.key_reg.valid_rounds',
+                                    )}
+                                >
+                                    <PWText>
+                                        {keyReg.voteFirstValid.toString()} -{' '}
+                                        {keyReg.voteLastValid.toString()}
+                                    </PWText>
+                                </KeyValueRow>
+                            )}
+
+                        {keyReg.voteKeyDilution !== undefined && (
+                            <KeyValueRow
+                                title={t('transactions.key_reg.key_dilution')}
+                            >
+                                <PWText>
+                                    {keyReg.voteKeyDilution.toString()}
+                                </PWText>
+                            </KeyValueRow>
+                        )}
+
+                        {keyReg.voteParticipationKey !== undefined && (
+                            <KeyValueRow
+                                title={t(
+                                    'transactions.key_reg.participation_key',
+                                )}
+                            >
+                                <PWText>
+                                    {keyReg.voteParticipationKey.toString()}
+                                </PWText>
+                            </KeyValueRow>
+                        )}
+
+                        {keyReg.selectionParticipationKey !== undefined && (
+                            <KeyValueRow
+                                title={t('transactions.key_reg.selection_key')}
+                            >
+                                <PWText>
+                                    {keyReg.selectionParticipationKey.toString()}
+                                </PWText>
+                            </KeyValueRow>
+                        )}
+                    </>
+                )}
+
+                <KeyValueRow title={t('transactions.common.fee')}>
+                    <CurrencyDisplay
+                        currency='ALGO'
+                        precision={6}
+                        minPrecision={2}
+                        value={Decimal(
+                            microAlgosToAlgos(transaction.fee ?? 0n),
+                        )}
+                        showSymbol
+                    />
+                </KeyValueRow>
+
+                <TransactionNoteRow transaction={transaction} />
             </PWView>
 
-            {keyRegType === 'online' && keyReg && (
-                <PWView style={styles.detailsContainer}>
-                    {keyReg.voteFirst !== undefined &&
-                        keyReg.voteLast !== undefined && (
-                            <PWView style={styles.detailRow}>
-                                <PWText style={styles.label}>
-                                    {t(
-                                        'signing.tx_display.key_reg.valid_rounds',
-                                    )}
-                                </PWText>
-                                <PWText style={styles.value}>
-                                    {keyReg.voteFirst.toString()} -{' '}
-                                    {keyReg.voteLast.toString()}
-                                </PWText>
-                            </PWView>
-                        )}
+            {showWarnings && <TransactionWarnings transaction={transaction} />}
 
-                    {keyReg.voteKeyDilution !== undefined && (
-                        <PWView style={styles.detailRow}>
-                            <PWText style={styles.label}>
-                                {t('signing.tx_display.key_reg.key_dilution')}
-                            </PWText>
-                            <PWText style={styles.value}>
-                                {keyReg.voteKeyDilution.toString()}
-                            </PWText>
-                        </PWView>
-                    )}
-                </PWView>
-            )}
+            <PWDivider
+                style={styles.divider}
+                color={theme.colors.layerGray}
+            />
 
-            {keyRegType === 'nonparticipating' && (
-                <PWView style={styles.warningContainer}>
-                    <PWText style={styles.warningText}>
-                        {t(
-                            'signing.tx_display.key_reg.nonparticipating_warning',
-                        )}
-                    </PWText>
-                </PWView>
-            )}
+            <TransactionFooter transaction={transaction} />
         </PWView>
     )
 }
