@@ -49,7 +49,7 @@ const appNames = {
   production: 'Pera',
 };
 
-// Expo project slugs (must be unique per variant for EAS)
+// Expo project slugs
 const slugs = {
   dev: 'pera-dev',
   staging: 'pera-staging',
@@ -169,15 +169,8 @@ module.exports = {
   extra: {
     appVariant: variant,
     appEnv: process.env.APP_ENV || 'production',
-    eas: {
-      projectId: process.env.EAS_PROJECT_ID,
-    },
   },
 
-  // Runtime version for OTA updates (if using EAS Update)
-  runtimeVersion: {
-    policy: 'appVersion',
-  },
 
   // Expo plugins configuration
   // These modify native code during prebuild
