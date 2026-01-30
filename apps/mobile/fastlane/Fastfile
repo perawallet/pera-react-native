@@ -17,11 +17,11 @@ def get_xcodeproj_path
   
   # Try standard location
   project = Dir["./ios/*.xcodeproj"].first
-  return project if project
+  return File.expand_path(project) if project
 
   # Try fallback relative to fastlane folder
   project = Dir["../ios/*.xcodeproj"].first
-  return project if project
+  return File.expand_path(project) if project
 
   raise "Could not find any .xcodeproj file in ./ios/ or ../ios/. CWD: #{Dir.pwd}. Files: #{Dir['*']}"
 end
@@ -196,7 +196,7 @@ platform :android do
 
     gradle(
       task: task,
-      flavor: options[:flavor],
+      # flavor: options[:flavor], # Standard Expo Prebuild projects don't use flavors
       build_type: options[:build_type],
       project_dir: "android/",
       properties: {
@@ -209,9 +209,9 @@ platform :android do
   # Returns the artifact path for a given flavor and type
   def android_artifact_path(flavor, artifact_type)
     if artifact_type == "apk"
-      "android/app/build/outputs/apk/#{flavor}/release/app-#{flavor}-release.apk"
+      "android/app/build/outputs/apk/release/app-release.apk"
     else
-      "android/app/build/outputs/bundle/#{flavor}Release/app-#{flavor}-release.aab"
+      "android/app/build/outputs/bundle/release/app-release.aab"
     end
   end
 
