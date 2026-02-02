@@ -573,6 +573,10 @@
             "success_title": "Transaction signed",
             "success_body": "The transaction has been signed and sent."
         },
+        "transactions": {
+            "title": "Transaction Summary",
+            "details": "Transaction Details"
+        },
         "unknown_request_type": {
             "title": "Unknown Request Type",
             "body": "The request type is unknown."

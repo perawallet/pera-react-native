@@ -24,6 +24,7 @@ import {
 import { useWalletConnectStore } from '../store'
 import {
     ArbitraryDataSignRequest,
+    decodeAlgorandTransactions,
     PeraArbitraryDataMessage,
     PeraArbitraryDataSignResult,
     PeraSignedTransaction,
@@ -34,7 +35,7 @@ import {
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import WalletConnect from '@walletconnect/client'
 import { useCallback } from 'react'
-import { AlgorandChainId, WalletConnectConnection } from '../models'
+import { AlgorandChainId, WalletConnectConnection, WalletConnectTransactionPayload } from '../models'
 import { MAX_DATA_SIGN_REQUESTS } from '../constants'
 import {
     isLedgerAccount,
@@ -219,46 +220,55 @@ export const useWalletConnectHandlers = () => {
         (
             connector: WalletConnect,
             error: Error | null,
-            //TODO type this correctly
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            payload: any | null,
+            payload: WalletConnectTransactionPayload | null,
         ) => {
-            validateRequest(connector, connections, network, error)
+            try {
+                validateRequest(connector, connections, network, error)
 
-            //TODO more validation
-
-            const { txn } = payload.params.at(0)
-
-            addSignRequest({
-                id: uuid(),
-                type: 'transactions',
-                transport: 'callback',
-                transportId: connector.clientId,
-                txs: [txn],
-                approve: async (signed: (PeraSignedTransaction | null)[][]) => {
-                    const signedTxns = signed.map(txns =>
-                        txns.map(txn =>
-                            txn ? encodeSignedTransaction(txn) : null,
-                        ),
+                const paramOne = payload?.params?.at(0)
+                if (!payload || !paramOne) {
+                    throw new WalletConnectSignRequestError(
+                        new Error('Invalid data found - parameter required'),
                     )
+                }
 
-                    if (signedTxns) {
-                        connector.approveRequest({
+                const txnObjects = decodeAlgorandTransactions(paramOne.map(p => p.txn))
+
+                logger.debug("handleSignTransaction", { payload, txnObjects })
+
+                addSignRequest({
+                    id: uuid(),
+                    type: 'transactions',
+                    transport: 'callback',
+                    transportId: connector.clientId,
+                    txs: [txnObjects ?? []],
+                    approve: async (signed: (PeraSignedTransaction | null)[][]) => {
+                        const signedTxns = signed.map(txns =>
+                            txns.map(txn =>
+                                txn ? encodeSignedTransaction(txn) : null,
+                            ),
+                        )
+
+                        if (signedTxns) {
+                            connector.approveRequest({
+                                id: payload.id,
+                                result: signedTxns,
+                            })
+                        }
+                    },
+                    reject: async () => {
+                        connector.rejectRequest({
                             id: payload.id,
-                            result: signedTxns,
+                            error: new Error('User rejected'),
                         })
-                    }
-                },
-                reject: async () => {
-                    connector.rejectRequest({
-                        id: payload.id,
-                        error: new Error('User rejected'),
-                    })
-                },
-                error: async (error: string) => {
-                    throw new WalletConnectSignRequestError(new Error(error))
-                },
-            } as TransactionSignRequest)
+                    },
+                    error: async (error: string) => {
+                        throw new WalletConnectSignRequestError(new Error(error))
+                    },
+                } as TransactionSignRequest)
+            } catch (error) {
+                logger.error("handleSignTransaction error", { error })
+            }
         },
         [connections, addSignRequest, network],
     )

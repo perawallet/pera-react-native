@@ -68,3 +68,15 @@ export type WalletConnectStore = BaseStoreState & {
     ) => void
     setSessionRequests: (sessionRequests: WalletConnectSessionRequest[]) => void
 }
+
+export type WalletConnectTransactionPayload = {
+    id: number
+    jsonrpc: string
+    method: 'algo_signTxn'
+    params: [WalletConnectTransactionParam[]]
+}
+
+export type WalletConnectTransactionParam = {
+    txn: string
+}
+

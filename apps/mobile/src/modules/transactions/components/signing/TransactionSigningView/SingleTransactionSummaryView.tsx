@@ -14,6 +14,7 @@ import {
     PWDivider,
     PWIcon,
     PWText,
+    PWToolbar,
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
@@ -29,6 +30,8 @@ import { useTheme } from '@rneui/themed'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import { TransactionWarnings } from '../../TransactionWarnings'
+import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
+import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 
 export type SingleTransactionSummaryViewProps = {
     transaction: PeraDisplayableTransaction
@@ -49,6 +52,7 @@ export const SingleTransactionSummaryView = ({
 
     return (
         <PWView style={styles.summaryContainer}>
+            <PWToolbar center={<PWText variant='h4'>{t('signing.transactions.title')}</PWText>} />
             <PWView style={styles.summaryHeader}>
                 <TransactionIcon
                     type={txType}
@@ -57,6 +61,15 @@ export const SingleTransactionSummaryView = ({
                 <PWText variant='h3'>
                     {t(`transactions.type.${transaction.txType}`)}
                 </PWText>
+                <CurrencyDisplay
+                    currency='ALGO'
+                    precision={ALGO_ASSET.decimals}
+                    minPrecision={DEFAULT_PRECISION}
+                    value={Decimal(microAlgosToAlgos(transaction.paymentTransaction?.amount ?? 0n))}
+                    showSymbol
+                    variant='h1'
+                    style={styles.amountValue}
+                />
             </PWView>
 
             <PWDivider color={theme.colors.layerGray} />

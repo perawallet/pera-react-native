@@ -20,7 +20,7 @@ export const useStyles = makeStyles(theme => {
         },
         contentContainer: {
             flex: 1,
-            padding: theme.spacing.xl,
+            paddingHorizontal: theme.spacing.xl,
         },
         slideContainer: {
             position: 'absolute',
@@ -28,7 +28,7 @@ export const useStyles = makeStyles(theme => {
             left: 0,
             right: 0,
             bottom: 0,
-            padding: theme.spacing.xl,
+            paddingHorizontal: theme.spacing.xl,
             backgroundColor: theme.colors.background,
         },
         title: {
@@ -113,6 +113,7 @@ export const useStyles = makeStyles(theme => {
             alignItems: 'center',
             gap: theme.spacing.md,
             paddingVertical: theme.spacing.xl,
+            flexGrow: 1,
         },
         viewDetailsRow: {
             flexDirection: 'row',
@@ -185,6 +186,9 @@ export const useStyles = makeStyles(theme => {
         },
         backButtonText: {
             color: theme.colors.linkPrimary,
+        },
+        amountValue: {
+            color: theme.colors.textMain,
         },
     }
 })

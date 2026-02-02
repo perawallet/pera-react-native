@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { SLIDE_ANIMATION_DURATION } from '@constants/ui'
 import React, { PropsWithChildren, useEffect } from 'react'
 import { Dimensions, StyleProp, ViewStyle } from 'react-native'
 import Animated, {
@@ -20,7 +21,6 @@ import Animated, {
 } from 'react-native-reanimated'
 
 const SCREEN_WIDTH = Dimensions.get('window').width
-const SLIDE_ANIMATION_DURATION = 250
 
 export type SlideViewProps = {
     isVisible: boolean
@@ -42,8 +42,8 @@ export const SlideView = ({
         const targetValue = isVisible
             ? 0
             : direction === 'right'
-              ? SCREEN_WIDTH
-              : -SCREEN_WIDTH
+                ? SCREEN_WIDTH
+                : -SCREEN_WIDTH
 
         translateX.value = withTiming(targetValue, {
             duration: SLIDE_ANIMATION_DURATION,

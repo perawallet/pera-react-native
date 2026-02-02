@@ -16,6 +16,7 @@ import {
     type PeraDisplayableTransaction,
     mapToDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
+import { logger } from '@perawallet/wallet-core-shared'
 
 export type SigningViewType =
     | 'single-summary'
@@ -60,6 +61,7 @@ type UseSigningNavigationResult = {
 export const useSigningNavigation = ({
     request,
 }: UseSigningNavigationParams): UseSigningNavigationResult => {
+    logger.debug('useSigningNavigation', { request })
     const groups = useMemo(
         () =>
             request.txs.map(group =>
