@@ -38,11 +38,14 @@ export const useStyles = makeStyles(theme => ({
     },
     assetContainer: {
         justifyContent: 'center',
+        gap: theme.spacing.xs,
     },
     assetIcon: {
-        backgroundColor: 'red',
         borderWidth: 1,
         borderColor: 'blue',
+    },
+    assetName: {
+        lineHeight: theme.spacing.lg,
     },
     assetId: {
         color: theme.colors.textGray,

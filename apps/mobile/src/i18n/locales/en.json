@@ -583,7 +583,21 @@
             "date": "Date",
             "note": "Transaction Note",
             "view_in_explorer": "View in Pera Explorer",
-            "view_note": "View Note"
+            "view_note": "View Note",
+            "completed": "Completed",
+            "failed": "Failed",
+            "pending": "Pending"
+        },
+        "type": {
+            "pay": "Payment Transaction",
+            "keyreg": "Key Registration Transaction",
+            "acfg": "Asset Configuration Transaction",
+            "axfer": "Asset Transfer Transaction",
+            "afrz": "Asset Freeze Transaction",
+            "appl": "Application Transaction",
+            "stpf": "State Proof Transaction",
+            "hb": "Heartbeat Transaction",
+            "unknown": "Unknown Transaction"
         },
         "warning": {
             "title": "Warning",

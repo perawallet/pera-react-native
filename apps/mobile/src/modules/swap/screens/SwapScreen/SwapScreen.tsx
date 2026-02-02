@@ -11,7 +11,13 @@
  */
 
 import { Text } from '@rneui/themed'
-import { PWIcon, PWView } from '@components/core'
+import {
+    PWBottomSheet,
+    PWIcon,
+    PWText,
+    PWToolbar,
+    PWView,
+} from '@components/core'
 import { useStyles } from './styles'
 import { PairSelectionPanel } from '@modules/swap/components/PairSelectionPanel/PairSelectionPanel'
 import { SwapHistoryPanel } from '@modules/swap/components/SwapHistoryPanel/SwapHistoryPanel'
@@ -19,11 +25,18 @@ import { TopPairsPanel } from '@modules/swap/components/TopPairsPanel/TopPairsPa
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Drawer } from 'react-native-drawer-layout'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AccountMenu } from '@modules/accounts/components/AccountMenu'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@hooks/usePeraWebviewInterface'
 import { config } from '@perawallet/wallet-core-config'
+import {
+    PeraDisplayableTransaction,
+    useAlgorandClient,
+} from '@perawallet/wallet-core-blockchain'
+import { Decimal } from 'decimal.js'
+import { TransactionDisplay } from '@modules/transactions/components/TransactionDisplay'
+import { ScrollView } from 'react-native-gesture-handler'
 
 export const SwapScreen = () => {
     const insets = useSafeAreaInsets()
@@ -31,12 +44,42 @@ export const SwapScreen = () => {
     const [drawerOpen, setDrawerOpen] = useState<boolean>(false)
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
+    const algoClient = useAlgorandClient()
 
     const openSwapSupport = () => {
         pushWebView({
             url: config.swapSupportUrl,
             id: 'swap-support',
         })
+    }
+
+    const [tx, setTx] = useState<PeraDisplayableTransaction>()
+    const [innerTx, setInnerTx] = useState<
+        PeraDisplayableTransaction | undefined
+    >(undefined)
+    useEffect(() => {
+        const fetchTx = async () => {
+            const appcall =
+                'IWDWCSAX52PHP7YTOBPTW4XCNTFTQGO7PNETPJ74RR467CVJOHLQ'
+            const appCallWithInnerApp =
+                '2H2UVTEZGELCWYJBNHI75XC4N7AUTYCRWFSUMJP26K6WGD5ARIJA'
+            const axfer = '6YXXCHW5JNWA6MZ3ZQAELWIR46ENPXUPI64Z37GHHDDBIJOJENEQ'
+            const payment =
+                'NSYTJRR4FKQWR4NB6P56IO7EHHS755VU6DK7UT5IWFEFBPXX7QNA'
+            const assetConfig =
+                'SQWLJMLVPNUNMCMDDF3FS2E4PZL2DOQCSFVC4EZGSSPQDF3MRVYQ'
+            const tx =
+                await algoClient.client.indexer.lookupTransactionById(
+                    axfer,
+                )
+
+            setTx(tx.transaction)
+        }
+        fetchTx()
+    }, [])
+
+    const showTx = (tx: PeraDisplayableTransaction) => {
+        setInnerTx(tx)
     }
 
     return (
@@ -51,25 +94,37 @@ export const SwapScreen = () => {
                 <AccountMenu onSelected={() => setDrawerOpen(false)} />
             )}
         >
-            <PWView style={styles.headerContainer}>
-                <PWView style={styles.titleContainer}>
-                    <Text
-                        h3
-                        h3Style={styles.titleText}
-                    >
-                        {t('tabbar.swap')}
-                    </Text>
-                    <PWIcon
-                        name='info'
-                        style={styles.titleIcon}
-                        onPress={openSwapSupport}
+            <PWView style={{ flex: 1, padding: 16 }}>
+                <ScrollView>
+                    {!!tx && (
+                        <TransactionDisplay
+                            transaction={tx}
+                            onInnerTransactionsPress={showTx}
+                        />
+                    )}
+                </ScrollView>
+                <PWBottomSheet
+                    isVisible={!!innerTx}
+                    containerStyle={{ height: '100%' }}
+                >
+                    <PWToolbar
+                        left={
+                            <PWIcon
+                                name='cross'
+                                onPress={() => setInnerTx(undefined)}
+                            />
+                        }
+                        center={<PWText>Inner Transaction</PWText>}
                     />
-                </PWView>
-                <AccountSelection onPress={() => setDrawerOpen(true)} />
+                    {!!innerTx && (
+                        <TransactionDisplay
+                            transaction={innerTx}
+                            isInnerTransaction
+                            onInnerTransactionsPress={showTx}
+                        />
+                    )}
+                </PWBottomSheet>
             </PWView>
-            <PairSelectionPanel />
-            <SwapHistoryPanel />
-            <TopPairsPanel />
         </Drawer>
     )
 }

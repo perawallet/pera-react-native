@@ -14,16 +14,17 @@ import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
 import { PWIcon, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 import { AssetIcon } from '../AssetIcon'
-import { useTheme } from '@rneui/themed'
 import { useMemo } from 'react'
+import { TypographyVariant } from '@theme/typography'
 
 export type AssetTitleProps = {
     asset: PeraAsset
+    showId?: boolean
+    nameVariant?: TypographyVariant
 }
 
-export const AssetTitle = ({ asset }: AssetTitleProps) => {
+export const AssetTitle = ({ asset, showId = false, nameVariant = 'h4' }: AssetTitleProps) => {
     const styles = useStyles()
-    const { theme } = useTheme()
 
     const isAlgo = useMemo(
         () => asset.assetId === ALGO_ASSET_ID,
@@ -34,35 +35,45 @@ export const AssetTitle = ({ asset }: AssetTitleProps) => {
         <PWView style={styles.container}>
             <AssetIcon
                 asset={asset}
-                size={theme.spacing.xxl}
+                size='lg'
             />
-            <PWView style={styles.nameContainer}>
-                <PWText
-                    variant='h4'
-                    style={styles.name}
-                >
-                    {isAlgo ? 'Algo' : asset.name}
-                </PWText>
-                {isAlgo && (
-                    <PWIcon
-                        name='assets/trusted'
-                        size={'sm'}
-                    />
+            <PWView style={styles.textContainer}>
+                <PWView style={styles.nameContainer}>
+                    <PWText
+                        variant={nameVariant}
+                        style={styles.name}
+                    >
+                        {isAlgo ? 'Algo' : asset.name}
+                    </PWText>
+                    {isAlgo && (
+                        <PWIcon
+                            name='assets/trusted'
+                            size={'sm'}
+                        />
+                    )}
+                    {!isAlgo &&
+                        asset.peraMetadata?.verificationTier === 'verified' && (
+                            <PWIcon
+                                name='assets/verified'
+                                size={'sm'}
+                            />
+                        )}
+                    {!isAlgo &&
+                        asset.peraMetadata?.verificationTier === 'suspicious' && (
+                            <PWIcon
+                                name='assets/suspicious'
+                                size={'sm'}
+                            />
+                        )}
+                </PWView>
+                {showId && (
+                    <PWText
+                        variant='caption'
+                        style={styles.id}
+                    >
+                        {asset.assetId}
+                    </PWText>
                 )}
-                {!isAlgo &&
-                    asset.peraMetadata?.verificationTier === 'verified' && (
-                        <PWIcon
-                            name='assets/verified'
-                            size={'sm'}
-                        />
-                    )}
-                {!isAlgo &&
-                    asset.peraMetadata?.verificationTier === 'suspicious' && (
-                        <PWIcon
-                            name='assets/suspicious'
-                            size={'sm'}
-                        />
-                    )}
             </PWView>
         </PWView>
     )

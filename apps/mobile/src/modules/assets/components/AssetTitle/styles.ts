@@ -16,15 +16,24 @@ export const useStyles = makeStyles(theme => ({
     container: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: theme.spacing.xs,
+        gap: theme.spacing.sm,
     },
-    name: {
-        color: theme.colors.textMain,
+    textContainer: {
+        alignItems: 'flex-start',
+        gap: theme.spacing.xs,
     },
     nameContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.xs,
-        paddingLeft: theme.spacing.xs,
+    },
+    id: {
+        color: theme.colors.textGray,
+        lineHeight: theme.spacing.lg,
+    },
+    name: {
+        color: theme.colors.textMain,
+        lineHeight: theme.spacing.lg,
+        paddingRight: theme.spacing.xs,
     },
 }))

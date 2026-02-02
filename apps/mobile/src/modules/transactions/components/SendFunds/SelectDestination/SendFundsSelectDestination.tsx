@@ -63,7 +63,7 @@ export const SendFundsSelectDestination = ({
                 <PWView style={styles.assetTitleContainer}>
                     <AssetIcon
                         asset={asset}
-                        size={theme.spacing.xl}
+                        size='md'
                     />
                     <PWText>{asset.name}</PWText>
                 </PWView>

@@ -14,18 +14,38 @@ import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
 import AlgoAssetIcon from '@assets/icons/assets/algo.svg'
 import { useMemo } from 'react'
 import { SvgProps } from 'react-native-svg'
-import { PWImage, PWText, PWView } from '@components/core'
+import { PWIconSize, PWImage, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
+import { useTheme } from '@rneui/themed'
+import { logger } from '@perawallet/wallet-core-shared'
 
 export type AssetIconProps = {
     asset: PeraAsset
-    size?: number
+    size?: PWIconSize
 } & SvgProps
 
 //TODO: we may want a few more "local" asset icons for popular icons (e.g. USDC, DEFLY, etc)
 export const AssetIcon = (props: AssetIconProps) => {
     const { asset, size, style, ...rest } = props
-    const styles = useStyles(props)
+    const { theme } = useTheme()
+
+    const sizeMap: Record<PWIconSize, number> = useMemo(
+        () => ({
+            xs: theme.spacing.md,
+            sm: theme.spacing.lg,
+            md: theme.spacing.xl,
+            lg: theme.spacing.xxl,
+            xl: theme.spacing['3xl'],
+            xxl: theme.spacing['4xl'],
+        }),
+        [theme],
+    )
+
+    const iconSize = useMemo(() => {
+        return sizeMap[size ?? 'md']
+    }, [size, sizeMap])
+
+    const styles = useStyles(iconSize)
 
     const icon = useMemo(() => {
         if (!asset) return <></>
@@ -34,16 +54,17 @@ export const AssetIcon = (props: AssetIconProps) => {
                 <AlgoAssetIcon
                     {...rest}
                     style={styles.icon}
-                    width={size}
-                    height={size}
+                    width={iconSize}
+                    height={iconSize}
                 />
             )
+
         if (asset.peraMetadata?.logo) {
             return (
                 <PWImage
                     resizeMode='contain'
                     source={{ uri: asset.peraMetadata?.logo }}
-                    style={[styles.icon, { width: size, height: size }]}
+                    style={styles.imageIcon}
                 />
             )
         }
@@ -52,7 +73,7 @@ export const AssetIcon = (props: AssetIconProps) => {
                 <PWText>{asset?.unitName?.slice(0, 1)}</PWText>
             </PWView>
         )
-    }, [asset, rest, size, styles.icon, styles.defaultAsset])
+    }, [asset, rest, iconSize, styles.icon, styles.defaultAsset])
 
     return <PWView style={[style, styles.container]}>{icon}</PWView>
 }
