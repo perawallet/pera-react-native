@@ -18,7 +18,6 @@ import { useStyles } from './styles'
 import { useModalState } from '@hooks/useModalState'
 import { NotificationsIcon } from '@modules/notifications/components/NotificationsIcon'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
-import { AccountMenuBottomSheet } from '@modules/accounts/components/AccountMenuBottomSheet'
 import { QRScannerView } from '@components/QRScannerView'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
@@ -36,7 +35,6 @@ export const AccountScreen = () => {
     const styles = useStyles()
     const account = useSelectedAccount()
     const scannerState = useModalState()
-    const accountMenuState = useModalState()
     const { t } = useLanguage()
 
     const { shouldPlayConfetti, setShouldPlayConfetti } =
@@ -64,7 +62,7 @@ export const AccountScreen = () => {
                 left={
                     // TODO we may want to add support for pending inbox items here too
                     // (like the current inbox since we're using the same screen real estate)
-                    <AccountSelection onPress={accountMenuState.open} />
+                    <AccountSelection showInbox />
                 }
                 right={
                     <PWView style={styles.iconBarSection}>
@@ -83,12 +81,6 @@ export const AccountScreen = () => {
                 animationType='slide'
             />
             <PromptContainer />
-            <AccountMenuBottomSheet
-                isVisible={accountMenuState.isOpen}
-                onClose={accountMenuState.close}
-                onSelected={() => accountMenuState.close()}
-                showInbox
-            />
         </PWView>
     )
 }

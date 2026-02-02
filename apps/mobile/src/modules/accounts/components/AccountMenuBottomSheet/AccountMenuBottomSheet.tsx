@@ -1,4 +1,4 @@
-import { PWBottomSheet } from '@components/core'
+import { PWBottomSheet, PWIcon, PWToolbar } from '@components/core'
 import { AccountMenu } from '@modules/accounts/components/AccountMenu'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useStyles } from './styles'
@@ -24,6 +24,9 @@ export const AccountMenuBottomSheet = ({
             onBackdropPress={onClose}
             innerContainerStyle={styles.container}
         >
+            <PWToolbar
+                right={<PWIcon name='cross' onPress={onClose} />}
+            />
             <AccountMenu onSelected={onSelected} showInbox={showInbox} />
         </PWBottomSheet>
     )

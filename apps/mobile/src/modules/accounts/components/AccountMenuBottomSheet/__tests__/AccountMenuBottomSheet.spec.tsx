@@ -6,6 +6,8 @@ import { AccountMenuBottomSheet } from '../AccountMenuBottomSheet'
 vi.mock('@components/core', async () => {
     return {
         PWBottomSheet: ({ children, isVisible }: any) => (isVisible ? <div data-testid="PWBottomSheet">{children}</div> : null),
+        PWToolbar: () => <div data-testid="PWToolbar" />,
+        PWIcon: () => <div data-testid="PWIcon" />,
     }
 })
 
@@ -25,6 +27,7 @@ describe('AccountMenuBottomSheet', () => {
         render(<AccountMenuBottomSheet {...props} />)
         expect(screen.getByTestId('PWBottomSheet')).toBeTruthy()
         expect(screen.getByTestId('AccountMenu')).toBeTruthy()
+        expect(screen.getByTestId('PWToolbar')).toBeTruthy()
     })
 
     it('does not render when isVisible is false', () => {
