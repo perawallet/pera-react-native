@@ -29,6 +29,8 @@ import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import { useMemo } from 'react'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
+import { AssetIcon } from '@modules/assets/components/AssetIcon'
+import { LoadingView } from '@components/LoadingView'
 
 export type AssetTransferDisplayProps = {
     referenceAddress?: string
@@ -93,6 +95,7 @@ export const AssetTransferDisplay = ({
             <PWView style={styles.detailContainer}>
                 <KeyValueRow title={t('transactions.common.asset')}>
                     <PWView style={styles.detailRow}>
+                        {asset ? <AssetIcon asset={asset} /> : <LoadingView size='sm' variant='circle' />}
                         <PWView style={styles.assetContainer}>
                             {asset && <PWText>{asset.name}</PWText>}
                             <PWText
