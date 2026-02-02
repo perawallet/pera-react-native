@@ -24,15 +24,15 @@ import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 
 export type AccountWithBalanceProps = {
     account: WalletAccount
-    isSelected?: boolean
+    isHighlighted?: boolean
 } & PWViewProps
 
 export const AccountWithBalance = ({
     account,
-    isSelected,
+    isHighlighted,
     ...rest
 }: AccountWithBalanceProps) => {
-    const styles = useStyles({ isSelected })
+    const styles = useStyles({ isHighlighted })
     const { preferredFiatCurrency } = useCurrency()
     const { accountBalances } = useAccountBalancesQuery([account], true)
 

@@ -13,10 +13,10 @@
 import { makeStyles } from '@rneui/themed'
 
 type StyleProps = {
-    isSelected?: boolean
+    isHighlighted?: boolean
 }
 
-export const useStyles = makeStyles((theme, { isSelected }: StyleProps) => {
+export const useStyles = makeStyles((theme, { isHighlighted }: StyleProps) => {
     return {
         container: {
             flexDirection: 'row',
@@ -26,7 +26,7 @@ export const useStyles = makeStyles((theme, { isSelected }: StyleProps) => {
             width: '100%',
             backgroundColor: theme.colors.layerGrayLightest,
             borderWidth: 1,
-            borderColor: isSelected
+            borderColor: isHighlighted
                 ? theme.colors.buttonSquareText
                 : theme.colors.layerGray,
             borderRadius: theme.spacing.lg,

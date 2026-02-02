@@ -68,11 +68,11 @@ describe('AccountWithBalance', () => {
         expect(container.textContent).toContain('Test Account')
     })
 
-    it('renders with selection state when isSelected is true', () => {
+    it('renders with highlight state when isHighlighted is true', () => {
         const { container } = render(
             <AccountWithBalance
                 account={mockAccount}
-                isSelected={true}
+                isHighlighted={true}
             />,
         )
         expect(container).toBeTruthy()

@@ -71,7 +71,7 @@ export const AccountMenu = (props: AccountMenuProps) => {
                         >
                             <AccountWithBalance
                                 account={acct}
-                                isSelected={
+                                isHighlighted={
                                     acct.address === selectedAccountAddress
                                 }
                             />
