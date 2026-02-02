@@ -12,6 +12,7 @@
 
 import { useEffect } from 'react'
 import NetInfo, { NetInfoState } from '@react-native-community/netinfo'
+import { onlineManager } from '@tanstack/react-query'
 import { useToast } from '@hooks/useToast'
 import { LONG_NOTIFICATION_DURATION } from '@constants/ui'
 import { useNetworkStatusStore } from './useNetworkStatusStore'
@@ -35,7 +36,9 @@ export const useNetworkStatusListener = (): void => {
     useEffect(() => {
         const netInfoSubscription = NetInfo.addEventListener(
             (state: NetInfoState) => {
-                setHasInternet(state.isConnected !== false)
+                const isConnected = state.isConnected !== false
+                setHasInternet(isConnected)
+                onlineManager.setOnline(isConnected)
             },
         )
         return () => {
