@@ -60,8 +60,7 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
         },
     }
 
-    const { backgroundColor, color } =
-        variantStyles[props.variant ?? 'primary']
+    const { backgroundColor, color } = variantStyles[props.variant ?? 'primary']
     const { paddingHorizontal, paddingVertical, minWidth } =
         paddingStyles[props.paddingStyle ?? 'normal']
 

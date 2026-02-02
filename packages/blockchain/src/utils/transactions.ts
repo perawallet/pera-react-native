@@ -28,10 +28,13 @@ import type {
     PeraTransactionType,
 } from '../models'
 import { encodeAlgorandAddress } from './addresses'
-import { OnCompletion, type Transaction as IndexerTransaction } from '@algorandfoundation/algokit-utils/indexer-client'
+import {
+    OnCompletion,
+    type Transaction as IndexerTransaction,
+} from '@algorandfoundation/algokit-utils/indexer-client'
 
 export const mapIndexerTxToDisplayableTransaction = (
-    tx: IndexerTransaction
+    tx: IndexerTransaction,
 ): PeraDisplayableTransaction => {
     return {
         ...tx,
@@ -77,8 +80,8 @@ export const mapToDisplayableTransaction = (
                 receiver: encodeAlgorandAddress(paymentTx.receiver.publicKey),
                 closeRemainderTo: paymentTx.closeRemainderTo
                     ? encodeAlgorandAddress(
-                        paymentTx.closeRemainderTo.publicKey,
-                    )
+                          paymentTx.closeRemainderTo.publicKey,
+                      )
                     : undefined,
             }
             break
@@ -172,19 +175,19 @@ export const mapToDisplayableTransaction = (
                 clearStateProgram: applTx.clearStateProgram,
                 globalStateSchema: applTx.globalStateSchema
                     ? {
-                        numByteSlices: Number(
-                            applTx.globalStateSchema.numByteSlices,
-                        ),
-                        numUints: Number(applTx.globalStateSchema.numUints),
-                    }
+                          numByteSlices: Number(
+                              applTx.globalStateSchema.numByteSlices,
+                          ),
+                          numUints: Number(applTx.globalStateSchema.numUints),
+                      }
                     : undefined,
                 localStateSchema: applTx.localStateSchema
                     ? {
-                        numByteSlices: Number(
-                            applTx.localStateSchema.numByteSlices,
-                        ),
-                        numUints: Number(applTx.localStateSchema.numUints),
-                    }
+                          numByteSlices: Number(
+                              applTx.localStateSchema.numByteSlices,
+                          ),
+                          numUints: Number(applTx.localStateSchema.numUints),
+                      }
                     : undefined,
             }
             break

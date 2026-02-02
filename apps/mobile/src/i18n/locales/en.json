@@ -663,22 +663,6 @@
             "transactions_count": "{{count}} Transaction(s)"
         }
     },
-    "swaps": {
-        "pair_selection": {
-            "you_pay": "You pay",
-            "balance": "Balance:",
-            "max": "MAX",
-            "you_receive": "You receive"
-        },
-        "history": {
-            "title": "Swap History",
-            "see_all": "See all"
-        },
-        "top_pairs": {
-            "title": "Top 5 Swaps",
-            "volume": "Volume (24H)"
-        }
-    },
     "tabbar": {
         "home": "Home",
         "discover": "Discover",
