@@ -22,9 +22,3 @@ export const getSuggestedParametersQueryKey = () => [
     MODULE_PREFIX,
     'suggested-parameters',
 ]
-
-export const getBlockQueryKey = (blockNumber: number, headerOnly: boolean) => [
-    MODULE_PREFIX,
-    'block',
-    { blockNumber, headerOnly },
-]
