@@ -10,74 +10,22 @@
  limitations under the License
  */
 
-import { useLanguage } from '@hooks/useLanguage'
-import { PWTab, PWTabView, PWView } from '@components/core'
-
+import { PWView } from '@components/core'
 import { useStyles } from './styles'
 import { PortfolioView } from '../PortfolioView'
-import { useEffect, useState } from 'react'
-import { InboxTab } from './InboxTab'
 import { AccountsTab } from './AccountsTab'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 export type AccountMenuProps = {
     onSelected: (account: WalletAccount) => void
-    showInbox?: boolean
 }
 export const AccountMenu = (props: AccountMenuProps) => {
-    const [index, setIndex] = useState(0)
     const styles = useStyles()
-    const { t } = useLanguage()
-
-    useEffect(() => {
-        if (!props.showInbox) {
-            setIndex(0)
-        }
-    }, [props.showInbox])
 
     return (
         <PWView style={styles.container}>
             <PortfolioView style={styles.portfolioContainer} />
-            <PWTab
-                value={index}
-                onChange={setIndex}
-                containerStyle={styles.tabs}
-                dense
-                disableIndicator
-            >
-                {!!props.showInbox && (
-                    <PWTab.Item
-                        title={t('account_menu.title')}
-                        titleStyle={
-                            index === 0
-                                ? styles.activeTitle
-                                : styles.inactiveTitle
-                        }
-                    />
-                )}
-                {!!props.showInbox && (
-                    <PWTab.Item
-                        title={t('account_menu.inbox')}
-                        titleStyle={
-                            index === 1
-                                ? styles.activeTitle
-                                : styles.inactiveTitle
-                        }
-                    />
-                )}
-            </PWTab>
-            <PWTabView
-                value={index}
-                onChange={setIndex}
-                animationType='spring'
-            >
-                <PWTabView.Item style={styles.fullWidth}>
-                    <AccountsTab onSelected={props.onSelected} />
-                </PWTabView.Item>
-                <PWTabView.Item style={styles.fullWidth}>
-                    <InboxTab />
-                </PWTabView.Item>
-            </PWTabView>
+            <AccountsTab onSelected={props.onSelected} />
         </PWView>
     )
 }

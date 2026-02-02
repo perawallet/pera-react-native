@@ -7,14 +7,12 @@ export type AccountMenuBottomSheetProps = {
     isVisible: boolean
     onClose: () => void
     onSelected: (account: WalletAccount) => void
-    showInbox?: boolean
 }
 
 export const AccountMenuBottomSheet = ({
     isVisible,
     onClose,
     onSelected,
-    showInbox,
 }: AccountMenuBottomSheetProps) => {
     const styles = useStyles()
 
@@ -27,7 +25,7 @@ export const AccountMenuBottomSheet = ({
             <PWToolbar
                 right={<PWIcon name='cross' onPress={onClose} />}
             />
-            <AccountMenu onSelected={onSelected} showInbox={showInbox} />
+            <AccountMenu onSelected={onSelected} />
         </PWBottomSheet>
     )
 }

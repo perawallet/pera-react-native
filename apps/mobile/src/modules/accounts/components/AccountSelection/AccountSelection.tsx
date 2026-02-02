@@ -20,12 +20,10 @@ import { TouchableOpacity, TouchableOpacityProps } from 'react-native'
 import { AccountDisplay } from '../AccountDisplay'
 
 export type AccountSelectionProps = {
-    showInbox?: boolean
     onSelected?: (account: WalletAccount) => void
 } & TouchableOpacityProps
 
 export const AccountSelection = ({
-    showInbox,
     onSelected,
     ...props
 }: AccountSelectionProps) => {
@@ -56,7 +54,6 @@ export const AccountSelection = ({
                 isVisible={accountMenuState.isOpen}
                 onClose={accountMenuState.close}
                 onSelected={handleSelected}
-                showInbox={showInbox}
             />
         </>
     )

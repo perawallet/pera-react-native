@@ -60,9 +60,7 @@ export const AccountScreen = () => {
             <PWToolbar
                 style={styles.iconBar}
                 left={
-                    // TODO we may want to add support for pending inbox items here too
-                    // (like the current inbox since we're using the same screen real estate)
-                    <AccountSelection showInbox />
+                    <AccountSelection />
                 }
                 right={
                     <PWView style={styles.iconBarSection}>
