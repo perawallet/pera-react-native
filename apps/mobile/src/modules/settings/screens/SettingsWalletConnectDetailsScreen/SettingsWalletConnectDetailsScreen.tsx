@@ -30,7 +30,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { WalletConnectSettingsStackParamsList } from '@modules/settings/routes'
 import { useWebView } from '@hooks/usePeraWebviewInterface'
 import { v7 as uuid } from 'uuid'
-import { RowTitledItem } from '@components/RowTitledItem'
+import { KeyValueRow } from '@components/KeyValueRow'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
@@ -154,7 +154,7 @@ export const SettingsWalletConnectDetailsScreen = ({
                 </Text>
             </PWView>
             <PWView style={styles.connectionContainer}>
-                <RowTitledItem
+                <KeyValueRow
                     title={t('walletconnect.settings.created_at', { date: '' })}
                 >
                     <Text style={styles.createdAt}>
@@ -164,7 +164,7 @@ export const SettingsWalletConnectDetailsScreen = ({
                             'medium',
                         )}
                     </Text>
-                </RowTitledItem>
+                </KeyValueRow>
             </PWView>
             {!!connectedAccounts?.length && (
                 <PWView style={styles.accountContainer}>

@@ -16,7 +16,7 @@ import {
     PeraArbitraryDataMessage,
 } from '@perawallet/wallet-core-blockchain'
 import { useLanguage } from '@hooks/useLanguage'
-import { RowTitledItem } from '@components/RowTitledItem'
+import { KeyValueRow } from '@components/KeyValueRow'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { useStyles } from './ArbitraryDataSigningDetailsView.style'
@@ -89,25 +89,23 @@ export const ArbitraryDataSigningDetailsView = ({
                 contentContainerStyle={styles.scrollContainer}
             >
                 <PWView style={styles.section}>
-                    <RowTitledItem
+                    <KeyValueRow
                         title={t('signing.arbitrary_data_details.from')}
                     >
                         <AccountDisplay
                             account={account}
                             showChevron={false}
                         />
-                    </RowTitledItem>
-                    <RowTitledItem
-                        title={t('signing.arbitrary_data_details.to')}
-                    >
+                    </KeyValueRow>
+                    <KeyValueRow title={t('signing.arbitrary_data_details.to')}>
                         <PWText>
                             {request?.sourceMetadata?.name ??
                                 t('signing.arbitrary_data_details.unnamed')}
                         </PWText>
-                    </RowTitledItem>
+                    </KeyValueRow>
                 </PWView>
                 <PWView style={styles.section}>
-                    <RowTitledItem
+                    <KeyValueRow
                         title={t('signing.arbitrary_data_details.amount')}
                     >
                         <CurrencyDisplay
@@ -117,8 +115,8 @@ export const ArbitraryDataSigningDetailsView = ({
                             precision={2}
                             minPrecision={2}
                         />
-                    </RowTitledItem>
-                    <RowTitledItem
+                    </KeyValueRow>
+                    <KeyValueRow
                         title={t('signing.arbitrary_data_details.fee')}
                     >
                         <CurrencyDisplay
@@ -128,15 +126,15 @@ export const ArbitraryDataSigningDetailsView = ({
                             precision={2}
                             minPrecision={2}
                         />
-                    </RowTitledItem>
+                    </KeyValueRow>
                 </PWView>
                 <PWView style={styles.section}>
-                    <RowTitledItem
+                    <KeyValueRow
                         title={t('signing.arbitrary_data_details.message')}
                     >
                         <PWText>{dataMessage.message}</PWText>
-                    </RowTitledItem>
-                    <RowTitledItem
+                    </KeyValueRow>
+                    <KeyValueRow
                         title={t('signing.arbitrary_data_details.data')}
                     >
                         <PWText style={styles.data}>
@@ -144,7 +142,7 @@ export const ArbitraryDataSigningDetailsView = ({
                                 'utf-8',
                             )}
                         </PWText>
-                    </RowTitledItem>
+                    </KeyValueRow>
                 </PWView>
             </ScrollView>
         </PWView>

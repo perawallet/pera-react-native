@@ -16,7 +16,6 @@ import { useMemo } from 'react'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useStyles } from './styles'
 import { AssetIcon } from '@modules/assets/components/AssetIcon'
-import { useTheme } from '@rneui/themed'
 import { EmptyView } from '@components/EmptyView'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
@@ -37,7 +36,6 @@ export const SendFundsSelectDestination = ({
         if (!selectedAsset?.assetId) return null
         return assets.get(selectedAsset?.assetId)
     }, [selectedAsset, assets])
-    const { theme } = useTheme()
     const { t } = useLanguage()
 
     const handleSelected = (address: string) => {
@@ -63,7 +61,7 @@ export const SendFundsSelectDestination = ({
                 <PWView style={styles.assetTitleContainer}>
                     <AssetIcon
                         asset={asset}
-                        size={theme.spacing.xl}
+                        size='md'
                     />
                     <PWText>{asset.name}</PWText>
                 </PWView>

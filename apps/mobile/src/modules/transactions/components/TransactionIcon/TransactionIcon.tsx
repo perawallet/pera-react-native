@@ -10,30 +10,53 @@
  limitations under the License
  */
 
-import { PWIcon, PWView } from '@components/core'
+import {
+    PWRoundIcon,
+    type IconName,
+    type PWRoundIconProps,
+} from '@components/core'
+import type { PeraTransactionType } from '@perawallet/wallet-core-blockchain'
 
-import { SvgProps } from 'react-native-svg'
-import { useStyles } from './styles'
+export type TransactionIconType = PeraTransactionType | 'group'
 
-//TODO support all tx types
 export type TransactionIconProps = {
-    type: 'pay' | 'group'
-    size?: 'small' | 'large'
-} & SvgProps
+    type: TransactionIconType
+    size?: 'sm' | 'md' | 'lg'
+} & Omit<PWRoundIconProps, 'icon' | 'size' | 'name'>
+
+const iconNameMap: Record<TransactionIconType, IconName> = {
+    payment: 'transactions/payment',
+    'asset-transfer': 'transactions/swap',
+    'asset-config': 'transactions/asset-config',
+    'asset-freeze': 'transactions/asset-freeze',
+    'key-registration': 'transactions/key-registration',
+    'app-call': 'transactions/application-call',
+    'asset-opt-in': 'transactions/opt-in',
+    'asset-opt-out': 'transactions/opt-out',
+    group: 'transactions/group',
+    'asset-clawback': 'transactions/generic',
+    'state-proof': 'transactions/generic',
+    heartbeat: 'transactions/generic',
+    unknown: 'transactions/generic',
+}
+
+const iconSizeMap = {
+    sm: 'md',
+    md: 'lg',
+    lg: 'xl',
+} as const
 
 export const TransactionIcon = (props: TransactionIconProps) => {
-    const { type, style, size = 'small', ...rest } = props
-    const styles = useStyles(props)
-    const iconSize = size === 'small' ? 'md' : 'lg'
-    const name = type === 'pay' ? 'transactions/payment' : 'transactions/group'
+    const { type, style, size = 'sm', ...rest } = props
+    const iconSize = iconSizeMap[size]
+    const name = iconNameMap[type] ?? 'transactions/generic'
 
     return (
-        <PWView style={[styles.container, style]}>
-            <PWIcon
-                {...rest}
-                name={name}
-                size={iconSize}
-            />
-        </PWView>
+        <PWRoundIcon
+            icon={name}
+            size={iconSize}
+            style={style}
+            {...rest}
+        />
     )
 }

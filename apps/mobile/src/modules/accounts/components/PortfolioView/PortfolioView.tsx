@@ -80,7 +80,7 @@ export const PortfolioView = (props: PortfolioViewProps) => {
             </PWView>
             <PWView style={styles.valueBar}>
                 <CurrencyDisplay
-                    h1
+                    variant='h1'
                     value={
                         selectedPoint
                             ? selectedPoint.algoValue
@@ -100,7 +100,7 @@ export const PortfolioView = (props: PortfolioViewProps) => {
             </PWView>
             <PWView style={styles.secondaryValueBar}>
                 <CurrencyDisplay
-                    h4
+                    variant='h4'
                     style={styles.valueTitle}
                     value={
                         selectedPoint

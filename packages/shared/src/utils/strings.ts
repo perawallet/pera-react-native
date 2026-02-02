@@ -23,11 +23,7 @@ export const decodeFromBase64 = (base64: string) => {
     return toByteArray(base64)
 }
 
-//TODO: we should fetch this from the server or a file or something
-//(the useCurrencies hook has this but can't use a hook from here...)
 const currencySymbols: Record<string, string> = {
-    ETH: 'Ξ',
-    BTC: '₿',
     USD: '$',
     EUR: '€',
     GBP: '£',
@@ -125,18 +121,22 @@ export const formatCurrency = (
     )
     const currencySymbol =
         !showSymbol || currency === 'ALGO'
-            ? ''
-            : (currencySymbols[currency] ?? '$')
+            ? undefined
+            : (currencySymbols[currency] ?? currency)
 
     //TODO this is pretty limited formatting - it's not very locale specific
-    return `${sign}${currencySymbol}${integer}${fraction}${unit}`
+    return `${sign}${currencySymbol ? `${currencySymbol} ` : ''}${integer}${fraction}${unit}`
 }
 
 export const formatDatetime = (
-    datetime: string | Date,
+    datetime?: string | Date,
     locale: string = 'en-US',
     style: 'short' | 'medium' | 'long' = 'long',
 ) => {
+    if (!datetime) {
+        return ''
+    }
+
     let date: number = Date.now()
     if (typeof datetime === 'string') {
         const parts = datetime.split('+')

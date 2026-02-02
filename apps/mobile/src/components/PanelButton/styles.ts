@@ -11,25 +11,46 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { PanelButtonProps } from './PanelButton'
 
-export const useStyles = makeStyles(theme => ({
-    buttonStyle: {
-        height: 60,
-        gap: theme.spacing.md,
-        justifyContent: 'space-between',
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: theme.spacing.lg,
-        backgroundColor: theme.colors.layerGrayLighter,
-        color: theme.colors.textMain,
-        borderRadius: theme.spacing.lg,
-    },
-    containerStyle: {},
-    textStyle: {
-        backgroundColor: theme.colors.layerGrayLighter,
-        color: theme.colors.textMain,
-        flexGrow: 1,
-        height: 28,
-        verticalAlign: 'middle',
-    },
-}))
+export const useStyles = makeStyles((theme, props: PanelButtonProps) => {
+    let backgroundColor = theme.colors.layerGrayLighter
+    let color = theme.colors.textMain
+    if (props.variant === 'error') {
+        backgroundColor = theme.colors.asaSuspiciousBg
+        color = theme.colors.error
+    }
+    return {
+        buttonStyle: {
+            backgroundColor,
+            borderRadius: theme.spacing.lg,
+            justifyContent: 'space-between',
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: theme.spacing.lg,
+        },
+        titleStyle: {
+            flexShrink: 1,
+            backgroundColor: 'transparent',
+            gap: theme.spacing.md,
+            flexDirection: 'row',
+        },
+        textStyle: {
+            flexShrink: 1,
+            backgroundColor: 'transparent',
+            color,
+            verticalAlign: 'middle',
+        },
+        descriptionStyle: {
+            flexShrink: 1,
+            backgroundColor: 'transparent',
+            lineHeight: theme.spacing.xl,
+        },
+        textContainerStyle: {
+            flexShrink: 1,
+            backgroundColor: 'transparent',
+            gap: theme.spacing.sm,
+            padding: theme.spacing.lg,
+        },
+    }
+})

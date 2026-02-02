@@ -24,14 +24,25 @@ export type PanelButtonProps = {
     leftIcon?: IconName
     rightIcon?: IconName
     title: string
+    description?: string
     titleWeight: 'h3' | 'h4'
+    variant?: 'default' | 'error'
     onPress: () => void
 } & PWTouchableOpacityProps
 
 export const PanelButton = (props: PanelButtonProps) => {
     const themeStyle = useStyles(props)
-    const { style, leftIcon, rightIcon, title, titleWeight, onPress, ...rest } =
-        props
+    const {
+        style,
+        leftIcon,
+        rightIcon,
+        title,
+        titleWeight,
+        variant,
+        onPress,
+        description,
+        ...rest
+    } = props
 
     return (
         <PWTouchableOpacity onPress={onPress}>
@@ -39,13 +50,29 @@ export const PanelButton = (props: PanelButtonProps) => {
                 style={[style, themeStyle.buttonStyle]}
                 {...rest}
             >
-                {leftIcon && <PWIcon name={leftIcon} />}
-                <PWText
-                    style={themeStyle.textStyle}
-                    variant={titleWeight}
-                >
-                    {title}
-                </PWText>
+                <PWView style={themeStyle.textContainerStyle}>
+                    <PWView style={themeStyle.titleStyle}>
+                        {!!leftIcon && (
+                            <PWIcon
+                                name={leftIcon}
+                                variant={
+                                    variant === 'error' ? 'error' : 'primary'
+                                }
+                            />
+                        )}
+                        <PWText
+                            style={themeStyle.textStyle}
+                            variant={titleWeight}
+                        >
+                            {title}
+                        </PWText>
+                    </PWView>
+                    {!!description && (
+                        <PWText style={themeStyle.descriptionStyle}>
+                            {description}
+                        </PWText>
+                    )}
+                </PWView>
                 {rightIcon && <PWIcon name={rightIcon} />}
             </PWView>
         </PWTouchableOpacity>

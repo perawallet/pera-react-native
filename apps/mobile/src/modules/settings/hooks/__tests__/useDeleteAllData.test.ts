@@ -26,6 +26,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     DataStoreRegistry: {
         clearAll: vi.fn().mockResolvedValue(undefined),
     },
+    logger: { api: vi.fn(), error: vi.fn(), info: vi.fn() },
 }))
 
 vi.mock('@tanstack/react-query', () => ({

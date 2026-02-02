@@ -95,7 +95,7 @@ export const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
 
                     <PWView style={styles.primaryValueContainer}>
                         <CurrencyDisplay
-                            h1
+                            variant='h1'
                             value={cryptoAmount}
                             currency={asset.unitName ?? ''}
                             precision={asset.decimals}

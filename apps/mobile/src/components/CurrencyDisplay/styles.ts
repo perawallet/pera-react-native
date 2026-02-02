@@ -14,21 +14,23 @@ import { makeStyles } from '@rneui/themed'
 import { CurrencyDisplayProps } from './CurrencyDisplay'
 
 export const useStyles = makeStyles((theme, props: CurrencyDisplayProps) => {
-    let size = 16
-
-    if (props.h1) {
-        size = 40
-    } else if (props.h2) {
-        size = 36
-    } else if (props.h3) {
-        size = 24
+    const variantSizes = {
+        h1: theme.spacing['3xl'],
+        h2: theme.spacing.xxl,
+        h3: theme.spacing.xl,
+        h4: theme.spacing.lg,
+        body: theme.spacing.lg,
+        caption: theme.spacing.md,
     }
+
+    const size = variantSizes[props.variant ?? 'body']
 
     return {
         container: {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'flex-start',
+            backgroundColor: 'transparent',
         },
         skeleton: {
             maxWidth: 150,

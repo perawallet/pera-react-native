@@ -120,6 +120,8 @@
     },
     "common": {
         "offline_mode": "Offline Mode",
+        "yes": "Yes",
+        "no": "No",
         "go_back": {
             "label": "Go Back"
         },
@@ -564,7 +566,7 @@
         },
         "transaction_view": {
             "invalid_title": "Invalid Transaction",
-            "invalid_body": "There does not appear to be a receiver for this transaction",
+            "invalid_body": "There does not appear to be a valid transaction",
             "transaction_failed_title": "Signing Failed",
             "transaction_failed_body": "The transaction failed to send. Please try again.",
             "success_title": "Transaction signed",
@@ -575,20 +577,90 @@
             "body": "The request type is unknown."
         }
     },
-    "swaps": {
-        "pair_selection": {
-            "you_pay": "You pay",
-            "balance": "Balance:",
-            "max": "MAX",
-            "you_receive": "You receive"
+    "transactions": {
+        "common": {
+            "from": "From",
+            "to": "To",
+            "fee": "Fee",
+            "round": "Round",
+            "amount": "Amount",
+            "asset": "Asset",
+            "asset_id": "Asset ID",
+            "date": "Date",
+            "note": "Transaction Note",
+            "view_in_explorer": "View in Pera Explorer",
+            "view_note": "View Note",
+            "completed": "Completed",
+            "failed": "Failed",
+            "pending": "Pending"
         },
-        "history": {
-            "title": "Swap History",
-            "see_all": "See all"
+        "type": {
+            "pay": "Payment Transaction",
+            "keyreg": "Key Registration Transaction",
+            "acfg": "Asset Configuration Transaction",
+            "axfer": "Asset Transfer Transaction",
+            "afrz": "Asset Freeze Transaction",
+            "appl": "Application Transaction",
+            "stpf": "State Proof Transaction",
+            "hb": "Heartbeat Transaction",
+            "unknown": "Unknown Transaction"
         },
-        "top_pairs": {
-            "title": "Top 5 Swaps",
-            "volume": "Volume (24H)"
+        "warning": {
+            "title": "Warning",
+            "title_cta_one": "This transaction contains a potentially sensitive action",
+            "title_cta_other": "This transaction contains {{count}} potentially sensitive actions",
+            "close_warning": "This transaction closes the account and send remaining funds to the following address: {{address}}",
+            "rekey_warning": "This transaction rekeys the account to the following address: {{address}}.",
+            "rekey_warning_bold": "This transfers full control of your account to another address."
+        },
+        "unknown": {
+            "title": "Unsupported Transaction Type",
+            "body": "This transaction type is not supported."
+        },
+        "asset_transfer": {
+            "clawback_from": "Clawback From"
+        },
+        "asset_config": {
+            "name": "Name",
+            "unit": "Unit Name",
+            "url": "URL",
+            "total": "Total Supply",
+            "decimals": "Decimals",
+            "default_frozen": "Default Frozen",
+            "manager": "Manager",
+            "reserve": "Reserve",
+            "freeze_addr": "Freeze Address",
+            "clawback": "Clawback Address"
+        },
+        "asset_freeze": {
+            "target": "Target Account",
+            "status": "Status",
+            "frozen": "Frozen",
+            "unfrozen": "Unfrozen"
+        },
+        "key_reg": {
+            "valid_rounds": "Valid Rounds",
+            "key_dilution": "Key Dilution",
+            "participation_key": "Participation Key",
+            "selection_key": "Selection Key",
+            "status": "Registration Status"
+        },
+        "app_call": {
+            "app_id": "Application ID",
+            "details": "Advanced Application Details",
+            "on_completion": "On Completion",
+            "args_count": "Arguments",
+            "accounts": "Account References",
+            "foreign_apps": "Foreign Apps",
+            "foreign_assets": "Foreign Assets",
+            "boxes": "Box References",
+            "inner_transactions_one": "{{count}} Inner Transaction",
+            "inner_transactions_other": "{{count}} Inner Transactions"
+        },
+        "group": {
+            "single_group_title": "Transaction Group",
+            "multiple_groups_title": "Multiple Transaction Groups",
+            "transactions_count": "{{count}} Transaction(s)"
         }
     },
     "tabbar": {

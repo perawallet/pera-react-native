@@ -15,20 +15,28 @@ import { PWSkeleton } from '@components/core/PWSkeleton'
 import { PWView } from '@components/core/PWView'
 import { useTheme } from '@rneui/themed'
 import { useStyles } from './styles'
+import { PropsWithChildren } from 'react'
 
 export type LoadingViewProps = {
     variant: 'circle' | 'skeleton'
     size?: 'sm' | 'lg'
     count?: number
-}
+    isLoading?: boolean
+} & PropsWithChildren
 
 export const LoadingView = ({
     variant,
     size = 'sm',
     count = 1,
+    isLoading = true,
+    children,
 }: LoadingViewProps) => {
     const { theme } = useTheme()
     const styles = useStyles()
+
+    if (!isLoading) {
+        return children
+    }
 
     if (variant === 'circle') {
         return (
