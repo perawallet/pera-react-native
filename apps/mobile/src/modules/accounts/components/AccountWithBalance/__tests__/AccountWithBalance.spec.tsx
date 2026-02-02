@@ -68,6 +68,16 @@ describe('AccountWithBalance', () => {
         expect(container.textContent).toContain('Test Account')
     })
 
+    it('renders with selection state when isSelected is true', () => {
+        const { container } = render(
+            <AccountWithBalance
+                account={mockAccount}
+                isSelected={true}
+            />,
+        )
+        expect(container).toBeTruthy()
+    })
+
     it('applies custom styles when passed via props', () => {
         const { container } = render(
             <AccountWithBalance

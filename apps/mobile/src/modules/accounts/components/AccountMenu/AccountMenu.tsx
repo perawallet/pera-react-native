@@ -62,14 +62,12 @@ export const AccountMenu = (props: AccountMenuProps) => {
                 {accounts.map(acct => (
                     <PWTouchableOpacity
                         key={acct.address}
-                        style={
-                            acct.address === selectedAccountAddress
-                                ? styles.activeItem
-                                : styles.passiveItem
-                        }
                         onPress={() => handleTap(acct)}
                     >
-                        <AccountWithBalance account={acct} />
+                        <AccountWithBalance
+                            account={acct}
+                            isSelected={acct.address === selectedAccountAddress}
+                        />
                     </PWTouchableOpacity>
                 ))}
             </PWView>

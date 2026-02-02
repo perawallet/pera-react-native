@@ -18,33 +18,9 @@ export const useStyles = makeStyles(theme => {
             paddingHorizontal: theme.spacing.lg,
             paddingTop: theme.spacing.md,
         },
-        activeLabel: {
-            color: theme.colors.textMain,
-            fontWeight: '600',
-        },
-        passiveLabel: {
-            color: theme.colors.textMain,
-        },
         accountContainer: {
             paddingHorizontal: theme.spacing.lg,
             gap: theme.spacing.md,
-        },
-        activeItem: {
-            flexDirection: 'row',
-            gap: theme.spacing.md,
-            backgroundColor: theme.colors.layerGrayLightest,
-            borderRadius: theme.spacing.xs,
-            paddingVertical: theme.spacing.md,
-            paddingHorizontal: theme.spacing.sm,
-            alignItems: 'center',
-        },
-        passiveItem: {
-            flexDirection: 'row',
-            gap: theme.spacing.md,
-            borderRadius: theme.spacing.xs,
-            paddingVertical: theme.spacing.md,
-            paddingHorizontal: theme.spacing.sm,
-            alignItems: 'center',
         },
         container: {
             padding: 0,

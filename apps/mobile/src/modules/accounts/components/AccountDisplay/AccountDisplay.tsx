@@ -53,6 +53,7 @@ export const AccountDisplay = ({
             {!!account && (
                 <AccountIcon
                     account={account}
+                    size='xl'
                     color={theme.colors.textMain}
                     {...iconProps}
                 />
