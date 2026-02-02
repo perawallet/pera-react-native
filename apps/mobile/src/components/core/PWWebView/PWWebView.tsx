@@ -32,18 +32,18 @@ import {
 } from './injected-scripts'
 import { useToast } from '@hooks/useToast'
 import { useStyles } from './styles'
-import { PWView } from '@components/core/PWView'
+import { PWView } from '../PWView'
 import { usePeraWebviewInterface } from '@hooks/usePeraWebviewInterface'
 import { EmptyView } from '@components/EmptyView'
-import { PWButton } from '@components/core/PWButton'
+import { PWButton } from '../PWButton'
 import { LoadingView } from '@components/LoadingView'
 import { logger } from '@perawallet/wallet-core-shared'
 import { WebViewTitleBar } from './WebViewTitleBar'
 import { WebViewFooterBar } from './WebViewFooterBar'
-import { useWebViewStore } from '@modules/webview'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
-import { bottomSheetNotifier } from '@components/core/PWBottomSheet'
+import { bottomSheetNotifier } from '../PWBottomSheet'
+import { useWebViewStore } from '@modules/webview'
 
 export type PWWebViewProps = {
     url: string
@@ -70,8 +70,8 @@ export const PWWebView = (props: PWWebViewProps) => {
         onBack,
         ...rest
     } = props
-    const removeWebView = useWebViewStore(state => state.removeWebView)
     const { theme } = useTheme()
+    const removeWebView = useWebViewStore(state => state.removeWebView)
     const webview = useRef<WebView>(null)
     const { showToast } = useToast()
     const [title, setTitle] = useState('')
@@ -100,7 +100,7 @@ export const PWWebView = (props: PWWebViewProps) => {
             return
         }
         removeWebView(requestId)
-    }, [removeWebView, requestId])
+    }, [onClose, requestId, removeWebView])
 
     const mobileInterface = usePeraWebviewInterface(
         webview.current,
@@ -260,7 +260,6 @@ export const PWWebView = (props: PWWebViewProps) => {
                 forceDarkOn={isDarkMode}
                 onLoadStart={verifyLoad}
                 onLoad={loadCompleted}
-                onLoadSubResourceError={showLoadError}
                 onError={showLoadError}
                 onHttpError={showError}
                 dataDetectorTypes={[]}

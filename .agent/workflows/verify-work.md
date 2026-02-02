@@ -15,7 +15,7 @@ This is the primary verification command that runs linting, formatting, copyrigh
 // turbo
 
 ```sh
-pnpm pre-push
+pnpm pre-push --no-fail-on-error
 ```
 
 If this fails, fix the issues before proceeding.

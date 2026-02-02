@@ -13,7 +13,9 @@
 import React from 'react'
 import { ActivityIndicator } from 'react-native'
 import { useTheme } from '@rneui/themed'
-import { PWOverlay, PWText } from '@components/core'
+import { PWOverlay } from '../PWOverlay'
+import { PWText } from '../PWText'
+
 import { useStyles } from './styles'
 
 export type PWLoadingOverlayProps = {

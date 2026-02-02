@@ -12,7 +12,9 @@
 
 module.exports = function (api) {
   api.cache(true);
-  const presets = ['module:@react-native/babel-preset']
+  // Use Expo's babel preset which wraps @react-native/babel-preset
+  // with additional Expo-specific transformations
+  const presets = ['babel-preset-expo']
   const plugins = [
     [
       'module-resolver',

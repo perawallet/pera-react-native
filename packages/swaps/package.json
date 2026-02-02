@@ -21,6 +21,7 @@
     "@perawallet/wallet-core-platform-integration": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "react": "catalog:",
+    "react-dom": "catalog:",
     "zustand": "catalog:",
     "@tanstack/react-query": "catalog:",
     "reflect-metadata": "catalog:"

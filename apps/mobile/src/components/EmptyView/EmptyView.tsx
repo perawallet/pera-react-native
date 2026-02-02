@@ -10,7 +10,9 @@
  limitations under the License
  */
 
-import { IconName, PWIcon, PWText, PWView, PWViewProps } from '@components/core'
+import { PWIcon, IconName } from '@components/core/PWIcon'
+import { PWText } from '@components/core/PWText'
+import { PWView, PWViewProps } from '@components/core/PWView'
 import { useStyles } from './styles'
 
 export type EmptyViewProps = {

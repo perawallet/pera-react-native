@@ -10,19 +10,17 @@
  limitations under the License
  */
 
-import {
-    registerPlatformServices,
-    type PlatformServices,
-    KeyValueStorageService,
-    SecureStorageService,
-    BiometricsService,
-    RemoteConfigService,
-    PushNotificationService,
-    CrashReportingService,
-    DeviceInfoService,
-    DevicePlatforms,
-    AnalyticsService,
-} from '../index'
+import { registerPlatformServices } from '../platform'
+import type { PlatformServices } from '../models'
+import type { AnalyticsService } from '../analytics'
+import type { KeyValueStorageService, SecureStorageService } from '../storage'
+import type { BiometricsService } from '../biometrics'
+import type { RemoteConfigService } from '../remote-config'
+import type { PushNotificationService } from '../push-notifications'
+import type { CrashReportingService } from '../reporting'
+import type { DeviceInfoService } from '../device'
+import { DevicePlatforms } from '../device'
+
 import { MemoryKeyValueStorage } from './storage'
 
 type Overrides = Partial<{

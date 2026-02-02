@@ -15,8 +15,8 @@ A concise guide to structure, setup, and daily commands.
 pnpm install
 # Set up Git hooks (pre-commit and pre-push)
 pnpm run setup
-# First time iOS only
-(cd apps/mobile/ios && bundle install && bundle exec pod install)
+# First time setup or to regenerate native projects
+pnpm --filter mobile expo:prebuild
 ```
 
 > **Note:** The `pnpm run setup` command installs Git hooks that automatically run linting, formatting, copyright checks before commits, and tests before pushes.
@@ -29,28 +29,38 @@ pnpm build
 
 This will build all packages in the monorepo and write out any generated configuration.
 
-## Run the mobile app
+### 1. Start Metro
 
 In one terminal start Metro:
 
 ```sh
-pnpm --filter mobile start
+pnpm mobile:start
 ```
+
+### 2. Run on device / simulator
 
 In another terminal run a platform target:
 
 ```sh
 # iOS
-pnpm --filter mobile ios
+pnpm ios
 
 # Android
-pnpm --filter mobile android
+pnpm android
 ```
 
 Tip: you can also run these from the app folder:
 
 ```sh
 pnpm -C apps/mobile start|ios|android
+```
+
+### Clean Rebuilds
+
+If you need to regenerate native projects from scratch:
+
+```sh
+pnpm -C apps/mobile expo:prebuild:clean
 ```
 
 ## Building packages

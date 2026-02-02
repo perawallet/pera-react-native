@@ -25,6 +25,7 @@
     "@tanstack/react-query": "catalog:",
     "decimal.js": "catalog:",
     "react": "catalog:",
+    "react-dom": "catalog:",
     "zustand": "catalog:"
   },
   "devDependencies": {

@@ -11,18 +11,24 @@
  */
 
 import { useState, useCallback, useMemo, useEffect } from 'react'
-import { Keyboard, Platform } from 'react-native'
+import { Keyboard, Platform, Linking } from 'react-native'
+import * as Clipboard from 'expo-clipboard'
+
 import { RouteProp, useRoute } from '@react-navigation/native'
 import { OnboardingStackParamList } from '../../routes/types'
 import {
     useImportAccount,
     ImportAccountType,
 } from '@perawallet/wallet-core-accounts'
+import { RECOVERY_PASSPHRASE_SUPPORT_URL } from '@perawallet/wallet-core-config'
 
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
+import { useModalState } from '@hooks/useModalState'
+import { useDeepLink } from '@hooks/useDeepLink'
+import { DeeplinkType } from '@hooks/deeplink/types'
 
 const MNEMONIC_LENGTH_MAP: Record<ImportAccountType, number> = {
     hdWallet: 24,
@@ -41,6 +47,15 @@ export type UseImportAccountScreenResult = {
     t: (key: string) => string
     isKeyboardVisible: boolean
     keyboardHeight: number
+    isSupportOptionsVisible: boolean
+    handleOpenSupportOptions: () => void
+    handleCloseSupportOptions: () => void
+    handlePastePassphrase: () => void
+    handleScanQRCode: () => void
+    handleLearnMore: () => void
+    isQRScannerVisible: boolean
+    handleCloseQRScanner: () => void
+    handleQRScannerSuccess: (url: string) => void
 }
 
 export function useImportAccountScreen(): UseImportAccountScreenResult {
@@ -51,6 +66,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     const importAccount = useImportAccount()
     const { showToast } = useToast()
     const { t } = useLanguage()
+    const { parseDeeplink } = useDeepLink()
 
     const [isKeyboardVisible, setIsKeyboardVisible] = useState(false)
     const [keyboardHeight, setKeyboardHeight] = useState(0)
@@ -83,6 +99,16 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     )
     const [focused, setFocused] = useState(0)
     const [processing, setProcessing] = useState(false)
+    const {
+        isOpen: isSupportOptionsVisible,
+        open: openSupportOptions,
+        close: handleCloseSupportOptions,
+    } = useModalState()
+    const {
+        isOpen: isQRScannerVisible,
+        open: openQRScanner,
+        close: handleCloseQRScanner,
+    } = useModalState()
 
     const canImport = useMemo(() => words.every(w => w.length > 0), [words])
 
@@ -173,6 +199,49 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         })
     }, [importAccount, words, accountType, navigation, showToast, t])
 
+    const handleOpenSupportOptions = useCallback(() => {
+        openSupportOptions()
+    }, [openSupportOptions])
+
+    const handlePastePassphrase = useCallback(async () => {
+        const content = await Clipboard.getStringAsync()
+
+        if (content) {
+            updateWord(content, 0)
+        }
+        handleCloseSupportOptions()
+    }, [updateWord, handleCloseSupportOptions])
+
+    const handleScanQRCode = useCallback(() => {
+        openQRScanner()
+        handleCloseSupportOptions()
+    }, [openQRScanner, handleCloseSupportOptions])
+
+    const handleQRScannerSuccess = useCallback(
+        (url: string) => {
+            handleCloseQRScanner()
+
+            const parsedDeeplink = parseDeeplink(url)
+
+            if (parsedDeeplink?.type === DeeplinkType.RECOVER_ADDRESS) {
+                updateWord(parsedDeeplink.mnemonic, 0)
+                return
+            }
+
+            showToast({
+                title: t('onboarding.import_account.invalid_mnemonic_title'),
+                body: t('onboarding.import_account.invalid_mnemonic_body'),
+                type: 'error',
+            })
+        },
+        [handleCloseQRScanner, parseDeeplink, showToast, t, updateWord],
+    )
+
+    const handleLearnMore = useCallback(() => {
+        Linking.openURL(RECOVERY_PASSPHRASE_SUPPORT_URL)
+        handleCloseSupportOptions()
+    }, [handleCloseSupportOptions])
+
     return {
         words,
         focused,
@@ -185,5 +254,14 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         t,
         isKeyboardVisible,
         keyboardHeight,
+        isSupportOptionsVisible,
+        handleOpenSupportOptions,
+        handleCloseSupportOptions,
+        handlePastePassphrase,
+        handleScanQRCode,
+        handleLearnMore,
+        isQRScannerVisible,
+        handleCloseQRScanner,
+        handleQRScannerSuccess,
     }
 }

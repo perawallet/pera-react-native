@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { PWText, PWTouchableOpacity, PWView } from '@components/core'
+import { PWText } from '../PWText'
+import { PWTouchableOpacity } from '../PWTouchableOpacity'
+import { PWView } from '../PWView'
+
 import { useStyles } from './styles'
 
 export type PWRadioButtonProps = {

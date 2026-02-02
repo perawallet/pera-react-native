@@ -5,10 +5,12 @@ The React Native application for Pera Wallet.
 ## Quick Start
 
 ```sh
-# From root directory
+# From apps/mobile directory
 pnpm install
+# Generate native folders (first time or after clean)
+pnpm expo:prebuild
+# Start dev server
 pnpm start
-
 # Run on device/simulator
 pnpm ios      # or: pnpm android
 ```
@@ -40,10 +42,16 @@ pnpm test -- --watch        # Watch mode
 
 ## Troubleshooting
 
-### CocoaPods Issues
+### Native Project Issues (iOS/Android)
+
+If you're having issues with native code or dependencies:
 
 ```sh
-cd ios && bundle exec pod install --clean-install
+# Regenerate native folders
+pnpm expo:prebuild
+
+# For a completely fresh start
+pnpm expo:prebuild:clean
 ```
 
 ### Metro Issues

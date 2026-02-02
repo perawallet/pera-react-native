@@ -22,6 +22,7 @@
     "@perawallet/wallet-core-platform-integration": "workspace:*",
     "decimal.js": "catalog:",
     "react": "catalog:",
+    "react-dom": "catalog:",
     "zustand": "catalog:",
     "@tanstack/react-query": "catalog:"
   },

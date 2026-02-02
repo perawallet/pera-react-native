@@ -26,6 +26,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { KeyboardAvoidingView, ScrollView } from 'react-native'
 import { useImportAccountScreen } from './useImportAccountScreen'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { ImportAccountSupportOptionsBottomSheet } from './ImportAccountSupportOptionsBottomSheet'
+import { QRScannerView } from '@components/QRScannerView'
 
 export const ImportAccountScreen = () => {
     const { theme } = useTheme()
@@ -43,6 +45,15 @@ export const ImportAccountScreen = () => {
         t,
         isKeyboardVisible,
         keyboardHeight,
+        isSupportOptionsVisible,
+        handleOpenSupportOptions,
+        handleCloseSupportOptions,
+        handlePastePassphrase,
+        handleScanQRCode,
+        handleLearnMore,
+        isQRScannerVisible,
+        handleCloseQRScanner,
+        handleQRScannerSuccess,
     } = useImportAccountScreen()
     const styles = useStyles({ insets, isKeyboardVisible, keyboardHeight })
 
@@ -56,6 +67,12 @@ export const ImportAccountScreen = () => {
                         <PWIcon
                             name='chevron-left'
                             onPress={navigation.goBack}
+                        />
+                    }
+                    right={
+                        <PWIcon
+                            name='ellipsis'
+                            onPress={handleOpenSupportOptions}
                         />
                     }
                 />
@@ -163,6 +180,21 @@ export const ImportAccountScreen = () => {
             <PWLoadingOverlay
                 isVisible={processing}
                 title={t('onboarding.import_account.importing')}
+            />
+
+            <ImportAccountSupportOptionsBottomSheet
+                isVisible={isSupportOptionsVisible}
+                onClose={handleCloseSupportOptions}
+                onPastePassphrase={handlePastePassphrase}
+                onScanQRCode={handleScanQRCode}
+                onLearnMore={handleLearnMore}
+            />
+
+            <QRScannerView
+                isVisible={isQRScannerVisible}
+                onClose={handleCloseQRScanner}
+                onSuccess={handleQRScannerSuccess}
+                animationType='slide'
             />
         </PWView>
     )
