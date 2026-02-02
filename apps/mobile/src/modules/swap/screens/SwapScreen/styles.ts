@@ -14,9 +14,7 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
     return {
-        drawer: {
-            width: '90%',
-        },
+
         container: {
             paddingHorizontal: 0,
             flex: 1,

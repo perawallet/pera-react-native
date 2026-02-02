@@ -36,16 +36,9 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     }
 })
 
-vi.mock('react-native-drawer-layout', () => {
-    return {
-        Drawer: ({ children }: { children: ReactNode }) =>
-            children as unknown as ReactNode,
-    }
-})
-
 // Mock children to simplify test
-vi.mock('@modules/accounts/components/AccountMenu', () => ({
-    AccountMenu: 'AccountMenu',
+vi.mock('@modules/accounts/components/AccountMenuBottomSheet', () => ({
+    AccountMenuBottomSheet: 'AccountMenuBottomSheet',
 }))
 vi.mock('@modules/accounts/components/AccountOverview', () => ({
     AccountOverview: () => <span data-testid='AccountOverview' />,

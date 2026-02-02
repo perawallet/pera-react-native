@@ -18,8 +18,7 @@ import { useStyles } from './styles'
 import { useModalState } from '@hooks/useModalState'
 import { NotificationsIcon } from '@modules/notifications/components/NotificationsIcon'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
-import { AccountMenu } from '@modules/accounts/components/AccountMenu'
-import { Drawer } from 'react-native-drawer-layout'
+import { AccountMenuBottomSheet } from '@modules/accounts/components/AccountMenuBottomSheet'
 import { QRScannerView } from '@components/QRScannerView'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
@@ -37,15 +36,13 @@ export const AccountScreen = () => {
     const styles = useStyles()
     const account = useSelectedAccount()
     const scannerState = useModalState()
-    const drawerState = useModalState()
+    const accountMenuState = useModalState()
     const { t } = useLanguage()
 
     const { shouldPlayConfetti, setShouldPlayConfetti } =
         useShouldPlayConfetti()
 
-    const toggleAccountSelectorVisible = () => {
-        drawerState.open()
-    }
+
 
     if (!account) {
         return (
@@ -57,20 +54,7 @@ export const AccountScreen = () => {
     }
 
     return (
-        <Drawer
-            open={drawerState.isOpen}
-            onOpen={() => drawerState.open()}
-            onClose={() => drawerState.close()}
-            drawerType='front'
-            swipeEnabled
-            drawerStyle={styles.drawer}
-            renderDrawerContent={() => (
-                <AccountMenu
-                    onSelected={() => drawerState.close()}
-                    showInbox
-                />
-            )}
-        >
+        <PWView style={styles.container}>
             <ConfettiAnimation
                 play={shouldPlayConfetti}
                 onFinish={() => setShouldPlayConfetti(false)}
@@ -80,7 +64,7 @@ export const AccountScreen = () => {
                 left={
                     // TODO we may want to add support for pending inbox items here too
                     // (like the current inbox since we're using the same screen real estate)
-                    <AccountSelection onPress={toggleAccountSelectorVisible} />
+                    <AccountSelection onPress={accountMenuState.open} />
                 }
                 right={
                     <PWView style={styles.iconBarSection}>
@@ -99,6 +83,12 @@ export const AccountScreen = () => {
                 animationType='slide'
             />
             <PromptContainer />
-        </Drawer>
+            <AccountMenuBottomSheet
+                isVisible={accountMenuState.isOpen}
+                onClose={accountMenuState.close}
+                onSelected={() => accountMenuState.close()}
+                showInbox
+            />
+        </PWView>
     )
 }

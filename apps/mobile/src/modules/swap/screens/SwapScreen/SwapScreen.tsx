@@ -18,9 +18,10 @@ import { SwapHistoryPanel } from '@modules/swap/components/SwapHistoryPanel/Swap
 import { TopPairsPanel } from '@modules/swap/components/TopPairsPanel/TopPairsPanel'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Drawer } from 'react-native-drawer-layout'
+import { AccountMenuBottomSheet } from '@modules/accounts/components/AccountMenuBottomSheet'
+import { useModalState } from '@hooks/useModalState'
 import { useState } from 'react'
-import { AccountMenu } from '@modules/accounts/components/AccountMenu'
+
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@hooks/usePeraWebviewInterface'
 import { config } from '@perawallet/wallet-core-config'
@@ -28,7 +29,7 @@ import { config } from '@perawallet/wallet-core-config'
 export const SwapScreen = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
-    const [drawerOpen, setDrawerOpen] = useState<boolean>(false)
+    const accountMenuState = useModalState()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
 
@@ -40,17 +41,7 @@ export const SwapScreen = () => {
     }
 
     return (
-        <Drawer
-            open={drawerOpen}
-            onOpen={() => setDrawerOpen(true)}
-            onClose={() => setDrawerOpen(false)}
-            drawerType='front'
-            swipeEnabled
-            drawerStyle={styles.drawer}
-            renderDrawerContent={() => (
-                <AccountMenu onSelected={() => setDrawerOpen(false)} />
-            )}
-        >
+        <PWView style={styles.container}>
             <PWView style={styles.headerContainer}>
                 <PWView style={styles.titleContainer}>
                     <Text
@@ -65,11 +56,16 @@ export const SwapScreen = () => {
                         onPress={openSwapSupport}
                     />
                 </PWView>
-                <AccountSelection onPress={() => setDrawerOpen(true)} />
+                <AccountSelection onPress={accountMenuState.open} />
             </PWView>
             <PairSelectionPanel />
             <SwapHistoryPanel />
             <TopPairsPanel />
-        </Drawer>
+            <AccountMenuBottomSheet
+                isVisible={accountMenuState.isOpen}
+                onClose={accountMenuState.close}
+                onSelected={() => accountMenuState.close()}
+            />
+        </PWView>
     )
 }
