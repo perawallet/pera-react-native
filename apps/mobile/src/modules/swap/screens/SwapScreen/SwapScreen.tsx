@@ -17,6 +17,9 @@ export const SwapScreen = () => {
     const { t } = useLanguage()
 
     return (
-        <EmptyView title={t('common.notimplemented.title')} body={t('common.notimplemented.body')} />
+        <EmptyView
+            title={t('common.notimplemented.title')}
+            body={t('common.notimplemented.body')}
+        />
     )
 }

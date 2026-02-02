@@ -23,7 +23,11 @@ export type AssetTitleProps = {
     nameVariant?: TypographyVariant
 }
 
-export const AssetTitle = ({ asset, showId = false, nameVariant = 'h4' }: AssetTitleProps) => {
+export const AssetTitle = ({
+    asset,
+    showId = false,
+    nameVariant = 'h4',
+}: AssetTitleProps) => {
     const styles = useStyles()
 
     const isAlgo = useMemo(
@@ -59,7 +63,8 @@ export const AssetTitle = ({ asset, showId = false, nameVariant = 'h4' }: AssetT
                             />
                         )}
                     {!isAlgo &&
-                        asset.peraMetadata?.verificationTier === 'suspicious' && (
+                        asset.peraMetadata?.verificationTier ===
+                            'suspicious' && (
                             <PWIcon
                                 name='assets/suspicious'
                                 size={'sm'}

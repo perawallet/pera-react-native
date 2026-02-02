@@ -64,7 +64,11 @@ export const AppCallDetailsPanel = ({
                         title={t('transactions.app_call.accounts')}
                     >
                         {appCall.accounts.map(account => (
-                            <AddressDisplay style={styles.detailText} key={'account-' + account.toString()} address={account.toString()} />
+                            <AddressDisplay
+                                style={styles.detailText}
+                                key={'account-' + account.toString()}
+                                address={account.toString()}
+                            />
                         ))}
                     </KeyValueRow>
                 )}

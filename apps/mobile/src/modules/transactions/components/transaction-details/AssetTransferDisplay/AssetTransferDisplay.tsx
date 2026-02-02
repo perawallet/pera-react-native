@@ -96,7 +96,18 @@ export const AssetTransferDisplay = ({
             <PWView style={styles.detailContainer}>
                 <KeyValueRow title={t('transactions.common.asset')}>
                     <PWView style={styles.detailRow}>
-                        {asset ? <AssetTitle asset={asset} nameVariant='body' showId /> : <LoadingView size='sm' variant='circle' />}
+                        {asset ? (
+                            <AssetTitle
+                                asset={asset}
+                                nameVariant='body'
+                                showId
+                            />
+                        ) : (
+                            <LoadingView
+                                size='sm'
+                                variant='circle'
+                            />
+                        )}
                     </PWView>
                 </KeyValueRow>
 
