@@ -38,8 +38,6 @@ export const AccountSelection = ({
         onSelected?.(selectedAccount)
     }
 
-    //TODO we may want to add support for pending inbox items here too
-    //(like the current inbox since we're using the same screen real estate)
     return (
         <>
             <TouchableOpacity
