@@ -11,6 +11,7 @@
  */
 
 import {
+    PWDivider,
     PWIcon,
     PWText,
     PWTouchableOpacity,
@@ -202,7 +203,7 @@ export const PortfolioView = (props: PortfolioViewProps) => {
                 )}
             </PWView>
 
-            <PWView style={styles.divider} />
+            <PWDivider style={styles.divider} />
 
             <PWTouchableOpacity
                 style={styles.chartToggle}
