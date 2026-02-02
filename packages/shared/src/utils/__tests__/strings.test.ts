@@ -38,26 +38,26 @@ describe('utils/strings - base64 encoding', () => {
 
 describe('utils/strings - formatCurrency', () => {
     test('formats USD in en-US with precision', () => {
-        expect(formatCurrency('0', 2, 'USD', 'en-US')).toBe('$0.00')
-        expect(formatCurrency('1', 2, 'USD', 'en-US')).toBe('$1.00')
-        expect(formatCurrency('1000', 2, 'USD', 'en-US')).toBe('$1,000.00')
+        expect(formatCurrency('0', 2, 'USD', 'en-US')).toBe('$ 0.00')
+        expect(formatCurrency('1', 2, 'USD', 'en-US')).toBe('$ 1.00')
+        expect(formatCurrency('1000', 2, 'USD', 'en-US')).toBe('$ 1,000.00')
         expect(formatCurrency('123456789', 2, 'USD', 'en-US')).toBe(
-            '$123,456,789.00',
+            '$ 123,456,789.00',
         )
-        expect(formatCurrency('1e3', 2, 'USD', 'en-US')).toBe('$1,000.00')
+        expect(formatCurrency('1e3', 2, 'USD', 'en-US')).toBe('$ 1,000.00')
     })
 
     test('supports precision 0 (no decimals)', () => {
-        expect(formatCurrency('1', 0, 'USD', 'en-US')).toBe('$1')
-        expect(formatCurrency('1000', 0, 'USD', 'en-US')).toBe('$1,000')
+        expect(formatCurrency('1', 0, 'USD', 'en-US')).toBe('$ 1')
+        expect(formatCurrency('1000', 0, 'USD', 'en-US')).toBe('$ 1,000')
     })
 
     test('formats negative amounts', () => {
-        expect(formatCurrency('-12345', 2, 'USD', 'en-US')).toBe('-$12,345.00')
+        expect(formatCurrency('-12345', 2, 'USD', 'en-US')).toBe('-$ 12,345.00')
     })
 
     test('uses locale placement/symbol for GBP in en-GB', () => {
-        expect(formatCurrency('12345', 2, 'GBP', 'en-GB')).toBe('£12,345.00')
+        expect(formatCurrency('12345', 2, 'GBP', 'en-GB')).toBe('£ 12,345.00')
     })
 
     test('throws for non-integer numeric strings (BigInt constraint)', () => {
@@ -66,18 +66,18 @@ describe('utils/strings - formatCurrency', () => {
         ).toThrow()
     })
 
-    describe('crypto symbol replacement (BTC, ETH, ALGO)', () => {
-        test('BTC symbol (₿) with grouping and precision', () => {
+    describe('crypto currency formatting (BTC, ETH, ALGO)', () => {
+        test('BTC uses currency code with grouping and precision', () => {
             const out = formatCurrency('1234', 2, 'BTC', 'en-US')
-            expect(out).toBe('₿1,234.00')
+            expect(out).toBe('BTC 1,234.00')
         })
 
-        test('ETH symbol (Ξ) with custom precision', () => {
+        test('ETH uses currency code with custom precision', () => {
             const out = formatCurrency('1234', 4, 'ETH', 'en-US')
-            expect(out).toBe('Ξ1,234.0000')
+            expect(out).toBe('ETH 1,234.0000')
         })
 
-        test('ALGO symbol (Ⱥ) with higher precision', () => {
+        test('ALGO shows no symbol with higher precision', () => {
             const out = formatCurrency('1234', 6, 'ALGO', 'en-US')
             expect(out).toBe('1,234.000000')
         })
@@ -85,50 +85,50 @@ describe('utils/strings - formatCurrency', () => {
 
     test('formats with K units', () => {
         expect(formatCurrency('1000', 2, 'USD', 'en-US', true, true)).toBe(
-            '$1.00K',
+            '$ 1.00K',
         )
         expect(formatCurrency('5000', 2, 'USD', 'en-US', true, true)).toBe(
-            '$5.00K',
+            '$ 5.00K',
         )
         expect(formatCurrency('12345', 2, 'USD', 'en-US', true, true)).toBe(
-            '$12.35K',
+            '$ 12.35K',
         )
     })
 
     test('formats with M units', () => {
         expect(formatCurrency('1000000', 2, 'USD', 'en-US', true, true)).toBe(
-            '$1.00M',
+            '$ 1.00M',
         )
         expect(formatCurrency('5000000', 2, 'USD', 'en-US', true, true)).toBe(
-            '$5.00M',
+            '$ 5.00M',
         )
         expect(formatCurrency('12345678', 2, 'USD', 'en-US', true, true)).toBe(
-            '$12.35M',
+            '$ 12.35M',
         )
     })
 
     test('formats with B units', () => {
         expect(
             formatCurrency('1000000000', 2, 'USD', 'en-US', true, true),
-        ).toBe('$1.00B')
+        ).toBe('$ 1.00B')
         expect(
             formatCurrency('5000000000', 2, 'USD', 'en-US', true, true),
-        ).toBe('$5.00B')
+        ).toBe('$ 5.00B')
         expect(
             formatCurrency('12345678900', 2, 'USD', 'en-US', true, true),
-        ).toBe('$12.35B')
+        ).toBe('$ 12.35B')
     })
 
     test('formats with T units', () => {
         expect(
             formatCurrency('1000000000000', 2, 'USD', 'en-US', true, true),
-        ).toBe('$1.00T')
+        ).toBe('$ 1.00T')
         expect(
             formatCurrency('5000000000000', 2, 'USD', 'en-US', true, true),
-        ).toBe('$5.00T')
+        ).toBe('$ 5.00T')
         expect(
             formatCurrency('12345678900000', 2, 'USD', 'en-US', true, true),
-        ).toBe('$12.35T')
+        ).toBe('$ 12.35T')
     })
 
     test('formats without symbol when showSymbol is false', () => {
@@ -142,10 +142,10 @@ describe('utils/strings - formatCurrency', () => {
 
     test('uses minPrecision to preserve trailing zeros', () => {
         expect(formatCurrency('1.5', 6, 'USD', 'en-US', true, false, 2)).toBe(
-            '$1.50',
+            '$ 1.50',
         )
         expect(formatCurrency('1.1', 6, 'USD', 'en-US', true, false, 4)).toBe(
-            '$1.1000',
+            '$ 1.1000',
         )
     })
 
@@ -153,10 +153,10 @@ describe('utils/strings - formatCurrency', () => {
         // When minPrecision is set, trailing zeros are truncated down to minPrecision
         expect(
             formatCurrency('1.50000', 6, 'USD', 'en-US', true, false, 0),
-        ).toBe('$1.5')
+        ).toBe('$ 1.5')
         expect(
             formatCurrency('1.10000', 6, 'USD', 'en-US', true, false, 0),
-        ).toBe('$1.1')
+        ).toBe('$ 1.1')
     })
 })
 
