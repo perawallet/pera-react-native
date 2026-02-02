@@ -82,7 +82,9 @@ export type BlockchainStore = BaseStoreState & {
 
 export { Address } from '@algorandfoundation/algokit-utils'
 
-export type PeraDisplayableTransaction = IndexerTransaction
+export type PeraDisplayableTransaction = IndexerTransaction & {
+    roundTimeMillis?: number
+}
 
 export type PeraTransaction = Transaction
 

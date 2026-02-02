@@ -666,27 +666,7 @@
         "group": {
             "single_group_title": "Transaction Group",
             "multiple_groups_title": "Multiple Transaction Groups",
-            "transactions_count_one": "{{count}} Transaction",
-            "transactions_count_other": "{{count}} Transactions",
-            "groups_count_one": "{{count}} Group",
-            "groups_count_other": "{{count}} Groups",
-            "group_number": "Group #{{number}}"
-        }
-    },
-    "swaps": {
-        "pair_selection": {
-            "you_pay": "You pay",
-            "balance": "Balance:",
-            "max": "MAX",
-            "you_receive": "You receive"
-        },
-        "history": {
-            "title": "Swap History",
-            "see_all": "See all"
-        },
-        "top_pairs": {
-            "title": "Top 5 Swaps",
-            "volume": "Volume (24H)"
+            "transactions_count": "{{count}} Transaction(s)"
         }
     },
     "tabbar": {

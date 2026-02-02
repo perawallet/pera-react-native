@@ -34,10 +34,10 @@ export const TransactionHeader = ({
     const styles = useStyles()
     const blockTime = useMemo(
         () =>
-            transaction.roundTime
-                ? new Date(transaction.roundTime * 1000)
+            transaction.roundTimeMillis
+                ? new Date(transaction.roundTimeMillis)
                 : undefined,
-        [transaction.roundTime],
+        [transaction.roundTimeMillis],
     )
 
     return (

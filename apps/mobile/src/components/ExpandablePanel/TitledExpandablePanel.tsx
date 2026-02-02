@@ -74,7 +74,7 @@ export const TitledExpandablePanel = ({
             </PWTouchableOpacity>
             <ExpandablePanel
                 isExpanded={expanded}
-                containerStyle={[contentStyle, styles.collapsableContainer]}
+                containerStyle={[styles.collapsableContainer, contentStyle]}
             >
                 {children}
             </ExpandablePanel>

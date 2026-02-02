@@ -21,7 +21,7 @@ export const useStyles = makeStyles((theme, resolvedSize: number) => {
             height: resolvedSize,
             overflow: 'hidden',
             borderRadius: resolvedSize / 2,
-            borderWidth: 1,
+            borderWidth: theme.borders.sm,
             borderColor: 'transparent',
         },
         imageIcon: {

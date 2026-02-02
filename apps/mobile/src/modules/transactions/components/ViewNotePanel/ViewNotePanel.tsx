@@ -37,8 +37,8 @@ export const ViewNotePanel = ({
 
     return (
         <PWBottomSheet
-            isVisible={isVisible}
             {...rest}
+            isVisible={isVisible}
         >
             <PWView style={styles.container}>
                 <PWToolbar
