@@ -17,7 +17,19 @@ export const useStyles = makeStyles(theme => {
         container: {
             flex: 1,
             minHeight: 500,
+        },
+        contentContainer: {
+            flex: 1,
             padding: theme.spacing.xl,
+        },
+        slideContainer: {
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            padding: theme.spacing.xl,
+            backgroundColor: theme.colors.background,
         },
         title: {
             padding: theme.spacing.lg,
@@ -46,6 +58,7 @@ export const useStyles = makeStyles(theme => {
             borderTopWidth: theme.borders.sm,
             borderTopColor: theme.colors.layerGrayLightest,
             paddingVertical: theme.spacing.sm,
+            paddingHorizontal: theme.spacing.xl,
         },
         button: {
             flexGrow: 1,
@@ -62,6 +75,9 @@ export const useStyles = makeStyles(theme => {
         },
         feeLabel: {
             color: theme.colors.textGray,
+        },
+        feeValue: {
+            color: theme.colors.helperNegative,
         },
         feeAmount: {
             color: theme.colors.helperNegative,
@@ -86,6 +102,89 @@ export const useStyles = makeStyles(theme => {
         },
         transactionListItem: {
             width: '100%',
+        },
+
+        // Single transaction summary styles
+        summaryContainer: {
+            flex: 1,
+            gap: theme.spacing.md,
+        },
+        summaryHeader: {
+            alignItems: 'center',
+            gap: theme.spacing.md,
+            paddingVertical: theme.spacing.xl,
+        },
+        viewDetailsRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingVertical: theme.spacing.md,
+        },
+        viewDetailsLabel: {
+            color: theme.colors.linkPrimary,
+        },
+        feeRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingVertical: theme.spacing.md,
+        },
+
+        // Group styles
+        groupContainer: {
+            flex: 1,
+            gap: theme.spacing.md,
+        },
+        groupHeader: {
+            alignItems: 'center',
+            gap: theme.spacing.md,
+            paddingVertical: theme.spacing.xl,
+        },
+        groupIdText: {
+            color: theme.colors.textGray,
+        },
+        transactionList: {
+            gap: theme.spacing.sm,
+        },
+        transactionListHeaderText: {
+            color: theme.colors.textGray,
+            marginBottom: theme.spacing.sm,
+        },
+        groupList: {
+            gap: theme.spacing.sm,
+        },
+
+        // Group preview styles
+        groupPreviewContainer: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: theme.colors.layerGrayLightest,
+            borderRadius: theme.spacing.lg,
+            padding: theme.spacing.md,
+            gap: theme.spacing.md,
+        },
+        groupPreviewContent: {
+            flex: 1,
+        },
+        groupPreviewTitle: {
+            fontWeight: '600',
+        },
+        groupPreviewSubtitle: {
+            color: theme.colors.textGray,
+        },
+
+        // Transaction details view styles
+        detailsViewContainer: {
+            flex: 1,
+        },
+        backButtonRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.xs,
+            paddingVertical: theme.spacing.md,
+        },
+        backButtonText: {
+            color: theme.colors.linkPrimary,
         },
     }
 })

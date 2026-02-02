@@ -11,8 +11,14 @@
  */
 
 import { EmptyView } from '@components/EmptyView'
-import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
-import { PWButton, PWText, PWView, bottomSheetNotifier } from '@components/core'
+import {
+    PWButton,
+    PWIcon,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+    bottomSheetNotifier,
+} from '@components/core'
 import {
     type TransactionSignRequest,
     useAlgorandClient,
@@ -21,122 +27,19 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { ScrollView } from 'react-native-gesture-handler'
 import { useStyles } from './styles'
-import { BalanceImpactView } from '../BalanceImpactView/BalanceImpactView'
-import { TransactionDisplay } from '../../TransactionDisplay'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useTransactionSigner } from '@perawallet/wallet-core-accounts'
 import { config } from '@perawallet/wallet-core-config'
-import { useSingleTransactionView } from './useSingleTransactionView'
-import { useGroupTransactionView } from './useGroupTransactionView'
+import { useSigningNavigation } from './useSigningNavigation'
+import { SingleTransactionSummaryView } from './SingleTransactionSummaryView'
+import { GroupTransactionListView } from './GroupTransactionListView'
+import { MultiGroupListView } from './MultiGroupListView'
+import { TransactionDetailsView } from './TransactionDetailsView'
+import { SlideView } from './SlideView'
 
 export type TransactionSigningViewProps = {
     request: TransactionSignRequest
-}
-
-const SingleTransactionView = ({ request }: TransactionSigningViewProps) => {
-    const styles = useStyles()
-    const { t } = useLanguage()
-
-    const {
-        rootTx,
-        currentTx,
-        isViewingInnerTransaction,
-        handleNavigateToInner,
-        handleNavigateBack,
-    } = useSingleTransactionView({ request })
-
-    if (!rootTx || !currentTx) {
-        return (
-            <EmptyView
-                title={t('signing.transaction_view.invalid_title')}
-                body={t('signing.transaction_view.invalid_body')}
-            />
-        )
-    }
-
-    return (
-        <PWView style={styles.body}>
-            {isViewingInnerTransaction && (
-                <PWButton
-                    title={t('common.go_back.label')}
-                    variant='secondary'
-                    onPress={handleNavigateBack}
-                    style={styles.backButton}
-                />
-            )}
-            <TransactionDisplay
-                transaction={currentTx}
-                onInnerTransactionsPress={handleNavigateToInner}
-            />
-        </PWView>
-    )
-}
-
-const GroupTransactionView = ({ request }: TransactionSigningViewProps) => {
-    const styles = useStyles()
-    const { t } = useLanguage()
-
-    const {
-        isMultipleGroups,
-        allTransactions,
-        currentTx,
-        isViewingTransaction,
-        handleSelectTransaction,
-        handleNavigateToInner,
-        handleNavigateBack,
-    } = useGroupTransactionView({ request })
-
-    if (isViewingTransaction && currentTx) {
-        return (
-            <ScrollView contentContainerStyle={styles.body}>
-                <PWButton
-                    title={t('common.go_back.label')}
-                    variant='secondary'
-                    onPress={handleNavigateBack}
-                    style={styles.backButton}
-                />
-                <TransactionDisplay
-                    transaction={currentTx}
-                    onInnerTransactionsPress={handleNavigateToInner}
-                />
-            </ScrollView>
-        )
-    }
-
-    return (
-        <ScrollView contentContainerStyle={styles.body}>
-            <TransactionIcon
-                type='group'
-                size='lg'
-            />
-            <PWText variant='h4'>
-                {isMultipleGroups
-                    ? t('transactions.group.multiple_groups_title')
-                    : t('transactions.group.single_group_title')}
-            </PWText>
-
-            <PWView style={styles.transactionListContainer}>
-                <PWText style={styles.transactionListHeader}>
-                    {t('transactions.group.transactions_count', {
-                        count: allTransactions.length,
-                    })}
-                </PWText>
-
-                {allTransactions.map((tx, index) => (
-                    <PWButton
-                        key={`tx-${index}`}
-                        title={`${index + 1}. ${tx.txType}`}
-                        variant='secondary'
-                        onPress={() => handleSelectTransaction(index)}
-                        style={styles.transactionListItem}
-                    />
-                ))}
-            </PWView>
-
-            <BalanceImpactView />
-        </ScrollView>
-    )
 }
 
 export const TransactionSigningView = ({
@@ -149,7 +52,21 @@ export const TransactionSigningView = ({
     const algokit = useAlgorandClient()
     const { showToast } = useToast()
     const { t } = useLanguage()
-    const isMultipleTransactions = request.txs?.length > 1
+
+    const {
+        currentView,
+        rootViewType,
+        isSingleTransaction,
+        groups,
+        allTransactions,
+        totalFee,
+        navigateToDetails,
+        navigateToGroup,
+        navigateToTransaction,
+        navigateToInnerTransaction,
+        navigateBack,
+        canGoBack,
+    } = useSigningNavigation({ request })
 
     const signAndSend = async () => {
         try {
@@ -207,13 +124,133 @@ export const TransactionSigningView = ({
         removeSignRequest(request)
     }
 
+    const renderRootView = () => {
+        if (isSingleTransaction) {
+            const tx = groups[0]?.[0]
+            if (!tx) {
+                return (
+                    <EmptyView
+                        title={t('signing.transaction_view.invalid_title')}
+                        body={t('signing.transaction_view.invalid_body')}
+                    />
+                )
+            }
+            return (
+                <SingleTransactionSummaryView
+                    transaction={tx}
+                    fee={totalFee}
+                    onViewDetails={() => navigateToDetails(tx)}
+                />
+            )
+        }
+
+        if (rootViewType === 'group-list') {
+            return (
+                <GroupTransactionListView
+                    transactions={groups[0] ?? []}
+                    fee={totalFee}
+                    onTransactionPress={(_, index) =>
+                        navigateToTransaction(index, 0)
+                    }
+                />
+            )
+        }
+
+        return (
+            <MultiGroupListView
+                groups={groups}
+                fee={totalFee}
+                onGroupPress={navigateToGroup}
+            />
+        )
+    }
+
+    const renderSlideView = () => {
+        if (!canGoBack) return null
+
+        const { viewType, transaction, groupIndex } = currentView
+
+        if (viewType === 'single-details' && transaction) {
+            return (
+                <SlideView
+                    isVisible={true}
+                    style={styles.slideContainer}
+                >
+                    <ScrollView>
+                        <TransactionDetailsView
+                            transaction={transaction}
+                            onBack={navigateBack}
+                            onInnerTransactionPress={navigateToInnerTransaction}
+                        />
+                    </ScrollView>
+                </SlideView>
+            )
+        }
+
+        if (viewType === 'group-list' && groupIndex !== undefined) {
+            const groupTransactions = groups[groupIndex] ?? []
+            return (
+                <SlideView
+                    isVisible={true}
+                    style={styles.slideContainer}
+                >
+                    <ScrollView>
+                        <PWTouchableOpacity
+                            onPress={navigateBack}
+                            style={styles.backButtonRow}
+                        >
+                            <PWIcon
+                                name='chevron-left'
+                                size='sm'
+                            />
+                            <PWText style={styles.backButtonText}>
+                                {t('common.go_back.label')}
+                            </PWText>
+                        </PWTouchableOpacity>
+                        <GroupTransactionListView
+                            transactions={groupTransactions}
+                            fee={groupTransactions.reduce(
+                                (sum, tx) => sum + (tx.fee ?? 0n),
+                                0n,
+                            )}
+                            showFee={false}
+                            onTransactionPress={(_, index) =>
+                                navigateToTransaction(index, groupIndex)
+                            }
+                        />
+                    </ScrollView>
+                </SlideView>
+            )
+        }
+
+        if (viewType === 'transaction-details' && transaction) {
+            return (
+                <SlideView
+                    isVisible={true}
+                    style={styles.slideContainer}
+                >
+                    <ScrollView>
+                        <TransactionDetailsView
+                            transaction={transaction}
+                            onBack={navigateBack}
+                            onInnerTransactionPress={navigateToInnerTransaction}
+                        />
+                    </ScrollView>
+                </SlideView>
+            )
+        }
+
+        return null
+    }
+
     return (
         <PWView style={styles.container}>
-            {isMultipleTransactions ? (
-                <GroupTransactionView request={request} />
-            ) : (
-                <SingleTransactionView request={request} />
-            )}
+            <ScrollView contentContainerStyle={styles.contentContainer}>
+                {renderRootView()}
+            </ScrollView>
+
+            {renderSlideView()}
+
             <PWView style={styles.buttonContainer}>
                 <PWButton
                     title={t('common.cancel.label')}
@@ -223,7 +260,7 @@ export const TransactionSigningView = ({
                 />
                 <PWButton
                     title={
-                        isMultipleTransactions
+                        allTransactions.length > 1
                             ? t('common.confirm_all.label')
                             : t('common.confirm.label')
                     }

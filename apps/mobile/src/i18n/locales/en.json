@@ -537,6 +537,7 @@
         }
     },
     "signing": {
+        "view_details": "View Transaction Details",
         "arbitrary_data_view": {
             "title": "Request",
             "body": "Data Signing Request",
@@ -582,6 +583,7 @@
             "from": "From",
             "to": "To",
             "fee": "Fee",
+            "total_fee": "Total Fee",
             "round": "Round",
             "amount": "Amount",
             "asset": "Asset",
@@ -660,7 +662,11 @@
         "group": {
             "single_group_title": "Transaction Group",
             "multiple_groups_title": "Multiple Transaction Groups",
-            "transactions_count": "{{count}} Transaction(s)"
+            "transactions_count_one": "{{count}} Transaction",
+            "transactions_count_other": "{{count}} Transactions",
+            "groups_count_one": "{{count}} Group",
+            "groups_count_other": "{{count}} Groups",
+            "group_number": "Group #{{number}}"
         }
     },
     "swaps": {
