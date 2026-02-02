@@ -10,52 +10,16 @@
  limitations under the License
  */
 
-import { Text } from '@rneui/themed'
-import { PWIcon, PWView } from '@components/core'
-import { useStyles } from './styles'
-import { PairSelectionPanel } from '@modules/swap/components/PairSelectionPanel/PairSelectionPanel'
-import { SwapHistoryPanel } from '@modules/swap/components/SwapHistoryPanel/SwapHistoryPanel'
-import { TopPairsPanel } from '@modules/swap/components/TopPairsPanel/TopPairsPanel'
-import { AccountSelection } from '@modules/accounts/components/AccountSelection'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useLanguage } from '@hooks/useLanguage'
-import { useWebView } from '@hooks/usePeraWebviewInterface'
-import { config } from '@perawallet/wallet-core-config'
+import { EmptyView } from '@components/EmptyView'
 
 export const SwapScreen = () => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
     const { t } = useLanguage()
-    const { pushWebView } = useWebView()
-
-    const openSwapSupport = () => {
-        pushWebView({
-            url: config.swapSupportUrl,
-            id: 'swap-support',
-        })
-    }
 
     return (
-        <PWView style={styles.container}>
-            <PWView style={styles.headerContainer}>
-                <PWView style={styles.titleContainer}>
-                    <Text
-                        h3
-                        h3Style={styles.titleText}
-                    >
-                        {t('tabbar.swap')}
-                    </Text>
-                    <PWIcon
-                        name='info'
-                        style={styles.titleIcon}
-                        onPress={openSwapSupport}
-                    />
-                </PWView>
-                <AccountSelection />
-            </PWView>
-            <PairSelectionPanel />
-            <SwapHistoryPanel />
-            <TopPairsPanel />
-        </PWView>
+        <EmptyView
+            title={t('common.not_implemented.title')}
+            body={t('common.not_implemented.body')}
+        />
     )
 }

@@ -10,6 +10,18 @@ const EXCLUDED_KEYS = [
     'errors.walletconnect.sign_request_body',
     'errors.walletconnect.permission_body',
     'errors.walletconnect.invalid_session_body',
+    'transactions.common.completed',
+    'transactions.common.failed',
+    'transactions.common.pending',
+    'transactions.type.pay',
+    'transactions.type.keyreg',
+    'transactions.type.acfg',
+    'transactions.type.axfer',
+    'transactions.type.afrz',
+    'transactions.type.appl',
+    'transactions.type.stpf',
+    'transactions.type.hb',
+    'transactions.type.unknown',
 ];
 
 // Colors for console output
@@ -163,13 +175,42 @@ function main() {
     const srcFiles = getFiles(SRC_DIR, ['.ts', '.tsx']);
     const allCode = srcFiles.map(f => fs.readFileSync(f, 'utf8')).join('\n');
 
+    // i18next plural suffixes
+    const PLURAL_SUFFIXES = ['_one', '_other', '_zero', '_two', '_few', '_many'];
+
+    // Helper to get base key from plural key (e.g., 'foo_one' -> 'foo')
+    const getBaseKey = (key) => {
+        for (const suffix of PLURAL_SUFFIXES) {
+            if (key.endsWith(suffix)) {
+                return key.slice(0, -suffix.length);
+            }
+        }
+        return null;
+    };
+
+    // Helper to check if a key is a plural variant
+    const isPluralKey = (key) => PLURAL_SUFFIXES.some(suffix => key.endsWith(suffix));
+
     let unusedKeysCount = 0;
     baseKeys.forEach(key => {
-        // Basic check: looks for the key string in quotes. 
+        // Basic check: looks for the key string in quotes.
         // This isn't perfect (e.g. dynamic keys) but good for a "lint"
         // We try to match "key" or 'key' or `key`
         const regex = new RegExp(`['"\`]${key}['"\`]`, 'g');
-        if (!regex.test(allCode) && !errorKeys.has(key) && !EXCLUDED_KEYS.includes(key)) {
+
+        // For plural keys (e.g., 'foo_one', 'foo_other'), also check if the base key is used
+        // since i18next allows calling t('foo', {count: n}) which uses foo_one/foo_other
+        let isUsed = regex.test(allCode);
+
+        if (!isUsed && isPluralKey(key)) {
+            const baseKey = getBaseKey(key);
+            if (baseKey) {
+                const baseRegex = new RegExp(`['"\`]${baseKey}['"\`]`, 'g');
+                isUsed = baseRegex.test(allCode);
+            }
+        }
+
+        if (!isUsed && !errorKeys.has(key) && !EXCLUDED_KEYS.includes(key)) {
             // Also check if it's used as a translation call like t('key') or t("key") just in case
             // Actually the above quote check covers most simple usages.
             // Let's being conservative and just warn.
@@ -190,6 +231,11 @@ function main() {
     // We want to capture the content inside the quotes
     const tCallRegex = /\bt\s*\(\s*(['"`])([^]*?)\1\s*[,)]/g;
 
+    // Helper to check if plural variants exist for a key
+    const hasPluralVariants = (key) => {
+        return baseKeys.has(`${key}_one`) || baseKeys.has(`${key}_other`);
+    };
+
     srcFiles.forEach(file => {
         const content = fs.readFileSync(file, 'utf8');
         const relativePath = path.relative(process.cwd(), file);
@@ -201,7 +247,8 @@ function main() {
             if (key.includes('${')) {
                 continue;
             }
-            if (!baseKeys.has(key)) {
+            // Check if key exists directly, or if plural variants exist (for i18next pluralization)
+            if (!baseKeys.has(key) && !hasPluralVariants(key)) {
                 warn(`Missing key used in ${relativePath}: ${key}`);
                 missingKeysCount++;
             }

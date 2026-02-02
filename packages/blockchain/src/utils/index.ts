@@ -10,16 +10,21 @@
  limitations under the License
  */
 
-import { encodeAddress } from '@algorandfoundation/algokit-utils'
+import { TransactionType } from '@algorandfoundation/algokit-utils/transact'
 
-export const encodeAlgorandAddress = (bytes: Uint8Array): string => {
-    return encodeAddress(bytes)
-}
-
-export const isValidAlgorandAddress = (address?: string) => {
-    if (!address) {
-        return false
-    }
-    return new RegExp('^[0-9a-zA-Z]{58}$').test(address)
-}
 export * from './algorandClient'
+export * from './addresses'
+export * from './transactions'
+
+export const microAlgosToAlgos = (microAlgos: bigint): number => {
+    return Number(microAlgos) / 1_000_000
+}
+
+export const formatMicroAlgos = (microAlgos: bigint): string => {
+    return microAlgosToAlgos(microAlgos).toLocaleString(undefined, {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 6,
+    })
+}
+
+export { TransactionType }

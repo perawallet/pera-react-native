@@ -31,7 +31,7 @@ const AssetImpact = () => {
                     value={Decimal(200)}
                     precision={2}
                     showSymbol
-                    h3
+                    variant='h3'
                 />
                 <CurrencyDisplay
                     currency='USD'

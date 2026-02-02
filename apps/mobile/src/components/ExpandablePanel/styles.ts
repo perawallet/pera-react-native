@@ -25,6 +25,7 @@ export const useStyles = makeStyles(theme => {
             position: 'absolute',
             left: 0,
             right: 0,
+            backgroundColor: 'transparent',
         },
         collapsableContainer: {
             overflow: 'hidden',

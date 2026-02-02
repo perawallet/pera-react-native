@@ -161,7 +161,7 @@ export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
                 <PWView style={styles.priceContainer}>
                     <PWView>
                         <CurrencyDisplay
-                            h1
+                            variant='h1'
                             value={currentPrice}
                             currency={preferredFiatCurrency}
                             precision={6}

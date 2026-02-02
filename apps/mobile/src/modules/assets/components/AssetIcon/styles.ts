@@ -11,10 +11,8 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { AssetIconProps } from './AssetIcon'
 
-export const useStyles = makeStyles((theme, props: AssetIconProps) => {
-    const resolvedSize = props.size ?? theme.spacing.xl
+export const useStyles = makeStyles((theme, resolvedSize: number) => {
     return {
         container: {
             alignItems: 'center',
@@ -23,6 +21,12 @@ export const useStyles = makeStyles((theme, props: AssetIconProps) => {
             height: resolvedSize,
             overflow: 'hidden',
             borderRadius: resolvedSize / 2,
+            borderWidth: theme.borders.sm,
+            borderColor: 'transparent',
+        },
+        imageIcon: {
+            width: resolvedSize,
+            height: resolvedSize,
         },
         icon: {
             backgroundColor: theme.colors.background,

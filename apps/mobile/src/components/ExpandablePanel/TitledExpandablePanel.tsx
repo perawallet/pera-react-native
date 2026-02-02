@@ -22,11 +22,13 @@ export type TitledExpandablePanelProps = {
     title: React.ReactNode | string
     iconPressed?: () => void
     containerStyle?: StyleProp<ViewStyle>
+    contentStyle?: StyleProp<ViewStyle>
 } & PropsWithChildren
 
 export const TitledExpandablePanel = ({
     title,
     containerStyle,
+    contentStyle,
     children,
     iconPressed,
 }: TitledExpandablePanelProps) => {
@@ -49,10 +51,9 @@ export const TitledExpandablePanel = ({
     }, [expanded])
 
     const handleIconPress = (event: GestureResponderEvent) => {
-        if (iconPressed) {
-            iconPressed()
-            event.stopPropagation()
-        }
+        event.stopPropagation()
+        onPress()
+        iconPressed?.()
     }
 
     return (
@@ -62,17 +63,18 @@ export const TitledExpandablePanel = ({
                 style={styles.header}
             >
                 {typeof title === 'string' ? <PWText>{title}</PWText> : title}
-                <Animated.View style={iconStyle}>
-                    <PWIcon
-                        name='chevron-right'
-                        size='sm'
-                        onPress={handleIconPress}
-                    />
-                </Animated.View>
+                <PWTouchableOpacity onPress={handleIconPress}>
+                    <Animated.View style={iconStyle}>
+                        <PWIcon
+                            name='chevron-right'
+                            size='sm'
+                        />
+                    </Animated.View>
+                </PWTouchableOpacity>
             </PWTouchableOpacity>
             <ExpandablePanel
                 isExpanded={expanded}
-                containerStyle={styles.collapsableContainer}
+                containerStyle={[styles.collapsableContainer, contentStyle]}
             >
                 {children}
             </ExpandablePanel>

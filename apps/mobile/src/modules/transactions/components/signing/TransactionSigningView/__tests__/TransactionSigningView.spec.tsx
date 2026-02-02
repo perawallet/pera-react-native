@@ -35,6 +35,30 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
             encodeSignedTransactions: vi.fn(),
         })),
         encodeAlgorandAddress: vi.fn(() => 'ENCODED_ADDRESS'),
+        mapToDisplayableTransaction: vi.fn(tx => {
+            if (!tx) return null
+            return {
+                fee: 1000n,
+                sender: 'MOCK_SENDER',
+                txType: tx.payment ? 'pay' : 'appl',
+                firstValid: 1n,
+                lastValid: 100n,
+                confirmedRound: 0n,
+                roundTime: 0,
+                intraRoundOffset: 0,
+                signature: {},
+                paymentTransaction: tx.payment
+                    ? {
+                          amount: tx.payment.amount ?? 0n,
+                          receiver: 'MOCK_RECEIVER',
+                      }
+                    : undefined,
+            }
+        }),
+        getTransactionType: vi.fn(tx => {
+            if (tx?.paymentTransaction) return 'payment'
+            return 'unknown'
+        }),
     }
 })
 
@@ -48,6 +72,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useTransactionSigner: vi.fn(() => ({
             signTransactions: vi.fn().mockResolvedValue([]),
         })),
+        useAllAccounts: vi.fn(() => []),
     }
 })
 
@@ -110,15 +135,29 @@ describe('TransactionSigningView', () => {
         expect(text).toContain('confirm')
     })
 
-    it('displays empty view when no receiver is present', () => {
+    it('displays empty view when transaction has no valid type', () => {
         const invalidRequest = {
             type: 'transactions',
             transport: 'callback',
-            txs: [[{}]], // No receiver
+            txs: [[{}]], // No transaction type fields
         } as unknown as TransactionSignRequest
 
         const { container } = render(
             <TransactionSigningView request={invalidRequest} />,
+        )
+        // Unknown transaction types show the unknown transaction display
+        expect(container.textContent?.toLowerCase()).toContain('unknown')
+    })
+
+    it('displays empty view when no transaction is present', () => {
+        const emptyRequest = {
+            type: 'transactions',
+            transport: 'callback',
+            txs: [[]], // Empty transaction array
+        } as unknown as TransactionSignRequest
+
+        const { container } = render(
+            <TransactionSigningView request={emptyRequest} />,
         )
         expect(container.textContent?.toLowerCase()).toContain('invalid')
     })

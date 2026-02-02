@@ -12,17 +12,22 @@
 
 import { AssetIcon } from '../AssetIcon'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import { PWIcon, PWText, PWView, PWViewProps } from '@components/core'
+import {
+    PWIcon,
+    PWIconSize,
+    PWText,
+    PWView,
+    PWViewProps,
+} from '@components/core'
 import { ALGO_ASSET_ID, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
-import { useTheme } from '@rneui/themed'
 import { useStyles } from './styles'
 import { useMemo } from 'react'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 
 export type AccountAssetItemViewProps = {
     accountBalance: AssetWithAccountBalance
-    iconSize?: number
+    iconSize?: PWIconSize
 } & PWViewProps
 
 export const AccountAssetItemView = ({
@@ -30,7 +35,6 @@ export const AccountAssetItemView = ({
     iconSize,
     ...rest
 }: AccountAssetItemViewProps) => {
-    const { theme } = useTheme()
     const styles = useStyles()
 
     const { preferredFiatCurrency } = useCurrency()
@@ -84,7 +88,7 @@ export const AccountAssetItemView = ({
         >
             <AssetIcon
                 asset={asset}
-                size={iconSize ?? theme.spacing.xxl}
+                size={iconSize ?? 'lg'}
             />
             <PWView style={styles.dataContainer}>
                 <PWView style={styles.unitContainer}>

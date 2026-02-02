@@ -15,39 +15,54 @@ import { PWButtonProps } from './PWButton'
 import { getFontFamily } from '@theme/theme'
 
 export const useStyles = makeStyles((theme, props: PWButtonProps) => {
-    let backgroundColor = theme.colors.buttonPrimaryBg
-    let color = theme.colors.buttonPrimaryText
-
-    if (props.variant === 'secondary') {
-        backgroundColor = theme.colors.layerGrayLighter
-        color = theme.colors.textMain
-    } else if (props.variant === 'helper') {
-        backgroundColor = theme.colors.buttonSquareBg
-        color = theme.colors.buttonSquareText
-    } else if (props.variant === 'destructive') {
-        backgroundColor = theme.colors.error
-        color = theme.colors.textWhite
-    } else if (props.variant === 'link') {
-        backgroundColor = theme.colors.background
-        color = theme.colors.linkPrimary
+    const variantStyles = {
+        primary: {
+            backgroundColor: theme.colors.buttonPrimaryBg,
+            color: theme.colors.buttonPrimaryText,
+        },
+        secondary: {
+            backgroundColor: theme.colors.layerGrayLighter,
+            color: theme.colors.textMain,
+        },
+        helper: {
+            backgroundColor: theme.colors.buttonSquareBg,
+            color: theme.colors.buttonSquareText,
+        },
+        destructive: {
+            backgroundColor: theme.colors.error,
+            color: theme.colors.textWhite,
+        },
+        link: {
+            backgroundColor: theme.colors.background,
+            color: theme.colors.linkPrimary,
+        },
+        errorLink: {
+            backgroundColor: theme.colors.background,
+            color: theme.colors.error,
+        },
     }
 
-    let paddingHorizontal = theme.spacing.xxl
-    if (props.paddingStyle === 'dense') {
-        paddingHorizontal = theme.spacing.md
-    } else if (props.paddingStyle === 'none') {
-        paddingHorizontal = 0
+    const paddingStyles = {
+        normal: {
+            paddingHorizontal: theme.spacing.xxl,
+            paddingVertical: theme.spacing.md,
+            minWidth: undefined as number | undefined,
+        },
+        dense: {
+            paddingHorizontal: theme.spacing.md,
+            paddingVertical: theme.spacing.md,
+            minWidth: theme.spacing.xxl,
+        },
+        none: {
+            paddingHorizontal: 0,
+            paddingVertical: 0,
+            minWidth: undefined as number | undefined,
+        },
     }
 
-    let paddingVertical = theme.spacing.md
-    if (props.paddingStyle === 'none') {
-        paddingVertical = 0
-    }
-
-    let minWidth: number | undefined
-    if (props.paddingStyle === 'dense') {
-        minWidth = theme.spacing.xxl
-    }
+    const { backgroundColor, color } = variantStyles[props.variant ?? 'primary']
+    const { paddingHorizontal, paddingVertical, minWidth } =
+        paddingStyles[props.paddingStyle ?? 'normal']
 
     return {
         loadingStyle: {

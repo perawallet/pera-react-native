@@ -69,7 +69,7 @@ export const AssetMarketStats = ({ assetDetails }: AssetMarketStatsProps) => {
                         {t('asset_details.markets.price')}
                     </PWText>
                     <CurrencyDisplay
-                        h2
+                        variant='h2'
                         value={price}
                         currency={preferredFiatCurrency}
                         precision={6}

@@ -43,7 +43,6 @@ export type PortfolioViewProps = {
     onDataSelected?: (selected: AccountBalanceHistoryItem | null) => void
 } & PWViewProps
 
-//TODO layout and spacing needs a bit of clean up
 export const PortfolioView = (props: PortfolioViewProps) => {
     const styles = useStyles()
     const { preferredFiatCurrency } = useCurrency()
@@ -116,7 +115,7 @@ export const PortfolioView = (props: PortfolioViewProps) => {
                         </InfoButton>
                     </PWView>
                     <CurrencyDisplay
-                        h2
+                        variant='h2'
                         value={
                             selectedPoint
                                 ? selectedPoint.algoValue
@@ -128,7 +127,7 @@ export const PortfolioView = (props: PortfolioViewProps) => {
                         isLoading={isPending}
                     />
                     <CurrencyDisplay
-                        h4
+                        variant='h4'
                         style={styles.valueTitle}
                         value={
                             selectedPoint
