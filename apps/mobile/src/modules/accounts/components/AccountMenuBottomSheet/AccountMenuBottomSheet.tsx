@@ -23,7 +23,12 @@ export const AccountMenuBottomSheet = ({
             innerContainerStyle={styles.container}
         >
             <PWToolbar
-                right={<PWIcon name='cross' onPress={onClose} />}
+                right={
+                    <PWIcon
+                        name='cross'
+                        onPress={onClose}
+                    />
+                }
             />
             <AccountMenu onSelected={onSelected} />
         </PWBottomSheet>

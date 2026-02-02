@@ -33,7 +33,7 @@ vi.mock('@modules/accounts/components/AccountMenuBottomSheet', () => ({
 }))
 
 vi.mock('../../AccountDisplay', () => ({
-    AccountDisplay: () => <div data-testid="account-display" />
+    AccountDisplay: () => <div data-testid='account-display' />,
 }))
 
 describe('AccountSelection', () => {
@@ -54,7 +54,7 @@ describe('AccountSelection', () => {
 
         const { getByTestId } = render(<AccountSelection />)
         fireEvent.click(getByTestId('account-display'))
-        
+
         expect(openMock).toHaveBeenCalled()
     })
 })

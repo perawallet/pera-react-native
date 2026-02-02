@@ -5,14 +5,23 @@ import { AccountMenuBottomSheet } from '../AccountMenuBottomSheet'
 
 vi.mock('@components/core', async () => {
     return {
-        PWBottomSheet: ({ children, isVisible }: any) => (isVisible ? <div data-testid="PWBottomSheet">{children}</div> : null),
-        PWToolbar: () => <div data-testid="PWToolbar" />,
-        PWIcon: () => <div data-testid="PWIcon" />,
+        PWBottomSheet: ({
+            children,
+            isVisible,
+        }: {
+            children: React.ReactNode
+            isVisible: boolean
+        }) =>
+            isVisible ? (
+                <div data-testid='PWBottomSheet'>{children}</div>
+            ) : null,
+        PWToolbar: () => <div data-testid='PWToolbar' />,
+        PWIcon: () => <div data-testid='PWIcon' />,
     }
 })
 
 vi.mock('@modules/accounts/components/AccountMenu', () => ({
-    AccountMenu: () => <div data-testid="AccountMenu" />,
+    AccountMenu: () => <div data-testid='AccountMenu' />,
 }))
 
 describe('AccountMenuBottomSheet', () => {

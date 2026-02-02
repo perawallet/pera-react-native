@@ -71,7 +71,9 @@ export const AccountMenu = (props: AccountMenuProps) => {
                         >
                             <AccountWithBalance
                                 account={acct}
-                                isSelected={acct.address === selectedAccountAddress}
+                                isSelected={
+                                    acct.address === selectedAccountAddress
+                                }
                             />
                         </PWTouchableOpacity>
                     ))}

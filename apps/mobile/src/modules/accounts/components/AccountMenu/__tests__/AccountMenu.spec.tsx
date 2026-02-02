@@ -37,7 +37,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 
 // Mock child components
 vi.mock('../../PortfolioView', () => ({
-    PortfolioView: () => <div data-testid="PortfolioView" />,
+    PortfolioView: () => <div data-testid='PortfolioView' />,
 }))
 
 describe('AccountMenu', () => {

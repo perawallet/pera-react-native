@@ -22,10 +22,7 @@ import { useLanguage } from '@hooks/useLanguage'
 
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { WealthChart } from '@components/WealthChart'
-import {
-    formatDatetime,
-    formatCurrency,
-} from '@perawallet/wallet-core-shared'
+import { formatDatetime, formatCurrency } from '@perawallet/wallet-core-shared'
 import { useCallback, useMemo } from 'react'
 import { useChartInteraction } from '@hooks/useChartInteraction'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
@@ -64,10 +61,7 @@ export const PortfolioView = (props: PortfolioViewProps) => {
         setPreference(UserPreferences.chartVisible, !chartVisible)
     }
 
-    const addresses = useMemo(
-        () => accounts.map(a => a.address),
-        [accounts],
-    )
+    const addresses = useMemo(() => accounts.map(a => a.address), [accounts])
 
     const { data: historyData } = useAccountBalancesHistoryQuery(
         addresses,
@@ -161,8 +155,14 @@ export const PortfolioView = (props: PortfolioViewProps) => {
                             {!trendPercentage.isZero() && (
                                 <PWView style={styles.trendIconContainer}>
                                     <PWIcon
-                                        name={isPositiveTrend ? 'arrow-up' : 'arrow-down'}
-                                        variant={isPositiveTrend ? 'helper' : 'error'}
+                                        name={
+                                            isPositiveTrend
+                                                ? 'arrow-up'
+                                                : 'arrow-down'
+                                        }
+                                        variant={
+                                            isPositiveTrend ? 'helper' : 'error'
+                                        }
                                         size='sm'
                                     />
                                 </PWView>

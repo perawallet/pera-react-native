@@ -40,8 +40,6 @@ export const AccountScreen = () => {
     const { shouldPlayConfetti, setShouldPlayConfetti } =
         useShouldPlayConfetti()
 
-
-
     if (!account) {
         return (
             <EmptyView
@@ -59,9 +57,7 @@ export const AccountScreen = () => {
             />
             <PWToolbar
                 style={styles.iconBar}
-                left={
-                    <AccountSelection />
-                }
+                left={<AccountSelection />}
                 right={
                     <PWView style={styles.iconBarSection}>
                         <PWTouchableOpacity onPress={scannerState.open}>

@@ -14,7 +14,6 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
     return {
-
         container: {
             paddingHorizontal: 0,
             flex: 1,

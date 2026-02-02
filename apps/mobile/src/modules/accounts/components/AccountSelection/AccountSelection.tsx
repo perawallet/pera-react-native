@@ -10,11 +10,13 @@
  limitations under the License
  */
 
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useSelectedAccount,
+    WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { useStyles } from './styles'
 import { AccountMenuBottomSheet } from '@modules/accounts/components/AccountMenuBottomSheet'
 import { useModalState } from '@hooks/useModalState'
-import { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 import { TouchableOpacity, TouchableOpacityProps } from 'react-native'
 import { AccountDisplay } from '../AccountDisplay'
