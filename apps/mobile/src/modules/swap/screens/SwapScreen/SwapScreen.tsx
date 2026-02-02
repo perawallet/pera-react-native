@@ -70,7 +70,7 @@ export const SwapScreen = () => {
                 'SQWLJMLVPNUNMCMDDF3FS2E4PZL2DOQCSFVC4EZGSSPQDF3MRVYQ'
             const tx =
                 await algoClient.client.indexer.lookupTransactionById(
-                    axfer,
+                    appCallWithInnerApp,
                 )
 
             setTx(tx.transaction)

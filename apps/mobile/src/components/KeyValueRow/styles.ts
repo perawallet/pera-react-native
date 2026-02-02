@@ -23,6 +23,7 @@ export const useStyles = makeStyles((theme, props: KeyValueRowProps) => {
         },
         label: {
             color: theme.colors.textGray,
+            lineHeight: theme.spacing.lg,
             width: '40%',
         },
         childContainer: {

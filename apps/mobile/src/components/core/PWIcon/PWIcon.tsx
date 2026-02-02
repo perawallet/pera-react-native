@@ -99,11 +99,20 @@ import LightWatchAccountIcon from '@assets/icons/accounts/light/watch-account.sv
 import USDCAssetIcon from '@assets/icons/assets/usdc.svg'
 import VerifiedAssetIcon from '@assets/icons/assets/verified.svg'
 import VestAssetIcon from '@assets/icons/assets/vest.svg'
-import GroupIcon from '@assets/icons/transactions/group.svg'
-import PaymentIcon from '@assets/icons/transactions/payment.svg'
 import DiscordIcon from '@assets/icons/socials/discord.svg'
 import TelegramIcon from '@assets/icons/socials/telegram.svg'
 import TwitterIcon from '@assets/icons/socials/twitter.svg'
+import TxApplicationCallIcon from '@assets/icons/transactions/application-call.svg'
+import TxAssetConfigIcon from '@assets/icons/transactions/asset-config.svg'
+import TxAssetFreezeIcon from '@assets/icons/transactions/asset-freeze.svg'
+import TxAssetTransferIcon from '@assets/icons/transactions/asset-transfer.svg'
+import TxGenericIcon from '@assets/icons/transactions/generic.svg'
+import TxKeyRegistrationIcon from '@assets/icons/transactions/key-registration.svg'
+import TxOptInIcon from '@assets/icons/transactions/opt-in.svg'
+import TxOptOutIcon from '@assets/icons/transactions/opt-out.svg'
+import TxGroupIcon from '@assets/icons/transactions/group.svg'
+import TxPaymentIcon from '@assets/icons/transactions/payment.svg'
+import TxSwapIcon from '@assets/icons/transactions/swap.svg'
 import { useMemo } from 'react'
 
 const ICON_LIBRARY = {
@@ -193,8 +202,17 @@ const ICON_LIBRARY = {
     'assets/usdc': USDCAssetIcon,
     'assets/verified': VerifiedAssetIcon,
     'assets/vest': VestAssetIcon,
-    'transactions/group': GroupIcon,
-    'transactions/payment': PaymentIcon,
+    'transactions/application-call': TxApplicationCallIcon,
+    'transactions/asset-config': TxAssetConfigIcon,
+    'transactions/asset-freeze': TxAssetFreezeIcon,
+    'transactions/asset-transfer': TxAssetTransferIcon,
+    'transactions/generic': TxGenericIcon,
+    'transactions/key-registration': TxKeyRegistrationIcon,
+    'transactions/opt-in': TxOptInIcon,
+    'transactions/opt-out': TxOptOutIcon,
+    'transactions/group': TxGroupIcon,
+    'transactions/payment': TxPaymentIcon,
+    'transactions/swap': TxSwapIcon,
     'socials/discord': DiscordIcon,
     'socials/telegram': TelegramIcon,
     'socials/twitter': TwitterIcon,

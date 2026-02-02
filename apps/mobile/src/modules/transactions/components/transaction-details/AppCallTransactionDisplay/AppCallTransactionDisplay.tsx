@@ -25,8 +25,8 @@ import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnin
 import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
-import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
-import { InnerTransactionPreview } from '../InnerTransactionPreview'
+import { InnerTransactionsPanel } from './InnerTransactionsPanel'
+import { AppCallDetailsPanel } from './AppCallDetailsPanel'
 
 export type AppCallTransactionDisplayProps = {
     transaction: PeraDisplayableTransaction
@@ -53,14 +53,7 @@ export const AppCallTransactionDisplay = ({
     }
 
     const appId = appCall.applicationId.toString()
-    const hasInnerTransactions = !!transaction.innerTxns?.length
-    const innerTransactionCount = transaction.innerTxns?.length ?? 0
     const showWarnings = !transaction?.id
-    const hasAdvancedDetails =
-        !!appCall.applicationArgs?.length ||
-        !!appCall.accounts?.length ||
-        !!appCall.foreignApps?.length ||
-        !!appCall.foreignAssets?.length
 
     return (
         <PWView style={styles.container}>
@@ -104,126 +97,17 @@ export const AppCallTransactionDisplay = ({
                     color={theme.colors.layerGray}
                 />
 
-                {hasInnerTransactions && (
-                    <TitledExpandablePanel
-                        title={t('transactions.app_call.inner_transactions', {
-                            count: innerTransactionCount,
-                        })}
-                    >
-                        <PWView style={styles.expandablePanel}>
-                            {transaction.innerTxns?.map((tx, index) => (
-                                <InnerTransactionPreview
-                                    onPress={onInnerTransactionsPress}
-                                    key={tx.id ?? index}
-                                    transaction={tx}
-                                />
-                            ))}
-                        </PWView>
-                    </TitledExpandablePanel>
-                )}
+                <InnerTransactionsPanel
+                    innerTransactions={transaction.innerTxns ?? []}
+                    onInnerTransactionPress={onInnerTransactionsPress}
+                />
 
                 <PWDivider
                     style={styles.divider}
                     color={theme.colors.layerGray}
                 />
 
-                {hasAdvancedDetails && (
-                    <TitledExpandablePanel
-                        title={t('transactions.app_call.details')}
-                    >
-                        <PWView style={styles.expandablePanel}>
-                            {appCall.applicationArgs &&
-                                appCall.applicationArgs.length > 0 && (
-                                    <KeyValueRow
-                                        title={t(
-                                            'transactions.app_call.args_count',
-                                        )}
-                                    >
-                                        <PWText style={styles.detailText}>
-                                            {appCall.applicationArgs.length}
-                                        </PWText>
-                                    </KeyValueRow>
-                                )}
-
-                            {appCall.accounts &&
-                                appCall.accounts.length > 0 && (
-                                    <KeyValueRow
-                                        verticalAlignment='top'
-                                        title={t(
-                                            'transactions.app_call.accounts',
-                                        )}
-                                    >
-                                        {appCall.accounts.map(account => (
-                                            <PWText
-                                                key={
-                                                    'account-' +
-                                                    account.toString()
-                                                }
-                                                style={styles.detailText}
-                                            >
-                                                {account.toString()}
-                                            </PWText>
-                                        ))}
-                                    </KeyValueRow>
-                                )}
-
-                            {appCall.foreignApps &&
-                                appCall.foreignApps.length > 0 && (
-                                    <KeyValueRow
-                                        verticalAlignment='top'
-                                        title={t(
-                                            'transactions.app_call.foreign_apps',
-                                        )}
-                                    >
-                                        {appCall.foreignApps.map(appId => (
-                                            <PWText
-                                                key={
-                                                    'foreign-app-' +
-                                                    appId.toString()
-                                                }
-                                                style={styles.detailText}
-                                            >
-                                                {appId.toString()}
-                                            </PWText>
-                                        ))}
-                                    </KeyValueRow>
-                                )}
-
-                            {appCall.foreignAssets &&
-                                appCall.foreignAssets.length > 0 && (
-                                    <KeyValueRow
-                                        verticalAlignment='top'
-                                        title={t(
-                                            'transactions.app_call.foreign_assets',
-                                        )}
-                                    >
-                                        {appCall.foreignAssets.map(assetId => (
-                                            <PWText
-                                                key={
-                                                    'foreign-asset-' +
-                                                    assetId.toString()
-                                                }
-                                                style={styles.detailText}
-                                            >
-                                                {assetId.toString()}
-                                            </PWText>
-                                        ))}
-                                    </KeyValueRow>
-                                )}
-
-                            {appCall.boxReferences &&
-                                appCall.boxReferences.length > 0 && (
-                                    <KeyValueRow
-                                        title={t('transactions.app_call.boxes')}
-                                    >
-                                        <PWText style={styles.detailText}>
-                                            {appCall.boxReferences.length}
-                                        </PWText>
-                                    </KeyValueRow>
-                                )}
-                        </PWView>
-                    </TitledExpandablePanel>
-                )}
+                <AppCallDetailsPanel transaction={transaction} />
             </PWView>
 
             {showWarnings && <TransactionWarnings transaction={transaction} />}

@@ -29,25 +29,23 @@ const getIconName = (type: TransactionIconType): IconName => {
         case 'payment':
             return 'transactions/payment'
         case 'asset-transfer':
-            return 'swap'
+            return 'transactions/swap'
         case 'asset-config':
-            return 'gear'
+            return 'transactions/asset-config'
         case 'asset-freeze':
-            return 'snowflake'
+            return 'transactions/asset-freeze'
         case 'key-registration':
-            return 'key'
+            return 'transactions/key-registration'
         case 'app-call':
-            return 'code'
+            return 'transactions/application-call'
         case 'asset-opt-in':
-            return 'plus'
+            return 'transactions/opt-in'
         case 'asset-opt-out':
-            return 'cross'
-        case 'asset-clawback':
-            return 'undo'
+            return 'transactions/opt-out'
         case 'group':
             return 'transactions/group'
         default:
-            return 'transactions/payment'
+            return 'transactions/generic'
     }
 }
 
