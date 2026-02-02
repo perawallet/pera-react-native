@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWButton, PWTouchableOpacity, PWView } from '@components/core'
+import { PWButton, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import {
     useAllAccounts,
     useSelectedAccountAddress,
@@ -37,17 +37,19 @@ export const AccountsTab = (props: AccountsTabProps) => {
     return (
         <>
             <PWView style={styles.titleBar}>
+                <PWText variant="h3" style={styles.activeTitle}>
+                    {t('account_menu.title')}
+                </PWText>
                 <PWView style={styles.titleBarButtonContainer}>
-                    <PWButton
-                        variant='helper'
-                        icon='plus'
-                        title={t('account_menu.add_account')}
-                        paddingStyle='dense'
-                    />
                     <PWButton
                         variant='link'
                         icon='list-arrow-down'
                         title={t('account_menu.sort')}
+                        paddingStyle='dense'
+                    />
+                    <PWButton
+                        variant='helper'
+                        icon='plus'
                         paddingStyle='dense'
                     />
                 </PWView>

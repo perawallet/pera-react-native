@@ -64,8 +64,6 @@ export const useStyles = makeStyles(theme => {
             flexDirection: 'row',
             gap: theme.spacing.md,
             alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
         },
         sortButton: {
             flexDirection: 'row',
