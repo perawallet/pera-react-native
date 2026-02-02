@@ -149,6 +149,9 @@ workflows:
                   CHANGELOG="No changes since last build"
                 fi
 
+                # Escape changelog for JSON using jq for proper escaping
+                CHANGELOG=$(printf '%s' "$CHANGELOG" | jq -Rs . | sed 's/^"//;s/"$//'  | sed 's/\n/\\n/g')
+
                 envman add --key CHANGELOG --value "$CHANGELOG"
       - share-pipeline-variable@1:
           inputs:
@@ -844,9 +847,6 @@ workflows:
                   STATUS="failure"
                 fi
 
-                # Escape changelog for JSON using jq for proper escaping
-                ESCAPED_CHANGELOG=$(printf '%s' "$CHANGELOG" | jq -Rs . | sed 's/^"//;s/"$//')
-
                 # Build context elements with optional install page link
                 CONTEXT_ELEMENTS="[{\"type\": \"mrkdwn\", \"text\": \"<${BITRISE_BUILD_URL}|View Build>\"}"
                 if [ -n "$INSTALL_PAGE_URL" ]; then
@@ -905,7 +905,7 @@ workflows:
                           "type": "section",
                           "text": {
                             "type": "mrkdwn",
-                            "text": "${ESCAPED_CHANGELOG}"
+                            "text": "${CHANGELOG}"
                           }
                         },
                         {
@@ -946,9 +946,6 @@ workflows:
                   COLOR="#ec0000"
                   STATUS="failure"
                 fi
-
-                # Escape changelog for JSON using jq for proper escaping
-                ESCAPED_CHANGELOG=$(printf '%s' "$CHANGELOG" | jq -Rs . | sed 's/^"//;s/"$//')
 
                 # Build context elements with optional install page link
                 CONTEXT_ELEMENTS="[{\"type\": \"mrkdwn\", \"text\": \"<${BITRISE_BUILD_URL}|View Build>\"}"
@@ -1008,7 +1005,7 @@ workflows:
                           "type": "section",
                           "text": {
                             "type": "mrkdwn",
-                            "text": "${ESCAPED_CHANGELOG}"
+                            "text": "${CHANGELOG}"
                           }
                         },
                         {
