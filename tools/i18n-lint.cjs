@@ -10,6 +10,18 @@ const EXCLUDED_KEYS = [
     'errors.walletconnect.sign_request_body',
     'errors.walletconnect.permission_body',
     'errors.walletconnect.invalid_session_body',
+    'transactions.common.completed',
+    'transactions.common.failed',
+    'transactions.common.pending',
+    'transactions.type.pay',
+    'transactions.type.keyreg',
+    'transactions.type.acfg',
+    'transactions.type.axfer',
+    'transactions.type.afrz',
+    'transactions.type.appl',
+    'transactions.type.stpf',
+    'transactions.type.hb',
+    'transactions.type.unknown',
 ];
 
 // Colors for console output

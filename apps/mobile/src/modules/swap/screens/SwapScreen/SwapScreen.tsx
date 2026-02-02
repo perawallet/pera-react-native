@@ -18,8 +18,8 @@ export const SwapScreen = () => {
 
     return (
         <EmptyView
-            title={t('common.notimplemented.title')}
-            body={t('common.notimplemented.body')}
+            title={t('common.not_implemented.title')}
+            body={t('common.not_implemented.body')}
         />
     )
 }
