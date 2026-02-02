@@ -19,7 +19,7 @@ export const useStyles = makeStyles((theme, props: CurrencyDisplayProps) => {
     if (props.h1) {
         size = 40
     } else if (props.h2) {
-        size = 36
+        size = 28
     } else if (props.h3) {
         size = 24
     }
@@ -29,6 +29,7 @@ export const useStyles = makeStyles((theme, props: CurrencyDisplayProps) => {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'flex-start',
+            gap: theme.spacing.xs,
         },
         skeleton: {
             maxWidth: 150,

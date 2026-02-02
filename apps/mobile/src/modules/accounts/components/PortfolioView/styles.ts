@@ -21,14 +21,46 @@ export const useStyles = makeStyles(theme => {
             borderRadius: theme.spacing.lg,
             padding: theme.spacing.md,
         },
-        valueBar: {
+        columns: {
             flexDirection: 'row',
             justifyContent: 'space-between',
+            alignItems: 'stretch',
         },
-        secondaryValueBar: {
+        leftColumn: {
+            flex: 1,
+            gap: theme.spacing.md,
+        },
+        rightColumn: {
+            alignItems: 'flex-end',
+            gap: theme.spacing.md,
+        },
+        trendTitle: {
+            color: theme.colors.textGray,
+        },
+        trendContent: {
             flexDirection: 'row',
             alignItems: 'center',
-            gap: theme.spacing.md,
+            gap: theme.spacing.xs,
+        },
+        trendIconContainer: {
+            backgroundColor: theme.colors.layerGrayLightest,
+            borderRadius: 100,
+            width: theme.spacing.xl,
+            height: theme.spacing.xl,
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        itemUp: {
+            color: theme.colors.helperPositive,
+        },
+        itemDown: {
+            color: theme.colors.error,
+        },
+        trendIconUp: {
+            color: theme.colors.helperPositive,
+        },
+        trendIconDown: {
+            color: theme.colors.error,
         },
         valueTitleBar: {
             flexDirection: 'row',
@@ -41,7 +73,6 @@ export const useStyles = makeStyles(theme => {
         dateDisplay: {
             color: theme.colors.textGray,
             textAlign: 'right',
-            flexGrow: 1,
         },
         divider: {
             height: 1,
