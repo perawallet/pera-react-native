@@ -17,7 +17,6 @@ import { SvgProps } from 'react-native-svg'
 import { PWIconSize, PWImage, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 import { useTheme } from '@rneui/themed'
-import { logger } from '@perawallet/wallet-core-shared'
 
 export type AssetIconProps = {
     asset: PeraAsset

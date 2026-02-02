@@ -21,7 +21,6 @@ import {
 } from '@components/core'
 import { ALGO_ASSET_ID, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
-import { useTheme } from '@rneui/themed'
 import { useStyles } from './styles'
 import { useMemo } from 'react'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
@@ -36,7 +35,6 @@ export const AccountAssetItemView = ({
     iconSize,
     ...rest
 }: AccountAssetItemViewProps) => {
-    const { theme } = useTheme()
     const styles = useStyles()
 
     const { preferredFiatCurrency } = useCurrency()

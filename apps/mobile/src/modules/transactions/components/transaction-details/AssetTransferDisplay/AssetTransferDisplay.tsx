@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWDivider, PWText, PWView } from '@components/core'
+import { PWDivider, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { AddressDisplay } from '@components/AddressDisplay'
 import {
@@ -29,7 +29,6 @@ import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import { useMemo } from 'react'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
-import { AssetIcon } from '@modules/assets/components/AssetIcon'
 import { LoadingView } from '@components/LoadingView'
 import { AssetTitle } from '@modules/assets/components/AssetTitle'
 
