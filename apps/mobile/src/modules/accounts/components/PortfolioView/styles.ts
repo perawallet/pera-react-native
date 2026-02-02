@@ -14,18 +14,16 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
     return {
-        iconBar: {
-            paddingVertical: 0,
-            paddingHorizontal: theme.spacing.xl,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-            gap: theme.spacing.lg,
+        container: {
+            backgroundColor: theme.colors.layerGrayLightest,
+            borderWidth: 1,
+            borderColor: theme.colors.layerGray,
+            borderRadius: theme.spacing.lg,
+            padding: theme.spacing.md,
         },
         valueBar: {
             flexDirection: 'row',
             justifyContent: 'space-between',
-            paddingTop: theme.spacing.md,
         },
         secondaryValueBar: {
             flexDirection: 'row',
@@ -45,32 +43,29 @@ export const useStyles = makeStyles(theme => {
             textAlign: 'right',
             flexGrow: 1,
         },
+        divider: {
+            height: 1,
+            backgroundColor: theme.colors.layerGray,
+            marginVertical: theme.spacing.md,
+        },
+        chartToggle: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: theme.spacing.xs,
+        },
+        chartToggleText: {
+            color: theme.colors.textGray,
+        },
+        invertedIcon: {
+            transform: [{ rotate: '180deg' }],
+        },
         primaryCurrency: {
             color: theme.colors.textMain,
-        },
-        webview: {
-            flex: 1,
-            paddingHorizontal: theme.spacing.xl,
-        },
-        webviewContent: {
-            paddingBottom: theme.spacing.xl,
-        },
-        chartButton: {
-            verticalAlign: 'middle',
-            justifyContent: 'center',
-            alignItems: 'center',
-        },
-        chartButtonText: {
-            paddingVertical: theme.spacing.xs,
-            paddingHorizontal: theme.spacing.md,
-            borderRadius: theme.spacing.md,
-            borderWidth: theme.borders.sm,
-            borderColor: theme.colors.layerGrayLight,
         },
         chartContainer: {
             gap: theme.spacing.md,
             marginTop: theme.spacing.md,
-            marginBottom: theme.spacing.md,
         },
     }
 })

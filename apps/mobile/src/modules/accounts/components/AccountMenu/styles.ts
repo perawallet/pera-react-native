@@ -15,26 +15,28 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => {
     return {
         portfolioContainer: {
-            paddingHorizontal: theme.spacing.lg,
             paddingTop: theme.spacing.md,
         },
         accountContainer: {
-            paddingHorizontal: theme.spacing.lg,
             gap: theme.spacing.md,
         },
         container: {
             padding: 0,
+            paddingHorizontal: theme.spacing.lg,
             margin: 0,
             flex: 1,
             overflow: 'hidden',
+            gap: theme.spacing.xl,
+        },
+        mainContent: {
+            flex: 1,
+            gap: theme.spacing.md,
         },
         titleBar: {
             gap: theme.spacing.md,
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
-            marginBottom: theme.spacing.sm,
-            paddingHorizontal: theme.spacing.lg,
         },
         titleBarButtonContainer: {
             flexDirection: 'row',

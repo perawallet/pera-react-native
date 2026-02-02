@@ -40,36 +40,42 @@ export const AccountMenu = (props: AccountMenuProps) => {
     return (
         <PWView style={styles.container}>
             <PortfolioView style={styles.portfolioContainer} />
-            <PWView style={styles.titleBar}>
-                <PWText variant="h3" style={styles.activeTitle}>
-                    {t('account_menu.title')}
-                </PWText>
-                <PWView style={styles.titleBarButtonContainer}>
-                    <PWButton
-                        variant='link'
-                        icon='list-arrow-down'
-                        title={t('account_menu.sort')}
-                        paddingStyle='dense'
-                    />
-                    <PWButton
-                        variant='helper'
-                        icon='plus'
-                        paddingStyle='dense'
-                    />
-                </PWView>
-            </PWView>
-            <PWView style={styles.accountContainer}>
-                {accounts.map(acct => (
-                    <PWTouchableOpacity
-                        key={acct.address}
-                        onPress={() => handleTap(acct)}
+
+            <PWView style={styles.mainContent}>
+                <PWView style={styles.titleBar}>
+                    <PWText
+                        variant='h3'
+                        style={styles.activeTitle}
                     >
-                        <AccountWithBalance
-                            account={acct}
-                            isSelected={acct.address === selectedAccountAddress}
+                        {t('account_menu.title')}
+                    </PWText>
+                    <PWView style={styles.titleBarButtonContainer}>
+                        <PWButton
+                            variant='link'
+                            icon='list-arrow-down'
+                            title={t('account_menu.sort')}
+                            paddingStyle='dense'
                         />
-                    </PWTouchableOpacity>
-                ))}
+                        <PWButton
+                            variant='helper'
+                            icon='plus'
+                            paddingStyle='dense'
+                        />
+                    </PWView>
+                </PWView>
+                <PWView style={styles.accountContainer}>
+                    {accounts.map(acct => (
+                        <PWTouchableOpacity
+                            key={acct.address}
+                            onPress={() => handleTap(acct)}
+                        >
+                            <AccountWithBalance
+                                account={acct}
+                                isSelected={acct.address === selectedAccountAddress}
+                            />
+                        </PWTouchableOpacity>
+                    ))}
+                </PWView>
             </PWView>
         </PWView>
     )

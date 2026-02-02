@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import { PWButton, PWText, PWView, PWViewProps } from '@components/core'
+import {
+    PWIcon,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+    PWViewProps,
+} from '@components/core'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 
@@ -63,7 +69,10 @@ export const PortfolioView = (props: PortfolioViewProps) => {
     )
 
     return (
-        <PWView {...props}>
+        <PWView
+            {...props}
+            style={[styles.container, props.style]}
+        >
             <PWView style={styles.valueTitleBar}>
                 <PWText
                     style={styles.valueTitle}
@@ -91,12 +100,6 @@ export const PortfolioView = (props: PortfolioViewProps) => {
                     style={styles.primaryCurrency}
                     isLoading={isPending}
                 />
-                <PWButton
-                    icon='chart'
-                    variant={chartVisible ? 'secondary' : 'helper'}
-                    paddingStyle='dense'
-                    onPress={toggleChartVisible}
-                />
             </PWView>
             <PWView style={styles.secondaryValueBar}>
                 <CurrencyDisplay
@@ -123,18 +126,36 @@ export const PortfolioView = (props: PortfolioViewProps) => {
                 )}
             </PWView>
 
-            <ExpandablePanel
-                isExpanded={chartVisible}
-                containerStyle={styles.chartContainer}
+            <PWView style={styles.divider} />
+
+            <PWTouchableOpacity
+                style={styles.chartToggle}
+                onPress={toggleChartVisible}
             >
-                <WealthChart
-                    period={period}
-                    onSelectionChanged={chartSelectionChanged}
+                <PWText style={styles.chartToggleText}>
+                    {chartVisible
+                        ? t('portfolio.hide_chart')
+                        : t('portfolio.show_chart')}
+                </PWText>
+                <PWIcon
+                    name='chevron-down'
+                    variant='secondary'
+                    size='xs'
+                    style={chartVisible ? styles.invertedIcon : undefined}
                 />
-                <ChartPeriodSelection
-                    value={period}
-                    onChange={setPeriod}
-                />
+            </PWTouchableOpacity>
+
+            <ExpandablePanel isExpanded={chartVisible}>
+                <PWView style={styles.chartContainer}>
+                    <WealthChart
+                        period={period}
+                        onSelectionChanged={chartSelectionChanged}
+                    />
+                    <ChartPeriodSelection
+                        value={period}
+                        onChange={setPeriod}
+                    />
+                </PWView>
             </ExpandablePanel>
         </PWView>
     )

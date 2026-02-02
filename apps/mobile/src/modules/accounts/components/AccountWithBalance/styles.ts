@@ -28,7 +28,7 @@ export const useStyles = makeStyles((theme, { isSelected }: StyleProps) => {
             borderWidth: 1,
             borderColor: isSelected
                 ? theme.colors.buttonSquareText
-                : theme.colors.layerGrayLighter,
+                : theme.colors.layerGray,
             borderRadius: theme.spacing.lg,
             padding: theme.spacing.md,
         },
