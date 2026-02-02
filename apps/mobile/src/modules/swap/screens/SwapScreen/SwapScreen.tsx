@@ -18,7 +18,6 @@ import { SwapHistoryPanel } from '@modules/swap/components/SwapHistoryPanel/Swap
 import { TopPairsPanel } from '@modules/swap/components/TopPairsPanel/TopPairsPanel'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@hooks/usePeraWebviewInterface'
 import { config } from '@perawallet/wallet-core-config'
