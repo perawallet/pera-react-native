@@ -19,7 +19,14 @@ export const useStyles = makeStyles(theme => {
             alignItems: 'center',
             gap: theme.spacing.md,
         },
+        textContainer: {
+            flexShrink: 1,
+            justifyContent: 'center',
+        },
         text: {
+            color: theme.colors.textMain,
+        },
+        addressText: {
             color: theme.colors.textGray,
         },
     }

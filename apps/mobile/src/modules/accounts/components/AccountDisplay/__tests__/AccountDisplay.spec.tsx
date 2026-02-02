@@ -36,10 +36,12 @@ vi.mock('@hooks/useIsDarkMode', () => ({
 }))
 
 describe('AccountDisplay', () => {
-    it('renders account name', () => {
-        const account = { address: 'addr' } as WalletAccount
+    it('renders account name and truncated address', () => {
+        const account = { address: 'LONGADDRESS1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF' } as WalletAccount
         render(<AccountDisplay account={account} />)
         expect(screen.getByText('Test Account')).toBeTruthy()
+        // Verify truncation with 6 chars at start and end
+        expect(screen.getByText(/LONGAD.*ABCDEF/)).toBeTruthy()
     })
 
     it('renders chevron by default', () => {
