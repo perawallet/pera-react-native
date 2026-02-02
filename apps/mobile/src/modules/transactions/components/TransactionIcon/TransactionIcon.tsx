@@ -24,35 +24,32 @@ export type TransactionIconProps = {
     size?: 'sm' | 'md' | 'lg'
 } & Omit<PWRoundIconProps, 'icon' | 'size' | 'name'>
 
-const getIconName = (type: TransactionIconType): IconName => {
-    switch (type) {
-        case 'payment':
-            return 'transactions/payment'
-        case 'asset-transfer':
-            return 'transactions/swap'
-        case 'asset-config':
-            return 'transactions/asset-config'
-        case 'asset-freeze':
-            return 'transactions/asset-freeze'
-        case 'key-registration':
-            return 'transactions/key-registration'
-        case 'app-call':
-            return 'transactions/application-call'
-        case 'asset-opt-in':
-            return 'transactions/opt-in'
-        case 'asset-opt-out':
-            return 'transactions/opt-out'
-        case 'group':
-            return 'transactions/group'
-        default:
-            return 'transactions/generic'
-    }
+const iconNameMap: Record<TransactionIconType, IconName> = {
+    payment: 'transactions/payment',
+    'asset-transfer': 'transactions/swap',
+    'asset-config': 'transactions/asset-config',
+    'asset-freeze': 'transactions/asset-freeze',
+    'key-registration': 'transactions/key-registration',
+    'app-call': 'transactions/application-call',
+    'asset-opt-in': 'transactions/opt-in',
+    'asset-opt-out': 'transactions/opt-out',
+    group: 'transactions/group',
+    'asset-clawback': 'transactions/generic',
+    'state-proof': 'transactions/generic',
+    heartbeat: 'transactions/generic',
+    unknown: 'transactions/generic',
 }
+
+const iconSizeMap = {
+    sm: 'md',
+    md: 'lg',
+    lg: 'xl',
+} as const
 
 export const TransactionIcon = (props: TransactionIconProps) => {
     const { type, style, size = 'sm', ...rest } = props
-    const iconSize = size === 'sm' ? 'md' : size === 'md' ? 'lg' : 'xl'
-    const name = getIconName(type)
+    const iconSize = iconSizeMap[size]
+    const name = iconNameMap[type] ?? 'transactions/generic'
 
     return (
         <PWRoundIcon

@@ -14,16 +14,22 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(
     (theme, status: 'pending' | 'completed' | 'failed') => {
-        let backgroundColor = theme.colors.asaTrustedBg
-        let color = theme.colors.asaTrustedText
-
-        if (status === 'failed') {
-            backgroundColor = theme.colors.asaSuspiciousBg
-            color = theme.colors.asaSuspiciousText
-        } else if (status === 'pending') {
-            backgroundColor = theme.colors.layerGrayLighter
-            color = theme.colors.textGray
+        const statusStyles = {
+            pending: {
+                backgroundColor: theme.colors.layerGrayLighter,
+                color: theme.colors.textGray,
+            },
+            completed: {
+                backgroundColor: theme.colors.asaTrustedBg,
+                color: theme.colors.asaTrustedText,
+            },
+            failed: {
+                backgroundColor: theme.colors.asaSuspiciousBg,
+                color: theme.colors.asaSuspiciousText,
+            },
         }
+
+        const { backgroundColor, color } = statusStyles[status]
 
         return {
             container: {
