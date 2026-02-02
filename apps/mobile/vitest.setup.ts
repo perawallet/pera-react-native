@@ -848,6 +848,11 @@ vi.mock('@rneui/themed', () => {
                 Chevron: (props: any) => React.createElement(MockView, props),
             },
         ),
+        Divider: (props: any) =>
+            React.createElement(MockView, {
+                ...props,
+                'data-testid': 'Divider',
+            }),
     }
 })
 
@@ -885,6 +890,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
         error: vi.fn(),
     },
     truncateAlgorandAddress: vi.fn(a => a),
+    DEFAULT_PRECISION: 6,
     ALGO_EXPLORER_URL: 'https://explorer.perawallet.app',
     Networks: { mainnet: 'mainnet', testnet: 'testnet' },
     formatDatetime: vi.fn(d => String(d)),

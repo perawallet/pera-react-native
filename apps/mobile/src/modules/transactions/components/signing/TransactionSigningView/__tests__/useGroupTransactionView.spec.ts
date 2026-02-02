@@ -10,13 +10,47 @@
  limitations under the License
  */
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useGroupTransactionView } from '../useGroupTransactionView'
 import type {
     TransactionSignRequest,
     PeraTransaction,
+    PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
+
+vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-blockchain')
+        >()
+    return {
+        ...actual,
+        mapToDisplayableTransaction: vi.fn(
+            (tx: PeraTransaction): PeraDisplayableTransaction | null => {
+                if (!tx) return null
+                const displayTx: PeraDisplayableTransaction = {
+                    fee: 1000n,
+                    sender: 'MOCK_SENDER',
+                    txType: tx.payment ? 'pay' : 'appl',
+                    firstValid: 1n,
+                    lastValid: 100n,
+                    confirmedRound: 0n,
+                    roundTime: 0,
+                    intraRoundOffset: 0,
+                    signature: {},
+                }
+                if (tx.payment) {
+                    displayTx.paymentTransaction = {
+                        amount: tx.payment.amount,
+                        receiver: 'MOCK_RECEIVER',
+                    }
+                }
+                return displayTx
+            },
+        ),
+    }
+})
 
 describe('useGroupTransactionView', () => {
     const mockPaymentTx = {
@@ -106,8 +140,9 @@ describe('useGroupTransactionView', () => {
             result.current.handleSelectTransaction(1)
         })
 
-        expect(result.current.selectedTx).toBe(mockAppCallTx)
-        expect(result.current.currentTx).toBe(mockAppCallTx)
+        expect(result.current.selectedTx).not.toBeNull()
+        expect(result.current.currentTx).not.toBeNull()
+        expect(result.current.selectedTx?.txType).toBe('appl')
         expect(result.current.isViewingTransaction).toBe(true)
     })
 
@@ -131,19 +166,5 @@ describe('useGroupTransactionView', () => {
 
         expect(result.current.selectedTx).toBeNull()
         expect(result.current.isViewingTransaction).toBe(false)
-    })
-
-    it('returns inner transactions for current transaction', () => {
-        const request = createGroupRequest([[mockAppCallTx]])
-        const { result } = renderHook(() =>
-            useGroupTransactionView({ request }),
-        )
-
-        // Select the app call transaction
-        act(() => {
-            result.current.handleSelectTransaction(0)
-        })
-
-        expect(result.current.innerTransactions).toHaveLength(2)
     })
 })

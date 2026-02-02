@@ -35,6 +35,30 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
             encodeSignedTransactions: vi.fn(),
         })),
         encodeAlgorandAddress: vi.fn(() => 'ENCODED_ADDRESS'),
+        mapToDisplayableTransaction: vi.fn(tx => {
+            if (!tx) return null
+            return {
+                fee: 1000n,
+                sender: 'MOCK_SENDER',
+                txType: tx.payment ? 'pay' : 'appl',
+                firstValid: 1n,
+                lastValid: 100n,
+                confirmedRound: 0n,
+                roundTime: 0,
+                intraRoundOffset: 0,
+                signature: {},
+                paymentTransaction: tx.payment
+                    ? {
+                          amount: tx.payment.amount ?? 0n,
+                          receiver: 'MOCK_RECEIVER',
+                      }
+                    : undefined,
+            }
+        }),
+        getTransactionType: vi.fn(tx => {
+            if (tx?.paymentTransaction) return 'payment'
+            return 'unknown'
+        }),
     }
 })
 
@@ -48,6 +72,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useTransactionSigner: vi.fn(() => ({
             signTransactions: vi.fn().mockResolvedValue([]),
         })),
+        useAllAccounts: vi.fn(() => []),
     }
 })
 

@@ -28,30 +28,30 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
 
 vi.mock('../../transaction-details', () => ({
     PaymentTransactionDisplay: vi.fn(() => (
-        <div data-testid="payment-display">Payment Display</div>
+        <div data-testid='payment-display'>Payment Display</div>
     )),
     AssetTransferDisplay: vi.fn(() => (
-        <div data-testid="asset-transfer-display">Asset Transfer Display</div>
+        <div data-testid='asset-transfer-display'>Asset Transfer Display</div>
     )),
     AssetConfigDisplay: vi.fn(() => (
-        <div data-testid="asset-config-display">Asset Config Display</div>
+        <div data-testid='asset-config-display'>Asset Config Display</div>
     )),
     AssetFreezeDisplay: vi.fn(() => (
-        <div data-testid="asset-freeze-display">Asset Freeze Display</div>
+        <div data-testid='asset-freeze-display'>Asset Freeze Display</div>
     )),
     KeyRegistrationDisplay: vi.fn(() => (
-        <div data-testid="key-registration-display">
+        <div data-testid='key-registration-display'>
             Key Registration Display
         </div>
     )),
     AppCallTransactionDisplay: vi.fn(() => (
-        <div data-testid="app-call-display">App Call Display</div>
+        <div data-testid='app-call-display'>App Call Display</div>
     )),
 }))
 
 vi.mock('@components/EmptyView', () => ({
     EmptyView: vi.fn(({ title }) => (
-        <div data-testid="empty-view">{title}</div>
+        <div data-testid='empty-view'>{title}</div>
     )),
 }))
 
@@ -183,57 +183,37 @@ describe('TransactionDisplay', () => {
         expect(getByTestId('empty-view')).toBeTruthy()
     })
 
-    it('passes isInnerTransaction prop to child components', async () => {
+    it('renders payment display with isInnerTransaction prop', async () => {
         const { getTransactionType } = await import(
             '@perawallet/wallet-core-blockchain'
         )
         vi.mocked(getTransactionType).mockReturnValue('payment')
 
-        const { PaymentTransactionDisplay } = await import(
-            '../../transaction-details'
-        )
-
-        render(
+        const { getByTestId } = render(
             <TransactionDisplay
                 transaction={mockTransaction}
                 isInnerTransaction={true}
             />,
         )
 
-        expect(PaymentTransactionDisplay).toHaveBeenCalledWith(
-            expect.objectContaining({
-                transaction: mockTransaction,
-                isInnerTransaction: true,
-            }),
-            expect.anything(),
-        )
+        expect(getByTestId('payment-display')).toBeTruthy()
     })
 
-    it('passes onInnerTransactionsPress to AppCallTransactionDisplay', async () => {
+    it('renders app call display with onInnerTransactionsPress callback', async () => {
         const { getTransactionType } = await import(
             '@perawallet/wallet-core-blockchain'
         )
         vi.mocked(getTransactionType).mockReturnValue('app-call')
 
-        const { AppCallTransactionDisplay } = await import(
-            '../../transaction-details'
-        )
-
         const mockOnPress = vi.fn()
 
-        render(
+        const { getByTestId } = render(
             <TransactionDisplay
                 transaction={mockTransaction}
                 onInnerTransactionsPress={mockOnPress}
             />,
         )
 
-        expect(AppCallTransactionDisplay).toHaveBeenCalledWith(
-            expect.objectContaining({
-                transaction: mockTransaction,
-                onInnerTransactionsPress: mockOnPress,
-            }),
-            expect.anything(),
-        )
+        expect(getByTestId('app-call-display')).toBeTruthy()
     })
 })

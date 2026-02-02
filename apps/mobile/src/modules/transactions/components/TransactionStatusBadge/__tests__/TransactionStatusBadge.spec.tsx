@@ -30,7 +30,7 @@ vi.mock('@hooks/useLanguage', () => ({
 describe('TransactionStatusBadge', () => {
     it('renders pending status', () => {
         const { getByText } = render(
-            <TransactionStatusBadge status="pending" />,
+            <TransactionStatusBadge status='pending' />,
         )
 
         expect(getByText('Pending')).toBeTruthy()
@@ -38,16 +38,14 @@ describe('TransactionStatusBadge', () => {
 
     it('renders completed status', () => {
         const { getByText } = render(
-            <TransactionStatusBadge status="completed" />,
+            <TransactionStatusBadge status='completed' />,
         )
 
         expect(getByText('Completed')).toBeTruthy()
     })
 
     it('renders failed status', () => {
-        const { getByText } = render(
-            <TransactionStatusBadge status="failed" />,
-        )
+        const { getByText } = render(<TransactionStatusBadge status='failed' />)
 
         expect(getByText('Failed')).toBeTruthy()
     })

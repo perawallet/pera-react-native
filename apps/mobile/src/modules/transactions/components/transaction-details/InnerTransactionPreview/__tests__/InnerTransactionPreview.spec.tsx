@@ -23,7 +23,11 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
     return {
         ...actual,
         encodeAlgorandAddress: vi.fn(() => 'ENCODED_ADDRESS_TEST123'),
-        getTransactionType: vi.fn(() => 'payment'),
+        getTransactionType: vi.fn((tx: PeraDisplayableTransaction) => {
+            if (tx.txType === 'pay') return 'payment'
+            if (tx.txType === 'appl') return 'app-call'
+            return 'unknown'
+        }),
         microAlgosToAlgos: vi.fn(
             (amount: bigint) => Number(amount) / 1_000_000,
         ),
@@ -32,27 +36,35 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
 
 describe('InnerTransactionPreview', () => {
     const mockPaymentTransaction = {
-        sender: { publicKey: new Uint8Array(32) },
-        payment: {
-            receiver: { publicKey: new Uint8Array(32) },
+        sender: 'ENCODED_ADDRESS_TEST123',
+        paymentTransaction: {
+            receiver: 'ENCODED_ADDRESS_TEST123',
             amount: BigInt(1_000_000),
         },
+        txType: 'pay',
     } as unknown as PeraDisplayableTransaction
 
     const mockAppCallTransaction = {
-        sender: { publicKey: new Uint8Array(32) },
-        appCall: {
-            appId: BigInt(123),
+        sender: 'ENCODED_ADDRESS_TEST123',
+        applicationTransaction: {
+            applicationId: BigInt(123),
             innerTransactions: [
-                { sender: { publicKey: new Uint8Array(32) } },
-                { sender: { publicKey: new Uint8Array(32) } },
+                { sender: 'ENCODED_ADDRESS_TEST123' },
+                { sender: 'ENCODED_ADDRESS_TEST123' },
             ],
         },
+        txType: 'appl',
     } as unknown as PeraDisplayableTransaction
 
-    it('renders payment transaction with sender address', () => {
+    it('renders sender address for unknown transaction types', () => {
+        const mockUnknownTransaction = {
+            ...mockPaymentTransaction,
+            txType: 'unknown',
+            paymentTransaction: undefined,
+        } as unknown as PeraDisplayableTransaction
+
         const { container } = render(
-            <InnerTransactionPreview transaction={mockPaymentTransaction} />,
+            <InnerTransactionPreview transaction={mockUnknownTransaction} />,
         )
 
         expect(container.textContent).toContain('ENCODED')

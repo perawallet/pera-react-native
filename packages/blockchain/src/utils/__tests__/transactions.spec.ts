@@ -20,6 +20,8 @@ import {
     isAssetFreezeTransaction,
     isKeyRegistrationTransaction,
     isAppCallTransaction,
+    getAssetTransferType,
+    getAssetConfigType,
 } from '../transactions'
 import { TransactionType } from '@algorandfoundation/algokit-utils/transact'
 import { encodeAddress } from '@algorandfoundation/algokit-utils'
@@ -217,6 +219,343 @@ describe('transactions utils', () => {
             expect(getTransactionType({ txType: 'other' } as any)).toBe(
                 'unknown',
             )
+        })
+    })
+
+    describe('mapToDisplayableTransaction additional types', () => {
+        it('should map Asset Config transaction', () => {
+            const tx = {
+                type: TransactionType.AssetConfig,
+                fee: 1000n,
+                firstValid: 1n,
+                lastValid: 2n,
+                sender: mockAddress(1),
+                assetConfig: {
+                    assetId: 100n,
+                    assetName: 'Test Asset',
+                    unitName: 'TST',
+                    total: 1000000n,
+                    decimals: 6,
+                    defaultFrozen: false,
+                    manager: mockAddress(3),
+                    reserve: mockAddress(4),
+                    freeze: mockAddress(5),
+                    clawback: mockAddress(6),
+                    url: 'https://test.com',
+                    metadataHash: new Uint8Array([1, 2, 3]),
+                },
+            } as any
+
+            const result = mapToDisplayableTransaction(tx as PeraTransaction)
+
+            expect(result?.txType).toBe('acfg')
+            expect(result?.assetConfigTransaction).toBeDefined()
+            expect(result?.assetConfigTransaction?.assetId).toBe(100n)
+            expect(result?.assetConfigTransaction?.params?.name).toBe(
+                'Test Asset',
+            )
+            expect(result?.assetConfigTransaction?.params?.unitName).toBe('TST')
+            expect(result?.assetConfigTransaction?.params?.manager).toBe(
+                encodeAddress(mockAddress(3).publicKey),
+            )
+            expect(result?.assetConfigTransaction?.params?.reserve).toBe(
+                encodeAddress(mockAddress(4).publicKey),
+            )
+        })
+
+        it('should map Asset Freeze transaction', () => {
+            const tx = {
+                type: TransactionType.AssetFreeze,
+                fee: 1000n,
+                firstValid: 1n,
+                lastValid: 2n,
+                sender: mockAddress(1),
+                assetFreeze: {
+                    assetId: 200n,
+                    freezeTarget: mockAddress(2),
+                    frozen: true,
+                },
+            } as any
+
+            const result = mapToDisplayableTransaction(tx as PeraTransaction)
+
+            expect(result?.txType).toBe('afrz')
+            expect(result?.assetFreezeTransaction).toBeDefined()
+            expect(result?.assetFreezeTransaction?.assetId).toBe(200n)
+            expect(result?.assetFreezeTransaction?.address).toBe(
+                encodeAddress(mockAddress(2).publicKey),
+            )
+            expect(result?.assetFreezeTransaction?.newFreezeStatus).toBe(true)
+        })
+
+        it('should map Key Registration transaction', () => {
+            const tx = {
+                type: TransactionType.KeyRegistration,
+                fee: 1000n,
+                firstValid: 1n,
+                lastValid: 2n,
+                sender: mockAddress(1),
+                keyRegistration: {
+                    voteFirst: 1000n,
+                    voteLast: 2000n,
+                    voteKeyDilution: 10n,
+                    selectionKey: new Uint8Array([1]),
+                    voteKey: new Uint8Array([2]),
+                    nonParticipation: false,
+                },
+            } as any
+
+            const result = mapToDisplayableTransaction(tx as PeraTransaction)
+
+            expect(result?.txType).toBe('keyreg')
+            expect(result?.keyregTransaction).toBeDefined()
+            expect(result?.keyregTransaction?.voteFirstValid).toBe(1000n)
+            expect(result?.keyregTransaction?.voteLastValid).toBe(2000n)
+            expect(
+                result?.keyregTransaction?.selectionParticipationKey,
+            ).toEqual(new Uint8Array([1]))
+        })
+
+        it('should map StateProof transaction', () => {
+            const tx = {
+                type: TransactionType.StateProof,
+                fee: 1000n,
+                firstValid: 1n,
+                lastValid: 2n,
+                sender: mockAddress(1),
+            } as any
+            const result = mapToDisplayableTransaction(tx as PeraTransaction)
+            expect(result?.txType).toBe('stpf')
+        })
+
+        it('should map Heartbeat transaction', () => {
+            const tx = {
+                type: TransactionType.Heartbeat,
+                fee: 1000n,
+                firstValid: 1n,
+                lastValid: 2n,
+                sender: mockAddress(1),
+            } as any
+            const result = mapToDisplayableTransaction(tx as PeraTransaction)
+            expect(result?.txType).toBe('hb')
+        })
+
+        it('should fallback to pay for unknown mapped type but valid generic type', () => {
+            // This hits the default case in mapTransactionType if we can force a type that isn't in screen
+            // But TransactionType enum is constrained. We can cast.
+            const tx = {
+                type: 999 as unknown as TransactionType,
+                fee: 1000n,
+                sender: mockAddress(1),
+            } as any
+            const result = mapToDisplayableTransaction(tx as PeraTransaction)
+            // It returns null at the top of mapToDisplayableTransaction check for Unknown (0).
+            // If we pass a random number that is not 0 but not in switch of mapTransactionType?
+            // mapToDisplayableTransaction checks `if (tx.type === TransactionType.Unknown) return null`
+            // If we pass 999, it proceeds.
+            // mapTransactionType(999) -> default 'pay'
+            expect(result?.txType).toBe('pay')
+        })
+
+        it('should map numeric OnCompletion in AppCall', () => {
+            const tx = {
+                type: TransactionType.AppCall,
+                fee: 1000n,
+                sender: mockAddress(1),
+                appCall: {
+                    appId: 99n,
+                    onComplete: 0, // NoOp
+                },
+            } as any
+            const result = mapToDisplayableTransaction(tx as PeraTransaction)
+            expect(result?.applicationTransaction?.onCompletion).toBe('noop')
+
+            // Test other values
+            const makeTx = (oc: number) =>
+                ({
+                    type: TransactionType.AppCall,
+                    fee: 1000n,
+                    sender: mockAddress(1),
+                    appCall: { appId: 99n, onComplete: oc },
+                }) as any
+
+            expect(
+                mapToDisplayableTransaction(makeTx(1))?.applicationTransaction
+                    ?.onCompletion,
+            ).toBe('optin')
+            expect(
+                mapToDisplayableTransaction(makeTx(2))?.applicationTransaction
+                    ?.onCompletion,
+            ).toBe('closeout')
+            expect(
+                mapToDisplayableTransaction(makeTx(3))?.applicationTransaction
+                    ?.onCompletion,
+            ).toBe('clear')
+            expect(
+                mapToDisplayableTransaction(makeTx(4))?.applicationTransaction
+                    ?.onCompletion,
+            ).toBe('update')
+            expect(
+                mapToDisplayableTransaction(makeTx(5))?.applicationTransaction
+                    ?.onCompletion,
+            ).toBe('delete')
+            expect(
+                mapToDisplayableTransaction(makeTx(99))?.applicationTransaction
+                    ?.onCompletion,
+            ).toBe('noop') // Default
+        })
+    })
+
+    describe('getAssetTransferType', () => {
+        it('should return unknown if not asset transfer', () => {
+            const tx = {
+                txType: 'pay',
+            } as PeraDisplayableTransaction
+            expect(getAssetTransferType(tx)).toBe('unknown')
+        })
+
+        it('should return clawback if asset sender is present', () => {
+            const tx = {
+                txType: 'axfer',
+                sender: 'sender-addr',
+                assetTransferTransaction: {
+                    sender: 'target-addr', // asset sender present
+                    receiver: 'receiver-addr',
+                    amount: 10n,
+                },
+            } as PeraDisplayableTransaction
+            expect(getAssetTransferType(tx)).toBe('clawback')
+        })
+
+        it('should return opt-in for 0 amount self-transfer without close', () => {
+            const tx = {
+                txType: 'axfer',
+                sender: 'addr-1',
+                assetTransferTransaction: {
+                    receiver: 'addr-1',
+                    amount: 0n,
+                },
+            } as PeraDisplayableTransaction
+            expect(getAssetTransferType(tx)).toBe('opt-in')
+        })
+
+        it('should return opt-out if close to address is present', () => {
+            const tx = {
+                txType: 'axfer',
+                sender: 'addr-1',
+                assetTransferTransaction: {
+                    receiver: 'addr-2',
+                    amount: 0n,
+                    closeTo: 'addr-3',
+                },
+            } as PeraDisplayableTransaction
+            expect(getAssetTransferType(tx)).toBe('opt-out')
+        })
+
+        it('should return transfer for standard transfer', () => {
+            const tx = {
+                txType: 'axfer',
+                sender: 'addr-1',
+                assetTransferTransaction: {
+                    receiver: 'addr-2',
+                    amount: 10n,
+                },
+            } as PeraDisplayableTransaction
+            expect(getAssetTransferType(tx)).toBe('transfer')
+        })
+    })
+
+    describe('getAssetConfigType', () => {
+        it('should return update if no config', () => {
+            const tx = { txType: 'acfg' } as PeraDisplayableTransaction
+            expect(getAssetConfigType(tx)).toBe('update')
+        })
+
+        it('should return create if assetId is 0', () => {
+            const tx = {
+                txType: 'acfg',
+                assetConfigTransaction: { assetId: 0n },
+            } as PeraDisplayableTransaction
+            expect(getAssetConfigType(tx)).toBe('create')
+        })
+
+        it('should return destroy if all params undefined', () => {
+            const tx = {
+                txType: 'acfg',
+                assetConfigTransaction: {
+                    assetId: 100n,
+                    params: {}, // all relevant fields undefined
+                },
+            } as PeraDisplayableTransaction
+            expect(getAssetConfigType(tx)).toBe('destroy')
+        })
+
+        it('should return update for normal config change', () => {
+            const tx = {
+                txType: 'acfg',
+                assetConfigTransaction: {
+                    assetId: 100n,
+                    params: { manager: 'addr-1' },
+                },
+            } as PeraDisplayableTransaction
+            expect(getAssetConfigType(tx)).toBe('update')
+        })
+    })
+
+    describe('Type Guards', () => {
+        it('should validate Asset Transfer', () => {
+            expect(
+                isAssetTransferTransaction({
+                    txType: 'axfer',
+                    assetTransferTransaction: {},
+                } as any),
+            ).toBe(true)
+            expect(isAssetTransferTransaction({ txType: 'pay' } as any)).toBe(
+                false,
+            )
+        })
+
+        it('should validate Asset Config', () => {
+            expect(
+                isAssetConfigTransaction({
+                    txType: 'acfg',
+                    assetConfigTransaction: {},
+                } as any),
+            ).toBe(true)
+            expect(isAssetConfigTransaction({ txType: 'pay' } as any)).toBe(
+                false,
+            )
+        })
+
+        it('should validate Asset Freeze', () => {
+            expect(
+                isAssetFreezeTransaction({
+                    txType: 'afrz',
+                    assetFreezeTransaction: {},
+                } as any),
+            ).toBe(true)
+            expect(isAssetFreezeTransaction({ txType: 'pay' } as any)).toBe(
+                false,
+            )
+        })
+
+        it('should validate Key Registration', () => {
+            expect(
+                isKeyRegistrationTransaction({ txType: 'keyreg' } as any),
+            ).toBe(true)
+            expect(isKeyRegistrationTransaction({ txType: 'pay' } as any)).toBe(
+                false,
+            )
+        })
+
+        it('should validate App Call', () => {
+            expect(
+                isAppCallTransaction({
+                    txType: 'appl',
+                    applicationTransaction: {},
+                } as any),
+            ).toBe(true)
+            expect(isAppCallTransaction({ txType: 'pay' } as any)).toBe(false)
         })
     })
 })

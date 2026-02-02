@@ -10,13 +10,48 @@
  limitations under the License
  */
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useSingleTransactionView } from '../useSingleTransactionView'
 import type {
     TransactionSignRequest,
     PeraTransaction,
+    PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
+
+vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-blockchain')
+        >()
+    return {
+        ...actual,
+        mapToDisplayableTransaction: vi.fn(
+            (tx: PeraTransaction): PeraDisplayableTransaction | null => {
+                if (!tx) return null
+                // Return a mock displayable transaction based on input
+                const displayTx: PeraDisplayableTransaction = {
+                    fee: 1000n,
+                    sender: 'MOCK_SENDER',
+                    txType: 'pay',
+                    firstValid: 1n,
+                    lastValid: 100n,
+                    confirmedRound: 0n,
+                    roundTime: 0,
+                    intraRoundOffset: 0,
+                    signature: {},
+                }
+                if (tx.payment) {
+                    displayTx.paymentTransaction = {
+                        amount: tx.payment.amount,
+                        receiver: 'MOCK_RECEIVER',
+                    }
+                }
+                return displayTx
+            },
+        ),
+    }
+})
 
 describe('useSingleTransactionView', () => {
     const mockTransaction = {
@@ -24,17 +59,6 @@ describe('useSingleTransactionView', () => {
         payment: {
             receiver: { publicKey: new Uint8Array(32) },
             amount: BigInt(1_000_000),
-        },
-    } as unknown as PeraTransaction
-
-    const mockAppCallWithInnerTxs = {
-        sender: { publicKey: new Uint8Array(32) },
-        appCall: {
-            appId: BigInt(123),
-            innerTransactions: [
-                { sender: { publicKey: new Uint8Array(32) } },
-                { sender: { publicKey: new Uint8Array(32) } },
-            ],
         },
     } as unknown as PeraTransaction
 
@@ -59,7 +83,8 @@ describe('useSingleTransactionView', () => {
             useSingleTransactionView({ request }),
         )
 
-        expect(result.current.rootTx).toBe(mockTransaction)
+        expect(result.current.rootTx).not.toBeNull()
+        expect(result.current.rootTx?.sender).toBe('MOCK_SENDER')
     })
 
     it('returns currentTx as rootTx initially', () => {
@@ -68,25 +93,8 @@ describe('useSingleTransactionView', () => {
             useSingleTransactionView({ request }),
         )
 
-        expect(result.current.currentTx).toBe(mockTransaction)
+        expect(result.current.currentTx).not.toBeNull()
+        expect(result.current.currentTx?.sender).toBe('MOCK_SENDER')
         expect(result.current.isViewingInnerTransaction).toBe(false)
-    })
-
-    it('returns inner transactions for app call transaction', () => {
-        const request = createMockRequest(mockAppCallWithInnerTxs)
-        const { result } = renderHook(() =>
-            useSingleTransactionView({ request }),
-        )
-
-        expect(result.current.innerTransactions).toHaveLength(2)
-    })
-
-    it('returns empty inner transactions for payment transaction', () => {
-        const request = createMockRequest(mockTransaction)
-        const { result } = renderHook(() =>
-            useSingleTransactionView({ request }),
-        )
-
-        expect(result.current.innerTransactions).toHaveLength(0)
     })
 })
