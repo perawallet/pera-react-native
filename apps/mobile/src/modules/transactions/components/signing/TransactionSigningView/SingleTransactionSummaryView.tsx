@@ -52,7 +52,13 @@ export const SingleTransactionSummaryView = ({
 
     return (
         <PWView style={styles.summaryContainer}>
-            <PWToolbar center={<PWText variant='h4'>{t('signing.transactions.title')}</PWText>} />
+            <PWToolbar
+                center={
+                    <PWText variant='h4'>
+                        {t('signing.transactions.title')}
+                    </PWText>
+                }
+            />
             <PWView style={styles.summaryHeader}>
                 <TransactionIcon
                     type={txType}
@@ -65,7 +71,11 @@ export const SingleTransactionSummaryView = ({
                     currency='ALGO'
                     precision={ALGO_ASSET.decimals}
                     minPrecision={DEFAULT_PRECISION}
-                    value={Decimal(microAlgosToAlgos(transaction.paymentTransaction?.amount ?? 0n))}
+                    value={Decimal(
+                        microAlgosToAlgos(
+                            transaction.paymentTransaction?.amount ?? 0n,
+                        ),
+                    )}
                     showSymbol
                     variant='h1'
                     style={styles.amountValue}

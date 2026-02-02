@@ -42,8 +42,8 @@ export const SlideView = ({
         const targetValue = isVisible
             ? 0
             : direction === 'right'
-                ? SCREEN_WIDTH
-                : -SCREEN_WIDTH
+              ? SCREEN_WIDTH
+              : -SCREEN_WIDTH
 
         translateX.value = withTiming(targetValue, {
             duration: SLIDE_ANIMATION_DURATION,

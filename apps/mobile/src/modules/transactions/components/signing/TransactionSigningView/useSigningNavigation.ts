@@ -74,8 +74,7 @@ export const useSigningNavigation = ({
 
     const allTransactions = useMemo(() => groups.flat(), [groups])
 
-    const isSingleTransaction =
-        groups.length === 1 && groups[0]?.length === 1
+    const isSingleTransaction = groups.length === 1 && groups[0]?.length === 1
     const isSingleGroup = groups.length === 1 && !isSingleTransaction
     const isMultipleGroups = groups.length > 1
 
@@ -94,10 +93,7 @@ export const useSigningNavigation = ({
     }
 
     const totalFee = useMemo(() => {
-        return allTransactions.reduce(
-            (sum, tx) => sum + (tx.fee ?? 0n),
-            0n,
-        )
+        return allTransactions.reduce((sum, tx) => sum + (tx.fee ?? 0n), 0n)
     }, [allTransactions])
 
     const canGoBack = navigationStack.length > 1
@@ -118,18 +114,15 @@ export const useSigningNavigation = ({
         [groups],
     )
 
-    const navigateToGroup = useCallback(
-        (groupIndex: number) => {
-            setNavigationStack(prev => [
-                ...prev,
-                {
-                    viewType: 'group-list',
-                    groupIndex,
-                },
-            ])
-        },
-        [],
-    )
+    const navigateToGroup = useCallback((groupIndex: number) => {
+        setNavigationStack(prev => [
+            ...prev,
+            {
+                viewType: 'group-list',
+                groupIndex,
+            },
+        ])
+    }, [])
 
     const navigateToTransaction = useCallback(
         (transactionIndex: number, groupIndex?: number) => {

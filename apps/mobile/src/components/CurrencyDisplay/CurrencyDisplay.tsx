@@ -63,14 +63,14 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
         return privacyMode
             ? '****'
             : formatCurrency(
-                value,
-                precision,
-                currency,
-                deviceInfo.getDeviceLocale(),
-                showSymbol,
-                truncateToUnits,
-                minPrecision,
-            )
+                  value,
+                  precision,
+                  currency,
+                  deviceInfo.getDeviceLocale(),
+                  showSymbol,
+                  truncateToUnits,
+                  minPrecision,
+              )
     }, [
         value,
         precision,

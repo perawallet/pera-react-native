@@ -19,7 +19,7 @@ import {
     type KeyRegistrationTransactionFields,
     type AppCallTransactionFields,
     OnApplicationComplete,
-    decodeTransaction
+    decodeTransaction,
 } from '@algorandfoundation/algokit-utils/transact'
 import type {
     AssetConfigType,
@@ -70,8 +70,8 @@ export const mapToDisplayableTransaction = (
                 receiver: encodeAlgorandAddress(paymentTx.receiver.publicKey),
                 closeRemainderTo: paymentTx.closeRemainderTo
                     ? encodeAlgorandAddress(
-                        paymentTx.closeRemainderTo.publicKey,
-                    )
+                          paymentTx.closeRemainderTo.publicKey,
+                      )
                     : undefined,
             }
             break
@@ -330,7 +330,8 @@ export const isAppCallTransaction = (
     return tx.txType === 'appl' && tx.applicationTransaction !== undefined
 }
 
-export const decodeAlgorandTransactions = (transactions: string[]): PeraTransaction[] => {
+export const decodeAlgorandTransactions = (
+    transactions: string[],
+): PeraTransaction[] => {
     return transactions.map(txn => decodeTransaction(decodeFromBase64(txn)))
 }
-

@@ -28,10 +28,7 @@ export type GroupTransactionListViewProps = {
     groupId?: string
     fee: bigint
     showFee?: boolean
-    onTransactionPress: (
-        tx: PeraDisplayableTransaction,
-        index: number,
-    ) => void
+    onTransactionPress: (tx: PeraDisplayableTransaction, index: number) => void
 }
 
 export const GroupTransactionListView = ({

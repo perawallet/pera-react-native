@@ -35,7 +35,11 @@ import {
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import WalletConnect from '@walletconnect/client'
 import { useCallback } from 'react'
-import { AlgorandChainId, WalletConnectConnection, WalletConnectTransactionPayload } from '../models'
+import {
+    AlgorandChainId,
+    WalletConnectConnection,
+    WalletConnectTransactionPayload,
+} from '../models'
 import { MAX_DATA_SIGN_REQUESTS } from '../constants'
 import {
     isLedgerAccount,
@@ -232,9 +236,11 @@ export const useWalletConnectHandlers = () => {
                     )
                 }
 
-                const txnObjects = decodeAlgorandTransactions(paramOne.map(p => p.txn))
+                const txnObjects = decodeAlgorandTransactions(
+                    paramOne.map(p => p.txn),
+                )
 
-                logger.debug("handleSignTransaction", { payload, txnObjects })
+                logger.debug('handleSignTransaction', { payload, txnObjects })
 
                 addSignRequest({
                     id: uuid(),
@@ -242,7 +248,9 @@ export const useWalletConnectHandlers = () => {
                     transport: 'callback',
                     transportId: connector.clientId,
                     txs: [txnObjects ?? []],
-                    approve: async (signed: (PeraSignedTransaction | null)[][]) => {
+                    approve: async (
+                        signed: (PeraSignedTransaction | null)[][],
+                    ) => {
                         const signedTxns = signed.map(txns =>
                             txns.map(txn =>
                                 txn ? encodeSignedTransaction(txn) : null,
@@ -263,11 +271,13 @@ export const useWalletConnectHandlers = () => {
                         })
                     },
                     error: async (error: string) => {
-                        throw new WalletConnectSignRequestError(new Error(error))
+                        throw new WalletConnectSignRequestError(
+                            new Error(error),
+                        )
                     },
                 } as TransactionSignRequest)
             } catch (error) {
-                logger.error("handleSignTransaction error", { error })
+                logger.error('handleSignTransaction error', { error })
             }
         },
         [connections, addSignRequest, network],

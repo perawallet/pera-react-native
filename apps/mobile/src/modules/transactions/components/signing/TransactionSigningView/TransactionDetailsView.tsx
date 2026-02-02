@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import { PWIcon, PWText, PWToolbar, PWTouchableOpacity, PWView } from '@components/core'
+import {
+    PWIcon,
+    PWText,
+    PWToolbar,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
@@ -33,7 +39,11 @@ export const TransactionDetailsView = ({
     return (
         <PWView style={styles.detailsViewContainer}>
             <PWToolbar
-                center={<PWText variant='h4'>{t('signing.transactions.details')}</PWText>}
+                center={
+                    <PWText variant='h4'>
+                        {t('signing.transactions.details')}
+                    </PWText>
+                }
                 left={
                     <PWTouchableOpacity
                         onPress={onBack}

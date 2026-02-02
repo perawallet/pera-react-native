@@ -79,4 +79,3 @@ export type WalletConnectTransactionPayload = {
 export type WalletConnectTransactionParam = {
     txn: string
 }
-

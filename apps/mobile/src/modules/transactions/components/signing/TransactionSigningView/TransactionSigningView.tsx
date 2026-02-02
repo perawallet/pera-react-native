@@ -104,8 +104,8 @@ export const TransactionSigningView = ({
                         body: config.debugEnabled
                             ? `${error}`
                             : t(
-                                'signing.transaction_view.transaction_failed_body',
-                            ),
+                                  'signing.transaction_view.transaction_failed_body',
+                              ),
                     },
                     {
                         notifier: bottomSheetNotifier.current ?? undefined,

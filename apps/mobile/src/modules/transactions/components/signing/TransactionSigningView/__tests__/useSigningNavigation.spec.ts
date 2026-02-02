@@ -21,9 +21,10 @@ import type {
 
 // Mock the mapToDisplayableTransaction function
 vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
-    const actual = await importOriginal<
-        typeof import('@perawallet/wallet-core-blockchain')
-    >()
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-blockchain')
+        >()
     return {
         ...actual,
         mapToDisplayableTransaction: (
@@ -138,10 +139,7 @@ describe('useSigningNavigation', () => {
 
     describe('multiple groups', () => {
         it('returns multi-group-list as root view type', () => {
-            const request = createRequest([
-                [mockPaymentTx],
-                [mockAppCallTx],
-            ])
+            const request = createRequest([[mockPaymentTx], [mockAppCallTx]])
             const { result } = renderHook(() =>
                 useSigningNavigation({ request }),
             )
