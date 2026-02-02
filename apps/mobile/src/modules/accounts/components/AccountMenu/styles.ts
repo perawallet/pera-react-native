@@ -15,57 +15,33 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => {
     return {
         portfolioContainer: {
-            paddingHorizontal: theme.spacing.lg,
             paddingTop: theme.spacing.md,
         },
-        activeLabel: {
-            color: theme.colors.textMain,
-            fontWeight: '600',
-        },
-        passiveLabel: {
-            color: theme.colors.textMain,
-        },
         accountContainer: {
-            paddingHorizontal: theme.spacing.lg,
             gap: theme.spacing.md,
-        },
-        activeItem: {
-            flexDirection: 'row',
-            gap: theme.spacing.md,
-            backgroundColor: theme.colors.layerGrayLightest,
-            borderRadius: theme.spacing.xs,
-            paddingVertical: theme.spacing.md,
-            paddingHorizontal: theme.spacing.sm,
-            alignItems: 'center',
-        },
-        passiveItem: {
-            flexDirection: 'row',
-            gap: theme.spacing.md,
-            borderRadius: theme.spacing.xs,
-            paddingVertical: theme.spacing.md,
-            paddingHorizontal: theme.spacing.sm,
-            alignItems: 'center',
         },
         container: {
             padding: 0,
+            paddingHorizontal: theme.spacing.lg,
             margin: 0,
             flex: 1,
             overflow: 'hidden',
+            gap: theme.spacing.xl,
+        },
+        mainContent: {
+            flex: 1,
+            gap: theme.spacing.md,
         },
         titleBar: {
             gap: theme.spacing.md,
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
-            marginBottom: theme.spacing.sm,
-            paddingHorizontal: theme.spacing.lg,
         },
         titleBarButtonContainer: {
             flexDirection: 'row',
             gap: theme.spacing.md,
             alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '100%',
         },
         sortButton: {
             flexDirection: 'row',

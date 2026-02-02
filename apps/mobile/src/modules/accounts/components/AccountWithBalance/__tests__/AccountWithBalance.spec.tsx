@@ -68,6 +68,16 @@ describe('AccountWithBalance', () => {
         expect(container.textContent).toContain('Test Account')
     })
 
+    it('renders with highlight state when isHighlighted is true', () => {
+        const { container } = render(
+            <AccountWithBalance
+                account={mockAccount}
+                isHighlighted={true}
+            />,
+        )
+        expect(container).toBeTruthy()
+    })
+
     it('applies custom styles when passed via props', () => {
         const { container } = render(
             <AccountWithBalance

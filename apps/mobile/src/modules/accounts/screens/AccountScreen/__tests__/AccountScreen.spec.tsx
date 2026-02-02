@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import React, { ReactNode } from 'react'
+import React from 'react'
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { AccountScreen } from '../AccountScreen'
@@ -36,16 +36,9 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     }
 })
 
-vi.mock('react-native-drawer-layout', () => {
-    return {
-        Drawer: ({ children }: { children: ReactNode }) =>
-            children as unknown as ReactNode,
-    }
-})
-
 // Mock children to simplify test
-vi.mock('@modules/accounts/components/AccountMenu', () => ({
-    AccountMenu: 'AccountMenu',
+vi.mock('@modules/accounts/components/AccountMenuBottomSheet', () => ({
+    AccountMenuBottomSheet: 'AccountMenuBottomSheet',
 }))
 vi.mock('@modules/accounts/components/AccountOverview', () => ({
     AccountOverview: () => <span data-testid='AccountOverview' />,

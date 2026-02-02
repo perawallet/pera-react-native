@@ -11,6 +11,7 @@
  */
 
 import { useTheme } from '@rneui/themed'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import {
     getAccountDisplayName,
     WalletAccount,
@@ -52,16 +53,31 @@ export const AccountDisplay = ({
             {!!account && (
                 <AccountIcon
                     account={account}
+                    size='lg'
                     color={theme.colors.textMain}
                     {...iconProps}
                 />
             )}
-            <PWText
-                style={textProps?.style ?? styles.text}
-                variant={textProps?.variant ?? 'h4'}
-            >
-                {displayName}
-            </PWText>
+            <PWView style={styles.textContainer}>
+                <PWText
+                    style={textProps?.style ?? styles.text}
+                    variant={textProps?.variant ?? 'h4'}
+                    numberOfLines={1}
+                    ellipsizeMode='tail'
+                >
+                    {displayName}
+                </PWText>
+                {!!account && (
+                    <PWText
+                        style={styles.addressText}
+                        variant='caption'
+                        numberOfLines={1}
+                        ellipsizeMode='middle'
+                    >
+                        {truncateAlgorandAddress(account.address, 12)}
+                    </PWText>
+                )}
+            </PWView>
             {showChevron && (
                 <PWIcon
                     variant='secondary'

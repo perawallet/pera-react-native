@@ -12,7 +12,11 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => {
+type StyleProps = {
+    isHighlighted?: boolean
+}
+
+export const useStyles = makeStyles((theme, { isHighlighted }: StyleProps) => {
     return {
         container: {
             flexDirection: 'row',
@@ -20,6 +24,13 @@ export const useStyles = makeStyles(theme => {
             justifyContent: 'space-between',
             gap: theme.spacing.sm,
             width: '100%',
+            backgroundColor: theme.colors.layerGrayLightest,
+            borderWidth: 1,
+            borderColor: isHighlighted
+                ? theme.colors.buttonSquareText
+                : theme.colors.layerGray,
+            borderRadius: theme.spacing.lg,
+            padding: theme.spacing.md,
         },
         balanceContainer: {
             gap: theme.spacing.xs,

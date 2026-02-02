@@ -10,23 +10,31 @@
  limitations under the License
  */
 
-import { PWButton, PWText, PWView, PWViewProps } from '@components/core'
+import {
+    PWDivider,
+    PWIcon,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+    PWViewProps,
+} from '@components/core'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { WealthChart } from '@components/WealthChart'
-import { formatDatetime } from '@perawallet/wallet-core-shared'
-import { useCallback } from 'react'
+import { formatDatetime, formatCurrency } from '@perawallet/wallet-core-shared'
+import { useCallback, useMemo } from 'react'
 import { useChartInteraction } from '@hooks/useChartInteraction'
-import { WealthTrend } from '@components/WealthTrend'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
     AccountBalanceHistoryItem,
     useAccountBalancesQuery,
+    useAccountBalancesHistoryQuery,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
+import Decimal from 'decimal.js'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { InfoButton } from '@components/InfoButton'
@@ -36,7 +44,6 @@ export type PortfolioViewProps = {
     onDataSelected?: (selected: AccountBalanceHistoryItem | null) => void
 } & PWViewProps
 
-//TODO layout and spacing needs a bit of clean up
 export const PortfolioView = (props: PortfolioViewProps) => {
     const styles = useStyles()
     const { preferredFiatCurrency } = useCurrency()
@@ -54,6 +61,31 @@ export const PortfolioView = (props: PortfolioViewProps) => {
         setPreference(UserPreferences.chartVisible, !chartVisible)
     }
 
+    const addresses = useMemo(() => accounts.map(a => a.address), [accounts])
+
+    const { data: historyData } = useAccountBalancesHistoryQuery(
+        addresses,
+        period,
+    )
+
+    const historyDataPoints = useMemo(
+        () => historyData?.map(p => p.fiatValue) ?? [],
+        [historyData],
+    )
+
+    const [trendAbsolute, trendPercentage, isPositiveTrend] = useMemo(() => {
+        const firstDp = historyDataPoints.at(0) ?? Decimal(0)
+        const lastDp = historyDataPoints.at(-1) ?? Decimal(0)
+
+        return [
+            lastDp.minus(firstDp),
+            lastDp.isZero()
+                ? Decimal(0)
+                : lastDp.minus(firstDp).abs().div(lastDp).mul(100),
+            lastDp.greaterThanOrEqualTo(firstDp),
+        ]
+    }, [historyDataPoints])
+
     const chartSelectionChanged = useCallback(
         (selected: AccountBalanceHistoryItem | null) => {
             setSelectedPoint(selected)
@@ -63,78 +95,144 @@ export const PortfolioView = (props: PortfolioViewProps) => {
     )
 
     return (
-        <PWView {...props}>
-            <PWView style={styles.valueTitleBar}>
-                <PWText
-                    style={styles.valueTitle}
-                    variant='h4'
-                >
-                    {t('portfolio.title')}
-                </PWText>
-                <InfoButton
-                    variant='secondary'
-                    title={t('portfolio.info.title')}
-                >
-                    <PWText>{t('portfolio.info.body')}</PWText>
-                </InfoButton>
-            </PWView>
-            <PWView style={styles.valueBar}>
-                <CurrencyDisplay
-                    variant='h1'
-                    value={
-                        selectedPoint
-                            ? selectedPoint.algoValue
-                            : portfolioAlgoValue
-                    }
-                    currency='ALGO'
-                    precision={2}
-                    style={styles.primaryCurrency}
-                    isLoading={isPending}
-                />
-                <PWButton
-                    icon='chart'
-                    variant={chartVisible ? 'secondary' : 'helper'}
-                    paddingStyle='dense'
-                    onPress={toggleChartVisible}
-                />
-            </PWView>
-            <PWView style={styles.secondaryValueBar}>
-                <CurrencyDisplay
-                    variant='h4'
-                    style={styles.valueTitle}
-                    value={
-                        selectedPoint
-                            ? selectedPoint.fiatValue
-                            : portfolioFiatValue
-                    }
-                    currency={preferredFiatCurrency}
-                    prefix='≈ '
-                    precision={2}
-                    isLoading={isPending}
-                />
-                {!selectedPoint && <WealthTrend period={period} />}
-                {selectedPoint && (
-                    <PWText
+        <PWView
+            {...props}
+            style={[styles.container, props.style]}
+        >
+            <PWView style={styles.columns}>
+                <PWView style={styles.leftColumn}>
+                    <PWView style={styles.valueTitleBar}>
+                        <PWText
+                            style={styles.valueTitle}
+                            variant='h4'
+                        >
+                            {t('portfolio.title')}
+                        </PWText>
+                        <InfoButton
+                            variant='secondary'
+                            title={t('portfolio.info.title')}
+                        >
+                            <PWText>{t('portfolio.info.body')}</PWText>
+                        </InfoButton>
+                    </PWView>
+                    <CurrencyDisplay
+                        variant='h2'
+                        value={
+                            selectedPoint
+                                ? selectedPoint.algoValue
+                                : portfolioAlgoValue
+                        }
+                        currency='ALGO'
+                        precision={2}
+                        style={styles.primaryCurrency}
+                        isLoading={isPending}
+                    />
+                    <CurrencyDisplay
                         variant='h4'
-                        style={styles.dateDisplay}
-                    >
-                        {formatDatetime(selectedPoint.datetime)}
-                    </PWText>
+                        style={styles.valueTitle}
+                        value={
+                            selectedPoint
+                                ? selectedPoint.fiatValue
+                                : portfolioFiatValue
+                        }
+                        currency={preferredFiatCurrency}
+                        prefix='≈ '
+                        precision={2}
+                        isLoading={isPending}
+                    />
+                </PWView>
+
+                {!selectedPoint && (
+                    <PWView style={styles.rightColumn}>
+                        <PWText
+                            variant='h4'
+                            style={styles.trendTitle}
+                        >
+                            {t('portfolio.last_7_days')}
+                        </PWText>
+
+                        <PWView style={styles.trendContent}>
+                            {!trendPercentage.isZero() && (
+                                <PWView style={styles.trendIconContainer}>
+                                    <PWIcon
+                                        name={
+                                            isPositiveTrend
+                                                ? 'arrow-up'
+                                                : 'arrow-down'
+                                        }
+                                        variant={
+                                            isPositiveTrend ? 'helper' : 'error'
+                                        }
+                                        size='sm'
+                                    />
+                                </PWView>
+                            )}
+                            <PWText
+                                variant='h2'
+                                style={styles.primaryCurrency}
+                            >
+                                {trendPercentage.toFixed(2)}%
+                            </PWText>
+                        </PWView>
+
+                        <PWText
+                            variant='h4'
+                            style={styles.valueTitle}
+                        >
+                            {isPositiveTrend ? '+' : '-'}
+                            {formatCurrency(
+                                trendAbsolute.abs(),
+                                2,
+                                preferredFiatCurrency,
+                                undefined,
+                                true,
+                            )}
+                        </PWText>
+                    </PWView>
+                )}
+
+                {selectedPoint && (
+                    <PWView style={styles.rightColumn}>
+                        <PWText
+                            variant='h4'
+                            style={styles.dateDisplay}
+                        >
+                            {formatDatetime(selectedPoint.datetime)}
+                        </PWText>
+                    </PWView>
                 )}
             </PWView>
 
-            <ExpandablePanel
-                isExpanded={chartVisible}
-                containerStyle={styles.chartContainer}
+            <PWDivider style={styles.divider} />
+
+            <PWTouchableOpacity
+                style={styles.chartToggle}
+                onPress={toggleChartVisible}
             >
-                <WealthChart
-                    period={period}
-                    onSelectionChanged={chartSelectionChanged}
+                <PWText style={styles.chartToggleText}>
+                    {chartVisible
+                        ? t('portfolio.hide_chart')
+                        : t('portfolio.show_chart')}
+                </PWText>
+                <PWIcon
+                    name='chevron-down'
+                    variant='secondary'
+                    size='xs'
+                    style={chartVisible ? styles.invertedIcon : undefined}
                 />
-                <ChartPeriodSelection
-                    value={period}
-                    onChange={setPeriod}
-                />
+            </PWTouchableOpacity>
+
+            <ExpandablePanel isExpanded={chartVisible}>
+                <PWView style={styles.chartContainer}>
+                    <WealthChart
+                        period={period}
+                        onSelectionChanged={chartSelectionChanged}
+                    />
+                    <ChartPeriodSelection
+                        value={period}
+                        onChange={setPeriod}
+                    />
+                </PWView>
             </ExpandablePanel>
         </PWView>
     )

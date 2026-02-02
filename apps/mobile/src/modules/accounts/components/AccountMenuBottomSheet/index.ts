@@ -10,24 +10,4 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => {
-    return {
-        container: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: theme.spacing.md,
-        },
-        textContainer: {
-            flexShrink: 1,
-            justifyContent: 'center',
-        },
-        text: {
-            color: theme.colors.textMain,
-        },
-        addressText: {
-            color: theme.colors.textGray,
-        },
-    }
-})
+export * from './AccountMenuBottomSheet'

@@ -36,25 +36,17 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 })
 
 // Mock child components
-vi.mock('../PortfolioView', () => ({
-    PortfolioView: 'PortfolioView',
+vi.mock('../../PortfolioView', () => ({
+    PortfolioView: () => <div data-testid='PortfolioView' />,
 }))
 
-// Mock InboxTab and AccountsTab if they are complex, but they are in same file/folder?
-// They are in same folder, so they are imported. We can mock them if needed, but shallow test might be better.
-// For now, let's rely on shallow rendering or just basic render.
-
 describe('AccountMenu', () => {
-    it('renders tabs', () => {
+    it('renders account list and portfolio', () => {
         const onSelected = vi.fn()
-        render(
-            <AccountMenu
-                onSelected={onSelected}
-                showInbox={true}
-            />,
-        )
-        // Tab and TabView should render
-        expect(screen.getByTestId('Tab')).toBeTruthy()
-        expect(screen.getByTestId('TabView')).toBeTruthy()
+        render(<AccountMenu onSelected={onSelected} />)
+
+        screen.debug()
+        expect(screen.getByText('account_menu.title')).toBeTruthy()
+        expect(screen.getByTestId('PortfolioView')).toBeTruthy()
     })
 })

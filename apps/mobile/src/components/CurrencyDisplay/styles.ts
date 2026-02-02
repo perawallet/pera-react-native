@@ -30,6 +30,7 @@ export const useStyles = makeStyles((theme, props: CurrencyDisplayProps) => {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'flex-start',
+            gap: theme.spacing.xs,
             backgroundColor: 'transparent',
         },
         skeleton: {
