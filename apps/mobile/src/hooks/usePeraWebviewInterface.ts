@@ -41,7 +41,7 @@ import {
     type SignRequestSource,
     type TransactionSignRequest,
     useSigningRequest,
-} from '../../../../packages/signing/dist'
+} from '@perawallet/wallet-core-signing'
 import {
     requireSecure,
     sendErrorToWebview,

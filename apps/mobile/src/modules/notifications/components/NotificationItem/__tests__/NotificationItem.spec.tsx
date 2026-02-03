@@ -17,6 +17,13 @@ import { PeraNotification } from '@perawallet/wallet-core-notifications'
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
     formatRelativeTime: vi.fn(date => `formatted-${date.toISOString()}`),
+    createLazyStore: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-signing', () => ({
+    useSigningRequest: vi.fn(() => ({
+        addSignRequest: vi.fn(),
+    })),
 }))
 
 describe('NotificationItem', () => {

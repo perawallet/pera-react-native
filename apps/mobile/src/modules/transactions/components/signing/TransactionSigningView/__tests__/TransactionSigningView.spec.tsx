@@ -22,6 +22,21 @@ import {
 const mockSignAndSendRequest = vi.fn()
 const mockRejectRequest = vi.fn()
 
+vi.mock('@react-navigation/native', () => ({
+    useNavigation: vi.fn(() => ({
+        canGoBack: vi.fn(() => false),
+    })),
+    useRoute: vi.fn(() => ({
+        params: {},
+    })),
+    NavigationContainer: ({ children }: { children: React.ReactNode }) => (
+        <div>{children}</div>
+    ),
+    NavigationIndependentTree: ({ children }: { children: React.ReactNode }) => (
+        <div>{children}</div>
+    ),
+}))
+
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: vi.fn(() => ({
         pendingSignRequests: [],
@@ -65,9 +80,9 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
                 signature: {},
                 paymentTransaction: tx.payment
                     ? {
-                          amount: tx.payment.amount ?? 0n,
-                          receiver: 'MOCK_RECEIVER',
-                      }
+                        amount: tx.payment.amount ?? 0n,
+                        receiver: 'MOCK_RECEIVER',
+                    }
                     : undefined,
             }
         }),

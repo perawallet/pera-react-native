@@ -73,9 +73,10 @@ export type WalletConnectTransactionPayload = {
     id: number
     jsonrpc: string
     method: 'algo_signTxn'
-    params: [WalletConnectTransactionParam[]]
+    params: WalletConnectTransactionParam[][]
 }
 
 export type WalletConnectTransactionParam = {
+    message?: string
     txn: string
 }
