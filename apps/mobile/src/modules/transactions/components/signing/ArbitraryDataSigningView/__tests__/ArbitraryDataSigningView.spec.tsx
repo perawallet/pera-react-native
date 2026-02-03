@@ -15,13 +15,28 @@ import { describe, it, expect, vi } from 'vitest'
 import { ArbitraryDataSigningView } from '../ArbitraryDataSigningView'
 import { ArbitraryDataSignRequest } from '@perawallet/wallet-core-blockchain'
 
-// Correctly mock TabView and its static Item property
-const MockTabView = ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-)
-MockTabView.Item = ({ children }: { children: React.ReactNode }) => (
-    <div>{children}</div>
-)
+// Mock createPWTabNavigator
+vi.mock('@components/core/PWTabView/PWTabView', () => {
+    const React = require('react')
+    const MockNavigator = ({ children }: { children: React.ReactNode }) => (
+        <div>{children}</div>
+    )
+    const MockScreen = ({ children, component: Component, name }: any) => {
+        if (name !== 'Main') return null
+        return (
+            <div>
+                {children ? (typeof children === 'function' ? children({ navigation: { navigate: vi.fn(), goBack: vi.fn() } }) : children) : null}
+                {Component ? <Component navigation={{ navigate: vi.fn(), goBack: vi.fn() }} route={{ params: {} }} /> : null}
+            </div>
+        )
+    }
+    return {
+        createPWTabNavigator: () => ({
+            Navigator: MockNavigator,
+            Screen: MockScreen,
+        }),
+    }
+})
 
 vi.mock('@perawallet/wallet-core-blockchain', async () => ({
     useSigningRequest: vi.fn(() => ({

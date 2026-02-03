@@ -17,7 +17,6 @@ import { useState } from 'react'
 import { useStyles } from './styles'
 import { useWindowDimensions } from 'react-native'
 import { TransactionErrorBoundary } from '@modules/transactions/components/BaseErrorBoundary/TransactionErrorBoundary'
-import { TAB_ANIMATION_CONFIG } from '@constants/ui'
 import { useLanguage } from '@hooks/useLanguage'
 import { ReceiveFundsAccountSelectionView } from '../AccountSelection/ReceiveFundsAccountSelectionView'
 import { ReceiveFundsQRView } from '../QrView/ReceiveFundsQRView'
@@ -28,12 +27,18 @@ export type ReceiveFundsBottomSheetProps = {
     onClose: () => void
 }
 
+export type ReceiveFundsTabParamsList = {
+    AccountSelection: undefined
+    QRView: undefined
+}
+
+const Tab = PWTabView.createNavigator<ReceiveFundsTabParamsList>()
+
 export const ReceiveFundsBottomSheet = ({
     account,
     onClose,
     isVisible,
 }: ReceiveFundsBottomSheetProps) => {
-    const [screenIndex, setScreenIndex] = useState(0)
     const dimensions = useWindowDimensions()
     const styles = useStyles(dimensions)
     const { t } = useLanguage()
@@ -41,17 +46,7 @@ export const ReceiveFundsBottomSheet = ({
 
     const handleClose = () => {
         setSelectedAccount(account)
-        setScreenIndex(0)
         onClose()
-    }
-
-    const handleSelected = (account?: WalletAccount) => {
-        setSelectedAccount(account)
-        setScreenIndex(screenIndex + 1)
-    }
-
-    const handleBack = () => {
-        setScreenIndex(screenIndex - 1)
     }
 
     return (
@@ -61,27 +56,42 @@ export const ReceiveFundsBottomSheet = ({
         >
             <PWView style={styles.innerContainer}>
                 <TransactionErrorBoundary t={t}>
-                    <PWTabView
-                        value={screenIndex}
-                        animationType='timing'
-                        animationConfig={TAB_ANIMATION_CONFIG}
+                    <Tab.Navigator
+                        screenOptions={{
+                            swipeEnabled: false,
+                        }}
                     >
                         {!account && (
-                            <PWTabView.Item style={styles.tabItem}>
-                                <ReceiveFundsAccountSelectionView
-                                    onSelected={handleSelected}
-                                    onClose={handleClose}
-                                />
-                            </PWTabView.Item>
+                            <Tab.Screen name='AccountSelection'>
+                                {({ navigation }) => (
+                                    <PWView style={styles.tabItem}>
+                                        <ReceiveFundsAccountSelectionView
+                                            onSelected={acc => {
+                                                setSelectedAccount(acc)
+                                                navigation.navigate('QRView')
+                                            }}
+                                            onClose={handleClose}
+                                        />
+                                    </PWView>
+                                )}
+                            </Tab.Screen>
                         )}
-                        <PWTabView.Item style={styles.tabItem}>
-                            <ReceiveFundsQRView
-                                account={selectedAccount}
-                                onClose={handleClose}
-                                onBack={account ? undefined : handleBack}
-                            />
-                        </PWTabView.Item>
-                    </PWTabView>
+                        <Tab.Screen name='QRView'>
+                            {({ navigation }) => (
+                                <PWView style={styles.tabItem}>
+                                    <ReceiveFundsQRView
+                                        account={selectedAccount}
+                                        onClose={handleClose}
+                                        onBack={
+                                            account
+                                                ? undefined
+                                                : () => navigation.goBack()
+                                        }
+                                    />
+                                </PWView>
+                            )}
+                        </Tab.Screen>
+                    </Tab.Navigator>
                 </TransactionErrorBoundary>
             </PWView>
         </PWBottomSheet>

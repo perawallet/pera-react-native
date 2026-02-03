@@ -14,19 +14,18 @@ import {
     useAccountAssetBalanceQuery,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
-import { PWBottomSheet, PWTabView } from '@components/core'
+import { PWBottomSheet, PWTabView, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { SendFundsAssetSelectionView } from '../AssetSelection/SendFundsAssetSelectionView'
 import { SendFundsInputView } from '../InputView/SendFundsInputView'
 
-import { useLayoutEffect, useState } from 'react'
+import { useLayoutEffect } from 'react'
 import { useStyles } from './styles'
 import { useWindowDimensions } from 'react-native'
 import { SendFundsSelectDestination } from '../SelectDestination/SendFundsSelectDestination'
 import { SendFundsTransactionConfirmation } from '../TransactionConfirmation/SendFundsTransactionConfirmation'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { TransactionErrorBoundary } from '@modules/transactions/components/BaseErrorBoundary/TransactionErrorBoundary'
-import { TAB_ANIMATION_CONFIG } from '@constants/ui'
 import { useLanguage } from '@hooks/useLanguage'
 
 export type SendFundsBottomSheetProps = {
@@ -35,18 +34,14 @@ export type SendFundsBottomSheetProps = {
     onClose: () => void
 }
 
-export type ScreenState =
-    | 'select-asset'
-    | 'input-amount'
-    | 'select-destination'
-    | 'confirm-transaction'
-
-const getScreenCount = (canSelectAsset: boolean) => {
-    if (canSelectAsset) {
-        return 4
-    }
-    return 3
+export type SendFundsTabParamsList = {
+    AssetSelection: undefined
+    InputAmount: undefined
+    SelectDestination: undefined
+    ConfirmTransaction: undefined
 }
+
+const Tab = PWTabView.createNavigator<SendFundsTabParamsList>()
 
 //TODO: add support for ASA Inbox sends (check whether destination account is opted into asset)
 //TODO: something isn't working with canSelectAsset
@@ -56,7 +51,6 @@ export const SendFundsBottomSheet = ({
     isVisible,
 }: SendFundsBottomSheetProps) => {
     const selectedAccount = useSelectedAccount()
-    const [screenIndex, setScreenIndex] = useState(0)
     const dimensions = useWindowDimensions()
     const styles = useStyles(dimensions)
     const { t } = useLanguage()
@@ -74,22 +68,9 @@ export const SendFundsBottomSheet = ({
         }
     }, [assetId, assetBalance, setCanSelectAsset, setSelectedAsset])
 
-    const handleNext = () => {
-        if (screenIndex >= getScreenCount(!!canSelectAsset) - 1) {
-            reset()
-            onClose()
-        } else {
-            setScreenIndex(screenIndex + 1)
-        }
-    }
-
-    const handleBack = () => {
-        if (screenIndex === 0) {
-            reset()
-            onClose()
-        } else {
-            setScreenIndex(screenIndex - 1)
-        }
+    const handleFinished = () => {
+        reset()
+        onClose()
     }
 
     return (
@@ -99,38 +80,72 @@ export const SendFundsBottomSheet = ({
         >
             <TransactionErrorBoundary t={t}>
                 {selectedAccount ? (
-                    <PWTabView
-                        value={screenIndex}
-                        animationType='timing'
-                        animationConfig={TAB_ANIMATION_CONFIG}
+                    <Tab.Navigator
+                        initialRouteName={
+                            canSelectAsset ? 'AssetSelection' : 'InputAmount'
+                        }
+                        screenOptions={{ swipeEnabled: false }}
                     >
-                        {!!canSelectAsset && (
-                            <PWTabView.Item style={styles.tabItem}>
-                                <SendFundsAssetSelectionView
-                                    onSelected={handleNext}
-                                    onBack={handleBack}
-                                />
-                            </PWTabView.Item>
-                        )}
-                        <PWTabView.Item style={styles.tabItem}>
-                            <SendFundsInputView
-                                onNext={handleNext}
-                                onBack={handleBack}
-                            />
-                        </PWTabView.Item>
-                        <PWTabView.Item style={styles.tabItem}>
-                            <SendFundsSelectDestination
-                                onNext={handleNext}
-                                onBack={handleBack}
-                            />
-                        </PWTabView.Item>
-                        <PWTabView.Item style={styles.tabItem}>
-                            <SendFundsTransactionConfirmation
-                                onNext={handleNext}
-                                onBack={handleBack}
-                            />
-                        </PWTabView.Item>
-                    </PWTabView>
+                        <Tab.Screen name='AssetSelection'>
+                            {({ navigation }) => (
+                                <PWView style={styles.tabItem}>
+                                    <SendFundsAssetSelectionView
+                                        onSelected={() =>
+                                            navigation.navigate('InputAmount')
+                                        }
+                                        onBack={handleFinished}
+                                    />
+                                </PWView>
+                            )}
+                        </Tab.Screen>
+
+                        <Tab.Screen name='InputAmount'>
+                            {({ navigation }) => (
+                                <PWView style={styles.tabItem}>
+                                    <SendFundsInputView
+                                        onNext={() =>
+                                            navigation.navigate('SelectDestination')
+                                        }
+                                        onBack={() => {
+                                            if (canSelectAsset) {
+                                                navigation.navigate('AssetSelection')
+                                            } else {
+                                                handleFinished()
+                                            }
+                                        }}
+                                    />
+                                </PWView>
+                            )}
+                        </Tab.Screen>
+
+                        <Tab.Screen name='SelectDestination'>
+                            {({ navigation }) => (
+                                <PWView style={styles.tabItem}>
+                                    <SendFundsSelectDestination
+                                        onNext={() =>
+                                            navigation.navigate('ConfirmTransaction')
+                                        }
+                                        onBack={() =>
+                                            navigation.navigate('InputAmount')
+                                        }
+                                    />
+                                </PWView>
+                            )}
+                        </Tab.Screen>
+
+                        <Tab.Screen name='ConfirmTransaction'>
+                            {({ navigation }) => (
+                                <PWView style={styles.tabItem}>
+                                    <SendFundsTransactionConfirmation
+                                        onNext={handleFinished}
+                                        onBack={() =>
+                                            navigation.navigate('SelectDestination')
+                                        }
+                                    />
+                                </PWView>
+                            )}
+                        </Tab.Screen>
+                    </Tab.Navigator>
                 ) : (
                     <EmptyView
                         title={t('send_funds.bottom_sheet.no_account_title')}

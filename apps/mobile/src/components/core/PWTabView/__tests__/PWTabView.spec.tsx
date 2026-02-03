@@ -11,18 +11,29 @@
  */
 
 import { render } from '@test-utils/render'
-import { describe, it } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { PWTabView } from '../PWTabView'
 import { Text } from 'react-native'
+import { NavigationContainer } from '@react-navigation/native'
 
 describe('PWTabView', () => {
-    it('renders correctly', () => {
-        render(
-            <PWTabView>
-                <PWTabView.Item>
-                    <Text>Content 1</Text>
-                </PWTabView.Item>
-            </PWTabView>,
+    it('provides a navigator factory', () => {
+        expect(PWTabView.createNavigator).toBeDefined()
+    })
+
+    it('renders navigator correctly', () => {
+        const Tab = PWTabView.createNavigator()
+        const { getByText } = render(
+            <NavigationContainer>
+                <Tab.Navigator>
+                    <Tab.Screen
+                        name='Tab1'
+                        component={() => <Text>Content 1</Text>}
+                    />
+                </Tab.Navigator>
+            </NavigationContainer>,
         )
+
+        expect(getByText('Content 1')).toBeTruthy()
     })
 })

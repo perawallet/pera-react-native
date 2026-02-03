@@ -10,58 +10,30 @@
  limitations under the License
  */
 
-import { TabView as RNETabView } from '@rneui/themed'
-import { StyleProp, ViewStyle, Animated } from 'react-native'
-import { ReactNode } from 'react'
+import {
+    createMaterialTopTabNavigator,
+} from '@react-navigation/material-top-tabs'
+import { ParamListBase } from '@react-navigation/native'
+import { PWTabBar } from './PWTabBar'
 
-export type PWTabViewProps = {
-    value?: number
-    onChange?: (value: number) => void
-    animationType?: 'spring' | 'timing'
-    animationConfig?: Omit<
-        Animated.SpringAnimationConfig & Animated.TimingAnimationConfig,
-        'toValue'
-    >
-    children?: ReactNode
+export const createPWTabNavigator = <ParamList extends ParamListBase>() => {
+    const Tab = createMaterialTopTabNavigator<ParamList>()
+
+    return {
+        Navigator: (
+            props: React.ComponentProps<typeof Tab.Navigator> & {
+                children: React.ReactNode
+            },
+        ) => (
+            <Tab.Navigator
+                tabBar={tabBarProps => <PWTabBar {...tabBarProps} />}
+                {...props}
+            />
+        ),
+        Screen: Tab.Screen,
+    }
 }
 
-const PWTabViewComponent = ({
-    value,
-    onChange,
-    animationType,
-    animationConfig,
-    children,
-    ...props
-}: PWTabViewProps) => {
-    return (
-        <RNETabView
-            value={value}
-            onChange={onChange}
-            animationType={animationType}
-            animationConfig={animationConfig}
-            {...props}
-        >
-            {children}
-        </RNETabView>
-    )
+export const PWTabView = {
+    createNavigator: createPWTabNavigator,
 }
-
-export type PWTabViewItemProps = {
-    children?: ReactNode
-    style?: StyleProp<ViewStyle>
-}
-
-const PWTabViewItem = ({ children, style, ...props }: PWTabViewItemProps) => {
-    return (
-        <RNETabView.Item
-            style={style}
-            {...props}
-        >
-            {children}
-        </RNETabView.Item>
-    )
-}
-
-export const PWTabView = Object.assign(PWTabViewComponent, {
-    Item: PWTabViewItem,
-})
