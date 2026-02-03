@@ -16,7 +16,6 @@ import { useShouldPlayConfetti } from '@modules/onboarding/hooks'
 
 import { useStyles } from './styles'
 import { useModalState } from '@hooks/useModalState'
-import { NotificationsIcon } from '@modules/notifications/components/NotificationsIcon'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
 import { QRScannerView } from '@components/QRScannerView'
 import { EmptyView } from '@components/EmptyView'
@@ -24,6 +23,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { ConfettiAnimation } from '@modules/accounts/components/ConfettiAnimation'
 import { PromptContainer } from '@modules/prompts'
 import { AccountTabNavigator } from '@modules/accounts/components/AccountTabNavigator'
+import { NotificationsIcon } from '@modules/notifications/components/NotificationsIcon'
 
 //TODO hook up all the button panel buttons correctly
 //TODO implement more menu
