@@ -63,6 +63,7 @@ export const useStyles = makeStyles(theme => {
         secondaryValueBar: {
             flexDirection: 'row',
             alignItems: 'center',
+            justifyContent: 'space-between',
             gap: theme.spacing.md,
         },
         valueTitleBar: {
