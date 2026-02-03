@@ -12,7 +12,6 @@
 
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs'
 import { ParamListBase } from '@react-navigation/native'
-import { useStyles } from './tabBarStyles'
 import { PWTabBar } from './PWTabBar'
 
 export const createPWTabNavigator = <ParamList extends ParamListBase>() => {
