@@ -10,5 +10,8 @@
  limitations under the License
  */
 
-export { SigningProvider, useSigningContext } from './SigningContext'
-export type { SigningProviderProps, AggregatedWarning } from './SigningContext'
+export { SigningContextProvider, useSigningContext } from './SigningContext'
+export type {
+    SigningContextProviderProps,
+    AggregatedWarning,
+} from './SigningContext'

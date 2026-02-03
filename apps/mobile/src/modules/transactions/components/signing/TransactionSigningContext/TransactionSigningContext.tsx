@@ -34,6 +34,7 @@ import { config } from '@perawallet/wallet-core-config'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { bottomSheetNotifier } from '@components/core'
+import { TransactionSigningContextValue } from '@modules/transactions/models'
 
 export type AggregatedWarning = {
     type: 'close' | 'rekey'
@@ -41,31 +42,17 @@ export type AggregatedWarning = {
     targetAddress: string
 }
 
-type SigningContextValue = {
-    request: TransactionSignRequest
-    groups: PeraDisplayableTransaction[][]
-    allTransactions: PeraDisplayableTransaction[]
-    totalFee: bigint
-    isSingleTransaction: boolean
-    isSingleGroup: boolean
-    isMultipleGroups: boolean
-    isLoading: boolean
-    aggregatedWarnings: AggregatedWarning[]
-    signAndSend: () => Promise<void>
-    rejectRequest: () => void
-}
+export const TransactionSigningContext = createContext<TransactionSigningContextValue | null>(null)
 
-const SigningContext = createContext<SigningContextValue | null>(null)
-
-export type SigningProviderProps = {
+export type TransactionSigningContextProviderProps = {
     request: TransactionSignRequest
     children: React.ReactNode
 }
 
-export const SigningProvider = ({
+export const SigningContextProvider = ({
     request,
     children,
-}: SigningProviderProps) => {
+}: TransactionSigningContextProviderProps) => {
     const { removeSignRequest } = useSigningRequest()
     const { signTransactions } = useTransactionSigner()
     const { encodeSignedTransactions } = useTransactionEncoder()
@@ -235,18 +222,8 @@ export const SigningProvider = ({
     )
 
     return (
-        <SigningContext.Provider value={value}>
+        <TransactionSigningContext.Provider value={value}>
             {children}
-        </SigningContext.Provider>
+        </TransactionSigningContext.Provider>
     )
-}
-
-export const useSigningContext = (): SigningContextValue => {
-    const context = useContext(SigningContext)
-    if (!context) {
-        throw new Error(
-            'useSigningContext must be used within a SigningProvider',
-        )
-    }
-    return context
 }

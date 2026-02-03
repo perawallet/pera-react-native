@@ -27,11 +27,11 @@ import {
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import { useSigningContext } from '@modules/transactions/components/signing/SigningContext'
 import type { SigningStackParamList } from '@modules/transactions/routes/signing/types'
 import { GroupListHeader } from './GroupListHeader'
 import { GroupListFooter } from './GroupListFooter'
 import { useStyles } from './styles'
+import { useTransactionSigningContext } from '@modules/transactions/hooks/signing/useTransactionSigning'
 
 type NavigationProp = NativeStackNavigationProp<
     SigningStackParamList,
@@ -44,7 +44,7 @@ export const GroupListScreen = () => {
     const { t } = useLanguage()
     const navigation = useNavigation<NavigationProp>()
     const route = useRoute<GroupListRouteProp>()
-    const { groups, totalFee, isMultipleGroups } = useSigningContext()
+    const { groups, totalFee, isMultipleGroups } = useTransactionSigningContext()
 
     const { groupIndex } = route.params
     const transactions = groups[groupIndex] ?? []

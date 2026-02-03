@@ -21,12 +21,12 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import { useSigningContext } from '@modules/transactions/components/signing/SigningContext'
 import type { SigningStackParamList } from '@modules/transactions/routes/signing/types'
 import { GroupPreview } from './GroupPreview'
 import { MultiGroupListHeader } from './MultiGroupListHeader'
 import { MultiGroupListFooter } from './MultiGroupListFooter'
 import { useStyles } from './styles'
+import { useTransactionSigningContext } from '@modules/transactions/hooks/signing/useTransactionSigning'
 
 type NavigationProp = NativeStackNavigationProp<
     SigningStackParamList,
@@ -42,7 +42,7 @@ export const MultiGroupListScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const navigation = useNavigation<NavigationProp>()
-    const { groups, totalFee } = useSigningContext()
+    const { groups, totalFee } = useTransactionSigningContext()
 
     const groupItems: GroupItem[] = useMemo(
         () => groups.map((transactions, index) => ({ transactions, index })),

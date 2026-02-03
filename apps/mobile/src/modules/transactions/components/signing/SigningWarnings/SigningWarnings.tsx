@@ -25,8 +25,9 @@ import { useModalState } from '@hooks/useModalState'
 import { useTheme } from '@rneui/themed'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { LONG_ADDRESS_FORMAT } from '@constants/ui'
-import { useSigningContext, type AggregatedWarning } from '../SigningContext'
+import { type AggregatedWarning } from '../TransactionSigningContext'
 import { useStyles } from './styles'
+import { useTransactionSigningContext } from '@modules/transactions/hooks/signing/useTransactionSigning'
 
 type WarningItemProps = {
     warning: AggregatedWarning
@@ -95,7 +96,7 @@ export const SigningWarnings = () => {
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
-    const { aggregatedWarnings } = useSigningContext()
+    const { aggregatedWarnings } = useTransactionSigningContext()
     const { isOpen, open, close } = useModalState()
 
     if (aggregatedWarnings.length === 0) {

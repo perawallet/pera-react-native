@@ -12,10 +12,14 @@
 
 import React, { PropsWithChildren, useEffect } from 'react'
 import { PWBottomSheet } from '@components/core'
-import { SigningView } from '@modules/transactions/components/signing/TransactionSigningView/SigningView'
+import { SignRequestView } from '@modules/transactions/components/signing/SignRequestView'
 import { useWindowDimensions } from 'react-native'
-import { useSigningRequest } from '@perawallet/wallet-core-blockchain'
+import {
+    useSigningRequest,
+    type TransactionSignRequest,
+} from '@perawallet/wallet-core-blockchain'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
+import { SigningContextProvider } from '@modules/transactions/components/signing/TransactionSigningContext'
 
 export type SigningProviderProps = {} & PropsWithChildren
 
@@ -41,7 +45,18 @@ export function SigningProvider({ children }: SigningProviderProps) {
                 innerContainerStyle={{ height: height - 100 }}
                 isVisible={isVisible}
             >
-                {!!nextRequest && <SigningView request={nextRequest} />}
+                {!!nextRequest &&
+                    (nextRequest.type === 'transactions' ? (
+                        <SigningContextProvider
+                            request={
+                                nextRequest as TransactionSignRequest
+                            }
+                        >
+                            <SignRequestView request={nextRequest} />
+                        </SigningContextProvider>
+                    ) : (
+                        <SignRequestView request={nextRequest} />
+                    ))}
             </PWBottomSheet>
         </>
     )

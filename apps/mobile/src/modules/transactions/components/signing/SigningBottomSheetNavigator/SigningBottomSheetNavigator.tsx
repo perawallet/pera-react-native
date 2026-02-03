@@ -10,23 +10,15 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
 import {
     NavigationContainer,
     NavigationIndependentTree,
 } from '@react-navigation/native'
-import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { PWView } from '@components/core'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-blockchain'
-import { SigningProvider } from '../SigningContext'
 import { SigningActionButtons } from '../SigningActionButtons'
-import { SingleTransactionScreen } from '@modules/transactions/screens/signing/SingleTransactionScreen'
-import { TransactionDetailsScreen } from '@modules/transactions/screens/signing/TransactionDetailsScreen'
-import { GroupListScreen } from '@modules/transactions/screens/signing/GroupListScreen'
-import { MultiGroupListScreen } from '@modules/transactions/screens/signing/MultiGroupListScreen'
-import type { SigningStackParamList } from '@modules/transactions/routes/signing/types'
-import { useStyles } from './styles'
 import { SigningRoutes } from '@modules/transactions/routes/signing'
+import { useStyles } from './styles'
 
 export type SigningBottomSheetNavigatorProps = {
     request: TransactionSignRequest
@@ -38,15 +30,13 @@ export const SigningBottomSheetNavigator = ({
     const styles = useStyles()
 
     return (
-        <SigningProvider request={request}>
-            <PWView style={styles.container}>
-                <NavigationIndependentTree>
-                    <NavigationContainer>
-                        <SigningRoutes request={request} />
-                    </NavigationContainer>
-                </NavigationIndependentTree>
-                <SigningActionButtons />
-            </PWView>
-        </SigningProvider>
+        <PWView style={styles.container}>
+            <NavigationIndependentTree>
+                <NavigationContainer>
+                    <SigningRoutes request={request} />
+                </NavigationContainer>
+            </NavigationIndependentTree>
+            <SigningActionButtons />
+        </PWView>
     )
 }
