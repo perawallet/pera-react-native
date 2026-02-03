@@ -37,6 +37,12 @@ vi.mock('@hooks/useLanguage', () => ({
     }),
 }))
 
+vi.mock('react-native-tab-view', () => ({
+    TabView: () => null,
+    TabBar: () => null,
+    SceneMap: () => null,
+}))
+
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountBalancesQuery: vi.fn(() => ({
         portfolioAlgoValue: new Decimal('100'),
@@ -66,11 +72,48 @@ vi.mock('@perawallet/wallet-core-settings', () => ({
 
 vi.mock('@hooks/useChartInteraction', () => ({
     useChartInteraction: vi.fn(() => ({
-        period: '24H',
+        period: 'one-day' as const,
         setPeriod: vi.fn(),
         selectedPoint: null,
         setSelectedPoint: vi.fn(),
+        clearSelection: vi.fn(),
     })),
+}))
+
+vi.mock('@components/core', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWView: ({ children, style, onLayout, ...rest }: any) => (
+        <div
+            style={style}
+            {...rest}
+        >
+            {children}
+        </div>
+    ),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWText: ({ children, style }: any) => <span style={style}>{children}</span>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWButton: ({ title, onPress }: any) => (
+        <button onClick={onPress}>{title}</button>
+    ),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWTouchableOpacity: ({ children, onPress, style }: any) => (
+        <button
+            onClick={onPress}
+            style={style}
+        >
+            {children}
+        </button>
+    ),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWHeader: ({ children }: any) => <div>{children}</div>,
+}))
+
+vi.mock('@components/CurrencyDisplay', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    CurrencyDisplay: ({ value }: any) => (
+        <div data-testid='currency-display'>{value?.toString()}</div>
+    ),
 }))
 
 vi.mock('@components/WealthChart', () => ({
@@ -82,14 +125,15 @@ vi.mock('@components/ChartPeriodSelection', () => ({
 vi.mock('@components/WealthTrend', () => ({
     WealthTrend: () => null,
 }))
-vi.mock('@components/CurrencyDisplay', () => ({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    CurrencyDisplay: ({ value }: any) => <div>{value?.toString()}</div>,
-}))
 
 // Mock sub-components to keep test focused
 vi.mock('../../ButtonPanel', () => ({
-    ButtonPanel: () => null,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ButtonPanel: (props: any) => (
+        <div>
+            <button onClick={props.onReceive}>Receive</button>
+        </div>
+    ),
 }))
 vi.mock('../../NoFundsButtonPanel', () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -97,14 +141,18 @@ vi.mock('../../NoFundsButtonPanel', () => ({
         <div>
             <button onClick={props.onBuyAlgo}>Buy Algo</button>
             <button onClick={props.onReceive}>Receive</button>
-
             <button onClick={props.onMore}>More</button>
         </div>
     ),
 }))
 vi.mock('../../AccountAssetList', () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    AccountAssetList: ({ header }: any) => <div>{header}</div>,
+    AccountAssetList: ({ header, children }: any) => (
+        <div>
+            {header}
+            {children}
+        </div>
+    ),
 }))
 
 vi.mock(

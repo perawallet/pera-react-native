@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { render, screen } from '@test-utils/render'
+import { render, screen, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { ButtonPanel } from '../ButtonPanel'
 
@@ -26,13 +26,44 @@ vi.mock('@react-navigation/native', async importOriginal => {
     }
 })
 
+vi.mock('@components/core', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWView: ({ children, style }: any) => <div style={style}>{children}</div>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWText: ({ children, style }: any) => <span style={style}>{children}</span>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWTouchableOpacity: ({ children, onPress, style }: any) => (
+        <button
+            onClick={onPress}
+            style={style}
+        >
+            {children}
+        </button>
+    ),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWRoundIcon: () => null,
+}))
+
+vi.mock('@components/RoundButton', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    RoundButton: ({ title, onPress }: any) => (
+        <button onClick={onPress}>{title}</button>
+    ),
+}))
+
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string) => key,
+    }),
+}))
+
 describe('ButtonPanel', () => {
-    it('renders correctly', () => {
+    it('renders all buttons correctly', () => {
         render(
             <ButtonPanel
                 onSwap={vi.fn()}
-                onStake={vi.fn()}
                 onSend={vi.fn()}
+                onReceive={vi.fn()}
                 onMore={vi.fn()}
             />,
         )
@@ -42,5 +73,83 @@ describe('ButtonPanel', () => {
         expect(
             screen.getByText('account_details.button_panel.send'),
         ).toBeTruthy()
+        expect(
+            screen.getByText('account_details.button_panel.receive'),
+        ).toBeTruthy()
+        expect(
+            screen.getByText('account_details.button_panel.more'),
+        ).toBeTruthy()
+    })
+
+    it('does not render stake button', () => {
+        render(
+            <ButtonPanel
+                onSwap={vi.fn()}
+                onSend={vi.fn()}
+                onReceive={vi.fn()}
+                onMore={vi.fn()}
+            />,
+        )
+        expect(() =>
+            screen.getByText('account_details.button_panel.stake'),
+        ).toThrow()
+    })
+
+    it('calls onSwap when swap button is pressed', () => {
+        const onSwap = vi.fn()
+        render(
+            <ButtonPanel
+                onSwap={onSwap}
+                onSend={vi.fn()}
+                onReceive={vi.fn()}
+                onMore={vi.fn()}
+            />,
+        )
+        fireEvent.click(screen.getByText('account_details.button_panel.swap'))
+        expect(onSwap).toHaveBeenCalledOnce()
+    })
+
+    it('calls onSend when send button is pressed', () => {
+        const onSend = vi.fn()
+        render(
+            <ButtonPanel
+                onSwap={vi.fn()}
+                onSend={onSend}
+                onReceive={vi.fn()}
+                onMore={vi.fn()}
+            />,
+        )
+        fireEvent.click(screen.getByText('account_details.button_panel.send'))
+        expect(onSend).toHaveBeenCalledOnce()
+    })
+
+    it('calls onReceive when receive button is pressed', () => {
+        const onReceive = vi.fn()
+        render(
+            <ButtonPanel
+                onSwap={vi.fn()}
+                onSend={vi.fn()}
+                onReceive={onReceive}
+                onMore={vi.fn()}
+            />,
+        )
+        fireEvent.click(
+            screen.getByText('account_details.button_panel.receive'),
+        )
+        expect(onReceive).toHaveBeenCalledOnce()
+    })
+
+    it('calls onMore when more button is pressed', () => {
+        const onMore = vi.fn()
+        render(
+            <ButtonPanel
+                onSwap={vi.fn()}
+                onSend={vi.fn()}
+                onReceive={vi.fn()}
+                onMore={onMore}
+            />,
+        )
+        fireEvent.click(screen.getByText('account_details.button_panel.more'))
+        expect(onMore).toHaveBeenCalledOnce()
     })
 })
