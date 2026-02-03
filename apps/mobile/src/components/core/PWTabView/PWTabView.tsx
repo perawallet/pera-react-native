@@ -14,22 +14,25 @@ import {
     createMaterialTopTabNavigator,
 } from '@react-navigation/material-top-tabs'
 import { ParamListBase } from '@react-navigation/native'
+import { useStyles } from './tabBarStyles'
 import { PWTabBar } from './PWTabBar'
 
 export const createPWTabNavigator = <ParamList extends ParamListBase>() => {
     const Tab = createMaterialTopTabNavigator<ParamList>()
 
     return {
-        Navigator: (
-            props: React.ComponentProps<typeof Tab.Navigator> & {
-                children: React.ReactNode
-            },
-        ) => (
-            <Tab.Navigator
-                tabBar={tabBarProps => <PWTabBar {...tabBarProps} />}
-                {...props}
-            />
-        ),
+        Navigator: ({
+            ...props
+        }: React.ComponentProps<typeof Tab.Navigator> & {
+            children: React.ReactNode
+        }) => {
+            return (
+                <Tab.Navigator
+                    tabBar={tabBarProps => <PWTabBar {...tabBarProps} />}
+                    {...props}
+                />
+            )
+        },
         Screen: Tab.Screen,
     }
 }

@@ -17,25 +17,49 @@ export const useStyles = makeStyles(theme => {
     const bodyTypography = getTypography(theme, 'body')
 
     return {
-        container: {
+        externalContainer: {
+            paddingHorizontal: theme.spacing.md,
+            paddingVertical: theme.spacing.sm,
             backgroundColor: theme.colors.background,
-            borderBottomWidth: theme.borders.sm,
-            borderBottomColor: theme.colors.layerGrayLight,
+        },
+        container: {
+            backgroundColor: theme.colors.layerGrayLighter,
+            borderRadius: theme.spacing.xxl,
+            height: theme.spacing['3xl'],
+            overflow: 'hidden',
+            position: 'relative',
+        },
+        indicatorWrapper: {
+            position: 'absolute',
+            height: '100%',
+            top: 0,
+            left: 0,
         },
         indicator: {
-            backgroundColor: theme.colors.textMain,
-            height: 2,
+            flex: 1,
+            backgroundColor: theme.colors.white,
+            height: theme.spacing.xxl,
+            margin: theme.spacing.xs,
+            borderRadius: theme.spacing.xxl,
+            ...theme.shadows.md,
         },
         title: {
             fontFamily: bodyTypography.fontFamily,
             fontSize: bodyTypography.fontSize,
+            fontWeight: '600',
             textTransform: 'none',
         },
         activeTitle: {
-            color: theme.colors.textMain,
+            color: theme.colors.black,
         },
         inactiveTitle: {
             color: theme.colors.textGray,
+        },
+        tab: {
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
         },
     }
 })
