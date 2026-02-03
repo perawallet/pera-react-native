@@ -34,17 +34,11 @@ import { config } from '@perawallet/wallet-core-config'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { bottomSheetNotifier } from '@components/core'
-import { TransactionSigningContextValue } from '@modules/transactions/models'
-
-export type AggregatedWarning = {
-    type: 'close' | 'rekey'
-    senderAddress: string
-    targetAddress: string
-}
+import { TransactionWarning, TransactionSigningContextValue } from '@modules/transactions/models'
 
 export const TransactionSigningContext = createContext<TransactionSigningContextValue | null>(null)
 
-export type TransactionSigningContextProviderProps = {
+export type SigningContextProviderProps = {
     request: TransactionSignRequest
     children: React.ReactNode
 }
@@ -52,7 +46,7 @@ export type TransactionSigningContextProviderProps = {
 export const SigningContextProvider = ({
     request,
     children,
-}: TransactionSigningContextProviderProps) => {
+}: SigningContextProviderProps) => {
     const { removeSignRequest } = useSigningRequest()
     const { signTransactions } = useTransactionSigner()
     const { encodeSignedTransactions } = useTransactionEncoder()
@@ -86,7 +80,7 @@ export const SigningContextProvider = ({
 
     // Aggregate warnings across all transactions for user-controlled accounts
     const aggregatedWarnings = useMemo(() => {
-        const warnings: AggregatedWarning[] = []
+        const warnings: TransactionWarning[] = []
 
         for (const tx of allTransactions) {
             // Only show warnings for transactions the user is signing

@@ -19,7 +19,7 @@ import {
     type TransactionSignRequest,
 } from '@perawallet/wallet-core-blockchain'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
-import { SigningContextProvider } from '@modules/transactions/components/signing/TransactionSigningContext'
+import { SigningContextProvider } from '@modules/transactions/components/signing/SigningContextProvider'
 
 export type SigningProviderProps = {} & PropsWithChildren
 
@@ -46,17 +46,14 @@ export function SigningProvider({ children }: SigningProviderProps) {
                 isVisible={isVisible}
             >
                 {!!nextRequest &&
-                    (nextRequest.type === 'transactions' ? (
-                        <SigningContextProvider
-                            request={
-                                nextRequest as TransactionSignRequest
-                            }
-                        >
-                            <SignRequestView request={nextRequest} />
-                        </SigningContextProvider>
-                    ) : (
+                    <SigningContextProvider
+                        request={
+                            nextRequest as TransactionSignRequest
+                        }
+                    >
                         <SignRequestView request={nextRequest} />
-                    ))}
+                    </SigningContextProvider>
+                }
             </PWBottomSheet>
         </>
     )

@@ -1,6 +1,10 @@
 import { PeraDisplayableTransaction, TransactionSignRequest } from "@perawallet/wallet-core-blockchain"
-import { AggregatedWarning } from "../components/signing/TransactionSigningContext/TransactionSigningContext"
 
+export type TransactionWarning = {
+    type: 'close' | 'rekey'
+    senderAddress: string
+    targetAddress: string
+}
 
 export type TransactionSigningContextValue = {
     request: TransactionSignRequest
@@ -11,7 +15,7 @@ export type TransactionSigningContextValue = {
     isSingleGroup: boolean
     isMultipleGroups: boolean
     isLoading: boolean
-    aggregatedWarnings: AggregatedWarning[]
+    aggregatedWarnings: TransactionWarning[]
     signAndSend: () => Promise<void>
     rejectRequest: () => void
 }

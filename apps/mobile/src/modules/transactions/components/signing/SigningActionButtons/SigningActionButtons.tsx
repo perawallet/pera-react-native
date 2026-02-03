@@ -12,7 +12,7 @@
 
 import { PWButton, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { useSigningContext } from '../TransactionSigningContext'
+import { useSigningContext } from '../SigningContextProvider'
 import { useStyles } from './styles'
 
 export const SigningActionButtons = () => {

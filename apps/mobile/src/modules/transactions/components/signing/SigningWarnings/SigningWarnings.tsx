@@ -25,12 +25,12 @@ import { useModalState } from '@hooks/useModalState'
 import { useTheme } from '@rneui/themed'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { LONG_ADDRESS_FORMAT } from '@constants/ui'
-import { type AggregatedWarning } from '../TransactionSigningContext'
 import { useStyles } from './styles'
 import { useTransactionSigningContext } from '@modules/transactions/hooks/signing/useTransactionSigning'
+import { TransactionWarning } from '@modules/transactions/models'
 
 type WarningItemProps = {
-    warning: AggregatedWarning
+    warning: TransactionWarning
     showDivider: boolean
 }
 
