@@ -28,6 +28,20 @@ export const useStyles = makeStyles(theme => {
             height: theme.spacing['3xl'],
             overflow: 'hidden',
             position: 'relative',
+            flexDirection: 'row',
+        },
+        labelContainer: {
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        activeLayer: {
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            alignItems: 'center',
+            justifyContent: 'center',
         },
         indicatorWrapper: {
             position: 'absolute',

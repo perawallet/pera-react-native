@@ -11,10 +11,27 @@
  */
 
 import { render } from '@test-utils/render'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { PWTabView } from '../PWTabView'
 import { Text } from 'react-native'
 import { NavigationContainer } from '@react-navigation/native'
+
+vi.mock('@react-navigation/material-top-tabs', () => ({
+    createMaterialTopTabNavigator: vi.fn(() => ({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        Navigator: ({ children }: any) => <div>{children}</div>,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        Screen: ({ component: Component }: any) => (
+            <div>{Component ? <Component /> : null}</div>
+        ),
+    })),
+}))
+
+vi.mock('react-native-tab-view', () => ({
+    TabView: () => null,
+    TabBar: () => null,
+    SceneMap: () => null,
+}))
 
 describe('PWTabView', () => {
     it('provides a navigator factory', () => {

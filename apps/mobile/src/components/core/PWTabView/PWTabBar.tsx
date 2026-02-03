@@ -23,7 +23,6 @@ export const PWTabBar = ({
     descriptors,
     navigation,
     position,
-    layout,
 }: PWTabBarProps) => {
     const styles = useStyles()
     // We rely on onLayout to get the actual width of the container (after padding)
@@ -49,7 +48,7 @@ export const PWTabBar = ({
     return (
         <PWView style={styles.externalContainer}>
             <PWView
-                style={[styles.container, { flexDirection: 'row' }]}
+                style={styles.container}
                 onLayout={handleLayout}
             >
                 {/* Animated Indicator Wrapper */}
@@ -62,7 +61,7 @@ export const PWTabBar = ({
                                 width: tabWidth,
                                 transform: [
                                     { translateX: indicatorTranslateX },
-                                ] as any,
+                                ],
                             },
                         ]}
                     >
@@ -120,12 +119,7 @@ export const PWTabBar = ({
                             style={styles.tab}
                             activeOpacity={1}
                         >
-                            <PWView
-                                style={{
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                }}
-                            >
+                            <PWView style={styles.labelContainer}>
                                 {/* Inactive Layer */}
                                 <Animated.View
                                     style={{ opacity: inactiveOpacity }}
@@ -148,16 +142,10 @@ export const PWTabBar = ({
 
                                 {/* Active Layer - Absolute overlay */}
                                 <Animated.View
-                                    style={{
-                                        opacity: activeOpacity,
-                                        position: 'absolute',
-                                        top: 0,
-                                        left: 0,
-                                        right: 0,
-                                        bottom: 0,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                    }}
+                                    style={[
+                                        styles.activeLayer,
+                                        { opacity: activeOpacity },
+                                    ]}
                                 >
                                     <Animated.Text
                                         style={[

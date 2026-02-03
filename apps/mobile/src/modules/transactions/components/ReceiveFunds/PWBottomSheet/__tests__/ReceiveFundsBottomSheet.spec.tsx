@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen } from '@test-utils/render'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 vi.mock('@hooks/useLanguage', () => ({
@@ -24,7 +24,7 @@ vi.mock('@components/core', () => ({
     PWBottomSheet: ({ children, isVisible }: any) =>
         isVisible ? <div data-testid='bottom-sheet'>{children}</div> : null,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    PWView: ({ children, style, onLayout, ...rest }: any) => (
+    PWView: ({ children, style, ...rest }: any) => (
         <div
             style={style}
             {...rest}
@@ -32,13 +32,11 @@ vi.mock('@components/core', () => ({
             {children}
         </div>
     ),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     PWText: ({
         children,
         style,
-        numberOfLines,
-        ellipsizeMode,
         ...rest
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }: any) => (
         <span
             style={style}
@@ -61,7 +59,8 @@ vi.mock('@components/core', () => ({
             Screen: ({ children }: any) => (
                 <div>
                     {typeof children === 'function'
-                        ? children({ navigation: {} } as any)
+                        ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          children({ navigation: {} } as any)
                         : children}
                 </div>
             ),

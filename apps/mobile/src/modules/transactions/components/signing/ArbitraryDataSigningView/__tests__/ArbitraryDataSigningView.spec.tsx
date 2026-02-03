@@ -10,47 +10,49 @@
  limitations under the License
  */
 
+import React from 'react'
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { ArbitraryDataSigningView } from '../ArbitraryDataSigningView'
 import { ArbitraryDataSignRequest } from '@perawallet/wallet-core-blockchain'
 
-// Mock createPWTabNavigator
-vi.mock('@components/core/PWTabView/PWTabView', () => {
-    const React = require('react')
-    const MockNavigator = ({ children }: { children: React.ReactNode }) => (
-        <div>{children}</div>
-    )
-    const MockScreen = ({ children, component: Component, name }: any) => {
-        if (name !== 'Main') return null
-        return (
-            <div>
-                {children
-                    ? typeof children === 'function'
-                        ? children({
-                              navigation: {
-                                  navigate: vi.fn(),
-                                  goBack: vi.fn(),
-                              },
-                          })
-                        : children
-                    : null}
-                {Component ? (
-                    <Component
-                        navigation={{ navigate: vi.fn(), goBack: vi.fn() }}
-                        route={{ params: {} }}
-                    />
-                ) : null}
-            </div>
-        )
-    }
-    return {
-        createPWTabNavigator: () => ({
-            Navigator: MockNavigator,
-            Screen: MockScreen,
+vi.mock('@components/core', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWView: ({ children, style }: any) => <div style={style}>{children}</div>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWText: ({ children, style }: any) => <span style={style}>{children}</span>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWButton: ({ title, onPress }: any) => (
+        <button onClick={onPress}>{title}</button>
+    ),
+
+    PWIcon: () => null,
+
+    PWImage: () => null,
+    PWTabView: {
+        createNavigator: () => ({
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            Navigator: ({ children }: any) => <div>{children}</div>,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            Screen: ({ children, name }: any) => {
+                if (name !== 'Main') return null
+                return (
+                    <div>
+                        {typeof children === 'function'
+                            ? children({
+                                  navigation: {
+                                      navigate: vi.fn(),
+                                      goBack: vi.fn(),
+                                  },
+                                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                              } as any)
+                            : children}
+                    </div>
+                )
+            },
         }),
-    }
-})
+    },
+}))
 
 vi.mock('@perawallet/wallet-core-blockchain', async () => ({
     useSigningRequest: vi.fn(() => ({

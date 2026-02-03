@@ -40,7 +40,6 @@ vi.mock('@components/core', () => ({
             {children}
         </button>
     ),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     PWRoundIcon: () => null,
 }))
 

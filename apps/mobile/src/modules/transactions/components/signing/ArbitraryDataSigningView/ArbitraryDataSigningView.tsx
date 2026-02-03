@@ -34,7 +34,6 @@ import { useWebView } from '@hooks/usePeraWebviewInterface'
 import { v7 as uuid } from 'uuid'
 import { useArbitraryDataSigningView } from '@modules/transactions/hooks/signing/useArbitraryDataSigningView'
 import { ArbitraryDataSigningDetailsView } from './ArbitraryDataSigningDetailsView'
-import { useState } from 'react'
 
 export type ArbitraryDataSigningViewProps = {
     request: ArbitraryDataSignRequest

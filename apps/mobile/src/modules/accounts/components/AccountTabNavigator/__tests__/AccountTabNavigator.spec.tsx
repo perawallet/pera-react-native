@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import React, { ReactNode } from 'react'
+import React from 'react'
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { AccountTabNavigator } from '../AccountTabNavigator'

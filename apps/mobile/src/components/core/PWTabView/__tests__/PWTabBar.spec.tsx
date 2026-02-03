@@ -15,6 +15,16 @@ import { describe, it, expect, vi } from 'vitest'
 import { PWTabBar } from '../PWTabBar'
 import { Animated } from 'react-native'
 
+vi.mock('@react-navigation/material-top-tabs', () => ({
+    createMaterialTopTabNavigator: vi.fn(),
+}))
+
+vi.mock('react-native-tab-view', () => ({
+    TabView: () => null,
+    TabBar: () => null,
+    SceneMap: () => null,
+}))
+
 describe('PWTabBar', () => {
     const mockNavigation = {
         navigate: vi.fn(),
@@ -42,34 +52,44 @@ describe('PWTabBar', () => {
     const mockPosition = new Animated.Value(0)
 
     it('renders all tabs with correct labels', () => {
-        const { getByText } = render(
+        const { getAllByText } = render(
             <PWTabBar
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 state={mockState as any}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 descriptors={mockDescriptors as any}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 navigation={mockNavigation as any}
                 position={mockPosition}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 layout={{ width: 300, height: 50 } as any}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 jumpTo={vi.fn() as any}
             />,
         )
 
-        expect(getByText('First Tab')).toBeTruthy()
-        expect(getByText('Second Tab')).toBeTruthy()
+        expect(getAllByText('First Tab')[0]).toBeTruthy()
+        expect(getAllByText('Second Tab')[0]).toBeTruthy()
     })
 
     it('handles tab press', () => {
-        const { getByText } = render(
+        const { getAllByText } = render(
             <PWTabBar
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 state={mockState as any}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 descriptors={mockDescriptors as any}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 navigation={mockNavigation as any}
                 position={mockPosition}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 layout={{ width: 300, height: 50 } as any}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 jumpTo={vi.fn() as any}
             />,
         )
 
-        fireEvent.click(getByText('Second Tab'))
+        fireEvent.click(getAllByText('Second Tab')[0])
 
         expect(mockNavigation.emit).toHaveBeenCalledWith({
             type: 'tabPress',

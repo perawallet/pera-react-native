@@ -82,7 +82,7 @@ vi.mock('@hooks/useChartInteraction', () => ({
 
 vi.mock('@components/core', () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    PWView: ({ children, style, onLayout, ...rest }: any) => (
+    PWView: ({ children, style, ...rest }: any) => (
         <div
             style={style}
             {...rest}
