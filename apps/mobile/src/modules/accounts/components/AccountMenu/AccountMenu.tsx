@@ -10,16 +10,19 @@
  limitations under the License
  */
 
-import { PWButton, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import {
-    useAllAccounts,
-    useSelectedAccountAddress,
-    WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+    PWButton,
+    PWFlatList,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
+import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { AccountWithBalance } from '../AccountWithBalance'
 import { PortfolioView } from '../PortfolioView'
+import { useAccountMenu } from './useAccountMenu'
 
 export type AccountMenuProps = {
     onSelected: (account: WalletAccount) => void
@@ -28,14 +31,8 @@ export type AccountMenuProps = {
 export const AccountMenu = (props: AccountMenuProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const accounts = useAllAccounts()
-    const { selectedAccountAddress, setSelectedAccountAddress } =
-        useSelectedAccountAddress()
-
-    const handleTap = (acct: WalletAccount) => {
-        setSelectedAccountAddress(acct.address)
-        props?.onSelected?.(acct)
-    }
+    const { accounts, selectedAccountAddress, handleTap } =
+        useAccountMenu(props)
 
     return (
         <PWView style={styles.container}>
@@ -63,12 +60,12 @@ export const AccountMenu = (props: AccountMenuProps) => {
                         />
                     </PWView>
                 </PWView>
-                <PWView style={styles.accountContainer}>
-                    {accounts.map(acct => (
-                        <PWTouchableOpacity
-                            key={acct.address}
-                            onPress={() => handleTap(acct)}
-                        >
+
+                <PWFlatList<WalletAccount>
+                    data={accounts}
+                    keyExtractor={item => item.address}
+                    renderItem={({ item: acct }) => (
+                        <PWTouchableOpacity onPress={() => handleTap(acct)}>
                             <AccountWithBalance
                                 account={acct}
                                 isHighlighted={
@@ -76,9 +73,18 @@ export const AccountMenu = (props: AccountMenuProps) => {
                                 }
                             />
                         </PWTouchableOpacity>
-                    ))}
-                </PWView>
+                    )}
+                    ItemSeparatorComponent={ListSeparator}
+                    showsVerticalScrollIndicator={false}
+                />
             </PWView>
         </PWView>
     )
 }
+
+const ListSeparator = () => {
+    const styles = useStyles()
+
+    return <PWView style={styles.listSeparator} />
+}
+

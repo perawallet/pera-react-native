@@ -43,7 +43,7 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.xs,
         },
         trendIconContainer: {
-            backgroundColor: theme.colors.layerGrayLightest,
+            backgroundColor: 'transparent',
             borderRadius: 100,
             width: theme.spacing.xl,
             height: theme.spacing.xl,

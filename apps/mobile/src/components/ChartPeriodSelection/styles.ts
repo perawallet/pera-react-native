@@ -23,14 +23,14 @@ export const useStyles = makeStyles(theme => {
             marginTop: theme.spacing.xs,
         },
         selectedButtonContainer: {
-            backgroundColor: theme.colors.layerGrayLighter,
+            backgroundColor: 'transparent',
             borderWidth: theme.borders.none,
             borderRadius: theme.spacing.sm,
             paddingVertical: theme.spacing.xs,
             paddingHorizontal: theme.spacing.md,
         },
         unselectedButtonContainer: {
-            backgroundColor: theme.colors.background,
+            backgroundColor: 'transparent',
             borderWidth: theme.borders.none,
             borderRadius: theme.spacing.sm,
             paddingVertical: theme.spacing.xs,
