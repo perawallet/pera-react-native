@@ -17,13 +17,14 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { ScrollView } from 'react-native-gesture-handler'
-import { useSigningContext } from '@modules/transactions/components/signing/SigningContextProvider'
 import { TransactionSummaryHeader } from '@modules/transactions/components/signing/TransactionSummaryHeader'
 import { ViewDetailsButton } from '@modules/transactions/components/signing/ViewDetailsButton'
 import { FeeDisplay } from '@modules/transactions/components/signing/FeeDisplay'
 import { SigningWarnings } from '@modules/transactions/components/signing/SigningWarnings'
 import type { SigningStackParamList } from '@modules/transactions/routes/signing/types'
 import { useStyles } from './styles'
+import { useTransactionSigningContext } from '@modules/transactions/hooks/signing/useTransactionSigning'
+import Decimal from 'decimal.js'
 
 type NavigationProp = NativeStackNavigationProp<SigningStackParamList>
 
@@ -32,7 +33,7 @@ export const SingleTransactionScreen = () => {
     const { theme } = useTheme()
     const { t } = useLanguage()
     const navigation = useNavigation<NavigationProp>()
-    const { groups, totalFee } = useSigningContext()
+    const { groups, totalFee } = useTransactionSigningContext()
 
     const transaction = groups[0]?.[0]
 
@@ -60,7 +61,7 @@ export const SingleTransactionScreen = () => {
 
                 <PWDivider color={theme.colors.layerGray} />
 
-                <FeeDisplay fee={totalFee} />
+                <FeeDisplay fee={new Decimal(totalFee)} />
 
                 <SigningWarnings />
             </PWView>

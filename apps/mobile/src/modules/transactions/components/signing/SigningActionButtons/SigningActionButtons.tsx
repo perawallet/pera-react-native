@@ -12,14 +12,14 @@
 
 import { PWButton, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { useSigningContext } from '../SigningContextProvider'
 import { useStyles } from './styles'
+import { useTransactionSigningContext } from '@modules/transactions/hooks/signing/useTransactionSigning'
 
 export const SigningActionButtons = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const { allTransactions, isLoading, signAndSend, rejectRequest } =
-        useSigningContext()
+        useTransactionSigningContext()
 
     return (
         <PWView style={styles.container}>

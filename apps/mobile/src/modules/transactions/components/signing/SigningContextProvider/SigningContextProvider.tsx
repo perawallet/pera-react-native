@@ -14,8 +14,8 @@ import { createContext, useMemo, useState, useCallback } from 'react'
 import {
     useSigningRequestAnalysis,
     useSigningRequest,
-} from '../../../../../../../../packages/signing/dist'
-import type { TransactionSignRequest } from '../../../../../../../../packages/signing/dist'
+    type TransactionSignRequest,
+} from '@perawallet/wallet-core-signing'
 import { config } from '@perawallet/wallet-core-config'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
