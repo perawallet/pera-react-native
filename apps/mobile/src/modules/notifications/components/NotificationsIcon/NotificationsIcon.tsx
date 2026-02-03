@@ -35,7 +35,12 @@ export const NotificationsIcon = (props: NotificationsIconProps) => {
                     name='inbox'
                     {...props}
                 />
-                {data?.hasNewNotification && <PWView style={styles.badge} />}
+                {data?.hasNewNotification && (
+                    <PWView
+                        style={styles.badge}
+                        testID='notification-badge'
+                    />
+                )}
             </PWView>
         </PWTouchableOpacity>
     )
