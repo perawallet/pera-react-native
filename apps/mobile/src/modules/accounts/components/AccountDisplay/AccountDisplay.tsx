@@ -32,6 +32,7 @@ export type AccountDisplayProps = {
     iconProps?: Omit<AccountIconProps, 'account'>
     textProps?: PWTextProps
     showChevron?: boolean
+    noBorder?: boolean
 } & PWViewProps
 
 export const AccountDisplay = ({
@@ -39,10 +40,11 @@ export const AccountDisplay = ({
     iconProps,
     showChevron = true,
     textProps,
+    noBorder,
     ...rest
 }: AccountDisplayProps) => {
     const { theme } = useTheme()
-    const styles = useStyles()
+    const styles = useStyles({ noBorder })
     const displayName = account ? getAccountDisplayName(account) : 'No Account'
 
     return (

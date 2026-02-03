@@ -12,7 +12,9 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
-import { render, screen } from '@test-utils/render'
+import { render, screen, renderHook, testTheme } from '@test-utils/render'
+import { ThemeProvider } from '@rneui/themed'
+import { useStyles } from '../styles'
 import { AccountDisplay } from '../AccountDisplay'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 
@@ -62,5 +64,17 @@ describe('AccountDisplay', () => {
             />,
         )
         expect(screen.queryByTestId('icon-chevron-down')).toBeNull()
+    })
+
+    it('returns style with borderWidth: 0 when noBorder is true', () => {
+        const { result } = renderHook(() => useStyles({ noBorder: true }), {
+            wrapper: ({ children }) => (
+                <ThemeProvider theme={testTheme}>{children}</ThemeProvider>
+            ),
+        })
+
+        expect(result.current.container).toMatchObject({
+            borderWidth: 0,
+        })
     })
 })
