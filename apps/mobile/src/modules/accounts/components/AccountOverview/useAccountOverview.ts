@@ -18,8 +18,7 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { usePreferences, useSettings } from '@perawallet/wallet-core-settings'
-import { UserPreferences } from '@constants/user-preferences'
+import { useSettings } from '@perawallet/wallet-core-settings'
 import { useChartInteraction } from '@hooks/useChartInteraction'
 import { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -34,12 +33,10 @@ export type UseAccountOverviewResult = {
     period: HistoryPeriod
     setPeriod: (period: HistoryPeriod) => void
     selectedPoint: AccountBalanceHistoryItem | null
-    chartVisible: boolean
     scrollingEnabled: boolean
     preferredFiatCurrency: string
     hasBalance: boolean
     togglePrivacyMode: () => void
-    toggleChartVisible: () => void
     handleChartSelectionChange: (
         selected: AccountBalanceHistoryItem | null,
     ) => void
@@ -47,7 +44,6 @@ export type UseAccountOverviewResult = {
     handleOpenSendFunds: () => void
     handleCloseSendFunds: () => void
     handleSwap: () => void
-    handleStake: () => void
     handleMore: () => void
     handleBuyAlgo: () => void
     handleReceive: () => void
@@ -61,7 +57,6 @@ export const useAccountOverview = (
     const { preferredFiatCurrency } = useCurrency()
     const { portfolioAlgoValue, portfolioFiatValue, isPending } =
         useAccountBalancesQuery(account ? [account] : [])
-    const { getPreference, setPreference } = usePreferences()
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
         useChartInteraction<AccountBalanceHistoryItem>()
     const [scrollingEnabled, setScrollingEnabled] = useState<boolean>(true)
@@ -70,11 +65,6 @@ export const useAccountOverview = (
     const togglePrivacyMode = useCallback(() => {
         setPrivacyMode(!privacyMode)
     }, [privacyMode, setPrivacyMode])
-
-    const chartVisible = !!getPreference(UserPreferences.chartVisible)
-    const toggleChartVisible = useCallback(() => {
-        setPreference(UserPreferences.chartVisible, !chartVisible)
-    }, [chartVisible, setPreference])
 
     const handleChartSelectionChange = useCallback(
         (selected: AccountBalanceHistoryItem | null) => {
@@ -100,10 +90,6 @@ export const useAccountOverview = (
 
     const handleSwap = useCallback(() => {
         navigation.replace('TabBar', { screen: 'Swap' })
-    }, [navigation])
-
-    const handleStake = useCallback(() => {
-        navigation.push('Staking')
     }, [navigation])
 
     const notImplemented = useCallback(() => {
@@ -135,18 +121,15 @@ export const useAccountOverview = (
         period,
         setPeriod,
         selectedPoint,
-        chartVisible,
         scrollingEnabled,
         preferredFiatCurrency,
         hasBalance: portfolioAlgoValue.gt(0),
         togglePrivacyMode,
-        toggleChartVisible,
         handleChartSelectionChange,
         isSendFundsVisible,
         handleOpenSendFunds,
         handleCloseSendFunds,
         handleSwap,
-        handleStake,
         handleMore: notImplemented,
         handleBuyAlgo,
         handleReceive,

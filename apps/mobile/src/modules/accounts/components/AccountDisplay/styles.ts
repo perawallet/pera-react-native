@@ -11,23 +11,29 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { AccountDisplayProps } from './AccountDisplay'
 
-export const useStyles = makeStyles(theme => {
-    return {
-        container: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: theme.spacing.md,
-        },
-        textContainer: {
-            flexShrink: 1,
-            justifyContent: 'center',
-        },
-        text: {
-            color: theme.colors.textMain,
-        },
-        addressText: {
-            color: theme.colors.textGray,
-        },
-    }
-})
+export const useStyles = makeStyles(
+    (theme, { noBorder }: AccountDisplayProps) => {
+        return {
+            container: {
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: theme.spacing.md,
+                ...(noBorder && {
+                    borderWidth: 0,
+                }),
+            },
+            textContainer: {
+                flexShrink: 1,
+                justifyContent: 'center',
+            },
+            text: {
+                color: theme.colors.textMain,
+            },
+            addressText: {
+                color: theme.colors.textGray,
+            },
+        }
+    },
+)

@@ -22,19 +22,24 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.sm,
             marginTop: theme.spacing.xs,
         },
+        buttonBase: {
+            width: theme.spacing['3xl'],
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: theme.spacing.sm,
+            paddingVertical: theme.spacing.xs,
+        },
         selectedButtonContainer: {
             backgroundColor: theme.colors.layerGrayLighter,
-            borderWidth: theme.borders.none,
-            borderRadius: theme.spacing.sm,
-            paddingVertical: theme.spacing.xs,
-            paddingHorizontal: theme.spacing.md,
         },
         unselectedButtonContainer: {
-            backgroundColor: theme.colors.background,
-            borderWidth: theme.borders.none,
-            borderRadius: theme.spacing.sm,
-            paddingVertical: theme.spacing.xs,
-            paddingHorizontal: theme.spacing.md,
+            backgroundColor: 'transparent',
+        },
+        selectedText: {
+            color: theme.colors.textMain,
+        },
+        unselectedText: {
+            color: theme.colors.textGray,
         },
     }
 })

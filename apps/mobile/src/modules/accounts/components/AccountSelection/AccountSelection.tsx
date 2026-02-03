@@ -48,6 +48,7 @@ export const AccountSelection = ({
                 <AccountDisplay
                     account={account ?? undefined}
                     style={styles.container}
+                    noBorder
                 />
             </TouchableOpacity>
             <AccountMenuBottomSheet

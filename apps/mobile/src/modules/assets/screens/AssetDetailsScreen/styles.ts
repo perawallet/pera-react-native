@@ -14,16 +14,9 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
     return {
-        tabs: {},
         fullWidth: {
             width: '100%',
             paddingHorizontal: theme.spacing.lg,
-        },
-        tabItem: {
-            color: theme.colors.textMain,
-        },
-        indicator: {
-            backgroundColor: theme.colors.textMain,
         },
         contentContainer: {
             flex: 1,

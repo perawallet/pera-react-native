@@ -10,54 +10,26 @@
  limitations under the License
  */
 
-import React, { ReactNode } from 'react'
+import React from 'react'
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { AccountTabNavigator } from '../AccountTabNavigator'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 
-// Mock the material top tabs navigator
-vi.mock('@react-navigation/material-top-tabs', () => {
-    const MockScreen = ({
-        children,
-        name,
-        options,
-    }: {
-        children?: () => ReactNode
-        name: string
-        options?: { tabBarLabel?: string }
-    }) => (
-        <div data-testid={`tab-screen-${name}`}>
-            <span>{options?.tabBarLabel || name}</span>
-            {children && children()}
-        </div>
-    )
-
-    const MockNavigator = ({
-        children,
-    }: {
-        children: ReactNode
-        screenOptions?: object
-    }) => <div data-testid='tab-navigator'>{children}</div>
-
-    return {
-        createMaterialTopTabNavigator: () => ({
-            Navigator: MockNavigator,
-            Screen: MockScreen,
-        }),
-    }
-})
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    getAccountDisplayName: vi.fn(account => account.name),
+}))
 
 // Use absolute module paths for the component mocks
-vi.mock('@modules/accounts/components/AccountOverview', () => ({
+vi.mock('../../AccountOverview', () => ({
     AccountOverview: () => <span data-testid='AccountOverview' />,
 }))
 
-vi.mock('@modules/accounts/components/AccountNfts', () => ({
+vi.mock('../../AccountNfts', () => ({
     AccountNfts: () => <span data-testid='AccountNfts' />,
 }))
 
-vi.mock('@modules/accounts/components/AccountHistory', () => ({
+vi.mock('../../AccountHistory', () => ({
     AccountHistory: () => <span data-testid='AccountHistory' />,
 }))
 
@@ -84,13 +56,7 @@ describe('AccountTabNavigator', () => {
         ).toBeTruthy()
     })
 
-    it('renders the tab navigator container', () => {
-        render(<AccountTabNavigator account={mockAccount} />)
-
-        expect(screen.getByTestId('tab-navigator')).toBeTruthy()
-    })
-
-    it('renders AccountOverview for the Overview tab', () => {
+    it('renders AccountOverview for the initial tab', () => {
         render(<AccountTabNavigator account={mockAccount} />)
 
         expect(screen.getByTestId('AccountOverview')).toBeTruthy()

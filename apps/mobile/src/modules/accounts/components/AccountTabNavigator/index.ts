@@ -11,4 +11,3 @@
  */
 
 export { AccountTabNavigator } from './AccountTabNavigator'
-export type { AccountTabsParamsList } from './AccountTabNavigator'
