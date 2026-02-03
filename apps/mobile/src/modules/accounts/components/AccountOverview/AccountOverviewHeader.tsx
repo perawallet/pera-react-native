@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWButton, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { formatDatetime, HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
@@ -23,7 +23,6 @@ import {
     AccountBalanceHistoryItem,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { ExpandablePanel } from '@components/ExpandablePanel'
 
 import { useLanguage } from '@hooks/useLanguage'
 import { NoFundsButtonPanel } from '../NoFundsButtonPanel'
@@ -37,10 +36,8 @@ export type AccountOverviewHeaderProps = {
     period: HistoryPeriod
     setPeriod: (period: HistoryPeriod) => void
     selectedPoint: AccountBalanceHistoryItem | null
-    chartVisible: boolean
     preferredFiatCurrency: string
     togglePrivacyMode: () => void
-    toggleChartVisible: () => void
     handleChartSelectionChange: (
         selected: AccountBalanceHistoryItem | null,
     ) => void
@@ -61,10 +58,8 @@ export const AccountOverviewHeader = ({
     period,
     setPeriod,
     selectedPoint,
-    chartVisible,
     preferredFiatCurrency,
     togglePrivacyMode,
-    toggleChartVisible,
     handleChartSelectionChange,
     handleSwap,
     handleStake,
@@ -94,12 +89,6 @@ export const AccountOverviewHeader = ({
                         precision={2}
                         style={styles.primaryCurrency}
                         isLoading={isPending}
-                    />
-                    <PWButton
-                        icon='chart'
-                        variant={chartVisible ? 'secondary' : 'helper'}
-                        paddingStyle='dense'
-                        onPress={toggleChartVisible}
                     />
                 </PWView>
                 <PWView style={styles.secondaryValueBar}>
@@ -133,10 +122,7 @@ export const AccountOverviewHeader = ({
                 </PWView>
             </PWTouchableOpacity>
 
-            <ExpandablePanel
-                isExpanded={chartVisible}
-                containerStyle={styles.chartContainer}
-            >
+            <PWView style={styles.chartContainer}>
                 <WealthChart
                     account={account}
                     period={period}
@@ -146,7 +132,7 @@ export const AccountOverviewHeader = ({
                     value={period}
                     onChange={setPeriod}
                 />
-            </ExpandablePanel>
+            </PWView>
 
             <ButtonPanel
                 onSwap={handleSwap}

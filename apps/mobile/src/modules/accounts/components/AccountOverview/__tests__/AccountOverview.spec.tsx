@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import React, { PropsWithChildren } from 'react'
+import React from 'react'
 import { render, screen, fireEvent } from '@test-utils/render'
 import Decimal from 'decimal.js'
 import { AccountOverview } from '../AccountOverview'
@@ -58,10 +58,6 @@ vi.mock('@hooks/useIsDarkMode', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-settings', () => ({
-    usePreferences: vi.fn(() => ({
-        getPreference: vi.fn(() => true),
-        setPreference: vi.fn(),
-    })),
     useSettings: vi.fn(() => ({
         privacyMode: false,
         setPrivacyMode: vi.fn(),
@@ -89,9 +85,6 @@ vi.mock('@components/WealthTrend', () => ({
 vi.mock('@components/CurrencyDisplay', () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     CurrencyDisplay: ({ value }: any) => <div>{value?.toString()}</div>,
-}))
-vi.mock('@components/ExpandablePanel', () => ({
-    ExpandablePanel: ({ children }: PropsWithChildren) => children,
 }))
 
 // Mock sub-components to keep test focused
