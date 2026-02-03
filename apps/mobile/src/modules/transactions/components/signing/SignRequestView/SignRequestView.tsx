@@ -15,7 +15,7 @@ import {
     Arc60SignRequest,
     SignRequest,
     TransactionSignRequest,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-signing'
 import { EmptyView } from '@components/EmptyView'
 import { TransactionSigningView } from '../TransactionSigningView'
 import { ArbitraryDataSigningView } from '../ArbitraryDataSigningView'

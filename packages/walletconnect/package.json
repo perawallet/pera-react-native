@@ -22,6 +22,7 @@
     "@perawallet/wallet-core-blockchain": "workspace:*",
     "@perawallet/wallet-core-platform-integration": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
+    "@perawallet/wallet-core-signing": "workspace:*",
     "@walletconnect/client": "1.8.0",
     "@walletconnect/types": "1.8.0",
     "@walletconnect/utils": "1.8.0",

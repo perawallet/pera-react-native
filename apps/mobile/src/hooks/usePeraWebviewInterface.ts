@@ -31,15 +31,17 @@ import { useCallback } from 'react'
 import { useWebView } from '@modules/webview/hooks'
 import { useLanguage } from './useLanguage'
 import {
-    ArbitraryDataSignRequest,
-    PeraArbitraryDataMessage,
-    PeraArbitraryDataSignResult,
     PeraSignedTransactionGroup,
     PeraTransaction,
-    SignRequestSource,
-    TransactionSignRequest,
-    useSigningRequest,
 } from '@perawallet/wallet-core-blockchain'
+import {
+    type ArbitraryDataSignRequest,
+    type PeraArbitraryDataMessage,
+    type PeraArbitraryDataSignResult,
+    type SignRequestSource,
+    type TransactionSignRequest,
+    useSigningRequest,
+} from '@perawallet/wallet-core-signing'
 import {
     requireSecure,
     sendErrorToWebview,

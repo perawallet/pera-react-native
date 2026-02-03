@@ -12,29 +12,20 @@
 
 import {
     createContext,
-    useContext,
     useMemo,
     useState,
     useCallback,
 } from 'react'
 import {
     type TransactionSignRequest,
-    type PeraDisplayableTransaction,
-    mapToDisplayableTransaction,
-    encodeAlgorandAddress,
-    useAlgorandClient,
-    useSigningRequest,
-    useTransactionEncoder,
-} from '@perawallet/wallet-core-blockchain'
-import {
-    useTransactionSigner,
-    useAllAccounts,
-} from '@perawallet/wallet-core-accounts'
+    useTransactionSigningSession,
+    useTransactionSignAndSend,
+} from '@perawallet/wallet-core-signing'
 import { config } from '@perawallet/wallet-core-config'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { bottomSheetNotifier } from '@components/core'
-import { TransactionWarning, TransactionSigningContextValue } from '@modules/transactions/models'
+import { TransactionSigningContextValue } from '@modules/transactions/models'
 
 export const TransactionSigningContext = createContext<TransactionSigningContextValue | null>(null)
 
@@ -47,104 +38,36 @@ export const SigningContextProvider = ({
     request,
     children,
 }: SigningContextProviderProps) => {
-    const { removeSignRequest } = useSigningRequest()
-    const { signTransactions } = useTransactionSigner()
-    const { encodeSignedTransactions } = useTransactionEncoder()
-    const algokit = useAlgorandClient()
     const { showToast } = useToast()
     const { t } = useLanguage()
     const [isLoading, setIsLoading] = useState(false)
-    const accounts = useAllAccounts()
 
-    const groups = useMemo(
-        () =>
-            request.txs.map(group =>
-                group
-                    .map(tx => mapToDisplayableTransaction(tx))
-                    .filter((tx): tx is PeraDisplayableTransaction => !!tx),
-            ),
-        [request.txs],
-    )
+    const {
+        groups,
+        allTransactions,
+        totalFee,
+        aggregatedWarnings,
+        isSingleTransaction,
+        isSingleGroup,
+        isMultipleGroups,
+    } = useTransactionSigningSession(request)
 
-    const allTransactions = useMemo(() => groups.flat(), [groups])
-
-    const totalFee = useMemo(() => {
-        return allTransactions.reduce((sum, tx) => sum + (tx.fee ?? 0n), 0n)
-    }, [allTransactions])
-
-    // Get addresses of accounts the user can sign for
-    const signableAddresses = useMemo(
-        () => new Set(accounts.filter(a => a.canSign).map(a => a.address)),
-        [accounts],
-    )
-
-    // Aggregate warnings across all transactions for user-controlled accounts
-    const aggregatedWarnings = useMemo(() => {
-        const warnings: TransactionWarning[] = []
-
-        for (const tx of allTransactions) {
-            // Only show warnings for transactions the user is signing
-            if (!tx.sender || !signableAddresses.has(tx.sender)) {
-                continue
-            }
-
-            // Check for close-to warnings
-            const closeAddress =
-                tx.paymentTransaction?.closeRemainderTo ??
-                tx.assetTransferTransaction?.closeTo
-
-            if (closeAddress) {
-                warnings.push({
-                    type: 'close',
-                    senderAddress: tx.sender,
-                    targetAddress: closeAddress,
-                })
-            }
-
-            // Check for rekey warnings
-            if (tx.rekeyTo?.publicKey) {
-                const rekeyAddress = encodeAlgorandAddress(tx.rekeyTo.publicKey)
-                warnings.push({
-                    type: 'rekey',
-                    senderAddress: tx.sender,
-                    targetAddress: rekeyAddress,
-                })
-            }
-        }
-
-        return warnings
-    }, [allTransactions, signableAddresses])
-
-    const isSingleTransaction = groups.length === 1 && groups[0]?.length === 1
-    const isSingleGroup = groups.length === 1 && !isSingleTransaction
-    const isMultipleGroups = groups.length > 1
+    const {
+        signAndSend: coreSignAndSend,
+        rejectRequest: coreRejectRequest,
+    } = useTransactionSignAndSend()
 
     const signAndSend = useCallback(async () => {
         setIsLoading(true)
         try {
-            const signedTxs = await Promise.all(
-                request.txs.map(txs => {
-                    return signTransactions(
-                        txs,
-                        request.txs.map((_, idx) => idx),
-                    )
-                }),
-            )
-            if (request.transport === 'algod') {
-                signedTxs.forEach(group => {
-                    algokit.client.algod.sendRawTransaction(
-                        encodeSignedTransactions(group),
-                    )
-                })
-            } else {
-                await request.approve?.(signedTxs)
+            await coreSignAndSend(request)
+            if (request.transport !== 'algod') {
                 showToast({
                     title: t('signing.transaction_view.success_title'),
                     body: t('signing.transaction_view.success_body'),
                     type: 'success',
                 })
             }
-            removeSignRequest(request)
         } catch (error) {
             if (request.transport === 'algod') {
                 showToast(
@@ -169,22 +92,11 @@ export const SigningContextProvider = ({
         } finally {
             setIsLoading(false)
         }
-    }, [
-        request,
-        signTransactions,
-        algokit,
-        encodeSignedTransactions,
-        showToast,
-        t,
-        removeSignRequest,
-    ])
+    }, [request, coreSignAndSend, showToast, t])
 
     const rejectRequest = useCallback(() => {
-        if (request.transport === 'callback') {
-            request.reject?.()
-        }
-        removeSignRequest(request)
-    }, [request, removeSignRequest])
+        coreRejectRequest(request)
+    }, [request, coreRejectRequest])
 
     const value = useMemo(
         () => ({

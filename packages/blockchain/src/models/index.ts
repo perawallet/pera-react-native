@@ -19,66 +19,7 @@ import { BaseStoreState } from '@perawallet/wallet-core-shared'
 
 export const MAX_TX_NOTE_BYTES = 1024
 
-export type SignRequestSource = {
-    name?: string
-    description?: string
-    url?: string
-    icons?: string[]
-}
-
-type BaseSignRequest = {
-    id: string
-    type: 'transactions' | 'arbitrary-data' | 'arc60'
-    transport: 'algod' | 'callback'
-    transportId?: string
-    sourceMetadata?: SignRequestSource
-}
-
-export type TransactionSignRequest = {
-    // A list of transaction groups (which in turn are a list of transactions) - nulls are used to represent transactions that the caller does not need signed
-    txs: PeraTransactionGroup[]
-    approve?: (signedTxs: PeraSignedTransactionGroup[]) => Promise<void>
-    reject?: () => Promise<void>
-    error?: (error: string) => Promise<void>
-} & BaseSignRequest
-
-export type PeraArbitraryDataMessage = {
-    signer: string
-    data: string
-    message?: string // optional message to display to the user
-    chainId: number
-}
-
-export type PeraArbitraryDataSignResult = {
-    signature: Uint8Array
-    signer: string
-}
-
-export type ArbitraryDataSignRequest = {
-    data: PeraArbitraryDataMessage[]
-    approve?: (signed: PeraArbitraryDataSignResult[]) => Promise<void>
-    reject?: () => Promise<void>
-    error?: (error: string) => Promise<void>
-} & BaseSignRequest
-
-//ARC 60 arbitrary data signing request
-export type Arc60SignRequest = {
-    //TODO add data in here that matches the expected structure
-    approve?: (signed: PeraArbitraryDataSignResult[]) => Promise<void>
-    reject?: () => Promise<void>
-    error?: (error: string) => Promise<void>
-} & BaseSignRequest
-
-export type SignRequest =
-    | TransactionSignRequest
-    | ArbitraryDataSignRequest
-    | Arc60SignRequest
-
-export type BlockchainStore = BaseStoreState & {
-    pendingSignRequests: SignRequest[]
-    addSignRequest: (request: SignRequest) => boolean
-    removeSignRequest: (request: SignRequest) => boolean
-}
+export type BlockchainStore = BaseStoreState
 
 export { Address } from '@algorandfoundation/algokit-utils'
 

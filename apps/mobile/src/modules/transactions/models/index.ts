@@ -1,10 +1,7 @@
-import { PeraDisplayableTransaction, TransactionSignRequest } from "@perawallet/wallet-core-blockchain"
+import { PeraDisplayableTransaction } from "@perawallet/wallet-core-blockchain"
+import { TransactionSignRequest, TransactionWarning } from "@perawallet/wallet-core-signing"
 
-export type TransactionWarning = {
-    type: 'close' | 'rekey'
-    senderAddress: string
-    targetAddress: string
-}
+export type { TransactionWarning } from "@perawallet/wallet-core-signing"
 
 export type TransactionSigningContextValue = {
     request: TransactionSignRequest

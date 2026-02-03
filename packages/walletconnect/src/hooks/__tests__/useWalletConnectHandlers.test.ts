@@ -14,7 +14,7 @@ import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useWalletConnectHandlers } from '../useWalletConnectHandlers'
 import { useWalletConnectStore } from '../../store'
-import { useSigningRequest } from '@perawallet/wallet-core-blockchain'
+import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import { Networks } from '@perawallet/wallet-core-shared'
 import {
@@ -41,11 +41,15 @@ vi.mock('uuid', async importOriginal => {
 })
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useSigningRequest: vi.fn(),
     useTransactionEncoder: vi.fn(() => ({
         encodeSignedTransaction: vi.fn(() => new Uint8Array([1, 2, 3, 4])),
     })),
     encodeAlgorandAddress: vi.fn(() => 'TEST_ADDRESS'),
+    decodeAlgorandTransactions: vi.fn(txns => txns),
+}))
+
+vi.mock('@perawallet/wallet-core-signing', () => ({
+    useSigningRequest: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-platform-integration', () => ({

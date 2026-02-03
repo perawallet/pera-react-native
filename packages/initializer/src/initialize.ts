@@ -14,6 +14,7 @@ import { registerAccountsStore } from '@perawallet/wallet-core-accounts'
 import { registerAssetsStore } from '@perawallet/wallet-core-assets'
 import { registerBlockchainStore } from '@perawallet/wallet-core-blockchain'
 import { registerContactsStore } from '@perawallet/wallet-core-contacts'
+import { registerSigningStore } from '@perawallet/wallet-core-signing'
 import { registerCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import { registerKeyManagerStore } from '@perawallet/wallet-core-kms'
 import {
@@ -31,6 +32,7 @@ export const registerDataStores = () => {
     registerAssetsStore()
     registerBlockchainStore()
     registerContactsStore()
+    registerSigningStore()
     registerCurrenciesStore()
     registerKeyManagerStore()
     registerDeviceStore()

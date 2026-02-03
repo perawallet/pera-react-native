@@ -10,7 +10,15 @@
  limitations under the License
  */
 
-export * from './useAccountInformationQuery'
-export * from './useAlgorandClient'
-export * from './useSuggestedParametersQuery'
-export * from './useTransactionEncoder'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+
+export const classifyTransactionGroups = (
+    groups: PeraDisplayableTransaction[][],
+) => {
+    const isSingleTransaction =
+        groups.length === 1 && groups[0]?.length === 1
+    const isSingleGroup = groups.length === 1 && !isSingleTransaction
+    const isMultipleGroups = groups.length > 1
+
+    return { isSingleTransaction, isSingleGroup, isMultipleGroups }
+}

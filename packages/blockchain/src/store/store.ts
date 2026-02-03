@@ -16,14 +16,13 @@ import {
     KeyValueStorageService,
     useKeyValueStorageService,
 } from '@perawallet/wallet-core-platform-integration'
-import type { BlockchainStore, SignRequest } from '../models'
+import type { BlockchainStore } from '../models'
 import {
     createLazyStore,
     DataStoreRegistry,
     logger,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
-import { v7 as uuidv7 } from 'uuid'
 
 const STORE_NAME = 'blockchain-store'
 const lazy = createLazyStore<WithPersist<StoreApi<BlockchainStore>, unknown>>()
@@ -32,48 +31,16 @@ export const useBlockchainStore: UseBoundStore<
     WithPersist<StoreApi<BlockchainStore>, unknown>
 > = lazy.useStore
 
-const initialState = {
-    pendingSignRequests: [] as SignRequest[],
-}
-
 const createBlockchainStore = (storage: KeyValueStorageService) =>
     create<BlockchainStore>()(
         persist(
-            (set, get) => ({
-                ...initialState,
-                addSignRequest: (request: SignRequest) => {
-                    const existing = get().pendingSignRequests ?? []
-                    const newRequest = {
-                        ...request,
-                        id: request.id ?? uuidv7(),
-                    }
-                    if (!existing.find(r => r.id === newRequest.id)) {
-                        set({ pendingSignRequests: [...existing, newRequest] })
-                        return true
-                    }
-                    return false
-                },
-                removeSignRequest: (request: SignRequest) => {
-                    const existing = get().pendingSignRequests ?? []
-                    const remaining = existing.filter(r => r.id !== request.id)
-
-                    if (remaining.length != existing.length) {
-                        set({ pendingSignRequests: remaining })
-                    }
-                    return remaining.length != existing.length
-                },
-                resetState: () => set(initialState),
+            set => ({
+                resetState: () => set({}),
             }),
             {
                 name: 'blockchain-store',
                 storage: createJSONStorage(() => storage),
                 version: 1,
-                partialize: state => ({
-                    // don't persist callback sign requests because the callback function can't be serialized and they become defunct
-                    pendingSignRequests: state.pendingSignRequests.filter(
-                        r => r.transport !== 'callback',
-                    ),
-                }),
             },
         ),
     )

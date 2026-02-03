@@ -16,6 +16,7 @@ import { registerAccountsStore } from '@perawallet/wallet-core-accounts'
 import { registerAssetsStore } from '@perawallet/wallet-core-assets'
 import { registerBlockchainStore } from '@perawallet/wallet-core-blockchain'
 import { registerContactsStore } from '@perawallet/wallet-core-contacts'
+import { registerSigningStore } from '@perawallet/wallet-core-signing'
 import { registerCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import { registerKeyManagerStore } from '@perawallet/wallet-core-kms'
 import {
@@ -40,6 +41,9 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 vi.mock('@perawallet/wallet-core-contacts', () => ({
     registerContactsStore: vi.fn(),
+}))
+vi.mock('@perawallet/wallet-core-signing', () => ({
+    registerSigningStore: vi.fn(),
 }))
 vi.mock('@perawallet/wallet-core-currencies', () => ({
     registerCurrenciesStore: vi.fn(),
@@ -86,6 +90,7 @@ describe('registerDataStores', () => {
         expect(registerPollingStore).toHaveBeenCalled()
         expect(registerSecurityStore).toHaveBeenCalled()
         expect(registerSettingsStore).toHaveBeenCalled()
+        expect(registerSigningStore).toHaveBeenCalled()
         expect(registerSwapsStore).toHaveBeenCalled()
         expect(registerWalletConnectStore).toHaveBeenCalled()
     })

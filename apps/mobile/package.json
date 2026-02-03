@@ -45,6 +45,7 @@
     "@perawallet/wallet-core-security": "workspace:*",
     "@perawallet/wallet-core-settings": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
+    "@perawallet/wallet-core-signing": "workspace:*",
     "@perawallet/wallet-core-swaps": "workspace:*",
     "@perawallet/wallet-core-walletconnect": "workspace:*",
     "@react-native-community/netinfo": "^11.4.1",

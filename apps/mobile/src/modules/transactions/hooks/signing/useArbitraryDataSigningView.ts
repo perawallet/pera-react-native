@@ -11,13 +11,9 @@
  */
 
 import {
-    useAllAccounts,
-    useArbitraryDataSigner,
-} from '@perawallet/wallet-core-accounts'
-import {
-    ArbitraryDataSignRequest,
-    useSigningRequest,
-} from '@perawallet/wallet-core-blockchain'
+    type ArbitraryDataSignRequest,
+    useArbitraryDataSignAndSend,
+} from '@perawallet/wallet-core-signing'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCallback, useState } from 'react'
@@ -26,46 +22,18 @@ export const useArbitraryDataSigningView = (
     request: ArbitraryDataSignRequest,
 ) => {
     const { t } = useLanguage()
-    const { removeSignRequest } = useSigningRequest()
     const { showToast } = useToast()
-    const { signArbitraryData } = useArbitraryDataSigner()
-    const allAccounts = useAllAccounts()
     const [isPending, setIsPending] = useState(false)
 
+    const {
+        signAndSend: coreSignAndSend,
+        rejectRequest: coreRejectRequest,
+    } = useArbitraryDataSignAndSend()
+
     const approveRequest = useCallback(async () => {
-        if (request.transport === 'algod') {
-            removeSignRequest(request)
-            throw new Error(t('signing.arbitrary_data_view.algod_not_valid'))
-        }
-
         setIsPending(true)
-        const signedData = request.data.map(async data => {
-            const account = allAccounts.find(
-                account => account.address === data.signer,
-            )
-
-            if (!account) {
-                removeSignRequest(request)
-                throw new Error(
-                    t('signing.arbitrary_data_view.account_not_found'),
-                )
-            }
-            const signature = await signArbitraryData(account, data.data)
-            if (!signature?.length) {
-                removeSignRequest(request)
-                throw new Error(
-                    t('signing.arbitrary_data_view.signature_not_found'),
-                )
-            }
-
-            return {
-                signer: account.address,
-                signature: signature[0],
-            }
-        })
         try {
-            const signatures = await Promise.all(signedData)
-            await request.approve?.(signatures)
+            await coreSignAndSend(request)
             showToast({
                 title: t('signing.arbitrary_data_view.success_title'),
                 body: t('signing.arbitrary_data_view.success_body'),
@@ -75,16 +43,12 @@ export const useArbitraryDataSigningView = (
             await request.error?.(`${error}`)
         } finally {
             setIsPending(false)
-            removeSignRequest(request)
         }
-    }, [request, removeSignRequest, showToast, signArbitraryData, allAccounts])
+    }, [request, coreSignAndSend, showToast, t])
 
     const rejectRequest = useCallback(() => {
-        removeSignRequest(request)
-        if (request.transport === 'callback') {
-            request.reject?.()
-        }
-    }, [request, removeSignRequest])
+        coreRejectRequest(request)
+    }, [request, coreRejectRequest])
 
     return {
         approveRequest,

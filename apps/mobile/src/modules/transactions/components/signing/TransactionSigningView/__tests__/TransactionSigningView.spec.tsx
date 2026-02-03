@@ -16,7 +16,13 @@ import { TransactionSigningView } from '../TransactionSigningView'
 import {
     TransactionSignRequest,
     useSigningRequest,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-signing'
+
+vi.mock('@perawallet/wallet-core-signing', () => ({
+    useSigningRequest: vi.fn(() => ({
+        removeSignRequest: vi.fn(),
+    })),
+}))
 
 vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
     const actual =
@@ -25,9 +31,6 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
         >()
     return {
         ...actual,
-        useSigningRequest: vi.fn(() => ({
-            removeSignRequest: vi.fn(),
-        })),
         useAlgorandClient: vi.fn(() => ({
             client: { algod: { sendRawTransaction: vi.fn() } },
         })),

@@ -10,20 +10,10 @@
  limitations under the License
  */
 
-import { useBlockchainStore } from '../store'
+export const name = '@perawallet/wallet-core-signing'
 
-export const useSigningRequest = () => {
-    const pendingSignRequests = useBlockchainStore(
-        state => state.pendingSignRequests,
-    )
-    const addSignRequest = useBlockchainStore(state => state.addSignRequest)
-    const removeSignRequest = useBlockchainStore(
-        state => state.removeSignRequest,
-    )
+export * from './models'
+export * from './hooks'
+export * from './utils'
 
-    return {
-        pendingSignRequests,
-        addSignRequest,
-        removeSignRequest,
-    }
-}
+export { initSigningStore, registerSigningStore } from './store'

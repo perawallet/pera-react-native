@@ -10,7 +10,20 @@
  limitations under the License
  */
 
-export * from './useAccountInformationQuery'
-export * from './useAlgorandClient'
-export * from './useSuggestedParametersQuery'
-export * from './useTransactionEncoder'
+import { useSigningStore } from '../store'
+
+export const useSigningRequest = () => {
+    const pendingSignRequests = useSigningStore(
+        state => state.pendingSignRequests,
+    )
+    const addSignRequest = useSigningStore(state => state.addSignRequest)
+    const removeSignRequest = useSigningStore(
+        state => state.removeSignRequest,
+    )
+
+    return {
+        pendingSignRequests,
+        addSignRequest,
+        removeSignRequest,
+    }
+}

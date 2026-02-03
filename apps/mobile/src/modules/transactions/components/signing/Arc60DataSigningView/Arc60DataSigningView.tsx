@@ -15,7 +15,7 @@ import { EmptyView } from '@components/EmptyView'
 import {
     Arc60SignRequest,
     useSigningRequest,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-signing'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'

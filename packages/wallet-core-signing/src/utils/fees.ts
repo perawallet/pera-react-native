@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-export * from './useAccountInformationQuery'
-export * from './useAlgorandClient'
-export * from './useSuggestedParametersQuery'
-export * from './useTransactionEncoder'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+
+export const calculateTotalFee = (
+    transactions: PeraDisplayableTransaction[],
+): bigint => transactions.reduce((sum, tx) => sum + (tx.fee ?? 0n), 0n)

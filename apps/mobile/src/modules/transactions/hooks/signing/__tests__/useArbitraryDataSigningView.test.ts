@@ -14,23 +14,14 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useArbitraryDataSigningView } from '../useArbitraryDataSigningView'
 import {
-    useAllAccounts,
-    useArbitraryDataSigner,
-} from '@perawallet/wallet-core-accounts'
-import {
     ArbitraryDataSignRequest,
-    useSigningRequest,
-} from '@perawallet/wallet-core-blockchain'
+    useArbitraryDataSignAndSend,
+} from '@perawallet/wallet-core-signing'
 import { useToast } from '@hooks/useToast'
 import { AlgorandChainId } from '@perawallet/wallet-core-walletconnect'
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAllAccounts: vi.fn(),
-    useArbitraryDataSigner: vi.fn(),
-}))
-
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useSigningRequest: vi.fn(),
+vi.mock('@perawallet/wallet-core-signing', () => ({
+    useArbitraryDataSignAndSend: vi.fn(),
 }))
 
 vi.mock('@hooks/useToast', () => ({
@@ -43,14 +34,10 @@ vi.mock('@hooks/useLanguage', () => ({
 
 describe('useArbitraryDataSigningView', () => {
     const mockShowToast = vi.fn()
-    const mockRemoveSignRequest = vi.fn()
-    const mockSignArbitraryData = vi.fn()
-    const mockApprove = vi.fn()
-    const mockReject = vi.fn()
+    const mockSignAndSend = vi.fn()
+    const mockRejectRequest = vi.fn()
     const mockRequestError = vi.fn()
-
-    const mockAccount = { address: 'ADDR1', name: 'Account 1' }
-    const mockAccounts = [mockAccount]
+    const mockReject = vi.fn()
 
     const baseRequest: ArbitraryDataSignRequest = {
         id: 'test-id',
@@ -59,7 +46,7 @@ describe('useArbitraryDataSigningView', () => {
         data: [
             { signer: 'ADDR1', data: 'data1', chainId: AlgorandChainId.all },
         ],
-        approve: mockApprove,
+        approve: vi.fn(),
         reject: mockReject,
         error: mockRequestError,
     }
@@ -67,39 +54,15 @@ describe('useArbitraryDataSigningView', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         ;(useToast as Mock).mockReturnValue({ showToast: mockShowToast })
-        ;(useSigningRequest as Mock).mockReturnValue({
-            removeSignRequest: mockRemoveSignRequest,
-        })
-        ;(useAllAccounts as Mock).mockReturnValue(mockAccounts)
-        ;(useArbitraryDataSigner as Mock).mockReturnValue({
-            signArbitraryData: mockSignArbitraryData,
+        ;(useArbitraryDataSignAndSend as Mock).mockReturnValue({
+            signAndSend: mockSignAndSend,
+            rejectRequest: mockRejectRequest,
         })
     })
 
     describe('approveRequest', () => {
-        it('should show error and remove request validation fails (algod transport)', async () => {
-            const request = {
-                ...baseRequest,
-                transport: 'algod' as 'algod' | 'callback',
-            }
-            const { result } = renderHook(() =>
-                useArbitraryDataSigningView(request),
-            )
-
-            await act(async () => {
-                try {
-                    await result.current.approveRequest()
-                    expect.fail('Expected error to be thrown')
-                } catch (error) {
-                    expect(error).toBeInstanceOf(Error)
-                }
-            })
-            expect(mockRemoveSignRequest).toHaveBeenCalledWith(request)
-            expect(mockSignArbitraryData).not.toHaveBeenCalled()
-        })
-
-        it('should fail if account is not found', async () => {
-            ;(useAllAccounts as Mock).mockReturnValue([])
+        it('should call signAndSend and show toast on success', async () => {
+            mockSignAndSend.mockResolvedValue(undefined)
             const { result } = renderHook(() =>
                 useArbitraryDataSigningView(baseRequest),
             )
@@ -108,51 +71,17 @@ describe('useArbitraryDataSigningView', () => {
                 await result.current.approveRequest()
             })
 
-            expect(mockRemoveSignRequest).toHaveBeenCalledWith(baseRequest)
-            expect(mockRequestError).toHaveBeenCalledWith(
-                expect.stringContaining('account_not_found'),
-            )
-        })
-
-        it('should fail if signature generation fails or returns empty', async () => {
-            mockSignArbitraryData.mockResolvedValue([]) // Empty signature
-            const { result } = renderHook(() =>
-                useArbitraryDataSigningView(baseRequest),
-            )
-
-            await act(async () => {
-                await result.current.approveRequest()
+            expect(mockSignAndSend).toHaveBeenCalledWith(baseRequest)
+            expect(mockShowToast).toHaveBeenCalledWith({
+                title: 'signing.arbitrary_data_view.success_title',
+                body: 'signing.arbitrary_data_view.success_body',
+                type: 'success',
             })
-
-            expect(mockRemoveSignRequest).toHaveBeenCalledWith(baseRequest)
-            expect(mockRequestError).toHaveBeenCalledWith(
-                expect.stringContaining('signature_not_found'),
-            )
-        })
-
-        it('should successfully sign and approve request', async () => {
-            mockSignArbitraryData.mockResolvedValue(['signature_bytes'])
-            const { result } = renderHook(() =>
-                useArbitraryDataSigningView(baseRequest),
-            )
-
-            await act(async () => {
-                await result.current.approveRequest()
-            })
-
-            expect(mockSignArbitraryData).toHaveBeenCalledWith(
-                mockAccount,
-                'data1',
-            )
-            expect(mockApprove).toHaveBeenCalledWith([
-                { signer: 'ADDR1', signature: 'signature_bytes' },
-            ])
-            expect(mockRemoveSignRequest).toHaveBeenCalledWith(baseRequest)
             expect(result.current.isPending).toBe(false)
         })
 
-        it('should handle exceptions during flow', async () => {
-            mockSignArbitraryData.mockRejectedValue(new Error('Sign fail'))
+        it('should handle errors from signAndSend', async () => {
+            mockSignAndSend.mockRejectedValue(new Error('Sign fail'))
             const { result } = renderHook(() =>
                 useArbitraryDataSigningView(baseRequest),
             )
@@ -162,44 +91,22 @@ describe('useArbitraryDataSigningView', () => {
             })
 
             expect(mockRequestError).toHaveBeenCalledWith('Error: Sign fail')
-            expect(mockRemoveSignRequest).toHaveBeenCalledWith(baseRequest)
+            expect(mockShowToast).not.toHaveBeenCalled()
             expect(result.current.isPending).toBe(false)
         })
     })
 
     describe('rejectRequest', () => {
-        it('should remove request and call reject if transport is callback', () => {
-            const request = {
-                ...baseRequest,
-                transport: 'callback' as 'algod' | 'callback',
-            }
+        it('should call coreRejectRequest with the request', () => {
             const { result } = renderHook(() =>
-                useArbitraryDataSigningView(request),
+                useArbitraryDataSigningView(baseRequest),
             )
 
             act(() => {
                 result.current.rejectRequest()
             })
 
-            expect(mockRemoveSignRequest).toHaveBeenCalledWith(request)
-            expect(mockReject).toHaveBeenCalled()
-        })
-
-        it('should remove request but NOT call reject if transport is not callback', () => {
-            const request = {
-                ...baseRequest,
-                transport: 'algod' as 'algod' | 'callback',
-            }
-            const { result } = renderHook(() =>
-                useArbitraryDataSigningView(request),
-            )
-
-            act(() => {
-                result.current.rejectRequest()
-            })
-
-            expect(mockRemoveSignRequest).toHaveBeenCalledWith(request)
-            expect(mockReject).not.toHaveBeenCalled()
+            expect(mockRejectRequest).toHaveBeenCalledWith(baseRequest)
         })
     })
 })

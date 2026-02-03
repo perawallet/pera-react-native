@@ -17,7 +17,7 @@ import { useWindowDimensions } from 'react-native'
 import {
     useSigningRequest,
     type TransactionSignRequest,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-signing'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 import { SigningContextProvider } from '@modules/transactions/components/signing/SigningContextProvider'
 

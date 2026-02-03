@@ -22,7 +22,7 @@ import {
     ArbitraryDataSignRequest,
     PeraArbitraryDataMessage,
     SignRequestSource,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-signing'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import {

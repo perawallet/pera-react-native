@@ -23,15 +23,17 @@ import {
 } from '../errors'
 import { useWalletConnectStore } from '../store'
 import {
-    ArbitraryDataSignRequest,
     decodeAlgorandTransactions,
-    PeraArbitraryDataMessage,
-    PeraArbitraryDataSignResult,
     PeraSignedTransaction,
-    TransactionSignRequest,
-    useSigningRequest,
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
+import {
+    type ArbitraryDataSignRequest,
+    type PeraArbitraryDataMessage,
+    type PeraArbitraryDataSignResult,
+    type TransactionSignRequest,
+    useSigningRequest,
+} from '@perawallet/wallet-core-signing'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import WalletConnect from '@walletconnect/client'
 import { useCallback } from 'react'

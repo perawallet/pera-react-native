@@ -1,4 +1,4 @@
-import { TransactionSignRequest } from '@perawallet/wallet-core-blockchain'
+import { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { useMemo } from 'react'
 import { SigningStackParamList } from './types'

@@ -13,7 +13,7 @@
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { ArbitraryDataSigningView } from '../ArbitraryDataSigningView'
-import { ArbitraryDataSignRequest } from '@perawallet/wallet-core-blockchain'
+import { ArbitraryDataSignRequest } from '@perawallet/wallet-core-signing'
 
 // Correctly mock TabView and its static Item property
 const MockTabView = ({ children }: { children: React.ReactNode }) => (
@@ -23,7 +23,7 @@ MockTabView.Item = ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
 )
 
-vi.mock('@perawallet/wallet-core-blockchain', async () => ({
+vi.mock('@perawallet/wallet-core-signing', async () => ({
     useSigningRequest: vi.fn(() => ({
         removeSignRequest: vi.fn(),
     })),
