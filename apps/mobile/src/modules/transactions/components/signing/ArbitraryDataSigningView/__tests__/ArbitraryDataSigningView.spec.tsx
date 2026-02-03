@@ -25,8 +25,22 @@ vi.mock('@components/core/PWTabView/PWTabView', () => {
         if (name !== 'Main') return null
         return (
             <div>
-                {children ? (typeof children === 'function' ? children({ navigation: { navigate: vi.fn(), goBack: vi.fn() } }) : children) : null}
-                {Component ? <Component navigation={{ navigate: vi.fn(), goBack: vi.fn() }} route={{ params: {} }} /> : null}
+                {children
+                    ? typeof children === 'function'
+                        ? children({
+                              navigation: {
+                                  navigate: vi.fn(),
+                                  goBack: vi.fn(),
+                              },
+                          })
+                        : children
+                    : null}
+                {Component ? (
+                    <Component
+                        navigation={{ navigate: vi.fn(), goBack: vi.fn() }}
+                        route={{ params: {} }}
+                    />
+                ) : null}
             </div>
         )
     }

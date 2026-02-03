@@ -87,4 +87,3 @@ const ListSeparator = () => {
 
     return <PWView style={styles.listSeparator} />
 }
-

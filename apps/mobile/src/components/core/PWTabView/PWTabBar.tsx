@@ -38,7 +38,7 @@ export const PWTabBar = ({
 
     const tabCount = state.routes.length
     const tabWidth = containerWidth / tabCount
-    
+
     const inputRange = state.routes.map((_, i) => i)
 
     const indicatorTranslateX = position.interpolate({
@@ -48,7 +48,7 @@ export const PWTabBar = ({
 
     return (
         <PWView style={styles.externalContainer}>
-            <PWView 
+            <PWView
                 style={[styles.container, { flexDirection: 'row' }]}
                 onLayout={handleLayout}
             >
@@ -60,7 +60,9 @@ export const PWTabBar = ({
                             styles.indicatorWrapper,
                             {
                                 width: tabWidth,
-                                transform: [{ translateX: indicatorTranslateX }] as any,
+                                transform: [
+                                    { translateX: indicatorTranslateX },
+                                ] as any,
                             },
                         ]}
                     >
@@ -70,7 +72,8 @@ export const PWTabBar = ({
 
                 {state.routes.map((route, index) => {
                     const { options } = descriptors[route.key]
-                    const label = options.tabBarLabel ?? options.title ?? route.name
+                    const label =
+                        options.tabBarLabel ?? options.title ?? route.name
                     const isFocused = state.index === index
 
                     // Cross-fade opacity based on position directly
@@ -96,8 +99,11 @@ export const PWTabBar = ({
                         }
                     }
 
-                    const renderLabelContent = (focused: boolean, color: string) => {
-                         if (typeof label === 'function') {
+                    const renderLabelContent = (
+                        focused: boolean,
+                        color: string,
+                    ) => {
+                        if (typeof label === 'function') {
                             return label({
                                 focused,
                                 color,
@@ -114,23 +120,36 @@ export const PWTabBar = ({
                             style={styles.tab}
                             activeOpacity={1}
                         >
-                            <PWView style={{ alignItems: 'center', justifyContent: 'center' }}>
+                            <PWView
+                                style={{
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}
+                            >
                                 {/* Inactive Layer */}
-                                <Animated.View style={{ opacity: inactiveOpacity }}>
+                                <Animated.View
+                                    style={{ opacity: inactiveOpacity }}
+                                >
                                     <Animated.Text
                                         style={[
                                             styles.title,
-                                            { color: styles.inactiveTitle.color },
+                                            {
+                                                color: styles.inactiveTitle
+                                                    .color,
+                                            },
                                         ]}
                                     >
-                                        {renderLabelContent(false, styles.inactiveTitle.color!)}
+                                        {renderLabelContent(
+                                            false,
+                                            styles.inactiveTitle.color!,
+                                        )}
                                     </Animated.Text>
                                 </Animated.View>
 
                                 {/* Active Layer - Absolute overlay */}
-                                <Animated.View 
-                                    style={{ 
-                                        opacity: activeOpacity, 
+                                <Animated.View
+                                    style={{
+                                        opacity: activeOpacity,
                                         position: 'absolute',
                                         top: 0,
                                         left: 0,
@@ -146,7 +165,10 @@ export const PWTabBar = ({
                                             { color: styles.activeTitle.color },
                                         ]}
                                     >
-                                        {renderLabelContent(true, styles.activeTitle.color!)}
+                                        {renderLabelContent(
+                                            true,
+                                            styles.activeTitle.color!,
+                                        )}
                                     </Animated.Text>
                                 </Animated.View>
                             </PWView>

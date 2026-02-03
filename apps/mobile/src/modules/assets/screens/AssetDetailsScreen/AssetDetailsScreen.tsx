@@ -95,7 +95,9 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
             <Tab.Navigator>
                 <Tab.Screen
                     name='Holdings'
-                    options={{ title: t('asset_details.main_screen.holdings_tab') }}
+                    options={{
+                        title: t('asset_details.main_screen.holdings_tab'),
+                    }}
                 >
                     {() => (
                         <AssetHoldings
@@ -107,7 +109,9 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
 
                 <Tab.Screen
                     name='Markets'
-                    options={{ title: t('asset_details.main_screen.markets_tab') }}
+                    options={{
+                        title: t('asset_details.main_screen.markets_tab'),
+                    }}
                 >
                     {() => <AssetMarkets asset={asset} />}
                 </Tab.Screen>

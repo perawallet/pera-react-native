@@ -12,28 +12,28 @@
 
 import { useCallback } from 'react'
 import {
-  useAllAccounts,
-  useSelectedAccountAddress,
-  WalletAccount,
+    useAllAccounts,
+    useSelectedAccountAddress,
+    WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { AccountMenuProps } from './AccountMenu'
 
 export const useAccountMenu = (props: AccountMenuProps) => {
-  const accounts = useAllAccounts()
-  const { selectedAccountAddress, setSelectedAccountAddress } =
-    useSelectedAccountAddress()
+    const accounts = useAllAccounts()
+    const { selectedAccountAddress, setSelectedAccountAddress } =
+        useSelectedAccountAddress()
 
-  const handleTap = useCallback(
-    (acct: WalletAccount) => {
-      setSelectedAccountAddress(acct.address)
-      props?.onSelected?.(acct)
-    },
-    [props, setSelectedAccountAddress],
-  )
+    const handleTap = useCallback(
+        (acct: WalletAccount) => {
+            setSelectedAccountAddress(acct.address)
+            props?.onSelected?.(acct)
+        },
+        [props, setSelectedAccountAddress],
+    )
 
-  return {
-    accounts,
-    selectedAccountAddress,
-    handleTap,
-  }
+    return {
+        accounts,
+        selectedAccountAddress,
+        handleTap,
+    }
 }

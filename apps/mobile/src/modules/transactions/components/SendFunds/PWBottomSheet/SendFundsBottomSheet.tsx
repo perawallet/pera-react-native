@@ -104,11 +104,15 @@ export const SendFundsBottomSheet = ({
                                 <PWView style={styles.tabItem}>
                                     <SendFundsInputView
                                         onNext={() =>
-                                            navigation.navigate('SelectDestination')
+                                            navigation.navigate(
+                                                'SelectDestination',
+                                            )
                                         }
                                         onBack={() => {
                                             if (canSelectAsset) {
-                                                navigation.navigate('AssetSelection')
+                                                navigation.navigate(
+                                                    'AssetSelection',
+                                                )
                                             } else {
                                                 handleFinished()
                                             }
@@ -123,7 +127,9 @@ export const SendFundsBottomSheet = ({
                                 <PWView style={styles.tabItem}>
                                     <SendFundsSelectDestination
                                         onNext={() =>
-                                            navigation.navigate('ConfirmTransaction')
+                                            navigation.navigate(
+                                                'ConfirmTransaction',
+                                            )
                                         }
                                         onBack={() =>
                                             navigation.navigate('InputAmount')
@@ -139,7 +145,9 @@ export const SendFundsBottomSheet = ({
                                     <SendFundsTransactionConfirmation
                                         onNext={handleFinished}
                                         onBack={() =>
-                                            navigation.navigate('SelectDestination')
+                                            navigation.navigate(
+                                                'SelectDestination',
+                                            )
                                         }
                                     />
                                 </PWView>

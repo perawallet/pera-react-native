@@ -10,9 +10,7 @@
  limitations under the License
  */
 
-import {
-    createMaterialTopTabNavigator,
-} from '@react-navigation/material-top-tabs'
+import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs'
 import { ParamListBase } from '@react-navigation/native'
 import { useStyles } from './tabBarStyles'
 import { PWTabBar } from './PWTabBar'
