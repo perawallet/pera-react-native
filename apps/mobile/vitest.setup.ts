@@ -470,12 +470,14 @@ vi.mock('@react-navigation/native', () => ({
         goBack: vi.fn(),
         reset: vi.fn(),
         setOptions: vi.fn(),
+        push: vi.fn(),
     }),
     useRoute: vi.fn(() => ({
         params: {},
     })),
     useFocusEffect: vi.fn(),
     NavigationContainer: ({ children }: any) => children,
+    NavigationIndependentTree: ({ children }: any) => children,
     DefaultTheme: {
         colors: {
             primary: 'blue',
@@ -495,12 +497,39 @@ vi.mock('@react-navigation/bottom-tabs', () => ({
     })),
 }))
 
-vi.mock('@react-navigation/native-stack', () => ({
-    createNativeStackNavigator: vi.fn(() => ({
-        Navigator: ({ children }: any) => children,
-        Screen: ({ children }: any) => children,
-    })),
-}))
+vi.mock('@react-navigation/native-stack', () => {
+    const React = require('react')
+    return {
+        createNativeStackNavigator: vi.fn(() => ({
+            Navigator: ({ children, initialRouteName }: any) => {
+                // Find the initial screen and render it
+                const screens = React.Children.toArray(children)
+                const initialScreen =
+                    screens.find(
+                        (child: any) => child.props?.name === initialRouteName,
+                    ) || screens[0]
+                if (initialScreen?.props?.component) {
+                    const Component = initialScreen.props.component
+                    return React.createElement(
+                        Component,
+                        initialScreen.props.initialParams || {},
+                    )
+                }
+                return children
+            },
+            Screen: ({
+                children,
+                component: Component,
+                initialParams,
+            }: any) => {
+                if (Component) {
+                    return React.createElement(Component, initialParams || {})
+                }
+                return children
+            },
+        })),
+    }
+})
 
 // Common native modules used in the app, stubbed with minimal implementations
 vi.mock('@react-native-firebase/app', () => ({

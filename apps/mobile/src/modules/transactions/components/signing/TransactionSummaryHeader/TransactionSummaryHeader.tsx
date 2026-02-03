@@ -1,0 +1,73 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { PWText, PWToolbar, PWView } from '@components/core'
+import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
+import {
+    getTransactionType,
+    microAlgosToAlgos,
+    PeraDisplayableTransaction,
+} from '@perawallet/wallet-core-blockchain'
+import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
+import { useLanguage } from '@hooks/useLanguage'
+import Decimal from 'decimal.js'
+import { useStyles } from './styles'
+
+export type TransactionSummaryHeaderProps = {
+    transaction: PeraDisplayableTransaction
+    title?: string
+}
+
+export const TransactionSummaryHeader = ({
+    transaction,
+    title,
+}: TransactionSummaryHeaderProps) => {
+    const styles = useStyles()
+    const { t } = useLanguage()
+    const txType = getTransactionType(transaction)
+
+    return (
+        <>
+            <PWToolbar
+                center={
+                    <PWText variant='h4'>
+                        {title ?? t('signing.transactions.title')}
+                    </PWText>
+                }
+            />
+            <PWView style={styles.container}>
+                <TransactionIcon
+                    type={txType}
+                    size='lg'
+                />
+                <PWText variant='h3'>
+                    {t(`transactions.type.${transaction.txType}`)}
+                </PWText>
+                <CurrencyDisplay
+                    currency='ALGO'
+                    precision={ALGO_ASSET.decimals}
+                    minPrecision={DEFAULT_PRECISION}
+                    value={Decimal(
+                        microAlgosToAlgos(
+                            transaction.paymentTransaction?.amount ?? 0n,
+                        ),
+                    )}
+                    showSymbol
+                    variant='h1'
+                    style={styles.amountValue}
+                />
+            </PWView>
+        </>
+    )
+}

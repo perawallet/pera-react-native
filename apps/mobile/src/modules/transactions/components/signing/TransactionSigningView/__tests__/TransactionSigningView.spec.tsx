@@ -135,7 +135,7 @@ describe('TransactionSigningView', () => {
         expect(text).toContain('confirm')
     })
 
-    it('displays empty view when transaction has no valid type', () => {
+    it('displays transaction view when transaction has no payment type', () => {
         const invalidRequest = {
             type: 'transactions',
             transport: 'callback',
@@ -145,11 +145,13 @@ describe('TransactionSigningView', () => {
         const { container } = render(
             <TransactionSigningView request={invalidRequest} />,
         )
-        // Unknown transaction types show the unknown transaction display
-        expect(container.textContent?.toLowerCase()).toContain('unknown')
+        // Transactions with no payment field show as app call type
+        expect(container.textContent?.toLowerCase()).toContain(
+            'transactions.type.appl',
+        )
     })
 
-    it('displays empty view when no transaction is present', () => {
+    it('displays group view when no transactions are present', () => {
         const emptyRequest = {
             type: 'transactions',
             transport: 'callback',
@@ -159,7 +161,8 @@ describe('TransactionSigningView', () => {
         const { container } = render(
             <TransactionSigningView request={emptyRequest} />,
         )
-        expect(container.textContent?.toLowerCase()).toContain('invalid')
+        // Empty group shows group view with 0 transactions
+        expect(container.textContent?.toLowerCase()).toContain('group')
     })
 
     it('calls removeSignRequest on cancel', () => {

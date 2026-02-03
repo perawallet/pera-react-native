@@ -1,0 +1,122 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { useCallback, useMemo } from 'react'
+import {
+    PWFlatList,
+    PWIcon,
+    PWText,
+    PWToolbar,
+    PWView,
+} from '@components/core'
+import { InnerTransactionPreview } from '@modules/transactions/components/transaction-details/InnerTransactionPreview'
+import { useLanguage } from '@hooks/useLanguage'
+import {
+    useNavigation,
+    useRoute,
+    type RouteProp,
+} from '@react-navigation/native'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import { useSigningContext } from '@modules/transactions/components/signing/SigningContext'
+import type { SigningStackParamList } from '@modules/transactions/routes/signing/types'
+import { GroupListHeader } from './GroupListHeader'
+import { GroupListFooter } from './GroupListFooter'
+import { useStyles } from './styles'
+
+type NavigationProp = NativeStackNavigationProp<
+    SigningStackParamList,
+    'GroupList'
+>
+type GroupListRouteProp = RouteProp<SigningStackParamList, 'GroupList'>
+
+export const GroupListScreen = () => {
+    const styles = useStyles()
+    const { t } = useLanguage()
+    const navigation = useNavigation<NavigationProp>()
+    const route = useRoute<GroupListRouteProp>()
+    const { groups, totalFee, isMultipleGroups } = useSigningContext()
+
+    const { groupIndex } = route.params
+    const transactions = groups[groupIndex] ?? []
+
+    const groupFee = transactions.reduce((sum, tx) => sum + (tx.fee ?? 0n), 0n)
+
+    const handleTransactionPress = (tx: PeraDisplayableTransaction) => {
+        navigation.navigate('TransactionDetails', { transaction: tx })
+    }
+
+    const renderItem = useCallback(
+        ({ item }: { item: PeraDisplayableTransaction }) => (
+            <InnerTransactionPreview
+                transaction={item}
+                onPress={() => handleTransactionPress(item)}
+            />
+        ),
+        [handleTransactionPress],
+    )
+
+    const keyExtractor = useCallback(
+        (item: PeraDisplayableTransaction, index: number) =>
+            item.id ?? `tx-${index}`,
+        [],
+    )
+
+    const ItemSeparator = useCallback(
+        () => <PWView style={styles.itemSeparator} />,
+        [styles.itemSeparator],
+    )
+
+    const displayedFee = isMultipleGroups ? groupFee : totalFee
+
+    const ListHeader = useMemo(
+        () => (
+            <GroupListHeader transactionCount={transactions.length} />
+        ),
+        [transactions.length],
+    )
+
+    const ListFooter = useMemo(
+        () => (
+            <GroupListFooter
+                fee={displayedFee}
+            />
+        ),
+        [displayedFee, isMultipleGroups],
+    )
+
+    return (
+        <PWView style={styles.container}>
+            <PWToolbar
+                center={
+                    <PWText variant='h4'>
+                        {t('signing.transactions.title')}
+                    </PWText>
+                }
+                left={
+                    navigation.canGoBack() ? (
+                        <PWIcon name='chevron-left' />
+                    ) : undefined
+                }
+            />
+            <PWFlatList
+                data={transactions}
+                renderItem={renderItem}
+                keyExtractor={keyExtractor}
+                ItemSeparatorComponent={ItemSeparator}
+                ListHeaderComponent={ListHeader}
+                ListFooterComponent={ListFooter}
+                contentContainerStyle={styles.contentContainer}
+            />
+        </PWView>
+    )
+}

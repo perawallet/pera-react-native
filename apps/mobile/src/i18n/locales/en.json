@@ -617,7 +617,8 @@
             "title_cta_other": "This transaction contains {{count}} potentially sensitive actions",
             "close_warning": "This transaction closes the account and send remaining funds to the following address: {{address}}",
             "rekey_warning": "This transaction rekeys the account to the following address: {{address}}.",
-            "rekey_warning_bold": "This transfers full control of your account to another address."
+            "rekey_warning_bold": "This transfers full control of your account to another address.",
+            "from_account": "From: {{address}}"
         },
         "unknown": {
             "title": "Unsupported Transaction Type",

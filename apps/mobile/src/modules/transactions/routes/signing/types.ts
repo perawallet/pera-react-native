@@ -10,15 +10,15 @@
  limitations under the License
  */
 
-import type { TransactionSignRequest } from '@perawallet/wallet-core-blockchain'
-import { SigningBottomSheetNavigator } from '../SigningBottomSheetNavigator'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 
-export type TransactionSigningViewProps = {
-    request: TransactionSignRequest
+export type SigningStackParamList = {
+    SingleTransaction: undefined
+    TransactionDetails: { transaction: PeraDisplayableTransaction }
+    GroupList: { groupIndex: number }
+    MultiGroupList: undefined
 }
 
-export const TransactionSigningView = ({
-    request,
-}: TransactionSigningViewProps) => {
-    return <SigningBottomSheetNavigator request={request} />
-}
+export type SigningStackScreenProps<T extends keyof SigningStackParamList> =
+    NativeStackScreenProps<SigningStackParamList, T>

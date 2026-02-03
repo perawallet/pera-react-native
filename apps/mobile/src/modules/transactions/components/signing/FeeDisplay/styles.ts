@@ -10,15 +10,19 @@
  limitations under the License
  */
 
-import type { TransactionSignRequest } from '@perawallet/wallet-core-blockchain'
-import { SigningBottomSheetNavigator } from '../SigningBottomSheetNavigator'
+import { makeStyles } from '@rneui/themed'
 
-export type TransactionSigningViewProps = {
-    request: TransactionSignRequest
-}
-
-export const TransactionSigningView = ({
-    request,
-}: TransactionSigningViewProps) => {
-    return <SigningBottomSheetNavigator request={request} />
-}
+export const useStyles = makeStyles(theme => ({
+    container: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: theme.spacing.md,
+    },
+    label: {
+        color: theme.colors.textGray,
+    },
+    value: {
+        color: theme.colors.helperNegative,
+    },
+}))
