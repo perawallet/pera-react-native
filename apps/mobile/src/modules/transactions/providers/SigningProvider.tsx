@@ -14,12 +14,8 @@ import React, { PropsWithChildren, useEffect } from 'react'
 import { PWBottomSheet } from '@components/core'
 import { SignRequestView } from '@modules/transactions/components/signing/SignRequestView'
 import { useWindowDimensions } from 'react-native'
-import {
-    useSigningRequest,
-    type TransactionSignRequest,
-} from '../../../../../../packages/signing/dist'
+import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
-import { SigningContextProvider } from '@modules/transactions/components/signing/SigningContextProvider'
 
 export type SigningProviderProps = {} & PropsWithChildren
 
@@ -32,6 +28,8 @@ export function SigningProvider({ children }: SigningProviderProps) {
     useEffect(() => {
         setIsVisible(false)
         if (nextRequest) {
+            // we defer here to force the bottom sheet to close and reopen, as a visual cue
+            // to the user that it's a new request.
             deferToNextCycle(() => {
                 setIsVisible(true)
             })
@@ -46,11 +44,7 @@ export function SigningProvider({ children }: SigningProviderProps) {
                 isVisible={isVisible}
             >
                 {!!nextRequest && (
-                    <SigningContextProvider
-                        request={nextRequest as TransactionSignRequest}
-                    >
-                        <SignRequestView request={nextRequest} />
-                    </SigningContextProvider>
+                    <SignRequestView request={nextRequest} />
                 )}
             </PWBottomSheet>
         </>

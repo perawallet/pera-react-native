@@ -13,14 +13,27 @@
 import { render, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { TransactionSigningView } from '../TransactionSigningView'
+import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 import {
-    TransactionSignRequest,
     useSigningRequest,
-} from '../../../../../../../../../packages/signing/dist'
+    useSigningRequestAnalysis,
+} from '@perawallet/wallet-core-signing'
+
+const mockSignAndSendRequest = vi.fn()
+const mockRejectRequest = vi.fn()
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: vi.fn(() => ({
-        removeSignRequest: vi.fn(),
+        pendingSignRequests: [],
+        signAndSendRequest: mockSignAndSendRequest,
+        rejectRequest: mockRejectRequest,
+    })),
+    useSigningRequestAnalysis: vi.fn(() => ({
+        groups: [],
+        allTransactions: [],
+        totalFee: 0n,
+        warnings: [],
+        requestStructure: 'single',
     })),
 }))
 
@@ -107,11 +120,31 @@ describe('TransactionSigningView', () => {
         reject: vi.fn(),
     } as unknown as TransactionSignRequest
 
+    const setupMocks = (
+        request: TransactionSignRequest,
+        analysisOverrides: Record<string, unknown> = {},
+    ) => {
+        vi.mocked(useSigningRequest).mockReturnValue({
+            pendingSignRequests: [request],
+            signAndSendRequest: mockSignAndSendRequest,
+            rejectRequest: mockRejectRequest,
+        } as unknown as ReturnType<typeof useSigningRequest>)
+        vi.mocked(useSigningRequestAnalysis).mockReturnValue({
+            groups: [],
+            allTransactions: [],
+            totalFee: 0n,
+            warnings: [],
+            requestStructure: 'single',
+            ...analysisOverrides,
+        } as ReturnType<typeof useSigningRequestAnalysis>)
+    }
+
     beforeEach(() => {
         vi.clearAllMocks()
     })
 
     it('renders cancel and confirm buttons', () => {
+        setupMocks(mockSingleTxRequest)
         const { container } = render(
             <TransactionSigningView request={mockSingleTxRequest} />,
         )
@@ -121,6 +154,12 @@ describe('TransactionSigningView', () => {
     })
 
     it('shows Confirm All for multiple transactions', () => {
+        setupMocks(mockGroupTxRequest, {
+            allTransactions: [
+                { fee: 1000n },
+                { fee: 1000n },
+            ],
+        })
         const { container } = render(
             <TransactionSigningView request={mockGroupTxRequest} />,
         )
@@ -130,10 +169,10 @@ describe('TransactionSigningView', () => {
     })
 
     it('shows single confirm for single transaction', () => {
+        setupMocks(mockSingleTxRequest)
         const { container } = render(
             <TransactionSigningView request={mockSingleTxRequest} />,
         )
-        // Should show "Confirm" - check it renders buttons
         const text = container.textContent?.toLowerCase() || ''
         expect(text).toContain('confirm')
     })
@@ -145,6 +184,15 @@ describe('TransactionSigningView', () => {
             txs: [[{}]], // No transaction type fields
         } as unknown as TransactionSignRequest
 
+        const mockTx = {
+            fee: 1000n,
+            sender: 'MOCK_SENDER',
+            txType: 'appl',
+        }
+        setupMocks(invalidRequest, {
+            groups: [[mockTx]],
+            allTransactions: [mockTx],
+        })
         const { container } = render(
             <TransactionSigningView request={invalidRequest} />,
         )
@@ -158,9 +206,13 @@ describe('TransactionSigningView', () => {
         const emptyRequest = {
             type: 'transactions',
             transport: 'callback',
-            txs: [[]], // Empty transaction array
+            txs: [[]],
         } as unknown as TransactionSignRequest
 
+        setupMocks(emptyRequest, {
+            groups: [[]],
+            requestStructure: 'group',
+        })
         const { container } = render(
             <TransactionSigningView request={emptyRequest} />,
         )
@@ -168,11 +220,8 @@ describe('TransactionSigningView', () => {
         expect(container.textContent?.toLowerCase()).toContain('group')
     })
 
-    it('calls removeSignRequest on cancel', () => {
-        const removeSignRequest = vi.fn()
-        vi.mocked(useSigningRequest).mockReturnValue({
-            removeSignRequest,
-        } as unknown as ReturnType<typeof useSigningRequest>)
+    it('calls rejectRequest on cancel', () => {
+        setupMocks(mockSingleTxRequest)
 
         const { container } = render(
             <TransactionSigningView request={mockSingleTxRequest} />,
@@ -184,7 +233,9 @@ describe('TransactionSigningView', () => {
         )
         if (cancelButton) {
             fireEvent.click(cancelButton)
-            expect(removeSignRequest).toHaveBeenCalledWith(mockSingleTxRequest)
+            expect(mockRejectRequest).toHaveBeenCalledWith(
+                mockSingleTxRequest,
+            )
         }
     })
 })

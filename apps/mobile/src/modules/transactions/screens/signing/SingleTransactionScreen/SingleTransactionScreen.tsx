@@ -21,9 +21,13 @@ import { TransactionSummaryHeader } from '@modules/transactions/components/signi
 import { ViewDetailsButton } from '@modules/transactions/components/signing/ViewDetailsButton'
 import { FeeDisplay } from '@modules/transactions/components/signing/FeeDisplay'
 import { SigningWarnings } from '@modules/transactions/components/signing/SigningWarnings'
+import {
+    useSigningRequest,
+    useSigningRequestAnalysis,
+    type TransactionSignRequest,
+} from '@perawallet/wallet-core-signing'
 import type { SigningStackParamList } from '@modules/transactions/routes/signing/types'
 import { useStyles } from './styles'
-import { useTransactionSigningContext } from '@modules/transactions/hooks/signing/useTransactionSigning'
 import Decimal from 'decimal.js'
 
 type NavigationProp = NativeStackNavigationProp<SigningStackParamList>
@@ -33,7 +37,9 @@ export const SingleTransactionScreen = () => {
     const { theme } = useTheme()
     const { t } = useLanguage()
     const navigation = useNavigation<NavigationProp>()
-    const { groups, totalFee } = useTransactionSigningContext()
+    const { pendingSignRequests } = useSigningRequest()
+    const request = pendingSignRequests[0] as TransactionSignRequest
+    const { groups, totalFee } = useSigningRequestAnalysis(request)
 
     const transaction = groups[0]?.[0]
 

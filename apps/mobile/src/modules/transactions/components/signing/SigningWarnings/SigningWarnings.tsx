@@ -25,9 +25,13 @@ import { useModalState } from '@hooks/useModalState'
 import { useTheme } from '@rneui/themed'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { LONG_ADDRESS_FORMAT } from '@constants/ui'
+import {
+    useSigningRequest,
+    useSigningRequestAnalysis,
+    type TransactionSignRequest,
+    type TransactionWarning,
+} from '@perawallet/wallet-core-signing'
 import { useStyles } from './styles'
-import { useTransactionSigningContext } from '@modules/transactions/hooks/signing/useTransactionSigning'
-import { TransactionWarning } from '@modules/transactions/models'
 
 type WarningItemProps = {
     warning: TransactionWarning
@@ -96,7 +100,9 @@ export const SigningWarnings = () => {
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
-    const { warnings } = useTransactionSigningContext()
+    const { pendingSignRequests } = useSigningRequest()
+    const request = pendingSignRequests[0] as TransactionSignRequest
+    const { warnings } = useSigningRequestAnalysis(request)
     const { isOpen, open, close } = useModalState()
 
     if (warnings.length === 0) {

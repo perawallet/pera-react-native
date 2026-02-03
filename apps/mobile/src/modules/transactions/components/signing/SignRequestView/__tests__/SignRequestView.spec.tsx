@@ -16,7 +16,7 @@ import { SignRequestView } from '../SignRequestView'
 import { SignRequest } from '../../../../../../../../../packages/signing/dist'
 
 // Correct mocks return non-empty strings so they can be detected by textContent assertions
-vi.mock('../TransactionSigningView', () => ({
+vi.mock('../../TransactionSigningView', () => ({
     TransactionSigningView: () => <div>TransactionSigningView</div>,
 }))
 
@@ -24,8 +24,8 @@ vi.mock('../../ArbitraryDataSigningView', () => ({
     ArbitraryDataSigningView: () => <div>ArbitraryDataSigningView</div>,
 }))
 
-vi.mock('../Arc60SigningView', () => ({
-    Arc60SigningView: () => <div>Arc60SigningView</div>,
+vi.mock('../../Arc60DataSigningView', () => ({
+    Arc60DataSigningView: () => <div>Arc60DataSigningView</div>,
 }))
 
 describe('SigningView', () => {
@@ -55,7 +55,7 @@ describe('SigningView', () => {
         } as unknown as SignRequest
 
         const { container } = render(<SignRequestView request={request} />)
-        expect(container.textContent).toContain('Arc60SigningView')
+        expect(container.textContent).toContain('Arc60DataSigningView')
     })
 
     it('renders empty view for unknown request types', () => {
