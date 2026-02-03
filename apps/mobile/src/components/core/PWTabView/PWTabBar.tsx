@@ -12,7 +12,7 @@
 
 import React, { useState } from 'react'
 import { Animated, LayoutChangeEvent } from 'react-native'
-import { MaterialTopTabBarProps } from '@react-navigation/material-top-tabs'
+import { MaterialTopTabBarProps } from '@react-navigation/material-top-tabs' // TODO: monitor for lib updates to migrate from native Animated to Reanimated, which is currently unsupported
 import { useStyles } from './tabBarStyles'
 import { PWView, PWTouchableOpacity } from '@components/core'
 
