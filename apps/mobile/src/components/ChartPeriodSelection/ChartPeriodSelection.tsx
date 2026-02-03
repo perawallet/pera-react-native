@@ -43,33 +43,60 @@ export const ChartPeriodSelection = ({
         <PWView style={styles.container}>
             <PWTouchableOpacity
                 onPress={() => handlePressed('one-week')}
-                style={
+                style={[
+                    styles.buttonBase,
                     activeValue === 'one-week'
                         ? styles.selectedButtonContainer
-                        : styles.unselectedButtonContainer
-                }
+                        : styles.unselectedButtonContainer,
+                ]}
             >
-                <PWText>{t('chart.one_week.label')}</PWText>
+                <PWText
+                    style={
+                        activeValue === 'one-week'
+                            ? styles.selectedText
+                            : styles.unselectedText
+                    }
+                >
+                    {t('chart.one_week.label')}
+                </PWText>
             </PWTouchableOpacity>
             <PWTouchableOpacity
                 onPress={() => handlePressed('one-month')}
-                style={
+                style={[
+                    styles.buttonBase,
                     activeValue === 'one-month'
                         ? styles.selectedButtonContainer
-                        : styles.unselectedButtonContainer
-                }
+                        : styles.unselectedButtonContainer,
+                ]}
             >
-                <PWText>{t('chart.one_month.label')}</PWText>
+                <PWText
+                    style={
+                        activeValue === 'one-month'
+                            ? styles.selectedText
+                            : styles.unselectedText
+                    }
+                >
+                    {t('chart.one_month.label')}
+                </PWText>
             </PWTouchableOpacity>
             <PWTouchableOpacity
                 onPress={() => handlePressed('one-year')}
-                style={
+                style={[
+                    styles.buttonBase,
                     activeValue === 'one-year'
                         ? styles.selectedButtonContainer
-                        : styles.unselectedButtonContainer
-                }
+                        : styles.unselectedButtonContainer,
+                ]}
             >
-                <PWText>{t('chart.one_year.label')}</PWText>
+                <PWText
+                    style={
+                        activeValue === 'one-year'
+                            ? styles.selectedText
+                            : styles.unselectedText
+                    }
+                >
+                    {t('chart.one_year.label')}
+                </PWText>
             </PWTouchableOpacity>
         </PWView>
     )
