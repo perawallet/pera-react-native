@@ -12,92 +12,58 @@
 
 import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useStyles } from './styles'
-import { useCallback, useState } from 'react'
 import { HistoryPeriod } from '@perawallet/wallet-core-shared'
-import { useLanguage } from '@hooks/useLanguage'
+import { useChartPeriodSelection } from './useChartPeriodSelection'
 
 export type ChartPeriodSelectionProps = {
     value: HistoryPeriod
     onChange: (val: HistoryPeriod) => void
 }
 
+const PERIODS: { value: HistoryPeriod; label: string }[] = [
+    { value: 'one-week', label: 'chart.one_week.label' },
+    { value: 'one-month', label: 'chart.one_month.label' },
+    { value: 'one-year', label: 'chart.one_year.label' },
+]
+
 export const ChartPeriodSelection = ({
     value,
     onChange,
 }: ChartPeriodSelectionProps) => {
     const styles = useStyles()
-    const [activeValue, setActiveValue] = useState<HistoryPeriod>(value)
-    const { t } = useLanguage()
-
-    const handlePressed = useCallback(
-        (newValue: HistoryPeriod) => {
-            if (activeValue !== newValue) {
-                setActiveValue(newValue)
-                onChange(newValue)
-            }
-        },
-        [onChange, setActiveValue, activeValue],
-    )
+    const { activeValue, handlePressed, t } = useChartPeriodSelection({
+        value,
+        onChange,
+    })
 
     return (
         <PWView style={styles.container}>
-            <PWTouchableOpacity
-                onPress={() => handlePressed('one-week')}
-                style={[
-                    styles.buttonBase,
-                    activeValue === 'one-week'
-                        ? styles.selectedButtonContainer
-                        : styles.unselectedButtonContainer,
-                ]}
-            >
-                <PWText
-                    style={
-                        activeValue === 'one-week'
-                            ? styles.selectedText
-                            : styles.unselectedText
-                    }
-                >
-                    {t('chart.one_week.label')}
-                </PWText>
-            </PWTouchableOpacity>
-            <PWTouchableOpacity
-                onPress={() => handlePressed('one-month')}
-                style={[
-                    styles.buttonBase,
-                    activeValue === 'one-month'
-                        ? styles.selectedButtonContainer
-                        : styles.unselectedButtonContainer,
-                ]}
-            >
-                <PWText
-                    style={
-                        activeValue === 'one-month'
-                            ? styles.selectedText
-                            : styles.unselectedText
-                    }
-                >
-                    {t('chart.one_month.label')}
-                </PWText>
-            </PWTouchableOpacity>
-            <PWTouchableOpacity
-                onPress={() => handlePressed('one-year')}
-                style={[
-                    styles.buttonBase,
-                    activeValue === 'one-year'
-                        ? styles.selectedButtonContainer
-                        : styles.unselectedButtonContainer,
-                ]}
-            >
-                <PWText
-                    style={
-                        activeValue === 'one-year'
-                            ? styles.selectedText
-                            : styles.unselectedText
-                    }
-                >
-                    {t('chart.one_year.label')}
-                </PWText>
-            </PWTouchableOpacity>
+            {PERIODS.map(({ value: periodValue, label }) => {
+                const isActive = activeValue === periodValue
+
+                return (
+                    <PWTouchableOpacity
+                        key={periodValue}
+                        onPress={() => handlePressed(periodValue)}
+                        style={[
+                            styles.buttonBase,
+                            isActive
+                                ? styles.selectedButtonContainer
+                                : styles.unselectedButtonContainer,
+                        ]}
+                    >
+                        <PWText
+                            style={
+                                isActive
+                                    ? styles.selectedText
+                                    : styles.unselectedText
+                            }
+                        >
+                            {t(label)}
+                        </PWText>
+                    </PWTouchableOpacity>
+                )
+            })}
         </PWView>
     )
 }
