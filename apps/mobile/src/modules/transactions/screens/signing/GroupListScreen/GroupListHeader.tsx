@@ -20,9 +20,7 @@ type GroupListHeaderProps = {
     transactionCount: number
 }
 
-export const GroupListHeader = ({
-    transactionCount,
-}: GroupListHeaderProps) => {
+export const GroupListHeader = ({ transactionCount }: GroupListHeaderProps) => {
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()

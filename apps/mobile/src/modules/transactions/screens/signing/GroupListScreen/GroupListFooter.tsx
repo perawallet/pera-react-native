@@ -22,9 +22,7 @@ type GroupListFooterProps = {
     fee: bigint
 }
 
-export const GroupListFooter = ({
-    fee,
-}: GroupListFooterProps) => {
+export const GroupListFooter = ({ fee }: GroupListFooterProps) => {
     const { theme } = useTheme()
     const { t } = useLanguage()
 

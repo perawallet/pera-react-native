@@ -12,7 +12,6 @@
 
 import { PWText, PWView } from '@components/core'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
 import { useLanguage } from '@hooks/useLanguage'
 import Decimal from 'decimal.js'
 import { useStyles } from './styles'

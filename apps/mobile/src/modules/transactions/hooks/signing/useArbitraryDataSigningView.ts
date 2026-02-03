@@ -12,8 +12,8 @@
 
 import {
     type ArbitraryDataSignRequest,
-    useArbitraryDataSignAndSend,
-} from '@perawallet/wallet-core-signing'
+    useSigningRequest,
+} from '../../../../../../../packages/signing/dist'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCallback, useState } from 'react'
@@ -25,15 +25,13 @@ export const useArbitraryDataSigningView = (
     const { showToast } = useToast()
     const [isPending, setIsPending] = useState(false)
 
-    const {
-        signAndSend: coreSignAndSend,
-        rejectRequest: coreRejectRequest,
-    } = useArbitraryDataSignAndSend()
+    const { signAndSendRequest, rejectRequest: coreRejectRequest } =
+        useSigningRequest()
 
     const approveRequest = useCallback(async () => {
         setIsPending(true)
         try {
-            await coreSignAndSend(request)
+            await signAndSendRequest(request)
             showToast({
                 title: t('signing.arbitrary_data_view.success_title'),
                 body: t('signing.arbitrary_data_view.success_body'),
@@ -44,7 +42,7 @@ export const useArbitraryDataSigningView = (
         } finally {
             setIsPending(false)
         }
-    }, [request, coreSignAndSend, showToast, t])
+    }, [request, signAndSendRequest, showToast, t])
 
     const rejectRequest = useCallback(() => {
         coreRejectRequest(request)

@@ -96,14 +96,14 @@ export const SigningWarnings = () => {
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
-    const { aggregatedWarnings } = useTransactionSigningContext()
+    const { warnings } = useTransactionSigningContext()
     const { isOpen, open, close } = useModalState()
 
-    if (aggregatedWarnings.length === 0) {
+    if (warnings.length === 0) {
         return null
     }
 
-    const warningCount = aggregatedWarnings.length
+    const warningCount = warnings.length
 
     return (
         <>
@@ -143,7 +143,7 @@ export const SigningWarnings = () => {
                             }
                         />
 
-                        {aggregatedWarnings.map((warning, index) => (
+                        {warnings.map((warning, index) => (
                             <WarningItem
                                 key={`${warning.type}-${warning.senderAddress}-${warning.targetAddress}`}
                                 warning={warning}

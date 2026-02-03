@@ -11,12 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import {
-    PWFlatList,
-    PWText,
-    PWToolbar,
-    PWView,
-} from '@components/core'
+import { PWFlatList, PWText, PWToolbar, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'

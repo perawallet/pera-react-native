@@ -10,20 +10,5 @@
  limitations under the License
  */
 
-import { useSigningStore } from '../store'
-
-export const useSigningRequest = () => {
-    const pendingSignRequests = useSigningStore(
-        state => state.pendingSignRequests,
-    )
-    const addSignRequest = useSigningStore(state => state.addSignRequest)
-    const removeSignRequest = useSigningStore(
-        state => state.removeSignRequest,
-    )
-
-    return {
-        pendingSignRequests,
-        addSignRequest,
-        removeSignRequest,
-    }
-}
+export * from './useSigningRequest'
+export * from './useSigningRequestAnalysis'

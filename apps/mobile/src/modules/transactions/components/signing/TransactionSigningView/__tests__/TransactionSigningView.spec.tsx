@@ -16,7 +16,7 @@ import { TransactionSigningView } from '../TransactionSigningView'
 import {
     TransactionSignRequest,
     useSigningRequest,
-} from '@perawallet/wallet-core-signing'
+} from '../../../../../../../../../packages/signing/dist'
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: vi.fn(() => ({

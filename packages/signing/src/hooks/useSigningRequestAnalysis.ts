@@ -21,9 +21,7 @@ import { calculateTotalFee } from '../utils/fees'
 import { aggregateTransactionWarnings } from '../utils/warnings'
 import { classifyTransactionGroups } from '../utils/classification'
 
-export const useTransactionSigningSession = (
-    request: TransactionSignRequest,
-) => {
+export const useSigningRequestAnalysis = (request: TransactionSignRequest) => {
     const accounts = useAllAccounts()
 
     const groups = useMemo(
@@ -31,9 +29,7 @@ export const useTransactionSigningSession = (
             request.txs.map(group =>
                 group
                     .map(tx => mapToDisplayableTransaction(tx))
-                    .filter(
-                        (tx): tx is PeraDisplayableTransaction => !!tx,
-                    ),
+                    .filter((tx): tx is PeraDisplayableTransaction => !!tx),
             ),
         [request.txs],
     )
@@ -50,25 +46,21 @@ export const useTransactionSigningSession = (
         [accounts],
     )
 
-    const aggregatedWarnings = useMemo(
-        () =>
-            aggregateTransactionWarnings(allTransactions, signableAddresses),
+    const warnings = useMemo(
+        () => aggregateTransactionWarnings(allTransactions, signableAddresses),
         [allTransactions, signableAddresses],
     )
 
-    const { isSingleTransaction, isSingleGroup, isMultipleGroups } =
-        useMemo(
-            () => classifyTransactionGroups(groups),
-            [groups],
-        )
+    const requestStructure = useMemo(
+        () => classifyTransactionGroups(groups),
+        [groups],
+    )
 
     return {
         groups,
         allTransactions,
         totalFee,
-        aggregatedWarnings,
-        isSingleTransaction,
-        isSingleGroup,
-        isMultipleGroups,
+        warnings,
+        requestStructure,
     }
 }

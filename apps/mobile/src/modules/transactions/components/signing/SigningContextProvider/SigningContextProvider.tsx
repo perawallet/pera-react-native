@@ -10,24 +10,20 @@
  limitations under the License
  */
 
+import { createContext, useMemo, useState, useCallback } from 'react'
 import {
-    createContext,
-    useMemo,
-    useState,
-    useCallback,
-} from 'react'
-import {
-    type TransactionSignRequest,
-    useTransactionSigningSession,
-    useTransactionSignAndSend,
-} from '@perawallet/wallet-core-signing'
+    useSigningRequestAnalysis,
+    useSigningRequest,
+} from '../../../../../../../../packages/signing/dist'
+import type { TransactionSignRequest } from '../../../../../../../../packages/signing/dist'
 import { config } from '@perawallet/wallet-core-config'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { bottomSheetNotifier } from '@components/core'
 import { TransactionSigningContextValue } from '@modules/transactions/models'
 
-export const TransactionSigningContext = createContext<TransactionSigningContextValue | null>(null)
+export const TransactionSigningContext =
+    createContext<TransactionSigningContextValue | null>(null)
 
 export type SigningContextProviderProps = {
     request: TransactionSignRequest
@@ -42,25 +38,16 @@ export const SigningContextProvider = ({
     const { t } = useLanguage()
     const [isLoading, setIsLoading] = useState(false)
 
-    const {
-        groups,
-        allTransactions,
-        totalFee,
-        aggregatedWarnings,
-        isSingleTransaction,
-        isSingleGroup,
-        isMultipleGroups,
-    } = useTransactionSigningSession(request)
+    const { groups, allTransactions, totalFee, warnings, requestStructure } =
+        useSigningRequestAnalysis(request)
 
-    const {
-        signAndSend: coreSignAndSend,
-        rejectRequest: coreRejectRequest,
-    } = useTransactionSignAndSend()
+    const { signAndSendRequest, rejectRequest: coreRejectRequest } =
+        useSigningRequest()
 
     const signAndSend = useCallback(async () => {
         setIsLoading(true)
         try {
-            await coreSignAndSend(request)
+            await signAndSendRequest(request)
             if (request.transport !== 'algod') {
                 showToast({
                     title: t('signing.transaction_view.success_title'),
@@ -92,7 +79,7 @@ export const SigningContextProvider = ({
         } finally {
             setIsLoading(false)
         }
-    }, [request, coreSignAndSend, showToast, t])
+    }, [request, signAndSendRequest, showToast, t])
 
     const rejectRequest = useCallback(() => {
         coreRejectRequest(request)
@@ -104,11 +91,9 @@ export const SigningContextProvider = ({
             groups,
             allTransactions,
             totalFee,
-            isSingleTransaction,
-            isSingleGroup,
-            isMultipleGroups,
+            requestStructure,
             isLoading,
-            aggregatedWarnings,
+            warnings,
             signAndSend,
             rejectRequest,
         }),
@@ -117,11 +102,9 @@ export const SigningContextProvider = ({
             groups,
             allTransactions,
             totalFee,
-            isSingleTransaction,
-            isSingleGroup,
-            isMultipleGroups,
+            requestStructure,
             isLoading,
-            aggregatedWarnings,
+            warnings,
             signAndSend,
             rejectRequest,
         ],

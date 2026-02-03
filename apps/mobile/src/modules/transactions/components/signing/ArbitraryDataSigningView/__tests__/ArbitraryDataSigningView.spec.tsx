@@ -13,7 +13,7 @@
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { ArbitraryDataSigningView } from '../ArbitraryDataSigningView'
-import { ArbitraryDataSignRequest } from '@perawallet/wallet-core-signing'
+import { ArbitraryDataSignRequest } from '../../../../../../../../../packages/signing/dist'
 
 // Correctly mock TabView and its static Item property
 const MockTabView = ({ children }: { children: React.ReactNode }) => (

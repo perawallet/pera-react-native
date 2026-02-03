@@ -10,7 +10,15 @@
  limitations under the License
  */
 
-export * from './useArbitraryDataSignAndSend'
-export * from './useSigningRequest'
-export * from './useTransactionSignAndSend'
-export * from './useTransactionSigningSession'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+
+export type RequestStructure = 'single' | 'group' | 'group-list'
+
+export const classifyTransactionGroups = (
+    groups: PeraDisplayableTransaction[][],
+): RequestStructure => {
+    if (groups.length === 1 && groups[0]?.length === 1) return 'single'
+    if (groups.length === 1) return 'group'
+    if (groups.length > 1) return 'group-list'
+    return 'single'
+}

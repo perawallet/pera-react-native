@@ -17,7 +17,7 @@ import { useWindowDimensions } from 'react-native'
 import {
     useSigningRequest,
     type TransactionSignRequest,
-} from '@perawallet/wallet-core-signing'
+} from '../../../../../../packages/signing/dist'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 import { SigningContextProvider } from '@modules/transactions/components/signing/SigningContextProvider'
 
@@ -45,15 +45,13 @@ export function SigningProvider({ children }: SigningProviderProps) {
                 innerContainerStyle={{ height: height - 100 }}
                 isVisible={isVisible}
             >
-                {!!nextRequest &&
+                {!!nextRequest && (
                     <SigningContextProvider
-                        request={
-                            nextRequest as TransactionSignRequest
-                        }
+                        request={nextRequest as TransactionSignRequest}
                     >
                         <SignRequestView request={nextRequest} />
                     </SigningContextProvider>
-                }
+                )}
             </PWBottomSheet>
         </>
     )

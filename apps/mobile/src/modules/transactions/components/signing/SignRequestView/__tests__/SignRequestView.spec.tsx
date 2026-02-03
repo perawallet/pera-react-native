@@ -13,7 +13,7 @@
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { SignRequestView } from '../SignRequestView'
-import { SignRequest } from '@perawallet/wallet-core-signing'
+import { SignRequest } from '../../../../../../../../../packages/signing/dist'
 
 // Correct mocks return non-empty strings so they can be detected by textContent assertions
 vi.mock('../TransactionSigningView', () => ({

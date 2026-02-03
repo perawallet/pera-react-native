@@ -15,13 +15,13 @@ import { renderHook, act } from '@testing-library/react'
 import { useArbitraryDataSigningView } from '../useArbitraryDataSigningView'
 import {
     ArbitraryDataSignRequest,
-    useArbitraryDataSignAndSend,
-} from '@perawallet/wallet-core-signing'
+    useSigningRequest,
+} from '../../../../../../../../packages/signing/dist'
 import { useToast } from '@hooks/useToast'
 import { AlgorandChainId } from '@perawallet/wallet-core-walletconnect'
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
-    useArbitraryDataSignAndSend: vi.fn(),
+    useSigningRequest: vi.fn(),
 }))
 
 vi.mock('@hooks/useToast', () => ({
@@ -54,8 +54,8 @@ describe('useArbitraryDataSigningView', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         ;(useToast as Mock).mockReturnValue({ showToast: mockShowToast })
-        ;(useArbitraryDataSignAndSend as Mock).mockReturnValue({
-            signAndSend: mockSignAndSend,
+        ;(useSigningRequest as Mock).mockReturnValue({
+            signAndSendRequest: mockSignAndSend,
             rejectRequest: mockRejectRequest,
         })
     })

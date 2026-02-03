@@ -11,13 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import {
-    PWFlatList,
-    PWIcon,
-    PWText,
-    PWToolbar,
-    PWView,
-} from '@components/core'
+import { PWFlatList, PWIcon, PWText, PWToolbar, PWView } from '@components/core'
 import { InnerTransactionPreview } from '@modules/transactions/components/transaction-details/InnerTransactionPreview'
 import { useLanguage } from '@hooks/useLanguage'
 import {
@@ -44,7 +38,8 @@ export const GroupListScreen = () => {
     const { t } = useLanguage()
     const navigation = useNavigation<NavigationProp>()
     const route = useRoute<GroupListRouteProp>()
-    const { groups, totalFee, isMultipleGroups } = useTransactionSigningContext()
+    const { groups, totalFee, requestStructure } =
+        useTransactionSigningContext()
 
     const { groupIndex } = route.params
     const transactions = groups[groupIndex] ?? []
@@ -76,22 +71,16 @@ export const GroupListScreen = () => {
         [styles.itemSeparator],
     )
 
-    const displayedFee = isMultipleGroups ? groupFee : totalFee
+    const displayedFee = requestStructure === 'group-list' ? groupFee : totalFee
 
     const ListHeader = useMemo(
-        () => (
-            <GroupListHeader transactionCount={transactions.length} />
-        ),
+        () => <GroupListHeader transactionCount={transactions.length} />,
         [transactions.length],
     )
 
     const ListFooter = useMemo(
-        () => (
-            <GroupListFooter
-                fee={displayedFee}
-            />
-        ),
-        [displayedFee, isMultipleGroups],
+        () => <GroupListFooter fee={displayedFee} />,
+        [displayedFee, requestStructure],
     )
 
     return (

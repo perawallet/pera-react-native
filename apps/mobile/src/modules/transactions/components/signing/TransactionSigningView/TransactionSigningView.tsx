@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
+import type { TransactionSignRequest } from '../../../../../../../../packages/signing/dist'
 import { SigningBottomSheetNavigator } from '../SigningBottomSheetNavigator'
 
 export type TransactionSigningViewProps = {

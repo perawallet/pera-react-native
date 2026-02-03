@@ -14,7 +14,7 @@ import { PWHeader, PWIcon, PWImage, PWText, PWView } from '@components/core'
 import {
     ArbitraryDataSignRequest,
     PeraArbitraryDataMessage,
-} from '@perawallet/wallet-core-signing'
+} from '../../../../../../../../packages/signing/dist'
 import { useLanguage } from '@hooks/useLanguage'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'

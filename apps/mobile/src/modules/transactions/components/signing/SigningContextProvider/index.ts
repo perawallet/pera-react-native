@@ -10,4 +10,7 @@
  limitations under the License
  */
 
-export { SigningContextProvider, type SigningContextProviderProps } from './SigningContextProvider'
+export {
+    SigningContextProvider,
+    type SigningContextProviderProps,
+} from './SigningContextProvider'
