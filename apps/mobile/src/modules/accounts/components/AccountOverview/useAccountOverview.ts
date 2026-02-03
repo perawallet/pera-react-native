@@ -44,7 +44,6 @@ export type UseAccountOverviewResult = {
     handleOpenSendFunds: () => void
     handleCloseSendFunds: () => void
     handleSwap: () => void
-    handleStake: () => void
     handleMore: () => void
     handleBuyAlgo: () => void
     handleReceive: () => void
@@ -93,10 +92,6 @@ export const useAccountOverview = (
         navigation.replace('TabBar', { screen: 'Swap' })
     }, [navigation])
 
-    const handleStake = useCallback(() => {
-        navigation.push('Staking')
-    }, [navigation])
-
     const notImplemented = useCallback(() => {
         showToast({
             title: t('common.not_implemented.title'),
@@ -135,7 +130,6 @@ export const useAccountOverview = (
         handleOpenSendFunds,
         handleCloseSendFunds,
         handleSwap,
-        handleStake,
         handleMore: notImplemented,
         handleBuyAlgo,
         handleReceive,

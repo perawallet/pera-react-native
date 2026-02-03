@@ -43,7 +43,6 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
         handleOpenSendFunds,
         handleCloseSendFunds,
         handleSwap,
-        handleStake,
         handleMore,
         handleBuyAlgo,
         handleReceive,
@@ -70,7 +69,6 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
                         togglePrivacyMode={togglePrivacyMode}
                         handleChartSelectionChange={handleChartSelectionChange}
                         handleSwap={handleSwap}
-                        handleStake={handleStake}
                         handleOpenSendFunds={handleOpenSendFunds}
                         handleMore={handleMore}
                         handleBuyAlgo={handleBuyAlgo}

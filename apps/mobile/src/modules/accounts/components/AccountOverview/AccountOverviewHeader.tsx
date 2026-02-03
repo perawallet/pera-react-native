@@ -42,7 +42,6 @@ export type AccountOverviewHeaderProps = {
         selected: AccountBalanceHistoryItem | null,
     ) => void
     handleSwap: () => void
-    handleStake: () => void
     handleOpenSendFunds: () => void
     handleMore: () => void
     handleBuyAlgo: () => void
@@ -62,7 +61,6 @@ export const AccountOverviewHeader = ({
     togglePrivacyMode,
     handleChartSelectionChange,
     handleSwap,
-    handleStake,
     handleOpenSendFunds,
     handleMore,
     handleBuyAlgo,
@@ -136,8 +134,8 @@ export const AccountOverviewHeader = ({
 
             <ButtonPanel
                 onSwap={handleSwap}
-                onStake={handleStake}
                 onSend={handleOpenSendFunds}
+                onReceive={handleReceive}
                 onMore={handleMore}
             />
         </>

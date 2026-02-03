@@ -17,15 +17,15 @@ import { useLanguage } from '@hooks/useLanguage'
 
 export type ButtonPanelProps = {
     onSwap: () => void
-    onStake: () => void
     onSend: () => void
+    onReceive: () => void
     onMore: () => void
 }
 
 export const ButtonPanel = ({
     onSwap,
-    onStake,
     onSend,
+    onReceive,
     onMore,
 }: ButtonPanelProps) => {
     const themeStyle = useStyles()
@@ -40,16 +40,16 @@ export const ButtonPanel = ({
                 onPress={onSwap}
             />
             <RoundButton
-                title={t('account_details.button_panel.stake')}
-                icon='dot-stack'
-                variant='secondary'
-                onPress={onStake}
-            />
-            <RoundButton
                 title={t('account_details.button_panel.send')}
                 icon='outflow'
                 variant='secondary'
                 onPress={onSend}
+            />
+            <RoundButton
+                title={t('account_details.button_panel.receive')}
+                icon='inflow'
+                variant='secondary'
+                onPress={onReceive}
             />
             <RoundButton
                 title={t('account_details.button_panel.more')}
