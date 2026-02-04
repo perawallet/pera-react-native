@@ -10,5 +10,4 @@
  limitations under the License
  */
 
-export { PWTab } from './PWTab'
-export type { PWTabProps, PWTabItemProps } from './PWTab'
+export * from './AccountMenuBottomSheet'

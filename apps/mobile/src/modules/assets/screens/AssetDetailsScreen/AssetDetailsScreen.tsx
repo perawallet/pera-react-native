@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-import { PWTab, PWTabView, PWView } from '@components/core'
+import { createPWTabNavigator } from '@components/core/PWTabView/PWTabView'
 import { useNavigation } from '@react-navigation/native'
 import {
     getAccountDisplayName,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useCallback, useLayoutEffect, useMemo, useState } from 'react'
+import { useCallback, useLayoutEffect, useMemo } from 'react'
 import { useStyles } from './styles'
 import { AssetMarkets } from '@modules/assets/components/market/AssetMarkets'
 import { AssetHoldings } from '@modules/assets/components/holdings/AssetHoldings'
@@ -24,22 +24,29 @@ import { AccountIcon } from '@modules/accounts/components/AccountIcon'
 import { useToast } from '@hooks/useToast'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import { LoadingView } from '@components/LoadingView'
-import { TAB_ANIMATION_CONFIG } from '@constants/ui'
 import { useLanguage } from '@hooks/useLanguage'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { AccountStackParamsList } from '@modules/accounts/routes'
+import { PWView } from '@components/core'
 
 export type AssetDetailsScreenProps = NativeStackScreenProps<
     AccountStackParamsList,
     'AssetDetails'
 >
+
+export type AssetDetailsTabParamsList = {
+    Holdings: undefined
+    Markets: undefined
+}
+
+const Tab = createPWTabNavigator<AssetDetailsTabParamsList>()
+
 export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
     const assetId = route.params?.assetId
     const { showToast } = useToast()
     const { t } = useLanguage()
 
     const styles = useStyles()
-    const [tabIndex, setTabIndex] = useState(0)
 
     const navigation = useNavigation()
     const account = useSelectedAccount()
@@ -85,37 +92,30 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
 
     return (
         <PWView style={styles.contentContainer}>
-            <PWTab
-                value={tabIndex}
-                onChange={e => setTabIndex(e)}
-                containerStyle={styles.tabs}
-                indicatorStyle={styles.indicator}
-                titleStyle={styles.tabItem}
-                dense
-            >
-                <PWTab.Item
-                    title={t('asset_details.main_screen.holdings_tab')}
-                />
-                <PWTab.Item
-                    title={t('asset_details.main_screen.markets_tab')}
-                />
-            </PWTab>
-            <PWTabView
-                value={tabIndex}
-                onChange={setTabIndex}
-                animationType='spring'
-                animationConfig={TAB_ANIMATION_CONFIG}
-            >
-                <PWTabView.Item style={styles.fullWidth}>
-                    <AssetHoldings
-                        account={account}
-                        asset={asset}
-                    />
-                </PWTabView.Item>
-                <PWTabView.Item style={styles.fullWidth}>
-                    <AssetMarkets asset={asset} />
-                </PWTabView.Item>
-            </PWTabView>
+            <Tab.Navigator>
+                <Tab.Screen
+                    name='Holdings'
+                    options={{
+                        title: t('asset_details.main_screen.holdings_tab'),
+                    }}
+                >
+                    {() => (
+                        <AssetHoldings
+                            account={account}
+                            asset={asset}
+                        />
+                    )}
+                </Tab.Screen>
+
+                <Tab.Screen
+                    name='Markets'
+                    options={{
+                        title: t('asset_details.main_screen.markets_tab'),
+                    }}
+                >
+                    {() => <AssetMarkets asset={asset} />}
+                </Tab.Screen>
+            </Tab.Navigator>
         </PWView>
     )
 }

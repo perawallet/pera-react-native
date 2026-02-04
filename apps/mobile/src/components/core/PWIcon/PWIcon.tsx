@@ -48,6 +48,7 @@ import GiftIcon from '@assets/icons/gift.svg'
 import GlobeIcon from '@assets/icons/globe.svg'
 import HorizontalLineStackIcon from '@assets/icons/horizontal-line-stack.svg'
 import HouseIcon from '@assets/icons/house.svg'
+import InboxIcon from '@assets/icons/inbox.svg'
 import InflowIcon from '@assets/icons/inflow.svg'
 import InfoIcon from '@assets/icons/info.svg'
 import KeyIcon from '@assets/icons/key.svg'
@@ -151,6 +152,7 @@ const ICON_LIBRARY = {
     globe: GlobeIcon,
     'horizontal-line-stack': HorizontalLineStackIcon,
     house: HouseIcon,
+    inbox: InboxIcon,
     inflow: InflowIcon,
     info: InfoIcon,
     key: KeyIcon,

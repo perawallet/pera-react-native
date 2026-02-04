@@ -10,29 +10,52 @@
  limitations under the License
  */
 
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useSelectedAccount,
+    WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { useStyles } from './styles'
+import { AccountMenuBottomSheet } from '@modules/accounts/components/AccountMenuBottomSheet'
+import { useModalState } from '@hooks/useModalState'
 
 import { TouchableOpacity, TouchableOpacityProps } from 'react-native'
 import { AccountDisplay } from '../AccountDisplay'
 
-export type AccountSelectionProps = {} & TouchableOpacityProps
+export type AccountSelectionProps = {
+    onSelected?: (account: WalletAccount) => void
+} & TouchableOpacityProps
 
-export const AccountSelection = (props: AccountSelectionProps) => {
+export const AccountSelection = ({
+    onSelected,
+    ...props
+}: AccountSelectionProps) => {
     const styles = useStyles()
     const account = useSelectedAccount()
+    const accountMenuState = useModalState()
 
-    //TODO we may want to add support for pending inbox items here too
-    //(like the current inbox since we're using the same screen real estate)
+    const handleSelected = (selectedAccount: WalletAccount) => {
+        accountMenuState.close()
+        onSelected?.(selectedAccount)
+    }
+
     return (
-        <TouchableOpacity
-            {...props}
-            activeOpacity={0.8}
-        >
-            <AccountDisplay
-                account={account ?? undefined}
-                style={styles.container}
+        <>
+            <TouchableOpacity
+                {...props}
+                activeOpacity={0.8}
+                onPress={accountMenuState.open}
+            >
+                <AccountDisplay
+                    account={account ?? undefined}
+                    style={styles.container}
+                    noBorder
+                />
+            </TouchableOpacity>
+            <AccountMenuBottomSheet
+                isVisible={accountMenuState.isOpen}
+                onClose={accountMenuState.close}
+                onSelected={handleSelected}
             />
-        </TouchableOpacity>
+        </>
     )
 }

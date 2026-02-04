@@ -85,6 +85,7 @@
             "swap": "Swap",
             "stake": "Stake",
             "send": "Send",
+            "receive": "Receive",
             "more": "More"
         },
         "main_screen": {
@@ -361,6 +362,9 @@
     },
     "portfolio": {
         "title": "Portfolio Value",
+        "show_chart": "Show Chart",
+        "hide_chart": "Hide Chart",
+        "last_7_days": "Last 7 Days",
         "info": {
             "title": "How we calculate portfolio value",
             "body": "The Total Portfolio Value is calculated by adding up the value of all asset values and Algo available in your accounts, excluding Watch Accounts.\n\nAsset values are calculated based on daily values fetched from several ecosystem partners.  Since some asset values are not available, the Total Portfolio Value should be considered an estimation."

@@ -10,17 +10,17 @@
  limitations under the License
  */
 
-import { EmptyView } from '@components/EmptyView'
-import { useLanguage } from '@hooks/useLanguage'
+import { Dimensions } from 'react-native'
+import { makeStyles } from '@rneui/themed'
 
-export const InboxTab = () => {
-    //TODO implement me
-    const { t } = useLanguage()
+const { height } = Dimensions.get('window')
 
-    return (
-        <EmptyView
-            title={t('account_menu.no_inbox_items')}
-            body={t('account_menu.no_inbox_body')}
-        />
-    )
-}
+export const useStyles = makeStyles(theme => ({
+    container: {
+        height: height * 0.9,
+        backgroundColor: theme.colors.background,
+        borderTopLeftRadius: theme.spacing.md,
+        borderTopRightRadius: theme.spacing.md,
+        overflow: 'hidden',
+    },
+}))

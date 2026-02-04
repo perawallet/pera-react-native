@@ -16,16 +16,14 @@ import { useShouldPlayConfetti } from '@modules/onboarding/hooks'
 
 import { useStyles } from './styles'
 import { useModalState } from '@hooks/useModalState'
-import { NotificationsIcon } from '@modules/notifications/components/NotificationsIcon'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
-import { AccountMenu } from '@modules/accounts/components/AccountMenu'
-import { Drawer } from 'react-native-drawer-layout'
 import { QRScannerView } from '@components/QRScannerView'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { ConfettiAnimation } from '@modules/accounts/components/ConfettiAnimation'
 import { PromptContainer } from '@modules/prompts'
 import { AccountTabNavigator } from '@modules/accounts/components/AccountTabNavigator'
+import { NotificationsIcon } from '@modules/notifications/components/NotificationsIcon'
 
 //TODO hook up all the button panel buttons correctly
 //TODO implement more menu
@@ -37,15 +35,10 @@ export const AccountScreen = () => {
     const styles = useStyles()
     const account = useSelectedAccount()
     const scannerState = useModalState()
-    const drawerState = useModalState()
     const { t } = useLanguage()
 
     const { shouldPlayConfetti, setShouldPlayConfetti } =
         useShouldPlayConfetti()
-
-    const toggleAccountSelectorVisible = () => {
-        drawerState.open()
-    }
 
     if (!account) {
         return (
@@ -57,31 +50,14 @@ export const AccountScreen = () => {
     }
 
     return (
-        <Drawer
-            open={drawerState.isOpen}
-            onOpen={() => drawerState.open()}
-            onClose={() => drawerState.close()}
-            drawerType='front'
-            swipeEnabled
-            drawerStyle={styles.drawer}
-            renderDrawerContent={() => (
-                <AccountMenu
-                    onSelected={() => drawerState.close()}
-                    showInbox
-                />
-            )}
-        >
+        <PWView style={styles.container}>
             <ConfettiAnimation
                 play={shouldPlayConfetti}
                 onFinish={() => setShouldPlayConfetti(false)}
             />
             <PWToolbar
                 style={styles.iconBar}
-                left={
-                    // TODO we may want to add support for pending inbox items here too
-                    // (like the current inbox since we're using the same screen real estate)
-                    <AccountSelection onPress={toggleAccountSelectorVisible} />
-                }
+                left={<AccountSelection />}
                 right={
                     <PWView style={styles.iconBarSection}>
                         <PWTouchableOpacity onPress={scannerState.open}>
@@ -99,6 +75,6 @@ export const AccountScreen = () => {
                 animationType='slide'
             />
             <PromptContainer />
-        </Drawer>
+        </PWView>
     )
 }

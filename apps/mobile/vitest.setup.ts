@@ -232,43 +232,75 @@ vi.mock('react-native', () => {
         TouchableOpacity: vi
             .fn()
             .mockImplementation(
-                ({ onPress, children, activeOpacity, ...props }) => {
+                ({ onPress, children, activeOpacity, testID, ...props }) => {
                     const React = require('react')
 
                     void activeOpacity
 
                     return React.createElement(
                         'button',
-                        { ...props, onClick: onPress },
+                        {
+                            ...props,
+                            onClick: onPress,
+                            ...(testID
+                                ? { 'data-testid': testID, testid: testID }
+                                : {}),
+                        },
                         children,
                     )
                 },
             ),
         KeyboardAvoidingView: vi
             .fn()
-            .mockImplementation(props =>
-                require('react').createElement('div', props, props.children),
-            ),
-        View: vi
-            .fn()
-            .mockImplementation(props =>
-                require('react').createElement('div', props, props.children),
-            ),
-        Text: vi
-            .fn()
-            .mockImplementation(props =>
-                require('react').createElement('span', props, props.children),
-            ),
-        Image: Object.assign(
-            vi
-                .fn()
-                .mockImplementation(props =>
-                    require('react').createElement(
-                        'img',
-                        props,
-                        props.children,
-                    ),
+            .mockImplementation(({ testID, ...props }) =>
+                require('react').createElement(
+                    'div',
+                    {
+                        ...props,
+                        ...(testID
+                            ? { 'data-testid': testID, testid: testID }
+                            : {}),
+                    },
+                    props.children,
                 ),
+            ),
+        View: vi.fn().mockImplementation(({ testID, ...props }) =>
+            require('react').createElement(
+                'div',
+                {
+                    ...props,
+                    ...(testID
+                        ? { 'data-testid': testID, testid: testID }
+                        : {}),
+                },
+                props.children,
+            ),
+        ),
+        Text: vi.fn().mockImplementation(({ testID, ...props }) =>
+            require('react').createElement(
+                'span',
+                {
+                    ...props,
+                    ...(testID
+                        ? { 'data-testid': testID, testid: testID }
+                        : {}),
+                },
+                props.children,
+            ),
+        ),
+        Image: Object.assign(
+            vi.fn().mockImplementation(({ testID, ...props }) =>
+                require('react').createElement(
+                    'img',
+                    {
+                        ...props,
+                        ...(testID
+                            ? { 'data-testid': testID, testid: testID }
+                            : {}),
+                    },
+                    props.children,
+                ),
+            ),
             {
                 resolveAssetSource: vi.fn(() => ({
                     uri: 'mock-image-uri',
@@ -278,15 +310,24 @@ vi.mock('react-native', () => {
             },
         ),
         ImageBackground: Object.assign(
-            vi
-                .fn()
-                .mockImplementation(props =>
-                    require('react').createElement(
-                        'div',
-                        { ...props, 'data-testid': 'ImageBackground' },
-                        props.children,
-                    ),
+            vi.fn().mockImplementation(({ testID, ...props }) =>
+                require('react').createElement(
+                    'div',
+                    {
+                        ...props,
+                        ...(testID
+                            ? {
+                                  'data-testid': testID || 'ImageBackground',
+                                  testid: testID || 'ImageBackground',
+                              }
+                            : {
+                                  'data-testid': 'ImageBackground',
+                                  testid: 'ImageBackground',
+                              }),
+                    },
+                    props.children,
                 ),
+            ),
             {
                 resolveAssetSource: vi.fn(() => ({
                     uri: 'mock-image-uri',
@@ -295,28 +336,46 @@ vi.mock('react-native', () => {
                 })),
             },
         ),
-        ScrollView: vi
-            .fn()
-            .mockImplementation(props =>
-                require('react').createElement('div', props, props.children),
+        ScrollView: vi.fn().mockImplementation(({ testID, ...props }) =>
+            require('react').createElement(
+                'div',
+                {
+                    ...props,
+                    ...(testID
+                        ? { 'data-testid': testID, testid: testID }
+                        : {}),
+                },
+                props.children,
             ),
+        ),
         FlatList: vi
             .fn()
-            .mockImplementation(({ data, renderItem, ...props }) => {
+            .mockImplementation(({ data, renderItem, testID, ...props }) => {
                 const React = require('react')
                 return React.createElement(
                     'div',
-                    { ...props, 'data-testid': 'FlatList' },
+                    {
+                        ...props,
+                        'data-testid': testID || 'FlatList',
+                        testid: testID || 'FlatList',
+                    },
                     data?.map((item: any, index: number) =>
                         renderItem({ item, index }),
                     ),
                 )
             }),
-        TextInput: vi
-            .fn()
-            .mockImplementation(props =>
-                require('react').createElement('input', props, props.children),
+        TextInput: vi.fn().mockImplementation(({ testID, ...props }) =>
+            require('react').createElement(
+                'input',
+                {
+                    ...props,
+                    ...(testID
+                        ? { 'data-testid': testID, testid: testID }
+                        : {}),
+                },
+                props.children,
             ),
+        ),
 
         Modal: vi.fn().mockImplementation((args: any) => {
             const {
@@ -325,6 +384,7 @@ vi.mock('react-native', () => {
                 animationType,
                 onRequestClose,
                 onShow,
+                testID,
                 ...props
             } = args
 
@@ -333,26 +393,45 @@ vi.mock('react-native', () => {
             void onRequestClose
             void onShow
             return visible
-                ? require('react').createElement('div', props, props.children)
+                ? require('react').createElement(
+                      'div',
+                      {
+                          ...props,
+                          ...(testID
+                              ? { 'data-testid': testID, testid: testID }
+                              : {}),
+                      },
+                      props.children,
+                  )
                 : null
         }),
-        ActivityIndicator: vi
-            .fn()
-            .mockImplementation(props =>
-                require('react').createElement(
-                    'div',
-                    { ...props, 'data-testid': 'activity-indicator' },
-                    'Loading...',
-                ),
+        ActivityIndicator: vi.fn().mockImplementation(({ testID, ...props }) =>
+            require('react').createElement(
+                'div',
+                {
+                    ...props,
+                    'data-testid': testID || 'activity-indicator',
+                    testid: testID || 'activity-indicator',
+                },
+                'Loading...',
             ),
-        Pressable: vi.fn().mockImplementation(({ onPress, ...props }) => {
-            const React = require('react')
-            return React.createElement(
-                'button',
-                { ...props, onClick: onPress },
-                props.children,
-            )
-        }),
+        ),
+        Pressable: vi
+            .fn()
+            .mockImplementation(({ onPress, testID, ...props }) => {
+                const React = require('react')
+                return React.createElement(
+                    'button',
+                    {
+                        ...props,
+                        onClick: onPress,
+                        ...(testID
+                            ? { 'data-testid': testID, testid: testID }
+                            : {}),
+                    },
+                    props.children,
+                )
+            }),
         Appearance: {
             getColorScheme: vi.fn(() => 'light'),
             addChangeListener: vi.fn(),
@@ -647,6 +726,39 @@ vi.mock('react-native-vector-icons/MaterialCommunityIcons', () => 'Icon')
 vi.mock('react-native-vector-icons/Ionicons', () => 'Icon')
 vi.mock('react-native-vector-icons/FontAwesome', () => 'Icon')
 vi.mock('react-native-vector-icons/FontAwesome5', () => 'Icon')
+
+vi.mock('react-native-tab-view', () => ({
+    TabView: () => null,
+    TabBar: () => null,
+    SceneMap: () => null,
+}))
+
+vi.mock('@react-navigation/material-top-tabs', () => ({
+    createMaterialTopTabNavigator: vi.fn(() => ({
+        Navigator: ({ children }: any) =>
+            require('react').createElement('div', {}, children),
+
+        Screen: ({ children, component: Component, options }: any) => {
+            const React = require('react')
+            return React.createElement(
+                'div',
+                {},
+                options?.title || options?.tabBarLabel
+                    ? React.createElement(
+                          'span',
+                          {},
+                          options.title || options.tabBarLabel,
+                      )
+                    : null,
+                Component
+                    ? React.createElement(Component)
+                    : typeof children === 'function'
+                      ? children({ navigation: {} })
+                      : children,
+            )
+        },
+    })),
+}))
 
 vi.mock('@rneui/themed', () => {
     const React = require('react')

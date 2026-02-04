@@ -35,8 +35,9 @@ vi.mock('@perawallet/wallet-core-notifications', () => ({
 
 describe('NotificationsIcon', () => {
     it('renders bell icon when there are no new notifications', () => {
-        const { getByTestId } = render(<NotificationsIcon />)
-        expect(getByTestId('icon-bell')).toBeTruthy()
+        const { getByTestId, queryByTestId } = render(<NotificationsIcon />)
+        expect(getByTestId('icon-inbox')).toBeTruthy()
+        expect(queryByTestId('notification-badge')).toBeNull()
     })
 
     it('renders bell-with-badge icon when there are new notifications', () => {
@@ -46,7 +47,8 @@ describe('NotificationsIcon', () => {
         } as any)
 
         const { getByTestId } = render(<NotificationsIcon />)
-        expect(getByTestId('icon-bell-with-badge')).toBeTruthy()
+        expect(getByTestId('icon-inbox')).toBeTruthy()
+        expect(getByTestId('notification-badge')).toBeTruthy()
     })
 
     it('navigates to Notifications screen when pressed', () => {

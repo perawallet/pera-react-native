@@ -12,15 +12,17 @@
 
 import { useNotificationStatus } from '@perawallet/wallet-core-notifications'
 import { SvgProps } from 'react-native-svg'
-import { PWIcon, PWTouchableOpacity } from '@components/core'
+import { PWIcon, PWTouchableOpacity, PWView } from '@components/core'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { useStyles } from './styles'
 
 export type NotificationsIconProps = {} & SvgProps
 
 export const NotificationsIcon = (props: NotificationsIconProps) => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { data } = useNotificationStatus()
+    const styles = useStyles()
 
     const goToNotifications = () => {
         navigation.navigate('Notifications')
@@ -28,10 +30,18 @@ export const NotificationsIcon = (props: NotificationsIconProps) => {
 
     return (
         <PWTouchableOpacity onPress={goToNotifications}>
-            <PWIcon
-                {...props}
-                name={data?.hasNewNotification ? 'bell-with-badge' : 'bell'}
-            />
+            <PWView>
+                <PWIcon
+                    name='inbox'
+                    {...props}
+                />
+                {data?.hasNewNotification && (
+                    <PWView
+                        style={styles.badge}
+                        testID='notification-badge'
+                    />
+                )}
+            </PWView>
         </PWTouchableOpacity>
     )
 }

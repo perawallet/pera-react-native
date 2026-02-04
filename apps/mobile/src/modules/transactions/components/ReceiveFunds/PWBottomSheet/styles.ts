@@ -23,9 +23,6 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
             borderTopEndRadius: theme.spacing.sm,
             overflow: 'hidden',
         },
-        innerContainer: {
-            flex: 1,
-        },
         tabItem: {
             width: '100%',
             paddingHorizontal: theme.spacing.lg,

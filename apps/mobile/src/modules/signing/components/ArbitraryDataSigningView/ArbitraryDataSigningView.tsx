@@ -34,7 +34,6 @@ import { useWebView } from '@hooks/usePeraWebviewInterface'
 import { v7 as uuid } from 'uuid'
 import { useArbitraryDataSigningView } from './useArbitraryDataSigningView'
 import { ArbitraryDataSigningDetailsView } from './ArbitraryDataSigningDetailsView'
-import { useState } from 'react'
 
 export type ArbitraryDataSigningViewProps = {
     request: ArbitraryDataSignRequest
@@ -182,6 +181,13 @@ const MultipleSignRequestView = ({
     )
 }
 
+export type ArbitraryDataSigningTabParamsList = {
+    Main: undefined
+    Details: { message: PeraArbitraryDataMessage }
+}
+
+const Tab = PWTabView.createNavigator<ArbitraryDataSigningTabParamsList>()
+
 export const ArbitraryDataSigningView = ({
     request,
 }: ArbitraryDataSigningViewProps) => {
@@ -189,81 +195,83 @@ export const ArbitraryDataSigningView = ({
     const { t } = useLanguage()
     const { approveRequest, rejectRequest, isPending } =
         useArbitraryDataSigningView(request)
-    const [index, setIndex] = useState(0)
-    const [selectedRequest, setSelectedRequest] = useState(request.data[0])
 
     const isSingleSignRequest = request.data.length === 1
 
-    const handleBack = () => {
-        setIndex(0)
-    }
-
-    const handleDetailsPress = (message: PeraArbitraryDataMessage) => {
-        setSelectedRequest(message)
-        setIndex(1)
-    }
-
     return (
         <PWView style={styles.container}>
-            <PWTabView
-                value={index}
-                onChange={setIndex}
-                animationType='spring'
-            >
-                <PWTabView.Item style={styles.tabItem}>
-                    <PWView style={styles.tabItemContainer}>
-                        <PWText style={styles.title}>
-                            {t('signing.arbitrary_data_view.title')}
-                        </PWText>
-                        {!!request.sourceMetadata && (
-                            <SourceMetadataView
-                                metadata={request.sourceMetadata}
-                            />
-                        )}
-                        <PWView style={styles.bodyContainer}>
-                            {isSingleSignRequest ? (
-                                <SingleSignRequestView
-                                    request={request.data[0]}
-                                    onDetailsPress={handleDetailsPress}
-                                />
-                            ) : (
-                                <MultipleSignRequestView
-                                    requests={request.data}
-                                    onDetailsPress={handleDetailsPress}
-                                />
-                            )}
+            <Tab.Navigator screenOptions={{ swipeEnabled: false }}>
+                <Tab.Screen name='Main'>
+                    {({ navigation }) => (
+                        <PWView style={styles.tabItem}>
+                            <PWView style={styles.tabItemContainer}>
+                                <PWText style={styles.title}>
+                                    {t('signing.arbitrary_data_view.title')}
+                                </PWText>
+                                {!!request.sourceMetadata && (
+                                    <SourceMetadataView
+                                        metadata={request.sourceMetadata}
+                                    />
+                                )}
+                                <PWView style={styles.bodyContainer}>
+                                    {isSingleSignRequest ? (
+                                        <SingleSignRequestView
+                                            request={request.data[0]}
+                                            onDetailsPress={message =>
+                                                navigation.navigate('Details', {
+                                                    message,
+                                                })
+                                            }
+                                        />
+                                    ) : (
+                                        <MultipleSignRequestView
+                                            requests={request.data}
+                                            onDetailsPress={message =>
+                                                navigation.navigate('Details', {
+                                                    message,
+                                                })
+                                            }
+                                        />
+                                    )}
+                                </PWView>
+                                <PWView style={styles.buttonContainer}>
+                                    <PWButton
+                                        title={t('common.cancel.label')}
+                                        variant='secondary'
+                                        onPress={rejectRequest}
+                                        style={styles.button}
+                                        isDisabled={isPending}
+                                    />
+                                    <PWButton
+                                        title={
+                                            isSingleSignRequest
+                                                ? t('common.confirm.label')
+                                                : t('common.confirm_all.label')
+                                        }
+                                        variant='primary'
+                                        onPress={approveRequest}
+                                        style={styles.button}
+                                        isDisabled={isPending}
+                                        isLoading={isPending}
+                                    />
+                                </PWView>
+                            </PWView>
                         </PWView>
-                        <PWView style={styles.buttonContainer}>
-                            <PWButton
-                                title={t('common.cancel.label')}
-                                variant='secondary'
-                                onPress={rejectRequest}
-                                style={styles.button}
-                                isDisabled={isPending}
-                            />
-                            <PWButton
-                                title={
-                                    isSingleSignRequest
-                                        ? t('common.confirm.label')
-                                        : t('common.confirm_all.label')
-                                }
-                                variant='primary'
-                                onPress={approveRequest}
-                                style={styles.button}
-                                isDisabled={isPending}
-                                isLoading={isPending}
+                    )}
+                </Tab.Screen>
+
+                <Tab.Screen name='Details'>
+                    {({ route, navigation }) => (
+                        <PWView style={styles.tabItem}>
+                            <ArbitraryDataSigningDetailsView
+                                request={request}
+                                dataMessage={route.params.message}
+                                onBack={() => navigation.goBack()}
                             />
                         </PWView>
-                    </PWView>
-                </PWTabView.Item>
-                <PWTabView.Item style={styles.tabItem}>
-                    <ArbitraryDataSigningDetailsView
-                        request={request}
-                        dataMessage={selectedRequest}
-                        onBack={handleBack}
-                    />
-                </PWTabView.Item>
-            </PWTabView>
+                    )}
+                </Tab.Screen>
+            </Tab.Navigator>
         </PWView>
     )
 }

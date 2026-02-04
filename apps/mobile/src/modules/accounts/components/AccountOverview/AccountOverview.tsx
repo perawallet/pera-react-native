@@ -34,18 +34,15 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
         period,
         setPeriod,
         selectedPoint,
-        chartVisible,
         scrollingEnabled,
         preferredFiatCurrency,
         hasBalance,
         togglePrivacyMode,
-        toggleChartVisible,
         handleChartSelectionChange,
         isSendFundsVisible,
         handleOpenSendFunds,
         handleCloseSendFunds,
         handleSwap,
-        handleStake,
         handleMore,
         handleBuyAlgo,
         handleReceive,
@@ -68,13 +65,10 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
                         period={period}
                         setPeriod={setPeriod}
                         selectedPoint={selectedPoint}
-                        chartVisible={chartVisible}
                         preferredFiatCurrency={preferredFiatCurrency}
                         togglePrivacyMode={togglePrivacyMode}
-                        toggleChartVisible={toggleChartVisible}
                         handleChartSelectionChange={handleChartSelectionChange}
                         handleSwap={handleSwap}
-                        handleStake={handleStake}
                         handleOpenSendFunds={handleOpenSendFunds}
                         handleMore={handleMore}
                         handleBuyAlgo={handleBuyAlgo}
