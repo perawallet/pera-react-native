@@ -11,8 +11,8 @@
  */
 
 import { AccountOverviewHeader } from './AccountOverviewHeader'
-import { SendFundsBottomSheet } from '@modules/transactions/components/SendFunds/PWBottomSheet/SendFundsBottomSheet'
-import { ReceiveFundsBottomSheet } from '@modules/transactions/components/ReceiveFunds/PWBottomSheet/ReceiveFundsBottomSheet'
+import { SendFundsBottomSheet } from '@modules/transactions/components/SendFunds/SendFundsBottomSheet/SendFundsBottomSheet'
+import { ReceiveFundsBottomSheet } from '@modules/transactions/components/ReceiveFunds/ReceiveFundsBottomSheet/ReceiveFundsBottomSheet'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useStyles } from './styles'
 import { useAccountOverview } from './useAccountOverview'

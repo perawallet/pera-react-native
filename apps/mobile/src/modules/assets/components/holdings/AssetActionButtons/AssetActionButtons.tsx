@@ -20,8 +20,8 @@ import { useToast } from '@hooks/useToast'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
-import { SendFundsBottomSheet } from '@modules/transactions/components/SendFunds/PWBottomSheet/SendFundsBottomSheet'
-import { ReceiveFundsBottomSheet } from '@modules/transactions/components/ReceiveFunds/PWBottomSheet/ReceiveFundsBottomSheet'
+import { SendFundsBottomSheet } from '@modules/transactions/components/SendFunds/SendFundsBottomSheet/SendFundsBottomSheet'
+import { ReceiveFundsBottomSheet } from '@modules/transactions/components/ReceiveFunds/ReceiveFundsBottomSheet/ReceiveFundsBottomSheet'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 
 export type AssetActionButtonsProps = {

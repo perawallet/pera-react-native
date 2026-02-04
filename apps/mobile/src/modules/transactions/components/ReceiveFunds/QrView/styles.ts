@@ -16,20 +16,25 @@ export const useStyles = makeStyles(theme => {
     return {
         container: {
             flex: 1,
-            gap: theme.spacing.xxl,
+            justifyContent: 'space-between',
+            paddingBottom: theme.spacing.lg,
         },
         qrContainer: {
             marginTop: theme.spacing.xl,
             alignItems: 'center',
+            justifyContent: 'center',
+            flex: 1,
         },
         addressContainer: {
-            flexGrow: 1,
             alignItems: 'center',
             gap: theme.spacing.md,
             paddingHorizontal: theme.spacing.xl,
+            marginTop: theme.spacing.xl,
         },
         buttonContainer: {
             gap: theme.spacing.md,
+            marginTop: theme.spacing.xl,
+            paddingHorizontal: theme.spacing.lg,
         },
         address: {
             color: theme.colors.textGray,
