@@ -11,17 +11,12 @@
  */
 
 import { PWText, PWToolbar, PWView } from '@components/core'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
 import {
     getTransactionType,
-    microAlgosToAlgos,
     PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
-import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
-import Decimal from 'decimal.js'
 import { useStyles } from './styles'
 import { PaymentTransactionSummaryHeader } from './PaymentTransactionSummaryHeader'
 import { AssetTransferSummaryHeader } from './AssetTransferSummaryHeader'
@@ -45,7 +40,7 @@ export const TransactionSummaryHeader = ({
         <>
             <PWToolbar
                 center={
-                    <PWText variant='h4'>
+                    <PWText variant='h4' style={styles.title}>
                         {title ?? t('signing.transactions.title')}
                     </PWText>
                 }

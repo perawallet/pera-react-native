@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback } from 'react'
 import { PWFlatList, PWIcon, PWText, PWToolbar, PWView } from '@components/core'
 import { InnerTransactionPreview } from '@modules/transactions/components/transaction-details/InnerTransactionPreview'
 import { useLanguage } from '@hooks/useLanguage'
@@ -44,13 +44,11 @@ export const GroupListScreen = () => {
     const route = useRoute<GroupListRouteProp>()
     const { pendingSignRequests } = useSigningRequest()
     const request = pendingSignRequests[0] as TransactionSignRequest
-    const { groups, totalFee, requestStructure } =
+    const { groups, totalFee } =
         useSigningRequestAnalysis(request)
 
     const { groupIndex } = route.params
     const transactions = groups[groupIndex] ?? []
-
-    const groupFee = transactions.reduce((sum, tx) => sum + (tx.fee ?? 0n), 0n)
 
     const handleTransactionPress = (tx: PeraDisplayableTransaction) => {
         navigation.navigate('TransactionDetails', { transaction: tx })
@@ -77,32 +75,30 @@ export const GroupListScreen = () => {
         [styles.itemSeparator],
     )
 
-    const displayedFee = requestStructure === 'group-list' ? groupFee : totalFee
-
     return (
         <PWView style={styles.container}>
             <PWToolbar
                 center={
-                    <PWText variant='h4'>
+                    <PWText variant='h4' style={styles.title}>
                         {t('signing.transactions.title')}
                     </PWText>
                 }
                 left={
                     navigation.canGoBack() ? (
                         <PWIcon name='chevron-left' />
-                    ) : undefined
+                    ) : null
                 }
             />
             <GroupListHeader transactionCount={transactions.length} />
             <PWFlatList
-                maxItemsInRecyclePool={500}
                 data={transactions}
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
                 ItemSeparatorComponent={ItemSeparator}
                 contentContainerStyle={styles.contentContainer}
+                recycleItems
             />
-            <GroupListFooter fee={displayedFee} />
+            <GroupListFooter fee={totalFee} />
         </PWView>
     )
 }

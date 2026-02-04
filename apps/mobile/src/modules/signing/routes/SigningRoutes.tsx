@@ -37,7 +37,7 @@ const getInitialRouteConfig = (
     request: TransactionSignRequest,
 ): InitialRouteConfig => {
     const groupCount = request.txs.length
-    const firstGroupLength = request.txs[0]?.length ?? 0
+    const firstGroupLength = request.txs.length ?? 0
     const isSingleTransaction = groupCount === 1 && firstGroupLength === 1
     const isSingleGroup = groupCount === 1 && !isSingleTransaction
 

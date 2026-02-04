@@ -12,9 +12,9 @@
 
 import { useCallback } from 'react'
 import {
+    PeraSignedTransaction,
     useAlgorandClient,
     useTransactionEncoder,
-    type PeraSignedTransactionGroup,
 } from '@perawallet/wallet-core-blockchain'
 import {
     useTransactionSigner,
@@ -31,13 +31,13 @@ import type {
 
 export type SignResult =
     | {
-          type: 'transactions'
-          signedTransactions: PeraSignedTransactionGroup[]
-      }
+        type: 'transactions'
+        signedTransactions: PeraSignedTransaction[]
+    }
     | {
-          type: 'arbitrary-data'
-          signatures: PeraArbitraryDataSignResult[]
-      }
+        type: 'arbitrary-data'
+        signatures: PeraArbitraryDataSignResult[]
+    }
 
 const isTransactionRequest = (
     request: SignRequest,
@@ -63,14 +63,10 @@ export const useSigningRequest = () => {
     const signTransactionRequest = useCallback(
         async (
             request: TransactionSignRequest,
-        ): Promise<PeraSignedTransactionGroup[]> => {
-            return Promise.all(
-                request.txs.map(txs =>
-                    signTransactions(
-                        txs,
-                        request.txs.map((_, idx) => idx),
-                    ),
-                ),
+        ): Promise<PeraSignedTransaction[]> => {
+            return signTransactions(
+                request.txs,
+                request.txs.map((_, idx) => idx),
             )
         },
         [signTransactions],
@@ -127,11 +123,10 @@ export const useSigningRequest = () => {
             if (isTransactionRequest(request)) {
                 const signedTxs = await signTransactionRequest(request)
                 if (request.transport === 'algod') {
-                    signedTxs.forEach(group => {
-                        algokit.client.algod.sendRawTransaction(
-                            encodeSignedTransactions(group),
-                        )
-                    })
+                    const encodedSignedTransactions = encodeSignedTransactions(signedTxs)
+                    algokit.client.algod.sendRawTransaction(
+                        encodedSignedTransactions,
+                    )
                 } else {
                     await request.approve?.(signedTxs)
                 }

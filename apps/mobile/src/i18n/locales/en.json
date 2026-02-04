@@ -679,7 +679,7 @@
             "transactions_count": "{{count}} Transaction(s)"
         },
         "summary": {
-            "payment_to": "Payment to <0>Address</0>",
+            "payment_to": "Payment to",
             "opt_in": "Asset Opt-in for {{asset}} to",
             "opt_out": "Asset Opt-out for {{asset}} from",
             "transfer": "Asset Transfer of {{asset}} to",

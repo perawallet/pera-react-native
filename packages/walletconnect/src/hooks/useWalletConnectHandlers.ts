@@ -253,12 +253,10 @@ export const useWalletConnectHandlers = () => {
                 type: 'transactions',
                 transport: 'callback',
                 transportId: connector.clientId,
-                txs: [txnObjects ?? []],
-                approve: async (signed: (PeraSignedTransaction | null)[][]) => {
-                    const signedTxns = signed.map(txns =>
-                        txns.map(txn =>
-                            txn ? encodeSignedTransaction(txn) : null,
-                        ),
+                txs: txnObjects,
+                approve: async (signed: (PeraSignedTransaction | null)[]) => {
+                    const signedTxns = signed.map(txn =>
+                        txn ? encodeSignedTransaction(txn) : null,
                     )
 
                     if (signedTxns) {

@@ -28,7 +28,6 @@ import { SvgProps } from 'react-native-svg'
 import { useMemo } from 'react'
 import { ContactAvatar } from '@components/ContactAvatar'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
-import { TypographyVariant } from '@theme/typography'
 
 export type AddressDisplayProps = {
     address: string

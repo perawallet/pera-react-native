@@ -10,12 +10,10 @@
  limitations under the License
  */
 
-import { PWButton, PWDivider, PWView } from '@components/core'
+import { PWDivider, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
-import { useNavigation } from '@react-navigation/native'
-import type { StackNavigationProp } from '@react-navigation/stack'
 import { ScrollView } from 'react-native-gesture-handler'
 import { TransactionSummaryHeader } from '@modules/signing/components/TransactionSummaryHeader'
 import { FeeDisplay } from '@modules/signing/components/FeeDisplay'
@@ -33,8 +31,8 @@ export const SingleTransactionScreen = () => {
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
-    const { pendingSignRequests } = useSigningRequest()
-    const request = pendingSignRequests[0] as TransactionSignRequest
+    const { currentRequest } = useSigningRequest()
+    const request = currentRequest as TransactionSignRequest
     const { groups, totalFee } = useSigningRequestAnalysis(request)
 
     const transaction = groups[0]?.[0]
@@ -53,9 +51,9 @@ export const SingleTransactionScreen = () => {
             <PWView style={styles.container}>
                 <TransactionSummaryHeader transaction={transaction} />
 
-                <PWDivider color={theme.colors.layerGray} />
-
                 <SigningWarnings />
+
+                <PWDivider color={theme.colors.layerGray} />
 
                 <FeeDisplay fee={new Decimal(totalFee)} transaction={transaction} />
 

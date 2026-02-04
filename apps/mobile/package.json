@@ -30,6 +30,7 @@
     "@algorandfoundation/xhd-wallet-api": "catalog:",
     "@craftzdog/react-native-buffer": "^6.1.1",
     "@hookform/resolvers": "^5.2.2",
+    "@legendapp/list": "^2.0.19",
     "@notifee/react-native": "^9.1.8",
     "@perawallet/wallet-core-accounts": "workspace:*",
     "@perawallet/wallet-core-assets": "workspace:*",

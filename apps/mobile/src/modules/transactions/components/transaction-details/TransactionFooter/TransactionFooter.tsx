@@ -31,10 +31,6 @@ export const TransactionFooter = ({
     const { network } = useNetwork()
     const { pushWebView } = useWebView()
 
-    if (!transaction.id) {
-        return null
-    }
-
     const explorerUrl = useMemo(() => {
         if (network === Networks.mainnet) {
             return config.mainnetExplorerUrl
@@ -48,6 +44,11 @@ export const TransactionFooter = ({
             id: uuid(),
         })
     }
+
+    if (!transaction.id) {
+        return null
+    }
+
     return (
         <PWView style={styles.container}>
             <PWButton

@@ -16,9 +16,12 @@ import { getFontFamily } from '@theme/theme'
 export const useStyles = makeStyles(theme => ({
     container: {
         alignItems: 'center',
-        gap: theme.spacing.xs,
+        gap: theme.spacing.md,
         paddingVertical: theme.spacing.xl,
         flexGrow: 1,
+    },
+    title: {
+        textAlign: 'center'
     },
     amountValue: {
         color: theme.colors.textMain,

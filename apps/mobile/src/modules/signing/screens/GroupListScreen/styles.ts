@@ -15,9 +15,9 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
+        paddingHorizontal: theme.spacing.xl,
     },
     contentContainer: {
-        paddingHorizontal: theme.spacing.xl,
     },
     groupHeader: {
         alignItems: 'center' as const,
@@ -32,4 +32,7 @@ export const useStyles = makeStyles(theme => ({
     itemSeparator: {
         height: theme.spacing.sm,
     },
+    title: {
+        textAlign: 'center'
+    }
 }))

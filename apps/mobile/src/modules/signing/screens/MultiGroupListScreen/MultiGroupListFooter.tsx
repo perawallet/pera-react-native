@@ -13,14 +13,13 @@
 import { PWDivider } from '@components/core'
 import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
-import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
 import Decimal from 'decimal.js'
 import { SigningWarnings } from '@modules/signing/components/SigningWarnings'
 import { FeeDisplay } from '@modules/signing/components/FeeDisplay'
 import { SigningActionButtons } from '@modules/signing/components/SigningActionButtons'
 
 type MultiGroupListFooterProps = {
-    totalFee: bigint
+    totalFee: Decimal
 }
 
 export const MultiGroupListFooter = ({
@@ -36,7 +35,7 @@ export const MultiGroupListFooter = ({
             <PWDivider color={theme.colors.layerGray} />
 
             <FeeDisplay
-                fee={Decimal(microAlgosToAlgos(totalFee))}
+                fee={totalFee}
                 label={t('transactions.common.total_fee')}
             />
 

@@ -18,6 +18,7 @@ import {
     useSigningRequest,
     useSigningRequestAnalysis,
 } from '@perawallet/wallet-core-signing'
+import Decimal from 'decimal.js'
 
 const mockSignAndSendRequest = vi.fn()
 const mockRejectRequest = vi.fn()
@@ -149,7 +150,7 @@ describe('TransactionSigningView', () => {
         vi.mocked(useSigningRequestAnalysis).mockReturnValue({
             groups: [],
             allTransactions: [],
-            totalFee: 0n,
+            totalFee: Decimal(0),
             warnings: [],
             distinctWarnings: [],
             requestStructure: 'single',

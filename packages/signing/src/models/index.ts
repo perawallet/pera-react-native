@@ -11,8 +11,8 @@
  */
 
 import type {
-    PeraTransactionGroup,
-    PeraSignedTransactionGroup,
+    PeraSignedTransaction,
+    PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { BaseStoreState } from '@perawallet/wallet-core-shared'
 
@@ -32,8 +32,8 @@ type BaseSignRequest = {
 }
 
 export type TransactionSignRequest = {
-    txs: PeraTransactionGroup[]
-    approve?: (signedTxs: PeraSignedTransactionGroup[]) => Promise<void>
+    txs: PeraTransaction[]
+    approve?: (signedTxs: PeraSignedTransaction[]) => Promise<void>
     reject?: () => Promise<void>
     error?: (error: string) => Promise<void>
 } & BaseSignRequest
