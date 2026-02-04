@@ -11,7 +11,7 @@
  */
 
 import { TransactionSignRequest } from '@perawallet/wallet-core-signing'
-import { createNativeStackNavigator } from '@react-navigation/native-stack'
+import { createStackNavigator } from '@react-navigation/stack'
 import { useMemo } from 'react'
 import { SigningStackParamList } from './types'
 import {
@@ -26,7 +26,7 @@ type SigningRoutesProps = {
     request: TransactionSignRequest
 }
 
-const Stack = createNativeStackNavigator<SigningStackParamList>()
+const Stack = createStackNavigator<SigningStackParamList>()
 
 type InitialRouteConfig = {
     name: keyof SigningStackParamList
@@ -59,10 +59,11 @@ export const SigningRoutes = ({ request }: SigningRoutesProps) => {
     return (
         <Stack.Navigator
             initialRouteName={initialRouteConfig.name}
+            detachInactiveScreens={false}
             screenOptions={{
                 headerShown: false,
-                animation: 'slide_from_right',
-                contentStyle: styles.screenContent,
+                cardStyle: styles.screenContent,
+                detachPreviousScreen: false,
             }}
         >
             <Stack.Screen

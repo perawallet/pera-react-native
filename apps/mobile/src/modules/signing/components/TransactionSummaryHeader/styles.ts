@@ -11,6 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { getFontFamily } from '@theme/theme'
 
 export const useStyles = makeStyles(theme => ({
     container: {
@@ -22,4 +23,34 @@ export const useStyles = makeStyles(theme => ({
     amountValue: {
         color: theme.colors.textMain,
     },
+    address: {
+        marginTop: theme.spacing.md / 2, //to fix weird alignment issue
+        flexWrap: 'nowrap',
+        gap: theme.spacing.md,
+    },
+    addressText: {
+        fontFamily: getFontFamily(false, 700),
+        fontSize: 19,
+        color: theme.colors.textMain
+    },
+    typeText: {
+        fontFamily: getFontFamily(false, 400),
+        fontSize: 19,
+        color: theme.colors.textGray
+    },
+    secondaryAmountValue: {
+        color: theme.colors.textGray
+    },
+    amountContainer: {
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+    },
+    assetIconContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+    },
+    assetName: {
+        color: theme.colors.textMain
+    }
 }))

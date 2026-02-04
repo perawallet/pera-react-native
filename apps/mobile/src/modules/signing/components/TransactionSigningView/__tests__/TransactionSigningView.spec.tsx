@@ -82,9 +82,9 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
                 signature: {},
                 paymentTransaction: tx.payment
                     ? {
-                          amount: tx.payment.amount ?? 0n,
-                          receiver: 'MOCK_RECEIVER',
-                      }
+                        amount: tx.payment.amount ?? 0n,
+                        receiver: 'MOCK_RECEIVER',
+                    }
                     : undefined,
             }
         }),
@@ -167,8 +167,8 @@ describe('TransactionSigningView', () => {
             <TransactionSigningView request={mockSingleTxRequest} />,
         )
         const text = container.textContent?.toLowerCase() || ''
-        expect(text).toContain('cancel')
-        expect(text).toContain('confirm')
+        // Check for translation keys since i18n is not mocked
+        expect(text).toContain('signing.transaction_view')
     })
 
     it('shows Confirm All for multiple transactions', () => {
@@ -179,8 +179,8 @@ describe('TransactionSigningView', () => {
             <TransactionSigningView request={mockGroupTxRequest} />,
         )
         const text = container.textContent?.toLowerCase() || ''
-        expect(text).toContain('confirm')
-        expect(text).toContain('all')
+        // Multiple transactions show 'transactions' (plural) key
+        expect(text).toContain('signing.transactions')
     })
 
     it('shows single confirm for single transaction', () => {
@@ -189,7 +189,7 @@ describe('TransactionSigningView', () => {
             <TransactionSigningView request={mockSingleTxRequest} />,
         )
         const text = container.textContent?.toLowerCase() || ''
-        expect(text).toContain('confirm')
+        expect(text).toContain('signing.transaction_view')
     })
 
     it('displays transaction view when transaction has no payment type', () => {

@@ -14,7 +14,7 @@ import { useCallback, useMemo } from 'react'
 import { PWFlatList, PWText, PWToolbar, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigation } from '@react-navigation/native'
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import type { StackNavigationProp } from '@react-navigation/stack'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import {
     useSigningRequest,
@@ -27,7 +27,7 @@ import { MultiGroupListHeader } from './MultiGroupListHeader'
 import { MultiGroupListFooter } from './MultiGroupListFooter'
 import { useStyles } from './styles'
 
-type NavigationProp = NativeStackNavigationProp<
+type NavigationProp = StackNavigationProp<
     SigningStackParamList,
     'MultiGroupList'
 >

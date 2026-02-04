@@ -19,10 +19,12 @@
   "dependencies": {
     "@babel/runtime": "catalog:",
     "@perawallet/wallet-core-accounts": "workspace:*",
+    "@perawallet/wallet-core-assets": "workspace:*",
     "@perawallet/wallet-core-blockchain": "workspace:*",
     "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-platform-integration": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
+    "decimal.js": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "uuid": "catalog:",

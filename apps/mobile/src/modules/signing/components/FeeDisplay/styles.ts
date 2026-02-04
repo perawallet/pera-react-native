@@ -14,10 +14,7 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingVertical: theme.spacing.md,
+        marginTop: theme.spacing.xs
     },
     label: {
         color: theme.colors.textGray,
@@ -25,4 +22,13 @@ export const useStyles = makeStyles(theme => ({
     value: {
         color: theme.colors.helperNegative,
     },
+    transactionDetails: {
+        alignSelf: 'flex-start',
+        marginVertical: theme.spacing.md
+    },
+    feeContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    }
 }))

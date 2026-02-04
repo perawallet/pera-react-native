@@ -28,6 +28,7 @@ import { SvgProps } from 'react-native-svg'
 import { useMemo } from 'react'
 import { ContactAvatar } from '@components/ContactAvatar'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
+import { TypographyVariant } from '@theme/typography'
 
 export type AddressDisplayProps = {
     address: string
@@ -85,13 +86,13 @@ export const AddressDisplay = ({
         addressFormat === 'full'
             ? address
             : addressFormat === 'long'
-              ? truncateAlgorandAddress(address, LONG_ADDRESS_FORMAT)
-              : truncateAlgorandAddress(address)
+                ? truncateAlgorandAddress(address, LONG_ADDRESS_FORMAT)
+                : truncateAlgorandAddress(address)
 
     return (
         <PWView
             {...rest}
-            style={[rest.style, styles.addressValueContainer]}
+            style={[styles.addressValueContainer, rest.style]}
         >
             {!!account && (
                 <AccountDisplay
@@ -100,6 +101,7 @@ export const AddressDisplay = ({
                         width: theme.spacing.xl,
                         height: theme.spacing.xl,
                     }}
+                    textProps={textProps}
                     showChevron={false}
                 />
             )}
@@ -110,7 +112,7 @@ export const AddressDisplay = ({
                         size='small'
                         contact={contact}
                     />
-                    <PWText>{contact.name}</PWText>
+                    <PWText {...textProps} >{contact.name}</PWText>
                 </PWView>
             )}
 

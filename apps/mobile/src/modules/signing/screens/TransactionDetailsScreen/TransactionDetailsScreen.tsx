@@ -17,14 +17,14 @@ import {
     useRoute,
     type RouteProp,
 } from '@react-navigation/native'
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import type { StackNavigationProp } from '@react-navigation/stack'
 import { ScrollView } from 'react-native-gesture-handler'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { TransactionDisplay } from '@modules/transactions/components/TransactionDisplay'
 import type { SigningStackParamList } from '@modules/signing/routes'
 import { useStyles } from './styles'
 
-type NavigationProp = NativeStackNavigationProp<
+type NavigationProp = StackNavigationProp<
     SigningStackParamList,
     'TransactionDetails'
 >
@@ -54,7 +54,7 @@ export const TransactionDetailsScreen = () => {
                 }
                 left={
                     navigation.canGoBack() ? (
-                        <PWIcon name='chevron-left' />
+                        <PWIcon name='chevron-left' onPress={navigation.goBack} />
                     ) : undefined
                 }
             />

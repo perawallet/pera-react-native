@@ -15,7 +15,7 @@ import { EmptyView } from '@components/EmptyView'
 import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigation } from '@react-navigation/native'
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import type { StackNavigationProp } from '@react-navigation/stack'
 import { ScrollView } from 'react-native-gesture-handler'
 import { TransactionSummaryHeader } from '@modules/signing/components/TransactionSummaryHeader'
 import { FeeDisplay } from '@modules/signing/components/FeeDisplay'
@@ -25,18 +25,14 @@ import {
     useSigningRequestAnalysis,
     type TransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
-import type { SigningStackParamList } from '@modules/signing/routes'
 import { useStyles } from './styles'
 import Decimal from 'decimal.js'
 import { SigningActionButtons } from '@modules/signing/components/SigningActionButtons'
-
-type NavigationProp = NativeStackNavigationProp<SigningStackParamList>
 
 export const SingleTransactionScreen = () => {
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
-    const navigation = useNavigation<NavigationProp>()
     const { pendingSignRequests } = useSigningRequest()
     const request = pendingSignRequests[0] as TransactionSignRequest
     const { groups, totalFee } = useSigningRequestAnalysis(request)
@@ -52,10 +48,6 @@ export const SingleTransactionScreen = () => {
         )
     }
 
-    const handleViewDetails = () => {
-        navigation.navigate('TransactionDetails', { transaction })
-    }
-
     return (
         <ScrollView contentContainerStyle={styles.contentContainer}>
             <PWView style={styles.container}>
@@ -63,13 +55,9 @@ export const SingleTransactionScreen = () => {
 
                 <PWDivider color={theme.colors.layerGray} />
 
-                <PWButton variant='link' title={t('signing.view_details')} iconRight='chevron-right' onPress={handleViewDetails} />
-
-                <PWDivider color={theme.colors.layerGray} />
-
-                <FeeDisplay fee={new Decimal(totalFee)} />
-
                 <SigningWarnings />
+
+                <FeeDisplay fee={new Decimal(totalFee)} transaction={transaction} />
 
                 <SigningActionButtons />
             </PWView>

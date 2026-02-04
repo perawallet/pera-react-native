@@ -83,9 +83,9 @@ export const SigningActionButtons = () => {
     }, [request, rejectRequest])
 
     return (
-        <>
+        <PWView style={styles.container}>
             <PWDivider color={theme.colors.layerGray} />
-            <PWView style={styles.container}>
+            <PWView style={styles.buttonContainer}>
                 <PWButton
                     title={t('common.cancel.label')}
                     variant='secondary'
@@ -105,6 +105,6 @@ export const SigningActionButtons = () => {
                     style={styles.button}
                 />
             </PWView>
-        </>
+        </PWView>
     )
 }

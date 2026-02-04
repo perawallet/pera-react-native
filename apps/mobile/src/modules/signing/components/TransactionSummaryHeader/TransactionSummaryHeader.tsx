@@ -23,6 +23,8 @@ import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import Decimal from 'decimal.js'
 import { useStyles } from './styles'
+import { PaymentTransactionSummaryHeader } from './PaymentTransactionSummaryHeader'
+import { AssetTransferSummaryHeader } from './AssetTransferSummaryHeader'
 
 export type TransactionSummaryHeaderProps = {
     transaction: PeraDisplayableTransaction
@@ -51,25 +53,9 @@ export const TransactionSummaryHeader = ({
                     type={txType}
                     size='lg'
                 />
-                <PWText variant='h3'>
-                    {t(`transactions.type.${transaction.txType}`)}
-                </PWText>
-                <PWText variant='h3'>
-                    NEEDS WORK
-                </PWText>
-                <CurrencyDisplay
-                    currency='ALGO'
-                    precision={ALGO_ASSET.decimals}
-                    minPrecision={DEFAULT_PRECISION}
-                    value={Decimal(
-                        microAlgosToAlgos(
-                            transaction.paymentTransaction?.amount ?? 0n,
-                        ),
-                    )}
-                    showSymbol
-                    variant='h1'
-                    style={styles.amountValue}
-                />
+
+                {txType === 'payment' && <PaymentTransactionSummaryHeader transaction={transaction} />}
+                {(txType === 'asset-transfer' || txType === 'asset-opt-in' || txType === 'asset-opt-out' || txType === 'asset-clawback') && <AssetTransferSummaryHeader transaction={transaction} />}
             </PWView>
         </>
     )

@@ -19,7 +19,7 @@ import {
     useRoute,
     type RouteProp,
 } from '@react-navigation/native'
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import type { StackNavigationProp } from '@react-navigation/stack'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import {
     useSigningRequest,
@@ -31,7 +31,7 @@ import { GroupListHeader } from './GroupListHeader'
 import { GroupListFooter } from './GroupListFooter'
 import { useStyles } from './styles'
 
-type NavigationProp = NativeStackNavigationProp<
+type NavigationProp = StackNavigationProp<
     SigningStackParamList,
     'GroupList'
 >

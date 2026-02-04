@@ -22,20 +22,20 @@ const makeTx = (fee?: bigint): PeraDisplayableTransaction =>
 
 describe('calculateTotalFee', () => {
     test('returns 0n for empty array', () => {
-        expect(calculateTotalFee([])).toBe(0n)
+        expect(calculateTotalFee([], new Set())).toBe(0n)
     })
 
     test('sums fees from multiple transactions', () => {
         const txs = [makeTx(1000n), makeTx(2000n), makeTx(3000n)]
-        expect(calculateTotalFee(txs)).toBe(6000n)
+        expect(calculateTotalFee(txs, new Set(['ADDR1']))).toBe(6000n)
     })
 
     test('treats undefined fee as 0n', () => {
         const txs = [makeTx(1000n), makeTx(undefined), makeTx(2000n)]
-        expect(calculateTotalFee(txs)).toBe(3000n)
+        expect(calculateTotalFee(txs, new Set(['ADDR1']))).toBe(3000n)
     })
 
     test('handles single transaction', () => {
-        expect(calculateTotalFee([makeTx(500n)])).toBe(500n)
+        expect(calculateTotalFee([makeTx(500n)], new Set(['ADDR1']))).toBe(500n)
     })
 })

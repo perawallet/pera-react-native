@@ -17,7 +17,7 @@ import {
 } from '@tanstack/react-query-persist-client'
 import { OmitKeyof, QueryCache, QueryClient } from '@tanstack/react-query'
 import { config } from '@perawallet/wallet-core-config'
-import { logger } from '@perawallet/wallet-core-shared'
+import { ApiError, logger } from '@perawallet/wallet-core-shared'
 
 const cache = new QueryCache({
     onError: error => {
@@ -25,13 +25,14 @@ const cache = new QueryCache({
         //TODO should we throw here?
     },
 })
+
 const queryClient = new QueryClient({
     queryCache: cache,
     defaultOptions: {
         queries: {
             gcTime: config.reactQueryDefaultGCTime,
             staleTime: config.reactQueryDefaultStaleTime,
-            retry: 2,
+            retry: 0, //ky handles retries
         },
         mutations: {
             throwOnError: true,

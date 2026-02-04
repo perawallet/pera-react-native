@@ -11,7 +11,7 @@
  */
 
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import type { NativeStackScreenProps } from '@react-navigation/native-stack'
+import type { StackScreenProps } from '@react-navigation/stack'
 
 export type SigningStackParamList = {
     SingleTransaction: undefined
@@ -21,4 +21,4 @@ export type SigningStackParamList = {
 }
 
 export type SigningStackScreenProps<T extends keyof SigningStackParamList> =
-    NativeStackScreenProps<SigningStackParamList, T>
+    StackScreenProps<SigningStackParamList, T>

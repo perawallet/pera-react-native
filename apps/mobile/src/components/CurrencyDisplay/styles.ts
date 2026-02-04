@@ -15,7 +15,7 @@ import { CurrencyDisplayProps } from './CurrencyDisplay'
 
 export const useStyles = makeStyles((theme, props: CurrencyDisplayProps) => {
     const variantSizes = {
-        h1: theme.spacing['3xl'],
+        h1: theme.spacing.xxl,
         h2: theme.spacing.xxl,
         h3: theme.spacing.xl,
         h4: theme.spacing.lg,

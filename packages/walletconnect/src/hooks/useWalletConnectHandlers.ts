@@ -83,6 +83,10 @@ const validateRequest = (
         ((network === Networks.mainnet && chainId !== 416001) ||
             (network === Networks.testnet && chainId !== 416002))
     ) {
+        logger.debug('Invalid network', {
+            clientId: connector.clientId,
+            connections,
+        })
         throw new WalletConnectInvalidNetworkError()
     }
 
@@ -228,6 +232,8 @@ export const useWalletConnectHandlers = () => {
             error: Error | null,
             payload: WalletConnectTransactionPayload | null,
         ) => {
+
+            logger.debug('handleSignTransaction', { payload, network })
             validateRequest(connector, connections, network, error)
             const paramOne = payload?.params?.at(0)
             if (!payload || !paramOne) {
