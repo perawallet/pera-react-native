@@ -14,7 +14,6 @@ import { PWView } from '@components/core'
 import { SigningRoutes } from '@modules/signing/routes'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
 import { NavigationContainer, NavigationIndependentTree } from '@react-navigation/native'
-import { SigningActionButtons } from '../SigningActionButtons'
 import { useStyles } from './styles'
 
 export type TransactionSigningViewProps = {
