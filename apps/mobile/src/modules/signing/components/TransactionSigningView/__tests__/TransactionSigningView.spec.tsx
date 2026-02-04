@@ -13,8 +13,8 @@
 import { render, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { TransactionSigningView } from '../TransactionSigningView'
-import type {
-    TransactionSignRequest,
+import {
+    type TransactionSignRequest,
     useSigningRequest,
     useSigningRequestAnalysis,
 } from '@perawallet/wallet-core-signing'
@@ -82,9 +82,9 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
                 signature: {},
                 paymentTransaction: tx.payment
                     ? {
-                          amount: tx.payment.amount ?? 0n,
-                          receiver: 'MOCK_RECEIVER',
-                      }
+                        amount: tx.payment.amount ?? 0n,
+                        receiver: 'MOCK_RECEIVER',
+                    }
                     : undefined,
             }
         }),
