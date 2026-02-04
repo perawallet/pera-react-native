@@ -36,18 +36,20 @@ import { useStyles } from './styles'
 type WarningItemProps = {
     warning: TransactionWarning
     showDivider: boolean
+    isGroup: boolean
 }
 
-const WarningItem = ({ warning, showDivider }: WarningItemProps) => {
+const WarningItem = ({ warning, showDivider, isGroup }: WarningItemProps) => {
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
 
     const isClose = warning.type === 'close'
+    const isRekey = warning.type === 'rekey'
     const icon = isClose ? 'trash' : 'rekey'
     const messageKey = isClose
-        ? 'transactions.warning.close_warning'
-        : 'transactions.warning.rekey_warning'
+        ? isGroup ? 'transactions.warning.close_group_warning' : 'transactions.warning.close_warning'
+        : isGroup ? 'transactions.warning.rekey_group_warning' : 'transactions.warning.rekey_warning'
 
     return (
         <>
@@ -73,7 +75,7 @@ const WarningItem = ({ warning, showDivider }: WarningItemProps) => {
                                 ),
                             })}
                         </PWText>
-                        {!isClose && (
+                        {isRekey && (
                             <PWText variant='h4'>
                                 {t('transactions.warning.rekey_warning_bold')}
                             </PWText>
@@ -102,10 +104,10 @@ export const SigningWarnings = () => {
     const { t } = useLanguage()
     const { pendingSignRequests } = useSigningRequest()
     const request = pendingSignRequests[0] as TransactionSignRequest
-    const { warnings } = useSigningRequestAnalysis(request)
+    const { distinctWarnings, warnings } = useSigningRequestAnalysis(request)
     const { isOpen, open, close } = useModalState()
 
-    if (warnings.length === 0) {
+    if (distinctWarnings.length === 0) {
         return null
     }
 
@@ -149,11 +151,12 @@ export const SigningWarnings = () => {
                             }
                         />
 
-                        {warnings.map((warning, index) => (
+                        {distinctWarnings.map((warning, index) => (
                             <WarningItem
                                 key={`${warning.type}-${warning.senderAddress}-${warning.targetAddress}`}
                                 warning={warning}
                                 showDivider={index > 0}
+                                isGroup={warnings.length !== distinctWarnings.length}
                             />
                         ))}
                     </PWView>

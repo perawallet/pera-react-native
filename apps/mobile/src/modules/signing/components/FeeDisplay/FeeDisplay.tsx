@@ -15,6 +15,8 @@ import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { useLanguage } from '@hooks/useLanguage'
 import Decimal from 'decimal.js'
 import { useStyles } from './styles'
+import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 
 export type FeeDisplayProps = {
     fee: Decimal
@@ -32,8 +34,8 @@ export const FeeDisplay = ({ fee, label }: FeeDisplayProps) => {
             </PWText>
             <CurrencyDisplay
                 currency='ALGO'
-                precision={6}
-                minPrecision={2}
+                precision={ALGO_ASSET.decimals}
+                minPrecision={DEFAULT_PRECISION}
                 value={fee}
                 showSymbol
                 style={styles.value}

@@ -36,19 +36,28 @@ export const useSigningRequestAnalysis = (request: TransactionSignRequest) => {
 
     const allTransactions = useMemo(() => groups.flat(), [groups])
 
-    const totalFee = useMemo(
-        () => calculateTotalFee(allTransactions),
-        [allTransactions],
-    )
-
     const signableAddresses = useMemo(
         () => new Set(accounts.filter(a => a.canSign).map(a => a.address)),
         [accounts],
     )
 
+    const totalFee = useMemo(
+        () => calculateTotalFee(allTransactions, signableAddresses),
+        [allTransactions, signableAddresses],
+    )
+
     const warnings = useMemo(
         () => aggregateTransactionWarnings(allTransactions, signableAddresses),
         [allTransactions, signableAddresses],
+    )
+
+    const distinctWarnings = useMemo(
+        () =>
+            warnings.filter(
+                (warning, index) =>
+                    warnings.findIndex(w => w.type === warning.type) === index,
+            ),
+        [warnings],
     )
 
     const requestStructure = useMemo(
@@ -61,6 +70,7 @@ export const useSigningRequestAnalysis = (request: TransactionSignRequest) => {
         allTransactions,
         totalFee,
         warnings,
+        distinctWarnings,
         requestStructure,
     }
 }

@@ -17,6 +17,7 @@ import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
 import Decimal from 'decimal.js'
 import { SigningWarnings } from '@modules/signing/components/SigningWarnings'
 import { FeeDisplay } from '@modules/signing/components/FeeDisplay'
+import { SigningActionButtons } from '@modules/signing/components/SigningActionButtons'
 
 type GroupListFooterProps = {
     fee: bigint
@@ -36,6 +37,8 @@ export const GroupListFooter = ({ fee }: GroupListFooterProps) => {
                 fee={Decimal(microAlgosToAlgos(fee))}
                 label={t('transactions.common.total_fee')}
             />
+
+            <SigningActionButtons />
         </>
     )
 }

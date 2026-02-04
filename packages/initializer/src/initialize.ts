@@ -28,11 +28,11 @@ import { registerSwapsStore } from '@perawallet/wallet-core-swaps'
 import { registerWalletConnectStore } from '@perawallet/wallet-core-walletconnect'
 
 export const registerDataStores = () => {
+    registerSigningStore()
     registerAccountsStore()
     registerAssetsStore()
     registerBlockchainStore()
     registerContactsStore()
-    registerSigningStore()
     registerCurrenciesStore()
     registerKeyManagerStore()
     registerDeviceStore()

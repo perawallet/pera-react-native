@@ -14,4 +14,10 @@ import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockch
 
 export const calculateTotalFee = (
     transactions: PeraDisplayableTransaction[],
-): bigint => transactions.reduce((sum, tx) => sum + (tx.fee ?? 0n), 0n)
+    signableAddresses: Set<string>,
+): bigint =>
+    transactions.reduce(
+        (sum, tx) =>
+            signableAddresses.has(tx.sender) ? sum + (tx.fee ?? 0n) : sum,
+        0n,
+    )

@@ -82,9 +82,9 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
                 signature: {},
                 paymentTransaction: tx.payment
                     ? {
-                        amount: tx.payment.amount ?? 0n,
-                        receiver: 'MOCK_RECEIVER',
-                    }
+                          amount: tx.payment.amount ?? 0n,
+                          receiver: 'MOCK_RECEIVER',
+                      }
                     : undefined,
             }
         }),
@@ -151,6 +151,7 @@ describe('TransactionSigningView', () => {
             allTransactions: [],
             totalFee: 0n,
             warnings: [],
+            distinctWarnings: [],
             requestStructure: 'single',
             ...analysisOverrides,
         } as ReturnType<typeof useSigningRequestAnalysis>)

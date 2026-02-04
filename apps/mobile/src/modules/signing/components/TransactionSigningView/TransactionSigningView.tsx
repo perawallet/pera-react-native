@@ -10,8 +10,12 @@
  limitations under the License
  */
 
+import { PWView } from '@components/core'
+import { SigningRoutes } from '@modules/signing/routes'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
-import { SigningBottomSheetNavigator } from '../SigningBottomSheetNavigator'
+import { NavigationContainer, NavigationIndependentTree } from '@react-navigation/native'
+import { SigningActionButtons } from '../SigningActionButtons'
+import { useStyles } from './styles'
 
 export type TransactionSigningViewProps = {
     request: TransactionSignRequest
@@ -20,5 +24,13 @@ export type TransactionSigningViewProps = {
 export const TransactionSigningView = ({
     request,
 }: TransactionSigningViewProps) => {
-    return <SigningBottomSheetNavigator request={request} />
+    const styles = useStyles()
+
+    return <PWView style={styles.container}>
+        <NavigationIndependentTree>
+            <NavigationContainer>
+                <SigningRoutes request={request} />
+            </NavigationContainer>
+        </NavigationIndependentTree>
+    </PWView>
 }

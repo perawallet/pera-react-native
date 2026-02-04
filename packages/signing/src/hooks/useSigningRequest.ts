@@ -172,6 +172,7 @@ export const useSigningRequest = () => {
 
     return {
         pendingSignRequests,
+        currentRequest: pendingSignRequests?.at(0),
         addSignRequest,
         removeSignRequest,
         signRequest,

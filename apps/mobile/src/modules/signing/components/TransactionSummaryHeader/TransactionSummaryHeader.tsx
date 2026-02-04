@@ -54,6 +54,9 @@ export const TransactionSummaryHeader = ({
                 <PWText variant='h3'>
                     {t(`transactions.type.${transaction.txType}`)}
                 </PWText>
+                <PWText variant='h3'>
+                    NEEDS WORK
+                </PWText>
                 <CurrencyDisplay
                     currency='ALGO'
                     precision={ALGO_ASSET.decimals}

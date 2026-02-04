@@ -10,5 +10,11 @@
  limitations under the License
  */
 
-export { ViewDetailsButton } from './ViewDetailsButton'
-export type { ViewDetailsButtonProps } from './ViewDetailsButton'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(() => ({
+    container: {
+        flex: 1,
+        minHeight: 500,
+    },
+}))

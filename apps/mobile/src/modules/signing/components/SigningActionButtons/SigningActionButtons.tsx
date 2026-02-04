@@ -11,7 +11,7 @@
  */
 
 import { useState, useCallback } from 'react'
-import { PWButton, PWView, bottomSheetNotifier } from '@components/core'
+import { PWButton, PWDivider, PWView, bottomSheetNotifier } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import {
@@ -21,6 +21,7 @@ import {
 } from '@perawallet/wallet-core-signing'
 import { config } from '@perawallet/wallet-core-config'
 import { useStyles } from './styles'
+import { useTheme } from '@rneui/themed'
 
 export const SigningActionButtons = () => {
     const styles = useStyles()
@@ -28,12 +29,16 @@ export const SigningActionButtons = () => {
     const { showToast } = useToast()
     const [isLoading, setIsLoading] = useState(false)
 
-    const { pendingSignRequests, signAndSendRequest, rejectRequest } =
+    const { currentRequest, signAndSendRequest, rejectRequest } =
         useSigningRequest()
-    const request = pendingSignRequests[0] as TransactionSignRequest
+    const request = currentRequest as TransactionSignRequest
     const { allTransactions } = useSigningRequestAnalysis(request)
+    const { theme } = useTheme()
 
     const handleSignAndSend = useCallback(async () => {
+        if (!request) {
+            return
+        }
         setIsLoading(true)
         try {
             await signAndSendRequest(request)
@@ -55,8 +60,8 @@ export const SigningActionButtons = () => {
                         body: config.debugEnabled
                             ? `${error}`
                             : t(
-                                  'signing.transaction_view.transaction_failed_body',
-                              ),
+                                'signing.transaction_view.transaction_failed_body',
+                            ),
                     },
                     {
                         notifier: bottomSheetNotifier.current ?? undefined,
@@ -71,29 +76,35 @@ export const SigningActionButtons = () => {
     }, [request, signAndSendRequest, showToast, t])
 
     const handleReject = useCallback(() => {
+        if (!request) {
+            return
+        }
         rejectRequest(request)
     }, [request, rejectRequest])
 
     return (
-        <PWView style={styles.container}>
-            <PWButton
-                title={t('common.cancel.label')}
-                variant='secondary'
-                onPress={handleReject}
-                isDisabled={isLoading}
-                style={styles.button}
-            />
-            <PWButton
-                title={
-                    allTransactions.length > 1
-                        ? t('common.confirm_all.label')
-                        : t('common.confirm.label')
-                }
-                variant='primary'
-                onPress={handleSignAndSend}
-                isLoading={isLoading}
-                style={styles.button}
-            />
-        </PWView>
+        <>
+            <PWDivider color={theme.colors.layerGray} />
+            <PWView style={styles.container}>
+                <PWButton
+                    title={t('common.cancel.label')}
+                    variant='secondary'
+                    onPress={handleReject}
+                    isDisabled={isLoading}
+                    style={styles.button}
+                />
+                <PWButton
+                    title={
+                        allTransactions.length > 1
+                            ? t('common.confirm_all.label')
+                            : t('common.confirm.label')
+                    }
+                    variant='primary'
+                    onPress={handleSignAndSend}
+                    isLoading={isLoading}
+                    style={styles.button}
+                />
+            </PWView>
+        </>
     )
 }

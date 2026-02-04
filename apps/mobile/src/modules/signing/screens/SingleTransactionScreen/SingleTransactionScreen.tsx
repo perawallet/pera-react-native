@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWDivider, PWView } from '@components/core'
+import { PWButton, PWDivider, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
@@ -18,7 +18,6 @@ import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { ScrollView } from 'react-native-gesture-handler'
 import { TransactionSummaryHeader } from '@modules/signing/components/TransactionSummaryHeader'
-import { ViewDetailsButton } from '@modules/signing/components/ViewDetailsButton'
 import { FeeDisplay } from '@modules/signing/components/FeeDisplay'
 import { SigningWarnings } from '@modules/signing/components/SigningWarnings'
 import {
@@ -29,6 +28,7 @@ import {
 import type { SigningStackParamList } from '@modules/signing/routes'
 import { useStyles } from './styles'
 import Decimal from 'decimal.js'
+import { SigningActionButtons } from '@modules/signing/components/SigningActionButtons'
 
 type NavigationProp = NativeStackNavigationProp<SigningStackParamList>
 
@@ -63,13 +63,15 @@ export const SingleTransactionScreen = () => {
 
                 <PWDivider color={theme.colors.layerGray} />
 
-                <ViewDetailsButton onPress={handleViewDetails} />
+                <PWButton variant='link' title={t('signing.view_details')} iconRight='chevron-right' onPress={handleViewDetails} />
 
                 <PWDivider color={theme.colors.layerGray} />
 
                 <FeeDisplay fee={new Decimal(totalFee)} />
 
                 <SigningWarnings />
+
+                <SigningActionButtons />
             </PWView>
         </ScrollView>
     )
