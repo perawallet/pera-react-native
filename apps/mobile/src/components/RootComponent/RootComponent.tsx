@@ -24,7 +24,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ErrorBoundary from 'react-native-error-boundary'
 import { useToast } from '@hooks/useToast'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
-import { SigningProvider } from '@modules/transactions/providers/SigningProvider'
+import { SigningProvider } from '@modules/signing/providers/SigningProvider'
 import {
     useDevice,
     useNetwork,

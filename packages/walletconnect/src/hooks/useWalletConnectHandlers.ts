@@ -250,7 +250,9 @@ export const useWalletConnectHandlers = () => {
                 txs: [txnObjects ?? []],
                 approve: async (signed: (PeraSignedTransaction | null)[][]) => {
                     const signedTxns = signed.map(txns =>
-                        txns.map(txn => (txn ? encodeSignedTransaction(txn) : null)),
+                        txns.map(txn =>
+                            txn ? encodeSignedTransaction(txn) : null,
+                        ),
                     )
 
                     if (signedTxns) {
