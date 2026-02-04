@@ -55,45 +55,37 @@ export const ReceiveFundsBottomSheet = ({
             innerContainerStyle={styles.container}
         >
             <TransactionErrorBoundary t={t}>
-                {account ? (
-                    <PWView style={styles.tabItem}>
-                        <ReceiveFundsQRView
-                            account={selectedAccount}
-                            onClose={handleClose}
-                        />
-                    </PWView>
-                ) : (
-                    <Tab.Navigator
-                        screenOptions={{
-                            swipeEnabled: false,
-                        }}
-                    >
-                        <Tab.Screen name='AccountSelection'>
-                            {({ navigation }) => (
-                                <PWView style={styles.tabItem}>
-                                    <ReceiveFundsAccountSelectionView
-                                        onSelected={acc => {
-                                            setSelectedAccount(acc)
-                                            navigation.navigate('QRView')
-                                        }}
-                                        onClose={handleClose}
-                                    />
-                                </PWView>
-                            )}
-                        </Tab.Screen>
-                        <Tab.Screen name='QRView'>
-                            {({ navigation }) => (
-                                <PWView style={styles.tabItem}>
-                                    <ReceiveFundsQRView
-                                        account={selectedAccount}
-                                        onClose={handleClose}
-                                        onBack={() => navigation.goBack()}
-                                    />
-                                </PWView>
-                            )}
-                        </Tab.Screen>
-                    </Tab.Navigator>
-                )}
+                <Tab.Navigator
+                    screenOptions={{
+                        swipeEnabled: false,
+                    }}
+                    initialRouteName={account ? 'QRView' : 'AccountSelection'}
+                >
+                    <Tab.Screen name='AccountSelection'>
+                        {({ navigation }) => (
+                            <PWView style={styles.tabItem}>
+                                <ReceiveFundsAccountSelectionView
+                                    onSelected={acc => {
+                                        setSelectedAccount(acc)
+                                        navigation.navigate('QRView')
+                                    }}
+                                    onClose={handleClose}
+                                />
+                            </PWView>
+                        )}
+                    </Tab.Screen>
+                    <Tab.Screen name='QRView'>
+                        {({ navigation }) => (
+                            <PWView style={styles.tabItem}>
+                                <ReceiveFundsQRView
+                                    account={selectedAccount}
+                                    onClose={handleClose}
+                                    onBack={() => navigation.goBack()}
+                                />
+                            </PWView>
+                        )}
+                    </Tab.Screen>
+                </Tab.Navigator>
             </TransactionErrorBoundary>
         </PWBottomSheet>
     )

@@ -34,6 +34,7 @@ export const useStyles = makeStyles(theme => {
         buttonContainer: {
             gap: theme.spacing.md,
             marginTop: theme.spacing.xl,
+            paddingHorizontal: theme.spacing.lg,
         },
         address: {
             color: theme.colors.textGray,
