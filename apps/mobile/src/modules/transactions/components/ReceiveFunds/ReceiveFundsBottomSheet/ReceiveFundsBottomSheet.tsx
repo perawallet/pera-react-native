@@ -59,6 +59,7 @@ export const ReceiveFundsBottomSheet = ({
                     screenOptions={{
                         swipeEnabled: false,
                     }}
+                    tabBarHidden
                     initialRouteName={account ? 'QRView' : 'AccountSelection'}
                 >
                     <Tab.Screen name='AccountSelection'>

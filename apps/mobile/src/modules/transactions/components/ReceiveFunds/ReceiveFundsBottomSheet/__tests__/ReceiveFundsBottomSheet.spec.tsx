@@ -52,8 +52,14 @@ vi.mock('@components/core', () => ({
     PWTabView: {
         createNavigator: () => ({
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            Navigator: ({ children }: any) => (
-                <div data-testid='tab-navigator'>{children}</div>
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            Navigator: ({ children, tabBarHidden }: any) => (
+                <div
+                    data-testid='tab-navigator'
+                    data-hidden-tabs={String(!!tabBarHidden)}
+                >
+                    {children}
+                </div>
             ),
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             Screen: ({ children }: any) => (
@@ -138,7 +144,7 @@ describe('ReceiveFundsBottomSheet', () => {
         expect(screen.getByTestId('tab-navigator')).toBeTruthy()
     })
 
-    it('renders QR view directly when account is provided', () => {
+    it('renders QR view and tab navigator when account is provided', () => {
         render(
             <ReceiveFundsBottomSheet
                 account={mockAccount}
@@ -148,20 +154,9 @@ describe('ReceiveFundsBottomSheet', () => {
         )
 
         expect(screen.getByTestId('qr-view')).toBeTruthy()
-        expect(screen.queryByTestId('tab-navigator')).toBeFalsy()
-    })
-
-    it('does not render tab navigator when account is provided to avoid single-route error', () => {
-        render(
-            <ReceiveFundsBottomSheet
-                account={mockAccount}
-                isVisible={true}
-                onClose={mockOnClose}
-            />,
-        )
-
-        // Verify tab navigator is not rendered when account is provided
-        // This prevents the "outputRange must have at least 2 elements" error
-        expect(screen.queryByTestId('tab-navigator')).toBeFalsy()
+        expect(screen.getByTestId('tab-navigator')).toBeTruthy()
+        expect(
+            screen.getByTestId('tab-navigator').getAttribute('data-hidden-tabs'),
+        ).toBe('true')
     })
 })
