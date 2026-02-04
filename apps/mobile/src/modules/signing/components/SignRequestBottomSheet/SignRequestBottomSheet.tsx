@@ -10,16 +10,14 @@
  limitations under the License
  */
 
-import React, { PropsWithChildren, useEffect } from 'react'
+import React, { useEffect } from 'react'
 import { PWBottomSheet } from '@components/core'
 import { SignRequestView } from '@modules/signing/components/SignRequestView'
 import { useWindowDimensions } from 'react-native'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 
-export type SigningProviderProps = {} & PropsWithChildren
-
-export function SigningProvider({ children }: SigningProviderProps) {
+export function SignRequestBottomSheet() {
     const { pendingSignRequests } = useSigningRequest()
     const nextRequest = pendingSignRequests.at(0)
     const { height } = useWindowDimensions()
@@ -37,14 +35,11 @@ export function SigningProvider({ children }: SigningProviderProps) {
     }, [pendingSignRequests])
 
     return (
-        <>
-            {children}
-            <PWBottomSheet
-                innerContainerStyle={{ height: height - 100 }}
-                isVisible={isVisible}
-            >
-                {!!nextRequest && <SignRequestView request={nextRequest} />}
-            </PWBottomSheet>
-        </>
+        <PWBottomSheet
+            innerContainerStyle={{ height: height - 100 }}
+            isVisible={isVisible}
+        >
+            {!!nextRequest && <SignRequestView request={nextRequest} />}
+        </PWBottomSheet>
     )
 }

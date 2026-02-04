@@ -24,7 +24,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ErrorBoundary from 'react-native-error-boundary'
 import { useToast } from '@hooks/useToast'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
-import { SigningProvider } from '@modules/signing/providers/SigningProvider'
 import {
     useDevice,
     useNetwork,
@@ -37,6 +36,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
 import { useTokenListener } from '@modules/token'
 import { AutoLockGuard } from '@modules/security/components/AutoLockGuard/AutoLockGuard'
+import { SignRequestBottomSheet } from '@modules/signing/components/SignRequestBottomSheet/SignRequestBottomSheet'
 
 export type RootComponentProps = {
     fcmToken: string | null
@@ -136,12 +136,11 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     return (
         <ThemeProvider theme={theme}>
             <AutoLockGuard>
-                <SigningProvider>
-                    <WalletConnectProvider>
-                        <RootContentContainer fcmToken={fcmToken} />
-                        <WebViewOverlay />
-                    </WalletConnectProvider>
-                </SigningProvider>
+                <WalletConnectProvider>
+                    <RootContentContainer fcmToken={fcmToken} />
+                    <WebViewOverlay />
+                </WalletConnectProvider>
+                <SignRequestBottomSheet />
             </AutoLockGuard>
         </ThemeProvider>
     )
