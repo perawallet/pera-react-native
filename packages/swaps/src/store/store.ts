@@ -21,7 +21,6 @@ import {
 import {
     createLazyStore,
     DataStoreRegistry,
-    logger,
 } from '@perawallet/wallet-core-shared'
 
 const STORE_NAME = 'swaps-store'
@@ -46,7 +45,7 @@ const createSwapsStore = (storage: KeyValueStorageService) =>
                 resetState: () => set(initialState),
             }),
             {
-                name: 'swaps-store',
+                name: STORE_NAME,
                 storage: createJSONStorage(() => storage),
                 version: 1,
                 partialize: state => ({
@@ -58,11 +57,9 @@ const createSwapsStore = (storage: KeyValueStorageService) =>
     )
 
 export const initSwapsStore = () => {
-    logger.debug('Initializing swaps store')
     const storage = useKeyValueStorageService()
     const realStore = createSwapsStore(storage)
     lazy.init(realStore, () => realStore.getState().resetState())
-    logger.debug('Swaps store initialized')
 }
 
 export const clearSwapsStore = () => lazy.clear()

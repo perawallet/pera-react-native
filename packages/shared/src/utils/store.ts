@@ -11,6 +11,7 @@
  */
 
 import { UseBoundStore, StoreApi, ExtractState } from 'zustand'
+import { logger } from './logging'
 
 export interface LazyStore<T extends StoreApi<unknown>> {
     useStore: UseBoundStore<T>
@@ -61,14 +62,18 @@ export function createLazyStore<T extends StoreApi<unknown>>(name: string): Lazy
     return {
         useStore,
         init(realStore, resetState) {
+            logger.debug(`Initializing zustand store ${name}`)
             store = realStore
             resetStateFn = resetState
+            logger.debug(`Store ${name} initialized: ${!!store}`)
         },
         clear() {
             if (store) {
+                logger.debug(`Clearing store ${name}`)
                 const persistStore = store as unknown as PersistApi
                 persistStore.persist?.clearStorage()
                 resetStateFn?.()
+                logger.debug(`Store ${name} cleared`)
             }
         },
         getStore() {

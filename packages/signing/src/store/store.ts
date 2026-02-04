@@ -20,7 +20,6 @@ import type { SigningStore, SignRequest } from '../models'
 import {
     createLazyStore,
     DataStoreRegistry,
-    logger,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
 import { v7 as uuidv7 } from 'uuid'
@@ -65,7 +64,7 @@ const createSigningStore = (storage: KeyValueStorageService) =>
                 resetState: () => set(initialState),
             }),
             {
-                name: 'signing-store',
+                name: STORE_NAME,
                 storage: createJSONStorage(() => storage),
                 version: 1,
                 partialize: state => ({
@@ -78,11 +77,9 @@ const createSigningStore = (storage: KeyValueStorageService) =>
     )
 
 export const initSigningStore = () => {
-    logger.debug('Initializing signing store')
     const storage = useKeyValueStorageService()
     const realStore = createSigningStore(storage)
     lazy.init(realStore, () => realStore.getState().resetState())
-    logger.debug('Signing store initialized')
 }
 
 export const clearSigningStore = () => lazy.clear()

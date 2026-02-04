@@ -20,7 +20,6 @@ import type { BlockchainStore } from '../models'
 import {
     createLazyStore,
     DataStoreRegistry,
-    logger,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
 
@@ -38,7 +37,7 @@ const createBlockchainStore = (storage: KeyValueStorageService) =>
                 resetState: () => set({}),
             }),
             {
-                name: 'blockchain-store',
+                name: STORE_NAME,
                 storage: createJSONStorage(() => storage),
                 version: 1,
             },
@@ -46,11 +45,9 @@ const createBlockchainStore = (storage: KeyValueStorageService) =>
     )
 
 export const initBlockchainStore = () => {
-    logger.debug('Initializing blockchain store')
     const storage = useKeyValueStorageService()
     const realStore = createBlockchainStore(storage)
     lazy.init(realStore, () => realStore.getState().resetState())
-    logger.debug('Blockchain store initialized')
 }
 
 export const clearBlockchainStore = () => lazy.clear()

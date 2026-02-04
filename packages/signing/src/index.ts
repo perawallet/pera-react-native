@@ -16,4 +16,4 @@ export * from './models'
 export * from './hooks'
 export * from './utils'
 
-export { initSigningStore, registerSigningStore } from './store'
+export { registerSigningStore } from './store'

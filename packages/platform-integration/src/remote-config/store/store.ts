@@ -20,7 +20,6 @@ import type { RemoteConfigStore } from '../models'
 import {
     createLazyStore,
     DataStoreRegistry,
-    logger,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
 
@@ -57,7 +56,7 @@ export const createRemoteConfigStore = (storage: KeyValueStorageService) =>
                 resetState: () => set(initialState),
             }),
             {
-                name: 'remote-config-store',
+                name: STORE_NAME,
                 storage: createJSONStorage(() => storage),
                 version: 1,
                 partialize: state => ({
@@ -68,11 +67,9 @@ export const createRemoteConfigStore = (storage: KeyValueStorageService) =>
     )
 
 export const initRemoteConfigStore = () => {
-    logger.debug('Initializing remote config store')
     const storage = useKeyValueStorageService()
     const realStore = createRemoteConfigStore(storage)
     lazy.init(realStore, () => realStore.getState().resetState())
-    logger.debug('Remote config store initialized')
 }
 
 export const clearRemoteConfigStore = () => lazy.clear()

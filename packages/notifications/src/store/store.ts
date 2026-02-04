@@ -21,7 +21,6 @@ import {
 import {
     createLazyStore,
     DataStoreRegistry,
-    logger,
 } from '@perawallet/wallet-core-shared'
 
 const STORE_NAME = 'notifications-store'
@@ -69,7 +68,7 @@ const createNotificationsStore = (storage: KeyValueStorageService) =>
                 resetState: () => set(initialState),
             }),
             {
-                name: 'notifications-store',
+                name: STORE_NAME,
                 storage: createJSONStorage(() => storage),
                 version: 1,
                 partialize: state => ({
@@ -81,11 +80,9 @@ const createNotificationsStore = (storage: KeyValueStorageService) =>
     )
 
 export const initNotificationsStore = () => {
-    logger.debug('Initializing notifications store')
     const storage = useKeyValueStorageService()
     const realStore = createNotificationsStore(storage)
     lazy.init(realStore, () => realStore.getState().resetState())
-    logger.debug('Notifications store initialized')
 }
 
 export const clearNotificationsStore = () => lazy.clear()

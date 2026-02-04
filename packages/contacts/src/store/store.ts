@@ -20,7 +20,6 @@ import type { Contact, ContactsState } from '../models'
 import {
     createLazyStore,
     DataStoreRegistry,
-    logger,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
 import { v7 as uuidv7 } from 'uuid'
@@ -70,7 +69,7 @@ const createContactsStore = (storage: KeyValueStorageService) =>
                 resetState: () => set(initialState),
             }),
             {
-                name: 'contacts-store',
+                name: STORE_NAME,
                 storage: createJSONStorage(() => storage),
                 version: 1,
                 partialize: state => ({
@@ -81,11 +80,9 @@ const createContactsStore = (storage: KeyValueStorageService) =>
     )
 
 export const initContactsStore = () => {
-    logger.debug('Initializing contacts store')
     const storage = useKeyValueStorageService()
     const realStore = createContactsStore(storage)
     lazy.init(realStore, () => realStore.getState().resetState())
-    logger.debug('Contacts store initialized')
 }
 
 export const clearContactsStore = () => lazy.clear()
