@@ -79,16 +79,6 @@ export const GroupListScreen = () => {
 
     const displayedFee = requestStructure === 'group-list' ? groupFee : totalFee
 
-    const ListHeader = useMemo(
-        () => <GroupListHeader transactionCount={transactions.length} />,
-        [transactions.length],
-    )
-
-    const ListFooter = useMemo(
-        () => <GroupListFooter fee={displayedFee} />,
-        [displayedFee, requestStructure],
-    )
-
     return (
         <PWView style={styles.container}>
             <PWToolbar
@@ -103,15 +93,16 @@ export const GroupListScreen = () => {
                     ) : undefined
                 }
             />
+            <GroupListHeader transactionCount={transactions.length} />
             <PWFlatList
+                maxItemsInRecyclePool={500}
                 data={transactions}
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
                 ItemSeparatorComponent={ItemSeparator}
-                ListHeaderComponent={ListHeader}
-                ListFooterComponent={ListFooter}
                 contentContainerStyle={styles.contentContainer}
             />
+            <GroupListFooter fee={displayedFee} />
         </PWView>
     )
 }

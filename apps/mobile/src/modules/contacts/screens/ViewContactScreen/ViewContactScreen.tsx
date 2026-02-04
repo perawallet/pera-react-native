@@ -55,7 +55,7 @@ export const ViewContactScreen = () => {
                 <AddressDisplay
                     address={selectedContact.address}
                     showCopy
-                    rawDisplay
+                    displayType='address-only'
                 />
             </PWView>
         </PWView>

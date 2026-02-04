@@ -25,6 +25,8 @@ import Decimal from 'decimal.js'
 import { useStyles } from './styles'
 import { PaymentTransactionSummaryHeader } from './PaymentTransactionSummaryHeader'
 import { AssetTransferSummaryHeader } from './AssetTransferSummaryHeader'
+import { AppCallSummaryHeader } from './AppCallSummaryHeader'
+import { GenericSummaryHeader } from './GenericSummaryHeader'
 
 export type TransactionSummaryHeaderProps = {
     transaction: PeraDisplayableTransaction
@@ -56,6 +58,8 @@ export const TransactionSummaryHeader = ({
 
                 {txType === 'payment' && <PaymentTransactionSummaryHeader transaction={transaction} />}
                 {(txType === 'asset-transfer' || txType === 'asset-opt-in' || txType === 'asset-opt-out' || txType === 'asset-clawback') && <AssetTransferSummaryHeader transaction={transaction} />}
+                {txType === 'app-call' && <AppCallSummaryHeader transaction={transaction} />}
+                {(txType === 'key-registration' || txType === 'asset-config' || txType === 'heartbeat' || txType === 'state-proof' || txType === 'unknown') && <GenericSummaryHeader transaction={transaction} />}
             </PWView>
         </>
     )

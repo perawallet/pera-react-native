@@ -98,7 +98,7 @@ const WarningItem = ({ warning, showDivider, isGroup }: WarningItemProps) => {
     )
 }
 
-export const SigningWarnings = () => {
+export const SigningWarnings = ({ isGroup = false }: { isGroup?: boolean }) => {
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
@@ -124,7 +124,7 @@ export const SigningWarnings = () => {
                     onPress={open}
                     title={t('transactions.warning.title')}
                     titleWeight='h4'
-                    description={t('transactions.warning.title_cta', {
+                    description={t(isGroup ? 'transactions.warning.title_cta_group' : 'transactions.warning.title_cta', {
                         count: warningCount,
                     })}
                     leftIcon='info'
@@ -156,7 +156,7 @@ export const SigningWarnings = () => {
                                 key={`${warning.type}-${warning.senderAddress}-${warning.targetAddress}`}
                                 warning={warning}
                                 showDivider={index > 0}
-                                isGroup={warnings.length !== distinctWarnings.length}
+                                isGroup={isGroup}
                             />
                         ))}
                     </PWView>

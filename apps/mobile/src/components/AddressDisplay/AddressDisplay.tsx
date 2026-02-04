@@ -33,7 +33,7 @@ import { TypographyVariant } from '@theme/typography'
 export type AddressDisplayProps = {
     address: string
     addressFormat?: 'short' | 'long' | 'full'
-    rawDisplay?: boolean
+    displayType?: 'full' | 'simple' | 'address-only'
     showCopy?: boolean
     textProps?: PWTextProps
     iconProps?: SvgProps
@@ -45,7 +45,7 @@ const LONG_ADDRESS_FORMAT = 20
 export const AddressDisplay = ({
     address,
     addressFormat = 'short',
-    rawDisplay,
+    displayType = 'full',
     showCopy = true,
     textProps,
     iconProps,
@@ -63,15 +63,15 @@ export const AddressDisplay = ({
     const { findContacts } = useContacts()
 
     const account = useMemo(() => {
-        if (rawDisplay) {
+        if (displayType !== 'full') {
             return null
         }
 
         return accounts.find(a => a.address === address)
-    }, [accounts, rawDisplay, address])
+    }, [displayType, accounts, address])
 
     const contact = useMemo(() => {
-        if (rawDisplay) {
+        if (displayType === 'address-only') {
             return null
         }
         return findContacts({
@@ -80,7 +80,7 @@ export const AddressDisplay = ({
             matchName: false,
             matchNFD: false,
         }).at(0)
-    }, [rawDisplay, address, findContacts])
+    }, [displayType, address, findContacts])
 
     const truncatedAddress =
         addressFormat === 'full'

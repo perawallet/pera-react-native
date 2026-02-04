@@ -29,7 +29,7 @@ export const GroupListFooter = ({ fee }: GroupListFooterProps) => {
 
     return (
         <>
-            <SigningWarnings />
+            <SigningWarnings isGroup />
 
             <PWDivider color={theme.colors.layerGray} />
 

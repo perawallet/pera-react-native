@@ -31,7 +31,7 @@ export const MultiGroupListFooter = ({
 
     return (
         <>
-            <SigningWarnings />
+            <SigningWarnings isGroup />
 
             <PWDivider color={theme.colors.layerGray} />
 

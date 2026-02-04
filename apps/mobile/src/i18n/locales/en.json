@@ -611,13 +611,15 @@
             "acfg": "Asset Configuration Transaction",
             "axfer": "Asset Transfer Transaction",
             "afrz": "Asset Freeze Transaction",
-            "appl": "Application Transaction",
+            "appl": "Application Call Transaction",
             "stpf": "State Proof Transaction",
             "hb": "Heartbeat Transaction",
             "unknown": "Unknown Transaction"
         },
         "warning": {
             "title": "Warning",
+            "title_cta_group_one": "This transaction group contains a potentially sensitive action",
+            "title_cta_group_other": "This transaction group contains {{count}} potentially sensitive actions",
             "title_cta_one": "This transaction contains a potentially sensitive action",
             "title_cta_other": "This transaction contains {{count}} potentially sensitive actions",
             "close_group_warning": "This transaction group closes one of your accounts and sends remaining funds another address.  Please review carefully before signing.",
@@ -678,10 +680,11 @@
         },
         "summary": {
             "payment_to": "Payment to <0>Address</0>",
-            "opt_in": "Asset Opt-in for <0>Address</0>",
-            "opt_out": "Asset Opt-out for <0>Address</0>",
-            "transfer": "Asset Transfer to <0>Address</0>",
-            "clawback": "Asset Clawback to <0>Address</0>"
+            "opt_in": "Asset Opt-in for {{asset}} to",
+            "opt_out": "Asset Opt-out for {{asset}} from",
+            "transfer": "Asset Transfer of {{asset}} to",
+            "clawback": "Asset Clawback of {{asset}} from",
+            "app_id": "Application ID: {{id}}"
         }
     },
     "tabbar": {

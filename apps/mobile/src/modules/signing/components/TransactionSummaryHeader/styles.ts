@@ -16,7 +16,7 @@ import { getFontFamily } from '@theme/theme'
 export const useStyles = makeStyles(theme => ({
     container: {
         alignItems: 'center',
-        gap: theme.spacing.md,
+        gap: theme.spacing.xs,
         paddingVertical: theme.spacing.xl,
         flexGrow: 1,
     },
@@ -24,8 +24,6 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textMain,
     },
     address: {
-        marginTop: theme.spacing.md / 2, //to fix weird alignment issue
-        flexWrap: 'nowrap',
         gap: theme.spacing.md,
     },
     addressText: {
@@ -36,12 +34,14 @@ export const useStyles = makeStyles(theme => ({
     typeText: {
         fontFamily: getFontFamily(false, 400),
         fontSize: 19,
-        color: theme.colors.textGray
+        color: theme.colors.textGray,
+        flexWrap: 'nowrap',
     },
     secondaryAmountValue: {
         color: theme.colors.textGray
     },
     amountContainer: {
+        marginTop: theme.spacing.md,
         alignItems: 'center',
         gap: theme.spacing.xs,
     },
