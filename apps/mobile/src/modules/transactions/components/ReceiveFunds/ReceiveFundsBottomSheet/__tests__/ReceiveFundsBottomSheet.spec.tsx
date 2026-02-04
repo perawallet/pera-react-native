@@ -52,7 +52,6 @@ vi.mock('@components/core', () => ({
     PWTabView: {
         createNavigator: () => ({
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             Navigator: ({ children, tabBarHidden }: any) => (
                 <div
                     data-testid='tab-navigator'
@@ -156,7 +155,9 @@ describe('ReceiveFundsBottomSheet', () => {
         expect(screen.getByTestId('qr-view')).toBeTruthy()
         expect(screen.getByTestId('tab-navigator')).toBeTruthy()
         expect(
-            screen.getByTestId('tab-navigator').getAttribute('data-hidden-tabs'),
+            screen
+                .getByTestId('tab-navigator')
+                .getAttribute('data-hidden-tabs'),
         ).toBe('true')
     })
 })

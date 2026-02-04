@@ -10,16 +10,100 @@
  limitations under the License
  */
 
+import {
+    PWButton,
+    PWFlatList,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
+import React from 'react'
+import { KeyboardAvoidingView } from 'react-native'
+import { useStyles } from './styles'
 
-//TODO implement
-export const AccountHistory = () => {
+const TAB_AND_HEADER_HEIGHT = 100
+
+export type AccountHistoryProps = {
+    scrollEnabled?: boolean
+}
+
+export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
+    const styles = useStyles()
     const { t } = useLanguage()
+
+    const renderItem = () => {
+        return (
+            <PWView style={styles.itemContainer}>
+                <PWText>Transaction Item</PWText>
+            </PWView>
+        )
+    }
+
     return (
-        <EmptyView
-            title={t('common.not_implemented.title')}
-            body={t('common.not_implemented.body')}
-        />
+        <KeyboardAvoidingView
+            keyboardVerticalOffset={TAB_AND_HEADER_HEIGHT}
+            enabled
+            behavior='padding'
+            style={styles.keyboardAvoidingViewContainer}
+        >
+            <PWTouchableOpacity
+                style={styles.keyboardAvoidingViewContainer}
+                activeOpacity={1}
+            >
+                <PWFlatList
+                    data={[]}
+                    renderItem={renderItem}
+                    scrollEnabled={scrollEnabled}
+                    keyExtractor={(_, index) => index.toString()}
+                    automaticallyAdjustKeyboardInsets
+                    keyboardDismissMode='interactive'
+                    contentContainerStyle={styles.rootContainer}
+                    ListHeaderComponent={
+                        <PWView style={styles.headerContainer}>
+                            <PWView style={styles.titleBar}>
+                                <PWText
+                                    style={styles.title}
+                                    variant='h4'
+                                >
+                                    {t('asset_details.transaction_list.title')}
+                                </PWText>
+                                <PWView style={styles.titleBarButtonContainer}>
+                                    <PWButton
+                                        icon='sliders'
+                                        title={t(
+                                            'asset_details.transaction_list.filter',
+                                        )}
+                                        variant='helper'
+                                        style={styles.transparentButton}
+                                        paddingStyle='dense'
+                                    />
+                                    <PWButton
+                                        icon='document-download'
+                                        title={t(
+                                            'asset_details.transaction_list.csv',
+                                        )}
+                                        variant='helper'
+                                        paddingStyle='dense'
+                                    />
+                                </PWView>
+                            </PWView>
+                        </PWView>
+                    }
+                    ListEmptyComponent={
+                        <EmptyView
+                            title={t(
+                                'asset_details.transaction_list.empty_title',
+                            )}
+                            body={t(
+                                'asset_details.transaction_list.empty_body',
+                            )}
+                        />
+                    }
+                    ListFooterComponent={<PWView style={styles.footer} />}
+                />
+            </PWTouchableOpacity>
+        </KeyboardAvoidingView>
     )
 }

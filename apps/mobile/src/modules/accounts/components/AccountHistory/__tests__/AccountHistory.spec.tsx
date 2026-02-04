@@ -11,12 +11,26 @@
  */
 
 import { render, screen } from '@test-utils/render'
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { AccountHistory } from '../AccountHistory'
 
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string) => {
+            if (key === 'asset_details.transaction_list.title')
+                return 'Transactions'
+            if (key === 'asset_details.transaction_list.filter') return 'Filter'
+            if (key === 'asset_details.transaction_list.csv') return 'CSV'
+            return key
+        },
+    }),
+}))
+
 describe('AccountHistory', () => {
-    it('renders placeholder', () => {
+    it('renders transactions title and buttons', () => {
         render(<AccountHistory />)
-        expect(screen.getByText('common.not_implemented.title')).toBeTruthy()
+        expect(screen.getByText('Transactions')).toBeTruthy()
+        expect(screen.getByText('Filter')).toBeTruthy()
+        expect(screen.getByText('CSV')).toBeTruthy()
     })
 })
