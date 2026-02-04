@@ -61,7 +61,7 @@ platform :ios do
   desc "Build iOS Staging"
   lane :build_staging do
     build_ios(
-      scheme: "Pera-Staging",
+      scheme: "Pera7Staging",
       configuration: "Release",
       export_method: "ad-hoc",
       clean: false
@@ -71,7 +71,7 @@ platform :ios do
   desc "Build iOS Production"
   lane :build_production do
     build_ios(
-      scheme: "Pera-Production",
+      scheme: "Pera7Production",
       configuration: "Release",
       export_method: "app-store"
     )
@@ -98,7 +98,7 @@ platform :ios do
 
     # Determine Bundle ID for export options
     bundle_id = case options[:scheme]
-    when "Pera-Production" then "com.algorandllc.perarn"
+    when "Pera7Production" then "com.algorandllc.perarn"
     else "com.algorandllc.perarn.staging"
     end
 
@@ -132,12 +132,12 @@ platform :ios do
 
   desc "Deploy to TestFlight"
   lane :deploy_testflight do |options|
-    scheme = options[:scheme] || "Pera-Staging"
+    scheme = options[:scheme] || "Pera7Staging"
 
     # Map scheme to configuration
     configuration = case scheme
-    when "Pera-Staging" then "Staging"
-    when "Pera-Production" then "Production"
+    when "Pera7Staging" then "Staging"
+    when "Pera7Production" then "Production"
     when "Pera-Dev" then "Dev"
     else "Staging"
     end
