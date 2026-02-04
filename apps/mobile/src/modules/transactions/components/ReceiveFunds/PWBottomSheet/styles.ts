@@ -25,6 +25,7 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
         },
         tabItem: {
             width: '100%',
+            flex: 1,
             paddingHorizontal: theme.spacing.lg,
         },
     }
