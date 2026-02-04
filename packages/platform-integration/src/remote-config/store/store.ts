@@ -27,7 +27,7 @@ import {
 const STORE_NAME = 'remote-config-store'
 
 const lazy =
-    createLazyStore<WithPersist<StoreApi<RemoteConfigStore>, unknown>>()
+    createLazyStore<WithPersist<StoreApi<RemoteConfigStore>, unknown>>(STORE_NAME)
 
 export const useRemoteConfigStore: UseBoundStore<
     WithPersist<StoreApi<RemoteConfigStore>, unknown>

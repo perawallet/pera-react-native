@@ -35,3 +35,4 @@ build/
 # Environment setup exports
 apps/mobile/scripts/.env-exports.sh
 /.claude
+packages/config/src/local-overrides.ts

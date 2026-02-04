@@ -25,7 +25,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 
 const STORE_NAME = 'blockchain-store'
-const lazy = createLazyStore<WithPersist<StoreApi<BlockchainStore>, unknown>>()
+const lazy = createLazyStore<WithPersist<StoreApi<BlockchainStore>, unknown>>(STORE_NAME)
 
 export const useBlockchainStore: UseBoundStore<
     WithPersist<StoreApi<BlockchainStore>, unknown>

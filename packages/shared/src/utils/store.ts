@@ -26,34 +26,34 @@ interface PersistApi {
     }
 }
 
-export function createLazyStore<T extends StoreApi<unknown>>(): LazyStore<T> {
+export function createLazyStore<T extends StoreApi<unknown>>(name: string): LazyStore<T> {
     let store: UseBoundStore<T> | null = null
     let resetStateFn: (() => void) | null = null
 
     const useStore = ((selector: (state: ExtractState<T>) => unknown) => {
         if (!store) {
-            throw new Error('Zustand store used before initialization')
+            throw new Error(`Zustand store ${name} used in useStore before initialization`)
         }
         return store(selector)
     }) as UseBoundStore<T>
 
     useStore.getState = () => {
         if (!store) {
-            throw new Error('Zustand store used before initialization')
+            throw new Error(`Zustand store ${name} used in getState before initialization`)
         }
         return store.getState()
     }
 
     useStore.setState = (partial, replace) => {
         if (!store) {
-            throw new Error('Zustand store used before initialization')
+            throw new Error(`Zustand store ${name} used in setState before initialization`)
         }
         store.setState(partial, replace as any) // eslint-disable-line @typescript-eslint/no-explicit-any
     }
 
     useStore.subscribe = listener => {
         if (!store) {
-            throw new Error('Zustand store used before initialization')
+            throw new Error(`Zustand store ${name} used in subscribe before initialization`)
         }
         return store.subscribe(listener)
     }

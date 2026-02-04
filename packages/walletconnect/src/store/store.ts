@@ -30,7 +30,7 @@ import {
 
 const STORE_NAME = 'wallet-connect-store'
 const lazy =
-    createLazyStore<WithPersist<StoreApi<WalletConnectStore>, unknown>>()
+    createLazyStore<WithPersist<StoreApi<WalletConnectStore>, unknown>>(STORE_NAME)
 
 export const useWalletConnectStore: UseBoundStore<
     WithPersist<StoreApi<WalletConnectStore>, unknown>

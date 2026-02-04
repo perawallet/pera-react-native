@@ -26,7 +26,7 @@ import {
 import { v7 as uuidv7 } from 'uuid'
 
 const STORE_NAME = 'contacts-store'
-const lazy = createLazyStore<WithPersist<StoreApi<ContactsState>, unknown>>()
+const lazy = createLazyStore<WithPersist<StoreApi<ContactsState>, unknown>>(STORE_NAME)
 
 export const useContactsStore: UseBoundStore<
     WithPersist<StoreApi<ContactsState>, unknown>
