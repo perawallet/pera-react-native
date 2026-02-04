@@ -5,8 +5,8 @@ project_type: react-native
 app:
   envs:
     - BITRISE_PROJECT_PATH: apps/mobile/ios/pera.xcworkspace
-    - BITRISE_SCHEME_STAGING: Pera-Staging
-    - BITRISE_SCHEME_PRODUCTION: Pera-Production
+    - BITRISE_SCHEME_STAGING: Pera7Staging
+    - BITRISE_SCHEME_PRODUCTION: Pera7Production
     - BITRISE_EXPORT_METHOD_STAGING: app-store
     - BITRISE_EXPORT_METHOD_PRODUCTION: app-store
     - ANDROID_MODULE: app
