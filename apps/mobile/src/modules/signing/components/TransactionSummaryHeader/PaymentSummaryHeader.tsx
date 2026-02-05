@@ -18,18 +18,16 @@ import { PWText, PWView } from '@components/core'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import {
     ALGO_ASSET,
-    useAssetFiatPricesQuery,
 } from '@perawallet/wallet-core-assets'
 import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import Decimal from 'decimal.js'
 import { useStyles } from './styles'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useTheme } from '@rneui/themed'
-import { useMemo } from 'react'
-import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useLanguage } from '@hooks/useLanguage'
+import { usePaymentSummaryHeader } from './usePaymentSummaryHeader'
 
-export const PaymentTransactionSummaryHeader = ({
+export const PaymentSummaryHeader = ({
     transaction,
 }: {
     transaction: PeraDisplayableTransaction
@@ -37,19 +35,7 @@ export const PaymentTransactionSummaryHeader = ({
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
-    const { preferredFiatCurrency, showAlgoAsPrimaryCurrency } = useCurrency()
-
-    const { data: fiatPrices, isPending } = useAssetFiatPricesQuery(
-        !showAlgoAsPrimaryCurrency,
-    )
-    const value = useMemo(() => {
-        if (isPending) {
-            return undefined
-        }
-        return (
-            fiatPrices?.get(ALGO_ASSET.assetId)?.fiatPrice ?? new Decimal(0)
-        ).mul(microAlgosToAlgos(transaction.paymentTransaction?.amount ?? 0n))
-    }, [fiatPrices, isPending])
+    const {value, preferredFiatCurrency} = usePaymentSummaryHeader(transaction)
 
     return (
         <PWView style={styles.container}>

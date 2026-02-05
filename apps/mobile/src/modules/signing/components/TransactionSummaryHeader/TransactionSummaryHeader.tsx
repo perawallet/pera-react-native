@@ -18,7 +18,7 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
-import { PaymentTransactionSummaryHeader } from './PaymentTransactionSummaryHeader'
+import { PaymentSummaryHeader } from './PaymentSummaryHeader'
 import { AssetTransferSummaryHeader } from './AssetTransferSummaryHeader'
 import { AppCallSummaryHeader } from './AppCallSummaryHeader'
 import { GenericSummaryHeader } from './GenericSummaryHeader'
@@ -55,7 +55,7 @@ export const TransactionSummaryHeader = ({
                 />
 
                 {txType === 'payment' && (
-                    <PaymentTransactionSummaryHeader
+                    <PaymentSummaryHeader
                         transaction={transaction}
                     />
                 )}
