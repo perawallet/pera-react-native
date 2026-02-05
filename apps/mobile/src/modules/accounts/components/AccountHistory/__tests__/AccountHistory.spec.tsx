@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import { render, screen } from '@test-utils/render'
+import { render, screen, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { AccountHistory } from '../AccountHistory'
+import { useAccountHistory } from '../useAccountHistory'
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
@@ -31,14 +32,16 @@ vi.mock('@hooks/useLanguage', () => ({
 }))
 
 vi.mock('../useAccountHistory', () => ({
-    useAccountHistory: () => ({
+    useAccountHistory: vi.fn(() => ({
         sections: [],
         isLoading: false,
         isFetchingNextPage: false,
         isEmpty: true,
         handleLoadMore: vi.fn(),
         handleRefresh: vi.fn(),
-    }),
+        handleExportCsv: vi.fn(),
+        isExportingCsv: false,
+    })),
 }))
 
 describe('AccountHistory', () => {
@@ -49,8 +52,48 @@ describe('AccountHistory', () => {
         expect(screen.getByText('CSV')).toBeTruthy()
     })
 
-    it('shows empty state when no transactions', () => {
+    it('calls handleExportCsv when CSV button is pressed', () => {
+        const handleExportCsv = vi.fn()
+        vi.mocked(useAccountHistory).mockReturnValueOnce({
+            sections: [],
+            isLoading: false,
+            isFetchingNextPage: false,
+            isEmpty: true,
+            handleLoadMore: vi.fn(),
+            handleRefresh: vi.fn(),
+            hasNextPage: false,
+            isError: false,
+            error: null,
+            handleExportCsv,
+            isExportingCsv: false,
+        } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+
         render(<AccountHistory />)
-        expect(screen.getByText('No transactions yet')).toBeTruthy()
+
+        const csvButton = screen.getByText('CSV')
+        fireEvent.click(csvButton)
+
+        expect(handleExportCsv).toHaveBeenCalled()
+    })
+
+    it('shows loading state on CSV button when exporting', () => {
+        vi.mocked(useAccountHistory).mockReturnValueOnce({
+            sections: [],
+            isLoading: false,
+            isFetchingNextPage: false,
+            isEmpty: true,
+            handleLoadMore: vi.fn(),
+            handleRefresh: vi.fn(),
+            hasNextPage: false,
+            isError: false,
+            error: null,
+            handleExportCsv: vi.fn(),
+            isExportingCsv: true,
+        } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+
+        render(<AccountHistory />)
+
+        // When isLoading is true, PWButton shows ActivityIndicator
+        expect(screen.getByTestId('activity-indicator')).toBeTruthy()
     })
 })

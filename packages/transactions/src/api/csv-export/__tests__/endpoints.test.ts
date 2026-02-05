@@ -25,7 +25,7 @@ vi.mock('@perawallet/wallet-core-config', () => ({
 
 // Mock fetch globally
 const mockFetch = vi.fn()
-    ; (globalThis as any).fetch = mockFetch
+;(globalThis as any).fetch = mockFetch
 
 const VALID_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ'
