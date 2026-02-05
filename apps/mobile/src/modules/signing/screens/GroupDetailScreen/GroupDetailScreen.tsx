@@ -21,50 +21,16 @@ import {
 } from '@components/core'
 import { TransactionPreview } from '@modules/transactions/components/transaction-details/TransactionPreview'
 import { useLanguage } from '@hooks/useLanguage'
-import {
-    useNavigation,
-    useRoute,
-    type RouteProp,
-} from '@react-navigation/native'
-import type { StackNavigationProp } from '@react-navigation/stack'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import {
-    useSigningRequest,
-    useSigningRequestAnalysis,
-    type TransactionSignRequest,
-    type GroupTransactionItem,
-} from '@perawallet/wallet-core-signing'
-import type { SigningStackParamList } from '@modules/signing/routes'
 import { GroupDetailHeader } from './GroupDetailHeader'
 import { useStyles } from './styles'
-
-type NavigationProp = StackNavigationProp<SigningStackParamList, 'GroupDetail'>
-type GroupDetailRouteProp = RouteProp<SigningStackParamList, 'GroupDetail'>
+import { useGroupDetailScreen } from './useGroupDetailScreen'
 
 export const GroupDetailScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const navigation = useNavigation<NavigationProp>()
-    const route = useRoute<GroupDetailRouteProp>()
-    const { pendingSignRequests } = useSigningRequest()
-    const request = pendingSignRequests[0] as TransactionSignRequest
-    const { listItems } = useSigningRequestAnalysis(request)
-
-    const { groupIndex } = route.params
-    const groupItem = listItems.find(
-        (item): item is GroupTransactionItem =>
-            item.type === 'group' && item.groupIndex === groupIndex,
-    )
-    const transactions = groupItem?.transactions ?? []
-    const groupId = groupItem?.transactions.at(0)?.group ?? ''
-
-    const handleTransactionPress = (tx: PeraDisplayableTransaction) => {
-        navigation.navigate('TransactionDetails', { transaction: tx })
-    }
-
-    const handleBack = () => {
-        navigation.goBack()
-    }
+    const { transactions, handleTransactionPress, handleBack, keyExtractor } =
+        useGroupDetailScreen()
 
     const renderItem = useCallback(
         ({ item }: { item: PeraDisplayableTransaction }) => (
@@ -74,12 +40,6 @@ export const GroupDetailScreen = () => {
             />
         ),
         [handleTransactionPress],
-    )
-
-    const keyExtractor = useCallback(
-        (item: PeraDisplayableTransaction, index: number) =>
-            item.id ?? `tx-${index}`,
-        [],
     )
 
     const ItemSeparator = useCallback(

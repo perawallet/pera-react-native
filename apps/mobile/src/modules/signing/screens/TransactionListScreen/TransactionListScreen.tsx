@@ -13,43 +13,25 @@
 import { useCallback } from 'react'
 import { PWFlatList, PWText, PWToolbar, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { useNavigation } from '@react-navigation/native'
-import type { StackNavigationProp } from '@react-navigation/stack'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import {
-    useSigningRequest,
-    useSigningRequestAnalysis,
-    type TransactionSignRequest,
-    type TransactionListItem,
-} from '@perawallet/wallet-core-signing'
-import type { SigningStackParamList } from '@modules/signing/routes'
+import type { TransactionListItem } from '@perawallet/wallet-core-signing'
 import { TransactionListHeader } from './TransactionListHeader'
 import { TransactionListFooter } from './TransactionListFooter'
 import { GroupPreviewItem } from './GroupPreviewItem'
 import { useStyles } from './styles'
+import { useTransactionListScreen } from './useTransactionListScreen'
 import { TransactionPreview } from '@modules/transactions/components/transaction-details'
-
-type NavigationProp = StackNavigationProp<
-    SigningStackParamList,
-    'TransactionList'
->
 
 export const TransactionListScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const navigation = useNavigation<NavigationProp>()
-    const { pendingSignRequests } = useSigningRequest()
-    const request = pendingSignRequests[0] as TransactionSignRequest
-    const { listItems, totalFee, allTransactions } =
-        useSigningRequestAnalysis(request)
-
-    const handleTransactionPress = (tx: PeraDisplayableTransaction) => {
-        navigation.navigate('TransactionDetails', { transaction: tx })
-    }
-
-    const handleGroupPress = (groupIndex: number) => {
-        navigation.navigate('GroupDetail', { groupIndex })
-    }
+    const {
+        listItems,
+        totalFee,
+        transactionCount,
+        handleTransactionPress,
+        handleGroupPress,
+        keyExtractor,
+    } = useTransactionListScreen()
 
     const renderItem = useCallback(
         ({ item }: { item: TransactionListItem }) => {
@@ -72,16 +54,6 @@ export const TransactionListScreen = () => {
         [handleTransactionPress, handleGroupPress],
     )
 
-    const keyExtractor = useCallback(
-        (item: TransactionListItem, index: number) => {
-            if (item.type === 'group') {
-                return `group-${item.groupIndex}`
-            }
-            return item.transaction.id ?? `tx-${index}`
-        },
-        [],
-    )
-
     const ItemSeparator = useCallback(
         () => <PWView style={styles.itemSeparator} />,
         [styles.itemSeparator],
@@ -96,7 +68,7 @@ export const TransactionListScreen = () => {
                     </PWText>
                 }
             />
-            <TransactionListHeader itemCount={allTransactions.length} />
+            <TransactionListHeader itemCount={transactionCount} />
             <PWFlatList
                 data={listItems}
                 renderItem={renderItem}
