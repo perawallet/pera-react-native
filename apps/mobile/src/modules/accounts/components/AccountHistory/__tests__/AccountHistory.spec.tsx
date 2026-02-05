@@ -21,8 +21,23 @@ vi.mock('@hooks/useLanguage', () => ({
                 return 'Transactions'
             if (key === 'asset_details.transaction_list.filter') return 'Filter'
             if (key === 'asset_details.transaction_list.csv') return 'CSV'
+            if (key === 'asset_details.transaction_list.empty_title')
+                return 'No transactions yet'
+            if (key === 'asset_details.transaction_list.empty_body')
+                return 'Your transactions will appear here'
             return key
         },
+    }),
+}))
+
+vi.mock('../useAccountHistory', () => ({
+    useAccountHistory: () => ({
+        sections: [],
+        isLoading: false,
+        isFetchingNextPage: false,
+        isEmpty: true,
+        handleLoadMore: vi.fn(),
+        handleRefresh: vi.fn(),
     }),
 }))
 
@@ -32,5 +47,10 @@ describe('AccountHistory', () => {
         expect(screen.getByText('Transactions')).toBeTruthy()
         expect(screen.getByText('Filter')).toBeTruthy()
         expect(screen.getByText('CSV')).toBeTruthy()
+    })
+
+    it('shows empty state when no transactions', () => {
+        render(<AccountHistory />)
+        expect(screen.getByText('No transactions yet')).toBeTruthy()
     })
 })

@@ -246,6 +246,9 @@ importers:
       '@perawallet/wallet-core-swaps':
         specifier: workspace:*
         version: link:../../packages/swaps
+      '@perawallet/wallet-core-transactions':
+        specifier: workspace:*
+        version: link:../../packages/transactions
       '@perawallet/wallet-core-walletconnect':
         specifier: workspace:*
         version: link:../../packages/walletconnect
@@ -13269,9 +13272,7 @@ snapshots:
       metro-runtime: 0.83.3
     transitivePeerDependencies:
       - '@babel/core'
-      - bufferutil
       - supports-color
-      - utf-8-validate
     optional: true
 
   '@react-native/normalize-colors@0.74.89': {}

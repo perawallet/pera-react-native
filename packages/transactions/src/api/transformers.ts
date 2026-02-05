@@ -30,9 +30,9 @@ const transformSwapGroupDetail = (
 ): TransactionSwapGroupDetail | null => {
     if (!detail) return null
     return {
-        assetInId: detail.asset_in_id,
+        assetInId: Number(detail.asset_in_id),
         assetInUnitName: detail.asset_in_unit_name,
-        assetOutId: detail.asset_out_id,
+        assetOutId: Number(detail.asset_out_id),
         assetOutUnitName: detail.asset_out_unit_name,
         amountIn: detail.amount_in,
         amountOut: detail.amount_out,
@@ -47,10 +47,10 @@ const transformAssetSummary = (
 ): TransactionAssetSummary | null => {
     if (!asset) return null
     return {
-        assetId: asset.asset_id,
-        name: asset.name,
-        unitName: asset.unit_name,
-        decimals: asset.decimals,
+        assetId: Number(asset.asset_id),
+        name: asset.name ?? '',
+        unitName: asset.unit_name ?? '',
+        decimals: asset.decimals ?? 0,
     }
 }
 
@@ -63,7 +63,7 @@ const transformInterpretedMeaning = (
     if (!meaning) return null
     return {
         title: meaning.title,
-        description: meaning.description,
+        description: meaning.description ?? '',
     }
 }
 
@@ -77,18 +77,18 @@ export const transformTransactionItem = (
     id: item.id,
     txType: item.tx_type,
     sender: item.sender,
-    receiver: item.receiver,
-    confirmedRound: item.confirmed_round,
-    roundTime: item.round_time,
+    receiver: item.receiver ?? null,
+    confirmedRound: Number(item.confirmed_round),
+    roundTime: Number(item.round_time),
     swapGroupDetail: transformSwapGroupDetail(item.swap_group_detail),
     interpretedMeaning: transformInterpretedMeaning(item.interpreted_meaning),
     fee: item.fee,
-    groupId: item.group_id,
-    amount: item.amount,
-    closeTo: item.close_to,
+    groupId: item.group_id ?? null,
+    amount: item.amount ?? null,
+    closeTo: item.close_to ?? null,
     asset: transformAssetSummary(item.asset),
-    applicationId: item.application_id,
-    innerTransactionCount: item.inner_transaction_count,
+    applicationId: item.application_id != null ? Number(item.application_id) : null,
+    innerTransactionCount: item.inner_transaction_count != null ? Number(item.inner_transaction_count) : null,
 })
 
 /**
@@ -99,11 +99,11 @@ export const transformTransactionHistoryResponse = (
 ): TransactionHistoryResult => ({
     transactions: response.results.map(transformTransactionItem),
     pagination: {
-        hasNextPage: response.next !== null,
-        hasPreviousPage: response.previous !== null,
-        nextUrl: response.next,
-        previousUrl: response.previous,
+        hasNextPage: !!response.next,
+        hasPreviousPage: !!response.previous,
+        nextUrl: response.next ?? null,
+        previousUrl: response.previous ?? null,
         totalFetched: response.results.length,
     },
-    currentRound: response.current_round,
+    currentRound: Number(response.current_round ?? 0),
 })

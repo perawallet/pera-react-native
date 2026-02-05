@@ -14,12 +14,17 @@ import { z } from 'zod'
 import { TransactionTypes } from '../models/types'
 
 /**
+ * Helper to coerce string to number (API sometimes returns numeric fields as strings)
+ */
+const coerceNumber = z.union([z.number(), z.string().transform(val => Number(val))])
+
+/**
  * Schema for swap group detail from API response
  */
 export const transactionSwapGroupDetailSchema = z.object({
-    asset_in_id: z.number(),
+    asset_in_id: coerceNumber,
     asset_in_unit_name: z.string(),
-    asset_out_id: z.number(),
+    asset_out_id: coerceNumber,
     asset_out_unit_name: z.string(),
     amount_in: z.string(),
     amount_out: z.string(),
@@ -27,12 +32,13 @@ export const transactionSwapGroupDetailSchema = z.object({
 
 /**
  * Schema for asset summary from API response
+ * Note: Some fields may be missing for certain asset types
  */
 export const transactionAssetSummarySchema = z.object({
-    asset_id: z.number(),
-    name: z.string(),
-    unit_name: z.string(),
-    decimals: z.number(),
+    asset_id: coerceNumber,
+    name: z.string().optional().default(''),
+    unit_name: z.string().optional().default(''),
+    decimals: z.number().optional().default(0),
 })
 
 /**
@@ -40,7 +46,7 @@ export const transactionAssetSummarySchema = z.object({
  */
 export const transactionInterpretedMeaningSchema = z.object({
     title: z.string(),
-    description: z.string(),
+    description: z.string().optional().default(''),
 })
 
 /**
@@ -50,27 +56,27 @@ export const transactionHistoryItemResponseSchema = z.object({
     id: z.string(),
     tx_type: z.nativeEnum(TransactionTypes),
     sender: z.string(),
-    receiver: z.string().nullable(),
-    confirmed_round: z.number(),
-    round_time: z.number(),
-    swap_group_detail: transactionSwapGroupDetailSchema.nullable(),
-    interpreted_meaning: transactionInterpretedMeaningSchema.nullable(),
+    receiver: z.string().nullable().optional(),
+    confirmed_round: coerceNumber,
+    round_time: coerceNumber,
+    swap_group_detail: transactionSwapGroupDetailSchema.nullable().optional(),
+    interpreted_meaning: transactionInterpretedMeaningSchema.nullable().optional(),
     fee: z.string(),
-    group_id: z.string().nullable(),
-    amount: z.string().nullable(),
-    close_to: z.string().nullable(),
-    asset: transactionAssetSummarySchema.nullable(),
-    application_id: z.number().nullable(),
-    inner_transaction_count: z.number().nullable(),
+    group_id: z.string().nullable().optional(),
+    amount: z.string().nullable().optional(),
+    close_to: z.string().nullable().optional(),
+    asset: transactionAssetSummarySchema.nullable().optional(),
+    application_id: coerceNumber.nullable().optional(),
+    inner_transaction_count: coerceNumber.nullable().optional(),
 })
 
 /**
  * Schema for the main API response
  */
 export const transactionHistoryResponseSchema = z.object({
-    current_round: z.number(),
-    next: z.string().nullable(),
-    previous: z.string().nullable(),
+    current_round: coerceNumber.optional().default(0),
+    next: z.string().nullable().optional(),
+    previous: z.string().nullable().optional(),
     results: z.array(transactionHistoryItemResponseSchema),
 })
 

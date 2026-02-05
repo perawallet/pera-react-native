@@ -16,18 +16,27 @@ import type { TransactionIconProps } from './TransactionIcon'
 type StyleProps = Pick<TransactionIconProps, 'size'>
 
 export const useStyles = makeStyles((theme, props: StyleProps) => {
-    const padding = props.size === 'sm' ? theme.spacing.md : theme.spacing.lg
-    const size =
-        (props.size === 'sm'
-            ? theme.spacing.xl
-            : props.size === 'md'
-              ? theme.spacing.xxl
-              : theme.spacing['4xl']) +
-        2 * padding
+    let size: number
+
+    switch (props.size) {
+        case 'sm':
+            size = 32
+            break
+        case 'md':
+            // As requested: about 40x40px
+            size = 40
+            break
+        case 'lg':
+            size = 56
+            break
+        default:
+            size = 32
+    }
+
     return {
         container: {
             backgroundColor: theme.colors.layerGrayLighter,
-            borderRadius: '50%',
+            borderRadius: size / 2,
             width: size,
             height: size,
             alignItems: 'center',

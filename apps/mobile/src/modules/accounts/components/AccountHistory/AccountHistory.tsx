@@ -10,18 +10,19 @@
  limitations under the License
  */
 
-import {
-    PWButton,
-    PWFlatList,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { PWButton, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
-import React from 'react'
-import { KeyboardAvoidingView } from 'react-native'
+import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
+import {
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    SectionList,
+} from 'react-native'
 import { useStyles } from './styles'
+import { useAccountHistory, type TransactionSection } from './useAccountHistory'
+import { TransactionListItem } from './TransactionListItem'
+import { TransactionDateHeader } from './TransactionDateHeader'
 
 const TAB_AND_HEADER_HEIGHT = 100
 
@@ -32,12 +33,46 @@ export type AccountHistoryProps = {
 export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const { sections, isLoading, isFetchingNextPage, isEmpty, handleLoadMore } =
+        useAccountHistory()
 
-    const renderItem = () => {
+    const renderItem = ({ item }: { item: TransactionHistoryItem }) => (
+        <TransactionListItem transaction={item} />
+    )
+
+    const renderSectionHeader = ({
+        section,
+    }: {
+        section: TransactionSection
+    }) => <TransactionDateHeader title={section.title} />
+
+    const keyExtractor = (item: TransactionHistoryItem) => item.id
+
+    const renderFooter = () => {
+        if (isFetchingNextPage) {
+            return (
+                <PWView style={styles.loadingFooter}>
+                    <ActivityIndicator size='small' />
+                </PWView>
+            )
+        }
+        return <PWView style={styles.footer} />
+    }
+
+    const renderEmptyComponent = () => {
+        if (isLoading) {
+            return (
+                <PWView style={styles.loadingContainer}>
+                    <ActivityIndicator size='large' />
+                </PWView>
+            )
+        }
+
         return (
-            <PWView style={styles.itemContainer}>
-                <PWText>Transaction Item</PWText>
-            </PWView>
+            <EmptyView
+                title={t('asset_details.transaction_list.empty_title')}
+                body={t('asset_details.transaction_list.empty_body')}
+            />
         )
     }
 
@@ -52,14 +87,16 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
                 style={styles.keyboardAvoidingViewContainer}
                 activeOpacity={1}
             >
-                <PWFlatList
-                    data={[]}
+                <SectionList
+                    sections={sections}
                     renderItem={renderItem}
+                    renderSectionHeader={renderSectionHeader}
+                    keyExtractor={keyExtractor}
                     scrollEnabled={scrollEnabled}
-                    keyExtractor={(_, index) => index.toString()}
-                    automaticallyAdjustKeyboardInsets
-                    keyboardDismissMode='interactive'
                     contentContainerStyle={styles.rootContainer}
+                    stickySectionHeadersEnabled={false}
+                    onEndReached={handleLoadMore}
+                    onEndReachedThreshold={0.5}
                     ListHeaderComponent={
                         <PWView style={styles.headerContainer}>
                             <PWView style={styles.titleBar}>
@@ -92,17 +129,15 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
                         </PWView>
                     }
                     ListEmptyComponent={
-                        <EmptyView
-                            title={t(
-                                'asset_details.transaction_list.empty_title',
-                            )}
-                            body={t(
-                                'asset_details.transaction_list.empty_body',
-                            )}
-                        />
+                        !isLoading && isEmpty ? renderEmptyComponent() : null
                     }
-                    ListFooterComponent={<PWView style={styles.footer} />}
+                    ListFooterComponent={renderFooter}
                 />
+                {isLoading && !sections.length && (
+                    <PWView style={styles.loadingOverlay}>
+                        <ActivityIndicator size='large' />
+                    </PWView>
+                )}
             </PWTouchableOpacity>
         </KeyboardAvoidingView>
     )
