@@ -46,6 +46,7 @@ export type AccountOverviewHeaderProps = {
     handleMore: () => void
     handleBuyAlgo: () => void
     handleReceive: () => void
+    chartVisible: boolean
 }
 
 export const AccountOverviewHeader = ({
@@ -65,6 +66,7 @@ export const AccountOverviewHeader = ({
     handleMore,
     handleBuyAlgo,
     handleReceive,
+    chartVisible,
 }: AccountOverviewHeaderProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -120,17 +122,19 @@ export const AccountOverviewHeader = ({
                 </PWView>
             </PWTouchableOpacity>
 
-            <PWView style={styles.chartContainer}>
-                <WealthChart
-                    account={account}
-                    period={period}
-                    onSelectionChanged={handleChartSelectionChange}
-                />
-                <ChartPeriodSelection
-                    value={period}
-                    onChange={setPeriod}
-                />
-            </PWView>
+            {chartVisible && (
+                <PWView style={styles.chartContainer}>
+                    <WealthChart
+                        account={account}
+                        period={period}
+                        onSelectionChanged={handleChartSelectionChange}
+                    />
+                    <ChartPeriodSelection
+                        value={period}
+                        onChange={setPeriod}
+                    />
+                </PWView>
+            )}
 
             <ButtonPanel
                 onSwap={handleSwap}

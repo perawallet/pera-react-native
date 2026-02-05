@@ -106,7 +106,10 @@ export const AccountScreen = () => {
                     </PWView>
                 }
             />
-            <AccountTabNavigator account={account} />
+            <AccountTabNavigator
+                account={account}
+                chartVisible={chartVisible}
+            />
             <QRScannerView
                 isVisible={scannerState.isOpen}
                 onSuccess={scannerState.close}
