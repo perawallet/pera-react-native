@@ -19,10 +19,15 @@ import {
     KeyboardAvoidingView,
     SectionList,
 } from 'react-native'
+import { useState } from 'react'
 import { useStyles } from './styles'
 import { useAccountHistory, type TransactionSection } from './useAccountHistory'
 import { TransactionListItem } from './TransactionListItem'
 import { TransactionDateHeader } from './TransactionDateHeader'
+import {
+    TransactionsFilterBottomSheet,
+    TransactionFilter,
+} from '../TransactionsFilterBottomSheet'
 
 const TAB_AND_HEADER_HEIGHT = 100
 
@@ -41,7 +46,12 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
         handleLoadMore,
         handleExportCsv,
         isExportingCsv,
+        activeFilter,
+        customRange,
+        handleApplyFilter,
     } = useAccountHistory()
+
+    const [isFilterVisible, setIsFilterVisible] = useState(false)
 
     const renderItem = ({ item }: { item: TransactionHistoryItem }) => (
         <TransactionListItem transaction={item} />
@@ -122,6 +132,7 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
                                         variant='helper'
                                         style={styles.transparentButton}
                                         paddingStyle='dense'
+                                        onPress={() => setIsFilterVisible(true)}
                                     />
                                     <PWButton
                                         icon='document-download'
@@ -148,6 +159,14 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
                     </PWView>
                 )}
             </PWTouchableOpacity>
+
+            <TransactionsFilterBottomSheet
+                isVisible={isFilterVisible}
+                onClose={() => setIsFilterVisible(false)}
+                activeFilter={activeFilter}
+                onApplyFilter={handleApplyFilter}
+                initialCustomRange={customRange}
+            />
         </KeyboardAvoidingView>
     )
 }

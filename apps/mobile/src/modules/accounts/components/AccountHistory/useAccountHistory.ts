@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useMemo, useCallback } from 'react'
+import { useMemo, useCallback, useState } from 'react'
 import { Share } from 'react-native'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
@@ -21,6 +21,10 @@ import {
     useCsvExportMutation,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
+import {
+    TransactionFilter,
+    type CustomDateRange,
+} from '../TransactionsFilterBottomSheet'
 
 /**
  * Represents a section of transactions grouped by date.
@@ -60,6 +64,16 @@ export type UseAccountHistoryResult = {
     handleExportCsv: () => void
     /** Whether CSV export is in progress */
     isExportingCsv: boolean
+
+    /** Current active filter */
+    activeFilter: TransactionFilter
+    /** Current custom range if active */
+    customRange?: CustomDateRange
+    /** Function to apply a new filter */
+    handleApplyFilter: (
+        filter: TransactionFilter,
+        range?: CustomDateRange,
+    ) => void
 }
 
 /**
@@ -110,6 +124,84 @@ const groupTransactionsByDate = (
 }
 
 /**
+ * Helper to get start/end dates for filters
+ */
+const getFilterTimes = (
+    filter: TransactionFilter,
+    customRange?: CustomDateRange,
+): { afterTime?: string; beforeTime?: string } => {
+    const now = new Date()
+    const startOfDay = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+    )
+
+    const toISODate = (d: Date) => d.toISOString().split('T')[0]
+
+    switch (filter) {
+        case TransactionFilter.Today:
+            return {
+                afterTime: toISODate(startOfDay),
+            }
+        case TransactionFilter.Yesterday: {
+            const yesterdayStart = new Date(startOfDay)
+            yesterdayStart.setDate(yesterdayStart.getDate() - 1)
+            const yesterdayEnd = new Date(startOfDay)
+            yesterdayEnd.setMilliseconds(-1) // End of yesterday
+
+            return {
+                afterTime: toISODate(yesterdayStart),
+                beforeTime: toISODate(yesterdayEnd),
+            }
+        }
+        case TransactionFilter.LastWeek: {
+            // "Last Week" as previous 7 days from start of today?
+            // Or calendar week? Assuming last 7 days for now to keep it simple and useful.
+            const end = new Date(startOfDay)
+            const start = new Date(startOfDay)
+            start.setDate(start.getDate() - 7)
+
+            return {
+                afterTime: toISODate(start),
+                beforeTime: toISODate(end),
+            }
+        }
+        case TransactionFilter.LastMonth: {
+            // Previous calendar month
+            const startOfLastMonth = new Date(
+                now.getFullYear(),
+                now.getMonth() - 1,
+                1,
+            )
+            const endOfLastMonth = new Date(
+                now.getFullYear(),
+                now.getMonth(),
+                0,
+                23,
+                59,
+                59,
+            )
+
+            return {
+                afterTime: toISODate(startOfLastMonth),
+                beforeTime: toISODate(endOfLastMonth),
+            }
+        }
+        case TransactionFilter.CustomRange: {
+            if (!customRange) return {}
+            return {
+                afterTime: toISODate(customRange.from),
+                beforeTime: toISODate(customRange.to),
+            }
+        }
+        case TransactionFilter.AllTime:
+        default:
+            return {}
+    }
+}
+
+/**
  * Hook that manages the transaction history state and logic for AccountHistory.
  *
  * Extracts all complex logic from the component following the component-level
@@ -118,6 +210,16 @@ const groupTransactionsByDate = (
 export const useAccountHistory = (): UseAccountHistoryResult => {
     const account = useSelectedAccount()
     const { network } = useNetwork()
+
+    const [activeFilter, setActiveFilter] = useState<TransactionFilter>(
+        TransactionFilter.AllTime,
+    )
+    const [customRange, setCustomRange] = useState<CustomDateRange>()
+
+    const { afterTime, beforeTime } = useMemo(
+        () => getFilterTimes(activeFilter, customRange),
+        [activeFilter, customRange],
+    )
 
     const {
         transactions,
@@ -132,6 +234,8 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         accountAddress: account?.address ?? '',
         network,
         isEnabled: !!account?.address,
+        afterTime,
+        beforeTime,
     })
 
     const sections = useMemo(
@@ -197,5 +301,16 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         isEmpty,
         handleExportCsv,
         isExportingCsv,
+        activeFilter,
+        customRange,
+        handleApplyFilter: (
+            filter: TransactionFilter,
+            range?: CustomDateRange,
+        ) => {
+            setActiveFilter(filter)
+            if (range) {
+                setCustomRange(range)
+            }
+        },
     }
 }

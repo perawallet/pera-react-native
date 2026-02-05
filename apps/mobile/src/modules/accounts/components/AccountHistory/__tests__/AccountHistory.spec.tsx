@@ -14,6 +14,17 @@ import { render, screen, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { AccountHistory } from '../AccountHistory'
 import { useAccountHistory } from '../useAccountHistory'
+import React from 'react'
+
+vi.mock('@react-native-community/datetimepicker', () => {
+    const MockDateTimePicker = (props: any) => {
+        return React.createElement('DateTimePicker', props)
+    }
+    return {
+        default: MockDateTimePicker,
+        DateTimePickerEvent: {},
+    }
+})
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
@@ -41,6 +52,9 @@ vi.mock('../useAccountHistory', () => ({
         handleRefresh: vi.fn(),
         handleExportCsv: vi.fn(),
         isExportingCsv: false,
+        activeFilter: 'all_time',
+        customRange: undefined,
+        handleApplyFilter: vi.fn(),
     })),
 }))
 
@@ -66,6 +80,9 @@ describe('AccountHistory', () => {
             error: null,
             handleExportCsv,
             isExportingCsv: false,
+            activeFilter: 'all_time',
+            customRange: undefined,
+            handleApplyFilter: vi.fn(),
         } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
 
         render(<AccountHistory />)
@@ -89,6 +106,9 @@ describe('AccountHistory', () => {
             error: null,
             handleExportCsv: vi.fn(),
             isExportingCsv: true,
+            activeFilter: 'all_time',
+            customRange: undefined,
+            handleApplyFilter: vi.fn(),
         } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
 
         render(<AccountHistory />)

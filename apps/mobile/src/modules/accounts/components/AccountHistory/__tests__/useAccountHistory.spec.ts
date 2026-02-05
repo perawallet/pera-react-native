@@ -21,6 +21,8 @@ import {
 } from '@perawallet/wallet-core-transactions'
 import { Share } from 'react-native'
 import { useToast } from '@hooks/useToast'
+import { TransactionFilter } from '../../TransactionsFilterBottomSheet/types'
+import { act } from '@testing-library/react'
 
 // Mock dependencies
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -47,6 +49,10 @@ vi.mock('@hooks/useLanguage', () => ({
 vi.mock('react-native', () => ({
     Share: {
         share: vi.fn(),
+    },
+    Platform: {
+        OS: 'ios',
+        select: vi.fn(),
     },
 }))
 
@@ -101,6 +107,20 @@ describe('useAccountHistory', () => {
         expect(result.current.sections).toHaveLength(2)
         expect(result.current.sections[0].date).toBe('2024-01-02')
         expect(result.current.sections[1].date).toBe('2024-01-01')
+    })
+
+    it('passes filter parameters to useTransactionHistoryQuery', () => {
+        const { result } = renderHook(() => useAccountHistory())
+
+        act(() => {
+            result.current.handleApplyFilter(TransactionFilter.Today)
+        })
+
+        expect(useTransactionHistoryQuery).toHaveBeenCalledWith(
+            expect.objectContaining({
+                afterTime: expect.any(String),
+            }),
+        )
     })
 
     describe('CSV Export', () => {
