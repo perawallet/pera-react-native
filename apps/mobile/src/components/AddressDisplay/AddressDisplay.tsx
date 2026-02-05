@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { useTheme } from '@rneui/themed'
 import {
     PWIcon,
     PWText,
@@ -51,7 +50,6 @@ export const AddressDisplay = ({
     ...rest
 }: AddressDisplayProps) => {
     const styles = useStyles()
-    const { theme } = useTheme()
     const { copyToClipboard } = useClipboard()
 
     const copyAddress = () => {
@@ -85,8 +83,8 @@ export const AddressDisplay = ({
         addressFormat === 'full'
             ? address
             : addressFormat === 'long'
-                ? truncateAlgorandAddress(address, LONG_ADDRESS_FORMAT)
-                : truncateAlgorandAddress(address)
+              ? truncateAlgorandAddress(address, LONG_ADDRESS_FORMAT)
+              : truncateAlgorandAddress(address)
 
     return (
         <PWView
@@ -107,7 +105,7 @@ export const AddressDisplay = ({
                         size='small'
                         contact={contact}
                     />
-                    <PWText {...textProps} >{contact.name}</PWText>
+                    <PWText {...textProps}>{contact.name}</PWText>
                 </PWView>
             )}
 

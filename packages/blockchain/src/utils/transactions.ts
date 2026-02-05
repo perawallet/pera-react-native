@@ -19,7 +19,6 @@ import {
     type KeyRegistrationTransactionFields,
     type AppCallTransactionFields,
     OnApplicationComplete,
-    decodeTransaction,
 } from '@algorandfoundation/algokit-utils/transact'
 import type {
     AssetConfigType,
@@ -30,7 +29,6 @@ import type {
 } from '../models'
 import { encodeAlgorandAddress } from './addresses'
 import { OnCompletion } from '@algorandfoundation/algokit-utils/indexer-client'
-import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 
 export const mapToDisplayableTransaction = (
     tx: PeraTransaction,
@@ -328,10 +326,4 @@ export const isAppCallTransaction = (
     tx: PeraDisplayableTransaction,
 ): boolean => {
     return tx.txType === 'appl' && tx.applicationTransaction !== undefined
-}
-
-export const decodeAlgorandTransactions = (
-    transactions: string[],
-): PeraTransaction[] => {
-    return transactions.map(txn => decodeTransaction(decodeFromBase64(txn)))
 }

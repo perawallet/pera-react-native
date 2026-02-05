@@ -40,7 +40,10 @@ export const TransactionSummaryHeader = ({
         <>
             <PWToolbar
                 center={
-                    <PWText variant='h4' style={styles.title}>
+                    <PWText
+                        variant='h4'
+                        style={styles.title}
+                    >
                         {title ?? t('signing.transactions.title', { count: 1 })}
                     </PWText>
                 }
@@ -51,10 +54,27 @@ export const TransactionSummaryHeader = ({
                     size='lg'
                 />
 
-                {txType === 'payment' && <PaymentTransactionSummaryHeader transaction={transaction} />}
-                {(txType === 'asset-transfer' || txType === 'asset-opt-in' || txType === 'asset-opt-out' || txType === 'asset-clawback') && <AssetTransferSummaryHeader transaction={transaction} />}
-                {txType === 'app-call' && <AppCallSummaryHeader transaction={transaction} />}
-                {(txType === 'key-registration' || txType === 'asset-config' || txType === 'heartbeat' || txType === 'state-proof' || txType === 'unknown') && <GenericSummaryHeader transaction={transaction} />}
+                {txType === 'payment' && (
+                    <PaymentTransactionSummaryHeader
+                        transaction={transaction}
+                    />
+                )}
+                {(txType === 'asset-transfer' ||
+                    txType === 'asset-opt-in' ||
+                    txType === 'asset-opt-out' ||
+                    txType === 'asset-clawback') && (
+                    <AssetTransferSummaryHeader transaction={transaction} />
+                )}
+                {txType === 'app-call' && (
+                    <AppCallSummaryHeader transaction={transaction} />
+                )}
+                {(txType === 'key-registration' ||
+                    txType === 'asset-config' ||
+                    txType === 'heartbeat' ||
+                    txType === 'state-proof' ||
+                    txType === 'unknown') && (
+                    <GenericSummaryHeader transaction={transaction} />
+                )}
             </PWView>
         </>
     )

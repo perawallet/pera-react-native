@@ -17,7 +17,7 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         gap: theme.spacing.lg,
         alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'center',
     },
     button: {
         flexGrow: 1,

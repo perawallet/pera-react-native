@@ -4,5 +4,5 @@
  */
 
 export const localOverrides = {
-    debugEnabled: true
-} as const;
+    debugEnabled: true,
+} as const

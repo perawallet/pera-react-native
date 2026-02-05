@@ -31,13 +31,13 @@ import type {
 
 export type SignResult =
     | {
-        type: 'transactions'
-        signedTransactions: PeraSignedTransaction[]
-    }
+          type: 'transactions'
+          signedTransactions: PeraSignedTransaction[]
+      }
     | {
-        type: 'arbitrary-data'
-        signatures: PeraArbitraryDataSignResult[]
-    }
+          type: 'arbitrary-data'
+          signatures: PeraArbitraryDataSignResult[]
+      }
 
 const isTransactionRequest = (
     request: SignRequest,
@@ -123,7 +123,8 @@ export const useSigningRequest = () => {
             if (isTransactionRequest(request)) {
                 const signedTxs = await signTransactionRequest(request)
                 if (request.transport === 'algod') {
-                    const encodedSignedTransactions = encodeSignedTransactions(signedTxs)
+                    const encodedSignedTransactions =
+                        encodeSignedTransactions(signedTxs)
                     algokit.client.algod.sendRawTransaction(
                         encodedSignedTransactions,
                     )

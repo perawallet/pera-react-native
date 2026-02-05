@@ -11,7 +11,12 @@
  */
 
 import { useState, useCallback } from 'react'
-import { PWButton, PWDivider, PWView, bottomSheetNotifier } from '@components/core'
+import {
+    PWButton,
+    PWDivider,
+    PWView,
+    bottomSheetNotifier,
+} from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import {
@@ -60,8 +65,8 @@ export const SigningActionButtons = () => {
                         body: config.debugEnabled
                             ? `${error}`
                             : t(
-                                'signing.transaction_view.transaction_failed_body',
-                            ),
+                                  'signing.transaction_view.transaction_failed_body',
+                              ),
                     },
                     {
                         notifier: bottomSheetNotifier.current ?? undefined,

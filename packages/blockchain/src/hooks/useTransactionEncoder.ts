@@ -19,6 +19,7 @@ import {
     decodeSignedTransaction,
     decodeTransaction,
     decodeSignedTransactions,
+    decodeTransactions,
 } from '@algorandfoundation/algokit-utils/transact'
 
 export const useTransactionEncoder = () => {
@@ -30,6 +31,8 @@ export const useTransactionEncoder = () => {
             encodeSignedTransactions(txs),
         decodeTransaction: (txn: Uint8Array) =>
             decodeTransaction(txn) as PeraTransaction,
+        decodeTransactions: (txns: Uint8Array[]) =>
+            decodeTransactions(txns) as PeraTransaction[],
         decodeSignedTransaction: (txn: Uint8Array) =>
             decodeSignedTransaction(txn) as PeraSignedTransaction,
         decodeSignedTransactions: (txns: Uint8Array[]) =>

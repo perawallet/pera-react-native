@@ -140,7 +140,7 @@ const mainnetPeraClient = ky.create({
     prefixUrl: config.mainnetBackendUrl,
     retry: {
         limit: 1,
-    }
+    },
 })
 
 const testnetPeraClient = ky.create({

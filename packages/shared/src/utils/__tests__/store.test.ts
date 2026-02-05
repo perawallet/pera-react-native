@@ -26,7 +26,9 @@ describe('utils/store', () => {
 
             expect(() => {
                 lazy.useStore((state: TestState) => state.count)
-            }).toThrow('Zustand store test used in useStore before initialization')
+            }).toThrow(
+                'Zustand store test used in useStore before initialization',
+            )
         })
 
         test('initializes without error', () => {

@@ -25,7 +25,8 @@ import { PollingState } from '../models'
 
 const STORE_NAME = 'polling-store'
 
-const lazy = createLazyStore<WithPersist<StoreApi<PollingState>, unknown>>(STORE_NAME)
+const lazy =
+    createLazyStore<WithPersist<StoreApi<PollingState>, unknown>>(STORE_NAME)
 
 export const usePollingStore: UseBoundStore<
     WithPersist<StoreApi<PollingState>, unknown>

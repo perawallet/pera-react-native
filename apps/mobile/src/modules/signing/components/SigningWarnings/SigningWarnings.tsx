@@ -48,8 +48,12 @@ const WarningItem = ({ warning, showDivider, isGroup }: WarningItemProps) => {
     const isRekey = warning.type === 'rekey'
     const icon = isClose ? 'trash' : 'rekey'
     const messageKey = isClose
-        ? isGroup ? 'transactions.warning.close_group_warning' : 'transactions.warning.close_warning'
-        : isGroup ? 'transactions.warning.rekey_group_warning' : 'transactions.warning.rekey_warning'
+        ? isGroup
+            ? 'transactions.warning.close_group_warning'
+            : 'transactions.warning.close_warning'
+        : isGroup
+          ? 'transactions.warning.rekey_group_warning'
+          : 'transactions.warning.rekey_warning'
 
     return (
         <>
@@ -124,9 +128,14 @@ export const SigningWarnings = ({ isGroup = false }: { isGroup?: boolean }) => {
                     onPress={open}
                     title={t('transactions.warning.title')}
                     titleWeight='h4'
-                    description={t(isGroup ? 'transactions.warning.title_cta_group' : 'transactions.warning.title_cta', {
-                        count: warningCount,
-                    })}
+                    description={t(
+                        isGroup
+                            ? 'transactions.warning.title_cta_group'
+                            : 'transactions.warning.title_cta',
+                        {
+                            count: warningCount,
+                        },
+                    )}
                     leftIcon='info'
                     rightIcon='chevron-right'
                     variant='error'

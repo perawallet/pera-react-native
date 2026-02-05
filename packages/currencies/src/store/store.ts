@@ -24,7 +24,8 @@ import {
 import { CurrenciesStore } from '../models'
 
 const STORE_NAME = 'currencies-store'
-const lazy = createLazyStore<WithPersist<StoreApi<CurrenciesStore>, unknown>>(STORE_NAME)
+const lazy =
+    createLazyStore<WithPersist<StoreApi<CurrenciesStore>, unknown>>(STORE_NAME)
 
 export const useCurrenciesStore: UseBoundStore<
     WithPersist<StoreApi<CurrenciesStore>, unknown>

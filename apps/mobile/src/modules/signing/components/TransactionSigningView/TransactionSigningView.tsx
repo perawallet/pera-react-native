@@ -13,7 +13,10 @@
 import { PWView } from '@components/core'
 import { SigningRoutes } from '@modules/signing/routes'
 import type { TransactionSignRequest } from '@perawallet/wallet-core-signing'
-import { NavigationContainer, NavigationIndependentTree } from '@react-navigation/native'
+import {
+    NavigationContainer,
+    NavigationIndependentTree,
+} from '@react-navigation/native'
 import { useStyles } from './styles'
 
 export type TransactionSigningViewProps = {
@@ -25,11 +28,13 @@ export const TransactionSigningView = ({
 }: TransactionSigningViewProps) => {
     const styles = useStyles()
 
-    return <PWView style={styles.container}>
-        <NavigationIndependentTree>
-            <NavigationContainer>
-                <SigningRoutes request={request} />
-            </NavigationContainer>
-        </NavigationIndependentTree>
-    </PWView>
+    return (
+        <PWView style={styles.container}>
+            <NavigationIndependentTree>
+                <NavigationContainer>
+                    <SigningRoutes request={request} />
+                </NavigationContainer>
+            </NavigationIndependentTree>
+        </PWView>
+    )
 }

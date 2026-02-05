@@ -1,4 +1,4 @@
-import { makeStyles } from "@rneui/themed"
+import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {

@@ -33,7 +33,7 @@ export const useStyles = makeStyles(theme => ({
     addressText: {
         fontFamily: getFontFamily(false, 700),
         fontSize: 19,
-        color: theme.colors.textMain
+        color: theme.colors.textMain,
     },
     typeText: {
         fontFamily: getFontFamily(false, 400),
@@ -42,7 +42,7 @@ export const useStyles = makeStyles(theme => ({
         flexWrap: 'nowrap',
     },
     secondaryAmountValue: {
-        color: theme.colors.textGray
+        color: theme.colors.textGray,
     },
     amountContainer: {
         marginTop: theme.spacing.md,
@@ -55,6 +55,6 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.xs,
     },
     assetName: {
-        color: theme.colors.textMain
-    }
+        color: theme.colors.textMain,
+    },
 }))

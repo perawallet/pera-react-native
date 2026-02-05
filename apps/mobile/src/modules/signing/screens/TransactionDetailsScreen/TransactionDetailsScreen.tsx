@@ -54,7 +54,10 @@ export const TransactionDetailsScreen = () => {
                 }
                 left={
                     navigation.canGoBack() ? (
-                        <PWIcon name='chevron-left' onPress={navigation.goBack} />
+                        <PWIcon
+                            name='chevron-left'
+                            onPress={navigation.goBack}
+                        />
                     ) : undefined
                 }
             />

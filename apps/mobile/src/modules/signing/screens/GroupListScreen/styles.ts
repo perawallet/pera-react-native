@@ -17,8 +17,7 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
         paddingHorizontal: theme.spacing.xl,
     },
-    contentContainer: {
-    },
+    contentContainer: {},
     groupHeader: {
         alignItems: 'center' as const,
         gap: theme.spacing.md,
@@ -33,6 +32,6 @@ export const useStyles = makeStyles(theme => ({
         height: theme.spacing.sm,
     },
     title: {
-        textAlign: 'center'
-    }
+        textAlign: 'center',
+    },
 }))

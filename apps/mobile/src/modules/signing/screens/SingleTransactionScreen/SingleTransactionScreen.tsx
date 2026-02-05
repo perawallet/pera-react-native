@@ -26,8 +26,6 @@ import {
 import { useStyles } from './styles'
 import Decimal from 'decimal.js'
 import { SigningActionButtons } from '@modules/signing/components/SigningActionButtons'
-import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
-import { AddressDisplay } from '@components/AddressDisplay'
 import { SigningAccountDisplay } from '@modules/signing/components/SigningAccountDisplay/SigningAccountDisplay'
 
 export const SingleTransactionScreen = () => {
@@ -56,11 +54,17 @@ export const SingleTransactionScreen = () => {
 
                 <SigningWarnings />
 
-                <PWDivider color={theme.colors.layerGray} style={styles.paddedDivider} />
+                <PWDivider
+                    color={theme.colors.layerGray}
+                    style={styles.paddedDivider}
+                />
 
                 <SigningAccountDisplay transaction={transaction} />
 
-                <FeeDisplay fee={new Decimal(totalFee)} transaction={transaction} />
+                <FeeDisplay
+                    fee={new Decimal(totalFee)}
+                    transaction={transaction}
+                />
 
                 <SigningActionButtons />
             </PWView>

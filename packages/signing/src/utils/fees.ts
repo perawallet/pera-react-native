@@ -20,6 +20,12 @@ export const calculateTotalFee = (
 ): Decimal =>
     transactions.reduce(
         (sum, tx) =>
-            signableAddresses.has(tx.sender) ? sum.add(new Decimal(tx.fee ?? 0n).dividedBy(10 ** ALGO_ASSET.decimals)) : sum,
+            signableAddresses.has(tx.sender)
+                ? sum.add(
+                      new Decimal(tx.fee ?? 0n).dividedBy(
+                          10 ** ALGO_ASSET.decimals,
+                      ),
+                  )
+                : sum,
         new Decimal(0),
     )

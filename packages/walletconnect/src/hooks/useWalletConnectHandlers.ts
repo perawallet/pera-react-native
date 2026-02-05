@@ -11,6 +11,7 @@
  */
 
 import {
+    decodeFromBase64,
     encodeToBase64,
     logger,
     Network,
@@ -23,7 +24,6 @@ import {
 } from '../errors'
 import { useWalletConnectStore } from '../store'
 import {
-    decodeAlgorandTransactions,
     PeraSignedTransaction,
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
@@ -163,7 +163,8 @@ export const useWalletConnectHandlers = () => {
         state => state.walletConnectConnections,
     )
     const { addSignRequest } = useSigningRequest()
-    const { encodeSignedTransaction } = useTransactionEncoder()
+    const { encodeSignedTransactions, decodeTransactions } =
+        useTransactionEncoder()
     const { network } = useNetwork()
     const accounts = useAllAccounts()
 
@@ -232,7 +233,6 @@ export const useWalletConnectHandlers = () => {
             error: Error | null,
             payload: WalletConnectTransactionPayload | null,
         ) => {
-
             logger.debug('handleSignTransaction', { payload, network })
             validateRequest(connector, connections, network, error)
             const paramOne = payload?.params?.at(0)
@@ -242,11 +242,9 @@ export const useWalletConnectHandlers = () => {
                 )
             }
 
-            const txnObjects = decodeAlgorandTransactions(
-                paramOne.map(p => p.txn),
+            const txnObjects = decodeTransactions(
+                paramOne.map(p => decodeFromBase64(p.txn)),
             )
-
-            logger.debug('handleSignTransaction', { payload, txnObjects })
 
             addSignRequest({
                 id: uuid(),
@@ -255,14 +253,18 @@ export const useWalletConnectHandlers = () => {
                 transportId: connector.clientId,
                 txs: txnObjects,
                 approve: async (signed: (PeraSignedTransaction | null)[]) => {
-                    const signedTxns = signed.map(txn =>
-                        txn ? encodeSignedTransaction(txn) : null,
-                    )
+                    const toSign = signed.filter(
+                        Boolean,
+                    ) as PeraSignedTransaction[]
+                    const encodedSignedTransactions =
+                        encodeSignedTransactions(toSign)
 
-                    if (signedTxns) {
+                    if (encodedSignedTransactions) {
                         connector.approveRequest({
                             id: payload.id,
-                            result: signedTxns,
+                            result: encodedSignedTransactions.map(t =>
+                                encodeToBase64(t),
+                            ),
                         })
                     }
                 },

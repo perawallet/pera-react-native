@@ -31,10 +31,7 @@ import { GroupListHeader } from './GroupListHeader'
 import { GroupListFooter } from './GroupListFooter'
 import { useStyles } from './styles'
 
-type NavigationProp = StackNavigationProp<
-    SigningStackParamList,
-    'GroupList'
->
+type NavigationProp = StackNavigationProp<SigningStackParamList, 'GroupList'>
 type GroupListRouteProp = RouteProp<SigningStackParamList, 'GroupList'>
 
 export const GroupListScreen = () => {
@@ -44,8 +41,7 @@ export const GroupListScreen = () => {
     const route = useRoute<GroupListRouteProp>()
     const { pendingSignRequests } = useSigningRequest()
     const request = pendingSignRequests[0] as TransactionSignRequest
-    const { groups, totalFee } =
-        useSigningRequestAnalysis(request)
+    const { groups, totalFee } = useSigningRequestAnalysis(request)
 
     const { groupIndex } = route.params
     const transactions = groups[groupIndex] ?? []
@@ -79,7 +75,10 @@ export const GroupListScreen = () => {
         <PWView style={styles.container}>
             <PWToolbar
                 center={
-                    <PWText variant='h4' style={styles.title}>
+                    <PWText
+                        variant='h4'
+                        style={styles.title}
+                    >
                         {t('signing.transactions.title')}
                     </PWText>
                 }

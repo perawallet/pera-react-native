@@ -25,7 +25,9 @@ import {
 
 const STORE_NAME = 'notifications-store'
 const lazy =
-    createLazyStore<WithPersist<StoreApi<NotificationsState>, unknown>>(STORE_NAME)
+    createLazyStore<WithPersist<StoreApi<NotificationsState>, unknown>>(
+        STORE_NAME,
+    )
 
 export const useNotificationsStore: UseBoundStore<
     WithPersist<StoreApi<NotificationsState>, unknown>

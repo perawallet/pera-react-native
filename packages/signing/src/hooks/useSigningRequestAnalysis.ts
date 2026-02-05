@@ -27,10 +27,12 @@ export const useSigningRequestAnalysis = (request: TransactionSignRequest) => {
 
     const groups = useMemo(
         () =>
-            partitionBy(request.txs
-                .map(tx => mapToDisplayableTransaction(tx))
-                .filter((tx): tx is PeraDisplayableTransaction => !!tx),
-                (tx: PeraDisplayableTransaction) => tx.group ? encodeToBase64(tx.group) : 'no-group'
+            partitionBy(
+                request.txs
+                    .map(tx => mapToDisplayableTransaction(tx))
+                    .filter((tx): tx is PeraDisplayableTransaction => !!tx),
+                (tx: PeraDisplayableTransaction) =>
+                    tx.group ? encodeToBase64(tx.group) : 'no-group',
             ),
         [request.txs],
     )

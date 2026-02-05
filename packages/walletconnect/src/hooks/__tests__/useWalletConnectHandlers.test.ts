@@ -46,7 +46,6 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         encodeSignedTransaction: vi.fn(() => new Uint8Array([1, 2, 3, 4])),
     })),
     encodeAlgorandAddress: vi.fn(() => 'TEST_ADDRESS'),
-    decodeAlgorandTransactions: vi.fn(txns => txns),
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({

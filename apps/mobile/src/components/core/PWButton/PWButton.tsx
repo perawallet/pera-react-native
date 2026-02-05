@@ -18,12 +18,12 @@ import { ActivityIndicator, StyleProp, ViewStyle } from 'react-native'
 
 export type PWButtonProps = {
     variant:
-    | 'primary'
-    | 'secondary'
-    | 'helper'
-    | 'link'
-    | 'destructive'
-    | 'errorLink'
+        | 'primary'
+        | 'secondary'
+        | 'helper'
+        | 'link'
+        | 'destructive'
+        | 'errorLink'
     title?: string
     icon?: IconName
     iconRight?: IconName

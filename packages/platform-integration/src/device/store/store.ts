@@ -51,7 +51,8 @@ const rehydrateDeviceSlice = (
     return persistedState
 }
 
-const lazy = createLazyStore<WithPersist<StoreApi<DeviceState>, unknown>>(STORE_NAME)
+const lazy =
+    createLazyStore<WithPersist<StoreApi<DeviceState>, unknown>>(STORE_NAME)
 
 export const useDeviceStore: UseBoundStore<
     WithPersist<StoreApi<DeviceState>, unknown>

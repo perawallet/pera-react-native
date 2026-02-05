@@ -22,6 +22,6 @@ export const useStyles = makeStyles(theme => ({
         paddingHorizontal: theme.spacing.xl,
     },
     paddedDivider: {
-        marginVertical: theme.spacing.md
-    }
+        marginVertical: theme.spacing.md,
+    },
 }))

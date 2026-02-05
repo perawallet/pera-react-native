@@ -55,10 +55,17 @@ export const FeeDisplay = ({ fee, transaction, label }: FeeDisplayProps) => {
                     showSymbol
                     style={fee.greaterThan(0) ? styles.value : undefined}
                 />
-
-
             </PWView>
-            {!!transaction && <PWButton variant='link' style={styles.transactionDetails} paddingStyle='none' title={t('signing.view_details')} iconRight='chevron-right' onPress={handleViewDetails} />}
+            {!!transaction && (
+                <PWButton
+                    variant='link'
+                    style={styles.transactionDetails}
+                    paddingStyle='none'
+                    title={t('signing.view_details')}
+                    iconRight='chevron-right'
+                    onPress={handleViewDetails}
+                />
+            )}
         </PWView>
     )
 }
