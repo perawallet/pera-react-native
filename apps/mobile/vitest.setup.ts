@@ -1483,3 +1483,15 @@ vi.mock('react-native-gifted-charts', () => {
             React.createElement('div', { ...props, 'data-testid': 'PieChart' }),
     }
 })
+
+// Mock @react-native-community/datetimepicker to prevent Rollup parse errors
+vi.mock('@react-native-community/datetimepicker', () => {
+    const React = require('react')
+    return {
+        default: (props: any) =>
+            React.createElement('div', {
+                ...props,
+                'data-testid': props.testID || 'datetimepicker',
+            }),
+    }
+})

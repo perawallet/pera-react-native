@@ -62,12 +62,17 @@ describe('useAccountHistory', () => {
     const mockNetwork = { network: 'mainnet' }
     const mockShowToast = vi.fn()
     const mockExportCsv = vi.fn()
+    const mockFetchNextPage = vi.fn()
+    const mockRefetch = vi.fn()
 
     beforeEach(() => {
         vi.clearAllMocks()
-        vi.mocked(useSelectedAccount).mockReturnValue(mockAccount as any) // eslint-disable-line @typescript-eslint/no-explicit-any
-        vi.mocked(useNetwork).mockReturnValue(mockNetwork as any) // eslint-disable-line @typescript-eslint/no-explicit-any
-        vi.mocked(useToast).mockReturnValue({ showToast: mockShowToast } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        vi.mocked(useSelectedAccount).mockReturnValue(mockAccount as any)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        vi.mocked(useNetwork).mockReturnValue(mockNetwork as any)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        vi.mocked(useToast).mockReturnValue({ showToast: mockShowToast } as any)
 
         vi.mocked(useTransactionHistoryQuery).mockReturnValue({
             transactions: [],
@@ -76,9 +81,10 @@ describe('useAccountHistory', () => {
             isError: false,
             error: null,
             hasNextPage: false,
-            fetchNextPage: vi.fn(),
-            refetch: vi.fn(),
-        } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+            fetchNextPage: mockFetchNextPage,
+            refetch: mockRefetch,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any)
 
         vi.mocked(useCsvExportMutation).mockReturnValue({
             exportCsv: mockExportCsv,
@@ -88,38 +94,200 @@ describe('useAccountHistory', () => {
             isSuccess: false,
             result: null,
             reset: vi.fn(),
-        } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any)
     })
 
-    it('returns grouped transactions sections', () => {
-        const transactions = [
-            { id: '1', roundTime: 1704067200, sender: 'A' }, // 2024-01-01
-            { id: '2', roundTime: 1704153600, sender: 'B' }, // 2024-01-02
-        ]
-        vi.mocked(useTransactionHistoryQuery).mockReturnValue({
-            transactions,
-            isLoading: false,
-        } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+    describe('transaction grouping', () => {
+        it('returns grouped transactions sections by date', () => {
+            const transactions = [
+                { id: '1', roundTime: 1704067200, sender: 'A' }, // 2024-01-01
+                { id: '2', roundTime: 1704153600, sender: 'B' }, // 2024-01-02
+            ]
+            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+                transactions,
+                isLoading: false,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
 
-        const { result } = renderHook(() => useAccountHistory())
+            const { result } = renderHook(() => useAccountHistory())
 
-        expect(result.current.sections).toHaveLength(2)
-        expect(result.current.sections[0].date).toBe('2024-01-02')
-        expect(result.current.sections[1].date).toBe('2024-01-01')
-    })
-
-    it('passes filter parameters to useTransactionHistoryQuery', () => {
-        const { result } = renderHook(() => useAccountHistory())
-
-        act(() => {
-            result.current.handleApplyFilter(TransactionFilter.Today)
+            expect(result.current.sections).toHaveLength(2)
+            expect(result.current.sections[0].date).toBe('2024-01-02')
+            expect(result.current.sections[1].date).toBe('2024-01-01')
         })
 
-        expect(useTransactionHistoryQuery).toHaveBeenCalledWith(
-            expect.objectContaining({
-                afterTime: expect.any(String),
-            }),
-        )
+        it('returns empty sections when no transactions', () => {
+            const { result } = renderHook(() => useAccountHistory())
+
+            expect(result.current.sections).toHaveLength(0)
+            expect(result.current.isEmpty).toBe(true)
+        })
+
+        it('groups multiple transactions on same date', () => {
+            const transactions = [
+                { id: '1', roundTime: 1704067200, sender: 'A' }, // 2024-01-01 00:00
+                { id: '2', roundTime: 1704067260, sender: 'B' }, // 2024-01-01 00:01
+                { id: '3', roundTime: 1704067320, sender: 'C' }, // 2024-01-01 00:02
+            ]
+            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+                transactions,
+                isLoading: false,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+
+            const { result } = renderHook(() => useAccountHistory())
+
+            expect(result.current.sections).toHaveLength(1)
+            expect(result.current.sections[0].data).toHaveLength(3)
+        })
+    })
+
+    describe('loading states', () => {
+        it('returns isLoading from query', () => {
+            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+                transactions: [],
+                isLoading: true,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+
+            const { result } = renderHook(() => useAccountHistory())
+
+            expect(result.current.isLoading).toBe(true)
+        })
+
+        it('returns isFetchingNextPage from query', () => {
+            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+                transactions: [],
+                isLoading: false,
+                isFetchingNextPage: true,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+
+            const { result } = renderHook(() => useAccountHistory())
+
+            expect(result.current.isFetchingNextPage).toBe(true)
+        })
+    })
+
+    describe('filter handling', () => {
+        it('passes filter parameters to useTransactionHistoryQuery', () => {
+            const { result } = renderHook(() => useAccountHistory())
+
+            act(() => {
+                result.current.handleApplyFilter(TransactionFilter.Today)
+            })
+
+            expect(useTransactionHistoryQuery).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    afterTime: expect.any(String),
+                }),
+            )
+        })
+
+        it('updates activeFilter when handleApplyFilter is called', () => {
+            const { result } = renderHook(() => useAccountHistory())
+
+            expect(result.current.activeFilter).toBe(TransactionFilter.AllTime)
+
+            act(() => {
+                result.current.handleApplyFilter(TransactionFilter.Yesterday)
+            })
+
+            expect(result.current.activeFilter).toBe(
+                TransactionFilter.Yesterday,
+            )
+        })
+
+        it('handles custom range filter', () => {
+            const { result } = renderHook(() => useAccountHistory())
+            const customRange = {
+                from: new Date('2024-01-01'),
+                to: new Date('2024-01-15'),
+            }
+
+            act(() => {
+                result.current.handleApplyFilter(
+                    TransactionFilter.CustomRange,
+                    customRange,
+                )
+            })
+
+            expect(result.current.activeFilter).toBe(
+                TransactionFilter.CustomRange,
+            )
+            expect(result.current.customRange).toEqual(customRange)
+        })
+    })
+
+    describe('pagination', () => {
+        it('calls fetchNextPage when handleLoadMore is called and hasNextPage', () => {
+            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+                transactions: [],
+                isLoading: false,
+                isFetchingNextPage: false,
+                hasNextPage: true,
+                fetchNextPage: mockFetchNextPage,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+
+            const { result } = renderHook(() => useAccountHistory())
+
+            result.current.handleLoadMore()
+
+            expect(mockFetchNextPage).toHaveBeenCalled()
+        })
+
+        it('does not call fetchNextPage when already fetching', () => {
+            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+                transactions: [],
+                isLoading: false,
+                isFetchingNextPage: true,
+                hasNextPage: true,
+                fetchNextPage: mockFetchNextPage,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+
+            const { result } = renderHook(() => useAccountHistory())
+
+            result.current.handleLoadMore()
+
+            expect(mockFetchNextPage).not.toHaveBeenCalled()
+        })
+
+        it('does not call fetchNextPage when no more pages', () => {
+            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+                transactions: [],
+                isLoading: false,
+                isFetchingNextPage: false,
+                hasNextPage: false,
+                fetchNextPage: mockFetchNextPage,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+
+            const { result } = renderHook(() => useAccountHistory())
+
+            result.current.handleLoadMore()
+
+            expect(mockFetchNextPage).not.toHaveBeenCalled()
+        })
+    })
+
+    describe('refresh', () => {
+        it('calls refetch when handleRefresh is called', () => {
+            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
+                transactions: [],
+                isLoading: false,
+                refetch: mockRefetch,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+
+            const { result } = renderHook(() => useAccountHistory())
+
+            result.current.handleRefresh()
+
+            expect(mockRefetch).toHaveBeenCalled()
+        })
     })
 
     describe('CSV Export', () => {
@@ -142,6 +310,18 @@ describe('useAccountHistory', () => {
             expect(mockExportCsv).not.toHaveBeenCalled()
         })
 
+        it('returns isExportingCsv from mutation', () => {
+            vi.mocked(useCsvExportMutation).mockReturnValue({
+                exportCsv: mockExportCsv,
+                isLoading: true,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any)
+
+            const { result } = renderHook(() => useAccountHistory())
+
+            expect(result.current.isExportingCsv).toBe(true)
+        })
+
         it('triggers native share upon successful export', async () => {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             let successCallback: (result: any) => Promise<void> = async () => {}
@@ -152,7 +332,8 @@ describe('useAccountHistory', () => {
                     return {
                         exportCsv: mockExportCsv,
                         isLoading: false,
-                    } as any // eslint-disable-line @typescript-eslint/no-explicit-any
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    } as any
                 },
             )
 
@@ -183,7 +364,8 @@ describe('useAccountHistory', () => {
                     return {
                         exportCsv: mockExportCsv,
                         isLoading: false,
-                    } as any // eslint-disable-line @typescript-eslint/no-explicit-any
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    } as any
                 },
             )
 
@@ -213,7 +395,8 @@ describe('useAccountHistory', () => {
                     return {
                         exportCsv: mockExportCsv,
                         isLoading: false,
-                    } as any // eslint-disable-line @typescript-eslint/no-explicit-any
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    } as any
                 },
             )
 
