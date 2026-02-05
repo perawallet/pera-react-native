@@ -11,7 +11,11 @@
  */
 
 import { useCallback } from 'react'
-import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native'
+import {
+    useNavigation,
+    useRoute,
+    type RouteProp,
+} from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import {
