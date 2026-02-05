@@ -44,6 +44,11 @@ export const TransactionFooter = ({
             id: uuid(),
         })
     }
+
+    if (!transaction.id) {
+        return null
+    }
+
     return (
         <PWView style={styles.container}>
             <PWButton

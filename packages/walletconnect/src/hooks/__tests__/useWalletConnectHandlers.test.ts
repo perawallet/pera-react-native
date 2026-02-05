@@ -14,7 +14,7 @@ import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useWalletConnectHandlers } from '../useWalletConnectHandlers'
 import { useWalletConnectStore } from '../../store'
-import { useSigningRequest } from '@perawallet/wallet-core-blockchain'
+import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import { Networks } from '@perawallet/wallet-core-shared'
 import {
@@ -26,6 +26,7 @@ import {
     WalletConnectInvalidSessionError,
     WalletConnectSignRequestError,
 } from '../../errors'
+import { WalletConnectTransactionPayload } from 'walletconnect/src/models'
 
 // Mock dependencies
 vi.mock('../../store', () => ({
@@ -41,11 +42,23 @@ vi.mock('uuid', async importOriginal => {
 })
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useSigningRequest: vi.fn(),
     useTransactionEncoder: vi.fn(() => ({
         encodeSignedTransaction: vi.fn(() => new Uint8Array([1, 2, 3, 4])),
+        encodeSignedTransactions: vi.fn((txs: unknown[]) =>
+            txs.length > 0 ? [new Uint8Array([1, 2, 3, 4])] : [],
+        ),
+        decodeTransactions: vi.fn((txnBytes: Uint8Array[]) =>
+            txnBytes.map(() => ({
+                sender: { publicKey: new Uint8Array([1, 2, 3]) },
+                fee: 1000n,
+            })),
+        ),
     })),
     encodeAlgorandAddress: vi.fn(() => 'TEST_ADDRESS'),
+}))
+
+vi.mock('@perawallet/wallet-core-signing', () => ({
+    useSigningRequest: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-platform-integration', () => ({
@@ -76,6 +89,8 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             debug: vi.fn(),
             error: vi.fn(),
         },
+        decodeFromBase64: vi.fn(() => new Uint8Array([1, 2, 3, 4])),
+        encodeToBase64: vi.fn(() => 'AQIDBA=='),
     }
 })
 
@@ -158,7 +173,7 @@ describe('useWalletConnectHandlers', () => {
 
             expect(connector.approveRequest).toHaveBeenCalledWith({
                 id: 1,
-                result: [Buffer.from(signature).toString('base64')],
+                result: ['AQIDBA=='], // Mocked encodeToBase64 return value
             })
         })
 
@@ -439,11 +454,15 @@ describe('useWalletConnectHandlers', () => {
             }
             const payload = {
                 params: [
-                    {
-                        message: 'Sign tx',
-                        txn: 'encodedTxn',
-                    },
+                    [
+                        {
+                            message: 'Sign tx',
+                            txn: 'encodedTxn',
+                        },
+                    ],
                 ],
+                method: 'algo_signTxn' as const,
+                jsonrpc: '2.0',
                 id: 1,
             }
 
@@ -458,7 +477,12 @@ describe('useWalletConnectHandlers', () => {
                 type: 'transactions',
                 transport: 'callback',
                 transportId: 'test-client-id',
-                txs: ['encodedTxn'],
+                txs: [
+                    {
+                        sender: { publicKey: new Uint8Array([1, 2, 3]) },
+                        fee: 1000n,
+                    },
+                ],
                 approve: expect.any(Function),
                 reject: expect.any(Function),
                 error: expect.any(Function),
@@ -470,16 +494,14 @@ describe('useWalletConnectHandlers', () => {
                     mockAddSignRequest.mock.calls.length - 1
                 ][0]
 
-            // Mock PeraSignedTransaction
+            // Mock PeraSignedTransaction (flat array)
             const signedTxs = [
-                [
-                    {
-                        txn: {
-                            sender: { publicKey: new Uint8Array([10, 20, 30]) },
-                        },
-                        sig: new Uint8Array([1, 2, 3]),
+                {
+                    txn: {
+                        sender: { publicKey: new Uint8Array([10, 20, 30]) },
                     },
-                ],
+                    sig: new Uint8Array([1, 2, 3]),
+                },
             ]
 
             act(() => {
@@ -488,7 +510,7 @@ describe('useWalletConnectHandlers', () => {
 
             expect(connector.approveRequest).toHaveBeenCalledWith({
                 id: 1,
-                result: [[new Uint8Array([1, 2, 3, 4])]],
+                result: ['AQIDBA=='],
             })
         })
 
@@ -499,7 +521,16 @@ describe('useWalletConnectHandlers', () => {
                 rejectRequest: vi.fn(),
             }
             const payload = {
-                params: [{ message: 'Sign tx', txn: 'encodedTxn' }],
+                params: [
+                    [
+                        {
+                            message: 'Sign tx',
+                            txn: 'encodedTxn',
+                        },
+                    ],
+                ],
+                method: 'algo_signTxn' as const,
+                jsonrpc: '2.0',
                 id: 1,
             }
 
@@ -534,7 +565,16 @@ describe('useWalletConnectHandlers', () => {
                 rejectRequest: vi.fn(),
             }
             const payload = {
-                params: [{ message: 'Sign tx', txn: 'encodedTxn' }],
+                params: [
+                    [
+                        {
+                            message: 'Sign tx',
+                            txn: 'encodedTxn',
+                        },
+                    ],
+                ],
+                method: 'algo_signTxn' as const,
+                jsonrpc: '2.0',
                 id: 1,
             }
 
@@ -575,7 +615,7 @@ describe('useWalletConnectHandlers', () => {
 
             expect(connector.approveRequest).toHaveBeenCalledWith({
                 id: 1,
-                result: [[new Uint8Array([1, 2, 3, 4])]],
+                result: ['AQIDBA=='],
             })
         })
 
@@ -589,7 +629,16 @@ describe('useWalletConnectHandlers', () => {
                 rejectRequest: vi.fn(),
             }
             const payload = {
-                params: [{ message: 'Sign tx', txn: 'encodedTxn' }],
+                params: [
+                    [
+                        {
+                            message: 'Sign tx',
+                            txn: 'encodedTxn',
+                        },
+                    ],
+                ],
+                method: 'algo_signTxn' as const,
+                jsonrpc: '2.0',
                 id: 1,
             }
 
@@ -621,7 +670,17 @@ describe('useWalletConnectHandlers', () => {
                 accounts: ['addr1'],
             }
             const payload = {
-                params: [{ message: 'Sign tx', txn: 'encodedTxn' }],
+                params: [
+                    [
+                        {
+                            message: 'Sign tx',
+                            txn: 'encodedTxn',
+                        },
+                    ],
+                ],
+                method: 'algo_signTxn' as const,
+                jsonrpc: '2.0',
+                id: 1,
             }
 
             result.current.handleSignTransaction(
@@ -651,7 +710,7 @@ describe('useWalletConnectHandlers', () => {
                 result.current.handleSignTransaction(
                     connector as any,
                     null,
-                    {},
+                    {} as unknown as WalletConnectTransactionPayload,
                 ),
             ).toThrow(WalletConnectInvalidSessionError)
         })

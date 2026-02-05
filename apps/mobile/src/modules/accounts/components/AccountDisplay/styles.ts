@@ -33,6 +33,7 @@ export const useStyles = makeStyles(
             },
             addressText: {
                 color: theme.colors.textGray,
+                lineHeight: theme.spacing.lg,
             },
         }
     },

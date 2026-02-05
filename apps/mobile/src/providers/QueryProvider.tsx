@@ -22,16 +22,16 @@ import { logger } from '@perawallet/wallet-core-shared'
 const cache = new QueryCache({
     onError: error => {
         logger.error('An error has occurred:', { error })
-        //TODO should we throw here?
     },
 })
+
 const queryClient = new QueryClient({
     queryCache: cache,
     defaultOptions: {
         queries: {
             gcTime: config.reactQueryDefaultGCTime,
             staleTime: config.reactQueryDefaultStaleTime,
-            retry: 2,
+            retry: 0, //ky handles retries
         },
         mutations: {
             throwOnError: true,

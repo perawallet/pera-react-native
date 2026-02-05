@@ -138,6 +138,9 @@ const mainnetPeraClient = ky.create({
         beforeRequest: [setStandardHeaders, ...standardHooks.beforeRequest],
     },
     prefixUrl: config.mainnetBackendUrl,
+    retry: {
+        limit: 1,
+    },
 })
 
 const testnetPeraClient = ky.create({

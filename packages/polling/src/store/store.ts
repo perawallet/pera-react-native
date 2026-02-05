@@ -19,14 +19,14 @@ import {
 import {
     createLazyStore,
     DataStoreRegistry,
-    logger,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
 import { PollingState } from '../models'
 
 const STORE_NAME = 'polling-store'
 
-const lazy = createLazyStore<WithPersist<StoreApi<PollingState>, unknown>>()
+const lazy =
+    createLazyStore<WithPersist<StoreApi<PollingState>, unknown>>(STORE_NAME)
 
 export const usePollingStore: UseBoundStore<
     WithPersist<StoreApi<PollingState>, unknown>
@@ -47,7 +47,7 @@ export const createPollingStore = (storage: KeyValueStorageService) =>
                 resetState: () => set(initialState),
             }),
             {
-                name: 'polling-store',
+                name: STORE_NAME,
                 storage: createJSONStorage(() => storage),
                 version: 1,
                 partialize: state => ({
@@ -58,11 +58,9 @@ export const createPollingStore = (storage: KeyValueStorageService) =>
     )
 
 export const initPollingStore = () => {
-    logger.debug('Initializing polling store')
     const storage = useKeyValueStorageService()
     const realStore = createPollingStore(storage)
     lazy.init(realStore, () => realStore.getState().resetState())
-    logger.debug('Polling store initialized')
 }
 
 export const clearPollingStore = () => lazy.clear()

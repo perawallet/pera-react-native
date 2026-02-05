@@ -41,6 +41,7 @@ describe('TransactionHeader', () => {
         id: 'TX_ID',
         txType: 'pay',
         confirmedRound: 12345n,
+        roundTime: 1704067200, // 2024-01-01
         roundTimeMillis: 1704067200000, // 2024-01-01 in milliseconds
     } as unknown as PeraDisplayableTransaction
 

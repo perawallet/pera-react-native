@@ -11,6 +11,7 @@
  */
 
 import {
+    decodeFromBase64,
     encodeToBase64,
     logger,
     Network,
@@ -23,18 +24,24 @@ import {
 } from '../errors'
 import { useWalletConnectStore } from '../store'
 import {
-    ArbitraryDataSignRequest,
-    PeraArbitraryDataMessage,
-    PeraArbitraryDataSignResult,
     PeraSignedTransaction,
-    TransactionSignRequest,
-    useSigningRequest,
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
+import {
+    type ArbitraryDataSignRequest,
+    type PeraArbitraryDataMessage,
+    type PeraArbitraryDataSignResult,
+    type TransactionSignRequest,
+    useSigningRequest,
+} from '@perawallet/wallet-core-signing'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import WalletConnect from '@walletconnect/client'
 import { useCallback } from 'react'
-import { AlgorandChainId, WalletConnectConnection } from '../models'
+import {
+    AlgorandChainId,
+    WalletConnectConnection,
+    WalletConnectTransactionPayload,
+} from '../models'
 import { MAX_DATA_SIGN_REQUESTS } from '../constants'
 import {
     isLedgerAccount,
@@ -76,6 +83,10 @@ const validateRequest = (
         ((network === Networks.mainnet && chainId !== 416001) ||
             (network === Networks.testnet && chainId !== 416002))
     ) {
+        logger.debug('Invalid network', {
+            clientId: connector.clientId,
+            connections,
+        })
         throw new WalletConnectInvalidNetworkError()
     }
 
@@ -152,7 +163,8 @@ export const useWalletConnectHandlers = () => {
         state => state.walletConnectConnections,
     )
     const { addSignRequest } = useSigningRequest()
-    const { encodeSignedTransaction } = useTransactionEncoder()
+    const { encodeSignedTransactions, decodeTransactions } =
+        useTransactionEncoder()
     const { network } = useNetwork()
     const accounts = useAllAccounts()
 
@@ -219,33 +231,40 @@ export const useWalletConnectHandlers = () => {
         (
             connector: WalletConnect,
             error: Error | null,
-            //TODO type this correctly
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            payload: any | null,
+            payload: WalletConnectTransactionPayload | null,
         ) => {
+            logger.debug('handleSignTransaction', { payload, network })
             validateRequest(connector, connections, network, error)
+            const paramOne = payload?.params?.at(0)
+            if (!payload || !paramOne) {
+                throw new WalletConnectSignRequestError(
+                    new Error('Invalid data found - parameter required'),
+                )
+            }
 
-            //TODO more validation
-
-            const { txn } = payload.params.at(0)
+            const txnObjects = decodeTransactions(
+                paramOne.map(p => decodeFromBase64(p.txn)),
+            )
 
             addSignRequest({
                 id: uuid(),
                 type: 'transactions',
                 transport: 'callback',
                 transportId: connector.clientId,
-                txs: [txn],
-                approve: async (signed: (PeraSignedTransaction | null)[][]) => {
-                    const signedTxns = signed.map(txns =>
-                        txns.map(txn =>
-                            txn ? encodeSignedTransaction(txn) : null,
-                        ),
-                    )
+                txs: txnObjects,
+                approve: async (signed: (PeraSignedTransaction | null)[]) => {
+                    const toSign = signed.filter(
+                        Boolean,
+                    ) as PeraSignedTransaction[]
+                    const encodedSignedTransactions =
+                        encodeSignedTransactions(toSign)
 
-                    if (signedTxns) {
+                    if (encodedSignedTransactions) {
                         connector.approveRequest({
                             id: payload.id,
-                            result: signedTxns,
+                            result: encodedSignedTransactions.map(t =>
+                                encodeToBase64(t),
+                            ),
                         })
                     }
                 },

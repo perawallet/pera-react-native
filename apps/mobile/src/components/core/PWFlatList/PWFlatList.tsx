@@ -11,10 +11,10 @@
  */
 
 import React from 'react'
-import { FlashList, FlashListProps } from '@shopify/flash-list'
+import { LegendList, LegendListProps } from '@legendapp/list'
 
-export type PWFlatListProps<T> = FlashListProps<T>
+export type PWFlatListProps<T> = LegendListProps<T>
 
 export const PWFlatList = <T,>(props: PWFlatListProps<T>) => {
-    return <FlashList {...props} />
+    return <LegendList {...props} />
 }

@@ -62,6 +62,7 @@ import { PWText } from '@components/core/PWText/PWText'
 ### Subcomponent Rules
 
 - Subcomponents live in the same folder as the main component
+- Subcomponents should be extracted into their own files
 - Subcomponents are **NOT** re-exported in the barrel file
 - Subcomponents should only be used by the parent component
 - If a subcomponent is needed elsewhere, it should become its own component
@@ -234,6 +235,8 @@ export const useStyles = makeStyles(theme => ({
 ```
 
 ### With Props
+
+Props are always defined as separate types in the same file, never inline in the component function arguments.
 
 ```typescript
 // styles.ts

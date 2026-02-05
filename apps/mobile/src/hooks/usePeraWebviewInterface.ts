@@ -31,15 +31,17 @@ import { useCallback } from 'react'
 import { useWebView } from '@modules/webview/hooks'
 import { useLanguage } from './useLanguage'
 import {
-    ArbitraryDataSignRequest,
-    PeraArbitraryDataMessage,
-    PeraArbitraryDataSignResult,
-    PeraSignedTransactionGroup,
+    PeraSignedTransaction,
     PeraTransaction,
-    SignRequestSource,
-    TransactionSignRequest,
-    useSigningRequest,
 } from '@perawallet/wallet-core-blockchain'
+import {
+    type ArbitraryDataSignRequest,
+    type PeraArbitraryDataMessage,
+    type PeraArbitraryDataSignResult,
+    type SignRequestSource,
+    type TransactionSignRequest,
+    useSigningRequest,
+} from '@perawallet/wallet-core-signing'
 import {
     requireSecure,
     sendErrorToWebview,
@@ -287,11 +289,11 @@ export const usePeraWebviewInterface = (
                     id: uuid(),
                     type: 'transactions',
                     transport: 'callback',
-                    txs: [txns],
+                    txs: txns,
                     transportId: message.id,
                     addresses: [address],
                     sourceMetadata: metadata,
-                    approve: async (signed: PeraSignedTransactionGroup[]) => {
+                    approve: async (signed: PeraSignedTransaction[]) => {
                         sendMessageToWebview(
                             message.id,
                             {

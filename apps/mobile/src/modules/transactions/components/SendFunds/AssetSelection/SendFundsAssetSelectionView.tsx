@@ -88,7 +88,7 @@ export const SendFundsAssetSelectionView = ({
 
     return (
         <PWFlatList
-            data={balanceData}
+            data={balanceData ?? []}
             renderItem={renderItem}
             keyExtractor={item => item.assetId}
             ListHeaderComponent={

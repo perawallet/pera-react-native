@@ -41,7 +41,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({ addSignRequest: vi.fn() }),
 }))
 

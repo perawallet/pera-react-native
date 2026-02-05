@@ -22,15 +22,17 @@ interface TestState {
 describe('utils/store', () => {
     describe('createLazyStore', () => {
         test('throws error when used before initialization', () => {
-            const lazy = createLazyStore<StoreApi<TestState>>()
+            const lazy = createLazyStore<StoreApi<TestState>>('test')
 
             expect(() => {
                 lazy.useStore((state: TestState) => state.count)
-            }).toThrow('Zustand store used before initialization')
+            }).toThrow(
+                'Zustand store test used in useStore before initialization',
+            )
         })
 
         test('initializes without error', () => {
-            const lazy = createLazyStore<StoreApi<TestState>>()
+            const lazy = createLazyStore<StoreApi<TestState>>('test')
             const testStore = create<TestState>(set => ({
                 count: 0,
                 increment: () => set(state => ({ count: state.count + 1 })),
@@ -41,7 +43,7 @@ describe('utils/store', () => {
         })
 
         test('calls resetState when cleared', () => {
-            const lazy = createLazyStore<StoreApi<TestState>>()
+            const lazy = createLazyStore<StoreApi<TestState>>('test')
             const resetState = vi.fn()
             const testStore = create<TestState>(set => ({
                 count: 0,

@@ -25,12 +25,13 @@ import {
 import {
     createLazyStore,
     DataStoreRegistry,
-    logger,
 } from '@perawallet/wallet-core-shared'
 
 const STORE_NAME = 'wallet-connect-store'
 const lazy =
-    createLazyStore<WithPersist<StoreApi<WalletConnectStore>, unknown>>()
+    createLazyStore<WithPersist<StoreApi<WalletConnectStore>, unknown>>(
+        STORE_NAME,
+    )
 
 export const useWalletConnectStore: UseBoundStore<
     WithPersist<StoreApi<WalletConnectStore>, unknown>
@@ -55,7 +56,7 @@ const createWalletConnectStore = (storage: KeyValueStorageService) =>
                 resetState: () => set(initialState),
             }),
             {
-                name: 'wallet-connect-store',
+                name: STORE_NAME,
                 storage: createJSONStorage(() => storage),
                 version: 1,
                 partialize: state => ({
@@ -66,11 +67,9 @@ const createWalletConnectStore = (storage: KeyValueStorageService) =>
     )
 
 export const initWalletConnectStore = () => {
-    logger.debug('Initializing wallet connect store')
     const storage = useKeyValueStorageService()
     const realStore = createWalletConnectStore(storage)
     lazy.init(realStore, () => realStore.getState().resetState())
-    logger.debug('Wallet connect store initialized')
 }
 
 export const clearWalletConnectStore = () => lazy.clear()

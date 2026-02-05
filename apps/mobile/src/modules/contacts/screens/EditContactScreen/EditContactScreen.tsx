@@ -140,7 +140,7 @@ export const EditContactScreen = () => {
                             <AddressDisplay
                                 address={selectedContact.address}
                                 showCopy
-                                rawDisplay
+                                displayType='address-only'
                             />
                         </PWView>
                     )}

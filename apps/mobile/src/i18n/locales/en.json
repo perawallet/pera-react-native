@@ -541,6 +541,7 @@
         }
     },
     "signing": {
+        "view_details": "View Transaction Details",
         "arbitrary_data_view": {
             "title": "Request",
             "body": "Data Signing Request",
@@ -576,6 +577,12 @@
             "success_title": "Transaction signed",
             "success_body": "The transaction has been signed and sent."
         },
+        "transactions": {
+            "title_one": "Review Transaction",
+            "title_many": "Review Transactions",
+            "details": "Transaction Details",
+            "signing_with": "Signing Account"
+        },
         "unknown_request_type": {
             "title": "Unknown Request Type",
             "body": "The request type is unknown."
@@ -586,6 +593,8 @@
             "from": "From",
             "to": "To",
             "fee": "Fee",
+            "tx_fee": "Your Transaction Fee",
+            "total_fee": "Total Fee",
             "round": "Round",
             "amount": "Amount",
             "asset": "Asset",
@@ -604,18 +613,23 @@
             "acfg": "Asset Configuration Transaction",
             "axfer": "Asset Transfer Transaction",
             "afrz": "Asset Freeze Transaction",
-            "appl": "Application Transaction",
+            "appl": "Application Call Transaction",
             "stpf": "State Proof Transaction",
             "hb": "Heartbeat Transaction",
             "unknown": "Unknown Transaction"
         },
         "warning": {
             "title": "Warning",
+            "title_cta_group_one": "This transaction group contains a potentially sensitive action",
+            "title_cta_group_other": "This transaction group contains {{count}} potentially sensitive actions",
             "title_cta_one": "This transaction contains a potentially sensitive action",
             "title_cta_other": "This transaction contains {{count}} potentially sensitive actions",
+            "close_group_warning": "This transaction group closes one of your accounts and sends remaining funds another address.  Please review carefully before signing.",
+            "rekey_group_warning": "This transaction group rekeys one of your accounts to another address, transferring ownership of your account in the process.",
             "close_warning": "This transaction closes the account and send remaining funds to the following address: {{address}}",
             "rekey_warning": "This transaction rekeys the account to the following address: {{address}}.",
-            "rekey_warning_bold": "This transfers full control of your account to another address."
+            "rekey_warning_bold": "This transfers full control of your account to another address. Please review carefully before signing.",
+            "from_account": "From: {{address}}"
         },
         "unknown": {
             "title": "Unsupported Transaction Type",
@@ -665,6 +679,14 @@
             "single_group_title": "Transaction Group",
             "multiple_groups_title": "Multiple Transaction Groups",
             "transactions_count": "{{count}} Transaction(s)"
+        },
+        "summary": {
+            "payment_to": "Payment to",
+            "opt_in": "Asset Opt-in for {{asset}} to",
+            "opt_out": "Asset Opt-out for {{asset}} from",
+            "transfer": "Asset Transfer of {{asset}} to",
+            "clawback": "Asset Clawback of {{asset}} from",
+            "app_id": "Application ID: {{id}}"
         }
     },
     "tabbar": {
