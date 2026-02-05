@@ -55,7 +55,9 @@ describe('GroupPreviewItem', () => {
             />,
         )
 
-        expect(container.textContent).toContain('transactions.group.transactions_count:3')
+        expect(container.textContent).toContain(
+            'transactions.group.transactions_count:3',
+        )
     })
 
     it('renders group title', () => {
@@ -70,7 +72,9 @@ describe('GroupPreviewItem', () => {
             />,
         )
 
-        expect(container.textContent).toContain('transactions.group.group_number')
+        expect(container.textContent).toContain(
+            'transactions.group.group_number',
+        )
     })
 
     it('calls onPress when pressed', () => {
@@ -112,7 +116,9 @@ describe('GroupPreviewItem', () => {
         )
 
         // Should display the truncated hex group ID
-        expect(container.textContent).toContain('transactions.group.group_id:0102030405')
+        expect(container.textContent).toContain(
+            'transactions.group.group_id:0102030405',
+        )
     })
 
     it('handles transactions without group ID', () => {
@@ -126,7 +132,9 @@ describe('GroupPreviewItem', () => {
         )
 
         // Should still render without crashing
-        expect(container.textContent).toContain('transactions.group.group_number')
+        expect(container.textContent).toContain(
+            'transactions.group.group_number',
+        )
     })
 
     it('handles empty transactions array', () => {
@@ -138,6 +146,8 @@ describe('GroupPreviewItem', () => {
         )
 
         // Should render with 0 count
-        expect(container.textContent).toContain('transactions.group.transactions_count:0')
+        expect(container.textContent).toContain(
+            'transactions.group.transactions_count:0',
+        )
     })
 })
