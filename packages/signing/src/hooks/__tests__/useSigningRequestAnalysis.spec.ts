@@ -14,6 +14,7 @@ import { describe, test, expect, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useSigningRequestAnalysis } from '../useSigningRequestAnalysis'
 import type { TransactionSignRequest } from '../../models'
+import Decimal from 'decimal.js'
 
 const mockMapToDisplayableTransaction = vi.fn()
 
@@ -29,30 +30,33 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     ]),
 }))
 
-const makeMockTx = (sender: string) => ({
+const makeMockTx = (sender: string, group?: Uint8Array) => ({
     sender: { toString: () => sender, publicKey: new Uint8Array() },
+    group,
 })
 
 const makeDisplayableTx = (overrides: Record<string, unknown> = {}) => ({
     sender: 'ADDR1',
     fee: 1000n,
+    group: undefined,
     ...overrides,
 })
 
 describe('useSigningRequestAnalysis', () => {
     test('maps transactions to displayable and computes derived state', () => {
-        const mockTx1 = makeMockTx('ADDR1')
-        const mockTx2 = makeMockTx('ADDR1')
+        const groupId = new Uint8Array([1, 2, 3])
+        const mockTx1 = makeMockTx('ADDR1', groupId)
+        const mockTx2 = makeMockTx('ADDR1', groupId)
 
         mockMapToDisplayableTransaction
-            .mockReturnValueOnce(makeDisplayableTx({ fee: 1000n }))
-            .mockReturnValueOnce(makeDisplayableTx({ fee: 2000n }))
+            .mockReturnValueOnce(makeDisplayableTx({ fee: 1000n, group: groupId }))
+            .mockReturnValueOnce(makeDisplayableTx({ fee: 2000n, group: groupId }))
 
         const request: TransactionSignRequest = {
             id: 'req-1',
             type: 'transactions',
             transport: 'algod',
-            txs: [[mockTx1, mockTx2] as any],
+            txs: [mockTx1, mockTx2] as any,
         }
 
         const { result } = renderHook(() => useSigningRequestAnalysis(request))
@@ -60,7 +64,8 @@ describe('useSigningRequestAnalysis', () => {
         expect(result.current.groups).toHaveLength(1)
         expect(result.current.groups[0]).toHaveLength(2)
         expect(result.current.allTransactions).toHaveLength(2)
-        expect(result.current.totalFee).toBe(3000n)
+        // 3000 microAlgo = 0.003 ALGO
+        expect(result.current.totalFee.eq(new Decimal(0.003))).toBe(true)
         expect(result.current.requestStructure).toBe('group')
     })
 
@@ -73,7 +78,7 @@ describe('useSigningRequestAnalysis', () => {
             id: 'req-1',
             type: 'transactions',
             transport: 'algod',
-            txs: [[makeMockTx('ADDR1'), makeMockTx('ADDR1')] as any],
+            txs: [makeMockTx('ADDR1'), makeMockTx('ADDR1')] as any,
         }
 
         const { result } = renderHook(() => useSigningRequestAnalysis(request))
@@ -88,7 +93,7 @@ describe('useSigningRequestAnalysis', () => {
             id: 'req-1',
             type: 'transactions',
             transport: 'algod',
-            txs: [[makeMockTx('ADDR1')] as any],
+            txs: [makeMockTx('ADDR1')] as any,
         }
 
         const { result } = renderHook(() => useSigningRequestAnalysis(request))
@@ -97,15 +102,18 @@ describe('useSigningRequestAnalysis', () => {
     })
 
     test('classifies multiple groups correctly', () => {
+        const group1 = new Uint8Array([1, 2, 3])
+        const group2 = new Uint8Array([4, 5, 6])
+
         mockMapToDisplayableTransaction
-            .mockReturnValueOnce(makeDisplayableTx())
-            .mockReturnValueOnce(makeDisplayableTx())
+            .mockReturnValueOnce(makeDisplayableTx({ group: group1 }))
+            .mockReturnValueOnce(makeDisplayableTx({ group: group2 }))
 
         const request: TransactionSignRequest = {
             id: 'req-1',
             type: 'transactions',
             transport: 'algod',
-            txs: [[makeMockTx('ADDR1')] as any, [makeMockTx('ADDR1')] as any],
+            txs: [makeMockTx('ADDR1', group1), makeMockTx('ADDR1', group2)] as any,
         }
 
         const { result } = renderHook(() => useSigningRequestAnalysis(request))
@@ -125,7 +133,7 @@ describe('useSigningRequestAnalysis', () => {
             id: 'req-1',
             type: 'transactions',
             transport: 'algod',
-            txs: [[makeMockTx('ADDR1')] as any],
+            txs: [makeMockTx('ADDR1')] as any,
         }
 
         const { result } = renderHook(() => useSigningRequestAnalysis(request))
@@ -150,7 +158,7 @@ describe('useSigningRequestAnalysis', () => {
             id: 'req-1',
             type: 'transactions',
             transport: 'algod',
-            txs: [[makeMockTx('ADDR2')] as any],
+            txs: [makeMockTx('ADDR2')] as any,
         }
 
         const { result } = renderHook(() => useSigningRequestAnalysis(request))

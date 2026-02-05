@@ -13,6 +13,7 @@
 import { describe, test, expect } from 'vitest'
 import { calculateTotalFee } from '../fees'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import Decimal from 'decimal.js'
 
 const makeTx = (fee?: bigint): PeraDisplayableTransaction =>
     ({
@@ -21,21 +22,32 @@ const makeTx = (fee?: bigint): PeraDisplayableTransaction =>
     }) as unknown as PeraDisplayableTransaction
 
 describe('calculateTotalFee', () => {
-    test('returns 0n for empty array', () => {
-        expect(calculateTotalFee([], new Set())).toBe(0n)
+    test('returns 0 for empty array', () => {
+        expect(calculateTotalFee([], new Set()).eq(new Decimal(0))).toBe(true)
     })
 
     test('sums fees from multiple transactions', () => {
         const txs = [makeTx(1000n), makeTx(2000n), makeTx(3000n)]
-        expect(calculateTotalFee(txs, new Set(['ADDR1']))).toBe(6000n)
+        // 6000 microAlgo = 0.006 ALGO
+        expect(
+            calculateTotalFee(txs, new Set(['ADDR1'])).eq(new Decimal(0.006)),
+        ).toBe(true)
     })
 
-    test('treats undefined fee as 0n', () => {
+    test('treats undefined fee as 0', () => {
         const txs = [makeTx(1000n), makeTx(undefined), makeTx(2000n)]
-        expect(calculateTotalFee(txs, new Set(['ADDR1']))).toBe(3000n)
+        // 3000 microAlgo = 0.003 ALGO
+        expect(
+            calculateTotalFee(txs, new Set(['ADDR1'])).eq(new Decimal(0.003)),
+        ).toBe(true)
     })
 
     test('handles single transaction', () => {
-        expect(calculateTotalFee([makeTx(500n)], new Set(['ADDR1']))).toBe(500n)
+        // 500 microAlgo = 0.0005 ALGO
+        expect(
+            calculateTotalFee([makeTx(500n)], new Set(['ADDR1'])).eq(
+                new Decimal(0.0005),
+            ),
+        ).toBe(true)
     })
 })

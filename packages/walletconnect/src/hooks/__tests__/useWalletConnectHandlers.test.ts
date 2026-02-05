@@ -44,6 +44,15 @@ vi.mock('uuid', async importOriginal => {
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useTransactionEncoder: vi.fn(() => ({
         encodeSignedTransaction: vi.fn(() => new Uint8Array([1, 2, 3, 4])),
+        encodeSignedTransactions: vi.fn((txs: unknown[]) =>
+            txs.length > 0 ? [new Uint8Array([1, 2, 3, 4])] : [],
+        ),
+        decodeTransactions: vi.fn((txnBytes: Uint8Array[]) =>
+            txnBytes.map(() => ({
+                sender: { publicKey: new Uint8Array([1, 2, 3]) },
+                fee: 1000n,
+            })),
+        ),
     })),
     encodeAlgorandAddress: vi.fn(() => 'TEST_ADDRESS'),
 }))
@@ -80,6 +89,8 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             debug: vi.fn(),
             error: vi.fn(),
         },
+        decodeFromBase64: vi.fn(() => new Uint8Array([1, 2, 3, 4])),
+        encodeToBase64: vi.fn(() => 'AQIDBA=='),
     }
 })
 
@@ -162,7 +173,7 @@ describe('useWalletConnectHandlers', () => {
 
             expect(connector.approveRequest).toHaveBeenCalledWith({
                 id: 1,
-                result: [Buffer.from(signature).toString('base64')],
+                result: ['AQIDBA=='], // Mocked encodeToBase64 return value
             })
         })
 
@@ -466,7 +477,12 @@ describe('useWalletConnectHandlers', () => {
                 type: 'transactions',
                 transport: 'callback',
                 transportId: 'test-client-id',
-                txs: [['encodedTxn']],
+                txs: [
+                    {
+                        sender: { publicKey: new Uint8Array([1, 2, 3]) },
+                        fee: 1000n,
+                    },
+                ],
                 approve: expect.any(Function),
                 reject: expect.any(Function),
                 error: expect.any(Function),
@@ -478,16 +494,14 @@ describe('useWalletConnectHandlers', () => {
                     mockAddSignRequest.mock.calls.length - 1
                 ][0]
 
-            // Mock PeraSignedTransaction
+            // Mock PeraSignedTransaction (flat array)
             const signedTxs = [
-                [
-                    {
-                        txn: {
-                            sender: { publicKey: new Uint8Array([10, 20, 30]) },
-                        },
-                        sig: new Uint8Array([1, 2, 3]),
+                {
+                    txn: {
+                        sender: { publicKey: new Uint8Array([10, 20, 30]) },
                     },
-                ],
+                    sig: new Uint8Array([1, 2, 3]),
+                },
             ]
 
             act(() => {
@@ -496,7 +510,7 @@ describe('useWalletConnectHandlers', () => {
 
             expect(connector.approveRequest).toHaveBeenCalledWith({
                 id: 1,
-                result: [[new Uint8Array([1, 2, 3, 4])]],
+                result: ['AQIDBA=='],
             })
         })
 
@@ -601,7 +615,7 @@ describe('useWalletConnectHandlers', () => {
 
             expect(connector.approveRequest).toHaveBeenCalledWith({
                 id: 1,
-                result: [[new Uint8Array([1, 2, 3, 4])]],
+                result: ['AQIDBA=='],
             })
         })
 

@@ -65,7 +65,7 @@ const makeTxRequest = (
     id: 'tx-1',
     type: 'transactions',
     transport: 'algod',
-    txs: [[{ sender: 'ADDR1' } as any]],
+    txs: [{ sender: 'ADDR1' } as any],
     ...overrides,
 })
 
@@ -136,12 +136,10 @@ describe('useSigningRequest', () => {
                 signResult = await result.current.signRequest(request)
             })
 
-            expect(mockSignTransactions).toHaveBeenCalledWith(request.txs[0], [
-                0,
-            ])
+            expect(mockSignTransactions).toHaveBeenCalledWith(request.txs, [0])
             expect(signResult).toEqual({
                 type: 'transactions',
-                signedTransactions: [[{ txn: {}, sig: new Uint8Array() }]],
+                signedTransactions: [{ txn: {}, sig: new Uint8Array() }],
             })
         })
 
