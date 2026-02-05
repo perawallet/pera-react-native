@@ -124,9 +124,10 @@ describe('useAccountHistory', () => {
         })
 
         it('triggers native share upon successful export', async () => {
-            let successCallback: (result: any) => Promise<void> = async () => { } // eslint-disable-line @typescript-eslint/no-explicit-any
+            let successCallback: (result: any) => Promise<void> = async () => {} // eslint-disable-line @typescript-eslint/no-explicit-any
             vi.mocked(useCsvExportMutation).mockImplementation(
-                ({ onSuccess }: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+                ({ onSuccess }: any) => {
+                    // eslint-disable-line @typescript-eslint/no-explicit-any
                     successCallback = onSuccess
                     return {
                         exportCsv: mockExportCsv,
@@ -153,9 +154,10 @@ describe('useAccountHistory', () => {
         })
 
         it('shows error toast when share fails', async () => {
-            let successCallback: (result: any) => Promise<void> = async () => { } // eslint-disable-line @typescript-eslint/no-explicit-any
+            let successCallback: (result: any) => Promise<void> = async () => {} // eslint-disable-line @typescript-eslint/no-explicit-any
             vi.mocked(useCsvExportMutation).mockImplementation(
-                ({ onSuccess }: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+                ({ onSuccess }: any) => {
+                    // eslint-disable-line @typescript-eslint/no-explicit-any
                     successCallback = onSuccess
                     return {
                         exportCsv: mockExportCsv,
@@ -181,9 +183,10 @@ describe('useAccountHistory', () => {
         })
 
         it('shows error toast when export fails', () => {
-            let errorCallback: (error: any) => void = () => { } // eslint-disable-line @typescript-eslint/no-explicit-any
+            let errorCallback: (error: any) => void = () => {} // eslint-disable-line @typescript-eslint/no-explicit-any
             vi.mocked(useCsvExportMutation).mockImplementation(
-                ({ onError }: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+                ({ onError }: any) => {
+                    // eslint-disable-line @typescript-eslint/no-explicit-any
                     errorCallback = onError
                     return {
                         exportCsv: mockExportCsv,
