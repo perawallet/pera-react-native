@@ -15,11 +15,13 @@ import { PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 
+type AppCallSummaryHeaderProps = {
+    transaction: PeraDisplayableTransaction
+}
+
 export const AppCallSummaryHeader = ({
     transaction,
-}: {
-    transaction: PeraDisplayableTransaction
-}) => {
+}: AppCallSummaryHeaderProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     return (

@@ -36,7 +36,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
 import { useTokenListener } from '@modules/token'
 import { AutoLockGuard } from '@modules/security/components/AutoLockGuard/AutoLockGuard'
-import { SignRequestBottomSheet } from '@modules/signing/components/SignRequestBottomSheet/SignRequestBottomSheet'
+import { SignRequestBottomSheet } from '@modules/signing/components/SignRequestBottomSheet'
 
 export type RootComponentProps = {
     fcmToken: string | null

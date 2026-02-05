@@ -20,11 +20,13 @@ import { useStyles } from './styles'
 import { PWView, PWText } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 
+type SigningAccountDisplayProps = {
+    transaction: PeraDisplayableTransaction
+}
+
 export const SigningAccountDisplay = ({
     transaction,
-}: {
-    transaction: PeraDisplayableTransaction
-}) => {
+}: SigningAccountDisplayProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const authAddress = transaction.authAddr?.publicKey

@@ -21,11 +21,13 @@ import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAssetTransferSummaryHeader } from './useAssetTransferSummaryHeader'
 
+type AssetTransferSummaryHeaderProps = {
+    transaction: PeraDisplayableTransaction
+}
+
 export const AssetTransferSummaryHeader = ({
     transaction,
-}: {
-    transaction: PeraDisplayableTransaction
-}) => {
+}: AssetTransferSummaryHeaderProps) => {
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()

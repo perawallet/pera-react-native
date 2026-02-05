@@ -25,11 +25,13 @@ import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePaymentSummaryHeader } from './usePaymentSummaryHeader'
 
+type PaymentSummaryHeaderProps = {
+    transaction: PeraDisplayableTransaction
+}
+
 export const PaymentSummaryHeader = ({
     transaction,
-}: {
-    transaction: PeraDisplayableTransaction
-}) => {
+}: PaymentSummaryHeaderProps) => {
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
