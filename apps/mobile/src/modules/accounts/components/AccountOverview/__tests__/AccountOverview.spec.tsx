@@ -180,7 +180,7 @@ describe('AccountOverview', () => {
     })
 
     it('renders balance values', () => {
-        render(<AccountOverview account={mockAccount} />)
+        render(<AccountOverview account={mockAccount} chartVisible={true} />)
         // Primary and secondary values
         expect(screen.getByText('100')).toBeTruthy()
         expect(screen.getByText('200')).toBeTruthy()
@@ -195,7 +195,7 @@ describe('AccountOverview', () => {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any)
 
-        render(<AccountOverview account={mockAccount} />)
+        render(<AccountOverview account={mockAccount} chartVisible={true} />)
         fireEvent.click(screen.getByText('100'))
 
         expect(setPrivacyMode).toHaveBeenCalledWith(true)
@@ -218,14 +218,14 @@ describe('AccountOverview', () => {
         })
 
         it('renders "no balance" view', () => {
-            render(<AccountOverview account={mockAccount} />)
+            render(<AccountOverview account={mockAccount} chartVisible={true} />)
             expect(
                 screen.getByText('account_details.no_balance.welcome'),
             ).toBeTruthy()
         })
 
         it('navigates to Fund screen when Buy Algo is pressed', () => {
-            render(<AccountOverview account={mockAccount} />)
+            render(<AccountOverview account={mockAccount} chartVisible={true} />)
             fireEvent.click(screen.getByText('Buy Algo'))
             expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
                 screen: 'Fund',
@@ -233,13 +233,13 @@ describe('AccountOverview', () => {
         })
 
         it('opens Receive Funds sheet when Receive is pressed', () => {
-            render(<AccountOverview account={mockAccount} />)
+            render(<AccountOverview account={mockAccount} chartVisible={true} />)
             fireEvent.click(screen.getByText('Receive'))
             expect(screen.getByTestId('receive-funds-sheet')).toBeTruthy()
         })
 
         it('shows not implemented toast when More is pressed', () => {
-            render(<AccountOverview account={mockAccount} />)
+            render(<AccountOverview account={mockAccount} chartVisible={true} />)
             fireEvent.click(screen.getByText('More'))
             expect(mockShowToast).toHaveBeenCalledWith({
                 title: 'common.not_implemented.title',
