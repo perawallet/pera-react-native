@@ -76,7 +76,9 @@ const formatAssetAmount = (
     unitName: string,
     isOutgoing: boolean,
 ): AmountDisplay => {
-    const safeDecimals = isNaN(decimals) ? 0 : Math.max(0, Math.min(19, decimals))
+    const safeDecimals = isNaN(decimals)
+        ? 0
+        : Math.max(0, Math.min(19, decimals))
     const numAmount = (Number(amount) || 0) / Math.pow(10, safeDecimals)
     const prefix = isOutgoing ? '- ' : '+ '
 
@@ -91,7 +93,9 @@ const formatAssetAmount = (
     const isAlgo = unitName === 'ALGO'
 
     return {
-        text: isAlgo ? `${prefix}${formatted}` : `${prefix}${formatted} ${unitName}`,
+        text: isAlgo
+            ? `${prefix}${formatted}`
+            : `${prefix}${formatted} ${unitName}`,
         isPositive: !isOutgoing && numAmount > 0,
         isNegative: isOutgoing,
         hasAlgoIcon: isAlgo,
@@ -238,7 +242,6 @@ export const useTransactionListItem = ({
         // Handle payment transactions
         if (transaction.txType === 'pay' && transaction.amount) {
             result.push(formatAlgoAmount(transaction.amount, isOutgoing))
-            return result
         }
 
         // Handle asset transfers
@@ -254,7 +257,6 @@ export const useTransactionListItem = ({
                     ),
                 )
             }
-            return result
         }
 
         // Handle app calls with inner transactions (may have asset result)

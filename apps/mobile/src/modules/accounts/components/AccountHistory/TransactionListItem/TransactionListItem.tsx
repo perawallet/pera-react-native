@@ -83,8 +83,8 @@ export const TransactionListItem = ({
                                 >
                                     {amount.hasAlgoIcon && (
                                         <PWIcon
-                                            name="algo"
-                                            size="sm"
+                                            name='algo'
+                                            size='sm'
                                             variant={
                                                 amount.isPositive
                                                     ? 'positive'

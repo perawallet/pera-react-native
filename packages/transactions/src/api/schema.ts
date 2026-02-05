@@ -16,7 +16,10 @@ import { TransactionTypes } from '../models/types'
 /**
  * Helper to coerce string to number (API sometimes returns numeric fields as strings)
  */
-const coerceNumber = z.union([z.number(), z.string().transform(val => Number(val))])
+const coerceNumber = z.union([
+    z.number(),
+    z.string().transform(val => Number(val)),
+])
 
 /**
  * Schema for swap group detail from API response
@@ -60,7 +63,9 @@ export const transactionHistoryItemResponseSchema = z.object({
     confirmed_round: coerceNumber,
     round_time: coerceNumber,
     swap_group_detail: transactionSwapGroupDetailSchema.nullable().optional(),
-    interpreted_meaning: transactionInterpretedMeaningSchema.nullable().optional(),
+    interpreted_meaning: transactionInterpretedMeaningSchema
+        .nullable()
+        .optional(),
     fee: z.string(),
     group_id: z.string().nullable().optional(),
     amount: z.string().nullable().optional(),

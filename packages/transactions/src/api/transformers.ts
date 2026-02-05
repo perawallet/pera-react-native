@@ -87,8 +87,12 @@ export const transformTransactionItem = (
     amount: item.amount ?? null,
     closeTo: item.close_to ?? null,
     asset: transformAssetSummary(item.asset),
-    applicationId: item.application_id != null ? Number(item.application_id) : null,
-    innerTransactionCount: item.inner_transaction_count != null ? Number(item.inner_transaction_count) : null,
+    applicationId:
+        item.application_id != null ? Number(item.application_id) : null,
+    innerTransactionCount:
+        item.inner_transaction_count != null
+            ? Number(item.inner_transaction_count)
+            : null,
 })
 
 /**
