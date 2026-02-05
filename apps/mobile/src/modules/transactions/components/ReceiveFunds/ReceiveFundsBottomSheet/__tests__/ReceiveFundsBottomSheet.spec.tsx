@@ -156,7 +156,9 @@ describe('ReceiveFundsBottomSheet', () => {
         expect(screen.getByTestId('qr-view')).toBeTruthy()
         expect(screen.getByTestId('tab-navigator')).toBeTruthy()
         expect(
-            screen.getByTestId('tab-navigator').getAttribute('data-hidden-tabs'),
+            screen
+                .getByTestId('tab-navigator')
+                .getAttribute('data-hidden-tabs'),
         ).toBe('true')
     })
 })
