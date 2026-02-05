@@ -11,10 +11,11 @@
  */
 
 import { config } from '@perawallet/wallet-core-config'
-import { PWView, PWWebView } from '@components/core'
+import { PWView } from '@components/core'
 import { useStyles } from './styles'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation } from '@react-navigation/native'
+import { PWWebView } from '@modules/webview/components/PWWebView'
 
 export const StakingScreen = () => {
     const insets = useSafeAreaInsets()
