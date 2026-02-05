@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { InnerTransactionPreview } from './InnerTransactionPreview'
-export type { InnerTransactionPreviewProps } from './InnerTransactionPreview'
+export { TransactionPreview } from './TransactionPreview'
+export type { TransactionPreviewProps } from './TransactionPreview'

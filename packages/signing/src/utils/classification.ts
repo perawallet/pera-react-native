@@ -11,76 +11,86 @@
  */
 
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 
 export type RequestStructure = 'single' | 'list'
 
-/**
- * Represents a single transaction item in the list
- */
 export type SingleTransactionItem = {
     type: 'transaction'
     transaction: PeraDisplayableTransaction
 }
 
-/**
- * Represents a group of transactions in the list
- */
 export type GroupTransactionItem = {
     type: 'group'
     transactions: PeraDisplayableTransaction[]
     groupIndex: number
 }
 
-/**
- * Union type for items that can appear in the transaction list
- */
 export type TransactionListItem = SingleTransactionItem | GroupTransactionItem
 
 /**
- * Classifies the request structure based on the transaction groups
- * - 'single': One transaction alone (or empty/invalid) - shows SingleTransactionScreen
- * - 'list': Multiple items (transactions and/or groups) - shows TransactionListScreen
+ * Creates list items from transactions while preserving original order.
+ * - Ungrouped transactions appear as individual items at their original position
+ * - Grouped transactions are collected into group items at the position of the first member
+ * - If there's only one group (and no ungrouped transactions), it's expanded to show individual transactions
  */
-export const classifyTransactionGroups = (
-    groups: PeraDisplayableTransaction[][],
-): RequestStructure => {
-    // Empty groups or single transaction = single view
-    if (groups.length === 0) return 'single'
-    if (groups.length === 1 && groups[0]?.length === 1) return 'single'
-    return 'list'
+export const createTransactionListItems = (
+    transactions: PeraDisplayableTransaction[],
+): TransactionListItem[] => {
+    const items: TransactionListItem[] = []
+    const groupMap = new Map<string, GroupTransactionItem>()
+    let groupIndex = 0
+
+    for (const tx of transactions) {
+        if (tx.group) {
+            const groupKey = encodeToBase64(tx.group)
+            const existingGroup = groupMap.get(groupKey)
+
+            if (existingGroup) {
+                // Add to existing group (already in items array)
+                existingGroup.transactions.push(tx)
+            } else {
+                // Create new group at this position
+                const newGroup: GroupTransactionItem = {
+                    type: 'group',
+                    transactions: [tx],
+                    groupIndex: groupIndex++,
+                }
+                groupMap.set(groupKey, newGroup)
+                items.push(newGroup)
+            }
+        } else {
+            // Ungrouped transaction
+            items.push({
+                type: 'transaction',
+                transaction: tx,
+            })
+        }
+    }
+
+    // If there's only one group and no other items, expand it
+    const groupItems = items.filter(item => item.type === 'group')
+    if (groupItems.length === 1 && items.length === 1) {
+        const group = groupItems[0] as GroupTransactionItem
+        return group.transactions.map(tx => ({
+            type: 'transaction' as const,
+            transaction: tx,
+        }))
+    }
+
+    return items
 }
 
 /**
- * Converts the grouped transactions into a flat list of items for display.
- * - Groups with a single transaction without a group ID are shown as individual transactions
- * - Groups with multiple transactions or a group ID are shown as group items
+ * Classifies the request structure based on list items.
+ * - 'single': Only one transaction to display
+ * - 'list': Multiple items (transactions and/or groups) to display
  */
-export const createTransactionListItems = (
-    groups: PeraDisplayableTransaction[][],
-): TransactionListItem[] => {
-    const items: TransactionListItem[] = []
-
-    groups.forEach((group, index) => {
-        // A group is shown as a "group item" if:
-        // 1. It has more than 1 transaction, OR
-        // 2. The single transaction has a group ID (meaning it's part of a group)
-        const isActualGroup =
-            group.length > 1 || (group.length === 1 && !!group[0]?.group)
-
-        if (isActualGroup) {
-            items.push({
-                type: 'group',
-                transactions: group,
-                groupIndex: index,
-            })
-        } else if (group.length === 1) {
-            // Single transaction without group ID - show as individual
-            items.push({
-                type: 'transaction',
-                transaction: group[0]!,
-            })
-        }
-    })
-
-    return items
+export const classifyRequestStructure = (
+    listItems: TransactionListItem[],
+): RequestStructure => {
+    if (listItems.length === 0) return 'single'
+    if (listItems.length === 1 && listItems[0]?.type === 'transaction')
+        return 'single'
+    return 'list'
 }

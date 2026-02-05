@@ -18,17 +18,18 @@ import { useStyles } from './styles'
 
 type GroupPreviewItemProps = {
     transactions: PeraDisplayableTransaction[]
-    groupIndex: number
     onPress: () => void
 }
 
 export const GroupPreviewItem = ({
     transactions,
-    groupIndex,
     onPress,
 }: GroupPreviewItemProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const groupId = Buffer.from(transactions.at(0)?.group ?? '')
+        .toString('hex')
+        .slice(0, 10)
 
     return (
         <PWTouchableOpacity
@@ -41,18 +42,26 @@ export const GroupPreviewItem = ({
             />
             <PWView style={styles.groupPreviewContent}>
                 <PWText style={styles.groupPreviewTitle}>
-                    {t('transactions.group.group_number', {
-                        number: groupIndex + 1,
-                    })}
+                    {t('transactions.group.group_number')}
                 </PWText>
-                <PWText
-                    variant='caption'
-                    style={styles.groupPreviewSubtitle}
-                >
-                    {t('transactions.group.transactions_count', {
-                        count: transactions.length,
-                    })}
-                </PWText>
+                <PWView style={styles.groupPreviewSubtitleContainer}>
+                    <PWText
+                        variant='caption'
+                        style={styles.groupPreviewSubtitle}
+                    >
+                        {t('transactions.group.transactions_count', {
+                            count: transactions.length,
+                        })}
+                    </PWText>
+                    <PWText
+                        variant='caption'
+                        style={styles.groupPreviewSubtitle}
+                    >
+                        {t('transactions.group.group_id', {
+                            groupId,
+                        })}
+                    </PWText>
+                </PWView>
             </PWView>
             <PWIcon
                 name='chevron-right'

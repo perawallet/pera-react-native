@@ -10,13 +10,14 @@
  limitations under the License
  */
 
-import { PWDivider } from '@components/core'
+import { PWDivider, PWView } from '@components/core'
 import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
 import Decimal from 'decimal.js'
 import { SigningWarnings } from '@modules/signing/components/SigningWarnings'
 import { FeeDisplay } from '@modules/signing/components/FeeDisplay'
 import { SigningActionButtons } from '@modules/signing/components/SigningActionButtons'
+import { useStyles } from './styles'
 
 type TransactionListFooterProps = {
     totalFee: Decimal
@@ -25,21 +26,24 @@ type TransactionListFooterProps = {
 export const TransactionListFooter = ({
     totalFee,
 }: TransactionListFooterProps) => {
+    const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
 
     return (
-        <>
+        <PWView style={styles.footerContainer}>
             <SigningWarnings isGroup />
 
             <PWDivider color={theme.colors.layerGray} />
 
-            <FeeDisplay
-                fee={totalFee}
-                label={t('transactions.common.total_fee')}
-            />
+            <PWView style={styles.feeContainer}>
+                <FeeDisplay
+                    fee={totalFee}
+                    label={t('transactions.common.total_fee')}
+                />
+            </PWView>
 
             <SigningActionButtons />
-        </>
+        </PWView>
     )
 }
