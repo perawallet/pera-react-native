@@ -34,9 +34,9 @@ export const SingleTransactionScreen = () => {
     const { t } = useLanguage()
     const { currentRequest } = useSigningRequest()
     const request = currentRequest as TransactionSignRequest
-    const { groups, totalFee } = useSigningRequestAnalysis(request)
+    const { allTransactions, totalFee } = useSigningRequestAnalysis(request)
 
-    const transaction = groups[0]?.[0]
+    const transaction = allTransactions[0]
 
     if (!transaction) {
         return (

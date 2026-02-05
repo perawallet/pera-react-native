@@ -10,9 +10,8 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback } from 'react'
 import { PWFlatList, PWText, PWToolbar, PWView } from '@components/core'
-import { InnerTransactionPreview } from '@modules/transactions/components/transaction-details/InnerTransactionPreview'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
@@ -28,6 +27,7 @@ import { TransactionListHeader } from './TransactionListHeader'
 import { TransactionListFooter } from './TransactionListFooter'
 import { GroupPreviewItem } from './GroupPreviewItem'
 import { useStyles } from './styles'
+import { TransactionPreview } from '@modules/transactions/components/transaction-details'
 
 type NavigationProp = StackNavigationProp<
     SigningStackParamList,
@@ -57,14 +57,13 @@ export const TransactionListScreen = () => {
                 return (
                     <GroupPreviewItem
                         transactions={item.transactions}
-                        groupIndex={item.groupIndex}
                         onPress={() => handleGroupPress(item.groupIndex)}
                     />
                 )
             }
 
             return (
-                <InnerTransactionPreview
+                <TransactionPreview
                     transaction={item.transaction}
                     onPress={() => handleTransactionPress(item.transaction)}
                 />
@@ -88,16 +87,6 @@ export const TransactionListScreen = () => {
         [styles.itemSeparator],
     )
 
-    const ListHeader = useMemo(
-        () => <TransactionListHeader itemCount={allTransactions.length} />,
-        [allTransactions.length],
-    )
-
-    const ListFooter = useMemo(
-        () => <TransactionListFooter totalFee={totalFee} />,
-        [totalFee],
-    )
-
     return (
         <PWView style={styles.container}>
             <PWToolbar
@@ -107,15 +96,16 @@ export const TransactionListScreen = () => {
                     </PWText>
                 }
             />
+            <TransactionListHeader itemCount={allTransactions.length} />
             <PWFlatList
                 data={listItems}
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
                 ItemSeparatorComponent={ItemSeparator}
-                ListHeaderComponent={ListHeader}
-                ListFooterComponent={ListFooter}
                 contentContainerStyle={styles.contentContainer}
+                showsVerticalScrollIndicator={false}
             />
+            <TransactionListFooter totalFee={totalFee} />
         </PWView>
     )
 }

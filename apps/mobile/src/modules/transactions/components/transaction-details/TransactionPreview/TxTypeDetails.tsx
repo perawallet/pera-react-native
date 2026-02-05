@@ -1,46 +1,28 @@
-/*
- Copyright 2022-2025 Pera Wallet, LDA
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License
- */
-
-import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
-import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
 import {
+    PeraDisplayableTransaction,
     getTransactionType,
     microAlgosToAlgos,
-    PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
+import { useLanguage } from '@hooks/useLanguage'
+import { useStyles } from './styles'
+import {
+    useSingleAssetDetailsQuery,
+    ALGO_ASSET,
+} from '@perawallet/wallet-core-assets'
+import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import Decimal from 'decimal.js'
+import { PWText, PWView } from '@components/core'
 import {
     DEFAULT_PRECISION,
     truncateAlgorandAddress,
 } from '@perawallet/wallet-core-shared'
-import { useStyles } from './styles'
-import { useLanguage } from '@hooks/useLanguage'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import {
-    ALGO_ASSET,
-    useSingleAssetDetailsQuery,
-} from '@perawallet/wallet-core-assets'
-import Decimal from 'decimal.js'
 import { LONG_ADDRESS_FORMAT } from '@constants/ui'
-
-export type InnerTransactionPreviewProps = {
-    transaction: PeraDisplayableTransaction
-    onPress?: (tx: PeraDisplayableTransaction) => void
-}
 
 const getInnerTransactionCount = (tx: PeraDisplayableTransaction): number => {
     return tx.innerTxns?.length ?? 0
 }
 
-const TxTypeDetails = ({ tx }: { tx: PeraDisplayableTransaction }) => {
+export const TxTypeDetails = ({ tx }: { tx: PeraDisplayableTransaction }) => {
     const txType = getTransactionType(tx)
     const { t } = useLanguage()
     const styles = useStyles()
@@ -142,36 +124,5 @@ const TxTypeDetails = ({ tx }: { tx: PeraDisplayableTransaction }) => {
             </PWText>
             {secondary}
         </PWView>
-    )
-}
-
-export const InnerTransactionPreview = ({
-    transaction,
-    onPress,
-}: InnerTransactionPreviewProps) => {
-    const styles = useStyles()
-    const type = getTransactionType(transaction)
-
-    const handlePress = () => {
-        onPress?.(transaction)
-    }
-
-    return (
-        <PWTouchableOpacity
-            style={styles.container}
-            onPress={handlePress}
-        >
-            <TransactionIcon
-                type={type}
-                size='sm'
-            />
-            <TxTypeDetails tx={transaction} />
-            <PWView style={styles.rightContent}>
-                <PWIcon
-                    name='chevron-right'
-                    size='sm'
-                />
-            </PWView>
-        </PWTouchableOpacity>
     )
 }

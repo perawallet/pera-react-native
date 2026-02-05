@@ -578,8 +578,12 @@
             "success_body": "The transaction has been signed and sent."
         },
         "transactions": {
+            "title": "Review Transactions",
             "title_one": "Review Transaction",
             "title_many": "Review Transactions",
+            "multiple_transactions_title": "Multiple Transactions",
+            "transactions_count_one": "{{count}} Transaction",
+            "transactions_count_other": "{{count}} Transactions",
             "details": "Transaction Details",
             "signing_with": "Signing Account"
         },
@@ -594,7 +598,7 @@
             "to": "To",
             "fee": "Fee",
             "tx_fee": "Your Transaction Fee",
-            "total_fee": "Total Fee",
+            "total_fee": "Your Total Fee",
             "round": "Round",
             "amount": "Amount",
             "asset": "Asset",
@@ -678,7 +682,13 @@
         "group": {
             "single_group_title": "Transaction Group",
             "multiple_groups_title": "Multiple Transaction Groups",
-            "transactions_count": "{{count}} Transaction(s)"
+            "group_number": "Transaction Group",
+            "group_id": "Group ID: {{groupId}}",
+            "transactions_count": "{{count}} Transaction(s)",
+            "transactions_count_one": "{{count}} Transaction",
+            "transactions_count_other": "{{count}} Transactions",
+            "groups_count_one": "{{count}} Group",
+            "groups_count_other": "{{count}} Groups"
         },
         "summary": {
             "payment_to": "Payment to",

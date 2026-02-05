@@ -19,7 +19,7 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { InnerTransactionPreview } from '@modules/transactions/components/transaction-details/InnerTransactionPreview'
+import { TransactionPreview } from '@modules/transactions/components/transaction-details/TransactionPreview'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     useNavigation,
@@ -32,6 +32,7 @@ import {
     useSigningRequest,
     useSigningRequestAnalysis,
     type TransactionSignRequest,
+    type GroupTransactionItem,
 } from '@perawallet/wallet-core-signing'
 import type { SigningStackParamList } from '@modules/signing/routes'
 import { GroupDetailHeader } from './GroupDetailHeader'
@@ -47,10 +48,15 @@ export const GroupDetailScreen = () => {
     const route = useRoute<GroupDetailRouteProp>()
     const { pendingSignRequests } = useSigningRequest()
     const request = pendingSignRequests[0] as TransactionSignRequest
-    const { groups } = useSigningRequestAnalysis(request)
+    const { listItems } = useSigningRequestAnalysis(request)
 
     const { groupIndex } = route.params
-    const transactions = groups[groupIndex] ?? []
+    const groupItem = listItems.find(
+        (item): item is GroupTransactionItem =>
+            item.type === 'group' && item.groupIndex === groupIndex,
+    )
+    const transactions = groupItem?.transactions ?? []
+    const groupId = groupItem?.transactions.at(0)?.group ?? ''
 
     const handleTransactionPress = (tx: PeraDisplayableTransaction) => {
         navigation.navigate('TransactionDetails', { transaction: tx })
@@ -62,7 +68,7 @@ export const GroupDetailScreen = () => {
 
     const renderItem = useCallback(
         ({ item }: { item: PeraDisplayableTransaction }) => (
-            <InnerTransactionPreview
+            <TransactionPreview
                 transaction={item}
                 onPress={() => handleTransactionPress(item)}
             />
@@ -89,9 +95,7 @@ export const GroupDetailScreen = () => {
                         variant='h4'
                         style={styles.title}
                     >
-                        {t('transactions.group.group_number', {
-                            number: groupIndex + 1,
-                        })}
+                        {t('transactions.group.group_number')}
                     </PWText>
                 }
                 left={
@@ -100,15 +104,17 @@ export const GroupDetailScreen = () => {
                     </PWTouchableOpacity>
                 }
             />
-            <GroupDetailHeader transactionCount={transactions.length} />
-            <PWFlatList
-                data={transactions}
-                renderItem={renderItem}
-                keyExtractor={keyExtractor}
-                ItemSeparatorComponent={ItemSeparator}
-                contentContainerStyle={styles.contentContainer}
-                recycleItems
-            />
+            <PWView style={styles.contentContainer}>
+                <GroupDetailHeader transactionCount={transactions.length} />
+                <PWFlatList
+                    data={transactions}
+                    renderItem={renderItem}
+                    keyExtractor={keyExtractor}
+                    ItemSeparatorComponent={ItemSeparator}
+                    contentContainerStyle={styles.listContainer}
+                    recycleItems
+                />
+            </PWView>
         </PWView>
     )
 }

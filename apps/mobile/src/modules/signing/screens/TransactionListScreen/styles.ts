@@ -15,10 +15,15 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
-    },
-    contentContainer: {
         paddingHorizontal: theme.spacing.xl,
     },
+    feeContainer: {
+        paddingVertical: theme.spacing.sm,
+    },
+    contentContainer: {
+        flexGrow: 1,
+    },
+    footerContainer: {},
     listHeader: {
         alignItems: 'center' as const,
         gap: theme.spacing.md,
@@ -32,7 +37,6 @@ export const useStyles = makeStyles(theme => ({
     itemSeparator: {
         height: theme.spacing.sm,
     },
-    // Group preview item styles - visually distinct from individual transactions
     groupPreviewContainer: {
         flexDirection: 'row' as const,
         alignItems: 'center' as const,
@@ -52,5 +56,10 @@ export const useStyles = makeStyles(theme => ({
     },
     groupPreviewSubtitle: {
         color: theme.colors.textGray,
+    },
+    groupPreviewSubtitleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.lg,
     },
 }))
