@@ -49,6 +49,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequestAnalysis: vi.fn(() => ({
         groups: [],
         allTransactions: [],
+        listItems: [],
         totalFee: 0n,
         warnings: [],
         requestStructure: 'single',
@@ -141,6 +142,7 @@ describe('TransactionSigningView', () => {
         vi.mocked(useSigningRequestAnalysis).mockReturnValue({
             groups: [],
             allTransactions: [],
+            listItems: [],
             totalFee: Decimal(0),
             warnings: [],
             distinctWarnings: [],
@@ -209,23 +211,33 @@ describe('TransactionSigningView', () => {
         )
     })
 
-    it('displays group view when no transactions are present', () => {
-        const emptyRequest = {
+    it('displays list view when multiple transactions are present', () => {
+        const multiTxRequest = {
             type: 'transactions',
             transport: 'callback',
-            txs: [[]],
+            txs: [{}, {}],
         } as unknown as TransactionSignRequest
 
-        setupMocks(emptyRequest, {
-            groups: [[]],
-            requestStructure: 'group',
+        const mockTx = {
+            fee: 1000n,
+            sender: 'MOCK_SENDER',
+            txType: 'pay',
+        }
+        setupMocks(multiTxRequest, {
+            groups: [[mockTx], [mockTx]],
+            allTransactions: [mockTx, mockTx],
+            listItems: [
+                { type: 'transaction', transaction: mockTx },
+                { type: 'transaction', transaction: mockTx },
+            ],
+            requestStructure: 'list',
         })
         const { container } = render(
-            <TransactionSigningView request={emptyRequest} />,
+            <TransactionSigningView request={multiTxRequest} />,
         )
-        // Empty group shows invalid state since there are no transactions to sign
+        // List view shows transactions title
         expect(container.textContent?.toLowerCase()).toContain(
-            'signing.transaction_view.invalid',
+            'signing.transactions',
         )
     })
 

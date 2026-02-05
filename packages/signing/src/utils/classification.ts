@@ -11,14 +11,75 @@
  */
 
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 
-export type RequestStructure = 'single' | 'group' | 'group-list'
+export type RequestStructure = 'single' | 'list'
 
-export const classifyTransactionGroups = (
-    groups: PeraDisplayableTransaction[][],
+export type SingleTransactionItem = {
+    type: 'transaction'
+    transaction: PeraDisplayableTransaction
+}
+
+export type GroupTransactionItem = {
+    type: 'group'
+    transactions: PeraDisplayableTransaction[]
+    groupIndex: number
+}
+
+export type TransactionListItem = SingleTransactionItem | GroupTransactionItem
+
+export const createTransactionListItems = (
+    transactions: PeraDisplayableTransaction[],
+): TransactionListItem[] => {
+    const items: TransactionListItem[] = []
+    const groupMap = new Map<string, GroupTransactionItem>()
+    let groupIndex = 0
+
+    for (const tx of transactions) {
+        if (tx.group) {
+            const groupKey = encodeToBase64(tx.group)
+            const existingGroup = groupMap.get(groupKey)
+
+            if (existingGroup) {
+                // Add to existing group (already in items array)
+                existingGroup.transactions.push(tx)
+            } else {
+                // Create new group at this position
+                const newGroup: GroupTransactionItem = {
+                    type: 'group',
+                    transactions: [tx],
+                    groupIndex: groupIndex++,
+                }
+                groupMap.set(groupKey, newGroup)
+                items.push(newGroup)
+            }
+        } else {
+            // Ungrouped transaction
+            items.push({
+                type: 'transaction',
+                transaction: tx,
+            })
+        }
+    }
+
+    // If there's only one group and no other items, expand it
+    const groupItems = items.filter(item => item.type === 'group')
+    if (groupItems.length === 1 && items.length === 1) {
+        const group = groupItems[0] as GroupTransactionItem
+        return group.transactions.map(tx => ({
+            type: 'transaction' as const,
+            transaction: tx,
+        }))
+    }
+
+    return items
+}
+
+export const classifyRequestStructure = (
+    listItems: TransactionListItem[],
 ): RequestStructure => {
-    if (groups.length === 1 && groups[0]?.length === 1) return 'single'
-    if (groups.length === 1) return 'group'
-    if (groups.length > 1) return 'group-list'
-    return 'single'
+    if (listItems.length === 0) return 'single'
+    if (listItems.length === 1 && listItems[0]?.type === 'transaction')
+        return 'single'
+    return 'list'
 }

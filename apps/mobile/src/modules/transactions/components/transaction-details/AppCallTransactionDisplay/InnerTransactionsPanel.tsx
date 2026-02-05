@@ -15,7 +15,7 @@ import { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
-import { InnerTransactionPreview } from '../InnerTransactionPreview'
+import { TransactionPreview } from '../TransactionPreview'
 
 export type InnerTransactionsPanelProps = {
     innerTransactions: PeraDisplayableTransaction[]
@@ -41,7 +41,7 @@ export const InnerTransactionsPanel = ({
         >
             <PWView style={styles.expandablePanel}>
                 {innerTransactions.map((tx, index) => (
-                    <InnerTransactionPreview
+                    <TransactionPreview
                         onPress={onInnerTransactionPress}
                         key={tx.id ?? index}
                         transaction={tx}

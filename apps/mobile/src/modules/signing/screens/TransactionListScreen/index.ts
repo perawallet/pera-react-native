@@ -10,7 +10,4 @@
  limitations under the License
  */
 
-export * from './SingleTransactionScreen'
-export * from './TransactionDetailsScreen'
-export * from './TransactionListScreen'
-export * from './GroupDetailScreen'
+export { TransactionListScreen } from './TransactionListScreen'

@@ -15,9 +15,9 @@ import type { StackScreenProps } from '@react-navigation/stack'
 
 export type SigningStackParamList = {
     SingleTransaction: undefined
+    TransactionList: undefined
     TransactionDetails: { transaction: PeraDisplayableTransaction }
-    GroupList: { groupIndex: number }
-    MultiGroupList: undefined
+    GroupDetail: { groupIndex: number }
 }
 
 export type SigningStackScreenProps<T extends keyof SigningStackParamList> =

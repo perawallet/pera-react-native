@@ -16,32 +16,34 @@ import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
-type GroupListHeaderProps = {
-    transactionCount: number
+type TransactionListHeaderProps = {
+    itemCount: number
 }
 
-export const GroupListHeader = ({ transactionCount }: GroupListHeaderProps) => {
+export const TransactionListHeader = ({
+    itemCount,
+}: TransactionListHeaderProps) => {
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
 
     return (
         <>
-            <PWView style={styles.groupHeader}>
+            <PWView style={styles.listHeader}>
                 <TransactionIcon
                     type='group'
                     size='lg'
                 />
                 <PWText variant='h3'>
-                    {t('transactions.group.single_group_title')}
+                    {t('signing.transactions.multiple_transactions_title')}
                 </PWText>
             </PWView>
 
             <PWDivider color={theme.colors.layerGray} />
 
-            <PWText style={styles.transactionListHeaderText}>
-                {t('transactions.group.transactions_count', {
-                    count: transactionCount,
+            <PWText style={styles.listSubheaderText}>
+                {t('signing.transactions.transactions_count', {
+                    count: itemCount,
                 })}
             </PWText>
         </>
