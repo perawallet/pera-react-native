@@ -28,12 +28,6 @@ export type GroupTransactionItem = {
 
 export type TransactionListItem = SingleTransactionItem | GroupTransactionItem
 
-/**
- * Creates list items from transactions while preserving original order.
- * - Ungrouped transactions appear as individual items at their original position
- * - Grouped transactions are collected into group items at the position of the first member
- * - If there's only one group (and no ungrouped transactions), it's expanded to show individual transactions
- */
 export const createTransactionListItems = (
     transactions: PeraDisplayableTransaction[],
 ): TransactionListItem[] => {
@@ -81,11 +75,6 @@ export const createTransactionListItems = (
     return items
 }
 
-/**
- * Classifies the request structure based on list items.
- * - 'single': Only one transaction to display
- * - 'list': Multiple items (transactions and/or groups) to display
- */
 export const classifyRequestStructure = (
     listItems: TransactionListItem[],
 ): RequestStructure => {
