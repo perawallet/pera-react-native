@@ -21,7 +21,8 @@ export const useStyles = makeStyles(theme => ({
         flexGrow: 1,
     },
     title: {
-        textAlign: 'center'
+        textAlign: 'center',
+        width: '100%',
     },
     amountValue: {
         color: theme.colors.textMain,

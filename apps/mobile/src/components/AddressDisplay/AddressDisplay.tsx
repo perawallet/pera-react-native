@@ -96,10 +96,6 @@ export const AddressDisplay = ({
             {!!account && (
                 <AccountDisplay
                     account={account}
-                    iconProps={{
-                        width: theme.spacing.xl,
-                        height: theme.spacing.xl,
-                    }}
                     textProps={textProps}
                     showChevron={false}
                 />

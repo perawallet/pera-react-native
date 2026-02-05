@@ -10,6 +10,7 @@ import { useTheme } from "@rneui/themed"
 import { useMemo } from "react"
 import { useCurrency } from "@perawallet/wallet-core-currencies"
 import { useLanguage } from "@hooks/useLanguage"
+import { useFindAccountByAddress } from "@perawallet/wallet-core-accounts"
 
 export const PaymentTransactionSummaryHeader = ({ transaction }: { transaction: PeraDisplayableTransaction }) => {
     const styles = useStyles()
@@ -24,7 +25,6 @@ export const PaymentTransactionSummaryHeader = ({ transaction }: { transaction: 
         }
         return (fiatPrices?.get(ALGO_ASSET.assetId)?.fiatPrice ?? new Decimal(0)).mul(microAlgosToAlgos(transaction.paymentTransaction?.amount ?? 0n))
     }, [fiatPrices, isPending])
-
 
     return (
         <PWView style={styles.container}>

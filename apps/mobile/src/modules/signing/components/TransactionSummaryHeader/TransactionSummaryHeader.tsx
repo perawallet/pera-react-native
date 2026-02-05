@@ -41,7 +41,7 @@ export const TransactionSummaryHeader = ({
             <PWToolbar
                 center={
                     <PWText variant='h4' style={styles.title}>
-                        {title ?? t('signing.transactions.title')}
+                        {title ?? t('signing.transactions.title', { count: 1 })}
                     </PWText>
                 }
             />

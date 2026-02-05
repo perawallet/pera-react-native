@@ -578,8 +578,10 @@
             "success_body": "The transaction has been signed and sent."
         },
         "transactions": {
-            "title": "Transaction Summary",
-            "details": "Transaction Details"
+            "title_one": "Review Transaction",
+            "title_many": "Review Transactions",
+            "details": "Transaction Details",
+            "signing_with": "Signing Account"
         },
         "unknown_request_type": {
             "title": "Unknown Request Type",
