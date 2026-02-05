@@ -16,17 +16,17 @@ import { useLanguage } from '@hooks/useLanguage'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { useStyles } from './styles'
 
-type GroupPreviewProps = {
+type GroupPreviewItemProps = {
     transactions: PeraDisplayableTransaction[]
     groupIndex: number
     onPress: () => void
 }
 
-export const GroupPreview = ({
+export const GroupPreviewItem = ({
     transactions,
     groupIndex,
     onPress,
-}: GroupPreviewProps) => {
+}: GroupPreviewItemProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
 

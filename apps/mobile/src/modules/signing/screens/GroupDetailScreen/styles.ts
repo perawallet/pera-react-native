@@ -15,16 +15,10 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
-    },
-    contentContainer: {
         paddingHorizontal: theme.spacing.xl,
     },
-    groupHeader: {
-        alignItems: 'center' as const,
-        gap: theme.spacing.md,
-        paddingVertical: theme.spacing.xl,
-    },
-    groupListHeaderText: {
+    contentContainer: {},
+    transactionListHeaderText: {
         color: theme.colors.textGray,
         marginBottom: theme.spacing.sm,
         paddingTop: theme.spacing.md,
@@ -32,21 +26,7 @@ export const useStyles = makeStyles(theme => ({
     itemSeparator: {
         height: theme.spacing.sm,
     },
-    groupPreviewContainer: {
-        flexDirection: 'row' as const,
-        alignItems: 'center' as const,
-        backgroundColor: theme.colors.layerGrayLightest,
-        borderRadius: theme.spacing.lg,
-        padding: theme.spacing.md,
-        gap: theme.spacing.md,
-    },
-    groupPreviewContent: {
-        flex: 1,
-    },
-    groupPreviewTitle: {
-        fontWeight: '600',
-    },
-    groupPreviewSubtitle: {
-        color: theme.colors.textGray,
+    title: {
+        textAlign: 'center',
     },
 }))

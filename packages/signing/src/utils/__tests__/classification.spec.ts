@@ -11,10 +11,16 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import { classifyTransactionGroups } from '../classification'
+import {
+    classifyTransactionGroups,
+    createTransactionListItems,
+} from '../classification'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 
 const tx = {} as PeraDisplayableTransaction
+const txWithGroup = {
+    group: new Uint8Array([1, 2, 3]),
+} as PeraDisplayableTransaction
 
 describe('classifyTransactionGroups', () => {
     test('returns single for empty groups', () => {
@@ -25,11 +31,69 @@ describe('classifyTransactionGroups', () => {
         expect(classifyTransactionGroups([[tx]])).toBe('single')
     })
 
-    test('returns group for multiple transactions in one group', () => {
-        expect(classifyTransactionGroups([[tx, tx, tx]])).toBe('group')
+    test('returns list for multiple transactions in one group', () => {
+        expect(classifyTransactionGroups([[tx, tx, tx]])).toBe('list')
     })
 
-    test('returns group-list for multiple groups', () => {
-        expect(classifyTransactionGroups([[tx], [tx, tx]])).toBe('group-list')
+    test('returns list for multiple groups', () => {
+        expect(classifyTransactionGroups([[tx], [tx, tx]])).toBe('list')
+    })
+})
+
+describe('createTransactionListItems', () => {
+    test('returns empty array for empty groups', () => {
+        expect(createTransactionListItems([])).toEqual([])
+    })
+
+    test('returns single transaction item for ungrouped transaction', () => {
+        const items = createTransactionListItems([[tx]])
+        expect(items).toHaveLength(1)
+        expect(items[0]).toEqual({
+            type: 'transaction',
+            transaction: tx,
+        })
+    })
+
+    test('returns group item for multiple transactions in a group', () => {
+        const items = createTransactionListItems([[tx, tx, tx]])
+        expect(items).toHaveLength(1)
+        expect(items[0]).toEqual({
+            type: 'group',
+            transactions: [tx, tx, tx],
+            groupIndex: 0,
+        })
+    })
+
+    test('returns group item for single transaction with group ID', () => {
+        const items = createTransactionListItems([[txWithGroup]])
+        expect(items).toHaveLength(1)
+        expect(items[0]).toEqual({
+            type: 'group',
+            transactions: [txWithGroup],
+            groupIndex: 0,
+        })
+    })
+
+    test('returns mixed items for groups and individual transactions', () => {
+        const items = createTransactionListItems([
+            [tx], // Individual transaction (no group ID)
+            [tx, tx], // Group with 2 transactions
+            [txWithGroup], // Single tx with group ID -> shown as group
+        ])
+        expect(items).toHaveLength(3)
+        expect(items[0]).toEqual({
+            type: 'transaction',
+            transaction: tx,
+        })
+        expect(items[1]).toEqual({
+            type: 'group',
+            transactions: [tx, tx],
+            groupIndex: 1,
+        })
+        expect(items[2]).toEqual({
+            type: 'group',
+            transactions: [txWithGroup],
+            groupIndex: 2,
+        })
     })
 })

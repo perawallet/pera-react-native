@@ -10,34 +10,31 @@
  limitations under the License
  */
 
-import { PWDivider } from '@components/core'
+import { PWDivider, PWText } from '@components/core'
 import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
-import Decimal from 'decimal.js'
-import { SigningWarnings } from '@modules/signing/components/SigningWarnings'
-import { FeeDisplay } from '@modules/signing/components/FeeDisplay'
-import { SigningActionButtons } from '@modules/signing/components/SigningActionButtons'
+import { useStyles } from './styles'
 
-type GroupListFooterProps = {
-    fee: Decimal
+type GroupDetailHeaderProps = {
+    transactionCount: number
 }
 
-export const GroupListFooter = ({ fee }: GroupListFooterProps) => {
+export const GroupDetailHeader = ({
+    transactionCount,
+}: GroupDetailHeaderProps) => {
+    const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
 
     return (
         <>
-            <SigningWarnings isGroup />
-
             <PWDivider color={theme.colors.layerGray} />
 
-            <FeeDisplay
-                fee={fee}
-                label={t('transactions.common.total_fee')}
-            />
-
-            <SigningActionButtons />
+            <PWText style={styles.transactionListHeaderText}>
+                {t('transactions.group.transactions_count', {
+                    count: transactionCount,
+                })}
+            </PWText>
         </>
     )
 }

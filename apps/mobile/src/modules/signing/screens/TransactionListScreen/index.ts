@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { GroupListScreen } from './GroupListScreen'
+export { TransactionListScreen } from './TransactionListScreen'

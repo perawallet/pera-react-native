@@ -11,7 +11,14 @@
  */
 
 import { useCallback } from 'react'
-import { PWFlatList, PWIcon, PWText, PWToolbar, PWView } from '@components/core'
+import {
+    PWFlatList,
+    PWIcon,
+    PWText,
+    PWToolbar,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { InnerTransactionPreview } from '@modules/transactions/components/transaction-details/InnerTransactionPreview'
 import { useLanguage } from '@hooks/useLanguage'
 import {
@@ -27,27 +34,30 @@ import {
     type TransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
 import type { SigningStackParamList } from '@modules/signing/routes'
-import { GroupListHeader } from './GroupListHeader'
-import { GroupListFooter } from './GroupListFooter'
+import { GroupDetailHeader } from './GroupDetailHeader'
 import { useStyles } from './styles'
 
-type NavigationProp = StackNavigationProp<SigningStackParamList, 'GroupList'>
-type GroupListRouteProp = RouteProp<SigningStackParamList, 'GroupList'>
+type NavigationProp = StackNavigationProp<SigningStackParamList, 'GroupDetail'>
+type GroupDetailRouteProp = RouteProp<SigningStackParamList, 'GroupDetail'>
 
-export const GroupListScreen = () => {
+export const GroupDetailScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const navigation = useNavigation<NavigationProp>()
-    const route = useRoute<GroupListRouteProp>()
+    const route = useRoute<GroupDetailRouteProp>()
     const { pendingSignRequests } = useSigningRequest()
     const request = pendingSignRequests[0] as TransactionSignRequest
-    const { groups, totalFee } = useSigningRequestAnalysis(request)
+    const { groups } = useSigningRequestAnalysis(request)
 
     const { groupIndex } = route.params
     const transactions = groups[groupIndex] ?? []
 
     const handleTransactionPress = (tx: PeraDisplayableTransaction) => {
         navigation.navigate('TransactionDetails', { transaction: tx })
+    }
+
+    const handleBack = () => {
+        navigation.goBack()
     }
 
     const renderItem = useCallback(
@@ -79,16 +89,18 @@ export const GroupListScreen = () => {
                         variant='h4'
                         style={styles.title}
                     >
-                        {t('signing.transactions.title')}
+                        {t('transactions.group.group_number', {
+                            number: groupIndex + 1,
+                        })}
                     </PWText>
                 }
                 left={
-                    navigation.canGoBack() ? (
+                    <PWTouchableOpacity onPress={handleBack}>
                         <PWIcon name='chevron-left' />
-                    ) : null
+                    </PWTouchableOpacity>
                 }
             />
-            <GroupListHeader transactionCount={transactions.length} />
+            <GroupDetailHeader transactionCount={transactions.length} />
             <PWFlatList
                 data={transactions}
                 renderItem={renderItem}
@@ -97,7 +109,6 @@ export const GroupListScreen = () => {
                 contentContainerStyle={styles.contentContainer}
                 recycleItems
             />
-            <GroupListFooter fee={totalFee} />
         </PWView>
     )
 }

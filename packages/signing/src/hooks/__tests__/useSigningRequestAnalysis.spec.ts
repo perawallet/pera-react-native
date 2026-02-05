@@ -70,7 +70,8 @@ describe('useSigningRequestAnalysis', () => {
         expect(result.current.allTransactions).toHaveLength(2)
         // 3000 microAlgo = 0.003 ALGO
         expect(result.current.totalFee.eq(new Decimal(0.003))).toBe(true)
-        expect(result.current.requestStructure).toBe('group')
+        // Multiple transactions in one group = list view
+        expect(result.current.requestStructure).toBe('list')
     })
 
     test('filters out null displayable transactions', () => {
@@ -125,7 +126,8 @@ describe('useSigningRequestAnalysis', () => {
 
         const { result } = renderHook(() => useSigningRequestAnalysis(request))
 
-        expect(result.current.requestStructure).toBe('group-list')
+        // Multiple groups = list view
+        expect(result.current.requestStructure).toBe('list')
     })
 
     test('aggregates warnings for signable addresses', () => {
