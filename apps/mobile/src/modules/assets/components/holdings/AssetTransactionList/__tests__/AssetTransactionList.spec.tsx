@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import React from 'react'
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { AssetTransactionList } from '../AssetTransactionList'
@@ -27,7 +28,6 @@ vi.mock('@legendapp/list', () => ({
         ListEmptyComponent?: React.ReactNode | (() => React.ReactElement)
         children?: React.ReactNode
     }) => {
-        const React = require('react')
         return React.createElement(
             'div',
             { 'data-testid': 'legend-list' },
