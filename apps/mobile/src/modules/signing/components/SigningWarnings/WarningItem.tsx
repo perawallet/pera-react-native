@@ -1,10 +1,10 @@
-import { TransactionWarning } from "@perawallet/wallet-core-signing"
-import { useStyles } from "./styles"
-import { useTheme } from "@rneui/themed"
-import { useLanguage } from "@hooks/useLanguage"
-import { PWDivider, PWRoundIcon, PWText, PWView } from "@components/core"
-import { truncateAlgorandAddress } from "@perawallet/wallet-core-shared"
-import { LONG_ADDRESS_FORMAT } from "@constants/ui"
+import { TransactionWarning } from '@perawallet/wallet-core-signing'
+import { useStyles } from './styles'
+import { useTheme } from '@rneui/themed'
+import { useLanguage } from '@hooks/useLanguage'
+import { PWDivider, PWRoundIcon, PWText, PWView } from '@components/core'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import { LONG_ADDRESS_FORMAT } from '@constants/ui'
 
 type WarningItemProps = {
     warning: TransactionWarning
@@ -12,7 +12,11 @@ type WarningItemProps = {
     isGroup: boolean
 }
 
-export const WarningItem = ({ warning, showDivider, isGroup }: WarningItemProps) => {
+export const WarningItem = ({
+    warning,
+    showDivider,
+    isGroup,
+}: WarningItemProps) => {
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
@@ -25,8 +29,8 @@ export const WarningItem = ({ warning, showDivider, isGroup }: WarningItemProps)
             ? 'transactions.warning.close_group_warning'
             : 'transactions.warning.close_warning'
         : isGroup
-            ? 'transactions.warning.rekey_group_warning'
-            : 'transactions.warning.rekey_warning'
+          ? 'transactions.warning.rekey_group_warning'
+          : 'transactions.warning.rekey_warning'
 
     return (
         <>
