@@ -27,7 +27,12 @@ const mockResult = {
     title: 'Payment',
     subtitle: 'RECEIVER',
     amounts: [
-        { text: '1.00', isPositive: true, isNegative: false, hasAlgoIcon: true }
+        {
+            text: '1.00',
+            isPositive: true,
+            isNegative: false,
+            hasAlgoIcon: true,
+        },
     ],
     handlePress: vi.fn(),
 }
@@ -43,7 +48,7 @@ vi.mock('@src/utils/hooks/useSelectedAccount', () => ({
 describe('TransactionListItem', () => {
     it('renders title, subtitle and amount', () => {
         render(<TransactionListItem transaction={mockTransaction} />)
-        
+
         expect(screen.getByText('Payment')).toBeTruthy()
         expect(screen.getByText('RECEIVER')).toBeTruthy()
         expect(screen.getByText('1.00')).toBeTruthy()
@@ -51,7 +56,7 @@ describe('TransactionListItem', () => {
 
     it('calls handlePress when pressed', () => {
         render(<TransactionListItem transaction={mockTransaction} />)
-        
+
         fireEvent.click(screen.getByRole('button'))
         expect(mockResult.handlePress).toHaveBeenCalled()
     })

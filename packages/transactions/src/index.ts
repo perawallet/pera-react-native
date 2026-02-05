@@ -23,3 +23,17 @@ export {
     type FetchTransactionHistoryParams,
     type FetchMoreTransactionsParams,
 } from './api/endpoints'
+
+// Export CSV export functionality
+export {
+    fetchTransactionsCsv,
+    CsvExportError,
+    formatISODate,
+    isValidISODate,
+    CSV_MIME_TYPE,
+    DEFAULT_CSV_FILENAME,
+    type DateRange,
+    type ExportCsvParams,
+    type CsvExportResult,
+    type FetchCsvParams,
+} from './api/csv-export'

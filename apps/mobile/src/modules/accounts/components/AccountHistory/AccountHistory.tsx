@@ -33,8 +33,15 @@ export type AccountHistoryProps = {
 export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { sections, isLoading, isFetchingNextPage, isEmpty, handleLoadMore } =
-        useAccountHistory()
+    const {
+        sections,
+        isLoading,
+        isFetchingNextPage,
+        isEmpty,
+        handleLoadMore,
+        handleExportCsv,
+        isExportingCsv,
+    } = useAccountHistory()
 
     const renderItem = ({ item }: { item: TransactionHistoryItem }) => (
         <TransactionListItem transaction={item} />
@@ -123,6 +130,8 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
                                         )}
                                         variant='helper'
                                         paddingStyle='dense'
+                                        onPress={handleExportCsv}
+                                        isLoading={isExportingCsv}
                                     />
                                 </PWView>
                             </PWView>

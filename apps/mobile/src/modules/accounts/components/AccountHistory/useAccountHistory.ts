@@ -11,10 +11,14 @@
  */
 
 import { useMemo, useCallback } from 'react'
+import { Share } from 'react-native'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
+import { useToast } from '@hooks/useToast'
+import { useLanguage } from '@hooks/useLanguage'
 import {
     useTransactionHistoryQuery,
+    useCsvExportMutation,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
 
@@ -52,6 +56,10 @@ export type UseAccountHistoryResult = {
     handleRefresh: () => void
     /** Whether data is empty */
     isEmpty: boolean
+    /** Function to export transaction history to CSV */
+    handleExportCsv: () => void
+    /** Whether CSV export is in progress */
+    isExportingCsv: boolean
 }
 
 /**
@@ -141,6 +149,40 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         refetch()
     }, [refetch])
 
+    const { t } = useLanguage()
+    const { showToast } = useToast()
+
+    const { exportCsv, isLoading: isExportingCsv } = useCsvExportMutation({
+        network,
+        onSuccess: async result => {
+            try {
+                await Share.share({
+                    title: result.filename,
+                    message: result.csvContent,
+                })
+            } catch (error) {
+                showToast({
+                    title: t('errors.general.title'),
+                    body: `${error}`,
+                    type: 'error',
+                })
+            }
+        },
+        onError: error => {
+            showToast({
+                title: t('errors.general.title'),
+                body: error?.message || t('errors.general.body'),
+                type: 'error',
+            })
+        },
+    })
+
+    const handleExportCsv = useCallback(() => {
+        if (account?.address) {
+            exportCsv({ accountAddress: account.address })
+        }
+    }, [account?.address, exportCsv])
+
     const isEmpty = !isLoading && transactions.length === 0
 
     return {
@@ -153,5 +195,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         handleLoadMore,
         handleRefresh,
         isEmpty,
+        handleExportCsv,
+        isExportingCsv,
     }
 }
