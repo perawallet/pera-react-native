@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { MultiGroupListScreen } from './MultiGroupListScreen'
+export { GroupDetailScreen } from './GroupDetailScreen'

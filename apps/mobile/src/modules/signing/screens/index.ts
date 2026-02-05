@@ -12,5 +12,5 @@
 
 export * from './SingleTransactionScreen'
 export * from './TransactionDetailsScreen'
-export * from './GroupListScreen'
-export * from './MultiGroupListScreen'
+export * from './TransactionListScreen'
+export * from './GroupDetailScreen'

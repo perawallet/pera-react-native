@@ -17,8 +17,8 @@ import { SigningStackParamList } from './types'
 import {
     SingleTransactionScreen,
     TransactionDetailsScreen,
-    GroupListScreen,
-    MultiGroupListScreen,
+    TransactionListScreen,
+    GroupDetailScreen,
 } from '@modules/signing/screens'
 import { useStyles } from './styles'
 
@@ -30,24 +30,17 @@ const Stack = createStackNavigator<SigningStackParamList>()
 
 type InitialRouteConfig = {
     name: keyof SigningStackParamList
-    params?: SigningStackParamList[keyof SigningStackParamList]
 }
 
 const getInitialRouteConfig = (
     request: TransactionSignRequest,
 ): InitialRouteConfig => {
-    const groupCount = request.txs.length
-    const firstGroupLength = request.txs.length ?? 0
-    const isSingleTransaction = groupCount === 1 && firstGroupLength === 1
-    const isSingleGroup = groupCount === 1 && !isSingleTransaction
+    const isSingleTransaction = request.txs.length === 1
 
     if (isSingleTransaction) {
         return { name: 'SingleTransaction' }
     }
-    if (isSingleGroup) {
-        return { name: 'GroupList', params: { groupIndex: 0 } }
-    }
-    return { name: 'MultiGroupList' }
+    return { name: 'TransactionList' }
 }
 
 export const SigningRoutes = ({ request }: SigningRoutesProps) => {
@@ -71,21 +64,16 @@ export const SigningRoutes = ({ request }: SigningRoutesProps) => {
                 component={SingleTransactionScreen}
             />
             <Stack.Screen
+                name='TransactionList'
+                component={TransactionListScreen}
+            />
+            <Stack.Screen
                 name='TransactionDetails'
                 component={TransactionDetailsScreen}
             />
             <Stack.Screen
-                name='GroupList'
-                component={GroupListScreen}
-                initialParams={
-                    initialRouteConfig.name === 'GroupList'
-                        ? (initialRouteConfig.params as { groupIndex: number })
-                        : undefined
-                }
-            />
-            <Stack.Screen
-                name='MultiGroupList'
-                component={MultiGroupListScreen}
+                name='GroupDetail'
+                component={GroupDetailScreen}
             />
         </Stack.Navigator>
     )

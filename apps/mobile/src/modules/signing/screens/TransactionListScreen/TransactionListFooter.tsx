@@ -18,13 +18,13 @@ import { SigningWarnings } from '@modules/signing/components/SigningWarnings'
 import { FeeDisplay } from '@modules/signing/components/FeeDisplay'
 import { SigningActionButtons } from '@modules/signing/components/SigningActionButtons'
 
-type MultiGroupListFooterProps = {
+type TransactionListFooterProps = {
     totalFee: Decimal
 }
 
-export const MultiGroupListFooter = ({
+export const TransactionListFooter = ({
     totalFee,
-}: MultiGroupListFooterProps) => {
+}: TransactionListFooterProps) => {
     const { theme } = useTheme()
     const { t } = useLanguage()
 

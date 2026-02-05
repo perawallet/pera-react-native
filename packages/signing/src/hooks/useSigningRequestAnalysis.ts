@@ -19,7 +19,10 @@ import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import type { TransactionSignRequest } from '../models'
 import { calculateTotalFee } from '../utils/fees'
 import { aggregateTransactionWarnings } from '../utils/warnings'
-import { classifyTransactionGroups } from '../utils/classification'
+import {
+    classifyTransactionGroups,
+    createTransactionListItems,
+} from '../utils/classification'
 import { encodeToBase64, partitionBy } from '@perawallet/wallet-core-shared'
 
 export const useSigningRequestAnalysis = (request: TransactionSignRequest) => {
@@ -32,12 +35,21 @@ export const useSigningRequestAnalysis = (request: TransactionSignRequest) => {
                     .map(tx => mapToDisplayableTransaction(tx))
                     .filter((tx): tx is PeraDisplayableTransaction => !!tx),
                 (tx: PeraDisplayableTransaction) =>
-                    tx.group ? encodeToBase64(tx.group) : 'no-group',
+                    tx.group ? encodeToBase64(tx.group) : `no-group-${tx.id}`,
             ),
         [request.txs],
     )
 
     const allTransactions = useMemo(() => groups.flat(), [groups])
+
+    /**
+     * List items for display in TransactionListScreen.
+     * Contains a mix of individual transactions and group items.
+     */
+    const listItems = useMemo(
+        () => createTransactionListItems(groups),
+        [groups],
+    )
 
     const signableAddresses = useMemo(
         () => new Set(accounts.filter(a => a.canSign).map(a => a.address)),
@@ -71,6 +83,7 @@ export const useSigningRequestAnalysis = (request: TransactionSignRequest) => {
     return {
         groups,
         allTransactions,
+        listItems,
         totalFee,
         warnings,
         distinctWarnings,

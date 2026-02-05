@@ -12,6 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import { PWFlatList, PWText, PWToolbar, PWView } from '@components/core'
+import { InnerTransactionPreview } from '@modules/transactions/components/transaction-details/InnerTransactionPreview'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
@@ -20,53 +21,65 @@ import {
     useSigningRequest,
     useSigningRequestAnalysis,
     type TransactionSignRequest,
+    type TransactionListItem,
 } from '@perawallet/wallet-core-signing'
 import type { SigningStackParamList } from '@modules/signing/routes'
-import { GroupPreview } from './GroupPreview'
-import { MultiGroupListHeader } from './MultiGroupListHeader'
-import { MultiGroupListFooter } from './MultiGroupListFooter'
+import { TransactionListHeader } from './TransactionListHeader'
+import { TransactionListFooter } from './TransactionListFooter'
+import { GroupPreviewItem } from './GroupPreviewItem'
 import { useStyles } from './styles'
 
 type NavigationProp = StackNavigationProp<
     SigningStackParamList,
-    'MultiGroupList'
+    'TransactionList'
 >
 
-type GroupItem = {
-    transactions: PeraDisplayableTransaction[]
-    index: number
-}
-
-export const MultiGroupListScreen = () => {
+export const TransactionListScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const navigation = useNavigation<NavigationProp>()
     const { pendingSignRequests } = useSigningRequest()
     const request = pendingSignRequests[0] as TransactionSignRequest
-    const { groups, totalFee } = useSigningRequestAnalysis(request)
+    const { listItems, totalFee, allTransactions } =
+        useSigningRequestAnalysis(request)
 
-    const groupItems: GroupItem[] = useMemo(
-        () => groups.map((transactions, index) => ({ transactions, index })),
-        [groups],
-    )
+    const handleTransactionPress = (tx: PeraDisplayableTransaction) => {
+        navigation.navigate('TransactionDetails', { transaction: tx })
+    }
 
     const handleGroupPress = (groupIndex: number) => {
-        navigation.navigate('GroupList', { groupIndex })
+        navigation.navigate('GroupDetail', { groupIndex })
     }
 
     const renderItem = useCallback(
-        ({ item }: { item: GroupItem }) => (
-            <GroupPreview
-                transactions={item.transactions}
-                groupIndex={item.index}
-                onPress={() => handleGroupPress(item.index)}
-            />
-        ),
-        [handleGroupPress],
+        ({ item }: { item: TransactionListItem }) => {
+            if (item.type === 'group') {
+                return (
+                    <GroupPreviewItem
+                        transactions={item.transactions}
+                        groupIndex={item.groupIndex}
+                        onPress={() => handleGroupPress(item.groupIndex)}
+                    />
+                )
+            }
+
+            return (
+                <InnerTransactionPreview
+                    transaction={item.transaction}
+                    onPress={() => handleTransactionPress(item.transaction)}
+                />
+            )
+        },
+        [handleTransactionPress, handleGroupPress],
     )
 
     const keyExtractor = useCallback(
-        (item: GroupItem) => `group-${item.index}`,
+        (item: TransactionListItem, index: number) => {
+            if (item.type === 'group') {
+                return `group-${item.groupIndex}`
+            }
+            return item.transaction.id ?? `tx-${index}`
+        },
         [],
     )
 
@@ -76,12 +89,12 @@ export const MultiGroupListScreen = () => {
     )
 
     const ListHeader = useMemo(
-        () => <MultiGroupListHeader groupCount={groups.length} />,
-        [groups.length],
+        () => <TransactionListHeader itemCount={allTransactions.length} />,
+        [allTransactions.length],
     )
 
     const ListFooter = useMemo(
-        () => <MultiGroupListFooter totalFee={totalFee} />,
+        () => <TransactionListFooter totalFee={totalFee} />,
         [totalFee],
     )
 
@@ -95,7 +108,7 @@ export const MultiGroupListScreen = () => {
                 }
             />
             <PWFlatList
-                data={groupItems}
+                data={listItems}
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
                 ItemSeparatorComponent={ItemSeparator}
