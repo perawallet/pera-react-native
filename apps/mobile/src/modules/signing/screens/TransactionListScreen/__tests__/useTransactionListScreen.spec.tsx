@@ -90,7 +90,10 @@ describe('useTransactionListScreen', () => {
     it('generates correct key for transaction items', () => {
         const { result } = renderHook(() => useTransactionListScreen())
 
-        const txItem = { type: 'transaction' as const, transaction: { id: 'tx-1' } }
+        const txItem = {
+            type: 'transaction' as const,
+            transaction: { id: 'tx-1' },
+        }
         const key = result.current.keyExtractor(txItem as any, 0)
 
         expect(key).toBe('tx-1')
