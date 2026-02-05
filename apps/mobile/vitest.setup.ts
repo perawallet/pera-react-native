@@ -125,6 +125,202 @@ vi.mock('@components/core/PWIcon/PWIcon', () => {
     }
 })
 
+// Mock @components/core barrel export with all core components
+vi.mock('@components/core', () => {
+    const React = require('react')
+
+    // Helper to create mock components
+    const createMockComponent =
+        (name: string, elementType = 'div') =>
+        ({ children, onPress, testID, style, ...props }: any) =>
+            React.createElement(
+                elementType,
+                {
+                    ...props,
+                    style,
+                    onClick: onPress,
+                    'data-testid': testID || name,
+                },
+                children,
+            )
+
+    return {
+        PWBadge: ({ value, label, children, testID, ...props }: any) =>
+            React.createElement(
+                'span',
+                { ...props, 'data-testid': testID || 'PWBadge' },
+                value || label || children,
+            ),
+        PWBottomSheet: ({ isVisible, children, ...props }: any) =>
+            isVisible
+                ? React.createElement(
+                      'div',
+                      { ...props, 'data-testid': 'PWBottomSheet' },
+                      children,
+                  )
+                : null,
+        PWButton: ({ children, title, onPress, testID, ...props }: any) =>
+            React.createElement(
+                'button',
+                { ...props, onClick: onPress, 'data-testid': testID || 'PWButton' },
+                title || children,
+            ),
+        PWCheckbox: createMockComponent('PWCheckbox'),
+        PWChip: ({ label, children, testID, ...props }: any) =>
+            React.createElement(
+                'span',
+                { ...props, 'data-testid': testID || 'PWChip' },
+                label || children,
+            ),
+        PWDialog: ({ isVisible, children, ...props }: any) =>
+            isVisible
+                ? React.createElement(
+                      'div',
+                      { ...props, 'data-testid': 'PWDialog' },
+                      children,
+                  )
+                : null,
+        PWDivider: () => React.createElement('hr', { 'data-testid': 'PWDivider' }),
+        PWHeader: ({ title, children, testID, ...props }: any) =>
+            React.createElement(
+                'div',
+                { ...props, 'data-testid': testID || 'PWHeader' },
+                title && React.createElement('span', { key: 'title' }, title),
+                children,
+            ),
+        PWFlatList: ({ data, renderItem, testID, ...props }: any) =>
+            React.createElement(
+                'div',
+                { ...props, 'data-testid': testID || 'PWFlatList' },
+                data?.map((item: any, index: number) => renderItem({ item, index })),
+            ),
+        PWIcon: ({ onPress, name, testID }: any) =>
+            React.createElement('div', {
+                onClick: onPress,
+                role: onPress ? 'button' : undefined,
+                'data-testid': testID || `icon-${name}`,
+            }),
+        PWImage: (props: any) =>
+            React.createElement('img', { ...props, 'data-testid': 'PWImage' }),
+        PWInput: ({ onChangeText, testID, ...props }: any) =>
+            React.createElement('input', {
+                ...props,
+                onChange: (e: any) => onChangeText?.(e.target.value),
+                'data-testid': testID || 'PWInput',
+            }),
+        PWListItem: ({ title, subtitle, children, onPress, testID, ...props }: any) =>
+            React.createElement(
+                'div',
+                { ...props, onClick: onPress, 'data-testid': testID || 'PWListItem' },
+                title && React.createElement('span', { key: 'title' }, title),
+                subtitle && React.createElement('span', { key: 'subtitle' }, subtitle),
+                children,
+            ),
+        PWLoadingOverlay: ({ isVisible, title, children, ...props }: any) =>
+            isVisible
+                ? React.createElement(
+                      'div',
+                      { ...props, 'data-testid': 'PWLoadingOverlay' },
+                      title && React.createElement('span', { key: 'title' }, title),
+                      children,
+                  )
+                : null,
+        PWNumpad: ({ mode, onKeyPress, isDisabled, testID }: any) => {
+            const keys = mode === 'number'
+                ? ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'delete']
+                : ['1', '2', '3', '4', '5', '6', '7', '8', '9', null, '0', 'delete']
+            return React.createElement(
+                'div',
+                { 'data-testid': testID || 'PWNumpad' },
+                keys.filter(Boolean).map((key: string) =>
+                    key === 'delete'
+                        ? React.createElement('button', {
+                              key,
+                              onClick: () => !isDisabled && onKeyPress?.('delete'),
+                              'data-testid': 'icon-delete',
+                          })
+                        : React.createElement(
+                              'button',
+                              {
+                                  key,
+                                  onClick: () => !isDisabled && onKeyPress?.(key),
+                              },
+                              key,
+                          ),
+                ),
+            )
+        },
+        PWOverlay: ({ isVisible, children, ...props }: any) =>
+            isVisible
+                ? React.createElement(
+                      'div',
+                      { ...props, 'data-testid': 'PWOverlay' },
+                      children,
+                  )
+                : null,
+        PWPinCircles: createMockComponent('PWPinCircles'),
+        PWRadioButton: createMockComponent('PWRadioButton'),
+        PWRoundIcon: vi.fn(({ icon, size, testID, ...props }: any) =>
+            React.createElement('div', {
+                ...props,
+                'data-testid': testID || `icon-${icon}`,
+                'data-icon': icon,
+                'data-size': size,
+            }),
+        ),
+        PWScrollView: createMockComponent('PWScrollView'),
+        PWSkeleton: createMockComponent('PWSkeleton'),
+        PWSwitch: ({ value, onValueChange, testID, ...props }: any) =>
+            React.createElement('input', {
+                type: 'checkbox',
+                role: 'switch',
+                checked: value,
+                onChange: (e: any) => onValueChange?.(e.target.checked),
+                ...props,
+                'data-testid': testID || 'PWSwitch',
+            }),
+        PWTabView: createMockComponent('PWTabView'),
+        PWText: ({ children, onPress, testID, style, ...props }: any) =>
+            React.createElement(
+                'span',
+                {
+                    ...props,
+                    style,
+                    onClick: onPress,
+                    'data-testid': testID || 'PWText',
+                },
+                children,
+            ),
+        PWToolbar: ({ title, children, testID, left, center, right, ...props }: any) =>
+            React.createElement(
+                'div',
+                { ...props, 'data-testid': testID || 'PWToolbar' },
+                left,
+                center || (title && React.createElement('span', { key: 'title' }, title)),
+                children,
+                right,
+            ),
+        PWTouchableOpacity: ({ children, onPress, testID, ...props }: any) =>
+            React.createElement(
+                'button',
+                {
+                    ...props,
+                    onClick: onPress,
+                    'data-testid': testID || 'PWTouchableOpacity',
+                    testid: testID || 'PWTouchableOpacity',
+                },
+                children,
+            ),
+        PWView: ({ children, testID, style, ...props }: any) =>
+            React.createElement(
+                'div',
+                { ...props, style, 'data-testid': testID || 'PWView' },
+                children,
+            ),
+        PWWebView: createMockComponent('PWWebView'),
+    }
+})
+
 // Clean up after each test
 afterEach(() => {
     vi.clearAllMocks()
@@ -458,11 +654,20 @@ vi.mock('react-native', () => {
             removeListener: vi.fn(),
         },
         Easing: {
-            inOut: vi.fn(),
-            out: vi.fn(),
+            inOut: vi.fn(fn => fn),
+            out: vi.fn(fn => fn),
+            in: vi.fn(fn => fn),
             ease: vi.fn(),
             linear: vi.fn(),
             quad: vi.fn(),
+            poly: vi.fn(() => vi.fn()),
+            bezier: vi.fn(() => vi.fn()),
+            circle: vi.fn(),
+            sin: vi.fn(),
+            exp: vi.fn(),
+            elastic: vi.fn(() => vi.fn()),
+            back: vi.fn(() => vi.fn()),
+            bounce: vi.fn(),
         },
         Animated: {
             timing: vi.fn(() => ({ start: vi.fn(cb => cb?.()) })),
@@ -506,6 +711,7 @@ vi.mock('react-native', () => {
 
 vi.mock('react-native-safe-area-context', () => {
     const inset = { top: 0, right: 0, bottom: 0, left: 0 }
+    const frame = { x: 0, y: 0, width: 375, height: 812 }
     return {
         SafeAreaProvider: vi
             .fn()
@@ -514,6 +720,8 @@ vi.mock('react-native-safe-area-context', () => {
             .fn()
             .mockImplementation(({ children }) => children(inset)),
         useSafeAreaInsets: vi.fn().mockImplementation(() => inset),
+        useSafeAreaFrame: vi.fn().mockImplementation(() => frame),
+        initialWindowMetrics: { insets: inset, frame },
     }
 })
 
@@ -550,6 +758,7 @@ vi.mock('@react-navigation/native', () => ({
         reset: vi.fn(),
         setOptions: vi.fn(),
         push: vi.fn(),
+        canGoBack: vi.fn(() => false),
     }),
     useRoute: vi.fn(() => ({
         params: {},
@@ -566,6 +775,18 @@ vi.mock('@react-navigation/native', () => ({
             border: 'gray',
             notification: 'red',
         },
+    },
+    createNavigatorFactory: vi.fn(() => () => ({
+        Navigator: ({ children }: any) => children,
+        Screen: ({ children }: any) => children,
+        Group: ({ children }: any) => children,
+    })),
+    useNavigationState: vi.fn(() => ({})),
+    StackActions: {
+        replace: vi.fn(),
+        push: vi.fn(),
+        pop: vi.fn(),
+        popToTop: vi.fn(),
     },
 }))
 
@@ -607,6 +828,66 @@ vi.mock('@react-navigation/native-stack', () => {
                 return children
             },
         })),
+    }
+})
+
+vi.mock('@react-navigation/stack', () => {
+    const React = require('react')
+    return {
+        createStackNavigator: vi.fn(() => ({
+            Navigator: ({ children, initialRouteName }: any) => {
+                // Find the initial screen and render it
+                const screens = React.Children.toArray(children)
+                const initialScreen =
+                    screens.find(
+                        (child: any) => child.props?.name === initialRouteName,
+                    ) || screens[0]
+                if (initialScreen?.props?.component) {
+                    const Component = initialScreen.props.component
+                    return React.createElement(
+                        Component,
+                        initialScreen.props.initialParams || {},
+                    )
+                }
+                return children
+            },
+            Screen: ({
+                children,
+                component: Component,
+                initialParams,
+            }: any) => {
+                if (Component) {
+                    return React.createElement(Component, initialParams || {})
+                }
+                return children
+            },
+            Group: ({ children }: any) => children,
+        })),
+        TransitionPresets: {
+            SlideFromRightIOS: {},
+            ModalSlideFromBottomIOS: {},
+            ModalPresentationIOS: {},
+            FadeFromBottomAndroid: {},
+            RevealFromBottomAndroid: {},
+            ScaleFromCenterAndroid: {},
+            DefaultTransition: {},
+            ModalTransition: {},
+        },
+        CardStyleInterpolators: {
+            forHorizontalIOS: vi.fn(),
+            forVerticalIOS: vi.fn(),
+            forModalPresentationIOS: vi.fn(),
+            forFadeFromBottomAndroid: vi.fn(),
+            forRevealFromBottomAndroid: vi.fn(),
+            forScaleFromCenterAndroid: vi.fn(),
+            forNoAnimation: vi.fn(),
+        },
+        HeaderStyleInterpolators: {
+            forUIKit: vi.fn(),
+            forFade: vi.fn(),
+            forStatic: vi.fn(),
+            forNoAnimation: vi.fn(),
+        },
     }
 })
 
@@ -1217,6 +1498,13 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         useAccountAssetBalanceQuery: vi.fn(() => ({
             data: null,
             isPending: false,
+        })),
+        useFindAccountByAddress: vi.fn(() => null),
+        useTransactionSigner: vi.fn(() => ({
+            signTransactions: vi.fn().mockResolvedValue([]),
+        })),
+        useArbitraryDataSigner: vi.fn(() => ({
+            signArbitraryData: vi.fn().mockResolvedValue([]),
         })),
         ALGO_ASSET_ID: '0',
         AccountTypes: {

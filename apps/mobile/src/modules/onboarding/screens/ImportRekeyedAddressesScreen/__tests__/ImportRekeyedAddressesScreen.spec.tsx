@@ -21,37 +21,7 @@ vi.mock('../useImportRekeyedAddressesScreen', () => ({
     useImportRekeyedAddressesScreen: vi.fn(),
 }))
 
-vi.mock('@components/core', async () => {
-    const actual = await vi.importActual<object>('@components/core')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { View, Text } = await vi.importActual<any>('react-native')
-    return {
-        ...actual,
-        PWFlatList: ({
-            ListHeaderComponent,
-            ListFooterComponent,
-            data,
-            renderItem,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        }: any) => (
-            <View>
-                {ListHeaderComponent && <ListHeaderComponent />}
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {data.map((item: any) => (
-                    <View key={item.address}>{renderItem({ item })}</View>
-                ))}
-                {ListFooterComponent && <ListFooterComponent />}
-            </View>
-        ),
-        PWLoadingOverlay: ({
-            isVisible,
-            title,
-        }: {
-            isVisible: boolean
-            title: string
-        }) => (isVisible ? <Text>{title}</Text> : null),
-    }
-})
+// Use global mock from vitest.setup.ts for @components/core
 
 describe('ImportRekeyedAddressesScreen', () => {
     const mockHandleContinue = vi.fn()

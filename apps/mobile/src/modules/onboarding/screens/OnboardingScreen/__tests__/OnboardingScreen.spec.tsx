@@ -34,32 +34,7 @@ vi.mock('@modules/webview', () => ({
     }),
 }))
 
-// Mock core components to handle onPress in DOM environment
-vi.mock('@components/core', async () => {
-    const actual =
-        await vi.importActual<typeof import('@components/core')>(
-            '@components/core',
-        )
-    const React = await import('react')
-    return {
-        ...actual,
-        PWText: ({
-            children,
-            onPress,
-            ...props
-        }: {
-            children?: React.ReactNode
-            onPress?: () => void
-        }) => {
-            // Map onPress to onClick for testing interactions
-            return React.createElement(
-                'span',
-                { ...props, onClick: onPress },
-                children,
-            )
-        },
-    }
-})
+// Uses global mock from vitest.setup.ts for @components/core
 
 // Mock react-i18next
 vi.mock('react-i18next', async () => {

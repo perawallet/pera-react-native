@@ -60,46 +60,7 @@ vi.mock('react-i18next', async () => {
     }
 })
 
-vi.mock('@components/core', async () => {
-    const actual =
-        await vi.importActual<typeof import('@components/core')>(
-            '@components/core',
-        )
-    const React = await import('react')
-    return {
-        ...actual,
-        PWTouchableOpacity: ({
-            children,
-            onPress,
-            testID,
-            ...props
-        }: {
-            children?: React.ReactNode
-            onPress?: () => void
-            testID?: string
-        }) => {
-            return React.createElement(
-                'div',
-                { ...props, onClick: onPress, 'data-testid': testID },
-                children,
-            )
-        },
-        PWText: ({
-            children,
-            onPress,
-            ...props
-        }: {
-            children?: React.ReactNode
-            onPress?: () => void
-        }) => {
-            return React.createElement(
-                'span',
-                { ...props, onClick: onPress },
-                children,
-            )
-        },
-    }
-})
+// Use global mock from vitest.setup.ts - no override needed
 
 // Mock react-navigation
 vi.mock('@react-navigation/native', async () => {

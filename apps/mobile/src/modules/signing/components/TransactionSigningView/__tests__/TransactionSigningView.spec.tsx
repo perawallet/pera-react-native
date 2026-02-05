@@ -55,60 +55,50 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     })),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
-    const actual =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-blockchain')
-        >()
-    return {
-        ...actual,
-        useAlgorandClient: vi.fn(() => ({
-            client: { algod: { sendRawTransaction: vi.fn() } },
-        })),
-        useTransactionEncoder: vi.fn(() => ({
-            encodeSignedTransactions: vi.fn(),
-        })),
-        encodeAlgorandAddress: vi.fn(() => 'ENCODED_ADDRESS'),
-        mapToDisplayableTransaction: vi.fn(tx => {
-            if (!tx) return null
-            return {
-                fee: 1000n,
-                sender: 'MOCK_SENDER',
-                txType: tx.payment ? 'pay' : 'appl',
-                firstValid: 1n,
-                lastValid: 100n,
-                confirmedRound: 0n,
-                roundTime: 0,
-                intraRoundOffset: 0,
-                signature: {},
-                paymentTransaction: tx.payment
-                    ? {
-                          amount: tx.payment.amount ?? 0n,
-                          receiver: 'MOCK_RECEIVER',
-                      }
-                    : undefined,
-            }
-        }),
-        getTransactionType: vi.fn(tx => {
-            if (tx?.paymentTransaction) return 'payment'
-            return 'unknown'
-        }),
-    }
-})
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useAlgorandClient: vi.fn(() => ({
+        client: { algod: { sendRawTransaction: vi.fn() } },
+    })),
+    useTransactionEncoder: vi.fn(() => ({
+        encodeSignedTransactions: vi.fn(),
+    })),
+    encodeAlgorandAddress: vi.fn(() => 'ENCODED_ADDRESS'),
+    mapToDisplayableTransaction: vi.fn(tx => {
+        if (!tx) return null
+        return {
+            fee: 1000n,
+            sender: 'MOCK_SENDER',
+            txType: tx.payment ? 'pay' : 'appl',
+            firstValid: 1n,
+            lastValid: 100n,
+            confirmedRound: 0n,
+            roundTime: 0,
+            intraRoundOffset: 0,
+            signature: {},
+            paymentTransaction: tx.payment
+                ? {
+                      amount: tx.payment.amount ?? 0n,
+                      receiver: 'MOCK_RECEIVER',
+                  }
+                : undefined,
+        }
+    }),
+    getTransactionType: vi.fn(tx => {
+        if (tx?.paymentTransaction) return 'payment'
+        return 'unknown'
+    }),
+    isValidAlgorandAddress: vi.fn(() => true),
+    initBlockchainStore: vi.fn(),
+}))
 
-vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
-    const actual =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-accounts')
-        >()
-    return {
-        ...actual,
-        useTransactionSigner: vi.fn(() => ({
-            signTransactions: vi.fn().mockResolvedValue([]),
-        })),
-        useAllAccounts: vi.fn(() => []),
-    }
-})
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useTransactionSigner: vi.fn(() => ({
+        signTransactions: vi.fn().mockResolvedValue([]),
+    })),
+    useAllAccounts: vi.fn(() => []),
+    useSelectedAccount: vi.fn(() => null),
+    getAccountDisplayName: vi.fn(() => ''),
+}))
 
 describe('TransactionSigningView', () => {
     const mockSingleTxRequest = {
