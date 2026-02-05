@@ -16,9 +16,7 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { PWText, PWView } from '@components/core'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import {
-    ALGO_ASSET,
-} from '@perawallet/wallet-core-assets'
+import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import Decimal from 'decimal.js'
 import { useStyles } from './styles'
@@ -35,7 +33,8 @@ export const PaymentSummaryHeader = ({
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
-    const {value, preferredFiatCurrency} = usePaymentSummaryHeader(transaction)
+    const { value, preferredFiatCurrency } =
+        usePaymentSummaryHeader(transaction)
 
     return (
         <PWView style={styles.container}>

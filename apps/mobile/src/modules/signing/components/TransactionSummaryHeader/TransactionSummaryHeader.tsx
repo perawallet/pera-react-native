@@ -55,9 +55,7 @@ export const TransactionSummaryHeader = ({
                 />
 
                 {txType === 'payment' && (
-                    <PaymentSummaryHeader
-                        transaction={transaction}
-                    />
+                    <PaymentSummaryHeader transaction={transaction} />
                 )}
                 {(txType === 'asset-transfer' ||
                     txType === 'asset-opt-in' ||

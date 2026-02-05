@@ -10,12 +10,9 @@
  limitations under the License
  */
 
-import {
-    PeraDisplayableTransaction,
-} from '@perawallet/wallet-core-blockchain'
+import { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { PWText, PWView } from '@components/core'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
-
 
 import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
@@ -33,7 +30,15 @@ export const AssetTransferSummaryHeader = ({
     const { theme } = useTheme()
     const { t } = useLanguage()
 
-    const { label, asset, receiver, amount, assetId, secondaryAssetName, value } = useAssetTransferSummaryHeader(transaction)
+    const {
+        label,
+        asset,
+        receiver,
+        amount,
+        assetId,
+        secondaryAssetName,
+        value,
+    } = useAssetTransferSummaryHeader(transaction)
 
     return (
         <PWView style={styles.container}>
