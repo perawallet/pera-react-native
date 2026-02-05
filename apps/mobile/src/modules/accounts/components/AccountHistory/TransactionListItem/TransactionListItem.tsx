@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWText, PWTouchableOpacity, PWView } from '@components/core'
+import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import { useStyles } from './styles'
@@ -73,21 +73,39 @@ export const TransactionListItem = ({
                                     text: string
                                     isPositive: boolean
                                     isNegative: boolean
+                                    hasAlgoIcon?: boolean
                                 },
                                 index: number,
                             ) => (
-                                <PWText
+                                <PWView
                                     key={index}
-                                    style={[
-                                        styles.amount,
-                                        amount.isPositive &&
-                                            styles.amountPositive,
-                                        amount.isNegative &&
-                                            styles.amountNegative,
-                                    ]}
+                                    style={styles.amountRow}
                                 >
-                                    {amount.text}
-                                </PWText>
+                                    {amount.hasAlgoIcon && (
+                                        <PWIcon
+                                            name="algo"
+                                            size="sm"
+                                            variant={
+                                                amount.isPositive
+                                                    ? 'positive'
+                                                    : amount.isNegative
+                                                      ? 'error'
+                                                      : 'primary'
+                                            }
+                                        />
+                                    )}
+                                    <PWText
+                                        style={[
+                                            styles.amount,
+                                            amount.isPositive &&
+                                                styles.amountPositive,
+                                            amount.isNegative &&
+                                                styles.amountNegative,
+                                        ]}
+                                    >
+                                        {amount.text}
+                                    </PWText>
+                                </PWView>
                             ),
                         )}
                     </PWView>

@@ -19,6 +19,7 @@ export type AmountDisplay = {
     text: string
     isPositive: boolean
     isNegative: boolean
+    hasAlgoIcon?: boolean
 }
 
 export type UseTransactionListItemParams = {
@@ -35,7 +36,6 @@ export type UseTransactionListItemResult = {
 }
 
 const ALGO_DECIMALS = 6
-const ALGO_SYMBOL = 'A'
 
 /**
  * Truncates an address to show first and last characters.
@@ -60,9 +60,10 @@ const formatAlgoAmount = (
     })
 
     return {
-        text: `${prefix}${ALGO_SYMBOL}${formatted}`,
+        text: `${prefix}${formatted}`,
         isPositive: !isOutgoing && amount > 0,
         isNegative: isOutgoing,
+        hasAlgoIcon: true,
     }
 }
 
@@ -87,10 +88,13 @@ const formatAssetAmount = (
         maximumFractionDigits: maxDigits,
     })
 
+    const isAlgo = unitName === 'ALGO'
+
     return {
-        text: `${prefix}${formatted} ${unitName}`,
+        text: isAlgo ? `${prefix}${formatted}` : `${prefix}${formatted} ${unitName}`,
         isPositive: !isOutgoing && numAmount > 0,
         isNegative: isOutgoing,
+        hasAlgoIcon: isAlgo,
     }
 }
 
@@ -222,10 +226,11 @@ export const useTransactionListItem = ({
             result.push({
                 text:
                     assetOutUnitName === 'ALGO'
-                        ? `${ALGO_SYMBOL}${formattedAmount}`
+                        ? `${formattedAmount}`
                         : `+ ${formattedAmount} ${assetOutUnitName}`,
                 isPositive: true,
                 isNegative: false,
+                hasAlgoIcon: assetOutUnitName === 'ALGO',
             })
             return result
         }
@@ -272,9 +277,10 @@ export const useTransactionListItem = ({
         // Always show fee for transactions that cost the user
         if (isOutgoing || transaction.txType === 'acfg') {
             result.push({
-                text: `-${ALGO_SYMBOL}${(Number(transaction.fee) / Math.pow(10, ALGO_DECIMALS)).toFixed(3)}`,
+                text: `-${(Number(transaction.fee) / Math.pow(10, ALGO_DECIMALS)).toFixed(3)}`,
                 isPositive: false,
                 isNegative: true,
+                hasAlgoIcon: true,
             })
         }
 

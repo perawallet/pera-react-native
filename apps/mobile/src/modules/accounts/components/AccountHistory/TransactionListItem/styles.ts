@@ -45,6 +45,11 @@ export const useStyles = makeStyles(theme => ({
     amountContainer: {
         alignItems: 'flex-end',
     },
+    amountRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+    },
     amount: {
         color: theme.colors.textMain,
         fontWeight: '500',
