@@ -13,6 +13,8 @@
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useTransactionListScreen } from '../useTransactionListScreen'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { TransactionListItem } from '@perawallet/wallet-core-signing'
 import Decimal from 'decimal.js'
 
 const mockNavigate = vi.fn()
@@ -68,9 +70,9 @@ describe('useTransactionListScreen', () => {
 
     it('navigates to TransactionDetails on transaction press', () => {
         const { result } = renderHook(() => useTransactionListScreen())
-        const mockTx = { id: 'tx-1' }
+        const mockTx = { id: 'tx-1' } as PeraDisplayableTransaction
 
-        result.current.handleTransactionPress(mockTx as any)
+        result.current.handleTransactionPress(mockTx)
 
         expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
             transaction: mockTx,
@@ -90,11 +92,11 @@ describe('useTransactionListScreen', () => {
     it('generates correct key for transaction items', () => {
         const { result } = renderHook(() => useTransactionListScreen())
 
-        const txItem = {
-            type: 'transaction' as const,
-            transaction: { id: 'tx-1' },
+        const txItem: TransactionListItem = {
+            type: 'transaction',
+            transaction: { id: 'tx-1' } as PeraDisplayableTransaction,
         }
-        const key = result.current.keyExtractor(txItem as any, 0)
+        const key = result.current.keyExtractor(txItem, 0)
 
         expect(key).toBe('tx-1')
     })
@@ -102,12 +104,12 @@ describe('useTransactionListScreen', () => {
     it('generates correct key for group items', () => {
         const { result } = renderHook(() => useTransactionListScreen())
 
-        const groupItem = {
-            type: 'group' as const,
+        const groupItem: TransactionListItem = {
+            type: 'group',
             transactions: [],
             groupIndex: 2,
         }
-        const key = result.current.keyExtractor(groupItem as any, 0)
+        const key = result.current.keyExtractor(groupItem, 0)
 
         expect(key).toBe('group-2')
     })
@@ -115,8 +117,11 @@ describe('useTransactionListScreen', () => {
     it('generates fallback key for transaction without id', () => {
         const { result } = renderHook(() => useTransactionListScreen())
 
-        const txItem = { type: 'transaction' as const, transaction: {} }
-        const key = result.current.keyExtractor(txItem as any, 5)
+        const txItem: TransactionListItem = {
+            type: 'transaction',
+            transaction: {} as PeraDisplayableTransaction,
+        }
+        const key = result.current.keyExtractor(txItem, 5)
 
         expect(key).toBe('tx-5')
     })

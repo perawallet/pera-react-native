@@ -13,6 +13,7 @@
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useGroupDetailScreen } from '../useGroupDetailScreen'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 
 const mockNavigate = vi.fn()
 const mockGoBack = vi.fn()
@@ -28,8 +29,8 @@ vi.mock('@react-navigation/native', () => ({
     }),
 }))
 
-const mockTx1 = { id: 'tx-1', sender: 'ADDR1' }
-const mockTx2 = { id: 'tx-2', sender: 'ADDR1' }
+const mockTx1 = { id: 'tx-1', sender: 'ADDR1' } as PeraDisplayableTransaction
+const mockTx2 = { id: 'tx-2', sender: 'ADDR1' } as PeraDisplayableTransaction
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: vi.fn(() => ({
@@ -77,7 +78,7 @@ describe('useGroupDetailScreen', () => {
     it('navigates to TransactionDetails on transaction press', () => {
         const { result } = renderHook(() => useGroupDetailScreen())
 
-        result.current.handleTransactionPress(mockTx1 as any)
+        result.current.handleTransactionPress(mockTx1)
 
         expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
             transaction: mockTx1,
@@ -95,7 +96,10 @@ describe('useGroupDetailScreen', () => {
     it('generates correct key for transaction with id', () => {
         const { result } = renderHook(() => useGroupDetailScreen())
 
-        const key = result.current.keyExtractor({ id: 'tx-123' } as any, 0)
+        const key = result.current.keyExtractor(
+            { id: 'tx-123' } as PeraDisplayableTransaction,
+            0,
+        )
 
         expect(key).toBe('tx-123')
     })
@@ -103,7 +107,10 @@ describe('useGroupDetailScreen', () => {
     it('generates fallback key for transaction without id', () => {
         const { result } = renderHook(() => useGroupDetailScreen())
 
-        const key = result.current.keyExtractor({} as any, 5)
+        const key = result.current.keyExtractor(
+            {} as PeraDisplayableTransaction,
+            5,
+        )
 
         expect(key).toBe('tx-5')
     })
