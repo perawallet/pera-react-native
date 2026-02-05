@@ -57,7 +57,9 @@ describe('ImportRekeyedAddressesScreen', () => {
     it('renders the select rekeyed addresses title', () => {
         render(<ImportRekeyedAddressesScreen />)
         expect(
-            screen.getByText('onboarding.import_rekeyed_addresses.title'),
+            screen.getByText(content =>
+                content.includes('onboarding.import_rekeyed_addresses.title'),
+            ),
         ).toBeTruthy()
     })
 

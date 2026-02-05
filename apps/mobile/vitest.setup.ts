@@ -132,13 +132,14 @@ vi.mock('@components/core', () => {
     // Helper to create mock components
     const createMockComponent =
         (name: string, elementType = 'div') =>
-        ({ children, onPress, testID, style, ...props }: any) =>
+        ({ children, onPress, testID, style, isDisabled, ...props }: any) =>
             React.createElement(
                 elementType,
                 {
                     ...props,
                     style,
                     onClick: onPress,
+                    disabled: isDisabled,
                     'data-testid': testID || name,
                 },
                 children,
@@ -159,18 +160,30 @@ vi.mock('@components/core', () => {
                       children,
                   )
                 : null,
-        PWButton: ({ children, title, onPress, testID, ...props }: any) =>
+        PWButton: ({
+            children,
+            title,
+            onPress,
+            testID,
+            isDisabled,
+            ...props
+        }: any) =>
             React.createElement(
                 'button',
-                { ...props, onClick: onPress, 'data-testid': testID || 'PWButton' },
+                {
+                    ...props,
+                    onClick: onPress,
+                    disabled: isDisabled,
+                    'data-testid': testID || 'PWButton',
+                },
                 title || children,
             ),
         PWCheckbox: createMockComponent('PWCheckbox'),
-        PWChip: ({ label, children, testID, ...props }: any) =>
+        PWChip: ({ label, title, children, testID, ...props }: any) =>
             React.createElement(
                 'span',
                 { ...props, 'data-testid': testID || 'PWChip' },
-                label || children,
+                title || label || children,
             ),
         PWDialog: ({ isVisible, children, ...props }: any) =>
             isVisible
@@ -180,7 +193,8 @@ vi.mock('@components/core', () => {
                       children,
                   )
                 : null,
-        PWDivider: () => React.createElement('hr', { 'data-testid': 'PWDivider' }),
+        PWDivider: () =>
+            React.createElement('hr', { 'data-testid': 'PWDivider' }),
         PWHeader: ({ title, children, testID, ...props }: any) =>
             React.createElement(
                 'div',
@@ -188,12 +202,34 @@ vi.mock('@components/core', () => {
                 title && React.createElement('span', { key: 'title' }, title),
                 children,
             ),
-        PWFlatList: ({ data, renderItem, testID, ...props }: any) =>
-            React.createElement(
+        PWFlatList: ({
+            data,
+            renderItem,
+            ListHeaderComponent,
+            ListFooterComponent,
+            ListEmptyComponent,
+            testID,
+            ...props
+        }: any) => {
+            const React = require('react')
+            return React.createElement(
                 'div',
                 { ...props, 'data-testid': testID || 'PWFlatList' },
-                data?.map((item: any, index: number) => renderItem({ item, index })),
-            ),
+                typeof ListHeaderComponent === 'function'
+                    ? React.createElement(ListHeaderComponent)
+                    : ListHeaderComponent,
+                data && data.length > 0
+                    ? data.map((item: any, index: number) =>
+                          renderItem({ item, index }),
+                      )
+                    : typeof ListEmptyComponent === 'function'
+                      ? React.createElement(ListEmptyComponent)
+                      : ListEmptyComponent,
+                typeof ListFooterComponent === 'function'
+                    ? React.createElement(ListFooterComponent)
+                    : ListFooterComponent,
+            )
+        },
         PWIcon: ({ onPress, name, testID }: any) =>
             React.createElement('div', {
                 onClick: onPress,
@@ -208,12 +244,24 @@ vi.mock('@components/core', () => {
                 onChange: (e: any) => onChangeText?.(e.target.value),
                 'data-testid': testID || 'PWInput',
             }),
-        PWListItem: ({ title, subtitle, children, onPress, testID, ...props }: any) =>
+        PWListItem: ({
+            title,
+            subtitle,
+            children,
+            onPress,
+            testID,
+            ...props
+        }: any) =>
             React.createElement(
                 'div',
-                { ...props, onClick: onPress, 'data-testid': testID || 'PWListItem' },
+                {
+                    ...props,
+                    onClick: onPress,
+                    'data-testid': testID || 'PWListItem',
+                },
                 title && React.createElement('span', { key: 'title' }, title),
-                subtitle && React.createElement('span', { key: 'subtitle' }, subtitle),
+                subtitle &&
+                    React.createElement('span', { key: 'subtitle' }, subtitle),
                 children,
             ),
         PWLoadingOverlay: ({ isVisible, title, children, ...props }: any) =>
@@ -221,33 +269,65 @@ vi.mock('@components/core', () => {
                 ? React.createElement(
                       'div',
                       { ...props, 'data-testid': 'PWLoadingOverlay' },
-                      title && React.createElement('span', { key: 'title' }, title),
+                      title &&
+                          React.createElement('span', { key: 'title' }, title),
                       children,
                   )
                 : null,
         PWNumpad: ({ mode, onKeyPress, isDisabled, testID }: any) => {
-            const keys = mode === 'number'
-                ? ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'delete']
-                : ['1', '2', '3', '4', '5', '6', '7', '8', '9', null, '0', 'delete']
+            const keys =
+                mode === 'number'
+                    ? [
+                          '1',
+                          '2',
+                          '3',
+                          '4',
+                          '5',
+                          '6',
+                          '7',
+                          '8',
+                          '9',
+                          '.',
+                          '0',
+                          'delete',
+                      ]
+                    : [
+                          '1',
+                          '2',
+                          '3',
+                          '4',
+                          '5',
+                          '6',
+                          '7',
+                          '8',
+                          '9',
+                          null,
+                          '0',
+                          'delete',
+                      ]
             return React.createElement(
                 'div',
                 { 'data-testid': testID || 'PWNumpad' },
-                keys.filter(Boolean).map((key: string) =>
-                    key === 'delete'
-                        ? React.createElement('button', {
-                              key,
-                              onClick: () => !isDisabled && onKeyPress?.('delete'),
-                              'data-testid': 'icon-delete',
-                          })
-                        : React.createElement(
-                              'button',
-                              {
+                keys
+                    .filter((key): key is string => !!key)
+                    .map(key =>
+                        key === 'delete'
+                            ? React.createElement('button', {
                                   key,
-                                  onClick: () => !isDisabled && onKeyPress?.(key),
-                              },
-                              key,
-                          ),
-                ),
+                                  onClick: () =>
+                                      !isDisabled && onKeyPress?.('delete'),
+                                  'data-testid': 'icon-delete',
+                              })
+                            : React.createElement(
+                                  'button',
+                                  {
+                                      key,
+                                      onClick: () =>
+                                          !isDisabled && onKeyPress?.(key),
+                                  },
+                                  key,
+                              ),
+                    ),
             )
         },
         PWOverlay: ({ isVisible, children, ...props }: any) =>
@@ -291,21 +371,38 @@ vi.mock('@components/core', () => {
                 },
                 children,
             ),
-        PWToolbar: ({ title, children, testID, left, center, right, ...props }: any) =>
+        PWToolbar: ({
+            title,
+            children,
+            testID,
+            left,
+            center,
+            right,
+            ...props
+        }: any) =>
             React.createElement(
                 'div',
                 { ...props, 'data-testid': testID || 'PWToolbar' },
                 left,
-                center || (title && React.createElement('span', { key: 'title' }, title)),
+                center ||
+                    (title &&
+                        React.createElement('span', { key: 'title' }, title)),
                 children,
                 right,
             ),
-        PWTouchableOpacity: ({ children, onPress, testID, ...props }: any) =>
+        PWTouchableOpacity: ({
+            children,
+            onPress,
+            testID,
+            isDisabled,
+            ...props
+        }: any) =>
             React.createElement(
                 'button',
                 {
                     ...props,
                     onClick: onPress,
+                    disabled: isDisabled,
                     'data-testid': testID || 'PWTouchableOpacity',
                     testid: testID || 'PWTouchableOpacity',
                 },

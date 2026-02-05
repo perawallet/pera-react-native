@@ -97,6 +97,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     })),
     useAllAccounts: vi.fn(() => []),
     useSelectedAccount: vi.fn(() => null),
+    useFindAccountByAddress: vi.fn(() => vi.fn(() => null)),
     getAccountDisplayName: vi.fn(() => ''),
 }))
 
@@ -222,8 +223,10 @@ describe('TransactionSigningView', () => {
         const { container } = render(
             <TransactionSigningView request={emptyRequest} />,
         )
-        // Empty group shows group view with 0 transactions
-        expect(container.textContent?.toLowerCase()).toContain('group')
+        // Empty group shows invalid state since there are no transactions to sign
+        expect(container.textContent?.toLowerCase()).toContain(
+            'signing.transaction_view.invalid',
+        )
     })
 
     it('calls rejectRequest on cancel', () => {

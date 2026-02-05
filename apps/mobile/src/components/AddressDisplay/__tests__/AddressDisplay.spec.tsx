@@ -11,10 +11,24 @@
  */
 
 import { render, screen } from '@test-utils/render'
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AddressDisplay } from '../AddressDisplay'
 
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useAllAccounts: vi.fn(() => []),
+}))
+
+vi.mock('@perawallet/wallet-core-contacts', () => ({
+    useContacts: vi.fn(() => ({
+        findContacts: vi.fn(() => []),
+    })),
+}))
+
 describe('AddressDisplay', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
     it('renders correctly with address', () => {
         const address = 'ABCDEFGHIJ1234567890'
         render(<AddressDisplay address={address} />)

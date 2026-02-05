@@ -10,12 +10,17 @@
  limitations under the License
  */
 
-import { PWSwitch, PWText, PWTextProps, PWView } from '@components/core'
+import {
+    PWFlatList,
+    PWSwitch,
+    PWText,
+    PWTextProps,
+    PWView,
+} from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSettingsNotificationsScreen } from './useSettingsNotificationsScreen'
 import { useStyles } from './styles'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { FlashList } from '@shopify/flash-list'
 import { EmptyView } from '@components/EmptyView'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { useMemo } from 'react'
@@ -74,7 +79,7 @@ export const SettingsNotificationsScreen = () => {
     } = useSettingsNotificationsScreen()
 
     return (
-        <FlashList
+        <PWFlatList
             data={accounts}
             keyExtractor={item => item.address}
             style={styles.container}

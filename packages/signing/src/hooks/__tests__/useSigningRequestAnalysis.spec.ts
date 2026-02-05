@@ -49,8 +49,12 @@ describe('useSigningRequestAnalysis', () => {
         const mockTx2 = makeMockTx('ADDR1', groupId)
 
         mockMapToDisplayableTransaction
-            .mockReturnValueOnce(makeDisplayableTx({ fee: 1000n, group: groupId }))
-            .mockReturnValueOnce(makeDisplayableTx({ fee: 2000n, group: groupId }))
+            .mockReturnValueOnce(
+                makeDisplayableTx({ fee: 1000n, group: groupId }),
+            )
+            .mockReturnValueOnce(
+                makeDisplayableTx({ fee: 2000n, group: groupId }),
+            )
 
         const request: TransactionSignRequest = {
             id: 'req-1',
@@ -113,7 +117,10 @@ describe('useSigningRequestAnalysis', () => {
             id: 'req-1',
             type: 'transactions',
             transport: 'algod',
-            txs: [makeMockTx('ADDR1', group1), makeMockTx('ADDR1', group2)] as any,
+            txs: [
+                makeMockTx('ADDR1', group1),
+                makeMockTx('ADDR1', group2),
+            ] as any,
         }
 
         const { result } = renderHook(() => useSigningRequestAnalysis(request))

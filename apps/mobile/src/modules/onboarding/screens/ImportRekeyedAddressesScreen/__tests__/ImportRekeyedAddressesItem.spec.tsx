@@ -68,8 +68,10 @@ describe('ImportRekeyedAddressesItem', () => {
         )
 
         expect(
-            screen.getByText(
-                /onboarding.import_rekeyed_addresses.already_imported/i,
+            screen.getByText(content =>
+                content.includes(
+                    'onboarding.import_rekeyed_addresses.already_imported',
+                ),
             ),
         ).toBeTruthy()
         // Ensure checkbox is likely not present or indicating disabled state if verified via specific props/styles,
