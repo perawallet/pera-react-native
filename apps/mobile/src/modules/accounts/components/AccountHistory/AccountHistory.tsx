@@ -24,10 +24,7 @@ import { useStyles } from './styles'
 import { useAccountHistory, type TransactionSection } from './useAccountHistory'
 import { TransactionListItem } from './TransactionListItem'
 import { TransactionDateHeader } from './TransactionDateHeader'
-import {
-    TransactionsFilterBottomSheet,
-    TransactionFilter,
-} from '../TransactionsFilterBottomSheet'
+import { TransactionsFilterBottomSheet } from '../TransactionsFilterBottomSheet'
 
 const TAB_AND_HEADER_HEIGHT = 100
 

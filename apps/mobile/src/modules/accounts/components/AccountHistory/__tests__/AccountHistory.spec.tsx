@@ -17,8 +17,11 @@ import { useAccountHistory } from '../useAccountHistory'
 import React from 'react'
 
 vi.mock('@react-native-community/datetimepicker', () => {
-    const MockDateTimePicker = (props: any) => {
-        return React.createElement('DateTimePicker', props)
+    const MockDateTimePicker = (props: unknown) => {
+        return React.createElement(
+            'DateTimePicker',
+            props as Record<string, unknown>,
+        )
     }
     return {
         default: MockDateTimePicker,

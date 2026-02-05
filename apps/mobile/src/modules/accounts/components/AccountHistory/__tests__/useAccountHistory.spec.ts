@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { renderHook, act } from '@testing-library/react'
 import { useAccountHistory } from '../useAccountHistory'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
@@ -22,7 +22,6 @@ import {
 import { Share } from 'react-native'
 import { useToast } from '@hooks/useToast'
 import { TransactionFilter } from '../../TransactionsFilterBottomSheet/types'
-import { act } from '@testing-library/react'
 
 // Mock dependencies
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -144,10 +143,11 @@ describe('useAccountHistory', () => {
         })
 
         it('triggers native share upon successful export', async () => {
-            let successCallback: (result: any) => Promise<void> = async () => {} // eslint-disable-line @typescript-eslint/no-explicit-any
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            let successCallback: (result: any) => Promise<void> = async () => {}
             vi.mocked(useCsvExportMutation).mockImplementation(
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 ({ onSuccess }: any) => {
-                    // eslint-disable-line @typescript-eslint/no-explicit-any
                     successCallback = onSuccess
                     return {
                         exportCsv: mockExportCsv,
@@ -174,10 +174,11 @@ describe('useAccountHistory', () => {
         })
 
         it('shows error toast when share fails', async () => {
-            let successCallback: (result: any) => Promise<void> = async () => {} // eslint-disable-line @typescript-eslint/no-explicit-any
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            let successCallback: (result: any) => Promise<void> = async () => {}
             vi.mocked(useCsvExportMutation).mockImplementation(
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 ({ onSuccess }: any) => {
-                    // eslint-disable-line @typescript-eslint/no-explicit-any
                     successCallback = onSuccess
                     return {
                         exportCsv: mockExportCsv,
@@ -203,10 +204,11 @@ describe('useAccountHistory', () => {
         })
 
         it('shows error toast when export fails', () => {
-            let errorCallback: (error: any) => void = () => {} // eslint-disable-line @typescript-eslint/no-explicit-any
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            let errorCallback: (error: any) => void = () => {}
             vi.mocked(useCsvExportMutation).mockImplementation(
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 ({ onError }: any) => {
-                    // eslint-disable-line @typescript-eslint/no-explicit-any
                     errorCallback = onError
                     return {
                         exportCsv: mockExportCsv,
