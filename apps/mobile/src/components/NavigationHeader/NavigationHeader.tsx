@@ -10,42 +10,49 @@
  limitations under the License
  */
 
-import { NativeStackHeaderProps } from '@react-navigation/native-stack'
 import { PWToolbar, PWText, PWIcon } from '@components/core'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useMemo } from 'react'
+import { NativeStackHeaderProps } from '@react-navigation/native-stack'
+import { StackHeaderProps } from '@react-navigation/stack'
 
-export type NavigationHeaderProps = NativeStackHeaderProps
+export type NavigationHeaderProps = (
+    | Partial<NativeStackHeaderProps>
+    | Partial<StackHeaderProps>
+) & {
+    safeArea?: boolean
+}
 
 export const NavigationHeader = (props: NavigationHeaderProps) => {
+    const { safeArea = true } = props
     const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
+    const styles = useStyles({ insets, safeArea })
     const { t } = useLanguage()
 
     const title = useMemo(() => {
         const headerTitle =
-            typeof props.options.headerTitle === 'string'
-                ? props.options.headerTitle
+            typeof props.options?.headerTitle === 'string'
+                ? props.options?.headerTitle
                 : undefined
-        const title = headerTitle ?? props.options.title ?? props.route.name
+        const title = headerTitle ?? props.options?.title ?? props.route?.name
 
-        if (title.includes('.') && !title.includes(' ')) {
+        if (title?.includes('.') && !title?.includes(' ')) {
             return t(title)
         }
         return title
-    }, [props.options.headerTitle, props.options.title, props.route.name, t])
+    }, [props.options?.headerTitle, props.options?.title, props.route?.name, t])
 
     return (
         <PWToolbar
             style={styles.container}
             left={
-                !!props.navigation.canGoBack() && (
+                !!props.navigation?.canGoBack() && (
                     <PWIcon
                         style={styles.backButton}
                         name='chevron-left'
-                        onPress={props.navigation.goBack}
+                        onPress={props.navigation?.goBack}
                     />
                 )
             }

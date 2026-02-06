@@ -24,6 +24,7 @@ vi.mock('@perawallet/wallet-core-security', () => ({
 vi.mock('@perawallet/wallet-core-settings', () => ({
     usePreferences: vi.fn(() => ({
         setPreference: vi.fn(),
+        getPreference: vi.fn(),
     })),
 }))
 
@@ -72,7 +73,9 @@ describe('SettingsSecurityScreen', () => {
         ).toBeTruthy()
         expect(getByText('settings.security.enable_pin_security')).toBeTruthy()
         expect(getByText('settings.security.antispam_section')).toBeTruthy()
-        expect(getByText('settings.security.enable_rekey_support')).toBeTruthy()
+        expect(
+            getByText('settings.security.advanced_security_settings'),
+        ).toBeTruthy()
     })
 
     it('renders PIN toggle switch', () => {
@@ -80,10 +83,12 @@ describe('SettingsSecurityScreen', () => {
         expect(getByText('settings.security.enable_pin_security')).toBeTruthy()
     })
 
-    it('renders rekey support description', () => {
+    it('renders advanced security settings description', () => {
         const { getByText } = render(<SettingsSecurityScreen />)
         expect(
-            getByText('settings.security.enable_rekey_support_description'),
+            getByText(
+                'settings.security.advanced_security_settings_description',
+            ),
         ).toBeTruthy()
     })
 

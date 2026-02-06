@@ -18,6 +18,7 @@ export type SigningStackParamList = {
     TransactionList: undefined
     TransactionDetails: { transaction: PeraDisplayableTransaction }
     GroupDetail: { groupIndex: number }
+    RekeySettings: undefined
 }
 
 export type SigningStackScreenProps<T extends keyof SigningStackParamList> =

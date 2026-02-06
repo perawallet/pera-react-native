@@ -12,7 +12,6 @@
 
 import {
     PWBottomSheet,
-    PWDivider,
     PWIcon,
     PWText,
     PWToolbar,
@@ -21,7 +20,6 @@ import {
 import { PanelButton } from '@components/PanelButton'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
-import { useTheme } from '@rneui/themed'
 import {
     useSigningRequest,
     useSigningRequestAnalysis,
@@ -32,7 +30,6 @@ import { WarningItem } from './WarningItem'
 
 export const SigningWarnings = ({ isGroup = false }: { isGroup?: boolean }) => {
     const styles = useStyles()
-    const { theme } = useTheme()
     const { t } = useLanguage()
     const { pendingSignRequests } = useSigningRequest()
     const request = pendingSignRequests[0] as TransactionSignRequest
@@ -47,10 +44,6 @@ export const SigningWarnings = ({ isGroup = false }: { isGroup?: boolean }) => {
 
     return (
         <>
-            <PWDivider
-                style={styles.divider}
-                color={theme.colors.layerGray}
-            />
             <PWView style={styles.warningContainer}>
                 <PanelButton
                     onPress={open}
@@ -67,6 +60,7 @@ export const SigningWarnings = ({ isGroup = false }: { isGroup?: boolean }) => {
                     leftIcon='info'
                     rightIcon='chevron-right'
                     variant='error'
+                    style={styles.panelButton}
                 />
 
                 <PWBottomSheet isVisible={isOpen}>

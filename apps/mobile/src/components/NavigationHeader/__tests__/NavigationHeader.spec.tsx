@@ -12,8 +12,10 @@
 
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import { NavigationHeader } from '../NavigationHeader'
-import { NativeStackHeaderProps } from '@react-navigation/native-stack'
+import {
+    NavigationHeader,
+    type NavigationHeaderProps,
+} from '../NavigationHeader'
 
 const mockProps = {
     navigation: {
@@ -21,12 +23,13 @@ const mockProps = {
         goBack: vi.fn(),
     },
     route: {
+        key: 'test-key',
         name: 'Test Screen',
     },
     options: {
         title: 'Test Title',
     },
-} as unknown as NativeStackHeaderProps
+} as unknown as NavigationHeaderProps
 
 describe('NavigationHeader', () => {
     it('renders title from options', () => {
@@ -41,7 +44,7 @@ describe('NavigationHeader', () => {
                 title: 'Ignored Title',
                 headerTitle: 'Priority Title',
             },
-        } as unknown as NativeStackHeaderProps
+        } as unknown as NavigationHeaderProps
         render(<NavigationHeader {...props} />)
         expect(screen.getByText('Priority Title')).toBeTruthy()
         expect(screen.queryByText('Ignored Title')).toBeNull()
@@ -54,7 +57,7 @@ describe('NavigationHeader', () => {
                 title: 'Ignored Title',
                 headerTitle: '',
             },
-        } as unknown as NativeStackHeaderProps
+        } as unknown as NavigationHeaderProps
         render(<NavigationHeader {...props} />)
         // Should not render "Ignored Title" or "Test Screen"
         expect(screen.queryByText('Ignored Title')).toBeNull()

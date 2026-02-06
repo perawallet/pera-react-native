@@ -49,7 +49,6 @@ export const useStyles = makeStyles((theme, props: PanelButtonProps) => {
         textContainerStyle: {
             flexShrink: 1,
             backgroundColor: 'transparent',
-            gap: theme.spacing.sm,
             padding: theme.spacing.lg,
         },
     }

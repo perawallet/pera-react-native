@@ -33,12 +33,14 @@ describe('useSettingsSecurityScreen', () => {
     const mockEnableBiometrics = vi.fn()
     const mockDisableBiometrics = vi.fn()
     const mockSetPreference = vi.fn()
+    const mockGetPreference = vi.fn()
 
     beforeEach(() => {
         vi.clearAllMocks()
         mockCheckPinEnabled.mockResolvedValue(false)
         mockCheckBiometricsEnabled.mockResolvedValue(false)
         mockCheckBiometricsAvailable.mockResolvedValue(false)
+        mockGetPreference.mockReturnValue(undefined)
         ;(usePinCode as Mock).mockReturnValue({
             checkPinEnabled: mockCheckPinEnabled,
             savePin: mockSavePin,
@@ -51,6 +53,7 @@ describe('useSettingsSecurityScreen', () => {
         })
         ;(usePreferences as Mock).mockReturnValue({
             setPreference: mockSetPreference,
+            getPreference: mockGetPreference,
         })
     })
 

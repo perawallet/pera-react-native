@@ -20,6 +20,8 @@ import {
     TransactionListScreen,
     GroupDetailScreen,
 } from '@modules/signing/screens'
+import { SettingsSecurityScreen } from '@modules/settings/screens/SettingsSecurityScreen'
+import { NavigationHeader } from '@components/NavigationHeader'
 import { useStyles } from './styles'
 
 type SigningRoutesProps = {
@@ -54,7 +56,13 @@ export const SigningRoutes = ({ request }: SigningRoutesProps) => {
             initialRouteName={initialRouteConfig.name}
             detachInactiveScreens={false}
             screenOptions={{
-                headerShown: false,
+                headerShown: true,
+                header: props => (
+                    <NavigationHeader
+                        {...props}
+                        safeArea={false}
+                    />
+                ),
                 cardStyle: styles.screenContent,
                 detachPreviousScreen: false,
             }}
@@ -62,18 +70,27 @@ export const SigningRoutes = ({ request }: SigningRoutesProps) => {
             <Stack.Screen
                 name='SingleTransaction'
                 component={SingleTransactionScreen}
+                options={{ title: 'signing.transactions.title' }}
             />
             <Stack.Screen
                 name='TransactionList'
                 component={TransactionListScreen}
+                options={{ title: 'signing.transactions.title' }}
             />
             <Stack.Screen
                 name='TransactionDetails'
                 component={TransactionDetailsScreen}
+                options={{ title: 'signing.transactions.details' }}
             />
             <Stack.Screen
                 name='GroupDetail'
                 component={GroupDetailScreen}
+                options={{ title: 'transactions.group.group_number' }}
+            />
+            <Stack.Screen
+                name='RekeySettings'
+                component={SettingsSecurityScreen}
+                options={{ title: 'settings.security.antispam_section' }}
             />
         </Stack.Navigator>
     )

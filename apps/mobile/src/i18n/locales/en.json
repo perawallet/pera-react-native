@@ -531,7 +531,9 @@
             "enable_rekey_support": "Enable Re-key Support",
             "enable_rekey_support_description": "Once you enable this, you can confirm transaction requests to rekey your account. This will give control of your account to another address.",
             "biometric_error_title": "Failed to authenticate.",
-            "biometric_error_message": "We were unable to authenticate you.  Please try again."
+            "biometric_error_message": "We were unable to authenticate you.  Please try again.",
+            "advanced_security_settings": "Advanced Security Settings",
+            "advanced_security_settings_description": "Enable advanced security options such as re-key support."
         },
         "notifications": {
             "push_notifications": "Push Notifications",
@@ -624,16 +626,22 @@
         },
         "warning": {
             "title": "Warning",
-            "title_cta_group_one": "This transaction group contains a potentially sensitive action",
-            "title_cta_group_other": "This transaction group contains {{count}} potentially sensitive actions",
-            "title_cta_one": "This transaction contains a potentially sensitive action",
-            "title_cta_other": "This transaction contains {{count}} potentially sensitive actions",
+            "title_cta_group_one": "Potentially dangerous action found",
+            "title_cta_group_other": "{{count}} potentially dangerous actions found",
+            "title_cta_one": "Potentially dangerous action found",
+            "title_cta_other": "{{count}} potentially dangerous actions found",
             "close_group_warning": "This transaction group closes one of your accounts and sends remaining funds another address.  Please review carefully before signing.",
             "rekey_group_warning": "This transaction group rekeys one of your accounts to another address, transferring ownership of your account in the process.",
             "close_warning": "This transaction closes the account and send remaining funds to the following address: {{address}}",
             "rekey_warning": "This transaction rekeys the account to the following address: {{address}}.",
             "rekey_warning_bold": "This transfers full control of your account to another address. Please review carefully before signing.",
-            "from_account": "From: {{address}}"
+            "from_account": "From: {{address}}",
+            "rekey_confirm_title": "Enable Rekey Support",
+            "rekey_confirm_description": "Rekey transactions can cause you to lose control of your account. In order to confirm this transaction, you need to enable the \"Rekey Support\" via app settings.",
+            "rekey_confirm_go_to_settings": "Go to Advanced Settings",
+            "rekey_are_you_sure_title": "Are you sure?",
+            "rekey_are_you_sure_description": "This signature includes rekey transaction, giving control over your accounts to another address. Please make sure that you understand the implications before proceeding.",
+            "rekey_are_you_sure_continue": "Continue"
         },
         "unknown": {
             "title": "Unsupported Transaction Type",

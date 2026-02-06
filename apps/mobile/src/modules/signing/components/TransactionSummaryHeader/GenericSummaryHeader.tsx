@@ -27,9 +27,14 @@ export const GenericSummaryHeader = ({
 
     return (
         <PWView style={styles.container}>
-            <PWText style={styles.typeText}>
-                {t(`transactions.type.${transaction.txType}`)}
-            </PWText>
+            <PWView style={styles.textContainer}>
+                <PWText
+                    variant='h3'
+                    style={styles.typeText}
+                >
+                    {t(`transactions.type.${transaction.txType}`)}
+                </PWText>
+            </PWView>
         </PWView>
     )
 }

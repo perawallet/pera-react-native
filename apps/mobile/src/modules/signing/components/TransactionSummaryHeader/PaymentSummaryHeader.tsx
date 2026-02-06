@@ -40,15 +40,20 @@ export const PaymentSummaryHeader = ({
 
     return (
         <PWView style={styles.container}>
-            <PWText style={styles.typeText}>
-                {t('transactions.summary.payment_to')}
-            </PWText>
-            <AddressDisplay
-                style={styles.address}
-                textProps={{ style: styles.addressText }}
-                iconProps={{ color: theme.colors.textMain }}
-                address={transaction.paymentTransaction?.receiver || ''}
-            />
+            <PWView style={styles.textContainer}>
+                <PWText
+                    variant='h3'
+                    style={styles.typeText}
+                >
+                    {t('transactions.summary.payment_to')}
+                </PWText>
+                <AddressDisplay
+                    style={styles.address}
+                    textProps={{ style: styles.addressText }}
+                    iconProps={{ color: theme.colors.textMain }}
+                    address={transaction.paymentTransaction?.receiver || ''}
+                />
+            </PWView>
             <PWView style={styles.amountContainer}>
                 <CurrencyDisplay
                     currency='ALGO'

@@ -31,9 +31,13 @@ export const SettingsSecurityScreen = () => {
         isPinEnabled,
         isBiometricEnabled,
         isBiometricsAvailable,
+        isAdvancedSecurityEnabled,
+        isRekeySupportEnabled,
         handlePinToggle,
         handleBiometricToggle,
         handleChangePinPress,
+        handleAdvancedSecurityToggle,
+        handleRekeyToggle,
         pinSetSuccess,
         clearPinViewMode,
     } = useSettingsSecurityScreen()
@@ -100,22 +104,45 @@ export const SettingsSecurityScreen = () => {
 
                 <PWView style={styles.listItem}>
                     <PWView style={styles.listItemContent}>
-                        <PWIcon name='rekey' />
+                        <PWIcon name='shield-check' />
                         <PWText>
-                            {t('settings.security.enable_rekey_support')}
+                            {t('settings.security.advanced_security_settings')}
                         </PWText>
                     </PWView>
                     <PWSwitch
-                        value={false}
-                        onValueChange={() => {
-                            // TODO: Implement re-key support
-                        }}
-                        disabled
+                        value={isAdvancedSecurityEnabled}
+                        onValueChange={handleAdvancedSecurityToggle}
                     />
                 </PWView>
                 <PWText style={styles.listItemSubtitle}>
-                    {t('settings.security.enable_rekey_support_description')}
+                    {t(
+                        'settings.security.advanced_security_settings_description',
+                    )}
                 </PWText>
+
+                {isAdvancedSecurityEnabled && (
+                    <>
+                        <PWView style={styles.listItem}>
+                            <PWView style={styles.listItemContent}>
+                                <PWIcon name='rekey' />
+                                <PWText>
+                                    {t(
+                                        'settings.security.enable_rekey_support',
+                                    )}
+                                </PWText>
+                            </PWView>
+                            <PWSwitch
+                                value={isRekeySupportEnabled}
+                                onValueChange={handleRekeyToggle}
+                            />
+                        </PWView>
+                        <PWText style={styles.listItemSubtitle}>
+                            {t(
+                                'settings.security.enable_rekey_support_description',
+                            )}
+                        </PWText>
+                    </>
+                )}
             </PWView>
 
             <PinEditView
