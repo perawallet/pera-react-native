@@ -19,24 +19,25 @@ import {
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './RekeyGuardBottomSheet.style'
-import { usePreferences } from '@perawallet/wallet-core-settings'
-import { UserPreferences } from '@constants/user-preferences'
 
 type RekeyGuardBottomSheetProps = {
     isOpen: boolean
     onClose: () => void
     onConfirm: () => void
     onGoToSettings: () => void
+    isRekeySupportEnabled: boolean
 }
 
 export const RekeyGuardBottomSheet = (props: RekeyGuardBottomSheetProps) => {
-    const { isOpen, onClose, onConfirm, onGoToSettings } = props
+    const {
+        isOpen,
+        onClose,
+        onConfirm,
+        onGoToSettings,
+        isRekeySupportEnabled,
+    } = props
     const { t } = useLanguage()
     const styles = useStyles()
-    const { getPreference } = usePreferences()
-    const isRekeySupportEnabled = !!getPreference(
-        UserPreferences.rekeySupportEnabled,
-    )
 
     return (
         <PWBottomSheet
