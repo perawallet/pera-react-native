@@ -42,7 +42,7 @@ const mockAccount: WalletAccount = {
 
 describe('AccountTabNavigator', () => {
     it('renders all three tabs', () => {
-        render(<AccountTabNavigator account={mockAccount} />)
+        render(<AccountTabNavigator account={mockAccount} chartVisible={true} />)
 
         // In tests, i18n returns the keys, not the translated values
         expect(
@@ -57,7 +57,7 @@ describe('AccountTabNavigator', () => {
     })
 
     it('renders AccountOverview for the initial tab', () => {
-        render(<AccountTabNavigator account={mockAccount} />)
+        render(<AccountTabNavigator account={mockAccount} chartVisible={true} />)
 
         expect(screen.getByTestId('AccountOverview')).toBeTruthy()
     })

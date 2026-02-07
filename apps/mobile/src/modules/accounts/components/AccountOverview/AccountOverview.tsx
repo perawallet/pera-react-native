@@ -21,11 +21,15 @@ import { AccountAssetList } from '../AccountAssetList'
 
 export type AccountOverviewProps = {
     account: WalletAccount
+    chartVisible: boolean
 }
 
 //TODO implement min balance display and info icon
 //TODO layout and spacing needs a bit of clean up
-export const AccountOverview = ({ account }: AccountOverviewProps) => {
+export const AccountOverview = ({
+    account,
+    chartVisible,
+}: AccountOverviewProps) => {
     const styles = useStyles()
     const {
         portfolioAlgoValue,
@@ -73,6 +77,7 @@ export const AccountOverview = ({ account }: AccountOverviewProps) => {
                         handleMore={handleMore}
                         handleBuyAlgo={handleBuyAlgo}
                         handleReceive={handleReceive}
+                        chartVisible={chartVisible}
                     />
                 }
             />

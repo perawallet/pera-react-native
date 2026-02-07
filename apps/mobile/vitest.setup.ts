@@ -364,6 +364,80 @@ vi.mock('react-native', () => {
                     ),
                 )
             }),
+        SectionList: vi
+            .fn()
+            .mockImplementation(
+                ({
+                    sections,
+                    renderItem,
+                    renderSectionHeader,
+                    keyExtractor,
+                    testID,
+                    ListHeaderComponent,
+                    ListEmptyComponent,
+                    ListFooterComponent,
+                    ...props
+                }) => {
+                    const React = require('react')
+                    const isEmpty =
+                        !sections ||
+                        sections.length === 0 ||
+                        sections.every(
+                            (s: any) => !s.data || s.data.length === 0,
+                        )
+                    return React.createElement(
+                        'div',
+                        {
+                            ...props,
+                            'data-testid': testID || 'SectionList',
+                            testid: testID || 'SectionList',
+                        },
+                        ListHeaderComponent
+                            ? typeof ListHeaderComponent === 'function'
+                                ? ListHeaderComponent()
+                                : ListHeaderComponent
+                            : null,
+                        isEmpty && ListEmptyComponent
+                            ? typeof ListEmptyComponent === 'function'
+                                ? ListEmptyComponent()
+                                : ListEmptyComponent
+                            : null,
+                        sections?.map((section: any, sectionIndex: number) =>
+                            React.createElement(
+                                'div',
+                                { key: `section-${sectionIndex}` },
+                                renderSectionHeader
+                                    ? renderSectionHeader({ section })
+                                    : null,
+                                section.data?.map(
+                                    (item: any, itemIndex: number) =>
+                                        React.createElement(
+                                            'div',
+                                            {
+                                                key: keyExtractor
+                                                    ? keyExtractor(
+                                                          item,
+                                                          itemIndex,
+                                                      )
+                                                    : itemIndex,
+                                            },
+                                            renderItem({
+                                                item,
+                                                index: itemIndex,
+                                                section,
+                                            }),
+                                        ),
+                                ),
+                            ),
+                        ),
+                        ListFooterComponent
+                            ? typeof ListFooterComponent === 'function'
+                                ? ListFooterComponent()
+                                : ListFooterComponent
+                            : null,
+                    )
+                },
+            ),
         TextInput: vi.fn().mockImplementation(({ testID, ...props }) =>
             require('react').createElement(
                 'input',
@@ -1407,5 +1481,17 @@ vi.mock('react-native-gifted-charts', () => {
             React.createElement('div', { ...props, 'data-testid': 'BarChart' }),
         PieChart: (props: any) =>
             React.createElement('div', { ...props, 'data-testid': 'PieChart' }),
+    }
+})
+
+// Mock @react-native-community/datetimepicker to prevent Rollup parse errors
+vi.mock('@react-native-community/datetimepicker', () => {
+    const React = require('react')
+    return {
+        default: (props: any) =>
+            React.createElement('div', {
+                ...props,
+                'data-testid': props.testID || 'datetimepicker',
+            }),
     }
 })

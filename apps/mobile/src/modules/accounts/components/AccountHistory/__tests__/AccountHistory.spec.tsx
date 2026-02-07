@@ -10,13 +10,113 @@
  limitations under the License
  */
 
-import { render, screen } from '@test-utils/render'
-import { describe, it, expect } from 'vitest'
+import { render, screen, fireEvent } from '@test-utils/render'
+import { describe, it, expect, vi } from 'vitest'
 import { AccountHistory } from '../AccountHistory'
+import { useAccountHistory } from '../useAccountHistory'
+import React from 'react'
+
+vi.mock('@react-native-community/datetimepicker', () => {
+    const MockDateTimePicker = (props: unknown) => {
+        return React.createElement(
+            'DateTimePicker',
+            props as Record<string, unknown>,
+        )
+    }
+    return {
+        default: MockDateTimePicker,
+        DateTimePickerEvent: {},
+    }
+})
+
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string) => {
+            if (key === 'asset_details.transaction_list.title')
+                return 'Transactions'
+            if (key === 'asset_details.transaction_list.filter') return 'Filter'
+            if (key === 'asset_details.transaction_list.csv') return 'CSV'
+            if (key === 'asset_details.transaction_list.empty_title')
+                return 'No transactions yet'
+            if (key === 'asset_details.transaction_list.empty_body')
+                return 'Your transactions will appear here'
+            return key
+        },
+    }),
+}))
+
+vi.mock('../useAccountHistory', () => ({
+    useAccountHistory: vi.fn(() => ({
+        sections: [],
+        isLoading: false,
+        isFetchingNextPage: false,
+        isEmpty: true,
+        handleLoadMore: vi.fn(),
+        handleRefresh: vi.fn(),
+        handleExportCsv: vi.fn(),
+        isExportingCsv: false,
+        activeFilter: 'all_time',
+        customRange: undefined,
+        handleApplyFilter: vi.fn(),
+    })),
+}))
 
 describe('AccountHistory', () => {
-    it('renders placeholder', () => {
+    it('renders transactions title and buttons', () => {
         render(<AccountHistory />)
-        expect(screen.getByText('common.not_implemented.title')).toBeTruthy()
+        expect(screen.getByText('Transactions')).toBeTruthy()
+        expect(screen.getByText('Filter')).toBeTruthy()
+        expect(screen.getByText('CSV')).toBeTruthy()
+    })
+
+    it('calls handleExportCsv when CSV button is pressed', () => {
+        const handleExportCsv = vi.fn()
+        vi.mocked(useAccountHistory).mockReturnValueOnce({
+            sections: [],
+            isLoading: false,
+            isFetchingNextPage: false,
+            isEmpty: true,
+            handleLoadMore: vi.fn(),
+            handleRefresh: vi.fn(),
+            hasNextPage: false,
+            isError: false,
+            error: null,
+            handleExportCsv,
+            isExportingCsv: false,
+            activeFilter: 'all_time',
+            customRange: undefined,
+            handleApplyFilter: vi.fn(),
+        } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+
+        render(<AccountHistory />)
+
+        const csvButton = screen.getByText('CSV')
+        fireEvent.click(csvButton)
+
+        expect(handleExportCsv).toHaveBeenCalled()
+    })
+
+    it('shows loading state on CSV button when exporting', () => {
+        vi.mocked(useAccountHistory).mockReturnValueOnce({
+            sections: [],
+            isLoading: false,
+            isFetchingNextPage: false,
+            isEmpty: true,
+            handleLoadMore: vi.fn(),
+            handleRefresh: vi.fn(),
+            hasNextPage: false,
+            isError: false,
+            error: null,
+            handleExportCsv: vi.fn(),
+            isExportingCsv: true,
+            activeFilter: 'all_time',
+            customRange: undefined,
+            handleApplyFilter: vi.fn(),
+        } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+
+        render(<AccountHistory />)
+
+        // When isLoading is true, PWButton shows ActivityIndicator
+        expect(screen.getByTestId('activity-indicator')).toBeTruthy()
     })
 })

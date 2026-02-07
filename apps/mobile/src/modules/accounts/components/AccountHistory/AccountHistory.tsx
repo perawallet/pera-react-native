@@ -10,16 +10,160 @@
  limitations under the License
  */
 
+import { PWButton, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
+import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
+import {
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    SectionList,
+} from 'react-native'
+import { useState } from 'react'
+import { useStyles } from './styles'
+import { useAccountHistory, type TransactionSection } from './useAccountHistory'
+import { TransactionListItem } from './TransactionListItem'
+import { TransactionDateHeader } from './TransactionDateHeader'
+import { TransactionsFilterBottomSheet } from '../TransactionsFilterBottomSheet'
 
-//TODO implement
-export const AccountHistory = () => {
+const TAB_AND_HEADER_HEIGHT = 100
+
+export type AccountHistoryProps = {
+    scrollEnabled?: boolean
+}
+
+export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
+    const styles = useStyles()
     const { t } = useLanguage()
+    const {
+        sections,
+        isLoading,
+        isFetchingNextPage,
+        isEmpty,
+        handleLoadMore,
+        handleExportCsv,
+        isExportingCsv,
+        activeFilter,
+        customRange,
+        handleApplyFilter,
+    } = useAccountHistory()
+
+    const [isFilterVisible, setIsFilterVisible] = useState(false)
+
+    const renderItem = ({ item }: { item: TransactionHistoryItem }) => (
+        <TransactionListItem transaction={item} />
+    )
+
+    const renderSectionHeader = ({
+        section,
+    }: {
+        section: TransactionSection
+    }) => <TransactionDateHeader title={section.title} />
+
+    const keyExtractor = (item: TransactionHistoryItem) => item.id
+
+    const renderFooter = () => {
+        if (isFetchingNextPage) {
+            return (
+                <PWView style={styles.loadingFooter}>
+                    <ActivityIndicator size='small' />
+                </PWView>
+            )
+        }
+        return <PWView style={styles.footer} />
+    }
+
+    const renderEmptyComponent = () => {
+        if (isLoading) {
+            return (
+                <PWView style={styles.loadingContainer}>
+                    <ActivityIndicator size='large' />
+                </PWView>
+            )
+        }
+
+        return (
+            <EmptyView
+                title={t('asset_details.transaction_list.empty_title')}
+                body={t('asset_details.transaction_list.empty_body')}
+            />
+        )
+    }
+
     return (
-        <EmptyView
-            title={t('common.not_implemented.title')}
-            body={t('common.not_implemented.body')}
-        />
+        <KeyboardAvoidingView
+            keyboardVerticalOffset={TAB_AND_HEADER_HEIGHT}
+            enabled
+            behavior='padding'
+            style={styles.keyboardAvoidingViewContainer}
+        >
+            <PWTouchableOpacity
+                style={styles.keyboardAvoidingViewContainer}
+                activeOpacity={1}
+            >
+                <SectionList
+                    sections={sections}
+                    renderItem={renderItem}
+                    renderSectionHeader={renderSectionHeader}
+                    keyExtractor={keyExtractor}
+                    scrollEnabled={scrollEnabled}
+                    contentContainerStyle={styles.rootContainer}
+                    stickySectionHeadersEnabled={false}
+                    onEndReached={handleLoadMore}
+                    onEndReachedThreshold={0.5}
+                    ListHeaderComponent={
+                        <PWView style={styles.headerContainer}>
+                            <PWView style={styles.titleBar}>
+                                <PWText
+                                    style={styles.title}
+                                    variant='h4'
+                                >
+                                    {t('asset_details.transaction_list.title')}
+                                </PWText>
+                                <PWView style={styles.titleBarButtonContainer}>
+                                    <PWButton
+                                        icon='sliders'
+                                        title={t(
+                                            'asset_details.transaction_list.filter',
+                                        )}
+                                        variant='helper'
+                                        style={styles.transparentButton}
+                                        paddingStyle='dense'
+                                        onPress={() => setIsFilterVisible(true)}
+                                    />
+                                    <PWButton
+                                        icon='document-download'
+                                        title={t(
+                                            'asset_details.transaction_list.csv',
+                                        )}
+                                        variant='helper'
+                                        paddingStyle='dense'
+                                        onPress={handleExportCsv}
+                                        isLoading={isExportingCsv}
+                                    />
+                                </PWView>
+                            </PWView>
+                        </PWView>
+                    }
+                    ListEmptyComponent={
+                        !isLoading && isEmpty ? renderEmptyComponent() : null
+                    }
+                    ListFooterComponent={renderFooter}
+                />
+                {isLoading && !sections.length && (
+                    <PWView style={styles.loadingOverlay}>
+                        <ActivityIndicator size='large' />
+                    </PWView>
+                )}
+            </PWTouchableOpacity>
+
+            <TransactionsFilterBottomSheet
+                isVisible={isFilterVisible}
+                onClose={() => setIsFilterVisible(false)}
+                activeFilter={activeFilter}
+                onApplyFilter={handleApplyFilter}
+                initialCustomRange={customRange}
+            />
+        </KeyboardAvoidingView>
     )
 }
