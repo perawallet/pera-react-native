@@ -52,7 +52,6 @@ vi.mock('@components/core', () => ({
     PWTabView: {
         createNavigator: () => ({
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             Navigator: ({ children, tabBarHidden }: any) => (
                 <div
                     data-testid='tab-navigator'

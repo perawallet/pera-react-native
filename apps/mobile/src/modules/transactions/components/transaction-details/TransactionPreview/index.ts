@@ -10,4 +10,5 @@
  limitations under the License
  */
 
-export { GroupListScreen } from './GroupListScreen'
+export { TransactionPreview } from './TransactionPreview'
+export type { TransactionPreviewProps } from './TransactionPreview'

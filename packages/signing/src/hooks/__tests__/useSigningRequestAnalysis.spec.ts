@@ -36,6 +36,7 @@ const makeMockTx = (sender: string, group?: Uint8Array) => ({
 })
 
 const makeDisplayableTx = (overrides: Record<string, unknown> = {}) => ({
+    id: `tx-${Math.random().toString(36).slice(2)}`,
     sender: 'ADDR1',
     fee: 1000n,
     group: undefined,
@@ -50,10 +51,10 @@ describe('useSigningRequestAnalysis', () => {
 
         mockMapToDisplayableTransaction
             .mockReturnValueOnce(
-                makeDisplayableTx({ fee: 1000n, group: groupId }),
+                makeDisplayableTx({ id: 'tx1', fee: 1000n, group: groupId }),
             )
             .mockReturnValueOnce(
-                makeDisplayableTx({ fee: 2000n, group: groupId }),
+                makeDisplayableTx({ id: 'tx2', fee: 2000n, group: groupId }),
             )
 
         const request: TransactionSignRequest = {
@@ -65,12 +66,15 @@ describe('useSigningRequestAnalysis', () => {
 
         const { result } = renderHook(() => useSigningRequestAnalysis(request))
 
-        expect(result.current.groups).toHaveLength(1)
-        expect(result.current.groups[0]).toHaveLength(2)
         expect(result.current.allTransactions).toHaveLength(2)
+        // Single group is expanded to individual transactions
+        expect(result.current.listItems).toHaveLength(2)
+        expect(result.current.listItems[0]?.type).toBe('transaction')
+        expect(result.current.listItems[1]?.type).toBe('transaction')
         // 3000 microAlgo = 0.003 ALGO
         expect(result.current.totalFee.eq(new Decimal(0.003))).toBe(true)
-        expect(result.current.requestStructure).toBe('group')
+        // Multiple items = list view
+        expect(result.current.requestStructure).toBe('list')
     })
 
     test('filters out null displayable transactions', () => {
@@ -110,8 +114,12 @@ describe('useSigningRequestAnalysis', () => {
         const group2 = new Uint8Array([4, 5, 6])
 
         mockMapToDisplayableTransaction
-            .mockReturnValueOnce(makeDisplayableTx({ group: group1 }))
-            .mockReturnValueOnce(makeDisplayableTx({ group: group2 }))
+            .mockReturnValueOnce(
+                makeDisplayableTx({ id: 'tx1', group: group1 }),
+            )
+            .mockReturnValueOnce(
+                makeDisplayableTx({ id: 'tx2', group: group2 }),
+            )
 
         const request: TransactionSignRequest = {
             id: 'req-1',
@@ -125,7 +133,12 @@ describe('useSigningRequestAnalysis', () => {
 
         const { result } = renderHook(() => useSigningRequestAnalysis(request))
 
-        expect(result.current.requestStructure).toBe('group-list')
+        // Multiple groups remain as group items
+        expect(result.current.listItems).toHaveLength(2)
+        expect(result.current.listItems[0]?.type).toBe('group')
+        expect(result.current.listItems[1]?.type).toBe('group')
+        // Multiple groups = list view
+        expect(result.current.requestStructure).toBe('list')
     })
 
     test('aggregates warnings for signable addresses', () => {

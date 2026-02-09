@@ -19,25 +19,26 @@ import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import type { TransactionSignRequest } from '../models'
 import { calculateTotalFee } from '../utils/fees'
 import { aggregateTransactionWarnings } from '../utils/warnings'
-import { classifyTransactionGroups } from '../utils/classification'
-import { encodeToBase64, partitionBy } from '@perawallet/wallet-core-shared'
+import {
+    classifyRequestStructure,
+    createTransactionListItems,
+} from '../utils/classification'
 
 export const useSigningRequestAnalysis = (request: TransactionSignRequest) => {
     const accounts = useAllAccounts()
 
-    const groups = useMemo(
+    const allTransactions = useMemo(
         () =>
-            partitionBy(
-                request.txs
-                    .map(tx => mapToDisplayableTransaction(tx))
-                    .filter((tx): tx is PeraDisplayableTransaction => !!tx),
-                (tx: PeraDisplayableTransaction) =>
-                    tx.group ? encodeToBase64(tx.group) : 'no-group',
-            ),
+            request.txs
+                .map(tx => mapToDisplayableTransaction(tx))
+                .filter((tx): tx is PeraDisplayableTransaction => !!tx),
         [request.txs],
     )
 
-    const allTransactions = useMemo(() => groups.flat(), [groups])
+    const listItems = useMemo(
+        () => createTransactionListItems(allTransactions),
+        [allTransactions],
+    )
 
     const signableAddresses = useMemo(
         () => new Set(accounts.filter(a => a.canSign).map(a => a.address)),
@@ -64,13 +65,13 @@ export const useSigningRequestAnalysis = (request: TransactionSignRequest) => {
     )
 
     const requestStructure = useMemo(
-        () => classifyTransactionGroups(groups),
-        [groups],
+        () => classifyRequestStructure(listItems),
+        [listItems],
     )
 
     return {
-        groups,
         allTransactions,
+        listItems,
         totalFee,
         warnings,
         distinctWarnings,
