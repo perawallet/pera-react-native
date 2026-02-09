@@ -1682,6 +1682,9 @@ importers:
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.90.14(react@19.1.0)
+      ky:
+        specifier: ^1.14.0
+        version: 1.14.2
       react:
         specifier: 'catalog:'
         version: 19.1.0

@@ -14,6 +14,36 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { fetchTransactionsCsv, CsvExportError } from '../endpoints'
 import { Networks } from '@perawallet/wallet-core-shared'
 
+// Track the last ky.get call for assertions
+let lastKyGetCall: {
+    endpoint: string
+    options: Record<string, unknown>
+} | null = null
+let mockGetResponse: { text: () => Promise<string>; status: number } | null =
+    null
+let mockGetError: Error | null = null
+
+// Mock ky module
+vi.mock('ky', () => {
+    const mockKyInstance = {
+        get: vi.fn(
+            async (endpoint: string, options: Record<string, unknown>) => {
+                lastKyGetCall = { endpoint, options }
+                if (mockGetError) {
+                    throw mockGetError
+                }
+                return mockGetResponse
+            },
+        ),
+    }
+
+    return {
+        default: {
+            create: vi.fn(() => mockKyInstance),
+        },
+    }
+})
+
 // Mock the config module
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: {
@@ -23,9 +53,17 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     },
 }))
 
-// Mock fetch globally
-const mockFetch = vi.fn()
-;(globalThis as any).fetch = mockFetch
+// Mock the logger
+vi.mock('@perawallet/wallet-core-shared', async () => {
+    const actual = await vi.importActual('@perawallet/wallet-core-shared')
+    return {
+        ...actual,
+        logger: {
+            error: vi.fn(),
+            debug: vi.fn(),
+        },
+    }
+})
 
 const VALID_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ'
@@ -35,7 +73,12 @@ const MOCK_CSV_CONTENT = `Date,Type,Amount,Asset
 
 describe('fetchTransactionsCsv', () => {
     beforeEach(() => {
-        mockFetch.mockReset()
+        lastKyGetCall = null
+        mockGetError = null
+        mockGetResponse = {
+            text: () => Promise.resolve(MOCK_CSV_CONTENT),
+            status: 200,
+        }
     })
 
     afterEach(() => {
@@ -43,12 +86,6 @@ describe('fetchTransactionsCsv', () => {
     })
 
     it('fetches CSV successfully', async () => {
-        mockFetch.mockResolvedValueOnce({
-            ok: true,
-            status: 200,
-            text: () => Promise.resolve(MOCK_CSV_CONTENT),
-        })
-
         const result = await fetchTransactionsCsv({
             accountAddress: VALID_ADDRESS,
             network: Networks.mainnet,
@@ -60,36 +97,18 @@ describe('fetchTransactionsCsv', () => {
         expect(result.filename).toBe(`${VALID_ADDRESS}.csv`)
     })
 
-    it('includes API key in headers', async () => {
-        mockFetch.mockResolvedValueOnce({
-            ok: true,
-            status: 200,
-            text: () => Promise.resolve(MOCK_CSV_CONTENT),
-        })
-
+    it('calls ky with correct endpoint', async () => {
         await fetchTransactionsCsv({
             accountAddress: VALID_ADDRESS,
             network: Networks.mainnet,
         })
 
-        expect(mockFetch).toHaveBeenCalledWith(
-            expect.any(String),
-            expect.objectContaining({
-                headers: expect.objectContaining({
-                    'X-API-Key': 'test-api-key',
-                    Accept: '*/*',
-                }),
-            }),
-        )
+        expect(lastKyGetCall).not.toBeNull()
+        expect(lastKyGetCall?.endpoint).toContain(VALID_ADDRESS)
+        expect(lastKyGetCall?.endpoint).toContain('export-history')
     })
 
-    it('includes date range in query params', async () => {
-        mockFetch.mockResolvedValueOnce({
-            ok: true,
-            status: 200,
-            text: () => Promise.resolve(MOCK_CSV_CONTENT),
-        })
-
+    it('includes date range in search params', async () => {
         await fetchTransactionsCsv({
             accountAddress: VALID_ADDRESS,
             network: Networks.mainnet,
@@ -99,18 +118,13 @@ describe('fetchTransactionsCsv', () => {
             },
         })
 
-        const calledUrl = mockFetch.mock.calls[0][0]
-        expect(calledUrl).toContain('start_date=2024-01-01')
-        expect(calledUrl).toContain('end_date=2024-12-31')
+        expect(lastKyGetCall?.options.searchParams).toEqual({
+            start_date: '2024-01-01',
+            end_date: '2024-12-31',
+        })
     })
 
     it('uses custom filename when provided', async () => {
-        mockFetch.mockResolvedValueOnce({
-            ok: true,
-            status: 200,
-            text: () => Promise.resolve(MOCK_CSV_CONTENT),
-        })
-
         const result = await fetchTransactionsCsv({
             accountAddress: VALID_ADDRESS,
             network: Networks.mainnet,
@@ -129,12 +143,8 @@ describe('fetchTransactionsCsv', () => {
         ).rejects.toThrow(CsvExportError)
     })
 
-    it('throws CsvExportError for HTTP errors', async () => {
-        mockFetch.mockResolvedValueOnce({
-            ok: false,
-            status: 404,
-            statusText: 'Not Found',
-        })
+    it('throws CsvExportError for network errors', async () => {
+        mockGetError = new Error('Network failure')
 
         await expect(
             fetchTransactionsCsv({
@@ -145,11 +155,10 @@ describe('fetchTransactionsCsv', () => {
     })
 
     it('throws CsvExportError for empty response', async () => {
-        mockFetch.mockResolvedValueOnce({
-            ok: true,
-            status: 200,
+        mockGetResponse = {
             text: () => Promise.resolve(''),
-        })
+            status: 200,
+        }
 
         await expect(
             fetchTransactionsCsv({
@@ -159,20 +168,16 @@ describe('fetchTransactionsCsv', () => {
         ).rejects.toThrow(CsvExportError)
     })
 
-    it('uses testnet URL for testnet network', async () => {
-        mockFetch.mockResolvedValueOnce({
-            ok: true,
-            status: 200,
-            text: () => Promise.resolve(MOCK_CSV_CONTENT),
-        })
+    it('passes signal to ky options', async () => {
+        const controller = new AbortController()
 
         await fetchTransactionsCsv({
             accountAddress: VALID_ADDRESS,
-            network: Networks.testnet,
+            network: Networks.mainnet,
+            signal: controller.signal,
         })
 
-        const calledUrl = mockFetch.mock.calls[0][0]
-        expect(calledUrl).toContain('testnet.api.perawallet.app')
+        expect(lastKyGetCall?.options.signal).toBe(controller.signal)
     })
 })
 

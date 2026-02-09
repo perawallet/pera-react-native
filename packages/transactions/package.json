@@ -22,6 +22,7 @@
     "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "@tanstack/react-query": "catalog:",
+    "ky": "^1.14.0",
     "react": "catalog:",
     "zod": "catalog:"
   },

@@ -10,8 +10,9 @@
  limitations under the License
  */
 
+import ky, { type KyRequest, type HTTPError, type BeforeRetryState } from 'ky'
 import { config } from '@perawallet/wallet-core-config'
-import { Network, Networks } from '@perawallet/wallet-core-shared'
+import { Network, Networks, logger } from '@perawallet/wallet-core-shared'
 import type { ExportCsvParams, CsvExportResult } from './types'
 import { generateFilename, buildCsvQueryParams, countCsvRows } from './utils'
 
@@ -57,10 +58,54 @@ const getBaseUrl = (network: Network): string => {
 }
 
 /**
+ * Creates a ky instance with proper configuration for CSV export.
+ * Uses ky for retry logic, error handling, and consistent API key setup.
+ */
+const createCsvClient = (baseUrl: string) => {
+    return ky.create({
+        prefixUrl: baseUrl,
+        retry: {
+            limit: 2,
+            methods: ['get'],
+            statusCodes: [408, 413, 429, 500, 502, 503, 504],
+        },
+        timeout: 30000, // 30 second timeout for large exports
+        hooks: {
+            beforeRequest: [
+                (request: KyRequest) => {
+                    request.headers.set('Accept', '*/*')
+                    if (config.backendAPIKey) {
+                        request.headers.set('X-API-Key', config.backendAPIKey)
+                    }
+                },
+            ],
+            beforeError: [
+                (error: HTTPError) => {
+                    logger.error('CSV export request error', {
+                        message: error.message,
+                        status: error.response?.status,
+                    })
+                    return error
+                },
+            ],
+            beforeRetry: [
+                ({ request, retryCount, error }: BeforeRetryState) => {
+                    logger.debug('Retrying CSV export request', {
+                        url: request.url,
+                        retryCount,
+                        errorMessage: error.message,
+                    })
+                },
+            ],
+        },
+    })
+}
+
+/**
  * Fetches transaction history CSV from the Pera API.
  *
- * This function makes a direct HTTP request to the CSV export endpoint
- * and returns the raw CSV content along with metadata.
+ * This function uses ky HTTP client with retry logic and proper error handling.
+ * Returns the raw CSV content along with metadata.
  *
  * @param params - Export parameters including address, network, date range
  * @returns CsvExportResult with the CSV data and metadata
@@ -80,32 +125,18 @@ export const fetchTransactionsCsv = async (
 
     const finalFilename = generateFilename(accountAddress, filename)
     const baseUrl = getBaseUrl(network)
-    const endpoint = `/v1/accounts/${encodeURIComponent(accountAddress)}/export-history/`
+    const endpoint = `v1/accounts/${encodeURIComponent(accountAddress)}/export-history/`
 
     // Build query string
     const queryParams = buildCsvQueryParams(dateRange)
-    const queryString = new URLSearchParams(queryParams).toString()
-    const url = `${baseUrl}${endpoint}${queryString ? `?${queryString}` : ''}`
+    const url = `${baseUrl}/${endpoint}`
 
     try {
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                Accept: '*/*',
-                ...(config.backendAPIKey && {
-                    'X-API-Key': config.backendAPIKey,
-                }),
-            },
+        const client = createCsvClient(baseUrl)
+        const response = await client.get(endpoint, {
+            searchParams: queryParams,
             signal,
         })
-
-        if (!response.ok) {
-            throw new CsvExportError(
-                `HTTP error! Status: ${response.status} - ${response.statusText}`,
-                response.status,
-                url,
-            )
-        }
 
         const csvContent = await response.text()
 
