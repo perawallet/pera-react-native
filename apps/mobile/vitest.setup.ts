@@ -166,6 +166,7 @@ vi.mock('@components/core', () => {
             onPress,
             testID,
             isDisabled,
+            isLoading,
             ...props
         }: any) =>
             React.createElement(
@@ -176,7 +177,11 @@ vi.mock('@components/core', () => {
                     disabled: isDisabled,
                     'data-testid': testID || 'PWButton',
                 },
-                title || children,
+                isLoading
+                    ? React.createElement('div', {
+                          'data-testid': 'activity-indicator',
+                      })
+                    : title || children,
             ),
         PWCheckbox: createMockComponent('PWCheckbox'),
         PWChip: ({ label, title, children, testID, ...props }: any) =>
@@ -415,6 +420,13 @@ vi.mock('@components/core', () => {
                 children,
             ),
         PWWebView: createMockComponent('PWWebView'),
+        PWDropdown: ({ children, testID }: any) =>
+            React.createElement(
+                'div',
+                { 'data-testid': testID || 'PWDropdown' },
+                children,
+            ),
+        PWDropdownItem: createMockComponent('PWDropdownItem'),
     }
 })
 

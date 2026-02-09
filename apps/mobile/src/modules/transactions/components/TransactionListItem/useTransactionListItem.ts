@@ -12,8 +12,10 @@
 
 import { useCallback, useMemo } from 'react'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import type { TransactionIconType } from '@modules/transactions/components/TransactionIcon'
+import { txTypeToIconTypeMap } from './types'
 
 export type AmountDisplay = {
     text: string
@@ -36,14 +38,6 @@ export type UseTransactionListItemResult = {
 }
 
 const ALGO_DECIMALS = 6
-
-/**
- * Truncates an address to show first and last characters.
- */
-const truncateAddress = (address: string): string => {
-    if (address.length <= 13) return address
-    return `${address.slice(0, 6)}..${address.slice(-6)}`
-}
 
 /**
  * Formats a microAlgo amount to a display string.
@@ -108,26 +102,14 @@ const formatAssetAmount = (
 const getIconType = (tx: TransactionHistoryItem): TransactionIconType => {
     if (tx.swapGroupDetail) return 'asset-transfer'
 
-    switch (tx.txType) {
-        case 'pay':
-            return 'payment'
-        case 'axfer':
-            // Check if it's an opt-in (sender === receiver)
-            if (tx.sender === tx.receiver && tx.amount === '0') {
-                return 'asset-opt-in'
-            }
-            return 'asset-transfer'
-        case 'acfg':
-            return 'asset-config'
-        case 'afrz':
-            return 'asset-freeze'
-        case 'appl':
-            return 'app-call'
-        case 'keyreg':
-            return 'key-registration'
-        default:
-            return 'unknown'
+    // Check for opt-in first (special case of axfer)
+    if (tx.txType === 'axfer') {
+        if (tx.sender === tx.receiver && tx.amount === '0') {
+            return 'asset-opt-in'
+        }
     }
+
+    return txTypeToIconTypeMap[tx.txType] ?? 'unknown'
 }
 
 /**
@@ -209,7 +191,8 @@ export const useTransactionListItem = ({
                 : transaction.sender
 
             if (counterparty) {
-                return truncateAddress(counterparty)
+                // Use shared util for address truncation (Review comment #3)
+                return truncateAlgorandAddress(counterparty)
             }
         }
 

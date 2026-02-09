@@ -22,8 +22,8 @@ import {
 import { useState } from 'react'
 import { useStyles } from './styles'
 import { useAccountHistory, type TransactionSection } from './useAccountHistory'
-import { TransactionListItem } from './TransactionListItem'
-import { TransactionDateHeader } from './TransactionDateHeader'
+import { TransactionListItem } from '@modules/transactions/components/TransactionListItem'
+import { TransactionDateHeader } from '@modules/transactions/components/TransactionDateHeader'
 import { TransactionsFilterBottomSheet } from '../TransactionsFilterBottomSheet'
 
 const TAB_AND_HEADER_HEIGHT = 100
