@@ -11,11 +11,13 @@
  */
 
 import {
-    PWRoundIcon,
+    PWIcon,
+    PWView,
     type IconName,
     type PWRoundIconProps,
 } from '@components/core'
 import type { PeraTransactionType } from '@perawallet/wallet-core-blockchain'
+import { useStyles } from './styles'
 
 export type TransactionIconType = PeraTransactionType | 'group'
 
@@ -40,23 +42,21 @@ const iconNameMap: Record<TransactionIconType, IconName> = {
     unknown: 'transactions/generic',
 }
 
-const iconSizeMap = {
-    sm: 'md',
-    md: 'lg',
-    lg: 'xl',
-} as const
-
 export const TransactionIcon = (props: TransactionIconProps) => {
-    const { type, style, size = 'sm', ...rest } = props
-    const iconSize = iconSizeMap[size]
+    const { type, style, size = 'sm', variant = 'secondary', ...rest } = props
+    const styles = useStyles({ size })
     const name = iconNameMap[type] ?? 'transactions/generic'
 
     return (
-        <PWRoundIcon
-            icon={name}
-            size={iconSize}
-            style={style}
+        <PWView
+            style={[styles.container, style]}
             {...rest}
-        />
+        >
+            <PWIcon
+                name={name}
+                size={size === 'md' ? 'md' : size === 'sm' ? 'sm' : 'lg'}
+                variant={variant === 'primary' ? 'white' : variant}
+            />
+        </PWView>
     )
 }

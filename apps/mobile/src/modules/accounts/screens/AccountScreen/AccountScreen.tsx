@@ -10,7 +10,17 @@
  limitations under the License
  */
 
-import { PWIcon, PWToolbar, PWTouchableOpacity, PWView } from '@components/core'
+import {
+    PWDropdown,
+    PWDropdownItem,
+    PWIcon,
+    PWToolbar,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
+import { usePreferences, useSettings } from '@perawallet/wallet-core-settings'
+import { UserPreferences } from '@constants/user-preferences'
+import { useMemo } from 'react'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useShouldPlayConfetti } from '@modules/onboarding/hooks'
 
@@ -40,6 +50,32 @@ export const AccountScreen = () => {
     const { shouldPlayConfetti, setShouldPlayConfetti } =
         useShouldPlayConfetti()
 
+    const { getPreference, setPreference } = usePreferences()
+    const { privacyMode, setPrivacyMode } = useSettings()
+
+    const chartVisible = !!getPreference(UserPreferences.chartVisible)
+
+    const dropdownItems: PWDropdownItem[] = useMemo(
+        () => [
+            {
+                label: chartVisible
+                    ? t('portfolio.hide_chart')
+                    : t('portfolio.show_chart'),
+                icon: chartVisible ? 'text-document' : 'chart',
+                onPress: () =>
+                    setPreference(UserPreferences.chartVisible, !chartVisible),
+            },
+            {
+                label: privacyMode
+                    ? t('common.exit_stealth_mode')
+                    : t('common.enter_stealth_mode'),
+                icon: 'eye',
+                onPress: () => setPrivacyMode(!privacyMode),
+            },
+        ],
+        [chartVisible, privacyMode, t, setPreference, setPrivacyMode],
+    )
+
     if (!account) {
         return (
             <EmptyView
@@ -60,6 +96,9 @@ export const AccountScreen = () => {
                 left={<AccountSelection />}
                 right={
                     <PWView style={styles.iconBarSection}>
+                        <PWDropdown items={dropdownItems}>
+                            <PWIcon name='ellipsis' />
+                        </PWDropdown>
                         <PWTouchableOpacity onPress={scannerState.open}>
                             <PWIcon name='camera' />
                         </PWTouchableOpacity>
@@ -67,7 +106,10 @@ export const AccountScreen = () => {
                     </PWView>
                 }
             />
-            <AccountTabNavigator account={account} />
+            <AccountTabNavigator
+                account={account}
+                chartVisible={chartVisible}
+            />
             <QRScannerView
                 isVisible={scannerState.isOpen}
                 onSuccess={scannerState.close}

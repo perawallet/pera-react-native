@@ -25,7 +25,6 @@ import { TransactionNoteRow } from '../TransactionNoteRow/TransactionNoteRow'
 import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnings'
 import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import Decimal from 'decimal.js'
 
 export type AssetFreezeDisplayProps = {
     transaction: PeraDisplayableTransaction
@@ -92,9 +91,7 @@ export const AssetFreezeDisplay = ({
                         currency='ALGO'
                         precision={6}
                         minPrecision={2}
-                        value={Decimal(
-                            microAlgosToAlgos(transaction.fee ?? 0n),
-                        )}
+                        value={microAlgosToAlgos(transaction.fee ?? 0n)}
                         showSymbol
                     />
                 </KeyValueRow>

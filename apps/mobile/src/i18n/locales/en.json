@@ -123,6 +123,8 @@
         "offline_mode": "Offline Mode",
         "yes": "Yes",
         "no": "No",
+        "enter_stealth_mode": "Enter Stealth Mode",
+        "exit_stealth_mode": "Exit Stealth Mode",
         "go_back": {
             "label": "Go Back"
         },

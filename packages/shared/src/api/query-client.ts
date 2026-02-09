@@ -99,7 +99,24 @@ const createFetchClient = (clients: Map<string, BackendInstances>) => {
                 headers: requestConfig.headers,
             })
 
-            const data = await response.json<TData>()
+            let data: TData
+            const responseType = requestConfig.responseType ?? 'json'
+
+            switch (responseType) {
+                case 'text':
+                    data = (await response.text()) as unknown as TData
+                    break
+                case 'blob':
+                    data = (await response.blob()) as unknown as TData
+                    break
+                case 'arraybuffer':
+                    data = (await response.arrayBuffer()) as unknown as TData
+                    break
+                case 'json':
+                default:
+                    data = await response.json<TData>()
+                    break
+            }
 
             return {
                 data,

@@ -1,0 +1,75 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+/**
+ * Validates that a string is in the correct ISO 8601 date format (YYYY-MM-DD).
+ * Also validates that the date is a real calendar date (e.g., rejects 2024-02-30).
+ */
+export const isValidISODate = (dateString: string): boolean => {
+    const isoDateRegex = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/
+
+    if (!isoDateRegex.test(dateString)) {
+        return false
+    }
+
+    // Additional validation: ensure it's a real date (e.g., not 2024-02-30)
+    const date = new Date(dateString)
+    const datePieces = dateString.split('-')
+    const year = parseInt(datePieces[0], 10)
+    const month = parseInt(datePieces[1], 10)
+    const day = parseInt(datePieces[2], 10)
+
+    return (
+        date.getFullYear() === year &&
+        date.getMonth() + 1 === month &&
+        date.getDate() === day
+    )
+}
+
+/**
+ * Formats a JavaScript Date object to ISO 8601 date string (YYYY-MM-DD).
+ */
+export const formatISODate = (date: Date): string => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+}
+
+/**
+ * Converts Unix timestamp to JavaScript Date object.
+ */
+export const parseRoundTime = (unixTimestamp: number): Date => {
+    return new Date(unixTimestamp * 1000)
+}
+
+/**
+ * Creates an ISO 8601 date string for filtering transactions by date.
+ */
+export const toISODateString = (date: Date): string => {
+    return date.toISOString()
+}
+
+/**
+ * Creates date range parameters for the last N days.
+ */
+export const getDateRangeParams = (
+    days: number,
+): { afterTime: string; beforeTime: string } => {
+    const now = new Date()
+    const pastDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000)
+
+    return {
+        afterTime: pastDate.toISOString(),
+        beforeTime: now.toISOString(),
+    }
+}
