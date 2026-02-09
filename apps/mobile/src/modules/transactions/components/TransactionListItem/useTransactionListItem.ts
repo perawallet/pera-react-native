@@ -14,8 +14,11 @@ import { useCallback, useMemo } from 'react'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
+import {
+    getTransactionType,
+    type PeraDisplayableTransaction,
+} from '@perawallet/wallet-core-blockchain'
 import type { TransactionIconType } from '@modules/transactions/components/TransactionIcon'
-import { txTypeToIconTypeMap } from './types'
 import { Decimal } from 'decimal.js'
 
 const ALGO_DECIMALS = 6
@@ -90,18 +93,6 @@ const createAssetAmount = (
 /**
  * Maps transaction type to icon type.
  */
-const getIconType = (tx: TransactionHistoryItem): TransactionIconType => {
-    if (tx.swapGroupDetail) return 'asset-transfer'
-
-    // Check for opt-in first (special case of axfer)
-    if (tx.txType === 'axfer') {
-        if (tx.sender === tx.receiver && tx.amount === '0') {
-            return 'asset-opt-in'
-        }
-    }
-
-    return txTypeToIconTypeMap[tx.txType] ?? 'unknown'
-}
 
 /**
  * Gets the display title for a transaction.
@@ -144,7 +135,13 @@ export const useTransactionListItem = ({
     const account = useSelectedAccount()
     const userAddress = account?.address ?? ''
 
-    const iconType = useMemo(() => getIconType(transaction), [transaction])
+    const iconType = useMemo(() => {
+        if (transaction.swapGroupDetail) return 'asset-transfer'
+
+        return getTransactionType(
+            transaction as unknown as PeraDisplayableTransaction,
+        )
+    }, [transaction])
 
     const title = useMemo(() => getTitle(transaction), [transaction])
 
