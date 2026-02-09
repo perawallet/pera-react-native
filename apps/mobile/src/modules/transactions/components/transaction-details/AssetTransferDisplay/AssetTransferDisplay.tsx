@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWDivider, PWView } from '@components/core'
+import { PWButton, PWDivider, PWIcon, PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { AddressDisplay } from '@components/AddressDisplay'
 import {
@@ -31,6 +31,8 @@ import { useMemo } from 'react'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import { LoadingView } from '@components/LoadingView'
 import { AssetTitle } from '@modules/assets/components/AssetTitle'
+import { ViewTextDetailsPanel } from '../../ViewTextDetailsPanel'
+import { useAssetTransferDisplay } from './useAssetTransferDisplay'
 
 export type AssetTransferDisplayProps = {
     referenceAddress?: string
@@ -47,34 +49,22 @@ export const AssetTransferDisplay = ({
     const { theme } = useTheme()
     const { t } = useLanguage()
 
-    const transferType = useMemo(
-        () => getAssetTransferType(transaction),
-        [transaction],
-    )
-    const showWarnings = useMemo(() => !transaction.id, [transaction])
-    const assetId = transaction.assetTransferTransaction?.assetId?.toString()
+    const {
+        asset,
+        transferType,
+        senderAddress,
+        receiverAddress,
+        amount,
+        amountStyle,
+        metadataHash,
+        assetTransfer,
+        showWarnings,
+        isMetadataHashDetailsModalOpen,
+        openMetadataHashDetailsModal,
+        closeMetadataHashDetailsModal,
+    } = useAssetTransferDisplay(transaction, referenceAddress)
 
-    const { data: asset } = useSingleAssetDetailsQuery(assetId ?? '')
 
-    const assetTransfer = transaction.assetTransferTransaction
-
-    const senderAddress = transaction.sender
-    const receiverAddress = assetTransfer?.receiver
-    const amount = useMemo(() => {
-        const amount = Decimal(assetTransfer?.amount?.toString() ?? '0')
-        return amount
-            .dividedBy(new Decimal(10 ** (asset?.decimals ?? 6)))
-            .mul(referenceAddress === assetTransfer?.receiver ? -1 : 1)
-    }, [assetTransfer?.amount, asset?.decimals])
-
-    const amountStyle = useMemo(() => {
-        if (senderAddress === referenceAddress) {
-            return styles.amountNegative
-        } else if (receiverAddress === referenceAddress) {
-            return styles.amountPositive
-        }
-        return undefined
-    }, [amount])
 
     if (!assetTransfer) {
         return null
@@ -86,6 +76,8 @@ export const AssetTransferDisplay = ({
                 transaction={transaction}
                 isInnerTransaction={isInnerTransaction}
             />
+
+            {showWarnings && <TransactionWarnings transaction={transaction} />}
 
             <PWDivider
                 style={styles.divider}
@@ -148,6 +140,14 @@ export const AssetTransferDisplay = ({
                     </KeyValueRow>
                 )}
 
+                {metadataHash && (
+                    <KeyValueRow
+                        title={t('transactions.asset_transfer.metadata_hash')}
+                    >
+                        <PWButton variant='link' paddingStyle='none' title={t('transactions.common.view_metadata')} onPress={openMetadataHashDetailsModal} />
+                    </KeyValueRow>
+                )}
+
                 <KeyValueRow title={t('transactions.common.fee')}>
                     <CurrencyDisplay
                         currency='ALGO'
@@ -163,14 +163,19 @@ export const AssetTransferDisplay = ({
                 <TransactionNoteRow transaction={transaction} />
             </PWView>
 
-            {showWarnings && <TransactionWarnings transaction={transaction} />}
-
             <PWDivider
                 style={styles.divider}
                 color={theme.colors.layerGray}
             />
 
             <TransactionFooter transaction={transaction} />
+
+            {!!metadataHash && <ViewTextDetailsPanel
+                isVisible={isMetadataHashDetailsModalOpen}
+                onClose={closeMetadataHashDetailsModal}
+                text={metadataHash}
+                titleKey='transactions.common.view_metadata'
+            />}
         </PWView>
     )
 }

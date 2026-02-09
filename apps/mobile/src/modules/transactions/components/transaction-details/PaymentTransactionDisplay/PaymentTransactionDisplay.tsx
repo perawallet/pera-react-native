@@ -80,6 +80,8 @@ export const PaymentTransactionDisplay = ({
                 isInnerTransaction={isInnerTransaction}
             />
 
+            {showWarnings && <TransactionWarnings transaction={transaction} />}
+
             <PWDivider
                 style={styles.divider}
                 color={theme.colors.layerGray}
@@ -123,8 +125,6 @@ export const PaymentTransactionDisplay = ({
 
                 <TransactionNoteRow transaction={transaction} />
             </PWView>
-
-            {showWarnings && <TransactionWarnings transaction={transaction} />}
 
             <PWDivider
                 style={styles.divider}

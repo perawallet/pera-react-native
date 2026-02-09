@@ -57,6 +57,8 @@ export const KeyRegistrationDisplay = ({
                 isInnerTransaction={isInnerTransaction}
             />
 
+            {showWarnings && <TransactionWarnings transaction={transaction} />}
+
             <PWDivider
                 style={styles.divider}
                 color={theme.colors.layerGray}
@@ -135,8 +137,6 @@ export const KeyRegistrationDisplay = ({
 
                 <TransactionNoteRow transaction={transaction} />
             </PWView>
-
-            {showWarnings && <TransactionWarnings transaction={transaction} />}
 
             <PWDivider
                 style={styles.divider}

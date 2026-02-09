@@ -22,6 +22,16 @@ export const useStyles = makeStyles(theme => {
             overflow: 'hidden',
             gap: theme.spacing.xl,
         },
+        buttonContainer: {
+            flexDirection: 'row',
+            gap: theme.spacing.sm,
+            paddingHorizontal: theme.spacing.xl,
+        },
+        button: {
+        },
+        buttonText: {
+            fontSize: theme.spacing.md,
+        },
         noteText: {
             marginBottom: theme.spacing.xl,
             paddingHorizontal: theme.spacing.xl,

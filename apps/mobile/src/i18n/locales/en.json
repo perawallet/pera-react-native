@@ -124,6 +124,9 @@
         "loading": {
             "label": "Loading..."
         },
+        "base64": {
+            "label": "Base64"
+        },
         "delete": {
             "label": "Delete"
         },
@@ -146,13 +149,22 @@
             "title": "Copied to clipboard",
             "body": ""
         },
+        "copy": {
+            "label": "Copy"
+        },
         "error": {
             "title": "An error has occurred",
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists."
         },
+        "hex": {
+            "label": "Hex"
+        },
         "not_implemented": {
             "title": "Not Implemented",
             "body": "This screen has not yet been implemented"
+        },
+        "text": {
+            "label": "Text"
         },
         "wealth_chart": {
             "empty_body": "You will see a chart here once you have some balance history",
@@ -602,6 +614,7 @@
             "note": "Transaction Note",
             "view_in_explorer": "View in Pera Explorer",
             "view_note": "View Note",
+            "view_metadata": "View Metadata",
             "completed": "Completed",
             "failed": "Failed",
             "pending": "Pending"
@@ -653,7 +666,8 @@
             "manager": "Manager",
             "reserve": "Reserve",
             "freeze_addr": "Freeze Address",
-            "clawback": "Clawback Address"
+            "clawback": "Clawback Address",
+            "metadata_hash": "Metadata"
         },
         "asset_freeze": {
             "target": "Target Account",

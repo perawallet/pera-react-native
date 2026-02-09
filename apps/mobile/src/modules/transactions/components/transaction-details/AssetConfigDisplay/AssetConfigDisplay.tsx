@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWDivider, PWText, PWView } from '@components/core'
+import { PWButton, PWDivider, PWIcon, PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { AddressDisplay } from '@components/AddressDisplay'
 import {
@@ -27,8 +27,8 @@ import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnin
 import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
-import { formatNumber, formatWithUnits } from '@perawallet/wallet-core-shared'
-import { useMemo } from 'react'
+import { useAssetConfigDisplay } from './useAssetConfigDisplay'
+import { ViewTextDetailsPanel } from '../../ViewTextDetailsPanel'
 
 export type AssetConfigDisplayProps = {
     transaction: PeraDisplayableTransaction
@@ -43,24 +43,17 @@ export const AssetConfigDisplay = ({
     const { theme } = useTheme()
     const { t } = useLanguage()
 
-    const assetConfig = transaction.assetConfigTransaction
-
-    const configType = getAssetConfigType(transaction)
-    const assetId = assetConfig?.assetId
-    const showWarnings = !transaction?.id
-
-    const supply = useMemo(() => {
-        const { amount, unit } = assetConfig?.params?.total
-            ? formatWithUnits(Decimal(assetConfig?.params?.total.toString()))
-            : { amount: undefined, unit: undefined }
-
-        if (!amount) {
-            return undefined
-        }
-
-        const { integer, fraction } = formatNumber(amount, 2)
-        return `${integer}${fraction}${unit}`
-    }, [assetConfig?.params?.total])
+    const {
+        assetConfig,
+        configType,
+        assetId,
+        showWarnings,
+        supply,
+        metadataHash,
+        openMetadataHashDetailsModal,
+        closeMetadataHashDetailsModal,
+        isMetadataHashDetailsModalVisible,
+    } = useAssetConfigDisplay(transaction)
 
     if (!assetConfig) {
         return null
@@ -72,6 +65,8 @@ export const AssetConfigDisplay = ({
                 transaction={transaction}
                 isInnerTransaction={isInnerTransaction}
             />
+
+            {showWarnings && <TransactionWarnings transaction={transaction} />}
 
             <PWDivider
                 style={styles.divider}
@@ -187,6 +182,14 @@ export const AssetConfigDisplay = ({
                     </KeyValueRow>
                 )}
 
+                {metadataHash && (
+                    <KeyValueRow
+                        title={t('transactions.asset_config.metadata_hash')}
+                    >
+                        <PWButton variant='link' paddingStyle='none' title={t('transactions.common.view_metadata')} onPress={openMetadataHashDetailsModal} />
+                    </KeyValueRow>
+                )}
+
                 <KeyValueRow title={t('transactions.common.fee')}>
                     <CurrencyDisplay
                         currency='ALGO'
@@ -202,14 +205,19 @@ export const AssetConfigDisplay = ({
                 <TransactionNoteRow transaction={transaction} />
             </PWView>
 
-            {showWarnings && <TransactionWarnings transaction={transaction} />}
-
             <PWDivider
                 style={styles.divider}
                 color={theme.colors.layerGray}
             />
 
             <TransactionFooter transaction={transaction} />
+
+            {!!metadataHash && <ViewTextDetailsPanel
+                isVisible={isMetadataHashDetailsModalVisible}
+                onClose={closeMetadataHashDetailsModal}
+                text={metadataHash}
+                titleKey='transactions.common.view_metadata'
+            />}
         </PWView>
     )
 }
