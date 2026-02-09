@@ -21,11 +21,11 @@ import {
 import {
     createLazyStore,
     DataStoreRegistry,
-    logger,
 } from '@perawallet/wallet-core-shared'
 
 const STORE_NAME = 'security-store'
-const lazy = createLazyStore<WithPersist<StoreApi<SecurityState>, unknown>>()
+const lazy =
+    createLazyStore<WithPersist<StoreApi<SecurityState>, unknown>>(STORE_NAME)
 
 export const useSecurityStore: UseBoundStore<
     WithPersist<StoreApi<SecurityState>, unknown>
@@ -54,7 +54,7 @@ const createSecurityStore = (storage: KeyValueStorageService) =>
                 resetState: () => set(initialState),
             }),
             {
-                name: 'security-store',
+                name: STORE_NAME,
                 storage: createJSONStorage(() => storage),
                 version: 1,
                 partialize: state => ({
@@ -67,11 +67,9 @@ const createSecurityStore = (storage: KeyValueStorageService) =>
     )
 
 export const initSecurityStore = () => {
-    logger.debug('Initializing security store')
     const storage = useKeyValueStorageService()
     const realStore = createSecurityStore(storage)
     lazy.init(realStore, () => realStore.getState().resetState())
-    logger.debug('Security store initialized')
 }
 
 export const clearSecurityStore = () => lazy.clear()

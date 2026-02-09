@@ -28,6 +28,7 @@ import type {
     PeraTransactionType,
 } from '../models'
 import { encodeAlgorandAddress } from './addresses'
+
 import {
     OnCompletion,
     type Transaction as IndexerTransaction,

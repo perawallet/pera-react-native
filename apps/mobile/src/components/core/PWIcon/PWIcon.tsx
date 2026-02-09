@@ -299,10 +299,10 @@ export const PWIcon = ({
 
     return (
         <IconComponent
-            {...rest}
             width={resolvedSize}
             height={resolvedSize}
             color={resolvedColor}
+            {...rest}
         />
     )
 }

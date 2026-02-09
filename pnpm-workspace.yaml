@@ -3,26 +3,26 @@ packages:
   - packages/*
 
 catalog:
-  "@algorandfoundation/algokit-transact": ^10.0.0-alpha.29
-  "@algorandfoundation/algokit-utils": ^10.0.0-alpha.29
-  "@algorandfoundation/xhd-wallet-api": ^2.0.0-canary.1
-  "@babel/runtime": ^7.28.4
-  "@kubb/cli": ^4.5.8
-  "@kubb/core": ^4.5.8
-  "@kubb/plugin-client": ^4.5.8
-  "@kubb/plugin-msw": ^4.5.8
-  "@kubb/plugin-oas": ^4.5.8
-  "@kubb/plugin-react-query": ^4.5.8
-  "@kubb/plugin-ts": ^4.5.8
-  "@kubb/plugin-zod": ^4.5.8
-  "@tanstack/query-async-storage-persister": ^5.90.9
-  "@tanstack/query-sync-storage-persister": ^5.90.9
-  "@tanstack/react-query": ^5.90.7
-  "@tanstack/react-query-persist-client": ^5.90.9
-  "@testing-library/react": 16.3.0
-  "@types/react": ~19.1.17
-  "@vitejs/plugin-react": 5.1.0
-  "@vitest/coverage-v8": ^4.0.16
+  '@algorandfoundation/algokit-transact': ^10.0.0-alpha.29
+  '@algorandfoundation/algokit-utils': ^10.0.0-alpha.29
+  '@algorandfoundation/xhd-wallet-api': ^2.0.0-canary.1
+  '@babel/runtime': ^7.28.4
+  '@kubb/cli': ^4.5.8
+  '@kubb/core': ^4.5.8
+  '@kubb/plugin-client': ^4.5.8
+  '@kubb/plugin-msw': ^4.5.8
+  '@kubb/plugin-oas': ^4.5.8
+  '@kubb/plugin-react-query': ^4.5.8
+  '@kubb/plugin-ts': ^4.5.8
+  '@kubb/plugin-zod': ^4.5.8
+  '@tanstack/query-async-storage-persister': ^5.90.9
+  '@tanstack/query-sync-storage-persister': ^5.90.9
+  '@tanstack/react-query': ^5.90.7
+  '@tanstack/react-query-persist-client': ^5.90.9
+  '@testing-library/react': 16.3.0
+  '@types/react': ~19.1.17
+  '@vitejs/plugin-react': 5.1.0
+  '@vitest/coverage-v8': ^4.0.16
   bip39: ^3.1.0
   decimal.js: ^10.6.0
   eslint: 9.39.1
@@ -43,8 +43,8 @@ catalog:
   zustand: ^5.0.8
 
 onlyBuiltDependencies:
-  - "@firebase/util"
-  - "@tailwindcss/oxide"
+  - '@firebase/util'
+  - '@tailwindcss/oxide'
   - electron
   - electron-winstaller
   - es5-ext
@@ -56,13 +56,13 @@ onlyBuiltDependencies:
   - simple-git-hooks
 
 overrides:
-  glob@>=10.2.0 <10.5.0: ">=10.5.0"
-  happy-dom@<20.0.0: ">=20.0.0"
-  happy-dom@>=19.0.0 <20.0.2: ">=20.0.2"
-  js-yaml@<3.14.2: ">=3.14.2"
-  js-yaml@>=4.0.0 <4.1.1: ">=4.1.1"
-  nanoid@<3.3.8: ">=3.3.8"
-  node-fetch@<2.6.7: ">=2.6.7"
+  glob@>=10.2.0 <10.5.0: '>=10.5.0'
+  happy-dom@<20.0.0: '>=20.0.0'
+  happy-dom@>=19.0.0 <20.0.2: '>=20.0.2'
+  js-yaml@<3.14.2: '>=3.14.2'
+  js-yaml@>=4.0.0 <4.1.1: '>=4.1.1'
+  nanoid@<3.3.8: '>=3.3.8'
+  node-fetch@<2.6.7: '>=2.6.7'
   ws@>=7.0.0 <7.5.10: 7.5.10
 
 supportedArchitectures:
