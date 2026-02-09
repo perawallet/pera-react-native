@@ -10,11 +10,5 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-signing'
-
-export * from './constants'
-export * from './models'
-export * from './hooks'
-export * from './utils'
-
-export { registerSigningStore } from './store'
+export const MAX_TRANSACTION_SIGN_REQUESTS = 1000
+export const MAX_DATA_SIGN_REQUESTS = 1000

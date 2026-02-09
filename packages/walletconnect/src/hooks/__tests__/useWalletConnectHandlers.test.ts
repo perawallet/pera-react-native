@@ -714,5 +714,39 @@ describe('useWalletConnectHandlers', () => {
                 ),
             ).toThrow(WalletConnectInvalidSessionError)
         })
+
+        it('should propagate error when addSignRequest throws for over-limit transactions', () => {
+            mockAddSignRequest.mockImplementation(() => {
+                throw new Error('Transaction limit exceeded')
+            })
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = {
+                clientId: 'test-client-id',
+                accounts: ['addr1'],
+                approveRequest: vi.fn(),
+                rejectRequest: vi.fn(),
+            }
+            const payload = {
+                params: [
+                    [
+                        {
+                            message: 'Sign tx',
+                            txn: 'encodedTxn',
+                        },
+                    ],
+                ],
+                method: 'algo_signTxn' as const,
+                jsonrpc: '2.0',
+                id: 1,
+            }
+
+            expect(() =>
+                result.current.handleSignTransaction(
+                    connector as any,
+                    null,
+                    payload,
+                ),
+            ).toThrow('Transaction limit exceeded')
+        })
     })
 })

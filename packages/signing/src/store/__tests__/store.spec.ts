@@ -14,6 +14,10 @@ import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useSigningStore, initSigningStore } from '../index'
 import { SignRequest } from '../../models'
+import {
+    MAX_TRANSACTION_SIGN_REQUESTS,
+    MAX_DATA_SIGN_REQUESTS,
+} from '../../constants'
 
 const mockStorage = {
     getItem: vi.fn(),
@@ -156,6 +160,73 @@ describe('SigningStore', () => {
         const storedValue = JSON.parse(value)
         expect(storedValue.state.pendingSignRequests).toHaveLength(1)
         expect(storedValue.state.pendingSignRequests[0].id).toBe('1')
+    })
+
+    test('should throw when transaction count exceeds limit', () => {
+        const { result } = renderHook(() => useSigningStore())
+        const txs = Array.from(
+            { length: MAX_TRANSACTION_SIGN_REQUESTS + 1 },
+            () => ({}),
+        )
+        const request = {
+            id: 'over-limit',
+            type: 'transactions',
+            transport: 'algod',
+            txs,
+        } as unknown as SignRequest
+
+        expect(() => {
+            act(() => {
+                result.current.addSignRequest(request)
+            })
+        }).toThrow('Transaction limit exceeded')
+
+        expect(result.current.pendingSignRequests).toHaveLength(0)
+    })
+
+    test('should accept transactions at exactly the limit', () => {
+        const { result } = renderHook(() => useSigningStore())
+        const txs = Array.from(
+            { length: MAX_TRANSACTION_SIGN_REQUESTS },
+            () => ({}),
+        )
+        const request = {
+            id: 'at-limit',
+            type: 'transactions',
+            transport: 'algod',
+            txs,
+        } as unknown as SignRequest
+
+        let added = false
+        act(() => {
+            added = result.current.addSignRequest(request)
+        })
+
+        expect(added).toBe(true)
+        expect(result.current.pendingSignRequests).toHaveLength(1)
+    })
+
+    test('should throw when data sign count exceeds limit', () => {
+        const { result } = renderHook(() => useSigningStore())
+        const data = Array.from({ length: MAX_DATA_SIGN_REQUESTS + 1 }, () => ({
+            signer: 'addr1',
+            data: 'test',
+            chainId: 4160,
+        }))
+        const request = {
+            id: 'over-data-limit',
+            type: 'arbitrary-data',
+            transport: 'callback',
+            data,
+        } as unknown as SignRequest
+
+        expect(() => {
+            act(() => {
+                result.current.addSignRequest(request)
+            })
+        }).toThrow('Data sign limit exceeded')
+
+        expect(result.current.pendingSignRequests).toHaveLength(0)
     })
 
     test('should reset state to initial values', () => {

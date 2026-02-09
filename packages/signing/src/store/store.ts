@@ -23,6 +23,10 @@ import {
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
 import { v7 as uuidv7 } from 'uuid'
+import {
+    MAX_TRANSACTION_SIGN_REQUESTS,
+    MAX_DATA_SIGN_REQUESTS,
+} from '../constants'
 
 const STORE_NAME = 'signing-store'
 const lazy =
@@ -42,6 +46,26 @@ const createSigningStore = (storage: KeyValueStorageService) =>
             (set, get) => ({
                 ...initialState,
                 addSignRequest: (request: SignRequest) => {
+                    if (
+                        request.type === 'transactions' &&
+                        'txs' in request &&
+                        request.txs.length > MAX_TRANSACTION_SIGN_REQUESTS
+                    ) {
+                        throw new Error(
+                            `Transaction limit exceeded: ${request.txs.length} transactions exceeds the maximum of ${MAX_TRANSACTION_SIGN_REQUESTS}`,
+                        )
+                    }
+
+                    if (
+                        request.type === 'arbitrary-data' &&
+                        'data' in request &&
+                        request.data.length > MAX_DATA_SIGN_REQUESTS
+                    ) {
+                        throw new Error(
+                            `Data sign limit exceeded: ${request.data.length} items exceeds the maximum of ${MAX_DATA_SIGN_REQUESTS}`,
+                        )
+                    }
+
                     const existing = get().pendingSignRequests ?? []
                     const newRequest = {
                         ...request,
