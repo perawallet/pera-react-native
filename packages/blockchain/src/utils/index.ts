@@ -20,11 +20,4 @@ export const microAlgosToAlgos = (microAlgos: bigint): number => {
     return Number(microAlgos) / 1_000_000
 }
 
-export const formatMicroAlgos = (microAlgos: bigint): string => {
-    return microAlgosToAlgos(microAlgos).toLocaleString(undefined, {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 6,
-    })
-}
-
 export { TransactionType }

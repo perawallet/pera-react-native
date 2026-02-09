@@ -55,6 +55,10 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
     }
 })
 
+vi.mock('../../ViewTextDetailsPanel', () => ({
+    ViewTextDetailsPanel: vi.fn(() => null),
+}))
+
 describe('AssetTransferDisplay', () => {
     const mockAsset = {
         assetId: '123',
@@ -111,6 +115,34 @@ describe('AssetTransferDisplay', () => {
 
         expect(container.textContent).toContain('Test Asset')
         expect(container.textContent).toContain('123')
+    })
+
+    it('renders metadata hash button when asset has metadata', () => {
+        vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
+            data: { ...mockAsset, metadata: 'some-metadata' },
+        } as UseQueryResult<NoInfer<PeraAsset>, unknown>)
+
+        const { container } = render(
+            <AssetTransferDisplay transaction={mockTransaction} />,
+        )
+
+        expect(container.textContent).toContain(
+            'transactions.common.view_metadata',
+        )
+    })
+
+    it('does not render metadata hash button when asset has no metadata', () => {
+        vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
+            data: mockAsset,
+        } as UseQueryResult<NoInfer<PeraAsset>, unknown>)
+
+        const { container } = render(
+            <AssetTransferDisplay transaction={mockTransaction} />,
+        )
+
+        expect(container.textContent).not.toContain(
+            'transactions.common.view_metadata',
+        )
     })
 
     it('renders null if assetTransferTransaction is missing', () => {
