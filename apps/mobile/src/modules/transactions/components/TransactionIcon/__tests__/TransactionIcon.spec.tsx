@@ -16,7 +16,8 @@ import { TransactionIcon, TransactionIconType } from '../TransactionIcon'
 import { PWIcon } from '@components/core'
 
 vi.mock('@components/core', () => ({
-    PWRoundIcon: vi.fn(() => null),
+    PWView: vi.fn(({ children }) => children),
+    PWIcon: vi.fn(() => null),
 }))
 
 describe('TransactionIcon', () => {
