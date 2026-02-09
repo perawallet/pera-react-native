@@ -21,7 +21,6 @@ import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { KeyValueRow } from '@components/KeyValueRow'
-import { useMemo } from 'react'
 import { TransactionHeader } from '../TransactionHeader/TransactionHeader'
 import { useTheme } from '@rneui/themed'
 import { TransactionNoteRow } from '../TransactionNoteRow/TransactionNoteRow'
@@ -29,6 +28,7 @@ import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnin
 import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
+import { usePaymentTransactionDisplay } from './usePaymentTransactionDisplay'
 
 export type PaymentTransactionDisplayProps = {
     referenceAddress?: string
@@ -44,30 +44,14 @@ export const PaymentTransactionDisplay = ({
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
-    const payment = transaction.paymentTransaction
-
-    const receiverAddress = payment?.receiver
-    const senderAddress = transaction.sender
-    const amount = useMemo(() => {
-        const algos = microAlgosToAlgos(payment?.amount ?? 0n)
-        if (senderAddress === referenceAddress) {
-            return -algos
-        }
-        return algos
-    }, [senderAddress, payment, receiverAddress])
-
-    const amountStyle = useMemo(() => {
-        if (senderAddress === referenceAddress) {
-            return styles.amountNegative
-        } else if (receiverAddress === referenceAddress) {
-            return styles.amountPositive
-        }
-        return undefined
-    }, [amount])
-
-    const showWarnings = useMemo(() => {
-        return !transaction?.confirmedRound
-    }, [transaction])
+    const {
+        amount,
+        amountStyle,
+        showWarnings,
+        receiverAddress,
+        senderAddress,
+        payment,
+    } = usePaymentTransactionDisplay(transaction, referenceAddress)
 
     if (!payment) {
         return null

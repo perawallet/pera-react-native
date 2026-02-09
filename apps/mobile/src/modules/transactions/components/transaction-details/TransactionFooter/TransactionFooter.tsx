@@ -13,13 +13,9 @@
 import { PWButton, PWView } from '@components/core'
 import { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { useLanguage } from '@hooks/useLanguage'
-import { useMemo } from 'react'
-import { useNetwork } from '@perawallet/wallet-core-platform-integration'
-import { useWebView } from '@modules/webview'
-import { config } from '@perawallet/wallet-core-config'
-import { v4 as uuid } from 'uuid'
-import { Networks } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
+import { useTransactionFooter } from './useTransactionFooter'
+import { RawTransactionButton } from '../RawTransactionButton'
 
 export const TransactionFooter = ({
     transaction,
@@ -28,36 +24,30 @@ export const TransactionFooter = ({
 }) => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { network } = useNetwork()
-    const { pushWebView } = useWebView()
-
-    const explorerUrl = useMemo(() => {
-        if (network === Networks.mainnet) {
-            return config.mainnetExplorerUrl
-        }
-        return config.testnetExplorerUrl
-    }, [network])
-
-    const showInExplorer = () => {
-        pushWebView({
-            url: `${explorerUrl}/tx/${transaction.id}`,
-            id: uuid(),
-        })
-    }
-
-    if (!transaction.id) {
-        return null
-    }
+    const { showInExplorer, assetUrl, showAssetUrl } =
+        useTransactionFooter(transaction)
 
     return (
         <PWView style={styles.container}>
-            <PWButton
-                variant='secondary'
-                title={t('transactions.common.view_in_explorer')}
-                icon='globe'
-                onPress={showInExplorer}
-                paddingStyle='dense'
-            />
+            <RawTransactionButton transaction={transaction} />
+            {!!assetUrl && (
+                <PWButton
+                    variant='secondary'
+                    title={t('transactions.common.view_asset_url')}
+                    iconRight='arrow-up-right'
+                    onPress={showAssetUrl}
+                    paddingStyle='dense'
+                />
+            )}
+            {!!transaction.id && (
+                <PWButton
+                    variant='secondary'
+                    title={t('transactions.common.view_in_explorer')}
+                    iconRight='arrow-up-right'
+                    onPress={showInExplorer}
+                    paddingStyle='dense'
+                />
+            )}
         </PWView>
     )
 }

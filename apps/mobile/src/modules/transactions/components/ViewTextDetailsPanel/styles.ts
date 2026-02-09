@@ -27,8 +27,7 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.sm,
             paddingHorizontal: theme.spacing.xl,
         },
-        button: {
-        },
+        button: {},
         buttonText: {
             fontSize: theme.spacing.md,
         },

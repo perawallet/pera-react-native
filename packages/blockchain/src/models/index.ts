@@ -25,6 +25,7 @@ export { Address } from '@algorandfoundation/algokit-utils'
 
 export type PeraDisplayableTransaction = IndexerTransaction & {
     roundTimeMillis?: number
+    rawTransaction?: PeraTransaction
 }
 
 export type PeraTransaction = Transaction

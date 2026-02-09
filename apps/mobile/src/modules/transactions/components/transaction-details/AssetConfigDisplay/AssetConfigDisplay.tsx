@@ -10,11 +10,10 @@
  limitations under the License
  */
 
-import { PWButton, PWDivider, PWIcon, PWText, PWView } from '@components/core'
+import { PWButton, PWDivider, PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { AddressDisplay } from '@components/AddressDisplay'
 import {
-    getAssetConfigType,
     microAlgosToAlgos,
     PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
@@ -186,7 +185,12 @@ export const AssetConfigDisplay = ({
                     <KeyValueRow
                         title={t('transactions.asset_config.metadata_hash')}
                     >
-                        <PWButton variant='link' paddingStyle='none' title={t('transactions.common.view_metadata')} onPress={openMetadataHashDetailsModal} />
+                        <PWButton
+                            variant='link'
+                            paddingStyle='none'
+                            title={t('transactions.common.view_metadata')}
+                            onPress={openMetadataHashDetailsModal}
+                        />
                     </KeyValueRow>
                 )}
 
@@ -212,12 +216,14 @@ export const AssetConfigDisplay = ({
 
             <TransactionFooter transaction={transaction} />
 
-            {!!metadataHash && <ViewTextDetailsPanel
-                isVisible={isMetadataHashDetailsModalVisible}
-                onClose={closeMetadataHashDetailsModal}
-                text={metadataHash}
-                titleKey='transactions.common.view_metadata'
-            />}
+            {!!metadataHash && (
+                <ViewTextDetailsPanel
+                    isVisible={isMetadataHashDetailsModalVisible}
+                    onClose={closeMetadataHashDetailsModal}
+                    text={metadataHash}
+                    titleKey='transactions.common.view_metadata'
+                />
+            )}
         </PWView>
     )
 }

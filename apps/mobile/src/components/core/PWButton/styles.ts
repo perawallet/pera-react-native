@@ -74,7 +74,7 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
             alignItems: 'center',
             justifyContent: 'center',
             gap: theme.spacing.sm,
-            borderRadius: theme.spacing.sm,
+            borderRadius: props.rounded ? theme.spacing.xl : theme.spacing.sm,
             paddingHorizontal,
             paddingVertical,
             minWidth,

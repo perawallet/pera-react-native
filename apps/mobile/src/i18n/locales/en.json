@@ -612,12 +612,15 @@
             "asset_id": "Asset ID",
             "date": "Date",
             "note": "Transaction Note",
+            "view_raw_transaction": "View JSON",
             "view_in_explorer": "View in Pera Explorer",
+            "view_asset_url": "View Asset URL",
             "view_note": "View Note",
             "view_metadata": "View Metadata",
             "completed": "Completed",
             "failed": "Failed",
-            "pending": "Pending"
+            "pending": "Pending",
+            "raw_transaction": "Raw Transaction"
         },
         "type": {
             "pay": "Payment Transaction",

@@ -14,7 +14,6 @@ import {
     PWBadge,
     PWBottomSheet,
     type PWBottomSheetProps,
-    PWButton,
     PWIcon,
     PWText,
     PWToolbar,
@@ -23,7 +22,6 @@ import {
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useClipboard } from '@hooks/useClipboard'
-import { Tab, TabView } from '@rneui/themed'
 import { useMemo, useState } from 'react'
 
 export type ViewTextDetailsPanelProps = {
@@ -74,11 +72,7 @@ export const ViewTextDetailsPanel = ({
                             onPress={onClose}
                         />
                     }
-                    center={
-                        <PWText variant='h4'>
-                            {t(titleKey)}
-                        </PWText>
-                    }
+                    center={<PWText variant='h4'>{t(titleKey)}</PWText>}
                     right={
                         <PWIcon
                             name='copy'

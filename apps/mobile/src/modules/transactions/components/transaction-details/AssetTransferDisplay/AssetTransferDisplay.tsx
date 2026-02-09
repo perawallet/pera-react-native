@@ -10,11 +10,10 @@
  limitations under the License
  */
 
-import { PWButton, PWDivider, PWIcon, PWText, PWView } from '@components/core'
+import { PWButton, PWDivider, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { AddressDisplay } from '@components/AddressDisplay'
 import {
-    getAssetTransferType,
     microAlgosToAlgos,
     type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
@@ -27,8 +26,6 @@ import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnin
 import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
-import { useMemo } from 'react'
-import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import { LoadingView } from '@components/LoadingView'
 import { AssetTitle } from '@modules/assets/components/AssetTitle'
 import { ViewTextDetailsPanel } from '../../ViewTextDetailsPanel'
@@ -63,8 +60,6 @@ export const AssetTransferDisplay = ({
         openMetadataHashDetailsModal,
         closeMetadataHashDetailsModal,
     } = useAssetTransferDisplay(transaction, referenceAddress)
-
-
 
     if (!assetTransfer) {
         return null
@@ -144,7 +139,12 @@ export const AssetTransferDisplay = ({
                     <KeyValueRow
                         title={t('transactions.asset_transfer.metadata_hash')}
                     >
-                        <PWButton variant='link' paddingStyle='none' title={t('transactions.common.view_metadata')} onPress={openMetadataHashDetailsModal} />
+                        <PWButton
+                            variant='link'
+                            paddingStyle='none'
+                            title={t('transactions.common.view_metadata')}
+                            onPress={openMetadataHashDetailsModal}
+                        />
                     </KeyValueRow>
                 )}
 
@@ -170,12 +170,14 @@ export const AssetTransferDisplay = ({
 
             <TransactionFooter transaction={transaction} />
 
-            {!!metadataHash && <ViewTextDetailsPanel
-                isVisible={isMetadataHashDetailsModalOpen}
-                onClose={closeMetadataHashDetailsModal}
-                text={metadataHash}
-                titleKey='transactions.common.view_metadata'
-            />}
+            {!!metadataHash && (
+                <ViewTextDetailsPanel
+                    isVisible={isMetadataHashDetailsModalOpen}
+                    onClose={closeMetadataHashDetailsModal}
+                    text={metadataHash}
+                    titleKey='transactions.common.view_metadata'
+                />
+            )}
         </PWView>
     )
 }
