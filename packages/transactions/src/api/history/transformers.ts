@@ -20,7 +20,7 @@ import type {
     TransactionAssetSummary,
     TransactionSwapGroupDetail,
     TransactionInterpretedMeaning,
-} from '../models/types'
+} from '../../models/types'
 
 /**
  * Transforms a swap group detail from API response format to domain format.

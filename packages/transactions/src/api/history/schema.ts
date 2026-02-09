@@ -11,7 +11,7 @@
  */
 
 import { z } from 'zod'
-import { TransactionTypes } from '../models/types'
+import { TransactionTypes } from '../../models/types'
 
 /**
  * Helper to coerce string to number (API sometimes returns numeric fields as strings)

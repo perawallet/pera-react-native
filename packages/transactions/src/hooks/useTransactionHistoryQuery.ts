@@ -15,7 +15,7 @@ import type { Network } from '@perawallet/wallet-core-shared'
 import {
     fetchTransactionHistory,
     fetchMoreTransactions,
-} from '../api/endpoints'
+} from '../api/history'
 import { transactionQueryKeys } from './querykeys'
 import type {
     TransactionHistoryItem,

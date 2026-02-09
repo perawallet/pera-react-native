@@ -16,10 +16,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
 import { useTransactionHistoryQuery } from '../useTransactionHistoryQuery'
-import * as endpoints from '../../api/endpoints'
+import * as endpoints from '../../api/history'
 
 // Mock the endpoints module
-vi.mock('../../api/endpoints')
+vi.mock('../../api/history')
 
 describe('useTransactionHistoryQuery', () => {
     let queryClient: QueryClient
@@ -77,10 +77,10 @@ describe('useTransactionHistoryQuery', () => {
                 children,
             )
 
-        // Mock the fetchTransactionHistory function
-        ;(endpoints.fetchTransactionHistory as Mock).mockResolvedValue(
-            mockTransactionHistoryResult,
-        )
+            // Mock the fetchTransactionHistory function
+            ; (endpoints.fetchTransactionHistory as Mock).mockResolvedValue(
+                mockTransactionHistoryResult,
+            )
     })
 
     test('fetches transaction history for a given address', async () => {
@@ -116,9 +116,9 @@ describe('useTransactionHistoryQuery', () => {
 
     test('handles errors', async () => {
         const mockError = new Error('Failed to fetch transactions')
-        ;(endpoints.fetchTransactionHistory as Mock).mockRejectedValue(
-            mockError,
-        )
+            ; (endpoints.fetchTransactionHistory as Mock).mockRejectedValue(
+                mockError,
+            )
 
         const { result } = renderHook(
             () =>
@@ -198,9 +198,9 @@ describe('useTransactionHistoryQuery', () => {
             },
         }
 
-        ;(endpoints.fetchMoreTransactions as Mock).mockResolvedValue(
-            nextPageResult,
-        )
+            ; (endpoints.fetchMoreTransactions as Mock).mockResolvedValue(
+                nextPageResult,
+            )
 
         const { result } = renderHook(
             () =>

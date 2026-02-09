@@ -21,7 +21,7 @@ export {
     fetchMoreTransactions,
     type FetchTransactionHistoryParams,
     type FetchMoreTransactionsParams,
-} from './api/endpoints'
+} from './api/history'
 
 // Export CSV export functionality
 export {

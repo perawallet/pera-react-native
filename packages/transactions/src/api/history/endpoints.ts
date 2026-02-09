@@ -16,8 +16,8 @@ import {
     type TransactionHistoryApiResponse,
 } from './schema'
 import { transformTransactionHistoryResponse } from './transformers'
-import { DEFAULT_ITEMS_PER_PAGE } from '../models/constants'
-import type { TransactionHistoryResult } from '../models/types'
+import { DEFAULT_ITEMS_PER_PAGE } from '../../models/constants'
+import type { TransactionHistoryResult } from '../../models/types'
 
 /**
  * Parameters for fetching transaction history.
