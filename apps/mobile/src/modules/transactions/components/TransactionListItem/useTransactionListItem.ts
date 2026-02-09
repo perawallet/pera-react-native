@@ -16,12 +16,19 @@ import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import type { TransactionIconType } from '@modules/transactions/components/TransactionIcon'
 import { txTypeToIconTypeMap } from './types'
+import { Decimal } from 'decimal.js'
+
+const ALGO_DECIMALS = 6
 
 export type AmountDisplay = {
-    text: string
-    isPositive: boolean
-    isNegative: boolean
-    hasAlgoIcon?: boolean
+    /** Raw amount value for CurrencyDisplay */
+    value: Decimal
+    /** Currency code (e.g., 'ALGO', 'USDC') */
+    currency: string
+    /** Number of decimal places for this currency */
+    precision: number
+    /** Prefix to show (e.g., '+', '-'). Also determines styling: '+' = positive (green), '-' = negative (red) */
+    prefix: '+' | '-'
 }
 
 export type UseTransactionListItemParams = {
@@ -37,34 +44,29 @@ export type UseTransactionListItemResult = {
     handlePress: () => void
 }
 
-const ALGO_DECIMALS = 6
-
 /**
- * Formats a microAlgo amount to a display string.
+ * Creates an AmountDisplay for an ALGO amount.
  */
-const formatAlgoAmount = (
+const createAlgoAmount = (
     microAlgos: string,
     isOutgoing: boolean,
 ): AmountDisplay => {
-    const amount = (Number(microAlgos) || 0) / Math.pow(10, ALGO_DECIMALS)
-    const prefix = isOutgoing ? '-' : ''
-    const formatted = amount.toLocaleString('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 6,
-    })
+    const rawAmount = new Decimal(microAlgos || 0).div(
+        Decimal.pow(10, ALGO_DECIMALS),
+    )
 
     return {
-        text: `${prefix}${formatted}`,
-        isPositive: !isOutgoing && amount > 0,
-        isNegative: isOutgoing,
-        hasAlgoIcon: true,
+        value: rawAmount.abs(),
+        currency: 'ALGO',
+        precision: ALGO_DECIMALS,
+        prefix: isOutgoing ? '-' : '+',
     }
 }
 
 /**
- * Formats an asset amount with proper decimals.
+ * Creates an AmountDisplay for an asset amount.
  */
-const formatAssetAmount = (
+const createAssetAmount = (
     amount: string,
     decimals: number,
     unitName: string,
@@ -73,26 +75,15 @@ const formatAssetAmount = (
     const safeDecimals = isNaN(decimals)
         ? 0
         : Math.max(0, Math.min(19, decimals))
-    const numAmount = (Number(amount) || 0) / Math.pow(10, safeDecimals)
-    const prefix = isOutgoing ? '- ' : '+ '
-
-    const maxDigits = safeDecimals
-    const minDigits = Math.min(2, maxDigits)
-
-    const formatted = numAmount.toLocaleString('en-US', {
-        minimumFractionDigits: minDigits,
-        maximumFractionDigits: maxDigits,
-    })
-
-    const isAlgo = unitName === 'ALGO'
+    const rawAmount = new Decimal(amount || 0).div(
+        Decimal.pow(10, safeDecimals),
+    )
 
     return {
-        text: isAlgo
-            ? `${prefix}${formatted}`
-            : `${prefix}${formatted} ${unitName}`,
-        isPositive: !isOutgoing && numAmount > 0,
-        isNegative: isOutgoing,
-        hasAlgoIcon: isAlgo,
+        value: rawAmount.abs(),
+        currency: unitName,
+        precision: safeDecimals,
+        prefix: isOutgoing ? '-' : '+',
     }
 }
 
@@ -180,7 +171,7 @@ export const useTransactionListItem = ({
             transaction.txType === 'appl' &&
             transaction.innerTransactionCount
         ) {
-            return `${transaction.innerTransactionCount}inner txns`
+            return `${transaction.innerTransactionCount} inner txns`
         }
 
         // For payments and transfers, show the counterparty
@@ -206,25 +197,22 @@ export const useTransactionListItem = ({
         // Handle swap transactions
         if (transaction.swapGroupDetail) {
             const { amountOut, assetOutUnitName } = transaction.swapGroupDetail
-            const formattedAmount = (
-                Number(amountOut) / Math.pow(10, 6)
-            ).toFixed(2)
-            // For swaps, show what user receives
+            const rawAmount = new Decimal(amountOut || 0).div(
+                Decimal.pow(10, 6),
+            )
+
             result.push({
-                text:
-                    assetOutUnitName === 'ALGO'
-                        ? `${formattedAmount}`
-                        : `+ ${formattedAmount} ${assetOutUnitName}`,
-                isPositive: true,
-                isNegative: false,
-                hasAlgoIcon: assetOutUnitName === 'ALGO',
+                value: rawAmount.abs(),
+                currency: assetOutUnitName,
+                precision: 6,
+                prefix: '+',
             })
             return result
         }
 
         // Handle payment transactions
         if (transaction.txType === 'pay' && transaction.amount) {
-            result.push(formatAlgoAmount(transaction.amount, isOutgoing))
+            result.push(createAlgoAmount(transaction.amount, isOutgoing))
         }
 
         // Handle asset transfers
@@ -232,7 +220,7 @@ export const useTransactionListItem = ({
             const { decimals, unitName } = transaction.asset
             if (transaction.amount) {
                 result.push(
-                    formatAssetAmount(
+                    createAssetAmount(
                         transaction.amount,
                         decimals,
                         unitName,
@@ -250,7 +238,7 @@ export const useTransactionListItem = ({
         ) {
             const { decimals, unitName } = transaction.asset
             result.push(
-                formatAssetAmount(
+                createAssetAmount(
                     transaction.amount,
                     decimals,
                     unitName,
@@ -261,11 +249,14 @@ export const useTransactionListItem = ({
 
         // Always show fee for transactions that cost the user
         if (isOutgoing || transaction.txType === 'acfg') {
+            const feeAmount = new Decimal(transaction.fee || 0).div(
+                Decimal.pow(10, ALGO_DECIMALS),
+            )
             result.push({
-                text: `-${(Number(transaction.fee) / Math.pow(10, ALGO_DECIMALS)).toFixed(3)}`,
-                isPositive: false,
-                isNegative: true,
-                hasAlgoIcon: true,
+                value: feeAmount.abs(),
+                currency: 'ALGO',
+                precision: 3,
+                prefix: '-',
             })
         }
 

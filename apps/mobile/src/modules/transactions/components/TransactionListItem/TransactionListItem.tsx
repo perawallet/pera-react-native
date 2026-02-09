@@ -10,11 +10,12 @@
  limitations under the License
  */
 
-import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import { PWText, PWTouchableOpacity, PWView } from '@components/core'
+import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import { useStyles } from './styles'
-import { useTransactionListItem } from './useTransactionListItem'
+import { useTransactionListItem, AmountDisplay } from './useTransactionListItem'
 
 export type TransactionListItemProps = {
     /** The transaction data to display */
@@ -33,6 +34,12 @@ export const TransactionListItem = ({
             transaction,
             onPress,
         })
+
+    const getAmountStyle = (amount: AmountDisplay) => {
+        if (amount.prefix === '+') return styles.amountPositive
+        if (amount.prefix === '-') return styles.amountNegative
+        return styles.amount
+    }
 
     return (
         <PWTouchableOpacity
@@ -67,47 +74,22 @@ export const TransactionListItem = ({
                     </PWView>
 
                     <PWView style={styles.amountContainer}>
-                        {amounts.map(
-                            (
-                                amount: {
-                                    text: string
-                                    isPositive: boolean
-                                    isNegative: boolean
-                                    hasAlgoIcon?: boolean
-                                },
-                                index: number,
-                            ) => (
-                                <PWView
-                                    key={index}
-                                    style={styles.amountRow}
-                                >
-                                    {amount.hasAlgoIcon && (
-                                        <PWIcon
-                                            name='algo'
-                                            size='sm'
-                                            variant={
-                                                amount.isPositive
-                                                    ? 'positive'
-                                                    : amount.isNegative
-                                                      ? 'error'
-                                                      : 'primary'
-                                            }
-                                        />
-                                    )}
-                                    <PWText
-                                        style={[
-                                            styles.amount,
-                                            amount.isPositive &&
-                                                styles.amountPositive,
-                                            amount.isNegative &&
-                                                styles.amountNegative,
-                                        ]}
-                                    >
-                                        {amount.text}
-                                    </PWText>
-                                </PWView>
-                            ),
-                        )}
+                        {amounts.map((amount, index) => (
+                            <PWView
+                                key={index}
+                                style={styles.amountRow}
+                            >
+                                <CurrencyDisplay
+                                    value={amount.value}
+                                    currency={amount.currency}
+                                    precision={amount.precision}
+                                    prefix={amount.prefix}
+                                    showSymbol={amount.currency === 'ALGO'}
+                                    alignRight
+                                    style={getAmountStyle(amount)}
+                                />
+                            </PWView>
+                        ))}
                     </PWView>
                 </PWView>
             </PWView>

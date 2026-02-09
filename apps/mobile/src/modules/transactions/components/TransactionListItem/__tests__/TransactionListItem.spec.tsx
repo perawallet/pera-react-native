@@ -14,6 +14,7 @@ import { render, screen, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { TransactionListItem } from '../TransactionListItem'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
+import { Decimal } from 'decimal.js'
 
 const mockTransaction = {
     id: '1',
@@ -28,10 +29,10 @@ const mockResult = {
     subtitle: 'RECEIVER',
     amounts: [
         {
-            text: '1.00',
-            isPositive: true,
-            isNegative: false,
-            hasAlgoIcon: true,
+            value: new Decimal(1),
+            currency: 'ALGO',
+            precision: 6,
+            prefix: '+' as const,
         },
     ],
     handlePress: vi.fn(),
@@ -45,13 +46,25 @@ vi.mock('@src/utils/hooks/useSelectedAccount', () => ({
     useSelectedAccount: vi.fn(),
 }))
 
+vi.mock('@components/CurrencyDisplay', () => ({
+    CurrencyDisplay: ({
+        value,
+        currency,
+        prefix,
+    }: {
+        value: Decimal
+        currency: string
+        prefix?: string
+    }) => `${prefix || ''}${value.toString()} ${currency}`,
+}))
+
 describe('TransactionListItem', () => {
     it('renders title, subtitle and amount', () => {
         render(<TransactionListItem transaction={mockTransaction} />)
 
         expect(screen.getByText('Payment')).toBeTruthy()
         expect(screen.getByText('RECEIVER')).toBeTruthy()
-        expect(screen.getByText('1.00')).toBeTruthy()
+        expect(screen.getByText('+1 ALGO')).toBeTruthy()
     })
 
     it('calls handlePress when pressed', () => {
