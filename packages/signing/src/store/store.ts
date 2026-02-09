@@ -21,16 +21,8 @@ import {
     createLazyStore,
     DataStoreRegistry,
     type WithPersist,
-    AppError,
-    ErrorCategory,
-    ErrorSeverity,
-    ERROR_I18N_KEYS,
 } from '@perawallet/wallet-core-shared'
 import { v7 as uuidv7 } from 'uuid'
-import {
-    MAX_TRANSACTION_SIGN_REQUESTS,
-    MAX_DATA_SIGN_REQUESTS,
-} from '../constants'
 
 const STORE_NAME = 'signing-store'
 const lazy =
@@ -50,44 +42,6 @@ const createSigningStore = (storage: KeyValueStorageService) =>
             (set, get) => ({
                 ...initialState,
                 addSignRequest: (request: SignRequest) => {
-                    if (
-                        request.type === 'transactions' &&
-                        'txs' in request &&
-                        request.txs.length > MAX_TRANSACTION_SIGN_REQUESTS
-                    ) {
-                        throw new AppError(
-                            ERROR_I18N_KEYS.SIGNING_TRANSACTION_LIMIT_EXCEEDED,
-                            {
-                                severity: ErrorSeverity.MEDIUM,
-                                category: ErrorCategory.VALIDATION,
-                                recoverable: false,
-                                params: {
-                                    count: request.txs.length,
-                                    max: MAX_TRANSACTION_SIGN_REQUESTS,
-                                },
-                            },
-                        )
-                    }
-
-                    if (
-                        request.type === 'arbitrary-data' &&
-                        'data' in request &&
-                        request.data.length > MAX_DATA_SIGN_REQUESTS
-                    ) {
-                        throw new AppError(
-                            ERROR_I18N_KEYS.SIGNING_DATA_LIMIT_EXCEEDED,
-                            {
-                                severity: ErrorSeverity.MEDIUM,
-                                category: ErrorCategory.VALIDATION,
-                                recoverable: false,
-                                params: {
-                                    count: request.data.length,
-                                    max: MAX_DATA_SIGN_REQUESTS,
-                                },
-                            },
-                        )
-                    }
-
                     const existing = get().pendingSignRequests ?? []
                     const newRequest = {
                         ...request,
