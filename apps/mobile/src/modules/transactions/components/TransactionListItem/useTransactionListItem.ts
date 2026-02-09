@@ -21,7 +21,7 @@ import {
 import type { TransactionIconType } from '@modules/transactions/components/TransactionIcon'
 import { Decimal } from 'decimal.js'
 
-const ALGO_DECIMALS = 6
+import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 
 export type AmountDisplay = {
     /** Raw amount value for CurrencyDisplay */
@@ -55,13 +55,13 @@ const createAlgoAmount = (
     isOutgoing: boolean,
 ): AmountDisplay => {
     const rawAmount = new Decimal(microAlgos || 0).div(
-        Decimal.pow(10, ALGO_DECIMALS),
+        Decimal.pow(10, ALGO_ASSET.decimals),
     )
 
     return {
         value: rawAmount.abs(),
         currency: 'ALGO',
-        precision: ALGO_DECIMALS,
+        precision: ALGO_ASSET.decimals,
         prefix: isOutgoing ? '-' : '+',
     }
 }
@@ -247,7 +247,7 @@ export const useTransactionListItem = ({
         // Always show fee for transactions that cost the user
         if (isOutgoing || transaction.txType === 'acfg') {
             const feeAmount = new Decimal(transaction.fee || 0).div(
-                Decimal.pow(10, ALGO_DECIMALS),
+                Decimal.pow(10, ALGO_ASSET.decimals),
             )
             result.push({
                 value: feeAmount.abs(),
