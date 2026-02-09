@@ -14,7 +14,6 @@ export const name = '@perawallet/wallet-core-transactions'
 
 export * from './models'
 export * from './hooks'
-export * from './utils'
 
 // Export API functions for advanced usage
 export {
@@ -28,8 +27,6 @@ export {
 export {
     fetchTransactionsCsv,
     CsvExportError,
-    formatISODate,
-    isValidISODate,
     CSV_MIME_TYPE,
     DEFAULT_CSV_FILENAME,
     type DateRange,

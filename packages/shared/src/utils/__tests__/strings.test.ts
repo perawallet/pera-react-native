@@ -12,7 +12,53 @@
 
 import { describe, test, expect } from 'vitest'
 import { encodeToBase64, decodeFromBase64 } from '../strings'
-import { formatCurrency, formatDatetime, formatRelativeTime } from '../strings'
+import {
+    formatCurrency,
+    formatDatetime,
+    formatRelativeTime,
+    formatMicroAlgos,
+    formatAssetAmount,
+} from '../strings'
+
+describe('utils/strings - formatMicroAlgos', () => {
+    test('converts microAlgos to ALGOs', () => {
+        expect(formatMicroAlgos('1000000')).toBe('1.000000')
+    })
+
+    test('handles fractional amounts', () => {
+        expect(formatMicroAlgos('1500000')).toBe('1.500000')
+    })
+
+    test('respects custom decimal places', () => {
+        expect(formatMicroAlgos('1500000', 2)).toBe('1.50')
+    })
+
+    test('handles large amounts', () => {
+        expect(formatMicroAlgos('1000000000000')).toBe('1000000.000000')
+    })
+
+    test('handles zero', () => {
+        expect(formatMicroAlgos('0')).toBe('0.000000')
+    })
+})
+
+describe('utils/strings - formatAssetAmount', () => {
+    test('formats with asset decimals', () => {
+        expect(formatAssetAmount('1000000', 6)).toBe('1.000000')
+    })
+
+    test('formats with zero decimals', () => {
+        expect(formatAssetAmount('1000', 0)).toBe('1000')
+    })
+
+    test('formats with custom display decimals', () => {
+        expect(formatAssetAmount('1000000', 6, 2)).toBe('1.00')
+    })
+
+    test('handles large amounts with many decimals', () => {
+        expect(formatAssetAmount('1000000000000000000', 18, 4)).toBe('1.0000')
+    })
+})
 
 describe('utils/strings - base64 encoding', () => {
     test('encodeToBase64 encodes bytes correctly', () => {

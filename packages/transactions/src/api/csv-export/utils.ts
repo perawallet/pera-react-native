@@ -10,42 +10,10 @@
  limitations under the License
  */
 
+import { isValidISODate } from '@perawallet/wallet-core-shared'
 import type { DateRange } from './types'
 import { DEFAULT_CSV_FILENAME } from './types'
 
-/**
- * Validates that a string is in the correct ISO 8601 date format (YYYY-MM-DD).
- */
-export const isValidISODate = (dateString: string): boolean => {
-    const isoDateRegex = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/
-
-    if (!isoDateRegex.test(dateString)) {
-        return false
-    }
-
-    // Additional validation: ensure it's a real date (e.g., not 2024-02-30)
-    const date = new Date(dateString)
-    const datePieces = dateString.split('-')
-    const year = parseInt(datePieces[0], 10)
-    const month = parseInt(datePieces[1], 10)
-    const day = parseInt(datePieces[2], 10)
-
-    return (
-        date.getFullYear() === year &&
-        date.getMonth() + 1 === month &&
-        date.getDate() === day
-    )
-}
-
-/**
- * Formats a JavaScript Date object to ISO 8601 date string (YYYY-MM-DD).
- */
-export const formatISODate = (date: Date): string => {
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-}
 
 /**
  * Generates a filename for the CSV export.
