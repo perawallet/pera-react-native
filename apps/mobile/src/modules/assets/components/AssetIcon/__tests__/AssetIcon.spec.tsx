@@ -36,7 +36,8 @@ describe('AssetIcon', () => {
             peraMetadata: { logo: 'https://logo.url' },
         } as unknown as PeraAsset
         render(<AssetIcon asset={asset} />)
-        expect(screen.getByTestId('RNEImage')).toBeTruthy()
+        // Check that component renders without error (PWImage is rendered)
+        expect(screen.getByTestId('PWImage')).toBeTruthy()
     })
 
     it('renders first letter for asset without logo', () => {

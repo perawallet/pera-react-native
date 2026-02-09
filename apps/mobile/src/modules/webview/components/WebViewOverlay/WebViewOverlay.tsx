@@ -11,10 +11,11 @@
  */
 
 import React from 'react'
-import { PWBottomSheet, PWView, PWWebView } from '@components/core'
+import { PWBottomSheet, PWView } from '@components/core'
 import { useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useWebViewStack, WebViewRequest } from '../../hooks'
+import { PWWebView } from '../PWWebView'
 
 const flexStyle = { flex: 1 }
 

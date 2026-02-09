@@ -17,3 +17,13 @@ export const partition = <T>(array: T[], size: number) => {
     }
     return chunks
 }
+
+export const partitionBy = <T>(array: T[], predicate: (item: T) => string) => {
+    const chunks: Record<string, T[]> = {}
+    for (const item of array) {
+        const key = predicate(item)
+        chunks[key] = chunks[key] || []
+        chunks[key].push(item)
+    }
+    return Object.values(chunks)
+}

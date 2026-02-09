@@ -144,7 +144,7 @@ export const useTransactionSigner = () => {
 
     const signTransactions = useCallback(
         async (
-            txnGroup: PeraTransactionGroup,
+            txnGroup: PeraTransaction[],
             indexesToSign: number[],
         ): Promise<PeraSignedTransaction[]> => {
             // we want to group the transactions by account for signing efficiency

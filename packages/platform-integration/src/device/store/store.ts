@@ -20,7 +20,6 @@ import type { DeviceState } from '../models'
 import {
     createLazyStore,
     DataStoreRegistry,
-    logger,
     type Network,
     Networks,
     type WithPersist,
@@ -52,7 +51,8 @@ const rehydrateDeviceSlice = (
     return persistedState
 }
 
-const lazy = createLazyStore<WithPersist<StoreApi<DeviceState>, unknown>>()
+const lazy =
+    createLazyStore<WithPersist<StoreApi<DeviceState>, unknown>>(STORE_NAME)
 
 export const useDeviceStore: UseBoundStore<
     WithPersist<StoreApi<DeviceState>, unknown>
@@ -87,7 +87,7 @@ export const createDeviceStore = (storage: KeyValueStorageService) =>
                     }),
             }),
             {
-                name: 'device-store',
+                name: STORE_NAME,
                 storage: createJSONStorage(() => storage),
                 version: 1,
                 partialize: state => ({
@@ -107,11 +107,9 @@ export const createDeviceStore = (storage: KeyValueStorageService) =>
     )
 
 export const initDeviceStore = () => {
-    logger.debug('Initializing device store')
     const storage = useKeyValueStorageService()
     const realStore = createDeviceStore(storage)
     lazy.init(realStore, () => realStore.getState().resetState())
-    logger.debug('Device store initialized')
 }
 
 export const clearDeviceStore = () => lazy.clear()

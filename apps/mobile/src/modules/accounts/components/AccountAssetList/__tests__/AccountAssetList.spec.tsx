@@ -56,6 +56,7 @@ vi.mock('@shopify/flash-list', () => ({
 vi.mock('@perawallet/wallet-core-assets', async () => ({
     useAssetsQuery: vi.fn(() => ({ data: new Map() })),
     ALGO_ASSET: { decimals: 6 },
+    ALGO_ASSET_ID: 0,
 }))
 
 describe('AccountAssetList', () => {

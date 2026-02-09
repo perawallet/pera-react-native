@@ -15,13 +15,9 @@ import { describe, it, expect, vi } from 'vitest'
 import { TransactionIcon, TransactionIconType } from '../TransactionIcon'
 import { PWRoundIcon } from '@components/core'
 
-vi.mock('@components/core', async importOriginal => {
-    const actual = await importOriginal<typeof import('@components/core')>()
-    return {
-        ...actual,
-        PWRoundIcon: vi.fn(() => null),
-    }
-})
+vi.mock('@components/core', () => ({
+    PWRoundIcon: vi.fn(() => null),
+}))
 
 describe('TransactionIcon', () => {
     it('renders correct icon for payment type', () => {

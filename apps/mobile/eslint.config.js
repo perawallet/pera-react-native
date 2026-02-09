@@ -70,6 +70,7 @@ export default [
       'prefer-const': 'error',
       'no-var': 'error',
       'no-duplicate-imports': 'error',
+      'unused-imports/no-unused-imports': 'error',
       'max-lines': ['warn', { max: 300, skipBlankLines: true }],
     },
     settings: {

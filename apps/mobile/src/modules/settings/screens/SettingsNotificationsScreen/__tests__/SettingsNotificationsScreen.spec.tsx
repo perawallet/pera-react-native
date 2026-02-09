@@ -90,7 +90,7 @@ describe('SettingsNotificationsScreen', () => {
         })
 
         const { getByTestId } = render(<SettingsNotificationsScreen />)
-        const switchBtn = getByTestId('RNESwitch')
+        const switchBtn = getByTestId('PWSwitch')
 
         fireEvent.click(switchBtn)
 

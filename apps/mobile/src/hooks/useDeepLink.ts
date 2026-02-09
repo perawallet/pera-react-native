@@ -16,7 +16,7 @@ import { useToast } from './useToast'
 import { logger } from '@perawallet/wallet-core-shared'
 import { parseDeeplink } from './deeplink/parser'
 import { DeeplinkType } from './deeplink/types'
-import { useSigningRequest } from '@perawallet/wallet-core-blockchain'
+import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import {
     useSelectedAccountAddress,
     WalletAccount,

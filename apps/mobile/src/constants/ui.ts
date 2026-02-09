@@ -22,6 +22,8 @@ export const TAB_ANIMATION_CONFIG = {
     useNativeDriver: true,
 }
 
+export const SLIDE_ANIMATION_DURATION = 250
+
 export const SCREEN_ANIMATION_TYPE = 'default'
 export const SCREEN_ANIMATION_DURATION = 150
 export const SCREEN_ANIMATION_CONFIG: NativeStackNavigationOptions = {
