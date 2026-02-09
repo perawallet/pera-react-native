@@ -19,15 +19,6 @@ let lastQueryClientCall: any = null
 let mockGetResponse: { data: string; status: number } | null = null
 let mockGetError: Error | null = null
 
-// Mock the config module
-vi.mock('@perawallet/wallet-core-config', () => ({
-    config: {
-        mainnetBackendUrl: 'https://mainnet.api.perawallet.app',
-        testnetBackendUrl: 'https://testnet.api.perawallet.app',
-        backendAPIKey: 'test-api-key',
-    },
-}))
-
 // Mock the core shared module
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const actual =
