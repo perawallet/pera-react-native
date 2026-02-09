@@ -23,7 +23,6 @@ import {
     ALGO_ASSET,
 } from '@perawallet/wallet-core-assets'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import Decimal from 'decimal.js'
 import { PWText, PWView } from '@components/core'
 import {
     DEFAULT_PRECISION,

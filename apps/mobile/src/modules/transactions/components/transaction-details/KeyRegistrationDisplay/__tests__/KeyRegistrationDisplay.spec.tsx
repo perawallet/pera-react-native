@@ -23,8 +23,8 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
     const { Decimal } = await import('decimal.js')
     return {
         ...actual,
-        microAlgosToAlgos: vi.fn(
-            (amount: bigint) => new Decimal(amount.toString()).div(1_000_000),
+        microAlgosToAlgos: vi.fn((amount: bigint) =>
+            new Decimal(amount.toString()).div(1_000_000),
         ),
         encodeAlgorandAddress: vi.fn(() => 'ENCODED_ADDRESS'),
     }

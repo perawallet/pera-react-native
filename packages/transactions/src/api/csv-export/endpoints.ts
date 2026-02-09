@@ -10,10 +10,7 @@
  limitations under the License
  */
 
-import {
-    Network,
-    queryClient,
-} from '@perawallet/wallet-core-shared'
+import { Network, queryClient } from '@perawallet/wallet-core-shared'
 import type { ExportCsvParams, CsvExportResult } from './types'
 import { generateFilename, buildCsvQueryParams, countCsvRows } from './utils'
 

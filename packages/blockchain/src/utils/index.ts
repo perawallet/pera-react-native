@@ -45,7 +45,9 @@ export const algosToMicroAlgos = (
     return displayUnitsToBaseUnits(algos, 6)
 }
 
-export const formatMicroAlgos = (microAlgos: bigint | number | string): string => {
+export const formatMicroAlgos = (
+    microAlgos: bigint | number | string,
+): string => {
     return microAlgosToAlgos(microAlgos).toNumber().toLocaleString(undefined, {
         minimumFractionDigits: 0,
         maximumFractionDigits: 6,

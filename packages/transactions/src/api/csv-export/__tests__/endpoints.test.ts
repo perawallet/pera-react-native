@@ -21,10 +21,9 @@ let mockGetError: Error | null = null
 
 // Mock the core shared module
 vi.mock('@perawallet/wallet-core-shared', async () => {
-    const actual =
-        await vi.importActual<
-            typeof import('@perawallet/wallet-core-shared')
-        >('@perawallet/wallet-core-shared')
+    const actual = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared')
+    >('@perawallet/wallet-core-shared')
     return {
         ...actual,
         queryClient: vi.fn(async (config: any) => {

@@ -24,7 +24,6 @@ import { TransactionNoteRow } from '../TransactionNoteRow/TransactionNoteRow'
 import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnings'
 import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import Decimal from 'decimal.js'
 import { InnerTransactionsPanel } from './InnerTransactionsPanel'
 import { AppCallDetailsPanel } from './AppCallDetailsPanel'
 

@@ -14,7 +14,6 @@ import { isValidISODate } from '@perawallet/wallet-core-shared'
 import type { DateRange } from './types'
 import { DEFAULT_CSV_FILENAME } from './types'
 
-
 /**
  * Generates a filename for the CSV export.
  */

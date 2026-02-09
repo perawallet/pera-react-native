@@ -12,10 +12,7 @@
 
 import { useInfiniteQuery } from '@tanstack/react-query'
 import type { Network } from '@perawallet/wallet-core-shared'
-import {
-    fetchTransactionHistory,
-    fetchMoreTransactions,
-} from '../api/history'
+import { fetchTransactionHistory, fetchMoreTransactions } from '../api/history'
 import { transactionQueryKeys } from './querykeys'
 import type {
     TransactionHistoryItem,

@@ -28,8 +28,8 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
             if (tx.assetConfigTransaction?.assetId === 0n) return 'create'
             return 'update'
         }),
-        microAlgosToAlgos: vi.fn(
-            (amount: bigint) => new Decimal(amount.toString()).div(1_000_000),
+        microAlgosToAlgos: vi.fn((amount: bigint) =>
+            new Decimal(amount.toString()).div(1_000_000),
         ),
         encodeAlgorandAddress: vi.fn(() => 'ENCODED_ADDRESS'),
     }
