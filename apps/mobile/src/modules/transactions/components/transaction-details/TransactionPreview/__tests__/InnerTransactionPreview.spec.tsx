@@ -12,7 +12,7 @@
 
 import { render, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import { InnerTransactionPreview } from '../InnerTransactionPreview'
+import { TransactionPreview } from '../TransactionPreview'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 
 vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
@@ -34,7 +34,7 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
     }
 })
 
-describe('InnerTransactionPreview', () => {
+describe('TransactionPreview', () => {
     const mockPaymentTransaction = {
         sender: 'ENCODED_ADDRESS_TEST123',
         paymentTransaction: {
@@ -64,7 +64,7 @@ describe('InnerTransactionPreview', () => {
         } as unknown as PeraDisplayableTransaction
 
         const { container } = render(
-            <InnerTransactionPreview transaction={mockUnknownTransaction} />,
+            <TransactionPreview transaction={mockUnknownTransaction} />,
         )
 
         expect(container.textContent).toContain('ENCODED')
@@ -73,7 +73,7 @@ describe('InnerTransactionPreview', () => {
     it('calls onPress when pressed', () => {
         const onPress = vi.fn()
         const { container } = render(
-            <InnerTransactionPreview
+            <TransactionPreview
                 transaction={mockPaymentTransaction}
                 onPress={onPress}
             />,
@@ -88,7 +88,7 @@ describe('InnerTransactionPreview', () => {
 
     it('displays payment amount for payment transactions', () => {
         const { container } = render(
-            <InnerTransactionPreview transaction={mockPaymentTransaction} />,
+            <TransactionPreview transaction={mockPaymentTransaction} />,
         )
 
         expect(container.textContent).toContain('ALGO')
@@ -96,7 +96,7 @@ describe('InnerTransactionPreview', () => {
 
     it('renders without crashing for app call transaction', () => {
         const { container } = render(
-            <InnerTransactionPreview transaction={mockAppCallTransaction} />,
+            <TransactionPreview transaction={mockAppCallTransaction} />,
         )
 
         expect(container).toBeTruthy()

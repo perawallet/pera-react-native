@@ -15,20 +15,26 @@ import { TransactionIcon } from '@modules/transactions/components/TransactionIco
 import { useLanguage } from '@hooks/useLanguage'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { useStyles } from './styles'
+import { useMemo } from 'react'
 
-type GroupPreviewProps = {
+type GroupPreviewItemProps = {
     transactions: PeraDisplayableTransaction[]
-    groupIndex: number
     onPress: () => void
 }
 
-export const GroupPreview = ({
+export const GroupPreviewItem = ({
     transactions,
-    groupIndex,
     onPress,
-}: GroupPreviewProps) => {
+}: GroupPreviewItemProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const groupId = useMemo(
+        () =>
+            Buffer.from(transactions.at(0)?.group ?? '')
+                .toString('hex')
+                .slice(0, 10),
+        [transactions],
+    )
 
     return (
         <PWTouchableOpacity
@@ -41,18 +47,26 @@ export const GroupPreview = ({
             />
             <PWView style={styles.groupPreviewContent}>
                 <PWText style={styles.groupPreviewTitle}>
-                    {t('transactions.group.group_number', {
-                        number: groupIndex + 1,
-                    })}
+                    {t('transactions.group.group_number')}
                 </PWText>
-                <PWText
-                    variant='caption'
-                    style={styles.groupPreviewSubtitle}
-                >
-                    {t('transactions.group.transactions_count', {
-                        count: transactions.length,
-                    })}
-                </PWText>
+                <PWView style={styles.groupPreviewSubtitleContainer}>
+                    <PWText
+                        variant='caption'
+                        style={styles.groupPreviewSubtitle}
+                    >
+                        {t('transactions.group.transactions_count', {
+                            count: transactions.length,
+                        })}
+                    </PWText>
+                    <PWText
+                        variant='caption'
+                        style={styles.groupPreviewSubtitle}
+                    >
+                        {t('transactions.group.group_id', {
+                            groupId,
+                        })}
+                    </PWText>
+                </PWView>
             </PWView>
             <PWIcon
                 name='chevron-right'

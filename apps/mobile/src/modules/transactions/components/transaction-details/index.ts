@@ -28,5 +28,5 @@ export type { KeyRegistrationDisplayProps } from './KeyRegistrationDisplay'
 export { AppCallTransactionDisplay } from './AppCallTransactionDisplay'
 export type { AppCallTransactionDisplayProps } from './AppCallTransactionDisplay'
 
-export { InnerTransactionPreview } from './InnerTransactionPreview'
-export type { InnerTransactionPreviewProps } from './InnerTransactionPreview'
+export { TransactionPreview } from './TransactionPreview'
+export type { TransactionPreviewProps } from './TransactionPreview'
