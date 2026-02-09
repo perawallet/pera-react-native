@@ -11,34 +11,22 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { ScaledSize } from 'react-native'
 
-export const useStyles = makeStyles(theme => {
+export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
+    const height = dimensions.height - 100
     return {
         container: {
+            height,
+            paddingVertical: theme.spacing.md,
+            borderTopStartRadius: theme.spacing.sm,
+            borderTopEndRadius: theme.spacing.sm,
+            overflow: 'hidden',
+        },
+        tabItem: {
+            width: '100%',
             flex: 1,
-            justifyContent: 'space-between',
-            paddingBottom: theme.spacing.lg,
-        },
-        qrContainer: {
-            marginTop: theme.spacing.xl,
-            alignItems: 'center',
-            justifyContent: 'center',
-            flex: 1,
-        },
-        addressContainer: {
-            alignItems: 'center',
-            gap: theme.spacing.md,
-            paddingHorizontal: theme.spacing.xl,
-            marginTop: theme.spacing.xl,
-        },
-        buttonContainer: {
-            gap: theme.spacing.md,
-            marginTop: theme.spacing.xl,
             paddingHorizontal: theme.spacing.lg,
-        },
-        address: {
-            color: theme.colors.textGray,
-            textAlign: 'center',
         },
     }
 })

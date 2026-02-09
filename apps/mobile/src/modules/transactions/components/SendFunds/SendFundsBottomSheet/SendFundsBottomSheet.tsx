@@ -85,6 +85,7 @@ export const SendFundsBottomSheet = ({
                             canSelectAsset ? 'AssetSelection' : 'InputAmount'
                         }
                         screenOptions={{ swipeEnabled: false }}
+                        tabBarHidden
                     >
                         <Tab.Screen name='AssetSelection'>
                             {({ navigation }) => (

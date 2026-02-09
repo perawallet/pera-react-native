@@ -31,13 +31,13 @@ vi.mock('@react-navigation/native', async importOriginal => {
 })
 
 vi.mock(
-    '@modules/transactions/components/SendFunds/PWBottomSheet/SendFundsBottomSheet',
+    '@modules/transactions/components/SendFunds/SendFundsBottomSheet/SendFundsBottomSheet',
     () => ({
         SendFundsBottomSheet: () => null,
     }),
 )
 vi.mock(
-    '@modules/transactions/components/ReceiveFunds/PWBottomSheet/ReceiveFundsBottomSheet',
+    '@modules/transactions/components/ReceiveFunds/ReceiveFundsBottomSheet/ReceiveFundsBottomSheet',
     () => ({
         ReceiveFundsBottomSheet: () => null,
     }),

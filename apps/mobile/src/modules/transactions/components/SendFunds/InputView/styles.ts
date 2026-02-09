@@ -41,15 +41,19 @@ export const useStyles = makeStyles(theme => {
             alignItems: 'center',
             gap: theme.spacing.md,
             marginBottom: theme.spacing.lg,
+            paddingHorizontal: theme.spacing.lg,
         },
         assetDisplay: {
             borderColor: theme.colors.layerGrayLighter,
             borderWidth: theme.borders.sm,
             borderRadius: theme.spacing.xs,
             padding: theme.spacing.md,
+            marginHorizontal: theme.spacing.lg,
         },
         nextButton: {
-            width: '100%',
+            width: 'auto',
+            alignSelf: 'stretch',
+            marginHorizontal: theme.spacing.lg,
         },
         secondaryButton: {
             paddingVertical: theme.spacing.xs,

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+<<<<<<<< HEAD:packages/signing/src/index.ts
 export const name = '@perawallet/wallet-core-signing'
 
 export * from './models'
@@ -17,3 +18,17 @@ export * from './hooks'
 export * from './utils'
 
 export { registerSigningStore } from './store'
+========
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+
+export type RequestStructure = 'single' | 'group' | 'group-list'
+
+export const classifyTransactionGroups = (
+    groups: PeraDisplayableTransaction[][],
+): RequestStructure => {
+    if (groups.length === 1 && groups[0]?.length === 1) return 'single'
+    if (groups.length === 1) return 'group'
+    if (groups.length > 1) return 'group-list'
+    return 'single'
+}
+>>>>>>>> main:packages/signing/src/utils/classification.ts

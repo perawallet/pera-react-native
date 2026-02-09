@@ -684,7 +684,6 @@
             "multiple_groups_title": "Multiple Transaction Groups",
             "group_number": "Transaction Group",
             "group_id": "Group ID: {{groupId}}",
-            "transactions_count": "{{count}} Transaction(s)",
             "transactions_count_one": "{{count}} Transaction",
             "transactions_count_other": "{{count}} Transactions",
             "groups_count_one": "{{count}} Group",

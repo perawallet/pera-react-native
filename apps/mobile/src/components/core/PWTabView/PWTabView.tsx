@@ -19,13 +19,17 @@ export const createPWTabNavigator = <ParamList extends ParamListBase>() => {
 
     return {
         Navigator: ({
+            tabBarHidden,
             ...props
         }: React.ComponentProps<typeof Tab.Navigator> & {
             children: React.ReactNode
+            tabBarHidden?: boolean
         }) => {
             return (
                 <Tab.Navigator
-                    tabBar={tabBarProps => <PWTabBar {...tabBarProps} />}
+                    tabBar={tabBarProps =>
+                        tabBarHidden ? null : <PWTabBar {...tabBarProps} />
+                    }
                     {...props}
                 />
             )

@@ -156,7 +156,7 @@ vi.mock('../../AccountAssetList', () => ({
 }))
 
 vi.mock(
-    '@modules/transactions/components/SendFunds/PWBottomSheet/SendFundsBottomSheet',
+    '@modules/transactions/components/SendFunds/SendFundsBottomSheet/SendFundsBottomSheet',
     () => ({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         SendFundsBottomSheet: ({ isVisible }: any) =>
@@ -164,7 +164,7 @@ vi.mock(
     }),
 )
 vi.mock(
-    '@modules/transactions/components/ReceiveFunds/PWBottomSheet/ReceiveFundsBottomSheet',
+    '@modules/transactions/components/ReceiveFunds/ReceiveFundsBottomSheet/ReceiveFundsBottomSheet',
     () => ({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ReceiveFundsBottomSheet: ({ isVisible }: any) =>
