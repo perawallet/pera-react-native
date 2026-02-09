@@ -21,6 +21,10 @@ import {
     createLazyStore,
     DataStoreRegistry,
     type WithPersist,
+    AppError,
+    ErrorCategory,
+    ErrorSeverity,
+    ERROR_I18N_KEYS,
 } from '@perawallet/wallet-core-shared'
 import { v7 as uuidv7 } from 'uuid'
 import {
@@ -51,8 +55,17 @@ const createSigningStore = (storage: KeyValueStorageService) =>
                         'txs' in request &&
                         request.txs.length > MAX_TRANSACTION_SIGN_REQUESTS
                     ) {
-                        throw new Error(
-                            `Transaction limit exceeded: ${request.txs.length} transactions exceeds the maximum of ${MAX_TRANSACTION_SIGN_REQUESTS}`,
+                        throw new AppError(
+                            ERROR_I18N_KEYS.SIGNING_TRANSACTION_LIMIT_EXCEEDED,
+                            {
+                                severity: ErrorSeverity.MEDIUM,
+                                category: ErrorCategory.VALIDATION,
+                                recoverable: false,
+                                params: {
+                                    count: request.txs.length,
+                                    max: MAX_TRANSACTION_SIGN_REQUESTS,
+                                },
+                            },
                         )
                     }
 
@@ -61,8 +74,17 @@ const createSigningStore = (storage: KeyValueStorageService) =>
                         'data' in request &&
                         request.data.length > MAX_DATA_SIGN_REQUESTS
                     ) {
-                        throw new Error(
-                            `Data sign limit exceeded: ${request.data.length} items exceeds the maximum of ${MAX_DATA_SIGN_REQUESTS}`,
+                        throw new AppError(
+                            ERROR_I18N_KEYS.SIGNING_DATA_LIMIT_EXCEEDED,
+                            {
+                                severity: ErrorSeverity.MEDIUM,
+                                category: ErrorCategory.VALIDATION,
+                                recoverable: false,
+                                params: {
+                                    count: request.data.length,
+                                    max: MAX_DATA_SIGN_REQUESTS,
+                                },
+                            },
                         )
                     }
 

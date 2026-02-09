@@ -1,11 +1,7 @@
 {
     "account_menu": {
         "title": "Accounts",
-        "inbox": "Inbox",
-        "add_account": "Add Account",
-        "sort": "Sort",
-        "no_inbox_items": "No Inbox Items",
-        "no_inbox_body": "There are currently no pending inbox items"
+        "sort": "Sort"
     },
     "address_entry": {
         "scan_qr": "Scan QR Code",
@@ -83,7 +79,6 @@
         },
         "button_panel": {
             "swap": "Swap",
-            "stake": "Stake",
             "send": "Send",
             "receive": "Receive",
             "more": "More"
@@ -260,6 +255,11 @@
             "permission_body": "You have received an unauthorized request from an app. Please check the app and try again.",
             "invalid_session": "Invalid Session",
             "invalid_session_body": "You have received an invalid session request from an app. Please check the app and try again."
+        },
+        "signing": {
+            "title": "An error occurred processing the signing request",
+            "transaction_limit_exceeded": "Too many transactions: {{count}} exceeds the maximum of {{max}}.",
+            "data_limit_exceeded": "Too many data items: {{count}} exceeds the maximum of {{max}}."
         },
         "webview": {
             "invalid_method": "Invalid method {{method}}",
@@ -549,10 +549,7 @@
             "body": "Data Signing Request",
             "details_title": "Arbitrary Signing Details",
             "show_details": "Show Details",
-            "algod_not_valid": "The request has an invalid signing recipient.",
-            "account_not_found": "The requested signing account was not found.",
             "on_behalf_of": "Signing On Behalf Of",
-            "signature_not_found": "An error occurred during the signing process.",
             "success_title": "Request Approved",
             "success_body": "The data has been signed."
         },
@@ -566,10 +563,6 @@
             "fee": "Fee",
             "message": "Message",
             "data": "Raw Data"
-        },
-        "impact": {
-            "you_receive": "YOU WILL RECEIVE",
-            "you_spend": "YOU WILL SPEND"
         },
         "transaction_view": {
             "invalid_title": "Invalid Transaction",
@@ -688,14 +681,10 @@
             "inner_transactions_other": "{{count}} Inner Transactions"
         },
         "group": {
-            "single_group_title": "Transaction Group",
-            "multiple_groups_title": "Multiple Transaction Groups",
             "group_number": "Transaction Group",
             "group_id": "Group ID: {{groupId}}",
             "transactions_count_one": "{{count}} Transaction",
-            "transactions_count_other": "{{count}} Transactions",
-            "groups_count_one": "{{count}} Group",
-            "groups_count_other": "{{count}} Groups"
+            "transactions_count_other": "{{count}} Transactions"
         },
         "summary": {
             "payment_to": "Payment to",

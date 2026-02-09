@@ -18,6 +18,7 @@ import {
     MAX_TRANSACTION_SIGN_REQUESTS,
     MAX_DATA_SIGN_REQUESTS,
 } from '../../constants'
+import { AppError, ERROR_I18N_KEYS } from '@perawallet/wallet-core-shared'
 
 const mockStorage = {
     getItem: vi.fn(),
@@ -179,7 +180,22 @@ describe('SigningStore', () => {
             act(() => {
                 result.current.addSignRequest(request)
             })
-        }).toThrow('Transaction limit exceeded')
+        }).toThrow(AppError)
+
+        try {
+            act(() => {
+                result.current.addSignRequest(request)
+            })
+        } catch (e) {
+            expect(e).toBeInstanceOf(AppError)
+            expect((e as AppError).getI18nKey()).toBe(
+                ERROR_I18N_KEYS.SIGNING_TRANSACTION_LIMIT_EXCEEDED,
+            )
+            expect((e as AppError).metadata.params).toEqual({
+                count: MAX_TRANSACTION_SIGN_REQUESTS + 1,
+                max: MAX_TRANSACTION_SIGN_REQUESTS,
+            })
+        }
 
         expect(result.current.pendingSignRequests).toHaveLength(0)
     })
@@ -224,7 +240,22 @@ describe('SigningStore', () => {
             act(() => {
                 result.current.addSignRequest(request)
             })
-        }).toThrow('Data sign limit exceeded')
+        }).toThrow(AppError)
+
+        try {
+            act(() => {
+                result.current.addSignRequest(request)
+            })
+        } catch (e) {
+            expect(e).toBeInstanceOf(AppError)
+            expect((e as AppError).getI18nKey()).toBe(
+                ERROR_I18N_KEYS.SIGNING_DATA_LIMIT_EXCEEDED,
+            )
+            expect((e as AppError).metadata.params).toEqual({
+                count: MAX_DATA_SIGN_REQUESTS + 1,
+                max: MAX_DATA_SIGN_REQUESTS,
+            })
+        }
 
         expect(result.current.pendingSignRequests).toHaveLength(0)
     })
