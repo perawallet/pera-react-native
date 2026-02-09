@@ -14,6 +14,7 @@ import {
     PeraDisplayableTransaction,
     getTransactionType,
     microAlgosToAlgos,
+    baseUnitsToDisplayUnits,
 } from '@perawallet/wallet-core-blockchain'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
@@ -53,7 +54,7 @@ export const TxTypeDetails = ({ tx }: { tx: PeraDisplayableTransaction }) => {
                         currency={'ALGO'}
                         precision={ALGO_ASSET.decimals}
                         minPrecision={DEFAULT_PRECISION}
-                        value={Decimal(amount)}
+                        value={amount}
                         showSymbol
                         variant='caption'
                         style={styles.secondaryText}
@@ -70,9 +71,10 @@ export const TxTypeDetails = ({ tx }: { tx: PeraDisplayableTransaction }) => {
                         currency={asset?.unitName ?? ''}
                         precision={asset?.decimals ?? 6}
                         minPrecision={DEFAULT_PRECISION}
-                        value={Decimal(
+                        value={baseUnitsToDisplayUnits(
                             tx.assetTransferTransaction.amount,
-                        ).dividedBy(new Decimal(10 ** (asset?.decimals ?? 6)))}
+                            asset?.decimals ?? 6,
+                        )}
                         showSymbol
                         variant='caption'
                         style={styles.secondaryText}

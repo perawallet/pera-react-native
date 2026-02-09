@@ -54,10 +54,8 @@ export const PaymentSummaryHeader = ({
                     currency='ALGO'
                     precision={ALGO_ASSET.decimals}
                     minPrecision={DEFAULT_PRECISION}
-                    value={Decimal(
-                        microAlgosToAlgos(
-                            transaction.paymentTransaction?.amount ?? 0n,
-                        ),
+                    value={microAlgosToAlgos(
+                        transaction.paymentTransaction?.amount ?? 0n,
                     )}
                     showSymbol
                     variant='h1'

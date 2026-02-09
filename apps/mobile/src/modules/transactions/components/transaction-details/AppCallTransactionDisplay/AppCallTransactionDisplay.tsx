@@ -83,9 +83,7 @@ export const AppCallTransactionDisplay = ({
                         currency='ALGO'
                         precision={6}
                         minPrecision={2}
-                        value={Decimal(
-                            microAlgosToAlgos(transaction.fee ?? 0n),
-                        )}
+                        value={microAlgosToAlgos(transaction.fee ?? 0n)}
                         showSymbol
                     />
                 </KeyValueRow>

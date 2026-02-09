@@ -16,6 +16,8 @@ import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import {
     getTransactionType,
+    microAlgosToAlgos,
+    baseUnitsToDisplayUnits,
     type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import type { TransactionIconType } from '@modules/transactions/components/TransactionIcon'
@@ -54,9 +56,7 @@ const createAlgoAmount = (
     microAlgos: string,
     isOutgoing: boolean,
 ): AmountDisplay => {
-    const rawAmount = new Decimal(microAlgos || 0).div(
-        Decimal.pow(10, ALGO_ASSET.decimals),
-    )
+    const rawAmount = microAlgosToAlgos(microAlgos || 0)
 
     return {
         value: rawAmount.abs(),
@@ -78,9 +78,7 @@ const createAssetAmount = (
     const safeDecimals = isNaN(decimals)
         ? 0
         : Math.max(0, Math.min(19, decimals))
-    const rawAmount = new Decimal(amount || 0).div(
-        Decimal.pow(10, safeDecimals),
-    )
+    const rawAmount = baseUnitsToDisplayUnits(amount || 0, safeDecimals)
 
     return {
         value: rawAmount.abs(),
@@ -194,9 +192,7 @@ export const useTransactionListItem = ({
         // Handle swap transactions
         if (transaction.swapGroupDetail) {
             const { amountOut, assetOutUnitName } = transaction.swapGroupDetail
-            const rawAmount = new Decimal(amountOut || 0).div(
-                Decimal.pow(10, 6),
-            )
+            const rawAmount = baseUnitsToDisplayUnits(amountOut || 0, 6)
 
             result.push({
                 value: rawAmount.abs(),
@@ -246,9 +242,7 @@ export const useTransactionListItem = ({
 
         // Always show fee for transactions that cost the user
         if (isOutgoing || transaction.txType === 'acfg') {
-            const feeAmount = new Decimal(transaction.fee || 0).div(
-                Decimal.pow(10, ALGO_ASSET.decimals),
-            )
+            const feeAmount = microAlgosToAlgos(transaction.fee || 0)
             result.push({
                 value: feeAmount.abs(),
                 currency: 'ALGO',
