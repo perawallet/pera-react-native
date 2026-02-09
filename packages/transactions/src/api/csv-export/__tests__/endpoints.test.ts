@@ -14,35 +14,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { fetchTransactionsCsv, CsvExportError } from '../endpoints'
 import { Networks } from '@perawallet/wallet-core-shared'
 
-// Track the last ky.get call for assertions
-let lastKyGetCall: {
-    endpoint: string
-    options: Record<string, unknown>
-} | null = null
-let mockGetResponse: { text: () => Promise<string>; status: number } | null =
-    null
+// Track the last queryClient call for assertions
+let lastQueryClientCall: any = null
+let mockGetResponse: { data: string; status: number } | null = null
 let mockGetError: Error | null = null
-
-// Mock ky module
-vi.mock('ky', () => {
-    const mockKyInstance = {
-        get: vi.fn(
-            async (endpoint: string, options: Record<string, unknown>) => {
-                lastKyGetCall = { endpoint, options }
-                if (mockGetError) {
-                    throw mockGetError
-                }
-                return mockGetResponse
-            },
-        ),
-    }
-
-    return {
-        default: {
-            create: vi.fn(() => mockKyInstance),
-        },
-    }
-})
 
 // Mock the config module
 vi.mock('@perawallet/wallet-core-config', () => ({
@@ -53,11 +28,21 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     },
 }))
 
-// Mock the logger
+// Mock the core shared module
 vi.mock('@perawallet/wallet-core-shared', async () => {
-    const actual = await vi.importActual('@perawallet/wallet-core-shared')
+    const actual =
+        await vi.importActual<
+            typeof import('@perawallet/wallet-core-shared')
+        >('@perawallet/wallet-core-shared')
     return {
         ...actual,
+        queryClient: vi.fn(async (config: any) => {
+            lastQueryClientCall = config
+            if (mockGetError) {
+                throw mockGetError
+            }
+            return mockGetResponse
+        }),
         logger: {
             error: vi.fn(),
             debug: vi.fn(),
@@ -73,10 +58,10 @@ const MOCK_CSV_CONTENT = `Date,Type,Amount,Asset
 
 describe('fetchTransactionsCsv', () => {
     beforeEach(() => {
-        lastKyGetCall = null
+        lastQueryClientCall = null
         mockGetError = null
         mockGetResponse = {
-            text: () => Promise.resolve(MOCK_CSV_CONTENT),
+            data: MOCK_CSV_CONTENT,
             status: 200,
         }
     })
@@ -103,9 +88,9 @@ describe('fetchTransactionsCsv', () => {
             network: Networks.mainnet,
         })
 
-        expect(lastKyGetCall).not.toBeNull()
-        expect(lastKyGetCall?.endpoint).toContain(VALID_ADDRESS)
-        expect(lastKyGetCall?.endpoint).toContain('export-history')
+        expect(lastQueryClientCall).not.toBeNull()
+        expect(lastQueryClientCall?.url).toContain(VALID_ADDRESS)
+        expect(lastQueryClientCall?.url).toContain('export-history')
     })
 
     it('includes date range in search params', async () => {
@@ -118,7 +103,7 @@ describe('fetchTransactionsCsv', () => {
             },
         })
 
-        expect(lastKyGetCall?.options.searchParams).toEqual({
+        expect(lastQueryClientCall?.params).toEqual({
             start_date: '2024-01-01',
             end_date: '2024-12-31',
         })
@@ -156,7 +141,7 @@ describe('fetchTransactionsCsv', () => {
 
     it('throws CsvExportError for empty response', async () => {
         mockGetResponse = {
-            text: () => Promise.resolve(''),
+            data: '',
             status: 200,
         }
 
@@ -177,7 +162,7 @@ describe('fetchTransactionsCsv', () => {
             signal: controller.signal,
         })
 
-        expect(lastKyGetCall?.options.signal).toBe(controller.signal)
+        expect(lastQueryClientCall?.signal).toBe(controller.signal)
     })
 })
 
