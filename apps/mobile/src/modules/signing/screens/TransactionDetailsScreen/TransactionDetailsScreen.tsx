@@ -63,58 +63,33 @@ export const TransactionDetailsScreen = () => {
         navigation.push('TransactionDetails', { transaction: tx })
     }
 
-    if (isLoading && !transaction) {
-        return (
-            <PWView style={styles.container}>
-                <PWToolbar
-                    center={
-                        <PWText variant='h4'>
-                            {t('signing.transactions.details')}
-                        </PWText>
-                    }
-                    left={
-                        navigation.canGoBack() ? (
-                            <PWIcon
-                                name='chevron-left'
-                                onPress={navigation.goBack}
-                            />
-                        ) : undefined
-                    }
-                />
+    const renderContent = () => {
+        if (transaction) {
+            return (
+                <ScrollView contentContainerStyle={styles.contentContainer}>
+                    <TransactionDisplay
+                        transaction={transaction}
+                        onInnerTransactionsPress={handleInnerTransactionPress}
+                    />
+                </ScrollView>
+            )
+        }
+
+        if (isLoading) {
+            return (
                 <PWView style={styles.loadingContainer}>
                     <ActivityIndicator size='large' />
                 </PWView>
-            </PWView>
-        )
-    }
+            )
+        }
 
-    if ((isError && !transaction) || (!isLoading && !transaction)) {
         return (
-            <PWView style={styles.container}>
-                <PWToolbar
-                    center={
-                        <PWText variant='h4'>
-                            {t('signing.transactions.details')}
-                        </PWText>
-                    }
-                    left={
-                        navigation.canGoBack() ? (
-                            <PWIcon
-                                name='chevron-left'
-                                onPress={navigation.goBack}
-                            />
-                        ) : undefined
-                    }
-                />
-                <EmptyView
-                    title={t('errors.general.title')}
-                    body={t('errors.general.body')}
-                />
-            </PWView>
+            <EmptyView
+                title={t('errors.general.title')}
+                body={t('errors.general.body')}
+            />
         )
     }
-
-    if (!transaction) return null
 
     return (
         <PWView style={styles.container}>
@@ -133,12 +108,7 @@ export const TransactionDetailsScreen = () => {
                     ) : undefined
                 }
             />
-            <ScrollView contentContainerStyle={styles.contentContainer}>
-                <TransactionDisplay
-                    transaction={transaction}
-                    onInnerTransactionsPress={handleInnerTransactionPress}
-                />
-            </ScrollView>
+            {renderContent()}
         </PWView>
     )
 }
