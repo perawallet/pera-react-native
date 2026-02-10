@@ -45,6 +45,7 @@ const aliasMap = {
     '@assets': path.resolve(projectRoot, 'assets'),
     '@theme': path.resolve(projectRoot, 'src/theme'),
     '@layouts': path.resolve(projectRoot, 'src/layouts'),
+    '@utils': path.resolve(projectRoot, 'src/utils'),
 };
 
 // Crypto polyfill map

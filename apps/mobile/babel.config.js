@@ -34,6 +34,7 @@ module.exports = function (api) {
           "@modules": "./src/modules",
           "@assets": "./assets",
           "@theme": "./src/theme",
+          "@utils": "./src/utils",
         },
       },
     ],

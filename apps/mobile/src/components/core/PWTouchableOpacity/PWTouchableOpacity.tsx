@@ -11,6 +11,7 @@
  */
 
 import { TouchableOpacity, TouchableOpacityProps } from 'react-native'
+import { getTestProps } from '../../../utils/test-id-helper'
 
 export type PWTouchableOpacityProps = {} & TouchableOpacityProps
 
@@ -19,12 +20,15 @@ const DEFAULT_ACTIVE_OPACITY = 0.8
 export const PWTouchableOpacity = ({
     children,
     activeOpacity,
+    testID,
     ...rest
 }: PWTouchableOpacityProps) => {
     return (
         <TouchableOpacity
             {...rest}
+            {...getTestProps(testID)}
             activeOpacity={activeOpacity ?? DEFAULT_ACTIVE_OPACITY}
+            accessible={true}
         >
             {children}
         </TouchableOpacity>

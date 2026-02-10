@@ -15,15 +15,16 @@ import { useStyles } from './styles'
 import { PWIcon, IconName, PWIconVariant } from '@components/core/PWIcon'
 import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import { ActivityIndicator, StyleProp, ViewStyle } from 'react-native'
+import { getTestProps } from '../../../utils/test-id-helper'
 
 export type PWButtonProps = {
     variant:
-        | 'primary'
-        | 'secondary'
-        | 'helper'
-        | 'link'
-        | 'destructive'
-        | 'errorLink'
+    | 'primary'
+    | 'secondary'
+    | 'helper'
+    | 'link'
+    | 'destructive'
+    | 'errorLink'
     title?: string
     icon?: IconName
     iconRight?: IconName
@@ -33,6 +34,7 @@ export type PWButtonProps = {
     isDisabled?: boolean
     isLoading?: boolean
     paddingStyle?: 'none' | 'dense' | 'normal'
+    testID?: string
 }
 
 const ICON_VARIANT_MAP: Record<string, PWIconVariant> = {
@@ -54,6 +56,7 @@ export const PWButton = ({
     isDisabled,
     isLoading,
     paddingStyle,
+    testID,
     ...props
 }: PWButtonProps) => {
     const styles = useStyles({
@@ -74,6 +77,7 @@ export const PWButton = ({
             style={[styles.buttonStyle, style]}
             onPress={onPress}
             disabled={isDisabled}
+            {...getTestProps(testID)}
             {...props}
         >
             {!!icon && !isLoading && (
