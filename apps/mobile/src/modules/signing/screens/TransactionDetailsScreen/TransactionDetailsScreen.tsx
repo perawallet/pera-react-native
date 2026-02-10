@@ -48,13 +48,12 @@ export const TransactionDetailsScreen = () => {
 
     const { transaction: paramTransaction, transactionId } = route.params
 
-    const { transaction: fetchedTransaction, isLoading } =
-        useTransactionDetailQuery({
-            transactionId: transactionId || paramTransaction?.id || '',
-            isEnabled: !paramTransaction && !!transactionId,
-        })
+    const { data: fetchedTransaction, isLoading } = useTransactionDetailQuery({
+        transactionId: transactionId || paramTransaction?.id || '',
+        isEnabled: !paramTransaction && !!transactionId,
+    })
 
-    const transaction = paramTransaction || fetchedTransaction
+    const transaction = paramTransaction || fetchedTransaction || null
 
     const handleInnerTransactionPress = (tx: PeraDisplayableTransaction) => {
         navigation.push('TransactionDetails', { transaction: tx })

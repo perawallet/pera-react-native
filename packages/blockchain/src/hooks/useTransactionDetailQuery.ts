@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, type UseQueryResult } from '@tanstack/react-query'
 import { useAlgorandClient } from './useAlgorandClient'
 import { getTransactionDetailQueryKey } from './querykeys'
 import { mapIndexerTxToDisplayableTransaction } from '../utils/transactions'
@@ -21,12 +21,8 @@ type UseTransactionDetailQueryParams = {
     isEnabled?: boolean
 }
 
-type UseTransactionDetailQueryResult = {
-    transaction: PeraDisplayableTransaction | null
-    isLoading: boolean
-    isError: boolean
-    error: Error | null
-}
+type UseTransactionDetailQueryResult =
+    UseQueryResult<PeraDisplayableTransaction>
 
 export const useTransactionDetailQuery = ({
     transactionId,
@@ -34,7 +30,7 @@ export const useTransactionDetailQuery = ({
 }: UseTransactionDetailQueryParams): UseTransactionDetailQueryResult => {
     const algokit = useAlgorandClient()
 
-    const query = useQuery({
+    return useQuery({
         queryKey: getTransactionDetailQueryKey(transactionId),
         queryFn: async () => {
             const response =
@@ -45,11 +41,4 @@ export const useTransactionDetailQuery = ({
         },
         enabled: isEnabled && !!transactionId,
     })
-
-    return {
-        transaction: query.data ?? null,
-        isLoading: query.isLoading,
-        isError: query.isError,
-        error: query.error,
-    }
 }
