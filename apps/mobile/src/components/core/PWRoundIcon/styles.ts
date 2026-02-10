@@ -33,8 +33,8 @@ export const useStyles = makeStyles((theme, props: PWRoundIconProps) => {
                 ? theme.colors.buttonHelperBg
                 : theme.colors.buttonPrimaryBg
             : variant === 'helper'
-                ? theme.colors.buttonSquareBg
-                : theme.colors.layerGrayLighter
+              ? theme.colors.buttonSquareBg
+              : theme.colors.layerGrayLighter
 
     return {
         container: {

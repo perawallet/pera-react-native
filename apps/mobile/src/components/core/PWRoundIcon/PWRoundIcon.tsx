@@ -65,7 +65,8 @@ export const PWRoundIcon = (props: PWRoundIconProps) => {
         if (theme.mode === 'dark' && variant === 'primary') {
             return 'brand'
         }
-        return (ICON_VARIANT_MAP[variant as string] || 'primary') as PWIconVariant
+        return (ICON_VARIANT_MAP[variant as string] ||
+            'primary') as PWIconVariant
     }, [theme.mode, variant])
 
     return (
