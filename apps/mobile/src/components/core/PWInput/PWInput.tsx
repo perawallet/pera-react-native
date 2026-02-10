@@ -36,6 +36,7 @@ export type PWInputProps = {
     blurOnSubmit?: boolean
     label?: string
     labelStyle?: RNEInputProps['labelStyle']
+    placeholderTextColor?: string
 }
 
 export const PWInput = ({
@@ -54,7 +55,6 @@ export const PWInput = ({
             inputContainerStyle={[styles.inputContainer, inputContainerStyle]}
             inputStyle={[styles.input, inputStyle]}
             labelStyle={[styles.label, labelStyle]}
-            placeholderTextColor={undefined} // Let theme handle it unless overridden
         />
     )
 }

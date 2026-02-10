@@ -51,7 +51,7 @@ export const useStyles = makeStyles(theme => {
         },
         indicator: {
             flex: 1,
-            backgroundColor: theme.colors.white,
+            backgroundColor: theme.colors.background,
             height: theme.spacing.xxl,
             margin: theme.spacing.xs,
             borderRadius: theme.spacing.xxl,
@@ -64,7 +64,7 @@ export const useStyles = makeStyles(theme => {
             textTransform: 'none',
         },
         activeTitle: {
-            color: theme.colors.black,
+            color: theme.colors.textMain,
         },
         inactiveTitle: {
             color: theme.colors.textGray,

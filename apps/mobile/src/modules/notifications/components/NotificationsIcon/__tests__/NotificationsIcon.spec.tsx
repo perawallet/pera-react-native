@@ -34,13 +34,13 @@ vi.mock('@perawallet/wallet-core-notifications', () => ({
 }))
 
 describe('NotificationsIcon', () => {
-    it('renders bell icon when there are no new notifications', () => {
+    it('renders inbox icon when there are no new notifications', () => {
         const { getByTestId, queryByTestId } = render(<NotificationsIcon />)
         expect(getByTestId('icon-inbox')).toBeTruthy()
         expect(queryByTestId('notification-badge')).toBeNull()
     })
 
-    it('renders bell-with-badge icon when there are new notifications', () => {
+    it('renders inbox-with-badge icon when there are new notifications', () => {
         vi.mocked(useNotificationStatus).mockReturnValue({
             data: { hasNewNotification: true },
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
