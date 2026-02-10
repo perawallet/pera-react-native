@@ -27,7 +27,7 @@ import {
     TransactionFilter,
     type CustomDateRange,
 } from '../TransactionsFilterBottomSheet'
-import type { AccountStackParamsList } from '@modules/accounts/routes/types'
+import type { AppStackParamList } from '@routes/types'
 import { groupTransactionsByDate, getFilterTimes } from './utils'
 
 /**
@@ -92,7 +92,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     const account = useSelectedAccount()
     const { network } = useNetwork()
     const navigation =
-        useNavigation<NativeStackNavigationProp<AccountStackParamsList>>()
+        useNavigation<NativeStackNavigationProp<AppStackParamList>>()
 
     const [activeFilter, setActiveFilter] = useState<TransactionFilter>(
         TransactionFilter.AllTime,

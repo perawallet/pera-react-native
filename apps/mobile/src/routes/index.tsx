@@ -27,10 +27,11 @@ import { useShowOnboarding } from '@hooks/useShowOnboarding'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { getNavigationTheme } from '@theme/theme'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import { TransactionDetailsScreen } from '@modules/signing/screens/TransactionDetailsScreen'
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
 
 import { RootStackParamList } from './types'
-import { fullScreenLayout } from '@layouts/index'
+import { fullScreenLayout, safeAreaLayout } from '@layouts/index'
 export type { RootStackParamList } from './types'
 
 const RootStack = createNativeStackNavigator<RootStackParamList>()
@@ -86,6 +87,14 @@ export const MainRoutes = () => {
                             <RootStack.Screen
                                 name='Staking'
                                 component={StakingScreen}
+                            />
+                            <RootStack.Screen
+                                name='TransactionDetails'
+                                layout={safeAreaLayout}
+                                component={TransactionDetailsScreen}
+                                options={{
+                                    headerShown: false,
+                                }}
                             />
                         </>
                     )}
