@@ -10,19 +10,4 @@
  limitations under the License
  */
 
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import type { StackScreenProps } from '@react-navigation/stack'
-
-export type SigningStackParamList = {
-    SingleTransaction: undefined
-    TransactionList: undefined
-    TransactionDetails: {
-        transaction?: PeraDisplayableTransaction
-        transactionId?: string
-    }
-    GroupDetail: { groupIndex: number }
-    SecuritySettings: undefined
-}
-
-export type SigningStackScreenProps<T extends keyof SigningStackParamList> =
-    StackScreenProps<SigningStackParamList, T>
+export { SecurityGuardBottomSheet } from './SecurityGuardBottomSheet'

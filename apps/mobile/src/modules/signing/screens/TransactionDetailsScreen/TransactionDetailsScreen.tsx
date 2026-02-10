@@ -41,8 +41,8 @@ type TransactionDetailsRouteProp = RouteProp<
 
 export const TransactionDetailsScreen = () => {
     const styles = useStyles()
-    const { t } = useLanguage()
     const navigation = useNavigation<NavigationProp>()
+    const { t } = useLanguage()
     const route = useRoute<TransactionDetailsRouteProp>()
 
     const { transaction: paramTransaction, transactionId } = route.params

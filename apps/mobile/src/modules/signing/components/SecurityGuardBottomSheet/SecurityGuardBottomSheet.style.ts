@@ -13,33 +13,20 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-        gap: theme.spacing.xl,
-        padding: theme.spacing.xl,
-    },
-    section: {
-        gap: theme.spacing.xl,
-    },
-    sectionTitle: {
-        color: theme.colors.textGray,
-    },
-    listItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    listItemContent: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
+    bottomSheetActions: {
         gap: theme.spacing.md,
+        width: '100%',
     },
-    listItemSubtitle: {
-        color: theme.colors.textGray,
+    bottomSheetMessage: {
+        textAlign: 'center',
+        marginBottom: theme.spacing.md,
     },
-    expandablePanelContent: {
-        gap: theme.spacing.xl,
+    bottomSheetIcon: {
+        marginVertical: theme.spacing.md,
+    },
+    bottomSheetContainer: {
+        padding: theme.spacing.xl,
+        gap: theme.spacing.lg,
+        alignItems: 'center',
     },
 }))

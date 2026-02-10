@@ -88,7 +88,7 @@ export const SigningRoutes = ({ request }: SigningRoutesProps) => {
                 options={{ title: 'transactions.group.group_number' }}
             />
             <Stack.Screen
-                name='RekeySettings'
+                name='SecuritySettings'
                 component={SettingsSecurityScreen}
                 options={{ title: 'settings.security.antispam_section' }}
             />

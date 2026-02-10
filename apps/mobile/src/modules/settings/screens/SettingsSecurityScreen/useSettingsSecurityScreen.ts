@@ -24,12 +24,14 @@ type UseSettingsSecurityScreenResult = {
     isBiometricsAvailable: boolean
     isAdvancedSecurityEnabled: boolean
     isRekeySupportEnabled: boolean
+    isAssetFreezeSupportEnabled: boolean
     pinViewMode: PinEntryMode | null
     handlePinToggle: (value: boolean) => void
     handleBiometricToggle: (value: boolean) => Promise<boolean>
     handleChangePinPress: () => void
     handleAdvancedSecurityToggle: (value: boolean) => void
     handleRekeyToggle: (value: boolean) => void
+    handleAssetFreezeToggle: (value: boolean) => void
     pinSetSuccess: () => void
     clearPinViewMode: () => void
 }
@@ -123,12 +125,19 @@ export const useSettingsSecurityScreen =
         const isRekeySupportEnabled = !!getPreference(
             UserPreferences.rekeySupportEnabled,
         )
+        const isAssetFreezeSupportEnabled = !!getPreference(
+            UserPreferences.assetFreezeSupportEnabled,
+        )
 
         const handleAdvancedSecurityToggle = useCallback(
             (value: boolean) => {
                 setPreference(UserPreferences.advancedSecurityEnabled, value)
                 if (!value) {
                     setPreference(UserPreferences.rekeySupportEnabled, false)
+                    setPreference(
+                        UserPreferences.assetFreezeSupportEnabled,
+                        false,
+                    )
                 }
             },
             [setPreference],
@@ -141,18 +150,27 @@ export const useSettingsSecurityScreen =
             [setPreference],
         )
 
+        const handleAssetFreezeToggle = useCallback(
+            (value: boolean) => {
+                setPreference(UserPreferences.assetFreezeSupportEnabled, value)
+            },
+            [setPreference],
+        )
+
         return {
             isPinEnabled,
             isBiometricEnabled,
             isBiometricsAvailable,
             isAdvancedSecurityEnabled,
             isRekeySupportEnabled,
+            isAssetFreezeSupportEnabled,
             pinViewMode,
             handlePinToggle,
             handleBiometricToggle,
             handleChangePinPress,
             handleAdvancedSecurityToggle,
             handleRekeyToggle,
+            handleAssetFreezeToggle,
             clearPinViewMode,
             pinSetSuccess,
         }

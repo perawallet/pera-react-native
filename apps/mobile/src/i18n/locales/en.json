@@ -547,7 +547,9 @@
             "biometric_error_title": "Failed to authenticate.",
             "biometric_error_message": "We were unable to authenticate you.  Please try again.",
             "advanced_security_settings": "Advanced Security Settings",
-            "advanced_security_settings_description": "Enable advanced security options such as re-key support."
+            "advanced_security_settings_description": "Enable advanced security options such as re-key support.",
+            "enable_asset_freeze_support": "Enable Asset Freeze Support",
+            "enable_asset_freeze_support_description": "Once you enable this, you can confirm transaction requests to freeze or unfreeze assets on accounts. This may prevent the target account from transacting with the specified asset."
         },
         "notifications": {
             "push_notifications": "Push Notifications",
@@ -652,7 +654,16 @@
             "rekey_confirm_go_to_settings": "Go to Advanced Settings",
             "rekey_are_you_sure_title": "Are you sure?",
             "rekey_are_you_sure_description": "This signature includes rekey transaction, giving control over your accounts to another address. Please make sure that you understand the implications before proceeding.",
-            "rekey_are_you_sure_continue": "Continue"
+            "rekey_are_you_sure_continue": "Continue",
+            "asset_freeze_warning": "This transaction freezes or unfreezes assets for the following address: {{address}}.",
+            "asset_freeze_group_warning": "This transaction group freezes or unfreezes assets for one of the accounts in this group. Please review carefully before signing.",
+            "asset_freeze_warning_bold": "This may prevent the target account from transacting with the frozen asset. Please review carefully before signing.",
+            "asset_freeze_confirm_title": "Enable Asset Freeze Support",
+            "asset_freeze_confirm_description": "Asset freeze transactions can prevent accounts from transacting with specific assets. In order to confirm this transaction, you need to enable \"Asset Freeze Support\" via app settings.",
+            "asset_freeze_confirm_go_to_settings": "Go to Advanced Settings",
+            "asset_freeze_are_you_sure_title": "Are you sure?",
+            "asset_freeze_are_you_sure_description": "This signature includes an asset freeze transaction, which may prevent the target account from transacting with the specified asset. Please make sure that you understand the implications before proceeding.",
+            "asset_freeze_are_you_sure_continue": "Continue"
         },
         "unknown": {
             "title": "Unsupported Transaction Type",

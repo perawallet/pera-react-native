@@ -73,7 +73,7 @@ describe('useSigningActionButtons', () => {
         })
     })
 
-    it('signs directly when there are no rekey warnings', async () => {
+    it('signs directly when there are no guarded warnings', async () => {
         const { result } = renderHook(() => useSigningActionButtons())
 
         await act(async () => {
@@ -81,10 +81,10 @@ describe('useSigningActionButtons', () => {
         })
 
         expect(mockSignAndSendRequest).toHaveBeenCalledWith(mockRequest)
-        expect(result.current.isRekeyGuardOpen).toBe(false)
+        expect(result.current.isSecurityGuardOpen).toBe(false)
     })
 
-    it('opens rekey guard instead of signing when rekey warnings exist', () => {
+    it('opens security guard instead of signing when rekey warnings exist', () => {
         ;(useSigningRequestAnalysis as Mock).mockReturnValue({
             allTransactions: [],
             warnings: [
@@ -102,11 +102,113 @@ describe('useSigningActionButtons', () => {
             result.current.handleSignAndSend()
         })
 
-        expect(result.current.isRekeyGuardOpen).toBe(true)
+        expect(result.current.isSecurityGuardOpen).toBe(true)
+        expect(result.current.guardedWarningType).toBe('rekey')
         expect(mockSignAndSendRequest).not.toHaveBeenCalled()
     })
 
-    it('proceeds with signing when rekey guard is confirmed', async () => {
+    it('opens security guard when asset-freeze warnings exist', () => {
+        ;(useSigningRequestAnalysis as Mock).mockReturnValue({
+            allTransactions: [],
+            warnings: [
+                {
+                    type: 'asset-freeze',
+                    senderAddress: 'addr1',
+                    targetAddress: 'addr2',
+                },
+            ],
+        })
+
+        const { result } = renderHook(() => useSigningActionButtons())
+
+        act(() => {
+            result.current.handleSignAndSend()
+        })
+
+        expect(result.current.isSecurityGuardOpen).toBe(true)
+        expect(result.current.guardedWarningType).toBe('asset-freeze')
+        expect(mockSignAndSendRequest).not.toHaveBeenCalled()
+    })
+
+    it('prioritizes disabled type when both rekey and asset-freeze exist', () => {
+        mockGetPreference.mockImplementation((key: string) => {
+            if (key === 'rekey-support-enabled') return true
+            return undefined
+        })
+        ;(useSigningRequestAnalysis as Mock).mockReturnValue({
+            allTransactions: [],
+            warnings: [
+                {
+                    type: 'rekey',
+                    senderAddress: 'addr1',
+                    targetAddress: 'addr2',
+                },
+                {
+                    type: 'asset-freeze',
+                    senderAddress: 'addr1',
+                    targetAddress: 'addr3',
+                },
+            ],
+        })
+
+        const { result } = renderHook(() => useSigningActionButtons())
+
+        // rekey is enabled, asset-freeze is not — guard should show asset-freeze
+        expect(result.current.guardedWarningType).toBe('asset-freeze')
+    })
+
+    it('shows rekey guard when both exist and neither is enabled', () => {
+        ;(useSigningRequestAnalysis as Mock).mockReturnValue({
+            allTransactions: [],
+            warnings: [
+                {
+                    type: 'rekey',
+                    senderAddress: 'addr1',
+                    targetAddress: 'addr2',
+                },
+                {
+                    type: 'asset-freeze',
+                    senderAddress: 'addr1',
+                    targetAddress: 'addr3',
+                },
+            ],
+        })
+
+        const { result } = renderHook(() => useSigningActionButtons())
+
+        // both disabled — rekey comes first in priority order
+        expect(result.current.guardedWarningType).toBe('rekey')
+    })
+
+    it('shows rekey confirmation when both exist and both are enabled', () => {
+        mockGetPreference.mockImplementation((key: string) => {
+            if (key === 'rekey-support-enabled') return true
+            if (key === 'asset-freeze-support-enabled') return true
+            return undefined
+        })
+        ;(useSigningRequestAnalysis as Mock).mockReturnValue({
+            allTransactions: [],
+            warnings: [
+                {
+                    type: 'rekey',
+                    senderAddress: 'addr1',
+                    targetAddress: 'addr2',
+                },
+                {
+                    type: 'asset-freeze',
+                    senderAddress: 'addr1',
+                    targetAddress: 'addr3',
+                },
+            ],
+        })
+
+        const { result } = renderHook(() => useSigningActionButtons())
+
+        // both enabled — show "are you sure?" for rekey (first in priority)
+        expect(result.current.guardedWarningType).toBe('rekey')
+    })
+
+    it('proceeds with signing when security guard is confirmed', async () => {
         ;(useSigningRequestAnalysis as Mock).mockReturnValue({
             allTransactions: [],
             warnings: [
@@ -124,13 +226,13 @@ describe('useSigningActionButtons', () => {
             result.current.handleSignAndSend()
         })
 
-        expect(result.current.isRekeyGuardOpen).toBe(true)
+        expect(result.current.isSecurityGuardOpen).toBe(true)
 
         await act(async () => {
-            result.current.handleRekeyConfirm()
+            result.current.handleSecurityGuardConfirm()
         })
 
-        expect(result.current.isRekeyGuardOpen).toBe(false)
+        expect(result.current.isSecurityGuardOpen).toBe(false)
         expect(mockSignAndSendRequest).toHaveBeenCalledWith(mockRequest)
     })
 
@@ -153,14 +255,14 @@ describe('useSigningActionButtons', () => {
         })
 
         act(() => {
-            result.current.handleRekeyGoToSettings()
+            result.current.handleSecurityGuardGoToSettings()
         })
 
-        expect(result.current.isRekeyGuardOpen).toBe(false)
-        expect(mockNavigate).toHaveBeenCalledWith('RekeySettings')
+        expect(result.current.isSecurityGuardOpen).toBe(false)
+        expect(mockNavigate).toHaveBeenCalledWith('SecuritySettings')
     })
 
-    it('closes rekey guard without signing when dismissed', () => {
+    it('closes security guard without signing when dismissed', () => {
         ;(useSigningRequestAnalysis as Mock).mockReturnValue({
             allTransactions: [],
             warnings: [
@@ -178,13 +280,37 @@ describe('useSigningActionButtons', () => {
             result.current.handleSignAndSend()
         })
 
-        expect(result.current.isRekeyGuardOpen).toBe(true)
+        expect(result.current.isSecurityGuardOpen).toBe(true)
 
         act(() => {
-            result.current.closeRekeyGuard()
+            result.current.closeSecurityGuard()
         })
 
-        expect(result.current.isRekeyGuardOpen).toBe(false)
+        expect(result.current.isSecurityGuardOpen).toBe(false)
         expect(mockSignAndSendRequest).not.toHaveBeenCalled()
+    })
+
+    it('does not trigger guard for close warnings only', async () => {
+        ;(useSigningRequestAnalysis as Mock).mockReturnValue({
+            allTransactions: [],
+            warnings: [
+                {
+                    type: 'close',
+                    senderAddress: 'addr1',
+                    targetAddress: 'addr2',
+                },
+            ],
+        })
+
+        const { result } = renderHook(() => useSigningActionButtons())
+
+        expect(result.current.guardedWarningType).toBeNull()
+
+        await act(async () => {
+            result.current.handleSignAndSend()
+        })
+
+        expect(mockSignAndSendRequest).toHaveBeenCalledWith(mockRequest)
+        expect(result.current.isSecurityGuardOpen).toBe(false)
     })
 })

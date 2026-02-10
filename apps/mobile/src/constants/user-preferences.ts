@@ -16,6 +16,7 @@ export const UserPreferences = {
     developerMenuEnabled: 'developer-menu-enabled',
     advancedSecurityEnabled: 'advanced-security-enabled',
     rekeySupportEnabled: 'rekey-support-enabled',
+    assetFreezeSupportEnabled: 'asset-freeze-support-enabled',
 
     //prompts (don't set these directly, they are set by the prompts module but held here to avoid accidental name collisions)
     _securityPinSetupPrompt: 'security_pin_setup_prompt',

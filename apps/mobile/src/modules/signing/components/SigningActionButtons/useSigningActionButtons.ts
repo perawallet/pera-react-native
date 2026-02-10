@@ -24,25 +24,48 @@ import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SigningStackParamList } from '@modules/signing/routes'
 import { useModalState } from '@hooks/useModalState'
+import { usePreferences } from '@perawallet/wallet-core-settings'
+import { UserPreferences } from '@constants/user-preferences'
+
+type GuardedWarningType = 'rekey' | 'asset-freeze'
+
+const preferenceKeyMap: Record<GuardedWarningType, string> = {
+    rekey: UserPreferences.rekeySupportEnabled,
+    'asset-freeze': UserPreferences.assetFreezeSupportEnabled,
+}
 
 export const useSigningActionButtons = () => {
     const { showToast } = useToast()
     const { t } = useLanguage()
     const [isLoading, setIsLoading] = useState(false)
 
-    const rekeyModal = useModalState()
+    const securityGuardModal = useModalState()
     const navigation =
         useNavigation<StackNavigationProp<SigningStackParamList>>()
+    const { getPreference } = usePreferences()
 
     const { currentRequest, signAndSendRequest, rejectRequest } =
         useSigningRequest()
     const request = currentRequest as TransactionSignRequest
     const { allTransactions, warnings } = useSigningRequestAnalysis(request)
 
-    const hasRekeyWarnings = useMemo(
-        () => warnings.some(w => w.type === 'rekey'),
-        [warnings],
-    )
+    const guardedWarningType = useMemo(() => {
+        const presentTypes: GuardedWarningType[] = []
+        if (warnings.some(w => w.type === 'rekey')) presentTypes.push('rekey')
+        if (warnings.some(w => w.type === 'asset-freeze'))
+            presentTypes.push('asset-freeze')
+
+        if (presentTypes.length === 0) return null
+
+        // Prioritize a type where support is disabled (must block)
+        const disabledType = presentTypes.find(
+            type => !getPreference(preferenceKeyMap[type]),
+        )
+        if (disabledType) return disabledType
+
+        // All present types are enabled — show "are you sure?" for the first
+        return presentTypes[0]
+    }, [warnings, getPreference])
 
     const performSign = useCallback(async () => {
         if (!request) {
@@ -85,25 +108,25 @@ export const useSigningActionButtons = () => {
     }, [request, signAndSendRequest, showToast, t])
 
     const handleSignAndSend = useCallback(() => {
-        if (hasRekeyWarnings) {
-            rekeyModal.open()
+        if (guardedWarningType !== null) {
+            securityGuardModal.open()
             return
         }
         performSign()
-    }, [hasRekeyWarnings, performSign])
+    }, [guardedWarningType, performSign])
 
-    const handleRekeyConfirm = useCallback(() => {
-        rekeyModal.close()
+    const handleSecurityGuardConfirm = useCallback(() => {
+        securityGuardModal.close()
         performSign()
     }, [performSign])
 
-    const handleRekeyGoToSettings = useCallback(() => {
-        rekeyModal.close()
-        navigation.navigate('RekeySettings')
+    const handleSecurityGuardGoToSettings = useCallback(() => {
+        securityGuardModal.close()
+        navigation.navigate('SecuritySettings')
     }, [navigation])
 
-    const closeRekeyGuard = useCallback(() => {
-        rekeyModal.close()
+    const closeSecurityGuard = useCallback(() => {
+        securityGuardModal.close()
     }, [])
 
     const handleReject = useCallback(() => {
@@ -118,9 +141,10 @@ export const useSigningActionButtons = () => {
         handleReject,
         isLoading,
         hasMultipleTransactions: allTransactions.length > 1,
-        isRekeyGuardOpen: rekeyModal.isOpen,
-        handleRekeyConfirm,
-        handleRekeyGoToSettings,
-        closeRekeyGuard,
+        guardedWarningType,
+        isSecurityGuardOpen: securityGuardModal.isOpen,
+        handleSecurityGuardConfirm,
+        handleSecurityGuardGoToSettings,
+        closeSecurityGuard,
     }
 }
