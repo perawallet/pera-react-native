@@ -10,9 +10,5 @@
  limitations under the License
  */
 
-<<<<<<<< HEAD:apps/mobile/src/modules/signing/screens/GroupDetailScreen/index.ts
-export { GroupDetailScreen } from './GroupDetailScreen'
-========
 export * from './types'
 export * from './endpoints'
->>>>>>>> main:packages/transactions/src/api/csv-export/index.ts

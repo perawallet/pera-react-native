@@ -10,8 +10,4 @@
  limitations under the License
  */
 
-<<<<<<<< HEAD:apps/mobile/src/modules/signing/components/RekeyGuardBottomSheet/index.ts
 export { RekeyGuardBottomSheet } from './RekeyGuardBottomSheet'
-========
-export { GroupDetailScreen } from './GroupDetailScreen'
->>>>>>>> main:apps/mobile/src/modules/signing/screens/GroupDetailScreen/index.ts
