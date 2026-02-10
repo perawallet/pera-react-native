@@ -21,6 +21,7 @@ export type SigningStackParamList = {
         transactionId?: string
     }
     GroupDetail: { groupIndex: number }
+    RekeySettings: undefined
 }
 
 export type SigningStackScreenProps<T extends keyof SigningStackParamList> =

@@ -10,13 +10,12 @@
  limitations under the License
  */
 
-import { PWText, PWToolbar, PWView } from '@components/core'
+import { PWView } from '@components/core'
 import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
 import {
     getTransactionType,
     PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { PaymentSummaryHeader } from './PaymentSummaryHeader'
 import { AssetTransferSummaryHeader } from './AssetTransferSummaryHeader'
@@ -25,33 +24,20 @@ import { GenericSummaryHeader } from './GenericSummaryHeader'
 
 export type TransactionSummaryHeaderProps = {
     transaction: PeraDisplayableTransaction
-    title?: string
 }
 
 export const TransactionSummaryHeader = ({
     transaction,
-    title,
 }: TransactionSummaryHeaderProps) => {
     const styles = useStyles()
-    const { t } = useLanguage()
     const txType = getTransactionType(transaction)
 
     return (
         <>
-            <PWToolbar
-                center={
-                    <PWText
-                        variant='h4'
-                        style={styles.title}
-                    >
-                        {title ?? t('signing.transactions.title', { count: 1 })}
-                    </PWText>
-                }
-            />
             <PWView style={styles.container}>
                 <TransactionIcon
                     type={txType}
-                    size='lg'
+                    size='md'
                 />
 
                 {txType === 'payment' && (

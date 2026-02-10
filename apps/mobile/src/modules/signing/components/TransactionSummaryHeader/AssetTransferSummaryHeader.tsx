@@ -44,16 +44,21 @@ export const AssetTransferSummaryHeader = ({
 
     return (
         <PWView style={styles.container}>
-            <PWText style={styles.typeText}>
-                {t(label, { asset: asset?.name ?? assetId })}
-            </PWText>
-            <AddressDisplay
-                style={styles.address}
-                displayType='simple'
-                textProps={{ style: styles.addressText }}
-                iconProps={{ color: theme.colors.textMain }}
-                address={receiver}
-            />
+            <PWView style={styles.textContainer}>
+                <PWText
+                    variant='h3'
+                    style={styles.typeText}
+                >
+                    {t(label, { asset: asset?.name ?? assetId })}
+                </PWText>
+                <AddressDisplay
+                    style={styles.address}
+                    displayType='simple'
+                    textProps={{ style: styles.addressText }}
+                    iconProps={{ color: theme.colors.textMain }}
+                    address={receiver}
+                />
+            </PWView>
 
             <PWView style={styles.amountContainer}>
                 {amount.isZero() ? null : (

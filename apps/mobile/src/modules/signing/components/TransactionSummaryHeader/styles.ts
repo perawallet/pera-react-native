@@ -11,18 +11,22 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { getFontFamily } from '@theme/theme'
 
 export const useStyles = makeStyles(theme => ({
     container: {
         alignItems: 'center',
         gap: theme.spacing.md,
-        paddingVertical: theme.spacing.xl,
         flexGrow: 1,
+        flexShrink: 1,
+        marginTop: theme.spacing.md,
     },
     title: {
         textAlign: 'center',
         width: '100%',
+    },
+    textContainer: {
+        alignItems: 'center',
+        gap: theme.spacing.xs,
     },
     amountValue: {
         color: theme.colors.textMain,
@@ -31,13 +35,9 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.md,
     },
     addressText: {
-        fontFamily: getFontFamily(false, 700),
-        fontSize: 19,
         color: theme.colors.textMain,
     },
     typeText: {
-        fontFamily: getFontFamily(false, 400),
-        fontSize: 19,
         color: theme.colors.textGray,
         flexWrap: 'nowrap',
     },
@@ -47,7 +47,6 @@ export const useStyles = makeStyles(theme => ({
     amountContainer: {
         marginTop: theme.spacing.md,
         alignItems: 'center',
-        gap: theme.spacing.xs,
     },
     assetIconContainer: {
         flexDirection: 'row',

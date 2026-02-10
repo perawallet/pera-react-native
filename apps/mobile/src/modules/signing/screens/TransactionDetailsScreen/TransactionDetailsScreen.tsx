@@ -42,7 +42,6 @@ type TransactionDetailsRouteProp = RouteProp<
 
 export const TransactionDetailsScreen = () => {
     const styles = useStyles()
-    const { t } = useLanguage()
     const navigation = useNavigation<NavigationProp>()
     const route = useRoute<TransactionDetailsRouteProp>()
 
@@ -89,23 +88,12 @@ export const TransactionDetailsScreen = () => {
     }
 
     return (
-        <PWView style={styles.container}>
-            <PWToolbar
-                center={
-                    <PWText variant='h4'>
-                        {t('signing.transactions.details')}
-                    </PWText>
-                }
-                left={
-                    navigation.canGoBack() ? (
-                        <PWIcon
-                            name='chevron-left'
-                            onPress={navigation.goBack}
-                        />
-                    ) : undefined
-                }
+        <ScrollView contentContainerStyle={styles.contentContainer}>
+            <TransactionDisplay
+                transaction={transaction}
+                onInnerTransactionsPress={handleInnerTransactionPress}
             />
             {renderContent()}
-        </PWView>
+        </ScrollView>
     )
 }

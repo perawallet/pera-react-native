@@ -22,10 +22,14 @@ type UseSettingsSecurityScreenResult = {
     isPinEnabled: boolean
     isBiometricEnabled: boolean
     isBiometricsAvailable: boolean
+    isAdvancedSecurityEnabled: boolean
+    isRekeySupportEnabled: boolean
     pinViewMode: PinEntryMode | null
     handlePinToggle: (value: boolean) => void
     handleBiometricToggle: (value: boolean) => Promise<boolean>
     handleChangePinPress: () => void
+    handleAdvancedSecurityToggle: (value: boolean) => void
+    handleRekeyToggle: (value: boolean) => void
     pinSetSuccess: () => void
     clearPinViewMode: () => void
 }
@@ -33,7 +37,7 @@ type UseSettingsSecurityScreenResult = {
 export const useSettingsSecurityScreen =
     (): UseSettingsSecurityScreenResult => {
         const { checkPinEnabled, savePin } = usePinCode()
-        const { setPreference } = usePreferences()
+        const { setPreference, getPreference } = usePreferences()
         const { showToast } = useToast()
         const { t } = useLanguage()
         const {
@@ -113,14 +117,42 @@ export const useSettingsSecurityScreen =
             setPinViewMode(null)
         }, [])
 
+        const isAdvancedSecurityEnabled = !!getPreference(
+            UserPreferences.advancedSecurityEnabled,
+        )
+        const isRekeySupportEnabled = !!getPreference(
+            UserPreferences.rekeySupportEnabled,
+        )
+
+        const handleAdvancedSecurityToggle = useCallback(
+            (value: boolean) => {
+                setPreference(UserPreferences.advancedSecurityEnabled, value)
+                if (!value) {
+                    setPreference(UserPreferences.rekeySupportEnabled, false)
+                }
+            },
+            [setPreference],
+        )
+
+        const handleRekeyToggle = useCallback(
+            (value: boolean) => {
+                setPreference(UserPreferences.rekeySupportEnabled, value)
+            },
+            [setPreference],
+        )
+
         return {
             isPinEnabled,
             isBiometricEnabled,
             isBiometricsAvailable,
+            isAdvancedSecurityEnabled,
+            isRekeySupportEnabled,
             pinViewMode,
             handlePinToggle,
             handleBiometricToggle,
             handleChangePinPress,
+            handleAdvancedSecurityToggle,
+            handleRekeyToggle,
             clearPinViewMode,
             pinSetSuccess,
         }

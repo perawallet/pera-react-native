@@ -26,16 +26,21 @@ export const AppCallSummaryHeader = ({
     const { t } = useLanguage()
     return (
         <PWView style={styles.container}>
-            <PWText style={styles.typeText}>
-                {t(`transactions.type.${transaction.txType}`)}
-            </PWText>
-            <PWText>
-                {t('transactions.summary.app_id', {
-                    id:
-                        transaction.applicationTransaction?.applicationId ??
-                        'unknown',
-                })}
-            </PWText>
+            <PWView style={styles.textContainer}>
+                <PWText
+                    variant='h3'
+                    style={styles.typeText}
+                >
+                    {t(`transactions.type.${transaction.txType}`)}
+                </PWText>
+                <PWText>
+                    {t('transactions.summary.app_id', {
+                        id:
+                            transaction.applicationTransaction?.applicationId ??
+                            'unknown',
+                    })}
+                </PWText>
+            </PWView>
         </PWView>
     )
 }
