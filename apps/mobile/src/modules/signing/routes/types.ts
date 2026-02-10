@@ -16,7 +16,10 @@ import type { StackScreenProps } from '@react-navigation/stack'
 export type SigningStackParamList = {
     SingleTransaction: undefined
     TransactionList: undefined
-    TransactionDetails: { transaction: PeraDisplayableTransaction }
+    TransactionDetails: {
+        transaction?: PeraDisplayableTransaction
+        transactionId?: string
+    }
     GroupDetail: { groupIndex: number }
 }
 

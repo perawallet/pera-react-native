@@ -37,9 +37,18 @@ vi.mock('@perawallet/wallet-core-platform-integration', () => ({
     useNetwork: vi.fn(),
 }))
 
-// Mock encodeSignedTransactions
+// Mock encodeSignedTransactions and TransactionType
 vi.mock('@algorandfoundation/algokit-utils/transact', () => ({
     encodeSignedTransactions: vi.fn(txs => txs),
+    TransactionType: {
+        Payment: 'pay',
+        AssetTransfer: 'axfer',
+        AssetConfig: 'acfg',
+        AssetFreeze: 'afrz',
+        ApplicationCall: 'appl',
+        KeyRegistration: 'keyreg',
+        StateProof: 'stpf',
+    },
 }))
 
 describe('services/blockchain/hooks', () => {

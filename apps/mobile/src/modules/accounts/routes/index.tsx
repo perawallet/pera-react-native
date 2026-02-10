@@ -18,6 +18,7 @@ import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { screenListeners } from '@routes/listeners'
 import { AccountScreen } from '@modules/accounts/screens/AccountScreen'
 import { AssetDetailsScreen } from '@modules/assets/screens/AssetDetailsScreen'
+import { TransactionDetailsScreen } from '@modules/signing/screens/TransactionDetailsScreen'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { fullScreenLayout, safeAreaLayoutWithTabBar } from '@layouts/index'
 
@@ -45,6 +46,17 @@ export const AccountStackNavigator = () => {
                 name='AssetDetails'
                 layout={fullScreenLayout}
                 component={AssetDetailsScreen}
+                options={{
+                    headerShown: true,
+                    header: (props: NativeStackHeaderProps) => (
+                        <NavigationHeader {...props} />
+                    ),
+                }}
+            />
+            <AccountStack.Screen
+                name='TransactionDetails'
+                layout={fullScreenLayout}
+                component={TransactionDetailsScreen}
                 options={{
                     headerShown: true,
                     header: (props: NativeStackHeaderProps) => (

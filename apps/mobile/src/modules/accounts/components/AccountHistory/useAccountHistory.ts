@@ -12,6 +12,8 @@
 
 import { useMemo, useCallback, useState } from 'react'
 import { Share } from 'react-native'
+import { useNavigation } from '@react-navigation/native'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import { useToast } from '@hooks/useToast'
@@ -25,6 +27,8 @@ import {
     TransactionFilter,
     type CustomDateRange,
 } from '../TransactionsFilterBottomSheet'
+import type { AccountStackParamsList } from '@modules/accounts/routes/types'
+import { groupTransactionsByDate, getFilterTimes } from './utils'
 
 /**
  * Represents a section of transactions grouped by date.
@@ -74,131 +78,8 @@ export type UseAccountHistoryResult = {
         filter: TransactionFilter,
         range?: CustomDateRange,
     ) => void
-}
-
-/**
- * Formats a Unix timestamp to a human-readable date string.
- */
-const formatDate = (roundTime: number): string => {
-    const date = new Date(roundTime * 1000)
-    return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-    })
-}
-
-/**
- * Gets a date key for grouping (YYYY-MM-DD format).
- */
-const getDateKey = (roundTime: number): string => {
-    const date = new Date(roundTime * 1000)
-    return date.toISOString().split('T')[0]
-}
-
-/**
- * Groups transactions by date into sections.
- */
-const groupTransactionsByDate = (
-    transactions: TransactionHistoryItem[],
-): TransactionSection[] => {
-    const groups: Record<string, TransactionHistoryItem[]> = {}
-    const dateFormats: Record<string, string> = {}
-
-    transactions.forEach(tx => {
-        const dateKey = getDateKey(tx.roundTime)
-        if (!groups[dateKey]) {
-            groups[dateKey] = []
-            dateFormats[dateKey] = formatDate(tx.roundTime)
-        }
-        groups[dateKey].push(tx)
-    })
-
-    return Object.entries(groups)
-        .sort(([a], [b]) => b.localeCompare(a)) // Sort by date descending
-        .map(([date, data]) => ({
-            date,
-            title: dateFormats[date],
-            data,
-        }))
-}
-
-/**
- * Helper to get start/end dates for filters
- */
-const getFilterTimes = (
-    filter: TransactionFilter,
-    customRange?: CustomDateRange,
-): { afterTime?: string; beforeTime?: string } => {
-    const now = new Date()
-    const startOfDay = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate(),
-    )
-
-    const toISODate = (d: Date) => d.toISOString().split('T')[0]
-
-    switch (filter) {
-        case TransactionFilter.Today:
-            return {
-                afterTime: toISODate(startOfDay),
-            }
-        case TransactionFilter.Yesterday: {
-            const yesterdayStart = new Date(startOfDay)
-            yesterdayStart.setDate(yesterdayStart.getDate() - 1)
-            const yesterdayEnd = new Date(startOfDay)
-            yesterdayEnd.setMilliseconds(-1) // End of yesterday
-
-            return {
-                afterTime: toISODate(yesterdayStart),
-                beforeTime: toISODate(yesterdayEnd),
-            }
-        }
-        case TransactionFilter.LastWeek: {
-            // "Last Week" as previous 7 days from start of today?
-            // Or calendar week? Assuming last 7 days for now to keep it simple and useful.
-            const end = new Date(startOfDay)
-            const start = new Date(startOfDay)
-            start.setDate(start.getDate() - 7)
-
-            return {
-                afterTime: toISODate(start),
-                beforeTime: toISODate(end),
-            }
-        }
-        case TransactionFilter.LastMonth: {
-            // Previous calendar month
-            const startOfLastMonth = new Date(
-                now.getFullYear(),
-                now.getMonth() - 1,
-                1,
-            )
-            const endOfLastMonth = new Date(
-                now.getFullYear(),
-                now.getMonth(),
-                0,
-                23,
-                59,
-                59,
-            )
-
-            return {
-                afterTime: toISODate(startOfLastMonth),
-                beforeTime: toISODate(endOfLastMonth),
-            }
-        }
-        case TransactionFilter.CustomRange: {
-            if (!customRange) return {}
-            return {
-                afterTime: toISODate(customRange.from),
-                beforeTime: toISODate(customRange.to),
-            }
-        }
-        case TransactionFilter.AllTime:
-        default:
-            return {}
-    }
+    /** Function to handle pressing a transaction item */
+    handleTransactionPress: (transaction: TransactionHistoryItem) => void
 }
 
 /**
@@ -210,6 +91,8 @@ const getFilterTimes = (
 export const useAccountHistory = (): UseAccountHistoryResult => {
     const account = useSelectedAccount()
     const { network } = useNetwork()
+    const navigation =
+        useNavigation<NativeStackNavigationProp<AccountStackParamsList>>()
 
     const [activeFilter, setActiveFilter] = useState<TransactionFilter>(
         TransactionFilter.AllTime,
@@ -287,6 +170,15 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         }
     }, [account?.address, exportCsv])
 
+    const handleTransactionPress = useCallback(
+        (transaction: TransactionHistoryItem) => {
+            navigation.navigate('TransactionDetails', {
+                transactionId: transaction.id,
+            })
+        },
+        [navigation],
+    )
+
     const isEmpty = !isLoading && transactions.length === 0
 
     return {
@@ -312,5 +204,6 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
                 setCustomRange(range)
             }
         },
+        handleTransactionPress,
     }
 }

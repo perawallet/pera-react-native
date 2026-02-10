@@ -10,7 +10,13 @@
  limitations under the License
  */
 
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+
 export type AccountStackParamsList = {
     AccountDetails?: { playConfetti?: boolean }
     AssetDetails?: { assetId: string }
+    TransactionDetails: {
+        transactionId?: string
+        transaction?: PeraDisplayableTransaction
+    }
 }

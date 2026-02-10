@@ -46,12 +46,16 @@ export const AccountHistory = ({ scrollEnabled }: AccountHistoryProps) => {
         activeFilter,
         customRange,
         handleApplyFilter,
+        handleTransactionPress,
     } = useAccountHistory()
 
     const [isFilterVisible, setIsFilterVisible] = useState(false)
 
     const renderItem = ({ item }: { item: TransactionHistoryItem }) => (
-        <TransactionListItem transaction={item} />
+        <TransactionListItem
+            transaction={item}
+            onPress={handleTransactionPress}
+        />
     )
 
     const renderSectionHeader = ({
