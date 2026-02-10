@@ -48,13 +48,11 @@ export const TransactionDetailsScreen = () => {
 
     const { transaction: paramTransaction, transactionId } = route.params
 
-    const {
-        transaction: fetchedTransaction,
-        isLoading,
-    } = useTransactionDetailQuery({
-        transactionId: transactionId || paramTransaction?.id || '',
-        isEnabled: !paramTransaction && !!transactionId,
-    })
+    const { transaction: fetchedTransaction, isLoading } =
+        useTransactionDetailQuery({
+            transactionId: transactionId || paramTransaction?.id || '',
+            isEnabled: !paramTransaction && !!transactionId,
+        })
 
     const transaction = paramTransaction || fetchedTransaction
 
