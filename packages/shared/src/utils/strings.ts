@@ -213,3 +213,29 @@ export const formatRelativeTime = (
 
     return pluralize('year', time / (60 * 60 * 24 * 365))
 }
+
+/**
+ * Converts microAlgos to ALGOs with proper decimal formatting.
+ */
+export const formatMicroAlgos = (
+    microAlgos: string,
+    decimals: number = 6,
+): string => {
+    const amount = BigInt(microAlgos)
+    const algoAmount = Number(amount) / 1_000_000
+    return algoAmount.toFixed(decimals)
+}
+
+/**
+ * Formats an asset amount considering its decimals.
+ */
+export const formatAssetAmount = (
+    amount: string,
+    decimals: number,
+    displayDecimals?: number,
+): string => {
+    const amountBigInt = BigInt(amount)
+    const divisor = Math.pow(10, decimals)
+    const formattedAmount = Number(amountBigInt) / divisor
+    return formattedAmount.toFixed(displayDecimals ?? decimals)
+}

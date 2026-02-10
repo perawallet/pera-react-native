@@ -15,13 +15,10 @@ import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { AccountScreen } from '../AccountScreen'
 
-vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
-    const actual =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-accounts')
-        >()
+vi.mock('@perawallet/wallet-core-accounts', async () => {
+    const actual = await vi.importActual('@perawallet/wallet-core-accounts')
     return {
-        ...actual,
+        ...(actual as Record<string, unknown>),
         useSelectedAccount: vi.fn(() => ({ address: 'test', name: 'Test' })),
         useAllAccounts: vi.fn(() => []),
         useSelectedAccountAddress: vi.fn(() => ({

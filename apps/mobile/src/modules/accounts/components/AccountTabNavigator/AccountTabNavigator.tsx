@@ -19,6 +19,7 @@ import { AccountHistory } from '../AccountHistory'
 
 export type AccountTabNavigatorProps = {
     account: WalletAccount
+    chartVisible: boolean
 }
 
 export type AccountTabsParamsList = {
@@ -29,7 +30,10 @@ export type AccountTabsParamsList = {
 
 const Tab = createPWTabNavigator<AccountTabsParamsList>()
 
-export const AccountTabNavigator = ({ account }: AccountTabNavigatorProps) => {
+export const AccountTabNavigator = ({
+    account,
+    chartVisible,
+}: AccountTabNavigatorProps) => {
     const { t } = useLanguage()
 
     return (
@@ -40,7 +44,12 @@ export const AccountTabNavigator = ({ account }: AccountTabNavigatorProps) => {
                     title: t('account_details.main_screen.overview_tab'),
                 }}
             >
-                {() => <AccountOverview account={account} />}
+                {() => (
+                    <AccountOverview
+                        account={account}
+                        chartVisible={chartVisible}
+                    />
+                )}
             </Tab.Screen>
 
             <Tab.Screen

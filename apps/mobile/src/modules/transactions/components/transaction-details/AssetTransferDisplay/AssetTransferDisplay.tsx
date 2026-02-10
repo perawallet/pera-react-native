@@ -16,6 +16,7 @@ import { AddressDisplay } from '@components/AddressDisplay'
 import {
     getAssetTransferType,
     microAlgosToAlgos,
+    baseUnitsToDisplayUnits,
     type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { useStyles } from './styles'
@@ -26,7 +27,6 @@ import { TransactionNoteRow } from '../TransactionNoteRow/TransactionNoteRow'
 import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnings'
 import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import Decimal from 'decimal.js'
 import { useMemo } from 'react'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import { LoadingView } from '@components/LoadingView'
@@ -61,11 +61,14 @@ export const AssetTransferDisplay = ({
     const senderAddress = transaction.sender
     const receiverAddress = assetTransfer?.receiver
     const amount = useMemo(() => {
-        const amount = Decimal(assetTransfer?.amount?.toString() ?? '0')
-        return amount
-            .dividedBy(new Decimal(10 ** (asset?.decimals ?? 6)))
-            .mul(referenceAddress === assetTransfer?.receiver ? -1 : 1)
-    }, [assetTransfer?.amount, asset?.decimals])
+        const amount = baseUnitsToDisplayUnits(
+            assetTransfer?.amount ?? 0n,
+            asset?.decimals ?? 6,
+        )
+        return referenceAddress === assetTransfer?.receiver
+            ? amount.negated()
+            : amount
+    }, [assetTransfer, asset, referenceAddress])
 
     const amountStyle = useMemo(() => {
         if (senderAddress === referenceAddress) {
@@ -153,9 +156,7 @@ export const AssetTransferDisplay = ({
                         currency='ALGO'
                         precision={6}
                         minPrecision={2}
-                        value={Decimal(
-                            microAlgosToAlgos(transaction.fee ?? 0n),
-                        )}
+                        value={microAlgosToAlgos(transaction.fee ?? 0n)}
                         showSymbol
                     />
                 </KeyValueRow>
