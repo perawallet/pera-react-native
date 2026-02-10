@@ -29,7 +29,9 @@ export const useStyles = makeStyles((theme, props: PWRoundIconProps) => {
 
     const backgroundColor =
         variant === 'primary'
-            ? theme.colors.buttonPrimaryBg
+            ? theme.mode === 'dark'
+                ? theme.colors.buttonHelperBg
+                : theme.colors.buttonPrimaryBg
             : variant === 'helper'
               ? theme.colors.buttonSquareBg
               : theme.colors.layerGrayLighter

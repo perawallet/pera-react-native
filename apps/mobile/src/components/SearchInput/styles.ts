@@ -18,5 +18,8 @@ export const useStyles = makeStyles(theme => {
             borderRadius: theme.spacing.sm,
             paddingHorizontal: theme.spacing.sm,
         },
+        input: {
+            color: theme.colors.textGray,
+        },
     }
 })

@@ -10,6 +10,10 @@
  limitations under the License
  */
 
+import React, { useMemo } from 'react'
+import { ViewStyle } from 'react-native'
+import { useTheme } from '@rneui/themed'
+
 import {
     IconName,
     PWIcon,
@@ -17,7 +21,6 @@ import {
     PWIconVariant,
 } from '@components/core/PWIcon'
 import { PWView, PWViewProps } from '@components/core/PWView'
-import { ViewStyle } from 'react-native'
 import { useStyles } from './styles'
 
 export type PWRoundIconProps = {
@@ -36,7 +39,7 @@ const ICON_SIZE_MAP: Record<PWIconSize, PWIconSize> = {
     xxl: 'xl',
 }
 
-const ICON_VARIANT_MAP: Record<PWIconVariant, PWIconVariant> = {
+const ICON_VARIANT_MAP: Record<string, PWIconVariant> = {
     primary: 'white',
     secondary: 'primary',
     buttonPrimary: 'buttonPrimary',
@@ -56,6 +59,15 @@ export const PWRoundIcon = (props: PWRoundIconProps) => {
         ...rest
     } = props
     const styles = useStyles(props)
+    const { theme } = useTheme()
+
+    const resolvedIconVariant = useMemo(() => {
+        if (theme.mode === 'dark' && variant === 'primary') {
+            return 'brand'
+        }
+        return (ICON_VARIANT_MAP[variant as string] ||
+            'primary') as PWIconVariant
+    }, [theme.mode, variant])
 
     return (
         <PWView
@@ -65,7 +77,7 @@ export const PWRoundIcon = (props: PWRoundIconProps) => {
             <PWIcon
                 name={icon}
                 size={ICON_SIZE_MAP[size]}
-                variant={ICON_VARIANT_MAP[variant]}
+                variant={resolvedIconVariant}
             />
         </PWView>
     )

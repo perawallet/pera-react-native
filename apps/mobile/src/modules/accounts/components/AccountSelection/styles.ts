@@ -23,8 +23,6 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.sm,
             borderRadius: theme.spacing.xl,
             backgroundColor: theme.colors.background,
-            borderWidth: theme.borders.sm,
-            borderColor: theme.colors.helperGray200,
         },
         text: {
             color: theme.colors.textGray,

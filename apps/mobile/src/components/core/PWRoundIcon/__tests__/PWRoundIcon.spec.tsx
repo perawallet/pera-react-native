@@ -47,6 +47,7 @@ describe('PWRoundIcon', () => {
 
         // Verify props passed to PWIcon
         // PWRoundIcon maps 'md' -> 'sm'
+        // PWRoundIcon maps 'secondary' (default) -> 'primary' icon variant
         expect(PWIcon).toHaveBeenCalledWith(
             expect.objectContaining({
                 name: 'globe',
