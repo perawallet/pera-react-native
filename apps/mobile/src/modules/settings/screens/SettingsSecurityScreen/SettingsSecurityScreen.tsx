@@ -110,7 +110,9 @@ export const SettingsSecurityScreen = () => {
                         <PWView style={styles.listItemContent}>
                             <PWIcon name='shield-check' />
                             <PWText>
-                                {t('settings.security.advanced_security_settings')}
+                                {t(
+                                    'settings.security.advanced_security_settings',
+                                )}
                             </PWText>
                         </PWView>
                         <PWSwitch
@@ -125,7 +127,7 @@ export const SettingsSecurityScreen = () => {
                     </PWText>
                 </PWView>
 
-                <ExpandablePanel isExpanded={isAdvancedSecurityEnabled} >
+                <ExpandablePanel isExpanded={isAdvancedSecurityEnabled}>
                     <PWView style={styles.expandablePanelContent}>
                         <PWView>
                             <PWView style={styles.listItem}>

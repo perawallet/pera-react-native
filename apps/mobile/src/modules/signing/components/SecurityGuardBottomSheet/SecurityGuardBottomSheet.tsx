@@ -46,10 +46,7 @@ const preferenceKeyMap: Record<GuardedWarningType, string> = {
     'asset-freeze': UserPreferences.assetFreezeSupportEnabled,
 }
 
-const i18nKeyMap: Record<
-    GuardedWarningType,
-    GuardedWarningMessages
-> = {
+const i18nKeyMap: Record<GuardedWarningType, GuardedWarningMessages> = {
     rekey: {
         confirmTitle: 'transactions.warning.rekey_confirm_title',
         confirmDescription: 'transactions.warning.rekey_confirm_description',
