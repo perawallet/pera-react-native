@@ -19,9 +19,4 @@ export const useStyles = makeStyles(theme => ({
     contentContainer: {
         paddingHorizontal: theme.spacing.xl,
     },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
 }))

@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { ActivityIndicator } from 'react-native'
 import { ScrollView } from 'react-native-gesture-handler'
 import {
     useNavigation,
@@ -20,6 +19,7 @@ import {
 import type { StackNavigationProp } from '@react-navigation/stack'
 
 import { PWIcon, PWText, PWToolbar, PWView } from '@components/core'
+import { LoadingView } from '@components/LoadingView'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import {
@@ -74,9 +74,10 @@ export const TransactionDetailsScreen = () => {
 
         if (isLoading) {
             return (
-                <PWView style={styles.loadingContainer}>
-                    <ActivityIndicator size='large' />
-                </PWView>
+                <LoadingView
+                    variant='circle'
+                    size='lg'
+                />
             )
         }
 
