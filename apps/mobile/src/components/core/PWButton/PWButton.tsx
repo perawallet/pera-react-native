@@ -107,6 +107,7 @@ export const PWButton = ({
 
             {isLoading && (
                 <ActivityIndicator
+                    testID='activity-indicator'
                     size='small'
                     color={styles.loadingStyle.color}
                 />

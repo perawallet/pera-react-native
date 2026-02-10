@@ -51,7 +51,7 @@ describe('PWRoundIcon', () => {
             expect.objectContaining({
                 name: 'globe',
                 size: 'sm',
-                variant: 'secondary',
+                variant: 'primary',
             }),
             undefined, // context is typically undefined for FC
         )
