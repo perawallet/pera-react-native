@@ -18,7 +18,6 @@ import {
 } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 
-import { PWIcon, PWText, PWToolbar, PWView } from '@components/core'
 import { LoadingView } from '@components/LoadingView'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
@@ -42,6 +41,7 @@ type TransactionDetailsRouteProp = RouteProp<
 
 export const TransactionDetailsScreen = () => {
     const styles = useStyles()
+    const { t } = useLanguage()
     const navigation = useNavigation<NavigationProp>()
     const route = useRoute<TransactionDetailsRouteProp>()
 
@@ -58,42 +58,30 @@ export const TransactionDetailsScreen = () => {
         navigation.push('TransactionDetails', { transaction: tx })
     }
 
-    const renderContent = () => {
-        if (transaction) {
-            return (
-                <ScrollView contentContainerStyle={styles.contentContainer}>
-                    <TransactionDisplay
-                        transaction={transaction}
-                        onInnerTransactionsPress={handleInnerTransactionPress}
-                    />
-                </ScrollView>
-            )
-        }
-
-        if (isLoading) {
-            return (
-                <LoadingView
-                    variant='circle'
-                    size='lg'
-                />
-            )
-        }
-
+    if (transaction) {
         return (
-            <EmptyView
-                title={t('errors.general.title')}
-                body={t('errors.general.body')}
+            <ScrollView contentContainerStyle={styles.contentContainer}>
+                <TransactionDisplay
+                    transaction={transaction}
+                    onInnerTransactionsPress={handleInnerTransactionPress}
+                />
+            </ScrollView>
+        )
+    }
+
+    if (isLoading) {
+        return (
+            <LoadingView
+                variant='circle'
+                size='lg'
             />
         )
     }
 
     return (
-        <ScrollView contentContainerStyle={styles.contentContainer}>
-            <TransactionDisplay
-                transaction={transaction}
-                onInnerTransactionsPress={handleInnerTransactionPress}
-            />
-            {renderContent()}
-        </ScrollView>
+        <EmptyView
+            title={t('errors.general.title')}
+            body={t('errors.general.body')}
+        />
     )
 }
