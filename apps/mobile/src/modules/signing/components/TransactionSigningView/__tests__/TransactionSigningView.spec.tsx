@@ -41,6 +41,10 @@ vi.mock('@react-navigation/native', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
+    useBalanceValidation: vi.fn(() => ({
+        validation: { isValid: true, errors: [] },
+        isLoading: false,
+    })),
     useSigningRequest: vi.fn(() => ({
         pendingSignRequests: [],
         signAndSendRequest: mockSignAndSendRequest,
@@ -50,6 +54,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
         groups: [],
         allTransactions: [],
         listItems: [],
+        signableAddresses: new Set(),
         totalFee: 0n,
         warnings: [],
         requestStructure: 'single',
@@ -158,6 +163,7 @@ describe('TransactionSigningView', () => {
             groups: [],
             allTransactions: [],
             listItems: [],
+            signableAddresses: new Set(),
             totalFee: Decimal(0),
             warnings: [],
             distinctWarnings: [],

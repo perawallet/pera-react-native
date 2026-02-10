@@ -47,7 +47,8 @@ export const useSigningActionButtons = () => {
     const { currentRequest, signAndSendRequest, rejectRequest } =
         useSigningRequest()
     const request = currentRequest as TransactionSignRequest
-    const { allTransactions, warnings } = useSigningRequestAnalysis(request)
+    const { allTransactions, warnings } =
+        useSigningRequestAnalysis(request)
 
     const guardedWarningType = useMemo(() => {
         const presentTypes: GuardedWarningType[] = []
@@ -92,8 +93,8 @@ export const useSigningActionButtons = () => {
                         body: config.debugEnabled
                             ? `${error}`
                             : t(
-                                  'signing.transaction_view.transaction_failed_body',
-                              ),
+                                'signing.transaction_view.transaction_failed_body',
+                            ),
                     },
                     {
                         notifier: bottomSheetNotifier.current ?? undefined,

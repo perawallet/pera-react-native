@@ -665,6 +665,12 @@
             "asset_freeze_are_you_sure_description": "This signature includes an asset freeze transaction, which may prevent the target account from transacting with the specified asset. Please make sure that you understand the implications before proceeding.",
             "asset_freeze_are_you_sure_continue": "Continue"
         },
+        "balance_validation": {
+            "title": "Insufficient Balance",
+            "insufficient_algo": "Your account does not have enough ALGO to complete this transaction. Accounts on Algorand have a minimum balance requirement to hold assets and resources and transactions require a small fee to send. \nAdd more ALGO to your account to complete this transaction.",
+            "insufficient_asset": "Your account does not have enough of {{asset}} to complete this transaction.",
+            "additional_errors": "And {{count}} more issue(s) detected."
+        },
         "unknown": {
             "title": "Unsupported Transaction Type",
             "body": "This transaction type is not supported."

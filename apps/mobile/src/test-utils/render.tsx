@@ -13,7 +13,7 @@
 import React, { ReactElement } from 'react'
 // Use @testing-library/react instead of @testing-library/react-native
 // since we're testing with react-native-web in Vitest
-import { render, RenderOptions, RenderResult } from '@testing-library/react'
+import { render, RenderOptions, RenderResult, fireEvent } from '@testing-library/react'
 import { ThemeProvider, createTheme } from '@rneui/themed'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { NavigationContainer } from '@react-navigation/native'
@@ -48,15 +48,15 @@ const testTheme = createTheme({
     },
 })
 
-// Extend theme with custom colors after creation
-;(testTheme.lightColors as any).textMain = '#000000'
-;(testTheme.lightColors as any).textGray = '#8E8E93'
-;(testTheme.lightColors as any).buttonPrimaryBg = '#007AFF'
-;(testTheme.lightColors as any).buttonPrimaryText = '#FFFFFF'
-;(testTheme.darkColors as any).textMain = '#FFFFFF'
-;(testTheme.darkColors as any).textGray = '#8E8E93'
-;(testTheme.darkColors as any).buttonPrimaryBg = '#0A84FF'
-;(testTheme.darkColors as any).buttonPrimaryText = '#FFFFFF'
+    // Extend theme with custom colors after creation
+    ; (testTheme.lightColors as any).textMain = '#000000'
+    ; (testTheme.lightColors as any).textGray = '#8E8E93'
+    ; (testTheme.lightColors as any).buttonPrimaryBg = '#007AFF'
+    ; (testTheme.lightColors as any).buttonPrimaryText = '#FFFFFF'
+    ; (testTheme.darkColors as any).textMain = '#FFFFFF'
+    ; (testTheme.darkColors as any).textGray = '#8E8E93'
+    ; (testTheme.darkColors as any).buttonPrimaryBg = '#0A84FF'
+    ; (testTheme.darkColors as any).buttonPrimaryText = '#FFFFFF'
 
 // Create a test query client with default settings
 const createTestQueryClient = () => {
@@ -136,4 +136,4 @@ const customRender = (
 
 // Re-export everything from '@testing-library/react'
 export * from '@testing-library/react'
-export { customRender as render, createTestQueryClient, testTheme }
+export { customRender as render, createTestQueryClient, testTheme, fireEvent }

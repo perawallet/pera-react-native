@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+export * from './balance-validation'
 export * from './classification'
 export * from './fees'
 export * from './warnings'

@@ -13,13 +13,23 @@
 import { useQuery } from '@tanstack/react-query'
 import { useAlgorandClient } from './useAlgorandClient'
 import { getAccountInformationQueryKey } from './querykeys'
+import type { Address } from '../models'
+
+type AccountInformation = {
+    minBalance: bigint
+    amount: bigint
+    address: Address
+    status: string
+    rewards: bigint
+    assets: Array<{ assetId: bigint; amount: bigint; isFrozen: boolean }>
+}
 
 export const useAccountInformationQuery = (address: string) => {
     const algokit = useAlgorandClient()
 
     return useQuery({
         queryKey: getAccountInformationQueryKey(address),
-        queryFn: async () => {
+        queryFn: async (): Promise<AccountInformation> => {
             const accountInformation =
                 await algokit.client.algod.accountInformation(address)
             return {
@@ -28,6 +38,11 @@ export const useAccountInformationQuery = (address: string) => {
                 address: accountInformation.address,
                 status: accountInformation.status,
                 rewards: accountInformation.rewards,
+                assets: (accountInformation.assets ?? []).map(a => ({
+                    assetId: a.assetId,
+                    amount: a.amount,
+                    isFrozen: a.isFrozen,
+                })),
             }
         },
     })
