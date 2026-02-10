@@ -51,7 +51,6 @@ export const TransactionDetailsScreen = () => {
     const {
         transaction: fetchedTransaction,
         isLoading,
-        isError,
     } = useTransactionDetailQuery({
         transactionId: transactionId || paramTransaction?.id || '',
         isEnabled: !paramTransaction && !!transactionId,

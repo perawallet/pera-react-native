@@ -20,7 +20,11 @@ import { AccountScreen } from '@modules/accounts/screens/AccountScreen'
 import { AssetDetailsScreen } from '@modules/assets/screens/AssetDetailsScreen'
 import { TransactionDetailsScreen } from '@modules/signing/screens/TransactionDetailsScreen'
 import { NavigationHeader } from '@components/NavigationHeader'
-import { fullScreenLayout, safeAreaLayout, safeAreaLayoutWithTabBar } from '@layouts/index'
+import {
+    fullScreenLayout,
+    safeAreaLayout,
+    safeAreaLayoutWithTabBar,
+} from '@layouts/index'
 
 import { AccountStackParamsList } from './types'
 export type { AccountStackParamsList } from './types'
