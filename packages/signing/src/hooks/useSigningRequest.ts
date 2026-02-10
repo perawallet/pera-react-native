@@ -28,6 +28,17 @@ import type {
     ArbitraryDataSignRequest,
     PeraArbitraryDataSignResult,
 } from '../models'
+import {
+    AppError,
+    ERROR_I18N_KEYS,
+    ErrorCategory,
+    ErrorSeverity,
+    logger,
+} from '@perawallet/wallet-core-shared'
+import {
+    MAX_DATA_SIGN_REQUESTS,
+    MAX_TRANSACTION_SIGN_REQUESTS,
+} from '../constants'
 
 export type SignResult =
     | {
@@ -51,14 +62,68 @@ export const useSigningRequest = () => {
     const pendingSignRequests = useSigningStore(
         state => state.pendingSignRequests,
     )
-    const addSignRequest = useSigningStore(state => state.addSignRequest)
-    const removeSignRequest = useSigningStore(state => state.removeSignRequest)
+    const addSignRequestToStore = useSigningStore(state => state.addSignRequest)
+    const removeSignRequestFromStore = useSigningStore(
+        state => state.removeSignRequest,
+    )
 
     const { signTransactions } = useTransactionSigner()
     const { encodeSignedTransactions } = useTransactionEncoder()
     const algokit = useAlgorandClient()
     const { signArbitraryData } = useArbitraryDataSigner()
     const allAccounts = useAllAccounts()
+
+    const addSignRequest = useCallback(
+        (request: SignRequest) => {
+            logger.info('Adding sign request', { request })
+            if (
+                request.type === 'transactions' &&
+                'txs' in request &&
+                request.txs.flat().length > MAX_TRANSACTION_SIGN_REQUESTS
+            ) {
+                throw new AppError(
+                    ERROR_I18N_KEYS.SIGNING_TRANSACTION_LIMIT_EXCEEDED,
+                    {
+                        severity: ErrorSeverity.MEDIUM,
+                        category: ErrorCategory.VALIDATION,
+                        recoverable: false,
+                        params: {
+                            count: request.txs.length,
+                            max: MAX_TRANSACTION_SIGN_REQUESTS,
+                        },
+                    },
+                )
+            }
+
+            if (
+                request.type === 'arbitrary-data' &&
+                'data' in request &&
+                request.data.length > MAX_DATA_SIGN_REQUESTS
+            ) {
+                throw new AppError(
+                    ERROR_I18N_KEYS.SIGNING_DATA_LIMIT_EXCEEDED,
+                    {
+                        severity: ErrorSeverity.MEDIUM,
+                        category: ErrorCategory.VALIDATION,
+                        recoverable: false,
+                        params: {
+                            count: request.data.length,
+                            max: MAX_DATA_SIGN_REQUESTS,
+                        },
+                    },
+                )
+            }
+            addSignRequestToStore(request)
+        },
+        [addSignRequestToStore],
+    )
+
+    const removeSignRequest = useCallback(
+        (request: SignRequest) => {
+            removeSignRequestFromStore(request)
+        },
+        [removeSignRequestFromStore],
+    )
 
     const signTransactionRequest = useCallback(
         async (

@@ -774,6 +774,67 @@ describe('usePeraWebviewInterface', () => {
         })
     })
 
+    describe('transaction limit handling', () => {
+        it('should send error to webview when addSignRequest throws for over-limit transactions', () => {
+            mockAddSignRequest.mockImplementation(() => {
+                throw new Error('Transaction limit exceeded')
+            })
+
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(mockWebview, true),
+            )
+
+            act(() => {
+                result.current.handleMessage({
+                    id: '30',
+                    jsonrpc: '2.0',
+                    method: 'requestTransactionSigning',
+                    params: {
+                        txns: [{}],
+                        metadata: { name: 'Test' },
+                        address: 'addr1',
+                    },
+                })
+            })
+
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('"id":"30"'),
+            )
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('Transaction limit exceeded'),
+            )
+        })
+
+        it('should send error to webview when addSignRequest throws for over-limit data signing', () => {
+            mockAddSignRequest.mockImplementation(() => {
+                throw new Error('Data sign limit exceeded')
+            })
+
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(mockWebview, true),
+            )
+
+            act(() => {
+                result.current.handleMessage({
+                    id: '31',
+                    jsonrpc: '2.0',
+                    method: 'requestDataSigning',
+                    params: {
+                        data: { data: 'AQID', message: 'Sign this' },
+                        metadata: { name: 'Test' },
+                    },
+                })
+            })
+
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('"id":"31"'),
+            )
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('Data sign limit exceeded'),
+            )
+        })
+    })
+
     describe('unknown method handling', () => {
         it('should send error for unknown method', () => {
             const { result } = renderHook(() =>

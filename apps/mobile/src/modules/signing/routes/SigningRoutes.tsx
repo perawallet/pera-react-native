@@ -78,10 +78,6 @@ export const SigningRoutes = ({ request }: SigningRoutesProps) => {
                 options={{ title: 'signing.transactions.title' }}
             />
             <Stack.Screen
-                name='TransactionList'
-                component={TransactionListScreen}
-            />
-            <Stack.Screen
                 name='TransactionDetails'
                 component={TransactionDetailsScreen}
                 options={{ title: 'signing.transactions.details' }}
