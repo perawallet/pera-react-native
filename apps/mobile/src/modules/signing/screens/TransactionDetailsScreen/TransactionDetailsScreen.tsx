@@ -10,14 +10,21 @@
  limitations under the License
  */
 
+import { ScrollView } from 'react-native-gesture-handler'
 import {
     useNavigation,
     useRoute,
     type RouteProp,
 } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
-import { ScrollView } from 'react-native-gesture-handler'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+
+import { LoadingView } from '@components/LoadingView'
+import { EmptyView } from '@components/EmptyView'
+import { useLanguage } from '@hooks/useLanguage'
+import {
+    useTransactionDetailQuery,
+    type PeraDisplayableTransaction,
+} from '@perawallet/wallet-core-blockchain'
 import { TransactionDisplay } from '@modules/transactions/components/TransactionDisplay'
 import type { SigningStackParamList } from '@modules/signing/routes'
 import { useStyles } from './styles'
@@ -26,6 +33,7 @@ type NavigationProp = StackNavigationProp<
     SigningStackParamList,
     'TransactionDetails'
 >
+
 type TransactionDetailsRouteProp = RouteProp<
     SigningStackParamList,
     'TransactionDetails'
@@ -33,20 +41,47 @@ type TransactionDetailsRouteProp = RouteProp<
 
 export const TransactionDetailsScreen = () => {
     const styles = useStyles()
+    const { t } = useLanguage()
     const navigation = useNavigation<NavigationProp>()
     const route = useRoute<TransactionDetailsRouteProp>()
-    const { transaction } = route.params
+
+    const { transaction: paramTransaction, transactionId } = route.params
+
+    const { data: fetchedTransaction, isLoading } = useTransactionDetailQuery({
+        transactionId: transactionId || paramTransaction?.id || '',
+        isEnabled: !paramTransaction && !!transactionId,
+    })
+
+    const transaction = paramTransaction || fetchedTransaction || null
 
     const handleInnerTransactionPress = (tx: PeraDisplayableTransaction) => {
         navigation.push('TransactionDetails', { transaction: tx })
     }
 
-    return (
-        <ScrollView contentContainerStyle={styles.contentContainer}>
-            <TransactionDisplay
-                transaction={transaction}
-                onInnerTransactionsPress={handleInnerTransactionPress}
+    if (transaction) {
+        return (
+            <ScrollView contentContainerStyle={styles.contentContainer}>
+                <TransactionDisplay
+                    transaction={transaction}
+                    onInnerTransactionsPress={handleInnerTransactionPress}
+                />
+            </ScrollView>
+        )
+    }
+
+    if (isLoading) {
+        return (
+            <LoadingView
+                variant='circle'
+                size='lg'
             />
-        </ScrollView>
+        )
+    }
+
+    return (
+        <EmptyView
+            title={t('errors.general.title')}
+            body={t('errors.general.body')}
+        />
     )
 }

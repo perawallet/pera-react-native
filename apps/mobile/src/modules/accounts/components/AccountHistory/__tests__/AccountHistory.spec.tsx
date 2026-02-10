@@ -58,6 +58,7 @@ vi.mock('../useAccountHistory', () => ({
         activeFilter: 'all_time',
         customRange: undefined,
         handleApplyFilter: vi.fn(),
+        handleTransactionPress: vi.fn(),
     })),
 }))
 
@@ -86,6 +87,7 @@ describe('AccountHistory', () => {
             activeFilter: 'all_time',
             customRange: undefined,
             handleApplyFilter: vi.fn(),
+            handleTransactionPress: vi.fn(),
         } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
 
         render(<AccountHistory />)
@@ -112,6 +114,7 @@ describe('AccountHistory', () => {
             activeFilter: 'all_time',
             customRange: undefined,
             handleApplyFilter: vi.fn(),
+            handleTransactionPress: vi.fn(),
         } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
 
         render(<AccountHistory />)

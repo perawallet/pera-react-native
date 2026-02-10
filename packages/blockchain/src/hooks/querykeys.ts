@@ -22,3 +22,9 @@ export const getSuggestedParametersQueryKey = () => [
     MODULE_PREFIX,
     'suggested-parameters',
 ]
+
+export const getTransactionDetailQueryKey = (transactionId: string) => [
+    MODULE_PREFIX,
+    'transaction-detail',
+    { transactionId },
+]

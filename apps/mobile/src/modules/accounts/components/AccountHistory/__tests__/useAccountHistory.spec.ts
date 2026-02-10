@@ -45,6 +45,13 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
 
+const mockNavigate = vi.fn()
+vi.mock('@react-navigation/native', () => ({
+    useNavigation: () => ({
+        navigate: mockNavigate,
+    }),
+}))
+
 vi.mock('react-native', () => ({
     Share: {
         share: vi.fn(),
@@ -54,6 +61,16 @@ vi.mock('react-native', () => ({
         select: vi.fn(),
     },
 }))
+
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    return {
+        ...actual,
+        formatISODate: (date: Date) => date.toISOString().split('T')[0],
+        parseRoundTime: (t: number) => new Date(t * 1000),
+    }
+})
 
 describe('useAccountHistory', () => {
     const mockAccount = {
@@ -67,6 +84,7 @@ describe('useAccountHistory', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        mockNavigate.mockReset()
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         vi.mocked(useSelectedAccount).mockReturnValue(mockAccount as any)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -410,6 +428,37 @@ describe('useAccountHistory', () => {
                     body: 'API Down',
                 }),
             )
+        })
+    })
+
+    describe('transaction press', () => {
+        it('navigates to TransactionDetails with transactionId when handleTransactionPress is called', () => {
+            const { result } = renderHook(() => useAccountHistory())
+
+            const mockTransaction = {
+                id: 'TX_123',
+                txType: 'pay',
+                sender: 'sender-address',
+                receiver: 'receiver-address',
+                confirmedRound: 100,
+                roundTime: 1704067200,
+                swapGroupDetail: null,
+                interpretedMeaning: null,
+                fee: '1000',
+                groupId: null,
+                amount: '5000000',
+                closeTo: null,
+                asset: null,
+                applicationId: null,
+                innerTransactionCount: null,
+            }
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            result.current.handleTransactionPress(mockTransaction as any)
+
+            expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
+                transactionId: 'TX_123',
+            })
         })
     })
 })

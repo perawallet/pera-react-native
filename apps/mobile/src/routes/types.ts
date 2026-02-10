@@ -16,6 +16,7 @@ import { TabBarStackParamList } from '@routes/tabbar'
 import { SettingsStackParamsList } from '@modules/settings/routes'
 import { ContactsStackParamsList } from '@modules/contacts/routes'
 import { AccountStackParamsList } from '@modules/accounts/routes/types'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 
 export type RootStackParamList = {
     Onboarding: NavigatorScreenParams<OnboardingStackParamList>
@@ -24,6 +25,10 @@ export type RootStackParamList = {
     Settings: NavigatorScreenParams<SettingsStackParamsList>
     Contacts: NavigatorScreenParams<ContactsStackParamsList>
     Staking: undefined
+    TransactionDetails: {
+        transactionId?: string
+        transaction?: PeraDisplayableTransaction
+    }
 }
 
 export type AppStackParamList = RootStackParamList &
