@@ -11,23 +11,22 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { EdgeInsets } from 'react-native-safe-area-context'
 
-type StyleProps = {
-    insets: EdgeInsets
-    safeArea: boolean
-}
-
-export const useStyles = makeStyles(
-    (theme, { insets, safeArea }: StyleProps) => ({
-        container: {
-            marginTop: safeArea ? insets.top : 0,
-        },
-        title: {
-            textAlign: 'center',
-        },
-        backButton: {
-            marginLeft: theme.spacing.md,
-        },
-    }),
-)
+export const useStyles = makeStyles(theme => ({
+    bottomSheetActions: {
+        gap: theme.spacing.md,
+        width: '100%',
+    },
+    bottomSheetMessage: {
+        textAlign: 'center',
+        marginBottom: theme.spacing.md,
+    },
+    bottomSheetIcon: {
+        marginVertical: theme.spacing.md,
+    },
+    bottomSheetContainer: {
+        padding: theme.spacing.xl,
+        gap: theme.spacing.lg,
+        alignItems: 'center',
+    },
+}))

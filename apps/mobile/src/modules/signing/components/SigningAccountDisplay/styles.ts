@@ -14,14 +14,15 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
+        marginVertical: theme.spacing.sm,
+        gap: theme.spacing.xs,
     },
     title: {
         color: theme.colors.textGray,
     },
-    fromAddress: {
-        gap: theme.spacing.md,
+    accountBalance: {
+        backgroundColor: theme.colors.background,
+        borderWidth: 0,
+        padding: 0,
     },
 }))

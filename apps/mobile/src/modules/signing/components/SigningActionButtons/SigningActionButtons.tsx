@@ -15,6 +15,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useTheme } from '@rneui/themed'
 import { useSigningActionButtons } from './useSigningActionButtons'
+import { RekeyGuardBottomSheet } from '../RekeyGuardBottomSheet'
 
 export const SigningActionButtons = () => {
     const styles = useStyles()
@@ -25,6 +26,10 @@ export const SigningActionButtons = () => {
         handleSignAndSend,
         isLoading,
         hasMultipleTransactions,
+        isRekeyGuardOpen,
+        handleRekeyConfirm,
+        handleRekeyGoToSettings,
+        closeRekeyGuard,
     } = useSigningActionButtons()
 
     return (
@@ -50,6 +55,12 @@ export const SigningActionButtons = () => {
                     style={styles.button}
                 />
             </PWView>
+            <RekeyGuardBottomSheet
+                isOpen={isRekeyGuardOpen}
+                onClose={closeRekeyGuard}
+                onConfirm={handleRekeyConfirm}
+                onGoToSettings={handleRekeyGoToSettings}
+            />
         </PWView>
     )
 }

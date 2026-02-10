@@ -50,10 +50,6 @@ export const useGroupDetailScreen = () => {
         [navigation],
     )
 
-    const handleBack = useCallback(() => {
-        navigation.goBack()
-    }, [navigation])
-
     const keyExtractor = useCallback(
         (item: PeraDisplayableTransaction, index: number) =>
             item.id ?? `tx-${index}`,
@@ -63,7 +59,6 @@ export const useGroupDetailScreen = () => {
     return {
         transactions,
         handleTransactionPress,
-        handleBack,
         keyExtractor,
     }
 }

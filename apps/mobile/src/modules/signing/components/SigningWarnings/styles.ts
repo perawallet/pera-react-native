@@ -13,11 +13,13 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
+    panelButton: {
+        width: '100%',
+    },
     warningContainer: {
         alignItems: 'center' as const,
         justifyContent: 'flex-start' as const,
         width: '100%',
-        marginBottom: theme.spacing.md,
     },
     sheetContainer: {
         paddingBottom: theme.spacing.xxl,

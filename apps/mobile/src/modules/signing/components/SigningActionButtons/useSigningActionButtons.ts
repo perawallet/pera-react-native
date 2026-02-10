@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useToast } from '@hooks/useToast'
 import { config } from '@perawallet/wallet-core-config'
 import { useLanguage } from '@hooks/useLanguage'
@@ -20,18 +20,31 @@ import {
     useSigningRequestAnalysis,
 } from '@perawallet/wallet-core-signing'
 import { bottomSheetNotifier } from '@components/core'
+import { useNavigation } from '@react-navigation/native'
+import type { StackNavigationProp } from '@react-navigation/stack'
+import type { SigningStackParamList } from '@modules/signing/routes'
+import { useModalState } from '@hooks/useModalState'
 
 export const useSigningActionButtons = () => {
     const { showToast } = useToast()
     const { t } = useLanguage()
     const [isLoading, setIsLoading] = useState(false)
 
+    const rekeyModal = useModalState()
+    const navigation =
+        useNavigation<StackNavigationProp<SigningStackParamList>>()
+
     const { currentRequest, signAndSendRequest, rejectRequest } =
         useSigningRequest()
     const request = currentRequest as TransactionSignRequest
-    const { allTransactions } = useSigningRequestAnalysis(request)
+    const { allTransactions, warnings } = useSigningRequestAnalysis(request)
 
-    const handleSignAndSend = useCallback(async () => {
+    const hasRekeyWarnings = useMemo(
+        () => warnings.some(w => w.type === 'rekey'),
+        [warnings],
+    )
+
+    const performSign = useCallback(async () => {
         if (!request) {
             return
         }
@@ -71,6 +84,28 @@ export const useSigningActionButtons = () => {
         }
     }, [request, signAndSendRequest, showToast, t])
 
+    const handleSignAndSend = useCallback(() => {
+        if (hasRekeyWarnings) {
+            rekeyModal.open()
+            return
+        }
+        performSign()
+    }, [hasRekeyWarnings, performSign])
+
+    const handleRekeyConfirm = useCallback(() => {
+        rekeyModal.close()
+        performSign()
+    }, [performSign])
+
+    const handleRekeyGoToSettings = useCallback(() => {
+        rekeyModal.close()
+        navigation.navigate('RekeySettings')
+    }, [navigation])
+
+    const closeRekeyGuard = useCallback(() => {
+        rekeyModal.close()
+    }, [])
+
     const handleReject = useCallback(() => {
         if (!request) {
             return
@@ -83,5 +118,9 @@ export const useSigningActionButtons = () => {
         handleReject,
         isLoading,
         hasMultipleTransactions: allTransactions.length > 1,
+        isRekeyGuardOpen: rekeyModal.isOpen,
+        handleRekeyConfirm,
+        handleRekeyGoToSettings,
+        closeRekeyGuard,
     }
 }

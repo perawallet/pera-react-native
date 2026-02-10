@@ -16,13 +16,11 @@ import { useGroupDetailScreen } from '../useGroupDetailScreen'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 
 const mockNavigate = vi.fn()
-const mockGoBack = vi.fn()
 const mockRouteParams = { groupIndex: 0 }
 
 vi.mock('@react-navigation/native', () => ({
     useNavigation: () => ({
         navigate: mockNavigate,
-        goBack: mockGoBack,
     }),
     useRoute: () => ({
         params: mockRouteParams,
@@ -83,14 +81,6 @@ describe('useGroupDetailScreen', () => {
         expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
             transaction: mockTx1,
         })
-    })
-
-    it('calls goBack on handleBack', () => {
-        const { result } = renderHook(() => useGroupDetailScreen())
-
-        result.current.handleBack()
-
-        expect(mockGoBack).toHaveBeenCalled()
     })
 
     it('generates correct key for transaction with id', () => {

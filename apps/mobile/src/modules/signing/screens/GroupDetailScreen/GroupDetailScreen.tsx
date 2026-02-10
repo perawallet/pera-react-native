@@ -11,16 +11,8 @@
  */
 
 import { useCallback } from 'react'
-import {
-    PWFlatList,
-    PWIcon,
-    PWText,
-    PWToolbar,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { PWFlatList, PWView } from '@components/core'
 import { TransactionPreview } from '@modules/transactions/components/transaction-details/TransactionPreview'
-import { useLanguage } from '@hooks/useLanguage'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { GroupDetailHeader } from './GroupDetailHeader'
 import { useStyles } from './styles'
@@ -28,8 +20,7 @@ import { useGroupDetailScreen } from './useGroupDetailScreen'
 
 export const GroupDetailScreen = () => {
     const styles = useStyles()
-    const { t } = useLanguage()
-    const { transactions, handleTransactionPress, handleBack, keyExtractor } =
+    const { transactions, handleTransactionPress, keyExtractor } =
         useGroupDetailScreen()
 
     const renderItem = useCallback(
@@ -49,21 +40,6 @@ export const GroupDetailScreen = () => {
 
     return (
         <PWView style={styles.container}>
-            <PWToolbar
-                center={
-                    <PWText
-                        variant='h4'
-                        style={styles.title}
-                    >
-                        {t('transactions.group.group_number')}
-                    </PWText>
-                }
-                left={
-                    <PWTouchableOpacity onPress={handleBack}>
-                        <PWIcon name='chevron-left' />
-                    </PWTouchableOpacity>
-                }
-            />
             <PWView style={styles.contentContainer}>
                 <GroupDetailHeader transactionCount={transactions.length} />
                 <PWFlatList
