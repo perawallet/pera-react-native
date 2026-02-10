@@ -172,7 +172,7 @@ export const AssetTransferDisplay = ({
                     isVisible={isMetadataHashDetailsModalOpen}
                     onClose={closeMetadataHashDetailsModal}
                     text={metadataHash}
-                    titleKey='transactions.common.view_metadata'
+                    title={t('transactions.common.view_metadata')}
                 />
             )}
         </PWView>

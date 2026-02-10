@@ -50,7 +50,8 @@ describe('TransactionFooter', () => {
 
     it('calls pushWebView when button is pressed', () => {
         const pushWebView = vi.fn()
-        vi.mocked(useWebView).mockReturnValue({ pushWebView })
+        const removeWebView = vi.fn()
+        vi.mocked(useWebView).mockReturnValue({ pushWebView, removeWebView })
 
         const { getByRole } = render(
             <TransactionFooter transaction={mockTransaction} />,

@@ -10,9 +10,5 @@
  limitations under the License
  */
 
-<<<<<<<< HEAD:apps/mobile/src/modules/transactions/components/transaction-details/RawTransactionButton/index.ts
-export * from './RawTransactionButton'
-========
 export * from './types'
 export * from './endpoints'
->>>>>>>> main:packages/transactions/src/api/csv-export/index.ts
