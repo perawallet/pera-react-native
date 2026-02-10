@@ -45,6 +45,14 @@ export const aggregateTransactionWarnings = (
                 targetAddress: rekeyAddress,
             })
         }
+
+        if (tx.assetFreezeTransaction) {
+            warnings.push({
+                type: 'asset-freeze',
+                senderAddress: tx.sender,
+                targetAddress: tx.assetFreezeTransaction.address,
+            })
+        }
     }
 
     return warnings

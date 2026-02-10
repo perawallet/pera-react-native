@@ -30,7 +30,7 @@ export const useSigningActionButtons = () => {
     const { t } = useLanguage()
     const [isLoading, setIsLoading] = useState(false)
 
-    const rekeyModal = useModalState()
+    const securityGuardModal = useModalState()
     const navigation =
         useNavigation<StackNavigationProp<SigningStackParamList>>()
 
@@ -39,10 +39,12 @@ export const useSigningActionButtons = () => {
     const request = currentRequest as TransactionSignRequest
     const { allTransactions, warnings } = useSigningRequestAnalysis(request)
 
-    const hasRekeyWarnings = useMemo(
-        () => warnings.some(w => w.type === 'rekey'),
-        [warnings],
-    )
+    const guardedWarningType = useMemo(() => {
+        if (warnings.some(w => w.type === 'rekey')) return 'rekey' as const
+        if (warnings.some(w => w.type === 'asset-freeze'))
+            return 'asset-freeze' as const
+        return null
+    }, [warnings])
 
     const performSign = useCallback(async () => {
         if (!request) {
@@ -85,25 +87,25 @@ export const useSigningActionButtons = () => {
     }, [request, signAndSendRequest, showToast, t])
 
     const handleSignAndSend = useCallback(() => {
-        if (hasRekeyWarnings) {
-            rekeyModal.open()
+        if (guardedWarningType !== null) {
+            securityGuardModal.open()
             return
         }
         performSign()
-    }, [hasRekeyWarnings, performSign])
+    }, [guardedWarningType, performSign])
 
-    const handleRekeyConfirm = useCallback(() => {
-        rekeyModal.close()
+    const handleSecurityGuardConfirm = useCallback(() => {
+        securityGuardModal.close()
         performSign()
     }, [performSign])
 
-    const handleRekeyGoToSettings = useCallback(() => {
-        rekeyModal.close()
-        navigation.navigate('RekeySettings')
+    const handleSecurityGuardGoToSettings = useCallback(() => {
+        securityGuardModal.close()
+        navigation.navigate('SecuritySettings')
     }, [navigation])
 
-    const closeRekeyGuard = useCallback(() => {
-        rekeyModal.close()
+    const closeSecurityGuard = useCallback(() => {
+        securityGuardModal.close()
     }, [])
 
     const handleReject = useCallback(() => {
@@ -118,9 +120,10 @@ export const useSigningActionButtons = () => {
         handleReject,
         isLoading,
         hasMultipleTransactions: allTransactions.length > 1,
-        isRekeyGuardOpen: rekeyModal.isOpen,
-        handleRekeyConfirm,
-        handleRekeyGoToSettings,
-        closeRekeyGuard,
+        guardedWarningType,
+        isSecurityGuardOpen: securityGuardModal.isOpen,
+        handleSecurityGuardConfirm,
+        handleSecurityGuardGoToSettings,
+        closeSecurityGuard,
     }
 }

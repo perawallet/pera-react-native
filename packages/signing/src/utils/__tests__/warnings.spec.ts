@@ -163,4 +163,45 @@ describe('aggregateTransactionWarnings', () => {
         expect(warnings[0].type).toBe('close')
         expect(warnings[1].type).toBe('rekey')
     })
+
+    test('detects asset-freeze warning', () => {
+        const txs = [
+            makeTx({
+                assetFreezeTransaction: {
+                    address: 'FREEZE_TARGET_ADDR',
+                    assetId: 123,
+                    newFreezeStatus: true,
+                } as any,
+            }),
+        ]
+
+        const warnings = aggregateTransactionWarnings(txs, signableAddresses)
+        expect(warnings).toEqual([
+            {
+                type: 'asset-freeze',
+                senderAddress: 'ADDR1',
+                targetAddress: 'FREEZE_TARGET_ADDR',
+            },
+        ])
+    })
+
+    test('detects asset-freeze alongside other warnings', () => {
+        const txs = [
+            makeTx({
+                rekeyTo: {
+                    publicKey: new TextEncoder().encode('REKEY_TARGET'),
+                } as any,
+                assetFreezeTransaction: {
+                    address: 'FREEZE_TARGET_ADDR',
+                    assetId: 123,
+                    newFreezeStatus: true,
+                } as any,
+            }),
+        ]
+
+        const warnings = aggregateTransactionWarnings(txs, signableAddresses)
+        expect(warnings).toHaveLength(2)
+        expect(warnings[0].type).toBe('rekey')
+        expect(warnings[1].type).toBe('asset-freeze')
+    })
 })

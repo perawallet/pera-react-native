@@ -39,4 +39,7 @@ export const useStyles = makeStyles(theme => ({
     listItemSubtitle: {
         color: theme.colors.textGray,
     },
+    expandablePanelContent: {
+        gap: theme.spacing.xl,
+    },
 }))

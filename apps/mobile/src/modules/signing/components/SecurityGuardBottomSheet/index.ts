@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { RekeyGuardBottomSheet } from './RekeyGuardBottomSheet'
+export { SecurityGuardBottomSheet } from './SecurityGuardBottomSheet'

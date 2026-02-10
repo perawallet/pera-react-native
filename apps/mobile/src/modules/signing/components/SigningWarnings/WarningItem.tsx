@@ -24,6 +24,38 @@ type WarningItemProps = {
     isGroup: boolean
 }
 
+const getWarningConfig = (
+    type: TransactionWarning['type'],
+    isGroup: boolean,
+) => {
+    switch (type) {
+        case 'close':
+            return {
+                icon: 'trash' as const,
+                messageKey: isGroup
+                    ? 'transactions.warning.close_group_warning'
+                    : 'transactions.warning.close_warning',
+                boldKey: null,
+            }
+        case 'rekey':
+            return {
+                icon: 'rekey' as const,
+                messageKey: isGroup
+                    ? 'transactions.warning.rekey_group_warning'
+                    : 'transactions.warning.rekey_warning',
+                boldKey: 'transactions.warning.rekey_warning_bold',
+            }
+        case 'asset-freeze':
+            return {
+                icon: 'snowflake' as const,
+                messageKey: isGroup
+                    ? 'transactions.warning.asset_freeze_group_warning'
+                    : 'transactions.warning.asset_freeze_warning',
+                boldKey: 'transactions.warning.asset_freeze_warning_bold',
+            }
+    }
+}
+
 export const WarningItem = ({
     warning,
     showDivider,
@@ -33,16 +65,10 @@ export const WarningItem = ({
     const { theme } = useTheme()
     const { t } = useLanguage()
 
-    const isClose = warning.type === 'close'
-    const isRekey = warning.type === 'rekey'
-    const icon = isClose ? 'trash' : 'rekey'
-    const messageKey = isClose
-        ? isGroup
-            ? 'transactions.warning.close_group_warning'
-            : 'transactions.warning.close_warning'
-        : isGroup
-          ? 'transactions.warning.rekey_group_warning'
-          : 'transactions.warning.rekey_warning'
+    const { icon, messageKey, boldKey } = getWarningConfig(
+        warning.type,
+        isGroup,
+    )
 
     return (
         <>
@@ -68,11 +94,7 @@ export const WarningItem = ({
                                 ),
                             })}
                         </PWText>
-                        {isRekey && (
-                            <PWText variant='h4'>
-                                {t('transactions.warning.rekey_warning_bold')}
-                            </PWText>
-                        )}
+                        {boldKey && <PWText variant='h4'>{t(boldKey)}</PWText>}
                         <PWText
                             variant='caption'
                             style={styles.senderText}
