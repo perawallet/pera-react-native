@@ -32,6 +32,7 @@
   "devDependencies": {
     "@perawallet/wallet-core-devtools": "workspace:*",
     "@testing-library/react": "catalog:",
+    "@types/node": "^20.19.28",
     "@types/react": "catalog:",
     "globals": "catalog:",
     "reflect-metadata": "catalog:",

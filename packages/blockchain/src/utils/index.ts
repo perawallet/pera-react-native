@@ -16,6 +16,7 @@ import { TransactionType } from '@algorandfoundation/algokit-utils/transact'
 export * from './algorandClient'
 export * from './addresses'
 export * from './transactions'
+export * from './json'
 
 export const baseUnitsToDisplayUnits = (
     amount: number | bigint | Decimal | string,

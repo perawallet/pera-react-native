@@ -17,7 +17,7 @@ import { useMemo } from 'react'
 import { useStyles } from './styles'
 import { useModalState } from '@hooks/useModalState'
 import { KeyValueRow } from '@components/KeyValueRow'
-import { ViewNotePanel } from '../../ViewNotePanel'
+import { ViewTextDetailsPanel } from '../../ViewTextDetailsPanel'
 
 export const TransactionNoteRow = ({
     transaction,
@@ -48,8 +48,9 @@ export const TransactionNoteRow = ({
                     paddingStyle='none'
                 />
             </KeyValueRow>
-            <ViewNotePanel
-                note={note}
+            <ViewTextDetailsPanel
+                title={t('transactions.common.note')}
+                text={note}
                 isVisible={noteModal.isOpen}
                 onClose={noteModal.close}
             />

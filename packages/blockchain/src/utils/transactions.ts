@@ -70,6 +70,7 @@ export const mapToDisplayableTransaction = (
         lease: tx.lease,
         note: tx.note,
         rekeyTo: tx.rekeyTo,
+        rawTransaction: tx,
     }
 
     // Map specific fields based on type

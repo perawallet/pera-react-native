@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { ViewNotePanel } from './ViewNotePanel'
-export type { ViewNotePanelProps } from './ViewNotePanel'
+export { ViewTextDetailsPanel } from './ViewTextDetailsPanel'
+export type { ViewTextDetailsPanelProps } from './ViewTextDetailsPanel'

@@ -11,14 +11,17 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { getFontFamily } from '@theme/theme'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'flex-start',
-        marginTop: theme.spacing.md,
-        gap: theme.spacing.xs,
-        width: '100%',
+        flex: 1,
+    },
+    contentContainer: {
+        flex: 1,
+        padding: theme.spacing.md,
+    },
+    rawTransactionText: {
+        fontFamily: getFontFamily(true, 400),
     },
 }))

@@ -56,6 +56,10 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     }
 })
 
+vi.mock('../../ViewTextDetailsPanel', () => ({
+    ViewTextDetailsPanel: vi.fn(() => null),
+}))
+
 describe('AssetConfigDisplay', () => {
     const mockTransaction = {
         sender: 'SENDER_ADDRESS',
@@ -114,6 +118,37 @@ describe('AssetConfigDisplay', () => {
         )
 
         expect(container.textContent).toContain('ALGO0.001')
+    })
+
+    it('renders metadata hash button when metadataHash is present', () => {
+        const txWithMetadata = {
+            ...mockTransaction,
+            assetConfigTransaction: {
+                ...mockTransaction.assetConfigTransaction,
+                params: {
+                    ...mockTransaction.assetConfigTransaction!.params,
+                    metadataHash: Buffer.from('test-hash'),
+                },
+            },
+        } as unknown as PeraDisplayableTransaction
+
+        const { container } = render(
+            <AssetConfigDisplay transaction={txWithMetadata} />,
+        )
+
+        expect(container.textContent).toContain(
+            'transactions.common.view_metadata',
+        )
+    })
+
+    it('does not render metadata hash button when metadataHash is absent', () => {
+        const { container } = render(
+            <AssetConfigDisplay transaction={mockTransaction} />,
+        )
+
+        expect(container.textContent).not.toContain(
+            'transactions.common.view_metadata',
+        )
     })
 
     it('renders null if assetConfigTransaction is missing', () => {

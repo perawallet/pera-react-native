@@ -14,15 +14,22 @@ import { render, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { TransactionFooter } from '../TransactionFooter'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import { useWebView } from '@modules/webview'
-import { WebViewActions } from '@modules/webview/hooks/useWebViewStore'
+import { useWebView } from '@hooks/usePeraWebviewInterface'
 
 vi.mock('@perawallet/wallet-core-platform-integration', () => ({
     useNetwork: vi.fn(() => ({ network: 'mainnet' })),
 }))
 
-vi.mock('@modules/webview', () => ({
+vi.mock('@hooks/usePeraWebviewInterface', () => ({
     useWebView: vi.fn(() => ({ pushWebView: vi.fn() })),
+}))
+
+vi.mock('@perawallet/wallet-core-assets', () => ({
+    useSingleAssetDetailsQuery: vi.fn(() => ({ data: undefined })),
+}))
+
+vi.mock('../../RawTransactionButton', () => ({
+    RawTransactionButton: () => null,
 }))
 
 describe('TransactionFooter', () => {
@@ -43,12 +50,8 @@ describe('TransactionFooter', () => {
 
     it('calls pushWebView when button is pressed', () => {
         const pushWebView = vi.fn()
-        vi.mocked(useWebView).mockReturnValue({
-            pushWebView,
-            removeWebView: vi.fn(),
-            clearWebViews: vi.fn(),
-            popWebView: vi.fn(),
-        } as WebViewActions)
+        const removeWebView = vi.fn()
+        vi.mocked(useWebView).mockReturnValue({ pushWebView, removeWebView })
 
         const { getByRole } = render(
             <TransactionFooter transaction={mockTransaction} />,

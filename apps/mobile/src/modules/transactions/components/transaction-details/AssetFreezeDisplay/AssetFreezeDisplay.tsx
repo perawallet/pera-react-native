@@ -56,6 +56,8 @@ export const AssetFreezeDisplay = ({
                 isInnerTransaction={isInnerTransaction}
             />
 
+            {showWarnings && <TransactionWarnings transaction={transaction} />}
+
             <PWDivider
                 style={styles.divider}
                 color={theme.colors.layerGray}
@@ -98,8 +100,6 @@ export const AssetFreezeDisplay = ({
 
                 <TransactionNoteRow transaction={transaction} />
             </PWView>
-
-            {showWarnings && <TransactionWarnings transaction={transaction} />}
 
             <PWDivider
                 style={styles.divider}

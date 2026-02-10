@@ -32,10 +32,14 @@ export const PWBottomSheet = ({
     ...rest
 }: PWBottomSheetProps) => {
     const style = useStyles()
+    const scrollViewProps = rest?.scrollViewProps ?? {}
     return (
         <BottomSheet
             {...rest}
-            scrollViewProps={{ scrollEnabled: scrollEnabled ?? true }}
+            scrollViewProps={{
+                scrollEnabled: scrollEnabled ?? true,
+                ...scrollViewProps,
+            }}
         >
             <NotifierWrapper
                 omitGlobalMethodsHookup

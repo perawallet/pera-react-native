@@ -61,6 +61,8 @@ export const AppCallTransactionDisplay = ({
                 isInnerTransaction={isInnerTransaction}
             />
 
+            {showWarnings && <TransactionWarnings transaction={transaction} />}
+
             <PWDivider
                 style={styles.divider}
                 color={theme.colors.layerGray}
@@ -106,8 +108,6 @@ export const AppCallTransactionDisplay = ({
 
                 <AppCallDetailsPanel transaction={transaction} />
             </PWView>
-
-            {showWarnings && <TransactionWarnings transaction={transaction} />}
 
             <PWDivider
                 style={styles.divider}
