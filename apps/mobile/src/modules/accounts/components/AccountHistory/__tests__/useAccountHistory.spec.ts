@@ -62,6 +62,16 @@ vi.mock('react-native', () => ({
     },
 }))
 
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    return {
+        ...actual,
+        formatISODate: (date: Date) => date.toISOString().split('T')[0],
+        parseRoundTime: (t: number) => new Date(t * 1000),
+    }
+})
+
 describe('useAccountHistory', () => {
     const mockAccount = {
         address: 'VALID_ADDRESS_58_CHARS_LONG_AAAAAAAAAAAAAAAAAAAAAAAAAAAA',
