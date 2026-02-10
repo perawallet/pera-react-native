@@ -234,6 +234,7 @@ export type PWIconVariant =
     | 'link'
     | 'error'
     | 'positive'
+    | 'brand'
 
 export type PWIconProps = {
     name: IconName
@@ -272,6 +273,7 @@ export const PWIcon = ({
             link: theme.colors.linkPrimary,
             error: theme.colors.error,
             positive: theme.colors.helperPositive,
+            brand: theme.colors.primary,
         }),
         [theme],
     )
@@ -286,6 +288,7 @@ export const PWIcon = ({
             link: theme.colors.textGray,
             error: theme.colors.error,
             positive: theme.colors.textGray,
+            brand: theme.colors.textGray,
         }),
         [theme],
     )
