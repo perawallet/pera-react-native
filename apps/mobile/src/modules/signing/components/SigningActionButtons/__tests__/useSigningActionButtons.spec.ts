@@ -130,17 +130,21 @@ describe('useSigningActionButtons', () => {
         expect(mockSignAndSendRequest).not.toHaveBeenCalled()
     })
 
-    it('prioritizes rekey over asset-freeze when both exist', () => {
+    it('prioritizes disabled type when both rekey and asset-freeze exist', () => {
+        mockGetPreference.mockImplementation((key: string) => {
+            if (key === 'rekey-support-enabled') return true
+            return undefined
+        })
         ;(useSigningRequestAnalysis as Mock).mockReturnValue({
             allTransactions: [],
             warnings: [
                 {
-                    type: 'asset-freeze',
+                    type: 'rekey',
                     senderAddress: 'addr1',
                     targetAddress: 'addr2',
                 },
                 {
-                    type: 'rekey',
+                    type: 'asset-freeze',
                     senderAddress: 'addr1',
                     targetAddress: 'addr3',
                 },
@@ -149,6 +153,58 @@ describe('useSigningActionButtons', () => {
 
         const { result } = renderHook(() => useSigningActionButtons())
 
+        // rekey is enabled, asset-freeze is not — guard should show asset-freeze
+        expect(result.current.guardedWarningType).toBe('asset-freeze')
+    })
+
+    it('shows rekey guard when both exist and neither is enabled', () => {
+        ;(useSigningRequestAnalysis as Mock).mockReturnValue({
+            allTransactions: [],
+            warnings: [
+                {
+                    type: 'rekey',
+                    senderAddress: 'addr1',
+                    targetAddress: 'addr2',
+                },
+                {
+                    type: 'asset-freeze',
+                    senderAddress: 'addr1',
+                    targetAddress: 'addr3',
+                },
+            ],
+        })
+
+        const { result } = renderHook(() => useSigningActionButtons())
+
+        // both disabled — rekey comes first in priority order
+        expect(result.current.guardedWarningType).toBe('rekey')
+    })
+
+    it('shows rekey confirmation when both exist and both are enabled', () => {
+        mockGetPreference.mockImplementation((key: string) => {
+            if (key === 'rekey-support-enabled') return true
+            if (key === 'asset-freeze-support-enabled') return true
+            return undefined
+        })
+        ;(useSigningRequestAnalysis as Mock).mockReturnValue({
+            allTransactions: [],
+            warnings: [
+                {
+                    type: 'rekey',
+                    senderAddress: 'addr1',
+                    targetAddress: 'addr2',
+                },
+                {
+                    type: 'asset-freeze',
+                    senderAddress: 'addr1',
+                    targetAddress: 'addr3',
+                },
+            ],
+        })
+
+        const { result } = renderHook(() => useSigningActionButtons())
+
+        // both enabled — show "are you sure?" for rekey (first in priority)
         expect(result.current.guardedWarningType).toBe('rekey')
     })
 

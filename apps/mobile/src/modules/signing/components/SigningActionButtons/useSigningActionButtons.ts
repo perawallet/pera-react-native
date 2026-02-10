@@ -24,6 +24,15 @@ import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SigningStackParamList } from '@modules/signing/routes'
 import { useModalState } from '@hooks/useModalState'
+import { usePreferences } from '@perawallet/wallet-core-settings'
+import { UserPreferences } from '@constants/user-preferences'
+
+type GuardedWarningType = 'rekey' | 'asset-freeze'
+
+const preferenceKeyMap: Record<GuardedWarningType, string> = {
+    rekey: UserPreferences.rekeySupportEnabled,
+    'asset-freeze': UserPreferences.assetFreezeSupportEnabled,
+}
 
 export const useSigningActionButtons = () => {
     const { showToast } = useToast()
@@ -33,6 +42,7 @@ export const useSigningActionButtons = () => {
     const securityGuardModal = useModalState()
     const navigation =
         useNavigation<StackNavigationProp<SigningStackParamList>>()
+    const { getPreference } = usePreferences()
 
     const { currentRequest, signAndSendRequest, rejectRequest } =
         useSigningRequest()
@@ -40,11 +50,22 @@ export const useSigningActionButtons = () => {
     const { allTransactions, warnings } = useSigningRequestAnalysis(request)
 
     const guardedWarningType = useMemo(() => {
-        if (warnings.some(w => w.type === 'rekey')) return 'rekey' as const
+        const presentTypes: GuardedWarningType[] = []
+        if (warnings.some(w => w.type === 'rekey')) presentTypes.push('rekey')
         if (warnings.some(w => w.type === 'asset-freeze'))
-            return 'asset-freeze' as const
-        return null
-    }, [warnings])
+            presentTypes.push('asset-freeze')
+
+        if (presentTypes.length === 0) return null
+
+        // Prioritize a type where support is disabled (must block)
+        const disabledType = presentTypes.find(
+            type => !getPreference(preferenceKeyMap[type]),
+        )
+        if (disabledType) return disabledType
+
+        // All present types are enabled — show "are you sure?" for the first
+        return presentTypes[0]
+    }, [warnings, getPreference])
 
     const performSign = useCallback(async () => {
         if (!request) {
