@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { Decimal } from 'decimal.js'
 import { TransactionType } from '@algorandfoundation/algokit-utils/transact'
 
 export * from './algorandClient'
@@ -17,8 +18,41 @@ export * from './addresses'
 export * from './transactions'
 export * from './json'
 
-export const microAlgosToAlgos = (microAlgos: bigint): number => {
-    return Number(microAlgos) / 1_000_000
+export const baseUnitsToDisplayUnits = (
+    amount: number | bigint | Decimal | string,
+    decimals: number,
+): Decimal => {
+    const amountDecimal = new Decimal(amount.toString())
+    return amountDecimal.div(Decimal.pow(10, decimals))
+}
+
+export const displayUnitsToBaseUnits = (
+    amount: number | bigint | Decimal | string,
+    decimals: number,
+): Decimal => {
+    const amountDecimal = new Decimal(amount.toString())
+    return amountDecimal.mul(Decimal.pow(10, decimals))
+}
+
+export const microAlgosToAlgos = (
+    microAlgos: number | bigint | Decimal | string,
+): Decimal => {
+    return baseUnitsToDisplayUnits(microAlgos, 6)
+}
+
+export const algosToMicroAlgos = (
+    algos: number | bigint | Decimal | string,
+): Decimal => {
+    return displayUnitsToBaseUnits(algos, 6)
+}
+
+export const formatMicroAlgos = (
+    microAlgos: bigint | number | string,
+): string => {
+    return microAlgosToAlgos(microAlgos).toNumber().toLocaleString(undefined, {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 6,
+    })
 }
 
 export { TransactionType }

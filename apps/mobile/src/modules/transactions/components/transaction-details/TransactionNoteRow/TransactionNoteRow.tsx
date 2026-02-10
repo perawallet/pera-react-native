@@ -49,6 +49,7 @@ export const TransactionNoteRow = ({
                 />
             </KeyValueRow>
             <ViewTextDetailsPanel
+                title={t('transactions.common.note')}
                 text={note}
                 isVisible={noteModal.isOpen}
                 onClose={noteModal.close}

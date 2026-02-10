@@ -26,14 +26,14 @@ import { useMemo, useState } from 'react'
 
 export type ViewTextDetailsPanelProps = {
     text: string
-    titleKey?: string
+    title: string
     onClose: () => void
 } & PWBottomSheetProps
 
 export const ViewTextDetailsPanel = ({
     text,
     isVisible,
-    titleKey = 'transactions.common.note',
+    title,
     onClose,
     ...rest
 }: ViewTextDetailsPanelProps) => {
@@ -72,7 +72,7 @@ export const ViewTextDetailsPanel = ({
                             onPress={onClose}
                         />
                     }
-                    center={<PWText variant='h4'>{t(titleKey)}</PWText>}
+                    center={<PWText variant='h4'>{title}</PWText>}
                     right={
                         <PWIcon
                             name='copy'

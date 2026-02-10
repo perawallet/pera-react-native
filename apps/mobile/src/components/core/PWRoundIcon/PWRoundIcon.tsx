@@ -27,6 +27,26 @@ export type PWRoundIconProps = {
     style?: ViewStyle
 } & PWViewProps
 
+const ICON_SIZE_MAP: Record<PWIconSize, PWIconSize> = {
+    xs: 'xs',
+    sm: 'sm',
+    md: 'sm',
+    lg: 'md',
+    xl: 'lg',
+    xxl: 'xl',
+}
+
+const ICON_VARIANT_MAP: Record<PWIconVariant, PWIconVariant> = {
+    primary: 'white',
+    secondary: 'primary',
+    buttonPrimary: 'buttonPrimary',
+    helper: 'helper',
+    white: 'white',
+    link: 'link',
+    error: 'error',
+    positive: 'positive',
+}
+
 export const PWRoundIcon = (props: PWRoundIconProps) => {
     const {
         icon,
@@ -37,15 +57,6 @@ export const PWRoundIcon = (props: PWRoundIconProps) => {
     } = props
     const styles = useStyles(props)
 
-    const iconSizeMap: Record<PWIconSize, PWIconSize> = {
-        xs: 'xs',
-        sm: 'sm',
-        md: 'sm',
-        lg: 'md',
-        xl: 'lg',
-        xxl: 'xl',
-    }
-
     return (
         <PWView
             style={[styles.container, propStyle]}
@@ -53,8 +64,8 @@ export const PWRoundIcon = (props: PWRoundIconProps) => {
         >
             <PWIcon
                 name={icon}
-                size={iconSizeMap[size]}
-                variant={variant === 'primary' ? 'white' : variant}
+                size={ICON_SIZE_MAP[size]}
+                variant={ICON_VARIANT_MAP[variant]}
             />
         </PWView>
     )

@@ -25,7 +25,6 @@ import { TransactionNoteRow } from '../TransactionNoteRow/TransactionNoteRow'
 import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnings'
 import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import Decimal from 'decimal.js'
 import { useAssetConfigDisplay } from './useAssetConfigDisplay'
 import { ViewTextDetailsPanel } from '../../ViewTextDetailsPanel'
 
@@ -199,9 +198,7 @@ export const AssetConfigDisplay = ({
                         currency='ALGO'
                         precision={6}
                         minPrecision={2}
-                        value={Decimal(
-                            microAlgosToAlgos(transaction.fee ?? 0n),
-                        )}
+                        value={microAlgosToAlgos(transaction.fee ?? 0n)}
                         showSymbol
                     />
                 </KeyValueRow>
@@ -221,7 +218,7 @@ export const AssetConfigDisplay = ({
                     isVisible={isMetadataHashDetailsModalVisible}
                     onClose={closeMetadataHashDetailsModal}
                     text={metadataHash}
-                    titleKey='transactions.common.view_metadata'
+                    title={t('transactions.common.view_metadata')}
                 />
             )}
         </PWView>

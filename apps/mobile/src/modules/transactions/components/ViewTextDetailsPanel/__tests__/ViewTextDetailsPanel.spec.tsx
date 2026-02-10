@@ -23,6 +23,7 @@ vi.mock('@hooks/useClipboard', () => ({
 
 describe('ViewTextDetailsPanel', () => {
     const defaultProps = {
+        title: 'Title',
         text: 'Hello World',
         isVisible: true,
         onClose: vi.fn(),
@@ -34,17 +35,11 @@ describe('ViewTextDetailsPanel', () => {
         expect(container.textContent).toContain('Hello World')
     })
 
-    it('renders default title when no titleKey provided', () => {
-        const { container } = render(<ViewTextDetailsPanel {...defaultProps} />)
-
-        expect(container.textContent).toContain('transactions.common.note')
-    })
-
     it('renders custom title when titleKey is provided', () => {
         const { container } = render(
             <ViewTextDetailsPanel
                 {...defaultProps}
-                titleKey='transactions.common.view_metadata'
+                title='transactions.common.view_metadata'
             />,
         )
 
