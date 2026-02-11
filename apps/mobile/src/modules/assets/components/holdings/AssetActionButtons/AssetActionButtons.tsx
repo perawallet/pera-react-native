@@ -16,7 +16,6 @@ import { RoundButton } from '@components/RoundButton'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useCallback } from 'react'
-import { useToast } from '@hooks/useToast'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
@@ -39,7 +38,6 @@ export const AssetActionButtons = ({
 }: AssetActionButtonsProps) => {
     const styles = useStyles()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-    const { showToast } = useToast()
     const { t } = useLanguage()
     const sendFunds = useModalState()
     const receiveFunds = useModalState()
@@ -59,13 +57,6 @@ export const AssetActionButtons = ({
         sendFunds.open()
     }, [assetHolding, setSelectedAsset, setCanSelectAsset, sendFunds])
 
-    const notImplemented = useCallback(() => {
-        showToast({
-            title: t('common.not_implemented.title'),
-            body: t('common.not_implemented.body'),
-            type: 'error',
-        })
-    }, [showToast, t])
 
     return (
         <PWView style={styles.container}>
@@ -76,10 +67,10 @@ export const AssetActionButtons = ({
                 onPress={() => goToRootPage('Swap')}
             />
             <RoundButton
-                title={t('asset_details.action_buttons.buy_sell')}
+                title={t('asset_details.action_buttons.buy')}
                 icon='dollar'
                 variant='secondary'
-                onPress={notImplemented}
+                onPress={() => goToRootPage('Fund')}
             />
             <RoundButton
                 title={t('asset_details.action_buttons.send')}

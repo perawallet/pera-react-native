@@ -87,6 +87,7 @@ describe('AssetActionButtons', () => {
 
         const text = container.textContent?.toLowerCase() || ''
         expect(text).toContain('swap')
+        expect(text).toContain('buy')
         expect(text).toContain('send')
         expect(text).toContain('receive')
     })
@@ -103,6 +104,21 @@ describe('AssetActionButtons', () => {
             fireEvent.click(swapButton)
             expect(mockReplace).toHaveBeenCalledWith('TabBar', {
                 screen: 'Swap',
+            })
+        }
+    })
+
+    it('navigates to fund screen when buy button is pressed', () => {
+        const { container } = render(<AssetActionButtons asset={mockAsset} />)
+
+        const buttons = container.querySelectorAll('button')
+        const buyButton = Array.from(buttons).find(btn =>
+            btn.textContent?.toLowerCase().includes('buy'),
+        )
+        if (buyButton) {
+            fireEvent.click(buyButton)
+            expect(mockReplace).toHaveBeenCalledWith('TabBar', {
+                screen: 'Fund',
             })
         }
     })
