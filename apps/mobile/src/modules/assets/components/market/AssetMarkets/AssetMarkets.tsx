@@ -20,7 +20,7 @@ import {
 } from '@modules/assets/components'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { AssetPriceChart } from '../AssetPriceChart/AssetPriceChart'
-import { useMemo, useCallback } from 'react'
+import { useMemo } from 'react'
 import { useChartInteraction } from '@hooks/useChartInteraction'
 import Decimal from 'decimal.js'
 import {
@@ -40,7 +40,6 @@ import { AssetSocialMedia } from '../AssetSocialMedia/AssetSocialMedia'
 import { PriceTrend } from '../PriceTrend/PriceTrend'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { useToast } from '@hooks/useToast'
 import { EmptyView } from '@components/EmptyView'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import {
@@ -73,7 +72,6 @@ export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
     const { preferredFiatCurrency } = useCurrency()
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
         useChartInteraction<AssetPriceHistoryItem>()
-    const { showToast } = useToast()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { getPreference, setPreference } = usePreferences()
     const { t } = useLanguage()
@@ -94,13 +92,6 @@ export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
         [asset, prices],
     )
 
-    const notImplemented = useCallback(() => {
-        showToast({
-            title: t('common.not_implemented.title'),
-            body: t('common.not_implemented.body'),
-            type: 'error',
-        })
-    }, [showToast, t])
 
     const currentPrice = useMemo(() => {
         if (selectedPoint) {
@@ -148,12 +139,14 @@ export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
                     <AssetTitle asset={asset} />
                     <PWView style={styles.headerIcons}>
                         <AssetNotificationButton
-                            isNotificationsEnabled={false}
-                            onPress={notImplemented}
+                            assetId={asset.assetId}
+                            isNotificationsEnabled={
+                                assetDetails?.peraMetadata?.isPriceAlertEnabled
+                            }
                         />
                         <AssetFavoriteButton
-                            isFavorite={false}
-                            onPress={notImplemented}
+                            assetId={asset.assetId}
+                            isFavorite={assetDetails?.peraMetadata?.isFavorited}
                         />
                     </PWView>
                 </PWView>

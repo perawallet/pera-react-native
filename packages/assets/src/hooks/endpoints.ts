@@ -14,6 +14,7 @@ import {
     Networks,
     queryClient,
     type HistoryPeriod,
+    type Network,
 } from '@perawallet/wallet-core-shared'
 import type {
     AssetPriceHistoryResponse,
@@ -93,6 +94,75 @@ export async function fetchAssetPriceHistory(
     })
 
     return res.data
+}
+
+export const fetchAccountAssets = async (address: string, network: Network) => {
+    const response = await queryClient<AssetsResponse, string>({
+        backend: 'pera',
+        network,
+        method: 'GET',
+        url: `/v2/accounts/${address}/assets/`,
+    })
+
+    return response.data
+}
+
+const getToggleAssetFavoriteEndpoint = (assetID: string) => {
+    return `/v2/assets/${assetID}/toggle-favorite/`
+}
+
+const getToggleAssetPriceAlertEndpoint = (assetID: string) => {
+    return `/v2/assets/${assetID}/toggle-price-alert/`
+}
+
+export const toggleAssetFavorite = async ({
+    assetID,
+    deviceId,
+    enabled,
+    network,
+}: {
+    assetID: string
+    deviceId: string
+    enabled: boolean
+    network: Network
+}) => {
+    const response = await queryClient<AssetResponse, unknown>({
+        backend: 'pera',
+        network,
+        method: 'POST',
+        url: getToggleAssetFavoriteEndpoint(assetID),
+        data: {
+            device_id: Number(deviceId),
+            enabled,
+        },
+    })
+
+    return response.data
+}
+
+export const toggleAssetPriceAlert = async ({
+    assetID,
+    deviceId,
+    enabled,
+    network,
+}: {
+    assetID: string
+    deviceId: string
+    enabled: boolean
+    network: Network
+}) => {
+    const response = await queryClient<AssetResponse, unknown>({
+        backend: 'pera',
+        network,
+        method: 'POST',
+        url: getToggleAssetPriceAlertEndpoint(assetID),
+        data: {
+            device_id: Number(deviceId),
+            enabled,
+        },
+    })
+
+    return response.data
 }
 
 export const fetchAssetDetails = async (assetID: string) => {

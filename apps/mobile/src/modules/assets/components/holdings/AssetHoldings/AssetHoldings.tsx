@@ -14,7 +14,7 @@ import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { PWButton, PWText, PWView } from '@components/core'
 import { AssetWealthChart } from '../AssetWealthChart/AssetWealthChart'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
-import { useCallback, useMemo } from 'react'
+import { useMemo } from 'react'
 import { useChartInteraction } from '@hooks/useChartInteraction'
 import { AssetActionButtons } from '../AssetActionButtons/AssetActionButtons'
 import { AssetTransactionList } from '../AssetTransactionList/AssetTransactionList'
@@ -27,15 +27,13 @@ import {
 } from '@modules/assets/components'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
-import { useToast } from '@hooks/useToast'
-import { useLanguage } from '@hooks/useLanguage'
 import {
     AccountBalanceHistoryItem,
     useAccountAssetBalanceQuery,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { PeraAsset } from '@perawallet/wallet-core-assets'
+import { PeraAsset, useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 
@@ -46,20 +44,11 @@ export type AssetHoldingsProps = {
 
 export const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
     const styles = useStyles()
+    const { data: assetDetails } = useSingleAssetDetailsQuery(asset.assetId)
     const { preferredFiatCurrency } = useCurrency()
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
         useChartInteraction<AccountBalanceHistoryItem>()
 
-    const { showToast } = useToast()
-    const { t } = useLanguage()
-
-    const notImplemented = useCallback(() => {
-        showToast({
-            title: t('common.not_implemented.title'),
-            body: t('common.not_implemented.body'),
-            type: 'error',
-        })
-    }, [showToast, t])
 
     const { getPreference, setPreference } = usePreferences()
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
@@ -97,12 +86,17 @@ export const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
                         <AssetTitle asset={asset} />
                         <PWView style={styles.headerIcons}>
                             <AssetNotificationButton
-                                isNotificationsEnabled={false}
-                                onPress={notImplemented}
+                                assetId={asset.assetId}
+                                isNotificationsEnabled={
+                                    assetDetails?.peraMetadata
+                                        ?.isPriceAlertEnabled
+                                }
                             />
                             <AssetFavoriteButton
-                                isFavorite={false}
-                                onPress={notImplemented}
+                                assetId={asset.assetId}
+                                isFavorite={
+                                    assetDetails?.peraMetadata?.isFavorited
+                                }
                             />
                         </PWView>
                     </PWView>

@@ -11,6 +11,7 @@
  */
 
 import { useStyles } from './styles'
+import { useAssetNotificationButton } from './useAssetNotificationButton'
 import {
     PWRoundIcon,
     PWTouchableOpacity,
@@ -18,20 +19,25 @@ import {
 } from '@components/core'
 
 export type AssetNotificationButtonProps = {
-    isNotificationsEnabled?: boolean | null
-} & PWTouchableOpacityProps
+    assetId: string
+    isNotificationsEnabled?: boolean
+} & Omit<PWTouchableOpacityProps, 'onPress'>
 
 export const AssetNotificationButton = ({
+    assetId,
     isNotificationsEnabled,
-    onPress,
     ...rest
 }: AssetNotificationButtonProps) => {
-    const styles = useStyles({ isNotificationsEnabled })
+    const styles = useStyles()
+    const { handleToggleNotifications, isDisabled } = useAssetNotificationButton(
+        assetId,
+        isNotificationsEnabled,
+    )
 
     return (
         <PWTouchableOpacity
-            onPress={onPress}
-            disabled={isNotificationsEnabled === null}
+            onPress={handleToggleNotifications}
+            disabled={isDisabled}
             {...rest}
         >
             <PWRoundIcon

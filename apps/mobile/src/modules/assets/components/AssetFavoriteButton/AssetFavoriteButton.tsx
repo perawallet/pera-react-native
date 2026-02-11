@@ -11,6 +11,7 @@
  */
 
 import { useStyles } from './styles'
+import { useAssetFavoriteButton } from './useAssetFavoriteButton'
 import {
     PWRoundIcon,
     PWTouchableOpacity,
@@ -18,20 +19,25 @@ import {
 } from '@components/core'
 
 export type AssetFavoriteButtonProps = {
-    isFavorite?: boolean | null
-} & PWTouchableOpacityProps
+    assetId: string
+    isFavorite?: boolean
+} & Omit<PWTouchableOpacityProps, 'onPress'>
 
 export const AssetFavoriteButton = ({
+    assetId,
     isFavorite,
-    onPress,
     ...rest
 }: AssetFavoriteButtonProps) => {
-    const styles = useStyles({ isFavorite })
+    const styles = useStyles()
+    const { handleToggleFavorite, isDisabled } = useAssetFavoriteButton(
+        assetId,
+        isFavorite,
+    )
 
     return (
         <PWTouchableOpacity
-            onPress={onPress}
-            disabled={isFavorite === null}
+            onPress={handleToggleFavorite}
+            disabled={isDisabled}
             {...rest}
         >
             <PWRoundIcon
