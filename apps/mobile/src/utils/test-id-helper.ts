@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Platform } from 'react-native';
+import { Platform } from 'react-native'
 
 /**
  * Returns props for testing/automation.
@@ -22,11 +22,11 @@ import { Platform } from 'react-native';
  */
 export function getTestProps(id?: string) {
     if (!id) {
-        return {};
+        return {}
     }
 
     return {
         testID: id,
         accessibilityLabel: Platform.OS === 'android' ? id : undefined,
-    };
+    }
 }

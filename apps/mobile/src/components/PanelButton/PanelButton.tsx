@@ -69,7 +69,9 @@ export const PanelButton = (props: PanelButtonProps) => {
                         <PWText
                             style={themeStyle.textStyle}
                             variant={titleWeight}
-                            {...getTestProps(testID ? `${testID}_text` : undefined)}
+                            {...getTestProps(
+                                testID ? `${testID}_text` : undefined,
+                            )}
                         >
                             {title}
                         </PWText>
