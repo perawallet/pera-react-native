@@ -57,7 +57,6 @@ export const AssetActionButtons = ({
         sendFunds.open()
     }, [assetHolding, setSelectedAsset, setCanSelectAsset, sendFunds])
 
-
     return (
         <PWView style={styles.container}>
             <RoundButton
