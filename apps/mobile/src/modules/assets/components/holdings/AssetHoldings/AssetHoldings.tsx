@@ -33,7 +33,10 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { PeraAsset, useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
+import {
+    PeraAsset,
+    useSingleAssetDetailsQuery,
+} from '@perawallet/wallet-core-assets'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 
@@ -48,7 +51,6 @@ export const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
     const { preferredFiatCurrency } = useCurrency()
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
         useChartInteraction<AccountBalanceHistoryItem>()
-
 
     const { getPreference, setPreference } = usePreferences()
     const chartVisible = !!getPreference(UserPreferences.chartVisible)

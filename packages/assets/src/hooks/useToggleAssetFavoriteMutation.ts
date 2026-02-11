@@ -17,41 +17,42 @@ import { type AssetResponse } from '../models'
 import { type Network } from '@perawallet/wallet-core-shared'
 
 type UseToggleAssetFavoriteMutationParams = {
-  assetID: string
-  deviceId: string
-  enabled: boolean
-  network: Network
+    assetID: string
+    deviceId: string
+    enabled: boolean
+    network: Network
 }
 
 type UseToggleAssetFavoriteMutationResult = {
-  toggleAssetFavorite: (params: UseToggleAssetFavoriteMutationParams) => void
-  isLoading: boolean
-  isError: boolean
-  error: Error | null
-  isSuccess: boolean
+    toggleAssetFavorite: (params: UseToggleAssetFavoriteMutationParams) => void
+    isLoading: boolean
+    isError: boolean
+    error: Error | null
+    isSuccess: boolean
 }
 
-export const useToggleAssetFavoriteMutation = (): UseToggleAssetFavoriteMutationResult => {
-  const queryClient = useQueryClient()
+export const useToggleAssetFavoriteMutation =
+    (): UseToggleAssetFavoriteMutationResult => {
+        const queryClient = useQueryClient()
 
-  const mutation = useMutation<
-    AssetResponse,
-    Error,
-    UseToggleAssetFavoriteMutationParams
-  >({
-    mutationFn: toggleAssetFavorite,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({
-        queryKey: getAssetDetailsQueryKey(`${data.asset_id}`),
-      })
-    },
-  })
+        const mutation = useMutation<
+            AssetResponse,
+            Error,
+            UseToggleAssetFavoriteMutationParams
+        >({
+            mutationFn: toggleAssetFavorite,
+            onSuccess: data => {
+                queryClient.invalidateQueries({
+                    queryKey: getAssetDetailsQueryKey(`${data.asset_id}`),
+                })
+            },
+        })
 
-  return {
-    toggleAssetFavorite: mutation.mutate,
-    isLoading: mutation.isPending,
-    isError: mutation.isError,
-    error: mutation.error,
-    isSuccess: mutation.isSuccess,
-  }
-}
+        return {
+            toggleAssetFavorite: mutation.mutate,
+            isLoading: mutation.isPending,
+            isError: mutation.isError,
+            error: mutation.error,
+            isSuccess: mutation.isSuccess,
+        }
+    }

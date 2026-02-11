@@ -29,10 +29,8 @@ export const AssetNotificationButton = ({
     ...rest
 }: AssetNotificationButtonProps) => {
     const styles = useStyles()
-    const { handleToggleNotifications, isDisabled } = useAssetNotificationButton(
-        assetId,
-        isNotificationsEnabled,
-    )
+    const { handleToggleNotifications, isDisabled } =
+        useAssetNotificationButton(assetId, isNotificationsEnabled)
 
     return (
         <PWTouchableOpacity

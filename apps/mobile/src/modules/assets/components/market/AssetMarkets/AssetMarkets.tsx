@@ -92,7 +92,6 @@ export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
         [asset, prices],
     )
 
-
     const currentPrice = useMemo(() => {
         if (selectedPoint) {
             return new Decimal(selectedPoint.fiatPrice)

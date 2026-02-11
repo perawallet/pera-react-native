@@ -12,32 +12,32 @@
 
 import { useCallback } from 'react'
 import {
-  useDeviceID,
-  useNetwork,
+    useDeviceID,
+    useNetwork,
 } from '@perawallet/wallet-core-platform-integration'
 import { useToggleAssetFavoriteMutation } from '@perawallet/wallet-core-assets'
 
 export const useAssetFavoriteButton = (
-  assetId: string,
-  isFavorite: boolean | undefined,
+    assetId: string,
+    isFavorite: boolean | undefined,
 ) => {
-  const { network } = useNetwork()
-  const deviceId = useDeviceID(network)
-  const { toggleAssetFavorite, isLoading } = useToggleAssetFavoriteMutation()
+    const { network } = useNetwork()
+    const deviceId = useDeviceID(network)
+    const { toggleAssetFavorite, isLoading } = useToggleAssetFavoriteMutation()
 
-  const handleToggleFavorite = useCallback(() => {
-    if (deviceId && isFavorite !== undefined) {
-      toggleAssetFavorite({
-        assetID: assetId,
-        deviceId: `${deviceId}`,
-        enabled: !isFavorite,
-        network,
-      })
+    const handleToggleFavorite = useCallback(() => {
+        if (deviceId && isFavorite !== undefined) {
+            toggleAssetFavorite({
+                assetID: assetId,
+                deviceId: `${deviceId}`,
+                enabled: !isFavorite,
+                network,
+            })
+        }
+    }, [assetId, deviceId, isFavorite, toggleAssetFavorite, network])
+
+    return {
+        handleToggleFavorite,
+        isDisabled: !deviceId || isFavorite === undefined || isLoading,
     }
-  }, [assetId, deviceId, isFavorite, toggleAssetFavorite, network])
-
-  return {
-    handleToggleFavorite,
-    isDisabled: !deviceId || isFavorite === undefined || isLoading,
-  }
 }

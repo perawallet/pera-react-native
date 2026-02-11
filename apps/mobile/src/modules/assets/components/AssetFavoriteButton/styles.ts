@@ -12,10 +12,10 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles((theme) => ({
-  icon: {
-    // Background is always layerGrayLighter for both states in Android
-    backgroundColor: theme.colors.layerGrayLighter,
-    // We use the variant to control the icon color
-  },
+export const useStyles = makeStyles(theme => ({
+    icon: {
+        // Background is always layerGrayLighter for both states in Android
+        backgroundColor: theme.colors.layerGrayLighter,
+        // We use the variant to control the icon color
+    },
 }))

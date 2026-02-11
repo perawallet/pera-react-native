@@ -12,40 +12,40 @@
 
 import { useCallback } from 'react'
 import {
-  useDeviceID,
-  useNetwork,
+    useDeviceID,
+    useNetwork,
 } from '@perawallet/wallet-core-platform-integration'
 import { useToggleAssetPriceAlertMutation } from '@perawallet/wallet-core-assets'
 
 export const useAssetNotificationButton = (
-  assetId: string,
-  isNotificationsEnabled: boolean | undefined,
+    assetId: string,
+    isNotificationsEnabled: boolean | undefined,
 ) => {
-  const { network } = useNetwork()
-  const deviceId = useDeviceID(network)
-  const { toggleAssetPriceAlert, isLoading } =
-    useToggleAssetPriceAlertMutation()
+    const { network } = useNetwork()
+    const deviceId = useDeviceID(network)
+    const { toggleAssetPriceAlert, isLoading } =
+        useToggleAssetPriceAlertMutation()
 
-  const handleToggleNotifications = useCallback(() => {
-    if (deviceId && isNotificationsEnabled !== undefined) {
-      toggleAssetPriceAlert({
-        assetID: assetId,
-        deviceId: `${deviceId}`,
-        enabled: !isNotificationsEnabled,
+    const handleToggleNotifications = useCallback(() => {
+        if (deviceId && isNotificationsEnabled !== undefined) {
+            toggleAssetPriceAlert({
+                assetID: assetId,
+                deviceId: `${deviceId}`,
+                enabled: !isNotificationsEnabled,
+                network,
+            })
+        }
+    }, [
+        assetId,
+        deviceId,
+        isNotificationsEnabled,
+        toggleAssetPriceAlert,
         network,
-      })
-    }
-  }, [
-    assetId,
-    deviceId,
-    isNotificationsEnabled,
-    toggleAssetPriceAlert,
-    network,
-  ])
+    ])
 
-  return {
-    handleToggleNotifications,
-    isDisabled:
-      !deviceId || isNotificationsEnabled === undefined || isLoading,
-  }
+    return {
+        handleToggleNotifications,
+        isDisabled:
+            !deviceId || isNotificationsEnabled === undefined || isLoading,
+    }
 }
