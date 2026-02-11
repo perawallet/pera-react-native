@@ -23,7 +23,9 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
     },
-    container: {},
+    container: {
+        paddingHorizontal: theme.spacing.md,
+    },
     emptyView: {
         minHeight: theme.spacing['5xl'],
     },

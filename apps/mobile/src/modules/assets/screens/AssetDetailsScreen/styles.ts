@@ -20,6 +20,7 @@ export const useStyles = makeStyles(theme => {
         },
         contentContainer: {
             flex: 1,
+            backgroundColor: theme.colors.background,
         },
     }
 })
