@@ -25,6 +25,7 @@ import DateTimePicker, {
 
 import { useStyles } from './styles'
 import { TransactionFilter, CustomDateRange } from './types'
+import { useLanguage } from '@hooks/useLanguage'
 
 export type TransactionsFilterBottomSheetProps = {
     isVisible: boolean
@@ -45,6 +46,7 @@ export const TransactionsFilterBottomSheet = ({
     initialCustomRange,
 }: TransactionsFilterBottomSheetProps) => {
     const styles = useStyles()
+    const { t } = useLanguage()
 
     // Internal state
     const [view, setView] = useState<'main' | 'custom_range'>('main')
@@ -212,7 +214,7 @@ export const TransactionsFilterBottomSheet = ({
                 )
             })}
             <PWButton
-                title='Close'
+                title={t('common.close.label')}
                 variant='secondary'
                 onPress={onClose}
                 style={styles.closeButton}
@@ -241,7 +243,7 @@ export const TransactionsFilterBottomSheet = ({
                         style={[
                             styles.dateInputWrapper,
                             activeDateInput === 'from' &&
-                                styles.activeDateInput,
+                            styles.activeDateInput,
                         ]}
                         onPress={() => setActiveDateInput('from')}
                     >
