@@ -14,6 +14,7 @@ import { render, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AssetActionButtons } from '../AssetActionButtons'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
+import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 
 const mockNavigate = vi.fn()
 const mockReplace = vi.fn()
@@ -43,12 +44,38 @@ vi.mock(
     }),
 )
 
+const mockSetSelectedAsset = vi.fn()
+const mockSetCanSelectAsset = vi.fn()
+
+vi.mock('@modules/transactions/hooks', () => ({
+    useSendFunds: () => ({
+        setSelectedAsset: mockSetSelectedAsset,
+        setCanSelectAsset: mockSetCanSelectAsset,
+    }),
+}))
+
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-accounts')
+        >()
+    return {
+        ...actual,
+        useSelectedAccount: vi.fn(() => ({ address: 'test-address' })),
+    }
+})
+
 const mockAsset = {
     assetId: '123',
     name: 'TEST',
     unitName: 'TST',
     decimals: 6,
 } as PeraAsset
+
+const mockAssetHolding = {
+    amount: 100,
+    fiatValue: 50,
+}
 
 describe('AssetActionButtons', () => {
     beforeEach(() => {
@@ -60,6 +87,7 @@ describe('AssetActionButtons', () => {
 
         const text = container.textContent?.toLowerCase() || ''
         expect(text).toContain('swap')
+        expect(text).toContain('buy')
         expect(text).toContain('send')
         expect(text).toContain('receive')
     })
@@ -77,6 +105,43 @@ describe('AssetActionButtons', () => {
             expect(mockReplace).toHaveBeenCalledWith('TabBar', {
                 screen: 'Swap',
             })
+        }
+    })
+
+    it('navigates to fund screen when buy button is pressed', () => {
+        const { container } = render(<AssetActionButtons asset={mockAsset} />)
+
+        const buttons = container.querySelectorAll('button')
+        const buyButton = Array.from(buttons).find(btn =>
+            btn.textContent?.toLowerCase().includes('buy'),
+        )
+        if (buyButton) {
+            fireEvent.click(buyButton)
+            expect(mockReplace).toHaveBeenCalledWith('TabBar', {
+                screen: 'Fund',
+            })
+        }
+    })
+
+    it('preselects asset and skips selection when send button is pressed', () => {
+        const { container } = render(
+            <AssetActionButtons
+                asset={mockAsset}
+                assetHolding={
+                    mockAssetHolding as unknown as AssetWithAccountBalance
+                }
+            />,
+        )
+
+        const buttons = container.querySelectorAll('button')
+        const sendButton = Array.from(buttons).find(btn =>
+            btn.textContent?.toLowerCase().includes('send'),
+        )
+
+        if (sendButton) {
+            fireEvent.click(sendButton)
+            expect(mockSetSelectedAsset).toHaveBeenCalledWith(mockAssetHolding)
+            expect(mockSetCanSelectAsset).toHaveBeenCalledWith(false)
         }
     })
 
