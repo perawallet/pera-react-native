@@ -17,8 +17,8 @@ import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 export const calculateTotalFee = (
     transactions: PeraDisplayableTransaction[],
     signableAddresses: Set<string>,
-): Decimal => {
-    const result = transactions.reduce(
+): Decimal =>
+    transactions.reduce(
         (sum, tx) =>
             signableAddresses.has(tx.sender)
                 ? sum.add(
@@ -29,6 +29,3 @@ export const calculateTotalFee = (
                 : sum,
         new Decimal(0),
     )
-
-    return result
-}
