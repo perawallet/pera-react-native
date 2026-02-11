@@ -54,8 +54,10 @@ vi.mock('../../AssetWealthChart/AssetWealthChart', () => ({
     AssetWealthChart: () => <div data-testid='wealth-chart'>WealthChart</div>,
 }))
 vi.mock('../../AssetActionButtons/AssetActionButtons', () => ({
-    AssetActionButtons: () => (
-        <div data-testid='action-buttons'>ActionButtons</div>
+    AssetActionButtons: ({ assetHolding }: { assetHolding: any }) => (
+        <div data-testid='action-buttons'>
+            {assetHolding ? 'with-holding' : 'without-holding'}
+        </div>
     ),
 }))
 
@@ -85,14 +87,14 @@ describe('AssetHoldings', () => {
         expect(container).toBeTruthy()
     })
 
-    it('renders action buttons for asset', () => {
-        const { container } = render(
+    it('renders action buttons with holding data', () => {
+        const { getByTestId } = render(
             <AssetHoldings
                 account={mockAccount}
                 asset={mockAsset}
             />,
         )
-        expect(container).toBeTruthy()
+        expect(getByTestId('action-buttons').textContent).toContain('with-holding')
     })
 
     it('handles null balance data gracefully', () => {
