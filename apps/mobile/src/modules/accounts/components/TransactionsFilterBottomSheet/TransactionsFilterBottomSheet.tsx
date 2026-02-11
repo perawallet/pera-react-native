@@ -243,7 +243,7 @@ export const TransactionsFilterBottomSheet = ({
                         style={[
                             styles.dateInputWrapper,
                             activeDateInput === 'from' &&
-                            styles.activeDateInput,
+                                styles.activeDateInput,
                         ]}
                         onPress={() => setActiveDateInput('from')}
                     >
