@@ -25,8 +25,8 @@ vi.mock('@hooks/useModalState', () => ({
     })),
 }))
 
-vi.mock('../../ViewNotePanel', () => ({
-    ViewNotePanel: vi.fn(() => null),
+vi.mock('../../ViewTextDetailsPanel', () => ({
+    ViewTextDetailsPanel: vi.fn(() => null),
 }))
 
 describe('TransactionNoteRow', () => {

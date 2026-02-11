@@ -12,6 +12,7 @@
 
 export const name = '@perawallet/wallet-core-signing'
 
+export * from './constants'
 export * from './models'
 export * from './hooks'
 export * from './utils'

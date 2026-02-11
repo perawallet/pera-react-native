@@ -10,11 +10,10 @@
  limitations under the License
  */
 
-import { PWDivider, PWView } from '@components/core'
+import { PWButton, PWDivider, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { AddressDisplay } from '@components/AddressDisplay'
 import {
-    getAssetTransferType,
     microAlgosToAlgos,
     type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
@@ -26,11 +25,10 @@ import { TransactionNoteRow } from '../TransactionNoteRow/TransactionNoteRow'
 import { TransactionWarnings } from '../../TransactionWarnings/TransactionWarnings'
 import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import Decimal from 'decimal.js'
-import { useMemo } from 'react'
-import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import { LoadingView } from '@components/LoadingView'
 import { AssetTitle } from '@modules/assets/components/AssetTitle'
+import { ViewTextDetailsPanel } from '../../ViewTextDetailsPanel'
+import { useAssetTransferDisplay } from './useAssetTransferDisplay'
 
 export type AssetTransferDisplayProps = {
     referenceAddress?: string
@@ -47,34 +45,20 @@ export const AssetTransferDisplay = ({
     const { theme } = useTheme()
     const { t } = useLanguage()
 
-    const transferType = useMemo(
-        () => getAssetTransferType(transaction),
-        [transaction],
-    )
-    const showWarnings = useMemo(() => !transaction.id, [transaction])
-    const assetId = transaction.assetTransferTransaction?.assetId?.toString()
-
-    const { data: asset } = useSingleAssetDetailsQuery(assetId ?? '')
-
-    const assetTransfer = transaction.assetTransferTransaction
-
-    const senderAddress = transaction.sender
-    const receiverAddress = assetTransfer?.receiver
-    const amount = useMemo(() => {
-        const amount = Decimal(assetTransfer?.amount?.toString() ?? '0')
-        return amount
-            .dividedBy(new Decimal(10 ** (asset?.decimals ?? 6)))
-            .mul(referenceAddress === assetTransfer?.receiver ? -1 : 1)
-    }, [assetTransfer?.amount, asset?.decimals])
-
-    const amountStyle = useMemo(() => {
-        if (senderAddress === referenceAddress) {
-            return styles.amountNegative
-        } else if (receiverAddress === referenceAddress) {
-            return styles.amountPositive
-        }
-        return undefined
-    }, [amount])
+    const {
+        asset,
+        transferType,
+        senderAddress,
+        receiverAddress,
+        amount,
+        amountStyle,
+        metadataHash,
+        assetTransfer,
+        showWarnings,
+        isMetadataHashDetailsModalOpen,
+        openMetadataHashDetailsModal,
+        closeMetadataHashDetailsModal,
+    } = useAssetTransferDisplay(transaction, referenceAddress)
 
     if (!assetTransfer) {
         return null
@@ -86,6 +70,8 @@ export const AssetTransferDisplay = ({
                 transaction={transaction}
                 isInnerTransaction={isInnerTransaction}
             />
+
+            {showWarnings && <TransactionWarnings transaction={transaction} />}
 
             <PWDivider
                 style={styles.divider}
@@ -148,14 +134,25 @@ export const AssetTransferDisplay = ({
                     </KeyValueRow>
                 )}
 
+                {metadataHash && (
+                    <KeyValueRow
+                        title={t('transactions.asset_config.metadata_hash')}
+                    >
+                        <PWButton
+                            variant='link'
+                            paddingStyle='none'
+                            title={t('transactions.common.view_metadata')}
+                            onPress={openMetadataHashDetailsModal}
+                        />
+                    </KeyValueRow>
+                )}
+
                 <KeyValueRow title={t('transactions.common.fee')}>
                     <CurrencyDisplay
                         currency='ALGO'
                         precision={6}
                         minPrecision={2}
-                        value={Decimal(
-                            microAlgosToAlgos(transaction.fee ?? 0n),
-                        )}
+                        value={microAlgosToAlgos(transaction.fee ?? 0n)}
                         showSymbol
                     />
                 </KeyValueRow>
@@ -163,14 +160,21 @@ export const AssetTransferDisplay = ({
                 <TransactionNoteRow transaction={transaction} />
             </PWView>
 
-            {showWarnings && <TransactionWarnings transaction={transaction} />}
-
             <PWDivider
                 style={styles.divider}
                 color={theme.colors.layerGray}
             />
 
             <TransactionFooter transaction={transaction} />
+
+            {!!metadataHash && (
+                <ViewTextDetailsPanel
+                    isVisible={isMetadataHashDetailsModalOpen}
+                    onClose={closeMetadataHashDetailsModal}
+                    text={metadataHash}
+                    title={t('transactions.common.view_metadata')}
+                />
+            )}
         </PWView>
     )
 }

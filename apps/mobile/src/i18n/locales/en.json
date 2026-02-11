@@ -1,11 +1,7 @@
 {
     "account_menu": {
         "title": "Accounts",
-        "inbox": "Inbox",
-        "add_account": "Add Account",
-        "sort": "Sort",
-        "no_inbox_items": "No Inbox Items",
-        "no_inbox_body": "There are currently no pending inbox items"
+        "sort": "Sort"
     },
     "address_entry": {
         "scan_qr": "Scan QR Code",
@@ -49,7 +45,7 @@
         },
         "action_buttons": {
             "swap": "Swap",
-            "buy_sell": "Buy / Sell",
+            "buy": "Buy",
             "send": "Send",
             "receive": "Receive"
         },
@@ -83,7 +79,6 @@
         },
         "button_panel": {
             "swap": "Swap",
-            "stake": "Stake",
             "send": "Send",
             "receive": "Receive",
             "more": "More"
@@ -123,11 +118,16 @@
         "offline_mode": "Offline Mode",
         "yes": "Yes",
         "no": "No",
+        "enter_stealth_mode": "Enter Stealth Mode",
+        "exit_stealth_mode": "Exit Stealth Mode",
         "go_back": {
             "label": "Go Back"
         },
         "loading": {
             "label": "Loading..."
+        },
+        "base64": {
+            "label": "Base64"
         },
         "delete": {
             "label": "Delete"
@@ -155,9 +155,15 @@
             "title": "An error has occurred",
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists."
         },
+        "hex": {
+            "label": "Hex"
+        },
         "not_implemented": {
             "title": "Not Implemented",
             "body": "This screen has not yet been implemented"
+        },
+        "text": {
+            "label": "Text"
         },
         "wealth_chart": {
             "empty_body": "You will see a chart here once you have some balance history",
@@ -260,6 +266,11 @@
             "permission_body": "You have received an unauthorized request from an app. Please check the app and try again.",
             "invalid_session": "Invalid Session",
             "invalid_session_body": "You have received an invalid session request from an app. Please check the app and try again."
+        },
+        "signing": {
+            "title": "An error occurred processing the signing request",
+            "transaction_limit_exceeded": "Too many transactions: {{count}} exceeds the maximum of {{max}}.",
+            "data_limit_exceeded": "Too many data items: {{count}} exceeds the maximum of {{max}}."
         },
         "webview": {
             "invalid_method": "Invalid method {{method}}",
@@ -531,7 +542,11 @@
             "enable_rekey_support": "Enable Re-key Support",
             "enable_rekey_support_description": "Once you enable this, you can confirm transaction requests to rekey your account. This will give control of your account to another address.",
             "biometric_error_title": "Failed to authenticate.",
-            "biometric_error_message": "We were unable to authenticate you.  Please try again."
+            "biometric_error_message": "We were unable to authenticate you.  Please try again.",
+            "advanced_security_settings": "Advanced Security Settings",
+            "advanced_security_settings_description": "Enable advanced security options such as re-key support.",
+            "enable_asset_freeze_support": "Enable Asset Freeze Support",
+            "enable_asset_freeze_support_description": "Once you enable this, you can confirm transaction requests to freeze or unfreeze assets on accounts. This may prevent the target account from transacting with the specified asset."
         },
         "notifications": {
             "push_notifications": "Push Notifications",
@@ -547,10 +562,7 @@
             "body": "Data Signing Request",
             "details_title": "Arbitrary Signing Details",
             "show_details": "Show Details",
-            "algod_not_valid": "The request has an invalid signing recipient.",
-            "account_not_found": "The requested signing account was not found.",
             "on_behalf_of": "Signing On Behalf Of",
-            "signature_not_found": "An error occurred during the signing process.",
             "success_title": "Request Approved",
             "success_body": "The data has been signed."
         },
@@ -564,10 +576,6 @@
             "fee": "Fee",
             "message": "Message",
             "data": "Raw Data"
-        },
-        "impact": {
-            "you_receive": "YOU WILL RECEIVE",
-            "you_spend": "YOU WILL SPEND"
         },
         "transaction_view": {
             "invalid_title": "Invalid Transaction",
@@ -605,11 +613,15 @@
             "asset_id": "Asset ID",
             "date": "Date",
             "note": "Transaction Note",
+            "view_raw_transaction": "View JSON",
             "view_in_explorer": "View in Pera Explorer",
+            "view_asset_url": "View Asset URL",
             "view_note": "View Note",
+            "view_metadata": "View Metadata",
             "completed": "Completed",
             "failed": "Failed",
-            "pending": "Pending"
+            "pending": "Pending",
+            "raw_transaction": "Raw Transaction"
         },
         "type": {
             "pay": "Payment Transaction",
@@ -624,16 +636,31 @@
         },
         "warning": {
             "title": "Warning",
-            "title_cta_group_one": "This transaction group contains a potentially sensitive action",
-            "title_cta_group_other": "This transaction group contains {{count}} potentially sensitive actions",
-            "title_cta_one": "This transaction contains a potentially sensitive action",
-            "title_cta_other": "This transaction contains {{count}} potentially sensitive actions",
+            "title_cta_group_one": "Potentially dangerous action found",
+            "title_cta_group_other": "{{count}} potentially dangerous actions found",
+            "title_cta_one": "Potentially dangerous action found",
+            "title_cta_other": "{{count}} potentially dangerous actions found",
             "close_group_warning": "This transaction group closes one of your accounts and sends remaining funds another address.  Please review carefully before signing.",
             "rekey_group_warning": "This transaction group rekeys one of your accounts to another address, transferring ownership of your account in the process.",
             "close_warning": "This transaction closes the account and send remaining funds to the following address: {{address}}",
             "rekey_warning": "This transaction rekeys the account to the following address: {{address}}.",
             "rekey_warning_bold": "This transfers full control of your account to another address. Please review carefully before signing.",
-            "from_account": "From: {{address}}"
+            "from_account": "From: {{address}}",
+            "rekey_confirm_title": "Enable Rekey Support",
+            "rekey_confirm_description": "Rekey transactions can cause you to lose control of your account. In order to confirm this transaction, you need to enable the \"Rekey Support\" via app settings.",
+            "rekey_confirm_go_to_settings": "Go to Advanced Settings",
+            "rekey_are_you_sure_title": "Are you sure?",
+            "rekey_are_you_sure_description": "This signature includes rekey transaction, giving control over your accounts to another address. Please make sure that you understand the implications before proceeding.",
+            "rekey_are_you_sure_continue": "Continue",
+            "asset_freeze_warning": "This transaction freezes or unfreezes assets for the following address: {{address}}.",
+            "asset_freeze_group_warning": "This transaction group freezes or unfreezes assets for one of the accounts in this group. Please review carefully before signing.",
+            "asset_freeze_warning_bold": "This may prevent the target account from transacting with the frozen asset. Please review carefully before signing.",
+            "asset_freeze_confirm_title": "Enable Asset Freeze Support",
+            "asset_freeze_confirm_description": "Asset freeze transactions can prevent accounts from transacting with specific assets. In order to confirm this transaction, you need to enable \"Asset Freeze Support\" via app settings.",
+            "asset_freeze_confirm_go_to_settings": "Go to Advanced Settings",
+            "asset_freeze_are_you_sure_title": "Are you sure?",
+            "asset_freeze_are_you_sure_description": "This signature includes an asset freeze transaction, which may prevent the target account from transacting with the specified asset. Please make sure that you understand the implications before proceeding.",
+            "asset_freeze_are_you_sure_continue": "Continue"
         },
         "unknown": {
             "title": "Unsupported Transaction Type",
@@ -652,7 +679,8 @@
             "manager": "Manager",
             "reserve": "Reserve",
             "freeze_addr": "Freeze Address",
-            "clawback": "Clawback Address"
+            "clawback": "Clawback Address",
+            "metadata_hash": "Metadata"
         },
         "asset_freeze": {
             "target": "Target Account",
@@ -680,14 +708,10 @@
             "inner_transactions_other": "{{count}} Inner Transactions"
         },
         "group": {
-            "single_group_title": "Transaction Group",
-            "multiple_groups_title": "Multiple Transaction Groups",
             "group_number": "Transaction Group",
             "group_id": "Group ID: {{groupId}}",
             "transactions_count_one": "{{count}} Transaction",
-            "transactions_count_other": "{{count}} Transactions",
-            "groups_count_one": "{{count}} Group",
-            "groups_count_other": "{{count}} Groups"
+            "transactions_count_other": "{{count}} Transactions"
         },
         "summary": {
             "payment_to": "Payment to",

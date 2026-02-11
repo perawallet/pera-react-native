@@ -139,7 +139,10 @@ export const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
                     </PWView>
                 )}
 
-                <AssetActionButtons asset={asset} />
+                <AssetActionButtons
+                    asset={asset}
+                    assetHolding={assetHolding}
+                />
             </PWView>
         </AssetTransactionList>
     )

@@ -33,6 +33,7 @@ export type PWButtonProps = {
     style?: StyleProp<ViewStyle>
     isDisabled?: boolean
     isLoading?: boolean
+    rounded?: boolean
     paddingStyle?: 'none' | 'dense' | 'normal'
     testID?: string
 }
@@ -55,6 +56,7 @@ export const PWButton = ({
     style,
     isDisabled,
     isLoading,
+    rounded,
     paddingStyle,
     testID,
     ...props
@@ -68,6 +70,7 @@ export const PWButton = ({
         isDisabled,
         isLoading,
         paddingStyle,
+        rounded,
     })
 
     const iconVariant = ICON_VARIANT_MAP[variant]
@@ -108,6 +111,7 @@ export const PWButton = ({
 
             {isLoading && (
                 <ActivityIndicator
+                    testID='activity-indicator'
                     size='small'
                     color={styles.loadingStyle.color}
                 />

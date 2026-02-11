@@ -15,10 +15,10 @@ import {
     PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
-import { AddressDisplay } from '@components/AddressDisplay'
 import { useStyles } from './styles'
 import { PWView, PWText } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { AccountWithBalance } from '@modules/accounts/components/AccountWithBalance'
 
 type SigningAccountDisplayProps = {
     transaction: PeraDisplayableTransaction
@@ -40,13 +40,15 @@ export const SigningAccountDisplay = ({
 
     return (
         <PWView style={styles.container}>
-            <PWText style={styles.title}>
+            <PWText
+                variant='caption'
+                style={styles.title}
+            >
                 {t('signing.transactions.signing_with')}
             </PWText>
-            <AddressDisplay
-                style={styles.fromAddress}
-                address={signingAccount.address}
-                showCopy={false}
+            <AccountWithBalance
+                account={signingAccount}
+                style={styles.accountBalance}
             />
         </PWView>
     )

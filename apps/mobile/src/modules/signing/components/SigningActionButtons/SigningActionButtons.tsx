@@ -15,6 +15,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useTheme } from '@rneui/themed'
 import { useSigningActionButtons } from './useSigningActionButtons'
+import { SecurityGuardBottomSheet } from '../SecurityGuardBottomSheet'
 
 export const SigningActionButtons = () => {
     const styles = useStyles()
@@ -25,6 +26,11 @@ export const SigningActionButtons = () => {
         handleSignAndSend,
         isLoading,
         hasMultipleTransactions,
+        guardedWarningType,
+        isSecurityGuardOpen,
+        handleSecurityGuardConfirm,
+        handleSecurityGuardGoToSettings,
+        closeSecurityGuard,
     } = useSigningActionButtons()
 
     return (
@@ -50,6 +56,15 @@ export const SigningActionButtons = () => {
                     style={styles.button}
                 />
             </PWView>
+            {guardedWarningType && (
+                <SecurityGuardBottomSheet
+                    isOpen={isSecurityGuardOpen}
+                    warningType={guardedWarningType}
+                    onClose={closeSecurityGuard}
+                    onConfirm={handleSecurityGuardConfirm}
+                    onGoToSettings={handleSecurityGuardGoToSettings}
+                />
+            )}
         </PWView>
     )
 }

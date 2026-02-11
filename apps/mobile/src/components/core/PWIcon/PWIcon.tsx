@@ -114,6 +114,7 @@ import TxOptOutIcon from '@assets/icons/transactions/opt-out.svg'
 import TxGroupIcon from '@assets/icons/transactions/group.svg'
 import TxPaymentIcon from '@assets/icons/transactions/payment.svg'
 import TxSwapIcon from '@assets/icons/transactions/swap.svg'
+import DocumentDownloadIcon from '@assets/icons/document-download.svg'
 import { useMemo } from 'react'
 
 const ICON_LIBRARY = {
@@ -139,6 +140,7 @@ const ICON_LIBRARY = {
     cross: CrossIcon,
     delete: DeleteIcon,
     dollar: DollarIcon,
+    'document-download': DocumentDownloadIcon,
     'dot-stack': DotStackIcon,
     'edit-pen': EditPenIcon,
     ellipsis: EllipsisIcon,
@@ -232,6 +234,7 @@ export type PWIconVariant =
     | 'link'
     | 'error'
     | 'positive'
+    | 'brand'
 
 export type PWIconProps = {
     name: IconName
@@ -270,6 +273,7 @@ export const PWIcon = ({
             link: theme.colors.linkPrimary,
             error: theme.colors.error,
             positive: theme.colors.helperPositive,
+            brand: theme.colors.primary,
         }),
         [theme],
     )
@@ -284,6 +288,7 @@ export const PWIcon = ({
             link: theme.colors.textGray,
             error: theme.colors.error,
             positive: theme.colors.textGray,
+            brand: theme.colors.textGray,
         }),
         [theme],
     )

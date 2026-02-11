@@ -22,10 +22,16 @@ type UseSettingsSecurityScreenResult = {
     isPinEnabled: boolean
     isBiometricEnabled: boolean
     isBiometricsAvailable: boolean
+    isAdvancedSecurityEnabled: boolean
+    isRekeySupportEnabled: boolean
+    isAssetFreezeSupportEnabled: boolean
     pinViewMode: PinEntryMode | null
     handlePinToggle: (value: boolean) => void
     handleBiometricToggle: (value: boolean) => Promise<boolean>
     handleChangePinPress: () => void
+    handleAdvancedSecurityToggle: (value: boolean) => void
+    handleRekeyToggle: (value: boolean) => void
+    handleAssetFreezeToggle: (value: boolean) => void
     pinSetSuccess: () => void
     clearPinViewMode: () => void
 }
@@ -33,7 +39,7 @@ type UseSettingsSecurityScreenResult = {
 export const useSettingsSecurityScreen =
     (): UseSettingsSecurityScreenResult => {
         const { checkPinEnabled, savePin } = usePinCode()
-        const { setPreference } = usePreferences()
+        const { setPreference, getPreference } = usePreferences()
         const { showToast } = useToast()
         const { t } = useLanguage()
         const {
@@ -113,14 +119,58 @@ export const useSettingsSecurityScreen =
             setPinViewMode(null)
         }, [])
 
+        const isAdvancedSecurityEnabled = !!getPreference(
+            UserPreferences.advancedSecurityEnabled,
+        )
+        const isRekeySupportEnabled = !!getPreference(
+            UserPreferences.rekeySupportEnabled,
+        )
+        const isAssetFreezeSupportEnabled = !!getPreference(
+            UserPreferences.assetFreezeSupportEnabled,
+        )
+
+        const handleAdvancedSecurityToggle = useCallback(
+            (value: boolean) => {
+                setPreference(UserPreferences.advancedSecurityEnabled, value)
+                if (!value) {
+                    setPreference(UserPreferences.rekeySupportEnabled, false)
+                    setPreference(
+                        UserPreferences.assetFreezeSupportEnabled,
+                        false,
+                    )
+                }
+            },
+            [setPreference],
+        )
+
+        const handleRekeyToggle = useCallback(
+            (value: boolean) => {
+                setPreference(UserPreferences.rekeySupportEnabled, value)
+            },
+            [setPreference],
+        )
+
+        const handleAssetFreezeToggle = useCallback(
+            (value: boolean) => {
+                setPreference(UserPreferences.assetFreezeSupportEnabled, value)
+            },
+            [setPreference],
+        )
+
         return {
             isPinEnabled,
             isBiometricEnabled,
             isBiometricsAvailable,
+            isAdvancedSecurityEnabled,
+            isRekeySupportEnabled,
+            isAssetFreezeSupportEnabled,
             pinViewMode,
             handlePinToggle,
             handleBiometricToggle,
             handleChangePinPress,
+            handleAdvancedSecurityToggle,
+            handleRekeyToggle,
+            handleAssetFreezeToggle,
             clearPinViewMode,
             pinSetSuccess,
         }

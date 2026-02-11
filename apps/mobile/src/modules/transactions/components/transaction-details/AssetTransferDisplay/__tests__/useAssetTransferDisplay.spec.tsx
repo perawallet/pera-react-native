@@ -1,0 +1,110 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, it, expect, vi } from 'vitest'
+import { renderHook, act } from '@testing-library/react'
+import { useAssetTransferDisplay } from '../useAssetTransferDisplay'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import {
+    useSingleAssetDetailsQuery,
+    type PeraAsset,
+} from '@perawallet/wallet-core-assets'
+import type { UseQueryResult } from '@tanstack/react-query'
+
+vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-blockchain')
+        >()
+    return {
+        ...actual,
+        getAssetTransferType: vi.fn(() => 'transfer'),
+    }
+})
+
+vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-assets')>()
+    return {
+        ...actual,
+        useSingleAssetDetailsQuery: vi.fn(),
+    }
+})
+
+describe('useAssetTransferDisplay', () => {
+    const baseTx = {
+        sender: 'SENDER',
+        fee: 1000n,
+        id: 'TX_ID',
+        assetTransferTransaction: {
+            receiver: 'RECEIVER',
+            amount: 1000000n,
+            assetId: 123n,
+        },
+    } as unknown as PeraDisplayableTransaction
+
+    it('returns asset metadata as metadataHash when present', () => {
+        vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
+            data: {
+                assetId: '123',
+                name: 'Test',
+                decimals: 6,
+                metadata: 'some-metadata-value',
+            },
+        } as UseQueryResult<NoInfer<PeraAsset>, unknown>)
+
+        const { result } = renderHook(() => useAssetTransferDisplay(baseTx))
+
+        expect(result.current.metadataHash).toBe('some-metadata-value')
+    })
+
+    it('returns undefined metadataHash when asset has no metadata', () => {
+        vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
+            data: {
+                assetId: '123',
+                name: 'Test',
+                decimals: 6,
+            },
+        } as UseQueryResult<NoInfer<PeraAsset>, unknown>)
+
+        const { result } = renderHook(() => useAssetTransferDisplay(baseTx))
+
+        expect(result.current.metadataHash).toBeUndefined()
+    })
+
+    it('manages modal state for metadata hash details', () => {
+        vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
+            data: {
+                assetId: '123',
+                name: 'Test',
+                decimals: 6,
+                metadata: 'hash',
+            },
+        } as UseQueryResult<NoInfer<PeraAsset>, unknown>)
+
+        const { result } = renderHook(() => useAssetTransferDisplay(baseTx))
+
+        expect(result.current.isMetadataHashDetailsModalOpen).toBe(false)
+
+        act(() => {
+            result.current.openMetadataHashDetailsModal()
+        })
+
+        expect(result.current.isMetadataHashDetailsModalOpen).toBe(true)
+
+        act(() => {
+            result.current.closeMetadataHashDetailsModal()
+        })
+
+        expect(result.current.isMetadataHashDetailsModalOpen).toBe(false)
+    })
+})

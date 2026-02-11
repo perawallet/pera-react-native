@@ -14,6 +14,11 @@ import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useSigningRequest } from '../useSigningRequest'
 import { initSigningStore } from '../../store'
+import {
+    MAX_TRANSACTION_SIGN_REQUESTS,
+    MAX_DATA_SIGN_REQUESTS,
+} from '../../constants'
+import { AppError, ERROR_I18N_KEYS } from '@perawallet/wallet-core-shared'
 import type {
     SignRequest,
     TransactionSignRequest,
@@ -110,19 +115,81 @@ describe('useSigningRequest', () => {
             expect(result.current.pendingSignRequests[0].id).toBe('tx-1')
         })
 
-        test('removes a sign request', () => {
+        test('throws when transaction count exceeds limit', () => {
             const { result } = renderHook(() => useSigningRequest())
-            const request: SignRequest = makeTxRequest()
+            const txs = Array.from(
+                { length: MAX_TRANSACTION_SIGN_REQUESTS + 1 },
+                () => ({}),
+            )
+            const request = makeTxRequest({
+                txs: txs as any,
+            })
+
+            expect(() => {
+                act(() => {
+                    result.current.addSignRequest(request)
+                })
+            }).toThrow(AppError)
+
+            try {
+                act(() => {
+                    result.current.addSignRequest(request)
+                })
+            } catch (e) {
+                expect(e).toBeInstanceOf(AppError)
+                expect((e as AppError).getI18nKey()).toBe(
+                    ERROR_I18N_KEYS.SIGNING_TRANSACTION_LIMIT_EXCEEDED,
+                )
+            }
+        })
+
+        test('accepts transactions at exactly the limit', () => {
+            const { result } = renderHook(() => useSigningRequest())
+            const txs = Array.from(
+                { length: MAX_TRANSACTION_SIGN_REQUESTS },
+                () => ({}),
+            )
+            const request = makeTxRequest({
+                txs: txs as any,
+            })
 
             act(() => {
                 result.current.addSignRequest(request)
             })
-            expect(result.current.pendingSignRequests).toHaveLength(1)
 
-            act(() => {
-                result.current.removeSignRequest(request)
+            expect(result.current.pendingSignRequests).toHaveLength(1)
+        })
+
+        test('throws when data sign count exceeds limit', () => {
+            const { result } = renderHook(() => useSigningRequest())
+            const data = Array.from(
+                { length: MAX_DATA_SIGN_REQUESTS + 1 },
+                () => ({
+                    signer: 'ADDR1',
+                    data: 'test',
+                    chainId: 4160,
+                }),
+            )
+            const request = makeArbRequest({
+                data: data as any,
             })
-            expect(result.current.pendingSignRequests).toHaveLength(0)
+
+            expect(() => {
+                act(() => {
+                    result.current.addSignRequest(request)
+                })
+            }).toThrow(AppError)
+
+            try {
+                act(() => {
+                    result.current.addSignRequest(request)
+                })
+            } catch (e) {
+                expect(e).toBeInstanceOf(AppError)
+                expect((e as AppError).getI18nKey()).toBe(
+                    ERROR_I18N_KEYS.SIGNING_DATA_LIMIT_EXCEEDED,
+                )
+            }
         })
     })
 

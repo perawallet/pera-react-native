@@ -15,19 +15,23 @@ import type { TransactionIconProps } from './TransactionIcon'
 
 type StyleProps = Pick<TransactionIconProps, 'size'>
 
+/**
+ * Size map for TransactionIcon container dimensions.
+ * Uses consistent map pattern per project conventions.
+ */
+const sizeMap: Record<NonNullable<TransactionIconProps['size']>, number> = {
+    sm: 32,
+    md: 40, // About 40x40px as requested
+    lg: 56,
+}
+
 export const useStyles = makeStyles((theme, props: StyleProps) => {
-    const padding = props.size === 'sm' ? theme.spacing.md : theme.spacing.lg
-    const size =
-        (props.size === 'sm'
-            ? theme.spacing.xl
-            : props.size === 'md'
-              ? theme.spacing.xxl
-              : theme.spacing['4xl']) +
-        2 * padding
+    const size = sizeMap[props.size ?? 'sm']
+
     return {
         container: {
             backgroundColor: theme.colors.layerGrayLighter,
-            borderRadius: '50%',
+            borderRadius: size / 2,
             width: size,
             height: size,
             alignItems: 'center',

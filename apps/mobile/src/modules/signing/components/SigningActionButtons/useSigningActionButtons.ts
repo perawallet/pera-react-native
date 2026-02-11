@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useToast } from '@hooks/useToast'
 import { config } from '@perawallet/wallet-core-config'
 import { useLanguage } from '@hooks/useLanguage'
@@ -20,18 +20,54 @@ import {
     useSigningRequestAnalysis,
 } from '@perawallet/wallet-core-signing'
 import { bottomSheetNotifier } from '@components/core'
+import { useNavigation } from '@react-navigation/native'
+import type { StackNavigationProp } from '@react-navigation/stack'
+import type { SigningStackParamList } from '@modules/signing/routes'
+import { useModalState } from '@hooks/useModalState'
+import { usePreferences } from '@perawallet/wallet-core-settings'
+import { UserPreferences } from '@constants/user-preferences'
+
+type GuardedWarningType = 'rekey' | 'asset-freeze'
+
+const preferenceKeyMap: Record<GuardedWarningType, string> = {
+    rekey: UserPreferences.rekeySupportEnabled,
+    'asset-freeze': UserPreferences.assetFreezeSupportEnabled,
+}
 
 export const useSigningActionButtons = () => {
     const { showToast } = useToast()
     const { t } = useLanguage()
     const [isLoading, setIsLoading] = useState(false)
 
+    const securityGuardModal = useModalState()
+    const navigation =
+        useNavigation<StackNavigationProp<SigningStackParamList>>()
+    const { getPreference } = usePreferences()
+
     const { currentRequest, signAndSendRequest, rejectRequest } =
         useSigningRequest()
     const request = currentRequest as TransactionSignRequest
-    const { allTransactions } = useSigningRequestAnalysis(request)
+    const { allTransactions, warnings } = useSigningRequestAnalysis(request)
 
-    const handleSignAndSend = useCallback(async () => {
+    const guardedWarningType = useMemo(() => {
+        const presentTypes: GuardedWarningType[] = []
+        if (warnings.some(w => w.type === 'rekey')) presentTypes.push('rekey')
+        if (warnings.some(w => w.type === 'asset-freeze'))
+            presentTypes.push('asset-freeze')
+
+        if (presentTypes.length === 0) return null
+
+        // Prioritize a type where support is disabled (must block)
+        const disabledType = presentTypes.find(
+            type => !getPreference(preferenceKeyMap[type]),
+        )
+        if (disabledType) return disabledType
+
+        // All present types are enabled — show "are you sure?" for the first
+        return presentTypes[0]
+    }, [warnings, getPreference])
+
+    const performSign = useCallback(async () => {
         if (!request) {
             return
         }
@@ -71,6 +107,28 @@ export const useSigningActionButtons = () => {
         }
     }, [request, signAndSendRequest, showToast, t])
 
+    const handleSignAndSend = useCallback(() => {
+        if (guardedWarningType !== null) {
+            securityGuardModal.open()
+            return
+        }
+        performSign()
+    }, [guardedWarningType, performSign])
+
+    const handleSecurityGuardConfirm = useCallback(() => {
+        securityGuardModal.close()
+        performSign()
+    }, [performSign])
+
+    const handleSecurityGuardGoToSettings = useCallback(() => {
+        securityGuardModal.close()
+        navigation.navigate('SecuritySettings')
+    }, [navigation])
+
+    const closeSecurityGuard = useCallback(() => {
+        securityGuardModal.close()
+    }, [])
+
     const handleReject = useCallback(() => {
         if (!request) {
             return
@@ -83,5 +141,10 @@ export const useSigningActionButtons = () => {
         handleReject,
         isLoading,
         hasMultipleTransactions: allTransactions.length > 1,
+        guardedWarningType,
+        isSecurityGuardOpen: securityGuardModal.isOpen,
+        handleSecurityGuardConfirm,
+        handleSecurityGuardGoToSettings,
+        closeSecurityGuard,
     }
 }

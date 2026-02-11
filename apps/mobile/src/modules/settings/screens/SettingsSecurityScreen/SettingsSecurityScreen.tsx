@@ -21,6 +21,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useSettingsSecurityScreen } from './useSettingsSecurityScreen'
 import { useStyles } from './styles'
 import { PinEditView } from '@modules/security/components/PinEditView/PinEditView'
+import { ExpandablePanel } from '@components/ExpandablePanel'
 
 export const SettingsSecurityScreen = () => {
     const { t } = useLanguage()
@@ -31,9 +32,15 @@ export const SettingsSecurityScreen = () => {
         isPinEnabled,
         isBiometricEnabled,
         isBiometricsAvailable,
+        isAdvancedSecurityEnabled,
+        isRekeySupportEnabled,
+        isAssetFreezeSupportEnabled,
         handlePinToggle,
         handleBiometricToggle,
         handleChangePinPress,
+        handleAdvancedSecurityToggle,
+        handleRekeyToggle,
+        handleAssetFreezeToggle,
         pinSetSuccess,
         clearPinViewMode,
     } = useSettingsSecurityScreen()
@@ -98,24 +105,74 @@ export const SettingsSecurityScreen = () => {
                     {t('settings.security.antispam_section')}
                 </PWText>
 
-                <PWView style={styles.listItem}>
-                    <PWView style={styles.listItemContent}>
-                        <PWIcon name='rekey' />
-                        <PWText>
-                            {t('settings.security.enable_rekey_support')}
-                        </PWText>
+                <PWView>
+                    <PWView style={styles.listItem}>
+                        <PWView style={styles.listItemContent}>
+                            <PWIcon name='shield-check' />
+                            <PWText>
+                                {t(
+                                    'settings.security.advanced_security_settings',
+                                )}
+                            </PWText>
+                        </PWView>
+                        <PWSwitch
+                            value={isAdvancedSecurityEnabled}
+                            onValueChange={handleAdvancedSecurityToggle}
+                        />
                     </PWView>
-                    <PWSwitch
-                        value={false}
-                        onValueChange={() => {
-                            // TODO: Implement re-key support
-                        }}
-                        disabled
-                    />
+                    <PWText style={styles.listItemSubtitle}>
+                        {t(
+                            'settings.security.advanced_security_settings_description',
+                        )}
+                    </PWText>
                 </PWView>
-                <PWText style={styles.listItemSubtitle}>
-                    {t('settings.security.enable_rekey_support_description')}
-                </PWText>
+
+                <ExpandablePanel isExpanded={isAdvancedSecurityEnabled}>
+                    <PWView style={styles.expandablePanelContent}>
+                        <PWView>
+                            <PWView style={styles.listItem}>
+                                <PWView style={styles.listItemContent}>
+                                    <PWIcon name='rekey' />
+                                    <PWText>
+                                        {t(
+                                            'settings.security.enable_rekey_support',
+                                        )}
+                                    </PWText>
+                                </PWView>
+                                <PWSwitch
+                                    value={isRekeySupportEnabled}
+                                    onValueChange={handleRekeyToggle}
+                                />
+                            </PWView>
+                            <PWText style={styles.listItemSubtitle}>
+                                {t(
+                                    'settings.security.enable_rekey_support_description',
+                                )}
+                            </PWText>
+                        </PWView>
+                        <PWView>
+                            <PWView style={styles.listItem}>
+                                <PWView style={styles.listItemContent}>
+                                    <PWIcon name='snowflake' />
+                                    <PWText>
+                                        {t(
+                                            'settings.security.enable_asset_freeze_support',
+                                        )}
+                                    </PWText>
+                                </PWView>
+                                <PWSwitch
+                                    value={isAssetFreezeSupportEnabled}
+                                    onValueChange={handleAssetFreezeToggle}
+                                />
+                            </PWView>
+                            <PWText style={styles.listItemSubtitle}>
+                                {t(
+                                    'settings.security.enable_asset_freeze_support_description',
+                                )}
+                            </PWText>
+                        </PWView>
+                    </PWView>
+                </ExpandablePanel>
             </PWView>
 
             <PinEditView

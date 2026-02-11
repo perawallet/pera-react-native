@@ -38,6 +38,7 @@ export type PWInputProps = {
     label?: string
     labelStyle?: RNEInputProps['labelStyle']
     testID?: string
+    placeholderTextColor?: string
 }
 
 export const PWInput = ({
@@ -58,7 +59,6 @@ export const PWInput = ({
             inputContainerStyle={[styles.inputContainer, inputContainerStyle]}
             inputStyle={[styles.input, inputStyle]}
             labelStyle={[styles.label, labelStyle]}
-            placeholderTextColor={undefined} // Let theme handle it unless overridden
         />
     )
 }

@@ -30,7 +30,11 @@ const triggerWCRefresh = () => {
         (walletConnectRefreshCounter.current ?? 0) + 1
 }
 
-export const useWalletConnect = () => {
+type UseWalletConnectOptions = {
+    onError?: (error: Error) => void
+}
+
+export const useWalletConnect = (options?: UseWalletConnectOptions) => {
     const connections = useWalletConnectStore(
         state => state.walletConnectConnections,
     )
@@ -84,7 +88,16 @@ export const useWalletConnect = () => {
                     payload,
                     clientId: connector.clientId,
                 })
-                handleSignData(connector, error, payload)
+                try {
+                    handleSignData(connector, error, payload)
+                } catch (e) {
+                    logger.error('Failed to sign data', { error: e })
+                    connector.rejectRequest({
+                        id: payload?.id,
+                        error: e as Error,
+                    })
+                    options?.onError?.(e as Error)
+                }
             })
             connector.on('algo_signTxn', (error, payload) => {
                 logger.debug('WC algo_signTxn received', {
@@ -92,7 +105,16 @@ export const useWalletConnect = () => {
                     payload,
                     clientId: connector.clientId,
                 })
-                handleSignTransaction(connector, error, payload)
+                try {
+                    handleSignTransaction(connector, error, payload)
+                } catch (e) {
+                    logger.error('Failed to sign transactions', { error: e })
+                    connector.rejectRequest({
+                        id: payload?.id,
+                        error: e as Error,
+                    })
+                    options?.onError?.(e as Error)
+                }
             })
 
             connector.on('disconnect', () => {

@@ -10,5 +10,4 @@
  limitations under the License
  */
 
-export { ViewNotePanel } from './ViewNotePanel'
-export type { ViewNotePanelProps } from './ViewNotePanel'
+export { RekeyGuardBottomSheet } from './RekeyGuardBottomSheet'

@@ -10,21 +10,24 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
+import { PWDivider, PWText, PWView } from '@components/core'
+import { useStyles } from './styles'
 
-export const useStyles = makeStyles(theme => {
-    return {
-        container: {
-            flex: 1,
-            paddingBottom: theme.spacing.xxl,
-            borderTopStartRadius: theme.spacing.sm,
-            borderTopEndRadius: theme.spacing.sm,
-            overflow: 'hidden',
-            gap: theme.spacing.xl,
-        },
-        noteText: {
-            marginBottom: theme.spacing.xl,
-            paddingHorizontal: theme.spacing.xl,
-        },
-    }
-})
+export type TransactionDateHeaderProps = {
+    /** The formatted date title to display */
+    title: string
+}
+
+export const TransactionDateHeader = ({
+    title,
+}: TransactionDateHeaderProps) => {
+    const styles = useStyles()
+
+    return (
+        <PWView style={styles.container}>
+            <PWDivider style={styles.divider} />
+            <PWText style={styles.title}>{title}</PWText>
+            <PWDivider style={styles.divider} />
+        </PWView>
+    )
+}

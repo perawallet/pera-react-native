@@ -20,7 +20,7 @@ export const useStyles = makeStyles(theme => ({
     contentContainer: {
         paddingTop: theme.spacing.lg,
         paddingBottom: theme.spacing.xl,
-        paddingHorizontal: theme.spacing.xs,
+        paddingHorizontal: theme.spacing.md,
     },
     header: {
         paddingVertical: theme.spacing.md,

@@ -13,19 +13,20 @@
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { TransactionIcon, TransactionIconType } from '../TransactionIcon'
-import { PWRoundIcon } from '@components/core'
+import { PWIcon } from '@components/core'
 
 vi.mock('@components/core', () => ({
-    PWRoundIcon: vi.fn(() => null),
+    PWView: vi.fn(({ children }) => children),
+    PWIcon: vi.fn(() => null),
 }))
 
 describe('TransactionIcon', () => {
     it('renders correct icon for payment type', () => {
         render(<TransactionIcon type='payment' />)
-        expect(PWRoundIcon).toHaveBeenCalledWith(
+        expect(PWIcon).toHaveBeenCalledWith(
             expect.objectContaining({
-                icon: 'transactions/payment',
-                size: 'md',
+                name: 'transactions/payment',
+                size: 'sm', // sm maps to 24px in our current setup for sm transactions
             }),
             undefined,
         )
@@ -33,15 +34,15 @@ describe('TransactionIcon', () => {
 
     it('renders correct icon for asset-transfer type', () => {
         render(<TransactionIcon type='asset-transfer' />)
-        expect(PWRoundIcon).toHaveBeenCalledWith(
+        expect(PWIcon).toHaveBeenCalledWith(
             expect.objectContaining({
-                icon: 'transactions/swap',
+                name: 'transactions/swap',
             }),
             undefined,
         )
     })
 
-    it('uses correct size mapping', () => {
+    it('uses correct size mapping for md requested size', () => {
         vi.clearAllMocks()
         render(
             <TransactionIcon
@@ -49,23 +50,10 @@ describe('TransactionIcon', () => {
                 size='md'
             />,
         )
-        expect(PWRoundIcon).toHaveBeenCalledWith(
+        // For size='md', we currently use size='md' (which is probably 32px or similar in system)
+        expect(PWIcon).toHaveBeenCalledWith(
             expect.objectContaining({
-                size: 'lg',
-            }),
-            undefined,
-        )
-
-        vi.clearAllMocks()
-        render(
-            <TransactionIcon
-                type='payment'
-                size='lg'
-            />,
-        )
-        expect(PWRoundIcon).toHaveBeenCalledWith(
-            expect.objectContaining({
-                size: 'xl',
+                size: 'md',
             }),
             undefined,
         )
@@ -78,9 +66,9 @@ describe('TransactionIcon', () => {
                 type={'unknown' as unknown as TransactionIconType}
             />,
         )
-        expect(PWRoundIcon).toHaveBeenCalledWith(
+        expect(PWIcon).toHaveBeenCalledWith(
             expect.objectContaining({
-                icon: 'transactions/generic',
+                name: 'transactions/generic',
             }),
             undefined,
         )

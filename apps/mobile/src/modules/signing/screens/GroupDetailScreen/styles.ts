@@ -28,7 +28,4 @@ export const useStyles = makeStyles(theme => ({
     itemSeparator: {
         height: theme.spacing.sm,
     },
-    title: {
-        textAlign: 'center',
-    },
 }))

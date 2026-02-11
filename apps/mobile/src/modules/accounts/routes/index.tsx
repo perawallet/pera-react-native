@@ -10,16 +10,12 @@
  limitations under the License
  */
 
-import {
-    createNativeStackNavigator,
-    NativeStackHeaderProps,
-} from '@react-navigation/native-stack'
+import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { screenListeners } from '@routes/listeners'
 import { AccountScreen } from '@modules/accounts/screens/AccountScreen'
 import { AssetDetailsScreen } from '@modules/assets/screens/AssetDetailsScreen'
-import { NavigationHeader } from '@components/NavigationHeader'
-import { fullScreenLayout, safeAreaLayoutWithTabBar } from '@layouts/index'
+import { safeAreaLayout, safeAreaLayoutWithTabBar } from '@layouts/index'
 
 import { AccountStackParamsList } from './types'
 export type { AccountStackParamsList } from './types'
@@ -43,13 +39,10 @@ export const AccountStackNavigator = () => {
             />
             <AccountStack.Screen
                 name='AssetDetails'
-                layout={fullScreenLayout}
+                layout={safeAreaLayout}
                 component={AssetDetailsScreen}
                 options={{
-                    headerShown: true,
-                    header: (props: NativeStackHeaderProps) => (
-                        <NavigationHeader {...props} />
-                    ),
+                    headerShown: false,
                 }}
             />
         </AccountStack.Navigator>

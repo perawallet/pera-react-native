@@ -75,7 +75,7 @@ export type SigningStore = BaseStoreState & {
 }
 
 export type TransactionWarning = {
-    type: 'close' | 'rekey'
+    type: 'close' | 'rekey' | 'asset-freeze'
     senderAddress: string
     targetAddress: string
 }

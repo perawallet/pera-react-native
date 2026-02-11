@@ -50,6 +50,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
         groups: [],
         allTransactions: [],
         listItems: [],
+        signableAddresses: new Set(),
         totalFee: 0n,
         warnings: [],
         requestStructure: 'single',
@@ -92,15 +93,30 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     initBlockchainStore: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useTransactionSigner: vi.fn(() => ({
-        signTransactions: vi.fn().mockResolvedValue([]),
-    })),
-    useAllAccounts: vi.fn(() => []),
-    useSelectedAccount: vi.fn(() => null),
-    useFindAccountByAddress: vi.fn(() => vi.fn(() => null)),
-    getAccountDisplayName: vi.fn(() => ''),
-}))
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-accounts')
+        >()
+    return {
+        ...actual,
+        useTransactionSigner: vi.fn(() => ({
+            signTransactions: vi.fn().mockResolvedValue([]),
+        })),
+        useAllAccounts: vi.fn(() => []),
+        useSelectedAccount: vi.fn(() => null),
+        useFindAccountByAddress: vi.fn(() => vi.fn(() => null)),
+        useAccountBalancesQuery: vi.fn(() => ({
+            accountBalances: new Map(),
+            portfolioAlgoValue: new Decimal(0),
+            portfolioFiatValue: new Decimal(0),
+            isPending: false,
+            isFetched: true,
+            isRefetching: false,
+            isError: false,
+        })),
+    }
+})
 
 describe('TransactionSigningView', () => {
     const mockSingleTxRequest = {
@@ -143,6 +159,7 @@ describe('TransactionSigningView', () => {
             groups: [],
             allTransactions: [],
             listItems: [],
+            signableAddresses: new Set(),
             totalFee: Decimal(0),
             warnings: [],
             distinctWarnings: [],

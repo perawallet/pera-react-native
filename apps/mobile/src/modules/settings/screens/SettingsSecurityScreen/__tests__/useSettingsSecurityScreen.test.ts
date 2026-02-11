@@ -33,12 +33,14 @@ describe('useSettingsSecurityScreen', () => {
     const mockEnableBiometrics = vi.fn()
     const mockDisableBiometrics = vi.fn()
     const mockSetPreference = vi.fn()
+    const mockGetPreference = vi.fn()
 
     beforeEach(() => {
         vi.clearAllMocks()
         mockCheckPinEnabled.mockResolvedValue(false)
         mockCheckBiometricsEnabled.mockResolvedValue(false)
         mockCheckBiometricsAvailable.mockResolvedValue(false)
+        mockGetPreference.mockReturnValue(undefined)
         ;(usePinCode as Mock).mockReturnValue({
             checkPinEnabled: mockCheckPinEnabled,
             savePin: mockSavePin,
@@ -51,6 +53,7 @@ describe('useSettingsSecurityScreen', () => {
         })
         ;(usePreferences as Mock).mockReturnValue({
             setPreference: mockSetPreference,
+            getPreference: mockGetPreference,
         })
     })
 
@@ -289,6 +292,69 @@ describe('useSettingsSecurityScreen', () => {
             })
 
             expect(result.current.pinViewMode).toBeNull()
+        })
+    })
+
+    describe('handleAssetFreezeToggle', () => {
+        it('should set asset freeze support preference when toggled on', async () => {
+            const { result } = renderHook(() => useSettingsSecurityScreen())
+
+            await waitFor(() => {
+                expect(mockCheckPinEnabled).toHaveBeenCalled()
+            })
+
+            act(() => {
+                result.current.handleAssetFreezeToggle(true)
+            })
+
+            expect(mockSetPreference).toHaveBeenCalledWith(
+                'asset-freeze-support-enabled',
+                true,
+            )
+        })
+
+        it('should clear asset freeze support preference when toggled off', async () => {
+            const { result } = renderHook(() => useSettingsSecurityScreen())
+
+            await waitFor(() => {
+                expect(mockCheckPinEnabled).toHaveBeenCalled()
+            })
+
+            act(() => {
+                result.current.handleAssetFreezeToggle(false)
+            })
+
+            expect(mockSetPreference).toHaveBeenCalledWith(
+                'asset-freeze-support-enabled',
+                false,
+            )
+        })
+    })
+
+    describe('handleAdvancedSecurityToggle', () => {
+        it('should reset both rekey and asset freeze when advanced security is disabled', async () => {
+            const { result } = renderHook(() => useSettingsSecurityScreen())
+
+            await waitFor(() => {
+                expect(mockCheckPinEnabled).toHaveBeenCalled()
+            })
+
+            act(() => {
+                result.current.handleAdvancedSecurityToggle(false)
+            })
+
+            expect(mockSetPreference).toHaveBeenCalledWith(
+                'advanced-security-enabled',
+                false,
+            )
+            expect(mockSetPreference).toHaveBeenCalledWith(
+                'rekey-support-enabled',
+                false,
+            )
+            expect(mockSetPreference).toHaveBeenCalledWith(
+                'asset-freeze-support-enabled',
+                false,
+            )
         })
     })
 })

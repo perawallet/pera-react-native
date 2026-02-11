@@ -11,8 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { PWFlatList, PWText, PWToolbar, PWView } from '@components/core'
-import { useLanguage } from '@hooks/useLanguage'
+import { PWFlatList, PWView } from '@components/core'
 import type { TransactionListItem } from '@perawallet/wallet-core-signing'
 import { TransactionListHeader } from './TransactionListHeader'
 import { TransactionListFooter } from './TransactionListFooter'
@@ -23,7 +22,6 @@ import { TransactionPreview } from '@modules/transactions/components/transaction
 
 export const TransactionListScreen = () => {
     const styles = useStyles()
-    const { t } = useLanguage()
     const {
         listItems,
         totalFee,
@@ -61,18 +59,13 @@ export const TransactionListScreen = () => {
 
     return (
         <PWView style={styles.container}>
-            <PWToolbar
-                center={
-                    <PWText variant='h4'>
-                        {t('signing.transactions.title')}
-                    </PWText>
-                }
-            />
-            <TransactionListHeader itemCount={transactionCount} />
             <PWFlatList
                 data={listItems}
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
+                ListHeaderComponent={
+                    <TransactionListHeader itemCount={transactionCount} />
+                }
                 ItemSeparatorComponent={ItemSeparator}
                 contentContainerStyle={styles.contentContainer}
                 showsVerticalScrollIndicator={false}

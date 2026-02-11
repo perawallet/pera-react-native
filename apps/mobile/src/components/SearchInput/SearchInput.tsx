@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { InputProps } from '@rneui/base'
+import { InputProps, useTheme } from '@rneui/themed'
 
 import { PWIcon, PWInput } from '@components/core'
 import { useStyles } from './styles'
@@ -22,12 +22,15 @@ export type SearchInputProps = {} & Omit<
 
 export const SearchInput = (props: SearchInputProps) => {
     const styles = useStyles()
+    const { theme } = useTheme()
 
     return (
         <PWInput
             {...props}
             inputContainerStyle={[props.inputContainerStyle, styles.search]}
+            inputStyle={styles.input}
             placeholder={props.placeholder ?? 'Search'}
+            placeholderTextColor={theme.colors.textGray}
             leftIcon={
                 <PWIcon
                     name='magnifying-glass'

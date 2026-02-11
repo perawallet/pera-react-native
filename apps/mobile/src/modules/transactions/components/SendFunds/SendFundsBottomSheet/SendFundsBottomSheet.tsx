@@ -54,19 +54,37 @@ export const SendFundsBottomSheet = ({
     const dimensions = useWindowDimensions()
     const styles = useStyles(dimensions)
     const { t } = useLanguage()
-    const { canSelectAsset, setSelectedAsset, setCanSelectAsset, reset } =
-        useSendFunds()
+    const {
+        canSelectAsset,
+        setSelectedAsset,
+        setCanSelectAsset,
+        reset,
+        selectedAsset,
+    } = useSendFunds()
     const { data: assetBalance } = useAccountAssetBalanceQuery(
         selectedAccount ?? undefined,
         assetId,
     )
 
     useLayoutEffect(() => {
-        if (assetId != null) {
-            setSelectedAsset(assetBalance ?? undefined)
-            setCanSelectAsset(false)
+        if (isVisible && assetId != null) {
+            if (canSelectAsset) {
+                setCanSelectAsset(false)
+            }
+
+            if (assetBalance && selectedAsset?.assetId !== assetId) {
+                setSelectedAsset(assetBalance)
+            }
         }
-    }, [assetId, assetBalance, setCanSelectAsset, setSelectedAsset])
+    }, [
+        isVisible,
+        assetId,
+        assetBalance,
+        setCanSelectAsset,
+        setSelectedAsset,
+        canSelectAsset,
+        selectedAsset?.assetId,
+    ])
 
     const handleFinished = () => {
         reset()

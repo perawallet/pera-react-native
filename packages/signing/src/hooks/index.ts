@@ -10,5 +10,6 @@
  limitations under the License
  */
 
+export * from './useBalanceValidation'
 export * from './useSigningRequest'
 export * from './useSigningRequestAnalysis'

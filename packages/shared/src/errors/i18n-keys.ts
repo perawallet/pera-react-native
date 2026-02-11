@@ -69,6 +69,11 @@ export const ERROR_I18N_KEYS = {
     WALLETCONNECT_SIGN_REQUEST: 'errors.walletconnect.sign_request',
     WALLETCONNECT_PERMISSION: 'errors.walletconnect.permission',
     WALLETCONNECT_INVALID_NETWORK: 'errors.walletconnect.invalid_network',
+
+    // Signing errors
+    SIGNING_TRANSACTION_LIMIT_EXCEEDED:
+        'errors.signing.transaction_limit_exceeded',
+    SIGNING_DATA_LIMIT_EXCEEDED: 'errors.signing.data_limit_exceeded',
 } as const
 
 /**

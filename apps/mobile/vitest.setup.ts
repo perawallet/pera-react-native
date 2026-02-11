@@ -166,6 +166,7 @@ vi.mock('@components/core', () => {
             onPress,
             testID,
             isDisabled,
+            isLoading,
             ...props
         }: any) =>
             React.createElement(
@@ -176,7 +177,11 @@ vi.mock('@components/core', () => {
                     disabled: isDisabled,
                     'data-testid': testID || 'PWButton',
                 },
-                title || children,
+                isLoading
+                    ? React.createElement('div', {
+                          'data-testid': 'activity-indicator',
+                      })
+                    : title || children,
             ),
         PWCheckbox: createMockComponent('PWCheckbox'),
         PWChip: ({ label, title, children, testID, ...props }: any) =>
@@ -415,6 +420,13 @@ vi.mock('@components/core', () => {
                 children,
             ),
         PWWebView: createMockComponent('PWWebView'),
+        PWDropdown: ({ children, testID }: any) =>
+            React.createElement(
+                'div',
+                { 'data-testid': testID || 'PWDropdown' },
+                children,
+            ),
+        PWDropdownItem: createMockComponent('PWDropdownItem'),
     }
 })
 
@@ -657,6 +669,80 @@ vi.mock('react-native', () => {
                     ),
                 )
             }),
+        SectionList: vi
+            .fn()
+            .mockImplementation(
+                ({
+                    sections,
+                    renderItem,
+                    renderSectionHeader,
+                    keyExtractor,
+                    testID,
+                    ListHeaderComponent,
+                    ListEmptyComponent,
+                    ListFooterComponent,
+                    ...props
+                }) => {
+                    const React = require('react')
+                    const isEmpty =
+                        !sections ||
+                        sections.length === 0 ||
+                        sections.every(
+                            (s: any) => !s.data || s.data.length === 0,
+                        )
+                    return React.createElement(
+                        'div',
+                        {
+                            ...props,
+                            'data-testid': testID || 'SectionList',
+                            testid: testID || 'SectionList',
+                        },
+                        ListHeaderComponent
+                            ? typeof ListHeaderComponent === 'function'
+                                ? ListHeaderComponent()
+                                : ListHeaderComponent
+                            : null,
+                        isEmpty && ListEmptyComponent
+                            ? typeof ListEmptyComponent === 'function'
+                                ? ListEmptyComponent()
+                                : ListEmptyComponent
+                            : null,
+                        sections?.map((section: any, sectionIndex: number) =>
+                            React.createElement(
+                                'div',
+                                { key: `section-${sectionIndex}` },
+                                renderSectionHeader
+                                    ? renderSectionHeader({ section })
+                                    : null,
+                                section.data?.map(
+                                    (item: any, itemIndex: number) =>
+                                        React.createElement(
+                                            'div',
+                                            {
+                                                key: keyExtractor
+                                                    ? keyExtractor(
+                                                          item,
+                                                          itemIndex,
+                                                      )
+                                                    : itemIndex,
+                                            },
+                                            renderItem({
+                                                item,
+                                                index: itemIndex,
+                                                section,
+                                            }),
+                                        ),
+                                ),
+                            ),
+                        ),
+                        ListFooterComponent
+                            ? typeof ListFooterComponent === 'function'
+                                ? ListFooterComponent()
+                                : ListFooterComponent
+                            : null,
+                    )
+                },
+            ),
         TextInput: vi.fn().mockImplementation(({ testID, ...props }) =>
             require('react').createElement(
                 'input',
@@ -1821,5 +1907,17 @@ vi.mock('react-native-gifted-charts', () => {
             React.createElement('div', { ...props, 'data-testid': 'BarChart' }),
         PieChart: (props: any) =>
             React.createElement('div', { ...props, 'data-testid': 'PieChart' }),
+    }
+})
+
+// Mock @react-native-community/datetimepicker to prevent Rollup parse errors
+vi.mock('@react-native-community/datetimepicker', () => {
+    const React = require('react')
+    return {
+        default: (props: any) =>
+            React.createElement('div', {
+                ...props,
+                'data-testid': props.testID || 'datetimepicker',
+            }),
     }
 })

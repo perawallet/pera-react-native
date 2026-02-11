@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import React, { PropsWithChildren, useEffect } from 'react'
+import React, { PropsWithChildren, useCallback, useEffect } from 'react'
 import { PWBottomSheet } from '@components/core'
 import { useWindowDimensions } from 'react-native'
 import { ConnectionView } from '@modules/walletconnect/components/ConnectionView/ConnectionView'
@@ -20,6 +20,7 @@ import {
 } from '@perawallet/wallet-core-walletconnect'
 import { WalletConnectErrorBoundary } from '@modules/walletconnect/components/BaseErrorBoundary/WalletConnectErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
 
 export type WalletConnectProviderProps = {} & PropsWithChildren
 
@@ -29,8 +30,23 @@ export function WalletConnectProvider({
     const { sessionRequests } = useWalletConnectSessionRequests()
     const nextRequest = sessionRequests.at(0)
     const { height } = useWindowDimensions()
-    const { initWalletConnect } = useWalletConnect()
+    const { showToast } = useToast()
     const { t } = useLanguage()
+
+    const handleSigningError = useCallback(
+        (error: Error) => {
+            showToast({
+                title: t('errors.signing.title'),
+                body: error.message,
+                type: 'error',
+            })
+        },
+        [showToast, t],
+    )
+
+    const { initWalletConnect } = useWalletConnect({
+        onError: handleSigningError,
+    })
 
     useEffect(() => {
         initWalletConnect()

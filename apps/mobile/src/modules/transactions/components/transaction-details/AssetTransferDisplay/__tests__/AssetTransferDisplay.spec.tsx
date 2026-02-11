@@ -25,11 +25,15 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
         await importOriginal<
             typeof import('@perawallet/wallet-core-blockchain')
         >()
+    const { Decimal } = await import('decimal.js')
     return {
         ...actual,
         getAssetTransferType: vi.fn(() => 'transfer'),
-        microAlgosToAlgos: vi.fn(
-            (amount: bigint) => Number(amount) / 1_000_000,
+        microAlgosToAlgos: vi.fn((amount: bigint) =>
+            new Decimal(amount.toString()).div(1_000_000),
+        ),
+        baseUnitsToDisplayUnits: vi.fn((amount: bigint, decimals: number) =>
+            new Decimal(amount.toString()).div(new Decimal(10).pow(decimals)),
         ),
         encodeAlgorandAddress: vi.fn(() => 'ENCODED_ADDRESS'),
     }
@@ -54,6 +58,10 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
         useSingleAssetDetailsQuery: vi.fn(),
     }
 })
+
+vi.mock('../../ViewTextDetailsPanel', () => ({
+    ViewTextDetailsPanel: vi.fn(() => null),
+}))
 
 describe('AssetTransferDisplay', () => {
     const mockAsset = {
@@ -111,6 +119,34 @@ describe('AssetTransferDisplay', () => {
 
         expect(container.textContent).toContain('Test Asset')
         expect(container.textContent).toContain('123')
+    })
+
+    it('renders metadata hash button when asset has metadata', () => {
+        vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
+            data: { ...mockAsset, metadata: 'some-metadata' },
+        } as UseQueryResult<NoInfer<PeraAsset>, unknown>)
+
+        const { container } = render(
+            <AssetTransferDisplay transaction={mockTransaction} />,
+        )
+
+        expect(container.textContent).toContain(
+            'transactions.common.view_metadata',
+        )
+    })
+
+    it('does not render metadata hash button when asset has no metadata', () => {
+        vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
+            data: mockAsset,
+        } as UseQueryResult<NoInfer<PeraAsset>, unknown>)
+
+        const { container } = render(
+            <AssetTransferDisplay transaction={mockTransaction} />,
+        )
+
+        expect(container.textContent).not.toContain(
+            'transactions.common.view_metadata',
+        )
     })
 
     it('renders null if assetTransferTransaction is missing', () => {

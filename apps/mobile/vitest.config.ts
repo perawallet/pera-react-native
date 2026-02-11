@@ -154,6 +154,13 @@ export default defineConfig({
                 ),
             },
             {
+                find: '@perawallet/wallet-core-transactions',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/transactions/src/index.ts',
+                ),
+            },
+            {
                 find: '@perawallet/wallet-core-swaps',
                 replacement: path.resolve(
                     __dirname,

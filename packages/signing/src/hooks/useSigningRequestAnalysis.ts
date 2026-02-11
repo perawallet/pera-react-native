@@ -72,6 +72,7 @@ export const useSigningRequestAnalysis = (request: TransactionSignRequest) => {
     return {
         allTransactions,
         listItems,
+        signableAddresses,
         totalFee,
         warnings,
         distinctWarnings,

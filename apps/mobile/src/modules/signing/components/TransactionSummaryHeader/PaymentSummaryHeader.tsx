@@ -18,7 +18,6 @@ import { PWText, PWView } from '@components/core'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
-import Decimal from 'decimal.js'
 import { useStyles } from './styles'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useTheme } from '@rneui/themed'
@@ -40,24 +39,27 @@ export const PaymentSummaryHeader = ({
 
     return (
         <PWView style={styles.container}>
-            <PWText style={styles.typeText}>
-                {t('transactions.summary.payment_to')}
-            </PWText>
-            <AddressDisplay
-                style={styles.address}
-                textProps={{ style: styles.addressText }}
-                iconProps={{ color: theme.colors.textMain }}
-                address={transaction.paymentTransaction?.receiver || ''}
-            />
+            <PWView style={styles.textContainer}>
+                <PWText
+                    variant='h3'
+                    style={styles.typeText}
+                >
+                    {t('transactions.summary.payment_to')}
+                </PWText>
+                <AddressDisplay
+                    style={styles.address}
+                    textProps={{ style: styles.addressText }}
+                    iconProps={{ color: theme.colors.textMain }}
+                    address={transaction.paymentTransaction?.receiver || ''}
+                />
+            </PWView>
             <PWView style={styles.amountContainer}>
                 <CurrencyDisplay
                     currency='ALGO'
                     precision={ALGO_ASSET.decimals}
                     minPrecision={DEFAULT_PRECISION}
-                    value={Decimal(
-                        microAlgosToAlgos(
-                            transaction.paymentTransaction?.amount ?? 0n,
-                        ),
+                    value={microAlgosToAlgos(
+                        transaction.paymentTransaction?.amount ?? 0n,
                     )}
                     showSymbol
                     variant='h1'

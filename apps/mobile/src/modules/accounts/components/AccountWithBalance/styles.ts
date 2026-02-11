@@ -36,9 +36,12 @@ export const useStyles = makeStyles((theme, { isHighlighted }: StyleProps) => {
             gap: theme.spacing.xs,
             alignItems: 'flex-end',
         },
-        algoBalance: {},
+        algoBalance: {
+            lineHeight: theme.spacing.lg,
+        },
         fiatBalance: {
             color: theme.colors.textGray,
+            lineHeight: theme.spacing.md,
         },
     }
 })

@@ -10,6 +10,10 @@
  limitations under the License
  */
 
+import React, { useMemo } from 'react'
+import { ViewStyle } from 'react-native'
+import { useTheme } from '@rneui/themed'
+
 import {
     IconName,
     PWIcon,
@@ -17,7 +21,6 @@ import {
     PWIconVariant,
 } from '@components/core/PWIcon'
 import { PWView, PWViewProps } from '@components/core/PWView'
-import { ViewStyle } from 'react-native'
 import { useStyles } from './styles'
 
 export type PWRoundIconProps = {
@@ -26,6 +29,26 @@ export type PWRoundIconProps = {
     variant?: PWIconVariant
     style?: ViewStyle
 } & PWViewProps
+
+const ICON_SIZE_MAP: Record<PWIconSize, PWIconSize> = {
+    xs: 'xs',
+    sm: 'sm',
+    md: 'sm',
+    lg: 'md',
+    xl: 'lg',
+    xxl: 'xl',
+}
+
+const ICON_VARIANT_MAP: Record<string, PWIconVariant> = {
+    primary: 'white',
+    secondary: 'primary',
+    buttonPrimary: 'buttonPrimary',
+    helper: 'helper',
+    white: 'white',
+    link: 'link',
+    error: 'error',
+    positive: 'positive',
+}
 
 export const PWRoundIcon = (props: PWRoundIconProps) => {
     const {
@@ -36,15 +59,15 @@ export const PWRoundIcon = (props: PWRoundIconProps) => {
         ...rest
     } = props
     const styles = useStyles(props)
+    const { theme } = useTheme()
 
-    const iconSizeMap: Record<PWIconSize, PWIconSize> = {
-        xs: 'xs',
-        sm: 'sm',
-        md: 'sm',
-        lg: 'md',
-        xl: 'lg',
-        xxl: 'xl',
-    }
+    const resolvedIconVariant = useMemo(() => {
+        if (theme.mode === 'dark' && variant === 'primary') {
+            return 'brand'
+        }
+        return (ICON_VARIANT_MAP[variant as string] ||
+            'primary') as PWIconVariant
+    }, [theme.mode, variant])
 
     return (
         <PWView
@@ -53,8 +76,8 @@ export const PWRoundIcon = (props: PWRoundIconProps) => {
         >
             <PWIcon
                 name={icon}
-                size={iconSizeMap[size]}
-                variant={variant === 'primary' ? 'white' : variant}
+                size={ICON_SIZE_MAP[size]}
+                variant={resolvedIconVariant}
             />
         </PWView>
     )

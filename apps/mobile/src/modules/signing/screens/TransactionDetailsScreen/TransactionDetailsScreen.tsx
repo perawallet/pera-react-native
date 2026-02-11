@@ -10,16 +10,21 @@
  limitations under the License
  */
 
-import { PWIcon, PWText, PWToolbar, PWView } from '@components/core'
-import { useLanguage } from '@hooks/useLanguage'
+import { ScrollView } from 'react-native-gesture-handler'
 import {
     useNavigation,
     useRoute,
     type RouteProp,
 } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
-import { ScrollView } from 'react-native-gesture-handler'
-import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+
+import { LoadingView } from '@components/LoadingView'
+import { EmptyView } from '@components/EmptyView'
+import { useLanguage } from '@hooks/useLanguage'
+import {
+    useTransactionDetailQuery,
+    type PeraDisplayableTransaction,
+} from '@perawallet/wallet-core-blockchain'
 import { TransactionDisplay } from '@modules/transactions/components/TransactionDisplay'
 import type { SigningStackParamList } from '@modules/signing/routes'
 import { useStyles } from './styles'
@@ -28,6 +33,7 @@ type NavigationProp = StackNavigationProp<
     SigningStackParamList,
     'TransactionDetails'
 >
+
 type TransactionDetailsRouteProp = RouteProp<
     SigningStackParamList,
     'TransactionDetails'
@@ -35,38 +41,47 @@ type TransactionDetailsRouteProp = RouteProp<
 
 export const TransactionDetailsScreen = () => {
     const styles = useStyles()
-    const { t } = useLanguage()
     const navigation = useNavigation<NavigationProp>()
+    const { t } = useLanguage()
     const route = useRoute<TransactionDetailsRouteProp>()
-    const { transaction } = route.params
+
+    const { transaction: paramTransaction, transactionId } = route.params
+
+    const { data: fetchedTransaction, isLoading } = useTransactionDetailQuery({
+        transactionId: transactionId || paramTransaction?.id || '',
+        isEnabled: !paramTransaction && !!transactionId,
+    })
+
+    const transaction = paramTransaction || fetchedTransaction || null
 
     const handleInnerTransactionPress = (tx: PeraDisplayableTransaction) => {
         navigation.push('TransactionDetails', { transaction: tx })
     }
 
-    return (
-        <PWView style={styles.container}>
-            <PWToolbar
-                center={
-                    <PWText variant='h4'>
-                        {t('signing.transactions.details')}
-                    </PWText>
-                }
-                left={
-                    navigation.canGoBack() ? (
-                        <PWIcon
-                            name='chevron-left'
-                            onPress={navigation.goBack}
-                        />
-                    ) : undefined
-                }
-            />
+    if (transaction) {
+        return (
             <ScrollView contentContainerStyle={styles.contentContainer}>
                 <TransactionDisplay
                     transaction={transaction}
                     onInnerTransactionsPress={handleInnerTransactionPress}
                 />
             </ScrollView>
-        </PWView>
+        )
+    }
+
+    if (isLoading) {
+        return (
+            <LoadingView
+                variant='circle'
+                size='lg'
+            />
+        )
+    }
+
+    return (
+        <EmptyView
+            title={t('errors.general.title')}
+            body={t('errors.general.body')}
+        />
     )
 }

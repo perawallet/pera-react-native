@@ -285,39 +285,53 @@ export const usePeraWebviewInterface = (
                     'metadata'
                 ] as SignRequestSource
                 const address = message.params!['address'] as string
-                addSignRequest({
-                    id: uuid(),
-                    type: 'transactions',
-                    transport: 'callback',
-                    txs: txns,
-                    transportId: message.id,
-                    addresses: [address],
-                    sourceMetadata: metadata,
-                    approve: async (signed: PeraSignedTransaction[]) => {
-                        sendMessageToWebview(
-                            message.id,
-                            {
-                                signedTxs: signed,
-                            },
-                            webview,
-                        )
-                    },
-                    reject: async () => {
-                        sendErrorToWebview(
-                            message.id,
-                            JsonRpcErrorCode.InternalError,
-                            'User rejected',
-                            webview,
-                        )
-                    },
-                    error: async (err: string) =>
-                        sendErrorToWebview(
-                            message.id,
-                            JsonRpcErrorCode.InternalError,
-                            err,
-                            webview,
-                        ),
-                } as TransactionSignRequest)
+                try {
+                    addSignRequest({
+                        id: uuid(),
+                        type: 'transactions',
+                        transport: 'callback',
+                        txs: txns,
+                        transportId: message.id,
+                        addresses: [address],
+                        sourceMetadata: metadata,
+                        approve: async (signed: PeraSignedTransaction[]) => {
+                            sendMessageToWebview(
+                                message.id,
+                                {
+                                    signedTxs: signed,
+                                },
+                                webview,
+                            )
+                        },
+                        reject: async () => {
+                            sendErrorToWebview(
+                                message.id,
+                                JsonRpcErrorCode.InternalError,
+                                'User rejected',
+                                webview,
+                            )
+                        },
+                        error: async (err: string) =>
+                            sendErrorToWebview(
+                                message.id,
+                                JsonRpcErrorCode.InternalError,
+                                err,
+                                webview,
+                            ),
+                    } as TransactionSignRequest)
+                } catch (e) {
+                    sendErrorToWebview(
+                        message.id,
+                        JsonRpcErrorCode.InternalError,
+                        (e as Error).message,
+                        webview,
+                    )
+                    showToast({
+                        title: t('errors.signing.title'),
+                        body: (e as Error).message,
+                        type: 'error',
+                    })
+                }
             })
         },
         [securedConnection, sendErrorToWebview, sendMessageToWebview, webview],
@@ -336,36 +350,52 @@ export const usePeraWebviewInterface = (
                 const metadata = message.params![
                     'metadata'
                 ] as SignRequestSource
-                addSignRequest({
-                    id: uuid(),
-                    type: 'arbitrary-data',
-                    transport: 'callback',
-                    transportId: message.id,
-                    sourceMetadata: metadata,
-                    data: [dataMessage],
-                    approve: async (signed: PeraArbitraryDataSignResult[]) => {
-                        sendMessageToWebview(
-                            message.id,
-                            signed.map(s => s.signature),
-                            webview,
-                        )
-                    },
-                    reject: async () => {
-                        sendErrorToWebview(
-                            message.id,
-                            JsonRpcErrorCode.InternalError,
-                            'User rejected',
-                            webview,
-                        )
-                    },
-                    error: async (err: string) =>
-                        sendErrorToWebview(
-                            message.id,
-                            JsonRpcErrorCode.InternalError,
-                            err,
-                            webview,
-                        ),
-                } as ArbitraryDataSignRequest)
+                try {
+                    addSignRequest({
+                        id: uuid(),
+                        type: 'arbitrary-data',
+                        transport: 'callback',
+                        transportId: message.id,
+                        sourceMetadata: metadata,
+                        data: [dataMessage],
+                        approve: async (
+                            signed: PeraArbitraryDataSignResult[],
+                        ) => {
+                            sendMessageToWebview(
+                                message.id,
+                                signed.map(s => s.signature),
+                                webview,
+                            )
+                        },
+                        reject: async () => {
+                            sendErrorToWebview(
+                                message.id,
+                                JsonRpcErrorCode.InternalError,
+                                'User rejected',
+                                webview,
+                            )
+                        },
+                        error: async (err: string) =>
+                            sendErrorToWebview(
+                                message.id,
+                                JsonRpcErrorCode.InternalError,
+                                err,
+                                webview,
+                            ),
+                    } as ArbitraryDataSignRequest)
+                } catch (e) {
+                    sendErrorToWebview(
+                        message.id,
+                        JsonRpcErrorCode.InternalError,
+                        (e as Error).message,
+                        webview,
+                    )
+                    showToast({
+                        title: t('errors.signing.title'),
+                        body: (e as Error).message,
+                        type: 'error',
+                    })
+                }
             })
         },
         [securedConnection, sendErrorToWebview, sendMessageToWebview, webview],

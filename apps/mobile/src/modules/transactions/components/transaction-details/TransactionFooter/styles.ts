@@ -14,7 +14,11 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
+        flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'flex-start',
         marginTop: theme.spacing.md,
+        gap: theme.spacing.xs,
+        width: '100%',
     },
 }))
