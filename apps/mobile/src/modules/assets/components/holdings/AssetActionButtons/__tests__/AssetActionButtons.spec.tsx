@@ -14,6 +14,7 @@ import { render, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AssetActionButtons } from '../AssetActionButtons'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
+import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 
 const mockNavigate = vi.fn()
 const mockReplace = vi.fn()
@@ -110,7 +111,9 @@ describe('AssetActionButtons', () => {
         const { container } = render(
             <AssetActionButtons
                 asset={mockAsset}
-                assetHolding={mockAssetHolding as any}
+                assetHolding={
+                    mockAssetHolding as unknown as AssetWithAccountBalance
+                }
             />,
         )
 

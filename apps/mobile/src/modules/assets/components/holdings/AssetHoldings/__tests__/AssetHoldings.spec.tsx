@@ -17,6 +17,7 @@ import { PeraAsset } from '@perawallet/wallet-core-assets'
 import {
     WalletAccount,
     useAccountAssetBalanceQuery,
+    AssetWithAccountBalance,
 } from '@perawallet/wallet-core-accounts'
 import Decimal from 'decimal.js'
 
@@ -54,7 +55,11 @@ vi.mock('../../AssetWealthChart/AssetWealthChart', () => ({
     AssetWealthChart: () => <div data-testid='wealth-chart'>WealthChart</div>,
 }))
 vi.mock('../../AssetActionButtons/AssetActionButtons', () => ({
-    AssetActionButtons: ({ assetHolding }: { assetHolding: any }) => (
+    AssetActionButtons: ({
+        assetHolding,
+    }: {
+        assetHolding: AssetWithAccountBalance | null
+    }) => (
         <div data-testid='action-buttons'>
             {assetHolding ? 'with-holding' : 'without-holding'}
         </div>
@@ -94,7 +99,9 @@ describe('AssetHoldings', () => {
                 asset={mockAsset}
             />,
         )
-        expect(getByTestId('action-buttons').textContent).toContain('with-holding')
+        expect(getByTestId('action-buttons').textContent).toContain(
+            'with-holding',
+        )
     })
 
     it('handles null balance data gracefully', () => {
