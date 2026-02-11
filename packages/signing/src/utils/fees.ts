@@ -13,19 +13,24 @@
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import Decimal from 'decimal.js'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { logger } from '@perawallet/wallet-core-shared'
 
 export const calculateTotalFee = (
     transactions: PeraDisplayableTransaction[],
     signableAddresses: Set<string>,
-): Decimal =>
-    transactions.reduce(
+): Decimal => {
+    const result = transactions.reduce(
         (sum, tx) =>
             signableAddresses.has(tx.sender)
                 ? sum.add(
-                      new Decimal(tx.fee ?? 0n).dividedBy(
-                          10 ** ALGO_ASSET.decimals,
-                      ),
-                  )
+                    new Decimal(tx.fee ?? 0n).dividedBy(
+                        10 ** ALGO_ASSET.decimals,
+                    ),
+                )
                 : sum,
         new Decimal(0),
     )
+
+    logger.info('Total fee', { fee: result.toString(), transactions, signableAddresses })
+    return result
+}

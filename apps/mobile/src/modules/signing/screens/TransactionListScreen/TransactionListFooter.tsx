@@ -21,10 +21,12 @@ import { useStyles } from './styles'
 
 type TransactionListFooterProps = {
     totalFee: Decimal
+    signableTransactionCount: number
 }
 
 export const TransactionListFooter = ({
     totalFee,
+    signableTransactionCount,
 }: TransactionListFooterProps) => {
     const styles = useStyles()
     const { theme } = useTheme()
@@ -40,6 +42,7 @@ export const TransactionListFooter = ({
                 <FeeDisplay
                     fee={totalFee}
                     label={t('transactions.common.total_fee')}
+                    signableTransactionCount={signableTransactionCount}
                 />
             </PWView>
 

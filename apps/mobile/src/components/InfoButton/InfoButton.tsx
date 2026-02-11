@@ -25,7 +25,7 @@ import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 
 export type InfoButtonProps = {
-    variant?: 'primary' | 'secondary'
+    variant?: 'primary' | 'secondary' | 'error'
     size?: PWIconSize
     title?: string
 } & PropsWithChildren

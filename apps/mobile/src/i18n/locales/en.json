@@ -662,6 +662,10 @@
             "asset_freeze_are_you_sure_description": "This signature includes an asset freeze transaction, which may prevent the target account from transacting with the specified asset. Please make sure that you understand the implications before proceeding.",
             "asset_freeze_are_you_sure_continue": "Continue"
         },
+        "fee_warning": {
+            "title": "Non-Standard Fees",
+            "body": "The fees for this transaction are higher than the standard network fee. This may be due to network congestion or additional fees required by the application."
+        },
         "unknown": {
             "title": "Unsupported Transaction Type",
             "body": "This transaction type is not supported."

@@ -64,6 +64,7 @@ export const SingleTransactionScreen = () => {
                 <FeeDisplay
                     fee={new Decimal(totalFee)}
                     transaction={transaction}
+                    signableTransactionCount={1}
                 />
 
                 <SigningActionButtons />

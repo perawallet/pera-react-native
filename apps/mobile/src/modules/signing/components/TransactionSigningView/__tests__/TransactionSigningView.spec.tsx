@@ -93,6 +93,10 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     initBlockchainStore: vi.fn(),
 }))
 
+vi.mock('@modules/signing/components/FeeDisplay/useFeeWarning', () => ({
+    useFeeWarning: vi.fn(() => ({ showWarning: false })),
+}))
+
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
         await importOriginal<

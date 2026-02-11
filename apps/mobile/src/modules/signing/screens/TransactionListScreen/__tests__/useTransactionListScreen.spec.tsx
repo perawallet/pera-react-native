@@ -31,15 +31,26 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     })),
     useSigningRequestAnalysis: vi.fn(() => ({
         listItems: [
-            { type: 'transaction', transaction: { id: 'tx-1' } },
+            {
+                type: 'transaction',
+                transaction: { id: 'tx-1', sender: 'addr1' },
+            },
             {
                 type: 'group',
-                transactions: [{ id: 'tx-2' }, { id: 'tx-3' }],
+                transactions: [
+                    { id: 'tx-2', sender: 'addr1' },
+                    { id: 'tx-3', sender: 'addr2' },
+                ],
                 groupIndex: 0,
             },
         ],
         totalFee: new Decimal(0.003),
-        allTransactions: [{ id: 'tx-1' }, { id: 'tx-2' }, { id: 'tx-3' }],
+        allTransactions: [
+            { id: 'tx-1', sender: 'addr1' },
+            { id: 'tx-2', sender: 'addr1' },
+            { id: 'tx-3', sender: 'addr2' },
+        ],
+        signableAddresses: new Set(['addr1', 'addr2']),
     })),
 }))
 

@@ -29,4 +29,9 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         justifyContent: 'space-between',
     },
+    feeValueContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+    },
 }))
