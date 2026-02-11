@@ -13,7 +13,6 @@
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import Decimal from 'decimal.js'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
-import { logger } from '@perawallet/wallet-core-shared'
 
 export const calculateTotalFee = (
     transactions: PeraDisplayableTransaction[],
@@ -31,10 +30,5 @@ export const calculateTotalFee = (
         new Decimal(0),
     )
 
-    logger.info('Total fee', {
-        fee: result.toString(),
-        transactions,
-        signableAddresses,
-    })
     return result
 }
