@@ -16,38 +16,46 @@ import { RoundButton } from '@components/RoundButton'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useCallback } from 'react'
-import { useToast } from '@hooks/useToast'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 import { SendFundsBottomSheet } from '@modules/transactions/components/SendFunds/SendFundsBottomSheet/SendFundsBottomSheet'
 import { ReceiveFundsBottomSheet } from '@modules/transactions/components/ReceiveFunds/ReceiveFundsBottomSheet/ReceiveFundsBottomSheet'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useSelectedAccount,
+    AssetWithAccountBalance,
+} from '@perawallet/wallet-core-accounts'
+import { useSendFunds } from '@modules/transactions/hooks'
 
 export type AssetActionButtonsProps = {
     asset: PeraAsset
+    assetHolding?: AssetWithAccountBalance | null
 }
 //TODO hook up missing actions
-export const AssetActionButtons = ({ asset }: AssetActionButtonsProps) => {
+export const AssetActionButtons = ({
+    asset,
+    assetHolding,
+}: AssetActionButtonsProps) => {
     const styles = useStyles()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-    const { showToast } = useToast()
     const { t } = useLanguage()
     const sendFunds = useModalState()
     const receiveFunds = useModalState()
     const account = useSelectedAccount()
+    const { setSelectedAsset, setCanSelectAsset } = useSendFunds()
 
     const goToRootPage = (name: string) => {
         navigation.replace('TabBar', { screen: name })
     }
 
-    const notImplemented = useCallback(() => {
-        showToast({
-            title: t('common.not_implemented.title'),
-            body: t('common.not_implemented.body'),
-            type: 'error',
-        })
-    }, [showToast, t])
+    const handleSend = useCallback(() => {
+        if (assetHolding) {
+            setSelectedAsset(assetHolding)
+            setCanSelectAsset(false)
+        }
+
+        sendFunds.open()
+    }, [assetHolding, setSelectedAsset, setCanSelectAsset, sendFunds])
 
     return (
         <PWView style={styles.container}>
@@ -58,16 +66,16 @@ export const AssetActionButtons = ({ asset }: AssetActionButtonsProps) => {
                 onPress={() => goToRootPage('Swap')}
             />
             <RoundButton
-                title={t('asset_details.action_buttons.buy_sell')}
+                title={t('asset_details.action_buttons.buy')}
                 icon='dollar'
                 variant='secondary'
-                onPress={notImplemented}
+                onPress={() => goToRootPage('Fund')}
             />
             <RoundButton
                 title={t('asset_details.action_buttons.send')}
                 icon='outflow'
                 variant='secondary'
-                onPress={sendFunds.open}
+                onPress={handleSend}
             />
             <RoundButton
                 title={t('asset_details.action_buttons.receive')}
