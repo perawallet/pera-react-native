@@ -136,7 +136,7 @@ export const AssetTransferDisplay = ({
 
                 {metadataHash && (
                     <KeyValueRow
-                        title={t('transactions.asset_transfer.metadata_hash')}
+                        title={t('transactions.asset_config.metadata_hash')}
                     >
                         <PWButton
                             variant='link'

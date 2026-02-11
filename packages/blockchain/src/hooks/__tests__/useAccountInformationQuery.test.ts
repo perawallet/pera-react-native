@@ -33,6 +33,7 @@ describe('useAccountInformationQuery', () => {
         address: mockAddress,
         status: 'Online',
         rewards: 0,
+        assets: [{ assetId: 123n, amount: 500n, isFrozen: false }],
     }
 
     beforeEach(() => {
@@ -77,6 +78,7 @@ describe('useAccountInformationQuery', () => {
             address: mockAccountInfo.address,
             status: mockAccountInfo.status,
             rewards: mockAccountInfo.rewards,
+            assets: mockAccountInfo.assets,
         })
     })
 

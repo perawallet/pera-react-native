@@ -16,6 +16,7 @@ import type {
     Transaction,
 } from '@algorandfoundation/algokit-utils/transact'
 import { BaseStoreState } from '@perawallet/wallet-core-shared'
+import { Address } from '@algorandfoundation/algokit-utils'
 
 export const MAX_TX_NOTE_BYTES = 1024
 
@@ -26,6 +27,15 @@ export { Address } from '@algorandfoundation/algokit-utils'
 export type PeraDisplayableTransaction = IndexerTransaction & {
     roundTimeMillis?: number
     rawTransaction?: PeraTransaction
+}
+
+export type AccountInformation = {
+    minBalance: bigint
+    amount: bigint
+    address: Address
+    status: string
+    rewards: bigint
+    assets: Array<{ assetId: bigint; amount: bigint; isFrozen: boolean }>
 }
 
 export type PeraTransaction = Transaction

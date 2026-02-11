@@ -63,6 +63,7 @@ describe('useSigningActionButtons', () => {
         })
         ;(useSigningRequestAnalysis as Mock).mockReturnValue({
             allTransactions: [],
+            signableAddresses: new Set(),
             warnings: [],
         })
         ;(usePreferences as Mock).mockReturnValue({
@@ -87,6 +88,7 @@ describe('useSigningActionButtons', () => {
     it('opens security guard instead of signing when rekey warnings exist', () => {
         ;(useSigningRequestAnalysis as Mock).mockReturnValue({
             allTransactions: [],
+            signableAddresses: new Set(),
             warnings: [
                 {
                     type: 'rekey',
@@ -110,6 +112,7 @@ describe('useSigningActionButtons', () => {
     it('opens security guard when asset-freeze warnings exist', () => {
         ;(useSigningRequestAnalysis as Mock).mockReturnValue({
             allTransactions: [],
+            signableAddresses: new Set(),
             warnings: [
                 {
                     type: 'asset-freeze',
@@ -137,6 +140,7 @@ describe('useSigningActionButtons', () => {
         })
         ;(useSigningRequestAnalysis as Mock).mockReturnValue({
             allTransactions: [],
+            signableAddresses: new Set(),
             warnings: [
                 {
                     type: 'rekey',
@@ -160,6 +164,7 @@ describe('useSigningActionButtons', () => {
     it('shows rekey guard when both exist and neither is enabled', () => {
         ;(useSigningRequestAnalysis as Mock).mockReturnValue({
             allTransactions: [],
+            signableAddresses: new Set(),
             warnings: [
                 {
                     type: 'rekey',
@@ -188,6 +193,7 @@ describe('useSigningActionButtons', () => {
         })
         ;(useSigningRequestAnalysis as Mock).mockReturnValue({
             allTransactions: [],
+            signableAddresses: new Set(),
             warnings: [
                 {
                     type: 'rekey',
@@ -211,6 +217,7 @@ describe('useSigningActionButtons', () => {
     it('proceeds with signing when security guard is confirmed', async () => {
         ;(useSigningRequestAnalysis as Mock).mockReturnValue({
             allTransactions: [],
+            signableAddresses: new Set(),
             warnings: [
                 {
                     type: 'rekey',
@@ -239,6 +246,7 @@ describe('useSigningActionButtons', () => {
     it('navigates to settings when go-to-settings is pressed', () => {
         ;(useSigningRequestAnalysis as Mock).mockReturnValue({
             allTransactions: [],
+            signableAddresses: new Set(),
             warnings: [
                 {
                     type: 'rekey',
@@ -265,6 +273,7 @@ describe('useSigningActionButtons', () => {
     it('closes security guard without signing when dismissed', () => {
         ;(useSigningRequestAnalysis as Mock).mockReturnValue({
             allTransactions: [],
+            signableAddresses: new Set(),
             warnings: [
                 {
                     type: 'rekey',
@@ -293,6 +302,7 @@ describe('useSigningActionButtons', () => {
     it('does not trigger guard for close warnings only', async () => {
         ;(useSigningRequestAnalysis as Mock).mockReturnValue({
             allTransactions: [],
+            signableAddresses: new Set(),
             warnings: [
                 {
                     type: 'close',
