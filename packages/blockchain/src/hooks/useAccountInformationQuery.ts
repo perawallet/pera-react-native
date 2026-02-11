@@ -13,16 +13,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useAlgorandClient } from './useAlgorandClient'
 import { getAccountInformationQueryKey } from './querykeys'
-import type { Address } from '../models'
-
-type AccountInformation = {
-    minBalance: bigint
-    amount: bigint
-    address: Address
-    status: string
-    rewards: bigint
-    assets: Array<{ assetId: bigint; amount: bigint; isFrozen: boolean }>
-}
+import { AccountInformation } from '../models'
 
 export const useAccountInformationQuery = (address: string) => {
     const algokit = useAlgorandClient()

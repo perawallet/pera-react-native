@@ -41,10 +41,6 @@ vi.mock('@react-navigation/native', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
-    useBalanceValidation: vi.fn(() => ({
-        validation: { isValid: true, errors: [] },
-        isLoading: false,
-    })),
     useSigningRequest: vi.fn(() => ({
         pendingSignRequests: [],
         signAndSendRequest: mockSignAndSendRequest,

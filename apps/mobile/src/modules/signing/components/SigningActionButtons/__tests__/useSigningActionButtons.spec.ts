@@ -14,7 +14,6 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useSigningActionButtons } from '../useSigningActionButtons'
 import {
-    useBalanceValidation,
     useSigningRequest,
     useSigningRequestAnalysis,
 } from '@perawallet/wallet-core-signing'
@@ -22,7 +21,6 @@ import { usePreferences } from '@perawallet/wallet-core-settings'
 import { useNavigation } from '@react-navigation/native'
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
-    useBalanceValidation: vi.fn(),
     useSigningRequest: vi.fn(),
     useSigningRequestAnalysis: vi.fn(),
 }))
@@ -67,10 +65,6 @@ describe('useSigningActionButtons', () => {
             allTransactions: [],
             signableAddresses: new Set(),
             warnings: [],
-        })
-        ;(useBalanceValidation as Mock).mockReturnValue({
-            validation: { isValid: true, errors: [] },
-            isLoading: false,
         })
         ;(usePreferences as Mock).mockReturnValue({
             getPreference: mockGetPreference,
