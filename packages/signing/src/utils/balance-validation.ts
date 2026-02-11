@@ -86,7 +86,8 @@ export const validateSignerBalances = (
             continue
 
         // ALGO check: required = fees + payments + minBalance
-        const required = totalFees + totalPayments + (includeMBR ? accountMinBalance : 0n)
+        const required =
+            totalFees + totalPayments + (includeMBR ? accountMinBalance : 0n)
         if (accountAmount < required) {
             errors.push({
                 type: 'insufficient-algo',

@@ -58,26 +58,26 @@ describe('useSigningActionButtons', () => {
         vi.clearAllMocks()
         mockSignAndSendRequest.mockResolvedValue(undefined)
         mockGetPreference.mockReturnValue(undefined)
-            ; (useSigningRequest as Mock).mockReturnValue({
-                currentRequest: mockRequest,
-                signAndSendRequest: mockSignAndSendRequest,
-                rejectRequest: mockRejectRequest,
-            })
-            ; (useSigningRequestAnalysis as Mock).mockReturnValue({
-                allTransactions: [],
-                signableAddresses: new Set(),
-                warnings: [],
-            })
-            ; (useBalanceValidation as Mock).mockReturnValue({
-                validation: { isValid: true, errors: [] },
-                isLoading: false,
-            })
-            ; (usePreferences as Mock).mockReturnValue({
-                getPreference: mockGetPreference,
-            })
-            ; (useNavigation as Mock).mockReturnValue({
-                navigate: mockNavigate,
-            })
+        ;(useSigningRequest as Mock).mockReturnValue({
+            currentRequest: mockRequest,
+            signAndSendRequest: mockSignAndSendRequest,
+            rejectRequest: mockRejectRequest,
+        })
+        ;(useSigningRequestAnalysis as Mock).mockReturnValue({
+            allTransactions: [],
+            signableAddresses: new Set(),
+            warnings: [],
+        })
+        ;(useBalanceValidation as Mock).mockReturnValue({
+            validation: { isValid: true, errors: [] },
+            isLoading: false,
+        })
+        ;(usePreferences as Mock).mockReturnValue({
+            getPreference: mockGetPreference,
+        })
+        ;(useNavigation as Mock).mockReturnValue({
+            navigate: mockNavigate,
+        })
     })
 
     it('signs directly when there are no guarded warnings', async () => {
@@ -92,7 +92,7 @@ describe('useSigningActionButtons', () => {
     })
 
     it('opens security guard instead of signing when rekey warnings exist', () => {
-        ; (useSigningRequestAnalysis as Mock).mockReturnValue({
+        ;(useSigningRequestAnalysis as Mock).mockReturnValue({
             allTransactions: [],
             signableAddresses: new Set(),
             warnings: [
@@ -116,7 +116,7 @@ describe('useSigningActionButtons', () => {
     })
 
     it('opens security guard when asset-freeze warnings exist', () => {
-        ; (useSigningRequestAnalysis as Mock).mockReturnValue({
+        ;(useSigningRequestAnalysis as Mock).mockReturnValue({
             allTransactions: [],
             signableAddresses: new Set(),
             warnings: [
@@ -144,22 +144,22 @@ describe('useSigningActionButtons', () => {
             if (key === 'rekey-support-enabled') return true
             return undefined
         })
-            ; (useSigningRequestAnalysis as Mock).mockReturnValue({
-                allTransactions: [],
-                signableAddresses: new Set(),
-                warnings: [
-                    {
-                        type: 'rekey',
-                        senderAddress: 'addr1',
-                        targetAddress: 'addr2',
-                    },
-                    {
-                        type: 'asset-freeze',
-                        senderAddress: 'addr1',
-                        targetAddress: 'addr3',
-                    },
-                ],
-            })
+        ;(useSigningRequestAnalysis as Mock).mockReturnValue({
+            allTransactions: [],
+            signableAddresses: new Set(),
+            warnings: [
+                {
+                    type: 'rekey',
+                    senderAddress: 'addr1',
+                    targetAddress: 'addr2',
+                },
+                {
+                    type: 'asset-freeze',
+                    senderAddress: 'addr1',
+                    targetAddress: 'addr3',
+                },
+            ],
+        })
 
         const { result } = renderHook(() => useSigningActionButtons())
 
@@ -168,7 +168,7 @@ describe('useSigningActionButtons', () => {
     })
 
     it('shows rekey guard when both exist and neither is enabled', () => {
-        ; (useSigningRequestAnalysis as Mock).mockReturnValue({
+        ;(useSigningRequestAnalysis as Mock).mockReturnValue({
             allTransactions: [],
             signableAddresses: new Set(),
             warnings: [
@@ -197,22 +197,22 @@ describe('useSigningActionButtons', () => {
             if (key === 'asset-freeze-support-enabled') return true
             return undefined
         })
-            ; (useSigningRequestAnalysis as Mock).mockReturnValue({
-                allTransactions: [],
-                signableAddresses: new Set(),
-                warnings: [
-                    {
-                        type: 'rekey',
-                        senderAddress: 'addr1',
-                        targetAddress: 'addr2',
-                    },
-                    {
-                        type: 'asset-freeze',
-                        senderAddress: 'addr1',
-                        targetAddress: 'addr3',
-                    },
-                ],
-            })
+        ;(useSigningRequestAnalysis as Mock).mockReturnValue({
+            allTransactions: [],
+            signableAddresses: new Set(),
+            warnings: [
+                {
+                    type: 'rekey',
+                    senderAddress: 'addr1',
+                    targetAddress: 'addr2',
+                },
+                {
+                    type: 'asset-freeze',
+                    senderAddress: 'addr1',
+                    targetAddress: 'addr3',
+                },
+            ],
+        })
 
         const { result } = renderHook(() => useSigningActionButtons())
 
@@ -221,7 +221,7 @@ describe('useSigningActionButtons', () => {
     })
 
     it('proceeds with signing when security guard is confirmed', async () => {
-        ; (useSigningRequestAnalysis as Mock).mockReturnValue({
+        ;(useSigningRequestAnalysis as Mock).mockReturnValue({
             allTransactions: [],
             signableAddresses: new Set(),
             warnings: [
@@ -250,7 +250,7 @@ describe('useSigningActionButtons', () => {
     })
 
     it('navigates to settings when go-to-settings is pressed', () => {
-        ; (useSigningRequestAnalysis as Mock).mockReturnValue({
+        ;(useSigningRequestAnalysis as Mock).mockReturnValue({
             allTransactions: [],
             signableAddresses: new Set(),
             warnings: [
@@ -277,7 +277,7 @@ describe('useSigningActionButtons', () => {
     })
 
     it('closes security guard without signing when dismissed', () => {
-        ; (useSigningRequestAnalysis as Mock).mockReturnValue({
+        ;(useSigningRequestAnalysis as Mock).mockReturnValue({
             allTransactions: [],
             signableAddresses: new Set(),
             warnings: [
@@ -306,7 +306,7 @@ describe('useSigningActionButtons', () => {
     })
 
     it('does not trigger guard for close warnings only', async () => {
-        ; (useSigningRequestAnalysis as Mock).mockReturnValue({
+        ;(useSigningRequestAnalysis as Mock).mockReturnValue({
             allTransactions: [],
             signableAddresses: new Set(),
             warnings: [
