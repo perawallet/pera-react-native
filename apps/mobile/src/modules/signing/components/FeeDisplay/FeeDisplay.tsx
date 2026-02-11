@@ -14,7 +14,6 @@ import { PWButton, PWText, PWView } from '@components/core'
 import { InfoButton } from '@components/InfoButton'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { useLanguage } from '@hooks/useLanguage'
-import Decimal from 'decimal.js'
 import { useStyles } from './styles'
 import { useFeeWarning } from './useFeeWarning'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
@@ -25,26 +24,16 @@ import { SigningStackParamList } from '@modules/signing/routes'
 import { StackNavigationProp } from '@react-navigation/stack'
 
 export type FeeDisplayProps = {
-    fee: Decimal
     transaction?: PeraDisplayableTransaction
     label?: string
-    signableTransactionCount?: number
 }
 type NavigationProp = StackNavigationProp<SigningStackParamList>
 
-export const FeeDisplay = ({
-    fee,
-    transaction,
-    label,
-    signableTransactionCount,
-}: FeeDisplayProps) => {
+export const FeeDisplay = ({ transaction, label }: FeeDisplayProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const navigation = useNavigation<NavigationProp>()
-    const { showWarning } = useFeeWarning({
-        fee,
-        signableTransactionCount: signableTransactionCount ?? 1,
-    })
+    const { showWarning, fee } = useFeeWarning()
 
     const handleViewDetails = () => {
         if (!transaction) {

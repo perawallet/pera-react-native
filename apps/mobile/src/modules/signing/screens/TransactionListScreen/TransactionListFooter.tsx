@@ -13,21 +13,12 @@
 import { PWDivider, PWView } from '@components/core'
 import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
-import Decimal from 'decimal.js'
 import { SigningWarnings } from '@modules/signing/components/SigningWarnings'
 import { FeeDisplay } from '@modules/signing/components/FeeDisplay'
 import { SigningActionButtons } from '@modules/signing/components/SigningActionButtons'
 import { useStyles } from './styles'
 
-type TransactionListFooterProps = {
-    totalFee: Decimal
-    signableTransactionCount: number
-}
-
-export const TransactionListFooter = ({
-    totalFee,
-    signableTransactionCount,
-}: TransactionListFooterProps) => {
+export const TransactionListFooter = () => {
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
@@ -39,11 +30,7 @@ export const TransactionListFooter = ({
             <PWDivider color={theme.colors.layerGray} />
 
             <PWView style={styles.feeContainer}>
-                <FeeDisplay
-                    fee={totalFee}
-                    label={t('transactions.common.total_fee')}
-                    signableTransactionCount={signableTransactionCount}
-                />
+                <FeeDisplay label={t('transactions.common.total_fee')} />
             </PWView>
 
             <SigningActionButtons />

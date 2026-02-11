@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
@@ -31,15 +31,7 @@ export const useTransactionListScreen = () => {
     const navigation = useNavigation<NavigationProp>()
     const { pendingSignRequests } = useSigningRequest()
     const request = pendingSignRequests[0] as TransactionSignRequest
-    const { listItems, totalFee, allTransactions, signableAddresses } =
-        useSigningRequestAnalysis(request)
-
-    const signableTransactionCount = useMemo(
-        () =>
-            allTransactions.filter(tx => signableAddresses.has(tx.sender))
-                .length,
-        [allTransactions, signableAddresses],
-    )
+    const { listItems, allTransactions } = useSigningRequestAnalysis(request)
 
     const handleTransactionPress = useCallback(
         (tx: PeraDisplayableTransaction) => {
@@ -67,9 +59,7 @@ export const useTransactionListScreen = () => {
 
     return {
         listItems,
-        totalFee,
         transactionCount: allTransactions.length,
-        signableTransactionCount,
         handleTransactionPress,
         handleGroupPress,
         keyExtractor,

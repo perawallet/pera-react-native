@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useMemo } from 'react'
 import Decimal from 'decimal.js'
 import {
     useAssetFiatPricesQuery,
@@ -19,25 +20,37 @@ import {
     useRemoteConfigService,
     RemoteConfigKeys,
 } from '@perawallet/wallet-core-platform-integration'
-
-type UseFeeWarningParams = {
-    fee: Decimal
-    signableTransactionCount: number
-}
+import {
+    useSigningRequest,
+    useSigningRequestAnalysis,
+    type TransactionSignRequest,
+} from '@perawallet/wallet-core-signing'
 
 type UseFeeWarningResult = {
     showWarning: boolean
+    fee: Decimal
 }
 
-export const useFeeWarning = ({
-    fee,
-    signableTransactionCount,
-}: UseFeeWarningParams): UseFeeWarningResult => {
+export const useFeeWarning = (): UseFeeWarningResult => {
+    const { currentRequest } = useSigningRequest()
+    const request = currentRequest as TransactionSignRequest
+    const { totalFee, allTransactions, signableAddresses } =
+        useSigningRequestAnalysis(request)
+
+    const fee = useMemo(() => new Decimal(totalFee), [totalFee])
+
+    const signableTransactionCount = useMemo(
+        () =>
+            allTransactions.filter(tx => signableAddresses.has(tx.sender))
+                .length,
+        [allTransactions, signableAddresses],
+    )
+
     const remoteConfigService = useRemoteConfigService()
     const { data: assetPrices } = useAssetFiatPricesQuery(true)
 
     if (signableTransactionCount === 0) {
-        return { showWarning: false }
+        return { showWarning: false, fee }
     }
 
     const standardFeePerTx = remoteConfigService.getNumberValue(
@@ -55,11 +68,11 @@ export const useFeeWarning = ({
     const algoPrice = assetPrices?.get(ALGO_ASSET_ID)?.fiatPrice
 
     if (!algoPrice) {
-        return { showWarning: false }
+        return { showWarning: false, fee }
     }
 
     const feeUsdValue = fee.mul(algoPrice)
     const showWarning = isNonStandard && feeUsdValue.greaterThan(usdThreshold)
 
-    return { showWarning }
+    return { showWarning, fee }
 }

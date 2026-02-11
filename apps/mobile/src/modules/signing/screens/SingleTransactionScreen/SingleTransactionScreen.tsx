@@ -24,7 +24,6 @@ import {
     type TransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
 import { useStyles } from './styles'
-import Decimal from 'decimal.js'
 import { SigningActionButtons } from '@modules/signing/components/SigningActionButtons'
 import { SigningAccountDisplay } from '@modules/signing/components/SigningAccountDisplay/SigningAccountDisplay'
 
@@ -34,7 +33,7 @@ export const SingleTransactionScreen = () => {
     const { t } = useLanguage()
     const { currentRequest } = useSigningRequest()
     const request = currentRequest as TransactionSignRequest
-    const { allTransactions, totalFee } = useSigningRequestAnalysis(request)
+    const { allTransactions } = useSigningRequestAnalysis(request)
 
     const transaction = allTransactions[0]
 
@@ -61,11 +60,7 @@ export const SingleTransactionScreen = () => {
 
                 <SigningAccountDisplay transaction={transaction} />
 
-                <FeeDisplay
-                    fee={new Decimal(totalFee)}
-                    transaction={transaction}
-                    signableTransactionCount={1}
-                />
+                <FeeDisplay transaction={transaction} />
 
                 <SigningActionButtons />
             </PWView>
