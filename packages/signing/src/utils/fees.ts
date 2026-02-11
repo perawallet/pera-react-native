@@ -23,14 +23,18 @@ export const calculateTotalFee = (
         (sum, tx) =>
             signableAddresses.has(tx.sender)
                 ? sum.add(
-                    new Decimal(tx.fee ?? 0n).dividedBy(
-                        10 ** ALGO_ASSET.decimals,
-                    ),
-                )
+                      new Decimal(tx.fee ?? 0n).dividedBy(
+                          10 ** ALGO_ASSET.decimals,
+                      ),
+                  )
                 : sum,
         new Decimal(0),
     )
 
-    logger.info('Total fee', { fee: result.toString(), transactions, signableAddresses })
+    logger.info('Total fee', {
+        fee: result.toString(),
+        transactions,
+        signableAddresses,
+    })
     return result
 }
