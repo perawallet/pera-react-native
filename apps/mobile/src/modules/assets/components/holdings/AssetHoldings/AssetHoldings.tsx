@@ -14,16 +14,21 @@ import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { PWButton, PWText, PWView } from '@components/core'
 import { AssetWealthChart } from '../AssetWealthChart/AssetWealthChart'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useChartInteraction } from '@hooks/useChartInteraction'
 import { AssetActionButtons } from '../AssetActionButtons/AssetActionButtons'
 import { AssetTransactionList } from '../AssetTransactionList/AssetTransactionList'
 
 import { useStyles } from './styles'
-import { AssetTitle } from '@modules/assets/components/AssetTitle'
+import {
+    AssetFavoriteButton,
+    AssetNotificationButton,
+    AssetTitle,
+} from '@modules/assets/components'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
-import { RoundButton } from '@components/RoundButton'
+import { useToast } from '@hooks/useToast'
+import { useLanguage } from '@hooks/useLanguage'
 import {
     AccountBalanceHistoryItem,
     useAccountAssetBalanceQuery,
@@ -44,6 +49,17 @@ export const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
     const { preferredFiatCurrency } = useCurrency()
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
         useChartInteraction<AccountBalanceHistoryItem>()
+
+    const { showToast } = useToast()
+    const { t } = useLanguage()
+
+    const notImplemented = useCallback(() => {
+        showToast({
+            title: t('common.not_implemented.title'),
+            body: t('common.not_implemented.body'),
+            type: 'error',
+        })
+    }, [showToast, t])
 
     const { getPreference, setPreference } = usePreferences()
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
@@ -80,15 +96,13 @@ export const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
                     <PWView style={styles.assetRow}>
                         <AssetTitle asset={asset} />
                         <PWView style={styles.headerIcons}>
-                            <RoundButton
-                                icon='bell'
-                                size='sm'
-                                variant='secondary'
+                            <AssetNotificationButton
+                                isNotificationsEnabled={false}
+                                onPress={notImplemented}
                             />
-                            <RoundButton
-                                icon='star'
-                                size='sm'
-                                variant='secondary'
+                            <AssetFavoriteButton
+                                isFavorite={false}
+                                onPress={notImplemented}
                             />
                         </PWView>
                     </PWView>

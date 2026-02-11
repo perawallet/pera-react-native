@@ -13,8 +13,11 @@
 import { ScrollView } from 'react-native'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
-import { AssetTitle } from '../../AssetTitle'
-import { RoundButton } from '@components/RoundButton'
+import {
+    AssetFavoriteButton,
+    AssetNotificationButton,
+    AssetTitle,
+} from '@modules/assets/components'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { AssetPriceChart } from '../AssetPriceChart/AssetPriceChart'
 import { useMemo, useCallback } from 'react'
@@ -144,16 +147,12 @@ export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
                 <PWView style={styles.assetRow}>
                     <AssetTitle asset={asset} />
                     <PWView style={styles.headerIcons}>
-                        <RoundButton
-                            icon='bell'
-                            size='sm'
-                            variant='secondary'
+                        <AssetNotificationButton
+                            isNotificationsEnabled={false}
                             onPress={notImplemented}
                         />
-                        <RoundButton
-                            icon='star'
-                            size='sm'
-                            variant='secondary'
+                        <AssetFavoriteButton
+                            isFavorite={false}
                             onPress={notImplemented}
                         />
                     </PWView>

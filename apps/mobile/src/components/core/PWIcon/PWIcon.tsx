@@ -20,6 +20,7 @@ import ArrowUpIcon from '@assets/icons/arrow-up.svg'
 import ArrowUpRightIcon from '@assets/icons/arrow-up-right.svg'
 import ArrowDownIcon from '@assets/icons/arrow-down.svg'
 import BellIcon from '@assets/icons/bell.svg'
+import BellOffIcon from '@assets/icons/bell-off.svg'
 import BellWithBadgeIcon from '@assets/icons/bell-with-badge.svg'
 import BuyIcon from '@assets/icons/buy.svg'
 import CameraIcon from '@assets/icons/camera.svg'
@@ -71,6 +72,7 @@ import ShieldCheckIcon from '@assets/icons/shield-check.svg'
 import SlidersIcon from '@assets/icons/sliders.svg'
 import SnowflakeIcon from '@assets/icons/snowflake.svg'
 import StarIcon from '@assets/icons/star.svg'
+import StarFilledIcon from '@assets/icons/star-filled.svg'
 import SwapIcon from '@assets/icons/swap.svg'
 import SwitchIcon from '@assets/icons/switch.svg'
 import TextDocumentIcon from '@assets/icons/text-document.svg'
@@ -125,6 +127,7 @@ const ICON_LIBRARY = {
     'arrow-down': ArrowDownIcon,
     'account-rekeyed': AccountRekeyedIcon,
     bell: BellIcon,
+    'bell-off': BellOffIcon,
     'bell-with-badge': BellWithBadgeIcon,
     buy: BuyIcon,
     camera: CameraIcon,
@@ -177,6 +180,7 @@ const ICON_LIBRARY = {
     sliders: SlidersIcon,
     snowflake: SnowflakeIcon,
     star: StarIcon,
+    'star-filled': StarFilledIcon,
     swap: SwapIcon,
     switch: SwitchIcon,
     'text-document': TextDocumentIcon,
@@ -235,6 +239,7 @@ export type PWIconVariant =
     | 'error'
     | 'positive'
     | 'brand'
+    | 'favorite'
 
 export type PWIconProps = {
     name: IconName
@@ -274,6 +279,7 @@ export const PWIcon = ({
             error: theme.colors.error,
             positive: theme.colors.helperPositive,
             brand: theme.colors.primary,
+            favorite: theme.colors.favorite,
         }),
         [theme],
     )
@@ -289,6 +295,7 @@ export const PWIcon = ({
             error: theme.colors.error,
             positive: theme.colors.textGray,
             brand: theme.colors.textGray,
+            favorite: theme.colors.textGray,
         }),
         [theme],
     )
