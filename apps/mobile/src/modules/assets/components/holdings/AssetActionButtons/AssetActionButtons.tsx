@@ -22,13 +22,21 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 import { SendFundsBottomSheet } from '@modules/transactions/components/SendFunds/SendFundsBottomSheet/SendFundsBottomSheet'
 import { ReceiveFundsBottomSheet } from '@modules/transactions/components/ReceiveFunds/ReceiveFundsBottomSheet/ReceiveFundsBottomSheet'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useSelectedAccount,
+    AssetWithAccountBalance,
+} from '@perawallet/wallet-core-accounts'
+import { useSendFunds } from '@modules/transactions/hooks'
 
 export type AssetActionButtonsProps = {
     asset: PeraAsset
+    assetHolding?: AssetWithAccountBalance | null
 }
 //TODO hook up missing actions
-export const AssetActionButtons = ({ asset }: AssetActionButtonsProps) => {
+export const AssetActionButtons = ({
+    asset,
+    assetHolding,
+}: AssetActionButtonsProps) => {
     const styles = useStyles()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { showToast } = useToast()
@@ -36,10 +44,20 @@ export const AssetActionButtons = ({ asset }: AssetActionButtonsProps) => {
     const sendFunds = useModalState()
     const receiveFunds = useModalState()
     const account = useSelectedAccount()
+    const { setSelectedAsset, setCanSelectAsset } = useSendFunds()
 
     const goToRootPage = (name: string) => {
         navigation.replace('TabBar', { screen: name })
     }
+
+    const handleSend = useCallback(() => {
+        if (assetHolding) {
+            setSelectedAsset(assetHolding)
+            setCanSelectAsset(false)
+        }
+
+        sendFunds.open()
+    }, [assetHolding, setSelectedAsset, setCanSelectAsset, sendFunds])
 
     const notImplemented = useCallback(() => {
         showToast({
@@ -67,7 +85,7 @@ export const AssetActionButtons = ({ asset }: AssetActionButtonsProps) => {
                 title={t('asset_details.action_buttons.send')}
                 icon='outflow'
                 variant='secondary'
-                onPress={sendFunds.open}
+                onPress={handleSend}
             />
             <RoundButton
                 title={t('asset_details.action_buttons.receive')}
