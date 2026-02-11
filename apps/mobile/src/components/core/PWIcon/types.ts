@@ -10,7 +10,16 @@
  limitations under the License
  */
 
-export { PWIcon } from './PWIcon'
-export type { PWIconProps } from './PWIcon'
-export type { PWIconSize, PWIconVariant } from './types'
-export type { IconName } from './constants'
+export type PWIconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl'
+
+export type PWIconVariant =
+    | 'primary'
+    | 'buttonPrimary'
+    | 'secondary'
+    | 'helper'
+    | 'white'
+    | 'link'
+    | 'error'
+    | 'positive'
+    | 'brand'
+    | 'favorite'
