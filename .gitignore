@@ -39,3 +39,4 @@ packages/config/src/local-overrides.ts
 /.opencode
 .mcp.json
 opencode.json
+.idea/
