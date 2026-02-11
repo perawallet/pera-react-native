@@ -19,7 +19,7 @@ import {
     type PWTouchableOpacityProps,
     PWText,
 } from '@components/core'
-import { getTestProps } from '../../utils/test-id-helper'
+import { getTestProps } from '@utils/test-id-helper'
 
 export type PanelButtonProps = {
     leftIcon?: IconName
@@ -54,7 +54,7 @@ export const PanelButton = (props: PanelButtonProps) => {
         >
             <PWView
                 style={[style, themeStyle.buttonStyle]}
-                {...getTestProps(testID ? `${testID}_view` : undefined)}
+                {...getTestProps(testID, 'view')}
             >
                 <PWView style={themeStyle.textContainerStyle}>
                     <PWView style={themeStyle.titleStyle}>
@@ -69,9 +69,7 @@ export const PanelButton = (props: PanelButtonProps) => {
                         <PWText
                             style={themeStyle.textStyle}
                             variant={titleWeight}
-                            {...getTestProps(
-                                testID ? `${testID}_text` : undefined,
-                            )}
+                            {...getTestProps(testID, 'text')}
                         >
                             {title}
                         </PWText>

@@ -224,7 +224,6 @@ module.exports = {
           buildToolsVersion: '35.0.0',
           enableProguardInReleaseBuilds: false,
           kotlinVersion: '2.0.21',
-          ndkVersion: '27.0.12077973',
         },
       },
     ],

@@ -12,7 +12,7 @@
 
 import { Input as RNEInput, InputProps as RNEInputProps } from '@rneui/themed'
 import { useStyles } from './styles'
-import { getTestProps } from '../../../utils/test-id-helper'
+import { getTestProps } from '@utils/test-id-helper'
 
 export type PWInputProps = {
     value?: string

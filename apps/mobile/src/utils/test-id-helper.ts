@@ -18,15 +18,18 @@ import { Platform } from 'react-native'
  * On iOS, testID is usually sufficient as it maps to accessibilityIdentifier.
  *
  * @param {string} id - The unique ID for the element.
+ * @param {string} [suffix] - Optional suffix for the ID.
  * @returns {object} - The test props.
  */
-export function getTestProps(id?: string) {
+export function getTestProps(id?: string, suffix?: string) {
     if (!id) {
         return {}
     }
 
+    const suffixedID = suffix ? `${id}_${suffix}` : id
+
     return {
-        testID: id,
-        accessibilityLabel: Platform.OS === 'android' ? id : undefined,
+        testID: suffixedID,
+        accessibilityLabel: Platform.OS === 'android' ? suffixedID : undefined,
     }
 }
