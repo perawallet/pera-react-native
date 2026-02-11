@@ -400,6 +400,7 @@ vi.mock('@components/core', () => {
             onPress,
             testID,
             isDisabled,
+            disabled,
             ...props
         }: any) =>
             React.createElement(
@@ -407,7 +408,8 @@ vi.mock('@components/core', () => {
                 {
                     ...props,
                     onClick: onPress,
-                    disabled: isDisabled,
+                    role: 'button',
+                    disabled: isDisabled ?? disabled,
                     'data-testid': testID || 'PWTouchableOpacity',
                     testid: testID || 'PWTouchableOpacity',
                 },
@@ -1618,6 +1620,20 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     })),
     useSingleAssetDetailsQuery: vi.fn(() => ({ data: null, isPending: false })),
     useInvalidateAssetPrices: vi.fn(() => ({ invalidate: vi.fn() })),
+    useToggleAssetFavoriteMutation: vi.fn(() => ({
+        toggleAssetFavorite: vi.fn(),
+        isLoading: false,
+        isError: false,
+        error: null,
+        isSuccess: false,
+    })),
+    useToggleAssetPriceAlertMutation: vi.fn(() => ({
+        toggleAssetPriceAlert: vi.fn(),
+        isLoading: false,
+        isError: false,
+        error: null,
+        isSuccess: false,
+    })),
     initAssetsStore: vi.fn(),
 }))
 

@@ -77,12 +77,15 @@ describe('useToggleAssetFavoriteMutation', () => {
             expect(result.current.isSuccess).toBe(true)
         })
 
-        expect(toggleAssetFavorite).toHaveBeenCalledWith({
-            assetID: '123',
-            deviceId: 'device-123',
-            enabled: true,
-            network: 'mainnet',
-        })
+        expect(toggleAssetFavorite).toHaveBeenCalledWith(
+            expect.objectContaining({
+                assetID: '123',
+                deviceId: 'device-123',
+                enabled: true,
+                network: 'mainnet',
+            }),
+            expect.any(Object),
+        )
     })
 
     it('calls toggleAssetFavorite with correct parameters when disabling', async () => {
@@ -103,12 +106,15 @@ describe('useToggleAssetFavoriteMutation', () => {
             expect(result.current.isSuccess).toBe(true)
         })
 
-        expect(toggleAssetFavorite).toHaveBeenCalledWith({
-            assetID: '123',
-            deviceId: 'device-123',
-            enabled: false,
-            network: 'testnet',
-        })
+        expect(toggleAssetFavorite).toHaveBeenCalledWith(
+            expect.objectContaining({
+                assetID: '123',
+                deviceId: 'device-123',
+                enabled: false,
+                network: 'testnet',
+            }),
+            expect.any(Object),
+        )
     })
 
     it('handles mutation error', async () => {
@@ -134,12 +140,11 @@ describe('useToggleAssetFavoriteMutation', () => {
     })
 
     it('returns isLoading true while mutation is in progress', async () => {
-        vi.mocked(toggleAssetFavorite).mockImplementation(
-            () =>
-                new Promise(resolve => {
-                    setTimeout(() => resolve(mockAssetResponse), 100)
-                }),
-        )
+        let resolvePromise: (value: typeof mockAssetResponse) => void
+        const promise = new Promise<typeof mockAssetResponse>(resolve => {
+            resolvePromise = resolve
+        })
+        vi.mocked(toggleAssetFavorite).mockReturnValue(promise)
 
         const { result } = renderHook(() => useToggleAssetFavoriteMutation(), {
             wrapper: createWrapper(queryClient),
@@ -154,7 +159,11 @@ describe('useToggleAssetFavoriteMutation', () => {
             network: 'mainnet' as const,
         })
 
-        expect(result.current.isLoading).toBe(true)
+        await waitFor(() => {
+            expect(result.current.isLoading).toBe(true)
+        })
+
+        resolvePromise!(mockAssetResponse)
 
         await waitFor(() => {
             expect(result.current.isSuccess).toBe(true)

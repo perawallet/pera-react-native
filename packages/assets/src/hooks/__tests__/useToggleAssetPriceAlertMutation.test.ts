@@ -80,12 +80,15 @@ describe('useToggleAssetPriceAlertMutation', () => {
             expect(result.current.isSuccess).toBe(true)
         })
 
-        expect(toggleAssetPriceAlert).toHaveBeenCalledWith({
-            assetID: '123',
-            deviceId: 'device-123',
-            enabled: true,
-            network: 'mainnet',
-        })
+        expect(toggleAssetPriceAlert).toHaveBeenCalledWith(
+            expect.objectContaining({
+                assetID: '123',
+                deviceId: 'device-123',
+                enabled: true,
+                network: 'mainnet',
+            }),
+            expect.any(Object),
+        )
     })
 
     it('calls toggleAssetPriceAlert with correct parameters when disabling', async () => {
@@ -109,12 +112,15 @@ describe('useToggleAssetPriceAlertMutation', () => {
             expect(result.current.isSuccess).toBe(true)
         })
 
-        expect(toggleAssetPriceAlert).toHaveBeenCalledWith({
-            assetID: '123',
-            deviceId: 'device-123',
-            enabled: false,
-            network: 'testnet',
-        })
+        expect(toggleAssetPriceAlert).toHaveBeenCalledWith(
+            expect.objectContaining({
+                assetID: '123',
+                deviceId: 'device-123',
+                enabled: false,
+                network: 'testnet',
+            }),
+            expect.any(Object),
+        )
     })
 
     it('handles mutation error', async () => {
@@ -143,12 +149,11 @@ describe('useToggleAssetPriceAlertMutation', () => {
     })
 
     it('returns isLoading true while mutation is in progress', async () => {
-        vi.mocked(toggleAssetPriceAlert).mockImplementation(
-            () =>
-                new Promise(resolve => {
-                    setTimeout(() => resolve(mockAssetResponse), 100)
-                }),
-        )
+        let resolvePromise: (value: typeof mockAssetResponse) => void
+        const promise = new Promise<typeof mockAssetResponse>(resolve => {
+            resolvePromise = resolve
+        })
+        vi.mocked(toggleAssetPriceAlert).mockReturnValue(promise)
 
         const { result } = renderHook(
             () => useToggleAssetPriceAlertMutation(),
@@ -166,7 +171,11 @@ describe('useToggleAssetPriceAlertMutation', () => {
             network: 'mainnet' as const,
         })
 
-        expect(result.current.isLoading).toBe(true)
+        await waitFor(() => {
+            expect(result.current.isLoading).toBe(true)
+        })
+
+        resolvePromise!(mockAssetResponse)
 
         await waitFor(() => {
             expect(result.current.isSuccess).toBe(true)

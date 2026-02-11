@@ -70,7 +70,7 @@ describe('toggleAssetFavorite', () => {
     it('calls queryClient with correct parameters when favoriting', async () => {
         const result = await toggleAssetFavorite({
             assetID: '123',
-            deviceId: 'device-123',
+            deviceId: '12345',
             enabled: true,
             network: Networks.mainnet,
         })
@@ -80,7 +80,7 @@ describe('toggleAssetFavorite', () => {
         expect(lastQueryClientCall?.method).toBe('POST')
         expect(lastQueryClientCall?.network).toBe('mainnet')
         expect(lastQueryClientCall?.data).toEqual({
-            device_id: 123,
+            device_id: 12345,
             enabled: true,
         })
         expect(result).toEqual(mockAssetResponse)
@@ -89,7 +89,7 @@ describe('toggleAssetFavorite', () => {
     it('calls queryClient with correct parameters when unfavoriting', async () => {
         const result = await toggleAssetFavorite({
             assetID: '456',
-            deviceId: 'device-456',
+            deviceId: '67890',
             enabled: false,
             network: Networks.testnet,
         })
@@ -99,7 +99,7 @@ describe('toggleAssetFavorite', () => {
         expect(lastQueryClientCall?.method).toBe('POST')
         expect(lastQueryClientCall?.network).toBe('testnet')
         expect(lastQueryClientCall?.data).toEqual({
-            device_id: 456,
+            device_id: 67890,
             enabled: false,
         })
         expect(result).toEqual(mockAssetResponse)
@@ -122,7 +122,7 @@ describe('toggleAssetFavorite', () => {
         await expect(
             toggleAssetFavorite({
                 assetID: '123',
-                deviceId: 'device-123',
+                deviceId: '12345',
                 enabled: true,
                 network: Networks.mainnet,
             }),
@@ -132,7 +132,7 @@ describe('toggleAssetFavorite', () => {
     it('uses pera backend', async () => {
         await toggleAssetFavorite({
             assetID: '123',
-            deviceId: 'device-123',
+            deviceId: '12345',
             enabled: true,
             network: Networks.mainnet,
         })
@@ -155,7 +155,7 @@ describe('toggleAssetPriceAlert', () => {
     it('calls queryClient with correct parameters when enabling alerts', async () => {
         const result = await toggleAssetPriceAlert({
             assetID: '123',
-            deviceId: 'device-123',
+            deviceId: '12345',
             enabled: true,
             network: Networks.mainnet,
         })
@@ -167,7 +167,7 @@ describe('toggleAssetPriceAlert', () => {
         expect(lastQueryClientCall?.method).toBe('POST')
         expect(lastQueryClientCall?.network).toBe('mainnet')
         expect(lastQueryClientCall?.data).toEqual({
-            device_id: 123,
+            device_id: 12345,
             enabled: true,
         })
         expect(result).toEqual(mockAssetResponse)
@@ -176,7 +176,7 @@ describe('toggleAssetPriceAlert', () => {
     it('calls queryClient with correct parameters when disabling alerts', async () => {
         const result = await toggleAssetPriceAlert({
             assetID: '456',
-            deviceId: 'device-456',
+            deviceId: '67890',
             enabled: false,
             network: Networks.testnet,
         })
@@ -188,7 +188,7 @@ describe('toggleAssetPriceAlert', () => {
         expect(lastQueryClientCall?.method).toBe('POST')
         expect(lastQueryClientCall?.network).toBe('testnet')
         expect(lastQueryClientCall?.data).toEqual({
-            device_id: 456,
+            device_id: 67890,
             enabled: false,
         })
         expect(result).toEqual(mockAssetResponse)
@@ -211,7 +211,7 @@ describe('toggleAssetPriceAlert', () => {
         await expect(
             toggleAssetPriceAlert({
                 assetID: '123',
-                deviceId: 'device-123',
+                deviceId: '12345',
                 enabled: true,
                 network: Networks.mainnet,
             }),
@@ -221,7 +221,7 @@ describe('toggleAssetPriceAlert', () => {
     it('uses pera backend', async () => {
         await toggleAssetPriceAlert({
             assetID: '123',
-            deviceId: 'device-123',
+            deviceId: '12345',
             enabled: true,
             network: Networks.mainnet,
         })

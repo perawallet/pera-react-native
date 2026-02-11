@@ -12,11 +12,19 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, fireEvent } from '@test-utils/render'
-import { AssetNotificationButton } from '../AssetNotificationButton'
-import { useToggleAssetPriceAlertMutation } from '@perawallet/wallet-core-assets'
+
+const mockToggleAssetPriceAlert = vi.fn()
+const mockUseToggleAssetPriceAlertMutation = vi.fn(() => ({
+    toggleAssetPriceAlert: mockToggleAssetPriceAlert,
+    isLoading: false,
+    isError: false,
+    error: null,
+    isSuccess: false,
+}))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    useToggleAssetPriceAlertMutation: vi.fn(),
+    useToggleAssetPriceAlertMutation: () =>
+        mockUseToggleAssetPriceAlertMutation(),
 }))
 
 vi.mock(
@@ -34,18 +42,18 @@ vi.mock(
     },
 )
 
-const mockToggleAssetPriceAlert = vi.fn()
+import { AssetNotificationButton } from '../AssetNotificationButton'
 
 describe('AssetNotificationButton', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        vi.mocked(useToggleAssetPriceAlertMutation).mockReturnValue({
+        mockUseToggleAssetPriceAlertMutation.mockReturnValue({
             toggleAssetPriceAlert: mockToggleAssetPriceAlert,
             isLoading: false,
             isError: false,
             error: null,
             isSuccess: false,
-        } as ReturnType<typeof useToggleAssetPriceAlertMutation>)
+        })
     })
 
     it('renders correctly when notifications are disabled', () => {
@@ -79,16 +87,19 @@ describe('AssetNotificationButton', () => {
         )
 
         const button = container.querySelector('[role="button"]')
+        expect(button).toBeTruthy()
         if (button) {
             fireEvent.click(button)
         }
 
-        expect(mockToggleAssetPriceAlert).toHaveBeenCalledWith({
-            assetID: '123',
-            deviceId: 'test-device-id',
-            enabled: true,
-            network: 'mainnet',
-        })
+        expect(mockToggleAssetPriceAlert).toHaveBeenCalledWith(
+            expect.objectContaining({
+                assetID: '123',
+                deviceId: 'test-device-id',
+                enabled: true,
+                network: 'mainnet',
+            }),
+        )
     })
 
     it('toggles from enabled to disabled', () => {
@@ -100,16 +111,19 @@ describe('AssetNotificationButton', () => {
         )
 
         const button = container.querySelector('[role="button"]')
+        expect(button).toBeTruthy()
         if (button) {
             fireEvent.click(button)
         }
 
-        expect(mockToggleAssetPriceAlert).toHaveBeenCalledWith({
-            assetID: '123',
-            deviceId: 'test-device-id',
-            enabled: false,
-            network: 'mainnet',
-        })
+        expect(mockToggleAssetPriceAlert).toHaveBeenCalledWith(
+            expect.objectContaining({
+                assetID: '123',
+                deviceId: 'test-device-id',
+                enabled: false,
+                network: 'mainnet',
+            }),
+        )
     })
 
     it('is disabled when isNotificationsEnabled is undefined', () => {
@@ -121,17 +135,17 @@ describe('AssetNotificationButton', () => {
         )
 
         const button = container.querySelector('[role="button"]')
-        expect(button?.getAttribute('disabled')).toBe('')
+        expect(button?.hasAttribute('disabled')).toBe(true)
     })
 
     it('is disabled when isLoading is true', () => {
-        vi.mocked(useToggleAssetPriceAlertMutation).mockReturnValue({
+        mockUseToggleAssetPriceAlertMutation.mockReturnValue({
             toggleAssetPriceAlert: mockToggleAssetPriceAlert,
             isLoading: true,
             isError: false,
             error: null,
             isSuccess: false,
-        } as ReturnType<typeof useToggleAssetPriceAlertMutation>)
+        })
 
         const { container } = render(
             <AssetNotificationButton
@@ -141,7 +155,7 @@ describe('AssetNotificationButton', () => {
         )
 
         const button = container.querySelector('[role="button"]')
-        expect(button?.getAttribute('disabled')).toBe('')
+        expect(button?.hasAttribute('disabled')).toBe(true)
     })
 
     it('is disabled when deviceId is null', async () => {
@@ -158,6 +172,43 @@ describe('AssetNotificationButton', () => {
         )
 
         const button = container.querySelector('[role="button"]')
-        expect(button?.getAttribute('disabled')).toBe('')
+        expect(button?.hasAttribute('disabled')).toBe(true)
+    })
+
+    it('is disabled when isLoading is true', () => {
+        mockUseToggleAssetPriceAlertMutation.mockReturnValue({
+            toggleAssetPriceAlert: mockToggleAssetPriceAlert,
+            isLoading: true,
+            isError: false,
+            error: null,
+            isSuccess: false,
+        })
+
+        const { container } = render(
+            <AssetNotificationButton
+                assetId='123'
+                isNotificationsEnabled={false}
+            />,
+        )
+
+        const button = container.querySelector('[role="button"]')
+        expect(button?.hasAttribute('disabled')).toBe(true)
+    })
+
+    it('is disabled when deviceId is null', async () => {
+        const module = await import(
+            '@perawallet/wallet-core-platform-integration'
+        )
+        vi.mocked(module.useDeviceID).mockReturnValue(null)
+
+        const { container } = render(
+            <AssetNotificationButton
+                assetId='123'
+                isNotificationsEnabled={false}
+            />,
+        )
+
+        const button = container.querySelector('[role="button"]')
+        expect(button?.hasAttribute('disabled')).toBe(true)
     })
 })

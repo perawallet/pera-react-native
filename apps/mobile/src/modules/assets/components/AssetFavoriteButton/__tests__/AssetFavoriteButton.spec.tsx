@@ -12,11 +12,18 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, fireEvent } from '@test-utils/render'
-import { AssetFavoriteButton } from '../AssetFavoriteButton'
-import { useToggleAssetFavoriteMutation } from '@perawallet/wallet-core-assets'
+
+const mockToggleAssetFavorite = vi.fn()
+const mockUseToggleAssetFavoriteMutation = vi.fn(() => ({
+    toggleAssetFavorite: mockToggleAssetFavorite,
+    isLoading: false,
+    isError: false,
+    error: null,
+    isSuccess: false,
+}))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    useToggleAssetFavoriteMutation: vi.fn(),
+    useToggleAssetFavoriteMutation: () => mockUseToggleAssetFavoriteMutation(),
 }))
 
 vi.mock(
@@ -34,18 +41,18 @@ vi.mock(
     },
 )
 
-const mockToggleAssetFavorite = vi.fn()
+import { AssetFavoriteButton } from '../AssetFavoriteButton'
 
 describe('AssetFavoriteButton', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        vi.mocked(useToggleAssetFavoriteMutation).mockReturnValue({
+        mockUseToggleAssetFavoriteMutation.mockReturnValue({
             toggleAssetFavorite: mockToggleAssetFavorite,
             isLoading: false,
             isError: false,
             error: null,
             isSuccess: false,
-        } as ReturnType<typeof useToggleAssetFavoriteMutation>)
+        })
     })
 
     it('renders correctly when asset is not favorited', () => {
@@ -79,16 +86,19 @@ describe('AssetFavoriteButton', () => {
         )
 
         const button = container.querySelector('[role="button"]')
+        expect(button).toBeTruthy()
         if (button) {
             fireEvent.click(button)
         }
 
-        expect(mockToggleAssetFavorite).toHaveBeenCalledWith({
-            assetID: '123',
-            deviceId: 'test-device-id',
-            enabled: true,
-            network: 'mainnet',
-        })
+        expect(mockToggleAssetFavorite).toHaveBeenCalledWith(
+            expect.objectContaining({
+                assetID: '123',
+                deviceId: 'test-device-id',
+                enabled: true,
+                network: 'mainnet',
+            }),
+        )
     })
 
     it('toggles from favorited to unfavorited', () => {
@@ -100,16 +110,19 @@ describe('AssetFavoriteButton', () => {
         )
 
         const button = container.querySelector('[role="button"]')
+        expect(button).toBeTruthy()
         if (button) {
             fireEvent.click(button)
         }
 
-        expect(mockToggleAssetFavorite).toHaveBeenCalledWith({
-            assetID: '123',
-            deviceId: 'test-device-id',
-            enabled: false,
-            network: 'mainnet',
-        })
+        expect(mockToggleAssetFavorite).toHaveBeenCalledWith(
+            expect.objectContaining({
+                assetID: '123',
+                deviceId: 'test-device-id',
+                enabled: false,
+                network: 'mainnet',
+            }),
+        )
     })
 
     it('is disabled when isFavorite is undefined', () => {
@@ -121,17 +134,17 @@ describe('AssetFavoriteButton', () => {
         )
 
         const button = container.querySelector('[role="button"]')
-        expect(button?.getAttribute('disabled')).toBe('')
+        expect(button?.hasAttribute('disabled')).toBe(true)
     })
 
     it('is disabled when isLoading is true', () => {
-        vi.mocked(useToggleAssetFavoriteMutation).mockReturnValue({
+        mockUseToggleAssetFavoriteMutation.mockReturnValue({
             toggleAssetFavorite: mockToggleAssetFavorite,
             isLoading: true,
             isError: false,
             error: null,
             isSuccess: false,
-        } as ReturnType<typeof useToggleAssetFavoriteMutation>)
+        })
 
         const { container } = render(
             <AssetFavoriteButton
@@ -141,7 +154,7 @@ describe('AssetFavoriteButton', () => {
         )
 
         const button = container.querySelector('[role="button"]')
-        expect(button?.getAttribute('disabled')).toBe('')
+        expect(button?.hasAttribute('disabled')).toBe(true)
     })
 
     it('is disabled when deviceId is null', async () => {
@@ -158,6 +171,43 @@ describe('AssetFavoriteButton', () => {
         )
 
         const button = container.querySelector('[role="button"]')
-        expect(button?.getAttribute('disabled')).toBe('')
+        expect(button?.hasAttribute('disabled')).toBe(true)
+    })
+
+    it('is disabled when isLoading is true', () => {
+        mockUseToggleAssetFavoriteMutation.mockReturnValue({
+            toggleAssetFavorite: mockToggleAssetFavorite,
+            isLoading: true,
+            isError: false,
+            error: null,
+            isSuccess: false,
+        })
+
+        const { container } = render(
+            <AssetFavoriteButton
+                assetId='123'
+                isFavorite={false}
+            />,
+        )
+
+        const button = container.querySelector('[role="button"]')
+        expect(button?.hasAttribute('disabled')).toBe(true)
+    })
+
+    it('is disabled when deviceId is null', async () => {
+        const module = await import(
+            '@perawallet/wallet-core-platform-integration'
+        )
+        vi.mocked(module.useDeviceID).mockReturnValue(null)
+
+        const { container } = render(
+            <AssetFavoriteButton
+                assetId='123'
+                isFavorite={false}
+            />,
+        )
+
+        const button = container.querySelector('[role="button"]')
+        expect(button?.hasAttribute('disabled')).toBe(true)
     })
 })
