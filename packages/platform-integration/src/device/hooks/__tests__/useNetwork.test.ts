@@ -10,9 +10,17 @@
  limitations under the License
  */
 
-import { describe, test, expect, beforeEach } from 'vitest'
+import { vi, describe, test, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { registerTestPlatform } from '../../../test-utils'
+
+vi.mock('@perawallet/wallet-core-config', () => ({
+    config: {
+        defaultNetwork: 'mainnet',
+        mainnetBackendUrl: 'https://mainnet-api.algorand.node',
+        testnetBackendUrl: 'https://testnet-api.algorand.node',
+    },
+}))
 
 describe('device/hooks/useNetwork', () => {
     beforeEach(() => {

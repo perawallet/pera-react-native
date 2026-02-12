@@ -14,6 +14,12 @@ import { vi, describe, test, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { registerTestPlatform } from '../../../test-utils'
 
+vi.mock('@perawallet/wallet-core-config', () => ({
+    config: {
+        defaultNetwork: 'mainnet',
+    },
+}))
+
 describe('device/store', () => {
     beforeEach(() => {
         // Reset modules to get fresh store instance

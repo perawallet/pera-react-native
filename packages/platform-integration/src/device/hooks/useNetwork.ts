@@ -12,8 +12,19 @@
 
 import { useDeviceStore } from '../store'
 
+import {
+    getNetworkConfig,
+    isMainnet as isMainnetHelper,
+    isTestnet as isTestnetHelper,
+} from '../network-config'
+
 export const useNetwork = () => {
     const network = useDeviceStore(state => state.network)
     const setNetwork = useDeviceStore(state => state.setNetwork)
-    return { network, setNetwork }
+
+    const isMainnet = isMainnetHelper(network)
+    const isTestnet = isTestnetHelper(network)
+    const networkConfig = getNetworkConfig(network)
+
+    return { network, setNetwork, isMainnet, isTestnet, networkConfig }
 }

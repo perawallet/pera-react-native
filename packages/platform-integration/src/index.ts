@@ -23,6 +23,12 @@ export * from './platform'
 
 export { initDeviceStore, registerDeviceStore } from './device/store'
 export {
+    getNetworkConfig,
+    isMainnet,
+    isTestnet,
+    type NetworkConfig,
+} from './device/network-config'
+export {
     initRemoteConfigStore,
     registerRemoteConfigStore,
 } from './remote-config/store'

@@ -17,7 +17,12 @@ import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockch
 import { useWebView } from '@hooks/usePeraWebviewInterface'
 
 vi.mock('@perawallet/wallet-core-platform-integration', () => ({
-    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
+    useNetwork: vi.fn(() => ({
+        network: 'mainnet',
+        isMainnet: true,
+        networkConfig: { explorerUrl: 'https://explorer.perawallet.app/tx' },
+    })),
+    getNetworkConfig: vi.fn(() => ({ explorerUrl: 'https://explorer.perawallet.app' })),
 }))
 
 vi.mock('@hooks/usePeraWebviewInterface', () => ({

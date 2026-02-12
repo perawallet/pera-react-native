@@ -84,6 +84,9 @@ append_config "DEBUG_ENABLED" "debugEnabled" "boolean"
 append_config "PROFILING_ENABLED" "profilingEnabled" "boolean"
 append_config "POLLING_ENABLED" "pollingEnabled" "boolean"
 
+# Default Network
+append_config "DEFAULT_NETWORK" "defaultNetwork" "string"
+
 # Close the object
 echo "} as const;" >> "$OUTPUT_FILE"
 

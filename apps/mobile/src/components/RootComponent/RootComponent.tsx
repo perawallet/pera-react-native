@@ -10,14 +10,13 @@
  limitations under the License
  */
 
-import { Networks } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
 import { useEffect, useRef } from 'react'
-import { AppState } from 'react-native'
+import { AppState, StatusBar, View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { MainRoutes } from '@routes/index'
 import { getTheme } from '@theme/theme'
-import { ThemeProvider } from '@rneui/themed'
+import { ThemeProvider, useTheme } from '@rneui/themed'
 import { useStyles } from './styles'
 import { PWText, PWView } from '@components/core'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -43,10 +42,11 @@ export type RootComponentProps = {
 }
 
 const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
+    const { isTestnet } = useNetwork()
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
+    const { theme } = useTheme()
     const { hasInternet } = useNetworkStatus()
-    const { network } = useNetwork()
     const { showToast } = useToast()
     const { t } = useLanguage()
 
@@ -69,8 +69,14 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
     return (
         <ErrorBoundary onError={showError}>
             <PWView style={styles.container}>
-                {network === Networks.testnet && (
-                    <PWView style={styles.testnetBar} />
+                <StatusBar
+                    barStyle={theme.mode === 'light' ? 'dark-content' : 'light-content'}
+                    backgroundColor={theme.colors.background}
+                />
+                {isTestnet && (
+                    <View style={styles.testnetBar}>
+                        <PWText style={styles.testnetText}>Testnet</PWText>
+                    </View>
                 )}
 
                 {!hasInternet && (

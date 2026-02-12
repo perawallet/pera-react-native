@@ -61,6 +61,8 @@ export const configSchema = z.object({
     debugEnabled: z.boolean(),
     profilingEnabled: z.boolean(),
     pollingEnabled: z.boolean(),
+
+    defaultNetwork: z.enum(['mainnet', 'testnet']).default('mainnet'),
 })
 
 export type Config = z.infer<typeof configSchema>
@@ -109,6 +111,8 @@ const productionConfig = {
     debugEnabled: false,
     profilingEnabled: false,
     pollingEnabled: true,
+
+    defaultNetwork: 'mainnet',
 }
 
 // A map of which environment variable (if any) to read config overrides from
@@ -143,6 +147,8 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     debugEnabled: 'DEBUG_ENABLED',
     profilingEnabled: 'PROFILING_ENABLED',
     pollingEnabled: 'POLLING_ENABLED',
+
+    defaultNetwork: 'DEFAULT_NETWORK',
 }
 
 /**

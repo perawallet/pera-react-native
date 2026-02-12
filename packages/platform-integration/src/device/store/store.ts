@@ -21,9 +21,9 @@ import {
     createLazyStore,
     DataStoreRegistry,
     type Network,
-    Networks,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
+import { config } from '@perawallet/wallet-core-config'
 
 const STORE_NAME = 'device-store'
 
@@ -61,7 +61,7 @@ export const useDeviceStore: UseBoundStore<
 const initialState = {
     deviceIDs: new Map<Network, string | null>(),
     pushToken: null as string | null,
-    network: Networks.mainnet as Network,
+    network: config.defaultNetwork as Network,
 }
 
 export const createDeviceStore = (storage: KeyValueStorageService) =>
