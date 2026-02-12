@@ -15,11 +15,6 @@ import { Networks } from '../models/network'
 import { config } from '../main'
 import { getNetworkConfig, isMainnet, isTestnet } from '../network-config'
 
-const AlgorandChainIDs = {
-  mainnet: 416001,
-  testnet: 416002,
-}
-
 describe('network-config', () => {
   test('isMainnet returns correct boolean', () => {
     expect(isMainnet(Networks.mainnet)).toBe(true)
@@ -38,7 +33,6 @@ describe('network-config', () => {
       network: Networks.mainnet,
       isMainnet: true,
       isTestnet: false,
-      chainId: AlgorandChainIDs.mainnet,
       backendUrl: config.mainnetBackendUrl,
       algodUrl: config.mainnetAlgodUrl,
       indexerUrl: config.mainnetIndexerUrl,
@@ -53,7 +47,6 @@ describe('network-config', () => {
       network: Networks.testnet,
       isMainnet: false,
       isTestnet: true,
-      chainId: AlgorandChainIDs.testnet,
       backendUrl: config.testnetBackendUrl,
       algodUrl: config.testnetAlgodUrl,
       indexerUrl: config.testnetIndexerUrl,

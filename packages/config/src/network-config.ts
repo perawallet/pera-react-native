@@ -14,18 +14,12 @@ import { Network, Networks } from './models/network'
 import { config } from './main'
 
 
-const AlgorandChainIDs = {
-  mainnet: 416001,
-  testnet: 416002,
-}
-
 export type NetworkConfig = {
   network: Network
   backendUrl: string
   algodUrl: string
   indexerUrl: string
   explorerUrl: string
-  chainId: number
   isTestnet: boolean
   isMainnet: boolean
 }
@@ -40,7 +34,6 @@ export const getNetworkConfig = (network: Network): NetworkConfig => {
     network,
     isMainnet: isMain,
     isTestnet: !isMain,
-    chainId: isMain ? AlgorandChainIDs.mainnet : AlgorandChainIDs.testnet,
     backendUrl: isMain ? config.mainnetBackendUrl : config.testnetBackendUrl,
     algodUrl: isMain ? config.mainnetAlgodUrl : config.testnetAlgodUrl,
     indexerUrl: isMain

@@ -63,9 +63,6 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 
 vi.mock('@perawallet/wallet-core-platform-integration', () => ({
     useNetwork: vi.fn(),
-    getNetworkConfig: vi.fn(network => ({
-        chainId: network === 1 ? 416001 : 416002,
-    })),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {

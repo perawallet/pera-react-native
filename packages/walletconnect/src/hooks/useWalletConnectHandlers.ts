@@ -15,6 +15,7 @@ import {
     encodeToBase64,
     logger,
     Network,
+    Networks,
 } from '@perawallet/wallet-core-shared'
 import {
     WalletConnectInvalidNetworkError,
@@ -33,7 +34,6 @@ import {
     type TransactionSignRequest,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
-import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import WalletConnect from '@walletconnect/client'
 import { useCallback } from 'react'
@@ -76,10 +76,14 @@ const validateRequest = (
         )
     }
 
-    const config = getNetworkConfig(network)
+    const expectedChainId =
+        network === Networks.testnet
+            ? AlgorandChainId.testnet
+            : AlgorandChainId.mainnet
+
     const { chainId } = foundConnection.session
 
-    if (chainId !== 4160 && chainId !== config.chainId) {
+    if (chainId !== AlgorandChainId.all && chainId !== expectedChainId) {
         logger.debug('Invalid network', {
             clientId: connector.clientId,
             connections,
@@ -116,12 +120,15 @@ const validateDataSignRequest = (
         )
     }
 
-    const config = getNetworkConfig(network)
+    const expectedChainId =
+        network === Networks.testnet
+            ? AlgorandChainId.testnet
+            : AlgorandChainId.mainnet
 
     data.forEach(item => {
         if (
             item.chainId !== AlgorandChainId.all &&
-            item.chainId !== config.chainId
+            item.chainId !== expectedChainId
         ) {
             throw new WalletConnectInvalidNetworkError(
                 new Error("ChainId doesn't match"),
