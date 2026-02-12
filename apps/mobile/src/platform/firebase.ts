@@ -13,6 +13,7 @@
 import {
     FirebaseCrashlyticsTypes,
     getCrashlytics,
+    recordError,
     setCrashlyticsCollectionEnabled,
 } from '@react-native-firebase/crashlytics'
 import {
@@ -21,6 +22,7 @@ import {
     getRemoteConfig,
     setConfigSettings,
     setDefaults,
+    getValue,
 } from '@react-native-firebase/remote-config'
 import {
     FirebaseMessagingTypes,
@@ -51,8 +53,7 @@ import {
 import { config } from '@perawallet/wallet-core-config'
 
 export class RNFirebaseService
-    implements CrashReportingService, RemoteConfigService, AnalyticsService
-{
+    implements CrashReportingService, RemoteConfigService, AnalyticsService {
     remoteConfig: FirebaseRemoteConfigTypes.Module | null = null
     messaging: FirebaseMessagingTypes.Module | null = null
     analytics: FirebaseAnalyticsTypes.Module | null = null
@@ -78,7 +79,7 @@ export class RNFirebaseService
             if (!this.remoteConfig) {
                 return fallback ?? ''
             }
-            return this.remoteConfig.getValue(key).asString()
+            return getValue(this.remoteConfig, key).asString()
         } catch {
             return fallback ?? ''
         }
@@ -88,7 +89,7 @@ export class RNFirebaseService
             if (!this.remoteConfig) {
                 return fallback ?? false
             }
-            return this.remoteConfig.getValue(key).asBoolean()
+            return getValue(this.remoteConfig, key).asBoolean()
         } catch {
             return fallback ?? false
         }
@@ -98,7 +99,7 @@ export class RNFirebaseService
             if (!this.remoteConfig) {
                 return fallback ?? 0
             }
-            return this.remoteConfig.getValue(key).asNumber()
+            return getValue(this.remoteConfig, key).asNumber()
         } catch {
             return fallback ?? 0
         }
@@ -111,7 +112,7 @@ export class RNFirebaseService
         if (settings.authorizationStatus !== AuthorizationStatus.AUTHORIZED) {
             return {
                 token: undefined,
-                unsubscribe: () => {},
+                unsubscribe: () => { },
             }
         }
 
@@ -137,21 +138,21 @@ export class RNFirebaseService
         // Foreground message handler (show a local notification)
         const unsubscribeOnMessage = this.messaging
             ? onMessage(this.messaging, async remoteMessage => {
-                  const title =
-                      remoteMessage.notification?.title ?? 'Notification'
-                  const body = remoteMessage.notification?.body ?? undefined
+                const title =
+                    remoteMessage.notification?.title ?? 'Notification'
+                const body = remoteMessage.notification?.body ?? undefined
 
-                  await notifee.displayNotification({
-                      title,
-                      body,
-                      data: remoteMessage.data,
-                      android: Platform.select({
-                          android: { channelId: 'default' },
-                          ios: undefined,
-                      }) as NotificationAndroid,
-                  })
-              })
-            : () => {}
+                await notifee.displayNotification({
+                    title,
+                    body,
+                    data: remoteMessage.data,
+                    android: Platform.select({
+                        android: { channelId: 'default' },
+                        ios: undefined,
+                    }) as NotificationAndroid,
+                })
+            })
+            : () => { }
 
         // Foreground notification events
         const unsubscribeNotifeeForeground = notifee.onForegroundEvent(
@@ -182,10 +183,14 @@ export class RNFirebaseService
     }
 
     recordNonFatalError(error: unknown): void {
+        if (!this.crashlytics) {
+            return
+        }
+
         if (error instanceof Error) {
-            this.crashlytics?.recordError(error)
+            recordError(this.crashlytics, error)
         } else {
-            this.crashlytics?.recordError(new Error(String(error)))
+            recordError(this.crashlytics, new Error(String(error)))
         }
     }
 
