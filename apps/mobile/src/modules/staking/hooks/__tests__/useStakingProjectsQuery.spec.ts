@@ -1,0 +1,121 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import React from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { renderHook, waitFor } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useStakingProjectsQuery } from '../useStakingProjectsQuery'
+
+const mocks = vi.hoisted(() => ({
+    fetchStakingProjectsInfo: vi.fn(),
+    useNetwork: vi.fn(),
+}))
+
+vi.mock('../endpoints', () => ({
+    fetchStakingProjectsInfo: mocks.fetchStakingProjectsInfo,
+}))
+
+vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-blockchain')
+        >()
+    return {
+        ...actual,
+        microAlgosToAlgos: actual.microAlgosToAlgos,
+    }
+})
+
+vi.mock('@perawallet/wallet-core-platform-integration', () => ({
+    useNetwork: mocks.useNetwork,
+}))
+
+describe('useStakingProjectsQuery', () => {
+    let queryClient: QueryClient
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+        queryClient = new QueryClient({
+            defaultOptions: {
+                queries: {
+                    retry: false,
+                },
+            },
+        })
+        mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
+    })
+
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+        React.createElement(
+            QueryClientProvider,
+            { client: queryClient },
+            children,
+        )
+
+    it('merges projects and sorts by tvl in algo descending', async () => {
+        mocks.fetchStakingProjectsInfo.mockResolvedValue({
+            folks: {
+                tvl_in_algo: '1000',
+                tvl_in_usd: '1200',
+            },
+            pact: {
+                tvl_in_algo: '2000',
+                tvl_in_usd: '2500',
+            },
+            valar: {
+                tvl_in_algo: '500',
+                tvl_in_usd: '630',
+            },
+        })
+
+        const { result } = renderHook(() => useStakingProjectsQuery(), {
+            wrapper,
+        })
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+        expect(result.current.projects[0].id).toBe('pact')
+        expect(result.current.projects[1].id).toBe('folks')
+        expect(result.current.projects[2].id).toBe('valar')
+        expect(result.current.projects[0].tvlInAlgo).toBe(0.002)
+        expect(result.current.projects[0].tvlInUsd).toBe(2500)
+        expect(result.current.projects.length).toBe(8)
+    })
+
+    it('returns error state when request fails', async () => {
+        mocks.fetchStakingProjectsInfo.mockRejectedValue(new Error('Failed'))
+
+        const { result } = renderHook(() => useStakingProjectsQuery(), {
+            wrapper,
+        })
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+
+        expect(result.current.error?.message).toBe('Failed')
+    })
+
+    it('uses the active network when fetching', async () => {
+        mocks.useNetwork.mockReturnValue({ network: 'testnet' })
+        mocks.fetchStakingProjectsInfo.mockResolvedValue({})
+
+        renderHook(() => useStakingProjectsQuery(), {
+            wrapper,
+        })
+
+        await waitFor(() =>
+            expect(mocks.fetchStakingProjectsInfo).toHaveBeenCalledWith(
+                'testnet',
+            ),
+        )
+    })
+})

@@ -25,6 +25,10 @@ export type RootStackParamList = {
     Settings: NavigatorScreenParams<SettingsStackParamsList>
     Contacts: NavigatorScreenParams<ContactsStackParamsList>
     Staking: undefined
+    StakingDApp: {
+        url: string
+        title: string
+    }
     TransactionDetails: {
         transactionId?: string
         transaction?: PeraDisplayableTransaction

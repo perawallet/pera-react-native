@@ -10,31 +10,148 @@
  limitations under the License
  */
 
-import { config } from '@perawallet/wallet-core-config'
-import { PWView } from '@components/core'
+import { useCallback } from 'react'
+import {
+    PWButton,
+    PWFlatList,
+    PWIcon,
+    PWSkeleton,
+    PWText,
+    PWToolbar,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
+import {
+    StakingDisclaimerSheet,
+    StakingHelpSheet,
+    StakingProjectCard,
+} from '@modules/staking/components'
+import type { StakingProject } from '@modules/staking/models'
+import { useStakingScreen } from './useStakingScreen'
 import { useStyles } from './styles'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useNavigation } from '@react-navigation/native'
-import { PWWebView } from '@modules/webview/components/PWWebView'
+
+const SKELETON_ITEMS = [0, 1, 2, 3, 4]
 
 export const StakingScreen = () => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
-    const url = config.stakingBaseUrl
-    const navigation = useNavigation()
+    const styles = useStyles()
+    const {
+        projects,
+        isLoading,
+        isError,
+        isHelpVisible,
+        isDisclaimerVisible,
+        handleBack,
+        handleRetry,
+        handleProjectPress,
+        handleHelpOpen,
+        handleHelpClose,
+        handleDisclaimerAccept,
+        handleDisclaimerClose,
+    } = useStakingScreen()
 
-    const onClose = () => {
-        navigation.goBack()
-    }
+    const renderProject = useCallback(
+        ({ item, index }: { item: StakingProject; index: number }) => {
+            return (
+                <StakingProjectCard
+                    project={item}
+                    isLast={index === projects.length - 1}
+                    onPress={handleProjectPress}
+                />
+            )
+        },
+        [handleProjectPress, projects.length],
+    )
 
     return (
         <PWView style={styles.container}>
-            <PWWebView
-                url={url}
-                enablePeraConnect={true}
-                style={styles.webview}
-                containerStyle={styles.webview}
-                onClose={onClose}
+            <PWToolbar
+                style={styles.toolbar}
+                left={
+                    <PWTouchableOpacity
+                        onPress={handleBack}
+                        testID='staking-back-button'
+                    >
+                        <PWIcon name='chevron-left' />
+                    </PWTouchableOpacity>
+                }
+                center={<PWText variant='h3'>Stake on Algorand</PWText>}
+                right={
+                    <PWTouchableOpacity
+                        onPress={handleHelpOpen}
+                        testID='staking-help-button'
+                    >
+                        <PWIcon name='question-mark' />
+                    </PWTouchableOpacity>
+                }
+            />
+
+            <PWText style={styles.subtitle}>
+                Secure the protocol and receive Staking Rewards!
+            </PWText>
+
+            {isLoading && (
+                <PWView style={styles.skeletonContainer}>
+                    {SKELETON_ITEMS.map(item => (
+                        <PWView
+                            key={`staking-skeleton-${item}`}
+                            style={styles.skeletonCard}
+                            testID='staking-skeleton'
+                        >
+                            <PWSkeleton
+                                circle
+                                height={40}
+                                width={40}
+                            />
+                            <PWView style={styles.skeletonContent}>
+                                <PWSkeleton style={styles.skeletonTitle} />
+                                <PWSkeleton
+                                    style={styles.skeletonDescription}
+                                />
+                                <PWSkeleton style={styles.skeletonTvlRow} />
+                            </PWView>
+                        </PWView>
+                    ))}
+                </PWView>
+            )}
+
+            {!isLoading && isError && (
+                <PWView style={styles.errorContainer}>
+                    <PWText
+                        variant='h4'
+                        style={styles.errorTitle}
+                    >
+                        Failed to load staking projects
+                    </PWText>
+                    <PWText style={styles.errorDescription}>
+                        Please try again in a moment.
+                    </PWText>
+                    <PWButton
+                        variant='primary'
+                        title='Retry'
+                        onPress={handleRetry}
+                    />
+                </PWView>
+            )}
+
+            {!isLoading && !isError && (
+                <PWFlatList
+                    data={projects}
+                    renderItem={renderProject}
+                    keyExtractor={item => item.id}
+                    style={styles.list}
+                    contentContainerStyle={styles.listContentContainer}
+                />
+            )}
+
+            <StakingHelpSheet
+                isVisible={isHelpVisible}
+                onClose={handleHelpClose}
+            />
+
+            <StakingDisclaimerSheet
+                isVisible={isDisclaimerVisible}
+                onAccept={handleDisclaimerAccept}
+                onClose={handleDisclaimerClose}
             />
         </PWView>
     )
