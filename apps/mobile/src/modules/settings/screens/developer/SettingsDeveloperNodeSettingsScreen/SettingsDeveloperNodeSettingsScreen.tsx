@@ -19,7 +19,7 @@ import { useLanguage } from '@hooks/useLanguage'
 
 export const SettingsDeveloperNodeSettingsScreen = () => {
     const styles = useStyles()
-    const { network, setNetwork } = useNetwork()
+    const { isMainnet, isTestnet, setNetwork } = useNetwork()
     const { t } = useLanguage()
 
     return (
@@ -27,12 +27,12 @@ export const SettingsDeveloperNodeSettingsScreen = () => {
             <PWRadioButton
                 title={t('settings.developer.node_settings.mainnet_label')}
                 onPress={() => setNetwork(Networks.mainnet)}
-                isSelected={network === Networks.mainnet}
+                isSelected={isMainnet}
             />
             <PWRadioButton
                 title={t('settings.developer.node_settings.testnet_label')}
                 onPress={() => setNetwork(Networks.testnet)}
-                isSelected={network === Networks.testnet}
+                isSelected={isTestnet}
             />
         </PWView>
     )

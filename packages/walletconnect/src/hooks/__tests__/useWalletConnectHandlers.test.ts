@@ -320,6 +320,71 @@ describe('useWalletConnectHandlers', () => {
             ).toThrow(WalletConnectInvalidNetworkError)
         })
 
+        it('should allow 416002 chainId when network is testnet', () => {
+            ;(useNetwork as any).mockReturnValue({
+                network: Networks.testnet,
+            })
+            const mockSessionsTestnet = [
+                {
+                    clientId: 'test-client-id',
+                    session: {
+                        clientId: 'test-client-id',
+                        chainId: 416002,
+                        accounts: ['addr1'],
+                    },
+                },
+            ]
+            ;(useWalletConnectStore as any).mockImplementation(
+                (selector: any) =>
+                    selector({
+                        walletConnectConnections: mockSessionsTestnet,
+                    }),
+            )
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = { clientId: 'test-client-id' }
+            const payload = {
+                params: [
+                    {
+                        message: 'Sign me',
+                        data: 'somedata',
+                        chainId: 416002,
+                        signer: 'addr1',
+                    },
+                ],
+            }
+
+            expect(() =>
+                result.current.handleSignData(connector as any, null, payload),
+            ).not.toThrow()
+        })
+
+        it('should throw WalletConnectInvalidNetworkError if chainId is 416001 when network is testnet', () => {
+            ;(useNetwork as any).mockReturnValue({
+                network: Networks.testnet,
+            })
+            const mockSessionsMismatch = [
+                {
+                    clientId: 'test-client-id',
+                    session: {
+                        clientId: 'test-client-id',
+                        chainId: 416001,
+                    },
+                },
+            ]
+            ;(useWalletConnectStore as any).mockImplementation(
+                (selector: any) =>
+                    selector({
+                        walletConnectConnections: mockSessionsMismatch,
+                    }),
+            )
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = { clientId: 'test-client-id' }
+
+            expect(() =>
+                result.current.handleSignData(connector as any, null, {}),
+            ).toThrow(WalletConnectInvalidNetworkError)
+        })
+
         it('should throw WalletConnectSignRequestError if param is missing', () => {
             const { result } = renderHook(() => useWalletConnectHandlers())
             const connector = { clientId: 'test-client-id' }

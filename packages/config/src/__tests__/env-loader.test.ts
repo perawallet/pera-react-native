@@ -155,6 +155,12 @@ describe('env-loader', () => {
             expect(result.pollingEnabled).toBe(false)
         })
 
+        test('loads defaultNetwork from DEFAULT_NETWORK', () => {
+            process.env.DEFAULT_NETWORK = 'testnet'
+            const result = loadEnvOverrides()
+            expect(result.defaultNetwork).toBe('testnet')
+        })
+
         test('loads multiple environment variables at once', () => {
             process.env.MAINNET_BACKEND_URL =
                 'https://custom-mainnet.example.com'
@@ -264,6 +270,7 @@ describe('env-loader', () => {
             debugEnabled: false,
             profilingEnabled: false,
             pollingEnabled: true,
+            defaultNetwork: 'mainnet',
         }
 
         test('returns base config when no environment variables are set', () => {
@@ -370,6 +377,7 @@ describe('env-loader', () => {
                 backendAPIKey: 'new-backend-key',
                 algodApiKey: 'new-algod-key',
                 debugEnabled: true,
+                defaultNetwork: 'mainnet',
             })
         })
     })
