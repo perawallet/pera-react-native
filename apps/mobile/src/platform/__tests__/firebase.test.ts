@@ -12,7 +12,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { vi, Mock } from 'vitest'
+import { vi } from 'vitest'
 import { Platform } from 'react-native'
 import { RNFirebaseService } from '../firebase'
 
