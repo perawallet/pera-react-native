@@ -11,36 +11,26 @@
  */
 
 import { PWButton, PWView } from '@components/core'
-import {
-    type ArbitraryDataSignRequest,
-    type PeraArbitraryDataMessage,
-    useSigningRequest,
-} from '@perawallet/wallet-core-signing'
 import { useLanguage } from '@hooks/useLanguage'
-import { useArbitraryDataSigningView } from '@modules/signing/components/ArbitraryDataSigningView/useArbitraryDataSigningView'
 import { SourceMetadataView } from '@modules/signing/components/SourceMetadataView'
 import { SingleArbitrarySignRequestView } from '@modules/signing/components/SingleArbitrarySignRequestView'
 import { MultipleArbitrarySignRequestView } from '@modules/signing/components/MultipleArbitrarySignRequestView'
 import { useStyles } from './styles'
-import type { SigningStackScreenProps } from '@modules/signing/routes'
+import { useArbitraryDataSigningScreen } from './useArbitraryDataSigningScreen'
 
-export const ArbitraryDataSigningScreen = ({
-    navigation,
-}: SigningStackScreenProps<'ArbitraryDataSigning'>) => {
+export const ArbitraryDataSigningScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { currentRequest } = useSigningRequest()
-    const request = currentRequest as ArbitraryDataSignRequest
-    const { approveRequest, rejectRequest, isPending } =
-        useArbitraryDataSigningView(request)
+    const {
+        request,
+        isSingleSignRequest,
+        isPending,
+        handleApprove,
+        handleReject,
+        handleDetailsPress,
+    } = useArbitraryDataSigningScreen()
 
     if (!request) return null
-
-    const isSingleSignRequest = request.data.length === 1
-
-    const handleDetailsPress = (message: PeraArbitraryDataMessage) => {
-        navigation.navigate('ArbitraryDataSigningDetails', { message })
-    }
 
     return (
         <PWView style={styles.container}>
@@ -65,7 +55,7 @@ export const ArbitraryDataSigningScreen = ({
                     <PWButton
                         title={t('common.cancel.label')}
                         variant='secondary'
-                        onPress={rejectRequest}
+                        onPress={handleReject}
                         style={styles.button}
                         isDisabled={isPending}
                     />
@@ -76,7 +66,7 @@ export const ArbitraryDataSigningScreen = ({
                                 : t('common.confirm_all.label')
                         }
                         variant='primary'
-                        onPress={approveRequest}
+                        onPress={handleApprove}
                         style={styles.button}
                         isDisabled={isPending}
                         isLoading={isPending}

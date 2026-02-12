@@ -34,7 +34,6 @@ export const ArbitraryDataSigningDetailsScreen = ({
             <ArbitraryDataSigningDetailsView
                 request={request}
                 dataMessage={route.params.message}
-                onBack={() => navigation.goBack()}
             />
         </PWView>
     )

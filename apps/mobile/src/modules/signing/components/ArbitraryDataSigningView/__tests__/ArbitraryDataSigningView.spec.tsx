@@ -14,10 +14,8 @@ import React from 'react'
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ArbitraryDataSigningView } from '../ArbitraryDataSigningView'
-import {
-    ArbitraryDataSignRequest,
-    useSigningRequest,
-} from '@perawallet/wallet-core-signing'
+import { ArbitraryDataSignRequest } from '@perawallet/wallet-core-signing'
+import { useArbitraryDataSigningScreen } from '@modules/signing/screens/ArbitraryDataSigningScreen/useArbitraryDataSigningScreen'
 
 vi.mock('@components/core', () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -74,13 +72,19 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
     useFindAccountByAddress: vi.fn(() => null),
 }))
 
-vi.mock('../useArbitraryDataSigningView', () => ({
-    useArbitraryDataSigningView: vi.fn(() => ({
-        approveRequest: vi.fn(),
-        rejectRequest: vi.fn(),
-        isPending: false,
-    })),
-}))
+vi.mock(
+    '@modules/signing/screens/ArbitraryDataSigningScreen/useArbitraryDataSigningScreen',
+    () => ({
+        useArbitraryDataSigningScreen: vi.fn(() => ({
+            request: null,
+            isSingleSignRequest: true,
+            isPending: false,
+            handleApprove: vi.fn(),
+            handleReject: vi.fn(),
+            handleDetailsPress: vi.fn(),
+        })),
+    }),
+)
 
 vi.mock('@hooks/usePeraWebviewInterface', () => ({
     useWebView: vi.fn(() => ({
@@ -124,15 +128,14 @@ describe('ArbitraryDataSigningView', () => {
     } as unknown as ArbitraryDataSignRequest
 
     const setupMock = (request: ArbitraryDataSignRequest) => {
-        vi.mocked(useSigningRequest).mockReturnValue({
-            currentRequest: request,
-            pendingSignRequests: [request],
-            lastCompletedRequest: null,
-            clearLastCompletedRequest: vi.fn(),
-            removeSignRequest: vi.fn(),
-            signAndSendRequest: vi.fn(),
-            rejectRequest: vi.fn(),
-        } as unknown as ReturnType<typeof useSigningRequest>)
+        vi.mocked(useArbitraryDataSigningScreen).mockReturnValue({
+            request,
+            isSingleSignRequest: request.data.length === 1,
+            isPending: false,
+            handleApprove: vi.fn(),
+            handleReject: vi.fn(),
+            handleDetailsPress: vi.fn(),
+        })
     }
 
     it('renders title for arbitrary data signing', () => {
