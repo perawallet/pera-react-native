@@ -10,12 +10,9 @@
  limitations under the License
  */
 
-import { config } from '@perawallet/wallet-core-config'
+import { config, getNetworkConfig } from '@perawallet/wallet-core-config'
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
-import {
-    getNetworkConfig,
-    useDeviceStore,
-} from '@perawallet/wallet-core-platform-integration'
+import { useDeviceStore } from '@perawallet/wallet-core-platform-integration'
 
 /**
  * Returns an instance of AlgorandClient based on the current network in device store.

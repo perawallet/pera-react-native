@@ -16,7 +16,7 @@ import {
     getNetworkConfig,
     isMainnet as isMainnetHelper,
     isTestnet as isTestnetHelper,
-} from '../network-config'
+} from '@perawallet/wallet-core-config'
 
 export const useNetwork = () => {
     const network = useDeviceStore(state => state.network)

@@ -11,8 +11,8 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import { Networks } from '@perawallet/wallet-core-shared'
-import { config } from '@perawallet/wallet-core-config'
+import { Networks } from '../models/network'
+import { config } from '../main'
 import { getNetworkConfig, isMainnet, isTestnet } from '../network-config'
 
 const AlgorandChainIDs = {

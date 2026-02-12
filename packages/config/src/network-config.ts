@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { Network, Networks } from '@perawallet/wallet-core-shared'
-import { config } from '@perawallet/wallet-core-config'
+import { Network, Networks } from './models/network'
+import { config } from './main'
 
 
 const AlgorandChainIDs = {

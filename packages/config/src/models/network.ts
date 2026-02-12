@@ -10,19 +10,9 @@
  limitations under the License
  */
 
-export * from './analytics'
-export * from './biometrics'
-export * from './device'
-export * from './push-notifications'
-export * from './remote-config'
-export * from './reporting'
-export * from './storage'
-export * from './models'
-export * from './test-utils'
-export * from './platform'
+export const Networks = {
+  testnet: 'testnet',
+  mainnet: 'mainnet',
+} as const
 
-export { initDeviceStore, registerDeviceStore } from './device/store'
-export {
-    initRemoteConfigStore,
-    registerRemoteConfigStore,
-} from './remote-config/store'
+export type Network = (typeof Networks)[keyof typeof Networks]

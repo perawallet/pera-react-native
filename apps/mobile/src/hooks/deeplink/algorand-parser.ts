@@ -23,7 +23,7 @@ import {
 } from './types'
 import { parseAlgorandURI } from './arc90-parser'
 // config and Networks removed because unused
-import { getNetworkConfig } from '@perawallet/wallet-core-platform-integration'
+import { getNetworkConfig } from '@perawallet/wallet-core-config'
 
 /**
  * Parse Algorand URIs (algorand://) according to ARC-90
