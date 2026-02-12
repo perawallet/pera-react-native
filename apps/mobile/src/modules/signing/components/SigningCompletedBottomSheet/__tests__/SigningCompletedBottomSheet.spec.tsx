@@ -13,7 +13,10 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import { SigningCompletedBottomSheet } from '../SigningCompletedBottomSheet'
-import { useSigningRequest, type SignRequest } from '@perawallet/wallet-core-signing'
+import {
+    useSigningRequest,
+    type SignRequest,
+} from '@perawallet/wallet-core-signing'
 
 const mockClearLastCompletedRequest = vi.fn()
 
