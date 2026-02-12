@@ -23,7 +23,9 @@ export const useStyles = makeStyles(theme => ({
     contentContainer: {
         flexGrow: 1,
     },
-    footerContainer: {},
+    footerContainer: {
+        paddingTop: theme.spacing.md,
+    },
     listHeader: {
         alignItems: 'center' as const,
         gap: theme.spacing.md,
