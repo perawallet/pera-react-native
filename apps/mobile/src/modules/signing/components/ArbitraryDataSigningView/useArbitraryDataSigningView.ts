@@ -13,7 +13,7 @@
 import {
     type ArbitraryDataSignRequest,
     useSigningRequest,
-} from '../../../../../../../packages/signing/dist'
+} from '@perawallet/wallet-core-signing'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCallback, useState } from 'react'

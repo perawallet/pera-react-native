@@ -15,13 +15,14 @@ import { describe, it, expect, vi } from 'vitest'
 import { SignRequestView } from '../SignRequestView'
 import { SignRequest } from '@perawallet/wallet-core-signing'
 
-// Correct mocks return non-empty strings so they can be detected by textContent assertions
-vi.mock('../../TransactionSigningView', () => ({
-    TransactionSigningView: () => <div>TransactionSigningView</div>,
-}))
-
-vi.mock('../../ArbitraryDataSigningView', () => ({
-    ArbitraryDataSigningView: () => <div>ArbitraryDataSigningView</div>,
+vi.mock('@modules/signing/routes', () => ({
+    SigningRoutes: ({ request }: { request: SignRequest }) => {
+        if (request.type === 'transactions')
+            return <div>TransactionSigningView</div>
+        if (request.type === 'arbitrary-data')
+            return <div>ArbitraryDataSigningView</div>
+        return null
+    },
 }))
 
 vi.mock('../../Arc60DataSigningView', () => ({

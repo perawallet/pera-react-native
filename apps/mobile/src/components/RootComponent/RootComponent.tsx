@@ -37,6 +37,7 @@ import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletCo
 import { useTokenListener } from '@modules/token'
 import { AutoLockGuard } from '@modules/security/components/AutoLockGuard/AutoLockGuard'
 import { SignRequestBottomSheet } from '@modules/signing/components/SignRequestBottomSheet'
+import { SigningCompletedBottomSheet } from '@modules/signing/components/SigningCompletedBottomSheet'
 
 export type RootComponentProps = {
     fcmToken: string | null
@@ -141,6 +142,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
                     <WebViewOverlay />
                 </WalletConnectProvider>
                 <SignRequestBottomSheet />
+                <SigningCompletedBottomSheet />
             </AutoLockGuard>
         </ThemeProvider>
     )

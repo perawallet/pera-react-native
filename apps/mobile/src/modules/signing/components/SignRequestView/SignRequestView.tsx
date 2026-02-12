@@ -10,17 +10,17 @@
  limitations under the License
  */
 
-import {
-    ArbitraryDataSignRequest,
-    Arc60SignRequest,
-    SignRequest,
-    TransactionSignRequest,
-} from '@perawallet/wallet-core-signing'
+import { Arc60SignRequest, SignRequest } from '@perawallet/wallet-core-signing'
 import { EmptyView } from '@components/EmptyView'
-import { TransactionSigningView } from '../TransactionSigningView'
-import { ArbitraryDataSigningView } from '../ArbitraryDataSigningView'
 import { Arc60DataSigningView } from '../Arc60DataSigningView'
 import { useLanguage } from '@hooks/useLanguage'
+import { SigningRoutes } from '@modules/signing/routes'
+import {
+    NavigationContainer,
+    NavigationIndependentTree,
+} from '@react-navigation/native'
+import { PWView } from '@components/core'
+import { useStyles } from './styles'
 
 export type SignRequestViewProps = {
     request: SignRequest
@@ -28,19 +28,19 @@ export type SignRequestViewProps = {
 
 export const SignRequestView = ({ request }: SignRequestViewProps) => {
     const { t } = useLanguage()
+    const styles = useStyles()
 
     switch (request.type) {
         case 'transactions':
-            return (
-                <TransactionSigningView
-                    request={request as TransactionSignRequest}
-                />
-            )
         case 'arbitrary-data':
             return (
-                <ArbitraryDataSigningView
-                    request={request as ArbitraryDataSignRequest}
-                />
+                <PWView style={styles.container}>
+                    <NavigationIndependentTree>
+                        <NavigationContainer>
+                            <SigningRoutes request={request} />
+                        </NavigationContainer>
+                    </NavigationIndependentTree>
+                </PWView>
             )
         case 'arc60':
             return (

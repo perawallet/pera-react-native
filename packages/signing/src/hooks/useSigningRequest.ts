@@ -62,9 +62,15 @@ export const useSigningRequest = () => {
     const pendingSignRequests = useSigningStore(
         state => state.pendingSignRequests,
     )
+    const lastCompletedRequest = useSigningStore(
+        state => state.lastCompletedRequest,
+    )
     const addSignRequestToStore = useSigningStore(state => state.addSignRequest)
     const removeSignRequestFromStore = useSigningStore(
         state => state.removeSignRequest,
+    )
+    const setLastCompletedRequestInStore = useSigningStore(
+        state => state.setLastCompletedRequest,
     )
 
     const { signTransactions } = useTransactionSigner()
@@ -124,6 +130,10 @@ export const useSigningRequest = () => {
         },
         [removeSignRequestFromStore],
     )
+
+    const clearLastCompletedRequest = useCallback(() => {
+        setLastCompletedRequestInStore(null)
+    }, [setLastCompletedRequestInStore])
 
     const signTransactionRequest = useCallback(
         async (
@@ -210,6 +220,7 @@ export const useSigningRequest = () => {
                     `Unsupported sign request type: ${request.type}`,
                 )
             }
+            setLastCompletedRequestInStore(request)
             removeSignRequest(request)
         },
         [
@@ -218,6 +229,7 @@ export const useSigningRequest = () => {
             algokit,
             encodeSignedTransactions,
             removeSignRequest,
+            setLastCompletedRequestInStore,
         ],
     )
 
@@ -233,9 +245,11 @@ export const useSigningRequest = () => {
 
     return {
         pendingSignRequests,
+        lastCompletedRequest,
         currentRequest: pendingSignRequests?.at(0),
         addSignRequest,
         removeSignRequest,
+        clearLastCompletedRequest,
         signRequest,
         signAndSendRequest,
         rejectRequest,

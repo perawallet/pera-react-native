@@ -74,13 +74,6 @@ export const useSigningActionButtons = () => {
         setIsLoading(true)
         try {
             await signAndSendRequest(request)
-            if (request.transport !== 'algod') {
-                showToast({
-                    title: t('signing.transaction_view.success_title'),
-                    body: t('signing.transaction_view.success_body'),
-                    type: 'success',
-                })
-            }
         } catch (error) {
             if (request.transport === 'algod') {
                 showToast(

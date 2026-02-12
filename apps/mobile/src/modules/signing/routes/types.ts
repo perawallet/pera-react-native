@@ -11,6 +11,7 @@
  */
 
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import type { PeraArbitraryDataMessage } from '@perawallet/wallet-core-signing'
 import type { StackScreenProps } from '@react-navigation/stack'
 
 export type SigningStackParamList = {
@@ -22,6 +23,8 @@ export type SigningStackParamList = {
     }
     GroupDetail: { groupIndex: number }
     SecuritySettings: undefined
+    ArbitraryDataSigning: undefined
+    ArbitraryDataSigningDetails: { message: PeraArbitraryDataMessage }
 }
 
 export type SigningStackScreenProps<T extends keyof SigningStackParamList> =

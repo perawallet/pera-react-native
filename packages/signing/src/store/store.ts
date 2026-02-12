@@ -34,6 +34,7 @@ export const useSigningStore: UseBoundStore<
 
 const initialState = {
     pendingSignRequests: [] as SignRequest[],
+    lastCompletedRequest: null as SignRequest | null,
 }
 
 const createSigningStore = (storage: KeyValueStorageService) =>
@@ -61,6 +62,9 @@ const createSigningStore = (storage: KeyValueStorageService) =>
                         set({ pendingSignRequests: remaining })
                     }
                     return remaining.length != existing.length
+                },
+                setLastCompletedRequest: (request: SignRequest | null) => {
+                    set({ lastCompletedRequest: request })
                 },
                 resetState: () => set(initialState),
             }),

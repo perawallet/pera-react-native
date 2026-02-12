@@ -10,9 +10,23 @@
  limitations under the License
  */
 
-export * from './SingleTransactionScreen'
-export * from './TransactionDetailsScreen'
-export * from './TransactionListScreen'
-export * from './GroupDetailScreen'
-export * from './ArbitraryDataSigningScreen'
-export * from './ArbitraryDataSigningDetailsScreen'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    container: {
+        flex: 1,
+    },
+    contentContainer: {
+        gap: theme.spacing.md,
+    },
+    requestContainer: {
+        borderColor: theme.colors.layerGrayLightest,
+        borderWidth: theme.borders.sm,
+        borderRadius: theme.spacing.md,
+        padding: theme.spacing.lg,
+        alignItems: 'flex-start',
+        gap: theme.spacing.md,
+    },
+    body: {},
+    message: {},
+}))

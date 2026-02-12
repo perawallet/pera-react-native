@@ -10,9 +10,5 @@
  limitations under the License
  */
 
-export * from './SingleTransactionScreen'
-export * from './TransactionDetailsScreen'
-export * from './TransactionListScreen'
-export * from './GroupDetailScreen'
-export * from './ArbitraryDataSigningScreen'
-export * from './ArbitraryDataSigningDetailsScreen'
+export { SourceMetadataView } from './SourceMetadataView'
+export type { SourceMetadataViewProps } from './SourceMetadataView'
