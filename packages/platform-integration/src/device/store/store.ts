@@ -103,7 +103,8 @@ export const createDeviceStore = (storage: KeyValueStorageService) =>
                         // Force network to match config.defaultNetwork if they differ
                         // This ensures ENV vars always take precedence over persisted state
                         if (deviceState.network !== config.defaultNetwork) {
-                            deviceState.network = config.defaultNetwork as Network
+                            deviceState.network =
+                                config.defaultNetwork as Network
                         }
 
                         Object.assign(state, deviceState)

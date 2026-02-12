@@ -22,7 +22,9 @@ vi.mock('@perawallet/wallet-core-platform-integration', () => ({
         isMainnet: true,
         networkConfig: { explorerUrl: 'https://explorer.perawallet.app/tx' },
     })),
-    getNetworkConfig: vi.fn(() => ({ explorerUrl: 'https://explorer.perawallet.app' })),
+    getNetworkConfig: vi.fn(() => ({
+        explorerUrl: 'https://explorer.perawallet.app',
+    })),
 }))
 
 vi.mock('@hooks/usePeraWebviewInterface', () => ({

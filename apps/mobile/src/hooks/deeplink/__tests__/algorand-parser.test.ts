@@ -14,7 +14,6 @@ import { parseAlgorandUri } from '../algorand-parser'
 import { DeeplinkType } from '../types'
 import { vi } from 'vitest'
 
-
 // Mock getNetworkConfig for all tests in this file
 vi.mock('@perawallet/wallet-core-platform-integration', () => ({
     getNetworkConfig: vi.fn(network => {

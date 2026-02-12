@@ -13,34 +13,35 @@
 import { Network, Networks } from './models/network'
 import { config } from './main'
 
-
 export type NetworkConfig = {
-  network: Network
-  backendUrl: string
-  algodUrl: string
-  indexerUrl: string
-  explorerUrl: string
-  isTestnet: boolean
-  isMainnet: boolean
+    network: Network
+    backendUrl: string
+    algodUrl: string
+    indexerUrl: string
+    explorerUrl: string
+    isTestnet: boolean
+    isMainnet: boolean
 }
 
 export const isTestnet = (network: Network) => network === Networks.testnet
 export const isMainnet = (network: Network) => network === Networks.mainnet
 
 export const getNetworkConfig = (network: Network): NetworkConfig => {
-  const isMain = isMainnet(network)
+    const isMain = isMainnet(network)
 
-  return {
-    network,
-    isMainnet: isMain,
-    isTestnet: !isMain,
-    backendUrl: isMain ? config.mainnetBackendUrl : config.testnetBackendUrl,
-    algodUrl: isMain ? config.mainnetAlgodUrl : config.testnetAlgodUrl,
-    indexerUrl: isMain
-      ? config.mainnetIndexerUrl
-      : config.testnetIndexerUrl,
-    explorerUrl: isMain
-      ? config.mainnetExplorerUrl
-      : config.testnetExplorerUrl,
-  }
+    return {
+        network,
+        isMainnet: isMain,
+        isTestnet: !isMain,
+        backendUrl: isMain
+            ? config.mainnetBackendUrl
+            : config.testnetBackendUrl,
+        algodUrl: isMain ? config.mainnetAlgodUrl : config.testnetAlgodUrl,
+        indexerUrl: isMain
+            ? config.mainnetIndexerUrl
+            : config.testnetIndexerUrl,
+        explorerUrl: isMain
+            ? config.mainnetExplorerUrl
+            : config.testnetExplorerUrl,
+    }
 }

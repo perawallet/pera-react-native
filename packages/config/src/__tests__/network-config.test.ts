@@ -16,41 +16,41 @@ import { config } from '../main'
 import { getNetworkConfig, isMainnet, isTestnet } from '../network-config'
 
 describe('network-config', () => {
-  test('isMainnet returns correct boolean', () => {
-    expect(isMainnet(Networks.mainnet)).toBe(true)
-    expect(isMainnet(Networks.testnet)).toBe(false)
-  })
-
-  test('isTestnet returns correct boolean', () => {
-    expect(isTestnet(Networks.testnet)).toBe(true)
-    expect(isTestnet(Networks.mainnet)).toBe(false)
-  })
-
-  test('getNetworkConfig returns correct mainnet config', () => {
-    const networkConfig = getNetworkConfig(Networks.mainnet)
-
-    expect(networkConfig).toEqual({
-      network: Networks.mainnet,
-      isMainnet: true,
-      isTestnet: false,
-      backendUrl: config.mainnetBackendUrl,
-      algodUrl: config.mainnetAlgodUrl,
-      indexerUrl: config.mainnetIndexerUrl,
-      explorerUrl: config.mainnetExplorerUrl,
+    test('isMainnet returns correct boolean', () => {
+        expect(isMainnet(Networks.mainnet)).toBe(true)
+        expect(isMainnet(Networks.testnet)).toBe(false)
     })
-  })
 
-  test('getNetworkConfig returns correct testnet config', () => {
-    const networkConfig = getNetworkConfig(Networks.testnet)
-
-    expect(networkConfig).toEqual({
-      network: Networks.testnet,
-      isMainnet: false,
-      isTestnet: true,
-      backendUrl: config.testnetBackendUrl,
-      algodUrl: config.testnetAlgodUrl,
-      indexerUrl: config.testnetIndexerUrl,
-      explorerUrl: config.testnetExplorerUrl,
+    test('isTestnet returns correct boolean', () => {
+        expect(isTestnet(Networks.testnet)).toBe(true)
+        expect(isTestnet(Networks.mainnet)).toBe(false)
     })
-  })
+
+    test('getNetworkConfig returns correct mainnet config', () => {
+        const networkConfig = getNetworkConfig(Networks.mainnet)
+
+        expect(networkConfig).toEqual({
+            network: Networks.mainnet,
+            isMainnet: true,
+            isTestnet: false,
+            backendUrl: config.mainnetBackendUrl,
+            algodUrl: config.mainnetAlgodUrl,
+            indexerUrl: config.mainnetIndexerUrl,
+            explorerUrl: config.mainnetExplorerUrl,
+        })
+    })
+
+    test('getNetworkConfig returns correct testnet config', () => {
+        const networkConfig = getNetworkConfig(Networks.testnet)
+
+        expect(networkConfig).toEqual({
+            network: Networks.testnet,
+            isMainnet: false,
+            isTestnet: true,
+            backendUrl: config.testnetBackendUrl,
+            algodUrl: config.testnetAlgodUrl,
+            indexerUrl: config.testnetIndexerUrl,
+            explorerUrl: config.testnetExplorerUrl,
+        })
+    })
 })

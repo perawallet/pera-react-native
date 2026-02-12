@@ -46,14 +46,14 @@ export const SettingsDeveloperScreen = () => {
         <PWView style={styles.container}>
             <PWListItem
                 onPress={() => handleTapEvent('NodeSettings')}
-                icon="tree"
+                icon='tree'
                 title={t('settings.developer.node_settings_title')}
             />
 
             {isTestnet && (
                 <PWListItem
                     onPress={openDispenser}
-                    icon="algo"
+                    icon='algo'
                     title={t('settings.developer.dispenser_title')}
                 />
             )}
@@ -61,7 +61,7 @@ export const SettingsDeveloperScreen = () => {
             {getPreference(UserPreferences.developerMenuEnabled) && (
                 <PWListItem
                     onPress={() => handleTapEvent('DevMenu')}
-                    icon="sliders"
+                    icon='sliders'
                     title={t('screens.developer_menu')}
                 />
             )}

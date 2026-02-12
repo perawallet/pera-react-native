@@ -70,7 +70,11 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
         <ErrorBoundary onError={showError}>
             <PWView style={styles.container}>
                 <StatusBar
-                    barStyle={theme.mode === 'light' ? 'dark-content' : 'light-content'}
+                    barStyle={
+                        theme.mode === 'light'
+                            ? 'dark-content'
+                            : 'light-content'
+                    }
                     backgroundColor={theme.colors.background}
                 />
                 {isTestnet && (
