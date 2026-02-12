@@ -18,6 +18,10 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     config: {
         defaultNetwork: 'mainnet',
     },
+    Networks: {
+        testnet: 'testnet',
+        mainnet: 'mainnet',
+    },
 }))
 
 describe('device/store', () => {

@@ -28,6 +28,10 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     getNetworkConfig: vi.fn(() => ({
         explorerUrl: 'https://explorer.perawallet.app',
     })),
+    Networks: {
+        testnet: 'testnet',
+        mainnet: 'mainnet',
+    },
 }))
 
 vi.mock('@hooks/usePeraWebviewInterface', () => ({

@@ -22,6 +22,10 @@ vi.mock('@perawallet/wallet-core-config', () => ({
         }
         return { explorerUrl: 'https://explorer.perawallet.app' }
     }),
+    Networks: {
+        testnet: 'testnet',
+        mainnet: 'mainnet',
+    },
 }))
 
 const TEST_ADDRESS =

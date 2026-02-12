@@ -20,6 +20,18 @@ vi.mock('@perawallet/wallet-core-config', () => ({
         mainnetBackendUrl: 'https://mainnet-api.algorand.node',
         testnetBackendUrl: 'https://testnet-api.algorand.node',
     },
+    Networks: {
+        testnet: 'testnet',
+        mainnet: 'mainnet',
+    },
+    isMainnet: vi.fn(network => network === 'mainnet'),
+    isTestnet: vi.fn(network => network === 'testnet'),
+    getNetworkConfig: vi.fn(network => ({
+        algodUrl:
+            network === 'mainnet'
+                ? 'https://mainnet-algod.node'
+                : 'https://testnet-algod.node',
+    })),
 }))
 
 describe('device/hooks/useNetwork', () => {
