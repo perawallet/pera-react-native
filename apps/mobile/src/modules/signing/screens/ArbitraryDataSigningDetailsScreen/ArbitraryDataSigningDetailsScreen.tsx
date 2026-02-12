@@ -21,7 +21,6 @@ import { useStyles } from './styles'
 
 export const ArbitraryDataSigningDetailsScreen = ({
     route,
-    navigation,
 }: SigningStackScreenProps<'ArbitraryDataSigningDetails'>) => {
     const styles = useStyles()
     const { currentRequest } = useSigningRequest()
