@@ -31,8 +31,7 @@ export const useTransactionListScreen = () => {
     const navigation = useNavigation<NavigationProp>()
     const { pendingSignRequests } = useSigningRequest()
     const request = pendingSignRequests[0] as TransactionSignRequest
-    const { listItems, totalFee, allTransactions } =
-        useSigningRequestAnalysis(request)
+    const { listItems, allTransactions } = useSigningRequestAnalysis(request)
 
     const handleTransactionPress = useCallback(
         (tx: PeraDisplayableTransaction) => {
@@ -60,7 +59,6 @@ export const useTransactionListScreen = () => {
 
     return {
         listItems,
-        totalFee,
         transactionCount: allTransactions.length,
         handleTransactionPress,
         handleGroupPress,

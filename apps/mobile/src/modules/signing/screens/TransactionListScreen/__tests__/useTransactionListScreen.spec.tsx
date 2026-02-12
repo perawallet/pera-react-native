@@ -15,7 +15,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useTransactionListScreen } from '../useTransactionListScreen'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import type { TransactionListItem } from '@perawallet/wallet-core-signing'
-import Decimal from 'decimal.js'
 
 const mockNavigate = vi.fn()
 
@@ -38,7 +37,6 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
                 groupIndex: 0,
             },
         ],
-        totalFee: new Decimal(0.003),
         allTransactions: [{ id: 'tx-1' }, { id: 'tx-2' }, { id: 'tx-3' }],
     })),
 }))
@@ -54,12 +52,6 @@ describe('useTransactionListScreen', () => {
         expect(result.current.listItems).toHaveLength(2)
         expect(result.current.listItems[0]?.type).toBe('transaction')
         expect(result.current.listItems[1]?.type).toBe('group')
-    })
-
-    it('returns totalFee from signing request analysis', () => {
-        const { result } = renderHook(() => useTransactionListScreen())
-
-        expect(result.current.totalFee.eq(new Decimal(0.003))).toBe(true)
     })
 
     it('returns transaction count', () => {
