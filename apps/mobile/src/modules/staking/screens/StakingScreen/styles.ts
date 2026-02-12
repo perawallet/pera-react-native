@@ -15,12 +15,71 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => {
     return {
         container: {
+            backgroundColor: theme.colors.background,
             flex: 1,
-            backgroundColor: theme.colors.background,
         },
-        webview: {
-            flexGrow: 1,
-            backgroundColor: theme.colors.background,
+        errorContainer: {
+            alignItems: 'center',
+            flex: 1,
+            gap: theme.spacing.md,
+            justifyContent: 'center',
+            marginHorizontal: theme.spacing.lg,
+        },
+        errorDescription: {
+            color: theme.colors.textGray,
+            textAlign: 'center',
+        },
+        errorTitle: {
+            textAlign: 'center',
+        },
+        list: {
+            flex: 1,
+        },
+        listContentContainer: {
+            gap: theme.spacing.md,
+            paddingBottom: theme.spacing.xxl,
+            paddingHorizontal: theme.spacing.md,
+        },
+        skeletonContainer: {
+            gap: theme.spacing.md,
+            paddingHorizontal: theme.spacing.lg,
+        },
+        skeletonCard: {
+            flexDirection: 'row',
+            gap: theme.spacing.md,
+            paddingHorizontal: theme.spacing.sm,
+            paddingTop: theme.spacing.lg,
+        },
+        skeletonDescription: {
+            borderRadius: theme.spacing.sm,
+            height: 36,
+            width: '100%',
+        },
+        skeletonContent: {
+            width: '100%',
+            flexShrink: 1,
+        },
+        skeletonTitle: {
+            borderRadius: theme.spacing.sm,
+            height: 18,
+            width: '40%',
+            marginBottom: theme.spacing.sm,
+        },
+        skeletonTvlRow: {
+            borderRadius: theme.spacing.sm,
+            height: 14,
+            width: '50%',
+            marginTop: theme.spacing.sm,
+        },
+        subtitle: {
+            fontSize: 15,
+            color: theme.colors.textGray,
+            marginBottom: theme.spacing.lg,
+            marginHorizontal: theme.spacing.lg,
+        },
+        toolbar: {
+            marginHorizontal: theme.spacing.lg,
+            marginTop: theme.spacing.sm,
         },
     }
 })
