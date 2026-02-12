@@ -10,7 +10,5 @@
  limitations under the License
  */
 
-export { PWIcon } from './PWIcon'
-export type { PWIconProps } from './PWIcon'
-export type { PWIconSize, PWIconVariant } from './types'
-export type { IconName } from './constants'
+export { AssetNotificationButton } from './AssetNotificationButton'
+export type { AssetNotificationButtonProps } from './AssetNotificationButton'

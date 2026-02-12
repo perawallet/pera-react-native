@@ -55,6 +55,8 @@ export const mapAssetResponseToPeraAsset = (data: AssetResponse): PeraAsset => {
             type: data.type,
             labels: data.labels,
             logo: data.logo,
+            isFavorited: data.is_favorited ?? false,
+            isPriceAlertEnabled: data.is_price_alert_enabled ?? false,
         },
         unitName: data.unit_name,
         decimals: data.fraction_decimals,

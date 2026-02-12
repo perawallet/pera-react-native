@@ -10,7 +10,12 @@
  limitations under the License
  */
 
-export { PWIcon } from './PWIcon'
-export type { PWIconProps } from './PWIcon'
-export type { PWIconSize, PWIconVariant } from './types'
-export type { IconName } from './constants'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    icon: {
+        backgroundColor: theme.colors.layerGrayLighter,
+        // Android uses text.main for both enabled/disabled bell icon
+        // Loading/null uses text.grayLighter
+    },
+}))

@@ -105,6 +105,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             success: '#2CB7BC', // Alert/positive
             warning: '#FFEE55', // Link/primary (dark variant) used as generic warning
             error: '#DB4645', // Alert/negative (light)
+            favorite: '#EDB21C',
             // Misc
             divider: 'rgba(0,0,0,0.05)', // Border/default (light)
         },

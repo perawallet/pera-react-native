@@ -10,7 +10,12 @@
  limitations under the License
  */
 
-export { PWIcon } from './PWIcon'
-export type { PWIconProps } from './PWIcon'
-export type { PWIconSize, PWIconVariant } from './types'
-export type { IconName } from './constants'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    icon: {
+        // Background is always layerGrayLighter for both states in Android
+        backgroundColor: theme.colors.layerGrayLighter,
+        // We use the variant to control the icon color
+    },
+}))

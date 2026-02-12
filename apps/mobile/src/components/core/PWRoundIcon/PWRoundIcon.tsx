@@ -48,6 +48,7 @@ const ICON_VARIANT_MAP: Record<string, PWIconVariant> = {
     link: 'link',
     error: 'error',
     positive: 'positive',
+    favorite: 'favorite',
 }
 
 export const PWRoundIcon = (props: PWRoundIconProps) => {

@@ -13,6 +13,39 @@
 import '@rneui/themed'
 
 declare module '@rneui/themed' {
+    export interface Colors {
+        layerGray: string
+        layerGrayLight: string
+        layerGrayLighter: string
+        layerGrayLightest: string
+        textGray: string
+        textGrayLighter: string
+        textMain: string
+        textSonicSilver: string
+        textWhite: string
+        buttonPrimaryBg: string
+        buttonPrimaryText: string
+        buttonHelperBg: string
+        buttonHelperText: string
+        buttonSquareBg: string
+        buttonSquareText: string
+        helperPositive: string
+        helperNegative: string
+        helperGray200: string
+        asaTrustedText: string
+        asaTrustedBg: string
+        asaVerifiedText: string
+        asaVerifiedBg: string
+        asaSuspiciousText: string
+        asaSuspiciousBg: string
+        backdrop: string
+        linkPrimary: string
+        tabIconActive: string
+        tabIconPassive: string
+        testnetBackground: string
+        favorite: string
+    }
+
     export interface ThemeSpacing {
         xxl: number
         '3xl': number
