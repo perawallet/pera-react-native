@@ -25,45 +25,42 @@ vi.mock('react-native', () => ({
 }))
 
 // Mock Firebase modules with simple implementations
+const {
+    mockGetValue,
+    mockFetchAndActivate,
+    mockSetConfigSettings,
+    mockSetDefaults,
+} = vi.hoisted(() => ({
+    mockGetValue: vi.fn(),
+    mockFetchAndActivate: vi.fn().mockResolvedValue(true),
+    mockSetConfigSettings: vi.fn().mockResolvedValue(undefined),
+    mockSetDefaults: vi.fn().mockResolvedValue(undefined),
+}))
+
 vi.mock('@react-native-firebase/crashlytics', () => ({
-    getCrashlytics: () => ({
-        setCrashlyticsCollectionEnabled: vi.fn().mockResolvedValue(null),
-        recordError: vi.fn(),
-    }),
-    setCrashlyticsCollectionEnabled: vi.fn(),
+    getCrashlytics: vi.fn(() => ({})),
+    setCrashlyticsCollectionEnabled: vi.fn().mockResolvedValue(null),
+    recordError: vi.fn(),
 }))
 
 vi.mock('@react-native-firebase/remote-config', () => ({
-    __esModule: true,
-    getRemoteConfig: vi.fn(() => ({
-        setConfigSettings: vi.fn().mockResolvedValue(undefined),
-        setDefaults: vi.fn().mockResolvedValue(undefined),
-        fetchAndActivate: vi.fn().mockResolvedValue(true),
-        getValue: vi.fn(),
-    })),
-    setConfigSettings: vi.fn().mockResolvedValue(undefined),
-    setDefaults: vi.fn().mockResolvedValue(undefined),
-    fetchAndActivate: vi.fn().mockResolvedValue(true),
+    getRemoteConfig: vi.fn(() => ({})),
+    setConfigSettings: mockSetConfigSettings,
+    setDefaults: mockSetDefaults,
+    fetchAndActivate: mockFetchAndActivate,
+    getValue: mockGetValue,
 }))
 
 vi.mock('@react-native-firebase/analytics', () => ({
-    __esModule: true,
-    getAnalytics: vi.fn(() => ({
-        logEvent: vi.fn(),
-    })),
+    getAnalytics: vi.fn(() => ({})),
     logEvent: vi.fn(),
 }))
 
 vi.mock('@react-native-firebase/messaging', () => ({
-    __esModule: true,
-    getMessaging: vi.fn(() => ({
-        registerDeviceForRemoteMessages: vi.fn().mockResolvedValue(undefined),
-        getToken: vi.fn().mockResolvedValue('mock-fcm-token'),
-        onMessage: vi.fn(() => vi.fn()),
-    })),
+    getMessaging: vi.fn(() => ({})),
+    registerDeviceForRemoteMessages: vi.fn().mockResolvedValue(undefined),
     getToken: vi.fn().mockResolvedValue('mock-fcm-token'),
     onMessage: vi.fn(() => vi.fn()),
-    registerDeviceForRemoteMessages: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('@notifee/react-native', () => ({
@@ -94,12 +91,9 @@ vi.mock('@notifee/react-native', () => ({
 import * as remoteConfig from '@react-native-firebase/remote-config'
 import * as analytics from '@react-native-firebase/analytics'
 import * as messaging from '@react-native-firebase/messaging'
+import * as crashlytics from '@react-native-firebase/crashlytics'
 import notifee from '@notifee/react-native'
 
-const mockRemoteConfig = (remoteConfig as any).getRemoteConfig()
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const mockAnalytics = (analytics as any).getAnalytics()
-const mockMessaging = (messaging as any).getMessaging()
 const mockNotifee = notifee as any
 
 describe('RNFirebaseService', () => {
@@ -119,7 +113,7 @@ describe('RNFirebaseService', () => {
             })
 
             it('should handle fetch errors gracefully', async () => {
-                mockRemoteConfig.fetchAndActivate.mockRejectedValueOnce(
+                vi.mocked(remoteConfig.fetchAndActivate).mockRejectedValueOnce(
                     new Error('Fetch failed'),
                 )
                 await expect(
@@ -129,26 +123,26 @@ describe('RNFirebaseService', () => {
         })
 
         describe('getStringValue', () => {
-            beforeEach(() => {
-                service.remoteConfig = mockRemoteConfig as any
+            beforeEach(async () => {
+                await service.initializeRemoteConfig()
             })
 
             it('should return string value from remote config', () => {
-                mockRemoteConfig.getValue.mockReturnValueOnce({
+                vi.mocked(remoteConfig.getValue).mockReturnValueOnce({
                     asString: () => 'mock-string-value',
                     asBoolean: () => true,
                     asNumber: () => 42,
-                })
+                } as any)
                 const result = service.getStringValue('welcome_message')
                 expect(result).toBe('mock-string-value')
             })
 
             it('should return value even when fallback provided', () => {
-                mockRemoteConfig.getValue.mockReturnValueOnce({
+                vi.mocked(remoteConfig.getValue).mockReturnValueOnce({
                     asString: () => 'mock-string-value',
                     asBoolean: () => true,
                     asNumber: () => 42,
-                })
+                } as any)
                 const result = service.getStringValue(
                     'welcome_message',
                     'fallback',
@@ -157,7 +151,7 @@ describe('RNFirebaseService', () => {
             })
 
             it('should return fallback string when provided and getValue nothing', async () => {
-                mockRemoteConfig.getValue.mockImplementation(() => {
+                vi.mocked(remoteConfig.getValue).mockImplementation(() => {
                     throw new Error('no value')
                 })
                 const result = service.getStringValue(
@@ -168,7 +162,7 @@ describe('RNFirebaseService', () => {
             })
 
             it('should return empty string when no fallback and getValue nothing', async () => {
-                mockRemoteConfig.getValue.mockImplementation(() => {
+                vi.mocked(remoteConfig.getValue).mockImplementation(() => {
                     throw new Error('no value')
                 })
                 const result = service.getStringValue('welcome_message')
@@ -177,32 +171,32 @@ describe('RNFirebaseService', () => {
         })
 
         describe('getBooleanValue', () => {
-            beforeEach(() => {
-                service.remoteConfig = mockRemoteConfig as any
+            beforeEach(async () => {
+                await service.initializeRemoteConfig()
             })
 
             it('should return boolean value from remote config', () => {
-                mockRemoteConfig.getValue.mockReturnValueOnce({
+                vi.mocked(remoteConfig.getValue).mockReturnValueOnce({
                     asString: () => 'mock-string-value',
                     asBoolean: () => true,
                     asNumber: () => 42,
-                })
+                } as any)
                 const result = service.getBooleanValue('welcome_message')
                 expect(result).toEqual(true)
             })
 
             it('should return value even when fallback provided', () => {
-                mockRemoteConfig.getValue.mockReturnValueOnce({
+                vi.mocked(remoteConfig.getValue).mockReturnValueOnce({
                     asString: () => 'mock-string-value',
                     asBoolean: () => true,
                     asNumber: () => 42,
-                })
+                } as any)
                 const result = service.getBooleanValue('welcome_message', false)
                 expect(result).toEqual(true)
             })
 
             it('should return fallback ', async () => {
-                mockRemoteConfig.getValue.mockImplementation(() => {
+                vi.mocked(remoteConfig.getValue).mockImplementation(() => {
                     throw new Error('no value')
                 })
                 const result = service.getBooleanValue('welcome_message', true)
@@ -210,7 +204,7 @@ describe('RNFirebaseService', () => {
             })
 
             it('should return default when no fallback provided ', async () => {
-                mockRemoteConfig.getValue.mockImplementation(() => {
+                vi.mocked(remoteConfig.getValue).mockImplementation(() => {
                     throw new Error('no value')
                 })
                 const result = service.getBooleanValue('welcome_message')
@@ -219,32 +213,32 @@ describe('RNFirebaseService', () => {
         })
 
         describe('getNumberValue', () => {
-            beforeEach(() => {
-                service.remoteConfig = mockRemoteConfig as any
+            beforeEach(async () => {
+                await service.initializeRemoteConfig()
             })
 
             it('should return number value from remote config', () => {
-                mockRemoteConfig.getValue.mockReturnValueOnce({
+                vi.mocked(remoteConfig.getValue).mockReturnValueOnce({
                     asString: () => 'mock-string-value',
                     asBoolean: () => true,
                     asNumber: () => 42,
-                })
+                } as any)
                 const result = service.getNumberValue('welcome_message')
                 expect(result).toEqual(42)
             })
 
             it('should ignore fallback value when value received', () => {
-                mockRemoteConfig.getValue.mockReturnValueOnce({
+                vi.mocked(remoteConfig.getValue).mockReturnValueOnce({
                     asString: () => 'mock-string-value',
                     asBoolean: () => true,
                     asNumber: () => 42,
-                })
+                } as any)
                 const result = service.getNumberValue('welcome_message', 100)
                 expect(result).toEqual(42)
             })
 
             it('should return fallback value when no value received', () => {
-                mockRemoteConfig.getValue.mockImplementation(() => {
+                vi.mocked(remoteConfig.getValue).mockImplementation(() => {
                     throw new Error('no value')
                 })
                 const result = service.getNumberValue('welcome_message', 100)
@@ -252,7 +246,7 @@ describe('RNFirebaseService', () => {
             })
 
             it('should return 0 value when no value or fallback', () => {
-                mockRemoteConfig.getValue.mockImplementation(() => {
+                vi.mocked(remoteConfig.getValue).mockImplementation(() => {
                     throw new Error('no value')
                 })
                 const result = service.getNumberValue('welcome_message')
@@ -284,11 +278,9 @@ describe('RNFirebaseService', () => {
 
             it('should return fallback or default when getValue throws', async () => {
                 await service.initializeRemoteConfig()
-                const mockGetValue = vi.fn().mockImplementation(() => {
+                vi.mocked(remoteConfig.getValue).mockImplementation(() => {
                     throw new Error('test error')
                 })
-
-                ;(service.remoteConfig!.getValue as Mock) = mockGetValue
 
                 expect(
                     service.getStringValue('test_key' as any, 'fallback'),
@@ -354,10 +346,7 @@ describe('RNFirebaseService', () => {
             })
 
             it('should handle messaging registration errors', async () => {
-                mockMessaging.registerDeviceForRemoteMessages.mockRejectedValueOnce(
-                    new Error('Registration failed'),
-                )
-                mockMessaging.getToken.mockRejectedValueOnce(
+                vi.mocked(messaging.getToken).mockRejectedValueOnce(
                     new Error('Token failed'),
                 )
 
@@ -492,15 +481,25 @@ describe('RNFirebaseService', () => {
         })
 
         describe('recordNonFatalError', () => {
+            beforeEach(() => {
+                service.initializeCrashReporting()
+            })
+
             it('should record Error instances', () => {
                 const error = new Error('Test error')
-                expect(() => service.recordNonFatalError(error)).not.toThrow()
+                service.recordNonFatalError(error)
+                expect(crashlytics.recordError).toHaveBeenCalledWith(
+                    expect.anything(),
+                    error,
+                )
             })
 
             it('should handle string errors', () => {
-                expect(() =>
-                    service.recordNonFatalError('String error'),
-                ).not.toThrow()
+                service.recordNonFatalError('String error')
+                expect(crashlytics.recordError).toHaveBeenCalledWith(
+                    expect.anything(),
+                    expect.any(Error),
+                )
             })
 
             it('should handle null errors', () => {
