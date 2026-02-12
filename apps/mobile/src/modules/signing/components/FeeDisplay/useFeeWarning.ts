@@ -49,7 +49,9 @@ export const useFeeWarning = (): UseFeeWarningResult => {
     const remoteConfigService = useRemoteConfigService()
     const { data: assetPrices } = useAssetFiatPricesQuery(true)
 
-    if (signableTransactionCount === 0) {
+    const algoPrice = assetPrices?.get(ALGO_ASSET_ID)?.fiatPrice
+
+    if (signableTransactionCount === 0 || !algoPrice) {
         return { showWarning: false, fee }
     }
 
@@ -64,12 +66,6 @@ export const useFeeWarning = (): UseFeeWarningResult => {
         standardFeePerTx,
     )
     const isNonStandard = fee.greaterThan(standardTotal)
-
-    const algoPrice = assetPrices?.get(ALGO_ASSET_ID)?.fiatPrice
-
-    if (!algoPrice) {
-        return { showWarning: false, fee }
-    }
 
     const feeUsdValue = fee.mul(algoPrice)
     const showWarning = isNonStandard && feeUsdValue.greaterThan(usdThreshold)
