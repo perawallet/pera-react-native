@@ -12,6 +12,13 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 OUTPUT_FILE="$ROOT_DIR/packages/config/src/generated-env.ts"
+ENV_FILE="$ROOT_DIR/.env"
+
+# Load .env file if it exists
+if [ -f "$ENV_FILE" ]; then
+  echo "Loading environment variables from $ENV_FILE"
+  export $(grep -v '^#' "$ENV_FILE" | xargs)
+fi
 
 echo "Generating configuration from environment variables..."
 
@@ -85,6 +92,9 @@ append_config "PROFILING_ENABLED" "profilingEnabled" "boolean"
 append_config "POLLING_ENABLED" "pollingEnabled" "boolean"
 
 # Default Network
+if [ -n "$PERA_DEFAULT_NETWORK" ] && [ -z "$DEFAULT_NETWORK" ]; then
+  DEFAULT_NETWORK="$PERA_DEFAULT_NETWORK"
+fi
 append_config "DEFAULT_NETWORK" "defaultNetwork" "string"
 
 # Close the object

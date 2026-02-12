@@ -124,7 +124,8 @@ export const parseAlgorandUri = (url: string): AnyParsedDeeplink | null => {
     if (parsed.type === 'assetquery') {
         const { assetId, network } = parsed
         // Redirect to Pera Explorer
-        const baseUrl = getNetworkConfig(network).explorerUrl
+        const targetNetwork = network === 'testnet' ? 'testnet' : 'mainnet'
+        const baseUrl = getNetworkConfig(targetNetwork).explorerUrl
 
         return {
             type: DeeplinkType.DISCOVER_BROWSER,
@@ -136,7 +137,8 @@ export const parseAlgorandUri = (url: string): AnyParsedDeeplink | null => {
     if (parsed.type === 'appquery') {
         const { appId, network } = parsed
         // Redirect to Pera Explorer
-        const baseUrl = getNetworkConfig(network).explorerUrl
+        const targetNetwork = network === 'testnet' ? 'testnet' : 'mainnet'
+        const baseUrl = getNetworkConfig(targetNetwork).explorerUrl
 
         return {
             type: DeeplinkType.DISCOVER_BROWSER,

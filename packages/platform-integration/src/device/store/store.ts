@@ -99,6 +99,13 @@ export const createDeviceStore = (storage: KeyValueStorageService) =>
                     if (state) {
                         // Rehydrate device slice to convert deviceIDs back to Map
                         const deviceState = rehydrateDeviceSlice(state)
+
+                        // Force network to match config.defaultNetwork if they differ
+                        // This ensures ENV vars always take precedence over persisted state
+                        if (deviceState.network !== config.defaultNetwork) {
+                            deviceState.network = config.defaultNetwork as Network
+                        }
+
                         Object.assign(state, deviceState)
                     }
                 },
