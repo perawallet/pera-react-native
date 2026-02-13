@@ -104,6 +104,8 @@ export const useAssetTransactionList = ({
         [activeFilter, customRange],
     )
 
+    const assetId = parseInt(asset.assetId, 10)
+
     const {
         transactions,
         isLoading,
@@ -119,7 +121,7 @@ export const useAssetTransactionList = ({
         isEnabled: !!account.address,
         afterTime,
         beforeTime,
-        assetId: asset.id,
+        assetId,
     })
 
     const sections = useMemo(
@@ -169,10 +171,10 @@ export const useAssetTransactionList = ({
         if (account.address) {
             exportCsv({
                 accountAddress: account.address,
-                assetId: asset.id,
+                assetId,
             })
         }
-    }, [account.address, asset.id, exportCsv])
+    }, [account.address, assetId, exportCsv])
 
     const handleTransactionPress = useCallback(
         (transaction: TransactionHistoryItem) => {
