@@ -39,7 +39,6 @@ export type PWInputProps = {
     labelStyle?: RNEInputProps['labelStyle']
     placeholderTextColor?: string
     testID?: string
-    placeholderTextColor?: string
 }
 
 export const PWInput = ({
