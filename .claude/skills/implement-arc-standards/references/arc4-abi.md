@@ -5,16 +5,16 @@ ARC-4 defines how to encode method calls, arguments, and return values for Algor
 ## Table of Contents
 
 - [ARC-4 Types](#arc-4-types)
-  - [Primitive Types](#primitive-types)
-  - [Complex Types](#complex-types)
-  - [Reference Types](#reference-types-arguments-only)
-  - [Transaction Types](#transaction-types-arguments-only)
+    - [Primitive Types](#primitive-types)
+    - [Complex Types](#complex-types)
+    - [Reference Types](#reference-types-arguments-only)
+    - [Transaction Types](#transaction-types-arguments-only)
 - [Using ARC-4 Types](#using-arc-4-types)
 - [Method Signatures and Selectors](#method-signatures-and-selectors)
 - [Encoding Rules](#encoding-rules)
-  - [Static vs Dynamic Types](#static-vs-dynamic-types)
-  - [Tuple Encoding](#tuple-encoding-head--tail)
-  - [Boolean Packing](#boolean-packing)
+    - [Static vs Dynamic Types](#static-vs-dynamic-types)
+    - [Tuple Encoding](#tuple-encoding-head--tail)
+    - [Boolean Packing](#boolean-packing)
 - [Method Invocation](#method-invocation)
 - [Calling ARC-4 Methods](#calling-arc-4-methods)
 - [Common Patterns](#common-patterns)
@@ -24,43 +24,43 @@ ARC-4 defines how to encode method calls, arguments, and return values for Algor
 
 ### Primitive Types
 
-| Type | Description | Encoding |
-|------|-------------|----------|
-| `uint<N>` | N-bit unsigned integer (8-512, N%8=0) | Big-endian N bits |
-| `byte` | Alias for `uint8` | 1 byte |
-| `bool` | Boolean (0 or 1) | MSB of 1 byte; consecutive bools are packed |
-| `ufixed<N>x<M>` | Fixed-point decimal | N bits, value = encoded / 10^M |
+| Type            | Description                           | Encoding                                    |
+| --------------- | ------------------------------------- | ------------------------------------------- |
+| `uint<N>`       | N-bit unsigned integer (8-512, N%8=0) | Big-endian N bits                           |
+| `byte`          | Alias for `uint8`                     | 1 byte                                      |
+| `bool`          | Boolean (0 or 1)                      | MSB of 1 byte; consecutive bools are packed |
+| `ufixed<N>x<M>` | Fixed-point decimal                   | N bits, value = encoded / 10^M              |
 
 ### Complex Types
 
-| Type | Description | Encoding |
-|------|-------------|----------|
-| `address` | 32-byte Algorand address | Equivalent to `byte[32]` |
-| `string` | UTF-8 encoded text | 2-byte length prefix + bytes |
-| `<type>[N]` | Fixed-length array | N elements packed together |
-| `<type>[]` | Variable-length array | 2-byte length prefix + elements |
-| `(T1,T2,...,TN)` | Tuple | Head (offsets) + Tail (dynamic data) |
+| Type             | Description              | Encoding                             |
+| ---------------- | ------------------------ | ------------------------------------ |
+| `address`        | 32-byte Algorand address | Equivalent to `byte[32]`             |
+| `string`         | UTF-8 encoded text       | 2-byte length prefix + bytes         |
+| `<type>[N]`      | Fixed-length array       | N elements packed together           |
+| `<type>[]`       | Variable-length array    | 2-byte length prefix + elements      |
+| `(T1,T2,...,TN)` | Tuple                    | Head (offsets) + Tail (dynamic data) |
 
 ### Reference Types (Arguments Only)
 
-| Type | Description | Encoded As |
-|------|-------------|------------|
-| `account` | Algorand account | `uint8` index into Accounts array |
-| `asset` | Algorand Standard Asset | `uint8` index into Foreign Assets array |
-| `application` | Algorand Application | `uint8` index into Foreign Apps array |
+| Type          | Description             | Encoded As                              |
+| ------------- | ----------------------- | --------------------------------------- |
+| `account`     | Algorand account        | `uint8` index into Accounts array       |
+| `asset`       | Algorand Standard Asset | `uint8` index into Foreign Assets array |
+| `application` | Algorand Application    | `uint8` index into Foreign Apps array   |
 
 **Important:** Reference types cannot be used as return types.
 
 ### Transaction Types (Arguments Only)
 
-| Type | Description |
-|------|-------------|
-| `txn` | Any transaction |
-| `pay` | Payment transaction |
-| `axfer` | Asset transfer transaction |
-| `acfg` | Asset config transaction |
-| `afrz` | Asset freeze transaction |
-| `appl` | Application call transaction |
+| Type     | Description                  |
+| -------- | ---------------------------- |
+| `txn`    | Any transaction              |
+| `pay`    | Payment transaction          |
+| `axfer`  | Asset transfer transaction   |
+| `acfg`   | Asset config transaction     |
+| `afrz`   | Asset freeze transaction     |
+| `appl`   | Application call transaction |
 | `keyreg` | Key registration transaction |
 
 Transaction arguments are encoded as preceding transactions in the group, not in ApplicationArgs.
@@ -104,37 +104,50 @@ class MyContract(ARC4Contract):
 ### TypeScript (Algorand TypeScript)
 
 ```typescript
-import { Contract, Account, Asset, Application, Global } from '@algorandfoundation/algorand-typescript'
-import { abimethod, UInt64, Bool, Str, DynamicBytes, Address } from '@algorandfoundation/algorand-typescript/arc4'
+import {
+    Contract,
+    Account,
+    Asset,
+    Application,
+    Global,
+} from '@algorandfoundation/algorand-typescript'
+import {
+    abimethod,
+    UInt64,
+    Bool,
+    Str,
+    DynamicBytes,
+    Address,
+} from '@algorandfoundation/algorand-typescript/arc4'
 import { PaymentTxn } from '@algorandfoundation/algorand-typescript/gtxn'
 
 class MyContract extends Contract {
-  @abimethod()
-  demoTypes(
-    // Primitive types
-    amount: UInt64,
-    flag: Bool,
-    name: Str,
+    @abimethod()
+    demoTypes(
+        // Primitive types
+        amount: UInt64,
+        flag: Bool,
+        name: Str,
 
-    // Reference types
-    user: Account,
-    token: Asset,
-    app: Application,
+        // Reference types
+        user: Account,
+        token: Asset,
+        app: Application,
 
-    // Complex types
-    data: DynamicBytes,
-    addr: Address,
-  ): Str {
-    return new Str('Success')
-  }
+        // Complex types
+        data: DynamicBytes,
+        addr: Address,
+    ): Str {
+        return new Str('Success')
+    }
 
-  @abimethod()
-  withTransaction(
-    payment: PaymentTxn,  // Preceding payment in group
-    amount: UInt64,
-  ): void {
-    assert(payment.receiver === Global.currentApplicationAddress)
-  }
+    @abimethod()
+    withTransaction(
+        payment: PaymentTxn, // Preceding payment in group
+        amount: UInt64,
+    ): void {
+        assert(payment.receiver === Global.currentApplicationAddress)
+    }
 }
 ```
 
@@ -152,12 +165,12 @@ method_name(arg1_type,arg2_type,...)return_type
 
 ### Examples
 
-| Method | Signature |
-|--------|-----------|
-| `def add(a: UInt64, b: UInt64) -> UInt128` | `add(uint64,uint64)uint128` |
-| `def greet(name: String) -> String` | `greet(string)string` |
+| Method                                           | Signature                      |
+| ------------------------------------------------ | ------------------------------ |
+| `def add(a: UInt64, b: UInt64) -> UInt128`       | `add(uint64,uint64)uint128`    |
+| `def greet(name: String) -> String`              | `greet(string)string`          |
 | `def transfer(to: Account, amt: UInt64) -> None` | `transfer(account,uint64)void` |
-| `def process(p: PaymentTxn, d: Bytes) -> None` | `process(pay,byte[])void` |
+| `def process(p: PaymentTxn, d: Bytes) -> None`   | `process(pay,byte[])void`      |
 
 ### Selector Calculation
 
@@ -191,12 +204,14 @@ selector = arc4.arc4_signature(Calculator.add)
 ### Static vs Dynamic Types
 
 **Static types** have fixed size:
+
 - `uint<N>`, `byte`, `bool`, `ufixed<N>x<M>`
 - `address` (always 32 bytes)
 - `<type>[N]` where `type` is static
 - `(T1,...,TN)` where all Ti are static
 
 **Dynamic types** have variable size:
+
 - `string`, `<type>[]`
 - `<type>[N]` where `type` is dynamic
 - `(T1,...,TN)` where any Ti is dynamic
@@ -206,11 +221,11 @@ selector = arc4.arc4_signature(Calculator.add)
 For a tuple `(T1, T2, ..., TN)`:
 
 1. **Head:** For each element:
-   - Static: encode value directly
-   - Dynamic: encode 2-byte offset to tail
+    - Static: encode value directly
+    - Dynamic: encode 2-byte offset to tail
 
 2. **Tail:** For each dynamic element:
-   - Encode the actual data
+    - Encode the actual data
 
 ```
 Example: (uint64, string, uint32, string)
@@ -307,11 +322,11 @@ result, txn = arc4.abi_call[arc4.String](
 ```typescript
 // TypeScript
 const result = await client.send.add({
-  args: { a: 10n, b: 20n }
+    args: { a: 10n, b: 20n },
 })
 
 // Access return value
-const sum = result.return  // BigInt
+const sum = result.return // BigInt
 ```
 
 ```python
@@ -366,13 +381,13 @@ class MyContract(ARC4Contract):
 
 ## Common Mistakes
 
-| Mistake | Problem | Fix |
-|---------|---------|-----|
-| Using native types in ABI | `def foo(x: int)` won't work | Use `arc4.UInt64` for arguments |
-| Returning reference type | `-> Account` is invalid | Return `arc4.Address` instead |
-| Wrong selector | Method not found | Verify signature matches exactly |
-| Missing transaction arg | Transaction not in group | Add preceding transaction |
-| Index out of bounds | Reference type index wrong | Check Accounts/Assets/Apps arrays |
+| Mistake                   | Problem                      | Fix                               |
+| ------------------------- | ---------------------------- | --------------------------------- |
+| Using native types in ABI | `def foo(x: int)` won't work | Use `arc4.UInt64` for arguments   |
+| Returning reference type  | `-> Account` is invalid      | Return `arc4.Address` instead     |
+| Wrong selector            | Method not found             | Verify signature matches exactly  |
+| Missing transaction arg   | Transaction not in group     | Add preceding transaction         |
+| Index out of bounds       | Reference type index wrong   | Check Accounts/Assets/Apps arrays |
 
 ## References
 

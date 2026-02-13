@@ -5,20 +5,20 @@ Common errors when building, deploying, or calling Algorand smart contracts.
 ## Table of Contents
 
 - [Logic Eval Errors](#logic-eval-errors)
-  - [Assert Failed](#assert-failed)
-  - [Opcode Budget Exceeded](#opcode-budget-exceeded)
-  - [Invalid Program](#invalid-program)
-  - [Stack Underflow](#stack-underflow)
-  - [Byte/Int Type Mismatch](#byteint-type-mismatch)
+    - [Assert Failed](#assert-failed)
+    - [Opcode Budget Exceeded](#opcode-budget-exceeded)
+    - [Invalid Program](#invalid-program)
+    - [Stack Underflow](#stack-underflow)
+    - [Byte/Int Type Mismatch](#byteint-type-mismatch)
 - [ABI Errors](#abi-errors)
-  - [Method Not Found](#method-not-found)
-  - [ABI Encoding Error](#abi-encoding-error)
-  - [Return Value Decoding Error](#return-value-decoding-error)
+    - [Method Not Found](#method-not-found)
+    - [ABI Encoding Error](#abi-encoding-error)
+    - [Return Value Decoding Error](#return-value-decoding-error)
 - [State Errors](#state-errors)
-  - [Global State Full](#global-state-full)
-  - [Local State Not Opted In](#local-state-not-opted-in)
-  - [Box Not Found](#box-not-found)
-  - [Box MBR Not Met](#box-mbr-not-met)
+    - [Global State Full](#global-state-full)
+    - [Local State Not Opted In](#local-state-not-opted-in)
+    - [Box Not Found](#box-not-found)
+    - [Box MBR Not Met](#box-mbr-not-met)
 - [Inner Transaction Errors](#inner-transaction-errors)
 - [Debugging Tips](#debugging-tips)
 
@@ -37,10 +37,10 @@ logic eval error: assert failed pc=123
 ```typescript
 // TypeScript - errors include source location automatically
 try {
-  await appClient.send.myMethod({ args: { value: 0 } })
+    await appClient.send.myMethod({ args: { value: 0 } })
 } catch (e) {
-  // Error includes: "assert failed at contracts/my_contract.py:45"
-  console.error(e)
+    // Error includes: "assert failed at contracts/my_contract.py:45"
+    console.error(e)
 }
 ```
 
@@ -57,6 +57,7 @@ except LogicError as e:
 ```
 
 **Common causes:**
+
 - Input validation failed (e.g., `assert amount > 0`)
 - Authorization check failed (e.g., `assert Txn.sender == self.owner`)
 - State precondition not met (e.g., `assert self.is_initialized`)
@@ -81,6 +82,7 @@ logic eval error: dynamic cost budget exceeded
 **Solutions:**
 
 1. **Pool budget with extra app calls:**
+
 ```python
 # Add dummy app calls to increase budget
 algorand.new_group()
@@ -95,6 +97,7 @@ algorand.new_group()
 ```
 
 2. **Optimize expensive operations:**
+
 ```python
 # EXPENSIVE - iteration over large data
 for i in range(100):
@@ -105,6 +108,7 @@ box_data = Box(Bytes, key=b"data")
 ```
 
 3. **Split across multiple calls:**
+
 ```python
 # Instead of one large operation, split into phases
 @arc4.abimethod
@@ -123,6 +127,7 @@ logic eval error: invalid program
 **Cause:** The TEAL program is malformed or uses unsupported opcodes.
 
 **Common causes:**
+
 - Compiling for wrong AVM version
 - Using opcodes not supported on target network
 - Corrupted approval/clear program bytes
@@ -148,6 +153,7 @@ logic eval error: assert failed: wanted type uint64 but got []byte
 **Cause:** Wrong type passed to an operation.
 
 **Common in Algorand Python:**
+
 ```python
 # INCORRECT - String where UInt64 expected
 assert payment.amount == "1000000"
@@ -167,6 +173,7 @@ error: method "foo(uint64)void" not found
 **Cause:** Calling a method that doesn't exist in the contract ABI.
 
 **Fix:**
+
 1. Regenerate the typed client after contract changes
 2. Check the method signature matches exactly
 3. Verify the contract was deployed with the latest code
@@ -180,6 +187,7 @@ ABIEncodingError: value out of range for uint64
 **Cause:** Value doesn't fit the ABI type.
 
 **Examples:**
+
 ```python
 # INCORRECT - Negative value for uint64
 arc4.UInt64(-1)
@@ -201,6 +209,7 @@ error: could not decode return value
 **Cause:** Method returned unexpected data format.
 
 **Common causes:**
+
 - Contract didn't log the return value properly
 - Wrong return type in client
 - Transaction failed before return
@@ -218,6 +227,7 @@ logic eval error: store global state: failed
 **Cause:** Exceeded declared global state schema.
 
 **Fix:** Increase schema in contract deployment:
+
 ```python
 class MyContract(ARC4Contract):
     # Declare more state slots in schema
@@ -235,6 +245,7 @@ logic eval error: application APPID not opted in
 **Cause:** Account hasn't opted into the application.
 
 **Fix:** Opt in before accessing local state:
+
 ```python
 algorand.send.app_call(AppCallParams(
     sender=user_address,
@@ -252,6 +263,7 @@ logic eval error: box not found
 **Cause:** Accessing a box that doesn't exist.
 
 **Fix:** Create box before access or check existence:
+
 ```python
 # In contract - check if box exists
 if self.my_box.exists:
@@ -271,6 +283,7 @@ logic eval error: box create with insufficient funds
 **MBR formula:** `2500 + (400 * (key_length + value_length))` microAlgos per box
 
 **Fix:** Fund the app account:
+
 ```python
 algorand.send.payment(PaymentParams(
     sender=funder.address,
@@ -290,6 +303,7 @@ logic eval error: insufficient balance
 **Cause:** App account lacks funds for inner transaction amount.
 
 **Fix:** Fund the app account before inner transactions:
+
 ```python
 # Fund app before calling method with inner transactions
 algorand.send.payment(PaymentParams(
@@ -318,6 +332,7 @@ logic eval error: asset ASSET_ID not opted in
 **Cause:** Contract account isn't opted into the asset.
 
 **Fix:** Add opt-in method to contract:
+
 ```python
 @arc4.abimethod
 def opt_in_to_asset(self, asset: Asset) -> None:
@@ -349,9 +364,10 @@ logging.getLogger("algokit").setLevel(logging.DEBUG)
 
 ```typescript
 // Simulate to get execution trace
-const result = await algorand.newGroup()
-  .addAppCallMethodCall(params)
-  .simulate({ execTraceConfig: { enable: true } })
+const result = await algorand
+    .newGroup()
+    .addAppCallMethodCall(params)
+    .simulate({ execTraceConfig: { enable: true } })
 
 console.log(result.simulateResponse.txnGroups[0].txnResults[0].execTrace)
 ```

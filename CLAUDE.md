@@ -30,9 +30,10 @@ type StyleProps = { variant: 'primary' | 'secondary' }
 
 export const useStyles = makeStyles((theme, { variant }: StyleProps) => ({
     container: {
-        backgroundColor: variant === 'primary'
-            ? theme.colors.buttonPrimaryBg
-            : theme.colors.layerGrayLighter,
+        backgroundColor:
+            variant === 'primary'
+                ? theme.colors.buttonPrimaryBg
+                : theme.colors.layerGrayLighter,
         padding: theme.spacing.md,
     },
 }))
@@ -50,12 +51,12 @@ Exceptions: `ActivityIndicator`, basic layout primitives used only inside PW com
 
 ### Component Locations
 
-| Type | Location | Prefix |
-|------|----------|--------|
-| Design system | `apps/mobile/src/components/core/PW[Name]/` | `PW` |
-| Shared | `apps/mobile/src/components/[Name]/` | None |
-| Module-specific | `apps/mobile/src/modules/[mod]/components/[Name]/` | None |
-| Screen | `apps/mobile/src/modules/[mod]/screens/[Name]/` | `Screen` suffix |
+| Type            | Location                                           | Prefix          |
+| --------------- | -------------------------------------------------- | --------------- |
+| Design system   | `apps/mobile/src/components/core/PW[Name]/`        | `PW`            |
+| Shared          | `apps/mobile/src/components/[Name]/`               | None            |
+| Module-specific | `apps/mobile/src/modules/[mod]/components/[Name]/` | None            |
+| Screen          | `apps/mobile/src/modules/[mod]/screens/[Name]/`    | `Screen` suffix |
 
 ### Folder Structure (Required)
 
@@ -77,20 +78,20 @@ If creating a core component, update `apps/mobile/src/components/core/index.ts` 
 
 ### Naming & Suffixes
 
-| Type | Suffix | Tech | Example |
-|------|--------|------|---------|
-| Data fetch | `Query` | TanStack Query | `useAccountBalancesQuery` |
-| Data mutate | `Mutation` | TanStack Query | `useCreateAccountMutation` |
-| Local state | `Store` | Zustand | `useAccountsStore` |
-| Component logic | Component name | React | `useAccountCard` |
+| Type            | Suffix         | Tech           | Example                    |
+| --------------- | -------------- | -------------- | -------------------------- |
+| Data fetch      | `Query`        | TanStack Query | `useAccountBalancesQuery`  |
+| Data mutate     | `Mutation`     | TanStack Query | `useCreateAccountMutation` |
+| Local state     | `Store`        | Zustand        | `useAccountsStore`         |
+| Component logic | Component name | React          | `useAccountCard`           |
 
 ### Locations
 
-| Scope | Location |
-|-------|----------|
-| Domain-level (shared) | `modules/[mod]/hooks/` |
-| Screen-specific | Colocated: `modules/[mod]/screens/[Screen]/use[Screen].ts` |
-| Component-specific | Colocated: `[Component]/use[Component].ts` |
+| Scope                 | Location                                                   |
+| --------------------- | ---------------------------------------------------------- |
+| Domain-level (shared) | `modules/[mod]/hooks/`                                     |
+| Screen-specific       | Colocated: `modules/[mod]/screens/[Screen]/use[Screen].ts` |
+| Component-specific    | Colocated: `[Component]/use[Component].ts`                 |
 
 ### Rules
 
@@ -110,7 +111,10 @@ type UseAccountsQueryResult = {
 }
 
 export const useAccountsQuery = (): UseAccountsQueryResult => {
-    const query = useQuery({ queryKey: accountQueryKeys.all, queryFn: fetchAccounts })
+    const query = useQuery({
+        queryKey: accountQueryKeys.all,
+        queryFn: fetchAccounts,
+    })
     return {
         accounts: query.data ?? [],
         isLoading: query.isLoading,

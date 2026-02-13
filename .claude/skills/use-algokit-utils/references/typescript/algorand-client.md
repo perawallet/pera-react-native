@@ -30,11 +30,11 @@ const algorand = AlgorandClient.fromClients({ algod, indexer, kmd })
 
 // From custom configuration
 const algorand = AlgorandClient.fromConfig({
-  algodConfig: {
-    server: 'http://localhost',
-    port: '4001',
-    token: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-  },
+    algodConfig: {
+        server: 'http://localhost',
+        port: '4001',
+        token: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    },
 })
 ```
 
@@ -83,32 +83,32 @@ import { algo } from '@algorandfoundation/algokit-utils'
 
 // Payment
 const result = await algorand.send.payment({
-  sender: 'SENDERADDRESS',
-  receiver: 'RECEIVERADDRESS',
-  amount: algo(1),
+    sender: 'SENDERADDRESS',
+    receiver: 'RECEIVERADDRESS',
+    amount: algo(1),
 })
 
 // Asset transfer
 await algorand.send.assetTransfer({
-  sender: 'SENDERADDRESS',
-  receiver: 'RECEIVERADDRESS',
-  assetId: 12345n,
-  amount: 100n,
+    sender: 'SENDERADDRESS',
+    receiver: 'RECEIVERADDRESS',
+    assetId: 12345n,
+    amount: 100n,
 })
 
 // Asset opt-in
 await algorand.send.assetOptIn({
-  sender: 'SENDERADDRESS',
-  assetId: 12345n,
+    sender: 'SENDERADDRESS',
+    assetId: 12345n,
 })
 
 // Asset create
 const createResult = await algorand.send.assetCreate({
-  sender: 'SENDERADDRESS',
-  total: 1000000n,
-  decimals: 6,
-  assetName: 'My Token',
-  unitName: 'MTK',
+    sender: 'SENDERADDRESS',
+    total: 1000000n,
+    decimals: 6,
+    assetName: 'My Token',
+    unitName: 'MTK',
 })
 const assetId = createResult.assetId
 ```
@@ -117,26 +117,26 @@ const assetId = createResult.assetId
 
 ```typescript
 const result = await algorand
-  .newGroup()
-  .addPayment({
-    sender: 'SENDERADDRESS',
-    receiver: 'RECEIVERADDRESS',
-    amount: algo(1),
-  })
-  .addAssetOptIn({
-    sender: 'SENDERADDRESS',
-    assetId: 12345n,
-  })
-  .send()
+    .newGroup()
+    .addPayment({
+        sender: 'SENDERADDRESS',
+        receiver: 'RECEIVERADDRESS',
+        amount: algo(1),
+    })
+    .addAssetOptIn({
+        sender: 'SENDERADDRESS',
+        assetId: 12345n,
+    })
+    .send()
 ```
 
 ### Creating Transactions (Without Sending)
 
 ```typescript
 const payment = await algorand.createTransaction.payment({
-  sender: 'SENDERADDRESS',
-  receiver: 'RECEIVERADDRESS',
-  amount: algo(1),
+    sender: 'SENDERADDRESS',
+    receiver: 'RECEIVERADDRESS',
+    amount: algo(1),
 })
 // payment is an unsigned algosdk.Transaction
 ```
@@ -147,24 +147,24 @@ All transactions support these common parameters:
 
 ```typescript
 await algorand.send.payment({
-  sender: 'SENDERADDRESS',
-  receiver: 'RECEIVERADDRESS',
-  amount: algo(1),
+    sender: 'SENDERADDRESS',
+    receiver: 'RECEIVERADDRESS',
+    amount: algo(1),
 
-  // Optional parameters
-  note: 'My note',
-  lease: 'unique-lease-id',
-  rekeyTo: 'NEWADDRESS',
+    // Optional parameters
+    note: 'My note',
+    lease: 'unique-lease-id',
+    rekeyTo: 'NEWADDRESS',
 
-  // Fee management
-  staticFee: algo(0.001),
-  extraFee: algo(0.001),  // For covering inner txn fees
-  maxFee: algo(0.01),
+    // Fee management
+    staticFee: algo(0.001),
+    extraFee: algo(0.001), // For covering inner txn fees
+    maxFee: algo(0.01),
 
-  // Validity
-  validityWindow: 1000,
-  firstValidRound: 12345n,
-  lastValidRound: 12445n,
+    // Validity
+    validityWindow: 1000,
+    firstValidRound: 12345n,
+    lastValidRound: 12445n,
 })
 ```
 
@@ -178,13 +178,13 @@ const factory = algorand.client.getTypedAppFactory(MyContractFactory)
 
 // Deploy
 const { appClient, result } = await factory.deploy({
-  sender: deployer.addr,
+    sender: deployer.addr,
 })
 
 // Call methods
 const response = await appClient.send.myMethod({
-  sender: deployer.addr,
-  args: { param1: 'value' },
+    sender: deployer.addr,
+    args: { param1: 'value' },
 })
 ```
 
@@ -192,10 +192,10 @@ const response = await appClient.send.myMethod({
 
 ```typescript
 await algorand.send.appCallMethodCall({
-  sender: 'SENDERADDRESS',
-  appId: 12345n,
-  method: algosdk.ABIMethod.fromSignature('hello(string)string'),
-  args: ['World'],
+    sender: 'SENDERADDRESS',
+    appId: 12345n,
+    method: algosdk.ABIMethod.fromSignature('hello(string)string'),
+    args: ['World'],
 })
 ```
 
@@ -205,24 +205,24 @@ Control execution behavior when sending:
 
 ```typescript
 await algorand.send.payment(
-  {
-    sender: 'SENDERADDRESS',
-    receiver: 'RECEIVERADDRESS',
-    amount: algo(1),
-  },
-  {
-    // Wait for confirmation
-    maxRoundsToWaitForConfirmation: 5,
+    {
+        sender: 'SENDERADDRESS',
+        receiver: 'RECEIVERADDRESS',
+        amount: algo(1),
+    },
+    {
+        // Wait for confirmation
+        maxRoundsToWaitForConfirmation: 5,
 
-    // Suppress logging
-    suppressLog: true,
+        // Suppress logging
+        suppressLog: true,
 
-    // Auto-populate app call resources
-    populateAppCallResources: true,
+        // Auto-populate app call resources
+        populateAppCallResources: true,
 
-    // Auto-calculate inner txn fees
-    coverAppCallInnerTransactionFees: true,
-  }
+        // Auto-calculate inner txn fees
+        coverAppCallInnerTransactionFees: true,
+    },
 )
 ```
 
@@ -231,13 +231,19 @@ await algorand.send.payment(
 ```typescript
 import { algo, microAlgo } from '@algorandfoundation/algokit-utils'
 
-algo(1)           // 1 Algo = 1,000,000 microAlgo
-algo(0.5)         // 0.5 Algo = 500,000 microAlgo
-microAlgo(1000)   // 1000 microAlgo
+algo(1) // 1 Algo = 1,000,000 microAlgo
+algo(0.5) // 0.5 Algo = 500,000 microAlgo
+microAlgo(1000)(
+    // 1000 microAlgo
 
-// Extension method syntax (alternative)
-(1).algo()        // 1 Algo = 1,000,000 microAlgo
-(100).microAlgo() // 100 microAlgo
+    // Extension method syntax (alternative)
+    1,
+)
+    .algo()(
+        // 1 Algo = 1,000,000 microAlgo
+        100,
+    )
+    .microAlgo() // 100 microAlgo
 ```
 
 ## Testing with algorandFixture
@@ -245,7 +251,10 @@ microAlgo(1000)   // 1000 microAlgo
 For testing, use `algorandFixture` to manage LocalNet lifecycle:
 
 ```typescript
-import { algorandFixture, AlgorandFixtureConfig } from '@algorandfoundation/algokit-utils/testing'
+import {
+    algorandFixture,
+    AlgorandFixtureConfig,
+} from '@algorandfoundation/algokit-utils/testing'
 import { Config } from '@algorandfoundation/algokit-utils'
 
 // Basic setup
@@ -253,19 +262,19 @@ const localnet = algorandFixture()
 
 // With custom configuration
 const localnet = algorandFixture({
-  testAccountFunding: algo(100),  // Fund test accounts with 100 Algo
-  algodConfig: {
-    server: 'http://localhost',
-    port: '4001',
-    token: 'aaaa...',
-  },
+    testAccountFunding: algo(100), // Fund test accounts with 100 Algo
+    algodConfig: {
+        server: 'http://localhost',
+        port: '4001',
+        token: 'aaaa...',
+    },
 } satisfies AlgorandFixtureConfig)
 
 // In tests
 beforeAll(() => {
-  Config.configure({ debug: true })
+    Config.configure({ debug: true })
 })
-beforeEach(localnet.newScope, 10_000)  // 10s timeout for LocalNet setup
+beforeEach(localnet.newScope, 10_000) // 10s timeout for LocalNet setup
 
 // Access algorand client
 const { algorand, testAccount } = localnet.context
@@ -284,8 +293,8 @@ beforeEach(logs.beforeEach)
 afterEach(logs.afterEach)
 
 test('should log transaction', async () => {
-  // ... perform operations
-  expect(logs.testLogger.getLogSnapshot()).toMatchInlineSnapshot()
+    // ... perform operations
+    expect(logs.testLogger.getLogSnapshot()).toMatchInlineSnapshot()
 })
 ```
 
@@ -295,9 +304,9 @@ test('should log transaction', async () => {
 
 ```typescript
 await algorand.send.payment({
-  sender: funderAccount.addr,
-  receiver: newAccount.addr,
-  amount: algo(10),
+    sender: funderAccount.addr,
+    receiver: newAccount.addr,
+    amount: algo(10),
 })
 ```
 
@@ -307,17 +316,17 @@ await algorand.send.payment({
 const newAccount = algorand.account.random()
 
 await algorand
-  .newGroup()
-  .addPayment({
-    sender: funder.addr,
-    receiver: newAccount.addr,
-    amount: algo(1),
-  })
-  .addAssetOptIn({
-    sender: newAccount.addr,
-    assetId: 12345n,
-  })
-  .send()
+    .newGroup()
+    .addPayment({
+        sender: funder.addr,
+        receiver: newAccount.addr,
+        amount: algo(1),
+    })
+    .addAssetOptIn({
+        sender: newAccount.addr,
+        assetId: 12345n,
+    })
+    .send()
 ```
 
 ### Deploy and Fund Contract
@@ -328,9 +337,9 @@ const { appClient } = await factory.deploy({ sender: deployer.addr })
 
 // Fund the app account for box storage
 await algorand.send.payment({
-  sender: deployer.addr,
-  receiver: appClient.appAddress,
-  amount: algo(1),
+    sender: deployer.addr,
+    receiver: appClient.appAddress,
+    amount: algo(1),
 })
 ```
 

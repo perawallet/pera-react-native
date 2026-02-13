@@ -21,7 +21,7 @@ type UseAccountsQueryResult = {
 }
 
 export const useAccountsQuery = (
-    params: UseAccountsQueryParams = {}
+    params: UseAccountsQueryParams = {},
 ): UseAccountsQueryResult => {
     const { isEnabled = true } = params
     const query = useQuery({

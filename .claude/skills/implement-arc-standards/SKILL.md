@@ -18,13 +18,13 @@ ARC (Algorand Request for Comments) standards define conventions for encoding, m
 
 ### Key ARCs for Smart Contract Development
 
-| ARC | Purpose | When to Use |
-|-----|---------|-------------|
-| **ARC-4** | Application Binary Interface (ABI) | All smart contract method calls, type encoding |
-| **ARC-22** | Read-only method annotation | Methods that don't modify state |
-| **ARC-28** | Event logging specification | Emitting structured events |
-| **ARC-32** | Application Specification (deprecated) | Legacy app specs (use ARC-56 instead) |
-| **ARC-56** | Extended App Description | Modern app specs with full contract metadata |
+| ARC        | Purpose                                | When to Use                                    |
+| ---------- | -------------------------------------- | ---------------------------------------------- |
+| **ARC-4**  | Application Binary Interface (ABI)     | All smart contract method calls, type encoding |
+| **ARC-22** | Read-only method annotation            | Methods that don't modify state                |
+| **ARC-28** | Event logging specification            | Emitting structured events                     |
+| **ARC-32** | Application Specification (deprecated) | Legacy app specs (use ARC-56 instead)          |
+| **ARC-56** | Extended App Description               | Modern app specs with full contract metadata   |
 
 ### ARC-4: The Foundation
 
@@ -48,13 +48,17 @@ class Calculator(ARC4Contract):
 
 ```typescript
 import { Contract } from '@algorandfoundation/algorand-typescript'
-import { abimethod, UInt64, UInt128 } from '@algorandfoundation/algorand-typescript/arc4'
+import {
+    abimethod,
+    UInt64,
+    UInt128,
+} from '@algorandfoundation/algorand-typescript/arc4'
 
 class Calculator extends Contract {
-  @abimethod()
-  add(a: UInt64, b: UInt64): UInt128 {
-    return new UInt128(a.native + b.native)
-  }
+    @abimethod()
+    add(a: UInt64, b: UInt64): UInt128 {
+        return new UInt128(a.native + b.native)
+    }
 }
 ```
 
@@ -68,15 +72,15 @@ Method selector: 8aa3b61f (first 4 bytes)
 
 ### ARC-32 vs ARC-56
 
-| Feature | ARC-32 | ARC-56 |
-|---------|--------|--------|
-| State schema | Yes | Yes |
-| Method descriptions | Yes | Yes |
-| Named structs | No | Yes |
-| Default argument values | Partial | Full |
-| Source maps | No | Yes |
-| Events (ARC-28) | No | Yes |
-| Status | Deprecated | Current |
+| Feature                 | ARC-32     | ARC-56  |
+| ----------------------- | ---------- | ------- |
+| State schema            | Yes        | Yes     |
+| Method descriptions     | Yes        | Yes     |
+| Named structs           | No         | Yes     |
+| Default argument values | Partial    | Full    |
+| Source maps             | No         | Yes     |
+| Events (ARC-28)         | No         | Yes     |
+| Status                  | Deprecated | Current |
 
 **Use ARC-56** for new projects. ARC-32 is maintained for backwards compatibility.
 
@@ -97,8 +101,8 @@ import { algorandClient } from '@algorandfoundation/algokit-utils'
 import appSpec from './Calculator.arc56.json'
 
 const client = algorand.client.getTypedAppClientById(CalculatorClient, {
-  appId: 12345n,
-  appSpec,
+    appId: 12345n,
+    appSpec,
 })
 
 const result = await client.send.add({ args: { a: 10n, b: 20n } })
@@ -120,22 +124,22 @@ result = client.send.add(a=10, b=20)
 
 ## Important Rules / Guidelines
 
-| Rule | Details |
-|------|---------|
-| **ARC-4 types only in ABI** | Use `arc4.UInt64`, `arc4.String`, etc. for method arguments and returns |
-| **Reference types as arguments only** | `account`, `asset`, `application` cannot be return types |
-| **15 argument limit** | Methods with 16+ args encode extras as a tuple in arg 15 |
-| **Return prefix** | Return values are logged with `151f7c75` prefix |
-| **Bare methods have no selector** | Bare calls use `NumAppArgs == 0` for routing |
+| Rule                                  | Details                                                                 |
+| ------------------------------------- | ----------------------------------------------------------------------- |
+| **ARC-4 types only in ABI**           | Use `arc4.UInt64`, `arc4.String`, etc. for method arguments and returns |
+| **Reference types as arguments only** | `account`, `asset`, `application` cannot be return types                |
+| **15 argument limit**                 | Methods with 16+ args encode extras as a tuple in arg 15                |
+| **Return prefix**                     | Return values are logged with `151f7c75` prefix                         |
+| **Bare methods have no selector**     | Bare calls use `NumAppArgs == 0` for routing                            |
 
 ## Common Variations / Edge Cases
 
-| Scenario | Approach |
-|----------|----------|
+| Scenario                           | Approach                                               |
+| ---------------------------------- | ------------------------------------------------------ |
 | Calling ARC-4 method from contract | Use `arc4.abi_call()` for type-safe inner transactions |
-| Creating contract with method | Use `create="require"` in `@abimethod` decorator |
-| Read-only methods (ARC-22) | Use `readonly=True` parameter in decorator |
-| Emitting events (ARC-28) | Use `arc4.emit()` with typed event structs |
+| Creating contract with method      | Use `create="require"` in `@abimethod` decorator       |
+| Read-only methods (ARC-22)         | Use `readonly=True` parameter in decorator             |
+| Emitting events (ARC-28)           | Use `arc4.emit()` with typed event structs             |
 
 ## References / Further Reading
 

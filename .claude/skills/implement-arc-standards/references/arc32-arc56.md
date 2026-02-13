@@ -8,9 +8,9 @@ Application specifications describe a smart contract's interface, state schema, 
 - [Generating App Specs](#generating-app-specs)
 - [ARC-56 Contract Structure](#arc-56-contract-structure)
 - [Method Descriptions](#method-descriptions)
-  - [ARC-56 Method Format](#arc-56-method-format)
-  - [Action Configuration](#action-configuration)
-  - [Default Argument Values](#default-argument-values)
+    - [ARC-56 Method Format](#arc-56-method-format)
+    - [Action Configuration](#action-configuration)
+    - [Default Argument Values](#default-argument-values)
 - [Named Structs](#named-structs)
 - [State Schema](#state-schema)
 - [Events (ARC-28)](#events-arc-28)
@@ -22,20 +22,20 @@ Application specifications describe a smart contract's interface, state schema, 
 
 ## ARC-32 vs ARC-56 Comparison
 
-| Feature | ARC-32 | ARC-56 |
-|---------|--------|--------|
-| **Status** | Deprecated | Current Standard |
-| **ARC-4 methods** | Yes | Yes |
-| **State schema** | Yes | Yes |
-| **Method hints** | Partial | Full |
-| **Named structs** | No | Yes |
-| **Default argument values** | Limited | Full support |
-| **Source code info** | No | Yes (optional) |
-| **Source maps** | No | Yes (optional) |
-| **ARC-28 events** | No | Yes |
-| **Bare action config** | Yes | Yes |
-| **Template variables** | No | Yes |
-| **Scratch variables** | No | Yes |
+| Feature                     | ARC-32     | ARC-56           |
+| --------------------------- | ---------- | ---------------- |
+| **Status**                  | Deprecated | Current Standard |
+| **ARC-4 methods**           | Yes        | Yes              |
+| **State schema**            | Yes        | Yes              |
+| **Method hints**            | Partial    | Full             |
+| **Named structs**           | No         | Yes              |
+| **Default argument values** | Limited    | Full support     |
+| **Source code info**        | No         | Yes (optional)   |
+| **Source maps**             | No         | Yes (optional)   |
+| **ARC-28 events**           | No         | Yes              |
+| **Bare action config**      | Yes        | Yes              |
+| **Template variables**      | No         | Yes              |
+| **Scratch variables**       | No         | Yes              |
 
 **Recommendation:** Use ARC-56 for all new projects. ARC-32 is maintained for legacy compatibility only.
 
@@ -52,6 +52,7 @@ algokit project run build
 ```
 
 Output files:
+
 - `MyContract.arc32.json` - Legacy app spec
 - `MyContract.arc56.json` - Modern app spec
 
@@ -167,10 +168,16 @@ The `actions` field specifies when a method can be called:
 
 ```json
 {
-  "actions": {
-    "create": ["NoOp", "OptIn"],
-    "call": ["NoOp", "OptIn", "CloseOut", "UpdateApplication", "DeleteApplication"]
-  }
+    "actions": {
+        "create": ["NoOp", "OptIn"],
+        "call": [
+            "NoOp",
+            "OptIn",
+            "CloseOut",
+            "UpdateApplication",
+            "DeleteApplication"
+        ]
+    }
 }
 ```
 
@@ -183,17 +190,18 @@ ARC-56 supports specifying default values for method arguments:
 
 ```json
 {
-  "name": "fee",
-  "type": "uint64",
-  "defaultValue": {
-    "source": "literal",
-    "data": "AAAAAAAAAGQ=",
-    "type": "uint64"
-  }
+    "name": "fee",
+    "type": "uint64",
+    "defaultValue": {
+        "source": "literal",
+        "data": "AAAAAAAAAGQ=",
+        "type": "uint64"
+    }
 }
 ```
 
 Sources for default values:
+
 - `literal`: Base64-encoded value
 - `global`: Read from global state key
 - `local`: Read from sender's local state
@@ -206,18 +214,18 @@ ARC-56 supports named structs that map to ABI tuples:
 
 ```json
 {
-  "structs": {
-    "UserInfo": [
-      { "name": "name", "type": "string" },
-      { "name": "balance", "type": "uint64" },
-      { "name": "active", "type": "bool" }
-    ],
-    "TransferRequest": [
-      { "name": "from", "type": "address" },
-      { "name": "to", "type": "address" },
-      { "name": "info", "type": "UserInfo" }
-    ]
-  }
+    "structs": {
+        "UserInfo": [
+            { "name": "name", "type": "string" },
+            { "name": "balance", "type": "uint64" },
+            { "name": "active", "type": "bool" }
+        ],
+        "TransferRequest": [
+            { "name": "from", "type": "address" },
+            { "name": "to", "type": "address" },
+            { "name": "info", "type": "UserInfo" }
+        ]
+    }
 }
 ```
 
@@ -225,9 +233,9 @@ In methods, reference structs by name:
 
 ```json
 {
-  "args": [
-    { "name": "user", "type": "(string,uint64,bool)", "struct": "UserInfo" }
-  ]
+    "args": [
+        { "name": "user", "type": "(string,uint64,bool)", "struct": "UserInfo" }
+    ]
 }
 ```
 
@@ -237,12 +245,12 @@ In methods, reference structs by name:
 
 ```json
 {
-  "state": {
-    "schema": {
-      "global": { "ints": 5, "bytes": 3 },
-      "local": { "ints": 2, "bytes": 1 }
+    "state": {
+        "schema": {
+            "global": { "ints": 5, "bytes": 3 },
+            "local": { "ints": 2, "bytes": 1 }
+        }
     }
-  }
 }
 ```
 
@@ -254,30 +262,30 @@ Named storage keys with type information:
 
 ```json
 {
-  "keys": {
-    "global": {
-      "total_supply": {
-        "key": "dG90YWxfc3VwcGx5",
-        "keyType": "AVMString",
-        "valueType": "uint64",
-        "desc": "Total token supply"
-      }
-    },
-    "local": {
-      "balance": {
-        "key": "YmFsYW5jZQ==",
-        "keyType": "AVMString",
-        "valueType": "uint64"
-      }
-    },
-    "box": {
-      "metadata": {
-        "key": "bWV0YQ==",
-        "keyType": "AVMString",
-        "valueType": "(string,uint64)"
-      }
+    "keys": {
+        "global": {
+            "total_supply": {
+                "key": "dG90YWxfc3VwcGx5",
+                "keyType": "AVMString",
+                "valueType": "uint64",
+                "desc": "Total token supply"
+            }
+        },
+        "local": {
+            "balance": {
+                "key": "YmFsYW5jZQ==",
+                "keyType": "AVMString",
+                "valueType": "uint64"
+            }
+        },
+        "box": {
+            "metadata": {
+                "key": "bWV0YQ==",
+                "keyType": "AVMString",
+                "valueType": "(string,uint64)"
+            }
+        }
     }
-  }
 }
 ```
 
@@ -287,15 +295,15 @@ For dynamic key storage (like BoxMap):
 
 ```json
 {
-  "maps": {
-    "box": {
-      "users": {
-        "keyType": "address",
-        "valueType": "UserInfo",
-        "prefix": "dXNlcl8="
-      }
+    "maps": {
+        "box": {
+            "users": {
+                "keyType": "address",
+                "valueType": "UserInfo",
+                "prefix": "dXNlcl8="
+            }
+        }
     }
-  }
 }
 ```
 
@@ -303,17 +311,17 @@ For dynamic key storage (like BoxMap):
 
 ```json
 {
-  "events": [
-    {
-      "name": "Transfer",
-      "desc": "Emitted when tokens are transferred",
-      "args": [
-        { "name": "from", "type": "address" },
-        { "name": "to", "type": "address" },
-        { "name": "amount", "type": "uint64" }
-      ]
-    }
-  ]
+    "events": [
+        {
+            "name": "Transfer",
+            "desc": "Emitted when tokens are transferred",
+            "args": [
+                { "name": "from", "type": "address" },
+                { "name": "to", "type": "address" },
+                { "name": "amount", "type": "uint64" }
+            ]
+        }
+    ]
 }
 ```
 
@@ -358,13 +366,13 @@ const algorand = AlgorandClient.defaultLocalNet()
 // Deploy new contract
 const factory = algorand.client.getTypedAppFactory(CalculatorFactory)
 const { appClient } = await factory.deploy({
-  onSchemaBreak: 'replace',
-  onUpdate: 'update',
+    onSchemaBreak: 'replace',
+    onUpdate: 'update',
 })
 
 // Call methods with full type safety
 const result = await appClient.send.add({
-  args: { a: 10n, b: 20n }
+    args: { a: 10n, b: 20n },
 })
 console.log(result.return) // BigInt: 30n
 
@@ -420,24 +428,24 @@ ARC-56 can include source maps for debugging:
 
 ```json
 {
-  "sourceInfo": {
-    "approval": {
-      "sourceInfo": [
-        {
-          "pc": [10, 11, 12],
-          "errorMessage": "Assertion failed: balance >= amount"
+    "sourceInfo": {
+        "approval": {
+            "sourceInfo": [
+                {
+                    "pc": [10, 11, 12],
+                    "errorMessage": "Assertion failed: balance >= amount"
+                }
+            ],
+            "pcOffsetMethod": "cblocks"
+        },
+        "clear": {
+            "sourceInfo": []
         }
-      ],
-      "pcOffsetMethod": "cblocks"
     },
-    "clear": {
-      "sourceInfo": []
+    "source": {
+        "approval": "I3ByYWdtYSB2ZXJzaW9uIDEwCg...",
+        "clear": "I3ByYWdtYSB2ZXJzaW9uIDEwCg..."
     }
-  },
-  "source": {
-    "approval": "I3ByYWdtYSB2ZXJzaW9uIDEwCg...",
-    "clear": "I3ByYWdtYSB2ZXJzaW9uIDEwCg..."
-  }
 }
 ```
 
@@ -447,15 +455,15 @@ For contracts with configurable values:
 
 ```json
 {
-  "templateVariables": {
-    "ADMIN_ADDRESS": {
-      "type": "address",
-      "value": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ"
-    },
-    "MAX_SUPPLY": {
-      "type": "uint64"
+    "templateVariables": {
+        "ADMIN_ADDRESS": {
+            "type": "address",
+            "value": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ"
+        },
+        "MAX_SUPPLY": {
+            "type": "uint64"
+        }
     }
-  }
 }
 ```
 
@@ -490,13 +498,13 @@ def delete(self) -> None:
 
 ## Common Mistakes
 
-| Mistake | Problem | Fix |
-|---------|---------|-----|
-| Using ARC-32 for new projects | Missing features | Use ARC-56 instead |
-| Missing schema in deployment | App creation fails | Include schema from app spec |
-| Wrong action configuration | Method call rejected | Verify `actions` field |
-| Struct name mismatch | Client type errors | Ensure struct names match |
-| Not regenerating client | Stale types | Regenerate after contract changes |
+| Mistake                       | Problem              | Fix                               |
+| ----------------------------- | -------------------- | --------------------------------- |
+| Using ARC-32 for new projects | Missing features     | Use ARC-56 instead                |
+| Missing schema in deployment  | App creation fails   | Include schema from app spec      |
+| Wrong action configuration    | Method call rejected | Verify `actions` field            |
+| Struct name mismatch          | Client type errors   | Ensure struct names match         |
+| Not regenerating client       | Stale types          | Regenerate after contract changes |
 
 ## References
 

@@ -34,6 +34,7 @@ mkdir -p packages/[package-name]/src/store/__tests__
 ### 3. Copy Configuration Files
 
 Copy from an existing package:
+
 - `tsconfig.json`
 - `vite.config.ts`
 - `vitest.config.ts`

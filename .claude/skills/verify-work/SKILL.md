@@ -35,6 +35,7 @@ pnpm build
 ## All Checks Must Pass
 
 Work is NOT complete until all checks pass. If any check fails:
+
 1. Fix the underlying issue
 2. Re-run all checks
 3. Only then report completion

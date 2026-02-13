@@ -9,10 +9,10 @@ Diagnose and resolve common Algorand development errors.
 
 ## Error Categories
 
-| Category | Common Causes | Reference |
-|----------|---------------|-----------|
-| Contract Errors | Assert failures, opcode budget, invalid operations | [contract-errors.md](./references/contract-errors.md) |
-| Transaction Errors | Overspend, invalid params, group issues | [transaction-errors.md](./references/transaction-errors.md) |
+| Category           | Common Causes                                      | Reference                                                   |
+| ------------------ | -------------------------------------------------- | ----------------------------------------------------------- |
+| Contract Errors    | Assert failures, opcode budget, invalid operations | [contract-errors.md](./references/contract-errors.md)       |
+| Transaction Errors | Overspend, invalid params, group issues            | [transaction-errors.md](./references/transaction-errors.md) |
 
 ## Quick Diagnosis Flow
 
@@ -32,6 +32,7 @@ logic eval error: assert failed pc=123
 **Cause:** An `assert` statement in the smart contract evaluated to false.
 
 **Debug steps:**
+
 1. The `pc=123` indicates the program counter where failure occurred
 2. Use source maps to find the exact line in your code
 3. Check the assertion condition and input values
@@ -55,6 +56,7 @@ logic eval error: dynamic cost budget exceeded
 **Cause:** Contract exceeded the 700 opcode budget per app call.
 
 **Fix:**
+
 - Add more app calls to the group for additional budget (pooled)
 - Optimize contract logic to reduce operations
 - Split complex operations across multiple calls
@@ -68,6 +70,7 @@ asset ASSET_ID missing from ACCOUNT_ADDRESS
 **Cause:** The receiving account hasn't opted into the asset.
 
 **Fix:** Have the receiver opt in before transferring:
+
 ```python
 algorand.send.asset_opt_in(AssetOptInParams(
     sender=receiver_address,

@@ -9,6 +9,7 @@ description: Create a new React Native component following Pera conventions
 ### 1. Check for External Dependencies
 
 **If wrapping an external component** (RNE, React Native, third-party):
+
 - Use `PW` prefix (e.g., `PWButton`, `PWText`)
 - Place in `apps/mobile/src/components/core/PW[Name]/`
 - Define a clean, project-specific props interface
@@ -18,11 +19,11 @@ description: Create a new React Native component following Pera conventions
 
 ### 2. Determine Location
 
-| Type | Location |
-|------|----------|
-| Design system (PW*) | `apps/mobile/src/components/core/[Name]/` |
-| Shared component | `apps/mobile/src/components/[Name]/` |
-| Module-specific | `apps/mobile/src/modules/[module]/components/[Name]/` |
+| Type                 | Location                                              |
+| -------------------- | ----------------------------------------------------- |
+| Design system (PW\*) | `apps/mobile/src/components/core/[Name]/`             |
+| Shared component     | `apps/mobile/src/components/[Name]/`                  |
+| Module-specific      | `apps/mobile/src/modules/[module]/components/[Name]/` |
 
 Folder names use **PascalCase** matching the component name.
 

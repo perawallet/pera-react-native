@@ -18,38 +18,38 @@ Find working contract examples and code patterns from Algorand Foundation reposi
 ## How to proceed
 
 1. **Determine the search type:**
-   - Looking for a specific pattern → use `github_search_code`
-   - Need a specific file → use `github_get_file_contents`
-   - Discovering repositories → use `github_search_repositories`
+    - Looking for a specific pattern → use `github_search_code`
+    - Need a specific file → use `github_get_file_contents`
+    - Discovering repositories → use `github_search_repositories`
 
 2. **Search priority repositories first:**
 
-   | Priority | Repository | Best For |
-   |----------|------------|----------|
-   | 1 | `algorandfoundation/devportal-code-examples` | Beginner-friendly patterns |
-   | 2 | `algorandfoundation/puya-ts` | Advanced TypeScript examples |
-   | 3 | `algorandfoundation/puya` | Python examples |
-   | 4 | `algorandfoundation/algokit-*` | Templates and utilities |
+    | Priority | Repository                                   | Best For                     |
+    | -------- | -------------------------------------------- | ---------------------------- |
+    | 1        | `algorandfoundation/devportal-code-examples` | Beginner-friendly patterns   |
+    | 2        | `algorandfoundation/puya-ts`                 | Advanced TypeScript examples |
+    | 3        | `algorandfoundation/puya`                    | Python examples              |
+    | 4        | `algorandfoundation/algokit-*`               | Templates and utilities      |
 
 3. **Execute the search:**
 
-   ```
-   # Search for code patterns
-   github_search_code query:"BoxMap org:algorandfoundation language:typescript"
+    ```
+    # Search for code patterns
+    github_search_code query:"BoxMap org:algorandfoundation language:typescript"
 
-   # Get specific file
-   github_get_file_contents owner:algorandfoundation repo:puya-ts path:examples/voting/contract.algo.ts
+    # Get specific file
+    github_get_file_contents owner:algorandfoundation repo:puya-ts path:examples/voting/contract.algo.ts
 
-   # List directory contents
-   github_get_file_contents owner:algorandfoundation repo:puya-ts path:examples
+    # List directory contents
+    github_get_file_contents owner:algorandfoundation repo:puya-ts path:examples
 
-   # Find repositories
-   github_search_repositories query:"topic:algorand smart-contract"
-   ```
+    # Find repositories
+    github_search_repositories query:"topic:algorand smart-contract"
+    ```
 
 4. **Always fetch test files:**
-   - For any contract file, check for corresponding `*.spec.ts` or `*_test.py`
-   - Tests show how to call methods and verify behavior
+    - For any contract file, check for corresponding `*.spec.ts` or `*_test.py`
+    - Tests show how to call methods and verify behavior
 
 ## Important Rules / Guidelines
 
@@ -57,8 +57,8 @@ Find working contract examples and code patterns from Algorand Foundation reposi
 - **Always include test files** — They demonstrate correct usage patterns
 - **Use specific queries** — Include `org:algorandfoundation` and `language:typescript` for better results
 - **Check file paths in devportal-code-examples:**
-  - TypeScript: `projects/typescript-examples/contracts/`
-  - Python: `projects/python-examples/contracts/`
+    - TypeScript: `projects/typescript-examples/contracts/`
+    - Python: `projects/python-examples/contracts/`
 - **Prefer puya-ts/examples for complex patterns** — Voting, AMM, auction examples are comprehensive
 
 ## If GitHub MCP Tools Unavailable
@@ -70,18 +70,19 @@ Use web search as fallback:
 - **For repos**: Search `site:github.com algorand {topic}`
 
 Key URLs to browse directly:
+
 - https://github.com/algorandfoundation/devportal-code-examples
 - https://github.com/algorandfoundation/puya-ts/tree/main/examples
 - https://github.com/algorandfoundation/puya/tree/main/examples
 
 ## Common Variations / Edge Cases
 
-| Scenario | Approach |
-|----------|----------|
-| Pattern not found in algorandfoundation | Expand search to all of GitHub |
-| Need Python instead of TypeScript | Search `algorandfoundation/puya` instead |
-| Looking for deployment patterns | Check `algokit-*-template` repos |
-| Need ARC standard implementation | Search for "ARC-{number}" in code |
+| Scenario                                | Approach                                 |
+| --------------------------------------- | ---------------------------------------- |
+| Pattern not found in algorandfoundation | Expand search to all of GitHub           |
+| Need Python instead of TypeScript       | Search `algorandfoundation/puya` instead |
+| Looking for deployment patterns         | Check `algokit-*-template` repos         |
+| Need ARC standard implementation        | Search for "ARC-{number}" in code        |
 
 ## References / Further Reading
 

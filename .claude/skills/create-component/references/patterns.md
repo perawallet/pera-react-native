@@ -144,18 +144,18 @@ export const useStyles = makeStyles(
 
 ## Components That MUST Be Wrapped
 
-| External Source | Examples |
-|----------------|----------|
+| External Source | Examples                                         |
+| --------------- | ------------------------------------------------ |
 | `@rneui/themed` | `Text`, `Button`, `ListItem`, `Icon`, `Skeleton` |
-| `react-native` | `TouchableOpacity`, `View`, `ScrollView` |
-| Third-party | `BottomSheet`, `WebView`, modals, etc. |
+| `react-native`  | `TouchableOpacity`, `View`, `ScrollView`         |
+| Third-party     | `BottomSheet`, `WebView`, modals, etc.           |
 
 ## Theme Tokens
 
-| Type | Usage | Examples |
-|------|-------|----------|
-| `theme.colors.*` | All colors | `background`, `textMain`, `textGray`, `linkPrimary`, `error` |
-| `theme.spacing.*` | Margins, paddings, gaps | `xs`, `sm`, `md`, `lg`, `xl`, `xxl`, `3xl`, `4xl`, `5xl` |
+| Type              | Usage                   | Examples                                                     |
+| ----------------- | ----------------------- | ------------------------------------------------------------ |
+| `theme.colors.*`  | All colors              | `background`, `textMain`, `textGray`, `linkPrimary`, `error` |
+| `theme.spacing.*` | Margins, paddings, gaps | `xs`, `sm`, `md`, `lg`, `xl`, `xxl`, `3xl`, `4xl`, `5xl`     |
 
 ## Barrel File Pattern
 

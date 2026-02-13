@@ -4,11 +4,11 @@ Quick reference for the GitHub MCP tools for searching Algorand code examples.
 
 ## Tools
 
-| Tool | Purpose |
-|------|---------|
-| `github_get_file_contents` | Read files or list directories |
-| `github_search_code` | Search for code patterns |
-| `github_search_repositories` | Find repositories |
+| Tool                         | Purpose                        |
+| ---------------------------- | ------------------------------ |
+| `github_get_file_contents`   | Read files or list directories |
+| `github_search_code`         | Search for code patterns       |
+| `github_search_repositories` | Find repositories              |
 
 ## github_get_file_contents
 
@@ -16,12 +16,12 @@ Retrieve file contents or list directory entries from a GitHub repository.
 
 **Parameters:**
 
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `owner` | Yes | Repository owner (e.g., `algorandfoundation`) |
-| `repo` | Yes | Repository name (e.g., `puya-ts`) |
-| `path` | No | Path to file or directory (default: root) |
-| `ref` | No | Git ref (branch, tag, or commit SHA) |
+| Parameter | Required | Description                                   |
+| --------- | -------- | --------------------------------------------- |
+| `owner`   | Yes      | Repository owner (e.g., `algorandfoundation`) |
+| `repo`    | Yes      | Repository name (e.g., `puya-ts`)             |
+| `path`    | No       | Path to file or directory (default: root)     |
+| `ref`     | No       | Git ref (branch, tag, or commit SHA)          |
 
 **Examples:**
 
@@ -45,23 +45,23 @@ Search for code patterns across GitHub repositories.
 
 **Parameters:**
 
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `query` | Yes | Search query (GitHub code search syntax) |
-| `sort` | No | Sort field (`indexed` only) |
-| `order` | No | Sort order (`asc` or `desc`) |
-| `page` | No | Page number (default: 1) |
-| `perPage` | No | Results per page (max 100, default: 30) |
+| Parameter | Required | Description                              |
+| --------- | -------- | ---------------------------------------- |
+| `query`   | Yes      | Search query (GitHub code search syntax) |
+| `sort`    | No       | Sort field (`indexed` only)              |
+| `order`   | No       | Sort order (`asc` or `desc`)             |
+| `page`    | No       | Page number (default: 1)                 |
+| `perPage` | No       | Results per page (max 100, default: 30)  |
 
 **Query Syntax:**
 
-| Qualifier | Example | Description |
-|-----------|---------|-------------|
-| `org:` | `org:algorandfoundation` | Search within organization |
-| `repo:` | `repo:algorandfoundation/puya-ts` | Search specific repo |
-| `language:` | `language:typescript` | Filter by language |
-| `path:` | `path:examples/` | Filter by file path |
-| `extension:` | `extension:ts` | Filter by file extension |
+| Qualifier    | Example                           | Description                |
+| ------------ | --------------------------------- | -------------------------- |
+| `org:`       | `org:algorandfoundation`          | Search within organization |
+| `repo:`      | `repo:algorandfoundation/puya-ts` | Search specific repo       |
+| `language:`  | `language:typescript`             | Filter by language         |
+| `path:`      | `path:examples/`                  | Filter by file path        |
+| `extension:` | `extension:ts`                    | Filter by file extension   |
 
 **Examples:**
 
@@ -85,22 +85,22 @@ Find repositories by name, description, topics, or other criteria.
 
 **Parameters:**
 
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `query` | Yes | Search query (GitHub repo search syntax) |
-| `sort` | No | Sort by: `stars`, `forks`, `help-wanted-issues`, `updated` |
-| `order` | No | Sort order (`asc` or `desc`) |
-| `page` | No | Page number (default: 1) |
-| `perPage` | No | Results per page (max 100, default: 30) |
+| Parameter | Required | Description                                                |
+| --------- | -------- | ---------------------------------------------------------- |
+| `query`   | Yes      | Search query (GitHub repo search syntax)                   |
+| `sort`    | No       | Sort by: `stars`, `forks`, `help-wanted-issues`, `updated` |
+| `order`   | No       | Sort order (`asc` or `desc`)                               |
+| `page`    | No       | Page number (default: 1)                                   |
+| `perPage` | No       | Results per page (max 100, default: 30)                    |
 
 **Query Syntax:**
 
-| Qualifier | Example | Description |
-|-----------|---------|-------------|
-| `topic:` | `topic:algorand` | Filter by topic |
-| `language:` | `language:typescript` | Filter by primary language |
-| `org:` | `org:algorandfoundation` | Filter by organization |
-| `stars:` | `stars:>100` | Filter by star count |
+| Qualifier   | Example                  | Description                |
+| ----------- | ------------------------ | -------------------------- |
+| `topic:`    | `topic:algorand`         | Filter by topic            |
+| `language:` | `language:typescript`    | Filter by primary language |
+| `org:`      | `org:algorandfoundation` | Filter by organization     |
+| `stars:`    | `stars:>100`             | Filter by star count       |
 
 **Examples:**
 
@@ -120,21 +120,21 @@ github_search_repositories query:"topic:algorand stars:>50" sort:stars
 
 ## Priority Repositories
 
-| Repository | Path | Content |
-|------------|------|---------|
-| `devportal-code-examples` | `projects/typescript-examples/contracts/` | Beginner TypeScript |
-| `devportal-code-examples` | `projects/python-examples/contracts/` | Beginner Python |
-| `puya-ts` | `examples/` | Advanced TypeScript (voting, amm, auction) |
-| `puya` | `examples/` | Advanced Python |
-| `algokit-typescript-template` | `/` | Project template |
-| `algokit-utils-ts` | `src/` | Utility library |
+| Repository                    | Path                                      | Content                                    |
+| ----------------------------- | ----------------------------------------- | ------------------------------------------ |
+| `devportal-code-examples`     | `projects/typescript-examples/contracts/` | Beginner TypeScript                        |
+| `devportal-code-examples`     | `projects/python-examples/contracts/`     | Beginner Python                            |
+| `puya-ts`                     | `examples/`                               | Advanced TypeScript (voting, amm, auction) |
+| `puya`                        | `examples/`                               | Advanced Python                            |
+| `algokit-typescript-template` | `/`                                       | Project template                           |
+| `algokit-utils-ts`            | `src/`                                    | Utility library                            |
 
 ## Common Patterns Location
 
-| Pattern | Repository | Path |
-|---------|------------|------|
-| Box storage | devportal-code-examples | `contracts/BoxStorage/` |
-| BoxMap | puya-ts | `examples/voting/`, `examples/amm/` |
-| Inner transactions | devportal-code-examples | `contracts/` |
-| ARC-4 methods | puya-ts | `examples/hello_world_arc4/` |
-| State management | devportal-code-examples | `contracts/` |
+| Pattern            | Repository              | Path                                |
+| ------------------ | ----------------------- | ----------------------------------- |
+| Box storage        | devportal-code-examples | `contracts/BoxStorage/`             |
+| BoxMap             | puya-ts                 | `examples/voting/`, `examples/amm/` |
+| Inner transactions | devportal-code-examples | `contracts/`                        |
+| ARC-4 methods      | puya-ts                 | `examples/hello_world_arc4/`        |
+| State management   | devportal-code-examples | `contracts/`                        |

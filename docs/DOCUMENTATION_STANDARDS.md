@@ -4,11 +4,11 @@ This project maintains documentation in two locations.
 
 ## Documentation Locations
 
-| Location | Purpose | Content Type |
-|----------|---------|--------------|
-| `docs/` | Human-readable overviews | Lean, high-level, no code examples |
-| `CLAUDE.md` | AI agent rules (inlined) | Dense, actionable rules with key examples |
-| `.claude/skills/` | On-demand workflows | Step-by-step procedures invoked via `/command` |
+| Location          | Purpose                  | Content Type                                   |
+| ----------------- | ------------------------ | ---------------------------------------------- |
+| `docs/`           | Human-readable overviews | Lean, high-level, no code examples             |
+| `CLAUDE.md`       | AI agent rules (inlined) | Dense, actionable rules with key examples      |
+| `.claude/skills/` | On-demand workflows      | Step-by-step procedures invoked via `/command` |
 
 ## docs/ Guidelines
 
@@ -38,10 +38,10 @@ Skills in `.claude/skills/` are **on-demand workflows**:
 
 ## File Naming
 
-| Location | Convention | Example |
-|----------|-----------|---------|
-| `docs/` | SCREAMING_SNAKE_CASE.md | `ARCHITECTURE.md` |
-| `.claude/skills/` | kebab-case dirs | `create-component/` |
+| Location          | Convention              | Example             |
+| ----------------- | ----------------------- | ------------------- |
+| `docs/`           | SCREAMING_SNAKE_CASE.md | `ARCHITECTURE.md`   |
+| `.claude/skills/` | kebab-case dirs         | `create-component/` |
 
 ## When Updating Documentation
 

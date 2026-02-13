@@ -18,57 +18,63 @@ Use AlgoKit Utils to interact with the Algorand blockchain from TypeScript or Py
 
 1. **Initialize AlgorandClient:**
 
-   TypeScript:
-   ```typescript
-   import { AlgorandClient } from '@algorandfoundation/algokit-utils'
+    TypeScript:
 
-   const algorand = AlgorandClient.fromEnvironment()
-   // Or: AlgorandClient.defaultLocalNet()
-   // Or: AlgorandClient.testNet()
-   // Or: AlgorandClient.mainNet()
-   ```
+    ```typescript
+    import { AlgorandClient } from '@algorandfoundation/algokit-utils'
 
-   Python:
-   ```python
-   from algokit_utils import AlgorandClient
+    const algorand = AlgorandClient.fromEnvironment()
+    // Or: AlgorandClient.defaultLocalNet()
+    // Or: AlgorandClient.testNet()
+    // Or: AlgorandClient.mainNet()
+    ```
 
-   algorand = AlgorandClient.from_environment()
-   # Or: AlgorandClient.default_localnet()
-   # Or: AlgorandClient.testnet()
-   # Or: AlgorandClient.mainnet()
-   ```
+    Python:
+
+    ```python
+    from algokit_utils import AlgorandClient
+
+    algorand = AlgorandClient.from_environment()
+    # Or: AlgorandClient.default_localnet()
+    # Or: AlgorandClient.testnet()
+    # Or: AlgorandClient.mainnet()
+    ```
 
 2. **Get accounts:**
 
-   TypeScript:
-   ```typescript
-   const account = await algorand.account.fromEnvironment('DEPLOYER')
-   ```
+    TypeScript:
 
-   Python:
-   ```python
-   account = algorand.account.from_environment("DEPLOYER")
-   ```
+    ```typescript
+    const account = await algorand.account.fromEnvironment('DEPLOYER')
+    ```
+
+    Python:
+
+    ```python
+    account = algorand.account.from_environment("DEPLOYER")
+    ```
 
 3. **Send transactions:**
 
-   TypeScript:
-   ```typescript
-   await algorand.send.payment({
-     sender: account.addr,
-     receiver: 'RECEIVERADDRESS',
-     amount: algo(1),
-   })
-   ```
+    TypeScript:
 
-   Python:
-   ```python
-   algorand.send.payment(PaymentParams(
-     sender=account.address,
-     receiver="RECEIVERADDRESS",
-     amount=AlgoAmount(algo=1),
-   ))
-   ```
+    ```typescript
+    await algorand.send.payment({
+        sender: account.addr,
+        receiver: 'RECEIVERADDRESS',
+        amount: algo(1),
+    })
+    ```
+
+    Python:
+
+    ```python
+    algorand.send.payment(PaymentParams(
+      sender=account.address,
+      receiver="RECEIVERADDRESS",
+      amount=AlgoAmount(algo=1),
+    ))
+    ```
 
 ## Important Rules / Guidelines
 
@@ -79,13 +85,13 @@ Use AlgoKit Utils to interact with the Algorand blockchain from TypeScript or Py
 
 ## Common Variations / Edge Cases
 
-| Scenario | Approach |
-|----------|----------|
-| LocalNet development | `AlgorandClient.defaultLocalNet()` |
-| TestNet/MainNet | `AlgorandClient.testNet()` or `.mainNet()` |
-| Custom node | `AlgorandClient.fromConfig({ algodConfig: {...} })` |
-| Deploy contract | Use typed app client factory (see app-client docs) |
-| Transaction groups | `algorand.newGroup().addPayment(...).addAssetOptIn(...).send()` |
+| Scenario             | Approach                                                        |
+| -------------------- | --------------------------------------------------------------- |
+| LocalNet development | `AlgorandClient.defaultLocalNet()`                              |
+| TestNet/MainNet      | `AlgorandClient.testNet()` or `.mainNet()`                      |
+| Custom node          | `AlgorandClient.fromConfig({ algodConfig: {...} })`             |
+| Deploy contract      | Use typed app client factory (see app-client docs)              |
+| Transaction groups   | `algorand.newGroup().addPayment(...).addAssetOptIn(...).send()` |
 
 ## References / Further Reading
 
@@ -95,5 +101,6 @@ Language-specific references are organized in subfolders:
 - **Python** (`references/python/`): [AlgorandClient](./references/python/algorand-client.md)
 
 External documentation:
+
 - [AlgoKit Utils TS Docs](https://dev.algorand.co/algokit/utils/typescript/overview/)
 - [AlgoKit Utils Python Docs](https://dev.algorand.co/algokit/utils/python/overview/)
