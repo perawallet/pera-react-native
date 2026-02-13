@@ -41,13 +41,13 @@ import {
 
 export type SignResult =
     | {
-          type: 'transactions'
-          signedTransactions: PeraSignedTransaction[]
-      }
+        type: 'transactions'
+        signedTransactions: PeraSignedTransaction[]
+    }
     | {
-          type: 'arbitrary-data'
-          signatures: PeraArbitraryDataSignResult[]
-      }
+        type: 'arbitrary-data'
+        signatures: PeraArbitraryDataSignResult[]
+    }
 
 const isTransactionRequest = (
     request: SignRequest,

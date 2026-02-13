@@ -34,6 +34,11 @@ export const useStyles = makeStyles(theme => ({
     titleContainer: {
         alignItems: 'center',
     },
+    nameRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+    },
     title: {
         textAlign: 'center',
     },

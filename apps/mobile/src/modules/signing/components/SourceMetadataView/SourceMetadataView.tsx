@@ -12,9 +12,9 @@
 
 import { PWButton, PWIcon, PWImage, PWText, PWView } from '@components/core'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
-import { useWebView } from '@hooks/usePeraWebviewInterface'
-import { v7 as uuid } from 'uuid'
 import { useStyles } from './styles'
+import { useSourceMetadataView } from './useSourceMetadataView'
+import { ProjectVerificationIcon } from '@modules/projects/components/ProjectVerificationIcon'
 
 export type SourceMetadataViewProps = {
     metadata: SignRequestSource
@@ -22,25 +22,15 @@ export type SourceMetadataViewProps = {
 
 export const SourceMetadataView = ({ metadata }: SourceMetadataViewProps) => {
     const styles = useStyles()
-    const preferredIcon =
-        metadata.icons?.find(
-            icon =>
-                icon.endsWith('.png') ||
-                icon.endsWith('.jpg') ||
-                icon.endsWith('.jpeg'),
-        ) ?? metadata.icons?.at(0)
-    const { pushWebView } = useWebView()
 
-    const handlePressUrl = () => {
-        if (!metadata.url) return
-        pushWebView({ id: uuid(), url: metadata.url })
-    }
+    const { displayIcon, displayName, project, handlePressUrl } =
+        useSourceMetadataView(metadata)
 
     return (
         <PWView style={styles.container}>
-            {preferredIcon ? (
+            {displayIcon ? (
                 <PWImage
-                    source={{ uri: preferredIcon }}
+                    source={{ uri: displayIcon }}
                     style={styles.icon}
                 />
             ) : (
@@ -53,12 +43,20 @@ export const SourceMetadataView = ({ metadata }: SourceMetadataViewProps) => {
                 </PWView>
             )}
             <PWView style={styles.titleContainer}>
-                <PWText
-                    variant='h3'
-                    style={styles.title}
-                >
-                    {metadata.name}
-                </PWText>
+                <PWView style={styles.nameRow}>
+                    <PWText
+                        variant='h3'
+                        style={styles.title}
+                    >
+                        {displayName}
+                    </PWText>
+                    {!!project?.verificationTier && (
+                        <ProjectVerificationIcon
+                            tier={project.verificationTier}
+                            size='sm'
+                        />
+                    )}
+                </PWView>
                 {!!metadata.url && (
                     <PWButton
                         variant='link'

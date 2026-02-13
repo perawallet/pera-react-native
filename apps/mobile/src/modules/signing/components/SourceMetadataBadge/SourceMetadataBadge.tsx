@@ -13,8 +13,8 @@
 import { PWIcon, PWImage, PWText, PWView } from '@components/core'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { useStyles } from './styles'
-import { useMemo } from 'react'
-import { stripUrlScheme } from '@perawallet/wallet-core-shared'
+import { useSourceMetadataBadge } from './useSourceMetadataBadge'
+import { ProjectVerificationIcon } from '@modules/projects/components/ProjectVerificationIcon'
 
 export type SourceMetadataBadgeProps = {
     metadata: SignRequestSource
@@ -22,21 +22,14 @@ export type SourceMetadataBadgeProps = {
 
 export const SourceMetadataBadge = ({ metadata }: SourceMetadataBadgeProps) => {
     const styles = useStyles()
-    const preferredIcon =
-        metadata.icons?.find(
-            icon =>
-                icon.endsWith('.png') ||
-                icon.endsWith('.jpg') ||
-                icon.endsWith('.jpeg'),
-        ) ?? metadata.icons?.at(0)
-
-    const url = useMemo(() => stripUrlScheme(metadata.url), [metadata.url])
+    const { displayIcon, displayName, url, project } =
+        useSourceMetadataBadge(metadata)
 
     return (
         <PWView style={styles.container}>
-            {preferredIcon ? (
+            {displayIcon ? (
                 <PWImage
-                    source={{ uri: preferredIcon }}
+                    source={{ uri: displayIcon }}
                     style={styles.icon}
                 />
             ) : (
@@ -48,15 +41,21 @@ export const SourceMetadataBadge = ({ metadata }: SourceMetadataBadgeProps) => {
                     />
                 </PWView>
             )}
-            {!!metadata.name && (
+            {!!displayName && (
                 <PWText
                     variant='caption'
                     style={styles.name}
                 >
-                    {metadata.name}
+                    {displayName}
                 </PWText>
             )}
-            {!!metadata.name && !!metadata.url && (
+            {!!project?.verificationTier && (
+                <ProjectVerificationIcon
+                    tier={project.verificationTier}
+                    size='sm'
+                />
+            )}
+            {!!displayName && !!metadata.url && (
                 <PWText
                     variant='caption'
                     style={styles.separator}

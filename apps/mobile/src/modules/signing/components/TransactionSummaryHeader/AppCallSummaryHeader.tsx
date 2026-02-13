@@ -14,6 +14,7 @@ import { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
+import { ApplicationDisplay } from '@modules/projects/components/ApplicationDisplay/ApplicationDisplay'
 
 type AppCallSummaryHeaderProps = {
     transaction: PeraDisplayableTransaction
@@ -24,6 +25,11 @@ export const AppCallSummaryHeader = ({
 }: AppCallSummaryHeaderProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
+
+    const appId = transaction.applicationTransaction?.applicationId
+        ? transaction.applicationTransaction.applicationId.toString()
+        : undefined
+
     return (
         <PWView style={styles.container}>
             <PWView style={styles.textContainer}>
@@ -33,13 +39,7 @@ export const AppCallSummaryHeader = ({
                 >
                     {t(`transactions.type.${transaction.txType}`)}
                 </PWText>
-                <PWText>
-                    {t('transactions.summary.app_id', {
-                        id:
-                            transaction.applicationTransaction?.applicationId ??
-                            'unknown',
-                    })}
-                </PWText>
+                {!!appId && <ApplicationDisplay applicationId={appId} />}
             </PWView>
         </PWView>
     )
