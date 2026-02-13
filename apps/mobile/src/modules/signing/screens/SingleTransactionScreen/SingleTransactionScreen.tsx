@@ -26,6 +26,7 @@ import {
 import { useStyles } from './styles'
 import { SigningActionButtons } from '@modules/signing/components/SigningActionButtons'
 import { SigningAccountDisplay } from '@modules/signing/components/SigningAccountDisplay/SigningAccountDisplay'
+import { SourceMetadataBadge } from '@modules/signing/components/SourceMetadataBadge'
 
 export const SingleTransactionScreen = () => {
     const styles = useStyles()
@@ -49,7 +50,10 @@ export const SingleTransactionScreen = () => {
     return (
         <ScrollView contentContainerStyle={styles.contentContainer}>
             <PWView style={styles.container}>
-                <TransactionSummaryHeader transaction={transaction} />
+                <TransactionSummaryHeader
+                    transaction={transaction}
+                    metadata={request.sourceMetadata}
+                />
 
                 <SigningWarnings />
 

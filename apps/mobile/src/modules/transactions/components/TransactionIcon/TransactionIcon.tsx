@@ -23,7 +23,7 @@ export type TransactionIconType = PeraTransactionType | 'group'
 
 export type TransactionIconProps = {
     type: TransactionIconType
-    size?: 'sm' | 'md' | 'lg'
+    size?: 'sm' | 'md' | 'lg' | 'xl'
 } & Omit<PWRoundIconProps, 'icon' | 'size' | 'name'>
 
 const iconNameMap: Record<TransactionIconType, IconName> = {
@@ -54,7 +54,7 @@ export const TransactionIcon = (props: TransactionIconProps) => {
         >
             <PWIcon
                 name={name}
-                size={size === 'md' ? 'md' : size === 'sm' ? 'sm' : 'lg'}
+                size={size}
                 variant={variant === 'primary' ? 'white' : variant}
             />
         </PWView>

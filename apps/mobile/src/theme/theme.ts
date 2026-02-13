@@ -92,6 +92,9 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
 
             backdrop: 'rgba(0, 0, 0, 0.4)',
 
+            //Backgrounds
+            altBackground: '#27272A',
+
             //Links
             linkPrimary: '#1F8E9D',
 
@@ -161,6 +164,9 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             asaSuspiciousBg: 'rgba(255, 109, 95, 0.16)',
 
             backdrop: 'rgba(0, 0, 0, 0.4)',
+
+            //Backgrounds
+            altBackground: '#F1F1F2',
 
             //Links
             linkPrimary: '#1F8E9D',

@@ -1,0 +1,1 @@
+export { SourceMetadataBadge } from './SourceMetadataBadge'

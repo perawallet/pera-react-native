@@ -252,6 +252,7 @@ export const useWalletConnectHandlers = () => {
                 transport: 'callback',
                 transportId: connector.clientId,
                 txs: txnObjects,
+                sourceMetadata: connector.session?.peerMeta,
                 approve: async (signed: (PeraSignedTransaction | null)[]) => {
                     const toSign = signed.filter(
                         Boolean,
