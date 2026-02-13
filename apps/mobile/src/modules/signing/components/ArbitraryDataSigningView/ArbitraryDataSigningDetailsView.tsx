@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWHeader, PWIcon, PWImage, PWText, PWView } from '@components/core'
+import { PWIcon, PWImage, PWText, PWView } from '@components/core'
 import {
     ArbitraryDataSignRequest,
     PeraArbitraryDataMessage,
@@ -27,13 +27,11 @@ import { ScrollView } from 'react-native-gesture-handler'
 export type ArbitraryDataSigningDetailsViewProps = {
     request: ArbitraryDataSignRequest
     dataMessage: PeraArbitraryDataMessage
-    onBack: () => void
 }
 
 export const ArbitraryDataSigningDetailsView = ({
     request,
     dataMessage,
-    onBack,
 }: ArbitraryDataSigningDetailsViewProps) => {
     const { t } = useLanguage()
     const accounts = useAllAccounts()
@@ -52,11 +50,6 @@ export const ArbitraryDataSigningDetailsView = ({
 
     return (
         <PWView style={styles.container}>
-            <PWHeader
-                title={t('signing.arbitrary_data_view.details_title')}
-                leftIcon='chevron-left'
-                onLeftPress={onBack}
-            />
             <PWView style={[styles.section, styles.titleSection]}>
                 {preferredIcon ? (
                     <PWImage

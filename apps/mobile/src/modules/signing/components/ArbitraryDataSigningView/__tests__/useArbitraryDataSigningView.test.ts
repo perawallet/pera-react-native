@@ -16,7 +16,7 @@ import { useArbitraryDataSigningView } from '../useArbitraryDataSigningView'
 import {
     ArbitraryDataSignRequest,
     useSigningRequest,
-} from '../../../../../../../../packages/signing/dist'
+} from '@perawallet/wallet-core-signing'
 import { useToast } from '@hooks/useToast'
 import { AlgorandChainId } from '@perawallet/wallet-core-walletconnect'
 

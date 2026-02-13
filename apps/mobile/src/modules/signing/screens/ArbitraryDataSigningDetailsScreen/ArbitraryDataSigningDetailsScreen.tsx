@@ -11,30 +11,29 @@
  */
 
 import { PWView } from '@components/core'
-import { SigningRoutes } from '@modules/signing/routes'
-import type { ArbitraryDataSignRequest } from '@perawallet/wallet-core-signing'
 import {
-    NavigationContainer,
-    NavigationIndependentTree,
-} from '@react-navigation/native'
+    type ArbitraryDataSignRequest,
+    useSigningRequest,
+} from '@perawallet/wallet-core-signing'
+import { ArbitraryDataSigningDetailsView } from '@modules/signing/components/ArbitraryDataSigningView/ArbitraryDataSigningDetailsView'
+import type { SigningStackScreenProps } from '@modules/signing/routes'
 import { useStyles } from './styles'
 
-export type ArbitraryDataSigningViewProps = {
-    request: ArbitraryDataSignRequest
-}
-
-export const ArbitraryDataSigningView = ({
-    request,
-}: ArbitraryDataSigningViewProps) => {
+export const ArbitraryDataSigningDetailsScreen = ({
+    route,
+}: SigningStackScreenProps<'ArbitraryDataSigningDetails'>) => {
     const styles = useStyles()
+    const { currentRequest } = useSigningRequest()
+    const request = currentRequest as ArbitraryDataSignRequest
+
+    if (!request) return null
 
     return (
         <PWView style={styles.container}>
-            <NavigationIndependentTree>
-                <NavigationContainer>
-                    <SigningRoutes request={request} />
-                </NavigationContainer>
-            </NavigationIndependentTree>
+            <ArbitraryDataSigningDetailsView
+                request={request}
+                dataMessage={route.params.message}
+            />
         </PWView>
     )
 }

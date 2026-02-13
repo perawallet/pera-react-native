@@ -173,4 +173,64 @@ describe('SigningStore', () => {
 
         expect(result.current.pendingSignRequests).toEqual([])
     })
+
+    test('should store lastCompletedRequest', () => {
+        const { result } = renderHook(() => useSigningStore())
+        const request: SignRequest = {
+            id: 'test-id',
+            txs: [],
+            type: 'transactions',
+            transport: 'algod',
+        }
+
+        act(() => {
+            result.current.setLastCompletedRequest(request)
+        })
+
+        expect(result.current.lastCompletedRequest).toEqual(request)
+    })
+
+    test('should clear lastCompletedRequest when set to null', () => {
+        const { result } = renderHook(() => useSigningStore())
+        const request: SignRequest = {
+            id: 'test-id',
+            txs: [],
+            type: 'transactions',
+            transport: 'algod',
+        }
+
+        act(() => {
+            result.current.setLastCompletedRequest(request)
+        })
+
+        expect(result.current.lastCompletedRequest).toEqual(request)
+
+        act(() => {
+            result.current.setLastCompletedRequest(null)
+        })
+
+        expect(result.current.lastCompletedRequest).toBeNull()
+    })
+
+    test('should clear lastCompletedRequest on resetState', () => {
+        const { result } = renderHook(() => useSigningStore())
+        const request: SignRequest = {
+            id: 'test-id',
+            txs: [],
+            type: 'transactions',
+            transport: 'algod',
+        }
+
+        act(() => {
+            result.current.setLastCompletedRequest(request)
+        })
+
+        expect(result.current.lastCompletedRequest).toEqual(request)
+
+        act(() => {
+            result.current.resetState()
+        })
+
+        expect(result.current.lastCompletedRequest).toBeNull()
+    })
 })

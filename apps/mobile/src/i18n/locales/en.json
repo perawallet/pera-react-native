@@ -173,7 +173,8 @@
             "failed_title": "Failed to load page",
             "reload": "Reload",
             "failed_body": "An error occurred loading this page. Please check your internet connection and try again."
-        }
+        },
+        "done": "Done"
     },
     "contacts": {
         "edit_contact": {
@@ -558,7 +559,7 @@
     "signing": {
         "view_details": "View Transaction Details",
         "arbitrary_data_view": {
-            "title": "Request",
+            "title": "Data Signing Request",
             "body": "Data Signing Request",
             "details_title": "Arbitrary Signing Details",
             "show_details": "Show Details",
@@ -598,6 +599,12 @@
         "unknown_request_type": {
             "title": "Unknown Request Type",
             "body": "The request type is unknown."
+        },
+        "signing_completed": {
+            "transaction_title": "Transaction Processing",
+            "transaction_body": "Your transaction has been sent successfully and is being processed.",
+            "data_title": "Data Signeing Successful",
+            "data_body": "Your data has been signed successfully and sent to the requesting application."
         }
     },
     "transactions": {

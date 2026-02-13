@@ -70,8 +70,10 @@ export type SignRequest =
 
 export type SigningStore = BaseStoreState & {
     pendingSignRequests: SignRequest[]
+    lastCompletedRequest: SignRequest | null
     addSignRequest: (request: SignRequest) => boolean
     removeSignRequest: (request: SignRequest) => boolean
+    setLastCompletedRequest: (request: SignRequest | null) => void
 }
 
 export type TransactionWarning = {
