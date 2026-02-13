@@ -76,13 +76,14 @@ const validateRequest = (
         )
     }
 
+    const expectedChainId =
+        network === Networks.testnet
+            ? AlgorandChainId.testnet
+            : AlgorandChainId.mainnet
+
     const { chainId } = foundConnection.session
 
-    if (
-        chainId !== 4160 &&
-        ((network === Networks.mainnet && chainId !== 416001) ||
-            (network === Networks.testnet && chainId !== 416002))
-    ) {
+    if (chainId !== AlgorandChainId.all && chainId !== expectedChainId) {
         logger.debug('Invalid network', {
             clientId: connector.clientId,
             connections,
@@ -119,10 +120,15 @@ const validateDataSignRequest = (
         )
     }
 
+    const expectedChainId =
+        network === Networks.testnet
+            ? AlgorandChainId.testnet
+            : AlgorandChainId.mainnet
+
     data.forEach(item => {
         if (
             item.chainId !== AlgorandChainId.all &&
-            item.chainId !== AlgorandChainId[network]
+            item.chainId !== expectedChainId
         ) {
             throw new WalletConnectInvalidNetworkError(
                 new Error("ChainId doesn't match"),

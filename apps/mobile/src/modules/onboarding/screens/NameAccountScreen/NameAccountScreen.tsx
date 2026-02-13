@@ -46,7 +46,10 @@ export const NameAccountScreen = () => {
         >
             <PWToolbar
                 left={
-                    <PWTouchableOpacity onPress={navigation.goBack}>
+                    <PWTouchableOpacity
+                        onPress={navigation.goBack}
+                        testID='name_account_back_button'
+                    >
                         <PWIcon name='chevron-left' />
                     </PWTouchableOpacity>
                 }
@@ -84,6 +87,7 @@ export const NameAccountScreen = () => {
                     value={walletDisplay}
                     onChangeText={handleNameChange}
                     autoFocus
+                    testID='name_account_name_input'
                 />
                 <PWView style={styles.spacer} />
                 <PWButton
@@ -93,6 +97,7 @@ export const NameAccountScreen = () => {
                     onPress={handleFinish}
                     isLoading={isCreating}
                     isDisabled={isCreating}
+                    testID='name_account_finish_button'
                 />
             </PWView>
 

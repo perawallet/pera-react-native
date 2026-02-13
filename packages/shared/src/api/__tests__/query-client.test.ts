@@ -38,6 +38,10 @@ vi.mock('@perawallet/wallet-core-config', () => ({
         algodApiKey: 'test-algod-key',
         indexerApiKey: 'test-indexer-key',
     },
+    Networks: {
+        testnet: 'testnet',
+        mainnet: 'mainnet',
+    },
 }))
 
 // Mock ky with hooks support

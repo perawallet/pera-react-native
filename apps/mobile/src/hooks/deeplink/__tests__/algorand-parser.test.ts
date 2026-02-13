@@ -12,6 +12,21 @@
 
 import { parseAlgorandUri } from '../algorand-parser'
 import { DeeplinkType } from '../types'
+import { vi } from 'vitest'
+
+// Mock getNetworkConfig for all tests in this file
+vi.mock('@perawallet/wallet-core-config', () => ({
+    getNetworkConfig: vi.fn(network => {
+        if (network === 'testnet') {
+            return { explorerUrl: 'https://testnet.explorer.perawallet.app' }
+        }
+        return { explorerUrl: 'https://explorer.perawallet.app' }
+    }),
+    Networks: {
+        testnet: 'testnet',
+        mainnet: 'mainnet',
+    },
+}))
 
 const TEST_ADDRESS =
     '5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA'

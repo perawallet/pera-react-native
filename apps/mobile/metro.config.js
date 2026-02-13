@@ -45,6 +45,7 @@ const aliasMap = {
     '@assets': path.resolve(projectRoot, 'assets'),
     '@theme': path.resolve(projectRoot, 'src/theme'),
     '@layouts': path.resolve(projectRoot, 'src/layouts'),
+    '@utils': path.resolve(projectRoot, 'src/utils'),
 };
 
 // Crypto polyfill map
@@ -103,7 +104,13 @@ const customResolveRequest = (context, moduleName, platform) => {
     }
 
     // Force resolution of critical packages to the mobile app's node_modules
-    if (moduleName === 'react' || moduleName === 'react-native' || moduleName === '@tanstack/react-query' || moduleName === 'react-dom') {
+    if (
+        moduleName === 'react' ||
+        moduleName === 'react-native' ||
+        moduleName === '@tanstack/react-query' ||
+        moduleName === 'react-dom' ||
+        moduleName === '@react-native-community/datetimepicker'
+    ) {
         const resolvedPath = path.resolve(projectRoot, 'node_modules', moduleName);
         return context.resolveRequest(context, resolvedPath, platform);
     }

@@ -14,3 +14,5 @@ export const name = '@perawallet/wallet-core-config'
 
 export * from './main'
 export * from './constants'
+export * from './network-config'
+export * from './models/network'

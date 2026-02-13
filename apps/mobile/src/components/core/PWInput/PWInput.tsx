@@ -12,6 +12,7 @@
 
 import { Input as RNEInput, InputProps as RNEInputProps } from '@rneui/themed'
 import { useStyles } from './styles'
+import { getTestProps } from '@utils/test-id-helper'
 
 export type PWInputProps = {
     value?: string
@@ -37,6 +38,8 @@ export type PWInputProps = {
     label?: string
     labelStyle?: RNEInputProps['labelStyle']
     placeholderTextColor?: string
+    testID?: string
+    placeholderTextColor?: string
 }
 
 export const PWInput = ({
@@ -44,6 +47,7 @@ export const PWInput = ({
     inputContainerStyle,
     inputStyle,
     labelStyle,
+    testID,
     ...props
 }: PWInputProps) => {
     const styles = useStyles()
@@ -51,6 +55,7 @@ export const PWInput = ({
     return (
         <RNEInput
             {...props}
+            {...getTestProps(testID)}
             containerStyle={[styles.container, containerStyle]}
             inputContainerStyle={[styles.inputContainer, inputContainerStyle]}
             inputStyle={[styles.input, inputStyle]}

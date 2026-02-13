@@ -12,6 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 import { EdgeInsets } from 'react-native-safe-area-context'
+import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
     return {
@@ -27,6 +28,8 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
             top: 0,
             left: 0,
             right: 0,
+            justifyContent: 'center',
+            alignItems: 'center',
         },
         mainnetBar: {
             backgroundColor: theme.colors.background,
@@ -44,6 +47,12 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
         },
         offlineText: {
             color: theme.colors.textGray,
+        },
+        testnetText: {
+            ...getTypography(theme, 'caption'),
+            color: theme.colors.black,
+            textAlign: 'center',
+            marginTop: theme.spacing.xs,
         },
     }
 })
