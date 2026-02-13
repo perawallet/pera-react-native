@@ -34,7 +34,7 @@ build/
 
 # Environment setup exports
 apps/mobile/scripts/.env-exports.sh
-/.claude
+/.claude/settings.local.json
 packages/config/src/local-overrides.ts
 /.opencode
 .mcp.json

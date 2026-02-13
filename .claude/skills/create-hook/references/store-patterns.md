@@ -1,7 +1,3 @@
----
-trigger: always_on
----
-
 # Store Patterns (Zustand)
 
 Location: `packages/[domain]/src/store/store.ts`
@@ -61,11 +57,11 @@ export const { useStore: useAccountsStore, initStore: initAccountsStore } =
 ## Store Access Pattern
 
 ```typescript
-// ✅ GOOD: Granular selectors
+// Granular selectors
 const accounts = useAccountsStore(state => state.accounts)
 const selectedAddress = useAccountsStore(state => state.selectedAccountAddress)
 
-// ✅ GOOD: Multiple values with shallow comparison
+// Multiple values with shallow comparison
 import { shallow } from 'zustand/shallow'
 const { accounts, selectedAccountAddress } = useAccountsStore(
     state => ({
@@ -75,7 +71,7 @@ const { accounts, selectedAccountAddress } = useAccountsStore(
     shallow,
 )
 
-// ❌ BAD: Subscribes to entire store
+// NEVER do this — subscribes to entire store
 const store = useAccountsStore()
 const { accounts } = useAccountsStore()
 ```

@@ -76,6 +76,5 @@ Note that any Zustand store state must include a resetState() method, so that it
 
 ## Learn More
 
-- For code examples and patterns, see the development workflows
 - For file placement rules, see [Folder Structure](FOLDER_STRUCTURE.md)
 - For naming rules, see [Naming Conventions](NAMING_CONVENTIONS.md)
