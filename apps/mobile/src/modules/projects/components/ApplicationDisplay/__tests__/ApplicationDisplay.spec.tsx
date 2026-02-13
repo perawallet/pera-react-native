@@ -105,7 +105,7 @@ describe('ApplicationDisplay', () => {
         vi.mocked(useApplicationQuery).mockReturnValue({
             data: null,
             isLoading: true,
-        } as ReturnType<typeof useApplicationQuery>)
+        } as unknown as ReturnType<typeof useApplicationQuery>)
 
         render(<ApplicationDisplay applicationId='123' />)
 
