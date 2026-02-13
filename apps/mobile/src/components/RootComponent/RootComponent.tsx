@@ -12,7 +12,7 @@
 
 import { config } from '@perawallet/wallet-core-config'
 import { useEffect, useRef } from 'react'
-import { AppState, StatusBar, View } from 'react-native'
+import { AppState, View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { MainRoutes } from '@routes/index'
 import { getTheme } from '@theme/theme'
@@ -69,14 +69,6 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
     return (
         <ErrorBoundary onError={showError}>
             <PWView style={styles.container}>
-                <StatusBar
-                    barStyle={
-                        theme.mode === 'light'
-                            ? 'dark-content'
-                            : 'light-content'
-                    }
-                    backgroundColor={theme.colors.background}
-                />
                 {isTestnet && (
                     <View style={styles.testnetBar}>
                         <PWText style={styles.testnetText}>Testnet</PWText>
