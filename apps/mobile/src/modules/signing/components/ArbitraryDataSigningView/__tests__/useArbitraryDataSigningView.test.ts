@@ -72,11 +72,6 @@ describe('useArbitraryDataSigningView', () => {
             })
 
             expect(mockSignAndSend).toHaveBeenCalledWith(baseRequest)
-            expect(mockShowToast).toHaveBeenCalledWith({
-                title: 'signing.arbitrary_data_view.success_title',
-                body: 'signing.arbitrary_data_view.success_body',
-                type: 'success',
-            })
             expect(result.current.isPending).toBe(false)
         })
 

@@ -30,8 +30,8 @@ export const useSourceMetadataBadge = (metadata: SignRequestSource) => {
                 icon.endsWith('.jpeg'),
         ) ?? metadata.icons?.at(0)
 
-    const displayIcon = project?.logoPng ?? preferredIcon
-    const displayName = project?.name ?? metadata.name
+    const displayIcon = preferredIcon ?? project?.logoPng
+    const displayName = metadata.name ?? project?.name
 
     const url = useMemo(() => stripUrlScheme(metadata.url), [metadata.url])
 
