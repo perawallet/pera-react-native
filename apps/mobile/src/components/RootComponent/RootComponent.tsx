@@ -16,7 +16,7 @@ import { AppState, View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { MainRoutes } from '@routes/index'
 import { getTheme } from '@theme/theme'
-import { ThemeProvider, useTheme } from '@rneui/themed'
+import { ThemeProvider } from '@rneui/themed'
 import { useStyles } from './styles'
 import { PWText, PWView } from '@components/core'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -45,7 +45,6 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
     const { isTestnet } = useNetwork()
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
-    const { theme } = useTheme()
     const { hasInternet } = useNetworkStatus()
     const { showToast } = useToast()
     const { t } = useLanguage()
