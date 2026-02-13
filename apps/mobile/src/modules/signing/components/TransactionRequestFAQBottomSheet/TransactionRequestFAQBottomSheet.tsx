@@ -1,3 +1,15 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
 import { useState, useEffect } from 'react'
 import { PWBottomSheet, PWButton, PWIcon, PWText } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
@@ -10,12 +22,12 @@ import { useStyles } from './styles'
 export const TransactionRequestFAQBottomSheet = () => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { pendingSignRequests } = useSigningRequest()
+    const { currentRequest } = useSigningRequest()
     const { getPreference, setPreference } = usePreferences()
     const [isVisible, setIsVisible] = useState(false)
 
     useEffect(() => {
-        if (pendingSignRequests.length > 0) {
+        if (currentRequest) {
             const alreadyShown = getPreference(
                 UserPreferences.transactionRequestFaqShown,
             )
@@ -26,7 +38,7 @@ export const TransactionRequestFAQBottomSheet = () => {
         } else {
             setIsVisible(false)
         }
-    }, [pendingSignRequests, getPreference])
+    }, [currentRequest, getPreference])
 
     const handleClose = () => {
         setPreference(UserPreferences.transactionRequestFaqShown, true)
@@ -58,6 +70,7 @@ export const TransactionRequestFAQBottomSheet = () => {
                 variant='primary'
                 title={t('common.close.label')}
                 onPress={handleClose}
+                style={styles.button}
             />
         </PWBottomSheet>
     )
