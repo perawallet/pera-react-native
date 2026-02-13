@@ -19,9 +19,11 @@ import { useLanguage } from '@hooks/useLanguage'
 import { PromptViewProps } from '@modules/prompts/models'
 import { PWImage, PWTouchableOpacity } from '@components/core'
 import lockImage from '@assets/images/lock.webp'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export const PinSecurityPrompt = (props: PromptViewProps) => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({ insets })
     const { t } = useLanguage()
     const { handleSetPinCode, handleNotNow, handleDontAskAgain } =
         usePinSecurityPrompt(props)
